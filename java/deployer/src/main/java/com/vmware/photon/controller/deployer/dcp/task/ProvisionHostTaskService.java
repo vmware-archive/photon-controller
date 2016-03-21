@@ -86,9 +86,11 @@ public class ProvisionHostTaskService extends StatefulService {
      */
     public enum SubStage {
       INSTALL_AGENT,
-      WAIT_FOR_AGENT,
+      WAIT_FOR_INSTALLATION,
       PROVISION_AGENT,
       GET_HOST_CONFIG,
+      UPGRADE_AGENT,
+      WAIT_FOR_UPGRADE,
     }
 
     /**
@@ -152,6 +154,15 @@ public class ProvisionHostTaskService extends StatefulService {
     @Positive
     @Immutable
     public Integer maximumPollCount;
+
+    /**
+     * This value represents the maximum number of agent status polling iterations which should be attempted before
+     * declaring failure. Agent upgrade takes much longer time than install or provision, so we need a separate value.
+     */
+    @DefaultInteger(value = 360)
+    @Positive
+    @Immutable
+    public Integer maximumPollCountForUpgrade;
 
     /**
      * This value represents the interval, in milliseconds, between agent status polling iterations.
@@ -273,9 +284,11 @@ public class ProvisionHostTaskService extends StatefulService {
         checkState(taskState.subStage != null);
         switch (taskState.subStage) {
           case INSTALL_AGENT:
-          case WAIT_FOR_AGENT:
+          case WAIT_FOR_INSTALLATION:
           case PROVISION_AGENT:
           case GET_HOST_CONFIG:
+          case UPGRADE_AGENT:
+          case WAIT_FOR_UPGRADE:
             break;
           default:
             throw new IllegalStateException("Unknown task sub-stage: " + taskState.subStage);
@@ -295,14 +308,20 @@ public class ProvisionHostTaskService extends StatefulService {
       case INSTALL_AGENT:
         processInstallAgentSubStage(currentState);
         break;
-      case WAIT_FOR_AGENT:
-        processWaitForAgentSubStage(currentState);
+      case WAIT_FOR_INSTALLATION:
+        processWaitForInstallationSubStage(currentState);
         break;
       case PROVISION_AGENT:
         processProvisionAgentSubStage(currentState);
         break;
       case GET_HOST_CONFIG:
         processGetHostConfigSubStage(currentState);
+        break;
+      case UPGRADE_AGENT:
+        processUpgradeAgentSubStage(currentState);
+        break;
+      case WAIT_FOR_UPGRADE:
+        processWaitForUpgradeSubStage(currentState);
         break;
     }
   }
@@ -373,7 +392,7 @@ public class ProvisionHostTaskService extends StatefulService {
         } else if (result != 0) {
           logScriptErrorAndFail(hostState, result, scriptLogFile);
         } else {
-          sendStageProgressPatch(currentState, TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_FOR_AGENT);
+          sendStageProgressPatch(currentState, TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_FOR_INSTALLATION);
         }
       }
 
@@ -398,10 +417,10 @@ public class ProvisionHostTaskService extends StatefulService {
   }
 
   //
-  // WAIT_FOR_AGENT sub-stage routines
+  // WAIT_FOR_INSTALLATION sub-stage routines
   //
 
-  private void processWaitForAgentSubStage(State currentState) {
+  private void processWaitForInstallationSubStage(State currentState) {
 
     HostUtils.getCloudStoreHelper(this)
         .createGet(currentState.hostServiceLink)
@@ -412,7 +431,7 @@ public class ProvisionHostTaskService extends StatefulService {
           }
 
           try {
-            processWaitForAgentSubStage(currentState, op.getBody(HostService.State.class));
+            processWaitForInstallationSubStage(currentState, op.getBody(HostService.State.class));
           } catch (Throwable t) {
             failTask(t);
           }
@@ -420,7 +439,7 @@ public class ProvisionHostTaskService extends StatefulService {
         .sendWith(this);
   }
 
-  private void processWaitForAgentSubStage(State currentState, HostService.State hostState) {
+  private void processWaitForInstallationSubStage(State currentState, HostService.State hostState) {
     try {
       AgentControlClient agentControlClient = HostUtils.getAgentControlClient(this);
       agentControlClient.setIpAndPort(hostState.hostAddress, hostState.agentPort);
@@ -432,21 +451,21 @@ public class ProvisionHostTaskService extends StatefulService {
             AgentControlClient.ResponseValidator.checkAgentStatusResponse(agentStatusResponse, hostState.hostAddress);
             sendStageProgressPatch(currentState, TaskState.TaskStage.STARTED, TaskState.SubStage.PROVISION_AGENT);
           } catch (Throwable t) {
-            retryGetAgentStatusOrFail(currentState, hostState, t);
+            retryGetInstallationStatusOrFail(currentState, hostState, t);
           }
         }
 
         @Override
         public void onError(Exception e) {
-          retryGetAgentStatusOrFail(currentState, hostState, e);
+          retryGetInstallationStatusOrFail(currentState, hostState, e);
         }
       });
     } catch (Throwable t) {
-      retryGetAgentStatusOrFail(currentState, hostState, t);
+      retryGetInstallationStatusOrFail(currentState, hostState, t);
     }
   }
 
-  private void retryGetAgentStatusOrFail(State currentState, HostService.State hostState, Throwable t) {
+  private void retryGetInstallationStatusOrFail(State currentState, HostService.State hostState, Throwable t) {
     if (currentState.pollCount + 1 >= currentState.maximumPollCount) {
       ServiceUtils.logSevere(this, t);
       State patchState = buildPatch(TaskState.TaskStage.FAILED, null, new IllegalStateException(
@@ -456,7 +475,7 @@ public class ProvisionHostTaskService extends StatefulService {
       TaskUtils.sendSelfPatch(this, patchState);
     } else {
       ServiceUtils.logTrace(this, t);
-      State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_FOR_AGENT, null);
+      State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_FOR_INSTALLATION, null);
       patchState.pollCount = currentState.pollCount + 1;
       getHost().schedule(() -> TaskUtils.sendSelfPatch(this, patchState), currentState.pollInterval,
           TimeUnit.MILLISECONDS);
@@ -468,26 +487,6 @@ public class ProvisionHostTaskService extends StatefulService {
   //
 
   private void processProvisionAgentSubStage(State currentState) {
-
-    HostUtils.getCloudStoreHelper(this)
-        .createGet(currentState.deploymentServiceLink)
-        .setCompletion((op, ex) -> {
-          if (ex != null) {
-            failTask(ex);
-            return;
-          }
-
-          try {
-            processProvisionAgentSubStage(currentState, op.getBody(DeploymentService.State.class));
-          } catch (Throwable t) {
-            failTask(t);
-          }
-        })
-        .sendWith(this);
-  }
-
-  private void processProvisionAgentSubStage(State currentState, DeploymentService.State deploymentState) {
-
     State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.GET_HOST_CONFIG, null);
     if (ControlFlags.disableOperationProcessingOnStageTransition(currentState.controlFlags)) {
       patchState.controlFlags = ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED;
@@ -676,10 +675,130 @@ public class ProvisionHostTaskService extends StatefulService {
           if (e != null) {
             failTask(e);
           } else {
-            sendStageProgressPatch(currentState, TaskState.TaskStage.FINISHED, null);
+            sendStageProgressPatch(currentState, TaskState.TaskStage.STARTED, TaskState.SubStage.UPGRADE_AGENT);
           }
         })
         .sendWith(this);
+  }
+
+  //
+  // UPGRADE_AGENT sub-stage methods
+  //
+
+  private void processUpgradeAgentSubStage(State currentState) {
+
+    CloudStoreHelper cloudStoreHelper = HostUtils.getCloudStoreHelper(this);
+    Operation hostOp = cloudStoreHelper.createGet(currentState.hostServiceLink);
+
+    hostOp.setCompletion(
+        (op, ex) -> {
+          if (ex != null) {
+            failTask(ex);
+            return;
+          }
+
+          try {
+            processUpgradeAgentSubStage(currentState, op.getBody(HostService.State.class));
+          } catch (Throwable t) {
+            failTask(t);
+          }
+        })
+        .sendWith(this);
+  }
+
+  private void processUpgradeAgentSubStage(State currentState, HostService.State hostState) {
+
+    try {
+      AgentControlClient agentControlClient = HostUtils.getAgentControlClient(this);
+      agentControlClient.setIpAndPort(hostState.hostAddress, hostState.agentPort);
+      agentControlClient.upgrade("",
+          new AsyncMethodCallback<AgentControl.AsyncClient.upgrade_call>() {
+            @Override
+            public void onComplete(AgentControl.AsyncClient.upgrade_call upgradeCall) {
+              try {
+                AgentControlClient.ResponseValidator.checkUpgradeResponse(upgradeCall.getResult());
+                sendStageProgressPatch(currentState, TaskState.TaskStage.STARTED,
+                    TaskState.SubStage.WAIT_FOR_UPGRADE);
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            }
+
+            @Override
+            public void onError(Exception e) {
+              failTask(e);
+            }
+          });
+
+    } catch (Throwable t) {
+      failTask(t);
+    }
+  }
+
+  //
+  // WAIT_FOR_UPGRADE sub-stage routines
+  //
+
+  private void processWaitForUpgradeSubStage(State currentState) {
+
+    HostUtils.getCloudStoreHelper(this)
+        .createGet(currentState.hostServiceLink)
+        .setCompletion((op, ex) -> {
+          if (ex != null) {
+            failTask(ex);
+            return;
+          }
+
+          try {
+            processWaitForUpgradeSubStage(currentState, op.getBody(HostService.State.class));
+          } catch (Throwable t) {
+            failTask(t);
+          }
+        })
+        .sendWith(this);
+  }
+
+  private void processWaitForUpgradeSubStage(State currentState, HostService.State hostState) {
+    try {
+      AgentControlClient agentControlClient = HostUtils.getAgentControlClient(this);
+      agentControlClient.setIpAndPort(hostState.hostAddress, hostState.agentPort);
+      agentControlClient.getAgentStatus(new AsyncMethodCallback<AgentControl.AsyncClient.get_agent_status_call>() {
+        @Override
+        public void onComplete(AgentControl.AsyncClient.get_agent_status_call getAgentStatusCall) {
+          try {
+            AgentStatusResponse agentStatusResponse = getAgentStatusCall.getResult();
+            AgentControlClient.ResponseValidator.checkAgentStatusResponse(agentStatusResponse, hostState.hostAddress);
+            sendStageProgressPatch(currentState, TaskState.TaskStage.FINISHED, null);
+          } catch (Throwable t) {
+            retryGetUpgradeStatusOrFail(currentState, hostState, t);
+          }
+        }
+
+        @Override
+        public void onError(Exception e) {
+          retryGetUpgradeStatusOrFail(currentState, hostState, e);
+        }
+      });
+    } catch (Throwable t) {
+      retryGetUpgradeStatusOrFail(currentState, hostState, t);
+    }
+  }
+
+  private void retryGetUpgradeStatusOrFail(State currentState, HostService.State hostState, Throwable t) {
+    if (currentState.pollCount + 1 >= currentState.maximumPollCountForUpgrade) {
+      ServiceUtils.logSevere(this, t);
+      State patchState = buildPatch(TaskState.TaskStage.FAILED, null, new IllegalStateException(
+          "The agent on host " + hostState.hostAddress + " failed to become ready after upgrade after " +
+              Integer.toString(currentState.maximumPollCountForUpgrade) + " retries"));
+      patchState.pollCount = currentState.pollCount + 1;
+      TaskUtils.sendSelfPatch(this, patchState);
+    } else {
+      ServiceUtils.logTrace(this, t);
+      State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_FOR_UPGRADE, null);
+      patchState.pollCount = currentState.pollCount + 1;
+      getHost().schedule(() -> TaskUtils.sendSelfPatch(this, patchState), currentState.pollInterval,
+          TimeUnit.MILLISECONDS);
+    }
   }
 
   //
