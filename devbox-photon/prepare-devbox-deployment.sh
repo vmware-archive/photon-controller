@@ -53,7 +53,6 @@ vagrant ssh -c "docker tag devbox/deployer esxcloud/deployer"
 vagrant ssh -c "docker tag devbox/cloud_store esxcloud/cloud-store"
 vagrant ssh -c "docker tag devbox/management_api esxcloud/management-api"
 vagrant ssh -c "docker tag devbox/root_scheduler esxcloud/root-scheduler"
-vagrant ssh -c "docker tag devbox/chairman esxcloud/chairman"
 vagrant ssh -c "docker tag devbox/housekeeper esxcloud/housekeeper"
 
 mgmt_ui_container_url="https://ci.ec.eng.vmware.com/view/UI/job/ec-ui-mgmt-publish-docker-image-develop/lastSuccessfulBuild/artifact/ci/docker-image/esxcloud-management-ui.tar"

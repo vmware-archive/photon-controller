@@ -11,14 +11,6 @@ if [ "$1" = 'management-api' ]; then
   mkdir -p $install_path
   tar xf $archive --strip=1 -C $install_path
 
-elif [ "$1" = 'chairman' ]; then
-  cp /archive/chairman*.tar $package_dir/
-  archive="$package_dir/chairman*.tar"
-  install_path='/usr/lib/esxcloud/chairman'
-  rm -rf $install_path
-  mkdir -p $install_path
-  tar xf $archive --strip=1 -C $install_path
-
 elif [ "$1" = 'root-scheduler' ]; then
   cp /archive/root-scheduler*.tar $package_dir/
   archive="$package_dir/root-scheduler*.tar"
@@ -100,10 +92,6 @@ elif [ "$1" = 'deployer' ]; then
   # Untar all the other services and copy them to configuration directory
   tar --wildcards -xf /archive/management*.tar --strip=1 -C /tmp management*/configuration
   cp -r $tmp_dir/ $config_dir/management-api/
-  rm -rf $tmp_dir
-
-  tar --wildcards -xf /archive/chairman*.tar --strip=1 -C /tmp chairman*/configuration
-  cp -r $tmp_dir/ $config_dir/chairman/
   rm -rf $tmp_dir
 
   tar --wildcards -xf /archive/root-scheduler*.tar --strip=1 -C /tmp root-scheduler*/configuration

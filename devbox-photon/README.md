@@ -168,7 +168,6 @@ To enable sending log entries to a remote syslog endpoint (such as VMware LogIns
 Remote debugging is enabled by default for the Java services in Dev Box. Debugger endpoints are available at the following ports:
 
 * API Frontend: 39000
-* Chairman: 23000
 * Root Scheduler: 23010
 * Housekeeper: 26000
 * Cloud Store: 29000

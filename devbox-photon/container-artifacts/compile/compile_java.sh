@@ -10,7 +10,6 @@ mkdir /esxcloud/java/distributions/configurations
 
 echo Clean build folders
 rm -rf api-frontend/management/build
-rm -rf chairman/build
 rm -rf root-scheduler/build
 rm -rf housekeeper/build
 rm -rf cloud-store/build
@@ -25,11 +24,6 @@ mv /esxcloud/java/api-frontend/management/build/distributions/management-*.tar \
   /esxcloud/java/distributions/management-api.tar
 cp -r /esxcloud/java/api-frontend/management/src/dist/configuration \
   /esxcloud/java/distributions/configurations/configuration-management-api
-
-mv /esxcloud/java/chairman/build/distributions/chairman*.tar \
-  /esxcloud/java/distributions/chairman.tar
-cp -r /esxcloud/java/chairman/src/dist/configuration \
-  /esxcloud/java/distributions/configurations/configuration-chairman
 
 mv /esxcloud/java/deployer/build/distributions/deployer-*.tar \
   /esxcloud/java/distributions/deployer.tar
