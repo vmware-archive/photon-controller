@@ -41,6 +41,7 @@ public class PortGroupServiceFactoryTest {
   public void testServiceOptions() {
 
     EnumSet<Service.ServiceOption> expected = EnumSet.of(
+        Service.ServiceOption.INSTRUMENTATION,
         Service.ServiceOption.CONCURRENT_UPDATE_HANDLING,
         Service.ServiceOption.CONCURRENT_GET_HANDLING,
         Service.ServiceOption.FACTORY,
