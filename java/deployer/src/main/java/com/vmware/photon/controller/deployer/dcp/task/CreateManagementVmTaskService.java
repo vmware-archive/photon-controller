@@ -46,6 +46,7 @@ import com.vmware.photon.controller.deployer.dcp.entity.VmService;
 import com.vmware.photon.controller.deployer.dcp.util.ApiUtils;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
 import com.vmware.photon.controller.deployer.dcp.util.MiscUtils;
+import com.vmware.photon.controller.deployer.dcp.workflow.BuildContainersConfigurationWorkflowService;
 import com.vmware.photon.controller.deployer.deployengine.ScriptRunner;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.OperationJoin;
@@ -1425,7 +1426,7 @@ public class CreateManagementVmTaskService extends StatefulService {
           BuildRuntimeConfigurationTaskService.MUSTACHE_KEY_HAPROXY_MGMT_UI_HTTPS_SERVERS,
           (k, v) -> new Gson().fromJson(v.toString(), loadBalancerTypeToken.getType()));
       dynamicParameters.computeIfPresent(
-          BuildRuntimeConfigurationTaskService.MUSTACHE_KEY_ZOOKEEPER_INSTANCES,
+          BuildContainersConfigurationWorkflowService.MUSTACHE_KEY_ZOOKEEPER_INSTANCES,
           (k, v) -> new Gson().fromJson(v.toString(), zookeeperTypeToken.getType()));
 
       serviceConfigurator.applyDynamicParameters(serviceConfigDirectoryPath.toString(),
