@@ -606,14 +606,13 @@ public class CreateContainerTaskServiceTest {
 
       if (authEnabled) {
         assertThat(environmentVariables,
-            hasEntry(BuildRuntimeConfigurationTaskService.MUSTACHE_KEY_MGMT_API_SWAGGER_LOGIN_URL, SWAGGER_LOGIN_URL));
+            hasEntry(CreateContainerTaskService.ENV_MGMT_API_SWAGGER_LOGIN_URL, SWAGGER_LOGIN_URL));
         assertThat(environmentVariables,
-            hasEntry(BuildRuntimeConfigurationTaskService.MUSTACHE_KEY_MGMT_API_SWAGGER_LOGOUT_URL,
-                SWAGGER_LOGOUT_URL));
+            hasEntry(CreateContainerTaskService.ENV_MGMT_API_SWAGGER_LOGOUT_URL, SWAGGER_LOGOUT_URL));
         assertThat(environmentVariables,
-            hasEntry(BuildRuntimeConfigurationTaskService.MUSTACHE_KEY_MGMT_UI_LOGIN_URL, MGMT_UI_LOGIN_URL));
+            hasEntry(CreateContainerTaskService.ENV_MGMT_UI_LOGIN_URL, MGMT_UI_LOGIN_URL));
         assertThat(environmentVariables,
-            hasEntry(BuildRuntimeConfigurationTaskService.MUSTACHE_KEY_MGMT_UI_LOGOUT_URL, MGMT_UI_LOGOUT_URL));
+            hasEntry(CreateContainerTaskService.ENV_MGMT_UI_LOGOUT_URL, MGMT_UI_LOGOUT_URL));
       }
 
       verify(healthCheckHelper, times(6)).getHealthChecker();
