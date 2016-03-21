@@ -52,6 +52,7 @@ public class ImageCleanerTriggerServiceFactoryTest {
     void testServiceOptions() {
       // Factory capability is implicitly added as part of the factory constructor.
       EnumSet<Service.ServiceOption> expected = EnumSet.of(
+          Service.ServiceOption.INSTRUMENTATION,
           Service.ServiceOption.FACTORY,
           Service.ServiceOption.CONCURRENT_GET_HANDLING,
           Service.ServiceOption.CONCURRENT_UPDATE_HANDLING);

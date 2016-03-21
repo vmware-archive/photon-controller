@@ -42,6 +42,7 @@ public class ImageServiceFactoryTest {
   public void testServiceOptionsInitialization() {
     // Factory capability is implicitly added as part of the factory constructor.
     EnumSet<Service.ServiceOption> expected = EnumSet.of(
+        Service.ServiceOption.INSTRUMENTATION,
         Service.ServiceOption.REPLICATION,
         Service.ServiceOption.FACTORY,
         Service.ServiceOption.CONCURRENT_GET_HANDLING,
