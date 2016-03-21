@@ -62,6 +62,12 @@ import java.util.stream.Collectors;
 public class BuildContainersConfigurationWorkflowService extends StatefulService {
 
   /**
+   * N.B. This value is used in data processing when applying mustache templates in
+   * {@link com.vmware.photon.controller.deployer.dcp.task.CreateManagementVmTaskService}.
+   */
+  public static final String MUSTACHE_KEY_ZOOKEEPER_INSTANCES = "ZOOKEEPER_INSTANCES";
+
+  /**
    * This class defines the state of a {@link BuildContainersConfigurationWorkflowService} task.
    */
   public static class TaskState extends com.vmware.xenon.common.TaskState {
@@ -548,8 +554,7 @@ public class BuildContainersConfigurationWorkflowService extends StatefulService
               ContainerService.State containerState = Utils.fromJson(containerDocument, ContainerService.State.class);
               ContainerService.State patchState = new ContainerService.State();
               patchState.dynamicParameters = containerState.dynamicParameters;
-              patchState.dynamicParameters.put(BuildRuntimeConfigurationTaskService.MUSTACHE_KEY_ZOOKEEPER_INSTANCES,
-                  zookeeperInstances);
+              patchState.dynamicParameters.put(MUSTACHE_KEY_ZOOKEEPER_INSTANCES, zookeeperInstances);
               return Operation.createPatch(this, containerState.documentSelfLink).setBody(patchState);
             }))
         .setCompletion(

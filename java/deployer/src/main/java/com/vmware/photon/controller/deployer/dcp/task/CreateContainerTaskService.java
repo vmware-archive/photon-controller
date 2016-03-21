@@ -59,6 +59,17 @@ public class CreateContainerTaskService extends StatefulService {
   public static final String ZOOKEEPER_DATA_DIR = "/var/esxcloud/data/zookeeper";
   public static final String ZOOKEEPER_CONF_DIR = "/usr/lib/zookeeper/conf";
 
+  @VisibleForTesting
+  protected static final String ENV_COMMON_ENABLE_AUTH = "ENABLE_AUTH";
+  @VisibleForTesting
+  protected static final String ENV_MGMT_API_SWAGGER_LOGIN_URL = "SWAGGER_LOGIN_URL";
+  @VisibleForTesting
+  protected static final String ENV_MGMT_API_SWAGGER_LOGOUT_URL = "SWAGGER_LOGOUT_URL";
+  @VisibleForTesting
+  protected static final String ENV_MGMT_UI_LOGIN_URL = "MGMT_UI_LOGIN_URL";
+  @VisibleForTesting
+  protected static final String ENV_MGMT_UI_LOGOUT_URL = "MGMT_UI_LOGOUT_URL";
+
   /**
    * This class defines the state of a {@link CreateContainerTaskService} task.
    */
@@ -403,15 +414,11 @@ public class CreateContainerTaskService extends StatefulService {
     }
 
     if (deploymentState.oAuthEnabled) {
-      environmentVariables.put(BuildRuntimeConfigurationTaskService.MUSTACHE_KEY_COMMON_ENABLE_AUTH, "true");
-      environmentVariables.put(BuildRuntimeConfigurationTaskService.MUSTACHE_KEY_MGMT_API_SWAGGER_LOGIN_URL,
-          deploymentState.oAuthSwaggerLoginEndpoint);
-      environmentVariables.put(BuildRuntimeConfigurationTaskService.MUSTACHE_KEY_MGMT_API_SWAGGER_LOGOUT_URL,
-          deploymentState.oAuthSwaggerLogoutEndpoint);
-      environmentVariables.put(BuildRuntimeConfigurationTaskService.MUSTACHE_KEY_MGMT_UI_LOGIN_URL,
-          deploymentState.oAuthMgmtUiLoginEndpoint);
-      environmentVariables.put(BuildRuntimeConfigurationTaskService.MUSTACHE_KEY_MGMT_UI_LOGOUT_URL,
-          deploymentState.oAuthMgmtUiLogoutEndpoint);
+      environmentVariables.put(ENV_COMMON_ENABLE_AUTH, "true");
+      environmentVariables.put(ENV_MGMT_API_SWAGGER_LOGIN_URL, deploymentState.oAuthSwaggerLoginEndpoint);
+      environmentVariables.put(ENV_MGMT_API_SWAGGER_LOGOUT_URL, deploymentState.oAuthSwaggerLogoutEndpoint);
+      environmentVariables.put(ENV_MGMT_UI_LOGIN_URL, deploymentState.oAuthMgmtUiLoginEndpoint);
+      environmentVariables.put(ENV_MGMT_UI_LOGOUT_URL, deploymentState.oAuthMgmtUiLogoutEndpoint);
     }
 
     String containerId = HostUtils.getDockerProvisionerFactory(this)
