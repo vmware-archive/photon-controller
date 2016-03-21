@@ -30,7 +30,6 @@ public class ServiceFileConstants {
   public static final Map<ContainersConfig.ContainerType, String> CONTAINER_CONFIG_FILES =
       ImmutableMap.<ContainersConfig.ContainerType, String>builder()
       .put(ContainersConfig.ContainerType.Deployer, "deployer_release.json")
-      .put(ContainersConfig.ContainerType.Chairman, "chairman_release.json")
       .put(ContainersConfig.ContainerType.Housekeeper, "housekeeper_release.json")
       .put(ContainersConfig.ContainerType.ManagementApi, "management-api_release.json")
       .put(ContainersConfig.ContainerType.RootScheduler, "root-scheduler_release.json")
@@ -44,7 +43,6 @@ public class ServiceFileConstants {
   public static final Map<ContainersConfig.ContainerType, String> CONTAINER_CONFIG_ROOT_DIRS =
       ImmutableMap.<ContainersConfig.ContainerType, String>builder()
       .put(ContainersConfig.ContainerType.Deployer, "deployer/")
-      .put(ContainersConfig.ContainerType.Chairman, "chairman/")
       .put(ContainersConfig.ContainerType.Housekeeper, "housekeeper/")
       .put(ContainersConfig.ContainerType.ManagementApi, "management-api/")
       .put(ContainersConfig.ContainerType.RootScheduler, "root-scheduler/")

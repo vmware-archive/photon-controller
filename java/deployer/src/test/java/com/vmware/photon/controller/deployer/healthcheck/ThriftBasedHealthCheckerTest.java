@@ -13,7 +13,6 @@
 
 package com.vmware.photon.controller.deployer.healthcheck;
 
-import com.vmware.photon.controller.common.clients.ChairmanClient;
 import com.vmware.photon.controller.common.clients.DeployerClient;
 import com.vmware.photon.controller.common.clients.HousekeeperClient;
 import com.vmware.photon.controller.common.clients.RootSchedulerClient;
@@ -63,11 +62,6 @@ public class ThriftBasedHealthCheckerTest {
         {ContainersConfig.ContainerType.Deployer, mock(DeployerClient.class), StatusType.INITIALIZING, false},
         {ContainersConfig.ContainerType.Deployer, mock(DeployerClient.class), StatusType.UNREACHABLE, false},
         {ContainersConfig.ContainerType.Deployer, mock(DeployerClient.class), StatusType.ERROR, false},
-
-        {ContainersConfig.ContainerType.Chairman, mock(ChairmanClient.class), StatusType.READY, true},
-        {ContainersConfig.ContainerType.Chairman, mock(ChairmanClient.class), StatusType.INITIALIZING, false},
-        {ContainersConfig.ContainerType.Chairman, mock(ChairmanClient.class), StatusType.UNREACHABLE, false},
-        {ContainersConfig.ContainerType.Chairman, mock(ChairmanClient.class), StatusType.ERROR, false},
 
         {ContainersConfig.ContainerType.RootScheduler, mock(RootSchedulerClient.class), StatusType.READY, true},
         {ContainersConfig.ContainerType.RootScheduler, mock(RootSchedulerClient.class), StatusType.INITIALIZING, false},

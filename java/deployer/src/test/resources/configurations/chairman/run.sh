@@ -1,1 +1,0 @@
-../../../../../../chairman/src/dist/configuration/run.sh

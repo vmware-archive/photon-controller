@@ -377,7 +377,6 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
         ServiceUtils.getIDFromDocumentSelfLink(deploymentState.documentSelfLink));
 
     switch (containerType) {
-      case Chairman:
       case RootScheduler:
       case Housekeeper:
       case CloudStore:
@@ -727,10 +726,6 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
 
       case ManagementUi:
         containerState.dynamicParameters.put(ENV_LOADBALANCER_IP, ipList.get(0));
-        break;
-
-      case Chairman:
-        containerState.dynamicParameters.put(ENV_ZOOKEEPER_QUORUM_URL, zookeeperUrl);
         break;
 
       case RootScheduler:

@@ -13,8 +13,6 @@
 
 package com.vmware.photon.controller.deployer.healthcheck;
 
-import com.vmware.photon.controller.chairman.gen.Chairman;
-import com.vmware.photon.controller.common.clients.ChairmanClient;
 import com.vmware.photon.controller.common.clients.DeployerClient;
 import com.vmware.photon.controller.common.clients.HousekeeperClient;
 import com.vmware.photon.controller.common.clients.RootSchedulerClient;
@@ -47,7 +45,6 @@ import java.lang.reflect.Constructor;
 public class ThriftBasedHealthChecker implements HealthChecker {
   private static final Logger logger = LoggerFactory.getLogger(ThriftBasedHealthChecker.class);
 
-  private static final String CHAIRMAN_SERVICE_NAME = "Chairman";
   private static final String ROOTSCHEDULER_SERVICE_NAME = "RootScheduler";
   private static final String HOUSEKEEPER_SERVICE_NAME = "Housekeeper";
 
@@ -75,9 +72,6 @@ public class ThriftBasedHealthChecker implements HealthChecker {
     switch (this.containerType) {
       case Deployer:
         return getThriftClient(DeployerClient.class, Deployer.AsyncClient.class, DeployerServer.SERVICE_NAME);
-
-      case Chairman:
-        return getThriftClient(ChairmanClient.class, Chairman.AsyncClient.class, CHAIRMAN_SERVICE_NAME);
 
       case RootScheduler:
         return getThriftClient(RootSchedulerClient.class, RootScheduler.AsyncClient.class, ROOTSCHEDULER_SERVICE_NAME);

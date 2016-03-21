@@ -67,7 +67,6 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class DeploymentWorkflowService extends StatefulService {
 
-  public static final String CHAIRMAN_PORT = "13000";
   public static final String ZOOKEEPER_PORT = "2181";
 
   /**

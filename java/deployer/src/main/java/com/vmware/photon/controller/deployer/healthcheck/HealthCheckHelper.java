@@ -51,11 +51,6 @@ public class HealthCheckHelper {
             ServicePortConstants.HOUSEKEEPER_PORT);
         break;
 
-      case Chairman:
-        this.healthChecker = new ThriftBasedHealthChecker(containerType, ipAddress,
-            ServicePortConstants.CHAIRMAN_PORT);
-        break;
-
       case RootScheduler:
         this.healthChecker = new ThriftBasedHealthChecker(containerType, ipAddress,
             ServicePortConstants.ROOT_SCHEDULER_PORT);

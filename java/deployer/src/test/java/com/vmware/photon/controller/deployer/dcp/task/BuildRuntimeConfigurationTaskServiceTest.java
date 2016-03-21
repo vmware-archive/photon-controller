@@ -583,9 +583,6 @@ public class BuildRuntimeConfigurationTaskServiceTest {
 
     @DataProvider(name = "mandatoryEnvironmentVariable")
     public Object[][] getMandatoryEnvironmentVariables() {
-      List<String> chairmanList = new ArrayList<String>();
-      chairmanList.add(BuildRuntimeConfigurationTaskService.ENV_ZOOKEEPER_QUORUM_URL);
-
       List<String> rootSchedulerList = new ArrayList<String>();
       rootSchedulerList.add(BuildRuntimeConfigurationTaskService.ENV_ZOOKEEPER_QUORUM_URL);
 
@@ -624,10 +621,6 @@ public class BuildRuntimeConfigurationTaskServiceTest {
       lightwaveList.add(BuildRuntimeConfigurationTaskService.ENV_LIGHTWAVE_DOMAIN);
 
       return new Object[][]{
-          {
-              ContainersConfig.ContainerType.Chairman,
-              chairmanList
-          },
           {
               ContainersConfig.ContainerType.RootScheduler,
               rootSchedulerList
