@@ -63,39 +63,44 @@ import java.util.stream.IntStream;
  */
 public class BuildRuntimeConfigurationTaskService extends StatefulService {
 
-  public static final String MUSTACHE_KEY_ZOOKEEPER_INSTANCES = "ZOOKEEPER_INSTANCES";
+  /**
+   * N.B. These values are used in data processing when applying mustache templates in
+   * {@link CreateManagementVmTaskService}.
+   */
+  public static final String MUSTACHE_KEY_HAPROXY_MGMT_API_HTTP_SERVERS = "MGMT_API_HTTP_SERVERS";
+  public static final String MUSTACHE_KEY_HAPROXY_MGMT_UI_HTTP_SERVERS = "MGMT_UI_HTTP_SERVERS";
+  public static final String MUSTACHE_KEY_HAPROXY_MGMT_UI_HTTPS_SERVERS = "MGMT_UI_HTTPS_SERVERS";
 
+  @VisibleForTesting
   protected static final String MUSTACHE_KEY_CHAIRMAN_DEPLOYMENT_ID = "DEPLOYMENT_ID";
-  protected static final String MUSTACHE_KEY_COMMON_CONTAINER_MEMORY_MB = "memoryMb";
-  protected static final String MUSTACHE_KEY_COMMON_CONTAINER_CPU_COUNT = "cpuCount";
-  protected static final String MUSTACHE_KEY_COMMON_CONTAINER_DISK_GB = "diskGb";
-  protected static final String MUSTACHE_KEY_COMMON_ENABLE_AUTH = "ENABLE_AUTH";
-  protected static final String MUSTACHE_KEY_COMMON_ENABLE_SYSLOG = "ENABLE_SYSLOG";
-  protected static final String MUSTACHE_KEY_COMMON_LOAD_BALANCER_IP = "APIFE_IP";
-  protected static final String MUSTACHE_KEY_COMMON_LOAD_BALANCER_PORT = "APIFE_PORT";
-  protected static final String MUSTACHE_KEY_COMMON_REGISTRATION_ADDRESS = "REGISTRATION_ADDRESS";
-  protected static final String MUSTACHE_KEY_COMMON_SHARED_SECRET = "SHARED_SECRET";
-  protected static final String MUSTACHE_KEY_COMMON_SYSLOG_ENDPOINT = "SYSLOG_ENDPOINT";
-  protected static final String MUSTACHE_KEY_COMMON_ZOOKEEPER_QUORUM = "ZOOKEEPER_QUORUM";
-  protected static final String MUSTACHE_KEY_HAPROXY_MGMT_API_HTTP_SERVERS = "MGMT_API_HTTP_SERVERS";
-  protected static final String MUSTACHE_KEY_HAPROXY_MGMT_API_PORT_SELECTOR = "MGMT_API_PORT_SELECTOR";
-  protected static final String MUSTACHE_KEY_HAPROXY_MGMT_UI_HTTP_PORT = "MANAGEMENT_UI_HTTP_PORT";
-  protected static final String MUSTACHE_KEY_HAPROXY_MGMT_UI_HTTP_SERVERS = "MGMT_UI_HTTP_SERVERS";
-  protected static final String MUSTACHE_KEY_HAPROXY_MGMT_UI_HTTPS_PORT = "MANAGEMENT_UI_HTTPS_PORT";
-  protected static final String MUSTACHE_KEY_HAPROXY_MGMT_UI_HTTPS_SERVERS = "MGMT_UI_HTTPS_SERVERS";
-  protected static final String MUSTACHE_KEY_LIGHTWAVE_ADDRESS = "LIGHTWAVE_ADDRESS";
-  protected static final String MUSTACHE_KEY_LIGHTWAVE_DOMAIN = "LIGHTWAVE_DOMAIN";
-  protected static final String MUSTACHE_KEY_LIGHTWAVE_PASSWORD = "LIGHTWAVE_PASSWORD";
-  protected static final String MUSTACHE_KEY_MGMT_API_AUTH_SERVER_ADDRESS = "AUTH_SERVER_ADDRESS";
-  protected static final String MUSTACHE_KEY_MGMT_API_AUTH_SERVER_TENANT = "AUTH_SERVER_TENANT";
-  protected static final String MUSTACHE_KEY_MGMT_API_AUTH_SERVER_PORT = "AUTH_SERVER_PORT";
-  protected static final String MUSTACHE_KEY_MGMT_API_DATASTORE = "DATASTORE";
-  protected static final String MUSTACHE_KEY_MGMT_API_ESX_HOST = "ESX_HOST";
-  protected static final String MUSTACHE_KEY_MGMT_API_SWAGGER_LOGIN_URL = "SWAGGER_LOGIN_URL";
-  protected static final String MUSTACHE_KEY_MGMT_API_SWAGGER_LOGOUT_URL = "SWAGGER_LOGOUT_URL";
-  protected static final String MUSTACHE_KEY_MGMT_UI_LOGIN_URL = "MGMT_UI_LOGIN_URL";
-  protected static final String MUSTACHE_KEY_MGMT_UI_LOGOUT_URL = "MGMT_UI_LOGOUT_URL";
-  protected static final String MUSTACHE_KEY_ZOOKEEPER_MY_ID = "ZOOKEEPER_MYID";
+
+  private static final String MUSTACHE_KEY_COMMON_CONTAINER_CPU_COUNT = "cpuCount";
+  private static final String MUSTACHE_KEY_COMMON_CONTAINER_DISK_GB = "diskGb";
+  private static final String MUSTACHE_KEY_COMMON_CONTAINER_MEMORY_MB = "memoryMb";
+  private static final String MUSTACHE_KEY_COMMON_ENABLE_AUTH = "ENABLE_AUTH";
+  private static final String MUSTACHE_KEY_COMMON_ENABLE_SYSLOG = "ENABLE_SYSLOG";
+  private static final String MUSTACHE_KEY_COMMON_LOAD_BALANCER_IP = "APIFE_IP";
+  private static final String MUSTACHE_KEY_COMMON_LOAD_BALANCER_PORT = "APIFE_PORT";
+  private static final String MUSTACHE_KEY_COMMON_REGISTRATION_ADDRESS = "REGISTRATION_ADDRESS";
+  private static final String MUSTACHE_KEY_COMMON_SHARED_SECRET = "SHARED_SECRET";
+  private static final String MUSTACHE_KEY_COMMON_SYSLOG_ENDPOINT = "SYSLOG_ENDPOINT";
+  private static final String MUSTACHE_KEY_COMMON_ZOOKEEPER_QUORUM = "ZOOKEEPER_QUORUM";
+  private static final String MUSTACHE_KEY_HAPROXY_MGMT_API_PORT_SELECTOR = "MGMT_API_PORT_SELECTOR";
+  private static final String MUSTACHE_KEY_HAPROXY_MGMT_UI_HTTP_PORT = "MANAGEMENT_UI_HTTP_PORT";
+  private static final String MUSTACHE_KEY_HAPROXY_MGMT_UI_HTTPS_PORT = "MANAGEMENT_UI_HTTPS_PORT";
+  private static final String MUSTACHE_KEY_LIGHTWAVE_ADDRESS = "LIGHTWAVE_ADDRESS";
+  private static final String MUSTACHE_KEY_LIGHTWAVE_DOMAIN = "LIGHTWAVE_DOMAIN";
+  private static final String MUSTACHE_KEY_LIGHTWAVE_PASSWORD = "LIGHTWAVE_PASSWORD";
+  private static final String MUSTACHE_KEY_MGMT_API_AUTH_SERVER_ADDRESS = "AUTH_SERVER_ADDRESS";
+  private static final String MUSTACHE_KEY_MGMT_API_AUTH_SERVER_TENANT = "AUTH_SERVER_TENANT";
+  private static final String MUSTACHE_KEY_MGMT_API_AUTH_SERVER_PORT = "AUTH_SERVER_PORT";
+  private static final String MUSTACHE_KEY_MGMT_API_DATASTORE = "DATASTORE";
+  private static final String MUSTACHE_KEY_MGMT_API_ESX_HOST = "ESX_HOST";
+  private static final String MUSTACHE_KEY_MGMT_API_SWAGGER_LOGIN_URL = "SWAGGER_LOGIN_URL";
+  private static final String MUSTACHE_KEY_MGMT_API_SWAGGER_LOGOUT_URL = "SWAGGER_LOGOUT_URL";
+  private static final String MUSTACHE_KEY_MGMT_UI_LOGIN_URL = "MGMT_UI_LOGIN_URL";
+  private static final String MUSTACHE_KEY_MGMT_UI_LOGOUT_URL = "MGMT_UI_LOGOUT_URL";
+  private static final String MUSTACHE_KEY_ZOOKEEPER_MY_ID = "ZOOKEEPER_MYID";
 
   /**
    * This class defines the state of a {@link BuildRuntimeConfigurationTaskService} task.

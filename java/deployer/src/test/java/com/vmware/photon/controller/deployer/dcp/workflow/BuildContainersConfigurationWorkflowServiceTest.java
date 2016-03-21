@@ -27,7 +27,6 @@ import com.vmware.photon.controller.deployer.dcp.ContainersConfig;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerService;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateService;
 import com.vmware.photon.controller.deployer.dcp.entity.VmService;
-import com.vmware.photon.controller.deployer.dcp.task.BuildRuntimeConfigurationTaskService;
 import com.vmware.photon.controller.deployer.helpers.ReflectionUtils;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
 import com.vmware.photon.controller.deployer.helpers.dcp.TestEnvironment;
@@ -414,9 +413,9 @@ public class BuildContainersConfigurationWorkflowServiceTest {
       for (Object containerObject : result.results.documents.values()) {
         ContainerService.State containerState = Utils.fromJson(containerObject, ContainerService.State.class);
         assertThat(containerState.dynamicParameters, hasKey(
-            BuildRuntimeConfigurationTaskService.MUSTACHE_KEY_ZOOKEEPER_INSTANCES));
+            BuildContainersConfigurationWorkflowService.MUSTACHE_KEY_ZOOKEEPER_INSTANCES));
         String zookeeperServers = containerState.dynamicParameters.get(
-            BuildRuntimeConfigurationTaskService.MUSTACHE_KEY_ZOOKEEPER_INSTANCES);
+            BuildContainersConfigurationWorkflowService.MUSTACHE_KEY_ZOOKEEPER_INSTANCES);
         for (int i = 0; i < hostCount; i++) {
           assertThat(zookeeperServers, containsString("server." + (i + 1)));
           assertThat(zookeeperServers, containsString("0.0.0." + i + ":2888:3888"));
