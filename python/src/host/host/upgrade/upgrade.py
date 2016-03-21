@@ -27,10 +27,8 @@ class HostUpgradeTaskRunner(TaskRunner):
 
         try:
             datastores = self._host_upgrade._datastore_manager.get_datastore_ids()
-
             soft_link_generator = SoftLinkGenerator()
-            for ds in datastores:
-                soft_link_generator.create_symlinks_to_new_image_path(ds)
+            soft_link_generator.process(datastores)
 
             self._logger.info("HostUpgrade completed")
         except:

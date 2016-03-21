@@ -24,34 +24,27 @@ class HostUpgradeTestCase(unittest.TestCase):
         self.datastore_manager.get_datastore_ids.return_value = ["datastore1", "datastore2"]
 
         self.host_upgrade = HostUpgrade(self.datastore_manager)
-
         self.timeout = self.TIMEOUT
 
     def tearDown(self):
         self.host_upgrade._task_runner.stop()
 
-    @patch("host.upgrade.softlink_generator.SoftLinkGenerator.create_symlinks_to_new_image_path")
-    def test_lifecycle(self, create_symlinks):
+    @patch("host.upgrade.softlink_generator.SoftLinkGenerator.process")
+    def test_lifecycle(self, process):
         assert_that(not self.host_upgrade.in_progress())
-
         self.host_upgrade.start(self.timeout)
-
         self.host_upgrade._task_runner.wait_for_task_end()
 
         assert_that(not self.host_upgrade.in_progress())
+        self.assertEqual(process.call_count, 1)
 
-        self.assertEqual(create_symlinks.call_count, 2)
-
-    @patch("host.upgrade.softlink_generator.SoftLinkGenerator.create_symlinks_to_new_image_path")
-    def test_upgrade_exception(self, create_symlinks):
-        create_symlinks.side_effect = Exception("create_symlinks failed.")
+    @patch("host.upgrade.softlink_generator.SoftLinkGenerator.process")
+    def test_upgrade_exception(self, process):
+        process.side_effect = Exception("create_symlinks failed.")
 
         assert_that(not self.host_upgrade.in_progress())
-
         self.host_upgrade.start(self.timeout)
-
         self.host_upgrade._task_runner.wait_for_task_end()
 
         assert_that(not self.host_upgrade.in_progress())
-
-        self.assertEqual(create_symlinks.call_count, 1)
+        self.assertEqual(process.call_count, 1)
