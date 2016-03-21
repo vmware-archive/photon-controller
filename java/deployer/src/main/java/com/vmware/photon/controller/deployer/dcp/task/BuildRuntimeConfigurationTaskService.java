@@ -270,7 +270,8 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
       } else if (currentState.taskState.stage == TaskState.TaskStage.STARTED) {
         processStartedStage(currentState);
       } else {
-        notifyParentTask(currentState);
+        TaskUtils.notifyParentTask(this, currentState.taskState, currentState.parentTaskServiceLink,
+            currentState.parentPatchBody);
       }
     } catch (Throwable t) {
       failTask(t);
@@ -329,34 +330,6 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
         processPatchEntityDocumentsSubStage(currentState);
         break;
     }
-  }
-
-  private void notifyParentTask(State currentState) {
-
-    if (currentState.parentTaskServiceLink == null) {
-      ServiceUtils.logInfo(this, "Skipping parent task notification");
-      return;
-    }
-
-    Operation patchOp = Operation.createPatch(this, currentState.parentTaskServiceLink);
-    switch (currentState.taskState.stage) {
-      case FINISHED:
-        if (currentState.parentPatchBody != null) {
-          patchOp.setBody(currentState.parentPatchBody);
-          break;
-        }
-        // Fall through
-      case FAILED:
-      case CANCELLED:
-        TaskServiceState patchState = new TaskServiceState();
-        patchState.taskState = currentState.taskState;
-        patchOp.setBody(patchState);
-        break;
-      default:
-        throw new IllegalStateException("Unexpected state: " + currentState.taskState.stage);
-    }
-
-    sendRequest(patchOp);
   }
 
   //
