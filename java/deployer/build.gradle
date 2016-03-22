@@ -12,7 +12,6 @@ dependencies {
   compile project(':common-auth')
   compile project(':cluster-manager:backend')
   compile project(':cluster-manager:service-documents')
-  compile project(':chairman')
 
   compile "commons-io:commons-io:2.4"
   compile "com.google.guava:guava:${versions.guava}"
