@@ -13,8 +13,8 @@
 
 package com.vmware.photon.controller.apife.auth;
 
-import com.vmware.photon.controller.api.AuthInfo;
-import com.vmware.photon.controller.api.builders.AuthInfoBuilder;
+import com.vmware.photon.controller.api.AuthConfigurationSpec;
+import com.vmware.photon.controller.api.builders.AuthConfigurationSpecBuilder;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidAuthConfigException;
 
 import org.testng.annotations.DataProvider;
@@ -28,70 +28,67 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * Tests for {@link AuthInfoValidator}.
+ * Tests for {@link AuthConfigurationSpecValidator}.
  */
-public class AuthInfoValidatorTest {
-  @Test(dataProvider = "validAuthInfo")
-  public void testValidateSuccess(AuthInfo authInfo) throws InvalidAuthConfigException {
-    AuthInfoValidator.validate(authInfo);
+public class AuthConfigurationSpecValidatorTest {
+  @Test(dataProvider = "validAuthConfig")
+  public void testValidateSuccess(AuthConfigurationSpec authInfo) throws InvalidAuthConfigException {
+    AuthConfigurationSpecValidator.validate(authInfo);
   }
 
-  @DataProvider(name = "validAuthInfo")
+  @DataProvider(name = "validAuthConfig")
   public Object[][] getValidAuthInfo() {
     return new Object[][]{
-        {new AuthInfoBuilder()
+        {new AuthConfigurationSpecBuilder()
             .enabled(true)
-            .endpoint("https://foo")
             .tenant("t")
-            .username("u")
             .password("p")
             .securityGroups(Arrays.asList(new String[]{"adminGroup1", "adminGroup2"}))
             .build()},
-        {new AuthInfoBuilder().enabled(false).build()}
+        {new AuthConfigurationSpecBuilder().enabled(false).build()}
     };
   }
 
-  @Test(dataProvider = "invalidAuthInfo")
-  public void testInvalidAuthInfo(AuthInfo authInfo, List<String> errorMsgs) throws InvalidAuthConfigException {
+  @Test(dataProvider = "invalidAuthConfig")
+  public void testInvalidAuthInfo(AuthConfigurationSpec authConfig, List<String> errorMsgs)
+      throws InvalidAuthConfigException {
     try {
-      AuthInfoValidator.validate(authInfo);
+      AuthConfigurationSpecValidator.validate(authConfig);
       fail("Auth info validation should have failed");
     } catch (InvalidAuthConfigException e) {
       errorMsgs.stream().forEach(errorMsg -> assertTrue(e.getMessage().contains(errorMsg)));
     }
   }
 
-  @DataProvider(name = "invalidAuthInfo")
+  @DataProvider(name = "invalidAuthConfig")
   public Object[][] getInvalidAuthInfo() {
     return new Object[][]{
-        {new AuthInfoBuilder()
+        {new AuthConfigurationSpecBuilder()
             .enabled(true)
             .securityGroups(Arrays.asList(new String[]{"adminGroup1"}))
             .build(),
             Arrays.asList(
                 "tenant may not be null (was null)",
-                "password may not be null (was null)",
-                "username may not be null (was null)")
+                "password may not be null (was null)")
             },
-        {new AuthInfoBuilder()
+        {new AuthConfigurationSpecBuilder()
             .enabled(false)
             .tenant("t")
-            .username("u")
             .password("p")
             .securityGroups(null)
             .build(),
             Arrays.asList(
                 "tenant must be null (was t)",
-                "password must be null (was p)",
-                "username must be null (was u)")
+                "password must be null (was p)")
         }
     };
   }
 
   @Test(dataProvider = "invalidSecurityGroups")
-  public void testInvalidSecurityGroups(AuthInfo authInfo, String errorMsgs) throws InvalidAuthConfigException {
+  public void testInvalidSecurityGroups(AuthConfigurationSpec authConfig, String errorMsgs)
+      throws InvalidAuthConfigException {
     try {
-      AuthInfoValidator.validate(authInfo);
+      AuthConfigurationSpecValidator.validate(authConfig);
       fail("Auth info validation should have failed");
     } catch (InvalidAuthConfigException e) {
       assertThat(e.getMessage(), containsString(errorMsgs));
@@ -101,23 +98,21 @@ public class AuthInfoValidatorTest {
   @DataProvider(name = "invalidSecurityGroups")
   public Object[][] getInvalidSecurityGroupsInfo() {
     return new Object[][]{
-        {new AuthInfoBuilder()
+        {new AuthConfigurationSpecBuilder()
             .enabled(true)
             .tenant("t")
-            .username("u")
             .password("p")
             .securityGroups(Arrays.asList(new String[0]))
             .build(),
             "securityGroups size must be between 1 and 2147483647 (was [])"},
-        {new AuthInfoBuilder()
+        {new AuthConfigurationSpecBuilder()
             .enabled(true)
             .tenant("t")
-            .username("u")
             .password("p")
             .securityGroups(null)
             .build(),
             "securityGroups may not be null"},
-        {new AuthInfoBuilder()
+        {new AuthConfigurationSpecBuilder()
             .enabled(false)
             .securityGroups(Arrays.asList(new String[0]))
             .build(),
