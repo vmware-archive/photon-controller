@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.common.xenon;
 
+import com.vmware.photon.controller.common.xenon.validation.DeepPatch;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.xenon.common.ServiceDocument;
 
@@ -33,17 +34,28 @@ public class PatchUtils {
           continue;
         }
         boolean immutableField = false;
+        boolean deepPatch = false;
         Annotation[] declaredAnnotations = patchStateField.getDeclaredAnnotations();
         for (Annotation annotation : declaredAnnotations) {
           if (annotation.annotationType() == Immutable.class) {
             immutableField = true;
-            break;
+          } else if (annotation.annotationType() == DeepPatch.class) {
+            deepPatch = true;
           }
         }
 
-        if (!immutableField && null != patchStateField.get(patchState)) {
+        if (immutableField) {
+          continue;
+        }
+
+        if (null != patchStateField.get(patchState)) {
           Field currentStateField = currentState.getClass().getField(patchStateField.getName());
-          currentStateField.set(currentState, patchStateField.get(patchState));
+
+          if (deepPatch) {
+            deepPatch(currentStateField.get(currentState), patchStateField.get(patchState));
+          } else {
+            currentStateField.set(currentState, patchStateField.get(patchState));
+          }
         }
       }
     } catch (IllegalStateException e) {
@@ -51,5 +63,30 @@ public class PatchUtils {
     } catch (Throwable t) {
       throw new RuntimeException(t);
     }
+  }
+
+  /**
+   * Deep patch operates on object level - sometimes a set-or-not-set operation does not satisfy our requirement
+   * for patching a complex type.
+   */
+  private static <T> void deepPatch(T currentObject, T patchObject) {
+    try {
+      Field[] patchObjectDeclaredFields = patchObject.getClass().getDeclaredFields();
+      for (Field patchObjectField : patchObjectDeclaredFields) {
+        if (Modifier.isStatic(patchObjectField.getModifiers())) {
+          continue;
+        }
+
+        if (null != patchObjectField.get(patchObject)) {
+          Field currentObjeField = currentObject.getClass().getField(patchObjectField.getName());
+          currentObjeField.set(currentObject, patchObjectField.get(patchObject));
+        }
+      }
+    } catch (IllegalStateException e) {
+      throw e;
+    } catch (Throwable t) {
+      throw new RuntimeException(t);
+    }
+
   }
 }

@@ -26,6 +26,7 @@ import com.vmware.photon.controller.common.xenon.PatchUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
+import com.vmware.photon.controller.common.xenon.validation.DeepPatch;
 import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
 import com.vmware.photon.controller.common.xenon.validation.DefaultLong;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
@@ -496,6 +497,21 @@ public class HostService extends StatefulService {
   }
 
   /**
+   * This class defines the NSX network related configuration information.
+   */
+  public static class NsxNetworkConfiguration {
+    public String fabricNodeIp;
+    public String fabricNodeId;
+    public String fabricNodeName;
+    public String hostSwitchName;
+    public Map<String, String> hostSwitchProfileIds;
+    public String staticIpPoolId;
+    public Map<String, String> physicalNics;
+    public String transportNodeId;
+    public String transportZoneId;
+  }
+
+  /**
    * This class defines the document state associated with a single
    * {@link HostService} instance.
    */
@@ -668,5 +684,11 @@ public class HostService extends StatefulService {
     @DefaultLong(value = DEFAULT_MAINTENANCE_INTERVAL_MILLIS)
     @Positive
     public Long triggerIntervalMillis;
+
+    /**
+     * This value represents NSX network related configuration information.
+     */
+    @DeepPatch
+    public NsxNetworkConfiguration nsxNetworkConfiguration;
   }
 }
