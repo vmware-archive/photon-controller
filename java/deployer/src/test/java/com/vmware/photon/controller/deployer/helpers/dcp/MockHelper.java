@@ -67,6 +67,7 @@ import com.vmware.xenon.common.Service;
 
 import com.github.dockerjava.api.DockerException;
 import com.google.common.util.concurrent.FutureCallback;
+import org.apache.http.entity.mime.content.FileBody;
 import org.mockito.ArgumentMatcher;
 import org.mockito.Matchers;
 import org.mockito.invocation.InvocationOnMock;
@@ -331,7 +332,6 @@ public class MockHelper {
   }
 
 
-
   public static Answer<Task> mockPerformStartOperationAsync(String taskId, String entityId, String state) {
     return mockPerformStartOperationAsync(TestHelper.createTask(taskId, entityId, state));
   }
@@ -549,7 +549,7 @@ public class MockHelper {
 
       // Upload image
       doReturn(taskReturnedByUploadManagementImage).
-          when(imagesApi).uploadImage(anyString(), anyString());
+          when(imagesApi).uploadImage(any(FileBody.class), anyString());
       doAnswer(new Answer() {
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {

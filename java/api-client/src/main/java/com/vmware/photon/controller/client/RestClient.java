@@ -205,24 +205,25 @@ public class RestClient {
   }
 
   public HttpResponse upload(String path, String inputFileName, Map<String, String> arguments) throws IOException {
-    HttpClient client = getHttpClient();
-    HttpPost httppost = new HttpPost(target + path);
-    File file = new File(inputFileName);
-    if (sharedSecret != null) {
-      httppost.addHeader(AUTHORIZATION_HEADER, AUTHORIZATION_METHOD + sharedSecret);
+    return upload(path, new FileBody(new File(inputFileName), "application/octet-stream"), arguments);
+  }
+
+  public HttpResponse upload(String path, FileBody fileBody, Map<String, String> arguments) throws IOException {
+    HttpClient httpClient = getHttpClient();
+    HttpPost httpPost = new HttpPost(this.target + path);
+    if (this.sharedSecret != null) {
+      httpPost.addHeader(AUTHORIZATION_HEADER, AUTHORIZATION_METHOD + this.sharedSecret);
     }
 
-    MultipartEntity mpEntity = new MultipartEntity();
-
-    FileBody cbFile = new FileBody(file, "application/octect-stream");
+    MultipartEntity multipartEntity = new MultipartEntity();
     for (Map.Entry<String, String> argument : arguments.entrySet()) {
       StringBody stringBody = new StringBody(argument.getValue());
-      mpEntity.addPart(argument.getKey(), stringBody);
+      multipartEntity.addPart(argument.getKey(), stringBody);
     }
-    mpEntity.addPart("file", cbFile);
-    httppost.setEntity(mpEntity);
 
-    return client.execute(httppost);
+    multipartEntity.addPart("file", fileBody);
+    httpPost.setEntity(multipartEntity);
+    return httpClient.execute(httpPost);
   }
 
   private HttpClient getHttpClient() {

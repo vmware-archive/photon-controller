@@ -50,6 +50,8 @@ import com.vmware.xenon.services.common.QueryTask;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
+import org.apache.commons.io.FileUtils;
+import org.apache.http.entity.mime.content.FileBody;
 import org.mockito.Matchers;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
@@ -61,6 +63,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doAnswer;
@@ -72,8 +75,12 @@ import static org.mockito.Mockito.verify;
 
 import javax.annotation.Nullable;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.lang.reflect.Field;
+import java.nio.file.Files;
 import java.util.EnumSet;
 import java.util.UUID;
 import java.util.concurrent.Executors;
@@ -342,6 +349,8 @@ public class UploadImageTaskServiceTest {
     private String imageId;
     private ImagesApi imagesApi;
     private ListeningExecutorService listeningExecutorService;
+    private File sourceDirectory;
+    private File sourceFile;
     private UploadImageTaskService.State startState;
     private TasksApi tasksApi;
     private TestEnvironment testEnvironment;
@@ -373,9 +382,18 @@ public class UploadImageTaskServiceTest {
 
       imageId = UUID.randomUUID().toString();
 
-      doReturn(TestHelper.createTask("UPLOAD_IMAGE_TASK_ID", imageId, "QUEUED"))
+      sourceDirectory = Files.createTempDirectory("source-ova-").toFile();
+      sourceFile = TestHelper.createSourceFile("source.ova", sourceDirectory);
+
+      doAnswer(
+          (invocation) -> {
+            FileBody fileBody = (FileBody) invocation.getArguments()[0];
+            OutputStream outputStream = new FileOutputStream(new File(sourceDirectory, "output.ova"));
+            fileBody.writeTo(outputStream);
+            return TestHelper.createTask("UPLOAD_IMAGE_TASK_ID", imageId, "QUEUED");
+          })
           .when(imagesApi)
-          .uploadImage(anyString(), anyString());
+          .uploadImage(any(FileBody.class), anyString());
 
       doAnswer(MockHelper.mockGetTaskAsync("UPLOAD_IMAGE_TASK_ID", imageId, "QUEUED"))
           .doAnswer(MockHelper.mockGetTaskAsync("UPLOAD_IMAGE_TASK_ID", imageId, "STARTED"))
@@ -401,10 +419,12 @@ public class UploadImageTaskServiceTest {
       startState = buildValidStartState(null, null);
       startState.controlFlags = null;
       startState.deploymentServiceLink = deploymentState.documentSelfLink;
+      startState.imageFile = sourceFile.getAbsolutePath();
     }
 
     @AfterMethod
     public void tearDownTest() throws Throwable {
+      FileUtils.deleteDirectory(sourceDirectory);
       TestHelper.deleteServicesOfType(cloudStoreEnvironment, DeploymentService.State.class);
       TestHelper.deleteServicesOfType(testEnvironment, VmService.State.class);
     }
@@ -428,6 +448,7 @@ public class UploadImageTaskServiceTest {
 
       TestHelper.assertTaskStateFinished(finalState.taskState);
       assertThat(finalState.taskState.subStage, nullValue());
+      assertThat(finalState.bytesUploaded, is(10485760L));
       assertThat(finalState.uploadImageTaskId, is("UPLOAD_IMAGE_TASK_ID"));
       assertThat(finalState.uploadImagePollCount, is(3));
       assertThat(finalState.imageId, is(imageId));
@@ -435,7 +456,7 @@ public class UploadImageTaskServiceTest {
       assertThat(finalState.imageSeedingPollCount, is(3));
 
       verify(imagesApi).uploadImage(
-          eq("IMAGE_FILE"),
+          any(FileBody.class),
           eq(ImageReplicationType.ON_DEMAND.name()));
 
       verify(tasksApi, times(3)).getTaskAsync(
@@ -469,9 +490,15 @@ public class UploadImageTaskServiceTest {
     @Test
     public void testSuccessNoTaskPolling() throws Throwable {
 
-      doReturn(TestHelper.createTask("UPLOAD_IMAGE_TASK_ID", imageId, "COMPLETED"))
+      doAnswer(
+          (invocation) -> {
+            FileBody fileBody = (FileBody) invocation.getArguments()[0];
+            OutputStream outputStream = new FileOutputStream(new File(sourceDirectory, "output.ova"));
+            fileBody.writeTo(outputStream);
+            return TestHelper.createTask("UPLOAD_IMAGE_TASK_ID", imageId, "COMPLETED");
+          })
           .when(imagesApi)
-          .uploadImage(anyString(), anyString());
+          .uploadImage(any(FileBody.class), anyString());
 
       UploadImageTaskService.State finalState =
           testEnvironment.callServiceAndWaitForState(
@@ -482,6 +509,7 @@ public class UploadImageTaskServiceTest {
 
       TestHelper.assertTaskStateFinished(finalState.taskState);
       assertThat(finalState.taskState.subStage, nullValue());
+      assertThat(finalState.bytesUploaded, is(10485760L));
       assertThat(finalState.uploadImageTaskId, nullValue());
       assertThat(finalState.uploadImagePollCount, is(0));
       assertThat(finalState.imageId, is(imageId));
@@ -489,7 +517,7 @@ public class UploadImageTaskServiceTest {
       assertThat(finalState.imageSeedingPollCount, is(3));
 
       verify(imagesApi).uploadImage(
-          eq("IMAGE_FILE"),
+          any(FileBody.class),
           eq(ImageReplicationType.ON_DEMAND.name()));
 
       verify(imagesApi, times(3)).getImageAsync(
@@ -532,6 +560,7 @@ public class UploadImageTaskServiceTest {
 
       TestHelper.assertTaskStateFinished(finalState.taskState);
       assertThat(finalState.taskState.subStage, nullValue());
+      assertThat(finalState.bytesUploaded, is(10485760L));
       assertThat(finalState.uploadImageTaskId, is("UPLOAD_IMAGE_TASK_ID"));
       assertThat(finalState.uploadImagePollCount, is(3));
       assertThat(finalState.imageId, is(imageId));
@@ -539,7 +568,7 @@ public class UploadImageTaskServiceTest {
       assertThat(finalState.imageSeedingPollCount, is(1));
 
       verify(imagesApi).uploadImage(
-          eq("IMAGE_FILE"),
+          any(FileBody.class),
           eq(ImageReplicationType.ON_DEMAND.name()));
 
       verify(tasksApi, times(3)).getTaskAsync(
@@ -576,7 +605,7 @@ public class UploadImageTaskServiceTest {
       assertThat(finalState.imageId, nullValue());
 
       verify(imagesApi).uploadImage(
-          eq("IMAGE_FILE"),
+          any(FileBody.class),
           eq(ImageReplicationType.ON_DEMAND.name()));
 
       verify(tasksApi, times(3)).getTaskAsync(
@@ -587,7 +616,7 @@ public class UploadImageTaskServiceTest {
     @Test
     public void testUploadImageFailureNoTaskPolling() throws Throwable {
 
-      doReturn(failedTask).when(imagesApi).uploadImage(anyString(), anyString());
+      doReturn(failedTask).when(imagesApi).uploadImage(any(FileBody.class), anyString());
 
       UploadImageTaskService.State finalState =
           testEnvironment.callServiceAndWaitForState(
@@ -609,7 +638,7 @@ public class UploadImageTaskServiceTest {
 
       doThrow(new IOException("I/O exception in uploadImage call"))
           .when(imagesApi)
-          .uploadImage(anyString(), anyString());
+          .uploadImage(any(FileBody.class), anyString());
 
       UploadImageTaskService.State finalState =
           testEnvironment.callServiceAndWaitForState(

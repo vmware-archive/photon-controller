@@ -67,6 +67,7 @@ import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import org.apache.commons.io.FileUtils;
+import org.apache.http.entity.mime.content.FileBody;
 import org.mockito.ArgumentMatcher;
 import org.mockito.Matchers;
 import org.mockito.invocation.InvocationOnMock;
@@ -709,7 +710,7 @@ public class BatchCreateManagementWorkflowServiceTest {
     }
 
     private void mockSuccessfulUploadImage() throws Throwable {
-      doReturn(taskReturnedByUploadImage).when(imagesApi).uploadImage(anyString(), anyString());
+      doReturn(taskReturnedByUploadImage).when(imagesApi).uploadImage(any(FileBody.class), anyString());
       doAnswer(new Answer() {
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
@@ -881,12 +882,12 @@ public class BatchCreateManagementWorkflowServiceTest {
 
       InetSocketAddress address = cloudStoreMachine.getServerSet().getServers().iterator().next();
       doReturn(Collections.singleton(address))
-        .when(zkBuilder).getServers(anyString(), eq(DeployerModule.CLOUDSTORE_SERVICE_NAME));
+          .when(zkBuilder).getServers(anyString(), eq(DeployerModule.CLOUDSTORE_SERVICE_NAME));
       InetSocketAddress adjustedAddress = new InetSocketAddress(address.getHostName(), address.getPort() - 1);
       doReturn(Collections.singleton(adjustedAddress))
-        .when(zkBuilder).getServers(anyString(), eq(DeployerModule.DEPLOYER_SERVICE_NAME));
+          .when(zkBuilder).getServers(anyString(), eq(DeployerModule.DEPLOYER_SERVICE_NAME));
       doReturn(Collections.singleton(adjustedAddress))
-        .when(zkBuilder).getServers(anyString(), eq(DeployerModule.HOUSEKEEPER_SERVICE_NAME));
+          .when(zkBuilder).getServers(anyString(), eq(DeployerModule.HOUSEKEEPER_SERVICE_NAME));
 
       return new TestEnvironment.Builder()
           .deployerContext(deployerContext)
