@@ -51,7 +51,7 @@ public class TaskSchedulerServiceHelper {
 
           NodeSelectorService.SelectOwnerResponse rsp = op.getBody(NodeSelectorService.SelectOwnerResponse.class);
           Operation patch = Operation
-              .createPatch(UriUtils.buildUri(rsp.ownerNodeReference, taskSchedulerServiceSelfLink))
+              .createPatch(UriUtils.buildUri(rsp.ownerNodeGroupReference, taskSchedulerServiceSelfLink))
               .setBody(state)
               .setReferer(referLink);
 
