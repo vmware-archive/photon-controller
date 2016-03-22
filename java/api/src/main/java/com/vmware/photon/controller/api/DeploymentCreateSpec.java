@@ -42,14 +42,13 @@ public class DeploymentCreateSpec {
   private Set<String> imageDatastores;
 
   @JsonProperty
+  @ApiModelProperty(value = "Flag for whether to allow using image datastore for Vms")
+  private boolean useImageDatastoreForVms;
+
+  @JsonProperty
   @ApiModelProperty(value = "End point of Syslog")
   @NullableDomainOrIP
   private String syslogEndpoint;
-
-  @JsonProperty
-  @ApiModelProperty(value = "Stats information")
-  @NotNull
-  private StatsInfo stats;
 
   @JsonProperty
   @ApiModelProperty(value = "End point of Ntp server")
@@ -57,13 +56,14 @@ public class DeploymentCreateSpec {
   private String ntpEndpoint;
 
   @JsonProperty
-  @ApiModelProperty(value = "Flag for whether to allow using image datastore for Vms")
-  private boolean useImageDatastoreForVms;
+  @ApiModelProperty(value = "Informatuon used to configure Authentication/Authorization.")
+  @NotNull
+  private AuthConfigurationSpec auth;
 
   @JsonProperty
-  @ApiModelProperty(value = "Authentication/ Authorization information")
+  @ApiModelProperty(value = "Stats information")
   @NotNull
-  private AuthInfo auth;
+  private StatsInfo stats;
 
   @JsonProperty
   @ApiModelProperty(value = "Network configuration information")
@@ -113,11 +113,11 @@ public class DeploymentCreateSpec {
     this.useImageDatastoreForVms = useImageDatastoreForVms;
   }
 
-  public AuthInfo getAuth() {
+  public AuthConfigurationSpec getAuth() {
     return auth;
   }
 
-  public void setAuth(AuthInfo auth) {
+  public void setAuth(AuthConfigurationSpec auth) {
     this.auth = auth;
   }
 
