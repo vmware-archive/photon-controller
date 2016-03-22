@@ -16,16 +16,19 @@ import logging
 import os.path
 import uuid
 
+from host.hypervisor.esx.vm_config import DISK_FOLDER_NAME_PREFIX
 from host.hypervisor.esx.vm_config import IMAGE_FOLDER_NAME_PREFIX
 from host.hypervisor.esx.vm_config import VM_FOLDER_NAME_PREFIX
 from host.hypervisor.esx.vm_config import VMFS_VOLUMES
 
 
 class SoftLinkGenerator:
+
     IMAGE_FILE_EXT = "vmdk"
     VM_FILE_EXT = "vmx"
     OLD_IMAGE_ROOT_FOLDER_NAME = "images"
     OLD_VM_ROOT_FOLDER_NAME = "vms"
+    OLD_DISKS_ROOT_FOLDER_NAME = "disks"
 
     def __init__(self):
         self._logger = logging.getLogger(__name__)
@@ -41,6 +44,9 @@ class SoftLinkGenerator:
 
     def _process_vms(self, datastore):
         self._create_symlinks(datastore, self.OLD_VM_ROOT_FOLDER_NAME, VM_FOLDER_NAME_PREFIX, self.VM_FILE_EXT)
+
+    def _process_disks(self, datastore):
+        self._create_symlinks(datastore, self.OLD_DISKS_ROOT_FOLDER_NAME, DISK_FOLDER_NAME_PREFIX, self.IMAGE_FILE_EXT)
 
     def _create_symlinks(self, datastore, old_root_folder, new_folder_prefix, required_file_ext):
         """ Helper to enumerate old directory structure and create symlinks that matches new structure
