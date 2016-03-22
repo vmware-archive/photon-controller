@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.api;
 
-import com.vmware.photon.controller.api.builders.AuthInfoBuilder;
+import com.vmware.photon.controller.api.builders.AuthConfigurationSpecBuilder;
 import com.vmware.photon.controller.api.builders.NetworkConfigurationCreateSpecBuilder;
 import com.vmware.photon.controller.api.builders.StatsInfoBuilder;
 import com.vmware.photon.controller.api.helpers.JsonHelpers;
@@ -39,17 +39,14 @@ import java.util.Set;
  * Tests {@link DeploymentCreateSpec}.
  */
 public class DeploymentCreateSpecTest {
-  private AuthInfo enabledAuthInfo = new AuthInfoBuilder()
+  private AuthConfigurationSpec enabledAuthInfo = new AuthConfigurationSpecBuilder()
       .enabled(true)
-      .endpoint("10.146.64.236")
-      .port(443)
       .tenant("t")
-      .username("u")
       .password("p")
       .securityGroups(Arrays.asList(new String[]{"adminGroup1", "adminGroup2"}))
       .build();
 
-  private AuthInfo disabledAuthInfo = new AuthInfoBuilder()
+  private AuthConfigurationSpec disabledAuthInfo = new AuthConfigurationSpecBuilder()
       .enabled(false)
       .build();
 
@@ -75,7 +72,8 @@ public class DeploymentCreateSpecTest {
       String ntpEndpoint) {
 
       return createDeploymentCreateSpec(
-          imageDatastores, syslogEndpoint, ntpEndpoint, new StatsInfoBuilder().build(), new AuthInfoBuilder().build());
+          imageDatastores, syslogEndpoint, ntpEndpoint, new StatsInfoBuilder().build(),
+          new AuthConfigurationSpecBuilder().build());
   }
 
   private DeploymentCreateSpec createDeploymentCreateSpec(
@@ -85,7 +83,7 @@ public class DeploymentCreateSpecTest {
       StatsInfo stats) {
 
     return createDeploymentCreateSpec(
-        imageDatastores, syslogEndpoint, ntpEndpoint, stats, new AuthInfoBuilder().build());
+        imageDatastores, syslogEndpoint, ntpEndpoint, stats, new AuthConfigurationSpecBuilder().build());
 
   }
 
@@ -93,7 +91,7 @@ public class DeploymentCreateSpecTest {
       Set<String> imageDatastores,
       String syslogEndpoint,
       String ntpEndpoint,
-      AuthInfo authInfo) {
+      AuthConfigurationSpec authInfo) {
 
     return createDeploymentCreateSpec(
         imageDatastores, syslogEndpoint, ntpEndpoint, new StatsInfoBuilder().build(), authInfo);
@@ -104,7 +102,7 @@ public class DeploymentCreateSpecTest {
       String syslogEndpoint,
       String ntpEndpoint,
       StatsInfo stats,
-      AuthInfo authInfo) {
+      AuthConfigurationSpec authInfo) {
 
     DeploymentCreateSpec spec = new DeploymentCreateSpec();
 
@@ -163,7 +161,7 @@ public class DeploymentCreateSpecTest {
               "ntpEndpoint fake is invalid IP or Domain Address"},
           {createDeploymentCreateSpec(Collections.singleton("i"), "0.0.0.2", "0.0.0.1", (StatsInfo) null),
               "stats may not be null (was null)"},
-          {createDeploymentCreateSpec(Collections.singleton("i"), "0.0.0.1", "0.0.0.2", (AuthInfo) null),
+          {createDeploymentCreateSpec(Collections.singleton("i"), "0.0.0.1", "0.0.0.2", (AuthConfigurationSpec) null),
               "auth may not be null (was null)"}
       };
     }

@@ -444,10 +444,7 @@ public class DeploymentDcpBackend implements DeploymentBackend {
     deployment.ntpEndpoint = spec.getNtpEndpoint();
     if (spec.getAuth() != null) {
       deployment.oAuthEnabled = spec.getAuth().getEnabled();
-      deployment.oAuthServerAddress = spec.getAuth().getEndpoint();
-      deployment.oAuthServerPort = spec.getAuth().getPort();
       deployment.oAuthTenantName = spec.getAuth().getTenant();
-      deployment.oAuthUserName = spec.getAuth().getUsername();
       deployment.oAuthPassword = spec.getAuth().getPassword();
 
       if (spec.getAuth().getSecurityGroups() != null
