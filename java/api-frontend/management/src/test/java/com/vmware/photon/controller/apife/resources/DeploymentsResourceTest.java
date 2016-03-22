@@ -18,6 +18,7 @@ import com.vmware.photon.controller.api.Deployment;
 import com.vmware.photon.controller.api.DeploymentCreateSpec;
 import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
+import com.vmware.photon.controller.api.builders.AuthConfigurationSpecBuilder;
 import com.vmware.photon.controller.api.builders.AuthInfoBuilder;
 import com.vmware.photon.controller.api.builders.StatsInfoBuilder;
 import com.vmware.photon.controller.apife.clients.DeploymentFeClient;
@@ -72,7 +73,7 @@ public class DeploymentsResourceTest extends ResourceTest {
 
   @Test
   public void testSuccessfulCreateDeploymentWithAuthDisabled() throws Exception {
-    spec.setAuth(new AuthInfoBuilder().build());
+    spec.setAuth(new AuthConfigurationSpecBuilder().build());
 
     Task task = new Task();
     task.setId(taskId);
@@ -89,7 +90,7 @@ public class DeploymentsResourceTest extends ResourceTest {
 
   @Test
   public void testInvalidDeploymentWithAuthDisabled() throws Exception {
-    spec.setAuth(new AuthInfoBuilder().enabled(false).securityGroups(new ArrayList<String>()).build());
+    spec.setAuth(new AuthConfigurationSpecBuilder().enabled(false).securityGroups(new ArrayList<String>()).build());
 
     Task task = new Task();
     task.setId(taskId);
@@ -106,7 +107,7 @@ public class DeploymentsResourceTest extends ResourceTest {
 
   @Test
   public void testInvalidDeploymentWithStatsEnabled() throws Exception {
-    spec.setAuth(new AuthInfoBuilder().enabled(false).build());
+    spec.setAuth(new AuthConfigurationSpecBuilder().enabled(false).build());
     spec.setStats(new StatsInfoBuilder().enabled(true).storeEndpoint(null).build());
 
     Task task = new Task();
@@ -125,12 +126,10 @@ public class DeploymentsResourceTest extends ResourceTest {
 
   @Test
   public void testSuccessfulCreateDeploymentWithAuthEnabled() throws Exception {
-    spec.setAuth(new AuthInfoBuilder()
+    spec.setAuth(new AuthConfigurationSpecBuilder()
         .enabled(true)
         .tenant("t")
-        .username("u")
         .password("p")
-        .endpoint("https://foo")
         .securityGroups(Arrays.asList(new String[]{"t\\adminGroup1"}))
         .build());
 
@@ -149,11 +148,9 @@ public class DeploymentsResourceTest extends ResourceTest {
 
   @Test
   public void testInvalidDeploymentWithAuthEnabled() throws Exception {
-    spec.setAuth(new AuthInfoBuilder()
+    spec.setAuth(new AuthConfigurationSpecBuilder()
         .enabled(true)
-        .endpoint("https://foo")
         .tenant("t")
-        .username("u")
         .password("p")
         .securityGroups(new ArrayList<String>())
         .build());
@@ -174,11 +171,9 @@ public class DeploymentsResourceTest extends ResourceTest {
 
   @Test
   public void testInvalidSecurityGroupFormatWithAuthEnabled() throws Exception {
-    spec.setAuth(new AuthInfoBuilder()
+    spec.setAuth(new AuthConfigurationSpecBuilder()
         .enabled(true)
-        .endpoint("https://foo")
         .tenant("t")
-        .username("u")
         .password("p")
         .securityGroups(Arrays.asList(new String[]{"adminGroup1"}))
         .build());
