@@ -18,7 +18,7 @@ import com.vmware.photon.controller.api.DeploymentCreateSpec;
 import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
-import com.vmware.photon.controller.apife.auth.AuthInfoValidator;
+import com.vmware.photon.controller.apife.auth.AuthConfigurationSpecValidator;
 import com.vmware.photon.controller.apife.clients.DeploymentFeClient;
 import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
 import com.vmware.photon.controller.apife.resources.routes.DeploymentResourceRoutes;
@@ -74,7 +74,7 @@ public class DeploymentsResource {
                          @Validated DeploymentCreateSpec deploymentCreateSpec)
       throws ExternalException, InternalException {
 
-    AuthInfoValidator.validate(deploymentCreateSpec.getAuth());
+    AuthConfigurationSpecValidator.validate(deploymentCreateSpec.getAuth());
     StatsInfoValidator.validate(deploymentCreateSpec.getStats());
     SecurityGroupUtils.validateSecurityGroupsFormat(deploymentCreateSpec.getAuth().getSecurityGroups());
 

@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.apife.auth;
 
-import com.vmware.photon.controller.api.AuthInfo;
+import com.vmware.photon.controller.api.AuthConfigurationSpec;
 import com.vmware.photon.controller.api.constraints.AuthDisabled;
 import com.vmware.photon.controller.api.constraints.AuthEnabled;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidAuthConfigException;
@@ -29,28 +29,28 @@ import java.util.Set;
 /**
  * Validate the authInfo.
  */
-public class AuthInfoValidator {
+public class AuthConfigurationSpecValidator {
   /**
    * Validate if AuthInfo has the correct configuration information.
    */
-  public static void validate(AuthInfo authInfo) throws InvalidAuthConfigException {
+  public static void validate(AuthConfigurationSpec authConfig) throws InvalidAuthConfigException {
     Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
-    if (authInfo.getEnabled()) {
-      Set<ConstraintViolation<AuthInfo>> violations = validator.validate(authInfo, AuthEnabled.class);
+    if (authConfig.getEnabled()) {
+      Set<ConstraintViolation<AuthConfigurationSpec>> violations = validator.validate(authConfig, AuthEnabled.class);
       if (!violations.isEmpty()) {
         throw new InvalidAuthConfigException(getErrorMessage(violations));
       }
     } else {
-      Set<ConstraintViolation<AuthInfo>> violations = validator.validate(authInfo, AuthDisabled.class);
+      Set<ConstraintViolation<AuthConfigurationSpec>> violations = validator.validate(authConfig, AuthDisabled.class);
       if (!violations.isEmpty()) {
         throw new InvalidAuthConfigException(getErrorMessage(violations));
       }
     }
   }
 
-  private static String getErrorMessage(Set<ConstraintViolation<AuthInfo>> violations) {
+  private static String getErrorMessage(Set<ConstraintViolation<AuthConfigurationSpec>> violations) {
     List<String> errors = new ArrayList<>();
-    for (ConstraintViolation<AuthInfo> violation : violations) {
+    for (ConstraintViolation<AuthConfigurationSpec> violation : violations) {
       String error = String.format("%s %s (was %s)", violation.getPropertyPath(), violation.getMessage(),
           violation.getInvalidValue());
       errors.add(error);

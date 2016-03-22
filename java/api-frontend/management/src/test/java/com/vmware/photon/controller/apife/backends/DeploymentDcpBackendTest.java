@@ -25,7 +25,7 @@ import com.vmware.photon.controller.api.Operation;
 import com.vmware.photon.controller.api.StatsInfo;
 import com.vmware.photon.controller.api.StatsStoreType;
 import com.vmware.photon.controller.api.TenantCreateSpec;
-import com.vmware.photon.controller.api.builders.AuthInfoBuilder;
+import com.vmware.photon.controller.api.builders.AuthConfigurationSpecBuilder;
 import com.vmware.photon.controller.api.builders.NetworkConfigurationCreateSpecBuilder;
 import com.vmware.photon.controller.api.builders.StatsInfoBuilder;
 import com.vmware.photon.controller.api.common.exceptions.external.InvalidOperationStateException;
@@ -138,12 +138,9 @@ public class DeploymentDcpBackendTest {
         .storeType(StatsStoreType.GRAPHITE)
         .build());
     deploymentCreateSpec.setUseImageDatastoreForVms(true);
-    deploymentCreateSpec.setAuth(new AuthInfoBuilder()
+    deploymentCreateSpec.setAuth(new AuthConfigurationSpecBuilder()
         .enabled(true)
-        .endpoint("10.146.64.236")
-        .port(443)
         .tenant("t")
-        .username("u")
         .password("p")
         .securityGroups(Arrays.asList(new String[]{"securityGroup1", "securityGroup2"}))
         .build());
@@ -228,10 +225,10 @@ public class DeploymentDcpBackendTest {
       assertThat(deployment.getStatsStoreType(), is(StatsStoreType.GRAPHITE));
       assertThat(deployment.getUseImageDatastoreForVms(), is(true));
       assertThat(deployment.getAuthEnabled(), is(true));
-      assertThat(deployment.getOauthEndpoint(), is("10.146.64.236"));
-      assertThat(deployment.getOauthPort(), is(443));
+      assertThat(deployment.getOauthEndpoint(), nullValue());
+      assertThat(deployment.getOauthPort(), nullValue());
       assertThat(deployment.getOauthTenant(), is("t"));
-      assertThat(deployment.getOauthUsername(), is("u"));
+      assertThat(deployment.getOauthUsername(), nullValue());
       assertThat(deployment.getOauthPassword(), is("p"));
       assertThat(deployment.getNetworkManagerAddress(), is("1.2.3.4"));
       assertThat(deployment.getNetworkManagerUsername(), is("networkManagerUsername"));
@@ -469,12 +466,9 @@ public class DeploymentDcpBackendTest {
       dcpClient.delete(DeploymentServiceFactory.SELF_LINK + "/" + initialDeploymentEntity.getId(),
           new DeploymentService.State());
 
-      deploymentCreateSpec.setAuth(new AuthInfoBuilder()
+      deploymentCreateSpec.setAuth(new AuthConfigurationSpecBuilder()
           .enabled(false)
-          .endpoint("10.146.64.236")
-          .port(443)
           .tenant("t")
-          .username("u")
           .password("p")
           .securityGroups(Arrays.asList(new String[]{"securityGroup1", "securityGroup2"}))
           .build());
@@ -1056,10 +1050,7 @@ public class DeploymentDcpBackendTest {
       }
       deployment2.imageDataStoreUsedForVMs = deploymentCreateSpec.isUseImageDatastoreForVms();
       deployment2.oAuthEnabled = deploymentCreateSpec.getAuth().getEnabled();
-      deployment2.oAuthServerAddress = deploymentCreateSpec.getAuth().getEndpoint();
-      deployment2.oAuthServerPort = deploymentCreateSpec.getAuth().getPort();
       deployment2.oAuthTenantName = deploymentCreateSpec.getAuth().getTenant();
-      deployment2.oAuthUserName = deploymentCreateSpec.getAuth().getUsername();
       deployment2.oAuthPassword = deploymentCreateSpec.getAuth().getPassword();
       deployment2.oAuthSecurityGroups = new ArrayList<>(deploymentCreateSpec.getAuth().getSecurityGroups());
       deployment2.networkManagerAddress = deploymentCreateSpec.getNetworkConfiguration().getNetworkManagerAddress();
