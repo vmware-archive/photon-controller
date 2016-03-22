@@ -32,7 +32,7 @@ describe "Agent stats plugin", stats: true do
   after(:all) do
   end
 
-  it "Publishes to Graphite successfully" do
+  xit "Publishes to Graphite successfully" do
     # Remove existing host
     expect(@host).not_to be_nil
     delete_host(@host.id)
