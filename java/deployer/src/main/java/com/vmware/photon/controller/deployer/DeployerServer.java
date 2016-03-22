@@ -13,15 +13,11 @@
 
 package com.vmware.photon.controller.deployer;
 
-import com.vmware.photon.controller.chairman.gen.Chairman;
-import com.vmware.photon.controller.chairman.hierarchy.HierarchyManager;
-import com.vmware.photon.controller.chairman.service.ChairmanService;
 import com.vmware.photon.controller.common.manifest.BuildInfo;
 import com.vmware.photon.controller.common.thrift.ThriftEventHandler;
 import com.vmware.photon.controller.common.thrift.ThriftFactory;
 import com.vmware.photon.controller.common.zookeeper.ServiceNode;
 import com.vmware.photon.controller.common.zookeeper.ServiceNodeFactory;
-import com.vmware.photon.controller.common.zookeeper.ServiceNodeUtils;
 import com.vmware.photon.controller.deployer.gen.Deployer;
 import com.vmware.photon.controller.deployer.service.DeployerService;
 
@@ -42,30 +38,25 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
-import java.util.concurrent.TimeUnit;
 
 /**
  * This class initializes the Thrift server for the deployer service and responds to Thrift calls.
  */
 public class DeployerServer {
-  public static final String CHAIRMAN_SERVICE_NAME = "Chairman";
   public static final String SERVICE_NAME = "Deployer";
 
   private static final Logger logger = LoggerFactory.getLogger(DeployerServer.class);
-  private static final long retryIntervalMsec = TimeUnit.SECONDS.toMillis(5);
 
   private final ServiceNodeFactory serviceNodeFactory;
   private final TTransportFactory transportFactory;
   private final TProtocolFactory protocolFactory;
   private final ThriftFactory thriftFactory;
   private final DeployerService deployerService;
-  private final ChairmanService chairmanService;
   private final BuildInfo buildInfo;
   private final String bind;
   private final String registrationAddress;
   private final int port;
   private final CloseableHttpAsyncClient httpClient;
-  private final HierarchyManager hierarchyManager;
 
   private TServer server;
   private ServiceNode serviceNode;
@@ -75,26 +66,22 @@ public class DeployerServer {
                         TProtocolFactory protocolFactory,
                         TTransportFactory transportFactory,
                         ThriftFactory thriftFactory,
-                        ChairmanService chairmanService,
                         DeployerService deployerService,
                         BuildInfo buildInfo,
                         @DeployerConfig.Bind String bind,
                         @DeployerConfig.RegistrationAddress String registrationAddress,
                         @DeployerConfig.Port int port,
-                        CloseableHttpAsyncClient httpClient,
-                        HierarchyManager hierarchyManager) {
+                        CloseableHttpAsyncClient httpClient) {
     this.serviceNodeFactory = serviceNodeFactory;
     this.transportFactory = transportFactory;
     this.protocolFactory = protocolFactory;
     this.thriftFactory = thriftFactory;
-    this.chairmanService = chairmanService;
     this.deployerService = deployerService;
     this.buildInfo = buildInfo;
     this.bind = bind;
     this.registrationAddress = registrationAddress;
     this.port = port;
     this.httpClient = httpClient;
-    this.hierarchyManager = hierarchyManager;
   }
 
   public void serve() throws UnknownHostException, TTransportException {
@@ -109,10 +96,8 @@ public class DeployerServer {
     InetSocketAddress bindSocketAddress = new InetSocketAddress(bindIpAddress, port);
     TServerSocket transport = new TServerSocket(bindSocketAddress);
 
-    Chairman.Processor<ChairmanService> chairmanProcessor = new Chairman.Processor<>(chairmanService);
     Deployer.Processor<DeployerService> deployerProcessor = new Deployer.Processor<>(deployerService);
     TMultiplexedProcessor processor = new TMultiplexedProcessor();
-    processor.registerProcessor(CHAIRMAN_SERVICE_NAME, chairmanProcessor);
     processor.registerProcessor(SERVICE_NAME, deployerProcessor);
 
     server = new TThreadPoolServer(
@@ -128,10 +113,6 @@ public class DeployerServer {
     serviceNode = serviceNodeFactory.createSimple("deployer", registrationSocketAddress);
 
     server.setServerEventHandler(getThriftEventHandler());
-
-    // Set up leader election for hierarchy manager
-    serviceNode = serviceNodeFactory.createLeader("tree-builder", registrationSocketAddress);
-    ServiceNodeUtils.joinService(serviceNode, retryIntervalMsec, hierarchyManager);
 
     logger.info("Starting deployer ({})", buildInfo);
     logger.info("Listening on: {}", bindSocketAddress);
