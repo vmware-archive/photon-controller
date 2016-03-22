@@ -78,6 +78,7 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
   private static final String MUSTACHE_KEY_COMMON_ENABLE_SYSLOG = "ENABLE_SYSLOG";
   private static final String MUSTACHE_KEY_COMMON_LOAD_BALANCER_IP = "APIFE_IP";
   private static final String MUSTACHE_KEY_COMMON_LOAD_BALANCER_PORT = "APIFE_PORT";
+  private static final String MUSTACHE_KEY_COMMON_PEER_NODES = "PEER_NODES";
   private static final String MUSTACHE_KEY_COMMON_REGISTRATION_ADDRESS = "REGISTRATION_ADDRESS";
   private static final String MUSTACHE_KEY_COMMON_SHARED_SECRET = "SHARED_SECRET";
   private static final String MUSTACHE_KEY_COMMON_SYSLOG_ENDPOINT = "SYSLOG_ENDPOINT";
@@ -507,6 +508,40 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
     }
 
     //
+    // Xenon-based services require information about the set of peer nodes with which they should
+    // form an initial cluster.
+    //
+    // N.B. Once our Xenon services are moved to their own groups, the special casing of individual
+    // container types will no longer be necessary -- each service will be part of a single default
+    // group, regardless of its type.
+    //
+
+    if (!currentState.dynamicParameters.containsKey(MUSTACHE_KEY_COMMON_PEER_NODES)) {
+      switch (currentState.containerType) {
+        case CloudStore:
+          getIpsForContainerType(currentState.containerType,
+              (vmIpAddresses) -> patchDynamicParameter(currentState, MUSTACHE_KEY_COMMON_PEER_NODES,
+                  generatePeerNodeList(vmIpAddresses, String.valueOf(ServicePortConstants.CLOUD_STORE_PORT))));
+          return;
+        case Deployer:
+          getIpsForContainerType(currentState.containerType,
+              (vmIpAddresses) -> patchDynamicParameter(currentState, MUSTACHE_KEY_COMMON_PEER_NODES,
+                  generatePeerNodeList(vmIpAddresses, String.valueOf(ServicePortConstants.DEPLOYER_PORT + 1))));
+          return;
+        case Housekeeper:
+          getIpsForContainerType(currentState.containerType,
+              (vmIpAddresses) -> patchDynamicParameter(currentState, MUSTACHE_KEY_COMMON_PEER_NODES,
+                  generatePeerNodeList(vmIpAddresses, String.valueOf(ServicePortConstants.HOUSEKEEPER_PORT + 1))));
+          return;
+        case RootScheduler:
+          getIpsForContainerType(currentState.containerType,
+              (vmIpAddresses) -> patchDynamicParameter(currentState, MUSTACHE_KEY_COMMON_PEER_NODES,
+                  generatePeerNodeList(vmIpAddresses, String.valueOf(ServicePortConstants.ROOT_SCHEDULER_PORT))));
+          return;
+      }
+    }
+
+    //
     // Some services require service-specific configuration data.
     //
 
@@ -585,6 +620,16 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
 
   private String generateReplicaList(List<String> replicaIps, String port) {
     return replicaIps.stream().sorted().map((ip) -> ip + ":" + port).collect(Collectors.joining(","));
+  }
+
+  private String generatePeerNodeList(List<String> peerNodeIps, String port) {
+
+    List<String> peerNodeList = peerNodeIps.stream()
+        .sorted()
+        .map((peerNode) -> peerNode + ":" + port)
+        .collect(Collectors.toList());
+
+    return Utils.toJson(peerNodeList);
   }
 
   private void patchLoadBalancerParameters(State currentState, List<String> vmIpAddresses) {

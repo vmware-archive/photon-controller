@@ -7,6 +7,7 @@
   "LOG_DIRECTORY": "/var/log/esxcloud",
   "HOUSEKEEPER_DCP_STORAGE_PATH": "/etc/esxcloud/housekeeper/sandbox_16000",
   "memoryMb": "2048",
+  "PEER_NODES": "[\"0.0.0.0:16001\",\"0.0.0.1:16001\",\"0.0.0.2:16001\"]",
   "HOUSEKEEPER_INSTALL_DIRECTORY": "/usr/lib/esxcloud/housekeeper",
   "APIFE_PORT": "28080",
   "REGISTRATION_ADDRESS": "0.0.0.2",

@@ -7,6 +7,7 @@
   "ZOOKEEPER_QUORUM": "0.0.0.0:2181,0.0.0.1:2181,0.0.0.2:2181",
   "CLOUD-STORE_DCP_STORAGE_PATH": "/etc/esxcloud/cloud-store/sandbox_19000",
   "LOG_DIRECTORY": "/var/log/esxcloud",
+  "PEER_NODES": "[\"0.0.0.0:19000\",\"0.0.0.1:19000\",\"0.0.0.2:19000\"]",
   "memoryMb": "4096",
   "APIFE_PORT": "443",
   "REGISTRATION_ADDRESS": "0.0.0.2",
