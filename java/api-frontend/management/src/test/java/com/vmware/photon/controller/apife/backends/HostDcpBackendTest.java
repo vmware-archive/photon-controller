@@ -24,7 +24,7 @@ import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.Operation;
 import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.UsageTag;
-import com.vmware.photon.controller.api.builders.AuthInfoBuilder;
+import com.vmware.photon.controller.api.builders.AuthConfigurationSpecBuilder;
 import com.vmware.photon.controller.api.builders.StatsInfoBuilder;
 import com.vmware.photon.controller.api.common.exceptions.external.ErrorCode;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
@@ -132,11 +132,9 @@ public class HostDcpBackendTest {
         .storePort(2004).enabled(true)
         .build());
     deploymentCreateSpec.setUseImageDatastoreForVms(true);
-    deploymentCreateSpec.setAuth(new AuthInfoBuilder()
+    deploymentCreateSpec.setAuth(new AuthConfigurationSpecBuilder()
         .enabled(true)
-        .endpoint("https://10.146.39.198:7444/lookupservice/sdk")
         .tenant("t")
-        .username("u")
         .password("p")
         .securityGroups(Arrays.asList(new String[]{"securityGroup1", "securityGroup2"}))
         .build());

@@ -19,7 +19,7 @@ import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.SecurityGroup;
 import com.vmware.photon.controller.api.Tenant;
 import com.vmware.photon.controller.api.TenantCreateSpec;
-import com.vmware.photon.controller.api.builders.AuthInfoBuilder;
+import com.vmware.photon.controller.api.builders.AuthConfigurationSpecBuilder;
 import com.vmware.photon.controller.apife.TestModule;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.entities.DeploymentEntity;
@@ -138,7 +138,7 @@ public class TenantDcpBackendTest {
       spec.setName("t1");
 
       deploymentSpec = new DeploymentCreateSpec();
-      deploymentSpec.setAuth(new AuthInfoBuilder()
+      deploymentSpec.setAuth(new AuthConfigurationSpecBuilder()
           .enabled(true)
           .securityGroups(Arrays.asList(new String[]{"securityGroup1", "securityGroup2"}))
           .build());

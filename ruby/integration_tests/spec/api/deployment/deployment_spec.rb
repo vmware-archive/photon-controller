@@ -50,7 +50,7 @@ describe "deployment", management: true, devbox: true do
     context "when auth config is invalid in deploy request" do
       context "when auth is enabled but tenant/username/password/securityGroups are not specified" do
         it_behaves_like "failed validation",
-                        ["OAuth endpoint cannot be nil when auth is enabled."],
+                        ["OAuth tenant cannot be nil when auth is enabled."],
                         "InvalidAuthConfig" do
           let(:deployment_create_spec) do
             EsxCloud::DeploymentCreateSpec.new(
@@ -66,8 +66,9 @@ describe "deployment", management: true, devbox: true do
 
       context "when auth is not enabled but tenant/username/password/securityGroups are specified" do
         it_behaves_like "failed validation",
-                        ["password must be null (was p)", "securityGroups must be null",
-                         "username must be null (was u)", "tenant must be null (was t)"],
+                        ["password must be null (was p)",
+                         "securityGroups must be null",
+                          "tenant must be null (was t)"],
                         "InvalidAuthConfig" do
           let(:deployment_create_spec) do
             EsxCloud::DeploymentCreateSpec.new(
