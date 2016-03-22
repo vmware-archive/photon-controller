@@ -24,15 +24,18 @@ module StatsHelper
   # or returns an empty result if no data available.
   def get_stats_from_graphite(endpoint, port, pattern)
     uri = URI.parse("http://#{endpoint}:#{port}/render?target=#{pattern}&format=json")
-    tries = 0
+    maxSeconds = 180
+    start = Time.now
     begin
       res = Net::HTTP.get(uri)
       json = JSON.parse(res)
-      tries += 1
       sleep(5)
-    end until json.length > 0 or tries > 20
-    return json
+    end until json.length > 0 || (Time.now - start) > maxSeconds
+    return [] if json.nil? || json.first.nil? || json.first["datapoints"].nil?
+    # Filter nil elements, makes test output nicer when printing the result
+    return json.first["datapoints"].select { |x| x.first != nil }
   end
+
 
   def delete_graphite_data_devbox
     whisper_dir = File.join(@@git_dir, "devbox-photon", "stats_data", "graphite", "graphite", "whisper", "photon")
