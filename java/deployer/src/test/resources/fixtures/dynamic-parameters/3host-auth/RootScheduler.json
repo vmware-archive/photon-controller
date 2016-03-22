@@ -8,6 +8,7 @@
   "LOG_DIRECTORY": "/var/log/esxcloud",
   "memoryMb": "1024",
   "ROOT-SCHEDULER_INSTALL_DIRECTORY": "/usr/lib/esxcloud/root-scheduler",
+  "PEER_NODES": "[\"0.0.0.0:13010\",\"0.0.0.1:13010\",\"0.0.0.2:13010\"]",
   "APIFE_PORT": "443",
   "REGISTRATION_ADDRESS": "0.0.0.2",
   "diskGb": "1",

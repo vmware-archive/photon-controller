@@ -8,6 +8,7 @@
   "CLOUD-STORE_DCP_STORAGE_PATH": "/etc/esxcloud/cloud-store/sandbox_19000",
   "LOG_DIRECTORY": "/var/log/esxcloud",
   "memoryMb": "4096",
+  "PEER_NODES": "[\"0.0.0.0:19000\",\"0.0.0.1:19000\",\"0.0.0.2:19000\"]",
   "APIFE_PORT": "28080",
   "REGISTRATION_ADDRESS": "0.0.0.2",
   "diskGb": "8",
