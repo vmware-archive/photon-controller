@@ -15,6 +15,10 @@ describe "service configuration", zookeeper: true  do
   let(:zkClient) { ApiClientHelper.zookeeper }
   let(:deployment) {client.find_all_api_deployments.items.first}
 
+  before(:each) do
+    client.resume_system(deployment.id)
+  end
+
   after(:each) do
     client.resume_system(deployment.id)
   end
