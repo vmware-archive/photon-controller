@@ -25,6 +25,7 @@ import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
 import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
+import com.vmware.photon.controller.common.xenon.validation.DefaultLong;
 import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
@@ -35,6 +36,8 @@ import com.vmware.photon.controller.deployer.dcp.util.ApiUtils;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.OperationJoin;
+import com.vmware.xenon.common.OperationProcessingChain;
+import com.vmware.xenon.common.RequestRouter;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
 import com.vmware.xenon.common.Utils;
@@ -44,10 +47,14 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFutureTask;
+import org.apache.commons.io.output.CountingOutputStream;
 import static com.google.common.base.Preconditions.checkState;
 
 import javax.annotation.Nullable;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -141,6 +148,12 @@ public class UploadImageTaskService extends StatefulService {
     public String imageFile;
 
     /**
+     * This value represents the number of bytes which have been uploaded.
+     */
+    @DefaultLong(value = 0L)
+    public Long bytesUploaded;
+
+    /**
      * This value represents the ID of the API-level task to create the image.
      */
     @WriteOnce
@@ -174,8 +187,90 @@ public class UploadImageTaskService extends StatefulService {
     public String imageSeedingProgress;
   }
 
+  /**
+   * This class defines the patch body type used in image upload progress notification patches.
+   */
+  public static class ImageUploadProgressNotification {
+
+    public static final String FIELD_NAME_KIND = "kind";
+
+    /**
+     * This type defines the possible purposes of the notification.
+     */
+    public enum Kind {
+      ADD_UPLOAD_PROGRESS,
+    }
+
+    /**
+     * This value represents the purpose of the current notification.
+     */
+    public Kind kind;
+
+    /**
+     * This value represents the change in the number of bytes uploaded.
+     */
+    public Integer delta;
+  }
+
+  @FunctionalInterface
+  private interface IStreamListener {
+    void counterChanged(int delta);
+  }
+
+  private static class FileBody extends org.apache.http.entity.mime.content.FileBody {
+
+    private IStreamListener streamListener;
+
+    public FileBody(File file) {
+      super(file);
+    }
+
+    @Override
+    public void writeTo(OutputStream outputStream) throws IOException {
+
+      CountingOutputStream countingOutputStream = new CountingOutputStream(outputStream) {
+        @Override
+        protected void beforeWrite(int n) {
+          if (streamListener != null && n != 0) {
+            streamListener.counterChanged(n);
+          }
+          super.beforeWrite(n);
+        }
+      };
+
+      super.writeTo(countingOutputStream);
+    }
+
+    public void setStreamListener(IStreamListener streamListener) {
+      this.streamListener = streamListener;
+    }
+  }
+
   public UploadImageTaskService() {
     super(State.class);
+  }
+
+  @Override
+  public OperationProcessingChain getOperationProcessingChain() {
+
+    if (super.getOperationProcessingChain() != null) {
+      return super.getOperationProcessingChain();
+    }
+
+    RequestRouter requestRouter = new RequestRouter();
+    requestRouter.register(
+        Action.PATCH,
+        new RequestRouter.RequestBodyMatcher<>(
+            ImageUploadProgressNotification.class,
+            ImageUploadProgressNotification.FIELD_NAME_KIND,
+            ImageUploadProgressNotification.Kind.ADD_UPLOAD_PROGRESS),
+        this::handleImageUploadProgressNotification,
+        "Image upload progress notification handling");
+
+    OperationProcessingChain operationProcessingChain = new OperationProcessingChain(this);
+    operationProcessingChain.add(requestRouter);
+    this.setOperationProcessingChain(operationProcessingChain);
+    return operationProcessingChain;
   }
 
   @Override
@@ -254,6 +349,41 @@ public class UploadImageTaskService extends StatefulService {
     }
   }
 
+  private void handleImageUploadProgressNotification(Operation patchOp) {
+    ServiceUtils.logTrace(this, "Handling image upload progress notification");
+    if (!patchOp.hasBody()) {
+      patchOp.fail(new IllegalArgumentException("Body is required"));
+      return;
+    }
+
+    State currentState = getState(patchOp);
+    ImageUploadProgressNotification notification = patchOp.getBody(ImageUploadProgressNotification.class);
+
+    try {
+      checkState(notification.delta > 0);
+    } catch (IllegalStateException e) {
+      ServiceUtils.failOperationAsBadRequest(this, patchOp, e);
+      return;
+    }
+
+    /**
+     * N.B. Log only when the uploaded file size crosses a 1MB boundary.
+     */
+    currentState.bytesUploaded += notification.delta;
+    if ((currentState.bytesUploaded % (1024 * 1024)) < notification.delta) {
+      ServiceUtils.logInfo(this, "Uploaded " + currentState.bytesUploaded + " bytes");
+    }
+
+    try {
+      validateState(currentState);
+    } catch (IllegalStateException e) {
+      ServiceUtils.failOperationAsBadRequest(this, patchOp, e);
+      return;
+    }
+
+    patchOp.complete();
+  }
+
   private void validateState(State currentState) {
     ValidationUtils.validateState(currentState);
     validateTaskState(currentState.taskState);
@@ -318,6 +448,15 @@ public class UploadImageTaskService extends StatefulService {
 
   private void processUploadImageSubStage(State currentState) {
 
+    FileBody fileBody = new FileBody(new File(currentState.imageFile));
+    fileBody.setStreamListener(
+        (delta) -> {
+          ImageUploadProgressNotification notification = new ImageUploadProgressNotification();
+          notification.kind = ImageUploadProgressNotification.Kind.ADD_UPLOAD_PROGRESS;
+          notification.delta = delta;
+          sendRequest(Operation.createPatch(this, getSelfLink()).setBody(notification));
+        });
+
     //
     // N.B. Image upload is not performed asynchronously (and can't be), so this operation is
     // performed on a separate thread.
@@ -326,7 +465,7 @@ public class UploadImageTaskService extends StatefulService {
     ListenableFutureTask<Task> futureTask = ListenableFutureTask.create(
         () -> HostUtils.getApiClient(this)
             .getImagesApi()
-            .uploadImage(currentState.imageFile, ImageReplicationType.ON_DEMAND.name()));
+            .uploadImage(fileBody, ImageReplicationType.ON_DEMAND.name()));
 
     HostUtils.getListeningExecutorService(this).submit(futureTask);
 

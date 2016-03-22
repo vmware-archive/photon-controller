@@ -23,6 +23,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.FutureCallback;
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
+import org.apache.http.entity.mime.content.FileBody;
 
 import javax.annotation.Nullable;
 
@@ -57,6 +58,24 @@ public class ImagesApi extends ApiBase {
 
     HttpResponse response =
         this.restClient.upload(path, inputFileName, ImmutableMap.of("IMAGEREPLICATION", replicationType));
+
+    this.restClient.checkResponse(response, HttpStatus.SC_CREATED);
+    return parseTaskFromHttpResponse(response);
+  }
+
+  /**
+   * This method uploads the image specified in the file body.
+   *
+   * @param fileBody        Supplies a FileBody specifying the image to be uploaded
+   * @param replicationType Supplies the replication type
+   * @return A {@link Task} entity representing the image upload operation.
+   * @throws IOException
+   */
+  public Task uploadImage(FileBody fileBody, String replicationType) throws IOException {
+    String path = getBasePath();
+
+    HttpResponse response =
+        this.restClient.upload(path, fileBody, ImmutableMap.of("IMAGEREPLICATION", replicationType));
 
     this.restClient.checkResponse(response, HttpStatus.SC_CREATED);
     return parseTaskFromHttpResponse(response);
