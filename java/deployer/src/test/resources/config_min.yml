@@ -1,6 +1,8 @@
 port: 18000
 dcp:
   storagePath: "/tmp/dcp/18000"
+  peerNodes:
+  - http://localhost:18001
 deployer:
   apifeEndpoint: "http://127.0.0.1"
   configDirectory: "/tmp/deployAgent/configurations"
