@@ -34,8 +34,8 @@ import com.google.common.base.Stopwatch;
 import com.google.common.net.InetAddresses;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
+import org.testng.annotations.AfterTest;
+import org.testng.annotations.BeforeTest;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -54,6 +54,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
@@ -79,7 +80,7 @@ public class CloudStoreConstraintCheckerTest {
 
   // The second Cloudstore environment has 3 Cloudstores and eventually, when we work well
   // with clusters larger than our replication factor, it will increase.
-  private static final int LARGE_NUMBER_OF_CS_HOSTS = 5;
+  private static final int LARGE_NUMBER_OF_CS_HOSTS = 3;
   private TestEnvironment cloudStoreTestEnvironmentLarge;
   private XenonRestClient cloudstoreClientLarge;
   private CloudStoreConstraintChecker checkerLarge;
@@ -93,7 +94,7 @@ public class CloudStoreConstraintCheckerTest {
     public void runTest(int iteration);
   }
 
-  @BeforeClass
+  @BeforeTest
   public void setUpClass() throws Throwable {
     configureLogging();
     startCloudstore();
@@ -132,7 +133,7 @@ public class CloudStoreConstraintCheckerTest {
     this.checkerLarge = new CloudStoreConstraintChecker(cloudstoreClientLarge);
   }
 
-  @AfterClass
+  @AfterTest
   public void tearDownClass() throws Throwable {
     if (cloudStoreTestEnvironmentSmall != null) {
       this.cloudStoreTestEnvironmentSmall.stop();
@@ -201,7 +202,7 @@ public class CloudStoreConstraintCheckerTest {
       if (selectedHosts.size() == 0) {
         break;
       }
-      logger.info("Host not deleted yet, will retry");
+      logger.info("Host " + selectedHosts.keySet().iterator().next() + " not deleted yet, will retry");
       Thread.sleep(1);
     }
     assertThat(selectedHosts.size(), equalTo(0));
@@ -219,6 +220,7 @@ public class CloudStoreConstraintCheckerTest {
     for (int i = 0; i < 10000; i++) {
       selectedHosts = checker.getCandidates(null, 1);
       if (selectedHosts.size() == hostCount) {
+        logger.info("Selected hosts: " + selectedHosts.keySet().iterator().next());
         break;
       }
       logger.info("Host not replicated yet, will retry");
@@ -242,7 +244,7 @@ public class CloudStoreConstraintCheckerTest {
     host.availabilityZoneId = "zone-1";
     host.metadata = new HashMap<>();
     host.usageTags = new HashSet<>(Arrays.asList(UsageTag.CLOUD.name()));
-    host.documentSelfLink = "cloud-host-1";
+    host.documentSelfLink = "cloud-host-" + UUID.randomUUID() + "-" + schedulingConstant;
     hosts.add(host);
 
     return hosts;
@@ -496,7 +498,8 @@ public class CloudStoreConstraintCheckerTest {
       assertThat(candidate.size(), is(1));
       // Extract the host index from the name, which is the string "hostN", where N is the number of the host.
       for (String hostname : candidate.keySet()) {
-        int hostIndex = Integer.parseInt(hostname.substring(CLOUD_HOST_PREFIX.length()));
+        String[] hostnameSubstrings = hostname.split("-");
+        int hostIndex = Integer.parseInt(hostnameSubstrings[hostnameSubstrings.length - 1]);
         selectedHost[hostIndex] = true;
       }
       if (Arrays.stream(selectedHost).allMatch(selected -> selected == true)) {
@@ -714,7 +717,7 @@ public class CloudStoreConstraintCheckerTest {
     List<DatastoreService.State> datastores = new ArrayList<>();
 
     for (int i = 0; i < numDatastores; i++) {
-      String datastoreName = "datastore-" + i;
+      String datastoreName = "datastore-" + UUID.randomUUID();
       String datastoreTag = "tag-" + i;
       String datastoreTag2 = "tag-extra-" + i;
 
@@ -753,9 +756,9 @@ public class CloudStoreConstraintCheckerTest {
       String azName = "zone-" + i;
 
       if (isManagement) {
-        hostName = MGMT_HOST_PREFIX + i;
+        hostName = MGMT_HOST_PREFIX + UUID.randomUUID() + "-" + i;
       } else {
-        hostName = CLOUD_HOST_PREFIX + i;
+        hostName = CLOUD_HOST_PREFIX + UUID.randomUUID() + "-" + i;
       }
 
       HostService.State host = new HostService.State();
@@ -769,6 +772,9 @@ public class CloudStoreConstraintCheckerTest {
       host.reportedNetworks = new HashSet<>(Arrays.asList(nwName));
       host.availabilityZoneId = azName;
       host.metadata = new HashMap<>();
+      // Equally distribute scheduling constant to make randomness test succeed
+      // For example, if i = 1, numHosts = 10, schedulingConstant = 1 * (10000 - 1)/10 = 999
+      host.schedulingConstant = i * (long) Math.floor((HostService.MAX_SCHEDULING_CONSTANT - 1) / numHosts);
       populateHostMetadata(host, isManagement);
       if (isManagement) {
         host.usageTags = new HashSet<>(Arrays.asList(UsageTag.MGMT.name()));
