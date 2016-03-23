@@ -265,7 +265,12 @@ public class DeployerXenonServiceHostTest {
     private void setUp() throws Throwable {
       injector = TestHelper.createInjector(configFilePath);
 
-      host = new DeployerXenonServiceHost("0.0.0.0", 18000, "0.0.0.0", storageDir.getPath(),
+      host = new DeployerXenonServiceHost(
+          "0.0.0.0",
+          18000,
+          null,
+          storageDir.getPath(),
+          null,
           null, /*cloudStoreServers*/
           injector.getInstance(DeployerContext.class),
           null /* containersConfig */,
@@ -286,7 +291,12 @@ public class DeployerXenonServiceHostTest {
       host.start();
       waitForServicesStartup(host);
 
-      host2 = new DeployerXenonServiceHost("0.0.0.0", 18002, "0.0.0.0", storageDir2.getPath(),
+      host2 = new DeployerXenonServiceHost(
+          "0.0.0.0",
+          18002,
+          null,
+          storageDir2.getPath(),
+          null,
           null, /*cloudStoreServers*/
           injector.getInstance(DeployerContext.class),
           null /* containersConfig */,
