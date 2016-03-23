@@ -36,6 +36,8 @@ import org.apache.http.nio.conn.ssl.SSLIOSessionStrategy;
 import org.apache.http.ssl.SSLContexts;
 import org.apache.http.util.EntityUtils;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import javax.net.ssl.SSLContext;
 
 import java.io.IOException;
@@ -65,46 +67,20 @@ public class RestClient {
    * Constructs a RestClient.
    */
   public RestClient(String target, String username, String password) {
-    if (null == target) {
-      throw new IllegalArgumentException("Target cannot be null");
-    }
-
-    if (null == username) {
-      throw new IllegalArgumentException("Username cannot be null");
-    }
-
-    if (null == password) {
-      throw new IllegalArgumentException("Password cannot be null");
-    }
-
-    this.target = target;
-    this.clientContext = getHttpClientContext(target, username, password);
-    this.asyncClient = getHttpClient();
+    this(target, username, password, null);
   }
 
   /**
    * Constructs a RestClient.
    */
   public RestClient(String target, String username, String password, CloseableHttpAsyncClient asyncClient) {
-    if (null == target) {
-      throw new IllegalArgumentException("Target cannot be null");
-    }
-
-    if (null == username) {
-      throw new IllegalArgumentException("Username cannot be null");
-    }
-
-    if (null == password) {
-      throw new IllegalArgumentException("Password cannot be null");
-    }
-
-    if (null == asyncClient) {
-      throw new IllegalArgumentException("Async client cannot be null");
-    }
+    checkNotNull(target, "target cannot be null");
+    checkNotNull(username, "username cannot be null");
+    checkNotNull(password, "password cannot be null");
 
     this.target = target;
     this.clientContext = getHttpClientContext(target, username, password);
-    this.asyncClient = asyncClient;
+    this.asyncClient = asyncClient == null ? getHttpClient() : asyncClient;
   }
 
   /**
@@ -113,11 +89,7 @@ public class RestClient {
   public HttpResponse send(final Method method, final String path, final HttpEntity payload) {
     try {
       return sendAsync(method, path, payload, null /* callback */).get();
-    } catch (InterruptedException e) {
-      throw new RuntimeException(e);
-    } catch (ExecutionException e) {
-      throw new RuntimeException(e);
-    } catch (IOException e) {
+    } catch (InterruptedException | ExecutionException | IOException e) {
       throw new RuntimeException(e);
     }
   }
