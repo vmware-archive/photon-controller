@@ -67,6 +67,7 @@ public class DeploymentTest {
         .securityGroups(Arrays.asList(new String[]{"adminGroup1", "adminGroup2"}))
         .build());
     deployment.setNetworkConfiguration(new NetworkConfigurationBuilder()
+        .virtualNetworkEnabled(true)
         .networkManagerAddress("1.2.3.4")
         .networkManagerUsername("networkManagerUsername")
         .networkManagerPassword("networkManagerPassword")
@@ -155,7 +156,7 @@ public class DeploymentTest {
               "ntpEndpoint=0.0.0.2, useImageDatastoreForVms=false, " +
               "auth=AuthInfo{enabled=true, endpoint=10.146.64.236, port=443, " +
               "tenant=t, username=u, password=p, securityGroups=adminGroup1,adminGroup2}, " +
-              "networkConfiguration=NetworkConfiguration{networkManagerAddress=1.2.3.4, " +
+              "networkConfiguration=NetworkConfiguration{virtualNetworkEnabled=true, networkManagerAddress=1.2.3.4, " +
               "networkManagerUsername=networkManagerUsername, networkManagerPassword=networkManagerPassword}, " +
               "loadBalancerEnabled=true, loadBalancerAddress=0.0.0.4, migrationProgress=null, " +
               "clusterConfigurations=null}";

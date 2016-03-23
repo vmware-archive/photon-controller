@@ -20,11 +20,18 @@ import com.vmware.photon.controller.api.NetworkConfiguration;
  */
 public class NetworkConfigurationBuilder {
 
+  private boolean virtualNetworkEnabled;
+
   private String networkManagerAddress;
 
   private String networkManagerUsername;
 
   private String networkManagerPassword;
+
+  public NetworkConfigurationBuilder virtualNetworkEnabled(boolean virtualNetworkEnabled) {
+    this.virtualNetworkEnabled = virtualNetworkEnabled;
+    return this;
+  }
 
   public NetworkConfigurationBuilder networkManagerAddress(String networkManagerAddress) {
     this.networkManagerAddress = networkManagerAddress;
@@ -43,6 +50,7 @@ public class NetworkConfigurationBuilder {
 
   public NetworkConfiguration build() {
     NetworkConfiguration networkConfiguration = new NetworkConfiguration();
+    networkConfiguration.setVirtualNetworkEnabled(this.virtualNetworkEnabled);
     networkConfiguration.setNetworkManagerAddress(this.networkManagerAddress);
     networkConfiguration.setNetworkManagerUsername(this.networkManagerUsername);
     networkConfiguration.setNetworkManagerPassword(this.networkManagerPassword);
