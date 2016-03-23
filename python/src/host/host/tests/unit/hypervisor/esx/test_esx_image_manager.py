@@ -32,7 +32,7 @@ from gen.resource.ttypes import DatastoreType
 from gen.resource.ttypes import ImageReplication
 from gen.resource.ttypes import ImageType
 from host.hypervisor.disk_manager import DiskAlreadyExistException
-from host.hypervisor.esx.vm_config import IMAGE_FOLDER_NAME_PREFIX
+from host.hypervisor.esx.vm_config import IMAGE_FOLDER_NAME_PREFIX, compond_path_join
 from host.hypervisor.esx.vm_config import TMP_IMAGE_FOLDER_NAME_PREFIX
 from host.hypervisor.image_manager import DirectoryNotFound
 from host.hypervisor.image_manager import ImageNotFoundException
@@ -101,7 +101,7 @@ class TestEsxImageManager(unittest.TestCase):
         """ Test that stray images are found and deleted by the reaper """
 
         def _fake_ds_folder(datastore, folder):
-            return "%s__%s" % (datastore, folder)
+            return "%s/%s" % (datastore, folder)
 
         ds = MagicMock()
         ds.id = "dsid"
@@ -110,10 +110,9 @@ class TestEsxImageManager(unittest.TestCase):
         # In a random transient directory, set up a directory to act as the
         # tmp images folder and to contain a stray image folder with a file.
         tmpdir = file_util.mkdtemp(delete=True)
-        tmp_images_folder = _fake_ds_folder(ds.id, TMP_IMAGE_FOLDER_NAME_PREFIX)
-        tmp_images_dir = os.path.join(tmpdir, tmp_images_folder)
-        tmp_image_dir = os.path.join(tmp_images_dir, "stray_image")
-        os.mkdir(tmp_images_dir)
+        tmp_ds_dir = os.path.join(tmpdir, ds.id)
+        os.mkdir(tmp_ds_dir)
+        tmp_image_dir = os.path.join(tmp_ds_dir, compond_path_join(TMP_IMAGE_FOLDER_NAME_PREFIX, "stray_image"))
         os.mkdir(tmp_image_dir)
         (fd, path) = tempfile.mkstemp(prefix='strayimage_', dir=tmp_image_dir)
 

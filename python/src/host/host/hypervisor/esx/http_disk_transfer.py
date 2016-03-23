@@ -19,6 +19,7 @@ import threading
 import time
 import uuid
 
+from common.file_util import rm_rf
 from common.photon_thrift.direct_client import DirectClient
 from common.lock import lock_non_blocking
 from gen.host import Host
@@ -32,7 +33,8 @@ from gen.host.ttypes import ServiceTicketResultCode
 from gen.host.ttypes import ServiceType
 from host.hypervisor.disk_manager import DiskAlreadyExistException
 from host.hypervisor.esx.vim_client import VimClient
-from host.hypervisor.esx.vm_config import IMAGE_FOLDER_NAME_PREFIX
+from host.hypervisor.esx.vm_config import IMAGE_FOLDER_NAME_PREFIX, os_datastore_path, compond_path_join, \
+    VM_FOLDER_NAME_PREFIX
 from host.hypervisor.esx.vm_config import EsxVmConfig, SHADOW_VM_NAME_PREFIX
 from host.hypervisor.esx.vm_config import os_image_manifest_path
 from host.hypervisor.esx.vm_config import os_metadata_path
@@ -291,7 +293,7 @@ class HttpNfcTransferer(HttpTransferer):
         of any image accessible on this host to another datastore not directly
         accessible from this host.
         """
-        shadow_vm_id = SHADOW_VM_NAME_PREFIX + str(uuid.uuid1())
+        shadow_vm_id = SHADOW_VM_NAME_PREFIX + str(uuid.uuid4())
         spec = self._vm_config.create_spec(
             vm_id=shadow_vm_id, datastore=self._get_shadow_vm_datastore(),
             memory=32, cpus=1)
@@ -348,7 +350,7 @@ class HttpNfcTransferer(HttpTransferer):
         return lease, disk_url
 
     def _create_import_vm_spec(self, image_id, datastore):
-        vm_name = "h2h_%s" % str(uuid.uuid4())
+        vm_name = str(uuid.uuid4())
         spec = self._vm_config.create_spec_for_import(vm_id=vm_name,
                                                       image_id=image_id,
                                                       datastore=datastore,
@@ -466,11 +468,14 @@ class HttpNfcTransferer(HttpTransferer):
             imported_vm_name = self._send_image(
                 tmp_path, manifest, metadata, spec, destination_image_id,
                 destination_datastore, host, port)
+
+            return imported_vm_name
+
         finally:
             try:
                 os.unlink(tmp_path)
             except OSError:
                 pass
             self._delete_shadow_vm(shadow_vm_id)
-
-        return imported_vm_name
+            rm_rf(os_datastore_path(self._get_shadow_vm_datastore(),
+                                    compond_path_join(VM_FOLDER_NAME_PREFIX, shadow_vm_id)))
