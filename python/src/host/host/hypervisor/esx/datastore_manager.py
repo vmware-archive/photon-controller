@@ -19,7 +19,6 @@ from gen.resource.constants import SHARED_VMFS_TAG
 from gen.resource.constants import NFS_TAG
 from gen.resource.ttypes import HostServiceTicket, Datastore, DatastoreType
 from host.hypervisor.datastore_manager import DatastoreManager
-from host.hypervisor.esx.disk_manager import datastore_mkdirs
 from host.hypervisor.hypervisor import UpdateListener
 
 
@@ -61,24 +60,18 @@ class EsxDatastoreManager(DatastoreManager, UpdateListener):
                                 if ds.name in image_ds_names or
                                 ds.id in image_ds_names])
 
-        # combined_datastores is the union of vm_datastores and
-        # image_datastores
+        # combined_datastores is the union of vm_datastores and image_datastores
         combined_datastores = vm_datastores | image_datastores
 
-        # create directory structure on datastores, populate class members,
-        # filtering out unavailable/readonly datastores.
+        # populate class members
         self._datastores = set()
         self._image_datastores = set()
         self._datastore_id_to_name_map = {}
         for ds in combined_datastores:
-            try:
-                datastore_mkdirs(self._hypervisor.vim_client, ds.name)
-                self._datastores.add(ds)
-                if ds in image_datastores:
-                    self._image_datastores.add(ds)
-                self._datastore_id_to_name_map[ds.id] = ds.name
-            except:
-                self.logger.exception("Failed to initialize %s" % ds)
+            self._datastores.add(ds)
+            if ds in image_datastores:
+                self._image_datastores.add(ds)
+            self._datastore_id_to_name_map[ds.id] = ds.name
 
         # make sure there is at least one datastore for cloud VMs. Here we
         # can't simply throw an exception since the agent needs to continue
