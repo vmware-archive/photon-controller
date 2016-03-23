@@ -54,21 +54,6 @@ def vmdk_mkdir(datastore, disk_id, logger):
         break
 
 
-def datastore_mkdirs(vim_client, datastore):
-    for path in [DISK_FOLDER_NAME_PREFIX, VM_FOLDER_NAME_PREFIX, IMAGE_FOLDER_NAME_PREFIX,
-                 TMP_IMAGE_FOLDER_NAME_PREFIX]:
-        ds_path = os_datastore_path(datastore, path)
-        # On shared folders os.mkdir races with other hosts attempting to
-        # create ds_path. try - pass works around that.
-        try:
-            os.mkdir(ds_path)
-        except OSError as e:
-            if e.errno == errno.EEXIST:
-                pass
-            else:
-                raise
-
-
 class EsxDiskManager(DiskManager):
     """ESX VM Manager specific implementation.
 

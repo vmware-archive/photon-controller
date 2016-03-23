@@ -30,8 +30,7 @@ from host.hypervisor.esx.vm_config import VM_FOLDER_NAME_PREFIX
 
 class TestEsxDatastoreManager(unittest.TestCase):
 
-    @patch("os.mkdir")
-    def test_get_datastores(self, mkdir_mock):
+    def test_get_datastores(self):
         """ Test esx datastore manager with different datastore types.
         Verify the datastore types are correctly parsed and all the
         datastores are populated.
@@ -55,14 +54,6 @@ class TestEsxDatastoreManager(unittest.TestCase):
                    "datastore4", "datastore5", "datastore6"]
         image_ds = [{"name": "datastore2", "used_for_vms": False}]
         ds_manager = EsxDatastoreManager(hypervisor, ds_list, image_ds)
-
-        expected_call_args = []
-        for ds in ds_list:
-            for folder in [DISK_FOLDER_NAME_PREFIX, VM_FOLDER_NAME_PREFIX, IMAGE_FOLDER_NAME_PREFIX,
-                           TMP_IMAGE_FOLDER_NAME_PREFIX]:
-                expected_call_args.append('/vmfs/volumes/%s/%s' % (ds, folder))
-        called_args = [c[0][0] for c in mkdir_mock.call_args_list]
-        assert_that(called_args, contains_inanyorder(*expected_call_args))
 
         assert_that(ds_manager.get_datastore_ids(),
                     contains_inanyorder("id-1", "id-2", "id-3", "id-4",
