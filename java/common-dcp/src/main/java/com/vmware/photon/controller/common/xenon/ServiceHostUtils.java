@@ -93,11 +93,6 @@ public class ServiceHostUtils {
     checkArgument(!Strings.isNullOrEmpty(nodeGroupPath), "nodeGroupPath cannot be null or empty");
     checkArgument(maxRetries > 0, "maxRetries must be > 0");
 
-    if (hosts.length == 1) {
-      // nothing to synchronize if we only have one host
-      return;
-    }
-
     List<Pair<String, Integer>> remoteHostIpAndPortPairs = new ArrayList<>();
     for (ServiceHost host : hosts) {
       remoteHostIpAndPortPairs.add(Pair.of(host.getState().bindAddress, host.getPort()));
@@ -121,11 +116,6 @@ public class ServiceHostUtils {
     checkArgument(remoteHostIpAndPortPairs != null, "remoteHostIpAndPortPairs cannot be null");
     checkArgument(!Strings.isNullOrEmpty(nodeGroupPath), "nodeGroupPath cannot be null or empty");
     checkArgument(maxRetries > 0, "maxRetries must be > 0");
-
-    if (remoteHostIpAndPortPairs.size() == 1) {
-      // nothing to synchronize if we only have one host
-      return;
-    }
 
     for (Pair<String, Integer> remoteHostIpAndPortPair : remoteHostIpAndPortPairs) {
 
