@@ -28,12 +28,10 @@ import com.vmware.photon.controller.resource.gen.ResourceConstraintType;
 import com.vmware.xenon.common.Operation;
 
 import ch.qos.logback.classic.Level;
-
 import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.annotations.AfterClass;

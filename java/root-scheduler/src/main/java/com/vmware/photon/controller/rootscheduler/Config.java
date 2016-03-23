@@ -17,13 +17,11 @@ import com.vmware.photon.controller.common.logging.LoggingConfiguration;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperConfig;
 import com.vmware.photon.controller.scheduler.gen.PlaceParams;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.inject.BindingAnnotation;
 import org.hibernate.validator.constraints.NotEmpty;
 import org.hibernate.validator.constraints.Range;
 
 import javax.validation.Valid;
-import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 
 import java.lang.annotation.Retention;
@@ -65,15 +63,6 @@ public class Config {
   @NotEmpty
   private String storagePath;
 
-  // Leave the next two in here until we bump the puppet pointer
-  @Min(1000)
-  @JsonProperty("place_timeout_ms")
-  private long placeTimeoutMs = 60000;
-
-  @Min(1000)
-  @JsonProperty("find_timeout_ms")
-  private long findTimeoutMs = 60000;
-
   @Valid
   @NotNull
   private LoggingConfiguration logging = new LoggingConfiguration();
@@ -84,19 +73,9 @@ public class Config {
 
   @Valid
   @NotNull
-  @JsonProperty("healthcheck")
-  private HealthCheckConfig healthCheck = new HealthCheckConfig();
-
-  @Valid
-  @NotNull
   private SchedulerConfig root = new SchedulerConfig();
 
-  @Valid
-  @NotNull
-  private SchedulerConfig leaf = new SchedulerConfig();
-
   private PlaceParams rootPlaceParams;
-  private PlaceParams leafPlaceParams;
 
   @Valid
   @NotNull
@@ -145,16 +124,8 @@ public class Config {
     return zookeeper;
   }
 
-  public HealthCheckConfig getHealthCheck() {
-    return healthCheck;
-  }
-
   public SchedulerConfig getRoot() {
     return root;
-  }
-
-  public SchedulerConfig getLeaf() {
-    return leaf;
   }
 
   /**
@@ -196,30 +167,11 @@ public class Config {
   public void initRootPlaceParams() {
     rootPlaceParams = new PlaceParams();
     rootPlaceParams.setTimeout(root.getPlaceTimeoutMs());
-    rootPlaceParams.setFanoutRatio(root.getFanoutRatio());
     rootPlaceParams.setMinFanoutCount(root.getMinFanoutCount());
     rootPlaceParams.setMaxFanoutCount(root.getMaxFanoutCount());
-    rootPlaceParams.setFastPlaceResponseRatio(root.getFastPlaceResponseRatio());
-    rootPlaceParams.setFastPlaceResponseTimeoutRatio(root.getFastPlaceResponseTimeoutRatio());
-    rootPlaceParams.setFastPlaceResponseMinCount(root.getFastPlaceResponseMinCount());
   }
 
   public PlaceParams getRootPlaceParams() {
     return rootPlaceParams;
-  }
-
-  public void initLeafPlaceParams() {
-    leafPlaceParams = new PlaceParams();
-    leafPlaceParams.setTimeout(leaf.getPlaceTimeoutMs());
-    leafPlaceParams.setFanoutRatio(leaf.getFanoutRatio());
-    leafPlaceParams.setMinFanoutCount(leaf.getMinFanoutCount());
-    leafPlaceParams.setMaxFanoutCount(leaf.getMaxFanoutCount());
-    leafPlaceParams.setFastPlaceResponseRatio(leaf.getFastPlaceResponseRatio());
-    leafPlaceParams.setFastPlaceResponseTimeoutRatio(leaf.getFastPlaceResponseTimeoutRatio());
-    leafPlaceParams.setFastPlaceResponseMinCount(leaf.getFastPlaceResponseMinCount());
-  }
-
-  public PlaceParams getLeafPlaceParams() {
-    return leafPlaceParams;
   }
 }

@@ -27,7 +27,6 @@ import org.apache.thrift.TException;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
@@ -42,9 +41,6 @@ public class SchedulerServiceTest {
   private Config config;
 
   @Mock
-  private RootSchedulerService rootSchedulerService;
-
-  @Mock
   private FlatSchedulerService flatSchedulerService;
 
   private SchedulerService schedulerService;
@@ -54,113 +50,63 @@ public class SchedulerServiceTest {
     MockitoAnnotations.initMocks(this);
   }
 
-  @DataProvider(name = "schedulerMode")
-  public Object[][] getSchedulerModes() {
-    return new Object[][] {
-        {SchedulerService.FLAT_SCHEDULER_MODE},
-        {SchedulerService.HIERARCHICAL_SCHEDULER_MODE}
-    };
-  }
-
-  @Test(dataProvider = "schedulerMode")
-  public void testGetSchedulers(String schedulerMode) throws TException {
-    schedulerService = new SchedulerService(config, rootSchedulerService, flatSchedulerService);
-    doReturn(schedulerMode).when(config).getMode();
+  @Test
+  public void testGetSchedulers() throws TException {
+    schedulerService = new SchedulerService(config, flatSchedulerService);
     doReturn(new GetSchedulersResponse()).when(flatSchedulerService).get_schedulers();
-    doReturn(new GetSchedulersResponse()).when(rootSchedulerService).get_schedulers();
     schedulerService.get_schedulers();
-    if (schedulerMode.equals(SchedulerService.FLAT_SCHEDULER_MODE)) {
-      verify(flatSchedulerService, times(1)).get_schedulers();
-    } else {
-      verify(rootSchedulerService, times(1)).get_schedulers();
-    }
+    verify(flatSchedulerService, times(1)).get_schedulers();
   }
 
-  @Test(dataProvider = "schedulerMode")
-  public void testGetStatus(String schedulerMode) throws TException {
-    schedulerService = new SchedulerService(config, rootSchedulerService, flatSchedulerService);
-    doReturn(schedulerMode).when(config).getMode();
+  @Test
+  public void testGetStatus() throws TException {
+    schedulerService = new SchedulerService(config, flatSchedulerService);
     GetStatusRequest request = new GetStatusRequest();
     doReturn(new Status()).when(flatSchedulerService).get_status(request);
-    doReturn(new Status()).when(rootSchedulerService).get_status(request);
     schedulerService.get_status(request);
-    if (schedulerMode.equals(SchedulerService.FLAT_SCHEDULER_MODE)) {
-      verify(flatSchedulerService, times(1)).get_status(request);
-    } else {
-      verify(rootSchedulerService, times(1)).get_status(request);
-    }
+    verify(flatSchedulerService, times(1)).get_status(request);
   }
 
-  @Test(dataProvider = "schedulerMode")
-  public void testConfigure(String schedulerMode) throws TException {
-    schedulerService = new SchedulerService(config, rootSchedulerService, flatSchedulerService);
-    doReturn(schedulerMode).when(config).getMode();
+  @Test
+  public void testConfigure() throws TException {
+    schedulerService = new SchedulerService(config, flatSchedulerService);
     ConfigureRequest request = new ConfigureRequest();
     doReturn(new ConfigureResponse()).when(flatSchedulerService).configure(request);
-    doReturn(new ConfigureResponse()).when(rootSchedulerService).configure(request);
     schedulerService.configure(request);
-    if (schedulerMode.equals(SchedulerService.FLAT_SCHEDULER_MODE)) {
-      verify(flatSchedulerService, times(1)).configure(request);
-    } else {
-      verify(rootSchedulerService, times(1)).configure(request);
-    }
+    verify(flatSchedulerService, times(1)).configure(request);
   }
 
-  @Test(dataProvider = "schedulerMode")
-  public void testPlace(String schedulerMode) throws TException {
-    schedulerService = new SchedulerService(config, rootSchedulerService, flatSchedulerService);
-    doReturn(schedulerMode).when(config).getMode();
+  @Test
+  public void testPlace() throws TException {
+    schedulerService = new SchedulerService(config, flatSchedulerService);
     PlaceRequest request = new PlaceRequest();
     doReturn(new PlaceResponse()).when(flatSchedulerService).place(request);
-    doReturn(new PlaceResponse()).when(rootSchedulerService).place(request);
     schedulerService.place(request);
-    if (schedulerMode.equals(SchedulerService.FLAT_SCHEDULER_MODE)) {
-      verify(flatSchedulerService, times(1)).place(request);
-    } else {
-      verify(rootSchedulerService, times(1)).place(request);
-    }
+    verify(flatSchedulerService, times(1)).place(request);
   }
 
-  @Test(dataProvider = "schedulerMode")
-  public void testFind(String schedulerMode) throws TException {
-    schedulerService = new SchedulerService(config, rootSchedulerService, flatSchedulerService);
-    doReturn(schedulerMode).when(config).getMode();
+  @Test
+  public void testFind() throws TException {
+    schedulerService = new SchedulerService(config, flatSchedulerService);
     FindRequest request = new FindRequest();
     doReturn(new FindResponse()).when(flatSchedulerService).find(request);
-    doReturn(new FindResponse()).when(rootSchedulerService).find(request);
     schedulerService.find(request);
-    if (schedulerMode.equals(SchedulerService.FLAT_SCHEDULER_MODE)) {
-      verify(flatSchedulerService, times(1)).find(request);
-    } else {
-      verify(rootSchedulerService, times(1)).find(request);
-    }
+    verify(flatSchedulerService, times(1)).find(request);
   }
 
-  @Test(dataProvider = "schedulerMode")
-  public void testOnJoin(String schedulerMode) throws TException {
-    schedulerService = new SchedulerService(config, rootSchedulerService, flatSchedulerService);
-    doReturn(schedulerMode).when(config).getMode();
+  @Test
+  public void testOnJoin() throws TException {
+    schedulerService = new SchedulerService(config, flatSchedulerService);
     doNothing().when(flatSchedulerService).onJoin();
-    doNothing().when(rootSchedulerService).onJoin();
     schedulerService.onJoin();
-    if (schedulerMode.equals(SchedulerService.FLAT_SCHEDULER_MODE)) {
-      verify(flatSchedulerService, times(1)).onJoin();
-    } else {
-      verify(rootSchedulerService, times(1)).onJoin();
-    }
+    verify(flatSchedulerService, times(1)).onJoin();
   }
 
-  @Test(dataProvider = "schedulerMode")
-  public void testOnLeave(String schedulerMode) throws TException {
-    schedulerService = new SchedulerService(config, rootSchedulerService, flatSchedulerService);
-    doReturn(schedulerMode).when(config).getMode();
+  @Test
+  public void testOnLeave() throws TException {
+    schedulerService = new SchedulerService(config, flatSchedulerService);
     doNothing().when(flatSchedulerService).onLeave();
-    doNothing().when(rootSchedulerService).onLeave();
     schedulerService.onLeave();
-    if (schedulerMode.equals(SchedulerService.FLAT_SCHEDULER_MODE)) {
-      verify(flatSchedulerService, times(1)).onLeave();
-    } else {
-      verify(rootSchedulerService, times(1)).onLeave();
-    }
+    verify(flatSchedulerService, times(1)).onLeave();
   }
 }

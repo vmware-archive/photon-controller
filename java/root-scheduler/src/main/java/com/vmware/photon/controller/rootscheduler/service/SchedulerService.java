@@ -28,7 +28,6 @@ import com.vmware.photon.controller.status.gen.Status;
 
 import com.google.common.base.Stopwatch;
 import com.google.inject.Inject;
-
 import org.apache.thrift.TException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,23 +38,19 @@ import java.util.concurrent.TimeUnit;
  * Scheduler thrift service.
  *
  * This class gets all the thrift calls sent to the scheduler and redirects it to
- * the root scheduler or flat scheduler based on the config option.
+ * the flat scheduler service.
  */
 public class SchedulerService implements RootScheduler.Iface, ServiceNodeEventHandler {
-  public static final String FLAT_SCHEDULER_MODE = "flat";
-  public static final String HIERARCHICAL_SCHEDULER_MODE = "hierarchical";
+
   private static final Logger logger = LoggerFactory.getLogger(SchedulerService.class);
 
   private Config config;
-  private RootSchedulerService rootSchedulerService;
   private FlatSchedulerService flatSchedulerService;
 
   @Inject
   public SchedulerService(Config config,
-                          RootSchedulerService rootSchedulerService,
                           FlatSchedulerService flatSchedulerService) {
     this.config = config;
-    this.rootSchedulerService = rootSchedulerService;
     this.flatSchedulerService = flatSchedulerService;
   }
 
@@ -69,32 +64,24 @@ public class SchedulerService implements RootScheduler.Iface, ServiceNodeEventHa
 
   @Override
   public GetSchedulersResponse get_schedulers() {
-    return config.getMode().equals(FLAT_SCHEDULER_MODE) ?
-        flatSchedulerService.get_schedulers() : rootSchedulerService.get_schedulers();
+    return flatSchedulerService.get_schedulers();
   }
 
   @Override
   public Status get_status(GetStatusRequest request) throws TException {
-    return config.getMode().equals(FLAT_SCHEDULER_MODE) ?
-        flatSchedulerService.get_status(request) : rootSchedulerService.get_status(request);
+    return flatSchedulerService.get_status(request);
   }
 
   @Override
   @RequestId
   public ConfigureResponse configure(ConfigureRequest request) throws TException {
-    return config.getMode().equals(FLAT_SCHEDULER_MODE) ?
-        flatSchedulerService.configure(request) : rootSchedulerService.configure(request);
+    return flatSchedulerService.configure(request);
   }
 
   @Override
   public PlaceResponse place(PlaceRequest request) throws TException {
-    // This will be logged with the request id, so we can know the request/scheduler association
-    // When the root scheduler is retired, this should be removed.
-    logger.info("scheduler-type: {}", config.getMode());
-
     Stopwatch stopwatch = Stopwatch.createStarted();
-    PlaceResponse placeResponse = config.getMode().equals(FLAT_SCHEDULER_MODE) ?
-        flatSchedulerService.place(request) : rootSchedulerService.place(request);
+    PlaceResponse placeResponse = flatSchedulerService.place(request);
     stopwatch.stop();
     logger.info("elapsed-time place {} milliseconds", stopwatch.elapsed(TimeUnit.MILLISECONDS));
 
@@ -103,26 +90,17 @@ public class SchedulerService implements RootScheduler.Iface, ServiceNodeEventHa
 
   @Override
   public FindResponse find(FindRequest request) throws TException {
-    return config.getMode().equals(FLAT_SCHEDULER_MODE) ?
-        flatSchedulerService.find(request) : rootSchedulerService.find(request);
+    return flatSchedulerService.find(request);
   }
 
   @Override
   public void onJoin() {
-    if (config.getMode().equals(FLAT_SCHEDULER_MODE)) {
-      flatSchedulerService.onJoin();
-    } else {
-      rootSchedulerService.onJoin();
-    }
+    flatSchedulerService.onJoin();
   }
 
   @Override
   public void onLeave() {
-    if (config.getMode().equals(FLAT_SCHEDULER_MODE)) {
-      flatSchedulerService.onLeave();
-    } else {
-      rootSchedulerService.onLeave();
-    }
+    flatSchedulerService.onLeave();
   }
 }
 
