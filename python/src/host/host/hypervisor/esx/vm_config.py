@@ -89,9 +89,13 @@ DEFAULT_DISK_ADAPTER_TYPE = controller_to_disk_adapter_map.get(
 
 
 def string_to_bool(string_val):
-    if (not string_val or string_val.lower() == 'false'):
+    if not string_val or string_val.lower() == 'false':
         return False
     return True
+
+
+def os_datastore_root(datastore):
+    return os.path.join(VMFS_VOLUMES, datastore)
 
 
 def os_datastore_path(datastore, folder):
@@ -99,7 +103,7 @@ def os_datastore_path(datastore, folder):
 
 
 def os_datastore_path_pattern(datastore, folder_prefix):
-    return os.path.join(VMFS_VOLUMES, datastore, folder_prefix) + COMPOND_PATH_SEPARATOR + "*"
+    return os_datastore_path(datastore, folder_prefix) + COMPOND_PATH_SEPARATOR + "*"
 
 
 def datastore_path(datastore, folder):
@@ -167,12 +171,6 @@ def tmp_image_path(datastore, image_id):
     subdir = compond_path_join(TMP_IMAGE_FOLDER_NAME_PREFIX, str(uuid.uuid4()))
     return os.path.join(
         datastore_path(datastore, subdir), "%s.vmdk" % image_id)
-
-
-def tmp_image_folder_os_path(datastore):
-    """ File system path of parent of all temporary images directories. """
-
-    return os_datastore_path(datastore, TMP_IMAGE_FOLDER_NAME_PREFIX)
 
 
 def os_metadata_path(datastore, disk_id, folder=DISK_FOLDER_NAME_PREFIX):
