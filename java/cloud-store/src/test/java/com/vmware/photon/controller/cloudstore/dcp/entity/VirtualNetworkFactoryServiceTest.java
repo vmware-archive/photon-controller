@@ -40,6 +40,8 @@ public class VirtualNetworkFactoryServiceTest {
   @Test
   public void testServiceOptionsInitialization() {
     EnumSet<Service.ServiceOption> expected = EnumSet.of(
+        Service.ServiceOption.INSTRUMENTATION,
+        Service.ServiceOption.REPLICATION,
         Service.ServiceOption.FACTORY,
         Service.ServiceOption.CONCURRENT_GET_HANDLING,
         Service.ServiceOption.CONCURRENT_UPDATE_HANDLING

@@ -33,6 +33,7 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.ResourceTicketServiceF
 import com.vmware.photon.controller.cloudstore.dcp.entity.TaskServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.TenantServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.TombstoneServiceFactory;
+import com.vmware.photon.controller.cloudstore.dcp.entity.VirtualNetworkFactoryService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.VmServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.task.AvailabilityZoneCleanerFactoryService;
 import com.vmware.photon.controller.cloudstore.dcp.task.EntityLockCleanerFactoryService;
@@ -111,6 +112,7 @@ public class CloudStoreXenonHost
       ClusterServiceFactory.class,
       ClusterConfigurationServiceFactory.class,
       AvailabilityZoneServiceFactory.class,
+      VirtualNetworkFactoryService.class,
 
       // Tasks
       TaskTriggerFactoryService.class,
