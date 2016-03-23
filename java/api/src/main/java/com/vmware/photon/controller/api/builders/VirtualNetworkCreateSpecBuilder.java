@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.api.builders;
 
-import com.vmware.photon.controller.api.InternetAccessState;
+import com.vmware.photon.controller.api.RoutingType;
 import com.vmware.photon.controller.api.VirtualNetworkCreateSpec;
 
 /**
@@ -22,7 +22,7 @@ import com.vmware.photon.controller.api.VirtualNetworkCreateSpec;
 public class VirtualNetworkCreateSpecBuilder {
   private String name;
   private String description;
-  private InternetAccessState internetAccessState;
+  private RoutingType routingType;
 
   public VirtualNetworkCreateSpecBuilder name(String name) {
     this.name = name;
@@ -34,8 +34,8 @@ public class VirtualNetworkCreateSpecBuilder {
     return this;
   }
 
-  public VirtualNetworkCreateSpecBuilder internetAccessState(InternetAccessState internetAccessState) {
-    this.internetAccessState = internetAccessState;
+  public VirtualNetworkCreateSpecBuilder routingType(RoutingType routingType) {
+    this.routingType = routingType;
     return this;
   }
 
@@ -43,7 +43,7 @@ public class VirtualNetworkCreateSpecBuilder {
     VirtualNetworkCreateSpec virtualNetworkCreateSpec = new VirtualNetworkCreateSpec();
     virtualNetworkCreateSpec.setName(name);
     virtualNetworkCreateSpec.setDescription(description);
-    virtualNetworkCreateSpec.setInternetAccessState(internetAccessState);
+    virtualNetworkCreateSpec.setRoutingType(routingType);
 
     return virtualNetworkCreateSpec;
   }

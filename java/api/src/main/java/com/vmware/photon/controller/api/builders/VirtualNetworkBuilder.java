@@ -13,8 +13,8 @@
 
 package com.vmware.photon.controller.api.builders;
 
-import com.vmware.photon.controller.api.InternetAccessState;
 import com.vmware.photon.controller.api.NetworkState;
+import com.vmware.photon.controller.api.RoutingType;
 import com.vmware.photon.controller.api.VirtualNetwork;
 
 /**
@@ -24,7 +24,7 @@ public class VirtualNetworkBuilder {
   private String name;
   private String description;
   private NetworkState state;
-  private InternetAccessState internetAccessState;
+  private RoutingType routingType;
 
   public VirtualNetworkBuilder() {
   }
@@ -44,8 +44,8 @@ public class VirtualNetworkBuilder {
     return this;
   }
 
-  public VirtualNetworkBuilder internetAccessState(InternetAccessState internetAccessState) {
-    this.internetAccessState = internetAccessState;
+  public VirtualNetworkBuilder routingType(RoutingType routingType) {
+    this.routingType = routingType;
     return this;
   }
 
@@ -54,7 +54,7 @@ public class VirtualNetworkBuilder {
     virtualNetwork.setName(name);
     virtualNetwork.setDescription(description);
     virtualNetwork.setState(state);
-    virtualNetwork.setInternetAccessState(internetAccessState);
+    virtualNetwork.setRoutingType(routingType);
 
     return virtualNetwork;
   }

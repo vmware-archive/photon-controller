@@ -16,7 +16,7 @@ package com.vmware.photon.controller.api;
 /**
  * This enum represents the type of the internet access.
  */
-public enum InternetAccessState {
+public enum RoutingType {
   ROUTED,
   ISOLATED;
 
