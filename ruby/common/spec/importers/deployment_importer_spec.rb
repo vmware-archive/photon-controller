@@ -61,7 +61,7 @@ CONTENT
           let(:file) { yml_file }
           let(:spec) do
             EsxCloud::DeploymentCreateSpec.new(["image_datastore"],
-                                               EsxCloud::AuthInfo.new(true, '0.0.0.0', '8080', 't', 'u', 'p', ['sg1', 'sg2']),
+                                               EsxCloud::AuthConfigurationSpec.new(true, 't', 'p', ['sg1', 'sg2']),
                                                EsxCloud::StatsInfo.new(true, '0.1.2.3', '2004', 'GRAPHITE'),
                                                "0.0.0.1",
                                                "0.0.0.2",
@@ -84,7 +84,10 @@ CONTENT
         it_behaves_like "import configuration" do
           let(:file) { yml_file }
           let(:spec) do
-            EsxCloud::DeploymentCreateSpec.new(["image_datastore"], EsxCloud::AuthInfo.new(false), EsxCloud::StatsInfo.new(false))
+            EsxCloud::DeploymentCreateSpec.new(
+                ["image_datastore"],
+                EsxCloud::AuthConfigurationSpec.new(false),
+                EsxCloud::StatsInfo.new(false))
           end
         end
 
@@ -104,7 +107,10 @@ CONTENT
           it_behaves_like "import configuration" do
             let(:file) { yml_file }
             let(:spec) do
-              EsxCloud::DeploymentCreateSpec.new(["image_ds1", "image_ds2"], EsxCloud::AuthInfo.new(false), EsxCloud::StatsInfo.new(false))
+              EsxCloud::DeploymentCreateSpec.new(
+                  ["image_ds1", "image_ds2"],
+                  EsxCloud::AuthConfigurationSpec.new(false),
+                  EsxCloud::StatsInfo.new(false))
             end
           end
         end
@@ -123,7 +129,10 @@ CONTENT
           it_behaves_like "import configuration" do
             let(:file) { yml_file }
             let(:spec) do
-              EsxCloud::DeploymentCreateSpec.new(["image_ds1", "image_ds2"], EsxCloud::AuthInfo.new(false), EsxCloud::StatsInfo.new(false))
+              EsxCloud::DeploymentCreateSpec.new(
+                  ["image_ds1", "image_ds2"],
+                  EsxCloud::AuthConfigurationSpec.new(false),
+                  EsxCloud::StatsInfo.new(false))
             end
           end
         end

@@ -40,7 +40,7 @@ describe "deployment", management: true, devbox: true do
     let(:spec) do
       EsxCloud::DeploymentCreateSpec.new(
         ["image_datastore"],
-        EsxCloud::AuthInfo.new(false),
+        EsxCloud::AuthConfigurationSpec.new(false),
         EsxCloud::StatsInfo.new(false),
         "0.0.0.1",
         "0.0.0.2",
@@ -50,12 +50,12 @@ describe "deployment", management: true, devbox: true do
     context "when auth config is invalid in deploy request" do
       context "when auth is enabled but tenant/username/password/securityGroups are not specified" do
         it_behaves_like "failed validation",
-                        ["OAuth endpoint cannot be nil when auth is enabled."],
+                        ["OAuth tenant cannot be nil when auth is enabled."],
                         "InvalidAuthConfig" do
           let(:deployment_create_spec) do
             EsxCloud::DeploymentCreateSpec.new(
               ["image_datastore"],
-              EsxCloud::AuthInfo.new(true),
+              EsxCloud::AuthConfigurationSpec.new(true),
               EsxCloud::StatsInfo.new(false),
               "0.0.0.1",
               "0.0.0.2",
@@ -64,16 +64,16 @@ describe "deployment", management: true, devbox: true do
         end
       end
 
-      context "when auth is not enabled but tenant/username/password/securityGroups are specified" do
+      context "when auth is not enabled but tenant/password/securityGroups are specified" do
         it_behaves_like "failed validation",
                         ["password must be null (was p)",
                          "securityGroups must be null",
-                          "tenant must be null (was t)"],
+                         "tenant must be null (was t)"],
                         "InvalidAuthConfig" do
           let(:deployment_create_spec) do
             EsxCloud::DeploymentCreateSpec.new(
               ["image_datastore"],
-              EsxCloud::AuthInfo.new(false, '0.0.0.0','8080', 't', 'u', 'p', ['t\\securityGroup1']),
+              EsxCloud::AuthConfigurationSpec.new(false, 't', 'p', ['t\\securityGroup1']),
               EsxCloud::StatsInfo.new(false),
               "0.0.0.1",
               "0.0.0.2",
