@@ -275,7 +275,7 @@ module EsxCloud
 
     def create_deployment
       spec = EsxCloud::DeploymentCreateSpec.new(["image_datastore"],
-                                                EsxCloud::AuthInfo.new(true, "0.0.0.3", "8080", "t", "u", "p", ["group"]),
+                                                EsxCloud::AuthConfigurationSpec.new(true, "t", "p", ["group"]),
                                                 EsxCloud::StatsInfo.new(false),
                                                 "0.0.0.1",
                                                 "0.0.0.2",

@@ -74,7 +74,7 @@ require "common/resources/stats_info"
 require "common/resources/availability_zone"
 require "common/resources/availability_zone_list"
 
-
+require "common/create_specs/auth_configuration_spec"
 require "common/create_specs/deployment_create_spec"
 require "common/create_specs/project_create_spec"
 require "common/create_specs/resource_ticket_create_spec"
