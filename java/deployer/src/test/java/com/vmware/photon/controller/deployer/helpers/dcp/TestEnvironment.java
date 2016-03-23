@@ -45,7 +45,6 @@ import java.util.concurrent.TimeUnit;
 public class TestEnvironment extends MultiHostEnvironment<DeployerXenonServiceHost> {
 
   private static final Logger logger = LoggerFactory.getLogger(TestEnvironment.class);
-  private static final String REGISTRATION_ADDRESS = "0.0.0.0";
 
   /**
    * Constructs a test environment object for various tests.
@@ -92,8 +91,9 @@ public class TestEnvironment extends MultiHostEnvironment<DeployerXenonServiceHo
       hosts[i] = new DeployerXenonServiceHost(
           BIND_ADDRESS,
           -1,
-          REGISTRATION_ADDRESS,
+          null,
           sandbox,
+          null,
           cloudServerSet,
           deployerContext,
           containersConfig,
