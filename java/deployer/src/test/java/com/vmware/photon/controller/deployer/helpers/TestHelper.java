@@ -110,37 +110,45 @@ public class TestHelper {
    * Class for constructing config injection.
    */
   public static class TestInjectedConfig {
+
     private String bind;
     private String registrationAddress;
     private int port;
     private String path;
+    private String[] peerNodes;
 
     @Inject
     public TestInjectedConfig(
         @DeployerConfig.Bind String bind,
         @DeployerConfig.RegistrationAddress String registrationAddress,
         @DeployerConfig.Port int port,
-        @XenonConfig.StoragePath String path) {
+        @XenonConfig.StoragePath String path,
+        @XenonConfig.PeerNodes String[] peerNodes) {
       this.bind = bind;
       this.registrationAddress = registrationAddress;
       this.port = port;
       this.path = path;
+      this.peerNodes = peerNodes;
     }
 
     public String getBind() {
-      return bind;
+      return this.bind;
     }
 
     public String getRegistrationAddress() {
-      return registrationAddress;
+      return this.registrationAddress;
     }
 
     public int getPort() {
-      return port;
+      return this.port;
     }
 
     public String getPath() {
-      return path;
+      return this.path;
+    }
+
+    public String[] getPeerNodes() {
+      return this.peerNodes;
     }
   }
 

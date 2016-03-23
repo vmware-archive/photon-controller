@@ -4,6 +4,13 @@ port: 18000
 
 dcp:
   storagePath: "{{{DEPLOYER_DCP_STORAGE_PATH}}}"
+  peerNodes:
+{{#PEER_NODES}}
+  - http://{{peerAddress}}:{{peerPort}}
+{{/PEER_NODES}}
+{{^PEER_NODES}}
+  - http://{{{REGISTRATION_ADDRESS}}}:18001
+{{/PEER_NODES}}
 
 deployer:
   apifeEndpoint: "http://{{{APIFE_IP}}}:{{{APIFE_PORT}}}"

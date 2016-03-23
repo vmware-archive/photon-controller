@@ -207,11 +207,7 @@ Vagrant.configure("2") do |config|
   #
   # Service-specific
   #
-  dynamic_params += "     \"DEPLOYER_REGISTRATION_ADDRESS\" : \"#{network_ip}\""
-  dynamic_params += "\n,  \"CLOUD-STORE_REGISTRATION_ADDRESS\" : \"#{network_ip}\""
-  dynamic_params += "\n,  \"ROOT-SCHEDULER_REGISTRATION_ADDRESS\" : \"#{network_ip}\""
-  dynamic_params += "\n,  \"HOUSEKEEPER_REGISTRATION_ADDRESS\" : \"#{network_ip}\""
-  dynamic_params += "\n,  \"MANAGEMENT-API_REGISTRATION_ADDRESS\" : \"#{network_ip}\""
+  dynamic_params += "     \"REGISTRATION_ADDRESS\" : \"#{network_ip}\""
   dynamic_params += "\n,  \"TASK_EXPIRATION_THRESHOLD\" : \"3 minutes\""
   dynamic_params += "\n,  \"TASK_EXPIRATION_SCAN_INTERVAL\" : \"3 minutes\""
 
