@@ -33,6 +33,7 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.isIn;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.startsWith;
 import static org.mockito.Matchers.anyString;
@@ -48,6 +49,7 @@ import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
 import java.security.InvalidParameterException;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 
@@ -177,7 +179,7 @@ public class ServiceHostUtilsTest {
     @Test(dataProvider = "HostCount")
     public void testSuccess(
         int hostCount,
-        NodeState.NodeStatus expectedStatus
+        List<NodeState.NodeStatus> expectedStatus
     ) throws Throwable {
       hosts = buildHosts(hostCount, ServiceUriPaths.DEFAULT_NODE_GROUP, true);
       ServiceHostUtils.waitForNodeGroupConvergence(hosts, ServiceUriPaths.DEFAULT_NODE_GROUP, 500, 20);
@@ -190,7 +192,7 @@ public class ServiceHostUtilsTest {
         assertThat(response, notNullValue());
         assertThat(response.nodes.size(), is(hostCount));
         for (NodeState nodeState : response.nodes.values()) {
-          assertThat(nodeState.status, is(expectedStatus));
+          assertThat(nodeState.status, isIn(expectedStatus));
         }
       }
     }
@@ -198,8 +200,8 @@ public class ServiceHostUtilsTest {
     @DataProvider(name = "HostCount")
     public Object[][] getHostCountData() {
       return new Object[][]{
-          {1, NodeState.NodeStatus.SYNCHRONIZING},
-          {3, NodeState.NodeStatus.AVAILABLE}
+          {1, ImmutableList.of(NodeState.NodeStatus.SYNCHRONIZING, NodeState.NodeStatus.AVAILABLE)},
+          {3, ImmutableList.of(NodeState.NodeStatus.AVAILABLE)}
       };
     }
 
