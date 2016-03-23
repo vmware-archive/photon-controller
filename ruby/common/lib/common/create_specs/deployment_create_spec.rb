@@ -16,7 +16,7 @@ module EsxCloud
                   :use_image_datastore_for_vms, :loadbalancer_enabled
 
     # @param [Array<String>] image_datastores
-    # @param [AuthInfo] auth
+    # @param [AuthConfigurationSpec] auth
     # @param [StatsInfo] stats
     # @param [String] syslog_endpoint
     # @param [String] ntp_endpoint
@@ -24,7 +24,8 @@ module EsxCloud
     def initialize(image_datastores, auth, stats,
       syslog_endpoint = nil, ntp_endpoint = nil, use_image_datastore_for_vms = false,
       loadbalancer_enabled = true)
-      fail EsxCloud::UnexpectedFormat, "auth is class #{auth.class} instead of AuthInfo" unless auth.is_a?(AuthInfo)
+      fail EsxCloud::UnexpectedFormat, "auth is class #{auth.class} instead of AuthConfigurationSpec" unless
+          auth.is_a?(AuthConfigurationSpec)
       @image_datastores = image_datastores
       @auth = auth
       @stats = stats

@@ -25,7 +25,7 @@ describe EsxCloud::CliClient do
 
   context "when auth is not enabled" do
     let(:spec) do
-      EsxCloud::DeploymentCreateSpec.new(['d'], EsxCloud::AuthInfo.new(false),
+      EsxCloud::DeploymentCreateSpec.new(['d'], EsxCloud::AuthConfigurationSpec.new(false),
                                          EsxCloud::StatsInfo.new(false),
                                          "0.0.0.1",
                                          "0.0.0.2",
@@ -46,7 +46,7 @@ describe EsxCloud::CliClient do
   context "when auth is enabled" do
     let(:spec) do
       EsxCloud::DeploymentCreateSpec.new(['d'],
-                                         EsxCloud::AuthInfo.new(true, '0.0.0.0', '8080', 't', 'u', 'p', ['sg1', 'sg2']),
+                                         EsxCloud::AuthConfigurationSpec.new(true, 't', 'p', ['sg1', 'sg2']),
                                          EsxCloud::StatsInfo.new(false),
                                          "0.0.0.1",
                                          "0.0.0.2",
@@ -58,7 +58,7 @@ describe EsxCloud::CliClient do
       deployments = double(EsxCloud::DeploymentList, items: [deployment])
 
       expect(client).to receive(:run_cli)
-                        .with("deployment create -i 'd' -s '0.0.0.1' -n '0.0.0.2' -v -a -o '0.0.0.0' -r '8080' -t 't' -u 'u' -p 'p' -g 'sg1,sg2'")
+                        .with("deployment create -i 'd' -s '0.0.0.1' -n '0.0.0.2' -v -a -t 't' -p 'p' -g 'sg1,sg2'")
       expect(client).to receive(:find_all_api_deployments).and_return(deployments)
 
       expect(client.create_api_deployment(spec.to_hash)).to eq deployment
@@ -67,7 +67,7 @@ describe EsxCloud::CliClient do
 
   context "when stats is not enabled" do
     let(:spec) do
-      EsxCloud::DeploymentCreateSpec.new(['d'], EsxCloud::AuthInfo.new(false),
+      EsxCloud::DeploymentCreateSpec.new(['d'], EsxCloud::AuthConfigurationSpec.new(false),
                                          EsxCloud::StatsInfo.new(false),
                                          "0.0.0.1",
                                          "0.0.0.2",
@@ -88,7 +88,7 @@ describe EsxCloud::CliClient do
   context "when stats is enabled" do
     let(:spec) do
       EsxCloud::DeploymentCreateSpec.new(['d'],
-                                         EsxCloud::AuthInfo.new(true, '0.0.0.0', '8080', 't', 'u', 'p', ['sg1', 'sg2']),
+                                         EsxCloud::AuthConfigurationSpec.new(true, 't', 'p', ['sg1', 'sg2']),
                                          EsxCloud::StatsInfo.new(true, '0.1.2.3', '2004'),
                                          "0.0.0.1",
                                          "0.0.0.2",
@@ -100,7 +100,7 @@ describe EsxCloud::CliClient do
       deployments = double(EsxCloud::DeploymentList, items: [deployment])
 
       expect(client).to receive(:run_cli)
-                            .with("deployment create -i 'd' -s '0.0.0.1' -n '0.0.0.2' -d -e '0.1.2.3' -f '2004' -v -a -o '0.0.0.0' -r '8080' -t 't' -u 'u' -p 'p' -g 'sg1,sg2'")
+                            .with("deployment create -i 'd' -s '0.0.0.1' -n '0.0.0.2' -d -e '0.1.2.3' -f '2004' -v -a -t 't' -p 'p' -g 'sg1,sg2'")
       expect(client).to receive(:find_all_api_deployments).and_return(deployments)
 
       expect(client.create_api_deployment(spec.to_hash)).to eq deployment

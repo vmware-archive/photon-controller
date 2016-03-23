@@ -32,12 +32,9 @@ module EsxCloud::Cli
           image_datastores = options[:image_datastores].split(/\s*,\s*/) unless  options[:image_datastores].nil?
           spec = EsxCloud::DeploymentCreateSpec.new(
               image_datastores,
-              EsxCloud::AuthInfo.new(
+              EsxCloud::AuthConfigurationSpec.new(
                   options[:auth_enabled],
-                  options[:oauth_endpoint],
-                  options[:oauth_port],
                   options[:oauth_tenant],
-                  options[:oauth_username],
                   options[:oauth_password],
                   oauth_security_groups
               ),
@@ -292,10 +289,7 @@ g2)') do |g|
         options = {
             :image_datastores => nil,
             :auth_enabled => false,
-            :oauth_endpoint => nil,
-            :oauth_port => nil,
             :oauth_tenant => nil,
-            :oauth_username => nil,
             :oauth_password => nil,
             :oauth_security_groups => nil,
             :syslog_endpoint => nil,
@@ -318,17 +312,8 @@ g2)') do |g|
           opts.on('-a', '--enable_auth', 'Enable authentication/authorization for deployment') do |_|
             options[:auth_enabled] = true
           end
-          opts.on('-o', '--oauth_endpoint ENDPOINT', 'OAuth Endpoint (Service URL)') do |o|
-            options[:oauth_endpoint] = o
-          end
-          opts.on('-r', '--oauth_port PORT', 'OAuth Port (Authentication Server Port)') do |r|
-            options[:oauth_port] = r
-          end
           opts.on('-t', '--oauth_tenant TENANT_NAME', 'OAuth Tenant/Domain') do |t|
             options[:oauth_tenant]= t
-          end
-          opts.on('-u', '--oauth_username USERNAME', 'OAuth Tenant/Dommain Admin Username') do |u|
-            options[:oauth_username] = u
           end
           opts.on('-p', '--oauth_password PASSWORD', 'OAuth Tenant/Domain Admin Password') do |p|
             options[:oauth_password] = p
@@ -365,10 +350,7 @@ g2)') do |g|
         options[:image_datastores] ||= ask("Image Datastore Names: ")
 
         if options[:auth_enabled]
-          options[:oauth_endpoint] ||= ask("OAuth Endpoint: ")
-          options[:oauth_port] ||= ask("OAuth Port: ")
           options[:oauth_tenant] ||= ask("OAuth Tenant: ")
-          options[:oauth_username] ||= ask("OAuth Username: ")
           options[:oauth_password] ||= ask("OAuth Password: ")
           options[:oauth_security_groups] ||= ask("OAuth Security Groups: ")
         end
@@ -397,17 +379,8 @@ g2)') do |g|
         end
 
         if options[:auth_enabled]
-          if options[:oauth_endpoint].blank?
-            usage_error("OAuth endpoint cannot be nil when auth is enabled.")
-          end
-          if options[:oauth_port].blank?
-            usage_error("OAuth port cannot be nil when auth is enabled.")
-          end
           if options[:oauth_tenant].blank?
             usage_error("OAuth tenant cannot be nil when auth is enabled.")
-          end
-          if options[:oauth_username].blank?
-            usage_error("OAuth username cannot be nil when auth is enabled.")
           end
           if options[:oauth_password].blank?
             usage_error("OAuth password cannot be nil when auth is enabled.")
