@@ -16,6 +16,7 @@ package com.vmware.photon.controller.deployer.dcp.task;
 import com.vmware.photon.controller.agent.gen.AgentControl;
 import com.vmware.photon.controller.agent.gen.AgentStatusResponse;
 import com.vmware.photon.controller.api.HostState;
+import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
@@ -43,6 +44,8 @@ import com.vmware.photon.controller.host.gen.HostConfig;
 import com.vmware.photon.controller.resource.gen.Datastore;
 import com.vmware.photon.controller.resource.gen.Network;
 import com.vmware.photon.controller.resource.gen.NetworkType;
+import com.vmware.photon.controller.stats.plugin.gen.StatsPluginConfig;
+import com.vmware.photon.controller.stats.plugin.gen.StatsStoreType;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.OperationJoin;
 import com.vmware.xenon.common.ServiceDocument;
@@ -50,6 +53,7 @@ import com.vmware.xenon.common.StatefulService;
 import com.vmware.xenon.common.Utils;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Joiner;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFutureTask;
@@ -62,6 +66,7 @@ import javax.annotation.Nullable;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -75,6 +80,9 @@ import java.util.concurrent.TimeUnit;
 public class ProvisionHostTaskService extends StatefulService {
 
   public static final String SCRIPT_NAME = "esx-install-agent2";
+  private static final String COMMA_DELIMITED_REGEX = "\\s*,\\s*";
+  private static final String DEFAULT_AGENT_LOG_LEVEL = "debug";
+  private static final String DEFAULT_AVAILABILITY_ZONE = "1";
 
   /**
    * This class defines the state of a {@link ProvisionHostTaskService} task.
@@ -88,6 +96,7 @@ public class ProvisionHostTaskService extends StatefulService {
       INSTALL_AGENT,
       WAIT_FOR_INSTALLATION,
       PROVISION_AGENT,
+      WAIT_FOR_PROVISION,
       GET_HOST_CONFIG,
       UPGRADE_AGENT,
       WAIT_FOR_UPGRADE,
@@ -286,6 +295,7 @@ public class ProvisionHostTaskService extends StatefulService {
           case INSTALL_AGENT:
           case WAIT_FOR_INSTALLATION:
           case PROVISION_AGENT:
+          case WAIT_FOR_PROVISION:
           case GET_HOST_CONFIG:
           case UPGRADE_AGENT:
           case WAIT_FOR_UPGRADE:
@@ -313,6 +323,9 @@ public class ProvisionHostTaskService extends StatefulService {
         break;
       case PROVISION_AGENT:
         processProvisionAgentSubStage(currentState);
+        break;
+      case WAIT_FOR_PROVISION:
+        processWaitForProvisionSubStage(currentState);
         break;
       case GET_HOST_CONFIG:
         processGetHostConfigSubStage(currentState);
@@ -487,26 +500,187 @@ public class ProvisionHostTaskService extends StatefulService {
   //
 
   private void processProvisionAgentSubStage(State currentState) {
-    State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.GET_HOST_CONFIG, null);
-    if (ControlFlags.disableOperationProcessingOnStageTransition(currentState.controlFlags)) {
-      patchState.controlFlags = ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED;
+
+    CloudStoreHelper cloudStoreHelper = HostUtils.getCloudStoreHelper(this);
+    Operation deploymentOp = cloudStoreHelper.createGet(currentState.deploymentServiceLink);
+    Operation hostOp = cloudStoreHelper.createGet(currentState.hostServiceLink);
+
+    OperationJoin
+        .create(deploymentOp, hostOp)
+        .setCompletion(
+            (ops, exs) -> {
+              if (exs != null && !exs.isEmpty()) {
+                failTask(exs.values());
+                return;
+              }
+
+              try {
+                processProvisionAgentSubStage(currentState,
+                    ops.get(deploymentOp.getId()).getBody(DeploymentService.State.class),
+                    ops.get(hostOp.getId()).getBody(HostService.State.class));
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            })
+        .sendWith(this);
+  }
+
+  private void processProvisionAgentSubStage(State currentState,
+                                             DeploymentService.State deploymentState,
+                                             HostService.State hostState) {
+
+    List<String> datastores = null;
+    if (hostState.metadata != null
+        && hostState.metadata.containsKey(HostService.State.METADATA_KEY_NAME_ALLOWED_DATASTORES)) {
+      String[] allowedDatastores = hostState.metadata.get(HostService.State.METADATA_KEY_NAME_ALLOWED_DATASTORES)
+          .trim().split(COMMA_DELIMITED_REGEX);
+      datastores = new ArrayList<>(allowedDatastores.length);
+      Collections.addAll(datastores, allowedDatastores);
     }
 
-    ProvisionAgentTaskService.State startState = new ProvisionAgentTaskService.State();
-    startState.parentTaskServiceLink = getSelfLink();
-    startState.parentPatchBody = Utils.toJson(patchState);
-    startState.deploymentServiceLink = currentState.deploymentServiceLink;
-    startState.hostServiceLink = currentState.hostServiceLink;
+    List<String> networks = null;
+    if (hostState.metadata != null
+        && hostState.metadata.containsKey(HostService.State.METADATA_KEY_NAME_ALLOWED_NETWORKS)) {
+      String[] allowedNetworks = hostState.metadata.get(HostService.State.METADATA_KEY_NAME_ALLOWED_NETWORKS)
+          .trim().split(COMMA_DELIMITED_REGEX);
+      networks = new ArrayList<>(allowedNetworks.length);
+      Collections.addAll(networks, allowedNetworks);
+    }
 
-    sendRequest(Operation
-        .createPost(this, ProvisionAgentTaskFactoryService.SELF_LINK)
-        .setBody(startState)
-        .setCompletion(
-            (o, e) -> {
+    StatsPluginConfig statsPluginConfig = new StatsPluginConfig(deploymentState.statsEnabled);
+
+    if (deploymentState.statsStoreEndpoint != null) {
+      statsPluginConfig.setStats_store_endpoint(deploymentState.statsStoreEndpoint);
+    }
+
+    if (deploymentState.statsStorePort != null) {
+      statsPluginConfig.setStats_store_port(deploymentState.statsStorePort);
+    }
+
+    if (deploymentState.statsStoreType != null) {
+      statsPluginConfig.setStats_store_type(StatsStoreType.findByValue(deploymentState.statsStoreType.ordinal()));
+    }
+
+    if (hostState.usageTags != null) {
+      // Agent accepts stats' tags as comma separated string.
+      // Concatenate usageTags as one tag for stats so that they could be
+      // queried easily. For example, user can query all metrics
+      // having tag equal to 'MGMT-CLOUD' or '*MGMT*'.
+      List<String> usageTagList = new ArrayList<>(hostState.usageTags);
+      Collections.sort(usageTagList);
+      statsPluginConfig.setStats_host_tags(Joiner.on("-").skipNulls().join(usageTagList));
+    }
+
+    try {
+      AgentControlClient agentControlClient = HostUtils.getAgentControlClient(this);
+      agentControlClient.setIpAndPort(hostState.hostAddress, hostState.agentPort);
+      agentControlClient.provision(
+          (hostState.availabilityZoneId != null) ?
+              hostState.availabilityZoneId :
+              DEFAULT_AVAILABILITY_ZONE,
+          datastores,
+          deploymentState.imageDataStoreNames,
+          deploymentState.imageDataStoreUsedForVMs,
+          networks,
+          hostState.hostAddress,
+          hostState.agentPort,
+          0, // Overcommit ratio is not implemented,
+          deploymentState.syslogEndpoint,
+          DEFAULT_AGENT_LOG_LEVEL,
+          statsPluginConfig,
+          (hostState.usageTags != null
+              && hostState.usageTags.contains(UsageTag.MGMT.name())
+              && !hostState.usageTags.contains(UsageTag.CLOUD.name())),
+          ServiceUtils.getIDFromDocumentSelfLink(currentState.hostServiceLink),
+          ServiceUtils.getIDFromDocumentSelfLink(currentState.deploymentServiceLink),
+          deploymentState.ntpEndpoint,
+          new AsyncMethodCallback<AgentControl.AsyncClient.provision_call>() {
+            @Override
+            public void onComplete(AgentControl.AsyncClient.provision_call provisionCall) {
+              try {
+                AgentControlClient.ResponseValidator.checkProvisionResponse(provisionCall.getResult());
+                sendStageProgressPatch(currentState, TaskState.TaskStage.STARTED,
+                    TaskState.SubStage.WAIT_FOR_PROVISION);
+              } catch (Throwable t) {
+                logProvisioningErrorAndFail(hostState, t);
+              }
+            }
+
+            @Override
+            public void onError(Exception e) {
+              logProvisioningErrorAndFail(hostState, e);
+            }
+          });
+
+    } catch (Throwable t) {
+      logProvisioningErrorAndFail(hostState, t);
+    }
+  }
+
+  //
+  // WAIT_FOR_PROVISION sub-stage routines
+  //
+
+  private void processWaitForProvisionSubStage(State currentState) {
+
+    HostUtils.getCloudStoreHelper(this)
+        .createGet(currentState.hostServiceLink)
+        .setCompletion((o, e) -> {
               if (e != null) {
                 failTask(e);
+                return;
               }
-            }));
+
+              try {
+                processWaitForProvisionSubStage(currentState, o.getBody(HostService.State.class));
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            })
+        .sendWith(this);
+  }
+
+  private void processWaitForProvisionSubStage(State currentState, HostService.State hostState) {
+    try {
+      AgentControlClient agentControlClient = HostUtils.getAgentControlClient(this);
+      agentControlClient.setIpAndPort(hostState.hostAddress, hostState.agentPort);
+      agentControlClient.getAgentStatus(new AsyncMethodCallback<AgentControl.AsyncClient.get_agent_status_call>() {
+        @Override
+        public void onComplete(AgentControl.AsyncClient.get_agent_status_call getAgentStatusCall) {
+          try {
+            AgentStatusResponse agentStatusResponse = getAgentStatusCall.getResult();
+            AgentControlClient.ResponseValidator.checkAgentStatusResponse(agentStatusResponse, hostState.hostAddress);
+            sendStageProgressPatch(currentState, TaskState.TaskStage.STARTED, TaskState.SubStage.GET_HOST_CONFIG);
+          } catch (Throwable t) {
+            retryGetProvisionStatusOrFail(currentState, hostState, t);
+          }
+        }
+
+        @Override
+        public void onError(Exception e) {
+          retryGetProvisionStatusOrFail(currentState, hostState, e);
+        }
+      });
+    } catch (Throwable t) {
+      retryGetProvisionStatusOrFail(currentState, hostState, t);
+    }
+  }
+
+  private void retryGetProvisionStatusOrFail(State currentState, HostService.State hostState, Throwable failure) {
+    if (currentState.pollCount + 1 >= currentState.maximumPollCount) {
+      ServiceUtils.logSevere(this, failure);
+      State patchState = buildPatch(TaskState.TaskStage.FAILED, null, new IllegalStateException(
+          "The agent on host " + hostState.hostAddress + " failed to become ready after provisioning after " +
+              Integer.toString(currentState.maximumPollCount) + " retries"));
+      patchState.pollCount = currentState.pollCount + 1;
+      TaskUtils.sendSelfPatch(this, patchState);
+    } else {
+      ServiceUtils.logTrace(this, failure);
+      State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_FOR_PROVISION, null);
+      patchState.pollCount = currentState.pollCount + 1;
+      getHost().schedule(() -> TaskUtils.sendSelfPatch(this, patchState), currentState.pollInterval,
+          TimeUnit.MILLISECONDS);
+    }
   }
 
   //
@@ -812,6 +986,12 @@ public class ProvisionHostTaskService extends StatefulService {
       patchState.controlFlags = ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED;
     }
     TaskUtils.sendSelfPatch(this, patchState);
+  }
+
+  private void logProvisioningErrorAndFail(HostService.State hostState, Throwable failure) {
+    ServiceUtils.logSevere(this, failure);
+    TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, null, new IllegalStateException(
+        "Provisioning the agent on host " + hostState.hostAddress + " failed with error: " + failure)));
   }
 
   private void failTask(Throwable failure) {

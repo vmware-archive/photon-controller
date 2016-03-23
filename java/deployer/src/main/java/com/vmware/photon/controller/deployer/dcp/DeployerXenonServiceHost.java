@@ -54,7 +54,6 @@ import com.vmware.photon.controller.deployer.dcp.task.DeleteAgentTaskFactoryServ
 import com.vmware.photon.controller.deployer.dcp.task.DeleteContainerTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.DeleteVmTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.MigrationStatusUpdateTriggerFactoryService;
-import com.vmware.photon.controller.deployer.dcp.task.ProvisionAgentTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.ProvisionHostTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.RegisterAuthClientTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.SetDatastoreTagsTaskFactoryService;
@@ -163,7 +162,6 @@ public class DeployerXenonServiceHost
       DeleteContainerTaskFactoryService.class,
       DeleteVmTaskFactoryService.class,
       MigrationStatusUpdateTriggerFactoryService.class,
-      ProvisionAgentTaskFactoryService.class,
       ProvisionHostTaskFactoryService.class,
       RegisterAuthClientTaskFactoryService.class,
       SetDatastoreTagsTaskFactoryService.class,
