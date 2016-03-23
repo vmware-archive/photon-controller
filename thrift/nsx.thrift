@@ -19,7 +19,7 @@ include 'status.thrift'
 include 'resource.thrift'
 
 //////////////////////////////////////////////////////////////////////////////
-// RegisterFabricNode
+// Common structures and enums
 //////////////////////////////////////////////////////////////////////////////
 struct HostNodeLoginCredential {
   1: required string username
@@ -27,6 +27,29 @@ struct HostNodeLoginCredential {
   3: required string thumbprint
 }
 
+struct PhysicalNic {
+  1: required string uplink_name
+  2: required string device_name
+}
+
+struct HostSwitch {
+  1: required string host_switch_name
+  2: optional string static_ip_pool_id
+  3: optional list<PhysicalNic> pnics
+}
+
+struct TransportZoneEndPoint {
+  1: required string transport_zone_id
+}
+
+enum TransportType {
+  OVERLAY,
+  VLAN
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// Fabric node
+//////////////////////////////////////////////////////////////////////////////
 struct RegisterFabricNodeRequest {
   1: required string resource_type
   2: optional string display_name
@@ -40,9 +63,6 @@ struct RegisterFabricNodeResponse {
   2: required string external_id
 }
 
-//////////////////////////////////////////////////////////////////////////////
-// GetFabricNode
-//////////////////////////////////////////////////////////////////////////////
 struct GetFabricNodeResponse {
   1: required string id
   2: required string external_id
@@ -52,4 +72,48 @@ struct GetFabricNodeResponse {
   6: optional string display_name
   7: optional string os_version
   8: required string os_type
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// Transport node
+//////////////////////////////////////////////////////////////////////////////
+struct CreateTransportNodeRequest {
+  1: optional string description
+  2: optional string display_name
+  3: required string node_id
+  4: required list<HostSwitch> host_switches
+  5: optional list<TransportZoneEndPoint> transport_zone_endpoints
+}
+
+struct CreateTransportNodeResponse {
+  1: required string id
+}
+
+struct GetTransportNodeResponse {
+  1: required string id
+  2: required string resource_type
+  3: required string node_id
+  4: required list<HostSwitch> host_switches
+  5: optional list<TransportZoneEndPoint> transport_zone_endpoints
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// Transport zone
+//////////////////////////////////////////////////////////////////////////////
+struct CreateTransportZoneRequest {
+  1: optional string display_name
+  2: required string host_switch_name
+  3: optional string description
+  4: required TransportType transport_type
+}
+
+struct CreateTransportZoneResponse {
+  1: required string id
+}
+
+struct GetTransportZoneResponse {
+  1: required string id
+  2: required string resource_type
+  3: required TransportType transport_type
+  4: required string host_switch_name
 }

@@ -13,7 +13,13 @@
 
 package com.vmware.photon.controller.common.clients.nsx;
 
+import com.vmware.photon.controller.nsx.gen.CreateTransportNodeRequest;
+import com.vmware.photon.controller.nsx.gen.CreateTransportNodeResponse;
+import com.vmware.photon.controller.nsx.gen.CreateTransportZoneRequest;
+import com.vmware.photon.controller.nsx.gen.CreateTransportZoneResponse;
 import com.vmware.photon.controller.nsx.gen.GetFabricNodeResponse;
+import com.vmware.photon.controller.nsx.gen.GetTransportNodeResponse;
+import com.vmware.photon.controller.nsx.gen.GetTransportZoneResponse;
 import com.vmware.photon.controller.nsx.gen.RegisterFabricNodeRequest;
 import com.vmware.photon.controller.nsx.gen.RegisterFabricNodeResponse;
 
@@ -42,16 +48,14 @@ public class NsxClient {
    * Constructs a NSX client.
    */
   public NsxClient(String target, String username, String password) {
-    this.restClient = new RestClient(target, username, password);
-    this.objectMapper = new ObjectMapper();
-    this.objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+    this(target, username, password, null);
   }
 
   /**
    * Constructs a NSX client.
    */
-  public NsxClient(RestClient restClient) {
-    this.restClient = restClient;
+  public NsxClient(String target, String username, String password, RestClient restClient) {
+    this.restClient = restClient == null ? new RestClient(target, username, password) : restClient;
     this.objectMapper = new ObjectMapper();
     this.objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
   }
@@ -60,7 +64,7 @@ public class NsxClient {
    * Registers a resource with NSX as a fabric node.
    */
   public RegisterFabricNodeResponse registerFabricNode(RegisterFabricNodeRequest request) throws IOException {
-    final String path = basePath + "/fabric/nodes/";
+    final String path = basePath + "/fabric/nodes";
     return post(path,
         serializeObjectAsJson(request),
         HttpStatus.SC_CREATED,
@@ -69,11 +73,12 @@ public class NsxClient {
   }
 
   /**
-   * Register a resource with NSX as a fabric node.
+   * Registers a resource with NSX as a fabric node.
    */
   public void registerFabricNodeAsync(RegisterFabricNodeRequest request,
-                                      FutureCallback<RegisterFabricNodeResponse> responseCallback) throws IOException {
-    final String path = basePath + "/fabric/nodes/";
+                                      FutureCallback<RegisterFabricNodeResponse> responseCallback)
+      throws IOException {
+    final String path = basePath + "/fabric/nodes";
     postAsync(path,
         serializeObjectAsJson(request),
         HttpStatus.SC_CREATED,
@@ -97,13 +102,172 @@ public class NsxClient {
    * Gets a NSX fabric node.
    */
   public void getFabricNodeAsync(String nodeId,
-                                 FutureCallback<GetFabricNodeResponse> responseCallback) throws IOException {
+                                 FutureCallback<GetFabricNodeResponse> responseCallback)
+      throws IOException {
     final String path = basePath + "/fabric/nodes/" + nodeId;
     getAsync(path,
         HttpStatus.SC_OK,
         new TypeReference<GetFabricNodeResponse>() {
         },
         responseCallback);
+  }
+
+  /**
+   * Unregisters a NSX fabric node.
+   */
+  public void unregisterFabricNode(String nodeId) throws IOException {
+    final String path = basePath + "/fabric/nodes/" + nodeId;
+    delete(path, HttpStatus.SC_OK);
+  }
+
+  /**
+   * Unregisters a NSX fabric node.
+   */
+  public void unregisterFabricNodeAsync(String nodeId,
+                                        FutureCallback<Void> responseCallback)
+      throws IOException {
+    final String path = basePath + "/fabric/nodes/" + nodeId;
+    deleteAsync(path, HttpStatus.SC_OK, responseCallback);
+  }
+
+  /**
+   * Creates a NSX transport node.
+   */
+  public CreateTransportNodeResponse createTransportNode(CreateTransportNodeRequest request) throws IOException {
+    final String path = basePath + "/transport-nodes";
+    return post(path,
+        serializeObjectAsJson(request),
+        HttpStatus.SC_CREATED,
+        new TypeReference<CreateTransportNodeResponse>() {
+        });
+  }
+
+  /**
+   * Creates a NSX transport node.
+   */
+  public void createTransportNodeAsync(CreateTransportNodeRequest request,
+                                       FutureCallback<CreateTransportNodeResponse> responseCallback)
+      throws IOException {
+    final String path = basePath + "/transport-nodes";
+    postAsync(path,
+        serializeObjectAsJson(request),
+        HttpStatus.SC_CREATED,
+        new TypeReference<CreateTransportNodeResponse>() {
+        },
+        responseCallback);
+  }
+
+  /**
+   * Gets a NSX transport node.
+   */
+  public GetTransportNodeResponse getTransportNode(String id) throws IOException {
+    final String path = basePath + "/transport-nodes/" + id;
+    return get(path,
+        HttpStatus.SC_OK,
+        new TypeReference<GetTransportNodeResponse>() {
+        });
+  }
+
+  /**
+   * Deletes a NSX transport node.
+   */
+  public void deleteTransportNode(String id) throws IOException {
+    final String path = basePath + "/transport-nodes/" + id;
+    delete(path, HttpStatus.SC_OK);
+  }
+
+  /**
+   * Deletes a NSX transport node.
+   */
+  public void deleteTransportNodeAsync(String id,
+                                       FutureCallback<Void> responseCallback)
+      throws IOException {
+    final String path = basePath + "/transport-nodes/" + id;
+    deleteAsync(path, HttpStatus.SC_OK, responseCallback);
+  }
+
+  /**
+   * Gets a NSX transport node.
+   */
+  public void getTransportNodeAsync(String id,
+                                    FutureCallback<GetTransportNodeResponse> responseFutureCallback)
+      throws IOException {
+    final String path = basePath + "/transport-nodes/" + id;
+    getAsync(path,
+        HttpStatus.SC_OK,
+        new TypeReference<GetTransportNodeResponse>() {
+        },
+        responseFutureCallback);
+  }
+
+  /**
+   * Creates a NSX transport zone.
+   */
+  public CreateTransportZoneResponse createTransportZone(CreateTransportZoneRequest request) throws IOException {
+    final String path = basePath + "/transport-zones";
+    return post(path,
+        serializeObjectAsJson(request),
+        HttpStatus.SC_CREATED,
+        new TypeReference<CreateTransportZoneResponse>() {
+        });
+  }
+
+  /**
+   * Creates a NSX transport zone.
+   */
+  public void createTransportZoneAsync(CreateTransportZoneRequest request,
+                                       FutureCallback<CreateTransportZoneResponse> responseCallback)
+    throws IOException {
+    final String path = basePath + "/transport-zones";
+    postAsync(path,
+        serializeObjectAsJson(request),
+        HttpStatus.SC_CREATED,
+        new TypeReference<CreateTransportZoneResponse>() {
+        },
+        responseCallback);
+  }
+
+  /**
+   * Gets a NSX transport zone.
+   */
+  public GetTransportZoneResponse getTransportZone(String id) throws IOException {
+    final String path = basePath + "/transport-zones/" + id;
+    return get(path,
+        HttpStatus.SC_OK,
+        new TypeReference<GetTransportZoneResponse>() {
+        });
+  }
+
+  /**
+   * Gets a NSX transport zone.
+   */
+  public void getTransportZoneAsync(String id,
+                                    FutureCallback<GetTransportZoneResponse> responseCallback)
+    throws IOException {
+    final String path = basePath + "/transport-zones/" + id;
+    getAsync(path,
+        HttpStatus.SC_OK,
+        new TypeReference<GetTransportZoneResponse>() {
+        },
+        responseCallback);
+  }
+
+  /**
+   * Deletes a NSX transport zone.
+   */
+  public void deleteTransportZone(String id) throws IOException {
+    final String path = basePath + "/transport-zones/" + id;
+    delete(path, HttpStatus.SC_OK);
+  }
+
+  /**
+   * Deletes a NSX transport zone.
+   */
+  public void deleteTransportZoneAsync(String id,
+                                       FutureCallback<Void> responseCallback)
+    throws IOException {
+    final String path = basePath + "/transport-zones/" + id;
+    deleteAsync(path, HttpStatus.SC_OK, responseCallback);
   }
 
   /**
@@ -216,6 +380,55 @@ public class NsxClient {
           @Override
           public void cancelled() {
             responseCallback.onFailure(new RuntimeException(String.format("getAsync %s was cancelled",
+                path)));
+          }
+        }
+    );
+  }
+
+  /**
+   * Performs a DELETE HTTP request to NSX.
+   */
+  private void delete(final String path,
+                      final int expectedResponseStatus) throws IOException {
+    HttpResponse result = restClient.send(
+        RestClient.Method.DELETE,
+        path,
+        null);
+
+    restClient.check(result, expectedResponseStatus);
+  }
+
+  /**
+   * Performs a DELETE HTTP request to NSX.
+   */
+  private void deleteAsync(final String path,
+                           final int expectedResponseStatus,
+                           final FutureCallback<Void> responseCallback) throws IOException {
+    restClient.sendAsync(
+        RestClient.Method.DELETE,
+        path,
+        null,
+        new org.apache.http.concurrent.FutureCallback<HttpResponse>() {
+          @Override
+          public void completed(HttpResponse result) {
+            try {
+              restClient.check(result, expectedResponseStatus);
+            } catch (Throwable e) {
+              responseCallback.onFailure(e);
+            }
+
+            responseCallback.onSuccess(null);
+          }
+
+          @Override
+          public void failed(Exception ex) {
+            responseCallback.onFailure(ex);
+          }
+
+          @Override
+          public void cancelled() {
+            responseCallback.onFailure(new RuntimeException(String.format("deleteAsync %s was cancelled",
                 path)));
           }
         }
