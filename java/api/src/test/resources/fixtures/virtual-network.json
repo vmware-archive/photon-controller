@@ -4,5 +4,5 @@
     "name": "vn1",
     "description": "desc",
     "state": "READY",
-    "internetAccessState": "ROUTED"
+    "routingType": "ROUTED"
 }

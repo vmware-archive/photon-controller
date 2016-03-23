@@ -42,9 +42,10 @@ public class VirtualNetworkCreateSpec implements Named {
   private String description;
 
   @JsonProperty
-  @ApiModelProperty(value = "Whether allow the VMs on this network to access Internet", required = true)
+  @ApiModelProperty(value = "Whether allow the VMs on this network to access Internet",
+      allowableValues = RoutingType.ALLOWABLE_VALUES, required = true)
   @NotNull
-  private InternetAccessState internetAccessState;
+  private RoutingType routingType;
 
   public String getName() {
     return name;
@@ -62,12 +63,12 @@ public class VirtualNetworkCreateSpec implements Named {
     this.description = description;
   }
 
-  public InternetAccessState getInternetAccessState() {
-    return internetAccessState;
+  public RoutingType getRoutingType() {
+    return routingType;
   }
 
-  public void setInternetAccessState(InternetAccessState internetAccessState) {
-    this.internetAccessState = internetAccessState;
+  public void setRoutingType(RoutingType routingType) {
+    this.routingType = routingType;
   }
 
   @Override
@@ -83,12 +84,12 @@ public class VirtualNetworkCreateSpec implements Named {
     VirtualNetworkCreateSpec other = (VirtualNetworkCreateSpec) o;
     return Objects.equals(this.name, other.name)
         && Objects.equals(this.description, other.description)
-        && Objects.equals(this.internetAccessState, other.internetAccessState);
+        && Objects.equals(this.routingType, other.routingType);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode(), this.name, this.description, this.internetAccessState);
+    return Objects.hash(super.hashCode(), this.name, this.description, this.routingType);
   }
 
   @Override
@@ -96,7 +97,7 @@ public class VirtualNetworkCreateSpec implements Named {
     return com.google.common.base.Objects.toStringHelper(this)
         .add("name", name)
         .add("description", description)
-        .add("internetAccessState", internetAccessState)
+        .add("routingType", routingType)
         .toString();
   }
 }

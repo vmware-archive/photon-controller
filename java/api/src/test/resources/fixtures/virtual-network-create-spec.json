@@ -1,5 +1,5 @@
 {
     "name": "vn1",
     "description": "desc",
-    "internetAccessState": "ROUTED"
+    "routingType": "ROUTED"
 }

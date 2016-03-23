@@ -48,9 +48,9 @@ public class VirtualNetwork extends VisibleModel {
 
   @JsonProperty
   @ApiModelProperty(value = "Whether allow the VMs on this network to access Internet",
-      allowableValues = InternetAccessState.ALLOWABLE_VALUES, required = true)
+      allowableValues = RoutingType.ALLOWABLE_VALUES, required = true)
   @NotNull
-  private InternetAccessState internetAccessState;
+  private RoutingType routingType;
 
   @Override
   public String getKind() {
@@ -73,12 +73,12 @@ public class VirtualNetwork extends VisibleModel {
     this.state = state;
   }
 
-  public InternetAccessState getInternetAccessState() {
-    return internetAccessState;
+  public RoutingType getRoutingType() {
+    return routingType;
   }
 
-  public void setInternetAccessState(InternetAccessState internetAccessState) {
-    this.internetAccessState = internetAccessState;
+  public void setRoutingType(RoutingType routingType) {
+    this.routingType = routingType;
   }
 
   @Override
@@ -96,12 +96,12 @@ public class VirtualNetwork extends VisibleModel {
     return Objects.equals(this.getName(), other.getName())
         && Objects.equals(this.description, other.description)
         && Objects.equals(this.state, other.state)
-        && Objects.equals(this.internetAccessState, other.internetAccessState);
+        && Objects.equals(this.routingType, other.routingType);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode(), this.description, this.state, this.internetAccessState);
+    return Objects.hash(super.hashCode(), this.description, this.state, this.routingType);
   }
 
   @Override
@@ -110,7 +110,7 @@ public class VirtualNetwork extends VisibleModel {
         .add("name", getName())
         .add("description", description)
         .add("state", state)
-        .add("internetAccessState", internetAccessState)
+        .add("routingType", routingType)
         .toString();
   }
 }

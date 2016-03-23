@@ -49,11 +49,11 @@ public class VirtualNetworkCreateSpecTest {
     public Object[][] getValidVirtualNetworkData() {
       return new Object[][] {
           {
-              new VirtualNetworkCreateSpecBuilder().name("vn1").internetAccessState(InternetAccessState.ROUTED).build()
+              new VirtualNetworkCreateSpecBuilder().name("vn1").routingType(RoutingType.ROUTED).build()
           },
           {
               new VirtualNetworkCreateSpecBuilder().name("vn1").description("desc")
-                  .internetAccessState(InternetAccessState.ROUTED).build()
+                  .routingType(RoutingType.ROUTED).build()
           }
       };
     }
@@ -71,17 +71,17 @@ public class VirtualNetworkCreateSpecTest {
       return new Object[][] {
           {
               new VirtualNetworkCreateSpecBuilder().build(),
-              ImmutableList.of("name may not be null (was null)", "internetAccessState may not be null (was null)")
+              ImmutableList.of("name may not be null (was null)", "routingType may not be null (was null)")
           },
           {
               new VirtualNetworkCreateSpecBuilder().name("").build(),
               ImmutableList.of("name : The specific virtual network name does not match pattern: " +
-                  "^[a-zA-Z][a-zA-Z0-9-]* (was )", "internetAccessState may not be null (was null)")
+                  "^[a-zA-Z][a-zA-Z0-9-]* (was )", "routingType may not be null (was null)")
           },
           {
               new VirtualNetworkCreateSpecBuilder().name("1a").build(),
               ImmutableList.of("name : The specific virtual network name does not match pattern: " +
-                  "^[a-zA-Z][a-zA-Z0-9-]* (was 1a)", "internetAccessState may not be null (was null)")
+                  "^[a-zA-Z][a-zA-Z0-9-]* (was 1a)", "routingType may not be null (was null)")
           }
       };
     }
@@ -101,12 +101,12 @@ public class VirtualNetworkCreateSpecTest {
     public Object[][] getVirtualNetworkData() {
       return new Object[][] {
           {new VirtualNetworkCreateSpecBuilder().name("vn1").build(),
-              "VirtualNetworkCreateSpec{name=vn1, description=null, internetAccessState=null}"},
+              "VirtualNetworkCreateSpec{name=vn1, description=null, routingType=null}"},
           {new VirtualNetworkCreateSpecBuilder().name("vn1").description("desc").build(),
-              "VirtualNetworkCreateSpec{name=vn1, description=desc, internetAccessState=null}"},
+              "VirtualNetworkCreateSpec{name=vn1, description=desc, routingType=null}"},
           {new VirtualNetworkCreateSpecBuilder().name("vn1").description("desc")
-              .internetAccessState(InternetAccessState.ROUTED).build(),
-              "VirtualNetworkCreateSpec{name=vn1, description=desc, internetAccessState=ROUTED}"}
+              .routingType(RoutingType.ROUTED).build(),
+              "VirtualNetworkCreateSpec{name=vn1, description=desc, routingType=ROUTED}"}
       };
     }
   }
@@ -121,7 +121,7 @@ public class VirtualNetworkCreateSpecTest {
       VirtualNetworkCreateSpec virtualNetworkCreateSpec = new VirtualNetworkCreateSpecBuilder()
           .name("vn1")
           .description("desc")
-          .internetAccessState(InternetAccessState.ROUTED)
+          .routingType(RoutingType.ROUTED)
           .build();
       String json = JsonHelpers.jsonFixture("fixtures/virtual-network-create-spec.json");
 
