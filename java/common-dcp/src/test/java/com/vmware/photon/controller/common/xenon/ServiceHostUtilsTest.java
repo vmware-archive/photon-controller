@@ -176,8 +176,7 @@ public class ServiceHostUtilsTest {
      */
     @Test(dataProvider = "HostCount")
     public void testSuccess(
-        int hostCount,
-        NodeState.NodeStatus expectedStatus
+        int hostCount
     ) throws Throwable {
       hosts = buildHosts(hostCount, ServiceUriPaths.DEFAULT_NODE_GROUP, true);
       ServiceHostUtils.waitForNodeGroupConvergence(hosts, ServiceUriPaths.DEFAULT_NODE_GROUP, 500, 20);
@@ -190,7 +189,7 @@ public class ServiceHostUtilsTest {
         assertThat(response, notNullValue());
         assertThat(response.nodes.size(), is(hostCount));
         for (NodeState nodeState : response.nodes.values()) {
-          assertThat(nodeState.status, is(expectedStatus));
+          assertThat(nodeState.status, is(NodeState.NodeStatus.AVAILABLE));
         }
       }
     }
@@ -198,8 +197,8 @@ public class ServiceHostUtilsTest {
     @DataProvider(name = "HostCount")
     public Object[][] getHostCountData() {
       return new Object[][]{
-          {1, NodeState.NodeStatus.SYNCHRONIZING},
-          {3, NodeState.NodeStatus.AVAILABLE}
+          {1},
+          {3}
       };
     }
 
