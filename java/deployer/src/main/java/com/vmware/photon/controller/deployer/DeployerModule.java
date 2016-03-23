@@ -63,6 +63,7 @@ import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
 import org.apache.http.nio.conn.ssl.SSLIOSessionStrategy;
 import org.apache.http.ssl.SSLContexts;
 
+import javax.annotation.Nullable;
 import javax.net.ssl.SSLContext;
 
 import java.nio.file.Paths;
@@ -175,6 +176,13 @@ public class DeployerModule extends AbstractModule {
 
   @Provides
   @Singleton
+  @XenonConfig.PeerNodes
+  public String[] getPeerNodes() {
+    return this.deployerConfig.getDcp().getPeerNodes();
+  }
+
+  @Provides
+  @Singleton
   @DeployerServerSet
   public ServerSet getDeployerServerSet(ZookeeperServerSetFactory serverSetFactory) {
     ServerSet serverSet = serverSetFactory.createServiceServerSet(DEPLOYER_SERVICE_NAME, true);
@@ -195,6 +203,7 @@ public class DeployerModule extends AbstractModule {
       @DeployerConfig.Port int port,
       @DeployerConfig.RegistrationAddress String registrationAddress,
       @XenonConfig.StoragePath String storagePath,
+      @XenonConfig.PeerNodes @Nullable String[] peerNodes,
       @CloudStoreServerSet ServerSet cloudStoreServerSet,
       DeployerContext deployerContext,
       ContainersConfig containersConfig,
@@ -217,6 +226,7 @@ public class DeployerModule extends AbstractModule {
         port,
         registrationAddress,
         storagePath,
+        peerNodes,
         cloudStoreServerSet,
         deployerContext,
         containersConfig,

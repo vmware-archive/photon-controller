@@ -27,6 +27,7 @@ import static org.hamcrest.core.Is.is;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -64,13 +65,16 @@ public class ServiceConfiguratorTest {
     FileUtils.copyDirectory(new File(configPath), new File(TMP_DIR));
     ServiceConfigurator serviceConfigurator = new ServiceConfigurator();
     ContainersConfig containersConfig = serviceConfigurator.generateContainersConfig(configPath);
-    serviceConfigurator.applyDynamicParameters(TMP_DIR, ContainersConfig.ContainerType.Deployer, containersConfig
-        .getContainerSpecs().get(ContainersConfig.ContainerType.Deployer.name()).getDynamicParameters());
+    Map<String, Object> dynamicParameters = new HashMap<>();
+    dynamicParameters.putAll(containersConfig.getContainerSpecs().get(ContainersConfig.ContainerType.Deployer.name())
+        .getDynamicParameters());
+    dynamicParameters.put("PEER_NODES", Collections.singletonList(new PeerNode("localhost", "18001")));
+    serviceConfigurator.applyDynamicParameters(TMP_DIR, ContainersConfig.ContainerType.Deployer, dynamicParameters);
     ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
     DeployerConfig deployerConfig = mapper.readValue(new File(TMP_DIR + "deployer/deployer.yml"), DeployerConfig.class);
     assertThat(deployerConfig.getBind(), is("0.0.0.0"));
 
-    Map<String, Object> dynamicParameters = new HashMap<>();
+    dynamicParameters = new HashMap<>();
     List<LoadBalancerServer> list = new ArrayList<>();
     list.add(new LoadBalancerServer("server-1", "0.0.0.0"));
     list.add(new LoadBalancerServer("server-2", "1.1.1.1"));

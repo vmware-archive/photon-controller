@@ -227,6 +227,7 @@ public class DeployerXenonServiceHost
       @DeployerConfig.Port int port,
       @DeployerConfig.RegistrationAddress String registrationAddress,
       @XenonConfig.StoragePath String storagePath,
+      @XenonConfig.PeerNodes String[] peerNodes,
       @CloudStoreServerSet ServerSet cloudStoreServerSet,
       DeployerContext deployerContext,
       ContainersConfig containersConfig,
@@ -249,6 +250,7 @@ public class DeployerXenonServiceHost
         port,
         registrationAddress,
         storagePath,
+        peerNodes,
         cloudStoreServerSet,
         deployerContext,
         containersConfig,
@@ -272,6 +274,7 @@ public class DeployerXenonServiceHost
       int port,
       String registrationAddress,
       String storagePath,
+      String[] peerNodes,
       ServerSet cloudStoreServerSet,
       DeployerContext deployerContext,
       ContainersConfig containersConfig,
@@ -311,6 +314,10 @@ public class DeployerXenonServiceHost
     arguments.port = port + 1;
     arguments.bindAddress = bindAddress;
     arguments.sandbox = Paths.get(storagePath);
+
+    if (peerNodes != null) {
+      arguments.peerNodes = peerNodes;
+    }
 
     logger.info("Initializing XenonServer on port: {} path: {}", arguments.port, storagePath);
 
