@@ -205,7 +205,7 @@ class TestHttpTransfer(unittest.TestCase):
 
         spec = xferer._create_import_vm_spec(image_id, destination_datastore)
 
-        expected_vm_id = "h2h_fake_id"
+        expected_vm_id = "fake_id"
         create_spec_mock.assert_called_once_with(
             vm_id=expected_vm_id, image_id=image_id,
             datastore=destination_datastore, memory=32, cpus=1)
