@@ -27,14 +27,6 @@ public class SchedulerConfig {
   @JsonProperty("place_timeout_ms")
   private long placeTimeoutMs = 60000;
 
-  @Min(1000)
-  @JsonProperty("find_timeout_ms")
-  private long findTimeoutMs = 60000;
-
-  @Max(1)
-  @JsonProperty("fan_out_ratio")
-  private double fanoutRatio = 0.15;
-
   @Min(1)
   @Max(32)
   @JsonProperty("max_fan_out_count")
@@ -44,19 +36,6 @@ public class SchedulerConfig {
   @Max(32)
   @JsonProperty("min_fan_out_count")
   private int minFanoutCount = 2;
-
-  @Max(1)
-  @JsonProperty("fast_place_response_timeout_ratio")
-  private double fastPlaceResponseTimeoutRatio = 0.25;
-
-  @Max(1)
-  @JsonProperty("fast_place_response_ratio")
-  private double fastPlaceResponseRatio = 0.5;
-
-  @Min(1)
-  @Max(32)
-  @JsonProperty("fast_place_response_min_count")
-  private int fastPlaceResponseMinCount = 2;
 
   @Min(0)
   @JsonProperty("utilization_transfer_ratio")
@@ -68,22 +47,6 @@ public class SchedulerConfig {
 
   public void setPlaceTimeoutMs(long placeTimeoutMs) {
     this.placeTimeoutMs = placeTimeoutMs;
-  }
-
-  public long getFindTimeoutMs() {
-    return findTimeoutMs;
-  }
-
-  public void setFindTimeoutMs(long findTimeoutMs) {
-    this.findTimeoutMs = findTimeoutMs;
-  }
-
-  public double getFanoutRatio() {
-    return fanoutRatio;
-  }
-
-  public void setFanoutRatio(double fanoutRatio) {
-    this.fanoutRatio = fanoutRatio;
   }
 
   public int getMaxFanoutCount() {
@@ -100,30 +63,6 @@ public class SchedulerConfig {
 
   public void setMinFanoutCount(int minFanoutCount) {
     this.minFanoutCount = minFanoutCount;
-  }
-
-  public double getFastPlaceResponseTimeoutRatio() {
-    return fastPlaceResponseTimeoutRatio;
-  }
-
-  public void setFastPlaceResponseTimeoutRatio(double fastPlaceResponseTimeoutRatio) {
-    this.fastPlaceResponseTimeoutRatio = fastPlaceResponseTimeoutRatio;
-  }
-
-  public double getFastPlaceResponseRatio() {
-    return fastPlaceResponseRatio;
-  }
-
-  public void setFastPlaceResponseRatio(double fastPlaceResponseRatio) {
-    this.fastPlaceResponseRatio = fastPlaceResponseRatio;
-  }
-
-  public int getFastPlaceResponseMinCount() {
-    return fastPlaceResponseMinCount;
-  }
-
-  public void setFastPlaceResponseMinCount(int fastPlaceResponseMinCount) {
-    this.fastPlaceResponseMinCount = fastPlaceResponseMinCount;
   }
 
   public double getUtilizationTransferRatio() {

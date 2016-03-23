@@ -13,7 +13,6 @@
 
 package com.vmware.photon.controller.rootscheduler;
 
-import com.vmware.photon.controller.chairman.gen.Chairman;
 import com.vmware.photon.controller.common.config.BadConfigException;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.logging.LoggingFactory;
@@ -58,7 +57,6 @@ public class Main {
         new ZookeeperModule(config.getZookeeper()),
         new ThriftModule(),
         new ThriftServiceModule<>(new TypeLiteral<Scheduler.AsyncClient>() {}),
-        new ThriftServiceModule<>(new TypeLiteral<Chairman.AsyncClient>() {}),
         new ThriftServiceModule<>(new TypeLiteral<Host.AsyncClient>() {}));
 
     final RootSchedulerServer server = injector.getInstance(RootSchedulerServer.class);
