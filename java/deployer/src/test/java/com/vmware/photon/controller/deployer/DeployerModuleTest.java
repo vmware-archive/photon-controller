@@ -31,10 +31,10 @@ import static org.hamcrest.Matchers.is;
 public class DeployerModuleTest {
 
   /**
-   * Dummy test case to make Intellij recognize this as a test class.
+   * This dummy test case enables Intellij to recognize this as a test class.
    */
-  @Test
-  private void dummy() {
+  @Test(enabled = false)
+  public void dummy() {
   }
 
   /**
@@ -56,6 +56,8 @@ public class DeployerModuleTest {
       assertThat(test.getRegistrationAddress(), is("localhost"));
       assertThat(test.getPort(), is(18000));
       assertThat(test.getPath(), is("/tmp/dcp/deployer/"));
+      String[] peerNodes = {"http://localhost:18001"};
+      assertThat(test.getPeerNodes(), is(peerNodes));
     }
 
     @Test

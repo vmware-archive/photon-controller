@@ -14,9 +14,7 @@
 package com.vmware.photon.controller.deployer.dcp;
 
 import com.google.inject.BindingAnnotation;
-import org.hibernate.validator.constraints.NotEmpty;
-
-import javax.validation.constraints.NotNull;
+import org.hibernate.validator.constraints.NotBlank;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
@@ -30,12 +28,17 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
  */
 public class XenonConfig {
 
-  @NotNull
-  @NotEmpty
+  @NotBlank
   private String storagePath;
 
+  private String[] peerNodes;
+
   public String getStoragePath() {
-    return storagePath;
+    return this.storagePath;
+  }
+
+  public String[] getPeerNodes() {
+    return this.peerNodes;
   }
 
   /**
@@ -45,5 +48,14 @@ public class XenonConfig {
   @Target({FIELD, PARAMETER, METHOD})
   @Retention(RUNTIME)
   public @interface StoragePath {
+  }
+
+  /**
+   * Xenon peer node set.
+   */
+  @BindingAnnotation
+  @Target({FIELD, PARAMETER, METHOD})
+  @Retention(RUNTIME)
+  public @interface PeerNodes {
   }
 }

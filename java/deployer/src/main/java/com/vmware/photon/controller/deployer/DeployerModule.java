@@ -175,6 +175,13 @@ public class DeployerModule extends AbstractModule {
 
   @Provides
   @Singleton
+  @XenonConfig.PeerNodes
+  public String[] getPeerNodes() {
+    return this.deployerConfig.getDcp().getPeerNodes();
+  }
+
+  @Provides
+  @Singleton
   @DeployerServerSet
   public ServerSet getDeployerServerSet(ZookeeperServerSetFactory serverSetFactory) {
     ServerSet serverSet = serverSetFactory.createServiceServerSet(DEPLOYER_SERVICE_NAME, true);
@@ -195,6 +202,7 @@ public class DeployerModule extends AbstractModule {
       @DeployerConfig.Port int port,
       @DeployerConfig.RegistrationAddress String registrationAddress,
       @XenonConfig.StoragePath String storagePath,
+      @XenonConfig.PeerNodes String[] peerNodes,
       @CloudStoreServerSet ServerSet cloudStoreServerSet,
       DeployerContext deployerContext,
       ContainersConfig containersConfig,
@@ -217,6 +225,7 @@ public class DeployerModule extends AbstractModule {
         port,
         registrationAddress,
         storagePath,
+        peerNodes,
         cloudStoreServerSet,
         deployerContext,
         containersConfig,
