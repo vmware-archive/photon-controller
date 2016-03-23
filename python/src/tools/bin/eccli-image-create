@@ -12,9 +12,8 @@ import re
 from host.hypervisor.esx.vim_client import VimClient
 from pyVmomi import vim
 
-from host.hypervisor.esx.vm_config import TMP_IMAGE_FOLDER_NAME_PREFIX
-from host.hypervisor.esx.vm_config import EsxVmConfigSpec, datastore_path, \
-    tmp_image_folder_os_path
+from host.hypervisor.esx.vm_config import TMP_IMAGE_FOLDER_NAME_PREFIX, compond_path_join
+from host.hypervisor.esx.vm_config import EsxVmConfigSpec, datastore_path
 
 from eccli.format import print_request, print_result
 from eccli.format import print_response
@@ -40,9 +39,16 @@ if not options.file_path or not options.datastore:
     exit(1)
 
 
+def normalize_datastore(vim_client, datastore):
+    for ds in vim_client.get_all_datastores():
+        if ds.name == datastore and ds.info.url:
+            return ds.info.url.rsplit("/", 1)[1]
+    return datastore
+
+
 # create import spec
 def create_import_spec(datastore, image_id):
-    vm_path = datastore_path(datastore, TMP_IMAGE_FOLDER_NAME_PREFIX)
+    vm_path = datastore_path(datastore, compond_path_join(TMP_IMAGE_FOLDER_NAME_PREFIX, image_id))
     vm_spec = EsxVmConfigSpec(image_id, "otherGuest", 32, 1, vm_path, None)
     disk_controller = vim.vm.device.VirtualLsiLogicController(
         key=0,
@@ -137,11 +143,11 @@ client = get_client(options, "Host")
 # create service ticket
 ticket = get_ticket(client)
 # create vim_client using ticket
-vim_client = VimClient(
-    host=options.host, ticket=ticket, auto_sync=False)
+vim_client = VimClient(host=options.host, ticket=ticket, auto_sync=False)
+datastore = normalize_datastore(vim_client, options.datastore)
 # create import spec
 image_id = str(uuid.uuid1())
-importSpec = create_import_spec(options.datastore, image_id)
+importSpec = create_import_spec(datastore, image_id)
 # importVApp and get upload url
 vm_folder = vim_client.vm_folder
 root_rp = vim_client.root_resource_pool
@@ -158,9 +164,8 @@ finally:
 # create image
 request = CreateImageRequest()
 request.image_id = image_id
-request.datastore = options.datastore
-request.tmp_image_path = os.path.join(
-        tmp_image_folder_os_path(options.datastore), image_id)
+request.datastore = datastore
+request.tmp_image_path = os.path.join(compond_path_join(TMP_IMAGE_FOLDER_NAME_PREFIX, image_id), image_id)
 
 print_request(request)
 response = client.create_image(request)

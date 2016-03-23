@@ -38,6 +38,8 @@ from gen.resource.ttypes import ImageReplication
 from gen.resource.ttypes import ImageType
 from host.hypervisor.datastore_manager import DatastoreNotFoundException
 from host.hypervisor.esx.vm_config import IMAGE_FOLDER_NAME_PREFIX
+from host.hypervisor.esx.vm_config import TMP_IMAGE_FOLDER_NAME_PREFIX
+from host.hypervisor.esx.vm_config import os_datastore_root
 from host.hypervisor.esx.vm_config import datastore_to_os_path
 from host.hypervisor.esx.vm_config import metadata_filename
 from host.hypervisor.esx.vm_config import manifest_filename
@@ -53,7 +55,6 @@ from host.hypervisor.esx.vm_config import os_to_datastore_path
 from host.hypervisor.esx.vm_config import os_vmdk_flat_path
 from host.hypervisor.esx.vm_config import os_vmdk_path
 from host.hypervisor.esx.vm_config import tmp_image_path
-from host.hypervisor.esx.vm_config import tmp_image_folder_os_path
 from host.hypervisor.esx.vm_config import vmdk_path
 from host.hypervisor.image_manager import DirectoryNotFound
 from host.hypervisor.image_manager import ImageManager
@@ -515,17 +516,14 @@ class EsxImageManager(ImageManager):
     def reap_tmp_images(self):
         """ Clean up unused directories in the temp image folder. """
         for ds in self._ds_manager.get_datastores():
-            images_dir = tmp_image_folder_os_path(ds.id)
-
-            for f in os.listdir(images_dir):
-                path = os.path.join(images_dir, f)
-                if not os.path.isdir(path):
+            tmp_image_pattern = os_datastore_path_pattern(ds.id, TMP_IMAGE_FOLDER_NAME_PREFIX)
+            for image_dir in glob.glob(tmp_image_pattern):
+                if not os.path.isdir(image_dir):
                     continue
 
-                create_time = os.stat(path).st_ctime
+                create_time = os.stat(image_dir).st_ctime
                 current_time = time.time()
-                if current_time - self.REAP_TMP_IMAGES_GRACE_PERIOD\
-                        < create_time:
+                if current_time - self.REAP_TMP_IMAGES_GRACE_PERIOD < create_time:
                     # Skip folders that are newly created in past x minutes
                     # For example, during host-to-host transfer, hostd on
                     # receiving end stores the uploaded file in temp images
@@ -533,19 +531,18 @@ class EsxImageManager(ImageManager):
                     # need to allow a grace period before reaping it.
                     self._logger.info(
                         "Skip folder: %s, created: %s, now: %s" %
-                        (path, create_time, current_time))
+                        (image_dir, create_time, current_time))
                     continue
 
                 try:
-                    with FileBackedLock(path, ds.type):
-                        if (os.path.exists(path)):
-                            self._logger.info("Delete folder %s" % path)
-                            shutil.rmtree(path, ignore_errors=True)
+                    with FileBackedLock(image_dir, ds.type):
+                        if os.path.exists(image_dir):
+                            self._logger.info("Delete folder %s" % image_dir)
+                            shutil.rmtree(image_dir, ignore_errors=True)
                 except (AcquireLockFailure, InvalidFile):
-                    self._logger.info("Already locked: %s, skipping" % path)
+                    self._logger.info("Already locked: %s, skipping" % image_dir)
                 except:
-                    self._logger.info("Unable to remove %s" % path,
-                                      exc_info=True)
+                    self._logger.info("Unable to remove %s" % image_dir, exc_info=True)
 
     def delete_image(self, datastore_id, image_id, ds_type, force):
         # Check if the image currently exists
@@ -599,7 +596,7 @@ class EsxImageManager(ImageManager):
         image_ids = []
 
         if SUPPORT_VSAN:
-            if not os.path.exists(os_datastore_path(datastore, "")):
+            if not os.path.exists(os_datastore_root(datastore)):
                 raise DatastoreNotFoundException()
 
             # image_folder is /vmfs/volumes/${datastore}/images_*
@@ -873,25 +870,31 @@ class EsxImageManager(ImageManager):
         vm_dir = os.path.dirname(vmx_os_path)
 
         vm.Unregister()
-        if self.check_image_dir(image_id, datastore_id):
-            self._logger.info("Image %s on datastore %s already exists" %
-                              (image_id, datastore_id))
-            raise DiskAlreadyExistException()
-        self._move_image(image_id, datastore_id, vm_dir)
 
-        # Save raw manifest
-        manifest_path = os_image_manifest_path(datastore_id, image_id)
-        with open(manifest_path, 'w') as f:
-            f.write(manifest)
+        try:
+            if self.check_image_dir(image_id, datastore_id):
+                self._logger.info("Image %s on datastore %s already exists" %
+                                  (image_id, datastore_id))
+                raise DiskAlreadyExistException()
+            self._move_image(image_id, datastore_id, vm_dir)
 
-        # Save raw metadata
-        if metadata:
-            metadata_path = os_metadata_path(datastore_id, image_id,
-                                             IMAGE_FOLDER_NAME_PREFIX)
-            with open(metadata_path, 'w') as f:
-                f.write(metadata)
+            # Save raw manifest
+            manifest_path = os_image_manifest_path(datastore_id, image_id)
+            with open(manifest_path, 'w') as f:
+                f.write(manifest)
 
-        self._create_image_timestamp_file_from_ids(datastore_id, image_id)
+            # Save raw metadata
+            if metadata:
+                metadata_path = os_metadata_path(datastore_id, image_id,
+                                                 IMAGE_FOLDER_NAME_PREFIX)
+                with open(metadata_path, 'w') as f:
+                    f.write(metadata)
+
+            self._create_image_timestamp_file_from_ids(datastore_id, image_id)
+        finally:
+            parent_dir = os.path.dirname(vm_dir)
+            if os.path.basename(parent_dir).startswith(TMP_IMAGE_FOLDER_NAME_PREFIX):
+                rm_rf(parent_dir)
 
     def delete_tmp_dir(self, datastore_id, tmp_dir):
         """ Deletes a temp image directory by moving it to a GC directory """
