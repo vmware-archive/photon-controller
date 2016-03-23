@@ -28,6 +28,7 @@ import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.common.xenon.validation.WriteOnce;
 import com.vmware.photon.controller.deployer.configuration.LoadBalancerServer;
+import com.vmware.photon.controller.deployer.configuration.PeerNode;
 import com.vmware.photon.controller.deployer.dcp.ContainersConfig;
 import com.vmware.photon.controller.deployer.dcp.constant.ServicePortConstants;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerService;
@@ -67,6 +68,7 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
    * N.B. These values are used in data processing when applying mustache templates in
    * {@link CreateManagementVmTaskService}.
    */
+  public static final String MUSTACHE_KEY_COMMON_PEER_NODES = "PEER_NODES";
   public static final String MUSTACHE_KEY_HAPROXY_MGMT_API_HTTP_SERVERS = "MGMT_API_HTTP_SERVERS";
   public static final String MUSTACHE_KEY_HAPROXY_MGMT_UI_HTTP_SERVERS = "MGMT_UI_HTTP_SERVERS";
   public static final String MUSTACHE_KEY_HAPROXY_MGMT_UI_HTTPS_SERVERS = "MGMT_UI_HTTPS_SERVERS";
@@ -78,7 +80,6 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
   private static final String MUSTACHE_KEY_COMMON_ENABLE_SYSLOG = "ENABLE_SYSLOG";
   private static final String MUSTACHE_KEY_COMMON_LOAD_BALANCER_IP = "APIFE_IP";
   private static final String MUSTACHE_KEY_COMMON_LOAD_BALANCER_PORT = "APIFE_PORT";
-  private static final String MUSTACHE_KEY_COMMON_PEER_NODES = "PEER_NODES";
   private static final String MUSTACHE_KEY_COMMON_REGISTRATION_ADDRESS = "REGISTRATION_ADDRESS";
   private static final String MUSTACHE_KEY_COMMON_SHARED_SECRET = "SHARED_SECRET";
   private static final String MUSTACHE_KEY_COMMON_SYSLOG_ENDPOINT = "SYSLOG_ENDPOINT";
@@ -597,9 +598,9 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
 
   private String generatePeerNodeList(List<String> peerNodeIps, String port) {
 
-    List<String> peerNodeList = peerNodeIps.stream()
+    List<PeerNode> peerNodeList = peerNodeIps.stream()
         .sorted()
-        .map((peerNode) -> peerNode + ":" + port)
+        .map((peerNodeIp) -> new PeerNode(peerNodeIp, port))
         .collect(Collectors.toList());
 
     return Utils.toJson(peerNodeList);

@@ -13,43 +13,73 @@
 
 package com.vmware.photon.controller.deployer.dcp;
 
-import com.vmware.photon.controller.common.config.BadConfigException;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.deployer.DeployerConfig;
 
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.testng.Assert.fail;
 
 /**
  * This class implements tests for the {@link XenonConfig} class.
  */
 public class XenonConfigTest {
 
-  private XenonConfig xenonConfig;
-
   /**
-   * Dummy test case to make Intellij recognize this as a test class.
+   * This dummy test case enables Intellij to recognize this as a test class.
    */
-  @Test
+  @Test(enabled = false)
   private void dummy() {
   }
 
-  @Test
-  public void testStoragePath() throws BadConfigException {
-    xenonConfig = ConfigBuilder.build(DeployerConfig.class,
-        XenonConfigTest.class.getResource("/config.yml").getPath()).getDcp();
-    assertThat(xenonConfig.getStoragePath(), is("/tmp/dcp/deployer/"));
+  /**
+   * This class implements tests for the default configuration file.
+   */
+  public class DefaultConfigTest {
+
+    private XenonConfig xenonConfig;
+
+    @BeforeMethod
+    public void setUpClass() throws Throwable {
+      xenonConfig = ConfigBuilder.build(DeployerConfig.class,
+          this.getClass().getResource("/config.yml").getPath()).getDcp();
+    }
+
+    @Test
+    public void testStoragePath() {
+      assertThat(xenonConfig.getStoragePath(), is("/tmp/dcp/deployer/"));
+    }
+
+    @Test
+    public void testPeerNodes() {
+      String[] peerNodes = {"http://localhost:18001"};
+      assertThat(xenonConfig.getPeerNodes(), is(peerNodes));
+    }
   }
 
-  @Test
-  public void testInvalidBatchSize() {
-    try {
+  /**
+   * This class implements tests for the minimal configuration file.
+   */
+  public class MinimalConfigTest {
+
+    private XenonConfig xenonConfig;
+
+    @BeforeMethod
+    public void setUpClass() throws Throwable {
       xenonConfig = ConfigBuilder.build(DeployerConfig.class,
-          XenonConfigTest.class.getResource("/dcpConfig_invalid.yml").getPath()).getDcp();
-      fail();
-    } catch (BadConfigException e) {
+          this.getClass().getResource("/config_min.yml").getPath()).getDcp();
+    }
+
+    @Test
+    public void testStoragePath() {
+      assertThat(xenonConfig.getStoragePath(), is("/tmp/dcp/18000"));
+    }
+
+    @Test
+    public void testPeerNodes() {
+      String[] peerNodes = {"http://localhost:18001"};
+      assertThat(xenonConfig.getPeerNodes(), is(peerNodes));
     }
   }
 }
