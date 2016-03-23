@@ -724,6 +724,7 @@ public class CloudStoreConstraintCheckerTest {
       datastore.type = "SHARED_VMFS";
       datastore.tags = new HashSet<>(Arrays.asList(datastoreTag, datastoreTag2));
       datastore.documentSelfLink = datastoreName;
+      datastore.isImageDatastore = false;
       datastores.add(datastore);
     }
     return datastores;
