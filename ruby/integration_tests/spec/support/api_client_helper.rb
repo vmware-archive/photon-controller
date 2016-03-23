@@ -24,8 +24,13 @@ class ApiClientHelper
       address = args[:address] unless args.nil?
       port = args[:port] unless args.nil?
 
-      protocol ||= ENV["ENABLE_AUTH"] ? "https" : "http"
-      port ||= ENV["ENABLE_AUTH"] ? "443" : "28080"
+      if ENV["ENABLE_AUTH"] && ENV["ENABLE_AUTH"] == "true"
+         protocol ||= "https"
+         port ||= "443"
+      else
+         protocol ||= "http"
+         port ||= "28080"
+      end
 
       setup_client(protocol, address, port)
     end
