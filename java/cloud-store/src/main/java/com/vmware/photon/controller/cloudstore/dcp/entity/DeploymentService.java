@@ -318,6 +318,11 @@ public class DeploymentService extends StatefulService {
     public String oAuthMgmtUiLogoutEndpoint;
 
     /**
+     * This value represents whether virtual network support is enabled for this deployment.
+     */
+    public Boolean virtualNetworkEnabled;
+
+    /**
      * This value represents the IP address of the network manager.
      */
     public String networkManagerAddress;

@@ -20,11 +20,18 @@ import com.vmware.photon.controller.api.NetworkConfigurationCreateSpec;
  */
 public class NetworkConfigurationCreateSpecBuilder {
 
+  private boolean virtualNetworkEnabled;
+
   private String networkManagerAddress;
 
   private String networkManagerUsername;
 
   private String networkManagerPassword;
+
+  public NetworkConfigurationCreateSpecBuilder virtualNetworkEnabled(boolean virtualNetworkEnabled) {
+    this.virtualNetworkEnabled = virtualNetworkEnabled;
+    return this;
+  }
 
   public NetworkConfigurationCreateSpecBuilder networkManagerAddress(String networkManagerAddress) {
     this.networkManagerAddress = networkManagerAddress;
@@ -43,6 +50,7 @@ public class NetworkConfigurationCreateSpecBuilder {
 
   public NetworkConfigurationCreateSpec build() {
     NetworkConfigurationCreateSpec networkConfigurationCreateSpec = new NetworkConfigurationCreateSpec();
+    networkConfigurationCreateSpec.setVirtualNetworkEnabled(this.virtualNetworkEnabled);
     networkConfigurationCreateSpec.setNetworkManagerAddress(this.networkManagerAddress);
     networkConfigurationCreateSpec.setNetworkManagerUsername(this.networkManagerUsername);
     networkConfigurationCreateSpec.setNetworkManagerPassword(this.networkManagerPassword);
