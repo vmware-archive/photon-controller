@@ -36,6 +36,7 @@ public class NetworkConfigurationTest {
   private static final String NETWORK_CONFIGURATION_JSON_FILE = "fixtures/network-configuration.json";
 
   private NetworkConfiguration sampleNetworkConfiguration = new NetworkConfigurationBuilder()
+      .virtualNetworkEnabled(true)
       .networkManagerAddress("1.2.3.4")
       .networkManagerUsername("networkManagerUsername")
       .networkManagerPassword("networkManagerPassword")
@@ -86,7 +87,8 @@ public class NetworkConfigurationTest {
     @Test
     public void testCorrectString() {
       String expectedString =
-          "NetworkConfiguration{networkManagerAddress=1.2.3.4, networkManagerUsername=networkManagerUsername, " +
+          "NetworkConfiguration{virtualNetworkEnabled=true, networkManagerAddress=1.2.3.4, " +
+          "networkManagerUsername=networkManagerUsername, " +
           "networkManagerPassword=networkManagerPassword}";
       assertThat(sampleNetworkConfiguration.toString(), is(expectedString));
     }

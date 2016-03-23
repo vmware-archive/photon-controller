@@ -38,10 +38,11 @@ public class NetworkConfigurationCreateSpecTest {
 
   private NetworkConfigurationCreateSpec sampleNetworkConfigurationCreateSpec =
       new NetworkConfigurationCreateSpecBuilder()
-      .networkManagerAddress("1.2.3.4")
-      .networkManagerUsername("networkManagerUsername")
-      .networkManagerPassword("networkManagerPassword")
-      .build();
+          .virtualNetworkEnabled(true)
+          .networkManagerAddress("1.2.3.4")
+          .networkManagerUsername("networkManagerUsername")
+          .networkManagerPassword("networkManagerPassword")
+          .build();
 
   @Test(enabled = false)
   private void dummy() {
@@ -88,7 +89,7 @@ public class NetworkConfigurationCreateSpecTest {
     @Test
     public void testCorrectString() {
       String expectedString =
-          "NetworkConfigurationCreateSpec{networkManagerAddress=1.2.3.4, " +
+          "NetworkConfigurationCreateSpec{virtualNetworkEnabled=true, networkManagerAddress=1.2.3.4, " +
           "networkManagerUsername=networkManagerUsername, " +
           "networkManagerPassword=networkManagerPassword}";
       assertThat(sampleNetworkConfigurationCreateSpec.toString(), is(expectedString));

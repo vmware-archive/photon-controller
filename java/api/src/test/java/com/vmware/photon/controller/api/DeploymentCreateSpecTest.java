@@ -51,6 +51,7 @@ public class DeploymentCreateSpecTest {
       .build();
 
   private NetworkConfigurationCreateSpec networkConfiguration = new NetworkConfigurationCreateSpecBuilder()
+      .virtualNetworkEnabled(true)
       .networkManagerAddress("1.2.3.4")
       .networkManagerUsername("networkManagerUsername")
       .networkManagerPassword("networkManagerPassword")

@@ -34,6 +34,10 @@ import java.util.Objects;
 public class NetworkConfigurationCreateSpec {
 
   @JsonProperty
+  @ApiModelProperty(value = "Flag that indicates if virtual network support is enabled or not", required = true)
+  private boolean virtualNetworkEnabled = false;
+
+  @JsonProperty
   @ApiModelProperty(value = "The IP address of the network manager", required = true)
   @NotNull
   @DomainOrIP
@@ -48,6 +52,14 @@ public class NetworkConfigurationCreateSpec {
   @ApiModelProperty(value = "The password for accessing the network manager", required = true)
   @NotNull
   private String networkManagerPassword;
+
+  public boolean getVirtualNetworkEnabled() {
+    return virtualNetworkEnabled;
+  }
+
+  public void setVirtualNetworkEnabled(boolean virtualNetworkEnabled) {
+    this.virtualNetworkEnabled = virtualNetworkEnabled;
+  }
 
   public String getNetworkManagerAddress() {
     return networkManagerAddress;
@@ -84,7 +96,8 @@ public class NetworkConfigurationCreateSpec {
 
     NetworkConfigurationCreateSpec other = (NetworkConfigurationCreateSpec) o;
 
-    return Objects.equals(this.getNetworkManagerAddress(), other.getNetworkManagerAddress())
+    return Objects.equals(this.getVirtualNetworkEnabled(), other.getVirtualNetworkEnabled())
+        && Objects.equals(this.getNetworkManagerAddress(), other.getNetworkManagerAddress())
         && Objects.equals(this.getNetworkManagerUsername(), other.getNetworkManagerUsername())
         && Objects.equals(this.getNetworkManagerPassword(), other.getNetworkManagerPassword());
   }
@@ -93,6 +106,7 @@ public class NetworkConfigurationCreateSpec {
   public int hashCode() {
     return Objects.hash(
         super.hashCode(),
+        this.getVirtualNetworkEnabled(),
         this.getNetworkManagerAddress(),
         this.getNetworkManagerUsername(),
         this.getNetworkManagerPassword());
@@ -100,6 +114,7 @@ public class NetworkConfigurationCreateSpec {
 
   protected com.google.common.base.Objects.ToStringHelper toStringHelper() {
     return com.google.common.base.Objects.toStringHelper(this)
+        .add("virtualNetworkEnabled", this.getVirtualNetworkEnabled())
         .add("networkManagerAddress", this.getNetworkManagerAddress())
         .add("networkManagerUsername", this.getNetworkManagerUsername())
         .add("networkManagerPassword", this.getNetworkManagerPassword());

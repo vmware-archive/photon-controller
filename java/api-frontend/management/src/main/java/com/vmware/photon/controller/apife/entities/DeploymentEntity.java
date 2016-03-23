@@ -58,6 +58,8 @@ public class DeploymentEntity extends BaseEntity {
 
   private List<String> oauthSecurityGroups;
 
+  private boolean virtualNetworkEnabled;
+
   private String networkManagerAddress;
 
   private String networkManagerUsername;
@@ -208,6 +210,14 @@ public class DeploymentEntity extends BaseEntity {
     this.oauthSecurityGroups = oauthSecurityGroups;
   }
 
+  public boolean getVirtualNetworkEnabled() {
+    return virtualNetworkEnabled;
+  }
+
+  public void setVirtualNetworkEnabled(boolean virtualNetworkEnabled) {
+    this.virtualNetworkEnabled = virtualNetworkEnabled;
+  }
+
   public String getNetworkManagerAddress() {
     return networkManagerAddress;
   }
@@ -312,6 +322,7 @@ public class DeploymentEntity extends BaseEntity {
         && Objects.equals(this.getOauthUsername(), other.getOauthUsername())
         && Objects.equals(this.getOauthPassword(), other.getOauthPassword())
         && ListUtils.isEqualList(this.getOauthSecurityGroups(), other.getOauthSecurityGroups())
+        && Objects.equals(this.getVirtualNetworkEnabled(), other.getVirtualNetworkEnabled())
         && Objects.equals(this.getNetworkManagerAddress(), other.getNetworkManagerAddress())
         && Objects.equals(this.getNetworkManagerUsername(), other.getNetworkManagerUsername())
         && Objects.equals(this.getNetworkManagerPassword(), other.getNetworkManagerPassword())
@@ -341,6 +352,7 @@ public class DeploymentEntity extends BaseEntity {
         .add("oauthUsername", this.getOauthUsername())
         .add("oauthPassword", this.getOauthPassword())
         .add("oauthSecurityGroups", StringUtils.join(this.getOauthSecurityGroups(), ','))
+        .add("virtualNetworkEnabled", this.getVirtualNetworkEnabled())
         .add("networkManagerAddress", this.getNetworkManagerAddress())
         .add("networkManagerUsername", this.getNetworkManagerUsername())
         .add("networkManagerPassword", this.getNetworkManagerPassword())
