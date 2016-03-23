@@ -94,6 +94,7 @@ public class TestEnvironment extends MultiHostEnvironment<DeployerXenonServiceHo
           -1,
           REGISTRATION_ADDRESS,
           sandbox,
+          null,
           cloudServerSet,
           deployerContext,
           containersConfig,

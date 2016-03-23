@@ -36,6 +36,7 @@ import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.common.xenon.validation.Positive;
 import com.vmware.photon.controller.common.xenon.validation.WriteOnce;
 import com.vmware.photon.controller.deployer.configuration.LoadBalancerServer;
+import com.vmware.photon.controller.deployer.configuration.PeerNode;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfigurator;
 import com.vmware.photon.controller.deployer.configuration.ZookeeperServer;
 import com.vmware.photon.controller.deployer.dcp.ContainersConfig;
@@ -97,6 +98,9 @@ public class CreateManagementVmTaskService extends StatefulService {
   public static final String SCRIPT_NAME = "esx-create-vm-iso";
 
   private static final TypeToken loadBalancerTypeToken = new TypeToken<ArrayList<LoadBalancerServer>>() {
+  };
+
+  private static final TypeToken peerNodeTypeToken = new TypeToken<ArrayList<PeerNode>>() {
   };
 
   private static final TypeToken zookeeperTypeToken = new TypeToken<ArrayList<ZookeeperServer>>() {
@@ -1396,6 +1400,9 @@ public class CreateManagementVmTaskService extends StatefulService {
       dynamicParameters.computeIfPresent(
           BuildRuntimeConfigurationTaskService.MUSTACHE_KEY_HAPROXY_MGMT_UI_HTTPS_SERVERS,
           (k, v) -> new Gson().fromJson(v.toString(), loadBalancerTypeToken.getType()));
+      dynamicParameters.computeIfPresent(
+          BuildRuntimeConfigurationTaskService.MUSTACHE_KEY_COMMON_PEER_NODES,
+          (k, v) -> new Gson().fromJson(v.toString(), peerNodeTypeToken.getType()));
       dynamicParameters.computeIfPresent(
           BuildContainersConfigurationWorkflowService.MUSTACHE_KEY_ZOOKEEPER_INSTANCES,
           (k, v) -> new Gson().fromJson(v.toString(), zookeeperTypeToken.getType()));
