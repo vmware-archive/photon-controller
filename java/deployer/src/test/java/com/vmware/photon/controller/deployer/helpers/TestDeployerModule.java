@@ -69,6 +69,7 @@ import java.util.concurrent.Executors;
  * This class implements a Guice injector module for deployer service tests.
  */
 public class TestDeployerModule extends AbstractModule {
+
   private final DeployerConfig deployerConfig;
 
   public TestDeployerModule(DeployerConfig deployerConfig) {
@@ -130,7 +131,13 @@ public class TestDeployerModule extends AbstractModule {
     install(new FactoryModuleBuilder()
         .implement(HostManagementVmAddressValidator.class, HostManagementVmAddressValidator.class)
         .build(HostManagementVmAddressValidatorFactory.class));
+  }
 
+  @Provides
+  @Singleton
+  @XenonConfig.PeerNodes
+  public String[] getPeerNodes() {
+    return this.deployerConfig.getDcp().getPeerNodes();
   }
 
   @Provides
@@ -192,6 +199,7 @@ public class TestDeployerModule extends AbstractModule {
       @DeployerConfig.Port int port,
       @DeployerConfig.RegistrationAddress String registrationAddress,
       @XenonConfig.StoragePath String storagePath,
+      @XenonConfig.PeerNodes @Nullable String[] peerNodes,
       DeployerContext deployerContext,
       ContainersConfig containersConfig,
       AgentControlClientFactory agentControlClientFactory,
@@ -214,6 +222,7 @@ public class TestDeployerModule extends AbstractModule {
             port,
             registrationAddress,
             storagePath,
+            peerNodes,
             null,
             deployerContext,
             containersConfig,
