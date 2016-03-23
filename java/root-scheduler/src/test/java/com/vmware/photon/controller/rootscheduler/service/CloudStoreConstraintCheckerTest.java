@@ -54,6 +54,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
@@ -242,7 +243,7 @@ public class CloudStoreConstraintCheckerTest {
     host.availabilityZoneId = "zone-1";
     host.metadata = new HashMap<>();
     host.usageTags = new HashSet<>(Arrays.asList(UsageTag.CLOUD.name()));
-    host.documentSelfLink = "cloud-host-1";
+    host.documentSelfLink = "cloud-host-" + UUID.randomUUID();
     hosts.add(host);
 
     return hosts;
@@ -496,7 +497,8 @@ public class CloudStoreConstraintCheckerTest {
       assertThat(candidate.size(), is(1));
       // Extract the host index from the name, which is the string "hostN", where N is the number of the host.
       for (String hostname : candidate.keySet()) {
-        int hostIndex = Integer.parseInt(hostname.substring(CLOUD_HOST_PREFIX.length()));
+        String[] hostnameSubstrings = hostname.split("-");
+        int hostIndex = Integer.parseInt(hostnameSubstrings[hostnameSubstrings.length - 1]);
         selectedHost[hostIndex] = true;
       }
       if (Arrays.stream(selectedHost).allMatch(selected -> selected == true)) {
@@ -714,7 +716,7 @@ public class CloudStoreConstraintCheckerTest {
     List<DatastoreService.State> datastores = new ArrayList<>();
 
     for (int i = 0; i < numDatastores; i++) {
-      String datastoreName = "datastore-" + i;
+      String datastoreName = "datastore-" + UUID.randomUUID();
       String datastoreTag = "tag-" + i;
       String datastoreTag2 = "tag-extra-" + i;
 
@@ -753,9 +755,9 @@ public class CloudStoreConstraintCheckerTest {
       String azName = "zone-" + i;
 
       if (isManagement) {
-        hostName = MGMT_HOST_PREFIX + i;
+        hostName = MGMT_HOST_PREFIX + UUID.randomUUID() + "-" + i;
       } else {
-        hostName = CLOUD_HOST_PREFIX + i;
+        hostName = CLOUD_HOST_PREFIX + UUID.randomUUID() + "-" + i;
       }
 
       HostService.State host = new HostService.State();
