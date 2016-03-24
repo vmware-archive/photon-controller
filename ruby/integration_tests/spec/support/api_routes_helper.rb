@@ -31,7 +31,6 @@ module EsxCloud
         *tenants_routes,
         *vms_routes,
         *status_routes
-        #*info_routes,
       ]
     end
 
@@ -52,8 +51,7 @@ module EsxCloud
           *resource_tickets_routes,
           *tasks_routes,
           *tenants_routes(seeder.tenant!.id),
-          *status_routes,
-          #*info_routes,
+          *status_routes
       ]
     end
 
@@ -219,12 +217,6 @@ module EsxCloud
     def self.status_routes
       [
         EsxCloud::ApiRoute.new(:get, "/status", 200, 200, 403, 403, 403),
-      ]
-    end
-
-    def self.info_routes
-      [
-        EsxCloud::ApiRoute.new(:get, "/info/topology", 200, 200, 200, 200, 200),
       ]
     end
   end
