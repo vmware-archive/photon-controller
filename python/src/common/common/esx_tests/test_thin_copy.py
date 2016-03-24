@@ -84,7 +84,6 @@ class ThinCopyTestCase(unittest.TestCase):
     def _provision_host(self, datastore):
         """ Provisions the agents on the remote hosts """
         req = ProvisionRequest()
-        req.availability_zone = "test"
         req.datastores = [datastore]
         req.networks = ["VM Network"]
         req.address = ServerAddress(host="localhost", port=8835)

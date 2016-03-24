@@ -1029,7 +1029,6 @@ class AgentCommonTests(object):
         :return the request we used to configure the host with.
         """
         req = ProvisionRequest()
-        req.availability_zone = "bootstrap_availability_zone_id"
         req.datastores = ["bootstrap_datastore"]
         req.networks = ["Bootstrap Network"]
         addr = ServerAddress(host="foobar", port=8835)
@@ -1067,7 +1066,6 @@ class AgentCommonTests(object):
         Negative test case to update the agent with an invalid config
         """
         req = ProvisionRequest()
-        req.availability_zone = "bootstrap_availability_zone_id"
         req.datastores = ["bootstrap_datastore"]
         req.networks = ["Bootstrap Network"]
         addr = ServerAddress(host="foobar", port=8835)
@@ -1075,17 +1073,6 @@ class AgentCommonTests(object):
         req.memory_overcommit = 0.5
         res = self.control_client.provision(req)
         self.assertEqual(res.result, ProvisionResultCode.INVALID_CONFIG)
-
-    def _validate_post_boostrap_config(self, req):
-        """
-        Validates that the post boostrap config is the same as the one we had
-        requested for.
-        """
-        host_config_request = Host.GetConfigRequest()
-        res = self.host_client.get_host_config(host_config_request)
-        # XXX Fix me the host config should return more useful info
-        avail_zone = req.availability_zone
-        self.assertEqual(res.hostConfig.availability_zone, avail_zone)
 
     def test_ping(self):
         """ Test ping against the control service """
