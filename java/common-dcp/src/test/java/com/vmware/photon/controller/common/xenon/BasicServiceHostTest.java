@@ -28,6 +28,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.equalToIgnoringCase;
 import static org.hamcrest.Matchers.is;
@@ -392,8 +393,8 @@ public class BasicServiceHostTest {
 
         Assert.fail("this state transition should not have succeeded");
       } catch (TimeoutException e) {
-        assertThat(e.getMessage(), is(equalToIgnoringCase(
-            "timeout waiting for state transition.")));
+        assertThat(e.getMessage(), containsString("Timeout waiting for state transition, serviceUri=[" +
+            SERVICE_URI + "]"));
       }
 
       try {
