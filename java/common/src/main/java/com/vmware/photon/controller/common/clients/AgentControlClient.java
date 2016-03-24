@@ -191,7 +191,6 @@ public class AgentControlClient {
    * This method performs an asynchronous Thrift call to provision an agent. On
    * completion, the specified handler is invoked.
    *
-   * @param availabilityZone
    * @param dataStoreList
    * @param imageDataStores
    * @param usedForVMs
@@ -210,7 +209,6 @@ public class AgentControlClient {
    */
   @RpcMethod
   public void provision(
-      String availabilityZone,
       List<String> dataStoreList,
       Set<String> imageDataStores,
       boolean usedForVMs,
@@ -235,7 +233,6 @@ public class AgentControlClient {
     });
 
     ProvisionRequest provisionRequest = new ProvisionRequest();
-    provisionRequest.setAvailability_zone(availabilityZone);
     provisionRequest.setDatastores(dataStoreList);
     provisionRequest.setNetworks(networkList);
     provisionRequest.setAddress(new ServerAddress(hostAddress, hostPort));
@@ -260,7 +257,6 @@ public class AgentControlClient {
   /**
    * This method performs a synchronous Thrift call to provision an agent.
    *
-   * @param availabilityZone
    * @param dataStoreList
    * @param imageDataStores
    * @param usedForVMs
@@ -280,7 +276,6 @@ public class AgentControlClient {
    */
   @RpcMethod
   public ProvisionResponse provision(
-      String availabilityZone,
       List<String> dataStoreList,
       Set<String> imageDataStores,
       boolean usedForVMs,
@@ -297,7 +292,7 @@ public class AgentControlClient {
       String ntpEndpoint)
       throws InterruptedException, RpcException {
     SyncHandler<ProvisionResponse, AgentControl.AsyncClient.provision_call> syncHandler = new SyncHandler<>();
-    provision(availabilityZone, dataStoreList, imageDataStores, usedForVMs, networkList, hostAddress, hostPort,
+    provision(dataStoreList, imageDataStores, usedForVMs, networkList, hostAddress, hostPort,
         memoryOverCommit, loggingEndpoint, logLevel, statsPluginConfig,
         managementOnly, hostId, deploymentId, ntpEndpoint, syncHandler);
     syncHandler.await();

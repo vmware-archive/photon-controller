@@ -61,7 +61,6 @@ public class AgentControlClientMock extends AgentControlClient {
 
   @Override
   public void provision(
-      String availabilityZone,
       List<String> datastores,
       Set<String> imageDatastoreNames,
       boolean usedForVMs,
