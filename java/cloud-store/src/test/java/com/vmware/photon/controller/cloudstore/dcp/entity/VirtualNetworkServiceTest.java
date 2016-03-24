@@ -84,11 +84,11 @@ public class VirtualNetworkServiceTest {
       assertThat(result.getStatusCode(), is(HttpStatus.SC_OK));
 
       VirtualNetworkService.State createdState = result.getBody(VirtualNetworkService.State.class);
-      assertThat(createdState, is(startState));
+      assertThat(ServiceUtils.documentEquals(VirtualNetworkService.State.class, startState, createdState), is(true));
 
       VirtualNetworkService.State savedState = host.getServiceState(VirtualNetworkService.State.class,
           createdState.documentSelfLink);
-      assertThat(savedState, is(startState));
+      assertThat(ServiceUtils.documentEquals(VirtualNetworkService.State.class, startState, savedState), is(true));
     }
 
     @Test
