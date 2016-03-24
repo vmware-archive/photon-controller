@@ -1,0 +1,24 @@
+#!/usr/bin/env python
+# Copyright (c) 2015 VMware, Inc. All Rights Reserved.
+
+from eccli.format import print_request
+from eccli.format import print_response
+from eccli.optparser import default_parser
+from eccli.thrift import get_client
+from gen.agent.ttypes import UpgradeRequest
+
+parser = default_parser(usage="eccli-upgrade [options]",
+                        add_help=True)
+(options, args) = parser.parse_args()
+
+if not options.host:
+    parser.print_help()
+    exit(1)
+
+client = get_client(options, "AgentControl")
+
+request = UpgradeRequest()
+
+print_request(request)
+response = client.upgrade(request)
+print_response(response)
