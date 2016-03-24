@@ -181,7 +181,7 @@ struct ProvisionResponse {
 
 // Upgrade request
 struct UpgradeRequest {
-  1: required string previous_version
+  99: optional tracing.TracingInfo tracing_info
 }
 
 // Upgrade result code

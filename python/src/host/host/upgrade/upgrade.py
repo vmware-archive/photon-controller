@@ -45,8 +45,7 @@ class HostUpgrade:
         self._timeout = HostUpgrade.DEFAULT_TIMEOUT
         self._task_runner = HostUpgradeTaskRunner(__name__, self)
 
-    def start(self, previous_version, timeout=None):
-        self._previous_version = previous_version
+    def start(self, timeout=None):
         if timeout:
             self._timeout = timeout
         self._task_runner.start(self._timeout)

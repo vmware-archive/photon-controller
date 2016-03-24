@@ -37,6 +37,7 @@ class SoftLinkGenerator:
         for ds in datastores:
             self._process_images(ds)
             self._process_vms(ds)
+            self._process_disks(ds)
 
     def _process_images(self, datastore):
         self._create_symlinks(datastore, self.OLD_IMAGE_ROOT_FOLDER_NAME, IMAGE_FOLDER_NAME_PREFIX,

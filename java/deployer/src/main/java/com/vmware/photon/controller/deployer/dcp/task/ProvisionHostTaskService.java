@@ -885,8 +885,7 @@ public class ProvisionHostTaskService extends StatefulService {
     try {
       AgentControlClient agentControlClient = HostUtils.getAgentControlClient(this);
       agentControlClient.setIpAndPort(hostState.hostAddress, hostState.agentPort);
-      agentControlClient.upgrade("",
-          new AsyncMethodCallback<AgentControl.AsyncClient.upgrade_call>() {
+      agentControlClient.upgrade(new AsyncMethodCallback<AgentControl.AsyncClient.upgrade_call>() {
             @Override
             public void onComplete(AgentControl.AsyncClient.upgrade_call upgradeCall) {
               try {
