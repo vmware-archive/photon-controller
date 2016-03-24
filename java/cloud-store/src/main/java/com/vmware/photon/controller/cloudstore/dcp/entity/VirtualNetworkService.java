@@ -17,11 +17,13 @@ import com.vmware.photon.controller.api.NetworkState;
 import com.vmware.photon.controller.api.RoutingType;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
+import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
 import com.vmware.photon.controller.common.xenon.validation.NotBlank;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.common.xenon.validation.WriteOnce;
+import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
@@ -35,6 +37,12 @@ import java.util.Objects;
  * Used for persisting the virtual network information.
  */
 public class VirtualNetworkService extends StatefulService {
+
+  public static final String FACTORY_LINK = ServiceUriPaths.CLOUDSTORE_ROOT + "/virtualNetworks";
+
+  public static FactoryService createFactory() {
+    return FactoryService.createIdempotent(VirtualNetworkService.class);
+  }
 
   public VirtualNetworkService() {
     super(State.class);

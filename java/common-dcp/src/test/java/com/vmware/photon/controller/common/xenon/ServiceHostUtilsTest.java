@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.common.xenon;
 
 import com.vmware.photon.controller.common.xenon.helpers.services.TestServiceWithSelfLink;
+import com.vmware.photon.controller.common.xenon.helpers.services.TestServiceWithStage;
 import com.vmware.photon.controller.common.xenon.helpers.services.TestServiceWithStageFactory;
 import com.vmware.photon.controller.common.xenon.helpers.services.TestServiceWithoutSelfLink;
 import com.vmware.xenon.common.Operation;
@@ -25,6 +26,7 @@ import com.vmware.xenon.services.common.NodeGroupService;
 import com.vmware.xenon.services.common.NodeState;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.testng.annotations.AfterMethod;
@@ -527,6 +529,55 @@ public class ServiceHostUtilsTest {
       assertTrue(
           host.checkServiceAvailable(TestServiceWithSelfLink.SELF_LINK),
           "TestServiceWithSelfLink is not available!");
+    }
+  }
+
+  /**
+   * Tests for startFactoryServices method.
+   */
+  public class StartFactoryServicesTest {
+
+    private BasicServiceHost host;
+
+    @BeforeMethod
+    public void setUp() throws Throwable {
+      host = spy(BasicServiceHost.create());
+    }
+
+    @AfterMethod
+    public void tearDown() throws Throwable {
+      if (host != null) {
+        BasicServiceHost.destroy(host);
+        host = null;
+      }
+    }
+
+    @Test
+    public void testInvalidHostParam() throws Throwable {
+      try {
+        ServiceHostUtils.startFactoryServices(null, ImmutableMap.of());
+        fail("Should have failed due to null host param");
+      } catch (NullPointerException e) {
+        assertThat(e.getMessage(), is("host cannot be null"));
+      }
+    }
+
+    @Test
+    public void testInvalidFactoryServicesParam() throws Throwable {
+      try {
+        ServiceHostUtils.startFactoryServices(mock(BasicServiceHost.class), null);
+        fail("Should have failed due to null factoryServicesMap param");
+      } catch (NullPointerException e) {
+        assertThat(e.getMessage(), is("factoryServicesMap cannot be null"));
+      }
+    }
+
+    @Test
+    public void testFactoryServicesSuccessfullyStarted() throws Throwable {
+      ServiceHostUtils.startFactoryServices(host,
+          ImmutableMap.of(TestServiceWithStage.class, TestServiceWithStage::createFactory));
+      ServiceHostUtils.waitForServiceAvailability(host, 1000, TestServiceWithStage.FACTORY_LINK);
+      assertThat(host.checkServiceAvailable(TestServiceWithStage.FACTORY_LINK), is(true));
     }
   }
 

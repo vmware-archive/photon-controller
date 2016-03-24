@@ -15,6 +15,7 @@ package com.vmware.photon.controller.common.xenon;
 
 import com.vmware.photon.controller.common.xenon.exceptions.BadRequestException;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
+import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.OperationJoin;
 import com.vmware.xenon.common.Service;
@@ -34,12 +35,14 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.lang.reflect.Field;
 import java.net.URI;
 import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -233,6 +236,24 @@ public class ServiceHostUtils {
 
     if (error.getSuppressed().length > 0) {
       throw error;
+    }
+  }
+
+  /**
+   * Starts the factory services for the given list of services.
+   * @param host
+   * @param factoryServicesMap
+   */
+  public static void startFactoryServices(ServiceHost host,
+                                          Map<Class<? extends Service>, Supplier<FactoryService>> factoryServicesMap) {
+    checkNotNull(host, "host cannot be null");
+    checkNotNull(factoryServicesMap, "factoryServicesMap cannot be null");
+
+    Iterator<Map.Entry<Class<? extends Service>, Supplier<FactoryService>>> it =
+        factoryServicesMap.entrySet().iterator();
+    while (it.hasNext()) {
+      Map.Entry<Class<? extends Service>, Supplier<FactoryService>> entry = it.next();
+      host.startFactory(entry.getKey(), entry.getValue());
     }
   }
 
