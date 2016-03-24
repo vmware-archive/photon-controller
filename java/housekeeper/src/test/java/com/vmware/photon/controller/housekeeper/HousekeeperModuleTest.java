@@ -48,10 +48,13 @@ public class HousekeeperModuleTest {
     @Test
     public void testConfig() {
       TestHelper.TestInjectedConfig test = injector.getInstance(TestHelper.TestInjectedConfig.class);
-      assertThat(test.getBind(), is("localhost"));
-      assertThat(test.getRegistrationAddress(), is("localhost"));
-      assertThat(test.getPort(), is(16000));
-      assertThat(test.getPath(), is("/tmp/dcp/housekeeper/"));
+      assertThat(test.getThriftBindAddress(), is("0.0.0.0"));
+      assertThat(test.getThriftPort(), is(16000));
+      assertThat(test.getThriftRegistrationAddress(), is("127.0.0.1"));
+      assertThat(test.getXenonBindAddress(), is("0.0.0.0"));
+      assertThat(test.getXenonPort(), is(16001));
+      assertThat(test.getXenonRegistrationAddress(), is("127.0.0.1"));
+      assertThat(test.getXenonStoragePath(), is("/tmp/dcp/housekeeper/"));
     }
   }
 }

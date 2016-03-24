@@ -17,13 +17,12 @@ import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.MultiHostEnvironment;
+import com.vmware.photon.controller.common.xenon.host.XenonConfig;
 import com.vmware.photon.controller.common.xenon.scheduler.TaskSchedulerServiceStateBuilder;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
 import com.vmware.photon.controller.housekeeper.dcp.HousekeeperXenonServiceHost;
-import com.vmware.photon.controller.housekeeper.helpers.TestHelper;
 import com.vmware.xenon.common.ServiceHost;
 
-import com.google.inject.Injector;
 import org.apache.commons.io.FileUtils;
 import static org.testng.Assert.assertTrue;
 
@@ -38,21 +37,24 @@ public class TestEnvironment extends MultiHostEnvironment<HousekeeperXenonServic
 
   private static final String configFilePath = "/config.yml";
 
-  private Injector injector = TestHelper.createInjector(configFilePath);
-
-  public TestEnvironment(CloudStoreHelper cloudStoreHelper, HostClientFactory hostClientFactory,
+  public TestEnvironment(CloudStoreHelper cloudStoreHelper,
+                         HostClientFactory hostClientFactory,
                          ServiceConfigFactory serviceConfigFactory,
-                         int hostCount) throws
-      Throwable {
+                         int hostCount) throws Throwable {
+
     assertTrue(hostCount > 0);
     hosts = new HousekeeperXenonServiceHost[hostCount];
     for (int i = 0; i < hosts.length; i++) {
-
       String sandbox = generateStorageSandboxPath();
       FileUtils.forceMkdir(new File(sandbox));
 
-      hosts[i] = new HousekeeperXenonServiceHost(cloudStoreHelper, BIND_ADDRESS, -1,
-          sandbox, hostClientFactory, serviceConfigFactory);
+      XenonConfig xenonConfig = new XenonConfig();
+      xenonConfig.setBindAddress(BIND_ADDRESS);
+      xenonConfig.setPort(0);
+      xenonConfig.setStoragePath(sandbox);
+
+      hosts[i] = new HousekeeperXenonServiceHost(xenonConfig, cloudStoreHelper, hostClientFactory,
+          serviceConfigFactory);
     }
   }
 

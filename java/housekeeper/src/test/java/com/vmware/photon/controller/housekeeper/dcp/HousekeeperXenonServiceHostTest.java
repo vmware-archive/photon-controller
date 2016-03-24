@@ -17,6 +17,7 @@ import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
+import com.vmware.photon.controller.common.xenon.host.XenonConfig;
 import com.vmware.photon.controller.common.xenon.scheduler.TaskSchedulerServiceFactory;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
 import com.vmware.photon.controller.housekeeper.Config;
@@ -93,7 +94,7 @@ public class HousekeeperXenonServiceHostTest {
 
       Config config = ConfigBuilder.build(Config.class,
           ConfigTest.class.getResource(configFilePath).getPath());
-      storageDir = new File(config.getDcp().getStoragePath());
+      storageDir = new File(config.getXenonConfig().getStoragePath());
       FileUtils.deleteDirectory(storageDir);
 
       injector = TestHelper.createInjector(configFilePath);
@@ -235,18 +236,29 @@ public class HousekeeperXenonServiceHostTest {
     private void setUp() throws Throwable {
       injector = TestHelper.createInjector(configFilePath);
 
+      XenonConfig xenonConfig = new XenonConfig();
+      xenonConfig.setBindAddress("0.0.0.0");
+      xenonConfig.setPort(16001);
+      xenonConfig.setStoragePath(storageDir.getAbsolutePath());
+
       host = new HousekeeperXenonServiceHost(
+          xenonConfig,
           injector.getInstance(CloudStoreHelper.class),
-          "0.0.0.0", 16000, storageDir.getPath(),
           injector.getInstance(HostClientFactory.class),
           injector.getInstance(ServiceConfigFactory.class));
+
       host.setMaintenanceIntervalMicros(maintenanceInterval);
       host.start();
       ServiceHostUtils.waitForServiceAvailability(host, SERVICES_STARTUP_TIMEOUT, serviceSelfLinks.clone());
 
+      XenonConfig xenonConfig2 = new XenonConfig();
+      xenonConfig2.setBindAddress("0.0.0.0");
+      xenonConfig2.setPort(16002);
+      xenonConfig2.setStoragePath(storageDir2.getAbsolutePath());
+
       host2 = new HousekeeperXenonServiceHost(
+          xenonConfig2,
           injector.getInstance(CloudStoreHelper.class),
-          "0.0.0.0", 16002, storageDir2.getPath(),
           injector.getInstance(HostClientFactory.class),
           injector.getInstance(ServiceConfigFactory.class));
       host2.setMaintenanceIntervalMicros(maintenanceInterval);
