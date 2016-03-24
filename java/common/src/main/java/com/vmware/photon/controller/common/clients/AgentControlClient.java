@@ -313,13 +313,11 @@ public class AgentControlClient {
    * @throws RpcException
    */
   @RpcMethod
-  public void upgrade(String previousVersion,
-      AsyncMethodCallback<AgentControl.AsyncClient.upgrade_call> handler)
+  public void upgrade(AsyncMethodCallback<AgentControl.AsyncClient.upgrade_call> handler)
       throws RpcException {
     ensureClient();
 
     UpgradeRequest upgradeRequest = new UpgradeRequest();
-    upgradeRequest.setPrevious_version(previousVersion);
 
     clientProxy.setTimeout(UPGRADE_TIMEOUT_MS);
     logger.info("upgrade target: {}, request {}", getHostIp(), upgradeRequest);
@@ -341,10 +339,10 @@ public class AgentControlClient {
    * @throws RpcException
    */
   @RpcMethod
-  public UpgradeResponse upgrade(String previousVersion)
+  public UpgradeResponse upgrade()
       throws InterruptedException, RpcException {
     SyncHandler<UpgradeResponse, AgentControl.AsyncClient.upgrade_call> syncHandler = new SyncHandler<>();
-    upgrade(previousVersion, syncHandler);
+    upgrade(syncHandler);
     syncHandler.await();
     return ResponseValidator.checkUpgradeResponse(syncHandler.getResponse());
   }

@@ -102,9 +102,7 @@ public class AgentControlClientMock extends AgentControlClient {
   }
 
   @Override
-  public void upgrade(
-      String previousVersion,
-      AsyncMethodCallback<AgentControl.AsyncClient.upgrade_call> handler) {
+  public void upgrade(AsyncMethodCallback<AgentControl.AsyncClient.upgrade_call> handler) {
 
     logger.info("Host upgrade complete invocation");
 
