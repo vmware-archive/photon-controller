@@ -575,9 +575,6 @@ public class ProvisionHostTaskService extends StatefulService {
       AgentControlClient agentControlClient = HostUtils.getAgentControlClient(this);
       agentControlClient.setIpAndPort(hostState.hostAddress, hostState.agentPort);
       agentControlClient.provision(
-          (hostState.availabilityZoneId != null) ?
-              hostState.availabilityZoneId :
-              DEFAULT_AVAILABILITY_ZONE,
           datastores,
           deploymentState.imageDataStoreNames,
           deploymentState.imageDataStoreUsedForVMs,
