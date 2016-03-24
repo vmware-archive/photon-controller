@@ -19,7 +19,6 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
 import com.vmware.photon.controller.common.logging.LoggingUtils;
 import com.vmware.photon.controller.common.manifest.BuildInfo;
 import com.vmware.photon.controller.common.thrift.ServerSet;
-import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.zookeeper.ServiceNodeEventHandler;
 import com.vmware.photon.controller.deployer.DeployerServerSet;
 import com.vmware.photon.controller.deployer.dcp.DeployerXenonServiceHost;
@@ -934,15 +933,7 @@ public class DeployerService implements Deployer.Iface, ServerSet.ChangeListener
    */
   @Override
   public void onServerAdded(InetSocketAddress address) {
-    String host = address.getHostString();
-    String currentHost = dcpHost.getUri().getHost();
-    if (host.equals(currentHost)) {
-      logger.info("Skip adding self {}", host);
-      return;
-    }
-
-    logger.info("Joining {} to {}", host, currentHost);
-    ServiceHostUtils.joinNodeGroup(dcpHost, host);
+    logger.info("Peer server added: " + address);
   }
 
   /**
@@ -952,6 +943,7 @@ public class DeployerService implements Deployer.Iface, ServerSet.ChangeListener
    */
   @Override
   public void onServerRemoved(InetSocketAddress address) {
+    logger.info("Peer server removed: " + address);
   }
 
   private void setRequestId(TracingInfo tracingInfo) {
