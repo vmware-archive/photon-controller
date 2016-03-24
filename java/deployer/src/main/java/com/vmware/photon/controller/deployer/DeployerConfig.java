@@ -18,29 +18,19 @@ import com.vmware.photon.controller.common.zookeeper.ZookeeperConfig;
 import com.vmware.photon.controller.deployer.dcp.ContainersConfig;
 import com.vmware.photon.controller.deployer.dcp.DeployerContext;
 import com.vmware.photon.controller.deployer.dcp.XenonConfig;
+import com.vmware.photon.controller.deployer.service.ThriftConfig;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableList;
-import com.google.inject.BindingAnnotation;
-import org.hibernate.validator.constraints.NotBlank;
-import org.hibernate.validator.constraints.Range;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
-import static java.lang.annotation.ElementType.FIELD;
-import static java.lang.annotation.ElementType.METHOD;
-import static java.lang.annotation.ElementType.PARAMETER;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
  * This class implements configuration state for the deployer service.
@@ -48,24 +38,20 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class DeployerConfig {
 
-  @NotNull
-  @Range(min = 0, max = 65535)
-  private Integer port;
-
-  @NotBlank
-  private String bind;
-
-  @NotBlank
-  private String registrationAddress;
-
-  @Valid
-  @NotNull
-  private XenonConfig dcp;
-
   @Valid
   @NotNull
   @JsonProperty("deployer")
   private DeployerContext deployerContext;
+
+  @Valid
+  @NotNull
+  @JsonProperty("xenon")
+  private XenonConfig xenonConfig;
+
+  @Valid
+  @NotNull
+  @JsonProperty("thrift")
+  private ThriftConfig thriftConfig;
 
   @Valid
   @NotNull
@@ -84,29 +70,12 @@ public class DeployerConfig {
 
   private static String managementImageFile = IMAGES_PATH + MANAGEMENT_IMAGE_FILE_NAME_PREFIX;
 
-  public DeployerConfig() {
-    try {
-      bind = InetAddress.getLocalHost().getHostAddress();
-      registrationAddress = InetAddress.getLocalHost().getHostAddress();
-    } catch (UnknownHostException e) {
-      throw new RuntimeException(e);
-    }
+  public XenonConfig getXenonConfig() {
+    return xenonConfig;
   }
 
-  public Integer getPort() {
-    return port;
-  }
-
-  public String getBind() {
-    return bind;
-  }
-
-  public String getRegistrationAddress() {
-    return registrationAddress;
-  }
-
-  public XenonConfig getDcp() {
-    return dcp;
+  public ThriftConfig getThriftConfig() {
+    return this.thriftConfig;
   }
 
   public DeployerContext getDeployerContext() {
@@ -143,32 +112,5 @@ public class DeployerConfig {
 
   public void setContainersConfig(ContainersConfig containersConfig) {
     this.containersConfig = containersConfig;
-  }
-
-  /**
-   * Deployer port.
-   */
-  @BindingAnnotation
-  @Target({FIELD, PARAMETER, METHOD})
-  @Retention(RUNTIME)
-  public @interface Port {
-  }
-
-  /**
-   * Deployer bind address.
-   */
-  @BindingAnnotation
-  @Target({FIELD, PARAMETER, METHOD})
-  @Retention(RUNTIME)
-  public @interface Bind {
-  }
-
-  /**
-   * Deployer registration address for zookeeper.
-   */
-  @BindingAnnotation
-  @Target({FIELD, PARAMETER, METHOD})
-  @Retention(RUNTIME)
-  public @interface RegistrationAddress {
   }
 }

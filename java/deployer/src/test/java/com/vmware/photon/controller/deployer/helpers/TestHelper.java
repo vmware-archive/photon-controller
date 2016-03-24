@@ -118,17 +118,12 @@ public class TestHelper {
     private String[] peerNodes;
 
     @Inject
-    public TestInjectedConfig(
-        @DeployerConfig.Bind String bind,
-        @DeployerConfig.RegistrationAddress String registrationAddress,
-        @DeployerConfig.Port int port,
-        @XenonConfig.StoragePath String path,
-        @XenonConfig.PeerNodes String[] peerNodes) {
-      this.bind = bind;
-      this.registrationAddress = registrationAddress;
-      this.port = port;
-      this.path = path;
-      this.peerNodes = peerNodes;
+    public TestInjectedConfig(XenonConfig xenonConfig) {
+      this.bind = xenonConfig.getBindAddress();
+      this.registrationAddress = xenonConfig.getRegistrationAddress();
+      this.port = xenonConfig.getPort();
+      this.path = xenonConfig.getStoragePath();
+      this.peerNodes = xenonConfig.getPeerNodes();
     }
 
     public String getBind() {

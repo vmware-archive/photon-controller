@@ -108,7 +108,7 @@ public class DeployerXenonServiceHostTest {
       DeployerConfig config = ConfigBuilder.build(DeployerConfig.class,
           DeployerConfigTest.class.getResource(configFilePath).getPath());
 
-      storageDir = new File(config.getDcp().getStoragePath());
+      storageDir = new File(config.getXenonConfig().getStoragePath());
       FileUtils.deleteDirectory(storageDir);
     }
 
@@ -265,12 +265,13 @@ public class DeployerXenonServiceHostTest {
     private void setUp() throws Throwable {
       injector = TestHelper.createInjector(configFilePath);
 
+      XenonConfig xenonConfig = new XenonConfig();
+      xenonConfig.setBindAddress("0.0.0.0");
+      xenonConfig.setPort(18001);
+      xenonConfig.setStoragePath(storageDir.getAbsolutePath());
+
       host = new DeployerXenonServiceHost(
-          "0.0.0.0",
-          18000,
-          null,
-          storageDir.getPath(),
-          null,
+          xenonConfig,
           null, /*cloudStoreServers*/
           injector.getInstance(DeployerContext.class),
           null /* containersConfig */,
@@ -291,12 +292,13 @@ public class DeployerXenonServiceHostTest {
       host.start();
       waitForServicesStartup(host);
 
+      XenonConfig xenonConfig2 = new XenonConfig();
+      xenonConfig2.setBindAddress("0.0.0.0");
+      xenonConfig2.setPort(18002);
+      xenonConfig2.setStoragePath(storageDir2.getAbsolutePath());
+
       host2 = new DeployerXenonServiceHost(
-          "0.0.0.0",
-          18002,
-          null,
-          storageDir2.getPath(),
-          null,
+          xenonConfig2,
           null, /*cloudStoreServers*/
           injector.getInstance(DeployerContext.class),
           null /* containersConfig */,

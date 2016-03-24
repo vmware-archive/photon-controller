@@ -44,6 +44,7 @@ import com.vmware.photon.controller.deployer.deployengine.ZookeeperClientFactory
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperNameSpace;
 import com.vmware.photon.controller.deployer.healthcheck.HealthCheckHelper;
 import com.vmware.photon.controller.deployer.healthcheck.HealthCheckHelperFactory;
+import com.vmware.photon.controller.deployer.service.ThriftConfig;
 import com.vmware.photon.controller.deployer.service.client.AddHostWorkflowServiceClientFactory;
 import com.vmware.photon.controller.deployer.service.client.ChangeHostModeTaskServiceClientFactory;
 import com.vmware.photon.controller.deployer.service.client.DeploymentWorkflowServiceClientFactory;
@@ -63,7 +64,6 @@ import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
 import org.apache.http.nio.conn.ssl.SSLIOSessionStrategy;
 import org.apache.http.ssl.SSLContexts;
 
-import javax.annotation.Nullable;
 import javax.net.ssl.SSLContext;
 
 import java.nio.file.Paths;
@@ -110,19 +110,17 @@ public class DeployerModule extends AbstractModule {
       throw new RuntimeException(e);
     }
 
-    bindConstant().annotatedWith(DeployerConfig.Bind.class).to(deployerConfig.getBind());
-    bindConstant().annotatedWith(DeployerConfig.RegistrationAddress.class).to(deployerConfig.getRegistrationAddress());
-    bindConstant().annotatedWith(DeployerConfig.Port.class).to(deployerConfig.getPort());
-    bindConstant().annotatedWith(XenonConfig.StoragePath.class).to(deployerConfig.getDcp().getStoragePath());
+    bind(BuildInfo.class).toInstance(BuildInfo.get(this.getClass()));
+    bind(ContainersConfig.class).toInstance(deployerConfig.getContainersConfig());
+    bind(DeployerContext.class).toInstance(deployerConfig.getDeployerContext());
+    bind(ThriftConfig.class).toInstance(deployerConfig.getThriftConfig());
+    bind(XenonConfig.class).toInstance(deployerConfig.getXenonConfig());
+
     bindConstant().annotatedWith(SharedSecret.class).to(deployerConfig.getDeployerContext().getSharedSecret());
 
     bind(String.class).annotatedWith(ZookeeperNameSpace.class)
         .toProvider(Providers.of(deployerConfig.getZookeeper().getNamespace()));
 
-    bind(XenonConfig.class).toInstance(deployerConfig.getDcp());
-    bind(DeployerContext.class).toInstance(deployerConfig.getDeployerContext());
-    bind(ContainersConfig.class).toInstance(deployerConfig.getContainersConfig());
-    bind(BuildInfo.class).toInstance(BuildInfo.get(DeployerModule.class));
     deployerConfig.getDeployerContext().setZookeeperQuorum(deployerConfig.getZookeeper().getQuorum());
 
     bind(ListeningExecutorService.class)
@@ -176,13 +174,6 @@ public class DeployerModule extends AbstractModule {
 
   @Provides
   @Singleton
-  @XenonConfig.PeerNodes
-  public String[] getPeerNodes() {
-    return this.deployerConfig.getDcp().getPeerNodes();
-  }
-
-  @Provides
-  @Singleton
   @DeployerServerSet
   public ServerSet getDeployerServerSet(ZookeeperServerSetFactory serverSetFactory) {
     ServerSet serverSet = serverSetFactory.createServiceServerSet(DEPLOYER_SERVICE_NAME, true);
@@ -199,11 +190,7 @@ public class DeployerModule extends AbstractModule {
   @Provides
   @Singleton
   public DeployerXenonServiceHost getDeployerDcpServiceHost(
-      @DeployerConfig.Bind String bind,
-      @DeployerConfig.Port int port,
-      @DeployerConfig.RegistrationAddress String registrationAddress,
-      @XenonConfig.StoragePath String storagePath,
-      @XenonConfig.PeerNodes @Nullable String[] peerNodes,
+      XenonConfig xenonConfig,
       @CloudStoreServerSet ServerSet cloudStoreServerSet,
       DeployerContext deployerContext,
       ContainersConfig containersConfig,
@@ -222,11 +209,7 @@ public class DeployerModule extends AbstractModule {
       throws Throwable {
 
     return new DeployerXenonServiceHost(
-        bind,
-        port,
-        registrationAddress,
-        storagePath,
-        peerNodes,
+        xenonConfig,
         cloudStoreServerSet,
         deployerContext,
         containersConfig,
