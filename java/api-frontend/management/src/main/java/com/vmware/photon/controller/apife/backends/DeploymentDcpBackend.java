@@ -64,6 +64,8 @@ import java.util.Set;
 @Singleton
 public class DeploymentDcpBackend implements DeploymentBackend {
 
+  protected static final String AUTH_ADMIN_USER_NAME = "administrator";
+
   private static final Logger logger = LoggerFactory.getLogger(DeploymentDcpBackend.class);
 
   private final ApiFeXenonRestClient dcpClient;
@@ -445,12 +447,16 @@ public class DeploymentDcpBackend implements DeploymentBackend {
     deployment.ntpEndpoint = spec.getNtpEndpoint();
     if (spec.getAuth() != null) {
       deployment.oAuthEnabled = spec.getAuth().getEnabled();
-      deployment.oAuthTenantName = spec.getAuth().getTenant();
-      deployment.oAuthPassword = spec.getAuth().getPassword();
 
-      if (spec.getAuth().getSecurityGroups() != null
-          && spec.getAuth().getSecurityGroups().size() > 0) {
-        deployment.oAuthSecurityGroups = new ArrayList<>(spec.getAuth().getSecurityGroups());
+      if (spec.getAuth().getEnabled()) {
+        deployment.oAuthTenantName = spec.getAuth().getTenant();
+        deployment.oAuthUserName = AUTH_ADMIN_USER_NAME;
+        deployment.oAuthPassword = spec.getAuth().getPassword();
+
+        if (spec.getAuth().getSecurityGroups() != null
+            && spec.getAuth().getSecurityGroups().size() > 0) {
+          deployment.oAuthSecurityGroups = new ArrayList<>(spec.getAuth().getSecurityGroups());
+        }
       }
     }
 
