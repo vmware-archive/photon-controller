@@ -53,6 +53,7 @@ import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyMap;
 import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.when;
 import static org.powermock.api.mockito.PowerMockito.doReturn;
 import static org.powermock.api.mockito.PowerMockito.doThrow;
@@ -383,8 +384,15 @@ public class RegisterAuthClientTaskServiceTest {
     public void testEndToEndSuccess() throws Throwable {
       setupMgmtServiceDocuments();
 
-      doReturn(implicitClient).when(authHelper).getResourceLoginUri(anyString(), anyString(),
-          anyString(), anyString(), anyInt(), anyString(), anyString());
+      doReturn(implicitClient)
+          .when(authHelper)
+          .getResourceLoginUri(
+              eq(deploymentServiceState.oAuthTenantName),
+              eq(deploymentServiceState.oAuthTenantName + "\\" + deploymentServiceState.oAuthUserName),
+              eq(deploymentServiceState.oAuthPassword),
+              eq(deploymentServiceState.oAuthServerAddress),
+              eq(deploymentServiceState.oAuthServerPort),
+              anyString(), anyString());
 
       RegisterAuthClientTaskService.State finalState = testEnvironment.callServiceAndWaitForState(
           RegisterAuthClientTaskFactoryService.SELF_LINK,
@@ -416,8 +424,9 @@ public class RegisterAuthClientTaskServiceTest {
 
     @Test
     public void testEndToEndFailedToGetLbIp() throws Throwable {
-      doReturn(implicitClient).when(authHelper).getResourceLoginUri(anyString(), anyString(),
-          anyString(), anyString(), anyInt(), anyString(), anyString());
+      doReturn(implicitClient)
+          .when(authHelper)
+          .getResourceLoginUri(anyString(), anyString(), anyString(), anyString(), anyInt(), anyString(), anyString());
 
       RegisterAuthClientTaskService.State finalState = testEnvironment.callServiceAndWaitForState(
           RegisterAuthClientTaskFactoryService.SELF_LINK,
@@ -449,6 +458,8 @@ public class RegisterAuthClientTaskServiceTest {
       deploymentStartState.oAuthUserName = "user1";
       deploymentStartState.oAuthPassword = "password1";
       deploymentStartState.oAuthTenantName = "tenant1";
+      deploymentStartState.loadBalancerEnabled = true;
+      deploymentStartState.loadBalancerAddress = "http://lb";
       deploymentServiceState = TestHelper.createDeploymentService(cloudStoreMachine, deploymentStartState);
     }
 

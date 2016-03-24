@@ -228,7 +228,7 @@ public class DeploymentDcpBackendTest {
       assertThat(deployment.getOauthEndpoint(), nullValue());
       assertThat(deployment.getOauthPort(), nullValue());
       assertThat(deployment.getOauthTenant(), is("t"));
-      assertThat(deployment.getOauthUsername(), nullValue());
+      assertThat(deployment.getOauthUsername(), is(DeploymentDcpBackend.AUTH_ADMIN_USER_NAME));
       assertThat(deployment.getOauthPassword(), is("p"));
       assertThat(deployment.getNetworkManagerAddress(), is("1.2.3.4"));
       assertThat(deployment.getNetworkManagerUsername(), is("networkManagerUsername"));
