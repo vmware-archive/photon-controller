@@ -204,7 +204,6 @@ public class AgentControlClientTest {
    */
   public class ProvisionTest {
 
-    private String availabilityZone = "zone1";
     private List<String> dataStoreList = Arrays.asList("dataStore1", "dataStore2", "dataStore3");
     private String imageDataStore = "dataStore1";
     private boolean usedForVms = false;
@@ -253,11 +252,9 @@ public class AgentControlClientTest {
 
       agentControlClient.setClientProxy(clientProxy);
 
-      assertThat(agentControlClient.provision(availabilityZone, dataStoreList,
-              new HashSet<>(Arrays.asList(imageDataStore)),
-              usedForVms, networkList, hostAddress, hostPort, memoryOverCommit,
-              loggingEndpoint, logLevel, statsPluginConfig, managementOnly, hostId,
-              deploymentId, ntpEndpoint),
+      assertThat(agentControlClient.provision(dataStoreList, new HashSet<>(Arrays.asList(imageDataStore)),
+              usedForVms, networkList, hostAddress, hostPort, memoryOverCommit, loggingEndpoint,
+              logLevel, statsPluginConfig, managementOnly, hostId, deploymentId, ntpEndpoint),
           is(provisionResponse));
       verify(clientProxy).provision(request.capture(), any(AsyncMethodCallback.class));
       // Verify that the image_datastores field is set.
@@ -267,7 +264,7 @@ public class AgentControlClientTest {
     @Test
     public void testFailureNullHostIp() throws Exception {
       try {
-        agentControlClient.provision(availabilityZone, dataStoreList, Collections.singleton(imageDataStore), usedForVms,
+        agentControlClient.provision(dataStoreList, Collections.singleton(imageDataStore), usedForVms,
             networkList, hostAddress, hostPort, memoryOverCommit, loggingEndpoint,
             logLevel, statsPluginConfig, managementOnly, hostId, deploymentId, ntpEndpoint);
         fail("Synchronous provision call should throw with null async clientProxy");
@@ -284,9 +281,8 @@ public class AgentControlClientTest {
       agentControlClient.setClientProxy(clientProxy);
 
       try {
-        agentControlClient.provision(availabilityZone, dataStoreList,
-            new HashSet<>(Arrays.asList(imageDataStore)), usedForVms,
-            networkList, hostAddress, hostPort, memoryOverCommit, loggingEndpoint,
+        agentControlClient.provision(dataStoreList, new HashSet<>(Arrays.asList(imageDataStore)),
+            usedForVms, networkList, hostAddress, hostPort, memoryOverCommit, loggingEndpoint,
             logLevel, statsPluginConfig, managementOnly, hostId, deploymentId, ntpEndpoint);
         fail("Synchronous provision call should convert TException on call to RpcException");
       } catch (RpcException e) {
@@ -304,9 +300,8 @@ public class AgentControlClientTest {
       agentControlClient.setClientProxy(clientProxy);
 
       try {
-        agentControlClient.provision(availabilityZone, dataStoreList,
-            new HashSet<>(Arrays.asList(imageDataStore)), usedForVms,
-            networkList, hostAddress, hostPort, memoryOverCommit, loggingEndpoint,
+        agentControlClient.provision(dataStoreList, new HashSet<>(Arrays.asList(imageDataStore)),
+            usedForVms, networkList, hostAddress, hostPort, memoryOverCommit, loggingEndpoint,
             logLevel, statsPluginConfig, managementOnly, hostId, deploymentId, ntpEndpoint);
         fail("Synchronous provision call should convert TException on call to RpcException");
       } catch (RpcException e) {
@@ -329,9 +324,8 @@ public class AgentControlClientTest {
       agentControlClient.setClientProxy(clientProxy);
 
       try {
-        agentControlClient.provision(availabilityZone, dataStoreList,
-            new HashSet<>(Arrays.asList(imageDataStore)), usedForVms,
-            networkList, hostAddress, hostPort, memoryOverCommit, loggingEndpoint,
+        agentControlClient.provision(dataStoreList, new HashSet<>(Arrays.asList(imageDataStore)),
+            usedForVms, networkList, hostAddress, hostPort, memoryOverCommit, loggingEndpoint,
             logLevel, statsPluginConfig, managementOnly, hostId, deploymentId, ntpEndpoint);
         fail("Synchronous provision call should throw on failure result: " + resultCode.toString());
       } catch (Exception e) {
