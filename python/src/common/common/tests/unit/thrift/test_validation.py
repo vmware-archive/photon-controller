@@ -59,7 +59,6 @@ class TestValidation(unittest.TestCase):
         msg = ConfigureRequest()
         self.assert_invalid(msg)
         msg.scheduler = "string"
-        msg.availability_zone = "string"
         self.assert_invalid(msg)
 
         msg.roles = Roles()

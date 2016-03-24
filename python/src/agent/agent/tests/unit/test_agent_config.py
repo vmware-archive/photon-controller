@@ -15,10 +15,8 @@ import os
 import shutil
 import unittest
 
-from hamcrest import *  # noqa
-import mock
-
 import common
+import mock
 from agent.agent_config import AgentConfig
 from agent.agent_config import InvalidConfig
 from common.file_util import mkdtemp
@@ -27,10 +25,10 @@ from common.service_name import ServiceName
 from common.state import State
 from gen.agent.ttypes import ProvisionRequest
 from gen.common.ttypes import ServerAddress
-from gen.host.ttypes import SetAvailabilityZoneRequest
 from gen.resource.ttypes import ImageDatastore
-from host.hypervisor.fake.hypervisor import FakeHypervisor
 from gen.stats.plugin.ttypes import StatsPluginConfig
+from hamcrest import *  # noqa
+from host.hypervisor.fake.hypervisor import FakeHypervisor
 
 
 class TestUnitAgent(unittest.TestCase):
@@ -99,7 +97,6 @@ class TestUnitAgent(unittest.TestCase):
 
     def test_property_accessors(self):
         self.agent._parse_options(["--config-path", self.agent_conf_dir,
-                                   "--availability-zone", "test",
                                    "--hostname", "localhost",
                                    "--port", "1234",
                                    "--datastores", "ds1, ds2",
@@ -109,7 +106,6 @@ class TestUnitAgent(unittest.TestCase):
                                    "--stats-store-endpoint", "10.10.10.10",
                                    "--stats-store-port", "8081",
                                    "--stats-host-tags", "MGMT,CLOUD"])
-        assert_that(self.agent.availability_zone, equal_to("test"))
         assert_that(self.agent.hostname, equal_to("localhost"))
         assert_that(self.agent.stats_enabled, equal_to(True))
         assert_that(self.agent.stats_store_endpoint, equal_to("10.10.10.10"))
@@ -122,7 +118,6 @@ class TestUnitAgent(unittest.TestCase):
 
     def test_boostrap_ready(self):
         self.agent._parse_options(["--config-path", self.agent_conf_dir,
-                                   "--availability-zone", "test",
                                    "--hostname", "localhost",
                                    "--port", "1234",
                                    "--host-id", "host1",
@@ -132,7 +127,6 @@ class TestUnitAgent(unittest.TestCase):
     def test_agent_config_update(self):
         """ Test that updating the config using the RPC struct works """
         self.agent._parse_options(["--config-path", self.agent_conf_dir,
-                                   "--availability-zone", "test",
                                    "--hostname", "localhost",
                                    "--port", "1234",
                                    "--datastores", "ds1, ds2"])
@@ -143,7 +137,6 @@ class TestUnitAgent(unittest.TestCase):
         self.assertFalse(self.agent.reboot_required)
 
         req = ProvisionRequest()
-        req.availability_zone = "test1"
         req.datastores = ["ds3", "ds4"]
         req.networks = ["Public"]
         req.memory_overcommit = 1.5
@@ -159,7 +152,6 @@ class TestUnitAgent(unittest.TestCase):
         req.deployment_id = "deployment1"
         self.agent.update_config(req)
 
-        assert_that(self.agent.availability_zone, equal_to("test1"))
         assert_that(self.agent.stats_store_endpoint, equal_to("10.0.0.100"))
         assert_that(self.agent.stats_store_port, equal_to(8081))
         assert_that(self.agent.stats_enabled, equal_to(True))
@@ -180,7 +172,6 @@ class TestUnitAgent(unittest.TestCase):
         req = ProvisionRequest()
 
         self.agent.update_config(req)
-        assert_that(self.agent.availability_zone, equal_to(None))
         assert_that(self.agent.hostname, equal_to(None))
         assert_that(self.agent.host_port, equal_to(8835))
         assert_that(self.agent.datastores, equal_to([]))
@@ -195,7 +186,6 @@ class TestUnitAgent(unittest.TestCase):
         # Test an invalid update and verify the update doesn't have any side
         # effects.
         req = ProvisionRequest()
-        req.availability_zone = "test1"
         req.datastores = ["ds3", "ds4"]
         req.networks = ["Public"]
         req.memory_overcommit = 0.5
@@ -204,70 +194,12 @@ class TestUnitAgent(unittest.TestCase):
 
         # Verify an exception is raised.
         self.assertRaises(InvalidConfig, self.agent.update_config, req)
-        assert_that(self.agent.availability_zone, equal_to(None))
         assert_that(self.agent.hostname, equal_to(None))
         assert_that(self.agent.host_port, equal_to(8835))
         assert_that(self.agent.datastores, equal_to([]))
         assert_that(self.agent.networks, equal_to([]))
         self.assertFalse(self.agent.bootstrap_ready)
         self.assertEqual(self.agent.memory_overcommit, 1.0)
-
-    def test_agent_config_set_availability_zone(self):
-        """ Test that updating the config using the RPC struct works """
-        self.agent._parse_options(["--config-path", self.agent_conf_dir,
-                                   "--availability-zone", "test",
-                                   "--hostname", "localhost",
-                                   "--port", "1234",
-                                   "--datastores", "ds1, ds2"])
-        expected_image_ds = [{"name": "ds3", "used_for_vms": True}]
-
-        self.assertFalse(self.agent.bootstrap_ready)
-        self.assertTrue(self.agent.provision_ready)
-        self.assertFalse(self.agent.reboot_required)
-
-        req = ProvisionRequest()
-        req.availability_zone = "test1"
-        req.datastores = ["ds3", "ds4"]
-        req.networks = ["Public"]
-        req.memory_overcommit = 1.5
-        req.image_datastores = set([ImageDatastore("ds3", True)])
-        addr = ServerAddress(host="localhost", port=2345)
-        req.address = addr
-        req.host_id = "host1"
-        req.deployment_id = "deployment1"
-        self.agent.update_config(req)
-
-        assert_that(self.agent.availability_zone, equal_to("test1"))
-        assert_that(self.agent.hostname, equal_to("localhost"))
-        assert_that(self.agent.host_port, equal_to(2345))
-        assert_that(self.agent.datastores, equal_to(["ds3", "ds4"]))
-        assert_that(self.agent.networks, equal_to(["Public"]))
-        assert_that(self.agent.memory_overcommit,
-                    equal_to(1.5))
-        assert_that(self.agent.image_datastores, equal_to(expected_image_ds))
-        assert_that(self.agent.host_id, equal_to("host1"))
-        assert_that(self.agent.deployment_id, equal_to("deployment1"))
-
-        self.assertTrue(self.agent.bootstrap_ready)
-        self.assertTrue(self.agent.reboot_required)
-
-        # Verify we are able to update availability zone only.
-        setZone = SetAvailabilityZoneRequest()
-        setZone.availability_zone = "test2"
-
-        self.agent.set_availability_zone(setZone)
-        assert_that(self.agent.availability_zone, equal_to("test2"))
-        assert_that(self.agent.hostname, equal_to("localhost"))
-        assert_that(self.agent.host_port, equal_to(2345))
-        assert_that(self.agent.datastores, equal_to(["ds3", "ds4"]))
-        assert_that(self.agent.networks, equal_to(["Public"]))
-        assert_that(self.agent.memory_overcommit,
-                    equal_to(1.5))
-        assert_that(self.agent.image_datastores, equal_to(expected_image_ds))
-        assert_that(self.agent.host_id, equal_to("host1"))
-
-        self.assertTrue(self.agent.bootstrap_ready)
-        self.assertTrue(self.agent.reboot_required)
 
     def test_reboot_required(self):
         """
@@ -279,7 +211,6 @@ class TestUnitAgent(unittest.TestCase):
         self.assertFalse(self.agent.reboot_required)
 
         req = ProvisionRequest()
-        req.availability_zone = "test1"
         req.datastores = ["ds3", "ds4"]
         req.networks = ["Public"]
         req.stats_plugin_config = StatsPluginConfig()
@@ -293,7 +224,6 @@ class TestUnitAgent(unittest.TestCase):
         self.assertTrue(self.agent.reboot_required)
 
         req = ProvisionRequest()
-        req.availability_zone = "test1"
         req.datastores = ["ds3", "ds4"]
         req.networks = ["Public"]
         addr = ServerAddress(host="localhost", port=2345)
