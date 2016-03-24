@@ -377,6 +377,8 @@ public class BulkProvisionHostsWorkflowServiceTest {
         declaredField.set(patchState, new Integer(0));
       } else if (declaredField.getType() == Set.class) {
         declaredField.set(patchState, new HashSet<>());
+      } else if (declaredField.getType() == Boolean.class) {
+        declaredField.set(patchState, new Boolean(false));
       } else {
         declaredField.set(patchState, declaredField.getType().newInstance());
       }
@@ -616,6 +618,7 @@ public class BulkProvisionHostsWorkflowServiceTest {
     startState.deploymentServiceLink = "DEPLOYMENT_SERVICE_LINK";
     startState.usageTag = UsageTag.MGMT.name();
     startState.controlFlags = ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED;
+    startState.shouldUpgradeAgent = true;
 
     if (null != startStage) {
       startState.taskState = new BulkProvisionHostsWorkflowService.TaskState();

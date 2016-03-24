@@ -1408,6 +1408,7 @@ public class ProvisionHostTaskServiceTest {
 
       doReturn(agentControlClientMock).when(agentControlClientFactory).create();
 
+      startState.shouldUpgradeAgent = true;
       ProvisionHostTaskService.State finalState =
           testEnvironment.callServiceAndWaitForState(
               ProvisionHostTaskFactoryService.SELF_LINK,
@@ -1429,6 +1430,7 @@ public class ProvisionHostTaskServiceTest {
 
       doReturn(agentControlClientMock).when(agentControlClientFactory).create();
 
+      startState.shouldUpgradeAgent = true;
       ProvisionHostTaskService.State finalState =
           testEnvironment.callServiceAndWaitForState(
               ProvisionHostTaskFactoryService.SELF_LINK,
@@ -1439,6 +1441,21 @@ public class ProvisionHostTaskServiceTest {
       assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
       assertThat(finalState.taskState.subStage, nullValue());
       assertThat(finalState.taskState.failure.statusCode, is(400));
+    }
+
+    @Test
+    public void testUpgradeAgentSkipped() throws Throwable {
+      startState.shouldUpgradeAgent = false;
+      ProvisionHostTaskService.State finalState =
+          testEnvironment.callServiceAndWaitForState(
+              ProvisionHostTaskFactoryService.SELF_LINK,
+              startState,
+              ProvisionHostTaskService.State.class,
+              (state) -> state.taskState.subStage !=
+                  ProvisionHostTaskService.TaskState.SubStage.UPGRADE_AGENT);
+
+      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FINISHED));
+      assertThat(finalState.controlFlags, is(ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED));
     }
   }
 
@@ -1676,15 +1693,18 @@ public class ProvisionHostTaskServiceTest {
       FileUtils.deleteDirectory(storageDirectory);
     }
 
-    @DataProvider(name = "PreExistingDatastoreCount")
-    public Object[][] getPreExistingDatastoreCount() {
+    @DataProvider(name = "EndToEndTestDataProvider")
+    public Object[][] getEndToEndTestData() {
       return new Object[][]{
-          {0}, {1}, {datastoreCount}
+          {0, true},
+          {1, true},
+          {datastoreCount, true},
+          {1, false}
       };
     }
 
-    @Test(dataProvider = "PreExistingDatastoreCount")
-    public void testEndToEndSuccess(int preExistingDatastoresCount) throws Throwable {
+    @Test(dataProvider = "EndToEndTestDataProvider")
+    public void testEndToEndSuccess(int preExistingDatastoresCount, boolean shouldUpgradeAgent) throws Throwable {
 
       MockHelper.mockCreateScriptFile(deployerContext, ProvisionHostTaskService.SCRIPT_NAME, true);
 
@@ -1713,6 +1733,7 @@ public class ProvisionHostTaskServiceTest {
 
       doReturn(hostClientMock).when(hostClientFactory).create();
 
+      startState.shouldUpgradeAgent = shouldUpgradeAgent;
       ProvisionHostTaskService.State finalState =
           testEnvironment.callServiceAndWaitForState(
               ProvisionHostTaskFactoryService.SELF_LINK,
@@ -1776,6 +1797,7 @@ public class ProvisionHostTaskServiceTest {
     startState.hostServiceLink = "HOST_SERVICE_LINK";
     startState.vibPath = "VIB_PATH";
     startState.controlFlags = ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED;
+    startState.shouldUpgradeAgent = true;
 
     if (stage != null) {
       startState.taskState = new ProvisionHostTaskService.TaskState();

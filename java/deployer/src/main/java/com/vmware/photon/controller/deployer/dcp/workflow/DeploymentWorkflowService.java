@@ -743,6 +743,7 @@ public class DeploymentWorkflowService extends StatefulService {
     startState.deploymentServiceLink = currentState.deploymentServiceLink;
     startState.usageTag = UsageTag.CLOUD.name();
     startState.taskPollDelay = currentState.taskPollDelay;
+    startState.shouldUpgradeAgent = false;
 
     TaskUtils.startTaskAsync(
         this,

@@ -688,6 +688,7 @@ public class AddManagementHostWorkflowService extends StatefulService {
     startState.deploymentServiceLink = currentState.deploymentServiceLink;
     startState.usageTag = UsageTag.MGMT.name();
     startState.taskPollDelay = currentState.taskPollDelay;
+    startState.shouldUpgradeAgent = false;
     if (currentState.hostServiceLink != null) {
       startState.querySpecification = MiscUtils.generateHostQuerySpecification(currentState.hostServiceLink, null);
     }

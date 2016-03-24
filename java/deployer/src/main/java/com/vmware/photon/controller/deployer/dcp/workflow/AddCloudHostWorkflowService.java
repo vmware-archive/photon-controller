@@ -225,6 +225,7 @@ public class AddCloudHostWorkflowService extends StatefulService {
     startState.deploymentServiceLink = deploymentServiceLink;
     startState.usageTag = UsageTag.CLOUD.name();
     startState.querySpecification = MiscUtils.generateHostQuerySpecification(currentState.hostServiceLink, null);
+    startState.shouldUpgradeAgent = false;
 
     TaskUtils.startTaskAsync(
         this,

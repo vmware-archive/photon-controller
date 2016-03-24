@@ -92,6 +92,13 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
     public String usageTag;
 
     /**
+     * This value represents whether to call agent to perform upgrade.
+     */
+    @NotNull
+    @Immutable
+    public Boolean shouldUpgradeAgent;
+
+    /**
      * This value represents the query specification which can be used to identify the hosts to be provisioned.
      */
     @Immutable
@@ -407,6 +414,7 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
     startState.deploymentServiceLink = currentState.deploymentServiceLink;
     startState.hostServiceLink = hostServiceLink;
     startState.vibPath = vibPath;
+    startState.shouldUpgradeAgent = currentState.shouldUpgradeAgent;
 
     TaskUtils.startTaskAsync(
         this,

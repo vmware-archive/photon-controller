@@ -156,6 +156,13 @@ public class ProvisionHostTaskService extends StatefulService {
     public String vibPath;
 
     /**
+     * This value represents whether to call agent to perform upgrade.
+     */
+    @NotNull
+    @Immutable
+    public Boolean shouldUpgradeAgent;
+
+    /**
      * This value represents the maximum number of agent status polling iterations which should be attempted before
      * declaring failure.
      */
@@ -861,6 +868,12 @@ public class ProvisionHostTaskService extends StatefulService {
 
   private void processUpgradeAgentSubStage(State currentState) {
 
+    // If UpgradeAgent is not necessary, skip this sub-stage.
+    if (!currentState.shouldUpgradeAgent) {
+      sendStageProgressPatch(currentState, TaskState.TaskStage.FINISHED, null);
+      return;
+    }
+
     CloudStoreHelper cloudStoreHelper = HostUtils.getCloudStoreHelper(this);
     Operation hostOp = cloudStoreHelper.createGet(currentState.hostServiceLink);
 
@@ -891,8 +904,7 @@ public class ProvisionHostTaskService extends StatefulService {
             public void onComplete(AgentControl.AsyncClient.upgrade_call upgradeCall) {
               try {
                 AgentControlClient.ResponseValidator.checkUpgradeResponse(upgradeCall.getResult());
-                sendStageProgressPatch(currentState, TaskState.TaskStage.STARTED,
-                    TaskState.SubStage.WAIT_FOR_UPGRADE);
+                sendStageProgressPatch(currentState, TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_FOR_UPGRADE);
               } catch (Throwable t) {
                 failTask(t);
               }

@@ -775,6 +775,7 @@ public class FinalizeDeploymentMigrationWorkflowService extends StatefulService 
     startState.taskState.subStage = BulkProvisionHostsWorkflowService.TaskState.SubStage.UPLOAD_VIB;
     startState.deploymentServiceLink = deploymentState.documentSelfLink;
     startState.usageTag = UsageTag.CLOUD.name();
+    startState.shouldUpgradeAgent = true;
     startState.querySpecification = MiscUtils.generateHostQuerySpecification(null, UsageTag.CLOUD.name());
     // only reprovision hosts that are actually in ready state, otherwise this might fail due to trying
     // to provision a bad host
