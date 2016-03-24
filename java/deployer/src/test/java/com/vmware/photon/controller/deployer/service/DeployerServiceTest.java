@@ -14,7 +14,6 @@
 package com.vmware.photon.controller.deployer.service;
 
 import com.vmware.photon.controller.common.thrift.ServerSet;
-import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.zookeeper.PathChildrenCacheFactory;
 import com.vmware.photon.controller.common.zookeeper.ServiceNode;
 import com.vmware.photon.controller.common.zookeeper.SimpleServiceNode;
@@ -94,7 +93,6 @@ import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
 
-import com.google.common.collect.ImmutableList;
 import com.google.inject.Injector;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -108,6 +106,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.mockito.Matchers.any;
@@ -116,11 +115,8 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.powermock.api.mockito.PowerMockito.verifyNoMoreInteractions;
-import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
 import java.net.InetSocketAddress;
@@ -177,6 +173,9 @@ public class DeployerServiceTest {
    */
   public class ZookeeperRegistrationTest {
 
+    private final InetSocketAddress address1 = new InetSocketAddress("192.168.1.1", 18000);
+    private final InetSocketAddress address2 = new InetSocketAddress("192.168.1.2", 18000);
+
     private CuratorFramework zkClient;
     private ServerSet serverSet;
 
@@ -207,69 +206,34 @@ public class DeployerServiceTest {
 
     @Test
     public void testJoin() throws Throwable {
-      int port = 18000;
-      TestGroup testGroup1 = createTestGroup("192.168.1.1", port);
-      TestGroup testGroup2 = createTestGroup("192.168.1.2", port);
+      TestGroup testGroup1 = createTestGroup(address1.getHostName(), address1.getPort());
+      TestGroup testGroup2 = createTestGroup(address2.getHostName(), address2.getPort());
 
       // join first node
-      CountDownLatch done = new CountDownLatch(2);
+      CountDownLatch done = new CountDownLatch(4);
       testGroup1.deployerService.setCountDownLatch(done);
       testGroup2.deployerService.setCountDownLatch(done);
       testGroup1.node.join();
-
-      assertTrue(done.await(5, TimeUnit.SECONDS), "Timed out waiting for server set callback");
-      assertEquals(testGroup1.deployerService.getServers().size(), 1);
-      assertEquals(testGroup2.deployerService.getServers().size(), 1);
-
-      // join second node
-      done = new CountDownLatch(2);
-      testGroup1.deployerService.setCountDownLatch(done);
-      testGroup2.deployerService.setCountDownLatch(done);
-
       testGroup2.node.join();
+
       assertTrue(done.await(5, TimeUnit.SECONDS), "Timed out waiting for server set callback");
-      assertEquals(testGroup1.deployerService.getServers().size(), 2);
-      assertEquals(testGroup2.deployerService.getServers().size(), 2);
-
-      verify(testGroup1.dcpHost).checkServiceAvailable(ServiceUriPaths.DEFAULT_NODE_GROUP);
-      verify(testGroup2.dcpHost).checkServiceAvailable(ServiceUriPaths.DEFAULT_NODE_GROUP);
-
-      verify(testGroup1.dcpHost, times(2)).getUri();
-      verify(testGroup2.dcpHost, times(2)).getUri();
-      verify(testGroup1.dcpHost).getPort();
-      verify(testGroup2.dcpHost).getPort();
-      verify(testGroup2.dcpHost).joinPeers(
-          ImmutableList.of(UriUtils.buildUri("192.168.1.1", 0, "", null)),
-          ServiceUriPaths.DEFAULT_NODE_GROUP);
-      verify(testGroup1.dcpHost).joinPeers(
-          ImmutableList.of(UriUtils.buildUri("192.168.1.2", 0, "", null)),
-          ServiceUriPaths.DEFAULT_NODE_GROUP);
-      verifyNoMoreInteractions(testGroup1.dcpHost, testGroup2.dcpHost);
+      assertThat(testGroup1.deployerService.getServers(), containsInAnyOrder(address1, address2));
+      assertThat(testGroup2.deployerService.getServers(), containsInAnyOrder(address1, address2));
     }
 
     private TestGroup createTestGroup(String hostname, int port) {
-      ServiceNode node =
-          new SimpleServiceNode(zkClient, "deployer", new InetSocketAddress(hostname, port));
-
-      DeployerXenonServiceHost dcpHost = mock(DeployerXenonServiceHost.class);
-      when(dcpHost.checkServiceAvailable(ServiceUriPaths.DEFAULT_NODE_GROUP)).thenReturn(true);
-      when(dcpHost.getUri()).thenReturn(UriUtils.buildUri(hostname, port + 1, "", null));
-
-      TestDeployerService deployerService =
-          new TestDeployerService(serverSet, dcpHost);
+      ServiceNode node = new SimpleServiceNode(zkClient, "deployer", new InetSocketAddress(hostname, port));
+      TestDeployerService deployerService = new TestDeployerService(serverSet);
       serverSet.addChangeListener(deployerService);
-
-      return new TestGroup(node, dcpHost, deployerService);
+      return new TestGroup(node, deployerService);
     }
 
     private class TestGroup {
       private ServiceNode node; // zookeeper node
-      private DeployerXenonServiceHost dcpHost; // DcpHost
       private TestDeployerService deployerService;
 
-      private TestGroup(ServiceNode node, DeployerXenonServiceHost dcpHost, TestDeployerService deployerService) {
+      private TestGroup(ServiceNode node, TestDeployerService deployerService) {
         this.node = node;
-        this.dcpHost = dcpHost;
         this.deployerService = deployerService;
       }
     }
@@ -278,8 +242,8 @@ public class DeployerServiceTest {
 
       private CountDownLatch countDownLatch;
 
-      public TestDeployerService(ServerSet serverSet, DeployerXenonServiceHost host) {
-        super(serverSet, host, null, null, null, null, null, null, null);
+      public TestDeployerService(ServerSet serverSet) {
+        super(serverSet, null, null, null, null, null, null, null, null);
       }
 
       public void setCountDownLatch(CountDownLatch countDownLatch) {
