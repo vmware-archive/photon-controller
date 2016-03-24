@@ -30,8 +30,6 @@ import com.vmware.xenon.common.StatefulService;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import java.util.Objects;
-
 
 /**
  * Used for persisting the virtual network information.
@@ -116,23 +114,5 @@ public class VirtualNetworkService extends StatefulService {
     public RoutingType routingType;
 
     public Long deleteRequestTime;
-
-    @Override
-    public boolean equals(Object o) {
-      if (this == o) {
-        return true;
-      }
-
-      if (o == null || this.getClass() != o.getClass()) {
-        return false;
-      }
-
-      State other = (State) o;
-
-      return Objects.equals(this.name, other.name)
-          && Objects.equals(this.description, other.description)
-          && Objects.equals(this.state, other.state)
-          && Objects.equals(this.routingType, other.routingType);
-    }
   }
 }
