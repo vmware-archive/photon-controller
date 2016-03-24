@@ -45,6 +45,7 @@ import com.vmware.photon.controller.deployer.deployengine.ZookeeperClientFactory
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperNameSpace;
 import com.vmware.photon.controller.deployer.healthcheck.HealthCheckHelper;
 import com.vmware.photon.controller.deployer.healthcheck.HealthCheckHelperFactory;
+import com.vmware.photon.controller.deployer.service.ThriftConfig;
 import com.vmware.photon.controller.deployer.service.client.HostServiceClientFactory;
 
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -78,19 +79,16 @@ public class TestDeployerModule extends AbstractModule {
 
   @Override
   protected void configure() {
-    bindConstant().annotatedWith(DeployerConfig.Bind.class).to(deployerConfig.getBind());
-    bindConstant().annotatedWith(DeployerConfig.RegistrationAddress.class).to(deployerConfig.getRegistrationAddress());
-    bindConstant().annotatedWith(DeployerConfig.Port.class).to(deployerConfig.getPort());
-    bind(XenonConfig.class).toInstance(deployerConfig.getDcp());
-    bindConstant().annotatedWith(XenonConfig.StoragePath.class).to(deployerConfig.getDcp().getStoragePath());
-    bindConstant().annotatedWith(SharedSecret.class).to(deployerConfig.getDeployerContext().getSharedSecret());
-    bind(BuildInfo.class).toInstance(BuildInfo.get(TestDeployerModule.class));
+    bind(BuildInfo.class).toInstance(BuildInfo.get(this.getClass()));
+    bind(DeployerContext.class).toInstance(deployerConfig.getDeployerContext());
+    bind(ThriftConfig.class).toInstance(deployerConfig.getThriftConfig());
+    bind(XenonConfig.class).toInstance(deployerConfig.getXenonConfig());
 
-//    bindConstant().annotatedWith(ZookeeperNameSpace.class).to(deployerConfig.getZookeeper().getNamespace());
+    bindConstant().annotatedWith(SharedSecret.class).to(deployerConfig.getDeployerContext().getSharedSecret());
+
     bind(String.class).annotatedWith(ZookeeperNameSpace.class)
         .toProvider(Providers.of(deployerConfig.getZookeeper().getNamespace()));
 
-    bind(DeployerContext.class).toInstance(deployerConfig.getDeployerContext());
     deployerConfig.getDeployerContext().setZookeeperQuorum(deployerConfig.getZookeeper().getQuorum());
 
     bind(ListeningExecutorService.class)
@@ -131,13 +129,6 @@ public class TestDeployerModule extends AbstractModule {
     install(new FactoryModuleBuilder()
         .implement(HostManagementVmAddressValidator.class, HostManagementVmAddressValidator.class)
         .build(HostManagementVmAddressValidatorFactory.class));
-  }
-
-  @Provides
-  @Singleton
-  @XenonConfig.PeerNodes
-  public String[] getPeerNodes() {
-    return this.deployerConfig.getDcp().getPeerNodes();
   }
 
   @Provides
@@ -195,11 +186,7 @@ public class TestDeployerModule extends AbstractModule {
   @Provides
   @Singleton
   public DeployerXenonServiceHost createServer(
-      @DeployerConfig.Bind String bind,
-      @DeployerConfig.Port int port,
-      @DeployerConfig.RegistrationAddress String registrationAddress,
-      @XenonConfig.StoragePath String storagePath,
-      @XenonConfig.PeerNodes @Nullable String[] peerNodes,
+      XenonConfig xenonConfig,
       DeployerContext deployerContext,
       ContainersConfig containersConfig,
       AgentControlClientFactory agentControlClientFactory,
@@ -218,11 +205,7 @@ public class TestDeployerModule extends AbstractModule {
 
     return spy(
         new DeployerXenonServiceHost(
-            bind,
-            port,
-            registrationAddress,
-            storagePath,
-            peerNodes,
+            xenonConfig,
             null,
             deployerContext,
             containersConfig,

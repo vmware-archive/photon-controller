@@ -23,6 +23,7 @@ import com.vmware.photon.controller.deployer.configuration.ServiceConfiguratorFa
 import com.vmware.photon.controller.deployer.dcp.ContainersConfig;
 import com.vmware.photon.controller.deployer.dcp.DeployerContext;
 import com.vmware.photon.controller.deployer.dcp.DeployerXenonServiceHost;
+import com.vmware.photon.controller.deployer.dcp.XenonConfig;
 import com.vmware.photon.controller.deployer.deployengine.ApiClientFactory;
 import com.vmware.photon.controller.deployer.deployengine.AuthHelperFactory;
 import com.vmware.photon.controller.deployer.deployengine.DockerProvisionerFactory;
@@ -88,12 +89,13 @@ public class TestEnvironment extends MultiHostEnvironment<DeployerXenonServiceHo
     for (int i = 0; i < hosts.length; i++) {
       String sandbox = Files.createTempDirectory(STORAGE_PATH_PREFIX).toAbsolutePath().toString();
 
+      XenonConfig xenonConfig = new XenonConfig();
+      xenonConfig.setBindAddress(BIND_ADDRESS);
+      xenonConfig.setPort(0);
+      xenonConfig.setStoragePath(sandbox);
+
       hosts[i] = new DeployerXenonServiceHost(
-          BIND_ADDRESS,
-          -1,
-          null,
-          sandbox,
-          null,
+          xenonConfig,
           cloudServerSet,
           deployerContext,
           containersConfig,

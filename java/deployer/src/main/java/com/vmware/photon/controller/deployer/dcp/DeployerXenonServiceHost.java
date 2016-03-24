@@ -29,7 +29,6 @@ import com.vmware.photon.controller.common.xenon.XenonHostInfoProvider;
 import com.vmware.photon.controller.common.xenon.scheduler.TaskSchedulerService;
 import com.vmware.photon.controller.common.xenon.scheduler.TaskSchedulerServiceFactory;
 import com.vmware.photon.controller.common.xenon.scheduler.TaskSchedulerServiceStateBuilder;
-import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfiguratorFactory;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfiguratorFactoryProvider;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerFactoryService;
@@ -218,16 +217,11 @@ public class DeployerXenonServiceHost
   private final HostManagementVmAddressValidatorFactory hostManagementVmAddressValidatorFactory;
   private final ClusterManagerFactory clusterManagerFactory;
 
-  private final String registrationAddress;
   private final ServerSet cloudStoreServerSet;
 
   @Inject
   public DeployerXenonServiceHost(
-      @DeployerConfig.Bind String bind,
-      @DeployerConfig.Port int port,
-      @DeployerConfig.RegistrationAddress String registrationAddress,
-      @XenonConfig.StoragePath String storagePath,
-      @XenonConfig.PeerNodes String[] peerNodes,
+      XenonConfig xenonConfig,
       @CloudStoreServerSet ServerSet cloudStoreServerSet,
       DeployerContext deployerContext,
       ContainersConfig containersConfig,
@@ -246,11 +240,7 @@ public class DeployerXenonServiceHost
       throws Throwable {
 
     this(
-        bind,
-        port,
-        registrationAddress,
-        storagePath,
-        peerNodes,
+        xenonConfig,
         cloudStoreServerSet,
         deployerContext,
         containersConfig,
@@ -270,11 +260,7 @@ public class DeployerXenonServiceHost
   }
 
   public DeployerXenonServiceHost(
-      String bindAddress,
-      int port,
-      String registrationAddress,
-      String storagePath,
-      String[] peerNodes,
+      XenonConfig xenonConfig,
       ServerSet cloudStoreServerSet,
       DeployerContext deployerContext,
       ContainersConfig containersConfig,
@@ -305,30 +291,22 @@ public class DeployerXenonServiceHost
     this.authHelperFactory = authHelperFactory;
     this.healthCheckHelperFactory = healthCheckHelperFactory;
     this.serviceConfiguratorFactory = serviceConfiguratorFactory;
-    this.registrationAddress = registrationAddress;
     this.zookeeperServerSetBuilderFactory = zookeeperServerSetBuilderFactory;
     this.hostManagementVmAddressValidatorFactory = hostManagementVmAddressValidatorFactory;
     this.clusterManagerFactory = clusterManagerFactory;
 
     ServiceHost.Arguments arguments = new ServiceHost.Arguments();
-    arguments.port = port + 1;
-    arguments.bindAddress = bindAddress;
-    arguments.sandbox = Paths.get(storagePath);
+    arguments.port = xenonConfig.getPort();
+    arguments.bindAddress = xenonConfig.getBindAddress();
+    arguments.sandbox = Paths.get(xenonConfig.getStoragePath());
 
-    if (registrationAddress != null) {
-      arguments.publicUri = UriUtils.buildUri(registrationAddress, port + 1, null, null).toString();
+    if (xenonConfig.getRegistrationAddress() != null) {
+      arguments.publicUri = UriUtils.buildUri(xenonConfig.getRegistrationAddress(), xenonConfig.getPort(), null, null)
+          .toString();
     }
 
-    if (peerNodes != null) {
-      arguments.peerNodes = peerNodes;
-    }
-
-    logger.info("Initializing XenonServer on port: {} path: {}", arguments.port, storagePath);
-
-    // Though we can manipulate hostId, we should never set it in production. This is only for
-    // testing purpose where a given hostId is easier to debug than random UUID assigned by Xenon.
-    if (hostId != null) {
-      arguments.id = "host-" + hostId;
+    if (xenonConfig.getPeerNodes() != null) {
+      arguments.peerNodes = xenonConfig.getPeerNodes();
     }
 
     this.initialize(arguments);
@@ -353,15 +331,6 @@ public class DeployerXenonServiceHost
     startTaskSchedulerServices();
 
     return this;
-  }
-
-  /**
-   * This method gets the containers configurations.
-   *
-   * @return
-   */
-  public String getRegistrationAddress() {
-    return registrationAddress;
   }
 
   /**

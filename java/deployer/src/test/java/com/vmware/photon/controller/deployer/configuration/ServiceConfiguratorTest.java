@@ -68,7 +68,7 @@ public class ServiceConfiguratorTest {
         .getContainerSpecs().get(ContainersConfig.ContainerType.Deployer.name()).getDynamicParameters());
     ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
     DeployerConfig deployerConfig = mapper.readValue(new File(TMP_DIR + "deployer/deployer.yml"), DeployerConfig.class);
-    assertThat(deployerConfig.getBind(), is("0.0.0.0"));
+    assertThat(deployerConfig.getXenonConfig().getBindAddress(), is("0.0.0.0"));
 
     Map<String, Object> dynamicParameters = new HashMap<>();
     List<LoadBalancerServer> list = new ArrayList<>();

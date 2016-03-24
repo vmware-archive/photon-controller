@@ -1,8 +1,3 @@
-port: 18000
-dcp:
-  storagePath: "/tmp/dcp/18000"
-  peerNodes:
-  - http://localhost:18001
 deployer:
   apifeEndpoint: "http://127.0.0.1"
   configDirectory: "/tmp/deployAgent/configurations"
@@ -15,6 +10,20 @@ deployer:
   scriptLogDirectory: "/tmp/deployAgent/logs"
   tenantName: "mgmt-tenant"
   vibDirectory: "/tmp/deployAgent/vibs"
+
+xenon:
+  bindAddress: localhost
+  registrationAddress: localhost
+  port: 18001
+  storagePath: "/tmp/dcp/18001"
+  peerNodes:
+  - http://localhost:18001
+
+thrift:
+  bindAddress: localhost
+  registrationAddress: localhost
+  port: 18000
+
 logging:
   loggers:
     "com.vmware.esxcloud.deployer": DEBUG

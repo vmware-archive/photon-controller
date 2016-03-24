@@ -58,7 +58,7 @@ public class ContainersConfigTest {
   @Test
   public void constructsContainersConfig() throws Exception {
     deployerConfig = ConfigBuilder.build(DeployerConfig.class,
-        XenonConfigTest.class.getResource("/config.yml").getPath());
+        this.getClass().getResource("/config.yml").getPath());
     TestHelper.setContainersConfig(deployerConfig);
     containersConfig = deployerConfig.getContainersConfig();
     assertThat(containersConfig.getContainerSpecs().size(), is(ContainersConfig.ContainerType.values().length));
@@ -67,12 +67,12 @@ public class ContainersConfigTest {
   @Test(expectedExceptions = BadConfigException.class)
   public void throwsOnMissingContainersConfig() throws Exception {
     containersConfig = ConfigBuilder.build(DeployerConfig.class,
-        XenonConfigTest.class.getResource("/dcpConfig_invalid.yml").getPath()).getContainersConfig();
+        this.getClass().getResource("/dcpConfig_invalid.yml").getPath()).getContainersConfig();
   }
 
   @Test
   public void buildsValidConfgiuration() throws Exception {
-    String path = XenonConfigTest.class.getResource("/configurations").getPath();
+    String path = this.getClass().getResource("/configurations").getPath();
     List<File> leafDirectories = findAllLeafDirectories(new File(path));
     for (File dir : leafDirectories) {
       File configYml = findFile(dir, "yml");

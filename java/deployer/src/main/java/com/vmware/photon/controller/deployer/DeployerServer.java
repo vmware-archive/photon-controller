@@ -20,6 +20,7 @@ import com.vmware.photon.controller.common.zookeeper.ServiceNode;
 import com.vmware.photon.controller.common.zookeeper.ServiceNodeFactory;
 import com.vmware.photon.controller.deployer.gen.Deployer;
 import com.vmware.photon.controller.deployer.service.DeployerService;
+import com.vmware.photon.controller.deployer.service.ThriftConfig;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
@@ -68,9 +69,7 @@ public class DeployerServer {
                         ThriftFactory thriftFactory,
                         DeployerService deployerService,
                         BuildInfo buildInfo,
-                        @DeployerConfig.Bind String bind,
-                        @DeployerConfig.RegistrationAddress String registrationAddress,
-                        @DeployerConfig.Port int port,
+                        ThriftConfig thriftConfig,
                         CloseableHttpAsyncClient httpClient) {
     this.serviceNodeFactory = serviceNodeFactory;
     this.transportFactory = transportFactory;
@@ -78,9 +77,9 @@ public class DeployerServer {
     this.thriftFactory = thriftFactory;
     this.deployerService = deployerService;
     this.buildInfo = buildInfo;
-    this.bind = bind;
-    this.registrationAddress = registrationAddress;
-    this.port = port;
+    this.bind = thriftConfig.getBindAddress();
+    this.registrationAddress = thriftConfig.getRegistrationAddress();
+    this.port = thriftConfig.getPort();
     this.httpClient = httpClient;
   }
 

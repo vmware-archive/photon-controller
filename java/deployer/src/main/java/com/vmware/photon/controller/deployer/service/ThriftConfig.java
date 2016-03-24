@@ -11,16 +11,15 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package com.vmware.photon.controller.deployer.dcp;
+package com.vmware.photon.controller.deployer.service;
 
 import org.hibernate.validator.constraints.NotBlank;
-import org.hibernate.validator.constraints.NotEmpty;
 import org.hibernate.validator.constraints.Range;
 
 /**
- * This class implements basic configuration state for a Xenon host.
+ * This class implements basic configuration state for a Thrift service.
  */
-public class XenonConfig {
+public class ThriftConfig {
 
   @Range(min = 0, max = 65535)
   private Integer port;
@@ -31,49 +30,15 @@ public class XenonConfig {
   @NotBlank
   private String registrationAddress;
 
-  @NotBlank
-  private String storagePath;
-
-  @NotEmpty
-  private String[] peerNodes;
-
-  public void setPort(int port) {
-    this.port = port;
-  }
-
   public Integer getPort() {
     return this.port;
-  }
-
-  public void setBindAddress(String bindAddress) {
-    this.bindAddress = bindAddress;
   }
 
   public String getBindAddress() {
     return this.bindAddress;
   }
 
-  public void setRegistrationAddress(String registrationAddress) {
-    this.registrationAddress = registrationAddress;
-  }
-
   public String getRegistrationAddress() {
     return this.registrationAddress;
-  }
-
-  public void setStoragePath(String storagePath) {
-    this.storagePath = storagePath;
-  }
-
-  public String getStoragePath() {
-    return this.storagePath;
-  }
-
-  public void setPeerNodes(String[] peerNodes) {
-    this.peerNodes = peerNodes;
-  }
-
-  public String[] getPeerNodes() {
-    return this.peerNodes;
   }
 }
