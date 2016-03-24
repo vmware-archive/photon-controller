@@ -292,8 +292,12 @@ public class AvailabilityZoneCleanerServiceTest {
     }
 
     private void freeTestEnvironment(TestEnvironment machine) throws Throwable {
-      for (String selfLink : testSelfLinks) {
-        machine.deleteService(selfLink);
+      try {
+        for (String selfLink : testSelfLinks) {
+          machine.deleteService(selfLink);
+        }
+      } finally {
+        testSelfLinks.clear();
       }
     }
 
