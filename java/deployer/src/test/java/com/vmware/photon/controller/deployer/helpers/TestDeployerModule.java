@@ -22,6 +22,7 @@ import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.manifest.BuildInfo;
 import com.vmware.photon.controller.common.thrift.ServerSet;
+import com.vmware.photon.controller.common.thrift.ThriftConfig;
 import com.vmware.photon.controller.common.xenon.host.XenonConfig;
 import com.vmware.photon.controller.deployer.ApiFeServerSet;
 import com.vmware.photon.controller.deployer.DeployerConfig;
@@ -45,7 +46,6 @@ import com.vmware.photon.controller.deployer.deployengine.ZookeeperClientFactory
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperNameSpace;
 import com.vmware.photon.controller.deployer.healthcheck.HealthCheckHelper;
 import com.vmware.photon.controller.deployer.healthcheck.HealthCheckHelperFactory;
-import com.vmware.photon.controller.deployer.service.ThriftConfig;
 import com.vmware.photon.controller.deployer.service.client.HostServiceClientFactory;
 
 import com.google.common.util.concurrent.ListeningExecutorService;
