@@ -18,12 +18,13 @@ import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.manifest.BuildInfo;
 import com.vmware.photon.controller.common.thrift.ServerSet;
+import com.vmware.photon.controller.common.thrift.ThriftConfig;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
+import com.vmware.photon.controller.common.xenon.host.XenonConfig;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperServerSetFactory;
 import com.vmware.photon.controller.housekeeper.dcp.HousekeeperXenonServiceHost;
-import com.vmware.photon.controller.housekeeper.dcp.XenonConfig;
 import com.vmware.photon.controller.housekeeper.service.HousekeeperService;
 
 import com.google.inject.AbstractModule;
@@ -49,12 +50,9 @@ public class HousekeeperModule extends AbstractModule {
 
   @Override
   protected void configure() {
-    bindConstant().annotatedWith(Config.Bind.class).to(config.getBind());
-    bindConstant().annotatedWith(Config.RegistrationAddress.class).to(config.getRegistrationAddress());
-    bindConstant().annotatedWith(Config.Port.class).to(config.getPort());
-    bind(XenonConfig.class).toInstance(config.getDcp());
-    bindConstant().annotatedWith(XenonConfig.StoragePath.class).to(config.getDcp().getStoragePath());
     bind(BuildInfo.class).toInstance(BuildInfo.get(HousekeeperModule.class));
+    bind(ThriftConfig.class).toInstance(config.getThriftConfig());
+    bind(XenonConfig.class).toInstance(config.getXenonConfig());
 
     bind(ScheduledExecutorService.class)
         .toInstance(Executors.newScheduledThreadPool(4));
@@ -81,36 +79,21 @@ public class HousekeeperModule extends AbstractModule {
   public HousekeeperService getHousekeeperService(
       @HousekeeperServerSet ServerSet serverSet,
       HousekeeperXenonServiceHost host,
-      XenonConfig dcpConfig,
+      Config config,
       BuildInfo buildInfo) {
-    return new HousekeeperService(serverSet, host, dcpConfig, buildInfo);
+    return new HousekeeperService(serverSet, host, config, buildInfo);
   }
 
   @Provides
   @Singleton
   @CloudStoreServerSet
   public ServerSet getCloudStoreServerSet(ZookeeperServerSetFactory serverSetFactory) {
-    ServerSet serverSet = serverSetFactory.createServiceServerSet(CLOUDSTORE_SERVICE_NAME, true);
-    return serverSet;
+    return serverSetFactory.createServiceServerSet(CLOUDSTORE_SERVICE_NAME, true);
   }
 
   @Provides
   @Singleton
   public CloudStoreHelper getCloudStoreHelper(@CloudStoreServerSet ServerSet cloudStoreServerSet) {
-    CloudStoreHelper cloudStoreHelper = new CloudStoreHelper(cloudStoreServerSet);
-    return cloudStoreHelper;
-  }
-
-  @Provides
-  @Singleton
-  public HousekeeperXenonServiceHost getHousekeeperDcpServiceHost(
-      CloudStoreHelper cloudStoreHelper,
-      @Config.Bind String bind,
-      @Config.Port int port,
-      @XenonConfig.StoragePath String storagePath,
-      HostClientFactory hostClientFactory,
-      ServiceConfigFactory serviceConfigFactory) throws Throwable {
-    return new HousekeeperXenonServiceHost(cloudStoreHelper, bind, port, storagePath, hostClientFactory,
-        serviceConfigFactory);
+    return new CloudStoreHelper(cloudStoreServerSet);
   }
 }

@@ -14,112 +14,57 @@
 package com.vmware.photon.controller.housekeeper;
 
 import com.vmware.photon.controller.common.logging.LoggingConfiguration;
+import com.vmware.photon.controller.common.thrift.ThriftConfig;
+import com.vmware.photon.controller.common.xenon.host.XenonConfig;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperConfig;
-import com.vmware.photon.controller.housekeeper.dcp.XenonConfig;
 
-import com.google.inject.BindingAnnotation;
-import org.hibernate.validator.constraints.NotEmpty;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.hibernate.validator.constraints.Range;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import static java.lang.annotation.ElementType.FIELD;
-import static java.lang.annotation.ElementType.METHOD;
-import static java.lang.annotation.ElementType.PARAMETER;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
-
 /**
  * Housekeeper configuration.
  */
-
 public class Config {
 
   @NotNull
-  @Range(min = 0, max = 65535)
-  private Integer port = null;
-
-  @NotNull
-  @NotEmpty
-  private String bind;
-
-  @NotNull
-  @NotEmpty
-  private String registrationAddress;
+  @Range(min = 0, max = 100)
+  @JsonProperty("image_copy_batch_size")
+  private int imageCopyBatchSize;
 
   @Valid
   @NotNull
-  private XenonConfig dcp = new XenonConfig();
+  @JsonProperty("xenon")
+  private XenonConfig xenonConfig;
 
   @Valid
   @NotNull
-  private LoggingConfiguration logging = new LoggingConfiguration();
+  @JsonProperty("thrift")
+  private ThriftConfig thriftConfig;
 
   @Valid
   @NotNull
-  private ZookeeperConfig zookeeper = new ZookeeperConfig();
+  private LoggingConfiguration logging;
 
-  public Config() {
-    try {
-      bind = InetAddress.getLocalHost().getHostAddress();
-      registrationAddress = InetAddress.getLocalHost().getHostAddress();
-    } catch (UnknownHostException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  public Integer getPort() {
-    return port;
-  }
-
-  public String getBind() {
-    return bind;
-  }
-
-  public String getRegistrationAddress() {
-    return registrationAddress;
-  }
+  @Valid
+  @NotNull
+  private ZookeeperConfig zookeeper;
 
   public LoggingConfiguration getLogging() {
-    return logging;
+    return this.logging;
+  }
+
+  public ThriftConfig getThriftConfig() {
+    return this.thriftConfig;
+  }
+
+  public XenonConfig getXenonConfig() {
+    return this.xenonConfig;
   }
 
   public ZookeeperConfig getZookeeper() {
-    return zookeeper;
-  }
-
-  public XenonConfig getDcp() {
-    return dcp;
-  }
-
-  /**
-   * Housekeeper port.
-   */
-  @BindingAnnotation
-  @Target({FIELD, PARAMETER, METHOD})
-  @Retention(RUNTIME)
-  public @interface Port {
-  }
-
-  /**
-   * Housekeeper bind address.
-   */
-  @BindingAnnotation
-  @Target({FIELD, PARAMETER, METHOD})
-  @Retention(RUNTIME)
-  public @interface Bind {
-  }
-
-  /**
-   * Housekeeper registration address for zookeeper.
-   */
-  @BindingAnnotation
-  @Target({FIELD, PARAMETER, METHOD})
-  @Retention(RUNTIME)
-  public @interface RegistrationAddress {
+    return this.zookeeper;
   }
 }
