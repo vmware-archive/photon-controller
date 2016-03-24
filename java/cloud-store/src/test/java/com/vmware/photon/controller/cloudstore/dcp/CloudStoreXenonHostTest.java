@@ -34,6 +34,7 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.ResourceTicketServiceF
 import com.vmware.photon.controller.cloudstore.dcp.entity.TaskServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.TenantServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.TombstoneServiceFactory;
+import com.vmware.photon.controller.cloudstore.dcp.entity.VirtualNetworkService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.VmServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.helpers.TestHelper;
 import com.vmware.photon.controller.cloudstore.dcp.helpers.UpgradeHelper;
@@ -107,6 +108,7 @@ public class CloudStoreXenonHostTest {
       ClusterServiceFactory.SELF_LINK,
       ClusterConfigurationServiceFactory.SELF_LINK,
       AvailabilityZoneServiceFactory.SELF_LINK,
+      VirtualNetworkService.FACTORY_LINK,
 
       // triggers
       TaskTriggerFactoryService.SELF_LINK,

@@ -49,7 +49,7 @@ public class VirtualNetworkServiceTest {
   @BeforeSuite
   public void beforeSuite() throws Throwable {
     host = BasicServiceHost.create();
-    ServiceHostUtils.startServices(host, CloudStoreXenonHost.FACTORY_SERVICES);
+    ServiceHostUtils.startFactoryServices(host, CloudStoreXenonHost.FACTORY_SERVICES_MAP);
 
     StaticServerSet serverSet = new StaticServerSet(new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
     xenonClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(128));
@@ -80,7 +80,7 @@ public class VirtualNetworkServiceTest {
     public void testSuccessfulCreation() throws Throwable {
       VirtualNetworkService.State startState = createInitialState();
 
-      Operation result = xenonClient.post(VirtualNetworkFactoryService.SELF_LINK, startState);
+      Operation result = xenonClient.post(VirtualNetworkService.FACTORY_LINK, startState);
       assertThat(result.getStatusCode(), is(HttpStatus.SC_OK));
 
       VirtualNetworkService.State createdState = result.getBody(VirtualNetworkService.State.class);
@@ -98,7 +98,7 @@ public class VirtualNetworkServiceTest {
       startState.routingType = RoutingType.ROUTED;
 
       try {
-        xenonClient.post(VirtualNetworkFactoryService.SELF_LINK, startState);
+        xenonClient.post(VirtualNetworkService.FACTORY_LINK, startState);
         fail("Should have failed due to illegal state");
       } catch (Exception e) {
         assertThat(e.getMessage(), is("name cannot be null"));
@@ -112,7 +112,7 @@ public class VirtualNetworkServiceTest {
       startState.state = NetworkState.CREATING;
 
       try {
-        xenonClient.post(VirtualNetworkFactoryService.SELF_LINK, startState);
+        xenonClient.post(VirtualNetworkService.FACTORY_LINK, startState);
         fail("Should have failed due to illegal state");
       } catch (Exception e) {
         assertThat(e.getMessage(), is("routingType cannot be null"));
@@ -126,7 +126,7 @@ public class VirtualNetworkServiceTest {
       startState.routingType = RoutingType.ROUTED;
 
       try {
-        xenonClient.post(VirtualNetworkFactoryService.SELF_LINK, startState);
+        xenonClient.post(VirtualNetworkService.FACTORY_LINK, startState);
         fail("Should have failed due to illegal state");
       } catch (Exception e) {
         assertThat(e.getMessage(), is("state cannot be null"));
@@ -227,7 +227,7 @@ public class VirtualNetworkServiceTest {
       TestHelper.testExpirationOnDelete(
           xenonClient,
           host,
-          VirtualNetworkFactoryService.SELF_LINK,
+          VirtualNetworkService.FACTORY_LINK,
           startState,
           VirtualNetworkService.State.class,
           0L,
@@ -241,7 +241,7 @@ public class VirtualNetworkServiceTest {
       TestHelper.testExpirationOnDelete(
           xenonClient,
           host,
-          VirtualNetworkFactoryService.SELF_LINK,
+          VirtualNetworkService.FACTORY_LINK,
           startState,
           VirtualNetworkService.State.class,
           ServiceUtils.computeExpirationTime(Integer.MAX_VALUE),
@@ -255,7 +255,7 @@ public class VirtualNetworkServiceTest {
       TestHelper.testExpirationOnDelete(
           xenonClient,
           host,
-          VirtualNetworkFactoryService.SELF_LINK,
+          VirtualNetworkService.FACTORY_LINK,
           startState,
           VirtualNetworkService.State.class,
           ServiceUtils.computeExpirationTime(TimeUnit.MINUTES.toMicros(1)),
@@ -267,7 +267,7 @@ public class VirtualNetworkServiceTest {
 
   private static VirtualNetworkService.State createVirtualNetworkService() throws Throwable {
     VirtualNetworkService.State startState = createInitialState();
-    Operation result = xenonClient.post(VirtualNetworkFactoryService.SELF_LINK, startState);
+    Operation result = xenonClient.post(VirtualNetworkService.FACTORY_LINK, startState);
 
     return result.getBody(VirtualNetworkService.State.class);
   }

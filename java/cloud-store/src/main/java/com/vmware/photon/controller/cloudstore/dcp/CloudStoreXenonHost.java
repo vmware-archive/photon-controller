@@ -33,7 +33,7 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.ResourceTicketServiceF
 import com.vmware.photon.controller.cloudstore.dcp.entity.TaskServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.TenantServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.TombstoneServiceFactory;
-import com.vmware.photon.controller.cloudstore.dcp.entity.VirtualNetworkFactoryService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.VirtualNetworkService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.VmServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.task.AvailabilityZoneCleanerFactoryService;
 import com.vmware.photon.controller.cloudstore.dcp.task.EntityLockCleanerFactoryService;
@@ -56,17 +56,22 @@ import com.vmware.photon.controller.common.xenon.scheduler.TaskTriggerFactorySer
 import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfigProvider;
+import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceHost;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.services.common.RootNamespaceService;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.file.Paths;
+import java.util.Map;
+import java.util.function.Supplier;
 
 /**
  * Class to initialize a Xenon host for cloud-store.
@@ -112,7 +117,6 @@ public class CloudStoreXenonHost
       ClusterServiceFactory.class,
       ClusterConfigurationServiceFactory.class,
       AvailabilityZoneServiceFactory.class,
-      VirtualNetworkFactoryService.class,
 
       // Tasks
       TaskTriggerFactoryService.class,
@@ -123,6 +127,10 @@ public class CloudStoreXenonHost
       // Discovery
       RootNamespaceService.class,
   };
+
+  public static final Map<Class<? extends Service>, Supplier<FactoryService>> FACTORY_SERVICES_MAP = ImmutableMap.of(
+      VirtualNetworkService.class, VirtualNetworkService::createFactory
+  );
 
   private BuildInfo buildInfo;
   private final HostClientFactory hostClientFactory;
@@ -189,6 +197,9 @@ public class CloudStoreXenonHost
 
     // Start all the factories
     ServiceHostUtils.startServices(this, FACTORY_SERVICES);
+
+    // Start the factories implemented using the xenon default factory service
+    ServiceHostUtils.startFactoryServices(this, FACTORY_SERVICES_MAP);
 
     // Start all special services
     ServiceHostUtils.startService(this, StatusService.class);

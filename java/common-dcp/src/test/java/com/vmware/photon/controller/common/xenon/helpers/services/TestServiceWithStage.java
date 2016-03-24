@@ -13,7 +13,9 @@
 
 package com.vmware.photon.controller.common.xenon.helpers.services;
 
+import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
+import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
@@ -23,6 +25,12 @@ import com.vmware.xenon.common.TaskState;
  * Class TestServiceWithStage is used for testing purpose.
  */
 public class TestServiceWithStage extends StatefulService {
+
+  public static final String FACTORY_LINK = ServiceUriPaths.SERVICES_ROOT + "/test-service-with-stage";
+
+  public static FactoryService createFactory() {
+    return FactoryService.createIdempotent(TestServiceWithStage.class);
+  }
 
   public TestServiceWithStage() {
     super(State.class);
