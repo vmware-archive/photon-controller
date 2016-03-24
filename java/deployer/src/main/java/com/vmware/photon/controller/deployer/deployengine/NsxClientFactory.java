@@ -1,0 +1,36 @@
+/*
+ * Copyright 2016 VMware, Inc. All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License.  You may obtain a copy of
+ * the License at http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed
+ * under the License is distributed on an "AS IS" BASIS, without warranties or
+ * conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the License for the
+ * specific language governing permissions and limitations under the License.
+ */
+
+package com.vmware.photon.controller.deployer.deployengine;
+
+import com.vmware.photon.controller.common.clients.nsx.NsxClient;
+
+import com.google.inject.Inject;
+import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
+
+/**
+ * This class defines a factory which creates
+ * {@link NsxClient} instances.
+ */
+public class NsxClientFactory {
+  private CloseableHttpAsyncClient asyncClient;
+
+  @Inject
+  public NsxClientFactory(CloseableHttpAsyncClient asynClient) {
+    this.asyncClient = asynClient;
+  }
+
+  public NsxClient create(String endpoint, String username, String password) {
+    return new NsxClient(endpoint, username, password, asyncClient);
+  }
+}

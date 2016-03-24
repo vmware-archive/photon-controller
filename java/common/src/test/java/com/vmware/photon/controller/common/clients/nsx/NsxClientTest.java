@@ -80,7 +80,7 @@ public class NsxClientTest {
     mockResponse.setExternal_id("externalId");
     setupMocks(objectMapper.writeValueAsString(mockResponse), HttpStatus.SC_CREATED);
 
-    NsxClient client = new NsxClient(target, username, password, restClient);
+    NsxClient client = new NsxClient(target, username, password, null, restClient);
     RegisterFabricNodeResponse response = client.registerFabricNode(new RegisterFabricNodeRequest());
     assertEquals(response, mockResponse);
   }
@@ -92,7 +92,7 @@ public class NsxClientTest {
     mockResponse.setExternal_id("externalId");
     setupMocks(objectMapper.writeValueAsString(mockResponse), HttpStatus.SC_CREATED);
 
-    NsxClient client = new NsxClient(target, username, password, restClient);
+    NsxClient client = new NsxClient(target, username, password, null, restClient);
     final CountDownLatch latch = new CountDownLatch(1);
     client.registerFabricNodeAsync(new RegisterFabricNodeRequest(),
         new com.google.common.util.concurrent.FutureCallback<RegisterFabricNodeResponse>() {
@@ -118,7 +118,7 @@ public class NsxClientTest {
     mockResponse.setId("id");
     setupMocks(objectMapper.writeValueAsString(mockResponse), HttpStatus.SC_OK);
 
-    NsxClient client = new NsxClient(target, username, password, restClient);
+    NsxClient client = new NsxClient(target, username, password, null, restClient);
     GetFabricNodeResponse response = client.getFabricNode("nodeId");
     assertEquals(response, mockResponse);
   }
@@ -129,7 +129,7 @@ public class NsxClientTest {
     mockResponse.setId("id");
     setupMocks(objectMapper.writeValueAsString(mockResponse), HttpStatus.SC_OK);
 
-    NsxClient client = new NsxClient(target, username, password, restClient);
+    NsxClient client = new NsxClient(target, username, password, null, restClient);
     final CountDownLatch latch = new CountDownLatch(1);
     client.getFabricNodeAsync("nodeId",
         new com.google.common.util.concurrent.FutureCallback<GetFabricNodeResponse>() {
@@ -153,7 +153,7 @@ public class NsxClientTest {
   public void testUnregisterFabricNode() throws IOException {
     setupMocks(null, HttpStatus.SC_OK);
 
-    NsxClient client = new NsxClient(target, username, password, restClient);
+    NsxClient client = new NsxClient(target, username, password, null, restClient);
     client.unregisterFabricNode("nodeId");
   }
 
@@ -161,7 +161,7 @@ public class NsxClientTest {
   public void testUnregisterFabricNodeAsync() throws IOException, InterruptedException {
     setupMocks(null, HttpStatus.SC_OK);
 
-    NsxClient client = new NsxClient(target, username, password, restClient);
+    NsxClient client = new NsxClient(target, username, password, null, restClient);
     final CountDownLatch latch = new CountDownLatch(1);
     client.unregisterFabricNodeAsync("nodeId",
       new com.google.common.util.concurrent.FutureCallback<Void>() {
@@ -186,7 +186,7 @@ public class NsxClientTest {
     mockResponse.setId("id");
     setupMocks(objectMapper.writeValueAsString(mockResponse), HttpStatus.SC_CREATED);
 
-    NsxClient client = new NsxClient(target, username, password, restClient);
+    NsxClient client = new NsxClient(target, username, password, null, restClient);
     CreateTransportNodeResponse response = client.createTransportNode(new CreateTransportNodeRequest());
     assertEquals(response, mockResponse);
   }
@@ -197,7 +197,7 @@ public class NsxClientTest {
     mockResponse.setId("id");
     setupMocks(objectMapper.writeValueAsString(mockResponse), HttpStatus.SC_CREATED);
 
-    NsxClient client = new NsxClient(target, username, password, restClient);
+    NsxClient client = new NsxClient(target, username, password, null, restClient);
     final CountDownLatch latch = new CountDownLatch(1);
     client.createTransportNodeAsync(new CreateTransportNodeRequest(),
         new com.google.common.util.concurrent.FutureCallback<CreateTransportNodeResponse>() {
@@ -224,7 +224,7 @@ public class NsxClientTest {
     mockResponse.setId("id");
     setupMocks(objectMapper.writeValueAsString(mockResponse), HttpStatus.SC_OK);
 
-    NsxClient client = new NsxClient(target, username, password, restClient);
+    NsxClient client = new NsxClient(target, username, password, null, restClient);
     GetTransportNodeResponse response = client.getTransportNode("id");
     assertEquals(response, mockResponse);
   }
@@ -235,7 +235,7 @@ public class NsxClientTest {
     mockResponse.setId("id");
     setupMocks(objectMapper.writeValueAsString(mockResponse), HttpStatus.SC_OK);
 
-    NsxClient client = new NsxClient(target, username, password, restClient);
+    NsxClient client = new NsxClient(target, username, password, null, restClient);
     final CountDownLatch latch = new CountDownLatch(1);
     client.getTransportNodeAsync("id",
         new com.google.common.util.concurrent.FutureCallback<GetTransportNodeResponse>() {
@@ -259,7 +259,7 @@ public class NsxClientTest {
   public void testDeleteTransportNode() throws IOException {
     setupMocks(null, HttpStatus.SC_OK);
 
-    NsxClient client = new NsxClient(target, username, password, restClient);
+    NsxClient client = new NsxClient(target, username, password, null, restClient);
     client.deleteTransportNode("id");
   }
 
@@ -267,7 +267,7 @@ public class NsxClientTest {
   public void testDeleteTransportNodeAsync() throws IOException, InterruptedException {
     setupMocks(null, HttpStatus.SC_OK);
 
-    NsxClient client = new NsxClient(target, username, password, restClient);
+    NsxClient client = new NsxClient(target, username, password, null, restClient);
     final CountDownLatch latch = new CountDownLatch(1);
     client.deleteTransportNodeAsync("id",
         new com.google.common.util.concurrent.FutureCallback<Void>() {
@@ -292,7 +292,7 @@ public class NsxClientTest {
     mockResponse.setId("id");
     setupMocks(objectMapper.writeValueAsString(mockResponse), HttpStatus.SC_CREATED);
 
-    NsxClient client = new NsxClient(target, username, password, restClient);
+    NsxClient client = new NsxClient(target, username, password, null, restClient);
     CreateTransportZoneResponse response = client.createTransportZone(new CreateTransportZoneRequest());
     assertEquals(response, mockResponse);
   }
@@ -303,7 +303,7 @@ public class NsxClientTest {
     mockResponse.setId("id");
     setupMocks(objectMapper.writeValueAsString(mockResponse), HttpStatus.SC_CREATED);
 
-    NsxClient client = new NsxClient(target, username, password, restClient);
+    NsxClient client = new NsxClient(target, username, password, null, restClient);
     final CountDownLatch latch = new CountDownLatch(1);
     client.createTransportZoneAsync(new CreateTransportZoneRequest(),
         new com.google.common.util.concurrent.FutureCallback<CreateTransportZoneResponse>() {
@@ -330,7 +330,7 @@ public class NsxClientTest {
     mockResponse.setId("id");
     setupMocks(objectMapper.writeValueAsString(mockResponse), HttpStatus.SC_OK);
 
-    NsxClient client = new NsxClient(target, username, password, restClient);
+    NsxClient client = new NsxClient(target, username, password, null, restClient);
     GetTransportZoneResponse response = client.getTransportZone("id");
     assertEquals(response, mockResponse);
   }
@@ -341,7 +341,7 @@ public class NsxClientTest {
     mockResponse.setId("id");
     setupMocks(objectMapper.writeValueAsString(mockResponse), HttpStatus.SC_OK);
 
-    NsxClient client = new NsxClient(target, username, password, restClient);
+    NsxClient client = new NsxClient(target, username, password, null, restClient);
     final CountDownLatch latch = new CountDownLatch(1);
     client.getTransportZoneAsync("id",
         new com.google.common.util.concurrent.FutureCallback<GetTransportZoneResponse>() {
@@ -365,7 +365,7 @@ public class NsxClientTest {
   public void testDeleteTransportZone() throws IOException {
     setupMocks(null, HttpStatus.SC_OK);
 
-    NsxClient client = new NsxClient(target, username, password, restClient);
+    NsxClient client = new NsxClient(target, username, password, null, restClient);
     client.deleteTransportZone("id");
   }
 
@@ -373,7 +373,7 @@ public class NsxClientTest {
   public void testDeleteTransportZoneAsync() throws IOException, InterruptedException {
     setupMocks(null, HttpStatus.SC_OK);
 
-    NsxClient client = new NsxClient(target, username, password, restClient);
+    NsxClient client = new NsxClient(target, username, password, null, restClient);
     final CountDownLatch latch = new CountDownLatch(1);
     client.deleteTransportZoneAsync("id",
         new com.google.common.util.concurrent.FutureCallback<Void>() {

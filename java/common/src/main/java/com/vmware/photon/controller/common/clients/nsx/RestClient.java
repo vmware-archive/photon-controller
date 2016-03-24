@@ -31,14 +31,9 @@ import org.apache.http.impl.auth.BasicScheme;
 import org.apache.http.impl.client.BasicAuthCache;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
-import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
-import org.apache.http.nio.conn.ssl.SSLIOSessionStrategy;
-import org.apache.http.ssl.SSLContexts;
 import org.apache.http.util.EntityUtils;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-
-import javax.net.ssl.SSLContext;
 
 import java.io.IOException;
 import java.util.concurrent.ExecutionException;
@@ -66,21 +61,15 @@ public class RestClient {
   /**
    * Constructs a RestClient.
    */
-  public RestClient(String target, String username, String password) {
-    this(target, username, password, null);
-  }
-
-  /**
-   * Constructs a RestClient.
-   */
   public RestClient(String target, String username, String password, CloseableHttpAsyncClient asyncClient) {
     checkNotNull(target, "target cannot be null");
     checkNotNull(username, "username cannot be null");
     checkNotNull(password, "password cannot be null");
+    checkNotNull(asyncClient, "asyncClient cannot be null");
 
     this.target = target;
     this.clientContext = getHttpClientContext(target, username, password);
-    this.asyncClient = asyncClient == null ? getHttpClient() : asyncClient;
+    this.asyncClient = asyncClient;
   }
 
   /**
@@ -175,25 +164,5 @@ public class RestClient {
     context.setAuthCache(authCache);
 
     return context;
-  }
-
-  /**
-   * Creates a HTTP client.
-   */
-  private CloseableHttpAsyncClient getHttpClient() {
-    try {
-      SSLContext sslcontext = SSLContexts.custom()
-          .loadTrustMaterial((chain, authtype) -> true)
-          .build();
-
-      CloseableHttpAsyncClient httpAsyncClient = HttpAsyncClientBuilder.create()
-          .setHostnameVerifier(SSLIOSessionStrategy.ALLOW_ALL_HOSTNAME_VERIFIER)
-          .setSSLContext(sslcontext)
-          .build();
-      httpAsyncClient.start();
-      return httpAsyncClient;
-    } catch (Throwable e) {
-      throw new RuntimeException(e);
-    }
   }
 }

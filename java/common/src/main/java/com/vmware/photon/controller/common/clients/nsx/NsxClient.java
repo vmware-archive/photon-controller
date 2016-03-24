@@ -33,6 +33,7 @@ import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
 
 import java.io.IOException;
 
@@ -47,15 +48,16 @@ public class NsxClient {
   /**
    * Constructs a NSX client.
    */
-  public NsxClient(String target, String username, String password) {
-    this(target, username, password, null);
+  public NsxClient(String target, String username, String password, CloseableHttpAsyncClient asyncClient) {
+    this(target, username, password, asyncClient, null);
   }
 
   /**
    * Constructs a NSX client.
    */
-  public NsxClient(String target, String username, String password, RestClient restClient) {
-    this.restClient = restClient == null ? new RestClient(target, username, password) : restClient;
+  public NsxClient(String target, String username, String password,
+                   CloseableHttpAsyncClient asyncClient, RestClient restClient) {
+    this.restClient = restClient == null ? new RestClient(target, username, password, asyncClient) : restClient;
     this.objectMapper = new ObjectMapper();
     this.objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
   }

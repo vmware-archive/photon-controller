@@ -40,6 +40,7 @@ import com.vmware.photon.controller.deployer.deployengine.HostManagementVmAddres
 import com.vmware.photon.controller.deployer.deployengine.HostManagementVmAddressValidatorFactory;
 import com.vmware.photon.controller.deployer.deployengine.HttpFileServiceClient;
 import com.vmware.photon.controller.deployer.deployengine.HttpFileServiceClientFactory;
+import com.vmware.photon.controller.deployer.deployengine.NsxClientFactory;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClient;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClientFactory;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperNameSpace;
@@ -200,7 +201,8 @@ public class TestDeployerModule extends AbstractModule {
       ServiceConfiguratorFactory serviceConfiguratorFactory,
       ZookeeperClientFactory zookeeperServerSetBuilderFactory,
       HostManagementVmAddressValidatorFactory hostManagementVmAddressValidatorFactory,
-      @Nullable ClusterManagerFactory clusterManagerFactory)
+      @Nullable ClusterManagerFactory clusterManagerFactory,
+      @Nullable NsxClientFactory nsxClientFactory)
       throws Throwable {
 
     return spy(
@@ -220,7 +222,8 @@ public class TestDeployerModule extends AbstractModule {
             serviceConfiguratorFactory,
             zookeeperServerSetBuilderFactory,
             hostManagementVmAddressValidatorFactory,
-            clusterManagerFactory));
+            clusterManagerFactory,
+            nsxClientFactory));
   }
 
   @Provides
@@ -276,5 +279,12 @@ public class TestDeployerModule extends AbstractModule {
   @Singleton
   ClusterManagerFactory getClusterManagerFactory() {
     return null;
+  }
+
+  @Provides
+  @Singleton
+  NsxClientFactory getNsxClientFactory(
+      @Nullable CloseableHttpAsyncClient asyncClient) {
+    return new NsxClientFactory(asyncClient);
   }
 }
