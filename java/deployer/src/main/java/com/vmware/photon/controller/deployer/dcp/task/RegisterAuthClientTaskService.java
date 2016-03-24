@@ -186,8 +186,6 @@ public class RegisterAuthClientTaskService extends StatefulService {
     ValidationUtils.validateTaskStageProgression(startState.taskState, patchState.taskState);
   }
 
-  private static final String AUTH_ADMIN_USER_NAME = "administrator";
-
   /**
    * Applies a patch to a service document and returns the update document state.
    *
@@ -436,18 +434,18 @@ public class RegisterAuthClientTaskService extends StatefulService {
         lbIpAddress,
         deploymentState.oAuthServerAddress,
         deploymentState.oAuthServerPort,
-        AUTH_ADMIN_USER_NAME,
+        deploymentState.oAuthUserName,
         deploymentState.oAuthTenantName);
 
     //
     // Lightwave requires login name to be in format "domain/user"
     //
-    String loginName = deploymentState.oAuthTenantName + "\\" + AUTH_ADMIN_USER_NAME;
     ListenableFutureTask futureTask = ListenableFutureTask.create(new Callable() {
       @Override
       public Object call() throws Exception {
-        return authHelper.getResourceLoginUri(deploymentState.oAuthTenantName,
-            loginName,
+        return authHelper.getResourceLoginUri(
+            deploymentState.oAuthTenantName,
+            deploymentState.oAuthUserName,
             deploymentState.oAuthPassword,
             deploymentState.oAuthServerAddress,
             deploymentState.oAuthServerPort,
