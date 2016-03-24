@@ -13,11 +13,14 @@
 
 package com.vmware.photon.controller.common.clients.nsx;
 
+import com.vmware.photon.controller.nsx.gen.CreateLogicalRouterRequest;
+import com.vmware.photon.controller.nsx.gen.CreateLogicalRouterResponse;
 import com.vmware.photon.controller.nsx.gen.CreateTransportNodeRequest;
 import com.vmware.photon.controller.nsx.gen.CreateTransportNodeResponse;
 import com.vmware.photon.controller.nsx.gen.CreateTransportZoneRequest;
 import com.vmware.photon.controller.nsx.gen.CreateTransportZoneResponse;
 import com.vmware.photon.controller.nsx.gen.GetFabricNodeResponse;
+import com.vmware.photon.controller.nsx.gen.GetLogicalRouterResponse;
 import com.vmware.photon.controller.nsx.gen.GetTransportNodeResponse;
 import com.vmware.photon.controller.nsx.gen.GetTransportZoneResponse;
 import com.vmware.photon.controller.nsx.gen.RegisterFabricNodeRequest;
@@ -267,6 +270,75 @@ public class NsxClient {
                                        FutureCallback<Void> responseCallback)
     throws IOException {
     final String path = basePath + "/transport-zones/" + id;
+    deleteAsync(path, HttpStatus.SC_OK, responseCallback);
+  }
+
+  /**
+   * Create a logical router.
+   */
+  public CreateLogicalRouterResponse createLogicalRouter(CreateLogicalRouterRequest request) throws IOException {
+    final String path = basePath + "/logical-routers";
+    return post(path,
+        serializeObjectAsJson(request),
+        HttpStatus.SC_CREATED,
+        new TypeReference<CreateLogicalRouterResponse>() {
+        });
+  }
+
+  /**
+   * Create a logical router.
+   */
+  public void createLogicalRouterAsync(CreateLogicalRouterRequest request,
+                                       FutureCallback<CreateLogicalRouterResponse> responseCallback)
+      throws IOException {
+    final String path = basePath + "/logical-routers";
+    postAsync(path,
+        serializeObjectAsJson(request),
+        HttpStatus.SC_CREATED,
+        new TypeReference<CreateLogicalRouterResponse>() {
+        },
+        responseCallback);
+  }
+
+  /**
+   * Gets a logical router.
+   */
+  public GetLogicalRouterResponse getLogicalRouter(String id) throws IOException {
+    final String path = basePath + "/logical-routers/" + id;
+    return get(path,
+        HttpStatus.SC_OK,
+        new TypeReference<GetLogicalRouterResponse>() {
+        });
+  }
+
+  /**
+   * Gets a logical router.
+   */
+  public void getLogicalRouterAsync(String id, FutureCallback<GetLogicalRouterResponse> responseCallback)
+      throws IOException {
+    final String path = basePath + "/logical-routers/" + id;
+    getAsync(path,
+        HttpStatus.SC_OK,
+        new TypeReference<GetLogicalRouterResponse>() {
+        },
+        responseCallback);
+  }
+
+  /**
+   * Deletes a logical router.
+   */
+  public void deleteLogicalRouter(String id) throws IOException {
+    final String path = basePath + "/logical-routers/" + id;
+    delete(path, HttpStatus.SC_OK);
+  }
+
+  /**
+   * Deletes a logical router.
+   */
+  public void deleteLogicalRouterAsync(String id,
+                                       FutureCallback<Void> responseCallback)
+      throws IOException {
+    final String path = basePath + "/logical-routers/" + id;
     deleteAsync(path, HttpStatus.SC_OK, responseCallback);
   }
 

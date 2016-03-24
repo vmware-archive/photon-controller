@@ -47,6 +47,20 @@ enum TransportType {
   VLAN
 }
 
+enum RouterType {
+  TIER0 = 1
+  TIER1 = 2
+}
+
+struct IPv4CIDRBlock {
+  1: required string IPv4CIDRBlock
+}
+
+struct LogicalRouterConfig {
+  1: optional list<IPv4CIDRBlock> external_transit_networks
+  2: optional IPv4CIDRBlock internal_transit_network
+}
+
 //////////////////////////////////////////////////////////////////////////////
 // Fabric node
 //////////////////////////////////////////////////////////////////////////////
@@ -116,4 +130,28 @@ struct GetTransportZoneResponse {
   2: required string resource_type
   3: required TransportType transport_type
   4: required string host_switch_name
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// Logical Router
+//////////////////////////////////////////////////////////////////////////////
+struct CreateLogicalRouterRequest {
+  1: required RouterType router_type
+  2: optional string display_name
+  3: optional string description
+  4: optional LogicalRouterConfig config
+}
+
+struct CreateLogicalRouterResponse {
+  1: required string id
+  2: required RouterType router_type
+}
+
+struct GetLogicalRouterResponse {
+  1: required string id
+  2: optional string resource_type
+  3: required RouterType router_type
+  4: optional string display_name
+  5: optional string description
+  6: optional LogicalRouterConfig config
 }
