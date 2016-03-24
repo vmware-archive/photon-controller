@@ -15,8 +15,8 @@ package com.vmware.photon.controller.deployer;
 
 import com.vmware.photon.controller.common.config.BadConfigException;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
+import com.vmware.photon.controller.common.thrift.ThriftConfig;
 import com.vmware.photon.controller.common.xenon.host.XenonConfig;
-import com.vmware.photon.controller.deployer.service.ThriftConfig;
 
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
