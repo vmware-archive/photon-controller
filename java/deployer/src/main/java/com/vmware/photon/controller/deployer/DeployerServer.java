@@ -14,13 +14,13 @@
 package com.vmware.photon.controller.deployer;
 
 import com.vmware.photon.controller.common.manifest.BuildInfo;
+import com.vmware.photon.controller.common.thrift.ThriftConfig;
 import com.vmware.photon.controller.common.thrift.ThriftEventHandler;
 import com.vmware.photon.controller.common.thrift.ThriftFactory;
 import com.vmware.photon.controller.common.zookeeper.ServiceNode;
 import com.vmware.photon.controller.common.zookeeper.ServiceNodeFactory;
 import com.vmware.photon.controller.deployer.gen.Deployer;
 import com.vmware.photon.controller.deployer.service.DeployerService;
-import com.vmware.photon.controller.deployer.service.ThriftConfig;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
