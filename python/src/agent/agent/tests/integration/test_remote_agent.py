@@ -158,7 +158,6 @@ class TestRemoteAgent(BaseKazooTestCase, AgentCommonTests):
             image_datastore = datastores[0]
 
         req = ProvisionRequest()
-        req.availability_zone = self.get_availability_zone()
         req.datastores = datastores
         if vm_networks is None:
             vm_networks = [self._vm_network]
@@ -224,9 +223,6 @@ class TestRemoteAgent(BaseKazooTestCase, AgentCommonTests):
         config_request = ConfigureRequest(stable_uuid("leaf scheduler"))
         config_request.roles = Roles([leaf_scheduler])
         self.host_client.configure(config_request)
-
-    def get_availability_zone(self):
-        return "test"
 
     @property
     def agent_in_uwsim(self):
@@ -396,8 +392,6 @@ class TestRemoteAgent(BaseKazooTestCase, AgentCommonTests):
         self.assertEqual(res.result, GetConfigResultCode.OK)
 
         hostConfig = res.hostConfig
-        avail_zone = self.get_availability_zone()
-        self.assertEqual(hostConfig.availability_zone, avail_zone)
         datastores = [ds.name for ds in hostConfig.datastores]
         containsDs = [ds for ds in self.get_all_datastores()
                       if ds in datastores]
