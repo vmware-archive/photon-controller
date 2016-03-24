@@ -139,7 +139,7 @@ public class CloudStoreXenonHostTest {
     public void setUpClass() throws IOException, BadConfigException {
       CloudStoreConfig config = ConfigBuilder.build(CloudStoreConfig.class,
           CloudStoreConfigTest.class.getResource(configFilePath).getPath());
-      storageDir = new File(config.getStoragePath());
+      storageDir = new File(config.getXenonConfig().getStoragePath());
       FileUtils.deleteDirectory(storageDir);
     }
 

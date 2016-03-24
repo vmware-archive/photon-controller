@@ -15,15 +15,15 @@ package com.vmware.photon.controller.cloudstore;
 
 import com.vmware.photon.controller.common.config.BadConfigException;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
+import com.vmware.photon.controller.common.xenon.host.XenonConfig;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperConfig;
 
-import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.arrayContaining;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-
-import java.net.UnknownHostException;
 
 /**
  * Tests {@link CloudStoreConfig}.
@@ -35,34 +35,24 @@ public class CloudStoreConfigTest {
   /**
    * Dummy test case to make Intellij recognize this as a test class.
    */
-  @Test
-  private void dummy() {
+  @Test(enabled = false)
+  public void dummy() {
   }
 
-  @BeforeMethod
+  @BeforeClass
   public void setUp() throws BadConfigException {
     config = ConfigBuilder.build(CloudStoreConfig.class,
         CloudStoreConfigTest.class.getResource("/config.yml").getPath());
   }
 
   @Test
-  public void testPort() {
-    assertThat(config.getPort(), is(19000));
-  }
-
-  @Test
-  public void testBind() throws UnknownHostException {
-    assertThat(config.getBind(), is("localhost"));
-  }
-
-  @Test
-  public void testRegistrationAddress() throws UnknownHostException {
-    assertThat(config.getRegistrationAddress(), is("localhost"));
-  }
-
-  @Test
-  public void testStoragePath() {
-    assertThat(config.getStoragePath(), is("/tmp/dcp/cloud-store/"));
+  public void testXenonConfig() {
+    XenonConfig xenonConfig = config.getXenonConfig();
+    assertThat(xenonConfig.getBindAddress(), is("0.0.0.0"));
+    assertThat(xenonConfig.getPeerNodes(), arrayContaining("http://127.0.0.1:19000"));
+    assertThat(xenonConfig.getPort(), is(19000));
+    assertThat(xenonConfig.getRegistrationAddress(), is("127.0.0.1"));
+    assertThat(xenonConfig.getStoragePath(), is("/tmp/dcp/cloud-store/"));
   }
 
   @Test

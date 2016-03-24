@@ -14,42 +14,24 @@
 package com.vmware.photon.controller.cloudstore;
 
 import com.vmware.photon.controller.common.logging.LoggingConfiguration;
+import com.vmware.photon.controller.common.xenon.host.XenonConfig;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperConfig;
 
-import com.google.inject.BindingAnnotation;
-import org.hibernate.validator.constraints.NotBlank;
-import org.hibernate.validator.constraints.Range;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
-
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import static java.lang.annotation.ElementType.FIELD;
-import static java.lang.annotation.ElementType.METHOD;
-import static java.lang.annotation.ElementType.PARAMETER;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
  * This class implements configuration state for the cloud-store service.
  */
 public class CloudStoreConfig {
 
+  @Valid
   @NotNull
-  @Range(min = 0, max = 65535)
-  private Integer port;
-
-  @NotBlank
-  private String bind;
-
-  @NotBlank
-  private String registrationAddress;
-
-  @NotBlank
-  private String storagePath;
+  @JsonProperty("xenon")
+  private XenonConfig xenonConfig;
 
   @Valid
   @NotNull
@@ -59,73 +41,15 @@ public class CloudStoreConfig {
   @NotNull
   private LoggingConfiguration logging = new LoggingConfiguration();
 
-  public CloudStoreConfig() {
-    try {
-      bind = InetAddress.getLocalHost().getHostAddress();
-      registrationAddress = InetAddress.getLocalHost().getHostAddress();
-    } catch (UnknownHostException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  public Integer getPort() {
-    return port;
-  }
-
-  public String getBind() {
-    return bind;
-  }
-
-  public String getRegistrationAddress() {
-    return registrationAddress;
+  public XenonConfig getXenonConfig() {
+    return this.xenonConfig;
   }
 
   public LoggingConfiguration getLogging() {
     return checkNotNull(logging);
   }
 
-  public String getStoragePath() {
-    return storagePath;
-  }
-
   public ZookeeperConfig getZookeeper() {
     return zookeeper;
   }
-
-  /**
-   * Cloud-store port.
-   */
-  @BindingAnnotation
-  @Target({FIELD, PARAMETER, METHOD})
-  @Retention(RUNTIME)
-  public @interface Port {
-  }
-
-  /**
-   * Cloud-store bind address.
-   */
-  @BindingAnnotation
-  @Target({FIELD, PARAMETER, METHOD})
-  @Retention(RUNTIME)
-  public @interface Bind {
-  }
-
-  /**
-   * Cloud-store registration address for zookeeper.
-   */
-  @BindingAnnotation
-  @Target({FIELD, PARAMETER, METHOD})
-  @Retention(RUNTIME)
-  public @interface RegistrationAddress {
-  }
-
-  /**
-   * DCP storage path.
-   */
-  @BindingAnnotation
-  @Target({FIELD, PARAMETER, METHOD})
-  @Retention(RUNTIME)
-  public @interface StoragePath {
-  }
-
 }

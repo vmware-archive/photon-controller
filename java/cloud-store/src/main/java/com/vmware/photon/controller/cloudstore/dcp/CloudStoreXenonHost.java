@@ -13,7 +13,6 @@
 
 package com.vmware.photon.controller.cloudstore.dcp;
 
-import com.vmware.photon.controller.cloudstore.CloudStoreConfig;
 import com.vmware.photon.controller.cloudstore.dcp.entity.AttachedDiskServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.AvailabilityZoneServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ClusterConfigurationServiceFactory;
@@ -51,6 +50,8 @@ import com.vmware.photon.controller.common.manifest.BuildInfo;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.XenonHostInfoProvider;
+import com.vmware.photon.controller.common.xenon.host.AbstractServiceHost;
+import com.vmware.photon.controller.common.xenon.host.XenonConfig;
 import com.vmware.photon.controller.common.xenon.scheduler.TaskStateBuilder;
 import com.vmware.photon.controller.common.xenon.scheduler.TaskTriggerFactoryService;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
@@ -66,14 +67,13 @@ import com.google.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.file.Paths;
-
 /**
  * Class to initialize a Xenon host for cloud-store.
  */
 @Singleton
 public class CloudStoreXenonHost
-    extends ServiceHost implements XenonHostInfoProvider, HostClientProvider, AgentControlClientProvider,
+    extends AbstractServiceHost
+    implements XenonHostInfoProvider, HostClientProvider, AgentControlClientProvider,
     ServiceConfigProvider {
   private static final Logger logger = LoggerFactory.getLogger(CloudStoreXenonHost.class);
   public static final int DEFAULT_CONNECTION_LIMIT_PER_HOST = 1024;
@@ -131,24 +131,16 @@ public class CloudStoreXenonHost
 
   @Inject
   public CloudStoreXenonHost(
-      @CloudStoreConfig.Bind String bindAddress,
-      @CloudStoreConfig.Port int port,
-      @CloudStoreConfig.StoragePath String storagePath,
+      XenonConfig xenonConfig,
       HostClientFactory hostClientFactory,
       AgentControlClientFactory agentControlClientFactory,
       ServiceConfigFactory serviceConfigFactory,
       BuildInfo buildInfo) throws Throwable {
 
+    super(xenonConfig);
     this.hostClientFactory = hostClientFactory;
     this.agentControlClientFactory = agentControlClientFactory;
     this.serviceConfigFactory = serviceConfigFactory;
-
-    logger.info("Initializing XenonServer on port: {} path: {}", port, storagePath);
-    ServiceHost.Arguments arguments = new ServiceHost.Arguments();
-    arguments.port = port;
-    arguments.bindAddress = bindAddress;
-    arguments.sandbox = Paths.get(storagePath);
-    this.initialize(arguments);
     this.buildInfo = buildInfo;
   }
 
