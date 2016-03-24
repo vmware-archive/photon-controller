@@ -74,7 +74,6 @@ import com.vmware.photon.controller.apife.resources.TenantResourceTicketsResourc
 import com.vmware.photon.controller.apife.resources.TenantSecurityGroupsResource;
 import com.vmware.photon.controller.apife.resources.TenantTasksResource;
 import com.vmware.photon.controller.apife.resources.TenantsResource;
-import com.vmware.photon.controller.apife.resources.TopologyResource;
 import com.vmware.photon.controller.apife.resources.VmDiskAttachResource;
 import com.vmware.photon.controller.apife.resources.VmDiskDetachResource;
 import com.vmware.photon.controller.apife.resources.VmIsoAttachResource;
@@ -282,7 +281,6 @@ public class ApiFeService extends Application<ApiFeStaticConfiguration> {
     resources.add(TenantsResource.class);
     resources.add(TenantTasksResource.class);
     resources.add(TenantSecurityGroupsResource.class);
-    resources.add(TopologyResource.class);
     resources.add(VmDiskAttachResource.class);
     resources.add(VmDiskDetachResource.class);
     resources.add(VmIsoAttachResource.class);

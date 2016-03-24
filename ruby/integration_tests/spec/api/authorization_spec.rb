@@ -50,8 +50,7 @@ describe "authorization", authorization: true, devbox: true do
         *EsxCloud::ApiRoutesHelper.tasks_routes,
         *EsxCloud::ApiRoutesHelper.tenants_routes,
         *EsxCloud::ApiRoutesHelper.vms_routes,
-        *EsxCloud::ApiRoutesHelper.status_routes,
-        *EsxCloud::ApiRoutesHelper.info_routes
+        *EsxCloud::ApiRoutesHelper.status_routes
       ].each do |route|
         it "dis-allows with error 401 #{route.action} #{route.uri}" do
           response = http_client_send route.action, route.uri
