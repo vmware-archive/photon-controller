@@ -23,7 +23,6 @@ import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.HostEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.exceptions.external.HostNotFoundException;
-import com.vmware.photon.controller.apife.exceptions.external.HostSetAvailabilityZoneFailedException;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
 
@@ -32,7 +31,6 @@ import org.testng.annotations.Test;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 /**
  * Test {@link com.vmware.photon.controller.apife.commands.steps.HostSetAvailabilityZoneStepCmd}.
@@ -71,9 +69,6 @@ public class HostSetAvailabilityZoneStepCmdTest {
     step.addResource(hostEntity);
 
     command = new HostSetAvailabilityZoneStepCmd(taskCommand, stepBackend, step, hostBackend);
-    when(taskCommand.getHostClient()).thenReturn(hostClient);
-    when(hostClient.getHostIp()).thenReturn(hostEntity.getAddress());
-    when(hostClient.getPort()).thenReturn(agentPort);
   }
 
 
@@ -83,16 +78,7 @@ public class HostSetAvailabilityZoneStepCmdTest {
     provisionResponse.setResult(ProvisionResultCode.OK);
 
     command.execute();
-    verify(hostClient).setHostIp(hostEntity.getAddress());
-    verify(hostClient).setAvailabilityZone(hostEntity.getAvailabilityZone());
     verify(hostBackend).updateAvailabilityZone(hostEntity);
-  }
-
-  @Test(expectedExceptions = HostSetAvailabilityZoneFailedException.class)
-  public void testRpcException() throws RpcException, InterruptedException, ApiFeException {
-    when(hostClient.setAvailabilityZone(hostEntity.getAvailabilityZone()))
-        .thenThrow(new RpcException());
-    command.execute();
   }
 
   @Test(expectedExceptions = HostNotFoundException.class)

@@ -97,9 +97,6 @@ import com.vmware.photon.controller.host.gen.ReserveResultCode;
 import com.vmware.photon.controller.host.gen.ServiceTicketRequest;
 import com.vmware.photon.controller.host.gen.ServiceTicketResponse;
 import com.vmware.photon.controller.host.gen.ServiceTicketResultCode;
-import com.vmware.photon.controller.host.gen.SetAvailabilityZoneRequest;
-import com.vmware.photon.controller.host.gen.SetAvailabilityZoneResponse;
-import com.vmware.photon.controller.host.gen.SetAvailabilityZoneResultCode;
 import com.vmware.photon.controller.host.gen.SetHostModeRequest;
 import com.vmware.photon.controller.host.gen.StartImageScanRequest;
 import com.vmware.photon.controller.host.gen.StartImageSweepRequest;
@@ -127,7 +124,6 @@ import com.google.inject.Injector;
 import com.google.inject.TypeLiteral;
 import org.apache.thrift.TException;
 import org.apache.thrift.async.AsyncMethodCallback;
-import org.mockito.ArgumentCaptor;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.testng.annotations.AfterMethod;
@@ -3408,132 +3404,6 @@ public class HostClientTest {
     public void testFailureUnknownResult() {
     }
   }
-
-  /**
-   * This class implements tests for the setAvailabilityZone method.
-   */
-  public class SetAvailabilityZoneTest {
-
-    private String availabilityZone = "zone1";
-
-    @BeforeMethod
-    private void setUp() {
-      HostClientTest.this.setUp();
-    }
-
-    @AfterMethod
-    private void tearDown() {
-      hostClient = null;
-    }
-
-    private Answer getAnswer(final Host.AsyncClient.set_availability_zone_call setAvailabilityZone) {
-      return new Answer() {
-        @Override
-        public Object answer(InvocationOnMock invocation) throws Throwable {
-          Object[] args = invocation.getArguments();
-          AsyncMethodCallback<Host.AsyncClient.set_availability_zone_call> handler = (AsyncMethodCallback) args[1];
-          handler.onComplete(setAvailabilityZone);
-          return null;
-        }
-      };
-    }
-
-    public void testSuccess() throws Exception {
-      SetAvailabilityZoneResponse setAvailabilityZoneResponse = new SetAvailabilityZoneResponse();
-      setAvailabilityZoneResponse.setResult(SetAvailabilityZoneResultCode.OK);
-      final Host.AsyncClient.set_availability_zone_call setAvailabilityZone =
-          mock(Host.AsyncClient.set_availability_zone_call.class);
-      doReturn(setAvailabilityZoneResponse).when(setAvailabilityZone).getResult();
-      ArgumentCaptor<SetAvailabilityZoneRequest> request = ArgumentCaptor.forClass(SetAvailabilityZoneRequest.class);
-      doAnswer(getAnswer(setAvailabilityZone))
-          .when(clientProxy)
-          .set_availability_zone(any(SetAvailabilityZoneRequest.class), any(AsyncMethodCallback.class));
-
-      hostClient.setClientProxy(clientProxy);
-
-      assertThat(hostClient.setAvailabilityZone(availabilityZone),
-          is(setAvailabilityZoneResponse));
-      verify(clientProxy).set_availability_zone(request.capture(), any(AsyncMethodCallback.class));
-    }
-
-    @Test
-    public void testFailureNullHostIp() throws Exception {
-      try {
-        hostClient.setAvailabilityZone(availabilityZone);
-        fail("Synchronous setAvailabilityZone call should throw with null async clientProxy");
-      } catch (IllegalArgumentException e) {
-        assertThat(e.toString(), is("java.lang.IllegalArgumentException: hostname can't be null"));
-      }
-    }
-
-    @Test
-    public void testFailureTExceptionOnCall() throws Exception {
-      doThrow(new TException("Thrift exception"))
-          .when(clientProxy)
-          .set_availability_zone(any(SetAvailabilityZoneRequest.class), any(AsyncMethodCallback.class));
-
-      hostClient.setClientProxy(clientProxy);
-
-      try {
-        hostClient.setAvailabilityZone(availabilityZone);
-        fail("Synchronous setAvailabilityZone call should convert TException on call to RpcException");
-      } catch (RpcException e) {
-        assertThat(e.getMessage(), is("Thrift exception"));
-      }
-    }
-
-    @Test
-    public void testFailureTExceptionOnGetResult() throws Exception {
-      final Host.AsyncClient.set_availability_zone_call setAvailabilityZone =
-          mock(Host.AsyncClient.set_availability_zone_call.class);
-      doThrow(new TException("Thrift exception")).when(setAvailabilityZone).getResult();
-      doAnswer(getAnswer(setAvailabilityZone))
-          .when(clientProxy)
-          .set_availability_zone(any(SetAvailabilityZoneRequest.class), any(AsyncMethodCallback.class));
-
-      hostClient.setClientProxy(clientProxy);
-
-      try {
-        hostClient.setAvailabilityZone(availabilityZone);
-        fail("Synchronous setAvailabilityZone call should convert TException on call to RpcException");
-      } catch (RpcException e) {
-        assertThat(e.getMessage(), is("Thrift exception"));
-      }
-    }
-
-    @Test(dataProvider = "SetAvailabilityZoneFailureResultCodes")
-    public void testFailureResult(SetAvailabilityZoneResultCode resultCode,
-                                  Class<RuntimeException> exceptionClass) throws Exception {
-      SetAvailabilityZoneResponse setAvailabilityZoneResponse = new SetAvailabilityZoneResponse();
-      setAvailabilityZoneResponse.setResult(resultCode);
-      setAvailabilityZoneResponse.setError(resultCode.toString());
-
-      final Host.AsyncClient.set_availability_zone_call setAvailabilityZone =
-          mock(Host.AsyncClient.set_availability_zone_call.class);
-      doReturn(setAvailabilityZoneResponse).when(setAvailabilityZone).getResult();
-      doAnswer(getAnswer(setAvailabilityZone))
-          .when(clientProxy)
-          .set_availability_zone(any(SetAvailabilityZoneRequest.class), any(AsyncMethodCallback.class));
-
-      hostClient.setClientProxy(clientProxy);
-
-      try {
-        hostClient.setAvailabilityZone(availabilityZone);
-        fail("Synchronous setAvailabilityZone call should throw on failure result: " + resultCode.toString());
-      } catch (Exception e) {
-        assertTrue(e.getClass() == exceptionClass);
-        assertThat(e.getMessage(), is(resultCode.toString()));
-      }
-    }
-
-    @DataProvider(name = "SetAvailabilityZoneFailureResultCodes")
-    public Object[][] getSetAvailabilityZoneFailureResultCodes() {
-      return new Object[][]{
-          {SetAvailabilityZoneResultCode.SYSTEM_ERROR, SystemErrorException.class},
-      };
-    }
-  }
-
 
   /**
    * This class implements tests for the reserve method.
