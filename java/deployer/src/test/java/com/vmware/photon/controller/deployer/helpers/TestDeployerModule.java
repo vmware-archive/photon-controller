@@ -22,6 +22,7 @@ import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.manifest.BuildInfo;
 import com.vmware.photon.controller.common.thrift.ServerSet;
+import com.vmware.photon.controller.common.xenon.host.XenonConfig;
 import com.vmware.photon.controller.deployer.ApiFeServerSet;
 import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.DeployerServerSet;
@@ -30,7 +31,6 @@ import com.vmware.photon.controller.deployer.configuration.ServiceConfiguratorFa
 import com.vmware.photon.controller.deployer.dcp.ContainersConfig;
 import com.vmware.photon.controller.deployer.dcp.DeployerContext;
 import com.vmware.photon.controller.deployer.dcp.DeployerXenonServiceHost;
-import com.vmware.photon.controller.deployer.dcp.XenonConfig;
 import com.vmware.photon.controller.deployer.deployengine.ApiClientFactory;
 import com.vmware.photon.controller.deployer.deployengine.AuthHelper;
 import com.vmware.photon.controller.deployer.deployengine.AuthHelperFactory;

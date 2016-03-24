@@ -18,12 +18,12 @@ import com.vmware.photon.controller.common.clients.AgentControlClientFactory;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.photon.controller.common.xenon.MultiHostEnvironment;
+import com.vmware.photon.controller.common.xenon.host.XenonConfig;
 import com.vmware.photon.controller.common.xenon.scheduler.TaskSchedulerServiceStateBuilder;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfiguratorFactory;
 import com.vmware.photon.controller.deployer.dcp.ContainersConfig;
 import com.vmware.photon.controller.deployer.dcp.DeployerContext;
 import com.vmware.photon.controller.deployer.dcp.DeployerXenonServiceHost;
-import com.vmware.photon.controller.deployer.dcp.XenonConfig;
 import com.vmware.photon.controller.deployer.deployengine.ApiClientFactory;
 import com.vmware.photon.controller.deployer.deployengine.AuthHelperFactory;
 import com.vmware.photon.controller.deployer.deployengine.DockerProvisionerFactory;
@@ -108,7 +108,6 @@ public class TestEnvironment extends MultiHostEnvironment<DeployerXenonServiceHo
           authHelperFactory,
           healthCheckHelperFactory,
           serviceConfiguratorFactory,
-          hostNumber++,
           zookeeperServerSetBuilderFactory,
           hostManagementVmAddressValidatorFactory,
           clusterManagerFactory);
@@ -213,11 +212,6 @@ public class TestEnvironment extends MultiHostEnvironment<DeployerXenonServiceHo
 
     public Builder operationTimeoutMicros(long operationTimeoutMicros) {
       this.operationTimeoutMicros = operationTimeoutMicros;
-      return this;
-    }
-
-    public Builder hostNumber(int hostNumber) {
-      this.hostNumber = hostNumber;
       return this;
     }
 
