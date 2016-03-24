@@ -21,7 +21,6 @@ import com.vmware.photon.controller.apife.entities.HostEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.exceptions.external.HostNotFoundException;
 import com.vmware.photon.controller.apife.exceptions.external.HostSetAvailabilityZoneFailedException;
-import com.vmware.photon.controller.common.clients.exceptions.RpcException;
 
 import com.google.common.base.Preconditions;
 import org.slf4j.Logger;
@@ -53,20 +52,7 @@ public class HostSetAvailabilityZoneStepCmd extends StepCommand {
     Preconditions.checkArgument(hostList.size() == 1);
     HostEntity hostEntity = hostList.get(0);
 
-    try {
-      taskCommand.getHostClient().setHostIp(hostEntity.getAddress());
-      taskCommand.getHostClient().setAvailabilityZone(hostEntity.getAvailabilityZone());
-
-      hostBackend.updateAvailabilityZone(hostEntity);
-
-    } catch (InterruptedException | RpcException e) {
-      HostSetAvailabilityZoneFailedException exception = new HostSetAvailabilityZoneFailedException(
-          hostEntity.getId(),
-          hostEntity.getAvailabilityZone(),
-          e);
-      logger.error(exception.getMessage());
-      throw exception;
-    }
+    hostBackend.updateAvailabilityZone(hostEntity);
   }
 
   @Override
