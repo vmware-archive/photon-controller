@@ -182,31 +182,11 @@ public class DeployerService implements Deployer.Iface, ServerSet.ChangeListener
       throws InvalidAuthConfigException {
     Deployment deployment = request.getDeployment();
     if (deployment == null) {
-      throw new IllegalArgumentException("Deployment is null");
+      throw new IllegalArgumentException("Deployment object is null.");
     }
 
-    Set<String> invalidEntries = new HashSet<>();
-    if ((deployment.isAuthEnabled() && StringUtils.isBlank(deployment.getOauthTenant()))
-        || (!deployment.isAuthEnabled() && StringUtils.isNotBlank(deployment.getOauthTenant()))) {
-      invalidEntries.add("Oauth Tenant");
-    }
-
-    if ((deployment.isAuthEnabled() && StringUtils.isBlank(deployment.getOauthUsername()))
-        || (!deployment.isAuthEnabled() && StringUtils.isNotBlank(deployment.getOauthUsername()))) {
-      invalidEntries.add("Oauth Username");
-    }
-
-    if ((deployment.isAuthEnabled() && StringUtils.isBlank(deployment.getOauthTenant()))
-        || (!deployment.isAuthEnabled() && StringUtils.isNotBlank(deployment.getOauthPassword()))) {
-      invalidEntries.add("Oauth Password");
-    }
-
-    if (!invalidEntries.isEmpty()) {
-      throw new InvalidAuthConfigException(
-          String.format("Auth is%s enabled and %s should%s be empty.",
-              deployment.isAuthEnabled() ? "" : " not",
-              invalidEntries,
-              deployment.isAuthEnabled() ? " not" : ""));
+    if (!deployment.isSetId() || deployment.getId().isEmpty()) {
+      throw new IllegalArgumentException("Deployment object 'id' field was not provided.");
     }
   }
 

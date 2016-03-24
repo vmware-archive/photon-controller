@@ -895,45 +895,34 @@ public class DeployerServiceTest {
     /**
      * Tests {@link DeployerService#validateDeployRequest(com.vmware.photon.controller.deployer.gen.DeployRequest)}.
      */
-    @Test(dataProvider = "DeployRequests")
-    public void testInvalidAuthConfigInDeployRequest(DeployRequest request, String errorMsg) throws Throwable {
+    @Test(dataProvider = "InvalidDeploymentInDeployRequest")
+    public void testInvalidDeploymentInDeployRequest(DeployRequest request, String errorMsg) throws Throwable {
       DeployResult result = service.deploy(request).getResult();
       assertThat(result.getError(), is(errorMsg));
-      assertThat(result.getCode(), is(DeployResultCode.INVALID_OAUTH_CONFIG));
+      assertThat(result.getCode(), is(DeployResultCode.SYSTEM_ERROR));
     }
 
-    @DataProvider(name = "DeployRequests")
-    private Object[][] getDeployRequests() {
+    @DataProvider(name = "InvalidDeploymentInDeployRequest")
+    private Object[][] getInvalidDeploymentInDeployRequestParams() {
       Object[][] data = new Object[][]{
-          {createDeployRequest(true, null, null, null),
-              "Auth is enabled and [Oauth Password, Oauth Tenant, Oauth Username] should not be empty."},
-          {createDeployRequest(false, "t", "u", "p"),
-              "Auth is not enabled and [Oauth Password, Oauth Tenant, Oauth Username] should be empty."},
+          {new DeployRequest(),       "Deployment object is null."},
+          {createDeployRequest(null), "Deployment object 'id' field was not provided."},
+          {createDeployRequest(""),   "Deployment object 'id' field was not provided."},
       };
       return data;
     }
 
     private DeployRequest createDeployRequest(
-        boolean authEnabled,
-        String oauthTenant,
-        String oauthUsername,
-        String oauthPassword) {
+        String id) {
       DeployRequest request = new DeployRequest();
       Deployment deployment = new Deployment();
-      deployment.setId(UUID.randomUUID().toString());
-      deployment.setImageDatastore("imageDatastore");
-      deployment.setNtpEndpoint("ntp");
-      deployment.setSyslogEndpoint("syslog");
-      deployment.setAuthEnabled(authEnabled);
-      deployment.setOauthTenant(oauthTenant);
-      deployment.setOauthUsername(oauthUsername);
-      deployment.setOauthPassword(oauthPassword);
+      deployment.setId(id);
       request.setDeployment(deployment);
       return request;
     }
 
     private DeployRequest createDeployRequest() {
-      return createDeployRequest(false, null, null, null);
+      return createDeployRequest(UUID.randomUUID().toString());
     }
   }
 
