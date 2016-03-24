@@ -1,5 +1,4 @@
 {
-  "REGISTRATION_ADDRESS": "localhost",
   "CLOUD-STORE_BIND_ADDRESS": "0.0.0.0",
   "CLOUD-STORE_DCP_STORAGE_PATH": "/etc/esxcloud/cloud-store/sandbox_19000",
   "LOG_DIRECTORY": "/vagrant/log",
