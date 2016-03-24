@@ -57,9 +57,9 @@ class TestAgent(unittest.TestCase, AgentCommonTests):
         self._update_agent_invalid_config()
         self.runtime.stop_agent(self.proc)
         new_config = self.config.copy()
-        # Don't set availability zone since
+        # Don't set datastores since
         # self._update_agent_config() sets it.
-        del new_config["--availability-zone"]
+        del new_config["--datastores"]
         res = self.runtime.start_agent(new_config)
         self.proc, self.host_client, self.control_client = res
         req = self._update_agent_config()

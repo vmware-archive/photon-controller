@@ -12,7 +12,6 @@
 
 """ Implements the interfaces that are defined in the thrift Host service."""
 
-import common
 import datetime
 import logging
 import os
@@ -20,19 +19,21 @@ import sys
 import threading
 import uuid
 
+import common
+from common.lock import AlreadyLocked
+from common.lock import lock_with
+from common.lock_vm import lock_vm
 from common.log import log_duration
-
+from common.mode import MODE
 from common.photon_thrift.decorators import error_handler
 from common.photon_thrift.decorators import log_request
-from common.lock import lock_with
-from common.lock import AlreadyLocked
-from common.lock_vm import lock_vm
-from common.mode import MODE
 from common.service_name import ServiceName
 from gen.common.ttypes import ServerAddress
 from gen.host import Host
 from gen.host.ttypes import AttachISOResponse
 from gen.host.ttypes import AttachISOResultCode
+from gen.host.ttypes import CopyImageResponse
+from gen.host.ttypes import CopyImageResultCode
 from gen.host.ttypes import CreateDiskError
 from gen.host.ttypes import CreateDiskResultCode
 from gen.host.ttypes import CreateDisksResponse
@@ -41,18 +42,16 @@ from gen.host.ttypes import CreateImageFromVmResponse
 from gen.host.ttypes import CreateImageFromVmResultCode
 from gen.host.ttypes import CreateImageResponse
 from gen.host.ttypes import CreateImageResultCode
-from gen.host.ttypes import CopyImageResponse
-from gen.host.ttypes import CopyImageResultCode
 from gen.host.ttypes import CreateVmResponse
 from gen.host.ttypes import CreateVmResultCode
+from gen.host.ttypes import DeleteDirectoryResponse
+from gen.host.ttypes import DeleteDirectoryResultCode
 from gen.host.ttypes import DeleteDiskError
 from gen.host.ttypes import DeleteDiskResultCode
 from gen.host.ttypes import DeleteDisksResponse
 from gen.host.ttypes import DeleteDisksResultCode
 from gen.host.ttypes import DeleteImageResponse
 from gen.host.ttypes import DeleteImageResultCode
-from gen.host.ttypes import DeleteDirectoryResponse
-from gen.host.ttypes import DeleteDirectoryResultCode
 from gen.host.ttypes import DeleteVmResponse
 from gen.host.ttypes import DeleteVmResultCode
 from gen.host.ttypes import DetachISOResponse
@@ -67,6 +66,7 @@ from gen.host.ttypes import GetHostModeResultCode
 from gen.host.ttypes import GetImagesResponse
 from gen.host.ttypes import GetImagesResultCode
 from gen.host.ttypes import GetInactiveImagesResponse
+from gen.host.ttypes import GetMonitoredImagesResultCode
 from gen.host.ttypes import GetNetworksResponse
 from gen.host.ttypes import GetNetworksResultCode
 from gen.host.ttypes import GetResourcesResponse
@@ -81,7 +81,6 @@ from gen.host.ttypes import ImageInfoResponse
 from gen.host.ttypes import ImageInfoResultCode
 from gen.host.ttypes import MksTicketResponse
 from gen.host.ttypes import MksTicketResultCode
-from gen.host.ttypes import GetMonitoredImagesResultCode
 from gen.host.ttypes import PowerVmOp
 from gen.host.ttypes import PowerVmOpResponse
 from gen.host.ttypes import PowerVmOpResultCode
@@ -92,20 +91,17 @@ from gen.host.ttypes import ReserveResultCode
 from gen.host.ttypes import ServiceTicketResponse
 from gen.host.ttypes import ServiceTicketResultCode
 from gen.host.ttypes import ServiceType
-from gen.host.ttypes import SetAvailabilityZoneResponse
-from gen.host.ttypes import SetAvailabilityZoneResultCode
 from gen.host.ttypes import SetHostModeResponse
 from gen.host.ttypes import SetHostModeResultCode
 from gen.host.ttypes import StartImageOperationResultCode
 from gen.host.ttypes import StartImageScanResponse
 from gen.host.ttypes import StartImageSweepResponse
-from gen.host.ttypes import StopImageOperationResultCode
 from gen.host.ttypes import StopImageOperationResponse
+from gen.host.ttypes import StopImageOperationResultCode
 from gen.host.ttypes import TransferImageResponse
 from gen.host.ttypes import TransferImageResultCode
-from gen.host.ttypes import VmDisksOpResponse
 from gen.host.ttypes import VmDiskOpResultCode
-
+from gen.host.ttypes import VmDisksOpResponse
 from gen.resource.ttypes import CloneType
 from gen.resource.ttypes import Datastore
 from gen.resource.ttypes import ImageInfo
@@ -121,22 +117,24 @@ from gen.scheduler.ttypes import PlaceResultCode
 from gen.scheduler.ttypes import Score
 from host.host_configuration import HostConfiguration
 from host.hypervisor.datastore_manager import DatastoreNotFoundException
-from host.hypervisor.image_scanner import DatastoreImageScanner
-from host.hypervisor.image_sweeper import DatastoreImageSweeper
 from host.hypervisor.image_manager import DirectoryNotFound
 from host.hypervisor.image_manager import ImageNotFoundException
+from host.hypervisor.image_scanner import DatastoreImageScanner
+from host.hypervisor.image_sweeper import DatastoreImageSweeper
 from host.hypervisor.placement_manager import InvalidReservationException
+from host.hypervisor.placement_manager import \
+    MissingPlacementDescriptorException
 from host.hypervisor.placement_manager import NoSuchResourceException
-from host.hypervisor.placement_manager import NotEnoughMemoryResourceException
 from host.hypervisor.placement_manager import NotEnoughCpuResourceException
 from host.hypervisor.placement_manager import \
     NotEnoughDatastoreCapacityException
-from host.hypervisor.placement_manager import \
-    MissingPlacementDescriptorException
-from host.hypervisor.resources import Disk
-from host.hypervisor.resources import Vm
-from host.hypervisor.resources import State
+from host.hypervisor.placement_manager import NotEnoughMemoryResourceException
 from host.hypervisor.resources import AgentResourcePlacementList
+from host.hypervisor.resources import Disk
+from host.hypervisor.resources import State
+from host.hypervisor.resources import Vm
+from host.hypervisor.task_runner import TaskAlreadyRunning
+
 from hypervisor.disk_manager import DiskAlreadyExistException
 from hypervisor.image_manager import ImageInUse
 from hypervisor.image_manager import InvalidImageState
@@ -146,7 +144,6 @@ from hypervisor.vm_manager import OperationNotAllowedException
 from hypervisor.vm_manager import VmAlreadyExistException
 from hypervisor.vm_manager import VmNotFoundException
 from hypervisor.vm_manager import VmPowerStateException
-from host.hypervisor.task_runner import TaskAlreadyRunning
 
 
 class HypervisorNotConfigured(Exception):
@@ -177,9 +174,6 @@ class HostHandler(Host.Iface):
         self._agent_id = agent_config.host_id
         self._address = ServerAddress(host=agent_config.hostname,
                                       port=agent_config.host_port)
-
-        # XXX We should just get this info from the hypervisor object
-        self._availability_zone = agent_config.availability_zone
 
         self._hypervisor = hypervisor
         self._generation = 0
@@ -217,8 +211,7 @@ class HostHandler(Host.Iface):
 
     def configure_host(self, leaf_scheduler, roles=Roles(), host_id=None):
         # Call registered observers
-        config = HostConfiguration(self._availability_zone,
-                                   leaf_scheduler,
+        config = HostConfiguration(leaf_scheduler,
                                    roles,
                                    host_id)
         for observer in self._configuration_observers:
@@ -257,7 +250,6 @@ class HostHandler(Host.Iface):
         agent_config = common.services.get(ServiceName.AGENT_CONFIG)
         config.agent_id = agent_config.host_id
         config.deployment_id = agent_config.deployment_id
-        config.availability_zone = agent_config.availability_zone
         config.management_only = agent_config.management_only
         config.address = ServerAddress(host=agent_config.hostname,
                                        port=agent_config.host_port)
@@ -1695,26 +1687,6 @@ class HostHandler(Host.Iface):
 
         response.result = DetachISOResultCode.OK
         return response
-
-    @log_request
-    @error_handler(SetAvailabilityZoneResponse, SetAvailabilityZoneResultCode)
-    def set_availability_zone(self, request):
-        """
-        Sets/Updates availability zone of host.
-
-        :type request: SetAvailabilityZoneRequest
-        :rtype: SetAvailabilityZoneResponse
-        """
-        try:
-            agent_config = common.services.get(ServiceName.AGENT_CONFIG)
-            agent_config.set_availability_zone(request)
-        except Exception, e:
-            self._logger.warning("Unexpected exception", exc_info=True)
-            return SetAvailabilityZoneResponse(
-                SetAvailabilityZoneResultCode.SYSTEM_ERROR,
-                str(e))
-
-        return SetAvailabilityZoneResponse(SetAvailabilityZoneResultCode.OK)
 
     @log_request
     @error_handler(ServiceTicketResponse, ServiceTicketResultCode)

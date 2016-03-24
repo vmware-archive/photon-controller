@@ -89,7 +89,7 @@ public class TestHostZookeeperServerSet extends BaseTestWithRealZookeeper {
   private byte[] getHostConfig(String id, InetSocketAddress address) throws Exception {
     ServerAddress sAddr = new ServerAddress(address.getHostString(), address.getPort());
     TSerializer serializer = new TSerializer();
-    HostConfig host = new HostConfig(id, "test_fault_domain", new ArrayList<Datastore>(), sAddr);
+    HostConfig host = new HostConfig(id, new ArrayList<Datastore>(), sAddr);
     return serializer.serialize(host);
   }
 }

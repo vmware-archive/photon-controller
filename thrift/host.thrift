@@ -36,7 +36,7 @@ enum GetConfigResultCode {
 // Current configuration of a host
 struct HostConfig {
   1: required string agent_id
-  2: required string availability_zone
+  2: optional string availability_zone
   3: required list<resource.Datastore> datastores
   // host:port this agent listens to
   4: required server_address.ServerAddress address
