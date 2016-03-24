@@ -13,15 +13,21 @@
 
 package com.vmware.photon.controller.common.clients.nsx;
 
+import com.vmware.photon.controller.nsx.gen.CreateLogicalRouterRequest;
+import com.vmware.photon.controller.nsx.gen.CreateLogicalRouterResponse;
 import com.vmware.photon.controller.nsx.gen.CreateTransportNodeRequest;
 import com.vmware.photon.controller.nsx.gen.CreateTransportNodeResponse;
 import com.vmware.photon.controller.nsx.gen.CreateTransportZoneRequest;
 import com.vmware.photon.controller.nsx.gen.CreateTransportZoneResponse;
 import com.vmware.photon.controller.nsx.gen.GetFabricNodeResponse;
+import com.vmware.photon.controller.nsx.gen.GetLogicalRouterResponse;
 import com.vmware.photon.controller.nsx.gen.GetTransportNodeResponse;
 import com.vmware.photon.controller.nsx.gen.GetTransportZoneResponse;
+import com.vmware.photon.controller.nsx.gen.IPv4CIDRBlock;
+import com.vmware.photon.controller.nsx.gen.LogicalRouterConfig;
 import com.vmware.photon.controller.nsx.gen.RegisterFabricNodeRequest;
 import com.vmware.photon.controller.nsx.gen.RegisterFabricNodeResponse;
+import com.vmware.photon.controller.nsx.gen.RouterType;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.http.HttpResponse;
@@ -392,6 +398,104 @@ public class NsxClientTest {
     assertThat(latch.await(COUNTDOWNLATCH_AWAIT_TIMEOUT, TimeUnit.SECONDS), is(true));
   }
 
+  @Test
+  public void testCreateLogicalRouter() throws IOException {
+    final CreateLogicalRouterResponse mockResponse = createLogicalRouterResponse();
+    setupMocks(objectMapper.writeValueAsString(mockResponse), HttpStatus.SC_CREATED);
+    NsxClient client = new NsxClient(target, username, password, restClient);
+    CreateLogicalRouterResponse response = client.createLogicalRouter(new CreateLogicalRouterRequest(RouterType.TIER1));
+    assertEquals(response, mockResponse);
+  }
+
+  @Test
+  public void testCreateLogicalRouterAsync() throws IOException, InterruptedException {
+    final CreateLogicalRouterResponse mockResponse = new CreateLogicalRouterResponse();
+    setupMocks(objectMapper.writeValueAsString(mockResponse), HttpStatus.SC_CREATED);
+
+    NsxClient client = new NsxClient(target, username, password, restClient);
+    final CountDownLatch latch = new CountDownLatch(1);
+    client.createLogicalRouterAsync(new CreateLogicalRouterRequest(RouterType.TIER1),
+        new com.google.common.util.concurrent.FutureCallback<CreateLogicalRouterResponse>() {
+          @Override
+          public void onSuccess(CreateLogicalRouterResponse result) {
+            assertEquals(result, mockResponse);
+            latch.countDown();
+          }
+
+          @Override
+          public void onFailure(Throwable t) {
+            fail(t.toString());
+            latch.countDown();
+          }
+        });
+
+    assertThat(latch.await(COUNTDOWNLATCH_AWAIT_TIMEOUT, TimeUnit.SECONDS), is(true));
+  }
+
+  @Test
+  public void testGetLogicalRouter() throws IOException {
+    final GetLogicalRouterResponse mockResponse = createGetLogicalRouterResponse();
+    setupMocks(objectMapper.writeValueAsString(mockResponse), HttpStatus.SC_OK);
+    NsxClient client = new NsxClient(target, username, password, restClient);
+    GetLogicalRouterResponse response = client.getLogicalRouter("id");
+    assertEquals(response, mockResponse);
+  }
+
+  @Test
+  public void testGetLogicalRouterAsync() throws IOException, InterruptedException {
+    final GetLogicalRouterResponse mockResponse = createGetLogicalRouterResponse();
+    setupMocks(objectMapper.writeValueAsString(mockResponse), HttpStatus.SC_OK);
+
+    NsxClient client = new NsxClient(target, username, password, restClient);
+    final CountDownLatch latch = new CountDownLatch(1);
+    client.getLogicalRouterAsync("id",
+        new com.google.common.util.concurrent.FutureCallback<GetLogicalRouterResponse>() {
+          @Override
+          public void onSuccess(GetLogicalRouterResponse result) {
+            assertEquals(result, mockResponse);
+            latch.countDown();
+          }
+
+          @Override
+          public void onFailure(Throwable t) {
+            fail(t.toString());
+            latch.countDown();
+          }
+        });
+
+    assertThat(latch.await(COUNTDOWNLATCH_AWAIT_TIMEOUT, TimeUnit.SECONDS), is(true));
+  }
+
+  @Test
+  public void testDeleteLogicalRouter() throws IOException {
+    setupMocks(null, HttpStatus.SC_OK);
+    NsxClient client = new NsxClient(target, username, password, restClient);
+    client.deleteLogicalRouter("id");
+  }
+
+  @Test
+  public void testDeleteLogicalRouterAsync() throws IOException, InterruptedException {
+    setupMocks(null, HttpStatus.SC_OK);
+
+    NsxClient client = new NsxClient(target, username, password, restClient);
+    final CountDownLatch latch = new CountDownLatch(1);
+    client.deleteLogicalRouterAsync("id",
+        new com.google.common.util.concurrent.FutureCallback<Void>() {
+          @Override
+          public void onSuccess(Void result) {
+            latch.countDown();
+          }
+
+          @Override
+          public void onFailure(Throwable t) {
+            fail(t.toString());
+            latch.countDown();
+          }
+        });
+
+    assertThat(latch.await(COUNTDOWNLATCH_AWAIT_TIMEOUT, TimeUnit.SECONDS), is(true));
+  }
+
   private void setupMocks(String serializedResponse, int responseCode) throws IOException {
     CloseableHttpAsyncClient asyncClient = mock(CloseableHttpAsyncClient.class);
     doAnswer(invocation -> null).when(asyncClient).close();
@@ -444,5 +548,24 @@ public class NsxClientTest {
           }
           return httpResponseFuture;
         });
+  }
+
+  private CreateLogicalRouterResponse createLogicalRouterResponse() {
+    final CreateLogicalRouterResponse response = new CreateLogicalRouterResponse();
+    response.setId("id");
+    response.setRouter_type(RouterType.TIER1);
+    return response;
+  }
+
+  private GetLogicalRouterResponse createGetLogicalRouterResponse() {
+    final GetLogicalRouterResponse response = new GetLogicalRouterResponse();
+    response.setId("id");
+    response.setRouter_type(RouterType.TIER1);
+    response.setDisplay_name("displayName");
+    response.setDescription("desc");
+    LogicalRouterConfig config = new LogicalRouterConfig();
+    config.setInternal_transit_network(new IPv4CIDRBlock("1.1.1.1/24"));
+    response.setConfig(config);
+    return response;
   }
 }
