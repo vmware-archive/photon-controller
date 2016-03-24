@@ -16,11 +16,10 @@ package com.vmware.photon.controller.housekeeper.service;
 import com.vmware.photon.controller.common.logging.LoggingUtils;
 import com.vmware.photon.controller.common.manifest.BuildInfo;
 import com.vmware.photon.controller.common.thrift.ServerSet;
-import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.zookeeper.ServiceNodeEventHandler;
+import com.vmware.photon.controller.housekeeper.Config;
 import com.vmware.photon.controller.housekeeper.HousekeeperServerSet;
 import com.vmware.photon.controller.housekeeper.dcp.HousekeeperXenonServiceHost;
-import com.vmware.photon.controller.housekeeper.dcp.XenonConfig;
 import com.vmware.photon.controller.housekeeper.gen.Housekeeper;
 import com.vmware.photon.controller.housekeeper.gen.ReplicateImageRequest;
 import com.vmware.photon.controller.housekeeper.gen.ReplicateImageResponse;
@@ -51,19 +50,19 @@ public class HousekeeperService implements Housekeeper.Iface, ServiceNodeEventHa
 
   private final ServerSet serverSet;
   private final HousekeeperXenonServiceHost dcpHost;
-  private final XenonConfig dcpConfig;
+  private final Config config;
   private final BuildInfo buildInfo;
 
   @Inject
   public HousekeeperService(
       @HousekeeperServerSet ServerSet serverSet,
       HousekeeperXenonServiceHost host,
-      XenonConfig dcpConfig,
+      Config config,
       BuildInfo buildInfo) {
     this.serverSet = serverSet;
     this.serverSet.addChangeListener(this);
     this.dcpHost = host;
-    this.dcpConfig = dcpConfig;
+    this.config = config;
     this.buildInfo = buildInfo;
   }
 
@@ -111,19 +110,12 @@ public class HousekeeperService implements Housekeeper.Iface, ServiceNodeEventHa
 
   @Override
   public void onServerAdded(InetSocketAddress address) {
-    String host = address.getHostString();
-    String currentHost = dcpHost.getUri().getHost();
-    if (host.equals(currentHost)) {
-      logger.info("Skip adding self {}", host);
-      return;
-    }
-
-    logger.info("joining {} to {}", host, currentHost);
-    ServiceHostUtils.joinNodeGroup(dcpHost, host);
+    logger.info("Server added: " + address);
   }
 
   @Override
   public void onServerRemoved(InetSocketAddress address) {
+    logger.info("Server removed: " + address);
   }
 
   private void setRequestId(TracingInfo tracingInfo) {
