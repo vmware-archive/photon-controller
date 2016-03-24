@@ -293,19 +293,17 @@ class DiskImage(BaseResource):
 class Host(BaseResource):
     """Hack: HostConfig"""
 
-    def __init__(self, agent_id=None, datastores=[], availability_zone=None,
+    def __init__(self, agent_id=None, datastores=[],
                  hypervisor=None, vm_network=None):
         """Create host
 
         :type agent_id: str
         :type datastores: list of Datastore
-        :type availability_zone: str
         :type hypervisor: binary
         :type vm_network: str
         """
         self.agent_id = agent_id
         self.datastores = datastores
-        self.availability_zone = availability_zone
         self.hypervisor = hypervisor
         self.vm_network = vm_network
 
@@ -318,12 +316,9 @@ class Host(BaseResource):
         return instance
 
     def to_thrift(self):
-        thrift_host_config = ThriftHostConfig(self.agent_id,
-                                              self.availability_zone)
+        thrift_host_config = ThriftHostConfig(self.agent_id)
         thrift_host_config.datastores = [ThriftDatastore(ds)
                                          for ds in self.datastores]
-        if self.availability_zone:
-            thrift_host_config.availability_zone = self.availability_zone
         if self.hypervisor:
             thrift_host_config.hypervisor = self.hypervisor
         if self.vm_network:

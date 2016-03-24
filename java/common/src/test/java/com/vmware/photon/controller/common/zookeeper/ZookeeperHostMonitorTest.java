@@ -402,7 +402,7 @@ public class ZookeeperHostMonitorTest {
 
   private HostConfig getHostConfig(String name) {
     ServerAddress sAddr = new ServerAddress(name, 1234);
-    return new HostConfig(name, "test_fault_domain", new ArrayList<Datastore>(), sAddr);
+    return new HostConfig(name, new ArrayList<Datastore>(), sAddr);
   }
 
   private HostConfig getHostConfig(String name, List<String> datastoreIDs, String imageDatastore) {
@@ -417,7 +417,7 @@ public class ZookeeperHostMonitorTest {
     if (imageDatastore != null) {
       imageDatastores.add(imageDatastore);
     }
-    HostConfig config = new HostConfig(name, "test_fault_domain", datastore, sAddr);
+    HostConfig config = new HostConfig(name, datastore, sAddr);
     config.setImage_datastore_ids(imageDatastores);
     return config;
   }

@@ -54,7 +54,6 @@ class AgentConfig(object):
     # Default config file options that are always persisted.
     DATASTORES = "datastores"
     VM_NETWORK = "vm_network"
-    AVAILABILITY_ZONE = "availability_zone"
     HOSTNAME = "hostname"
     HOST_PORT = "port"
     MEMORY_OVERCOMMIT = "memory_overcommit"
@@ -71,8 +70,7 @@ class AgentConfig(object):
     STATS_HOST_TAGS = "stats_host_tags"
 
     PROVISION_ARGS = [HOST_PORT]
-    BOOTSTRAP_ARGS = PROVISION_ARGS + [AVAILABILITY_ZONE, HOSTNAME, HOST_ID,
-                                       DEPLOYMENT_ID]
+    BOOTSTRAP_ARGS = PROVISION_ARGS + [HOSTNAME, HOST_ID, DEPLOYMENT_ID]
 
     # List of attributes persisted to config.json by default
 
@@ -172,8 +170,6 @@ class AgentConfig(object):
 
         reboot = False
         reboot |= self._check_and_set_attr(
-            self.AVAILABILITY_ZONE, provision_req.availability_zone)
-        reboot |= self._check_and_set_attr(
             self.DATASTORES, provision_req.datastores)
         reboot |= self._check_and_set_attr(
             self.VM_NETWORK, provision_req.networks)
@@ -238,28 +234,6 @@ class AgentConfig(object):
                 self._logger.warning("Agent not fully configured %s" %
                                      str(self._options))
             self._reboot_required = True
-
-    @locked
-    def set_availability_zone(self, set_availability_zone_req):
-        """
-        set availability zone in agent configuration using the
-        set availability zone request.
-        This supports partial updates and the other properties remain as is.
-        @param set_availability_zone_req: The set availability zone request
-        """
-
-        avail_zone = set_availability_zone_req.availability_zone
-        config_changed = False
-        config_changed |= self._check_and_set_attr(self.AVAILABILITY_ZONE,
-                                                   avail_zone)
-
-        # Persist the updates to the config file.
-        self._persist_config()
-
-    @property
-    @locked
-    def availability_zone(self):
-        return getattr(self._options, self.AVAILABILITY_ZONE)
 
     @property
     @locked
@@ -498,8 +472,6 @@ class AgentConfig(object):
         parser.add_option("--hypervisor", dest="hypervisor", type="string",
                           default="esx",
                           help="The hypervisor that we are running on.")
-        parser.add_option("--availability-zone", dest=self.AVAILABILITY_ZONE,
-                          type="string", default=None)
         parser.add_option("--config-path", dest="config_path", type="string",
                           default=self.DEFAULT_CONFIG_PATH)
         parser.add_option("--datastores", dest=self.DATASTORES, type="string",

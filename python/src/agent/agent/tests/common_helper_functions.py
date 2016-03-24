@@ -359,7 +359,6 @@ class RuntimeUtils(object):
             "--logging-level": "debug",
             "--no-syslog": None,
             "--vm-network": "VM Network",
-            "--availability-zone": "fake_availability_zone",
             "--heartbeat-interval-sec": "3",
             "--heartbeat-timeout-factor": "6",
             "--config-path": config_path,

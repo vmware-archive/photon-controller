@@ -257,7 +257,7 @@ public class ZookeeperServerSetTest {
   }
 
   private HostConfig getHostConfig(String id, ServerAddress server) {
-    return new HostConfig(id, "test_fault_domain", new ArrayList<Datastore>(), server);
+    return new HostConfig(id, new ArrayList<Datastore>(), server);
   }
 
   private HostConfig getHostConfig(String id, InetSocketAddress server) {

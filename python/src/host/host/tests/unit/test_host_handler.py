@@ -9,33 +9,22 @@
 # warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
 # License for then specific language governing permissions and limitations
 # under the License.
-import tempfile
-import time
-
-import common
-from gen.scheduler import Scheduler
-from host.hypervisor.image_scanner import DatastoreImageScanner
-from host.hypervisor.image_sweeper import DatastoreImageSweeper
-from host.hypervisor.system import DatastoreInfo
 import os
+import tempfile
 import threading
+import time
 import unittest
 import uuid
 
-from matchers import *  # noqa
-from mock import MagicMock
-from mock import call
-from mock import patch
-
-from concurrent.futures import ThreadPoolExecutor
-from nose_parameterized import parameterized
-
+import common
 from common.exclusive_set import ExclusiveSet
 from common.file_util import mkdtemp
-from common.mode import MODE, Mode
 from common.kind import Flavor as HostFlavor
+from common.mode import MODE, Mode
 from common.service_name import ServiceName
 from common.state import State as CommonState
+from concurrent.futures import ThreadPoolExecutor
+from gen.common.ttypes import ServerAddress
 from gen.flavors.ttypes import Flavor
 from gen.flavors.ttypes import QuotaLineItem
 from gen.host.ttypes import CopyImageRequest
@@ -65,14 +54,11 @@ from gen.host.ttypes import PowerVmOpRequest
 from gen.host.ttypes import PowerVmOpResultCode
 from gen.host.ttypes import ReserveRequest
 from gen.host.ttypes import ReserveResultCode
-from gen.host.ttypes import SetAvailabilityZoneRequest
-from gen.host.ttypes import SetAvailabilityZoneResultCode
+from gen.host.ttypes import StartImageOperationResultCode
 from gen.host.ttypes import StartImageScanRequest
 from gen.host.ttypes import StartImageSweepRequest
-from gen.host.ttypes import StartImageOperationResultCode
 from gen.host.ttypes import StopImageOperationRequest
 from gen.host.ttypes import StopImageOperationResultCode
-from gen.common.ttypes import ServerAddress
 from gen.host.ttypes import VmDiskOpResultCode
 from gen.host.ttypes import VmDisksDetachRequest
 from gen.resource.ttypes import Datastore
@@ -83,15 +69,16 @@ from gen.resource.ttypes import ImageReplication
 from gen.resource.ttypes import ImageType
 from gen.resource.ttypes import InactiveImageDescriptor
 from gen.resource.ttypes import Resource
-from gen.resource.ttypes import ResourceConstraintType
 from gen.resource.ttypes import ResourceConstraint
-from gen.resource.ttypes import ResourcePlacementType
+from gen.resource.ttypes import ResourceConstraintType
 from gen.resource.ttypes import ResourcePlacement
 from gen.resource.ttypes import ResourcePlacementList
+from gen.resource.ttypes import ResourcePlacementType
 from gen.resource.ttypes import State
 from gen.resource.ttypes import Vm
 from gen.roles.ttypes import Roles
 from gen.roles.ttypes import SchedulerRole
+from gen.scheduler import Scheduler
 from gen.scheduler.ttypes import ConfigureRequest
 from gen.scheduler.ttypes import ConfigureResultCode
 from gen.scheduler.ttypes import PlaceRequest
@@ -101,20 +88,28 @@ from host.host_handler import HostHandler
 from host.hypervisor.datastore_manager import DatastoreNotFoundException
 from host.hypervisor.disk_manager import DiskAlreadyExistException
 from host.hypervisor.hypervisor import Hypervisor
-from host.hypervisor.image_manager import ImageNotFoundException
 from host.hypervisor.image_manager import ImageInUse
+from host.hypervisor.image_manager import ImageNotFoundException
 from host.hypervisor.image_manager import InvalidImageState
+from host.hypervisor.image_scanner import DatastoreImageScanner
+from host.hypervisor.image_sweeper import DatastoreImageSweeper
 from host.hypervisor.placement_manager import InvalidReservationException
 from host.hypervisor.placement_manager import NoSuchResourceException
+from host.hypervisor.resources import AgentResourcePlacement
+from host.hypervisor.resources import Disk as HostDisk
+from host.hypervisor.resources import State as VmState
+from host.hypervisor.system import DatastoreInfo
+from host.hypervisor.task_runner import TaskAlreadyRunning
 from host.hypervisor.vm_manager import DiskNotFoundException
 from host.hypervisor.vm_manager import IsoNotAttachedException
 from host.hypervisor.vm_manager import VmAlreadyExistException
 from host.hypervisor.vm_manager import VmNotFoundException
 from host.hypervisor.vm_manager import VmPowerStateException
-from host.hypervisor.resources import AgentResourcePlacement
-from host.hypervisor.resources import Disk as HostDisk
-from host.hypervisor.resources import State as VmState
-from host.hypervisor.task_runner import TaskAlreadyRunning
+from matchers import *  # noqa
+from mock import MagicMock
+from mock import call
+from mock import patch
+from nose_parameterized import parameterized
 
 
 def stable_uuid(name):
@@ -142,7 +137,6 @@ class HostHandlerTestCase(unittest.TestCase):
         self._config = MagicMock()
         self._config.hypervisor = "fake"
         self._config.agent_id = stable_uuid("agent_id")
-        self._config.availability_zone_id = "Fake_zone"
         self._config.hostname = "localhost"
         self._config.host_port = 1234
         self._config.host_version = "X.X.X"
@@ -1434,19 +1428,6 @@ class HostHandlerTestCase(unittest.TestCase):
 
         assert_that(response.result is
                     GetMonitoredImagesResultCode.DATASTORE_NOT_FOUND)
-
-    def test_set_availability_zone(self):
-        """Test set_availability_zone against mock"""
-        handler = HostHandler(MagicMock())
-
-        # Setup request
-        request = SetAvailabilityZoneRequest()
-        request.availability_zone = "a_z"
-
-        # Test success
-        result = handler.set_availability_zone(request)
-
-        assert_that(result.result is SetAvailabilityZoneResultCode.OK)
 
 
 if __name__ == '__main__':
