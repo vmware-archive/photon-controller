@@ -514,6 +514,8 @@ public class ServiceHostUtils {
                                           long waitIterationCount,
                                           Runnable cleanup)
       throws Throwable {
+
+    String timeoutMessage = String.format("Timeout waiting for state transition, serviceUri=[%s]", serviceUri);
     return waitForState(
         new Supplier<T>() {
           @Override
@@ -523,20 +525,22 @@ public class ServiceHostUtils {
             } catch (Throwable t) {
               throw new RuntimeException("Failed to get service state", t);
             }
-          }
+            }
         },
         predicate,
         waitIterationSleep,
         waitIterationCount,
-        cleanup);
+        cleanup,
+        timeoutMessage);
   }
 
   /**
    * Generic wait function.
    */
-  public static <T> T waitForState(Supplier<T> supplier, Predicate<T> predicate, Runnable cleanup)
+  public static <T> T waitForState(Supplier<T> supplier, Predicate<T> predicate, Runnable cleanup,
+                                   String timeoutMessage)
       throws Throwable {
-    return waitForState(supplier, predicate, WAIT_ITERATION_SLEEP, WAIT_ITERATION_COUNT, cleanup);
+    return waitForState(supplier, predicate, WAIT_ITERATION_SLEEP, WAIT_ITERATION_COUNT, cleanup, timeoutMessage);
   }
 
   /**
@@ -544,7 +548,7 @@ public class ServiceHostUtils {
    */
   public static <T> T waitForState(Supplier<T> supplier, Predicate<T> predicate,
                                    long waitIterationSleep, long waitIterationCount,
-                                   Runnable cleanup)
+                                   Runnable cleanup, String timeoutMessage)
       throws Throwable {
     for (int i = 0; i < waitIterationCount; i++) {
       T t = supplier.get();
@@ -557,7 +561,9 @@ public class ServiceHostUtils {
     if (cleanup != null) {
       cleanup.run();
     }
-    throw new TimeoutException("timeout waiting for state transition.");
+
+    logger.warn(timeoutMessage);
+    throw new TimeoutException(timeoutMessage);
   }
 
   /**

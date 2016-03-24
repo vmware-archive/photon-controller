@@ -167,11 +167,6 @@ public abstract class MultiHostEnvironment<H extends ServiceHost & XenonHostInfo
       String serviceUri, T parameters)
       throws Throwable {
     Operation op = Operation.createPost(UriUtils.buildUri(hosts[0], serviceUri, null))
-        // PRAGMA_DIRECTIVE_FORCE_INDEX_UPDATE is a workaround needed
-        // because Xenon 0.7.0 does not allow POST to a previously deleted service
-        // we MAY need to implement an alternative solution so that this workaround can be removed
-        // https://www.pivotaltracker.com/story/show/114426995
-        .addPragmaDirective(Operation.PRAGMA_DIRECTIVE_FORCE_INDEX_UPDATE)
         .setBody(parameters);
     return sendRequestAndWait(op, hosts[0]);
   }
@@ -391,6 +386,7 @@ public abstract class MultiHostEnvironment<H extends ServiceHost & XenonHostInfo
   }
 
   private void waitForHostReady(final H host) throws Throwable {
+    String timeoutMessage = String.format("Timeout waiting for host ready, host=[%s]", host.getUri());
     ServiceHostUtils.waitForState(new Supplier<H>() {
                                     @Override
                                     public H get() {
@@ -403,7 +399,8 @@ public abstract class MultiHostEnvironment<H extends ServiceHost & XenonHostInfo
                                       return isReady;
                                     }
                                   },
-        getEnvironmentCleanup()
+        getEnvironmentCleanup(),
+        timeoutMessage
     );
   }
 
