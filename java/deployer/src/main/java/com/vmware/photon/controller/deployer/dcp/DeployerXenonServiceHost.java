@@ -26,6 +26,8 @@ import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.XenonHostInfoProvider;
+import com.vmware.photon.controller.common.xenon.host.AbstractServiceHost;
+import com.vmware.photon.controller.common.xenon.host.XenonConfig;
 import com.vmware.photon.controller.common.xenon.scheduler.TaskSchedulerService;
 import com.vmware.photon.controller.common.xenon.scheduler.TaskSchedulerServiceFactory;
 import com.vmware.photon.controller.common.xenon.scheduler.TaskSchedulerServiceStateBuilder;
@@ -100,7 +102,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.URI;
-import java.nio.file.Paths;
 import java.util.Map;
 
 /**
@@ -108,7 +109,7 @@ import java.util.Map;
  */
 @Singleton
 public class DeployerXenonServiceHost
-    extends ServiceHost
+    extends AbstractServiceHost
     implements XenonHostInfoProvider,
     DeployerContextProvider,
     DockerProvisionerFactoryProvider,
@@ -237,46 +238,7 @@ public class DeployerXenonServiceHost
       ClusterManagerFactory clusterManagerFactory)
       throws Throwable {
 
-    this(
-        xenonConfig,
-        cloudStoreServerSet,
-        deployerContext,
-        containersConfig,
-        agentControlClientFactory,
-        hostClientFactory,
-        httpFileServiceClientFactory,
-        listeningExecutorService,
-        apiClientFactory,
-        dockerProvisionerFactory,
-        authHelperFactory,
-        healthCheckHelperFactory,
-        serviceConfiguratorFactory,
-        null,
-        zookeeperServerSetBuilderFactory,
-        hostManagementVmAddressValidatorFactory,
-        clusterManagerFactory);
-  }
-
-  public DeployerXenonServiceHost(
-      XenonConfig xenonConfig,
-      ServerSet cloudStoreServerSet,
-      DeployerContext deployerContext,
-      ContainersConfig containersConfig,
-      AgentControlClientFactory agentControlClientFactory,
-      HostClientFactory hostClientFactory,
-      HttpFileServiceClientFactory httpFileServiceClientFactory,
-      ListeningExecutorService listeningExecutorService,
-      ApiClientFactory apiClientFactory,
-      DockerProvisionerFactory dockerProvisionerFactory,
-      AuthHelperFactory authHelperFactory,
-      HealthCheckHelperFactory healthCheckHelperFactory,
-      ServiceConfiguratorFactory serviceConfiguratorFactory,
-      Integer hostId,
-      ZookeeperClientFactory zookeeperServerSetBuilderFactory,
-      HostManagementVmAddressValidatorFactory hostManagementVmAddressValidatorFactory,
-      ClusterManagerFactory clusterManagerFactory)
-      throws Throwable {
-
+    super(xenonConfig);
     this.cloudStoreServerSet = cloudStoreServerSet;
     this.deployerContext = deployerContext;
     this.containersConfig = containersConfig;
@@ -292,22 +254,6 @@ public class DeployerXenonServiceHost
     this.zookeeperServerSetBuilderFactory = zookeeperServerSetBuilderFactory;
     this.hostManagementVmAddressValidatorFactory = hostManagementVmAddressValidatorFactory;
     this.clusterManagerFactory = clusterManagerFactory;
-
-    ServiceHost.Arguments arguments = new ServiceHost.Arguments();
-    arguments.port = xenonConfig.getPort();
-    arguments.bindAddress = xenonConfig.getBindAddress();
-    arguments.sandbox = Paths.get(xenonConfig.getStoragePath());
-
-    if (xenonConfig.getRegistrationAddress() != null) {
-      arguments.publicUri = UriUtils.buildUri(xenonConfig.getRegistrationAddress(), xenonConfig.getPort(), null, null)
-          .toString();
-    }
-
-    if (xenonConfig.getPeerNodes() != null) {
-      arguments.peerNodes = xenonConfig.getPeerNodes();
-    }
-
-    this.initialize(arguments);
   }
 
   /**
