@@ -27,6 +27,7 @@ import com.vmware.photon.controller.deployer.deployengine.AuthHelperFactory;
 import com.vmware.photon.controller.deployer.deployengine.DockerProvisionerFactory;
 import com.vmware.photon.controller.deployer.deployengine.HostManagementVmAddressValidatorFactory;
 import com.vmware.photon.controller.deployer.deployengine.HttpFileServiceClientFactory;
+import com.vmware.photon.controller.deployer.deployengine.NsxClientFactory;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClientFactory;
 import com.vmware.photon.controller.deployer.healthcheck.HealthCheckHelperFactory;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
@@ -287,7 +288,8 @@ public class DeployerXenonServiceHostTest {
           injector.getInstance(ServiceConfiguratorFactory.class),
           injector.getInstance(ZookeeperClientFactory.class),
           injector.getInstance(HostManagementVmAddressValidatorFactory.class),
-          injector.getInstance(ClusterManagerFactory.class));
+          injector.getInstance(ClusterManagerFactory.class),
+          injector.getInstance(NsxClientFactory.class));
 
       host.setMaintenanceIntervalMicros(maintenanceInterval);
       host.start();
@@ -314,7 +316,8 @@ public class DeployerXenonServiceHostTest {
           injector.getInstance(ServiceConfiguratorFactory.class),
           injector.getInstance(ZookeeperClientFactory.class),
           injector.getInstance(HostManagementVmAddressValidatorFactory.class),
-          injector.getInstance(ClusterManagerFactory.class));
+          injector.getInstance(ClusterManagerFactory.class),
+          injector.getInstance(NsxClientFactory.class));
 
       host2.setMaintenanceIntervalMicros(maintenanceInterval);
       host2.start();

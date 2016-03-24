@@ -85,6 +85,8 @@ import com.vmware.photon.controller.deployer.deployengine.HostManagementVmAddres
 import com.vmware.photon.controller.deployer.deployengine.HostManagementVmAddressValidatorFactoryProvider;
 import com.vmware.photon.controller.deployer.deployengine.HttpFileServiceClientFactory;
 import com.vmware.photon.controller.deployer.deployengine.HttpFileServiceClientFactoryProvider;
+import com.vmware.photon.controller.deployer.deployengine.NsxClientFactory;
+import com.vmware.photon.controller.deployer.deployengine.NsxClientFactoryProvider;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClientFactory;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClientFactoryProvider;
 import com.vmware.photon.controller.deployer.healthcheck.HealthCheckHelperFactory;
@@ -125,7 +127,8 @@ public class DeployerXenonServiceHost
     ServiceConfiguratorFactoryProvider,
     ZookeeperClientFactoryProvider,
     HostManagementVmAddressValidatorFactoryProvider,
-    ClusterManagerFactoryProvider {
+    ClusterManagerFactoryProvider,
+    NsxClientFactoryProvider {
 
   private static final Logger logger = LoggerFactory.getLogger(DeployerXenonServiceHost.class);
 
@@ -217,6 +220,7 @@ public class DeployerXenonServiceHost
   private final ZookeeperClientFactory zookeeperServerSetBuilderFactory;
   private final HostManagementVmAddressValidatorFactory hostManagementVmAddressValidatorFactory;
   private final ClusterManagerFactory clusterManagerFactory;
+  private final NsxClientFactory nsxClientFactory;
 
   private final ServerSet cloudStoreServerSet;
 
@@ -237,7 +241,8 @@ public class DeployerXenonServiceHost
       ServiceConfiguratorFactory serviceConfiguratorFactory,
       ZookeeperClientFactory zookeeperServerSetBuilderFactory,
       HostManagementVmAddressValidatorFactory hostManagementVmAddressValidatorFactory,
-      ClusterManagerFactory clusterManagerFactory)
+      ClusterManagerFactory clusterManagerFactory,
+      NsxClientFactory nsxClientFactory)
       throws Throwable {
 
     super(xenonConfig);
@@ -256,6 +261,7 @@ public class DeployerXenonServiceHost
     this.zookeeperServerSetBuilderFactory = zookeeperServerSetBuilderFactory;
     this.hostManagementVmAddressValidatorFactory = hostManagementVmAddressValidatorFactory;
     this.clusterManagerFactory = clusterManagerFactory;
+    this.nsxClientFactory = nsxClientFactory;
   }
 
   /**
@@ -407,6 +413,16 @@ public class DeployerXenonServiceHost
   @Override
   public ClusterManagerFactory getClusterManagerFactory() {
     return clusterManagerFactory;
+  }
+
+  /**
+   * Getter for NsxClient factory instance.
+   *
+   * @return
+   */
+  @Override
+  public NsxClientFactory getNsxClientFactory() {
+    return nsxClientFactory;
   }
 
   /**
