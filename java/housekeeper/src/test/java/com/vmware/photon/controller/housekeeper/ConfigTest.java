@@ -16,80 +16,91 @@ package com.vmware.photon.controller.housekeeper;
 import com.vmware.photon.controller.common.config.BadConfigException;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.logging.LoggingConfiguration;
+import com.vmware.photon.controller.common.thrift.ThriftConfig;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperConfig;
-import com.vmware.photon.controller.housekeeper.dcp.XenonConfig;
 
-import org.hamcrest.MatcherAssert;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.arrayContaining;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 
 /**
  * Tests {@link Config}.
  */
 public class ConfigTest {
 
-  private Config config;
+  /**
+   * This class implements tests for the default test configuration file.
+   */
+  public class DefaultConfigTest {
 
-  @BeforeMethod
-  public void setUp() throws BadConfigException {
-    config = ConfigBuilder.build(Config.class,
-        ConfigTest.class.getResource("/config.yml").getPath());
-  }
+    private Config config;
 
-  @Test
-  public void testPort() {
-    assertThat(config.getPort(), is(16000));
-  }
+    @BeforeClass
+    public void setUp() throws BadConfigException {
+      config = ConfigBuilder.build(Config.class, ConfigTest.class.getResource("/config.yml").getPath());
+    }
 
-  @Test
-  public void testBind() throws UnknownHostException {
-    assertThat(config.getBind(), is("localhost"));
-  }
+    @Test
+    public void testThriftConfig() {
+      ThriftConfig thriftConfig = config.getThriftConfig();
+      assertThat(thriftConfig.getBindAddress(), is("0.0.0.0"));
+      assertThat(thriftConfig.getPort(), is(16000));
+      assertThat(thriftConfig.getRegistrationAddress(), is("127.0.0.1"));
+    }
 
-  @Test
-  public void testRegistrationAddress() throws UnknownHostException {
-    assertThat(config.getRegistrationAddress(), is("localhost"));
-  }
+    @Test
+    public void testXenonConfig() {
+      com.vmware.photon.controller.common.xenon.host.XenonConfig xenonConfig = config.getXenonConfig();
+      assertThat(xenonConfig.getBindAddress(), is("0.0.0.0"));
+      assertThat(xenonConfig.getPeerNodes(), arrayContaining("http://127.0.0.1:16001"));
+      assertThat(xenonConfig.getPort(), is(16001));
+      assertThat(xenonConfig.getRegistrationAddress(), is("127.0.0.1"));
+      assertThat(xenonConfig.getStoragePath(), is("/tmp/dcp/housekeeper/"));
+    }
 
-  @Test
-  public void testDcpConfig() {
-    MatcherAssert.assertThat(config.getDcp(), instanceOf(XenonConfig.class));
-  }
+    @Test
+    public void testZookeeperConfig() {
+      assertThat(config.getZookeeper(), instanceOf(ZookeeperConfig.class));
+    }
 
-  @Test
-  public void testZookeeperConfig() {
-    assertThat(config.getZookeeper(), instanceOf(ZookeeperConfig.class));
-  }
-
-  @Test
-  public void testLoggingConfig() {
-    assertThat(config.getLogging(), instanceOf(LoggingConfiguration.class));
+    @Test
+    public void testLoggingConfig() {
+      assertThat(config.getLogging(), instanceOf(LoggingConfiguration.class));
+    }
   }
 
   /**
    * Tests that a minimal config file can be loaded.
    */
   protected class Minimal {
+
+    private Config config;
+
     @BeforeMethod
     public void setUp() throws BadConfigException {
-      config = ConfigBuilder.build(Config.class,
-          ConfigTest.class.getResource("/config_min.yml").getPath());
+      config = ConfigBuilder.build(Config.class, ConfigTest.class.getResource("/config_min.yml").getPath());
     }
 
     @Test
-    public void testDefaultBind() throws UnknownHostException {
-      assertThat(config.getBind(), is(InetAddress.getLocalHost().getHostAddress()));
+    public void testThriftConfig() {
+      ThriftConfig thriftConfig = config.getThriftConfig();
+      assertThat(thriftConfig.getBindAddress(), is("0.0.0.0"));
+      assertThat(thriftConfig.getPort(), is(16000));
+      assertThat(thriftConfig.getRegistrationAddress(), is("127.0.0.1"));
     }
 
     @Test
-    public void testDefaultRegistrationAddress() throws UnknownHostException {
-      assertThat(config.getRegistrationAddress(), is(InetAddress.getLocalHost().getHostAddress()));
+    public void testXenonConfig() {
+      com.vmware.photon.controller.common.xenon.host.XenonConfig xenonConfig = config.getXenonConfig();
+      assertThat(xenonConfig.getBindAddress(), is("0.0.0.0"));
+      assertThat(xenonConfig.getPeerNodes(), arrayContaining("http://127.0.0.1:16001"));
+      assertThat(xenonConfig.getPort(), is(16001));
+      assertThat(xenonConfig.getRegistrationAddress(), is("127.0.0.1"));
+      assertThat(xenonConfig.getStoragePath(), is("/tmp/dcp/16001"));
     }
   }
 }

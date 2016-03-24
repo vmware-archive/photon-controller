@@ -1,10 +1,24 @@
-bind: "0.0.0.0"
-registrationAddress: "{{{REGISTRATION_ADDRESS}}}"
-port: 16000
-dcp:
-  storage_path: "{{{HOUSEKEEPER_DCP_STORAGE_PATH}}}"
+xenon:
+  bindAddress: "0.0.0.0"
+  port: 16001
+  registrationAddress: "{{{REGISTRATION_ADDRESS}}}"
+  storagePath: "{{{HOUSEKEEPER_DCP_STORAGE_PATH}}}"
+  peerNodes:
+{{#PEER_NODES}}
+  - http://{{peerAddress}}:{{peerPort}}
+{{/PEER_NODES}}
+{{^PEER_NODES}}
+  - http://{{{REGISTRATION_ADDRESS}}}:16001
+{{/PEER_NODES}}
+
+thrift:
+  bindAddress: "0.0.0.0"
+  port: 16000
+  registrationAddress: "{{{REGISTRATION_ADDRESS}}}"
+
 zookeeper:
   quorum: "{{{ZOOKEEPER_QUORUM}}}"
+
 logging:
   console:
     enabled: false
@@ -15,8 +29,8 @@ logging:
     logFormat: "%-5p [%d{ISO8601}] %c: %m\n%ex"
   syslog:
     enabled: {{{ENABLE_SYSLOG}}}
-    {{#ENABLE_SYSLOG}}
+{{#ENABLE_SYSLOG}}
     host: "{{{SYSLOG_ENDPOINT}}}"
     logFormat: "%-5p [%d{ISO8601}] [housekeeper] [%property{instance}]%X{request}%X{task} %c: %m\n%ex"
     facility: LOCAL0
-    {{/ENABLE_SYSLOG}}
+{{/ENABLE_SYSLOG}}

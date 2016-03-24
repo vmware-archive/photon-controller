@@ -22,7 +22,6 @@ import com.vmware.photon.controller.host.gen.Host;
 import com.vmware.photon.controller.housekeeper.Config;
 import com.vmware.photon.controller.housekeeper.ConfigTest;
 import com.vmware.photon.controller.housekeeper.HousekeeperServer;
-import com.vmware.photon.controller.housekeeper.dcp.XenonConfig;
 import com.vmware.photon.controller.housekeeper.gen.Housekeeper;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceHost;
@@ -69,7 +68,7 @@ public class TestHelper {
       throws TTransportException, InterruptedException, TimeoutException {
 
     long timeLeft = CONNECTION_TIMEOUT_IN_MS;
-    TSocket socket = new TSocket(config.getBind(), config.getPort());
+    TSocket socket = new TSocket(config.getThriftBindAddress(), config.getThriftPort());
     while (true) {
       if (timeLeft <= 0) {
         throw new TimeoutException();
@@ -111,37 +110,52 @@ public class TestHelper {
    * Class for constructing config injection.
    */
   public static class TestInjectedConfig {
-    private String bind;
-    private String registrationAddress;
-    private int port;
-    private String path;
+
+    private String thriftBindAddress;
+    private int thriftPort;
+    private String thriftRegistrationAddress;
+    private String xenonBindAddress;
+    private int xenonPort;
+    private String xenonRegistrationAddress;
+    private String xenonStoragePath;
 
     @Inject
-    public TestInjectedConfig(
-        @Config.Bind String bind,
-        @Config.RegistrationAddress String registrationAddress,
-        @Config.Port int port,
-        @XenonConfig.StoragePath String path) {
-      this.bind = bind;
-      this.registrationAddress = registrationAddress;
-      this.port = port;
-      this.path = path;
+    public TestInjectedConfig(Config config) {
+      this.thriftBindAddress = config.getThriftConfig().getBindAddress();
+      this.thriftPort = config.getThriftConfig().getPort();
+      this.thriftRegistrationAddress = config.getThriftConfig().getRegistrationAddress();
+      this.xenonBindAddress = config.getXenonConfig().getBindAddress();
+      this.xenonPort = config.getXenonConfig().getPort();
+      this.xenonRegistrationAddress = config.getXenonConfig().getRegistrationAddress();
+      this.xenonStoragePath = config.getXenonConfig().getStoragePath();
     }
 
-    public String getBind() {
-      return bind;
+    public String getThriftBindAddress() {
+      return this.thriftBindAddress;
     }
 
-    public String getRegistrationAddress() {
-      return registrationAddress;
+    public int getThriftPort() {
+      return this.thriftPort;
     }
 
-    public int getPort() {
-      return port;
+    public String getThriftRegistrationAddress() {
+      return this.thriftRegistrationAddress;
     }
 
-    public String getPath() {
-      return path;
+    public String getXenonBindAddress() {
+      return this.xenonBindAddress;
+    }
+
+    public int getXenonPort() {
+      return this.xenonPort;
+    }
+
+    public String getXenonRegistrationAddress() {
+      return this.xenonRegistrationAddress;
+    }
+
+    public String getXenonStoragePath() {
+      return this.xenonStoragePath;
     }
   }
 
