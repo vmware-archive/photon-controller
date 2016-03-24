@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.housekeeper;
 
 import com.vmware.photon.controller.common.manifest.BuildInfo;
+import com.vmware.photon.controller.common.thrift.ThriftConfig;
 import com.vmware.photon.controller.common.thrift.ThriftEventHandler;
 import com.vmware.photon.controller.common.thrift.ThriftFactory;
 import com.vmware.photon.controller.common.zookeeper.ServiceNode;
@@ -62,18 +63,16 @@ public class HousekeeperServer {
                            ThriftFactory thriftFactory,
                            HousekeeperService housekeeperService,
                            BuildInfo buildInfo,
-                           @Config.Bind String bind,
-                           @Config.RegistrationAddress String registrationAddress,
-                           @Config.Port int port) {
+                           ThriftConfig thriftConfig) {
     this.serviceNodeFactory = serviceNodeFactory;
     this.transportFactory = transportFactory;
     this.protocolFactory = protocolFactory;
     this.thriftFactory = thriftFactory;
     this.housekeeperService = housekeeperService;
     this.buildInfo = buildInfo;
-    this.bind = bind;
-    this.registrationAddress = registrationAddress;
-    this.port = port;
+    this.bind = thriftConfig.getBindAddress();
+    this.registrationAddress = thriftConfig.getRegistrationAddress();
+    this.port = thriftConfig.getPort();
   }
 
   public void serve() throws UnknownHostException, TTransportException {

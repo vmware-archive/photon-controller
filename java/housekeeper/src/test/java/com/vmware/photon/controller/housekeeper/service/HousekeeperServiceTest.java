@@ -23,8 +23,8 @@ import com.vmware.photon.controller.common.zookeeper.SimpleServiceNode;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperServerReader;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperServerSet;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperServiceReader;
+import com.vmware.photon.controller.housekeeper.Config;
 import com.vmware.photon.controller.housekeeper.dcp.HousekeeperXenonServiceHost;
-import com.vmware.photon.controller.housekeeper.dcp.XenonConfig;
 import com.vmware.photon.controller.housekeeper.gen.ReplicateImageRequest;
 import com.vmware.photon.controller.housekeeper.gen.ReplicateImageResponse;
 import com.vmware.photon.controller.housekeeper.gen.ReplicateImageResult;
@@ -34,7 +34,6 @@ import com.vmware.photon.controller.status.gen.StatusType;
 import com.vmware.photon.controller.tracing.gen.TracingInfo;
 import com.vmware.xenon.common.UriUtils;
 
-import com.google.common.collect.ImmutableList;
 import com.google.inject.Injector;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -46,17 +45,14 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.powermock.api.mockito.PowerMockito.verifyNoMoreInteractions;
-import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
 import java.net.InetSocketAddress;
@@ -157,6 +153,9 @@ public class HousekeeperServiceTest {
    */
   public class ZookeeperRegistrationTest {
 
+    private final InetSocketAddress address1 = new InetSocketAddress("192.168.1.1", 16000);
+    private final InetSocketAddress address2 = new InetSocketAddress("192.168.1.2", 16000);
+
     private CuratorFramework zkClient;
     private ServerSet serverSet;
 
@@ -187,44 +186,19 @@ public class HousekeeperServiceTest {
 
     @Test
     public void testJoin() throws Throwable {
-      int port = 16000;
-      TestGroup testGroup1 = createTestGroup("192.168.1.1", port);
-      TestGroup testGroup2 = createTestGroup("192.168.1.2", port);
+      TestGroup testGroup1 = createTestGroup(address1.getHostName(), address1.getPort());
+      TestGroup testGroup2 = createTestGroup(address2.getHostName(), address2.getPort());
 
       // join first node
       CountDownLatch done = new CountDownLatch(2);
       testGroup1.houseKeeperService.setCountDownLatch(done);
       testGroup2.houseKeeperService.setCountDownLatch(done);
       testGroup1.node.join();
-
-      assertTrue(done.await(5, TimeUnit.SECONDS), "Timed out waiting for server set callback");
-      assertEquals(testGroup1.houseKeeperService.getServers().size(), 1);
-      assertEquals(testGroup2.houseKeeperService.getServers().size(), 1);
-
-      // join second node
-      done = new CountDownLatch(2);
-      testGroup1.houseKeeperService.setCountDownLatch(done);
-      testGroup2.houseKeeperService.setCountDownLatch(done);
-
       testGroup2.node.join();
+
       assertTrue(done.await(5, TimeUnit.SECONDS), "Timed out waiting for server set callback");
-      assertEquals(testGroup1.houseKeeperService.getServers().size(), 2);
-      assertEquals(testGroup2.houseKeeperService.getServers().size(), 2);
-
-      verify(testGroup1.dcpHost).checkServiceAvailable(ServiceUriPaths.DEFAULT_NODE_GROUP);
-      verify(testGroup2.dcpHost).checkServiceAvailable(ServiceUriPaths.DEFAULT_NODE_GROUP);
-
-      verify(testGroup1.dcpHost, times(2)).getUri();
-      verify(testGroup2.dcpHost, times(2)).getUri();
-      verify(testGroup1.dcpHost).getPort();
-      verify(testGroup2.dcpHost).getPort();
-      verify(testGroup2.dcpHost).joinPeers(
-          ImmutableList.of(UriUtils.buildUri("192.168.1.1", 0, "", null)),
-          ServiceUriPaths.DEFAULT_NODE_GROUP);
-      verify(testGroup1.dcpHost).joinPeers(
-          ImmutableList.of(UriUtils.buildUri("192.168.1.2", 0, "", null)),
-          ServiceUriPaths.DEFAULT_NODE_GROUP);
-      verifyNoMoreInteractions(testGroup1.dcpHost, testGroup2.dcpHost);
+      assertThat(testGroup1.houseKeeperService.getServers(), containsInAnyOrder(address1, address2));
+      assertThat(testGroup2.houseKeeperService.getServers(), containsInAnyOrder(address1, address2));
     }
 
     private TestGroup createTestGroup(String hostname, int port) {
@@ -236,7 +210,7 @@ public class HousekeeperServiceTest {
       when(dcpHost.getUri()).thenReturn(UriUtils.buildUri(hostname, port + 1, "", null));
 
       TestHouseKeeperService housekeeperService =
-          new TestHouseKeeperService(serverSet, dcpHost, mock(XenonConfig.class), mock(BuildInfo.class));
+          new TestHouseKeeperService(serverSet, dcpHost, mock(Config.class), mock(BuildInfo.class));
       serverSet.addChangeListener(housekeeperService);
 
       return new TestGroup(node, dcpHost, housekeeperService);
@@ -262,9 +236,9 @@ public class HousekeeperServiceTest {
 
       public TestHouseKeeperService(ServerSet serverSet,
                                     HousekeeperXenonServiceHost host,
-                                    XenonConfig dcpConfig,
+                                    Config config,
                                     BuildInfo buildInfo) {
-        super(serverSet, host, dcpConfig, buildInfo);
+        super(serverSet, host, config, buildInfo);
       }
 
       public void setCountDownLatch(CountDownLatch countDownLatch) {

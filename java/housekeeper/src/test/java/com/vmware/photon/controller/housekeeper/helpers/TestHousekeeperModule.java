@@ -18,13 +18,14 @@ import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.manifest.BuildInfo;
 import com.vmware.photon.controller.common.thrift.ServerSet;
+import com.vmware.photon.controller.common.thrift.ThriftConfig;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
+import com.vmware.photon.controller.common.xenon.host.XenonConfig;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
 import com.vmware.photon.controller.housekeeper.Config;
 import com.vmware.photon.controller.housekeeper.HousekeeperServerSet;
 import com.vmware.photon.controller.housekeeper.dcp.HousekeeperXenonServiceHost;
-import com.vmware.photon.controller.housekeeper.dcp.XenonConfig;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
@@ -52,12 +53,10 @@ public class TestHousekeeperModule extends AbstractModule {
 
   @Override
   protected void configure() {
-    bindConstant().annotatedWith(Config.Bind.class).to(config.getBind());
-    bindConstant().annotatedWith(Config.RegistrationAddress.class).to(config.getRegistrationAddress());
-    bindConstant().annotatedWith(Config.Port.class).to(config.getPort());
-    bind(XenonConfig.class).toInstance(config.getDcp());
-    bindConstant().annotatedWith(XenonConfig.StoragePath.class).to(config.getDcp().getStoragePath());
-    bind(BuildInfo.class).toInstance(BuildInfo.get(TestHousekeeperModule.class));
+    bind(BuildInfo.class).toInstance(BuildInfo.get(this.getClass()));
+    bind(Config.class).toInstance(this.config);
+    bind(ThriftConfig.class).toInstance(this.config.getThriftConfig());
+    bind(XenonConfig.class).toInstance(this.config.getXenonConfig());
 
     bind(ScheduledExecutorService.class)
         .toInstance(Executors.newScheduledThreadPool(4));
@@ -74,14 +73,11 @@ public class TestHousekeeperModule extends AbstractModule {
   @Provides
   @Singleton
   public HousekeeperXenonServiceHost getHousekeepDcpServiceHost(
+      XenonConfig xenonConfig,
       CloudStoreHelper cloudStoreHelper,
-      @Config.Bind String bind,
-      @Config.Port int port,
-      @XenonConfig.StoragePath String storagePath,
       HostClientFactory hostClientFactory,
       ServiceConfigFactory serviceConfigFactory) throws Throwable {
-    return spy(new HousekeeperXenonServiceHost(cloudStoreHelper, bind, port, storagePath, hostClientFactory,
-        serviceConfigFactory));
+    return spy(new HousekeeperXenonServiceHost(xenonConfig, cloudStoreHelper, hostClientFactory, serviceConfigFactory));
   }
 
   @Provides

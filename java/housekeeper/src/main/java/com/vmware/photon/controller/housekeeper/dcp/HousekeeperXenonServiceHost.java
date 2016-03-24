@@ -20,13 +20,14 @@ import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelperProvider;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.XenonHostInfoProvider;
+import com.vmware.photon.controller.common.xenon.host.AbstractServiceHost;
+import com.vmware.photon.controller.common.xenon.host.XenonConfig;
 import com.vmware.photon.controller.common.xenon.scheduler.TaskSchedulerService;
 import com.vmware.photon.controller.common.xenon.scheduler.TaskSchedulerServiceFactory;
 import com.vmware.photon.controller.common.xenon.scheduler.TaskSchedulerServiceStateBuilder;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfigProvider;
-import com.vmware.photon.controller.housekeeper.Config;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceHost;
 import com.vmware.xenon.common.UriUtils;
@@ -40,7 +41,6 @@ import org.slf4j.LoggerFactory;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.net.URI;
-import java.nio.file.Paths;
 import java.util.Map;
 
 /**
@@ -48,7 +48,7 @@ import java.util.Map;
  */
 @Singleton
 public class HousekeeperXenonServiceHost
-    extends ServiceHost
+    extends AbstractServiceHost
     implements XenonHostInfoProvider,
     HostClientProvider, CloudStoreHelperProvider, ServiceConfigProvider {
 
@@ -87,22 +87,15 @@ public class HousekeeperXenonServiceHost
 
   @Inject
   public HousekeeperXenonServiceHost(
+      XenonConfig xenonConfig,
       CloudStoreHelper cloudStoreHelper,
-      @Config.Bind String bindAddress,
-      @Config.Port int port,
-      @XenonConfig.StoragePath String storagePath,
       HostClientFactory hostClientFactory,
       ServiceConfigFactory serviceConfigFactory) throws Throwable {
 
+    super(xenonConfig);
     this.hostClientFactory = checkNotNull(hostClientFactory);
     this.serviceConfigFactory =  checkNotNull(serviceConfigFactory);
     this.cloudStoreHelper = checkNotNull(cloudStoreHelper);
-    ServiceHost.Arguments arguments = new ServiceHost.Arguments();
-    arguments.port = port + 1;
-    arguments.bindAddress = bindAddress;
-    arguments.sandbox = Paths.get(storagePath);
-    logger.info("Initializing HousekeeperXenonServiceHost on port: {} path: {}", arguments.port, storagePath);
-    this.initialize(arguments);
   }
 
   @Override
