@@ -124,14 +124,12 @@ import com.vmware.xenon.common.TaskState;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.thrift.TException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -182,31 +180,11 @@ public class DeployerService implements Deployer.Iface, ServerSet.ChangeListener
       throws InvalidAuthConfigException {
     Deployment deployment = request.getDeployment();
     if (deployment == null) {
-      throw new IllegalArgumentException("Deployment is null");
+      throw new IllegalArgumentException("Deployment object is null.");
     }
 
-    Set<String> invalidEntries = new HashSet<>();
-    if ((deployment.isAuthEnabled() && StringUtils.isBlank(deployment.getOauthTenant()))
-        || (!deployment.isAuthEnabled() && StringUtils.isNotBlank(deployment.getOauthTenant()))) {
-      invalidEntries.add("Oauth Tenant");
-    }
-
-    if ((deployment.isAuthEnabled() && StringUtils.isBlank(deployment.getOauthUsername()))
-        || (!deployment.isAuthEnabled() && StringUtils.isNotBlank(deployment.getOauthUsername()))) {
-      invalidEntries.add("Oauth Username");
-    }
-
-    if ((deployment.isAuthEnabled() && StringUtils.isBlank(deployment.getOauthTenant()))
-        || (!deployment.isAuthEnabled() && StringUtils.isNotBlank(deployment.getOauthPassword()))) {
-      invalidEntries.add("Oauth Password");
-    }
-
-    if (!invalidEntries.isEmpty()) {
-      throw new InvalidAuthConfigException(
-          String.format("Auth is%s enabled and %s should%s be empty.",
-              deployment.isAuthEnabled() ? "" : " not",
-              invalidEntries,
-              deployment.isAuthEnabled() ? " not" : ""));
+    if (!deployment.isSetId() || deployment.getId().isEmpty()) {
+      throw new IllegalArgumentException("Deployment object 'id' field was not provided.");
     }
   }
 
