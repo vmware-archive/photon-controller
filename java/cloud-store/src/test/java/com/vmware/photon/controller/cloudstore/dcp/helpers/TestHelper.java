@@ -180,15 +180,11 @@ public class TestHelper {
     private String path;
 
     @Inject
-    public TestInjectedConfig(
-        @CloudStoreConfig.Bind String bind,
-        @CloudStoreConfig.RegistrationAddress String registrationAddress,
-        @CloudStoreConfig.Port int port,
-        @CloudStoreConfig.StoragePath String path) {
-      this.bind = bind;
-      this.registrationAddress = registrationAddress;
-      this.port = port;
-      this.path = path;
+    public TestInjectedConfig(CloudStoreConfig cloudStoreConfig) {
+      this.bind = cloudStoreConfig.getXenonConfig().getBindAddress();
+      this.registrationAddress = cloudStoreConfig.getXenonConfig().getRegistrationAddress();
+      this.port = cloudStoreConfig.getXenonConfig().getPort();
+      this.path = cloudStoreConfig.getXenonConfig().getStoragePath();
     }
 
     public String getBind() {

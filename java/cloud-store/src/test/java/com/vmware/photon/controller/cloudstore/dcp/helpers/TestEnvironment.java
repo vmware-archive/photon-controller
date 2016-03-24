@@ -19,6 +19,7 @@ import com.vmware.photon.controller.common.clients.AgentControlClientFactory;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.manifest.BuildInfo;
 import com.vmware.photon.controller.common.xenon.MultiHostEnvironment;
+import com.vmware.photon.controller.common.xenon.host.XenonConfig;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
 
 import org.apache.commons.io.FileUtils;
@@ -39,9 +40,14 @@ public class TestEnvironment extends MultiHostEnvironment<CloudStoreXenonHost> {
       String sandbox = generateStorageSandboxPath();
       FileUtils.forceMkdir(new File(sandbox));
 
-      BuildInfo buildInfo = BuildInfo.get(TestCloudStoreModule.class);
+      XenonConfig xenonConfig = new XenonConfig();
+      xenonConfig.setBindAddress(BIND_ADDRESS);
+      xenonConfig.setPort(0);
+      xenonConfig.setStoragePath(sandbox);
 
-      hosts[i] = new CloudStoreXenonHost(BIND_ADDRESS, 0, sandbox, mock(HostClientFactory.class),
+      BuildInfo buildInfo = BuildInfo.get(this.getClass());
+
+      hosts[i] = new CloudStoreXenonHost(xenonConfig, mock(HostClientFactory.class),
           mock(AgentControlClientFactory.class), mock(ServiceConfigFactory.class), buildInfo);
     }
     // Disable host ping: we have fake hosts and don't want them to be marked as missing

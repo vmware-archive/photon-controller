@@ -96,7 +96,9 @@ public class Main {
     ServerSet cloudStoreServerSet = injector.getInstance(Key.get(ServerSet.class, CloudStoreServerSet.class));
     logger.info("CloudStoreServerSet {}", cloudStoreServerSet.getServers());
 
-    registerWithZookeeper(serviceNodeFactory, cloudStoreConfig.getRegistrationAddress(), cloudStoreConfig.getPort());
+    registerWithZookeeper(serviceNodeFactory,
+        cloudStoreConfig.getXenonConfig().getRegistrationAddress(),
+        cloudStoreConfig.getXenonConfig().getPort());
   }
 
   private static CloudStoreConfig getConfig(Namespace namespace) {
@@ -116,5 +118,4 @@ public class Main {
     ServiceNode serviceNode = serviceNodeFactory.createSimple("cloudstore", registrationSocketAddress);
     ServiceNodeUtils.joinService(serviceNode, retryIntervalMsec);
   }
-
 }

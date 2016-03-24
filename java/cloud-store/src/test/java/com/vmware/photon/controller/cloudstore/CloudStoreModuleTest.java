@@ -52,8 +52,8 @@ public class CloudStoreModuleTest {
     @Test
     public void testConfig() {
       TestHelper.TestInjectedConfig test = injector.getInstance(TestHelper.TestInjectedConfig.class);
-      assertThat(test.getBind(), is("localhost"));
-      assertThat(test.getRegistrationAddress(), is("localhost"));
+      assertThat(test.getBind(), is("0.0.0.0"));
+      assertThat(test.getRegistrationAddress(), is("127.0.0.1"));
       assertThat(test.getPort(), is(19000));
       assertThat(test.getPath(), is("/tmp/dcp/cloud-store/"));
     }

@@ -20,6 +20,7 @@ import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.manifest.BuildInfo;
 import com.vmware.photon.controller.common.thrift.ServerSet;
+import com.vmware.photon.controller.common.xenon.host.XenonConfig;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperServerSetFactory;
@@ -42,12 +43,9 @@ public class CloudStoreModule extends AbstractModule {
 
   @Override
   protected void configure() {
-    bindConstant().annotatedWith(CloudStoreConfig.Bind.class).to(cloudStoreConfig.getBind());
-    bindConstant().annotatedWith(CloudStoreConfig.RegistrationAddress.class)
-        .to(cloudStoreConfig.getRegistrationAddress());
-    bindConstant().annotatedWith(CloudStoreConfig.Port.class).to(cloudStoreConfig.getPort());
-    bindConstant().annotatedWith(CloudStoreConfig.StoragePath.class).to(cloudStoreConfig.getStoragePath());
-    bind(BuildInfo.class).toInstance(BuildInfo.get(CloudStoreModule.class));
+    bind(BuildInfo.class).toInstance(BuildInfo.get(this.getClass()));
+    bind(CloudStoreConfig.class).toInstance(cloudStoreConfig);
+    bind(XenonConfig.class).toInstance(cloudStoreConfig.getXenonConfig());
 
     install(new FactoryModuleBuilder()
         .implement(HostClient.class, HostClient.class)
@@ -60,17 +58,12 @@ public class CloudStoreModule extends AbstractModule {
     install(new FactoryModuleBuilder()
         .implement(ServiceConfig.class, ServiceConfig.class)
         .build(ServiceConfigFactory.class));
-
   }
 
   @Provides
   @Singleton
   @CloudStoreServerSet
-  public ServerSet getCloudStoreServerSet(
-      ZookeeperServerSetFactory serverSetFactory,
-      CloudStoreServerSetChangeListener cloudStoreServerSetChangeListener) {
-    ServerSet serverSet = serverSetFactory.createServiceServerSet("cloudstore", true);
-    serverSet.addChangeListener(cloudStoreServerSetChangeListener);
-    return serverSet;
+  public ServerSet getCloudStoreServerSet(ZookeeperServerSetFactory serverSetFactory) {
+    return serverSetFactory.createServiceServerSet("cloudstore", true);
   }
 }
