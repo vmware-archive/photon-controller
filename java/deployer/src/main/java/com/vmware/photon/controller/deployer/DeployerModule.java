@@ -40,6 +40,7 @@ import com.vmware.photon.controller.deployer.deployengine.HostManagementVmAddres
 import com.vmware.photon.controller.deployer.deployengine.HostManagementVmAddressValidatorFactory;
 import com.vmware.photon.controller.deployer.deployengine.HttpFileServiceClient;
 import com.vmware.photon.controller.deployer.deployengine.HttpFileServiceClientFactory;
+import com.vmware.photon.controller.deployer.deployengine.NsxClientFactory;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClient;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClientFactory;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperNameSpace;
@@ -205,7 +206,8 @@ public class DeployerModule extends AbstractModule {
       ServiceConfiguratorFactory serviceConfiguratorFactory,
       ZookeeperClientFactory zookeeperServerSetBuilderFactory,
       HostManagementVmAddressValidatorFactory hostManagementVmAddressValidatorFactory,
-      ClusterManagerFactory clusterManagerFactory)
+      ClusterManagerFactory clusterManagerFactory,
+      NsxClientFactory nsxClientFactory)
       throws Throwable {
 
     return new DeployerXenonServiceHost(
@@ -224,7 +226,8 @@ public class DeployerModule extends AbstractModule {
         serviceConfiguratorFactory,
         zookeeperServerSetBuilderFactory,
         hostManagementVmAddressValidatorFactory,
-        clusterManagerFactory);
+        clusterManagerFactory,
+        nsxClientFactory);
   }
 
   @Provides
@@ -314,6 +317,12 @@ public class DeployerModule extends AbstractModule {
       CloseableHttpAsyncClient httpClient,
       @SharedSecret String sharedSecret) {
     return new ApiClientFactory(serverSet, httpClient, sharedSecret);
+  }
+
+  @Provides
+  @Singleton
+  NsxClientFactory getNsxClientFactory() {
+    return new NsxClientFactory();
   }
 
   @Provides

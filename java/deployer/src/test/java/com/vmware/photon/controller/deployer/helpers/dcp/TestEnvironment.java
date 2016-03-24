@@ -29,6 +29,7 @@ import com.vmware.photon.controller.deployer.deployengine.AuthHelperFactory;
 import com.vmware.photon.controller.deployer.deployengine.DockerProvisionerFactory;
 import com.vmware.photon.controller.deployer.deployengine.HostManagementVmAddressValidatorFactory;
 import com.vmware.photon.controller.deployer.deployengine.HttpFileServiceClientFactory;
+import com.vmware.photon.controller.deployer.deployengine.NsxClientFactory;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClientFactory;
 import com.vmware.photon.controller.deployer.healthcheck.HealthCheckHelperFactory;
 
@@ -78,6 +79,7 @@ public class TestEnvironment extends MultiHostEnvironment<DeployerXenonServiceHo
       ZookeeperClientFactory zookeeperServerSetBuilderFactory,
       HostManagementVmAddressValidatorFactory hostManagementVmAddressValidatorFactory,
       ClusterManagerFactory clusterManagerFactory,
+      NsxClientFactory nsxClientFactory,
       int hostCount,
       Long operationTimeoutMicros,
       int hostNumber,
@@ -110,7 +112,8 @@ public class TestEnvironment extends MultiHostEnvironment<DeployerXenonServiceHo
           serviceConfiguratorFactory,
           zookeeperServerSetBuilderFactory,
           hostManagementVmAddressValidatorFactory,
-          clusterManagerFactory);
+          clusterManagerFactory,
+          nsxClientFactory);
 
       TaskSchedulerServiceStateBuilder.triggerInterval = TimeUnit.MILLISECONDS.toMicros(500);
       logger.debug(String.format("sandbox for %s: %s", hosts[i].getId(), sandbox));
@@ -144,6 +147,7 @@ public class TestEnvironment extends MultiHostEnvironment<DeployerXenonServiceHo
     private ZookeeperClientFactory zookeeperServerSetBuilderFactory;
     private HostManagementVmAddressValidatorFactory hostManagementVmAddressValidatorFactory;
     private ClusterManagerFactory clusterManagerFactory;
+    private NsxClientFactory nsxClientFactory;
 
     public Builder apiClientFactory(ApiClientFactory apiClientFactory) {
       this.apiClientFactory = apiClientFactory;
@@ -231,6 +235,11 @@ public class TestEnvironment extends MultiHostEnvironment<DeployerXenonServiceHo
       return this;
     }
 
+    public Builder nsxClientFactory(NsxClientFactory  nsxClientFactory) {
+      this.nsxClientFactory = nsxClientFactory;
+      return this;
+    }
+
     public TestEnvironment build() throws Throwable {
 
       if (null == this.hostCount) {
@@ -252,6 +261,7 @@ public class TestEnvironment extends MultiHostEnvironment<DeployerXenonServiceHo
           this.zookeeperServerSetBuilderFactory,
           this.hostManagementVmAddressValidatorFactory,
           this.clusterManagerFactory,
+          this.nsxClientFactory,
           this.hostCount,
           this.operationTimeoutMicros,
           this.hostNumber,
