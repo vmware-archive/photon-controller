@@ -54,7 +54,7 @@ public class DeployerModuleTest {
       TestHelper.TestInjectedConfig test = injector.getInstance(TestHelper.TestInjectedConfig.class);
       assertThat(test.getBind(), is("localhost"));
       assertThat(test.getRegistrationAddress(), is("localhost"));
-      assertThat(test.getPort(), is(18000));
+      assertThat(test.getPort(), is(18001));
       assertThat(test.getPath(), is("/tmp/dcp/deployer/"));
       String[] peerNodes = {"http://localhost:18001"};
       assertThat(test.getPeerNodes(), is(peerNodes));

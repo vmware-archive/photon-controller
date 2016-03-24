@@ -1,17 +1,3 @@
-bind: "0.0.0.0"
-registrationAddress: "{{{REGISTRATION_ADDRESS}}}"
-port: 18000
-
-dcp:
-  storagePath: "{{{DEPLOYER_DCP_STORAGE_PATH}}}"
-  peerNodes:
-{{#PEER_NODES}}
-  - http://{{peerAddress}}:{{peerPort}}
-{{/PEER_NODES}}
-{{^PEER_NODES}}
-  - http://{{{REGISTRATION_ADDRESS}}}:18001
-{{/PEER_NODES}}
-
 deployer:
   apifeEndpoint: "http://{{{APIFE_IP}}}:{{{APIFE_PORT}}}"
   configDirectory: "/etc/esxcloud-deployer/configurations/"
@@ -26,6 +12,24 @@ deployer:
   tenantName: "{{{TENANT_NAME}}}"
   vibDirectory: "{{{VIB_DIRECTORY}}}"
   sharedSecret: "{{{SHARED_SECRET}}}"
+
+xenon:
+  bindAddress: "0.0.0.0"
+  registrationAddress: "{{{REGISTRATION_ADDRESS}}}"
+  port: 18001
+  storagePath: "{{{DEPLOYER_DCP_STORAGE_PATH}}}"
+  peerNodes:
+{{#PEER_NODES}}
+  - http://{{peerAddress}}:{{peerPort}}
+{{/PEER_NODES}}
+{{^PEER_NODES}}
+  - http://{{{REGISTRATION_ADDRESS}}}:18001
+{{/PEER_NODES}}
+
+thrift:
+  bindAddress: "0.0.0.0"
+  registrationAddress: "{{{REGISTRATION_ADDRESS}}}"
+  port: 18000
 
 zookeeper:
   quorum: "{{{ZOOKEEPER_QUORUM}}}"
