@@ -53,4 +53,7 @@ public class ServiceUriPaths extends com.vmware.xenon.services.common.ServiceUri
 
   public static final String NODE_SELECTOR_FOR_SYMMETRIC_REPLICATION =
       com.vmware.xenon.services.common.ServiceUriPaths.DEFAULT_NODE_SELECTOR;
+
+  public static final String DEPLOYER_ROOT = SERVICES_ROOT + "/deployer";
+  public static final String UPGRADE_ROOT = SERVICES_ROOT + "/upgrade";
 }

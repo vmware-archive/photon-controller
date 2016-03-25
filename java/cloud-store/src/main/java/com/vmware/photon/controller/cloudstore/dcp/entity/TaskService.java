@@ -13,10 +13,14 @@
 
 package com.vmware.photon.controller.cloudstore.dcp.entity;
 
+import com.vmware.photon.controller.cloudstore.CloudStoreModule;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
+import com.vmware.photon.controller.common.xenon.upgrade.MigrateDuringUpgrade;
+import com.vmware.photon.controller.common.xenon.upgrade.NoMigrationDuringUpgrade;
+import com.vmware.photon.controller.common.xenon.upgrade.UpgradeUtils;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.OperationProcessingChain;
 import com.vmware.xenon.common.RequestRouter;
@@ -153,6 +157,7 @@ public class TaskService extends StatefulService {
   /**
    * Class for updating step.
    */
+  @NoMigrationDuringUpgrade
   public static class StepUpdate extends ServiceDocument {
     public static final String KIND = StepUpdate.class.getCanonicalName();
     public final String kind;
@@ -187,6 +192,10 @@ public class TaskService extends StatefulService {
   /**
    * Durable service state data. Class encapsulating the data for Task.
    */
+  @MigrateDuringUpgrade(transformationServicePath = UpgradeUtils.REFLECTION_TRANSFORMATION_SERVICE_LINK,
+      sourceFactoryServicePath = TaskServiceFactory.SELF_LINK,
+      destinationFactoryServicePath = TaskServiceFactory.SELF_LINK,
+      serviceName = CloudStoreModule.CLOUDSTORE_SERVICE_NAME)
   public static class State extends ServiceDocument {
 
     public static final String FIELD_NAME_ENTITY_ID = "entityId";

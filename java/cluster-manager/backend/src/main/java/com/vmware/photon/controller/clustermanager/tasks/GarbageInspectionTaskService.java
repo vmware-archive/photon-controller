@@ -31,6 +31,7 @@ import com.vmware.photon.controller.common.xenon.PatchUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
+import com.vmware.photon.controller.common.xenon.upgrade.NoMigrationDuringUpgrade;
 import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
 import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
@@ -369,6 +370,7 @@ public class GarbageInspectionTaskService extends StatefulService {
    * This class represents the document state associated with a
    * {@link GarbageInspectionTaskService} task.
    */
+  @NoMigrationDuringUpgrade
   public static class State extends ServiceDocument {
     /**
      * The state of the current task.

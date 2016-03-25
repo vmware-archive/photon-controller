@@ -12,6 +12,7 @@
  */
 package com.vmware.photon.controller.deployer.dcp.entity;
 
+import com.vmware.photon.controller.common.xenon.upgrade.NoMigrationDuringUpgrade;
 import com.vmware.photon.controller.common.xenon.validation.RenamedField;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
@@ -35,7 +36,12 @@ public class SampleService extends StatefulService {
 
   /**
    * This class defines the document state associated with a single {@link SampleService} instance.
+   *
+   * We do not need to migrate this class since it is solely used in tests. However the unit test
+   * checking that all ServiceDocuments are annotated is picking up this class as well, thus to
+   * avoid test errors we need to annotate this class.
    */
+  @NoMigrationDuringUpgrade
   public static class State extends ServiceDocument {
 
     @RenamedField(originalName = "hostAddress")

@@ -35,6 +35,7 @@ import com.google.inject.assistedinject.FactoryModuleBuilder;
  */
 public class CloudStoreModule extends AbstractModule {
 
+  public static final String CLOUDSTORE_SERVICE_NAME = "cloudstore";
   private final CloudStoreConfig cloudStoreConfig;
 
   public CloudStoreModule(CloudStoreConfig cloudStoreConfig) {
@@ -64,6 +65,6 @@ public class CloudStoreModule extends AbstractModule {
   @Singleton
   @CloudStoreServerSet
   public ServerSet getCloudStoreServerSet(ZookeeperServerSetFactory serverSetFactory) {
-    return serverSetFactory.createServiceServerSet("cloudstore", true);
+    return serverSetFactory.createServiceServerSet(CLOUDSTORE_SERVICE_NAME, true);
   }
 }

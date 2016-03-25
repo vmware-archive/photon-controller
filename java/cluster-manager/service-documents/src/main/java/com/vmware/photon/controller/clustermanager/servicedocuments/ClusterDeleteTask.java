@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.clustermanager.servicedocuments;
 
+import com.vmware.photon.controller.common.xenon.upgrade.NoMigrationDuringUpgrade;
 import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
 import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
@@ -23,6 +24,7 @@ import com.vmware.xenon.common.ServiceDocument;
  * This class defines the document state associated with a single
  * ClusterDeleteTaskService instance.
  */
+@NoMigrationDuringUpgrade
 public class ClusterDeleteTask extends ServiceDocument {
   /**
    * The state of the current task.

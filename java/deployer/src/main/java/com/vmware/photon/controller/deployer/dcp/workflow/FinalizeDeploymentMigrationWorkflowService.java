@@ -31,13 +31,13 @@ import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
+import com.vmware.photon.controller.common.xenon.upgrade.NoMigrationDuringUpgrade;
 import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
 import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.common.xenon.validation.Positive;
 import com.vmware.photon.controller.common.xenon.validation.WriteOnce;
-import com.vmware.photon.controller.deployer.DeployerModule;
 import com.vmware.photon.controller.deployer.dcp.constant.ServicePortConstants;
 import com.vmware.photon.controller.deployer.dcp.task.CopyStateTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.CopyStateTaskService;
@@ -116,6 +116,7 @@ public class FinalizeDeploymentMigrationWorkflowService extends StatefulService 
    * This class defines the document state associated with a single
    * {@link FinalizeDeploymentMigrationWorkflowService} instance.
    */
+  @NoMigrationDuringUpgrade
   public static class State extends ServiceDocument {
     /**
      * This value represents the state of the task.
@@ -735,28 +736,35 @@ public class FinalizeDeploymentMigrationWorkflowService extends StatefulService 
   }
 
   private void migrateFinal(State currentState, Map<String, Long> lastUpdateTimes) {
+    Map<String, Pair<Set<InetSocketAddress>, Set<InetSocketAddress>>> m = new HashMap<>();
     ZookeeperClient zookeeperClient
         = ((ZookeeperClientFactoryProvider) getHost()).getZookeeperServerSetFactoryBuilder().create();
-    Set<InetSocketAddress> destinationServers = zookeeperClient.getServers(
-        HostUtils.getDeployerContext(this).getZookeeperQuorum(),
-        DeployerModule.CLOUDSTORE_SERVICE_NAME);
-    Set<InetSocketAddress> sourceServers
-        = zookeeperClient.getServers(currentState.sourceZookeeperQuorum, DeployerModule.CLOUDSTORE_SERVICE_NAME);
-
-    Set<Map.Entry<String, String>> factoryMap = HostUtils.getDeployerContext(this).getFactoryLinkMapEntries();
 
     OperationJoin.create(
-        factoryMap.stream()
+        HostUtils.getDeployerContext(this).getUpgradeInformation().stream()
         .map(entry -> {
-          String sourceFactory = entry.getKey();
+          if (!m.containsKey(entry.zookeeperServerSet)) {
+            Set<InetSocketAddress> destinationServers = zookeeperClient.getServers(
+                HostUtils.getDeployerContext(this).getZookeeperQuorum(),
+                entry.zookeeperServerSet);
+            Set<InetSocketAddress> sourceServers
+                = zookeeperClient.getServers(currentState.sourceZookeeperQuorum, entry.zookeeperServerSet);
+
+            m.put(entry.zookeeperServerSet, new Pair<>(sourceServers, destinationServers));
+          }
+
+          String sourceFactory = entry.sourceFactoryServicePath;
           if (!sourceFactory.endsWith("/")) {
             sourceFactory += "/";
           }
           CopyStateTaskService.State startState
-            = MiscUtils.createCopyStateStartState(sourceServers, destinationServers, entry.getValue(), sourceFactory);
+            = MiscUtils.createCopyStateStartState(
+                m.get(entry.zookeeperServerSet).getFirst(),
+                m.get(entry.zookeeperServerSet).getSecond(),
+                entry.destinationFactoryServicePath, sourceFactory);
           startState.queryDocumentsChangedSinceEpoc = lastUpdateTimes.getOrDefault(sourceFactory, 0L);
           startState.sourceServers = new HashSet<>();
-          for (InetSocketAddress sourceServer : sourceServers) {
+          for (InetSocketAddress sourceServer : m.get(entry.zookeeperServerSet).getFirst()) {
             startState.sourceServers.add(new Pair<>(sourceServer.getHostName(), new Integer(sourceServer.getPort())));
           }
           startState.performHostTransformation = Boolean.TRUE;

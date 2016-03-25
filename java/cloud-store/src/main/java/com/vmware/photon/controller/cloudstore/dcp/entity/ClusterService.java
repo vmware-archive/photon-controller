@@ -19,6 +19,7 @@ import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
+import com.vmware.photon.controller.common.xenon.upgrade.NoMigrationDuringUpgrade;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotBlank;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
@@ -83,6 +84,7 @@ public class ClusterService extends StatefulService {
    * This class defines the document state associated with a single
    * {@link ClusterService} instance.
    */
+  @NoMigrationDuringUpgrade
   public static class State extends ServiceDocument {
 
     /**

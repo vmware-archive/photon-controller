@@ -27,15 +27,15 @@ import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
-import com.vmware.photon.controller.common.xenon.UpgradeUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
+import com.vmware.photon.controller.common.xenon.upgrade.NoMigrationDuringUpgrade;
+import com.vmware.photon.controller.common.xenon.upgrade.UpgradeInformation;
 import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
 import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.common.xenon.validation.Positive;
 import com.vmware.photon.controller.common.xenon.validation.WriteOnce;
-import com.vmware.photon.controller.deployer.DeployerModule;
 import com.vmware.photon.controller.deployer.dcp.constant.ServicePortConstants;
 import com.vmware.photon.controller.deployer.dcp.task.CopyStateTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.CopyStateTaskService;
@@ -74,6 +74,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Collection;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -112,6 +113,7 @@ public class InitializeDeploymentMigrationWorkflowService extends StatefulServic
    * This class defines the document state associated with a single
    * {@link InitializeDeploymentMigrationWorkflowService} instance.
    */
+  @NoMigrationDuringUpgrade
   public static class State extends ServiceDocument {
     /**
      * This value represents the state of the task.
@@ -322,29 +324,37 @@ public class InitializeDeploymentMigrationWorkflowService extends StatefulServic
 
   private void migrateHostEntities(State currentState) throws Throwable {
     // run instances of copy state for host migration
-    Map<String, String> hostsUrls = UpgradeUtils.SOURCE_DESTINATION_MAP.entrySet().stream()
-        .filter(e -> e.getValue().equals(HostServiceFactory.SELF_LINK))
-        .collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
-    hostsUrls.put(HostServiceFactory.SELF_LINK, HostServiceFactory.SELF_LINK);
+    List<UpgradeInformation> hostUpgradeInformation = HostUtils.getDeployerContext(this)
+        .getUpgradeInformation().stream()
+        .filter(e -> e.destinationFactoryServicePath.equals(HostServiceFactory.SELF_LINK))
+        .collect(Collectors.toList());
 
+    Map<String, Pair<Set<InetSocketAddress>, Set<InetSocketAddress>>> m = new HashMap<>();
     ZookeeperClient zookeeperClient
-      = ((ZookeeperClientFactoryProvider) getHost()).getZookeeperServerSetFactoryBuilder().create();
-    Set<InetSocketAddress> destinationServers = zookeeperClient.getServers(
-        HostUtils.getDeployerContext(this).getZookeeperQuorum(),
-        DeployerModule.CLOUDSTORE_SERVICE_NAME);
-    Set<InetSocketAddress> sourceServers
-      = zookeeperClient.getServers(currentState.sourceZookeeperQuorum, DeployerModule.CLOUDSTORE_SERVICE_NAME);
+        = ((ZookeeperClientFactoryProvider) getHost()).getZookeeperServerSetFactoryBuilder().create();
 
     OperationJoin.create(
-        hostsUrls.entrySet().stream()
+        hostUpgradeInformation.stream()
             .map(entry -> {
-              String sourceFactory = entry.getKey();
+              if (!m.containsKey(entry.zookeeperServerSet)) {
+                Set<InetSocketAddress> destinationServers = zookeeperClient.getServers(
+                    HostUtils.getDeployerContext(this).getZookeeperQuorum(),
+                    entry.zookeeperServerSet);
+                Set<InetSocketAddress> sourceServers
+                    = zookeeperClient.getServers(currentState.sourceZookeeperQuorum, entry.zookeeperServerSet);
+
+                m.put(entry.zookeeperServerSet, new Pair<>(sourceServers, destinationServers));
+              }
+
+              String sourceFactory = entry.sourceFactoryServicePath;
               if (!sourceFactory.endsWith("/")) {
                 sourceFactory += "/";
               }
               CopyStateTaskService.State startState
-                  = MiscUtils.createCopyStateStartState(sourceServers, destinationServers, entry.getValue(),
-                  sourceFactory);
+                = MiscUtils.createCopyStateStartState(
+                    m.get(entry.zookeeperServerSet).getFirst(),
+                    m.get(entry.zookeeperServerSet).getSecond(),
+                    entry.destinationFactoryServicePath, sourceFactory);
               startState.performHostTransformation = Boolean.TRUE;
               return Operation
                   .createPost(this, CopyStateTaskFactoryService.SELF_LINK)
@@ -479,25 +489,30 @@ public class InitializeDeploymentMigrationWorkflowService extends StatefulServic
   }
 
   private OperationJoin createStartMigrationOperations(State currentState) {
+    Map<String, Pair<Set<InetSocketAddress>, Set<InetSocketAddress>>> m = new HashMap<>();
     ZookeeperClient zookeeperClient
         = ((ZookeeperClientFactoryProvider) getHost()).getZookeeperServerSetFactoryBuilder().create();
-    Set<InetSocketAddress> destinationServers = zookeeperClient.getServers(
-        HostUtils.getDeployerContext(this).getZookeeperQuorum(),
-        DeployerModule.CLOUDSTORE_SERVICE_NAME);
-    Set<InetSocketAddress> sourceServers
-        = zookeeperClient.getServers(currentState.sourceZookeeperQuorum, DeployerModule.CLOUDSTORE_SERVICE_NAME);
-
-    Set<Map.Entry<String, String>> factoryMap = HostUtils.getDeployerContext(this).getFactoryLinkMapEntries();
 
     return OperationJoin.create(
-        factoryMap.stream()
+        HostUtils.getDeployerContext(this).getUpgradeInformation().stream()
         .map(entry -> {
-          String destinationFactoryLink = entry.getValue();
-          String sourceFactoryLink = entry.getKey();
-          InetSocketAddress remote = ServiceUtils.selectRandomItem(destinationServers);
+          if (!m.containsKey(entry.zookeeperServerSet)) {
+            Set<InetSocketAddress> destinationServers = zookeeperClient.getServers(
+                HostUtils.getDeployerContext(this).getZookeeperQuorum(),
+                entry.zookeeperServerSet);
+            Set<InetSocketAddress> sourceServers
+                = zookeeperClient.getServers(currentState.sourceZookeeperQuorum, entry.zookeeperServerSet);
+
+            m.put(entry.zookeeperServerSet, new Pair<>(sourceServers, destinationServers));
+          }
+
+          String destinationFactoryLink = entry.destinationFactoryServicePath;
+          String sourceFactoryLink = entry.sourceFactoryServicePath;
+
+          InetSocketAddress remote = ServiceUtils.selectRandomItem(m.get(entry.zookeeperServerSet).getSecond());
           CopyStateTriggerTaskService.State startState = new CopyStateTriggerTaskService.State();
           startState.sourceServers = new HashSet<>();
-          for (InetSocketAddress sourceServer : sourceServers) {
+          for (InetSocketAddress sourceServer : m.get(entry.zookeeperServerSet).getFirst()) {
             startState.sourceServers.add(new Pair<>(sourceServer.getHostName(), sourceServer.getPort()));
           }
           startState.destinationIp = remote.getAddress().getHostAddress();
