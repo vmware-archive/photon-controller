@@ -15,7 +15,6 @@ package com.vmware.photon.controller.deployer.dcp.workflow;
 
 import com.vmware.photon.controller.agent.gen.AgentStatusCode;
 import com.vmware.photon.controller.agent.gen.ProvisionResultCode;
-import com.vmware.photon.controller.agent.gen.UpgradeResultCode;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.common.clients.AgentControlClientFactory;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
@@ -484,7 +483,6 @@ public class BulkProvisionHostsWorkflowServiceTest {
       AgentControlClientMock agentControlClientMock = new AgentControlClientMock.Builder()
           .provisionResultCode(ProvisionResultCode.OK)
           .agentStatusCode(AgentStatusCode.OK)
-          .upgradeResultCode(UpgradeResultCode.OK)
           .build();
 
       doReturn(agentControlClientMock).when(agentControlClientFactory).create();

@@ -157,6 +157,7 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
           case STOP_MIGRATE_TASKS:
           case DATA_ADJUSTMENT:
           case REINSTALL_AGENTS:
+          case UPGRADE_AGENTS:
           case MIGRATE_FINAL:
           case RESUME_DESTINATION_SYSTEM:
             // fall through
@@ -194,6 +195,7 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
         case MIGRATE_FINAL:
         case DATA_ADJUSTMENT:
         case REINSTALL_AGENTS:
+        case UPGRADE_AGENTS:
           // fall through
         case STOP_MIGRATE_TASKS:
           break;
@@ -282,6 +284,8 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
               FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.STOP_MIGRATE_TASKS},
           {TaskState.TaskStage.STARTED,
               FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.REINSTALL_AGENTS},
+          {TaskState.TaskStage.STARTED,
+              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.UPGRADE_AGENTS},
           {TaskState.TaskStage.STARTED,
               FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.MIGRATE_FINAL},
           {TaskState.TaskStage.STARTED,
@@ -475,6 +479,10 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
           {TaskState.TaskStage.STARTED,
               FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.REINSTALL_AGENTS,
               TaskState.TaskStage.STARTED,
+              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.UPGRADE_AGENTS},
+          {TaskState.TaskStage.STARTED,
+              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.UPGRADE_AGENTS,
+              TaskState.TaskStage.STARTED,
               FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.RESUME_DESTINATION_SYSTEM},
           {TaskState.TaskStage.STARTED,
               FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.RESUME_DESTINATION_SYSTEM,
@@ -490,6 +498,9 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
               TaskState.TaskStage.FAILED, null},
           {TaskState.TaskStage.STARTED,
               FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.REINSTALL_AGENTS,
+              TaskState.TaskStage.FAILED, null},
+          {TaskState.TaskStage.STARTED,
+              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.UPGRADE_AGENTS,
               TaskState.TaskStage.FAILED, null},
           {TaskState.TaskStage.STARTED,
               FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.MIGRATE_FINAL,
@@ -508,6 +519,9 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
               TaskState.TaskStage.CANCELLED, null},
           {TaskState.TaskStage.STARTED,
               FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.REINSTALL_AGENTS,
+              TaskState.TaskStage.CANCELLED, null},
+          {TaskState.TaskStage.STARTED,
+              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.UPGRADE_AGENTS,
               TaskState.TaskStage.CANCELLED, null},
           {TaskState.TaskStage.STARTED,
               FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.MIGRATE_FINAL,
@@ -573,12 +587,20 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
               FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.MIGRATE_FINAL},
 
           {TaskState.TaskStage.STARTED,
+              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.UPGRADE_AGENTS,
+              TaskState.TaskStage.CREATED, null},
+          {TaskState.TaskStage.STARTED,
+              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.UPGRADE_AGENTS,
+              TaskState.TaskStage.STARTED,
+              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.REINSTALL_AGENTS},
+
+          {TaskState.TaskStage.STARTED,
               FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.RESUME_DESTINATION_SYSTEM,
               TaskState.TaskStage.CREATED, null},
           {TaskState.TaskStage.STARTED,
               FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.RESUME_DESTINATION_SYSTEM,
               TaskState.TaskStage.STARTED,
-              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.REINSTALL_AGENTS},
+              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.UPGRADE_AGENTS},
 
           {TaskState.TaskStage.FINISHED, null,
               TaskState.TaskStage.CREATED, null},
@@ -591,6 +613,9 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
           {TaskState.TaskStage.FINISHED, null,
               TaskState.TaskStage.STARTED,
               FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.REINSTALL_AGENTS},
+          {TaskState.TaskStage.FINISHED, null,
+              TaskState.TaskStage.STARTED,
+              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.UPGRADE_AGENTS},
           {TaskState.TaskStage.FINISHED, null,
               TaskState.TaskStage.STARTED,
               FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.MIGRATE_FINAL},
@@ -617,6 +642,9 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
               FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.REINSTALL_AGENTS},
           {TaskState.TaskStage.FAILED, null,
               TaskState.TaskStage.STARTED,
+              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.UPGRADE_AGENTS},
+          {TaskState.TaskStage.FAILED, null,
+              TaskState.TaskStage.STARTED,
               FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.MIGRATE_FINAL},
           {TaskState.TaskStage.FAILED, null,
               TaskState.TaskStage.STARTED,
@@ -639,6 +667,9 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
           {TaskState.TaskStage.CANCELLED, null,
               TaskState.TaskStage.STARTED,
               FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.REINSTALL_AGENTS},
+          {TaskState.TaskStage.CANCELLED, null,
+              TaskState.TaskStage.STARTED,
+              FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.UPGRADE_AGENTS},
           {TaskState.TaskStage.CANCELLED, null,
               TaskState.TaskStage.STARTED,
               FinalizeDeploymentMigrationWorkflowService.TaskState.SubStage.MIGRATE_FINAL},
@@ -967,9 +998,10 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
 
       // Create a host on source
       TestHelper.createHostService(sourceCloudStore, Collections.singleton(UsageTag.CLOUD.name()));
+      TestHelper.createHostService(sourceCloudStore, Collections.singleton(UsageTag.CLOUD.name()));
 
       Set<String> hostsSource = getDocuments(HostService.State.class, sourceCloudStore);
-      assertThat((hostsSource.size() == 1), is(true));
+      assertThat((hostsSource.size() == 2), is(true));
 
       FinalizeDeploymentMigrationWorkflowService.State finalState =
           destinationEnvironment.callServiceAndWaitForState(
@@ -981,7 +1013,7 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
 
       //Make sure that the host is in destination
       Set<String> hosts = getDocuments(HostService.State.class, destinationCloudStore);
-      assertThat((hosts.size() == 1), is(true));
+      assertThat((hosts.size() == 2), is(true));
     }
 
     private Set<String> getDocuments(Class kindClass,
