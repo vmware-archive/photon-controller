@@ -1,5 +1,15 @@
-port: 15000
-storagePath: "/tmp/dcp/scheduler/"
+xenon:
+  bindAddress: "0.0.0.0"
+  port: 15001
+  registrationAddress: "127.0.0.1"
+  storagePath: "/tmp/dcp/scheduler/"
+  peerNodes:
+  - http://127.0.0.1:15001
+
+thrift:
+  bindAddress: "0.0.0.0"
+  port: 15000
+  registrationAddress: "127.0.0.1"
 
 zookeeper:
   quorum: localhost:2181

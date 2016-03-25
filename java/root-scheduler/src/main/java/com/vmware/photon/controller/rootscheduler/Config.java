@@ -14,24 +14,16 @@
 package com.vmware.photon.controller.rootscheduler;
 
 import com.vmware.photon.controller.common.logging.LoggingConfiguration;
+import com.vmware.photon.controller.common.thrift.ThriftConfig;
+import com.vmware.photon.controller.common.xenon.host.XenonConfig;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperConfig;
 import com.vmware.photon.controller.scheduler.gen.PlaceParams;
 
-import com.google.inject.BindingAnnotation;
-import org.hibernate.validator.constraints.NotEmpty;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.hibernate.validator.constraints.Range;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
-
-import java.lang.annotation.Retention;
-import java.lang.annotation.Target;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import static java.lang.annotation.ElementType.FIELD;
-import static java.lang.annotation.ElementType.METHOD;
-import static java.lang.annotation.ElementType.PARAMETER;
-import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
  * Root scheduler configuration.
@@ -47,21 +39,15 @@ public class Config {
   @Range(min = 1, max = 600)
   private Integer refreshIntervalSec = 30;
 
+  @Valid
   @NotNull
-  @Range(min = 0, max = 65535)
-  private Integer port = null;
+  @JsonProperty("xenon")
+  private XenonConfig xenonConfig;
 
+  @Valid
   @NotNull
-  @NotEmpty
-  private String bind;
-
-  @NotNull
-  @NotEmpty
-  private String registrationAddress;
-
-  @NotNull
-  @NotEmpty
-  private String storagePath;
+  @JsonProperty("thrift")
+  private ThriftConfig thriftConfig;
 
   @Valid
   @NotNull
@@ -77,17 +63,6 @@ public class Config {
 
   private PlaceParams rootPlaceParams;
 
-  @Valid
-  @NotNull
-  public Config() {
-    try {
-      bind = InetAddress.getLocalHost().getHostAddress();
-      registrationAddress = InetAddress.getLocalHost().getHostAddress();
-    } catch (UnknownHostException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
   public String getMode() {
     return mode;
   }
@@ -100,20 +75,12 @@ public class Config {
     return refreshIntervalSec;
   }
 
-  public Integer getPort() {
-    return port;
+  public XenonConfig getXenonConfig() {
+    return this.xenonConfig;
   }
 
-  public String getBind() {
-    return bind;
-  }
-
-  public String getRegistrationAddress() {
-    return registrationAddress;
-  }
-
-  public String getStoragePath() {
-    return storagePath;
+  public ThriftConfig getThriftConfig() {
+    return this.thriftConfig;
   }
 
   public LoggingConfiguration getLogging() {
@@ -126,42 +93,6 @@ public class Config {
 
   public SchedulerConfig getRoot() {
     return root;
-  }
-
-  /**
-   * Root scheduler port.
-   */
-  @BindingAnnotation
-  @Target({FIELD, PARAMETER, METHOD})
-  @Retention(RUNTIME)
-  public @interface Port {
-  }
-
-  /**
-   * Root scheduler bind address.
-   */
-  @BindingAnnotation
-  @Target({FIELD, PARAMETER, METHOD})
-  @Retention(RUNTIME)
-  public @interface Bind {
-  }
-
-  /**
-   * Root scheduler address to register in Zookeeper.
-   */
-  @BindingAnnotation
-  @Target({FIELD, PARAMETER, METHOD})
-  @Retention(RUNTIME)
-  public @interface RegistrationAddress {
-  }
-
-  /**
-   * DCP storage path.
-   */
-  @BindingAnnotation
-  @Target({FIELD, PARAMETER, METHOD})
-  @Retention(RUNTIME)
-  public @interface StoragePath {
   }
 
   public void initRootPlaceParams() {

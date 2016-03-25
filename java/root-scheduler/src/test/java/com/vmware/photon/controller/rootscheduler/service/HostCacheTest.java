@@ -27,7 +27,6 @@ import com.vmware.photon.controller.rootscheduler.Config;
 import com.vmware.photon.controller.rootscheduler.ConfigTest;
 import com.vmware.photon.controller.rootscheduler.SchedulerDcpHost;
 import com.vmware.xenon.common.Operation;
-import com.vmware.xenon.common.ServiceHost;
 import com.vmware.xenon.common.UriUtils;
 
 import com.google.common.net.InetAddresses;
@@ -110,8 +109,7 @@ public class HostCacheTest {
     // Guice in the scheduler,
     // so we're not adding extra usages of it until necessary.
     Config config = ConfigBuilder.build(Config.class, ConfigTest.class.getResource(configFilePath).getPath());
-    this.schedulerHost =
-        new SchedulerDcpHost(ServiceHost.ALL_INTERFACES, config.getPort() + 1, config.getStoragePath());
+    this.schedulerHost = new SchedulerDcpHost(config.getXenonConfig());
     this.schedulerHost.start();
     while (!this.schedulerHost.isReady()) {
       Thread.sleep(100);
