@@ -76,7 +76,11 @@ module EsxCloud
       # @param [String] state
       # @return [TaskList]
       def get_disk_tasks(id, state = nil)
-        @api_client.get_disk_tasks(id, state)
+        cmd = "disk tasks '#{id}'"
+        cmd += " -s '#{state}'" if state
+
+        result = run_cli(cmd)
+        get_task_list_from_response(result)
       end
       private
 

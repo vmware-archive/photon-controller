@@ -82,7 +82,10 @@ module EsxCloud
       # @param [String] id
       # @return [TaskList]
       def find_tasks_by_host_id(id)
-        @api_client.find_tasks_by_host_id(id)
+        cmd = "host tasks '#{id}'"
+
+        result = run_cli(cmd)
+        get_task_list_from_response(result)
       end
 
       # @param [String] id

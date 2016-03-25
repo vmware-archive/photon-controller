@@ -79,9 +79,13 @@ describe EsxCloud::GoCliClient do
   end
 
   it "gets tenant tasks" do
+    tenant_id = double("bar")
+    result = "task1 COMPLETED CREATE_TENANT  1458853080000  1000
+              task2 COMPLETED DELETE_TENANT  1458853089000  1000"
     tasks = double(EsxCloud::TaskList)
-    expect(@api_client).to receive(:get_tenant_tasks).with("foo", "a").and_return(tasks)
-    client.get_tenant_tasks("foo", "a").should == tasks
+    expect(client).to receive(:run_cli).with("tenant tasks '#{tenant_id}' -s 'COMPLETED'").and_return(result)
+    expect(client).to receive(:get_task_list_from_response).with(result).and_return(tasks)
+    client.get_tenant_tasks(tenant_id, "COMPLETED").should == tasks
   end
 
   it "sets tenant security groups" do

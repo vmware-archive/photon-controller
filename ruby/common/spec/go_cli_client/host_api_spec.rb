@@ -54,4 +54,13 @@ describe EsxCloud::GoCliClient do
     expect(client.mgmt_find_host_by_id(host_id)).to eq host
   end
 
+  it "gets host tasks" do
+    host_id = double("h1")
+    result = "task1 COMPLETED CREATE_HOST  1458853080000  1000
+              task2 COMPLETED DELETE_HOST  1458853089000  1000"
+    tasks = double(EsxCloud::TaskList)
+    expect(client).to receive(:run_cli).with("host tasks '#{host_id}'").and_return(result)
+    expect(client).to receive(:get_task_list_from_response).with(result).and_return(tasks)
+    client.find_tasks_by_host_id(host_id).should == tasks
+  end
 end
