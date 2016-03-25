@@ -278,10 +278,10 @@ public class CloudStoreXenonHostTest {
 
     @Test
     public void checkCurrentStateAgainstBenchmark() throws Throwable {
-      Map<String, HashMap> previousState = UpgradeHelper.parseBenchmarkState();
-      Map<String, HashMap> currentState = UpgradeHelper.populateCurrentState();
+      Map<String, HashMap<String, String>> previousState = UpgradeHelper.parseBenchmarkState();
+      Map<String, HashMap<String, String>> currentState = UpgradeHelper.populateCurrentState();
 
-      for (Map.Entry<String, HashMap> prevState : previousState.entrySet()) {
+      for (Map.Entry<String, HashMap<String, String>> prevState : previousState.entrySet()) {
         if (prevState.getKey().equals(safelyDeletedFieldsName)) {
           // Ignore this since it is not an actual entity class
           continue;
@@ -313,14 +313,14 @@ public class CloudStoreXenonHostTest {
           String currentType = currentFields.get(prevField.getKey());
           if (!prevType.equals(currentType) && !prevType.replace("esxcloud", "photon.controller").equals(currentType)) {
             // Now check if it is assignable
-            Class prevFieldType = null;
+            Class<?> prevFieldType = null;
             try {
               prevFieldType = Class.forName(prevType);
             } catch (ClassNotFoundException ex) {
               // May be its namespace is renamed
               prevFieldType = Class.forName(prevType.replace("esxcloud", "photon.controller"));
             }
-            Class currentFieldType = Class.forName(currentType);
+            Class<?> currentFieldType = Class.forName(currentType);
 
             System.out.println("This field " + prevField.getKey() + " has different type " + prevType
                 + " in the current system " + currentType +

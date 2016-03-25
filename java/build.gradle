@@ -98,6 +98,7 @@ subprojects {
     testLogging.events "failed", "passed"
 //    jvmArgs '-XX:-UseSplitVerifier'
     jvmArgs '-noverify'
+//    testLogging.showStandardStreams = true
   }
 }
 
