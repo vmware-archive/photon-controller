@@ -103,12 +103,6 @@ struct RefCount {
 
 // Struct describing the provisioning configuration of the esx agent.
 struct ProvisionRequest {
-  // This field has been deprecated.
-  1: optional list<string> zookeeper_server
-
-  // The availability zone associated with the esx host.
-  2: optional string availability_zone
-
   // The datastores to use for cloud virtual machine workloads
   // Expects at least one datastore to be present. If this field is not set,
   // the host uses all the datastores.
@@ -121,9 +115,6 @@ struct ProvisionRequest {
   // The host ip + port information for the thrift services to bind to.
   // Address update will result in agent restart.
   5: optional server_address.ServerAddress address
-
-  // List of chairman services.
-  7: optional list<server_address.ServerAddress> chairman_server
 
   // The memory overcommit for this host. If unspecified it defaults to 1.0,
   // i.e. no overcommit
