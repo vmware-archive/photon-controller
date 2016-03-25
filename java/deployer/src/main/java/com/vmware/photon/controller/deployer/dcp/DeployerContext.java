@@ -14,7 +14,8 @@
 package com.vmware.photon.controller.deployer.dcp;
 
 import com.vmware.photon.controller.cloudstore.dcp.entity.EntityLockServiceFactory;
-import com.vmware.photon.controller.common.xenon.UpgradeUtils;
+import com.vmware.photon.controller.common.xenon.upgrade.UpgradeInformation;
+import com.vmware.photon.controller.common.xenon.upgrade.UpgradeUtils;
 import com.vmware.photon.controller.deployer.dcp.constant.DeployerDefaults;
 import com.vmware.xenon.services.common.RootNamespaceService;
 
@@ -27,8 +28,7 @@ import org.hibernate.validator.constraints.Range;
 import javax.validation.constraints.NotNull;
 
 import java.util.Collection;
-import java.util.Map;
-import java.util.Set;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -217,6 +217,10 @@ public class DeployerContext {
     return vibDirectory;
   }
 
+  public List<UpgradeInformation> getUpgradeInformation() {
+    return UpgradeUtils.findAllUpgradeServices();
+  }
+
   public int getWaitForServiceMaxRetryCount() {
     return waitForServiceMaxRetryCount;
   }
@@ -235,10 +239,6 @@ public class DeployerContext {
 
   public void setZookeeperQuorum(String zookeeperQuorum) {
     this.zookeeperQuorum = zookeeperQuorum;
-  }
-
-  public Set<Map.Entry<String, String>> getFactoryLinkMapEntries() {
-    return UpgradeUtils.SOURCE_DESTINATION_MAP.entrySet();
   }
 
   public Collection<Class<?>> getMigrationExcludedServices() {

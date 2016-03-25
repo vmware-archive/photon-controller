@@ -15,7 +15,7 @@ package com.vmware.photon.controller.cloudstore.dcp.helpers;
 
 import com.vmware.photon.controller.cloudstore.dcp.CloudStoreXenonHost;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
-import com.vmware.photon.controller.common.xenon.UpgradeUtils;
+import com.vmware.photon.controller.common.xenon.upgrade.UpgradeUtils;
 import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceDocument;
@@ -43,12 +43,12 @@ public class UpgradeHelper {
   private static final String FILE_NAME = "fieldsbenchmark.yml";
 
   public static void generateBenchmarkFile() throws Throwable {
-    Map<String, HashMap> currentServices = populateCurrentState();
+    Map<String, HashMap<String, String>> currentServices = populateCurrentState();
 
     try (BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(
         new FileOutputStream(FILE_NAME), "utf-8"))) {
 
-      for (Map.Entry<String, HashMap> service : currentServices.entrySet()) {
+      for (Map.Entry<String, HashMap<String, String>> service : currentServices.entrySet()) {
         writer.write(service.getKey() + ":");
         writer.newLine();
 
@@ -65,15 +65,15 @@ public class UpgradeHelper {
     }
   }
 
-  public static Map<String, HashMap> populateCurrentState() throws Throwable {
-    Map<String, HashMap> currentServices = new HashMap<>();
+  public static Map<String, HashMap<String, String>> populateCurrentState() throws Throwable {
+    Map<String, HashMap<String, String>> currentServices = new HashMap<>();
 
     List<String> factoriesToUpgrade = UpgradeUtils
-        .SOURCE_DESTINATION_MAP.entrySet().stream()
-        .map(entry -> entry.getValue())
+        .findAllUpgradeServices().stream()
+        .map(entry -> entry.destinationFactoryServicePath)
         .collect(Collectors.toList());
 
-    for (Class service : CloudStoreXenonHost.FACTORY_SERVICES) {
+    for (Class<?> service : CloudStoreXenonHost.FACTORY_SERVICES) {
       if (!factoriesToUpgrade.contains(ServiceHostUtils.getServiceSelfLink("SELF_LINK", service))) {
         // We are not interested in this entity
         continue;
@@ -83,8 +83,8 @@ public class UpgradeHelper {
 
       Service instance = factoryInstance.createServiceInstance();
       Class<?>[] innerClasses = instance.getClass().getClasses();
-      Class serviceClass = null;
-      for (Class c : innerClasses) {
+      Class<?> serviceClass = null;
+      for (Class<?> c : innerClasses) {
         if (ServiceDocument.class.isAssignableFrom(c)) {
           serviceClass = c;
           break;
@@ -104,12 +104,12 @@ public class UpgradeHelper {
     return currentServices;
   }
 
-  public static Map<String, HashMap> parseBenchmarkState() throws Throwable {
+  public static Map<String, HashMap<String, String>> parseBenchmarkState() throws Throwable {
     ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
     String json = UpgradeHelper.class.getResource("/" + FILE_NAME).getPath();
     JsonNode rootNode = mapper.readValue(new File(json), JsonNode.class);
 
-    Map<String, HashMap> previousServices = new HashMap<>();
+    Map<String, HashMap<String, String>> previousServices = new HashMap<>();
 
     Iterator<Map.Entry<String, JsonNode>> elements = rootNode.fields();
     while (elements.hasNext()) {

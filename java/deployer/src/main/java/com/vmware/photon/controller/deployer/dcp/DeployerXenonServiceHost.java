@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.deployer.dcp;
 
+import com.vmware.photon.controller.cloudstore.xenon.upgrade.HostTransformationService;
 import com.vmware.photon.controller.clustermanager.ClusterManagerFactory;
 import com.vmware.photon.controller.clustermanager.ClusterManagerFactoryProvider;
 import com.vmware.photon.controller.common.CloudStoreServerSet;
@@ -63,6 +64,7 @@ import com.vmware.photon.controller.deployer.dcp.task.UploadImageTaskFactoryServ
 import com.vmware.photon.controller.deployer.dcp.task.UploadVibTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.UploadVibTaskService;
 import com.vmware.photon.controller.deployer.dcp.task.ValidateHostTaskFactoryService;
+import com.vmware.photon.controller.deployer.dcp.upgrade.ReflectionTransformationService;
 import com.vmware.photon.controller.deployer.dcp.workflow.AddCloudHostWorkflowFactoryService;
 import com.vmware.photon.controller.deployer.dcp.workflow.AddManagementHostWorkflowFactoryService;
 import com.vmware.photon.controller.deployer.dcp.workflow.BatchCreateManagementWorkflowFactoryService;
@@ -191,6 +193,10 @@ public class DeployerXenonServiceHost
 
       // Discovery
       RootNamespaceService.class,
+
+      // Transformation
+      HostTransformationService.class,
+      ReflectionTransformationService.class,
   };
 
   private static final int DEFAULT_TASK_LIMIT = 8;
