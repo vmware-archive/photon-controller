@@ -18,6 +18,7 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentServiceFacto
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
+import com.vmware.photon.controller.common.xenon.upgrade.UpgradeUtils;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.dcp.DeployerContext;
@@ -192,10 +193,10 @@ public class MigrationStatusUpdateTriggerServiceTest {
 
       DeploymentService.State deploymentState = cloudStoreMachine
           .getServiceState(state.deploymentServiceLink, DeploymentService.State.class);
-      assertThat(deploymentState.dataMigrationProgress.size(), is(deployerContext.getFactoryLinkMapEntries().size()));
+      assertThat(deploymentState.dataMigrationProgress.size(), is(UpgradeUtils.findAllUpgradeServices().size()));
       assertThat(
           deploymentState.dataMigrationProgress
-              .get(deployerContext.getFactoryLinkMapEntries().iterator().next().getKey() + "/"),
+              .get(UpgradeUtils.findAllUpgradeServices().iterator().next().sourceFactoryServicePath + "/"),
           is(1));
       assertThat(deploymentState.vibsUploaded, is(1L));
       assertThat(deploymentState.vibsUploading, is(0L));
@@ -216,7 +217,7 @@ public class MigrationStatusUpdateTriggerServiceTest {
 
       DeploymentService.State deploymentState = cloudStoreMachine
           .getServiceState(state.deploymentServiceLink, DeploymentService.State.class);
-      assertThat(deploymentState.dataMigrationProgress.size(), is(deployerContext.getFactoryLinkMapEntries().size()));
+      assertThat(deploymentState.dataMigrationProgress.size(), is(UpgradeUtils.findAllUpgradeServices().size()));
       assertThat(deploymentState.dataMigrationProgress.values().stream().mapToInt(value -> value).sum(), is(0));
       assertThat(deploymentState.vibsUploaded, is(0L));
       assertThat(deploymentState.vibsUploading, is(1L));
@@ -260,8 +261,8 @@ public class MigrationStatusUpdateTriggerServiceTest {
       startState.destinationIp = "127.0.0.1";
       startState.sourceServers = new HashSet<>();
       startState.sourceServers.add(new Pair<>("127.0.0.1", 1234));
-      startState.factoryLink = deployerContext.getFactoryLinkMapEntries().iterator().next().getValue();
-      startState.sourceFactoryLink = deployerContext.getFactoryLinkMapEntries().iterator().next().getKey();
+      startState.factoryLink = UpgradeUtils.findAllUpgradeServices().iterator().next().destinationFactoryServicePath;
+      startState.sourceFactoryLink = UpgradeUtils.findAllUpgradeServices().iterator().next().sourceFactoryServicePath;
       return startState;
     }
 
