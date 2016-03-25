@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.provisioner.xenon.helpers;
 
 import com.vmware.photon.controller.common.xenon.MultiHostEnvironment;
+import com.vmware.photon.controller.common.xenon.host.XenonConfig;
 import com.vmware.photon.controller.provisioner.xenon.ProvisionerXenonHost;
 
 import org.apache.commons.io.FileUtils;
@@ -33,11 +34,15 @@ public class TestEnvironment extends MultiHostEnvironment<ProvisionerXenonHost> 
     assertTrue(hostCount > 0);
     hosts = new ProvisionerXenonHost[hostCount];
     for (int i = 0; i < hosts.length; i++) {
-
       String sandbox = generateStorageSandboxPath();
       FileUtils.forceMkdir(new File(sandbox));
 
-      hosts[i] = new ProvisionerXenonHost(BIND_ADDRESS, 0, sandbox);
+      XenonConfig xenonConfig = new XenonConfig();
+      xenonConfig.setBindAddress(BIND_ADDRESS);
+      xenonConfig.setPort(0);
+      xenonConfig.setStoragePath(sandbox);
+
+      hosts[i] = new ProvisionerXenonHost(xenonConfig);
     }
   }
 
