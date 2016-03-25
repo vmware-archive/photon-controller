@@ -109,6 +109,16 @@ public abstract class MultiHostEnvironment<H extends ServiceHost & XenonHostInfo
           // Since the default sleep time is 200 we will use a shorter time for tests
           MultiHostEnvironment.TEST_NODE_GROUP_CONVERGENCE_SLEEP);
 
+      /**
+       * In Xenon 0.7.5, the factories for replicated services are not reported as available on all
+       * hosts in a node group; instead, they show up as available only on the node to which the
+       * Xenon owner selection mechanism assigns ownership of the factory service. This is a change
+       * from previous versions, where factory service availability was entirely opaque to outside
+       * entities (0.7.0-0.7.2) or was handled as part of host availability (pre-0.7.0).
+       *
+       * Wait for factory services to be reported as available as appropriate given the replication
+       * characteristics of the services.
+       */
       for (int i = 0; i < hosts.length; i++) {
         waitForReplicatedFactoryServices(hosts[i]);
       }
