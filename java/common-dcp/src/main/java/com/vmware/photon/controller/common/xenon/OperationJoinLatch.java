@@ -44,7 +44,8 @@ public class OperationJoinLatch {
 
   public void await(long timeout, TimeUnit unit) throws InterruptedException, TimeoutException {
     if (!latch.await(timeout, unit)) {
-      throw new TimeoutException(String.format("Timeout:{%s}, TimeUnit:{%s}", timeout, unit));
+      throw new TimeoutException(String.format("Timeout:{%s}, TimeUnit:{%s}, OperationJoin.size:{%s}",
+          timeout, unit, this.join.getOperations().size()));
     }
   }
 
