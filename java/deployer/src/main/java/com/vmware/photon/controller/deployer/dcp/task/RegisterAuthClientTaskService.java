@@ -21,6 +21,7 @@ import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
+import com.vmware.photon.controller.common.xenon.upgrade.NoMigrationDuringUpgrade;
 import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
 import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
@@ -61,6 +62,7 @@ public class RegisterAuthClientTaskService extends StatefulService {
   /**
    * Class defines the state of the AuthClientRegsitrationService.
    */
+  @NoMigrationDuringUpgrade
   public static class State extends ServiceDocument {
 
     /**

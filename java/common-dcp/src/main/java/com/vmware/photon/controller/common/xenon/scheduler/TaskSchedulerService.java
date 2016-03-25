@@ -19,6 +19,7 @@ import com.vmware.photon.controller.common.xenon.PatchUtils;
 import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
+import com.vmware.photon.controller.common.xenon.upgrade.NoMigrationDuringUpgrade;
 import com.vmware.photon.controller.common.xenon.validation.NotBlank;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.common.xenon.validation.Positive;
@@ -291,6 +292,7 @@ public class TaskSchedulerService extends StatefulService {
   /**
    * Class defines the durable state of the TaskSchedulerService.
    */
+  @NoMigrationDuringUpgrade
   public static class State extends ServiceDocument {
 
     /**

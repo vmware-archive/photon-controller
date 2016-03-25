@@ -17,6 +17,7 @@ import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
+import com.vmware.photon.controller.common.xenon.upgrade.NoMigrationDuringUpgrade;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.common.xenon.validation.WriteOnce;
@@ -32,7 +33,11 @@ public class VmService extends StatefulService {
 
   /**
    * This class defines the document state associated with a single {@link VmService} instance.
+   *
+   * We do not migrate the control plane layout, since this would mix old plane layout with new
+   * plane layout.
    */
+  @NoMigrationDuringUpgrade
   public static class State extends ServiceDocument {
 
     public static final String FIELD_NAME_HOST_SERVICE_LINK = "hostServiceLink";

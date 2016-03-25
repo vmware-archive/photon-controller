@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.common.xenon;
 
+import com.vmware.photon.controller.common.xenon.upgrade.NoMigrationDuringUpgrade;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.TaskState;
 
@@ -20,6 +21,7 @@ import com.vmware.xenon.common.TaskState;
  * This class defines a basic task service state document which is used for message passing between task service
  * instances.
  */
+@NoMigrationDuringUpgrade
 public class TaskServiceState extends ServiceDocument {
 
   /**

@@ -13,9 +13,12 @@
 
 package com.vmware.photon.controller.cloudstore.dcp.entity;
 
+import com.vmware.photon.controller.cloudstore.CloudStoreModule;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
+import com.vmware.photon.controller.common.xenon.upgrade.MigrateDuringUpgrade;
+import com.vmware.photon.controller.common.xenon.upgrade.UpgradeUtils;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotBlank;
 import com.vmware.xenon.common.Operation;
@@ -69,6 +72,10 @@ public class ImageToImageDatastoreMappingService extends StatefulService {
   /**
    * Durable service state data. Class encapsulating the data for image replication info.
    */
+  @MigrateDuringUpgrade(transformationServicePath = UpgradeUtils.REFLECTION_TRANSFORMATION_SERVICE_LINK,
+      sourceFactoryServicePath = ImageToImageDatastoreMappingServiceFactory.SELF_LINK,
+      destinationFactoryServicePath = ImageToImageDatastoreMappingServiceFactory.SELF_LINK,
+      serviceName = CloudStoreModule.CLOUDSTORE_SERVICE_NAME)
   public static class State extends ServiceDocument {
 
     @NotBlank
