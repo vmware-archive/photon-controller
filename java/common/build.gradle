@@ -29,7 +29,6 @@ dependencies {
 
   thrift files('../../thrift/agent.thrift',
       '../../thrift/aggregator.thrift',
-      '../../thrift/chairman.thrift',
       '../../thrift/deployer.thrift',
       '../../thrift/flavors.thrift',
       '../../thrift/host.thrift',

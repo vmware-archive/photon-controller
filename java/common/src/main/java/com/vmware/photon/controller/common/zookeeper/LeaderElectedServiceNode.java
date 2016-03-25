@@ -112,7 +112,7 @@ public class LeaderElectedServiceNode extends AbstractServiceNode {
           promise.setException(e);
         } finally {
           // There is an interesting race condition here:
-          // 1. chairman starts up and it's not a leader, so it blocks on leader latch acquisition;
+          // 1. Leader elected service starts up and it's not a leader, so it blocks on leader latch acquisition;
           // 2. ZK goes away, acquisition gets interrupted;
           // 3. failure callback for the acquisition gets fired and (currently) runs System.exit(0);
           // 4. According to the Java language spec 'finally' block is NOT guaranteed to run when JVM is exiting BUT

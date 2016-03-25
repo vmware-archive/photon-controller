@@ -53,7 +53,7 @@ public class StatusResource {
   }
 
   @GET
-  @ApiOperation(value = "Get statuses of all components, such as root scheduler and chairman",
+  @ApiOperation(value = "Get statuses of all components, such as root scheduler, housekeeper, etc.",
       response = SystemStatus.class)
   @ApiResponses(value = {@ApiResponse(code = 200, message = "Get component statuses of the system")})
   public Response get() throws InternalException {

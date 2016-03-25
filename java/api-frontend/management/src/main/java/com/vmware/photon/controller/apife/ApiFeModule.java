@@ -78,7 +78,6 @@ import com.vmware.photon.controller.apife.config.ImageConfig;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.config.RootSchedulerConfig;
 import com.vmware.photon.controller.apife.config.StatusConfig;
-import com.vmware.photon.controller.chairman.gen.Chairman;
 import com.vmware.photon.controller.common.CloudStoreServerSet;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
@@ -247,28 +246,6 @@ public class ApiFeModule extends AbstractModule {
 
   @Provides
   @Singleton
-  @ChairmanServerSet
-  public ServerSet getChairmanServerSet(ZookeeperServerSetFactory serverSetFactory) {
-    return serverSetFactory.createServiceServerSet("chairman", true);
-  }
-
-  @Provides
-  @Singleton
-  public ClientPool<Chairman.AsyncClient> getChairmanClientPool(
-      @ChairmanServerSet ServerSet serverSet,
-      ClientPoolFactory<Chairman.AsyncClient> clientPoolFactory) {
-
-    ClientPoolOptions options = new ClientPoolOptions()
-        .setMaxClients(10)
-        .setMaxWaiters(10)
-        .setTimeout(10, TimeUnit.SECONDS)
-        .setServiceName("Chairman");
-
-    return clientPoolFactory.create(serverSet, options);
-  }
-
-  @Provides
-  @Singleton
   @HousekeeperServerSet
   public ServerSet getHousekeeperServerSet(ZookeeperServerSetFactory serverSetFactory) {
     return serverSetFactory.createServiceServerSet("housekeeper", true);
@@ -304,14 +281,6 @@ public class ApiFeModule extends AbstractModule {
         this.configuration.getImage().getReplicationTimeout().toMilliseconds());
 
     return config;
-  }
-
-  @Provides
-  @Singleton
-  public ClientProxy<Chairman.AsyncClient> getChairmanClientProxy(
-      ClientProxyFactory<Chairman.AsyncClient> factory,
-      ClientPool<Chairman.AsyncClient> clientPool) {
-    return factory.create(clientPool);
   }
 
   @Provides
@@ -368,8 +337,6 @@ public class ApiFeModule extends AbstractModule {
     install(new ThriftServiceModule<>(new TypeLiteral<Host.AsyncClient>() {
     }));
     install(new ThriftServiceModule<>(new TypeLiteral<RootScheduler.AsyncClient>() {
-    }));
-    install(new ThriftServiceModule<>(new TypeLiteral<Chairman.AsyncClient>() {
     }));
     install(new ThriftServiceModule<>(new TypeLiteral<Housekeeper.AsyncClient>() {
     }));
