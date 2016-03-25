@@ -37,10 +37,13 @@ bundle exec rake zookeeper
 # API tests
 bundle exec rake esxcloud:authorization
 
-if [ -z "$DISABLE_CLI_TESTS" ]; then
-  drivers=(api cli)
-else
-  drivers=(api)
+drivers=()
+if [ -z "$DISABLE_API_TESTS" ]; then
+  drivers+=(api)
+fi
+
+if [ -z "$DISABLE_CLI_TESTS" ] && [ -z "$DISABLE_RUBY_CLI_TESTS" ]; then
+  drivers+=(cli)
 fi
 
 pids=()
