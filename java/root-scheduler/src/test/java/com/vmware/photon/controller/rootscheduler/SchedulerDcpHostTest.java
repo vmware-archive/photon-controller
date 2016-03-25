@@ -17,6 +17,7 @@ import com.vmware.photon.controller.common.config.BadConfigException;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.xenon.MultiHostEnvironment;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
+import com.vmware.photon.controller.common.xenon.host.XenonConfig;
 import com.vmware.photon.controller.rootscheduler.helpers.TestHelper;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.services.common.LuceneDocumentIndexService;
@@ -93,7 +94,7 @@ public class SchedulerDcpHostTest {
       Config config = ConfigBuilder.build(Config.class,
           ConfigTest.class.getResource(configFilePath).getPath());
 
-      storageDir = new File(config.getStoragePath());
+      storageDir = new File(config.getXenonConfig().getStoragePath());
       FileUtils.deleteDirectory(storageDir);
     }
 
@@ -146,7 +147,7 @@ public class SchedulerDcpHostTest {
       Config config = ConfigBuilder.build(Config.class,
           ConfigTest.class.getResource(configFilePath).getPath());
 
-      storageDir = new File(config.getStoragePath());
+      storageDir = new File(config.getXenonConfig().getStoragePath());
       FileUtils.deleteDirectory(storageDir);
     }
 
@@ -198,7 +199,7 @@ public class SchedulerDcpHostTest {
       Config config = ConfigBuilder.build(Config.class,
           ConfigTest.class.getResource(configFilePath).getPath());
 
-      storageDir = new File(config.getStoragePath());
+      storageDir = new File(config.getXenonConfig().getStoragePath());
       FileUtils.deleteDirectory(storageDir);
     }
 
@@ -260,16 +261,22 @@ public class SchedulerDcpHostTest {
     private void setUp() throws Throwable {
       injector = TestHelper.createInjector(configFilePath);
 
-      host = new SchedulerDcpHost(
-          "0.0.0.0", 18000, storageDir.getPath());
+      XenonConfig xenonConfig = new XenonConfig();
+      xenonConfig.setBindAddress("0.0.0.0");
+      xenonConfig.setPort(18000);
+      xenonConfig.setStoragePath(storageDir.getAbsolutePath());
 
+      host = new SchedulerDcpHost(xenonConfig);
       host.setMaintenanceIntervalMicros(maintenanceInterval);
       host.start();
       waitForServicesStartup(host);
 
-      host2 = new SchedulerDcpHost(
-          "0.0.0.0", 18002, storageDir2.getPath());
+      XenonConfig xenonConfig2 = new XenonConfig();
+      xenonConfig2.setBindAddress("0.0.0.0");
+      xenonConfig2.setPort(18002);
+      xenonConfig2.setStoragePath(storageDir2.getAbsolutePath());
 
+      host2 = new SchedulerDcpHost(xenonConfig2);
       host2.setMaintenanceIntervalMicros(maintenanceInterval);
       host2.start();
       waitForServicesStartup(host2);

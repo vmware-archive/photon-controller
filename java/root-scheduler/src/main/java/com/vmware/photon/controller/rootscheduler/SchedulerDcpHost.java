@@ -15,6 +15,8 @@ package com.vmware.photon.controller.rootscheduler;
 
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.XenonHostInfoProvider;
+import com.vmware.photon.controller.common.xenon.host.AbstractServiceHost;
+import com.vmware.photon.controller.common.xenon.host.XenonConfig;
 import com.vmware.xenon.common.ServiceHost;
 import com.vmware.xenon.services.common.RootNamespaceService;
 
@@ -23,15 +25,13 @@ import com.google.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.file.Paths;
-
 /**
  * This class implements the Xenon service host object
  * for the Root-Scheduler service.
  */
 @Singleton
 public class SchedulerDcpHost
-    extends ServiceHost implements XenonHostInfoProvider {
+    extends AbstractServiceHost implements XenonHostInfoProvider {
 
   private static final Logger logger = LoggerFactory.getLogger(SchedulerDcpHost.class);
   public static final String FACTORY_SERVICE_FIELD_NAME_SELF_LINK = "SELF_LINK";
@@ -43,20 +43,8 @@ public class SchedulerDcpHost
   };
 
   @Inject
-  public SchedulerDcpHost(
-      @Config.Bind String bindAddress,
-      @Config.Port int port,
-      @Config.StoragePath String storagePath)
-      throws Throwable {
-
-    ServiceHost.Arguments arguments = new ServiceHost.Arguments();
-    arguments.port = port + 1;
-    arguments.bindAddress = bindAddress;
-    arguments.sandbox = Paths.get(storagePath);
-
-    logger.info("Initializing SchedulerDcpHost on port: {} path: {}", arguments.port, storagePath);
-
-    this.initialize(arguments);
+  public SchedulerDcpHost(XenonConfig xenonConfig) throws Throwable {
+    super(xenonConfig);
   }
 
   /**

@@ -20,7 +20,9 @@ import com.vmware.photon.controller.common.thrift.HeartbeatServerSet;
 import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.common.thrift.StaticServerSetFactory;
+import com.vmware.photon.controller.common.thrift.ThriftConfig;
 import com.vmware.photon.controller.common.xenon.XenonRestClient;
+import com.vmware.photon.controller.common.xenon.host.XenonConfig;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperServerSetFactory;
 import com.vmware.photon.controller.rootscheduler.interceptors.RequestId;
 import com.vmware.photon.controller.rootscheduler.interceptors.RequestIdInterceptor;
@@ -54,13 +56,11 @@ public class RootSchedulerModule extends AbstractModule {
   @Override
   protected void configure() {
     bindInterceptor(Matchers.any(), Matchers.annotatedWith(RequestId.class), new RequestIdInterceptor());
-
-    bindConstant().annotatedWith(Config.Bind.class).to(config.getBind());
-    bindConstant().annotatedWith(Config.RegistrationAddress.class).to(config.getRegistrationAddress());
-    bindConstant().annotatedWith(Config.Port.class).to(config.getPort());
-    bindConstant().annotatedWith(Config.StoragePath.class).to(config.getStoragePath());
-    bind(BuildInfo.class).toInstance(BuildInfo.get(RootSchedulerModule.class));
+    bind(BuildInfo.class).toInstance(BuildInfo.get(this.getClass()));
     bind(Config.class).toInstance(config);
+    bind(ThriftConfig.class).toInstance(config.getThriftConfig());
+    bind(XenonConfig.class).toInstance(config.getXenonConfig());
+
     config.initRootPlaceParams();
 
     bind(ScheduledExecutorService.class)

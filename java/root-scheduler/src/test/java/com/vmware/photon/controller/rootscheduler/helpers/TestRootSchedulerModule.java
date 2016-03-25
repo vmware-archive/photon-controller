@@ -13,17 +13,17 @@
 
 package com.vmware.photon.controller.rootscheduler.helpers;
 
+import com.vmware.photon.controller.common.thrift.ThriftConfig;
+import com.vmware.photon.controller.common.xenon.host.XenonConfig;
 import com.vmware.photon.controller.rootscheduler.Config;
-import com.vmware.photon.controller.rootscheduler.SchedulerDcpHost;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Singleton;
 
 /**
  * Provides common test dependencies.
  */
 public class TestRootSchedulerModule extends AbstractModule {
+
   private final Config config;
 
   public TestRootSchedulerModule(Config config) {
@@ -32,17 +32,7 @@ public class TestRootSchedulerModule extends AbstractModule {
 
   @Override
   protected void configure() {
-    bindConstant().annotatedWith(Config.Bind.class).to(config.getBind());
-    bindConstant().annotatedWith(Config.Port.class).to(config.getPort());
-    bindConstant().annotatedWith(Config.StoragePath.class).to(config.getStoragePath());
-  }
-
-  @Provides
-  @Singleton
-  public SchedulerDcpHost createServer(
-      @Config.Bind String bind,
-      @Config.Port int port,
-      @Config.StoragePath String storagePath) throws Throwable {
-    return new SchedulerDcpHost(bind, port, storagePath);
+    bind(ThriftConfig.class).toInstance(config.getThriftConfig());
+    bind(XenonConfig.class).toInstance(config.getXenonConfig());
   }
 }
