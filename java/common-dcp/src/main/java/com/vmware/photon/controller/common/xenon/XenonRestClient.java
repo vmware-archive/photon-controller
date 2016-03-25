@@ -519,18 +519,7 @@ public class XenonRestClient implements XenonClient {
   @VisibleForTesting
   protected void handleTimeoutException(Operation operation, TimeoutException timeoutException)
       throws TimeoutException {
-    logger.warn("send: TIMEOUT {}, Message={}",
-        createLogMessageWithStatusAndBody(operation),
-        timeoutException.getMessage());
-    throw timeoutException;
-  }
-
-  @VisibleForTesting
-  protected void handleTimeoutException(OperationJoin operationJoin, TimeoutException timeoutException)
-      throws TimeoutException {
-    logger.warn("send: TIMEOUT {}, Message={}",
-        createLogMessageWithStatusAndBody(operationJoin.getOperations()),
-        timeoutException.getMessage());
+    logger.warn("send: {}", timeoutException.getMessage());
     throw timeoutException;
   }
 
@@ -538,20 +527,8 @@ public class XenonRestClient implements XenonClient {
   protected void handleInterruptedException(Operation operation, InterruptedException interruptedException)
       throws InterruptedException {
     logger.warn("send: INTERRUPTED {}, Exception={}",
-        createLogMessageWithStatusAndBody(operation),
+        OperationUtils.createLogMessageWithStatusAndBody(operation),
         interruptedException);
-    throw interruptedException;
-  }
-
-  @VisibleForTesting
-  protected void handleInterruptedException(OperationJoin operationJoin, InterruptedException interruptedException)
-      throws InterruptedException {
-    for (Operation operation : operationJoin.getOperations()) {
-      logger.warn("send: multiple operations INTERRUPTED with Exception={}",
-          interruptedException);
-      logger.warn("send: INTERRUPTED Operation={}",
-          createLogMessageWithStatusAndBody(operation));
-    }
     throw interruptedException;
   }
 
@@ -568,7 +545,7 @@ public class XenonRestClient implements XenonClient {
   @VisibleForTesting
   protected Operation send(Operation requestedOperation)
       throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException {
-    logger.info("send: STARTED {}", createLogMessageWithBody(requestedOperation));
+    logger.info("send: STARTED {}", OperationUtils.createLogMessageWithBody(requestedOperation));
     OperationLatch operationLatch = createOperationLatch(requestedOperation);
 
     client.send(requestedOperation);
@@ -594,7 +571,7 @@ public class XenonRestClient implements XenonClient {
       throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException {
 
     for (Operation requestedOperation : requestedOperations.values()) {
-      logger.info("send: STARTED {}", createLogMessageWithBody(requestedOperation));
+      logger.info("send: STARTED {}", OperationUtils.createLogMessageWithBody(requestedOperation));
     }
 
     OperationJoin operationJoin = OperationJoin.create(requestedOperations.values());
@@ -615,10 +592,10 @@ public class XenonRestClient implements XenonClient {
       for (Operation operation : completedOperations) {
         result.put(sourceLinks.get(operation.getId()), operation);
       }
-    } catch (TimeoutException timeoutException) {
-      handleTimeoutException(operationJoin, timeoutException);
-    } catch (InterruptedException interruptedException) {
-      handleInterruptedException(operationJoin, interruptedException);
+    } catch (TimeoutException | InterruptedException exception) {
+      logger.warn("OperationJoin failed. Each operation result will be handled individually. Error:{}",
+          exception.getMessage());
+      handleOperationResults(requestedOperations, operationJoin.getOperations());
     }
 
     return result;
@@ -710,7 +687,7 @@ public class XenonRestClient implements XenonClient {
         case PUT:
           // for successful DELETE, PATCH and PUT we do not need to log the status and body.
           logger.info("send: SUCCESS {}",
-              createLogMessageWithoutStatusAndBody(completedOperation));
+              OperationUtils.createLogMessageWithoutStatusAndBody(completedOperation));
           break;
         case POST:
           // fall through
@@ -720,63 +697,15 @@ public class XenonRestClient implements XenonClient {
           // for successful POST and GET we do not need to log the status,
           // but we need need to log the body to see what was returned for the posted query or get.
           logger.info("send: SUCCESS {}",
-              createLogMessageWithBody(completedOperation));
+              OperationUtils.createLogMessageWithBody(completedOperation));
       }
     } else {
       if (completedOperation.getStatusCode() == Operation.STATUS_CODE_NOT_FOUND) {
-        logger.info("send: COMPLETED {}", createLogMessageWithStatus(completedOperation));
+        logger.info("send: COMPLETED {}", OperationUtils.createLogMessageWithStatus(completedOperation));
       } else {
-        logger.warn("send: WARN {}", createLogMessageWithStatusAndBody(completedOperation));
+        logger.warn("send: WARN {}", OperationUtils.createLogMessageWithStatusAndBody(completedOperation));
       }
     }
-  }
-
-  private String createLogMessageWithoutStatusAndBody(Operation operation) {
-    return String.format(
-        "Action={%s}, OperationId={%s}, Uri={%s}, Referer={%s}, jsonBody={NOT LOGGED}",
-        operation.getAction(),
-        operation.getId(),
-        operation.getUri(),
-        operation.getReferer());
-  }
-
-  private String createLogMessageWithBody(Operation operation) {
-    return String.format(
-        "Action={%s}, OperationId={%s}, Uri={%s}, Referer={%s}, jsonBody={%s}",
-        operation.getAction(),
-        operation.getId(),
-        operation.getUri(),
-        operation.getReferer(),
-        Utils.toJson(operation.getBodyRaw()));
-  }
-
-  private String createLogMessageWithStatus(Operation operation) {
-    return String.format(
-        "Action={%s}, StatusCode={%s}, OperationId={%s}, Uri={%s}, Referer={%s}, jsonBody={NOT LOGGED}",
-        operation.getAction(),
-        operation.getStatusCode(),
-        operation.getId(),
-        operation.getUri(),
-        operation.getReferer());
-  }
-
-  private String createLogMessageWithStatusAndBody(Operation operation) {
-    return String.format(
-        "Action={%s}, StatusCode={%s}, OperationId={%s}, Uri={%s}, Referer={%s}, jsonBody={%s}",
-        operation.getAction(),
-        operation.getStatusCode(),
-        operation.getId(),
-        operation.getUri(),
-        operation.getReferer(),
-        Utils.toJson(operation.getBodyRaw()));
-  }
-
-  private String createLogMessageWithStatusAndBody(Collection<Operation> operations) {
-    StringBuilder stringBuilder = new StringBuilder();
-    for (Operation operation : operations) {
-      stringBuilder.append(createLogMessageWithStatusAndBody(operation)).append("\n");
-    }
-    return stringBuilder.toString();
   }
 
   private Operation waitForTaskToFinish(URI serviceUri)

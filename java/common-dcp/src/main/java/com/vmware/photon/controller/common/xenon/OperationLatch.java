@@ -71,7 +71,12 @@ public class OperationLatch {
   @VisibleForTesting
   protected void await(long timeout, TimeUnit unit) throws InterruptedException, TimeoutException {
     if (!latch.await(timeout, unit)) {
-      throw new TimeoutException(String.format("Timeout:{%s}, TimeUnit:{%s}", timeout, unit));
+      String timeOutMessage = String.format(
+          "TIMEOUT:{%s}, TimeUnit:{%s}, Operation:{%s}",
+          timeout,
+          unit,
+          OperationUtils.createLogMessageWithStatusAndBody(this.operation));
+      throw new TimeoutException(timeOutMessage);
     }
   }
 

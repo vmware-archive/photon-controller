@@ -129,7 +129,8 @@ public class OperationLatchTest {
         Assert.fail("Operation Latch should have timed out");
       } catch (TimeoutException e) {
         assertThat(e.getMessage(),
-            containsString(String.format("Timeout:{%s}, TimeUnit:{%s}", 1, TimeUnit.MICROSECONDS)));
+            containsString(String.format("TIMEOUT:{%s}, TimeUnit:{%s}, Operation:{%s}",
+                1, TimeUnit.MICROSECONDS, OperationUtils.createLogMessageWithStatusAndBody(operation))));
       }
     }
 
