@@ -36,7 +36,7 @@ enum GetConfigResultCode {
 // Current configuration of a host
 struct HostConfig {
   1: required string agent_id
-  2: optional string availability_zone
+
   3: required list<resource.Datastore> datastores
   // host:port this agent listens to
   4: required server_address.ServerAddress address
@@ -926,29 +926,6 @@ struct GetNetworksResponse {
   2: optional list<resource.Network> networks
 }
 
-// Struct describing the setting availability zone of the esx host.
-struct SetAvailabilityZoneRequest {
-  // The availability zone associated with the esx host.
-  1: required string availability_zone
-
-  99: optional tracing.TracingInfo tracing_info
-}
-
-// SetAvailabilityZone result code
-enum SetAvailabilityZoneResultCode {
-  // Setting AvailabilityZone was successful.
-  OK = 0
-
-  // Catch all error
-  SYSTEM_ERROR = 15
-}
-
-// SetAvailabilityZone response
-struct SetAvailabilityZoneResponse {
-  1: required SetAvailabilityZoneResultCode result
-  2: optional string error
-}
-
 // Host service
 service Host {
   scheduler.ConfigureResponse configure(1: scheduler.ConfigureRequest request)
@@ -1012,7 +989,4 @@ service Host {
    * delete tmp images.
    */
   DeleteDirectoryResponse delete_directory(1: DeleteDirectoryRequest request)
-
-  // Method to set host's availability zone.
-  SetAvailabilityZoneResponse set_availability_zone(1: SetAvailabilityZoneRequest request)
 }
