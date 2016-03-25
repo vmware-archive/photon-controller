@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.provisioner;
 
 import com.vmware.photon.controller.common.manifest.BuildInfo;
+import com.vmware.photon.controller.common.xenon.host.XenonConfig;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
 
@@ -33,16 +34,12 @@ public class ProvisionerModule extends AbstractModule {
 
   @Override
   protected void configure() {
-    bindConstant().annotatedWith(ProvisionerConfig.Bind.class).to(provisionerConfig.getBind());
-    bindConstant().annotatedWith(ProvisionerConfig.RegistrationAddress.class)
-        .to(provisionerConfig.getRegistrationAddress());
-    bindConstant().annotatedWith(ProvisionerConfig.Port.class).to(provisionerConfig.getPort());
-    bindConstant().annotatedWith(ProvisionerConfig.StoragePath.class).to(provisionerConfig.getStoragePath());
-    bind(BuildInfo.class).toInstance(BuildInfo.get(ProvisionerConfig.class));
+    bind(BuildInfo.class).toInstance(BuildInfo.get(this.getClass()));
+    bind(ProvisionerConfig.class).toInstance(provisionerConfig);
+    bind(XenonConfig.class).toInstance(provisionerConfig.getXenonConfig());
 
     install(new FactoryModuleBuilder()
         .implement(ServiceConfig.class, ServiceConfig.class)
         .build(ServiceConfigFactory.class));
-
   }
 }

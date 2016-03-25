@@ -89,7 +89,9 @@ public class Main {
 
     provisionerXenonHost.start();
 
-    registerWithZookeeper(serviceNodeFactory, provisionerConfig.getRegistrationAddress(), provisionerConfig.getPort());
+    registerWithZookeeper(serviceNodeFactory,
+        provisionerConfig.getXenonConfig().getRegistrationAddress(),
+        provisionerConfig.getXenonConfig().getPort());
   }
 
   private static ProvisionerConfig getConfig(Namespace namespace) {

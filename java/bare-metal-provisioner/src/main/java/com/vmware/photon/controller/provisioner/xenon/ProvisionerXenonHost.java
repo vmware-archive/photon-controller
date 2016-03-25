@@ -15,7 +15,8 @@ package com.vmware.photon.controller.provisioner.xenon;
 
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.XenonHostInfoProvider;
-import com.vmware.photon.controller.provisioner.ProvisionerConfig;
+import com.vmware.photon.controller.common.xenon.host.AbstractServiceHost;
+import com.vmware.photon.controller.common.xenon.host.XenonConfig;
 import com.vmware.photon.controller.provisioner.xenon.entity.DhcpConfigurationServiceFactory;
 import com.vmware.photon.controller.provisioner.xenon.entity.DhcpLeaseServiceFactory;
 import com.vmware.photon.controller.provisioner.xenon.entity.DhcpSubnetServiceFactory;
@@ -30,13 +31,11 @@ import org.slf4j.LoggerFactory;
 
 import javax.inject.Singleton;
 
-import java.nio.file.Paths;
-
 /**
  * Class to initialize a Xenon host for provisioner.
  */
 @Singleton
-public class ProvisionerXenonHost extends ServiceHost implements XenonHostInfoProvider {
+public class ProvisionerXenonHost extends AbstractServiceHost implements XenonHostInfoProvider {
   private static final Logger logger = LoggerFactory.getLogger(ProvisionerXenonHost.class);
   public static final int DEFAULT_CONNECTION_LIMIT_PER_HOST = 1024;
 
@@ -51,20 +50,9 @@ public class ProvisionerXenonHost extends ServiceHost implements XenonHostInfoPr
   };
 
   @Inject
-  public ProvisionerXenonHost(
-      @ProvisionerConfig.Bind String bindAddress,
-      @ProvisionerConfig.Port int port,
-      @ProvisionerConfig.StoragePath String storagePath
-      ) throws Throwable {
-
-    logger.info("Initializing XenonServer on port: {} path: {}", port, storagePath);
-    ServiceHost.Arguments arguments = new ServiceHost.Arguments();
-    arguments.port = port;
-    arguments.bindAddress = bindAddress;
-    arguments.sandbox = Paths.get(storagePath);
-    this.initialize(arguments);
+  public ProvisionerXenonHost(XenonConfig xenonConfig) throws Throwable {
+    super(xenonConfig);
   }
-
 
   @Override
   public ServiceHost start() throws Throwable {
@@ -89,7 +77,6 @@ public class ProvisionerXenonHost extends ServiceHost implements XenonHostInfoPr
         && checkServiceAvailable(DhcpConfigurationServiceFactory.SELF_LINK)
         && checkServiceAvailable(DhcpLeaseServiceFactory.SELF_LINK)
         && checkServiceAvailable(DhcpSubnetServiceFactory.SELF_LINK)
-
         && checkServiceAvailable(StartSlingshotFactoryService.SELF_LINK);
   }
 
@@ -97,5 +84,4 @@ public class ProvisionerXenonHost extends ServiceHost implements XenonHostInfoPr
   public Class[] getFactoryServices() {
     return FACTORY_SERVICES;
   }
-
 }
