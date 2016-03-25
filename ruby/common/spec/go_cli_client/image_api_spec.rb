@@ -74,9 +74,12 @@ describe EsxCloud::GoCliClient do
   end
 
   it "gets Image tasks" do
+    image_id = double("bar")
+    result = "task1 COMPLETED CREATE_IMAGE  1458853080000  1000
+              task2 COMPLETED DELETE_IMAGE  1458853089000  1000"
     tasks = double(EsxCloud::TaskList)
-    expect(@api_client).to receive(:get_image_tasks).with("foo", "bar").and_return(tasks)
-    expect(client.get_image_tasks("foo", "bar")).to eq(tasks)
+    expect(client).to receive(:run_cli).with("image tasks '#{image_id}' -s 'COMPLETED'").and_return(result)
+    expect(client).to receive(:get_task_list_from_response).with(result).and_return(tasks)
+    client.get_image_tasks(image_id, "COMPLETED").should == tasks
   end
-
 end

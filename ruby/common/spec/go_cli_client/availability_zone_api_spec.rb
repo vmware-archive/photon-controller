@@ -68,8 +68,12 @@ describe EsxCloud::GoCliClient do
   end
 
   it "gets availability zone tasks" do
+    availability_zone_id = "foo"
+    result = "task1 COMPLETED CREATE_AVAILABILITY-ZONE  1458853080000  1000
+              task2 COMPLETED DELETE_AVAILABILITY-ZONE  1458853089000  1000"
     tasks = double(EsxCloud::TaskList)
-    expect(@api_client).to receive(:get_availability_zone_tasks).with("foo", "a").and_return(tasks)
-    client.get_availability_zone_tasks("foo", "a").should == tasks
+    expect(client).to receive(:run_cli).with("availability-zone tasks '#{availability_zone_id}' -s 'COMPLETED'").and_return(result)
+    expect(client).to receive(:get_task_list_from_response).with(result).and_return(tasks)
+    client.get_availability_zone_tasks(availability_zone_id, "COMPLETED").should == tasks
   end
 end

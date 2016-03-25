@@ -84,4 +84,14 @@ describe EsxCloud::GoCliClient do
       client.delete_disk(disk_id).should be_true
     end
   end
+
+  it "gets disk tasks" do
+    disk_id = double("bar")
+    result = "task1 COMPLETED CREATE_DISK  1458853080000  1000
+              task2 COMPLETED DELETE_DISK  1458853089000  1000"
+    tasks = double(EsxCloud::TaskList)
+    expect(client).to receive(:run_cli).with("disk tasks '#{disk_id}' -s 'COMPLETED'").and_return(result)
+    expect(client).to receive(:get_task_list_from_response).with(result).and_return(tasks)
+    client.get_disk_tasks(disk_id, "COMPLETED").should == tasks
+  end
 end

@@ -235,4 +235,14 @@ describe EsxCloud::GoCliClient do
 
     client.perform_vm_metadata_set(vm_id, metadata: '{"key":"value"}').should == vm
   end
+
+  it "gets vm tasks" do
+    vm_id = double("bar")
+    result = "task1 COMPLETED CREATE_TENANT  1458853080000  1000
+              task2 COMPLETED DELETE_TENANT  1458853089000  1000"
+    tasks = double(EsxCloud::TaskList)
+    expect(client).to receive(:run_cli).with("vm tasks '#{vm_id}' -s 'COMPLETED'").and_return(result)
+    expect(client).to receive(:get_task_list_from_response).with(result).and_return(tasks)
+    client.get_vm_tasks(vm_id, "COMPLETED").should == tasks
+  end
 end
