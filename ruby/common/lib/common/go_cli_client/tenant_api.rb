@@ -61,7 +61,11 @@ module EsxCloud
       # @param [String] id
       # @return [TaskList]
       def get_tenant_tasks(id, state = nil)
-        @api_client.get_tenant_tasks(id, state)
+        cmd = "tenant tasks '#{id}'"
+        cmd += "  -s '#{state}'" if state
+
+        result = run_cli(cmd)
+        get_task_list_from_response(result)
       end
 
       # @param [String] id
