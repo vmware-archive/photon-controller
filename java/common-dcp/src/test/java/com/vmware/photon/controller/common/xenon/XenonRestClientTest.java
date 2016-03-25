@@ -84,8 +84,8 @@ public class XenonRestClientTest {
   /**
    * Dummy test case to make Intellij recognize this as a test class.
    */
-  @Test
-  private void dummy() {
+  @Test(enabled = false)
+  public void dummy() {
   }
 
   private void setUpHostAndClient() throws Throwable {
