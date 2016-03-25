@@ -1,0 +1,35 @@
+apply plugin: 'java'
+
+dependencies {
+  testCompile "org.hamcrest:hamcrest-all:${versions.hamcrest}"
+  testCompile "org.testng:testng:${versions.testng}"
+  testCompile "org.mockito:mockito-core:${versions.mockito}"
+  testCompile("org.powermock:powermock-api-mockito:${versions.powermock}") {
+    exclude group: 'org.mockito', module: 'mockito-all'
+  }
+  testCompile "org.powermock:powermock-module-testng:${versions.powermock}"
+}
+
+jar {
+  baseName = 'nsx-client'
+  manifest {
+    attributes 'Specification-Title': 'NSX Client Library',
+        'Specification-Version': version,
+        'Built-By': System.getProperty('user.name'),
+        'Built-Date': new Date(),
+        'Built-JDK': System.getProperty('java.version'),
+        'Built-Gradle': gradle.gradleVersion
+  }
+}
+
+tasks.withType(Test) {
+  scanForTestClasses = false
+  include "**/*Test.class"
+  exclude "**/helpers/*.class"
+}
+
+test {
+  useTestNG() {
+    excludeGroups 'flaky'
+  }
+}
