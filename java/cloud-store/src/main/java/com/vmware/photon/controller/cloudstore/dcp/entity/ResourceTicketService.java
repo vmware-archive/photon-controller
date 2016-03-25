@@ -15,9 +15,13 @@ package com.vmware.photon.controller.cloudstore.dcp.entity;
 
 import com.vmware.photon.controller.api.QuotaLineItem;
 import com.vmware.photon.controller.api.QuotaUnit;
+import com.vmware.photon.controller.cloudstore.CloudStoreModule;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
+import com.vmware.photon.controller.common.xenon.upgrade.NoMigrationDuringUpgrade;
+import com.vmware.photon.controller.common.xenon.upgrade.MigrateDuringUpgrade;
+import com.vmware.photon.controller.common.xenon.upgrade.UpgradeUtils;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
@@ -369,6 +373,7 @@ public class ResourceTicketService extends StatefulService {
   /**
    * Class encapsulating patch data for ResourceTicket.
    */
+  @NoMigrationDuringUpgrade
   public static class Patch extends ServiceDocument {
 
     public PatchType patchtype = PatchType.NONE;
@@ -388,6 +393,10 @@ public class ResourceTicketService extends StatefulService {
   /**
    * Durable service state data. Class encapsulating the data for ResourceTicket.
    */
+  @MigrateDuringUpgrade(transformationServicePath = UpgradeUtils.REFLECTION_TRANSFORMATION_SERVICE_LINK,
+      sourceFactoryServicePath = ResourceTicketServiceFactory.SELF_LINK,
+      destinationFactoryServicePath = ResourceTicketServiceFactory.SELF_LINK,
+      serviceName = CloudStoreModule.CLOUDSTORE_SERVICE_NAME)
   public static class State extends ServiceDocument {
 
     @Immutable

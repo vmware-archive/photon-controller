@@ -17,10 +17,13 @@ import com.vmware.photon.controller.api.DiskState;
 import com.vmware.photon.controller.api.DiskType;
 import com.vmware.photon.controller.api.LocalitySpec;
 import com.vmware.photon.controller.api.QuotaLineItem;
+import com.vmware.photon.controller.cloudstore.CloudStoreModule;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
+import com.vmware.photon.controller.common.xenon.upgrade.MigrateDuringUpgrade;
+import com.vmware.photon.controller.common.xenon.upgrade.UpgradeUtils;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotBlank;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
@@ -96,6 +99,10 @@ public class DiskService extends StatefulService {
   /**
    * Durable service state data. Class encapsulating the data for Disk.
    */
+  @MigrateDuringUpgrade(transformationServicePath = UpgradeUtils.REFLECTION_TRANSFORMATION_SERVICE_LINK,
+      sourceFactoryServicePath = DiskServiceFactory.SELF_LINK,
+      destinationFactoryServicePath = DiskServiceFactory.SELF_LINK,
+      serviceName = CloudStoreModule.CLOUDSTORE_SERVICE_NAME)
   public static class State extends ServiceDocument {
     @NotBlank
     @Immutable

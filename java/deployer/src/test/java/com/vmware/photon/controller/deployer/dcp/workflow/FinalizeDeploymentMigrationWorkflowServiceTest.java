@@ -26,9 +26,15 @@ import com.vmware.photon.controller.client.ApiClient;
 import com.vmware.photon.controller.client.resource.DeploymentApi;
 import com.vmware.photon.controller.client.resource.TasksApi;
 import com.vmware.photon.controller.client.resource.VmApi;
+import com.vmware.photon.controller.cloudstore.CloudStoreModule;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.FlavorService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.NetworkService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.TaskService;
+import com.vmware.photon.controller.cloudstore.xenon.upgrade.HostTransformationService;
 import com.vmware.photon.controller.common.clients.AgentControlClientFactory;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
@@ -37,6 +43,8 @@ import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
+import com.vmware.photon.controller.common.xenon.upgrade.UpgradeInformation;
+import com.vmware.photon.controller.common.xenon.upgrade.UpgradeUtils;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.deployer.DeployerConfig;
@@ -66,7 +74,7 @@ import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.NodeGroupBroadcastResponse;
 import com.vmware.xenon.services.common.QueryTask;
 
-import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -105,6 +113,7 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -841,16 +850,28 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
       ServiceHost sourceHost = sourceEnvironment.getHosts()[0];
       startState.sourceLoadBalancerAddress = sourceHost.getPublicUri().toString();
 
-      Map<String, String> factoryLinksMap = ImmutableMap.<String, String>builder()
-          .put("/photon/cloudstore/flavors", "/photon/cloudstore/flavors")
-          .put("/photon/cloudstore/images", "/photon/cloudstore/images")
-          .put("/photon/cloudstore/hosts", "/photon/cloudstore/hosts")
-          .put("/photon/cloudstore/networks", "/photon/cloudstore/networks")
-          .put("/photon/cloudstore/datastores", "/photon/cloudstore/datastores")
-          .put("/photon/cloudstore/tasks", "/photon/cloudstore/tasks")
+      List<UpgradeInformation> upgradeInfo = ImmutableList.<UpgradeInformation>builder()
+          .add(new UpgradeInformation("/photon/cloudstore/flavors", "/photon/cloudstore/flavors",
+              CloudStoreModule.CLOUDSTORE_SERVICE_NAME, UpgradeUtils.REFLECTION_TRANSFORMATION_SERVICE_LINK,
+              FlavorService.State.class))
+          .add(new UpgradeInformation("/photon/cloudstore/images", "/photon/cloudstore/images",
+              CloudStoreModule.CLOUDSTORE_SERVICE_NAME, UpgradeUtils.REFLECTION_TRANSFORMATION_SERVICE_LINK,
+              ImageService.State.class))
+          .add(new UpgradeInformation("/photon/cloudstore/hosts", "/photon/cloudstore/hosts",
+              CloudStoreModule.CLOUDSTORE_SERVICE_NAME, HostTransformationService.SELF_LINK,
+              HostService.State.class))
+          .add(new UpgradeInformation("/photon/cloudstore/networks", "/photon/cloudstore/networks",
+              CloudStoreModule.CLOUDSTORE_SERVICE_NAME, UpgradeUtils.REFLECTION_TRANSFORMATION_SERVICE_LINK,
+              NetworkService.State.class))
+          .add(new UpgradeInformation("/photon/cloudstore/datastores", "/photon/cloudstore/datastores",
+              CloudStoreModule.CLOUDSTORE_SERVICE_NAME, UpgradeUtils.REFLECTION_TRANSFORMATION_SERVICE_LINK,
+              DatastoreService.State.class))
+          .add(new UpgradeInformation("/photon/cloudstore/tasks", "/photon/cloudstore/tasks",
+              CloudStoreModule.CLOUDSTORE_SERVICE_NAME, UpgradeUtils.REFLECTION_TRANSFORMATION_SERVICE_LINK,
+              TaskService.State.class))
           .build();
 
-      when(deployerContext.getFactoryLinkMapEntries()).thenReturn(factoryLinksMap.entrySet());
+      when(deployerContext.getUpgradeInformation()).thenReturn(upgradeInfo);
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
@@ -1014,7 +1035,7 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
       assertThat((hosts.size() == 2), is(true));
     }
 
-    private Set<String> getDocuments(Class kindClass,
+    private Set<String> getDocuments(Class<?> kindClass,
                                      com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment cloudStore)
         throws Throwable {
 

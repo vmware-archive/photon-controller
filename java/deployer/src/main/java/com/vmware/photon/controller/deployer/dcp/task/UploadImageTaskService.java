@@ -24,6 +24,7 @@ import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
+import com.vmware.photon.controller.common.xenon.upgrade.NoMigrationDuringUpgrade;
 import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
 import com.vmware.photon.controller.common.xenon.validation.DefaultLong;
 import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
@@ -88,6 +89,7 @@ public class UploadImageTaskService extends StatefulService {
   /**
    * This class defines the document state associated with a {@link UploadImageTaskService} task.
    */
+  @NoMigrationDuringUpgrade
   public static class State extends ServiceDocument {
 
     /**

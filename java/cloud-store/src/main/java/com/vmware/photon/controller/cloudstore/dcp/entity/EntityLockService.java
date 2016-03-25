@@ -16,6 +16,7 @@ package com.vmware.photon.controller.cloudstore.dcp.entity;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
+import com.vmware.photon.controller.common.xenon.upgrade.NoMigrationDuringUpgrade;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotBlank;
 import com.vmware.xenon.common.Operation;
@@ -63,6 +64,7 @@ public class EntityLockService extends StatefulService {
   /**
    * Durable service state data. Class encapsulating the data for EntityLock.
    */
+  @NoMigrationDuringUpgrade
   public static class State extends ServiceDocument {
 
     @NotBlank

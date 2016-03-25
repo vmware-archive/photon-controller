@@ -14,10 +14,13 @@
 package com.vmware.photon.controller.cloudstore.dcp.entity;
 
 import com.vmware.photon.controller.api.SecurityGroup;
+import com.vmware.photon.controller.cloudstore.CloudStoreModule;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
+import com.vmware.photon.controller.common.xenon.upgrade.MigrateDuringUpgrade;
+import com.vmware.photon.controller.common.xenon.upgrade.UpgradeUtils;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotBlank;
 import com.vmware.xenon.common.Operation;
@@ -95,6 +98,10 @@ public class TenantService extends StatefulService {
   /**
    * Durable service state data. Class encapsulating the data for Tenant.
    */
+  @MigrateDuringUpgrade(transformationServicePath = UpgradeUtils.REFLECTION_TRANSFORMATION_SERVICE_LINK,
+      sourceFactoryServicePath = TenantServiceFactory.SELF_LINK,
+      destinationFactoryServicePath = TenantServiceFactory.SELF_LINK,
+      serviceName = CloudStoreModule.CLOUDSTORE_SERVICE_NAME)
   public static class State extends ServiceDocument {
 
     @NotBlank

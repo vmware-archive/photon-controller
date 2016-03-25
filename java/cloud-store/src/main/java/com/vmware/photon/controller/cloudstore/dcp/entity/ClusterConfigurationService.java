@@ -17,6 +17,7 @@ import com.vmware.photon.controller.api.ClusterType;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
+import com.vmware.photon.controller.common.xenon.upgrade.NoMigrationDuringUpgrade;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotBlank;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
@@ -57,6 +58,7 @@ public class ClusterConfigurationService extends StatefulService {
    * This class defines the document state associated with a single
    * {@link ClusterConfigurationService} instance.
    */
+  @NoMigrationDuringUpgrade
   public static class State extends ServiceDocument {
 
     @NotNull

@@ -21,6 +21,7 @@ import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
+import com.vmware.photon.controller.common.xenon.upgrade.NoMigrationDuringUpgrade;
 import com.vmware.photon.controller.common.xenon.validation.DefaultBoolean;
 import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
 import com.vmware.photon.controller.common.xenon.validation.DefaultLong;
@@ -438,6 +439,7 @@ public class EntityLockCleanerService extends StatefulService {
   /**
    * Durable service state data.
    */
+  @NoMigrationDuringUpgrade
   public static class State extends ServiceDocument {
 
     /**
