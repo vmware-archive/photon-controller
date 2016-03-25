@@ -18,6 +18,7 @@ import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
 import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.ServiceDocumentQueryResult;
 import com.vmware.xenon.common.ServiceHost;
@@ -33,12 +34,14 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.net.InetSocketAddress;
+import java.net.URI;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 /**
  * TestMachine class hosting a DCP host.
@@ -106,9 +109,65 @@ public abstract class MultiHostEnvironment<H extends ServiceHost & XenonHostInfo
           // Since the default sleep time is 200 we will use a shorter time for tests
           MultiHostEnvironment.TEST_NODE_GROUP_CONVERGENCE_SLEEP);
 
-      // wait for factories to be synchronized
-      Thread.sleep(2 * MAINTENANCE_INTERVAL_MS);
+      for (int i = 0; i < hosts.length; i++) {
+        waitForReplicatedFactoryServices(hosts[i]);
+      }
     }
+  }
+
+  private boolean checkFactoryServiceAvailable(H host, Class c) {
+    try {
+      if (FactoryService.class.isAssignableFrom(c)) {
+        if (((FactoryService) c.newInstance()).getOptions().contains(Service.ServiceOption.REPLICATION)) {
+          return checkFactoryServiceAvailable(host, c, ServiceUriPaths.DEFAULT_NODE_SELECTOR);
+        } else {
+          return checkFactoryServiceAvailable(host, c, null);
+        }
+      } else {
+        return true;
+      }
+    } catch (Throwable t) {
+      logger.error("Checking factory service availability failed: {}", t);
+      throw new RuntimeException(t);
+    }
+  }
+
+  private boolean checkFactoryServiceAvailable(H host, Class<? extends Service> c, String selector) throws Throwable {
+
+    URI availableUri = UriUtils.buildAvailableUri(UriUtils.buildUri(host, c));
+    if (selector != null) {
+      availableUri = UriUtils.buildBroadcastRequestUri(availableUri, selector);
+    }
+
+    boolean isReady[] = new boolean[1];
+    CountDownLatch countDownLatch = new CountDownLatch(1);
+    Operation getOp = Operation
+        .createGet(availableUri)
+        .setReferer(UriUtils.buildUri(host, "/multi-host-environment"))
+        .setCompletion(
+            (o, e) -> {
+              if (e != null) {
+                logger.info("Checking availability failed: " + e);
+                isReady[0] = false;
+                countDownLatch.countDown();
+                return;
+              }
+
+              if (selector == null) {
+                isReady[0] = true;
+                countDownLatch.countDown();
+                return;
+              }
+
+              NodeGroupBroadcastResponse rsp = o.getBody(NodeGroupBroadcastResponse.class);
+              logger.info("Received {} failures, {} available nodes", rsp.failures.size(), rsp.availableNodeCount);
+              isReady[0] = (rsp.failures.size() < rsp.availableNodeCount);
+              countDownLatch.countDown();
+            });
+
+    host.sendRequest(getOp);
+    countDownLatch.await();
+    return isReady[0];
   }
 
   /**
@@ -385,23 +444,16 @@ public abstract class MultiHostEnvironment<H extends ServiceHost & XenonHostInfo
     return syncOp.awaitOperationCompletion();
   }
 
-  private void waitForHostReady(final H host) throws Throwable {
+  private void waitForHostReady(H host) throws Throwable {
     String timeoutMessage = String.format("Timeout waiting for host ready, host=[%s]", host.getUri());
-    ServiceHostUtils.waitForState(new Supplier<H>() {
-                                    @Override
-                                    public H get() {
-                                      return host;
-                                    }
-                                  }, new Predicate<H>() {
-                                    @Override
-                                    public boolean test(H esxCloudDcpServiceHost) {
-                                      boolean isReady = esxCloudDcpServiceHost.isReady();
-                                      return isReady;
-                                    }
-                                  },
-        getEnvironmentCleanup(),
-        timeoutMessage
-    );
+    ServiceHostUtils.waitForState(() -> host, (h) -> h.isReady(), getEnvironmentCleanup(), timeoutMessage);
+  }
+
+  private void waitForReplicatedFactoryServices(H host) throws Throwable {
+    String timeoutMessage = String.format("Timeout waiting for factory services [host %s]", host.getUri());
+    ServiceHostUtils.waitForState(() -> host,
+        (H h) -> Stream.of(h.getFactoryServices()).allMatch((c) -> checkFactoryServiceAvailable(h, c)),
+        getEnvironmentCleanup(), timeoutMessage);
   }
 
   private void waitForReplication(String serviceUri, String serviceLink) throws Throwable {
