@@ -72,7 +72,8 @@ module EsxCloud
       end
 
       def api_clean(host_ip)
-        host = EsxCloud::Host.find_all.items.detect { |h| h.address == host_ip }
+        deployment = EsxCloud::Deployment.find_all.items.first
+        host = EsxCloud::Deployment.get_deployment_hosts(deployment.id).items.detect { |h| h.address == host_ip }
         fail "Host with [#{host_ip}] not found." if host.nil?
         enter_suspended_mode host
         EsxCloud::Host.get_host_vms(host.id).items.each { |v| delete_vm v.id }
