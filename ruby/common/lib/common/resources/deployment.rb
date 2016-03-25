@@ -21,15 +21,47 @@ module EsxCloud
       Config.client.create_api_deployment(spec.to_hash)
     end
 
+    # @param [String] json
+    # @return [Deployment]
+    def self.create_from_json(json)
+      create_from_hash(JSON.parse(json))
+    end
+
+    # @param [Hash] hash
+    # @return [Deployment]
+    def self.create_from_hash(hash)
+      unless hash.is_a?(Hash) && hash.keys.to_set.superset?(%w(id auth imageDatastores).to_set)
+        fail UnexpectedFormat, "Invalid Deployment hash: #{hash}"
+      end
+
+      if hash["clusterConfigurations"] == nil
+        cluster_configurations = nil
+      else
+        cluster_configurations = hash["clusterConfigurations"].map { |cc| ClusterConfiguration.create_from_hash(cc)}
+      end
+
+      new(hash["id"], hash["state"], hash["imageDatastores"], AuthInfo.create_from_hash(hash["auth"]),
+          StatsInfo.create_from_hash(hash["stats"]),
+          hash["syslogEndpoint"], hash["ntpEndpoint"], hash["useImageDatastoreForVms"],
+          hash["loadBalancerEnabled"],
+          MigrationStatus.create_from_hash(hash["migrationStatus"]), cluster_configurations)
+    end
+
     # @param [String] deployment_id
     # @return [Deployment]
     def self.find_deployment_by_id(deployment_id)
-      Config.client.find_deployment_by_id(deployment_id)
+      Config.client.find_deployment_by_id deployment_id
     end
 
     # @return [DeploymentList]
     def self.find_all
       Config.client.find_all_api_deployments
+    end
+
+    # @param [String] deployment_id
+    # @return [HostList]
+    def self.get_deployment_hosts(deployment_id)
+      Config.client.get_deployment_hosts deployment_id
     end
 
     # @param [String] source_deployment_address
@@ -56,32 +88,6 @@ module EsxCloud
     # @return [Boolean]
     def self.disable_cluster_type(deployment_id, spec)
       Config.client.disable_cluster_type(deployment_id, spec.to_hash)
-    end
-
-    # @param [String] json
-    # @return [Deployment]
-    def self.create_from_json(json)
-      create_from_hash(JSON.parse(json))
-    end
-
-    # @param [Hash] hash
-    # @return [Deployment]
-    def self.create_from_hash(hash)
-      unless hash.is_a?(Hash) && hash.keys.to_set.superset?(%w(id auth imageDatastores).to_set)
-        fail UnexpectedFormat, "Invalid Deployment hash: #{hash}"
-      end
-
-      if hash["clusterConfigurations"] == nil
-        cluster_configurations = nil
-      else
-        cluster_configurations = hash["clusterConfigurations"].map { |cc| ClusterConfiguration.create_from_hash(cc)}
-      end
-
-      new(hash["id"], hash["state"], hash["imageDatastores"], AuthInfo.create_from_hash(hash["auth"]),
-          StatsInfo.create_from_hash(hash["stats"]),
-          hash["syslogEndpoint"], hash["ntpEndpoint"], hash["useImageDatastoreForVms"],
-          hash["loadBalancerEnabled"],
-          MigrationStatus.create_from_hash(hash["migrationStatus"]), cluster_configurations)
     end
 
     # @param [String] id
