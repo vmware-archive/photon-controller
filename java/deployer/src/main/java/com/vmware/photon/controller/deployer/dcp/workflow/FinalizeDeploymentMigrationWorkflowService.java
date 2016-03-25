@@ -26,6 +26,7 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageToImageDatastoreMappingService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageToImageDatastoreMappingServiceFactory;
+import com.vmware.photon.controller.clustermanager.utils.ExceptionUtils;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
@@ -47,6 +48,8 @@ import com.vmware.photon.controller.deployer.dcp.task.CopyStateTaskFactoryServic
 import com.vmware.photon.controller.deployer.dcp.task.CopyStateTaskService;
 import com.vmware.photon.controller.deployer.dcp.task.CopyStateTriggerTaskService;
 import com.vmware.photon.controller.deployer.dcp.task.MigrationStatusUpdateTriggerFactoryService;
+import com.vmware.photon.controller.deployer.dcp.task.UpgradeAgentTaskFactoryService;
+import com.vmware.photon.controller.deployer.dcp.task.UpgradeAgentTaskService;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
 import com.vmware.photon.controller.deployer.dcp.util.MiscUtils;
 import com.vmware.photon.controller.deployer.dcp.util.Pair;
@@ -82,8 +85,11 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 /**
@@ -110,6 +116,7 @@ public class FinalizeDeploymentMigrationWorkflowService extends StatefulService 
       MIGRATE_FINAL,
       DATA_ADJUSTMENT,
       REINSTALL_AGENTS,
+      UPGRADE_AGENTS,
       RESUME_DESTINATION_SYSTEM,
     }
   }
@@ -251,12 +258,70 @@ public class FinalizeDeploymentMigrationWorkflowService extends StatefulService 
       case REINSTALL_AGENTS:
         reinstallAgents(currentState);
         break;
+      case UPGRADE_AGENTS:
+        upgradeAgents(currentState);
+        break;
       case RESUME_DESTINATION_SYSTEM:
         resumeDestinationSystem(currentState);
         break;
     }
   }
 
+  private void validateState(State currentState) {
+    ValidationUtils.validateState(currentState);
+    ValidationUtils.validateTaskStage(currentState.taskState);
+    validateTaskSubStage(currentState.taskState);
+
+    if (TaskState.TaskStage.STARTED == currentState.taskState.stage) {
+      switch (currentState.taskState.subStage) {
+        case PAUSE_SOURCE_SYSTEM:
+          break;
+        case UPGRADE_AGENTS:
+        case REINSTALL_AGENTS:
+        case MIGRATE_FINAL:
+        case RESUME_DESTINATION_SYSTEM:
+        case DATA_ADJUSTMENT:
+          // fall through
+        case STOP_MIGRATE_TASKS:
+          checkState(null != currentState.sourceDeploymentId);
+          break;
+        default:
+          throw new IllegalStateException("Unknown task sub-stage: " + currentState.taskState.subStage);
+      }
+    } else {
+      checkState(null == currentState.taskState.subStage, "Sub-stage must be null in stages other than STARTED.");
+    }
+  }
+
+  private void validateTaskSubStage(TaskState taskState) {
+    switch (taskState.stage) {
+      case CREATED:
+        checkState(null == taskState.subStage);
+        break;
+      case STARTED:
+        checkState(null != taskState.subStage);
+        break;
+      case FINISHED:
+      case FAILED:
+      case CANCELLED:
+        checkState(null == taskState.subStage);
+        break;
+    }
+  }
+
+  private void validatePatchState(State currentState, State patchState) {
+    ValidationUtils.validatePatch(currentState, patchState);
+    ValidationUtils.validateTaskStage(patchState.taskState);
+    ValidationUtils.validateTaskStageProgression(currentState.taskState, patchState.taskState);
+
+    if (null != currentState.taskState.subStage && null != patchState.taskState.subStage) {
+      checkState(patchState.taskState.subStage.ordinal() >= currentState.taskState.subStage.ordinal());
+    }
+  }
+
+  //
+  // DATA_ADJUSTMENT sub-stage routines
+  //
   private void dataAdjustment(State currentState) throws Throwable {
     ZookeeperClient zookeeperClient
       = ((ZookeeperClientFactoryProvider) getHost()).getZookeeperServerSetFactoryBuilder().create();
@@ -424,57 +489,9 @@ public class FinalizeDeploymentMigrationWorkflowService extends StatefulService 
     return ops;
   }
 
-  private void validateState(State currentState) {
-    ValidationUtils.validateState(currentState);
-    ValidationUtils.validateTaskStage(currentState.taskState);
-    validateTaskSubStage(currentState.taskState);
-
-    if (TaskState.TaskStage.STARTED == currentState.taskState.stage) {
-      switch (currentState.taskState.subStage) {
-        case PAUSE_SOURCE_SYSTEM:
-          break;
-        case REINSTALL_AGENTS:
-        case MIGRATE_FINAL:
-        case RESUME_DESTINATION_SYSTEM:
-        case DATA_ADJUSTMENT:
-          // fall through
-        case STOP_MIGRATE_TASKS:
-          checkState(null != currentState.sourceDeploymentId);
-          break;
-        default:
-          throw new IllegalStateException("Unknown task sub-stage: " + currentState.taskState.subStage);
-      }
-    } else {
-      checkState(null == currentState.taskState.subStage, "Sub-stage must be null in stages other than STARTED.");
-    }
-  }
-
-  private void validateTaskSubStage(TaskState taskState) {
-    switch (taskState.stage) {
-      case CREATED:
-        checkState(null == taskState.subStage);
-        break;
-      case STARTED:
-        checkState(null != taskState.subStage);
-        break;
-      case FINISHED:
-      case FAILED:
-      case CANCELLED:
-        checkState(null == taskState.subStage);
-        break;
-    }
-  }
-
-  private void validatePatchState(State currentState, State patchState) {
-    ValidationUtils.validatePatch(currentState, patchState);
-    ValidationUtils.validateTaskStage(patchState.taskState);
-    ValidationUtils.validateTaskStageProgression(currentState.taskState, patchState.taskState);
-
-    if (null != currentState.taskState.subStage && null != patchState.taskState.subStage) {
-      checkState(patchState.taskState.subStage.ordinal() >= currentState.taskState.subStage.ordinal());
-    }
-  }
-
+  //
+  // PAUSE_SOURCE_SYSTEM sub-stage routines
+  //
   private void pauseSourceSystem(final State currentState) throws Throwable {
     getDeployment(currentState, currentState.sourceLoadBalancerAddress, new FutureCallback<ResourceList<Deployment>>() {
       @Override
@@ -587,6 +604,9 @@ public class FinalizeDeploymentMigrationWorkflowService extends StatefulService 
     }
   }
 
+  //
+  // STOP_MIGRATE_TASKS sub-stage routines
+  //
   private void stopMigrateTasks(State currentState) {
     // stop the copy-state trigger
     Operation copyStateTaskTriggerQuery = generateQueryCopyStateTaskTriggerQuery();
@@ -707,6 +727,9 @@ public class FinalizeDeploymentMigrationWorkflowService extends StatefulService 
         .setTermMatchValue(value);
   }
 
+  //
+  // REINSTALL_AGENTS sub-stage routines
+  //
   private void reinstallAgents(State currentState) {
 
     sendRequest(
@@ -737,8 +760,7 @@ public class FinalizeDeploymentMigrationWorkflowService extends StatefulService 
             State failPatchState = null;
             switch (result.taskState.stage) {
               case FINISHED:
-                State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.RESUME_DESTINATION_SYSTEM
-                    , null);
+                State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.UPGRADE_AGENTS, null);
                 TaskUtils.sendSelfPatch(FinalizeDeploymentMigrationWorkflowService.this, patchState);
                 break;
               case FAILED:
@@ -793,6 +815,125 @@ public class FinalizeDeploymentMigrationWorkflowService extends StatefulService 
         provisionCallback);
   }
 
+  //
+  // UPGRADE_AGENT sub-stage routines
+  //
+  private QueryTask.QuerySpecification buildQuerySpecificationForUpgradeAgents() {
+
+    QueryTask.Query kindClause = new QueryTask.Query()
+        .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
+        .setTermMatchValue(Utils.buildKind(HostService.State.class));
+
+    String usageTagsKey = QueryTask.QuerySpecification.buildCollectionItemName(
+        HostService.State.FIELD_NAME_USAGE_TAGS);
+
+    QueryTask.Query cloudUsageTagClause = new QueryTask.Query()
+        .setTermPropertyName(usageTagsKey)
+        .setTermMatchValue(UsageTag.CLOUD.name());
+
+    QueryTask.Query mgmtUsageTagClause = new QueryTask.Query()
+        .setTermPropertyName(usageTagsKey)
+        .setTermMatchValue(UsageTag.MGMT.name());
+    mgmtUsageTagClause.occurance = QueryTask.Query.Occurance.MUST_NOT_OCCUR;
+
+    QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
+    querySpecification.query.addBooleanClause(kindClause);
+    querySpecification.query.addBooleanClause(cloudUsageTagClause);
+    querySpecification.query.addBooleanClause(mgmtUsageTagClause);
+    return querySpecification;
+  }
+
+  private void upgradeAgents(final State currentState) {
+
+    QueryTask.QuerySpecification querySpecification = buildQuerySpecificationForUpgradeAgents();
+    sendRequest(
+        HostUtils.getCloudStoreHelper(this)
+            .createBroadcastPost(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS, ServiceUriPaths.DEFAULT_NODE_SELECTOR)
+            .setBody(QueryTask.create(querySpecification).setDirect(true))
+            .setCompletion(
+                (completedOp, failure) -> {
+                  if (null != failure) {
+                    failTask(failure);
+                    return;
+                  }
+
+                  try {
+                    NodeGroupBroadcastResponse queryResponse = completedOp.getBody(NodeGroupBroadcastResponse.class);
+                    Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(queryResponse);
+                    if (documentLinks.isEmpty()) {
+                      TaskUtils.sendSelfPatch(FinalizeDeploymentMigrationWorkflowService.this,
+                          buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.RESUME_DESTINATION_SYSTEM, null));
+                      return;
+                    }
+                    upgradeAgents(currentState, documentLinks);
+                  } catch (Throwable t) {
+                    failTask(t);
+                  }
+                }
+            ));
+  }
+
+  private void upgradeAgents(final State currentState, Set<String> hostServiceLinks){
+
+    final Queue<Throwable> exceptions = new ConcurrentLinkedQueue<>();
+    final AtomicInteger latch = new AtomicInteger(hostServiceLinks.size());
+
+    for (String hostServiceLink: hostServiceLinks) {
+      FutureCallback<UpgradeAgentTaskService.State> callback = new FutureCallback<UpgradeAgentTaskService.State>() {
+        @Override
+        public void onSuccess(@Nullable UpgradeAgentTaskService.State result) {
+          switch (result.taskState.stage) {
+            case FINISHED:
+              break;
+            case CANCELLED:
+              exceptions.add(new IllegalStateException(String.format(
+                  "UpgradeAgentTaskService was canceled. %s",
+                  result.documentSelfLink)));
+              break;
+            case FAILED:
+              exceptions.add(new IllegalStateException(String.format(
+                  "UpgradeAgentTaskService failed with error %s. %s",
+                  result.taskState.failure.message,
+                  result.documentSelfLink)));
+              break;
+          }
+
+          if (0 == latch.decrementAndGet()) {
+            if (0 == exceptions.size()) {
+              TaskUtils.sendSelfPatch(FinalizeDeploymentMigrationWorkflowService.this,
+                  buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.RESUME_DESTINATION_SYSTEM, null));
+            } else {
+              failTask(ExceptionUtils.createMultiException(exceptions));
+            }
+          }
+        }
+
+        @Override
+        public void onFailure(Throwable t) {
+          exceptions.add(t);
+          if (0 == latch.decrementAndGet()) {
+            failTask(ExceptionUtils.createMultiException(exceptions));
+          }
+        }
+      };
+
+      UpgradeAgentTaskService.State startState = new UpgradeAgentTaskService.State();
+      startState.hostServiceLink = hostServiceLink;
+
+      TaskUtils.startTaskAsync(
+          FinalizeDeploymentMigrationWorkflowService.this,
+          UpgradeAgentTaskFactoryService.SELF_LINK,
+          startState,
+          (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage),
+          UpgradeAgentTaskService.State.class,
+          currentState.taskPollDelay,
+          callback);
+    }
+  }
+
+  //
+  // MIGRATE_FINAL sub-stage routines
+  //
   private void migrateFinal(State currentState) {
     generateQueryCopyStateTaskQuery()
       .setCompletion((o, t) -> {
@@ -862,6 +1003,9 @@ public class FinalizeDeploymentMigrationWorkflowService extends StatefulService 
       .sendWith(this);
   }
 
+  //
+  // STOP_MIGRATE_TASKS sub-stage routines
+  //
   private void stopMigrationUpdateService(State currentState) {
     Operation delete = Operation.createDelete(this,
         MigrationStatusUpdateTriggerFactoryService.SELF_LINK + "/" + currentState.destinationDeploymentId)
@@ -879,6 +1023,9 @@ public class FinalizeDeploymentMigrationWorkflowService extends StatefulService 
     sendRequest(delete);
   }
 
+  //
+  // RESUME_DESTINATION sub-stage routines
+  //
   private void resumeDestinationSystem(final State currentState) throws Throwable {
     ApiClient client = HostUtils.getApiClient(this);
 
