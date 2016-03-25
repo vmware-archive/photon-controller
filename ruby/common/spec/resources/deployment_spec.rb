@@ -15,6 +15,7 @@ describe EsxCloud::Deployment do
 
   let(:client) { double(EsxCloud::ApiClient) }
   let(:deployment) { double(EsxCloud::Deployment) }
+  let(:hostList) { double(EsxCloud::HostList) }
 
   before(:each) do
     allow(EsxCloud::Config).to receive(:client).and_return(client)
@@ -32,12 +33,17 @@ describe EsxCloud::Deployment do
     expect(EsxCloud::Deployment.find_deployment_by_id("deployment_id")).to eq deployment
   end
 
+  it "delegates get_deployment_hosts to client" do
+    expect(client).to receive(:get_deployment_hosts).with("deployment_id").and_return(hostList)
+    expect(EsxCloud::Deployment.get_deployment_hosts("deployment_id")).to eq hostList
+  end
+
   it "delegates delete to client" do
     expect(client).to receive(:delete_api_deployment).with("deployment_id").and_return(true)
     expect(EsxCloud::Deployment.delete("deployment_id")).to eq true
   end
 
-  it "delegates update to client" do
+  it "delegates update_security_groups to client" do
     security_groups = ["adminGroup1", "adminGroup2"]
     security_groups_in_hash = {items: security_groups}
     expect(client).to receive(:update_security_groups)
