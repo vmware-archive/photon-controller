@@ -55,7 +55,7 @@ public enum RenamedFieldHandler {
     return result;
   }
 
-  private static Object getNamedFieldValue(Object jsonObject, String fieldName, Class fieldType) {
+  private static Object getNamedFieldValue(Object jsonObject, String fieldName, Class<?> fieldType) {
     Object fieldValue = Utils.getJsonMapValue(jsonObject, fieldName, fieldType);
     return fieldValue;
   }
