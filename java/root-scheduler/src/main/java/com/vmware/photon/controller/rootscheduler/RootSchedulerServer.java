@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.rootscheduler;
 
 import com.vmware.photon.controller.common.manifest.BuildInfo;
+import com.vmware.photon.controller.common.thrift.ThriftConfig;
 import com.vmware.photon.controller.common.thrift.ThriftFactory;
 import com.vmware.photon.controller.common.zookeeper.ServiceNode;
 import com.vmware.photon.controller.common.zookeeper.ServiceNodeEventHandler;
@@ -55,18 +56,16 @@ public class RootSchedulerServer {
   private volatile ServiceNode serviceNode;
 
   @Inject
-  public RootSchedulerServer(@Config.Bind String bind,
-                             @Config.RegistrationAddress String registrationAddress,
-                             @Config.Port int port,
+  public RootSchedulerServer(ThriftConfig thriftConfig,
                              RootScheduler.Iface rootSchedulerService,
                              TProtocolFactory protocolFactory,
                              TTransportFactory transportFactory,
                              ServiceNodeFactory serviceNodeFactory,
                              BuildInfo buildInfo,
                              ThriftFactory thriftFactory) {
-    this.bind = bind;
-    this.registrationAddress = registrationAddress;
-    this.port = port;
+    this.bind = thriftConfig.getBindAddress();
+    this.registrationAddress = thriftConfig.getRegistrationAddress();
+    this.port = thriftConfig.getPort();
     this.rootSchedulerService = rootSchedulerService;
     this.protocolFactory = protocolFactory;
     this.transportFactory = transportFactory;
