@@ -14,12 +14,12 @@
 package com.vmware.photon.controller.api;
 
 /**
- * Agent state, this state is controlled by chairman. The active state, refers to an agent that
- * has registered and is not missing. The Missing state, refers to an agent that has registered
- * and has been reported as missing.
+ * Agent state, this state is controlled by the scheduler. The active state, refers to an agent
+ * that is reachable by the host monitoring service. The Missing state, refers to an agent that
+ * has is not reachable by the host monitoring service.
  */
 
 public enum AgentState {
-    ACTIVE,
-    MISSING;
+  ACTIVE,
+  MISSING;
 }

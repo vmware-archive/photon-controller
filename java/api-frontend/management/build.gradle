@@ -32,7 +32,6 @@ dependencies {
   compile 'org.postgresql:postgresql:9.2-1003-jdbc4'
 
   thrift files('../../../thrift/host.thrift',
-      '../../../thrift/chairman.thrift',
       '../../../thrift/resource.thrift',
       '../../../thrift/scheduler.thrift',
       '../../../thrift/root_scheduler.thrift',

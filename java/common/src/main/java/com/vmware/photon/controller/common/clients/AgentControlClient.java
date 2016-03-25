@@ -54,8 +54,8 @@ import java.util.concurrent.TimeUnit;
  * Note that this class is not thread safe, because thrift's TAsyncClient is not thread
  * safe and only allows one method call at a time.
  * <p>
- * Instances of AgentControlClient, HostClient, RootSchedulerClient and ChairmanClient
- * reuses and shares global TAsyncClientManager and ClientProxyExecutor, so it is fairly
+ * Instances of AgentControlClient, HostClient and RootSchedulerClient reuses and
+ * shares global TAsyncClientManager and ClientProxyExecutor, so it is fairly
  * cheap to create a new client instance for each use.
  */
 @RpcClient
