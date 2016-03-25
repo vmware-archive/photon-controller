@@ -9,6 +9,7 @@
 # conditions of any kind, EITHER EXPRESS OR IMPLIED. See the License for the
 # specific language governing permissions and limitations under the License.
 
+require 'date'
 require 'net/http'
 require 'json'
 require 'fileutils'
@@ -33,6 +34,14 @@ module StatsHelper
     end until json.length > 0 || (Time.now - start) > maxSeconds
     return [] if json.nil? || json.first.nil? || json.first["datapoints"].nil?
     # Filter nil elements, makes test output nicer when printing the result
+
+    len = json.first["datapoints"].length
+    start_time = json.first["datapoints"][0].last
+    end_time = json.first["datapoints"][len-1].last
+    start_time_utc = Time.at(start_time).utc.to_datetime
+    end_time_utc = Time.at(end_time).utc.to_datetime
+    puts "Graphite collected Start time: #{start_time_utc}, End time: #{end_time_utc}"
+    json.first["datapoints"].select { |x| x.first != nil }
     return json.first["datapoints"].select { |x| x.first != nil }
   end
 
