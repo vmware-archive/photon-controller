@@ -38,9 +38,7 @@ import com.vmware.photon.controller.common.clients.RootSchedulerClient;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
-import com.vmware.photon.controller.common.zookeeper.gen.ServerAddress;
 import com.vmware.photon.controller.resource.gen.Resource;
-import com.vmware.photon.controller.scheduler.gen.FindResponse;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
@@ -227,8 +225,7 @@ public class TaskCommand extends BaseCommand {
         return hostClient;
       }
     }
-    invokeRootScheduler(vm);
-    return hostClient;
+    throw new VmNotFoundException(vm.getId());
   }
 
   public HostClient findHost(BaseDiskEntity disk)
@@ -248,7 +245,7 @@ public class TaskCommand extends BaseCommand {
     }
 
     if (disk.getAgent() == null || !foundDisk) {
-      invokeRootScheduler(disk);
+      throw new DiskNotFoundException(disk.getKind(), disk.getId());
     }
 
     return hostClient;
@@ -277,34 +274,4 @@ public class TaskCommand extends BaseCommand {
 
     return hostState.hostAddress;
   }
-
-  private void invokeRootScheduler(BaseDiskEntity disk)
-      throws RpcException, InterruptedException, DiskNotFoundException {
-    logger.warn("disk {} does not have agentId, looking up from the scheduler", disk.getId());
-    try {
-      FindResponse response = rootSchedulerClient.findDisk(disk.getId());
-      disk.setAgent(response.getAgent_id());
-      ServerAddress serverAddress = response.getAddress();
-      hostClient.setIpAndPort(serverAddress.getHost(), serverAddress.getPort());
-    } catch (com.vmware.photon.controller.common.clients.exceptions.DiskNotFoundException ex) {
-      throw new DiskNotFoundException(disk.getKind(), disk.getId());
-    }
-  }
-
-  private void invokeRootScheduler(VmEntity vm)
-      throws RpcException, InterruptedException, VmNotFoundException {
-    logger.warn("vm {} does not have agentId or hostIp, looking up from the scheduler", vm.getId());
-    try {
-      FindResponse response = rootSchedulerClient.findVm(vm.getId());
-      vm.setAgent(response.getAgent_id());
-      if (response.getDatastore() != null) {
-        vm.setDatastore(response.getDatastore().getId());
-      }
-      ServerAddress serverAddress = response.getAddress();
-      hostClient.setIpAndPort(serverAddress.getHost(), serverAddress.getPort());
-    } catch (com.vmware.photon.controller.common.clients.exceptions.VmNotFoundException ex) {
-      throw new VmNotFoundException(vm.getId());
-    }
-  }
-
 }

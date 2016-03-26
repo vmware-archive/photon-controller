@@ -28,9 +28,6 @@ import com.vmware.photon.controller.rootscheduler.interceptors.RequestId;
 import com.vmware.photon.controller.scheduler.gen.ConfigureRequest;
 import com.vmware.photon.controller.scheduler.gen.ConfigureResponse;
 import com.vmware.photon.controller.scheduler.gen.ConfigureResultCode;
-import com.vmware.photon.controller.scheduler.gen.FindRequest;
-import com.vmware.photon.controller.scheduler.gen.FindResponse;
-import com.vmware.photon.controller.scheduler.gen.FindResultCode;
 import com.vmware.photon.controller.scheduler.gen.PlaceRequest;
 import com.vmware.photon.controller.scheduler.gen.PlaceResponse;
 import com.vmware.photon.controller.scheduler.gen.PlaceResultCode;
@@ -266,11 +263,6 @@ public class FlatSchedulerService implements RootScheduler.Iface, ServiceNodeEve
       logger.info("Returning bestResponse: {} in {} ms", response, watch.elapsed(TimeUnit.MILLISECONDS));
     }
     return response;
-  }
-
-  @Override
-  public FindResponse find(FindRequest request) throws TException {
-    return new FindResponse(FindResultCode.NOT_FOUND);
   }
 
   @Override

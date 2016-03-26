@@ -14,25 +14,17 @@
 package com.vmware.photon.controller.common.clients;
 
 import com.vmware.photon.controller.common.clients.exceptions.ComponentClientExceptionHandler;
-import com.vmware.photon.controller.common.clients.exceptions.DiskNotFoundException;
 import com.vmware.photon.controller.common.clients.exceptions.InvalidSchedulerException;
 import com.vmware.photon.controller.common.clients.exceptions.NoSuchResourceException;
 import com.vmware.photon.controller.common.clients.exceptions.NotEnoughCpuResourceException;
 import com.vmware.photon.controller.common.clients.exceptions.NotEnoughDatastoreCapacityException;
 import com.vmware.photon.controller.common.clients.exceptions.NotEnoughMemoryResourceException;
-import com.vmware.photon.controller.common.clients.exceptions.NotFoundException;
 import com.vmware.photon.controller.common.clients.exceptions.NotLeaderException;
 import com.vmware.photon.controller.common.clients.exceptions.ResourceConstraintException;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
 import com.vmware.photon.controller.common.clients.exceptions.SystemErrorException;
-import com.vmware.photon.controller.common.clients.exceptions.VmNotFoundException;
 import com.vmware.photon.controller.common.thrift.ClientProxy;
-import com.vmware.photon.controller.resource.gen.DiskLocator;
-import com.vmware.photon.controller.resource.gen.Locator;
 import com.vmware.photon.controller.resource.gen.Resource;
-import com.vmware.photon.controller.resource.gen.VmLocator;
-import com.vmware.photon.controller.scheduler.gen.FindRequest;
-import com.vmware.photon.controller.scheduler.gen.FindResponse;
 import com.vmware.photon.controller.scheduler.gen.PlaceRequest;
 import com.vmware.photon.controller.scheduler.gen.PlaceResponse;
 import com.vmware.photon.controller.scheduler.root.gen.RootScheduler;
@@ -54,12 +46,6 @@ public class RootSchedulerClient implements StatusProvider {
 
   private static final Logger logger = LoggerFactory.getLogger(RootSchedulerClient.class);
 
-  private static final int FIND_MAX_RETRIES = 1;
-
-  private static final long FIND_RETRY_INTERVAL_MS = 1000;
-
-  private static final long FIND_TIMEOUT_MS = 120000; // 2 min
-
   private static final long PLACE_TIMEOUT_MS = 120000; // 2 min
 
   private static final long STATUS_CALL_TIMEOUT_MS = 5000; // 5 sec
@@ -70,75 +56,6 @@ public class RootSchedulerClient implements StatusProvider {
   public RootSchedulerClient(ClientProxy<RootScheduler.AsyncClient> proxy) {
     logger.info("Calling RootSchedulerClient constructor: {}", System.identityHashCode(this));
     this.proxy = proxy;
-  }
-
-  public FindResponse findVm(String vmId) throws RpcException, InterruptedException {
-    try {
-      Locator locator = new Locator();
-      locator.setVm(new VmLocator(vmId));
-      FindResponse response = findWithRetries(locator);
-      return response;
-    } catch (NotFoundException e) {
-      throw new VmNotFoundException(e);
-    }
-  }
-
-  public FindResponse findDisk(String diskId) throws RpcException, InterruptedException {
-    try {
-      Locator locator = new Locator();
-      locator.setDisk(new DiskLocator(diskId));
-      return findWithRetries(locator);
-    } catch (NotFoundException e) {
-      throw new DiskNotFoundException(e);
-    }
-  }
-
-  public FindResponse findWithRetries(Locator locator) throws RpcException, InterruptedException {
-    int retries = FIND_MAX_RETRIES;
-
-    for (int i = 0; i <= retries; i++) {
-      try {
-        return find(locator);
-      } catch (RpcException e) {
-        logger.warn("retrying failed findById resource: {}", locator, e);
-        Thread.sleep(FIND_RETRY_INTERVAL_MS);
-      }
-    }
-
-    logger.warn("gave up finding resource: {}", locator);
-    throw new NotFoundException();
-  }
-
-  @RpcMethod
-  public FindResponse find(Locator locator) throws RpcException, InterruptedException {
-    try {
-      RootScheduler.AsyncClient client = proxy.get();
-
-      SyncHandler<FindResponse, RootScheduler.AsyncClient.find_call> handler = new SyncHandler<>();
-      client.setTimeout(FIND_TIMEOUT_MS);
-      FindRequest findRequestRequest = new FindRequest(locator);
-      client.find(findRequestRequest, handler);
-      handler.await();
-      logger.info("Find request: {}", findRequestRequest);
-
-      FindResponse response = handler.getResponse();
-      switch (response.getResult()) {
-        case OK:
-          break;
-        case NOT_LEADER:
-          throw new NotLeaderException();
-        case NOT_FOUND:
-          throw new NotFoundException();
-        case SYSTEM_ERROR:
-          throw new SystemErrorException(response.getError());
-        default:
-          throw new RpcException(String.format("Unknown result: %s", response.getResult()));
-      }
-
-      return response;
-    } catch (TException e) {
-      throw new RpcException(e);
-    }
   }
 
   @RpcMethod

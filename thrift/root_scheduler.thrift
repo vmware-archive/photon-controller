@@ -24,5 +24,4 @@ service RootScheduler {
   status.Status get_status(1:status.GetStatusRequest request)
   scheduler.ConfigureResponse configure(1: scheduler.ConfigureRequest request)
   scheduler.PlaceResponse place(1: scheduler.PlaceRequest request)
-  scheduler.FindResponse find(1: scheduler.FindRequest request)
 }

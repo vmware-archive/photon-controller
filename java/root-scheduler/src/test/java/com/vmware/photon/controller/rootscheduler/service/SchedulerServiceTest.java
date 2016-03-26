@@ -16,8 +16,6 @@ import com.vmware.photon.controller.roles.gen.GetSchedulersResponse;
 import com.vmware.photon.controller.rootscheduler.Config;
 import com.vmware.photon.controller.scheduler.gen.ConfigureRequest;
 import com.vmware.photon.controller.scheduler.gen.ConfigureResponse;
-import com.vmware.photon.controller.scheduler.gen.FindRequest;
-import com.vmware.photon.controller.scheduler.gen.FindResponse;
 import com.vmware.photon.controller.scheduler.gen.PlaceRequest;
 import com.vmware.photon.controller.scheduler.gen.PlaceResponse;
 import com.vmware.photon.controller.status.gen.GetStatusRequest;
@@ -83,15 +81,6 @@ public class SchedulerServiceTest {
     doReturn(new PlaceResponse()).when(flatSchedulerService).place(request);
     schedulerService.place(request);
     verify(flatSchedulerService, times(1)).place(request);
-  }
-
-  @Test
-  public void testFind() throws TException {
-    schedulerService = new SchedulerService(config, flatSchedulerService);
-    FindRequest request = new FindRequest();
-    doReturn(new FindResponse()).when(flatSchedulerService).find(request);
-    schedulerService.find(request);
-    verify(flatSchedulerService, times(1)).find(request);
   }
 
   @Test
