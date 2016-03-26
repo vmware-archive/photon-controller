@@ -41,25 +41,18 @@ import com.vmware.photon.controller.common.clients.RootSchedulerClient;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
 import com.vmware.photon.controller.common.clients.exceptions.VmNotFoundException;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
-import com.vmware.photon.controller.common.zookeeper.gen.ServerAddress;
 import com.vmware.photon.controller.host.gen.VmDiskOpError;
 import com.vmware.photon.controller.host.gen.VmDiskOpResultCode;
 import com.vmware.photon.controller.host.gen.VmDisksOpResponse;
 import com.vmware.photon.controller.resource.gen.Datastore;
 import com.vmware.photon.controller.resource.gen.Disk;
-import com.vmware.photon.controller.scheduler.gen.FindResponse;
 
-import org.mockito.InOrder;
 import org.mockito.Matchers;
 import org.mockito.Mock;
 import org.powermock.modules.testng.PowerMockTestCase;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-import static org.mockito.Matchers.anyList;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.powermock.api.mockito.PowerMockito.spy;
 
@@ -183,8 +176,6 @@ public class VmDiskOpStepCmdTest extends PowerMockTestCase {
   private List<PersistentDiskEntity> persistentDiskEntities;
   private List<PersistentDiskEntity> baseDiskEntities;
 
-  private FindResponse findResponse;
-
   @BeforeMethod
   public void setUp() throws Exception, DocumentNotFoundException {
     attachedDiskIds = new ArrayList<>();
@@ -238,14 +229,8 @@ public class VmDiskOpStepCmdTest extends PowerMockTestCase {
     attachedDiskEntity2.setId(attachedDiskId2);
     attachedDiskEntities.add(attachedDiskEntity2);
 
-    findResponse = new FindResponse();
     Datastore datastore = new Datastore();
     datastore.setId("datastore-id");
-    findResponse.setDatastore(datastore);
-    ServerAddress serverAddress = new ServerAddress();
-    serverAddress.setHost("0.0.0.0");
-    serverAddress.setPort(0);
-    findResponse.setAddress(serverAddress);
 
     when(diskBackend.find(PersistentDisk.KIND, diskId1)).thenReturn(disk1);
     when(diskBackend.find(PersistentDisk.KIND, diskId2)).thenReturn(disk2);
@@ -260,7 +245,6 @@ public class VmDiskOpStepCmdTest extends PowerMockTestCase {
 
     when(attachedDiskBackend.findAttachedDisk(disk1)).thenReturn(attachedDiskEntity1);
     when(attachedDiskBackend.findAttachedDisk(disk2)).thenReturn(attachedDiskEntity2);
-    when(taskCommand.getRootSchedulerClient().findVm(vmId)).thenReturn(findResponse);
     when(taskCommand.getHostClient()).thenReturn(hostClient);
     HostService.State hostServiceState = new HostService.State();
     hostServiceState.hostAddress = "host-ip";
@@ -282,33 +266,14 @@ public class VmDiskOpStepCmdTest extends PowerMockTestCase {
     verify(attachedDiskBackend).attachDisks(vm, persistentDiskEntities);
   }
 
-  @Test(expectedExceptions = VmNotFoundException.class)
+  @Test(expectedExceptions = com.vmware.photon.controller.apife.exceptions.external.VmNotFoundException.class)
   public void testFailedAttachDiskVmNotFound() throws Exception {
     when(hostClient.attachDisks(vmId, attachedDiskIds)).thenThrow(VmNotFoundException.class);
 
     VmDiskOpStepCmd command = getVmDiskOpStepCmd(Operation.ATTACH_DISK);
     vm.setAgent("some-agent");
+    vm.setHost("0.0.0.0");
     command.execute();
-  }
-
-  @Test
-  public void testStaleAgent() throws Exception {
-    vm.setAgent("staled-agent");
-    VmDiskOpStepCmd command = getVmDiskOpStepCmd(Operation.ATTACH_DISK);
-
-    when(rootSchedulerClient.findVm(vmId)).thenReturn(findResponse);
-    when(hostClient.attachDisks(anyString(), anyList())).thenThrow(
-        new VmNotFoundException("Error")).thenReturn(SUCCESSFUL_VM_DISKOP_RESPONSE);
-
-    command.execute();
-
-    InOrder inOrder = inOrder(hostClient, rootSchedulerClient);
-    inOrder.verify(hostClient).setHostIp("host-ip");
-    inOrder.verify(hostClient).attachDisks(vmId, attachedDiskIds);
-    inOrder.verify(rootSchedulerClient).findVm(vmId);
-    inOrder.verify(hostClient).setIpAndPort("0.0.0.0", 0);
-    inOrder.verify(hostClient).attachDisks(vmId, attachedDiskIds);
-    verifyNoMoreInteractions(hostClient, rootSchedulerClient);
   }
 
   @Test(expectedExceptions = RpcException.class)

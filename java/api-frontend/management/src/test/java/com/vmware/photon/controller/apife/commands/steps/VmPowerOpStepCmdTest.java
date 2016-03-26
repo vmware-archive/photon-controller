@@ -30,14 +30,11 @@ import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HousekeeperClient;
 import com.vmware.photon.controller.common.clients.RootSchedulerClient;
 import com.vmware.photon.controller.common.clients.exceptions.InvalidVmPowerStateException;
-import com.vmware.photon.controller.common.clients.exceptions.VmNotFoundException;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
-import com.vmware.photon.controller.common.zookeeper.gen.ServerAddress;
 import com.vmware.photon.controller.host.gen.PowerVmOp;
 import com.vmware.photon.controller.host.gen.PowerVmOpResponse;
 import com.vmware.photon.controller.host.gen.PowerVmOpResultCode;
 import com.vmware.photon.controller.resource.gen.Datastore;
-import com.vmware.photon.controller.scheduler.gen.FindResponse;
 
 import org.mockito.InOrder;
 import org.mockito.Matchers;
@@ -92,7 +89,6 @@ public class VmPowerOpStepCmdTest extends PowerMockTestCase {
   private TaskEntity task;
   private VmEntity vm;
   private StepEntity step;
-  private FindResponse findResponse;
 
   @BeforeMethod
   public void setUp() throws Exception, DocumentNotFoundException {
@@ -102,14 +98,8 @@ public class VmPowerOpStepCmdTest extends PowerMockTestCase {
     vm = new VmEntity();
     vm.setId("vm-1");
 
-    findResponse = new FindResponse();
     Datastore datastore = new Datastore();
     datastore.setId("datastore-id");
-    findResponse.setDatastore(datastore);
-    ServerAddress serverAddress = new ServerAddress();
-    serverAddress.setHost("0.0.0.0");
-    serverAddress.setPort(0);
-    findResponse.setAddress(serverAddress);
 
     taskCommand = spy(new TaskCommand(dcpClient,
         rootSchedulerClient, hostClient, housekeeperClient, deployerClient, entityLockBackend, task));
@@ -122,35 +112,10 @@ public class VmPowerOpStepCmdTest extends PowerMockTestCase {
   }
 
   @Test
-  public void testStaleAgent() throws Exception {
-    VmPowerOpStepCmd command = getVmPowerOpStepCmd();
-    Operation operation = Operation.START_VM;
-    vm.setAgent("some-agent");
-    step.setOperation(operation);
-
-    when(rootSchedulerClient.findVm("vm-1")).thenReturn(findResponse);
-    when(hostClient.powerVmOp(anyString(), any(PowerVmOp.class))).thenThrow(
-        new VmNotFoundException("Error")).thenReturn(new PowerVmOpResponse(PowerVmOpResultCode.OK));
-
-    command.execute();
-
-    InOrder inOrder = inOrder(hostClient, rootSchedulerClient, vmBackend);
-    inOrder.verify(hostClient).setHostIp("host-ip");
-    inOrder.verify(hostClient).powerVmOp("vm-1", PowerVmOp.ON);
-    inOrder.verify(rootSchedulerClient).findVm("vm-1");
-    inOrder.verify(hostClient).setIpAndPort("0.0.0.0", 0);
-    inOrder.verify(hostClient).powerVmOp("vm-1", PowerVmOp.ON);
-    inOrder.verify(vmBackend).updateState(vm, VmState.STARTED);
-
-    verifyNoMoreInteractions(hostClient, rootSchedulerClient, vmBackend);
-  }
-
-  @Test
   public void testVmNotFoundException() throws Exception {
     VmPowerOpStepCmd command = getVmPowerOpStepCmd();
     Operation operation = Operation.START_VM;
     step.setOperation(operation);
-    when(rootSchedulerClient.findVm("vm-1")).thenThrow(new VmNotFoundException("Error"));
 
     try {
       command.execute();

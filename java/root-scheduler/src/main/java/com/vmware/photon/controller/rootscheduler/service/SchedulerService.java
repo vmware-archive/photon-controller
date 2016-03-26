@@ -18,8 +18,6 @@ import com.vmware.photon.controller.rootscheduler.Config;
 import com.vmware.photon.controller.rootscheduler.interceptors.RequestId;
 import com.vmware.photon.controller.scheduler.gen.ConfigureRequest;
 import com.vmware.photon.controller.scheduler.gen.ConfigureResponse;
-import com.vmware.photon.controller.scheduler.gen.FindRequest;
-import com.vmware.photon.controller.scheduler.gen.FindResponse;
 import com.vmware.photon.controller.scheduler.gen.PlaceRequest;
 import com.vmware.photon.controller.scheduler.gen.PlaceResponse;
 import com.vmware.photon.controller.scheduler.root.gen.RootScheduler;
@@ -86,11 +84,6 @@ public class SchedulerService implements RootScheduler.Iface, ServiceNodeEventHa
     logger.info("elapsed-time place {} milliseconds", stopwatch.elapsed(TimeUnit.MILLISECONDS));
 
     return placeResponse;
-  }
-
-  @Override
-  public FindResponse find(FindRequest request) throws TException {
-    return flatSchedulerService.find(request);
   }
 
   @Override

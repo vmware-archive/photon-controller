@@ -28,14 +28,11 @@ import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HousekeeperClient;
 import com.vmware.photon.controller.common.clients.RootSchedulerClient;
 import com.vmware.photon.controller.common.clients.exceptions.SystemErrorException;
-import com.vmware.photon.controller.common.clients.exceptions.VmNotFoundException;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
-import com.vmware.photon.controller.common.zookeeper.gen.ServerAddress;
 import com.vmware.photon.controller.host.gen.MksTicketResponse;
 import com.vmware.photon.controller.host.gen.MksTicketResultCode;
 import com.vmware.photon.controller.resource.gen.Datastore;
 import com.vmware.photon.controller.resource.gen.MksTicket;
-import com.vmware.photon.controller.scheduler.gen.FindResponse;
 
 import org.mockito.InOrder;
 import org.mockito.Matchers;
@@ -44,7 +41,6 @@ import org.powermock.modules.testng.PowerMockTestCase;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
@@ -92,7 +88,6 @@ public class VmGetMksTicketStepCmdTest extends PowerMockTestCase {
   private MksTicketResponse mksTicketResponse;
 
   private StepEntity step;
-  private FindResponse findResponse;
   private String stepId = "step-1";
   private String vmId = "vm-1";
 
@@ -110,20 +105,13 @@ public class VmGetMksTicketStepCmdTest extends PowerMockTestCase {
     mksTicketResponse = new MksTicketResponse(MksTicketResultCode.OK);
     mksTicketResponse.setTicket(ticket);
 
-    findResponse = new FindResponse();
     Datastore datastore = new Datastore();
     datastore.setId("datastore-id");
-    findResponse.setDatastore(datastore);
-    ServerAddress serverAddress = new ServerAddress();
-    serverAddress.setHost("0.0.0.0");
-    serverAddress.setPort(0);
-    findResponse.setAddress(serverAddress);
 
     taskCommand = spy(new TaskCommand(dcpClient,
         rootSchedulerClient, hostClient, housekeeperClient, deployerClient, entityLockBackend, task));
     when(taskCommand.getHostClient()).thenReturn(hostClient);
     when(taskCommand.getRootSchedulerClient()).thenReturn(rootSchedulerClient);
-    when(rootSchedulerClient.findVm(vmId)).thenReturn(findResponse);
     HostService.State hostServiceState = new HostService.State();
     hostServiceState.hostAddress = "host-ip";
     when(hostServiceOp.getBody(Matchers.<Class>any())).thenReturn(hostServiceState);
@@ -137,6 +125,7 @@ public class VmGetMksTicketStepCmdTest extends PowerMockTestCase {
     when(hostClient.getVmMksTicket(vmId))
         .thenReturn(mksTicketResponse);
 
+    vm.setHost("0.0.0.0");
     VmGetMksTicketStepCmd command = getCommand();
     command.execute();
 
@@ -148,30 +137,7 @@ public class VmGetMksTicketStepCmdTest extends PowerMockTestCase {
   }
 
   @Test
-  public void testStaleAgent() throws Exception {
-    vm.setAgent("staled-agent");
-    VmGetMksTicketStepCmd command = getCommand();
-
-    when(rootSchedulerClient.findVm("vm-1")).thenReturn(findResponse);
-    when(hostClient.getVmMksTicket(anyString())).thenThrow(
-        new VmNotFoundException("Error")).thenReturn(mksTicketResponse);
-
-    command.execute();
-
-    InOrder inOrder = inOrder(hostClient, taskBackend, rootSchedulerClient);
-    inOrder.verify(hostClient).setHostIp("host-ip");
-    inOrder.verify(hostClient).getVmMksTicket(vmId);
-    inOrder.verify(rootSchedulerClient).findVm(vmId);
-    inOrder.verify(hostClient).setIpAndPort("0.0.0.0", 0);
-    inOrder.verify(hostClient).getVmMksTicket(vmId);
-    inOrder.verify(taskBackend).setTaskResourceProperties(any(TaskEntity.class), any(String.class));
-    verifyNoMoreInteractions(hostClient, taskBackend, rootSchedulerClient);
-  }
-
-  @Test
   public void testVmNotFoundException() throws Exception {
-    when(rootSchedulerClient.findVm(vmId)).thenThrow(new VmNotFoundException("Error"));
-
     VmGetMksTicketStepCmd command = getCommand();
     try {
       command.execute();
@@ -183,7 +149,7 @@ public class VmGetMksTicketStepCmdTest extends PowerMockTestCase {
   @Test
   public void testFailedGetMksTicket() throws Throwable {
     when(hostClient.getVmMksTicket(vmId)).thenThrow(new SystemErrorException("e"));
-
+    vm.setHost("0.0.0.0");
     VmGetMksTicketStepCmd command = getCommand();
     try {
       command.execute();
