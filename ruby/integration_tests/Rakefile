@@ -204,7 +204,7 @@ end
 desc 'Run integration test for housekeeper service'
 RSpec::Core::RakeTask.new(:housekeeper) do |task|
   task.pattern = FileList['spec/housekeeper/*_spec.rb']
-  task.rspec_opts = "--tag housekeeper --format RspecJunitFormatter --out reports/rspec-cluster.xml --tag ~slow"
+  task.rspec_opts = "--tag housekeeper --format RspecJunitFormatter --out reports/rspec-housekeeper.xml --tag ~slow"
 end
 
 desc 'Run integration test for availability zone'
