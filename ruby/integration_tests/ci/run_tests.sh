@@ -73,7 +73,7 @@ fi
 
 if [ -z "$DISABLE_CLUSTER_INTEGRATION" ]; then
   env
-  bundle exec parallel_rspec -o '--tag cluster --format RspecJunitFormatter --out reports/rspec-cluster.xml --tag ~slow' -- spec/api/cluster/*_spec.rb
+  bundle exec rspec -o '--tag cluster --format RspecJunitFormatter --out reports/rspec-cluster.xml --tag ~slow' -- spec/api/cluster/*_spec.rb
 fi
 
 # run the availability zone integration test
