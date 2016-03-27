@@ -5,6 +5,8 @@ dependencies {
   compile project(':common-dcp')
   compile project(':cloud-store')
 
+  compile 'com.google.code.findbugs:jsr305:2.0.1'
+
   testCompile "org.hamcrest:hamcrest-all:${versions.hamcrest}"
   testCompile "org.testng:testng:${versions.testng}"
   testCompile "org.mockito:mockito-core:${versions.mockito}"
