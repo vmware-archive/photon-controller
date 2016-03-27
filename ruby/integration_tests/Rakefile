@@ -21,43 +21,43 @@ namespace "esxcloud" do
   desc 'Run authorization test for esxcloud api'
   RSpec::Core::RakeTask.new(:authorization) do |task|
     task.pattern = FileList['spec/api/**/*_spec.rb']
-    task.rspec_opts = "--tag authorization --format RspecJunitFormatter --out reports/rspec-api.xml --tag ~slow --profile"
+    task.rspec_opts = "--tag authorization --format RspecJunitFormatter --out test_reports/rspec-api.xml --tag ~slow --profile"
   end
 
   desc 'Run integration test for esxcloud api'
   RSpec::Core::RakeTask.new(:api) do |task|
     task.pattern = FileList['spec/api/**/*_spec.rb']
-    task.rspec_opts = "--tag management --format RspecJunitFormatter --out reports/rspec-api.xml --tag ~slow --profile"
+    task.rspec_opts = "--tag management --format RspecJunitFormatter --out test_reports/rspec-api.xml --tag ~slow --profile"
   end
 
   desc 'Run integration test for esxcloud cli'
   RSpec::Core::RakeTask.new(:cli) do |task|
     task.pattern = FileList['spec/api/**/*_spec.rb']
-    task.rspec_opts = "--tag management --format RspecJunitFormatter --out reports/rspec-cli.xml --tag ~slow --profile"
+    task.rspec_opts = "--tag management --format RspecJunitFormatter --out test_reports/rspec-cli.xml --tag ~slow --profile"
   end
 
   desc 'Run integration test for esxcloud gocli'
   RSpec::Core::RakeTask.new(:gocli) do |task|
     task.pattern = FileList['spec/api/**/*_spec.rb']
-    task.rspec_opts = "--tag management --format RspecJunitFormatter --out reports/rspec-gocli.xml --tag ~slow --profile"
+    task.rspec_opts = "--tag management --format RspecJunitFormatter --out test_reports/rspec-gocli.xml --tag ~slow --profile"
   end
 
   desc 'Run tests for the deployment apis'
   RSpec::Core::RakeTask.new(:deployment) do |task|
     task.pattern = FileList['spec/api/**/*_spec.rb']
-    task.rspec_opts = "--tag new_deployment --format RspecJunitFormatter --out reports/rspec-deployment.xml --tag ~slow --profile"
+    task.rspec_opts = "--tag new_deployment --format RspecJunitFormatter --out test_reports/rspec-deployment.xml --tag ~slow --profile"
   end
 
   desc 'Validate esxcloud system'
   RSpec::Core::RakeTask.new(:validate) do |task|
     task.pattern = FileList['spec/api/system_spec.rb']
-    task.rspec_opts = "--tag validate_system --format RspecJunitFormatter --out reports/rspec-clean.xml"
+    task.rspec_opts = "--tag validate_system --format RspecJunitFormatter --out test_reports/rspec-clean.xml"
   end
 
   desc 'Run tests for life cycle'
   RSpec::Core::RakeTask.new(:life_cycle) do |task|
     task.pattern = FileList['spec/api/**/*_spec.rb']
-    task.rspec_opts = "--tag life_cycle --format RspecJunitFormatter --out reports/rspec-life-cycle.xml --tag ~slow --profile"
+    task.rspec_opts = "--tag life_cycle --format RspecJunitFormatter --out test_reports/rspec-life-cycle.xml --tag ~slow --profile"
   end
 end
 
@@ -104,31 +104,31 @@ namespace "upgrade" do
     desc "Runs tests checking the old_install setup"
     RSpec::Core::RakeTask.new(:old_install) do |task|
       task.pattern = FileList['spec/upgrade/verify_old_install_spec.rb']
-      task.rspec_opts = "--tag upgrade --format RspecJunitFormatter --out reports/rspec-upgrade-old-install.xml --tag ~slow"
+      task.rspec_opts = "--tag upgrade --format RspecJunitFormatter --out test_reports/rspec-upgrade-old-install.xml --tag ~slow"
     end
 
     desc "Runs tests checking the new install setup"
     RSpec::Core::RakeTask.new(:new_install) do |task|
       task.pattern = FileList['spec/upgrade/verify_new_install_spec.rb']
-      task.rspec_opts = "--tag upgrade --format RspecJunitFormatter --out reports/rspec-upgrade-new-install.xml --tag ~slow"
+      task.rspec_opts = "--tag upgrade --format RspecJunitFormatter --out test_reports/rspec-upgrade-new-install.xml --tag ~slow"
     end
 
     desc "Runs tests checking the migration preparation"
     RSpec::Core::RakeTask.new(:during_prepare) do |task|
       task.pattern = FileList['spec/upgrade/during_prepare_spec.rb']
-      task.rspec_opts = "--tag upgrade --format RspecJunitFormatter --out reports/rspec-during-upgrade-prepare.xml --tag ~slow"
+      task.rspec_opts = "--tag upgrade --format RspecJunitFormatter --out test_reports/rspec-during-upgrade-prepare.xml --tag ~slow"
     end
 
     desc "Runs tests checking the migration finalization"
     RSpec::Core::RakeTask.new(:during_finalize) do |task|
       task.pattern = FileList['spec/upgrade/during_finalize_spec.rb']
-      task.rspec_opts = "--tag upgrade --format RspecJunitFormatter --out reports/rspec-during-upgrade-finilize.xml --tag ~slow"
+      task.rspec_opts = "--tag upgrade --format RspecJunitFormatter --out test_reports/rspec-during-upgrade-finilize.xml --tag ~slow"
     end
 
     desc "Runs tests checking the migration finalization"
     RSpec::Core::RakeTask.new(:after_finalize) do |task|
       task.pattern = FileList['spec/upgrade/after_finalize_spec.rb']
-      task.rspec_opts = "--tag upgrade --format RspecJunitFormatter --out reports/rspec-after-upgrade-finilize.xml --tag ~slow"
+      task.rspec_opts = "--tag upgrade --format RspecJunitFormatter --out test_reports/rspec-after-upgrade-finilize.xml --tag ~slow"
     end
   end
 
@@ -179,38 +179,38 @@ end
 desc 'Run integration test to check deployment'
 RSpec::Core::RakeTask.new(:check_deployment) do |task|
   task.pattern = FileList['spec/api/check_deployment/*_spec.rb']
-  task.rspec_opts = "--tag check_deployment --format RspecJunitFormatter --out reports/rspec-deployer.xml --tag ~slow"
+  task.rspec_opts = "--tag check_deployment --format RspecJunitFormatter --out test_reports/rspec-deployer.xml --tag ~slow"
 end
 
 
 desc 'Run integration test for deployer'
 RSpec::Core::RakeTask.new(:deployer) do |task|
   task.pattern = FileList['spec/api/deployer/*_spec.rb']
-  task.rspec_opts = "--tag deployer --format RspecJunitFormatter --out reports/rspec-deployer.xml --tag ~slow"
+  task.rspec_opts = "--tag deployer --format RspecJunitFormatter --out test_reports/rspec-deployer.xml --tag ~slow"
 end
 
 desc 'Run integration test for zookeeper service'
 RSpec::Core::RakeTask.new(:zookeeper) do |task|
   task.pattern = FileList['spec/zookeeper/**/*_spec.rb']
-  task.rspec_opts = "--tag zookeeper --format RspecJunitFormatter --out reports/rspec-zookeeper.xml --tag ~slow"
+  task.rspec_opts = "--tag zookeeper --format RspecJunitFormatter --out test_reports/rspec-zookeeper.xml --tag ~slow"
 end
 
 desc 'Run integration test for Cluster service'
 RSpec::Core::RakeTask.new(:cluster) do |task|
   task.pattern = FileList['spec/api/cluster/*_spec.rb']
-  task.rspec_opts = "--tag cluster --format RspecJunitFormatter --out reports/rspec-cluster.xml --tag ~slow"
+  task.rspec_opts = "--tag cluster --format RspecJunitFormatter --out test_reports/rspec-cluster.xml --tag ~slow"
 end
 
 desc 'Run integration test for housekeeper service'
 RSpec::Core::RakeTask.new(:housekeeper) do |task|
   task.pattern = FileList['spec/housekeeper/*_spec.rb']
-  task.rspec_opts = "--tag housekeeper --format RspecJunitFormatter --out reports/rspec-cluster.xml --tag ~slow"
+  task.rspec_opts = "--tag housekeeper --format RspecJunitFormatter --out test_reports/rspec-cluster.xml --tag ~slow"
 end
 
 desc 'Run integration test for availability zone'
 RSpec::Core::RakeTask.new(:availabilityzone) do |task|
   task.pattern = FileList['spec/availabilityzone/availability_zone_spec.rb']
-  task.rspec_opts = "--tag availabilityzone --format RspecJunitFormatter --out reports/rspec-availabilityzone.xml --tag ~slow"
+  task.rspec_opts = "--tag availabilityzone --format RspecJunitFormatter --out test_reports/rspec-availabilityzone.xml --tag ~slow"
 end
 
 namespace "agent" do
@@ -219,7 +219,7 @@ namespace "agent" do
     EsxCloud::Config.init
     EsxCloud::Config.client = ApiClientHelper.management
     task.pattern = FileList['spec/agent/stats_spec.rb']
-    task.rspec_opts = "--tag stats --format RspecJunitFormatter --out reports/rspec-stats.xml --tag ~slow"
+    task.rspec_opts = "--tag stats --format RspecJunitFormatter --out test_reports/rspec-stats.xml --tag ~slow"
   end
 end
 
