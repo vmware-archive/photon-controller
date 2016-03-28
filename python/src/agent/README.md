@@ -1,12 +1,11 @@
 # Photon Controller Agent
 
 Photon controller agent runs inside ESX host and expose thrift interface to
-control plane. There are 3 major services in agent: host, scheduler and agent
+control plane. There are 2 major services in agent: host and agent
 control.
 
 * Host supports the control to ESX Host, like life cycle management of VM, image
   and disk.
-* Scheduler supports hierachical scheduling of resources.
 * Agent control supports homekeeping management like provision, heartbeat etc.
 
 ## Creating the vib package

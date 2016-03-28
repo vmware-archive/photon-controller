@@ -32,6 +32,12 @@ setup(name='photon.controller.stats',
           'photon.controller.host',
           'photon.controller.gen.thrift'
       ],
+      setup_requires=[
+          'thrift==0.9.3',
+          'photon.controller.common',
+          'photon.controller.host',
+          'photon.controller.gen.thrift'
+      ],
       extras_require={
           'esx': [
               'pyvmomi==5.5.0',
