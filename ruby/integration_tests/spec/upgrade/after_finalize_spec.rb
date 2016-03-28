@@ -41,18 +41,6 @@ describe "migrate finalize", upgrade: true do
   describe "#data_check" do
     it "should destination contain all the cloudstore content of the source" do
       upgrade_cloudstore_map = {
-          "/esxcloud/cloudstore/datastores" => "/photon/cloudstore/datastores",
-          "/esxcloud/cloudstore/hosts" => "/photon/cloudstore/hosts",
-          "/esxcloud/cloudstore/attached-disks" => "/photon/cloudstore/attached-disks",
-          "/esxcloud/cloudstore/flavors" => "/photon/cloudstore/flavors",
-          "/esxcloud/cloudstore/images" => "/photon/cloudstore/images",
-          "/esxcloud/cloudstore/networks" => "/photon/cloudstore/networks",
-          "/provisioning/esxcloud/portgroups" => "/photon/cloudstore/portgroups",
-          "/esxcloud/cloudstore/projects" => "/photon/cloudstore/projects",
-          "/esxcloud/cloudstore/tenants" => "/photon/cloudstore/tenants",
-          "/esxcloud/cloudstore/resource-tickets" => "/photon/cloudstore/resource-tickets",
-          "/esxcloud/cloudstore/vms" => "/photon/cloudstore/vms",
-          "/esxcloud/cloudstore/disks" => "/photon/cloudstore/disks",
           "/photon/cloudstore/datastores" => "/photon/cloudstore/datastores",
           "/photon/cloudstore/hosts" => "/photon/cloudstore/hosts",
           "/photon/cloudstore/attached-disks" => "/photon/cloudstore/attached-disks",
@@ -64,7 +52,8 @@ describe "migrate finalize", upgrade: true do
           "/photon/cloudstore/tenants" => "/photon/cloudstore/tenants",
           "/photon/cloudstore/resource-tickets" => "/photon/cloudstore/resource-tickets",
           "/photon/cloudstore/vms" => "/photon/cloudstore/vms",
-          "/photon/cloudstore/disks" => "/photon/cloudstore/disks"}
+          "/photon/cloudstore/disks" => "/photon/cloudstore/disks",
+          "/photon/cloudstore/images-to-image-datastore-mapping" => "/photon/cloudstore/images-to-image-datastore-mapping"}
       uri = URI.parse(EsxCloud::TestHelpers.get_upgrade_source_address)
       source_cloud_store =  EsxCloud::Dcp::CloudStore::CloudStoreClient.connect_to_endpoint(uri.host, nil)
 
