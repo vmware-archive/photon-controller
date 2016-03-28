@@ -1,4 +1,4 @@
-DEPS=common host scheduler stats
+DEPS=common host stats
 TESTS=agent/tests/unit
 EXTRA_CLEANUP_TARGETS=$(BUILD)/$(NAME).log
 

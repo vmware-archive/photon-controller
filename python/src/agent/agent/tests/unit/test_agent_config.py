@@ -233,10 +233,8 @@ class TestUnitAgent(unittest.TestCase):
 
     def test_thrift_thread_settings(self):
         """ Simple test that sets and reads thrift thread settings"""
-        self.agent._parse_options(["--scheduler-service-threads", "10",
-                                   "--host-service-threads", "5",
+        self.agent._parse_options(["--host-service-threads", "5",
                                    "--control-service-threads", "2"])
-        self.assertEqual(self.agent.scheduler_service_threads, 10)
         self.assertEqual(self.agent.host_service_threads, 5)
         self.assertEqual(self.agent.control_service_threads, 2)
 
