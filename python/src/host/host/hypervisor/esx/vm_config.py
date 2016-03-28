@@ -122,6 +122,16 @@ def datastore_to_os_path(datastore_path):
     return os.path.join(VMFS_VOLUMES, spl[0], spl[1].strip())
 
 
+def datastore_path_to_os_symlink(datastore_path, vm_id):
+    if datastore_path.startswith(VMFS_VOLUMES):
+        datastore_name = datastore_path.split("VMFS_VOLUMES", 1)[1].split('/', 1)[1].split('/', 1)[0]
+    else:
+        datastore_name = datastore_path.split('[', 1)[1].split(']', 1)[0]
+
+    vm_dir_link_name = VM_FOLDER_NAME_PREFIX + COMPOND_PATH_SEPARATOR + vm_id
+    return os.path.join(VMFS_VOLUMES, datastore_name, vm_dir_link_name)
+
+
 def os_to_datastore_path(os_path):
     if os_path.startswith("["):
         return os_path

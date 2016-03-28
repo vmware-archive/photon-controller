@@ -27,6 +27,7 @@ from pyVmomi import vim
 
 from common.exclusive_set import DuplicatedValue
 from common.exclusive_set import ExclusiveSet
+from common.file_util import rm_link
 from common.file_util import rm_rf
 from common.file_util import mkdir_p
 from common.kind import Flavor
@@ -47,6 +48,7 @@ from host.hypervisor.vm_manager import VmAlreadyExistException
 from host.hypervisor.vm_manager import VmNotFoundException
 from host.hypervisor.vm_manager import VmPowerStateException
 from host.hypervisor.esx.vm_config import datastore_to_os_path
+from host.hypervisor.esx.vm_config import datastore_path_to_os_symlink
 from host.hypervisor.esx.vm_config import DeviceNotFoundException
 from host.hypervisor.esx.vm_config import EsxVmConfig
 from host.hypervisor.esx.vm_config import get_image_base_disk
@@ -289,6 +291,12 @@ class EsxVmManager(VmManager):
             self._logger.warning("Force delete vm directory %s" % vm_dir)
             rm_rf(vm_dir)
 
+    def _ensure_symlink_cleanup(self, vm_ds_path, vm_id):
+        # Check if the symlink exists and then delete it
+        vm_link = datastore_path_to_os_symlink(vm_ds_path, vm_id)
+        self._logger.info("Removing symlink to vmdir : %s" % vm_link)
+        rm_link(vm_link)
+
     @log_duration
     def delete_vm(self, vm_id, force=False):
         """Delete a Virtual Machine
@@ -314,6 +322,9 @@ class EsxVmManager(VmManager):
         self._invoke_vm(vm, "Destroy")
 
         self._ensure_directory_cleanup(vm_ds_path)
+
+        # Deleting the symlink to vm dir if it exists after upgrade
+        self._ensure_symlink_cleanup(vm_ds_path, vm_id)
 
         self.vim_client.wait_for_vm_delete(vm_id)
 
