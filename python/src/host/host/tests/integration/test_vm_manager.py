@@ -26,6 +26,7 @@ from host.hypervisor.esx.vm_manager import EsxVmManager
 
 
 class TestVmManager(unittest.TestCase):
+
     def setUp(self):
         if "host_remote_test" not in config:
             raise SkipTest()
@@ -38,7 +39,7 @@ class TestVmManager(unittest.TestCase):
 
         self._logger = logging.getLogger(__name__)
         self.vim_client = VimClient(self.host, "root", self.pwd)
-        self.vm_manager = EsxVmManager(self.vim_client, [])
+        self.vm_manager = EsxVmManager(self.vim_client, None)
         for vm in self.vim_client.get_vms():
             vm.Destroy()
 
