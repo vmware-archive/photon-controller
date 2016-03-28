@@ -18,6 +18,7 @@ import time
 import unittest
 import uuid
 
+from agent.tests.base_kazoo_test import BaseKazooTestCase
 from agent.tests.common_helper_functions import RuntimeUtils
 from common.photon_thrift.direct_client import DirectClient
 from gen.agent import AgentControl
@@ -82,8 +83,8 @@ from hamcrest import has_length
 from hamcrest import is_
 from hamcrest import is_in
 from hamcrest import not_none
-from host.hypervisor.esx.vm_config import IMAGE_FOLDER_NAME_PREFIX
 from host.hypervisor.esx.vim_client import VimClient
+from host.hypervisor.esx.vm_config import IMAGE_FOLDER_NAME_PREFIX
 from host.hypervisor.esx.vm_config import vmdk_path
 from host.hypervisor.esx.vm_manager import EsxVmManager
 from nose.plugins.skip import SkipTest
@@ -91,7 +92,6 @@ from pyVmomi import SoapStubAdapter, vim
 from pysdk import connect
 from pysdk import host
 from pysdk import task
-from scheduler.tests.base_kazoo_test import BaseKazooTestCase
 from thrift.transport import TTransport
 
 from agent_common_tests import AgentCommonTests
