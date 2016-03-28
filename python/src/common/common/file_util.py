@@ -115,6 +115,21 @@ def rm_rf(dir):
             raise exc
 
 
+def rm_link(link):
+    """The equivalent of unlink.
+    Args:
+        link: The link to be removed.
+    """
+    try:
+        if os.path.islink(link):
+            os.remove(link)
+    except OSError as exc:
+        if exc.errno == errno.ENOENT:
+            pass
+        else:
+            raise exc
+
+
 def mkdtemp(*args, **kwargs):
     """A wrapper of tempfile.mkdtemp to support auto delete
     :param kwargs: if delete is set as True, the temp directory is
