@@ -19,13 +19,9 @@ import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.client.ApiClient;
-import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ImageToImageDatastoreMappingService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ImageToImageDatastoreMappingServiceFactory;
 import com.vmware.photon.controller.clustermanager.utils.ExceptionUtils;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
@@ -65,7 +61,6 @@ import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.NodeGroupBroadcastResponse;
 import com.vmware.xenon.services.common.QueryTask;
 import com.vmware.xenon.services.common.QueryTask.Query;
-import com.vmware.xenon.services.common.QueryTask.QuerySpecification.QueryOption;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.FutureCallback;
@@ -76,8 +71,6 @@ import javax.annotation.Nullable;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.net.URI;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -113,7 +106,6 @@ public class FinalizeDeploymentMigrationWorkflowService extends StatefulService 
       PAUSE_SOURCE_SYSTEM,
       STOP_MIGRATE_TASKS,
       MIGRATE_FINAL,
-      DATA_ADJUSTMENT,
       REINSTALL_AGENTS,
       UPGRADE_AGENTS,
       RESUME_DESTINATION_SYSTEM,
@@ -251,9 +243,6 @@ public class FinalizeDeploymentMigrationWorkflowService extends StatefulService 
       case MIGRATE_FINAL:
         migrateFinal(currentState);
         break;
-      case DATA_ADJUSTMENT:
-        dataAdjustment(currentState);
-        break;
       case REINSTALL_AGENTS:
         reinstallAgents(currentState);
         break;
@@ -279,7 +268,6 @@ public class FinalizeDeploymentMigrationWorkflowService extends StatefulService 
         case REINSTALL_AGENTS:
         case MIGRATE_FINAL:
         case RESUME_DESTINATION_SYSTEM:
-        case DATA_ADJUSTMENT:
           // fall through
         case STOP_MIGRATE_TASKS:
           checkState(null != currentState.sourceDeploymentId);
@@ -316,176 +304,6 @@ public class FinalizeDeploymentMigrationWorkflowService extends StatefulService 
     if (null != currentState.taskState.subStage && null != patchState.taskState.subStage) {
       checkState(patchState.taskState.subStage.ordinal() >= currentState.taskState.subStage.ordinal());
     }
-  }
-
-  //
-  // DATA_ADJUSTMENT sub-stage routines
-  //
-  private void dataAdjustment(State currentState) throws Throwable {
-    ZookeeperClient zookeeperClient
-      = ((ZookeeperClientFactoryProvider) getHost()).getZookeeperServerSetFactoryBuilder().create();
-    Set<InetSocketAddress> sourceServers
-      = zookeeperClient.getServers(currentState.sourceZookeeperQuorum, DeployerModule.CLOUDSTORE_SERVICE_NAME);
-    InetSocketAddress socketAddress = sourceServers.iterator().next();
-    URI destinationUri = UriUtils.buildUri(socketAddress.getHostName(), socketAddress.getPort(), null, null);
-    URI remoteBroadcastRequestUri
-      = UriUtils.buildBroadcastRequestUri(
-          UriUtils
-            .buildUri(destinationUri, ServiceUriPaths.CORE_LOCAL_QUERY_TASKS), ServiceUriPaths.DEFAULT_NODE_SELECTOR);
-
-    QueryTask.Query datastoreClause = new QueryTask.Query()
-        .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
-        .setTermMatchValue(Utils.buildKind(DatastoreService.State.class));
-    Operation datastoreOperation = HostUtils.getCloudStoreHelper(this)
-      .createBroadcastPost(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS, ServiceUriPaths.DEFAULT_NODE_SELECTOR)
-      .setBody(QueryTask.Builder.createDirectTask()
-          .setQuery(datastoreClause)
-          .addOption(QueryOption.EXPAND_CONTENT)
-          .build());
-
-    Query deploymentQuery = Query.Builder.create()
-        .addFieldClause(ServiceDocument.FIELD_NAME_SELF_LINK, "*/cloudstore/deployments/*",
-            QueryTask.QueryTerm.MatchType.WILDCARD)
-        .build();
-    Operation deploymentOp
-      = Operation.createPost(remoteBroadcastRequestUri)
-          .setBody(QueryTask.Builder.createDirectTask()
-              .setQuery(deploymentQuery)
-              .addOption(QueryOption.EXPAND_CONTENT)
-              .build());
-
-    OperationJoin.create(datastoreOperation, deploymentOp)
-      .setCompletion((os, ts) -> {
-        if (ts != null && !ts.isEmpty()) {
-          failTask(ts.values());
-          return;
-        }
-        Set<String> imageStoreNames = getImageStoreNames(os.get(deploymentOp.getId()));
-        List<DatastoreService.State> datastores
-          = QueryTaskUtils.getBroadcastQueryDocuments(DatastoreService.State.class, os.get(datastoreOperation.getId()));
-        Set<String> imageStoreIds = getImageStoreId(datastores, imageStoreNames);
-        dataAdjustment(currentState, imageStoreIds, datastores);
-      })
-      .sendWith(this);
-  }
-
-  private Set<String> getImageStoreNames(Operation operation) {
-    Set<String> names = new HashSet<>();
-    NodeGroupBroadcastResponse response = operation.getBody(NodeGroupBroadcastResponse.class);
-
-    for (Map.Entry<URI, String> entry : response.jsonResponses.entrySet()) {
-      QueryTask queryTask = Utils.fromJson(entry.getValue(), QueryTask.class);
-      if (null != queryTask.results && queryTask.results.documents != null) {
-        for (Object value : queryTask.results.documents.values()) {
-          try {
-            String name = Utils.getJsonMapValue(value, "imageDataStoreName", String.class);
-            if (name != null && !name.isEmpty()) {
-              names.add(name);
-            }
-          } catch (Throwable t) {
-
-          }
-          try {
-            List<?> nameList = Utils.getJsonMapValue(value, "imageDataStoreNames", List.class);
-            if (nameList != null) {
-              for (Object o : nameList) {
-                names.add(Utils.fromJson(o, String.class));
-              }
-            }
-          } catch (Throwable t) {
-
-          }
-        }
-      }
-    }
-
-    return names;
-  }
-
-  private Set<String> getImageStoreId(List<DatastoreService.State> datastores, Set<String> imageStoreNames) {
-    Set<String> ids = new HashSet<>();
-    for (DatastoreService.State store : datastores) {
-      if (imageStoreNames.contains(store.name)) {
-        ids.add(ServiceUtils.getIDFromDocumentSelfLink(store.documentSelfLink));
-      }
-    }
-    return ids;
-  }
-
-  private void dataAdjustment(State currentState, Set<String> imageStoreIds, List<DatastoreService.State> datastores) {
-    // get all images
-    QueryTask.Query imageClause = new QueryTask.Query()
-        .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
-        .setTermMatchValue(Utils.buildKind(ImageService.State.class));
-    Operation imageOperation = HostUtils.getCloudStoreHelper(this)
-      .createBroadcastPost(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS, ServiceUriPaths.DEFAULT_NODE_SELECTOR)
-      .setBody(QueryTask.Builder.createDirectTask()
-          .setQuery(imageClause)
-          .addOption(QueryOption.EXPAND_CONTENT)
-          .build());
-
-    OperationJoin.create(imageOperation)
-      .setCompletion((os, ts) -> {
-        if (ts != null && !ts.isEmpty()) {
-          failTask(ts.values());
-          return;
-        }
-        List<ImageService.State> images
-          = QueryTaskUtils.getBroadcastQueryDocuments(ImageService.State.class, os.get(imageOperation.getId()));
-        images = images.stream().filter(image -> image.totalImageDatastore == 0).collect(Collectors.toList());
-        Collection<Operation> updateOperations = getImageRelatedUpdateOperations(images, datastores, imageStoreIds);
-        OperationJoin.create(updateOperations)
-          .setCompletion((ops, ths) -> {
-            if (ths != null && !ths.isEmpty()) {
-              failTask(ths.values());
-              return;
-            }
-            State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.REINSTALL_AGENTS
-                , null);
-            TaskUtils.sendSelfPatch(FinalizeDeploymentMigrationWorkflowService.this, patchState);
-          })
-          .sendWith(this);
-      })
-      .sendWith(this);
-  }
-
-  private Collection<Operation> getImageRelatedUpdateOperations(
-      List<ImageService.State> images,
-      List<DatastoreService.State> datastores,
-      Set<String> oldImageStoreIds) {
-
-    Collection<Operation> ops = new ArrayList<>();
-    datastores.forEach(ds -> {
-      if (oldImageStoreIds.contains(ds.id)) {
-        ds.isImageDatastore = Boolean.TRUE;
-        DatastoreService.State patch = new DatastoreService.State();
-        patch.isImageDatastore = Boolean.TRUE;
-        ops.add(HostUtils.getCloudStoreHelper(this)
-            .createPatch(ds.documentSelfLink)
-            .setBody(patch)
-        );
-      }
-    });
-    for (ImageService.State image : images) {
-      ImageToImageDatastoreMappingService.State state = new ImageToImageDatastoreMappingService.State();
-      state.imageId = ServiceUtils.getIDFromDocumentSelfLink(image.documentSelfLink);
-      for (String dids : oldImageStoreIds) {
-        state.imageDatastoreId = dids;
-        ops.add(HostUtils.getCloudStoreHelper(this)
-            .createPost(ImageToImageDatastoreMappingServiceFactory.SELF_LINK)
-            .setBody(state)
-          );
-      }
-      ImageService.State patch = new ImageService.State();
-      patch.totalImageDatastore = 1;
-      patch.replicatedDatastore = 1;
-      patch.replicatedImageDatastore = 1;
-      patch.totalDatastore = 1;
-      ops.add(HostUtils.getCloudStoreHelper(this)
-          .createPatch(image.documentSelfLink)
-          .setBody(patch));
-    }
-    return ops;
   }
 
   //
@@ -850,6 +668,12 @@ public class FinalizeDeploymentMigrationWorkflowService extends StatefulService 
                   result.taskState.failure.message,
                   result.documentSelfLink)));
               break;
+            default:
+              exceptions.add(new IllegalStateException(String.format(
+                  "Unknown TaskState %s for task %s.",
+                  result.taskState.stage.name(),
+                  result.documentSelfLink)));
+              break;
           }
 
           if (0 == latch.decrementAndGet()) {
@@ -970,7 +794,7 @@ public class FinalizeDeploymentMigrationWorkflowService extends StatefulService 
           }
           State patchState = buildPatch(
               TaskState.TaskStage.STARTED,
-              TaskState.SubStage.DATA_ADJUSTMENT,
+              TaskState.SubStage.REINSTALL_AGENTS,
               null);
           TaskUtils.sendSelfPatch(FinalizeDeploymentMigrationWorkflowService.this, patchState);
         });
