@@ -42,7 +42,6 @@ import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.common.xenon.validation.Positive;
 import com.vmware.photon.controller.common.xenon.validation.WriteOnce;
 import com.vmware.photon.controller.deployer.DeployerModule;
-import com.vmware.photon.controller.deployer.dcp.ContainersConfig.ContainerType;
 import com.vmware.photon.controller.deployer.dcp.constant.ServicePortConstants;
 import com.vmware.photon.controller.deployer.dcp.task.CopyStateTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.CopyStateTaskService;
@@ -571,37 +570,11 @@ public class FinalizeDeploymentMigrationWorkflowService extends StatefulService 
   }
 
   private void moveToStopMigrateTasks(final String sourceDeploymentId, String zookeeperQuorum) {
-    HostUtils.getListeningExecutorService(this).execute(() -> {
-      try {
-        disbaleHouseKeeperOnSource(sourceDeploymentId, zookeeperQuorum);
-      } catch (Throwable t) {
-        failTask(t);
-        return;
-      }
-      State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.STOP_MIGRATE_TASKS,
-          null);
-      patchState.sourceDeploymentId = sourceDeploymentId;
-      patchState.sourceZookeeperQuorum = zookeeperQuorum;
-      TaskUtils.sendSelfPatch(FinalizeDeploymentMigrationWorkflowService.this, patchState);
-    });
-  }
-
-  // Since we will need to ensure that the old management plane is not actively
-  // deleting images, we need to shutdown house keeper.
-  // This should be deprecated soon as fully pausing the sytem will take care
-  // of that in the future.
-  @Deprecated
-  private void disbaleHouseKeeperOnSource(final String sourceDeploymentId, String sourceZookeeperQuorum) {
-    ZookeeperClient zookeeperClient
-      = ((ZookeeperClientFactoryProvider) getHost()).getZookeeperServerSetFactoryBuilder().create();
-    Set<InetSocketAddress> sourceServers
-      = zookeeperClient.getServers(sourceZookeeperQuorum, DeployerModule.CLOUDSTORE_SERVICE_NAME);
-
-    for (InetSocketAddress address : sourceServers) {
-      HostUtils.getDockerProvisionerFactory(this)
-        .create(address.getAddress().getHostAddress())
-        .stopContainerMatching(ContainerType.Housekeeper.name());
-    }
+    State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.STOP_MIGRATE_TASKS,
+        null);
+    patchState.sourceDeploymentId = sourceDeploymentId;
+    patchState.sourceZookeeperQuorum = zookeeperQuorum;
+    TaskUtils.sendSelfPatch(FinalizeDeploymentMigrationWorkflowService.this, patchState);
   }
 
   //

@@ -89,20 +89,13 @@ describe "migrate finalize", upgrade: true do
   end
 
   describe "#old plane state" do
-    ["/esxcloud/cloudstore/hosts", "/photon/cloudstore/hosts"].each do |host_uri|
-      it "should not be running housekeeper [host_uri: #{host_uri}]" do
-        uri = URI.parse(EsxCloud::TestHelpers.get_upgrade_source_address)
-        source_cloud_store =  EsxCloud::Dcp::CloudStore::CloudStoreClient.connect_to_endpoint(uri.host, nil)
-        get_all_hosts(source_cloud_store, host_uri) do |host|
-          if host.usage_tags.include? "MGMT"
-            vm_ip = host.metadata["MANAGEMENT_NETWORK_IP"]
-            uri = URI("http://#{vm_ip}:#{DOCKER_PORT}/containers/json")
-            uri.query = URI.encode_www_form({ :all => false })
-            res = Net::HTTP.get(uri)
-            fail("HouseKeeper container on #{vm_ip} still running") unless JSON.parse(res)[0]["Names"].select { |name| name.downcase.include? "housekeeper" }.empty?
-          end
-        end
-      end
+    it "should be paused" do
+      uri = URI.parse(EsxCloud::TestHelpers.get_upgrade_source_address)
+      zk_address = uri.host
+      zk = Zookeeper.new("#{zk_address}:2181")
+      value = zk.get(path: "/config/apife/status")
+      expect(value).to_not be_nil
+      expect(value[:data]).to eq "PAUSED"
     end
   end
 
