@@ -38,22 +38,23 @@ describe "migrate finalize", upgrade: true do
     source_api_client.find_all_api_deployments.items.first
   end
 
+  let(:upgrade_cloudstore_map) do
+    uri = URI.parse(EsxCloud::TestHelpers.get_upgrade_source_address)
+    map = get_service_map uri
+    map.select { |key,_| key.include? "photon" }
+  end
+
   describe "#data_check" do
+    it "should have all expected factories" do
+      destination_map = get_service_map URI.parse(ApiClientHelper.endpoint(nil, nil, nil))
+      destination_map = destination_map.select { |key,_| key.include? "photon" }
+
+      # the two lists should be equal
+      expect(destination_map.keys() - upgrade_cloudstore_map.keys()).to_be eq []
+      expect(upgrade_cloudstore_map.keys() - destination_map.keys()).to_be eq []
+    end
+
     it "should destination contain all the cloudstore content of the source" do
-      upgrade_cloudstore_map = {
-          "/photon/cloudstore/datastores" => "/photon/cloudstore/datastores",
-          "/photon/cloudstore/hosts" => "/photon/cloudstore/hosts",
-          "/photon/cloudstore/attached-disks" => "/photon/cloudstore/attached-disks",
-          "/photon/cloudstore/flavors" => "/photon/cloudstore/flavors",
-          "/photon/cloudstore/images" => "/photon/cloudstore/images",
-          "/photon/cloudstore/networks" => "/photon/cloudstore/networks",
-          "/photon/cloudstore/portgroups" => "/photon/cloudstore/portgroups",
-          "/photon/cloudstore/projects" => "/photon/cloudstore/projects",
-          "/photon/cloudstore/tenants" => "/photon/cloudstore/tenants",
-          "/photon/cloudstore/resource-tickets" => "/photon/cloudstore/resource-tickets",
-          "/photon/cloudstore/vms" => "/photon/cloudstore/vms",
-          "/photon/cloudstore/disks" => "/photon/cloudstore/disks",
-          "/photon/cloudstore/images-to-image-datastore-mapping" => "/photon/cloudstore/images-to-image-datastore-mapping"}
       uri = URI.parse(EsxCloud::TestHelpers.get_upgrade_source_address)
       source_cloud_store =  EsxCloud::Dcp::CloudStore::CloudStoreClient.connect_to_endpoint(uri.host, nil)
 
@@ -154,5 +155,15 @@ describe "migrate finalize", upgrade: true do
     rescue StandardError => _
     end
     hosts
+  end
+
+  def get_service_map(uri)
+    source_cloud_store =  EsxCloud::Dcp::CloudStore::CloudStoreClient.connect_to_endpoint(uri.host, nil)
+    json = source_cloud_store.get "/"
+    result = {}
+    json["documentLinks"].map do |item|
+      result[item] = item
+    end
+    result
   end
 end
