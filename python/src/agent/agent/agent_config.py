@@ -358,11 +358,6 @@ class AgentConfig(object):
 
     @property
     @locked
-    def scheduler_service_threads(self):
-        return self._options.scheduler_service_threads
-
-    @property
-    @locked
     def control_service_threads(self):
         return self._options.control_service_threads
 
@@ -509,11 +504,7 @@ class AgentConfig(object):
                           default=20,  # Same as hostd vmops threads.
                           help="The number of threads for the host thrift " +
                                "service")
-        parser.add_option("--scheduler-service-threads",
-                          dest="scheduler_service_threads", type="int",
-                          default=32,  # Leaf scheduler span.
-                          help="The number of threads for the scheduler " +
-                               "thrift service")
+
         parser.add_option("--control-service-threads",
                           dest="control_service_threads", type="int",
                           default=1,  # Doesn't do much currently
