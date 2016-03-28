@@ -26,22 +26,6 @@ import java.util.Map;
  */
 public class UpgradeUtils {
   public static final Map<String, String> SOURCE_DESTINATION_MAP = ImmutableMap.<String, String>builder()
-      // uris for beta 1
-      .put("/esxcloud/cloudstore/flavors", "/photon/cloudstore/flavors")
-      .put("/esxcloud/cloudstore/images", "/photon/cloudstore/images")
-      .put("/esxcloud/cloudstore/hosts", "/photon/cloudstore/hosts")
-      .put("/esxcloud/cloudstore/networks", "/photon/cloudstore/networks")
-      .put("/esxcloud/cloudstore/datastores", "/photon/cloudstore/datastores")
-      .put("/provisioning/esxcloud/portgroups", "/photon/cloudstore/portgroups")
-      .put("/esxcloud/cloudstore/tasks", "/photon/cloudstore/tasks")
-      .put("/esxcloud/cloudstore/projects", "/photon/cloudstore/projects")
-      .put("/esxcloud/cloudstore/tenants", "/photon/cloudstore/tenants")
-      .put("/esxcloud/cloudstore/resource-tickets", "/photon/cloudstore/resource-tickets")
-      .put("/esxcloud/cloudstore/vms", "/photon/cloudstore/vms")
-      .put("/esxcloud/cloudstore/disks", "/photon/cloudstore/disks")
-      .put("/esxcloud/cloudstore/attached-disks", "/photon/cloudstore/attached-disks")
-      .put("/esxcloud/cloudstore/tombstones", "/photon/cloudstore/tombstones")
-      // uris after beta1
       .put("/photon/cloudstore/flavors", "/photon/cloudstore/flavors")
       .put("/photon/cloudstore/images", "/photon/cloudstore/images")
       .put("/photon/cloudstore/hosts", "/photon/cloudstore/hosts")
@@ -56,6 +40,7 @@ public class UpgradeUtils {
       .put("/photon/cloudstore/disks", "/photon/cloudstore/disks")
       .put("/photon/cloudstore/attached-disks", "/photon/cloudstore/attached-disks")
       .put("/photon/cloudstore/tombstones", "/photon/cloudstore/tombstones")
+      .put("/photon/cloudstore/images-to-image-datastore-mapping", "/photon/cloudstore/images-to-image-datastore-mapping")
       .build();
 
     public static List<Field> handleRenamedField(Object source, ServiceDocument destination) {

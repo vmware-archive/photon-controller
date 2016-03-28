@@ -155,7 +155,6 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
       if (TaskState.TaskStage.STARTED == startStage) {
         switch (startSubStage) {
           case STOP_MIGRATE_TASKS:
-          case DATA_ADJUSTMENT:
           case REINSTALL_AGENTS:
           case UPGRADE_AGENTS:
           case MIGRATE_FINAL:
@@ -193,7 +192,6 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
           break;
         case RESUME_DESTINATION_SYSTEM:
         case MIGRATE_FINAL:
-        case DATA_ADJUSTMENT:
         case REINSTALL_AGENTS:
         case UPGRADE_AGENTS:
           // fall through
