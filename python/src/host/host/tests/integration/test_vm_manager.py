@@ -16,16 +16,21 @@ from time import strftime, localtime
 import unittest
 
 from hamcrest import *  # noqa
+from mock import MagicMock
 from mock import patch
 from nose.plugins.skip import SkipTest
 from testconfig import config
 
 from common.kind import Unit, QuotaLineItem, Flavor
+from host.hypervisor.datastore_manager import DatastoreManager
 from host.hypervisor.esx.vim_client import VimClient
 from host.hypervisor.esx.vm_manager import EsxVmManager
 
 
 class TestVmManager(unittest.TestCase):
+    def ds_manager_normalize(self, value):
+        return value
+
     def setUp(self):
         if "host_remote_test" not in config:
             raise SkipTest()
@@ -38,6 +43,8 @@ class TestVmManager(unittest.TestCase):
 
         self._logger = logging.getLogger(__name__)
         self.vim_client = VimClient(self.host, "root", self.pwd)
+        self.ds_manager = DatastoreManager()
+        self.ds_manager.normalize = MagicMock(side_effect=self.ds_manager_normalize)
         self.vm_manager = EsxVmManager(self.vim_client, [])
         for vm in self.vim_client.get_vms():
             vm.Destroy()

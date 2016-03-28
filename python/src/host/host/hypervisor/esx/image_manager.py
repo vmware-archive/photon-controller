@@ -737,11 +737,6 @@ class EsxImageManager(ImageManager):
             # Directory got created, stop the for loop
             break
 
-    def _rm_image_dir(self, datastore, id,
-                      parent_folder_name=IMAGE_FOLDER_NAME_PREFIX):
-        path = os.path.dirname(os_vmdk_path(datastore, id, parent_folder_name))
-        shutil.rmtree(path)
-
     def get_datastore_id_from_path(self, image_path):
         """Extract datastore id from the absolute path of an image.
 
@@ -779,6 +774,7 @@ class EsxImageManager(ImageManager):
         """
         src_path = os.path.dirname(os_vmdk_path(datastore_id, image_id,
                                                 IMAGE_FOLDER_NAME_PREFIX))
+        self._logger.info("Image path to be cleaned: %s" % src_path)
         # Verify locking held.
         assert(os.path.exists(src_path))
         # Generate a random suffix, this is to address the following.
@@ -792,7 +788,13 @@ class EsxImageManager(ImageManager):
         gc_dir = os_datastore_path(datastore_id, GC_IMAGE_FOLDER)
         dst_dir = os.path.join(gc_dir, rnd_uuid)
         os.makedirs(dst_dir)
-        shutil.move(src_path, dst_dir)
+        if os.path.islink(src_path):
+            # if dir is a symlink, move the link target and remove link
+            link = os.readlink(src_path)
+            shutil.move(link, dst_dir)
+            os.remove(src_path)
+        else:
+            shutil.move(src_path, dst_dir)
 
     def _clean_gc_dir(self, datastore_id):
         """
@@ -800,7 +802,7 @@ class EsxImageManager(ImageManager):
         """
         dir_path = os_datastore_path(datastore_id, GC_IMAGE_FOLDER)
         for sub_dir in os.listdir(dir_path):
-            shutil.rmtree(os.path.join(dir_path, sub_dir), ignore_errors=True)
+            rm_rf(os.path.join(dir_path, sub_dir), ignore_errors=True)
 
     def create_image(self, datastore_id, tmp_dir, image_id):
         """ Installs an image using image data staged at a temp directory.

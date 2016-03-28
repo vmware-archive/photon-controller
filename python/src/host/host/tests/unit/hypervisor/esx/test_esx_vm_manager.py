@@ -318,19 +318,20 @@ class TestEsxVmManager(unittest.TestCase):
         ('b.vmdk', 'Stray disk (possible data leak): b.vmdk')
     ])
     @patch.object(os.path, "isdir", return_value=True)
+    @patch.object(os.path, "islink", return_value=False)
     @patch.object(shutil, "rmtree")
     def test_ensure_directory_cleanup(
-            self, stray_file, expected, rmtree, isdir):
+            self, stray_file, expected, rmtree, islink, isdir):
         """Test cleanup of stray vm directory"""
 
         self.vm_manager._logger = MagicMock()
 
         with patch.object(os, "listdir", return_value=[stray_file]):
-            self.vm_manager._ensure_directory_cleanup("[fake] vms/xx/xxyy.vmx")
-            rmtree.assert_called_once_with("/vmfs/volumes/fake/vms/xx")
+            self.vm_manager._ensure_directory_cleanup("/vmfs/volumes/fake/vm_vm_foo")
+            rmtree.assert_called_once_with("/vmfs/volumes/fake/vm_vm_foo")
             self.vm_manager._logger.info.assert_called_once_with(expected)
             self.vm_manager._logger.warning.assert_called_once_with(
-                "Force delete vm directory /vmfs/volumes/fake/vms/xx")
+                "Force delete vm directory /vmfs/volumes/fake/vm_vm_foo")
 
     def test_delete_vm(self):
         """Test deleting a VM"""
@@ -342,12 +343,14 @@ class TestEsxVmManager(unittest.TestCase):
         self.vm_manager.vm_config.get_devices = MagicMock(return_value=[])
 
         self.vm_manager.get_vm_path = MagicMock()
-        self.vm_manager.get_vm_path.return_value = "[fake] vms/xx/xxyy.vmx"
+        self.vm_manager.get_vm_path.return_value = "[fake] vm_foo/xxyy.vmx"
+        self.vm_manager.get_vm_datastore = MagicMock()
+        self.vm_manager.get_vm_datastore.return_value = "fake"
         self.vm_manager._ensure_directory_cleanup = MagicMock()
 
         self.vm_manager.delete_vm("vm_foo")
         self.vm_manager._ensure_directory_cleanup.assert_called_once_with(
-            "[fake] vms/xx/xxyy.vmx")
+            "/vmfs/volumes/fake/vm_vm_foo")
 
     @parameterized.expand([
         ("poweredOn"), ("suspended")
