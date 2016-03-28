@@ -12,13 +12,8 @@
 import threading
 
 from gen.host import Host
-from gen.scheduler import Scheduler
 from gen.scheduler.ttypes import ConfigureResponse
 from gen.scheduler.ttypes import ConfigureResultCode
-from gen.scheduler.ttypes import FindResponse
-from gen.scheduler.ttypes import FindResultCode
-from gen.scheduler.ttypes import PlaceResponse
-from gen.scheduler.ttypes import PlaceResultCode
 
 
 class AgentHandler(Host.Iface):
@@ -38,19 +33,3 @@ class AgentHandler(Host.Iface):
         if len(self.configs) == self.num_agents:
             self.received_all.set()
         return ConfigureResponse(self.return_code)
-
-
-class SchedulerHandler(Scheduler.Iface):
-    """A scheduler handler to intercept messages sent to a leaf scheduler"""
-
-    def __init__(self):
-        self.find_reqs = []
-        self.place_reqs = []
-
-    def find(self, request):
-        self.find_reqs.append(request)
-        return FindResponse(FindResultCode.NOT_FOUND)
-
-    def place(self, request):
-        self.place_reqs.append(request)
-        return PlaceResponse(PlaceResultCode.OK)
