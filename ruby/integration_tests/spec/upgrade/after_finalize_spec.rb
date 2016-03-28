@@ -115,7 +115,7 @@ describe "migrate finalize", upgrade: true do
         req = VersionRequest.new
         res = agent_client.get_version req
         puts host.address
-        expect(res.version).to eq "0.1.2"
+        expect(res.version).to eq "0.9.0"
       end
     end
   end
