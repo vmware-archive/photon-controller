@@ -45,6 +45,7 @@ from host.hypervisor.vm_manager import IsoNotAttachedException
 from host.hypervisor.vm_manager import VmAlreadyExistException
 from host.hypervisor.vm_manager import VmNotFoundException
 from host.hypervisor.vm_manager import VmPowerStateException
+from host.hypervisor.esx.vm_config import compond_path_join
 from host.hypervisor.esx.vm_config import datastore_to_os_path
 from host.hypervisor.esx.vm_config import DeviceNotFoundException
 from host.hypervisor.esx.vm_config import EsxVmConfig
@@ -270,12 +271,14 @@ class EsxVmManager(VmManager):
         vm = self.vim_client.get_vm(vm_id)
         self._reconfig_vm(vm, spec)
 
-    def _ensure_directory_cleanup(self, vm_ds_path):
+    def _ensure_directory_cleanup(self, vm_dir):
         # Upon successful destroy of VM, log any stray files still left in the
         # VM directory and delete the directory.
-        vm_dir = os.path.dirname(datastore_to_os_path(vm_ds_path))
         if os.path.isdir(vm_dir):
-            files = os.listdir(vm_dir)
+            target_dir = vm_dir
+            if os.path.islink(vm_dir):
+                target_dir = os.readlink(vm_dir)
+            files = os.listdir(target_dir)
             for f in files:
                 if f.endswith(".vmdk"):
                     self._logger.info("Stray disk "
@@ -300,16 +303,17 @@ class EsxVmManager(VmManager):
             raise VmPowerStateException("Can only delete vm in state %s" %
                                         vm.runtime.powerState)
 
-        vm_ds_path = self.get_vm_path(vm.config)
+        # Getting the path for the new dir structure if we have upgraded from older structure
+        datastore_name = self.get_vm_datastore(vm.config)
+        vm_path = os_datastore_path(datastore_name, compond_path_join(VM_FOLDER_NAME_PREFIX, vm_id))
 
         if not force:
             self._verify_disks(vm)
 
-        self._logger.info("Destroy VM at %s" % vm_ds_path)
-
+        self._logger.info("Destroy VM at %s" % vm_path)
         self._invoke_vm(vm, "Destroy")
 
-        self._ensure_directory_cleanup(vm_ds_path)
+        self._ensure_directory_cleanup(vm_path)
 
         self.vim_client.wait_for_vm_delete(vm_id)
 
@@ -806,8 +810,9 @@ class EsxVmManager(VmManager):
         """
         vmx = config.files.vmPathName
         datastore_name = self._get_datastore_name_from_ds_path(vmx)
-        datastore_id = self._ds_manager.normalize(datastore_name)
-        return datastore_id
+        if self._ds_manager is not None:
+            return self._ds_manager.normalize(datastore_name)
+        return datastore_name
 
     @log_duration
     def get_linked_clone_path(self, vm_id):
