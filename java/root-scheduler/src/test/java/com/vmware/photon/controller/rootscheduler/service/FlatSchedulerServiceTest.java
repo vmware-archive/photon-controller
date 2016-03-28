@@ -13,10 +13,10 @@
 
 package com.vmware.photon.controller.rootscheduler.service;
 
-import com.vmware.photon.controller.common.thrift.TAsyncClientFactory;
-import com.vmware.photon.controller.common.thrift.ThriftFactory;
+import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.xenon.XenonRestClient;
 import com.vmware.photon.controller.common.zookeeper.gen.ServerAddress;
+import com.vmware.photon.controller.host.gen.Host;
 import com.vmware.photon.controller.resource.gen.Resource;
 import com.vmware.photon.controller.resource.gen.ResourceConstraint;
 import com.vmware.photon.controller.rootscheduler.Config;
@@ -25,7 +25,6 @@ import com.vmware.photon.controller.scheduler.gen.PlaceParams;
 import com.vmware.photon.controller.scheduler.gen.PlaceRequest;
 import com.vmware.photon.controller.scheduler.gen.PlaceResponse;
 import com.vmware.photon.controller.scheduler.gen.PlaceResultCode;
-import com.vmware.photon.controller.scheduler.gen.Scheduler;
 import com.vmware.photon.controller.scheduler.gen.Score;
 import com.vmware.photon.controller.scheduler.root.gen.RootScheduler;
 
@@ -63,7 +62,7 @@ public class FlatSchedulerServiceTest {
   private Config config;
 
   @Mock
-  private Scheduler.AsyncClient client;
+  private Host.AsyncClient client;
 
   @Mock
   private ConstraintChecker checker;
@@ -72,10 +71,7 @@ public class FlatSchedulerServiceTest {
   private XenonRestClient dcpRestClient;
 
   @Mock
-  private TAsyncClientFactory<Scheduler.AsyncClient> clientFactory;
-
-  @Mock
-  private ThriftFactory thriftFactory;
+  private HostClientFactory hostClientFactory;
 
   private ScoreCalculator scoreCalculator;
 
@@ -91,7 +87,7 @@ public class FlatSchedulerServiceTest {
     doReturn(schedulerConfig).when(config).getRoot();
     doReturn(rootPlaceParams).when(config).getRootPlaceParams();
     scoreCalculator = new ScoreCalculator(config);
-    doReturn(client).when(clientFactory.create(any(), any()));
+    doReturn(client).when(hostClientFactory.create());
   }
 
   /**
@@ -102,7 +98,7 @@ public class FlatSchedulerServiceTest {
       doReturn(ImmutableMap.of()).when(checker)
           .getCandidates(anyListOf(ResourceConstraint.class), anyInt());
       return new Object[][]{
-        {new FlatSchedulerService(config, checker, dcpRestClient, scoreCalculator, clientFactory, thriftFactory)},
+        {new FlatSchedulerService(config, checker, dcpRestClient, scoreCalculator, hostClientFactory)},
     };
   }
 
@@ -132,7 +128,7 @@ public class FlatSchedulerServiceTest {
     doReturn(matches).when(checker)
         .getCandidates(anyListOf(ResourceConstraint.class), anyInt());
     return new Object[][]{
-        {new FlatSchedulerService(config, checker, dcpRestClient, scoreCalculator, clientFactory, thriftFactory)},
+        {new FlatSchedulerService(config, checker, dcpRestClient, scoreCalculator, hostClientFactory)},
     };
   }
 
@@ -143,11 +139,11 @@ public class FlatSchedulerServiceTest {
   public void testNoResponse(RootScheduler.Iface scheduler) throws Exception {
     doAnswer((InvocationOnMock invocation) -> {
       Object[] arguments = invocation.getArguments();
-      AsyncMethodCallback<Scheduler.AsyncClient.host_place_call> call =
-          (AsyncMethodCallback<Scheduler.AsyncClient.host_place_call>) arguments[1];
+      AsyncMethodCallback<Host.AsyncClient.place_call> call =
+          (AsyncMethodCallback<Host.AsyncClient.place_call>) arguments[1];
       call.onError(new Exception());
       return null;
-    }).when(client).host_place(any(), any());
+    }).when(client).place(any(), any());
 
     PlaceRequest request = new PlaceRequest();
     PlaceResponse response = scheduler.place(request);
@@ -163,21 +159,21 @@ public class FlatSchedulerServiceTest {
     Set<PlaceResponse> responses = new HashSet<>();
     doAnswer((InvocationOnMock invocation) -> {
       Object[] arguments = invocation.getArguments();
-      AsyncMethodCallback<Scheduler.AsyncClient.host_place_call> call =
-          (AsyncMethodCallback<Scheduler.AsyncClient.host_place_call>) arguments[1];
+      AsyncMethodCallback<Host.AsyncClient.place_call> call =
+          (AsyncMethodCallback<Host.AsyncClient.place_call>) arguments[1];
       PlaceResponse response = new PlaceResponse(PlaceResultCode.OK);
       response.setScore(new Score(random.nextInt(), random.nextInt()));
       responses.add(response);
-      Scheduler.AsyncClient.host_place_call placeResponse = mock(Scheduler.AsyncClient.host_place_call.class);
+      Host.AsyncClient.place_call placeResponse = mock(Host.AsyncClient.place_call.class);
       doReturn(response).when(placeResponse).getResult();
       call.onComplete(placeResponse);
       return null;
-    }).when(client).host_place(any(), any());
+    }).when(client).place(any(), any());
 
     PlaceRequest request = new PlaceRequest();
     PlaceResponse response = scheduler.place(request);
     assertThat(response, is(scoreCalculator.pickBestResponse(responses)));
-    verify(client, times(4)).host_place(any(), any());
+    verify(client, times(4)).place(any(), any());
   }
 
   /**
@@ -189,24 +185,24 @@ public class FlatSchedulerServiceTest {
     Set<PlaceResponse> responses = new HashSet<>();
     doAnswer((InvocationOnMock invocation) -> {
       Object[] arguments = invocation.getArguments();
-      AsyncMethodCallback<Scheduler.AsyncClient.host_place_call> call =
-          (AsyncMethodCallback<Scheduler.AsyncClient.host_place_call>) arguments[1];
+      AsyncMethodCallback<Host.AsyncClient.place_call> call =
+          (AsyncMethodCallback<Host.AsyncClient.place_call>) arguments[1];
       if (responses.size() < numResponses) {
         PlaceResponse response = new PlaceResponse(PlaceResultCode.OK);
         response.setScore(new Score(random.nextInt(), random.nextInt()));
         responses.add(response);
-        Scheduler.AsyncClient.host_place_call placeResponse = mock(Scheduler.AsyncClient.host_place_call.class);
+        Host.AsyncClient.place_call placeResponse = mock(Host.AsyncClient.place_call.class);
         doReturn(response).when(placeResponse).getResult();
         call.onComplete(placeResponse);
       } else {
         call.onError(new Exception());
       }
       return null;
-    }).when(client).host_place(any(), any());
+    }).when(client).place(any(), any());
 
     PlaceRequest request = new PlaceRequest();
     PlaceResponse response = scheduler.place(request);
     assertThat(response, is(scoreCalculator.pickBestResponse(responses)));
-    verify(client, times(4)).host_place(any(), any());
+    verify(client, times(4)).place(any(), any());
   }
 }

@@ -13,12 +13,15 @@
 
 package com.vmware.photon.controller.rootscheduler.service;
 
+import com.vmware.photon.controller.common.clients.HostClient;
+import com.vmware.photon.controller.common.clients.HostClientFactory;
+import com.vmware.photon.controller.common.clients.HostClientProvider;
+import com.vmware.photon.controller.common.clients.exceptions.RpcException;
 import com.vmware.photon.controller.common.logging.LoggingUtils;
-import com.vmware.photon.controller.common.thrift.TAsyncClientFactory;
-import com.vmware.photon.controller.common.thrift.ThriftFactory;
 import com.vmware.photon.controller.common.xenon.XenonRestClient;
 import com.vmware.photon.controller.common.zookeeper.ServiceNodeEventHandler;
 import com.vmware.photon.controller.common.zookeeper.gen.ServerAddress;
+import com.vmware.photon.controller.host.gen.Host;
 import com.vmware.photon.controller.resource.gen.Disk;
 import com.vmware.photon.controller.resource.gen.Resource;
 import com.vmware.photon.controller.resource.gen.ResourceConstraint;
@@ -31,7 +34,6 @@ import com.vmware.photon.controller.scheduler.gen.ConfigureResultCode;
 import com.vmware.photon.controller.scheduler.gen.PlaceRequest;
 import com.vmware.photon.controller.scheduler.gen.PlaceResponse;
 import com.vmware.photon.controller.scheduler.gen.PlaceResultCode;
-import com.vmware.photon.controller.scheduler.gen.Scheduler;
 import com.vmware.photon.controller.scheduler.root.gen.RootScheduler;
 import com.vmware.photon.controller.status.gen.GetStatusRequest;
 import com.vmware.photon.controller.status.gen.Status;
@@ -43,12 +45,9 @@ import com.google.common.collect.Sets;
 import com.google.inject.Inject;
 import org.apache.thrift.TException;
 import org.apache.thrift.async.AsyncMethodCallback;
-import org.apache.thrift.protocol.TProtocolFactory;
-import org.apache.thrift.transport.TNonblockingSocket;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -73,26 +72,23 @@ import java.util.concurrent.TimeUnit;
  *
  * (1) http://www.eecs.berkeley.edu/~keo/publications/sosp13-final17.pdf
  */
-public class FlatSchedulerService implements RootScheduler.Iface, ServiceNodeEventHandler {
+public class FlatSchedulerService implements RootScheduler.Iface, ServiceNodeEventHandler, HostClientProvider {
   private static final Logger logger = LoggerFactory.getLogger(FlatSchedulerService.class);
   private final Config config;
   private ConstraintChecker checker;
   private final ScoreCalculator scoreCalculator;
-  private final TAsyncClientFactory<Scheduler.AsyncClient> clientFactory;
-  private final TProtocolFactory protocolFactory;
+  private final HostClientFactory hostClientFactory;
 
   @Inject
   public FlatSchedulerService(Config config,
                               ConstraintChecker checker,
                               XenonRestClient dcpRestClient,
                               ScoreCalculator scoreCalculator,
-                              TAsyncClientFactory<Scheduler.AsyncClient> clientFactory,
-                              ThriftFactory thriftFactory) {
+                              HostClientFactory hostClientFactory) {
     this.config = config;
     this.checker = checker;
-    this.clientFactory = clientFactory;
-    this.protocolFactory = thriftFactory.create("Scheduler");
     this.scoreCalculator = scoreCalculator;
+    this.hostClientFactory = hostClientFactory;
 
     if (this.checker instanceof InMemoryConstraintChecker) {
       final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
@@ -115,6 +111,11 @@ public class FlatSchedulerService implements RootScheduler.Iface, ServiceNodeEve
       request.getTracing_info().setRequest_id(UUID.randomUUID().toString());
     }
     LoggingUtils.setRequestId(request.getTracing_info().getRequest_id());
+  }
+
+  @Override
+  public HostClient getHostClient() {
+    return hostClientFactory.create();
   }
 
   @Override
@@ -189,43 +190,38 @@ public class FlatSchedulerService implements RootScheduler.Iface, ServiceNodeEve
     final CountDownLatch done = new CountDownLatch(candidates.size());
     for (Map.Entry<String, ServerAddress> entry : candidates.entrySet()) {
       ServerAddress address = entry.getValue();
-      TNonblockingSocket socket;
       try {
-        socket = new TNonblockingSocket(address.getHost(), address.getPort());
-      } catch (IOException ex) {
-        logger.warn("Failed to create socket for {}", address, ex);
-        done.countDown();
-        continue;
-      }
-      Scheduler.AsyncClient client = clientFactory.create(protocolFactory, socket);
-      client.host_place(request, new AsyncMethodCallback<Scheduler.AsyncClient.host_place_call>() {
-        @Override
-        public void onComplete(Scheduler.AsyncClient.host_place_call call) {
-          initRequestId(request);
-          PlaceResponse response;
-          try {
-            response = call.getResult();
-          } catch (TException ex) {
-            onError(ex);
-            return;
+        HostClient hostClient = getHostClient();
+        hostClient.setIpAndPort(address.getHost(), address.getPort());
+        hostClient.place(request.getResource(), new AsyncMethodCallback<Host.AsyncClient.place_call>() {
+          @Override
+          public void onComplete(Host.AsyncClient.place_call call) {
+            initRequestId(request);
+            PlaceResponse response;
+            try {
+              response = call.getResult();
+            } catch (TException ex) {
+              onError(ex);
+              return;
+            }
+            logger.info("Received a place response from {}: {}", entry, response);
+            returnCodes.add(response.getResult());
+            if (response.getResult() == PlaceResultCode.OK) {
+              okResponses.add(response);
+            }
+            done.countDown();
           }
-          logger.info("Received a place response from {}: {}", entry, response);
-          returnCodes.add(response.getResult());
-          if (response.getResult() == PlaceResultCode.OK) {
-            okResponses.add(response);
-          }
-          done.countDown();
-          socket.close();
-        }
 
-        @Override
-        public void onError(Exception ex) {
-          initRequestId(request);
-          logger.warn("Failed to get a placement response from {}: {}", entry, ex);
-          done.countDown();
-          socket.close();
-        }
-      });
+          @Override
+          public void onError(Exception ex) {
+            initRequestId(request);
+            logger.warn("Failed to get a placement response from {}: {}", entry, ex);
+            done.countDown();
+          }
+        });
+      } catch (RpcException ex) {
+        logger.warn("Failed to get a placement response from {}: {}", entry, ex);
+      }
     }
 
     // Wait for responses to come back.
