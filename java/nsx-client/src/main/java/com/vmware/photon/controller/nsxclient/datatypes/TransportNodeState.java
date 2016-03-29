@@ -11,12 +11,16 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package com.vmware.photon.controller.nsxclient.models;
+package com.vmware.photon.controller.nsxclient.datatypes;
 
 /**
- * This enum represents the TransportType.
+ * This enum represents the TransportNodeState.
  */
-public enum TransportType {
-  OVERLAY,
-  VLAN
+public enum TransportNodeState {
+  PENDING,
+  IN_PROGRESS,
+  SUCCESS,
+  FAILED,
+  PARTIAL_SUCCESS,
+  ORPHANED
 }

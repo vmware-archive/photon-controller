@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.nsxclient.models;
 
-import com.vmware.photon.controller.nsxclient.datatypes.TransportType;
+import com.vmware.photon.controller.nsxclient.datatypes.ConfigurationState;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -23,53 +23,53 @@ import java.lang.reflect.Field;
 import java.util.Objects;
 
 /**
- * This class represents a CreateTransportZoneRequest JSON structure.
+ * This class represents a ConfigurationStateElement JSON structure.
  */
 @JsonIgnoreProperties(ignoreUnknown =  true)
-public class CreateTransportZoneRequest {
+public class ConfigurationStateElement {
 
-  @JsonProperty(value = "display_name", required = false)
-  private String displayName;
+  @JsonProperty(value = "failure_code", required = false)
+  private Integer errorCode;
 
-  @JsonProperty(value = "description", required = false)
-  private String description;
+  @JsonProperty(value = "failure_message", required = false)
+  private String errorMessage;
 
-  @JsonProperty(value = "host_switch_name", required = true)
-  private String hostSwitchName;
+  @JsonProperty(value = "state", required = true)
+  private ConfigurationState state;
 
-  @JsonProperty(value = "transport_type", required = true)
-  private TransportType transportType;
+  @JsonProperty(value = "sub_system_id", required = false)
+  private String subSystemId;
 
-  public String getDisplayName() {
-    return this.displayName;
+  public Integer getErrorCode() {
+    return this.errorCode;
   }
 
-  public void setDisplayName(String displayName) {
-    this.displayName = displayName;
+  public void setErrorCode(Integer errorCode) {
+    this.errorCode = errorCode;
   }
 
-  public String getDescription() {
-    return this.description;
+  public String getErrorMessage() {
+    return this.errorMessage;
   }
 
-  public void setDescription(String description) {
-    this.description = description;
+  public void setErrorMessage(String errorMessage) {
+    this.errorMessage = errorMessage;
   }
 
-  public String getHostSwitchName() {
-    return this.hostSwitchName;
+  public ConfigurationState getState() {
+    return this.state;
   }
 
-  public void setHostSwitchName(String hostSwitchName) {
-    this.hostSwitchName = hostSwitchName;
+  public void setState(ConfigurationState state) {
+    this.state = state;
   }
 
-  public TransportType getTransportType() {
-    return this.transportType;
+  public String getSubSystemId() {
+    return this.subSystemId;
   }
 
-  public void setTransportType(TransportType transportType) {
-    this.transportType = transportType;
+  public void setSubSystemId(String subSystemId) {
+    this.subSystemId = subSystemId;
   }
 
   @Override
@@ -82,20 +82,20 @@ public class CreateTransportZoneRequest {
       return false;
     }
 
-    CreateTransportZoneRequest other = (CreateTransportZoneRequest) o;
-    return Objects.equals(getDisplayName(), other.getDisplayName())
-        && Objects.equals(getDescription(), other.getDescription())
-        && Objects.equals(getHostSwitchName(), other.getHostSwitchName())
-        && Objects.equals(getTransportType(), other.getTransportType());
+    ConfigurationStateElement other = (ConfigurationStateElement) o;
+    return Objects.equals(getErrorCode(), other.getErrorCode())
+        && Objects.equals(getErrorMessage(), other.getErrorMessage())
+        && Objects.equals(getState(), other.getState())
+        && Objects.equals(getSubSystemId(), other.getSubSystemId());
   }
 
   @Override
   public int hashCode() {
     return Objects.hash(super.hashCode(),
-        getDisplayName(),
-        getDescription(),
-        getHostSwitchName(),
-        getTransportType());
+        getErrorCode(),
+        getErrorMessage(),
+        getState(),
+        getSubSystemId());
   }
 
   @Override
