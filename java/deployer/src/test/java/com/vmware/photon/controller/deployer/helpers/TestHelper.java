@@ -358,15 +358,18 @@ public class TestHelper {
   public static DeploymentService.State createDeploymentService(
       com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment testEnvironment) throws
       Throwable {
-    return createDeploymentService(testEnvironment, false, false);
+    return createDeploymentService(testEnvironment, false, false, false);
   }
 
   public static DeploymentService.State createDeploymentService(
       com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment testEnvironment,
       boolean isAuthEnabled,
-      boolean isVirtualNetworkEnabled) throws Throwable {
-    return createDeploymentService(testEnvironment,
-        getDeploymentServiceStartState(isAuthEnabled, isVirtualNetworkEnabled));
+      boolean isVirtualNetworkEnabled,
+      boolean isPhotonDHCPEnabled) throws Throwable {
+    DeploymentService.State deploymentServiceState = getDeploymentServiceStartState(isAuthEnabled,
+        isVirtualNetworkEnabled);
+    deploymentServiceState.usePhotonDHCP = isPhotonDHCPEnabled;
+    return createDeploymentService(testEnvironment, deploymentServiceState);
   }
 
   public static DeploymentService.State createDeploymentService(

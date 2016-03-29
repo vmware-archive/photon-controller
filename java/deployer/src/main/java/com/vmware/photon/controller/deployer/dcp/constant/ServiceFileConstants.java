@@ -38,6 +38,7 @@ public class ServiceFileConstants {
       .put(ContainersConfig.ContainerType.CloudStore, "cloud-store_release.json")
       .put(ContainersConfig.ContainerType.Lightwave, "lightwave_release.json")
       .put(ContainersConfig.ContainerType.ManagementUi, "management-ui_release.json")
+      .put(ContainersConfig.ContainerType.BareMetalProvisioner, "bare-metal-provisioner_release.json")
       .build();
 
   public static final Map<ContainersConfig.ContainerType, String> CONTAINER_CONFIG_ROOT_DIRS =
@@ -51,6 +52,7 @@ public class ServiceFileConstants {
       .put(ContainersConfig.ContainerType.CloudStore, "cloud-store/")
       .put(ContainersConfig.ContainerType.Lightwave, "lightwave/")
       .put(ContainersConfig.ContainerType.ManagementUi, "management-ui/")
+      .put(ContainersConfig.ContainerType.BareMetalProvisioner, "bare-metal-provisioner/")
       .build();
 
 }

@@ -1337,7 +1337,7 @@ public class ProvisionHostTaskServiceTest {
       startState = buildValidStartState(TaskState.TaskStage.STARTED,
           ProvisionHostTaskService.TaskState.SubStage.PROVISION_NETWORK);
       startState.controlFlags = ControlFlags.CONTROL_FLAG_DISABLE_OPERATION_PROCESSING_ON_STAGE_TRANSITION;
-      startState.deploymentServiceLink = TestHelper.createDeploymentService(cloudStoreEnvironment, false, true)
+      startState.deploymentServiceLink = TestHelper.createDeploymentService(cloudStoreEnvironment, false, true, false)
           .documentSelfLink;
 
       fabricNodeId = "fabricNodeId";

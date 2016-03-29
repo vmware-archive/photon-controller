@@ -48,7 +48,20 @@ elif [ "$1" = 'cloud-store' ]; then
   if [ "$clean_sandbox" = 'true' ]; then
     rm -rf $dcp_storage_path
   fi
+elif [ "$1" = 'bare-metal-provisioner' ]; then
+  cp /archive/bare-metal-provisioner*.tar $package_dir/
+  archive="$package_dir/bare-metal-provisioner*.tar"
+  install_path='/usr/lib/esxcloud/bare-metal-provisioner'
+  clean_sandbox='true'
+  dcp_storage_path='/etc/esxcloud/bare-metal-provisioner/sandbox_21000'
+  rm -rf $install_path
+  mkdir -p $install_path
+  tar xf $archive --strip=1 -C $install_path
 
+  # Clean sandbox if clean_sandbox option is set
+  if [ "$clean_sandbox" = 'true' ]; then
+    rm -rf $dcp_storage_path
+  fi
 elif [ "$1" = 'deployer' ]; then
   cp /archive/deployer*.tar $package_dir/
   archive="$package_dir/deployer*.tar"
@@ -104,6 +117,10 @@ elif [ "$1" = 'deployer' ]; then
 
   tar --wildcards -xf /archive/cloud-store*.tar --strip=1 -C /tmp cloud-store*/configuration
   cp -r $tmp_dir/ $config_dir/cloud-store/
+  rm -rf $tmp_dir
+
+  tar --wildcards -xf /archive/bare-metal-provisioner*.tar --strip=1 -C /tmp bare-metal-provisioner*/configuration
+  cp -r $tmp_dir/ $config_dir/bare-metal-provisioner/
   rm -rf $tmp_dir
 
   cp -r $install_path/configuration $config_dir/deployer/

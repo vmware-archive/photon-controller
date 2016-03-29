@@ -799,6 +799,7 @@ public class CreateManagementVmTaskServiceTest {
 
       verify(flavorApi).createAsync(
           eq(getExpectedVmFlavorCreateSpec(1, 1636L)),
+//          eq(getExpectedVmFlavorCreateSpec(4, 15360L)),
           Matchers.<FutureCallback<Task>>any());
 
       verify(flavorApi).createAsync(

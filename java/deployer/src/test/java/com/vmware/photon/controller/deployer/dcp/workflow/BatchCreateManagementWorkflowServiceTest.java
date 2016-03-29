@@ -919,6 +919,7 @@ public class BatchCreateManagementWorkflowServiceTest {
     state.imageFile = "imageFile";
     state.deploymentServiceLink = "deploymentServiceLink";
     state.isAuthEnabled = false;
+    state.isPhotonDHCPEnabled = false;
     return state;
   }
 
