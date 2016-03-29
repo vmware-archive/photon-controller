@@ -35,20 +35,13 @@ import java.io.IOException;
 public class NsxClientApi {
   private final RestClient restClient;
   private final ObjectMapper objectMapper;
-  private final String basePath = "/api/v1";
+  protected final String basePath = "/api/v1";
 
   /**
    * Constructs a NSX client api base class.
    */
-  public NsxClientApi(String target, String username, String password) {
-    this(target, username, password, null);
-  }
-
-  /**
-   * Constructs a NSX client api base class.
-   */
-  public NsxClientApi(String target, String username, String password, RestClient restClient) {
-    this.restClient = restClient == null ? new RestClient(target, username, password) : restClient;
+  public NsxClientApi(RestClient restClient) {
+    this.restClient = restClient;
     this.objectMapper = new ObjectMapper();
     this.objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
   }
@@ -185,7 +178,7 @@ public class NsxClientApi {
   /**
    * Performs a DELETE HTTP request to NSX.
    */
-  private void deleteAsync(final String path,
+  protected void deleteAsync(final String path,
                            final int expectedResponseStatus,
                            final FutureCallback<Void> responseCallback) throws IOException {
     restClient.sendAsync(
