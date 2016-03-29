@@ -20,6 +20,7 @@ include 'flavors.thrift'
 const string SHARED_VMFS_TAG = "SHARED_VMFS"
 const string LOCAL_VMFS_TAG = "LOCAL_VMFS"
 const string NFS_TAG = "NFS"
+const string VSAN_TAG = "VSAN"
 
 /**
  * Resource specs.
