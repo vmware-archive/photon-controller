@@ -154,23 +154,15 @@ class TestEsxImageManager(unittest.TestCase):
     @patch("pysdk.task.WaitForTask")
     @patch("uuid.uuid4", return_value="fake_id")
     @patch("os.path.exists")
-    @patch("os.makedirs")
     @patch("shutil.copy")
-    @patch("shutil.rmtree")
-    @patch("shutil.move")
     @patch.object(EsxImageManager, "_manage_disk")
-    @patch.object(EsxImageManager, "_get_datastore_type",
-                  return_value=DatastoreType.EXT3)
+    @patch.object(EsxImageManager, "_get_datastore_type", return_value=DatastoreType.EXT3)
     @patch.object(EsxImageManager, "_check_image_repair", return_value=False)
-    @patch.object(EsxImageManager,
-                  "check_and_validate_image", return_value=False)
+    @patch.object(EsxImageManager, "check_and_validate_image", return_value=False)
     @patch.object(EsxImageManager, "_create_image_timestamp_file")
     @patch("host.hypervisor.esx.image_manager.FileBackedLock")
-    def test_copy_image(self, _flock, _create_image_timestamp,
-                        check_image, _check_image_repair,
-                        _get_ds_type, _manage_disk,
-                        _mv_dir, _rmtree, _copy, _makedirs, _exists,
-                        _uuid, _wait_for_task):
+    def test_copy_image(self, _flock, _create_image_timestamp, check_image, _check_image_repair,
+                        _get_ds_type, _manage_disk, _copy, _exists, _uuid, _wait_for_task):
         _exists.side_effect = (True,  # dest image vmdk missing
                                True,  # source meta file present
                                True)  # source manifest file present
@@ -206,8 +198,10 @@ class TestEsxImageManager(unittest.TestCase):
                          destSpec=_vd_spec)
         expected_vim_calls = [copy_call]
         self.assertEqual(expected_vim_calls, _manage_disk.call_args_list)
-        _mv_dir.assert_called_once_with('/vmfs/volumes/ds2/tmp_image_fake_id',
-                                        '%s/image_bar' % os_path_prefix2)
+
+        self.image_manager._vim_client.file_manager.MoveFile.assert_called_once_with(
+                sourceName='[] /vmfs/volumes/ds2/tmp_image_fake_id',
+                destinationName='[] %s/image_bar' % os_path_prefix2)
         _create_image_timestamp.assert_called_once_with(
             "/vmfs/volumes/ds2/tmp_image_fake_id")
 
