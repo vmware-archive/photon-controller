@@ -109,6 +109,8 @@ struct Deployment {
   25: optional i32 oauthAuthServerPort
 
   30: optional bool loadBalancerEnabled
+
+  35: optional bool usePhotonDHCP
 }
 
 enum DeployResultCode {
