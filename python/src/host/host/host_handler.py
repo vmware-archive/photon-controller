@@ -1033,6 +1033,7 @@ class HostHandler(Host.Iface):
             return CopyImageResponse(
                 result=CopyImageResultCode.DESTINATION_ALREADY_EXIST)
         except Exception as e:
+            self._logger.exception("Unexpected exception %s" % (e))
             return self._error_response(
                 CopyImageResultCode.SYSTEM_ERROR,
                 "Copy image %s->%s error: %s" % (src_image.id, dst_image.id,
