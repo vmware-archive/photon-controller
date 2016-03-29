@@ -24,6 +24,7 @@ import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.io.IOException;
 
@@ -41,6 +42,8 @@ public class NsxClientApi {
    * Constructs a NSX client api base class.
    */
   public NsxClientApi(RestClient restClient) {
+    checkNotNull(restClient, "restClient cannot be null");
+
     this.restClient = restClient;
     this.objectMapper = new ObjectMapper();
     this.objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
@@ -116,9 +119,7 @@ public class NsxClientApi {
         null);
 
     restClient.check(result, expectedResponseStatus);
-    T abc = deserializeObjectFromJson(result.getEntity(), typeReference);
-
-    return abc;
+    return deserializeObjectFromJson(result.getEntity(), typeReference);
   }
 
   /**
