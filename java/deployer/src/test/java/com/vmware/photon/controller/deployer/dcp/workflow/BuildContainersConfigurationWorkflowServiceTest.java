@@ -351,7 +351,7 @@ public class BuildContainersConfigurationWorkflowServiceTest {
 
     private void testEndToEndSuccess(boolean authEnabled, int hostCount) throws Throwable {
       DeploymentService.State deploymentStartState = TestHelper.createDeploymentService(cloudStoreEnvironment,
-          authEnabled);
+          authEnabled, false);
       startState.deploymentServiceLink = deploymentStartState.documentSelfLink;
 
       Map<ContainersConfig.ContainerType, ContainerTemplateService.State> templateMap = new HashMap<>();

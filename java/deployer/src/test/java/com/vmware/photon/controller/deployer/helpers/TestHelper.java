@@ -225,7 +225,8 @@ public class TestHelper {
     return containerTemplateServiceState;
   }
 
-  public static DeploymentService.State getDeploymentServiceStartState(boolean authEnabled) {
+  public static DeploymentService.State getDeploymentServiceStartState(boolean authEnabled,
+                                                                       boolean virtualNetworkEnabled) {
     DeploymentService.State startState = new DeploymentService.State();
     startState.imageDataStoreNames = Collections.singleton("IMAGE_DATASTORE_NAME");
     startState.imageDataStoreUsedForVMs = true;
@@ -242,6 +243,12 @@ public class TestHelper {
       startState.oAuthServerPort = 433;
     } else {
       startState.oAuthServerPort = 500;
+    }
+    startState.virtualNetworkEnabled = virtualNetworkEnabled;
+    if (startState.virtualNetworkEnabled) {
+      startState.networkManagerAddress = "1.2.3.4";
+      startState.networkManagerUsername = "networkManagerUsername";
+      startState.networkManagerPassword = "networkManagerPassword";
     }
     return startState;
   }
@@ -345,13 +352,15 @@ public class TestHelper {
   public static DeploymentService.State createDeploymentService(
       com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment testEnvironment) throws
       Throwable {
-    return createDeploymentService(testEnvironment, false);
+    return createDeploymentService(testEnvironment, false, false);
   }
 
   public static DeploymentService.State createDeploymentService(
-      com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment testEnvironment, boolean isAuthEnabled) throws
-      Throwable {
-    return createDeploymentService(testEnvironment, getDeploymentServiceStartState(isAuthEnabled));
+      com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment testEnvironment,
+      boolean isAuthEnabled,
+      boolean isVirtualNetworkEnabled) throws Throwable {
+    return createDeploymentService(testEnvironment,
+        getDeploymentServiceStartState(isAuthEnabled, isVirtualNetworkEnabled));
   }
 
   public static DeploymentService.State createDeploymentService(

@@ -452,7 +452,7 @@ public class RegisterAuthClientTaskServiceTest {
     }
 
     private void setupDeploymentServiceDocuments() throws Throwable {
-      DeploymentService.State deploymentStartState = TestHelper.getDeploymentServiceStartState(false);
+      DeploymentService.State deploymentStartState = TestHelper.getDeploymentServiceStartState(false, false);
       deploymentStartState.oAuthServerAddress = "http://lotus";
       deploymentStartState.oAuthServerPort = 433;
       deploymentStartState.oAuthUserName = "user1";

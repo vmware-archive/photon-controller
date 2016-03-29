@@ -957,7 +957,8 @@ public class AddManagementHostWorkflowServiceTest {
         com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment cloudStore,
         boolean isAuthEnabled)
         throws Throwable {
-      DeploymentService.State deploymentService = TestHelper.createDeploymentService(cloudStore, isAuthEnabled);
+      DeploymentService.State deploymentService = TestHelper.createDeploymentService(cloudStore,
+          isAuthEnabled, false);
       return deploymentService.documentSelfLink;
     }
 

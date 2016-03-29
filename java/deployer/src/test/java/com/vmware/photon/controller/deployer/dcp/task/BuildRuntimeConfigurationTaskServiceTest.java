@@ -417,7 +417,7 @@ public class BuildRuntimeConfigurationTaskServiceTest {
                                           int hostCount,
                                           Map<String, String> expectedParameters) throws Throwable {
 
-      DeploymentService.State deploymentStartState = TestHelper.getDeploymentServiceStartState(authEnabled);
+      DeploymentService.State deploymentStartState = TestHelper.getDeploymentServiceStartState(authEnabled, false);
       if (authEnabled) {
         deploymentStartState.oAuthMgmtUiLoginEndpoint = "MGMT_UI_LOGIN_URL";
         deploymentStartState.oAuthMgmtUiLogoutEndpoint = "MGMT_UI_LOGOUT_URL";

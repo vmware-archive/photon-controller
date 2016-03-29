@@ -466,7 +466,8 @@ public class CreateContainerTaskServiceTest {
     public void createTestDocuments(ContainersConfig.ContainerType containerType, boolean authEnabled)
         throws Throwable {
 
-      DeploymentService.State deploymentStartState = TestHelper.getDeploymentServiceStartState(authEnabled);
+      DeploymentService.State deploymentStartState = TestHelper.getDeploymentServiceStartState(
+          authEnabled, false);
 
       if (authEnabled) {
         deploymentStartState.oAuthSwaggerLoginEndpoint = SWAGGER_LOGIN_URL;
