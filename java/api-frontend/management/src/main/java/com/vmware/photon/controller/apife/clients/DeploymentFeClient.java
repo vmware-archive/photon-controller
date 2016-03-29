@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.apife.clients;
 
+import com.vmware.photon.controller.api.Auth;
 import com.vmware.photon.controller.api.ClusterConfiguration;
 import com.vmware.photon.controller.api.ClusterConfigurationSpec;
 import com.vmware.photon.controller.api.ClusterType;
@@ -135,6 +136,11 @@ public class DeploymentFeClient {
     Deployment deployment = deploymentBackend.toApiRepresentation(id);
     deployment.setClusterConfigurations(deploymentBackend.getClusterConfigurations());
     return deployment;
+  }
+
+  public Auth getAuth() {
+    Auth auth = deploymentBackend.getAuth();
+    return auth;
   }
 
   public Task setSecurityGroups(String id, List<String> securityGroups) throws ExternalException {

@@ -14,13 +14,14 @@
 package com.vmware.photon.controller.apife.resources;
 
 import com.vmware.photon.controller.api.Auth;
-import com.vmware.photon.controller.apife.config.AuthConfig;
+import com.vmware.photon.controller.apife.clients.DeploymentFeClient;
 import com.vmware.photon.controller.apife.resources.routes.AuthRoutes;
 
-import org.testng.annotations.BeforeMethod;
+import org.mockito.Mock;
 import org.testng.annotations.Test;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.mockito.Mockito.when;
 
 import javax.ws.rs.core.UriBuilder;
 
@@ -33,21 +34,14 @@ public class AuthResourceTest extends ResourceTest {
   private static final String AUTH_AUTH_SERVER_ADDRESS = "10.1.1.0";
   private static final int AUTH_AUTH_SERVER_PORT = 443;
 
-  AuthResource authResource;
-  String authRoute = UriBuilder.fromPath(AuthRoutes.API).build().toString();
+  @Mock
+  private DeploymentFeClient deploymentFeClient;
 
-  public AuthResourceTest() {
-    AuthConfig config = new AuthConfig();
-    config.setEnableAuth(ENABLE_AUTH);
-    config.setAuthServerAddress(AUTH_AUTH_SERVER_ADDRESS);
-    config.setAuthServerPort(AUTH_AUTH_SERVER_PORT);
-
-    this.authResource = new AuthResource(config);
-  }
+  private String authRoute = UriBuilder.fromPath(AuthRoutes.API).build().toString();
 
   @Override
   protected void setUpResources() throws Exception {
-    addResource(this.authResource);
+    addResource(new AuthResource(deploymentFeClient));
   }
 
   @Test
@@ -57,20 +51,19 @@ public class AuthResourceTest extends ResourceTest {
   /**
    * Contains tests for HTTP GET Method on AuthResource.
    */
-  public class GetAuthResourceTests {
+  @Test
+  public void testGetAuthInfo() throws Exception {
+    Auth auth = new Auth();
+    auth.setEnabled(AuthResourceTest.ENABLE_AUTH);
+    auth.setEndpoint(AuthResourceTest.AUTH_AUTH_SERVER_ADDRESS);
+    auth.setPort(AuthResourceTest.AUTH_AUTH_SERVER_PORT);
 
-    @BeforeMethod
-    public void setUp() throws Exception {
-      AuthResourceTest.this.setUpJersey();
-    }
+    when(deploymentFeClient.getAuth()).thenReturn(auth);
 
-    @Test
-    public void testGetAuthInfo() throws Exception {
-      Auth authInfo = client().target(authRoute).request().get(Auth.class);
+    Auth authInfo = client().target(authRoute).request().get(Auth.class);
 
-      assertThat(authInfo.getEnabled(), is(AuthResourceTest.ENABLE_AUTH));
-      assertThat(authInfo.getEndpoint(), is(AuthResourceTest.AUTH_AUTH_SERVER_ADDRESS));
-      assertThat(authInfo.getPort(), is(AuthResourceTest.AUTH_AUTH_SERVER_PORT));
-    }
+    assertThat(authInfo.getEnabled(), is(AuthResourceTest.ENABLE_AUTH));
+    assertThat(authInfo.getEndpoint(), is(AuthResourceTest.AUTH_AUTH_SERVER_ADDRESS));
+    assertThat(authInfo.getPort(), is(AuthResourceTest.AUTH_AUTH_SERVER_PORT));
   }
 }
