@@ -180,6 +180,7 @@ public class DeploymentWorkFlowServiceClientTest {
           {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE},
           {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.PROVISION_CLOUD_HOSTS},
           {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.MIGRATE_DEPLOYMENT_DATA},
+          {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.STOP_SLINGSHOT},
           {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.ALLOCATE_CM_RESOURCES},
       };
     }
@@ -281,6 +282,7 @@ public class DeploymentWorkFlowServiceClientTest {
             case CREATE_MANAGEMENT_PLANE:
             case PROVISION_CLOUD_HOSTS:
             case ALLOCATE_CM_RESOURCES:
+            case STOP_SLINGSHOT:
               startState.taskSubStates.add(TaskState.TaskStage.FINISHED);
               break;
             case MIGRATE_DEPLOYMENT_DATA:
@@ -390,6 +392,29 @@ public class DeploymentWorkFlowServiceClientTest {
         allocateCMStages.add(status);
       }
 
+      ArrayList<DeployStageStatus> stopSlingshotStages = new ArrayList<>();
+      for (DeploymentWorkflowService.TaskState.SubStage s : DeploymentWorkflowService.TaskState.SubStage.values()) {
+        DeployStageStatus status = new DeployStageStatus();
+        status.setName(s.name());
+        switch (s) {
+          case PROVISION_MANAGEMENT_HOSTS:
+          case CREATE_MANAGEMENT_PLANE:
+          case PROVISION_CLOUD_HOSTS:
+          case ALLOCATE_CM_RESOURCES:
+            status.setCode(DeployStatusCode.FINISHED);
+            break;
+
+          case STOP_SLINGSHOT:
+            status.setCode(DeployStatusCode.IN_PROGRESS);
+            break;
+          default:
+            status.setCode(null);
+            break;
+        }
+
+        stopSlingshotStages.add(status);
+      }
+
       ArrayList<DeployStageStatus> migrateDataStages = new ArrayList<>();
       for (DeploymentWorkflowService.TaskState.SubStage s : DeploymentWorkflowService.TaskState.SubStage.values()) {
         DeployStageStatus status = new DeployStageStatus();
@@ -399,6 +424,7 @@ public class DeploymentWorkFlowServiceClientTest {
           case CREATE_MANAGEMENT_PLANE:
           case PROVISION_CLOUD_HOSTS:
           case ALLOCATE_CM_RESOURCES:
+          case STOP_SLINGSHOT:
             status.setCode(DeployStatusCode.FINISHED);
             break;
           case MIGRATE_DEPLOYMENT_DATA:
@@ -421,6 +447,7 @@ public class DeploymentWorkFlowServiceClientTest {
           case CREATE_MANAGEMENT_PLANE:
           case PROVISION_CLOUD_HOSTS:
           case ALLOCATE_CM_RESOURCES:
+          case STOP_SLINGSHOT:
           case MIGRATE_DEPLOYMENT_DATA:
             status.setCode(DeployStatusCode.FINISHED);
             break;
@@ -441,6 +468,7 @@ public class DeploymentWorkFlowServiceClientTest {
           case CREATE_MANAGEMENT_PLANE:
           case PROVISION_CLOUD_HOSTS:
           case ALLOCATE_CM_RESOURCES:
+          case STOP_SLINGSHOT:
             status.setCode(DeployStatusCode.FINISHED);
             break;
           case MIGRATE_DEPLOYMENT_DATA:
@@ -465,6 +493,8 @@ public class DeploymentWorkFlowServiceClientTest {
               allocateCMStages},
           {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.MIGRATE_DEPLOYMENT_DATA,
               migrateDataStages},
+          {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.STOP_SLINGSHOT,
+              stopSlingshotStages},
           {TaskState.TaskStage.FINISHED, null, finishedStages},
           {TaskState.TaskStage.FAILED, null, failedStages},
       };

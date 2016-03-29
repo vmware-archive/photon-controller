@@ -248,6 +248,12 @@ public class DeploymentService extends StatefulService {
     public Boolean usePhotonDHCP;
 
     /**
+     * This value represents the slingshot endpoint for the deployment.
+     */
+    @WriteOnce
+    public String dhcpServerAddress;
+
+    /**
      * Id of image entity in cloudstore.
      */
     @WriteOnce

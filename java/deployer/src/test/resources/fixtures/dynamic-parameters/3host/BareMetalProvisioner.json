@@ -1,0 +1,17 @@
+{
+  "ENABLE_SYSLOG": "true",
+  "SHARED_SECRET": "shared-secret",
+  "ENABLE_AUTH": "false",
+  "SYSLOG_ENDPOINT": "SYSLOG_ENDPOINT",
+  "ZOOKEEPER_QUORUM": "0.0.0.0:2181",
+  "LOG_DIRECTORY": "/var/log/esxcloud",
+  "BARE-METAL-PROVISIONER_XENON_STORAGE_PATH": "/etc/esxcloud/bare-metal-provisioner/sandbox_21000",
+  "BARE-METAL-PROVISIONER_INSTALL_DIRECTORY": "/usr/lib/esxcloud/bare-metal-provisioner",
+  "memoryMb": "2048",
+  "PEER_NODES": "[{\"peerAddress\":\"0.0.0.0\",\"peerPort\":\"21000\"}]",
+  "APIFE_PORT": "28080",
+  "REGISTRATION_ADDRESS": "0.0.0.0",
+  "diskGb": "8",
+  "USE_PHOTON_DHCP": "false",
+  "cpuCount": "2"
+}

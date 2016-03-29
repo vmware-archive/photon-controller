@@ -160,6 +160,13 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
     public Boolean isAuthEnabled;
 
     /**
+     * This value represents if Slingshot is enabled or not.
+     */
+    @NotNull
+    @Immutable
+    public Boolean isPhotonDHCPEnabled;
+
+    /**
      * This value represents the URL of the DeploymentService object.
      */
     @NotNull
@@ -700,6 +707,7 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
     CreateContainersWorkflowService.State startState = new CreateContainersWorkflowService.State();
     startState.deploymentServiceLink = currentState.deploymentServiceLink;
     startState.isAuthEnabled = currentState.isAuthEnabled;
+    startState.isPhotonDHCPEnabled = currentState.isPhotonDHCPEnabled;
     startState.taskPollDelay = currentState.taskPollDelay;
     TaskUtils.startTaskAsync(
         this,
