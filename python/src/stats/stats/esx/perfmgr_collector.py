@@ -224,13 +224,15 @@ class PerfManagerCollector(Collector):
         # Stats are sampled by the performance manager every 20
         # seconds. Hostd keeps 180 samples at the rate of 1 sample
         # per 20 seconds, which results in samples that span an hour.
-
         query_specs, vm_stat_prefix_map = self._add_vm_query_specs(start_time, end_time)
         query_specs.append(self._build_perf_query_spec(self.get_host_system(), start_time, end_time))
+
+        self._logger.debug("Collecting %d metrics" % len(query_specs))
 
         results = {}
         stats = self.get_perf_manager().QueryPerf(query_specs)
         if not stats:
+            self._logger.debug("No metrics collected")
             return results
 
         results.update(self._get_host_stats(stats, vm_stat_prefix_map))
