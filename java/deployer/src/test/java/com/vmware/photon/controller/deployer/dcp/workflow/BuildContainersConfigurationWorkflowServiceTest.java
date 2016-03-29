@@ -331,27 +331,27 @@ public class BuildContainersConfigurationWorkflowServiceTest {
 
     @Test
     public void testOneHostAuthEnabled() throws Throwable {
-      testEndToEndSuccess(true, 1);
+      testEndToEndSuccess(true, false, 1);
     }
 
     @Test
     public void testOneHostAuthDisabled() throws Throwable {
-      testEndToEndSuccess(false, 1);
+      testEndToEndSuccess(false, true, 1);
     }
 
     @Test
     public void testThreeHostsAuthEnabled() throws Throwable {
-      testEndToEndSuccess(true, 3);
+      testEndToEndSuccess(true, true, 3);
     }
 
     @Test
     public void testThreeHostsAuthDisabled() throws Throwable {
-      testEndToEndSuccess(false, 3);
+      testEndToEndSuccess(false, false, 3);
     }
 
-    private void testEndToEndSuccess(boolean authEnabled, int hostCount) throws Throwable {
+    private void testEndToEndSuccess(boolean authEnabled, boolean isPhotonDHCPEnabled, int hostCount) throws Throwable {
       DeploymentService.State deploymentStartState = TestHelper.createDeploymentService(cloudStoreEnvironment,
-          authEnabled);
+          authEnabled, isPhotonDHCPEnabled);
       startState.deploymentServiceLink = deploymentStartState.documentSelfLink;
 
       Map<ContainersConfig.ContainerType, ContainerTemplateService.State> templateMap = new HashMap<>();
@@ -369,6 +369,7 @@ public class BuildContainersConfigurationWorkflowServiceTest {
           switch (containerType) {
             case Lightwave:
             case LoadBalancer:
+            case BareMetalProvisioner:
               if (i != 0) {
                 continue;
               }

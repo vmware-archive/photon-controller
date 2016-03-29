@@ -345,13 +345,16 @@ public class TestHelper {
   public static DeploymentService.State createDeploymentService(
       com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment testEnvironment) throws
       Throwable {
-    return createDeploymentService(testEnvironment, false);
+    return createDeploymentService(testEnvironment, false, false);
   }
 
   public static DeploymentService.State createDeploymentService(
-      com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment testEnvironment, boolean isAuthEnabled) throws
+      com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment testEnvironment,
+      boolean isAuthEnabled, boolean isPhotonDHCPEnabled) throws
       Throwable {
-    return createDeploymentService(testEnvironment, getDeploymentServiceStartState(isAuthEnabled));
+    DeploymentService.State deploymentServiceState = getDeploymentServiceStartState(isAuthEnabled);
+    deploymentServiceState.usePhotonDHCP = isPhotonDHCPEnabled;
+    return createDeploymentService(testEnvironment, deploymentServiceState);
   }
 
   public static DeploymentService.State createDeploymentService(
