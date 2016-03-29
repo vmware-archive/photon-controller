@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.apife.backends;
 
+import com.vmware.photon.controller.api.Auth;
 import com.vmware.photon.controller.api.AuthInfo;
 import com.vmware.photon.controller.api.ClusterConfiguration;
 import com.vmware.photon.controller.api.ClusterConfigurationSpec;
@@ -688,11 +689,21 @@ public class DeploymentDcpBackendTest {
       AuthInfo authInfo = deployment.getAuth();
       assertThat(authInfo.getEnabled(), is(entity.getAuthEnabled()));
       assertThat(authInfo.getEndpoint(), is(entity.getOauthEndpoint()));
+      assertThat(authInfo.getPort(), is(entity.getOauthPort()));
       assertThat(authInfo.getTenant(), is(entity.getOauthTenant()));
       assertThat(authInfo.getUsername(), nullValue());
       assertThat(authInfo.getPassword(), nullValue());
       assertThat(CollectionUtils.isEqualCollection(authInfo.getSecurityGroups(),
           Arrays.asList(new String[]{"securityGroup1", "securityGroup2"})), is(true));
+    }
+
+    @Test
+    public void testGetAuth() throws Throwable {
+      Auth auth = deploymentBackend.getAuth();
+      assertThat(auth, is(notNullValue()));
+      assertThat(auth.getEnabled(), is(true));
+      assertThat(auth.getEndpoint(), is(entity.getOauthEndpoint()));
+      assertThat(auth.getPort(), is(entity.getOauthPort()));
     }
 
     @Test(expectedExceptions = DeploymentNotFoundException.class)

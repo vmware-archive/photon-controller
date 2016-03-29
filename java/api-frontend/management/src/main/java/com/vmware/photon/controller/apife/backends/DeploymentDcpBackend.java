@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.apife.backends;
 
+import com.vmware.photon.controller.api.Auth;
 import com.vmware.photon.controller.api.AuthInfo;
 import com.vmware.photon.controller.api.ClusterConfiguration;
 import com.vmware.photon.controller.api.ClusterConfigurationSpec;
@@ -50,6 +51,8 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static com.google.common.base.Preconditions.checkArgument;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -254,6 +257,7 @@ public class DeploymentDcpBackend implements DeploymentBackend {
     AuthInfo authInfo = new AuthInfo();
     authInfo.setEnabled(deploymentEntity.getAuthEnabled());
     authInfo.setEndpoint(deploymentEntity.getOauthEndpoint());
+    authInfo.setPort(deploymentEntity.getOauthPort());
     authInfo.setTenant(deploymentEntity.getOauthTenant());
     authInfo.setSecurityGroups(deploymentEntity.getOauthSecurityGroups());
     deployment.setAuth(authInfo);
@@ -263,6 +267,21 @@ public class DeploymentDcpBackend implements DeploymentBackend {
     deployment.setMigrationStatus(generateMigrationStatus(deploymentEntity));
 
     return deployment;
+  }
+
+  @Override
+  public Auth getAuth() {
+    List<Deployment> deploymentList = getAll();
+    checkArgument(deploymentList.size() > 0, "Must have one or more deployments present to display auth info.");
+    Deployment deployment = deploymentList.get(0);
+
+    AuthInfo authInfo = deployment.getAuth();
+    Auth auth = new Auth();
+    auth.setEnabled(authInfo.getEnabled());
+    auth.setEndpoint(authInfo.getEndpoint());
+    auth.setPort(authInfo.getPort());
+
+    return auth;
   }
 
   private MigrationStatus generateMigrationStatus(DeploymentEntity entity) {
