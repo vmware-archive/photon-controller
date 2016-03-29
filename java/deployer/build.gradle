@@ -13,6 +13,7 @@ dependencies {
   compile project(':common-auth')
   compile project(':cluster-manager:backend')
   compile project(':cluster-manager:service-documents')
+  compile project(':bare-metal-provisioner')
 
   compile "commons-io:commons-io:2.4"
   compile "com.google.guava:guava:${versions.guava}"
@@ -42,6 +43,7 @@ dependencies {
   }
   testCompile "org.powermock:powermock-module-testng:${versions.powermock}"
   testCompile(project(path: ':cloud-store', configuration: 'tests'))
+  testCompile(project(path: ':bare-metal-provisioner', configuration: 'tests'))
 }
 
 jar {

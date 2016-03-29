@@ -87,6 +87,8 @@ public class DockerProvisioner {
     Ports containerPortBindings = new Ports();
     for (Integer key : portBindings.keySet()) {
       containerPortBindings.bind(ExposedPort.tcp(key), Ports.Binding(portBindings.get(key)));
+      // We expose both udp and tcp right now
+      containerPortBindings.bind(ExposedPort.udp(key), Ports.Binding(portBindings.get(key)));
     }
     return containerPortBindings;
   }

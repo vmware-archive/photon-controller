@@ -368,23 +368,23 @@ public class BuildRuntimeConfigurationTaskServiceTest {
 
     @Test(dataProvider = "ContainerTypesAuthEnabled")
     public void testOneHostRuntimeStateAuthEnabled(ContainersConfig.ContainerType containerType) throws Throwable {
-      testRuntimeStateFromFile(containerType, true, 1, getExpectedParameters("1host-auth", containerType));
+      testRuntimeStateFromFile(containerType, true, true, 1, getExpectedParameters("1host-auth", containerType));
     }
 
     @Test(dataProvider = "ContainerTypesAuthDisabled")
     public void testOneHostRuntimeStateAuthDisabled(ContainersConfig.ContainerType containerType) throws Throwable {
-      testRuntimeStateFromFile(containerType, false, 1, getExpectedParameters("1host", containerType));
+      testRuntimeStateFromFile(containerType, false, false, 1, getExpectedParameters("1host", containerType));
     }
 
 
     @Test(dataProvider = "ContainerTypesAuthEnabled")
     public void testThreeHostRuntimeStateAuthEnabled(ContainersConfig.ContainerType containerType) throws Throwable {
-      testRuntimeStateFromFile(containerType, true, 3, getExpectedParameters("3host-auth", containerType));
+      testRuntimeStateFromFile(containerType, true, true, 3, getExpectedParameters("3host-auth", containerType));
     }
 
     @Test(dataProvider = "ContainerTypesAuthDisabled")
     public void testThreeHostRuntimeStateAuthDisabled(ContainersConfig.ContainerType containerType) throws Throwable {
-      testRuntimeStateFromFile(containerType, false, 3, getExpectedParameters("3host", containerType));
+      testRuntimeStateFromFile(containerType, false, false, 3, getExpectedParameters("3host", containerType));
     }
 
     @DataProvider(name = "ContainerTypesAuthEnabled")
@@ -401,6 +401,7 @@ public class BuildRuntimeConfigurationTaskServiceTest {
 
       return TestHelper.toDataProvidersList(Stream.of(ContainersConfig.ContainerType.values())
           .filter((type) -> type != ContainersConfig.ContainerType.Lightwave)
+          .filter((type) -> type != ContainersConfig.ContainerType.BareMetalProvisioner)
           .collect(Collectors.toList()));
     }
 
@@ -414,6 +415,7 @@ public class BuildRuntimeConfigurationTaskServiceTest {
 
     private void testRuntimeStateFromFile(ContainersConfig.ContainerType containerType,
                                           boolean authEnabled,
+                                          boolean usePhotonDHCP,
                                           int hostCount,
                                           Map<String, String> expectedParameters) throws Throwable {
 
@@ -425,6 +427,10 @@ public class BuildRuntimeConfigurationTaskServiceTest {
         deploymentStartState.oAuthSwaggerLoginEndpoint = "SWAGGER_LOGIN_URL";
         deploymentStartState.oAuthSwaggerLogoutEndpoint = "SWAGGER_LOGOUT_URL";
         deploymentStartState.oAuthTenantName = "TENANT_NAME";
+      }
+
+      if (usePhotonDHCP) {
+        deploymentStartState.usePhotonDHCP = true;
       }
 
       startState.deploymentServiceLink =
@@ -468,6 +474,19 @@ public class BuildRuntimeConfigurationTaskServiceTest {
 
               desiredIndex = 0;
               break;
+
+            //
+            // N.B. BMP is deployed as a singleton container, and only when usePhotonDHCP is
+            // true.
+            //
+
+            case BareMetalProvisioner:
+              if (!usePhotonDHCP || i != 0) {
+                continue;
+              }
+
+              desiredIndex = 0;
+              break;
           }
 
           ContainerService.State containerState =
@@ -505,6 +524,9 @@ public class BuildRuntimeConfigurationTaskServiceTest {
           break;
         case LoadBalancer:
           assertThat(deploymentState.loadBalancerAddress, is("0.0.0.0"));
+          break;
+        case BareMetalProvisioner:
+          assertThat(deploymentState.dhcpServerAddress, is("0.0.0.0"));
           break;
       }
     }

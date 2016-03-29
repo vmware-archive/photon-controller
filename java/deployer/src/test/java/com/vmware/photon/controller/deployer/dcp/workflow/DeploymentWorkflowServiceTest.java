@@ -407,10 +407,17 @@ public class DeploymentWorkflowServiceTest {
               TaskState.TaskStage.CANCELLED, null},
 
           {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.ALLOCATE_CM_RESOURCES,
-              TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.MIGRATE_DEPLOYMENT_DATA},
+              TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.STOP_SLINGSHOT},
           {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.ALLOCATE_CM_RESOURCES,
               TaskState.TaskStage.FAILED, null},
           {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.ALLOCATE_CM_RESOURCES,
+              TaskState.TaskStage.CANCELLED, null},
+
+          {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.STOP_SLINGSHOT,
+              TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.MIGRATE_DEPLOYMENT_DATA},
+          {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.STOP_SLINGSHOT,
+              TaskState.TaskStage.FAILED, null},
+          {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.STOP_SLINGSHOT,
               TaskState.TaskStage.CANCELLED, null},
 
           {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.MIGRATE_DEPLOYMENT_DATA,
@@ -457,6 +464,8 @@ public class DeploymentWorkflowServiceTest {
               TaskState.TaskStage.CREATED, null},
           {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.ALLOCATE_CM_RESOURCES,
               TaskState.TaskStage.CREATED, null},
+          {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.STOP_SLINGSHOT,
+              TaskState.TaskStage.CREATED, null},
           {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.MIGRATE_DEPLOYMENT_DATA,
               TaskState.TaskStage.CREATED, null},
 
@@ -467,6 +476,15 @@ public class DeploymentWorkflowServiceTest {
           {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.MIGRATE_DEPLOYMENT_DATA,
               TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.PROVISION_CLOUD_HOSTS},
           {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.MIGRATE_DEPLOYMENT_DATA,
+              TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.STOP_SLINGSHOT},
+
+          {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.STOP_SLINGSHOT,
+              TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.PROVISION_MANAGEMENT_HOSTS},
+          {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.STOP_SLINGSHOT,
+              TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE},
+          {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.STOP_SLINGSHOT,
+              TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.PROVISION_CLOUD_HOSTS},
+          {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.STOP_SLINGSHOT,
               TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.ALLOCATE_CM_RESOURCES},
 
           {TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.ALLOCATE_CM_RESOURCES,
@@ -493,6 +511,8 @@ public class DeploymentWorkflowServiceTest {
           {TaskState.TaskStage.FINISHED, null,
               TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.ALLOCATE_CM_RESOURCES},
           {TaskState.TaskStage.FINISHED, null,
+              TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.STOP_SLINGSHOT},
+          {TaskState.TaskStage.FINISHED, null,
               TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.MIGRATE_DEPLOYMENT_DATA},
           {TaskState.TaskStage.FINISHED, null,
               TaskState.TaskStage.FINISHED, null},
@@ -512,6 +532,8 @@ public class DeploymentWorkflowServiceTest {
           {TaskState.TaskStage.FAILED, null,
               TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.ALLOCATE_CM_RESOURCES},
           {TaskState.TaskStage.FAILED, null,
+              TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.STOP_SLINGSHOT},
+          {TaskState.TaskStage.FAILED, null,
               TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.MIGRATE_DEPLOYMENT_DATA},
           {TaskState.TaskStage.FAILED, null,
               TaskState.TaskStage.FINISHED, null},
@@ -530,6 +552,8 @@ public class DeploymentWorkflowServiceTest {
               TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.PROVISION_CLOUD_HOSTS},
           {TaskState.TaskStage.CANCELLED, null,
               TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.ALLOCATE_CM_RESOURCES},
+          {TaskState.TaskStage.CANCELLED, null,
+              TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.STOP_SLINGSHOT},
           {TaskState.TaskStage.CANCELLED, null,
               TaskState.TaskStage.STARTED, DeploymentWorkflowService.TaskState.SubStage.MIGRATE_DEPLOYMENT_DATA},
           {TaskState.TaskStage.CANCELLED, null,
@@ -602,6 +626,9 @@ public class DeploymentWorkflowServiceTest {
     private com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment localStore;
     private com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment remoteStore;
 
+    private com.vmware.photon.controller.provisioner.xenon.helpers.TestEnvironment localBMP;
+    private com.vmware.photon.controller.provisioner.xenon.helpers.TestEnvironment remoteBMP;
+
     @BeforeClass
     public void setUpClass() throws Throwable {
       FileUtils.deleteDirectory(storageDirectory);
@@ -637,9 +664,12 @@ public class DeploymentWorkflowServiceTest {
       MockHelper.mockServiceConfigurator(serviceConfiguratorFactory, true);
     }
 
-    private void createCloudStores() throws Throwable {
+    private void createOtherXenonHosts() throws Throwable {
       localStore = com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.create(1);
       remoteStore = com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.create(1);
+
+      localBMP = com.vmware.photon.controller.provisioner.xenon.helpers.TestEnvironment.create(1);
+      remoteBMP = com.vmware.photon.controller.provisioner.xenon.helpers.TestEnvironment.create(1);
     }
 
     private void createTestEnvironment(int remoteNodeCount) throws Throwable {
@@ -696,6 +726,12 @@ public class DeploymentWorkflowServiceTest {
       doReturn(Collections.singleton(new InetSocketAddress("127.0.0.1", remoteStore.getHosts()[0].getState().httpPort)))
           .when(zkBuilder)
           .getServers(Matchers.startsWith("0.0.0"), eq("cloudstore"));
+      doReturn(Collections.singleton(
+          new InetSocketAddress("127.0.0.1", localBMP.getHosts()[0].getState().httpPort)))
+          .when(zkBuilder).getServers(eq(quorum), eq("bare-metal-provisioner"));
+      doReturn(Collections.singleton(
+          new InetSocketAddress("127.0.0.1", remoteBMP.getHosts()[0].getState().httpPort)))
+          .when(zkBuilder).getServers(Matchers.startsWith("0.0.0"), eq("bare-metal-provisioner"));
       doReturn(mock(ServiceConfig.class))
           .when(zkBuilder)
           .getServiceConfig(anyString(), anyString());
@@ -728,6 +764,16 @@ public class DeploymentWorkflowServiceTest {
         remoteStore = null;
       }
 
+      if (null != localBMP) {
+        localBMP.stop();
+        localBMP = null;
+      }
+
+      if (null != remoteBMP) {
+        remoteBMP.stop();
+        remoteBMP = null;
+      }
+
       authHelperFactory = null;
       containersConfig = null;
       dockerProvisionerFactory = null;
@@ -747,17 +793,17 @@ public class DeploymentWorkflowServiceTest {
     @DataProvider(name = "HostCountsWithAuthInfo")
     public Object[][] getHostCountsWithAuthInfo() {
       return new Object[][]{
-          {1, 1, 1, true},
-          {1, 1, 1, false},
-          {1, 2, 11, true},
-          {1, 2, 11, false},
+          {1, 1, 1, true, true},
+//          {1, 1, 1, false, false},
+//          {1, 2, 11, true, false},
+//          {1, 2, 11, false, true},
       };
     }
 
     @Test(dataProvider = "HostCountsWithAuthInfo")
     public void testSuccess(Integer mgmtHostCount, Integer mixedHostCount, Integer cloudHostCount,
-                            Boolean isAuthEnabled) throws Throwable {
-      createCloudStores();
+                            Boolean isAuthEnabled, Boolean isPhotonDHCPEnabled) throws Throwable {
+      createOtherXenonHosts();
       MockHelper.mockHttpFileServiceClient(httpFileServiceClientFactory, true);
       MockHelper.mockHostClient(agentControlClientFactory, hostClientFactory, true);
       MockHelper.mockApiClient(apiClientFactory, localStore, true);
@@ -782,7 +828,7 @@ public class DeploymentWorkflowServiceTest {
         createHostService(Collections.singleton(UsageTag.CLOUD.name()), null);
       }
 
-      startState.deploymentServiceLink = createDeploymentServiceLink(localStore, isAuthEnabled);
+      startState.deploymentServiceLink = createDeploymentServiceLink(localStore, isAuthEnabled, isPhotonDHCPEnabled);
 
       DeploymentWorkflowService.State finalState =
           localDeployer.callServiceAndWaitForState(
@@ -795,7 +841,7 @@ public class DeploymentWorkflowServiceTest {
 
       verifyDeploymentServiceState(mgmtHostCount + mixedHostCount);
       verifyVmServiceStates(mgmtHostCount + mixedHostCount);
-      verifyContainerTemplateServiceStates(isAuthEnabled);
+      verifyContainerTemplateServiceStates(isAuthEnabled, isPhotonDHCPEnabled);
       verifyContainerServiceStates();
       verifyTenantServiceState();
       verifyResourceTicketServiceState();
@@ -815,10 +861,10 @@ public class DeploymentWorkflowServiceTest {
 
     private String createDeploymentServiceLink(
         com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment cloudStore,
-        boolean isAuthEnabled)
+        boolean isAuthEnabled, boolean isPhotonDHCPEnabled)
         throws Throwable {
-      DeploymentService.State deploymentService = TestHelper.createDeploymentService(
-          cloudStore, isAuthEnabled, false);
+      DeploymentService.State deploymentService = TestHelper.createDeploymentService(cloudStore, isAuthEnabled,
+          false, isPhotonDHCPEnabled);
       return deploymentService.documentSelfLink;
     }
 
@@ -832,7 +878,7 @@ public class DeploymentWorkflowServiceTest {
 
     @Test(dataProvider = "AuthEnabled")
     public void testProvisionManagementHostFailure(Boolean authEnabled) throws Throwable {
-      createCloudStores();
+      createOtherXenonHosts();
       MockHelper.mockHttpFileServiceClient(httpFileServiceClientFactory, false);
       MockHelper.mockHostClient(agentControlClientFactory, hostClientFactory, false);
       MockHelper.mockApiClient(apiClientFactory, localStore, true);
@@ -849,7 +895,7 @@ public class DeploymentWorkflowServiceTest {
           new HashSet<>(Arrays.asList(UsageTag.CLOUD.name(), UsageTag.MGMT.name())));
       TestHelper.createHostService(localStore, Collections.singleton(UsageTag.CLOUD.name()));
 
-      startState.deploymentServiceLink = createDeploymentServiceLink(localStore, authEnabled);
+      startState.deploymentServiceLink = createDeploymentServiceLink(localStore, authEnabled, false);
 
       DeploymentWorkflowService.State finalState =
           localDeployer.callServiceAndWaitForState(
@@ -863,7 +909,7 @@ public class DeploymentWorkflowServiceTest {
 
     @Test(dataProvider = "AuthEnabled")
     public void testCreateManagementPlaneFailure(Boolean authEnabled) throws Throwable {
-      createCloudStores();
+      createOtherXenonHosts();
       MockHelper.mockHttpFileServiceClient(httpFileServiceClientFactory, true);
       MockHelper.mockHostClient(agentControlClientFactory, hostClientFactory, true);
       MockHelper.mockApiClient(apiClientFactory, localStore, false);
@@ -880,7 +926,7 @@ public class DeploymentWorkflowServiceTest {
           new HashSet<>(Arrays.asList(UsageTag.CLOUD.name(), UsageTag.MGMT.name())));
       TestHelper.createHostService(localStore, Collections.singleton(UsageTag.CLOUD.name()));
 
-      startState.deploymentServiceLink = createDeploymentServiceLink(localStore, authEnabled);
+      startState.deploymentServiceLink = createDeploymentServiceLink(localStore, authEnabled, false);
 
       DeploymentWorkflowService.State finalState =
           localDeployer.callServiceAndWaitForState(
@@ -894,7 +940,7 @@ public class DeploymentWorkflowServiceTest {
 
     @Test
     public void testAuthClientRegistrationFailure() throws Throwable {
-      createCloudStores();
+      createOtherXenonHosts();
       MockHelper.mockHttpFileServiceClient(httpFileServiceClientFactory, true);
       MockHelper.mockHostClient(agentControlClientFactory, hostClientFactory, true);
       MockHelper.mockApiClient(apiClientFactory, localStore, true);
@@ -911,7 +957,7 @@ public class DeploymentWorkflowServiceTest {
           new HashSet<>(Arrays.asList(UsageTag.CLOUD.name(), UsageTag.MGMT.name())));
       TestHelper.createHostService(localStore, Collections.singleton(UsageTag.CLOUD.name()));
 
-      startState.deploymentServiceLink = createDeploymentServiceLink(localStore, true);
+      startState.deploymentServiceLink = createDeploymentServiceLink(localStore, true, false);
 
       DeploymentWorkflowService.State finalState =
           localDeployer.callServiceAndWaitForState(
@@ -972,7 +1018,8 @@ public class DeploymentWorkflowServiceTest {
       assertThat(hostServiceLinks.size(), is(expectedVmEntityNumber));
     }
 
-    private void verifyContainerTemplateServiceStates(Boolean isAuthEnabled) throws Throwable {
+    private void verifyContainerTemplateServiceStates(Boolean isAuthEnabled, Boolean isPhotonDHCPEnabled)
+        throws Throwable {
       List<ContainerTemplateService.State> states = queryForServiceStates(ContainerTemplateService.State.class,
           localDeployer);
 
@@ -981,6 +1028,10 @@ public class DeploymentWorkflowServiceTest {
       int expectedContainerTemplateEntitynumber = containersConfig.getContainerSpecs().size();
       if (!isAuthEnabled) {
         // if auth is not enabled we will not deploy LightWave
+        expectedContainerTemplateEntitynumber -= 1;
+      }
+      if (!isPhotonDHCPEnabled) {
+        // if auth is not enabled we will not deploy BMP container
         expectedContainerTemplateEntitynumber -= 1;
       }
       assertThat(states.size(), is(expectedContainerTemplateEntitynumber));
