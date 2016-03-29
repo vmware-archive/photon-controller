@@ -329,7 +329,7 @@ class EsxImageManager(ImageManager):
             source_meta = os_metadata_path(source_datastore, source_id,
                                            IMAGE_FOLDER_NAME_PREFIX)
             # Create the temp directory
-            mkdir_p(tmp_image_dir_path)
+            self._vim_client.file_manager.MakeDirectory(os_to_datastore_path(tmp_image_dir_path))
 
             # Copy the metadata file if it exists.
             if os.path.exists(source_meta):
@@ -407,13 +407,17 @@ class EsxImageManager(ImageManager):
                 if self._check_image_repair(image_id, datastore):
                     raise DiskAlreadyExistException("Image already exists")
 
-                shutil.move(tmp_dir, image_path)
+                self._vim_client.file_manager.MoveFile(sourceName=os_to_datastore_path(tmp_dir),
+                                                       destinationName=os_to_datastore_path(image_path))
         except (AcquireLockFailure, InvalidFile):
             self._logger.info("Unable to lock %s for atomic move" % image_id)
             raise
         except DiskAlreadyExistException:
             self._logger.info("Image %s already copied" % image_id)
             rm_rf(tmp_dir)
+            raise
+        except:
+            self._logger.exception("Move image %s to %s failed" % (image_id, image_path))
             raise
 
     """
