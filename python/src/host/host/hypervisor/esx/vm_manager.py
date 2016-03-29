@@ -28,7 +28,6 @@ from pyVmomi import vim
 from common.exclusive_set import DuplicatedValue
 from common.exclusive_set import ExclusiveSet
 from common.file_util import rm_rf
-from common.file_util import mkdir_p
 from common.kind import Flavor
 from common.kind import Unit
 from gen.agent.ttypes import PowerState
@@ -53,7 +52,6 @@ from host.hypervisor.esx.vm_config import get_image_base_disk
 from host.hypervisor.esx.vm_config import get_root_disk
 from host.hypervisor.esx.vm_config import is_persistent_disk
 from host.hypervisor.esx.vm_config import os_datastore_path
-from host.hypervisor.esx.vm_config import SUPPORT_VSAN
 from host.hypervisor.esx.vm_config import vmdk_id
 from host.hypervisor.esx.vm_config import VM_FOLDER_NAME_PREFIX
 from host.hypervisor.datastore_manager import DatastoreNotFoundException
@@ -254,13 +252,11 @@ class EsxVmManager(VmManager):
         # The scenario of the vm creation at ESX where intermediate directory
         # has to be created has not been well exercised and is known to be
         # racy and not informative on failures. So be defensive and proactively
-        # create the intermediate directory ("/vmfs/volumes/<dsid>/vms/xy").
-        if not SUPPORT_VSAN:
-            vm_parent_dir = datastore_to_os_path(create_spec.files.vmPathName)
-            if os.path.exists(vm_parent_dir):
-                self._logger.debug("Parent directory %s exists" % vm_parent_dir)
-            else:
-                mkdir_p(vm_parent_dir)
+        # create the intermediate directory ("/vmfs/volumes/<dsid>/vm_xy").
+        try:
+            self.vim_client.file_manager.MakeDirectory(create_spec.files.vmPathName)
+        except vim.fault.FileAlreadyExists:
+            self._logger.debug("Parent directory %s exists" % create_spec.files.vmPathName)
 
         task = folder.CreateVm(create_spec, resource_pool, None)
         self.vim_client.wait_for_task(task)
