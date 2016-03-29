@@ -78,8 +78,15 @@ class StatsPublisher(object):
         self._logger.info("Stats publisher configured")
 
     def publish(self):
+        if len(self._publishers) <= 0:
+            self._logger.debug("No publishers found.")
+            return
+
         retrieved_stats = {}
         latest_ts = self._last_seen_ts
+
+        self._logger.debug("DB metrics size %d" % len(self._db.get_keys()))
+
         for metric in self._db.get_keys():
             values = self._db.get_values_since(self._last_seen_ts, metric)
             retrieved_stats[metric] = values
@@ -87,7 +94,7 @@ class StatsPublisher(object):
                 latest_ts = max(latest_ts, max([x[0] for x in values]))
 
         self._last_seen_ts = latest_ts
-        if retrieved_stats and len(self._publishers) > 0:
+        if len(retrieved_stats) > 0:
             # Use first publisher by default for now
             publisher = self._publishers[0]
             published = publisher.publish(retrieved_stats)
@@ -98,6 +105,8 @@ class StatsPublisher(object):
             elif self.failed_count > 0:
                 self.failed_count = 0
                 self._publisher_thread.update_wait_interval(self.DEFAULT_PUBLISH_INTERVAL_SECS)
+        else:
+            self._logger.debug("No metrics to send")
 
         if self.failed_count >= self.publish_try_count:
             self.failed_count = 0
