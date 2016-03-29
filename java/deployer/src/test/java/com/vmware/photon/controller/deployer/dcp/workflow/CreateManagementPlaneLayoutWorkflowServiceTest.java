@@ -534,6 +534,7 @@ public class CreateManagementPlaneLayoutWorkflowServiceTest {
       startState.controlFlags = null;
       startState.taskPollDelay = 10;
       startState.isAuthEnabled = true;
+      startState.isPhotonDHCPEnabled = true;
     }
 
     @BeforeMethod
