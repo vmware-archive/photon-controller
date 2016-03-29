@@ -17,6 +17,7 @@ from common.lock import locked
 from gen.resource.constants import LOCAL_VMFS_TAG
 from gen.resource.constants import SHARED_VMFS_TAG
 from gen.resource.constants import NFS_TAG
+from gen.resource.constants import VSAN_TAG
 from gen.resource.ttypes import HostServiceTicket, Datastore, DatastoreType
 from host.hypervisor.datastore_manager import DatastoreManager
 from host.hypervisor.hypervisor import UpdateListener
@@ -168,6 +169,7 @@ class EsxDatastoreManager(DatastoreManager, UpdateListener):
             system_tag = NFS_TAG
         elif type == "vsan":
             thrift_type = DatastoreType.VSAN
+            system_tag = VSAN_TAG
         else:
             thrift_type = DatastoreType.OTHER
 

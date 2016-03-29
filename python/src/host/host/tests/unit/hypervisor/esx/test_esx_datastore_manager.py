@@ -19,6 +19,7 @@ from hamcrest import *  # noqa
 from gen.resource.constants import LOCAL_VMFS_TAG
 from gen.resource.constants import SHARED_VMFS_TAG
 from gen.resource.constants import NFS_TAG
+from gen.resource.constants import VSAN_TAG
 from gen.resource.ttypes import Datastore
 from gen.resource.ttypes import DatastoreType as DSType
 from host.hypervisor.esx.datastore_manager import EsxDatastoreManager
@@ -69,7 +70,7 @@ class TestEsxDatastoreManager(unittest.TestCase):
                       tags=set([NFS_TAG])),
             Datastore("id-4", "datastore4", type=DSType.NFS_41,
                       tags=set([NFS_TAG])),
-            Datastore("id-5", "datastore5", type=DSType.VSAN, tags=set()),
+            Datastore("id-5", "datastore5", type=DSType.VSAN, tags=set([VSAN_TAG])),
             Datastore("id-6", "datastore6", type=DSType.OTHER, tags=set())))
 
         assert_that(ds_manager.image_datastores(), is_(["id-2"]))
