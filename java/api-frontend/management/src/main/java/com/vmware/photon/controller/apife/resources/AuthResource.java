@@ -15,10 +15,11 @@ package com.vmware.photon.controller.apife.resources;
 
 import com.vmware.photon.controller.api.Auth;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
-import com.vmware.photon.controller.apife.config.AuthConfig;
+import com.vmware.photon.controller.apife.clients.DeploymentFeClient;
 import com.vmware.photon.controller.apife.resources.routes.AuthRoutes;
 import static com.vmware.photon.controller.api.common.Responses.generateCustomResponse;
 
+import com.google.inject.Inject;
 import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiResponse;
@@ -42,10 +43,11 @@ import javax.ws.rs.core.Response;
 @Consumes(MediaType.APPLICATION_JSON)
 public class AuthResource {
 
-  private AuthConfig authConfig;
+  private final DeploymentFeClient deploymentFeClient;
 
-  public AuthResource(AuthConfig authConfig) {
-    this.authConfig = authConfig;
+  @Inject
+  public AuthResource(DeploymentFeClient deploymentFeClient) {
+    this.deploymentFeClient = deploymentFeClient;
   }
 
   @GET
@@ -55,11 +57,7 @@ public class AuthResource {
   @ApiResponses(
       value = {@ApiResponse(code = 200, message = "Returns Authentication/ Authorization Info")})
   public Response get(@Context Request request) throws ExternalException {
-
-    Auth auth = new Auth();
-    auth.setEnabled(this.authConfig.isAuthEnabled());
-    auth.setEndpoint(this.authConfig.getAuthServerAddress());
-    auth.setPort(this.authConfig.getAuthServerPort());
+    Auth auth = deploymentFeClient.getAuth();
 
     return generateCustomResponse(Response.Status.OK, auth);
   }
