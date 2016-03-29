@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.apife.backends;
 
+import com.vmware.photon.controller.api.Auth;
 import com.vmware.photon.controller.api.ClusterConfiguration;
 import com.vmware.photon.controller.api.ClusterConfigurationSpec;
 import com.vmware.photon.controller.api.ClusterType;
@@ -72,4 +73,6 @@ public interface DeploymentBackend {
   DeploymentEntity findById(String id) throws DeploymentNotFoundException;
 
   TaskEntity prepareUpdateImageDatastores(String id, List<String> imageDatastores) throws ExternalException;
+
+  public Auth getAuth();
 }
