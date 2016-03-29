@@ -72,6 +72,8 @@ public class DeploymentEntity extends BaseEntity {
 
   private boolean useImageDatastoreForVms;
 
+  private boolean usePhotonDHCP;
+
   //Transient
   private String operationId;
 
@@ -266,6 +268,14 @@ public class DeploymentEntity extends BaseEntity {
     this.useImageDatastoreForVms = useImageDatastoreForVms;
   }
 
+  public boolean getUsePhotonDHCP() {
+    return this.usePhotonDHCP;
+  }
+
+  public void setUsePhotonDHCP(boolean usePhotonDHCP) {
+    this.usePhotonDHCP = usePhotonDHCP;
+  }
+
   public String getOperationId() {
     return this.operationId;
   }
@@ -329,6 +339,7 @@ public class DeploymentEntity extends BaseEntity {
         && Objects.equals(this.getNtpEndpoint(), other.getNtpEndpoint())
         && Objects.equals(this.getImageDatastores(), other.getImageDatastores())
         && Objects.equals(this.getUseImageDatastoreForVms(), other.getUseImageDatastoreForVms())
+        && Objects.equals(this.getUsePhotonDHCP(), other.getUsePhotonDHCP())
         && Objects.equals(this.getLoadBalancerEnabled(), other.getLoadBalancerEnabled())
         && Objects.equals(this.getLoadBalancerAddress(), other.getLoadBalancerAddress())
         && Objects.equals(this.getMigrationProgress(), other.getMigrationProgress())
@@ -359,6 +370,7 @@ public class DeploymentEntity extends BaseEntity {
         .add("ntpEndpoint", this.getNtpEndpoint())
         .add("imageDatastores", StringUtils.join(this.getImageDatastores(), ','))
         .add("useImageDatastoreForVms", this.getUseImageDatastoreForVms())
+        .add("usePhotonDHCP", this.getUsePhotonDHCP())
         .add("operationId", this.getOperationId())
         .add("loadBalancerEnabled", this.getLoadBalancerEnabled())
         .add("loadBalancerAddress", this.getLoadBalancerAddress())

@@ -8,6 +8,7 @@
         "enabled": false
     },
     "useImageDatastoreForVms": false,
+    "usePhotonDHCP": false,
     "auth": {
         "enabled": true,
         "tenant": "t",
