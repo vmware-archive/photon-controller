@@ -267,6 +267,11 @@ class VimClient(object):
 
     @property
     @hostd_error_handler
+    def file_manager(self):
+        return self._content.fileManager
+
+    @property
+    @hostd_error_handler
     def virtual_disk_manager(self):
         return self._content.virtualDiskManager
 

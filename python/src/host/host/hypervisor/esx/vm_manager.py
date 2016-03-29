@@ -254,13 +254,11 @@ class EsxVmManager(VmManager):
         # The scenario of the vm creation at ESX where intermediate directory
         # has to be created has not been well exercised and is known to be
         # racy and not informative on failures. So be defensive and proactively
-        # create the intermediate directory ("/vmfs/volumes/<dsid>/vms/xy").
-        if not SUPPORT_VSAN:
-            vm_parent_dir = datastore_to_os_path(create_spec.files.vmPathName)
-            if os.path.exists(vm_parent_dir):
-                self._logger.debug("Parent directory %s exists" % vm_parent_dir)
-            else:
-                mkdir_p(vm_parent_dir)
+        # create the intermediate directory ("/vmfs/volumes/<dsid>/vm_xy").
+        try:
+            self.vim_client.file_manager.MakeDirectory(create_spec.files.vmPathName)
+        except vim.fault.FileAlreadyExists:
+            self._logger.debug("Parent directory %s exists" % create_spec.files.vmPathName)
 
         task = folder.CreateVm(create_spec, resource_pool, None)
         self.vim_client.wait_for_task(task)
