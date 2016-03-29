@@ -106,6 +106,13 @@ public class CreateManagementPlaneLayoutWorkflowService extends StatefulService 
     public Boolean isLoadbalancerEnabled;
 
     /**
+     * This value represents if we deploy slingshot.
+     */
+    @DefaultBoolean(value = false)
+    @Immutable
+    public Boolean isPhotonDHCPEnabled;
+
+    /**
      * This value represents if we deploy with authentication enabled.
      */
     @DefaultBoolean(value = false)
@@ -271,6 +278,8 @@ public class CreateManagementPlaneLayoutWorkflowService extends StatefulService 
                   || !spec.getType().equals(ContainersConfig.ContainerType.LoadBalancer.name()))
               .filter(spec -> currentState.isAuthEnabled
                   || !spec.getType().equals(ContainersConfig.ContainerType.Lightwave.name()))
+              .filter(spec -> currentState.isPhotonDHCPEnabled
+                  || !spec.getType().equals(ContainersConfig.ContainerType.BareMetalProvisioner.name()))
               .map(spec -> buildTemplateStartState(spec))
               .map(templateStartState -> Operation.createPost(this, ContainerTemplateFactoryService.SELF_LINK)
                   .setBody(templateStartState)))

@@ -39,6 +39,7 @@ import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
 import com.vmware.photon.controller.deployer.dcp.util.MiscUtils;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClient;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClientFactoryProvider;
+import com.vmware.photon.controller.provisioner.xenon.ProvisionerXenonHost;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceDocument;
@@ -87,6 +88,7 @@ public class DeploymentWorkflowService extends StatefulService {
       CREATE_MANAGEMENT_PLANE,
       PROVISION_CLOUD_HOSTS,
       ALLOCATE_CM_RESOURCES,
+      STOP_SLINGSHOT,
       MIGRATE_DEPLOYMENT_DATA
     }
   }
@@ -249,6 +251,7 @@ public class DeploymentWorkflowService extends StatefulService {
         case CREATE_MANAGEMENT_PLANE:
         case PROVISION_CLOUD_HOSTS:
         case ALLOCATE_CM_RESOURCES:
+        case STOP_SLINGSHOT:
         case MIGRATE_DEPLOYMENT_DATA:
           break;
         default:
@@ -367,6 +370,9 @@ public class DeploymentWorkflowService extends StatefulService {
       case ALLOCATE_CM_RESOURCES:
         allocateClusterManagerResources(currentState);
         break;
+      case STOP_SLINGSHOT:
+        stopSlingshot(currentState);
+        break;
       case MIGRATE_DEPLOYMENT_DATA:
         migrateDeploymentData(currentState);
     }
@@ -478,6 +484,7 @@ public class DeploymentWorkflowService extends StatefulService {
     startState.imageFile = currentState.managementVmImageFile;
     startState.deploymentServiceLink = currentState.deploymentServiceLink;
     startState.isAuthEnabled = deploymentService.oAuthEnabled;
+    startState.isPhotonDHCPEnabled = deploymentService.usePhotonDHCP;
     startState.taskPollDelay = currentState.taskPollDelay;
     startState.ntpEndpoint = deploymentService.ntpEndpoint;
     startState.childPollInterval = currentState.childPollInterval;
@@ -505,7 +512,7 @@ public class DeploymentWorkflowService extends StatefulService {
               case FINISHED:
                 TaskUtils.sendSelfPatch(service, buildPatch(
                     TaskState.TaskStage.STARTED,
-                    TaskState.SubStage.MIGRATE_DEPLOYMENT_DATA,
+                    TaskState.SubStage.STOP_SLINGSHOT,
                     null));
                 break;
               case FAILED:
@@ -536,6 +543,36 @@ public class DeploymentWorkflowService extends StatefulService {
         AllocateClusterManagerResourcesTaskService.State.class,
         currentState.taskPollDelay,
         callback);
+  }
+
+  private void stopSlingshot(final State currentState) throws Throwable {
+    ServiceUtils.logInfo(this, "Stopping Slingshot");
+    final Service service = this;
+
+    HostUtils.getListeningExecutorService(this).execute(() -> {
+      try {
+        ZookeeperClient zookeeperClient
+            = ((ZookeeperClientFactoryProvider) getHost()).getZookeeperServerSetFactoryBuilder().create();
+        Set<InetSocketAddress> localServers = zookeeperClient.getServers(
+            HostUtils.getDeployerContext(this).getZookeeperQuorum(),
+            DeployerModule.BMP_SERVICE_NAME);
+
+        for (InetSocketAddress address : localServers) {
+          HostUtils.getDockerProvisionerFactory(this)
+              .create(address.getAddress().getHostAddress())
+              .stopContainerMatching(DeployerModule.BMP_SERVICE_NAME);
+        }
+      } catch (Throwable t) {
+        failTask(t);
+        return;
+      }
+
+      TaskUtils.sendSelfPatch(service, buildPatch(
+          TaskState.TaskStage.STARTED,
+          TaskState.SubStage.MIGRATE_DEPLOYMENT_DATA,
+          null));
+
+    });
   }
 
   private void migrateDeploymentData(State currentState) {
@@ -572,6 +609,64 @@ public class DeploymentWorkflowService extends StatefulService {
 
     Set<Class<?>> servicesToMigrate
         = new HashSet<Class<?>>((Arrays.<Class<?>>asList(DeployerXenonServiceHost.FACTORY_SERVICES_TO_MIGRATE)));
+
+    final AtomicInteger latch = new AtomicInteger(servicesToMigrate.size());
+    final List<Throwable> errors = new BlockingArrayQueue<>();
+    for (Class<?> factoryClass : servicesToMigrate) {
+      CopyStateTaskService.State startState = MiscUtils.createCopyStateStartState(localServers, remoteServers,
+          MiscUtils.getSelfLink(factoryClass), null, 1);
+
+      TaskUtils.startTaskAsync(
+          this,
+          CopyStateTaskFactoryService.SELF_LINK,
+          startState,
+          state -> TaskUtils.finalTaskStages.contains(state.taskState.stage),
+          CopyStateTaskService.State.class,
+          currentState.taskPollDelay,
+          new FutureCallback<CopyStateTaskService.State>() {
+            @Override
+            public void onSuccess(@Nullable CopyStateTaskService.State result) {
+              switch (result.taskState.stage) {
+                case FINISHED:
+                  break;
+                case FAILED:
+                case CANCELLED:
+                  errors.add(new Throwable("service: " + result.documentSelfLink + " did not finish."));
+                  break;
+              }
+
+              if (latch.decrementAndGet() == 0) {
+                if (!errors.isEmpty()) {
+                  failTask(errors);
+                } else {
+                  migrateSlingshotData(currentState, zookeeperQuorum);
+                }
+              }
+            }
+
+            @Override
+            public void onFailure(Throwable t) {
+              errors.add(t);
+              if (latch.decrementAndGet() == 0) {
+                failTask(errors);
+              }
+            }
+          }
+      );
+    }
+  }
+
+  private void migrateSlingshotData(State currentState, String zookeeperQuorum) {
+    ZookeeperClient zookeeperClient
+        = ((ZookeeperClientFactoryProvider) getHost()).getZookeeperServerSetFactoryBuilder().create();
+    Set<InetSocketAddress> localServers = zookeeperClient.getServers(
+        HostUtils.getDeployerContext(this).getZookeeperQuorum(),
+        DeployerModule.BMP_SERVICE_NAME);
+    Set<InetSocketAddress> remoteServers
+        = zookeeperClient.getServers(zookeeperQuorum, DeployerModule.BMP_SERVICE_NAME);
+
+    Set<Class<?>> servicesToMigrate
+        = new HashSet<Class<?>>((Arrays.<Class<?>>asList(ProvisionerXenonHost.FACTORY_SERVICES)));
 
     final AtomicInteger latch = new AtomicInteger(servicesToMigrate.size());
     final List<Throwable> errors = new BlockingArrayQueue<>();

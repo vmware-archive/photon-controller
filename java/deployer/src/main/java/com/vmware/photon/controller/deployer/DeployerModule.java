@@ -84,6 +84,7 @@ public class DeployerModule extends AbstractModule {
   public static final String CLOUDSTORE_SERVICE_NAME = "cloudstore";
   public static final String HOUSEKEEPER_SERVICE_NAME = "housekeeper";
   public static final String CLUSTER_SCRIPTS_DIRECTORY = "clusters";
+  public static final String BMP_SERVICE_NAME = "bare-metal-provisioner";
   /**
    * The blocking queue associated with the thread pool executor service
    * controls the rejection policy for new work items: a bounded queue, such as
