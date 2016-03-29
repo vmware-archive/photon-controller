@@ -68,6 +68,10 @@ public class Deployment extends Base {
   private boolean useImageDatastoreForVms;
 
   @JsonProperty
+  @ApiModelProperty(value = "usePhotonDHCP")
+  private boolean usePhotonDHCP;
+
+  @JsonProperty
   @ApiModelProperty(value = "Supplies the state of the Deployment",
       allowableValues = "CREATING,READY,ERROR,NOT_DEPLOYED,DELETED.",
       required = true)
@@ -137,6 +141,14 @@ public class Deployment extends Base {
 
   public void setUseImageDatastoreForVms(boolean useImageDatastoreForVms) {
     this.useImageDatastoreForVms = useImageDatastoreForVms;
+  }
+
+  public boolean isUsePhotonDHCP() {
+    return usePhotonDHCP;
+  }
+
+  public void setUsePhotonDHCP(boolean usePhotonDHCP) {
+    this.usePhotonDHCP = usePhotonDHCP;
   }
 
   public DeploymentState getState() {
@@ -213,6 +225,7 @@ public class Deployment extends Base {
         && Objects.equals(this.getNtpEndpoint(), other.getNtpEndpoint())
         && Objects.equals(this.getImageDatastores(), other.getImageDatastores())
         && Objects.equals(this.isUseImageDatastoreForVms(), other.isUseImageDatastoreForVms())
+        && Objects.equals(this.isUsePhotonDHCP(), other.isUsePhotonDHCP())
         && Objects.equals(this.getAuth(), other.getAuth())
         && Objects.equals(this.getNetworkConfiguration(), other.getNetworkConfiguration())
         && Objects.equals(this.isLoadBalancerEnabled(), other.isLoadBalancerEnabled())
@@ -230,6 +243,7 @@ public class Deployment extends Base {
         this.getNtpEndpoint(),
         this.getImageDatastores(),
         this.isUseImageDatastoreForVms(),
+        this.isUsePhotonDHCP(),
         this.getAuth(),
         this.getNetworkConfiguration(),
         this.isLoadBalancerEnabled(),
@@ -245,6 +259,7 @@ public class Deployment extends Base {
         .add("stats", stats)
         .add("ntpEndpoint", ntpEndpoint)
         .add("useImageDatastoreForVms", useImageDatastoreForVms)
+        .add("usePhotonDHCP", usePhotonDHCP)
         .add("auth", auth.toString())
         .add("networkConfiguration", networkConfiguration.toString())
         .add("loadBalancerEnabled", loadBalancerEnabled)
