@@ -30,6 +30,7 @@ from common.cache import cached
 from common.lock import lock_with
 from common.log import log_duration_with
 from gen.agent.ttypes import TaskCache
+from host.hypervisor.esx.vm_config import os_to_datastore_path
 from pysdk import connect
 from pysdk import host
 from pysdk import invt
@@ -264,6 +265,11 @@ class VimClient(object):
     @hostd_error_handler
     def perf_manager(self):
         return self._content.perfManager
+
+    @property
+    @hostd_error_handler
+    def file_manager(self):
+        return self._content.fileManager
 
     @property
     @hostd_error_handler
@@ -667,6 +673,21 @@ class VimClient(object):
         :return: vim.host.VirtualNicManager.NetConfig[]
         """
         return self.vnic_manager.info.netConfig
+
+    @hostd_error_handler
+    def make_directory(self, path):
+        """Make directory using vim.fileManager.MakeDirectory
+        """
+        vim_task = self.file_manager.MakeDirectory(os_to_datastore_path(path))
+        self.wait_for_task(vim_task)
+
+    @hostd_error_handler
+    def move_file(self, src, dest):
+        """Move directory or file using vim.fileManager.MoveFile
+        """
+        vim_task = self.file_manager.MoveFile(sourceName=os_to_datastore_path(src),
+                                              destinationName=os_to_datastore_path(dest))
+        self.wait_for_task(vim_task)
 
     @staticmethod
     def _verify_task_done(task_cache):

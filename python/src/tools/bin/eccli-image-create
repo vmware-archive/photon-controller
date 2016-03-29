@@ -21,7 +21,7 @@ from eccli.optparser import default_parser
 from eccli.thrift import get_client
 
 from gen.host.ttypes import CreateImageRequest, ServiceTicketRequest, \
-    ServiceType
+    ServiceType, CreateImageResultCode
 
 parser = default_parser(usage="eccli-image-create [options]",
                         add_help=True)
@@ -111,7 +111,8 @@ def split_url(url):
     return protocol, host, selector
 
 
-def upload_file(file_path, upload_url):
+def upload_file(file_path, upload_url, upload_lease):
+    CHUNK_SIZE = 65536
     with open(file_path, "rb") as read_fp:
         file_size = os.stat(file_path).st_size
         protocol, host, selector = split_url(upload_url)
@@ -123,12 +124,18 @@ def upload_file(file_path, upload_url):
         counter = 0
         try:
             while True:
-                data = read_fp.read(65536)
+                data = read_fp.read(CHUNK_SIZE)
                 if len(data) == 0:
                     break
 
                 conn.send(data)
                 counter += 1
+                if counter % 1024 == 0:  # every 64MB
+                    progress = min(counter // 1024, 99)
+                    # renew lease periodically, or it will timeout after 5 minutes.
+                    upload_lease.Progress(progress)
+                    print_result("Sent %d MB, Progress %d%%." %
+                                 (CHUNK_SIZE * counter // (1024 * 1024), progress))
         except socket.error, e:
             raise Exception(str(e))
 
@@ -148,6 +155,7 @@ datastore = normalize_datastore(vim_client, options.datastore)
 # create import spec
 image_id = str(uuid.uuid1())
 importSpec = create_import_spec(datastore, image_id)
+vim_client.make_directory(importSpec.configSpec.files.vmPathName)
 # importVApp and get upload url
 vm_folder = vim_client.vm_folder
 root_rp = vim_client.root_resource_pool
@@ -157,7 +165,7 @@ upload_url = upload_lease.info.deviceUrl[0].url.replace("*", options.host)
 
 # upload file
 try:
-    upload_file(options.file_path, upload_url)
+    upload_file(options.file_path, upload_url, upload_lease)
 finally:
     upload_lease.Complete()
 
@@ -165,10 +173,14 @@ finally:
 request = CreateImageRequest()
 request.image_id = image_id
 request.datastore = datastore
-request.tmp_image_path = os.path.join(compond_path_join(TMP_IMAGE_FOLDER_NAME_PREFIX, image_id), image_id)
+request.tmp_image_path = os.path.join(compond_path_join(TMP_IMAGE_FOLDER_NAME_PREFIX, image_id))
+if not options.datastore.startswith("vsan"):
+    # on vmfs, hostd creates an extra subfolder when importing vm
+    request.tmp_image_path = os.path.join(request.tmp_image_path, image_id)
 
 print_request(request)
 response = client.create_image(request)
 print_response(response)
 
-print_result("image id: %s" % image_id)
+if response.result == CreateImageResultCode.OK:
+    print_result("image id: %s" % image_id)
