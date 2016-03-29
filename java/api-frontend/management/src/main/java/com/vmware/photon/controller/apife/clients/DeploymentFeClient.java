@@ -13,6 +13,8 @@
 
 package com.vmware.photon.controller.apife.clients;
 
+import com.vmware.photon.controller.api.Auth;
+import com.vmware.photon.controller.api.AuthInfo;
 import com.vmware.photon.controller.api.ClusterConfiguration;
 import com.vmware.photon.controller.api.ClusterConfigurationSpec;
 import com.vmware.photon.controller.api.ClusterType;
@@ -45,6 +47,7 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import static com.google.common.base.Preconditions.checkArgument;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -137,6 +140,19 @@ public class DeploymentFeClient {
     return deployment;
   }
 
+  public Auth getAuth() {
+    List<Deployment> deploymentList = deploymentBackend.getAll();
+    checkArgument(deploymentList.size() > 0, "Must have one or more deployments present to display auth info.");
+    Deployment deployment = deploymentList.get(0);
+
+    AuthInfo authInfo = deployment.getAuth();
+    Auth auth = new Auth();
+    auth.setEnabled(authInfo.getEnabled());
+    auth.setEndpoint(authInfo.getEndpoint());
+    auth.setPort(authInfo.getPort());
+    return auth;
+  }
+
   public Task setSecurityGroups(String id, List<String> securityGroups) throws ExternalException {
     TaskEntity taskEntity = deploymentBackend.updateSecurityGroups(id, securityGroups);
     Task task = taskBackend.getApiRepresentation(taskEntity);
@@ -213,7 +229,7 @@ public class DeploymentFeClient {
   }
 
 
-  public ResourceList<Host> getHostsPage(String pageLink) throws PageExpiredException{
+  public ResourceList<Host> getHostsPage(String pageLink) throws PageExpiredException {
     return hostBackend.getHostsPage(pageLink);
   }
 
@@ -224,7 +240,7 @@ public class DeploymentFeClient {
 
   public Task deleteClusterConfiguration(String id, ClusterType clusterType) throws ExternalException {
     deploymentBackend.findById(id);
-    TaskEntity taskEntity =  deploymentBackend.deleteClusterConfiguration(clusterType);
+    TaskEntity taskEntity = deploymentBackend.deleteClusterConfiguration(clusterType);
     return taskBackend.getApiRepresentation(taskEntity);
   }
 

@@ -101,7 +101,6 @@ import io.dropwizard.jetty.HttpConnectorFactory;
 import io.dropwizard.server.DefaultServerFactory;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
-import org.glassfish.hk2.utilities.binding.AbstractBinder;
 
 import javax.servlet.DispatcherType;
 import javax.validation.ConstraintValidator;
@@ -174,14 +173,6 @@ public class ApiFeService extends Application<ApiFeStaticConfiguration> {
     if (authConfig.isAuthEnabled()) {
       environment.jersey().register(AuthFilter.class);
     }
-
-    environment.jersey().register(new AbstractBinder() {
-      @Override
-      protected void configure() {
-        bind(new AuthResource(authConfig)).to(AuthResource.class);
-      }
-    });
-    environment.jersey().register(AuthResource.class);
     registerResourcesWithSwagger(configuration, environment);
 
     ValidatorFactory validatorFactory = Validation
