@@ -72,6 +72,10 @@ public class HealthCheckHelper {
         this.healthChecker = new LightwaveHealthChecker(ipAddress, ServicePortConstants.LIGHTWAVE_PORT);
         break;
 
+      case BareMetalProvisioner:
+        this.healthChecker = new LightwaveHealthChecker(ipAddress, ServicePortConstants.BARE_METAL_PROVISIONER_PORT);
+        break;
+
       default:
         this.healthChecker = () -> {
           ServiceUtils.logInfo(service, "Default HealthChecker for %s - will always return true", containerType);

@@ -708,6 +708,9 @@ public class AddManagementHostWorkflowServiceTest {
     private com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment localStore;
     private com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment remoteStore;
 
+    private com.vmware.photon.controller.provisioner.xenon.helpers.TestEnvironment localBMP;
+    private com.vmware.photon.controller.provisioner.xenon.helpers.TestEnvironment remoteBMP;
+
     @BeforeClass
     public void setUpClass() throws Throwable {
       FileUtils.deleteDirectory(storageDirectory);
@@ -743,9 +746,14 @@ public class AddManagementHostWorkflowServiceTest {
       MockHelper.mockServiceConfigurator(serviceConfiguratorFactory, true);
     }
 
-    private void createCloudStore() throws Throwable {
+    private void createOtherXenonHosts() throws Throwable {
       localStore = com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.create(1);
       remoteStore = com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.create(1);
+
+      localBMP = com.vmware.photon.controller.provisioner.xenon.helpers.TestEnvironment.create(1);
+      remoteBMP = com.vmware.photon.controller.provisioner.xenon.helpers.TestEnvironment.create(1);
+      System.out.println("localBMP " + localBMP.getHosts()[0].getState().httpPort);
+      System.out.println("remoteBMP " + remoteBMP.getHosts()[0].getState().httpPort);
     }
 
     private void createTestEnvironment(int remoteNodeCount) throws Throwable {
@@ -803,6 +811,12 @@ public class AddManagementHostWorkflowServiceTest {
       doReturn(Collections.singleton(new InetSocketAddress("127.0.0.1", remoteStore.getHosts()[0].getState().httpPort)))
           .when(zkBuilder)
           .getServers(Matchers.startsWith("0.0.0.0:2181"), eq("cloudstore"));
+      doReturn(Collections.singleton(
+          new InetSocketAddress("127.0.0.1", localBMP.getHosts()[0].getState().httpPort)))
+          .when(zkBuilder).getServers(eq(quorum), eq("bare-metal-provisioner"));
+      doReturn(Collections.singleton(
+          new InetSocketAddress("127.0.0.1", remoteBMP.getHosts()[0].getState().httpPort)))
+          .when(zkBuilder).getServers(Matchers.startsWith("0.0.0"), eq("bare-metal-provisioner"));
       doAnswer(new Answer<Object>() {
                  @Override
                 public Object answer(InvocationOnMock invocation) {
@@ -844,6 +858,18 @@ public class AddManagementHostWorkflowServiceTest {
         remoteStore = null;
       }
 
+      if (null != localBMP) {
+        System.out.println("localBMP stopped " + localBMP.getHosts()[0].getState().httpPort);
+        localBMP.stop();
+        localBMP = null;
+      }
+
+      if (null != remoteBMP) {
+        System.out.println("remoteBMP stopped" + remoteBMP.getHosts()[0].getState().httpPort);
+        remoteBMP.stop();
+        remoteBMP = null;
+      }
+
       authHelperFactory = null;
       containersConfig = null;
       dockerProvisionerFactory = null;
@@ -863,17 +889,18 @@ public class AddManagementHostWorkflowServiceTest {
     @DataProvider(name = "HostWithTagWithAuthInfo")
     public Object[][] getHostsWithAuthInfo() {
       return new Object[][]{
-          {true, true, 4},
-          {true, false, 5},
-          {false, true, 4},
-          {false, false, 5},
+          {true, true, true, 4},
+          {true, false, false, 5},
+          {false, true, true, 4},
+          {false, false, false, 5},
       };
     }
 
     @Test(dataProvider = "HostWithTagWithAuthInfo")
-    public void testSuccess(Boolean isOnlyMgmtHost, Boolean isAuthEnabled, int hostCount) throws Throwable {
+    public void testSuccess(Boolean isOnlyMgmtHost, Boolean isAuthEnabled, Boolean isPhotonDHCPEnabled, int
+        hostCount) throws Throwable {
       int initialHostNum = isAuthEnabled ? 2 : 1;
-      createCloudStore();
+      createOtherXenonHosts();
       MockHelper.mockHttpFileServiceClient(httpFileServiceClientFactory, true);
       MockHelper.mockHostClient(agentControlClientFactory, hostClientFactory, true);
       MockHelper.mockApiClient(apiClientFactory, localStore, true);
@@ -885,7 +912,7 @@ public class AddManagementHostWorkflowServiceTest {
       MockHelper.mockHealthChecker(healthCheckHelperFactory, true);
       createTestEnvironment(1);
 
-      startState.deploymentServiceLink = createDeploymentServiceLink(localStore, isAuthEnabled);
+      startState.deploymentServiceLink = createDeploymentServiceLink(localStore, isAuthEnabled, isPhotonDHCPEnabled);
       for (int i = 0; i < initialHostNum; ++i) {
         createHostService(Collections.singleton(UsageTag.MGMT.name()), localStore, null);
       }
@@ -935,7 +962,7 @@ public class AddManagementHostWorkflowServiceTest {
         verifyVmServiceStates(i);
       }
 
-      verifyContainerTemplateServiceStates(isAuthEnabled);
+      verifyContainerTemplateServiceStates(isAuthEnabled, isPhotonDHCPEnabled);
       verifyContainerServiceStates(startState.hostServiceLink);
     }
 
@@ -955,24 +982,25 @@ public class AddManagementHostWorkflowServiceTest {
 
     private String createDeploymentServiceLink(
         com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment cloudStore,
-        boolean isAuthEnabled)
+        boolean isAuthEnabled,
+        boolean isPhotonDHCPEnabled)
         throws Throwable {
       DeploymentService.State deploymentService = TestHelper.createDeploymentService(cloudStore,
-          isAuthEnabled, false);
+          isAuthEnabled, false, isPhotonDHCPEnabled);
       return deploymentService.documentSelfLink;
     }
 
     @DataProvider(name = "AuthEnabled")
     public Object[][] getAuthEnabled() {
       return new Object[][]{
-          {Boolean.TRUE},
-          {Boolean.FALSE},
+          {Boolean.TRUE, Boolean.TRUE},
+          {Boolean.FALSE, Boolean.FALSE},
       };
     }
 
     @Test(dataProvider = "AuthEnabled")
-    public void testProvisionManagementHostFailure(Boolean authEnabled) throws Throwable {
-      createCloudStore();
+    public void testProvisionManagementHostFailure(Boolean authEnabled, Boolean isPhotonDHCPEnabled) throws Throwable {
+      createOtherXenonHosts();
       MockHelper.mockHttpFileServiceClient(httpFileServiceClientFactory, false);
       MockHelper.mockHostClient(agentControlClientFactory, hostClientFactory, false);
       MockHelper.mockApiClient(apiClientFactory, localStore, true);
@@ -989,7 +1017,7 @@ public class AddManagementHostWorkflowServiceTest {
           new HashSet<>(Arrays.asList(UsageTag.CLOUD.name(), UsageTag.MGMT.name())));
       TestHelper.createHostService(localStore, Collections.singleton(UsageTag.CLOUD.name()));
 
-      startState.deploymentServiceLink = createDeploymentServiceLink(localStore, authEnabled);
+      startState.deploymentServiceLink = createDeploymentServiceLink(localStore, authEnabled, isPhotonDHCPEnabled);
 
       AddManagementHostWorkflowService.State finalState =
           localDeployer.callServiceAndWaitForState(
@@ -1002,8 +1030,8 @@ public class AddManagementHostWorkflowServiceTest {
     }
 
     @Test(dataProvider = "AuthEnabled")
-    public void testCreateManagementPlaneFailure(Boolean authEnabled) throws Throwable {
-      createCloudStore();
+    public void testCreateManagementPlaneFailure(Boolean authEnabled, Boolean isPhotonDHCPEnabled) throws Throwable {
+      createOtherXenonHosts();
       MockHelper.mockHttpFileServiceClient(httpFileServiceClientFactory, true);
       MockHelper.mockHostClient(agentControlClientFactory, hostClientFactory, true);
       MockHelper.mockApiClient(apiClientFactory, localStore, false);
@@ -1020,7 +1048,7 @@ public class AddManagementHostWorkflowServiceTest {
           new HashSet<>(Arrays.asList(UsageTag.CLOUD.name(), UsageTag.MGMT.name())));
       TestHelper.createHostService(localStore, Collections.singleton(UsageTag.CLOUD.name()));
 
-      startState.deploymentServiceLink = createDeploymentServiceLink(localStore, authEnabled);
+      startState.deploymentServiceLink = createDeploymentServiceLink(localStore, authEnabled, isPhotonDHCPEnabled);
 
       AddManagementHostWorkflowService.State finalState =
           localDeployer.callServiceAndWaitForState(
@@ -1034,7 +1062,7 @@ public class AddManagementHostWorkflowServiceTest {
 
     @Test
     public void testAuthClientRegistrationFailure() throws Throwable {
-      createCloudStore();
+      createOtherXenonHosts();
       MockHelper.mockHttpFileServiceClient(httpFileServiceClientFactory, true);
       MockHelper.mockHostClient(agentControlClientFactory, hostClientFactory, true);
       MockHelper.mockApiClient(apiClientFactory, localStore, true);
@@ -1051,7 +1079,7 @@ public class AddManagementHostWorkflowServiceTest {
           new HashSet<>(Arrays.asList(UsageTag.CLOUD.name(), UsageTag.MGMT.name())));
       TestHelper.createHostService(localStore, Collections.singleton(UsageTag.CLOUD.name()));
 
-      startState.deploymentServiceLink = createDeploymentServiceLink(localStore, true);
+      startState.deploymentServiceLink = createDeploymentServiceLink(localStore, true, false);
 
       AddManagementHostWorkflowService.State finalState =
           localDeployer.callServiceAndWaitForState(
@@ -1086,7 +1114,8 @@ public class AddManagementHostWorkflowServiceTest {
       assertThat(hostServiceLinks.size(), is(expectedVmEntityNumber));
     }
 
-    private void verifyContainerTemplateServiceStates(Boolean isAuthEnabled) throws Throwable {
+    private void verifyContainerTemplateServiceStates(Boolean isAuthEnabled, Boolean isPhotonDHCPEnabled) throws
+        Throwable {
       List<ContainerTemplateService.State> states = queryForServiceStates(ContainerTemplateService.State.class,
           remoteDeployer);
 
@@ -1095,6 +1124,10 @@ public class AddManagementHostWorkflowServiceTest {
       int expectedContainerTemplateEntitynumber = containersConfig.getContainerSpecs().size();
       if (!isAuthEnabled) {
         // if auth is not enabled we will not deploy LightWave
+        expectedContainerTemplateEntitynumber -= 1;
+      }
+      if (!isPhotonDHCPEnabled) {
+        // if DHCP is not enabled we will not deploy Slingshot
         expectedContainerTemplateEntitynumber -= 1;
       }
       assertThat(states.size(), is(expectedContainerTemplateEntitynumber));
@@ -1111,6 +1144,10 @@ public class AddManagementHostWorkflowServiceTest {
         if (!isAuthEnabled &&
             entry.getValue().getType().equals(ContainersConfig.ContainerType.Lightwave.name())) {
           // if auth is disabled we do not generate the Lightwave container template.
+          assertThat(containerTemplateMap.containsKey(entry.getKey()), is(false));
+          continue;
+        } else if (!isPhotonDHCPEnabled &&
+            entry.getValue().getType().equals(ContainersConfig.ContainerType.BareMetalProvisioner.name())) {
           assertThat(containerTemplateMap.containsKey(entry.getKey()), is(false));
           continue;
         } else {

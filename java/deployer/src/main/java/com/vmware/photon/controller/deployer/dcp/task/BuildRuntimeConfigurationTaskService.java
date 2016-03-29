@@ -101,6 +101,9 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
   private static final String MUSTACHE_KEY_MGMT_UI_LOGOUT_URL = "MGMT_UI_LOGOUT_URL";
   private static final String MUSTACHE_KEY_ZOOKEEPER_MY_ID = "ZOOKEEPER_MYID";
 
+
+  private static final String MUSTACHE_KEY_USE_PHOTON_DHCP = "USE_PHOTON_DHCP";
+
   /**
    * This class defines the state of a {@link BuildRuntimeConfigurationTaskService} task.
    */
@@ -196,6 +199,12 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
      */
     @WriteOnce
     public Boolean oAuthEnabled;
+
+    /**
+     * This value specifies whether photon DHCP is used for the parent deployment.
+     */
+    @WriteOnce
+    public Boolean isPhotonDHCPEnabled;
 
     /**
      * This value represents the runtime configuration state allocated for the new container by the
@@ -453,6 +462,7 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
     patchState.vmIpAddress = vmState.ipAddress;
     patchState.hostServiceLink = vmState.hostServiceLink;
     patchState.oAuthEnabled = deploymentState.oAuthEnabled;
+    patchState.isPhotonDHCPEnabled = deploymentState.usePhotonDHCP;
     sendStageProgressPatch(patchState);
   }
 
@@ -580,6 +590,18 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
           return;
         }
         break;
+
+      //
+      // This value represents whether DHCP/Slingshot is running or not.
+      //
+
+      case BareMetalProvisioner:
+        if (!currentState.dynamicParameters.containsKey(MUSTACHE_KEY_USE_PHOTON_DHCP)) {
+          getIpsForContainerType(currentState.containerType,
+              (vmIpAddresses) -> patchBMPParameters(currentState, vmIpAddresses));
+          return;
+        }
+        break;
     }
 
     sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.PATCH_ENTITY_DOCUMENTS);
@@ -628,6 +650,22 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
     if (currentState.oAuthEnabled) {
       patchState.dynamicParameters.put(MUSTACHE_KEY_HAPROXY_MGMT_API_PORT_SELECTOR, "true");
     }
+
+    TaskUtils.sendSelfPatch(this, patchState);
+  }
+
+  private void patchBMPParameters(State currentState, List<String> vmIpAddresses) {
+    Collections.sort(vmIpAddresses);
+    State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.BUILD_TYPE_SPECIFIC_STATE);
+    patchState.dynamicParameters = currentState.dynamicParameters;
+    // Assumption peer nodes all have Zookeeper so it is the same as ZKQuorum
+    patchState.dynamicParameters.put(MUSTACHE_KEY_COMMON_ZOOKEEPER_QUORUM,
+        generateReplicaList(vmIpAddresses, String.valueOf(ServicePortConstants.ZOOKEEPER_PORT)));
+
+    patchState.dynamicParameters.put(MUSTACHE_KEY_COMMON_PEER_NODES,
+        generatePeerNodeList(vmIpAddresses, String.valueOf(ServicePortConstants.BARE_METAL_PROVISIONER_PORT)));
+
+    patchState.dynamicParameters.put(MUSTACHE_KEY_USE_PHOTON_DHCP, currentState.isPhotonDHCPEnabled.toString());
 
     TaskUtils.sendSelfPatch(this, patchState);
   }
@@ -829,6 +867,13 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
       case LoadBalancer: {
         DeploymentService.State deploymentPatchState = new DeploymentService.State();
         deploymentPatchState.loadBalancerAddress = currentState.vmIpAddress;
+        patchOps.add(HostUtils.getCloudStoreHelper(this).createPatch(currentState.deploymentServiceLink)
+            .setBody(deploymentPatchState));
+        break;
+      }
+      case BareMetalProvisioner: {
+        DeploymentService.State deploymentPatchState = new DeploymentService.State();
+        deploymentPatchState.dhcpServerAddress = currentState.vmIpAddress;
         patchOps.add(HostUtils.getCloudStoreHelper(this).createPatch(currentState.deploymentServiceLink)
             .setBody(deploymentPatchState));
         break;

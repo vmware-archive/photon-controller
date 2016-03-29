@@ -106,6 +106,10 @@ elif [ "$1" = 'deployer' ]; then
   cp -r $tmp_dir/ $config_dir/cloud-store/
   rm -rf $tmp_dir
 
+  tar --wildcards -xf /archive/bare-metal-provisioner*.tar --strip=1 -C /tmp bare-metal-provisioner*/configuration
+  cp -r $tmp_dir/ $config_dir/bare-metal-provisioner/
+  rm -rf $tmp_dir
+
   cp -r $install_path/configuration $config_dir/deployer/
   cp -r $install_path/configuration-haproxy/ $config_dir/haproxy/
   cp -r $install_path/configuration-postgresql/ $config_dir/postgresql/

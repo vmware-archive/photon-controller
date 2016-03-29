@@ -45,4 +45,9 @@ mv /esxcloud/java/root-scheduler/build/distributions/root-scheduler-*.tar \
 cp -r /esxcloud/java/root-scheduler/src/dist/configuration \
   /esxcloud/java/distributions/configurations/configuration-root-scheduler
 
+mv /esxcloud/java/bare-metal-provisioner/build/distributions/*.tar \
+  /esxcloud/java/distributions/bare-metal-provisioner.tar
+cp -r /esxcloud/java/bare-metal-provisioner/src/dist/configuration \
+  /esxcloud/java/distributions/configurations/configuration-bare-metal-provisioner
+
 cp -r /esxcloud/java/deployer/src/dist/configuration-* /esxcloud/java/distributions/configurations/
