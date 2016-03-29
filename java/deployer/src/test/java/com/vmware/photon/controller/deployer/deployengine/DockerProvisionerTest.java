@@ -90,9 +90,11 @@ public class DockerProvisionerTest {
     portMap.put(5432, 5432);
     Ports portBindings = dockerProvisioner.getPortBindings(portMap);
     Map<ExposedPort, Ports.Binding[]> bindingMap = portBindings.getBindings();
-    assertEquals(bindingMap.keySet().size(), 1);
+    assertEquals(bindingMap.keySet().size(), 2);
     assertNotNull(bindingMap.get(ExposedPort.tcp(5432)));
     assertEquals(bindingMap.get(ExposedPort.tcp(5432))[0], Ports.Binding(5432));
+    assertNotNull(bindingMap.get(ExposedPort.udp(5432)));
+    assertEquals(bindingMap.get(ExposedPort.udp(5432))[0], Ports.Binding(5432));
   }
 
   @Test

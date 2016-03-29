@@ -89,6 +89,7 @@ public class CreateContainersWorkflowService extends StatefulService {
       REGISTER_AUTH_CLIENT_FOR_MGMT_UI,
       CREATE_SERVICE_CONTAINERS,
       CREATE_LOAD_BALANCER_CONTAINER,
+      CREATE_BARE_METAL_PROVISIONER_CONTAINER,
     }
 
     /**
@@ -142,6 +143,13 @@ public class CreateContainersWorkflowService extends StatefulService {
     @NotNull
     @Immutable
     public Boolean isAuthEnabled;
+
+    /**
+     * This value represents whether Slingshot will be used for the current deployment.
+     */
+    @NotNull
+    @Immutable
+    public Boolean isPhotonDHCPEnabled;
 
     /**
      * This value represents whether the current task is being executed as part of a new deployment.
@@ -242,6 +250,7 @@ public class CreateContainersWorkflowService extends StatefulService {
           case REGISTER_AUTH_CLIENT_FOR_MGMT_UI:
           case CREATE_SERVICE_CONTAINERS:
           case CREATE_LOAD_BALANCER_CONTAINER:
+          case CREATE_BARE_METAL_PROVISIONER_CONTAINER:
             break;
           default:
             throw new IllegalStateException("Unknown task sub-stage: " + taskState.subStage);
@@ -290,6 +299,9 @@ public class CreateContainersWorkflowService extends StatefulService {
         break;
       case CREATE_LOAD_BALANCER_CONTAINER:
         processCreateLoadBalancerContainerSubStage(currentState);
+        break;
+      case CREATE_BARE_METAL_PROVISIONER_CONTAINER:
+        processCreateBMPContainerSubStage(currentState);
         break;
     }
   }
@@ -361,12 +373,36 @@ public class CreateContainersWorkflowService extends StatefulService {
 
     if (!currentState.isNewDeployment) {
       ServiceUtils.logInfo(this, "Skipping creation of load balancer container (not a new deployment");
-      sendStageProgressPatch(TaskState.TaskStage.FINISHED, null);
+      sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.CREATE_BARE_METAL_PROVISIONER_CONTAINER);
       return;
     }
 
     createContainers(currentState,
         Collections.singletonList(ContainersConfig.ContainerType.LoadBalancer),
+        TaskState.TaskStage.STARTED,
+        TaskState.SubStage.CREATE_BARE_METAL_PROVISIONER_CONTAINER);
+  }
+
+  //
+  // CREATE_BARE_METAL_PROVISIONER_CONTAINER sub-stage routines
+  //
+
+  private void processCreateBMPContainerSubStage(State currentState) {
+
+    if (!currentState.isNewDeployment) {
+      ServiceUtils.logInfo(this, "Skipping creation of bmp container (not a new deployment");
+      sendStageProgressPatch(TaskState.TaskStage.FINISHED, null);
+      return;
+    }
+
+    if (!currentState.isPhotonDHCPEnabled) {
+      ServiceUtils.logInfo(this, "Skipping creation of Bare-Metal-Provisioner container (usePhotonDHCP is false)");
+      sendStageProgressPatch(TaskState.TaskStage.FINISHED, null);
+      return;
+    }
+
+    createContainers(currentState,
+        Collections.singletonList(ContainersConfig.ContainerType.BareMetalProvisioner),
         TaskState.TaskStage.FINISHED,
         null);
   }

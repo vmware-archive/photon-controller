@@ -784,7 +784,7 @@ public class CreateManagementVmTaskServiceTest {
       TestHelper.assertTaskStateFinished(finalState.taskState);
       assertThat(finalState.taskState.subStage, nullValue());
       assertThat(finalState.cpuCount, is(4));
-      assertThat(finalState.memoryMb, is(13312L));
+      assertThat(finalState.memoryMb, is(15360L));
       assertThat(finalState.createVmFlavorTaskId, nullValue());
       assertThat(finalState.createVmFlavorPollCount, is(0));
       assertThat(finalState.vmFlavorId, is("VM_FLAVOR_ID"));
@@ -803,7 +803,7 @@ public class CreateManagementVmTaskServiceTest {
       assertThat(finalState.dockerPollIterations, is(1));
 
       verify(flavorApi).createAsync(
-          eq(getExpectedVmFlavorCreateSpec(4, 13312L)),
+          eq(getExpectedVmFlavorCreateSpec(4, 15360L)),
           Matchers.<FutureCallback<Task>>any());
 
       verify(flavorApi).createAsync(
@@ -871,7 +871,7 @@ public class CreateManagementVmTaskServiceTest {
           HostService.State.METADATA_KEY_NAME_MANAGEMENT_VM_DISK_GB_OVERWRITE, Integer.toString(80));
 
       return new Object[][]{
-          {basicHostState, 4, 13312L},
+          {basicHostState, 4, 15360L},
           {hostStateWithResourceValues, 6, 1636L},
           {hostStateWithResourceOverrides, 7, 1792L},
       };
