@@ -861,7 +861,7 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
       VmApi vmApi = mock(VmApi.class);
       TasksApi tasksApi = mock(TasksApi.class);
 
-      DeploymentService.State deploymentService = TestHelper.getDeploymentServiceStartState(false);
+      DeploymentService.State deploymentService = TestHelper.getDeploymentServiceStartState(false, false);
       deploymentService = TestHelper.createDeploymentService(destinationCloudStore, deploymentService);
       Deployment deployment = new Deployment();
       deployment.setId(ServiceUtils.getIDFromDocumentSelfLink(deploymentService.documentSelfLink));

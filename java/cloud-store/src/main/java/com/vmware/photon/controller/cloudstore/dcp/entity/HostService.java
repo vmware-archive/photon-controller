@@ -33,6 +33,7 @@ import com.vmware.photon.controller.common.xenon.validation.NotEmpty;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.common.xenon.validation.Positive;
 import com.vmware.photon.controller.common.xenon.validation.Range;
+import com.vmware.photon.controller.common.xenon.validation.WriteOnce;
 import com.vmware.photon.controller.host.gen.GetConfigResponse;
 import com.vmware.photon.controller.host.gen.Host;
 import com.vmware.photon.controller.host.gen.HostConfig;
@@ -668,5 +669,19 @@ public class HostService extends StatefulService {
     @DefaultLong(value = DEFAULT_MAINTENANCE_INTERVAL_MILLIS)
     @Positive
     public Long triggerIntervalMillis;
+
+    /**
+     * This value represents the ID of the host being registered as a fabric node in
+     * NSX environment.
+     */
+    @WriteOnce
+    public String nsxFabricNodeId;
+
+    /**
+     * This value represents the ID of the host being registerd as a transport node in
+     * NSX environment.
+     */
+    @WriteOnce
+    public String nsxTransportNodeId;
   }
 }

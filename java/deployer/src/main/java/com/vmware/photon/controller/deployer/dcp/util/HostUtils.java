@@ -35,6 +35,8 @@ import com.vmware.photon.controller.deployer.deployengine.HostManagementVmAddres
 import com.vmware.photon.controller.deployer.deployengine.HostManagementVmAddressValidatorFactoryProvider;
 import com.vmware.photon.controller.deployer.deployengine.HttpFileServiceClientFactory;
 import com.vmware.photon.controller.deployer.deployengine.HttpFileServiceClientFactoryProvider;
+import com.vmware.photon.controller.deployer.deployengine.NsxClientFactory;
+import com.vmware.photon.controller.deployer.deployengine.NsxClientFactoryProvider;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClient;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClientFactoryProvider;
 import com.vmware.photon.controller.deployer.healthcheck.HealthCheckHelperFactory;
@@ -199,5 +201,15 @@ public class HostUtils {
    */
   public static ZookeeperClient getZookeeperClient(Service service) {
     return ((ZookeeperClientFactoryProvider) service.getHost()).getZookeeperServerSetFactoryBuilder().create();
+  }
+
+  /**
+   * This function gets a Nsx client object from the host associated with the specified service.
+   *
+   * @param service Supplies a DCP service instance.
+   * @return The Nsx client factory provided by the DCP host associated with the service.
+   */
+  public static NsxClientFactory getNsxClientFactory(Service service) {
+    return ((NsxClientFactoryProvider) service.getHost()).getNsxClientFactory();
   }
 }
