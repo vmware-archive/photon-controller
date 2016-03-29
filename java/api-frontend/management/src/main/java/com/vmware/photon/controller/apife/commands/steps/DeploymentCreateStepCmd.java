@@ -102,6 +102,7 @@ public class DeploymentCreateStepCmd extends StepCommand {
       deployment.setImageDatastore(entity.getImageDatastores().iterator().next());
     }
     deployment.setUseImageDatastoreForVms(entity.getUseImageDatastoreForVms());
+    deployment.setUsePhotonDHCP(entity.getUsePhotonDHCP());
     deployment.setNtpEndpoint(entity.getNtpEndpoint());
     deployment.setSyslogEndpoint(entity.getSyslogEndpoint());
     deployment.setAuthEnabled(entity.getAuthEnabled());
