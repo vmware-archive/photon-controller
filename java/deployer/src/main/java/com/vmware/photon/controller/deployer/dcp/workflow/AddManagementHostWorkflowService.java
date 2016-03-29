@@ -461,6 +461,7 @@ public class AddManagementHostWorkflowService extends StatefulService {
     CreateManagementPlaneLayoutWorkflowService.State state = new CreateManagementPlaneLayoutWorkflowService.State();
     state.taskPollDelay = currentState.taskPollDelay;
     state.isLoadbalancerEnabled = deploymentService.loadBalancerEnabled;
+    state.isPhotonDHCPEnabled = deploymentService.usePhotonDHCP;
     state.isAuthEnabled = deploymentService.oAuthEnabled;
     state.isNewDeployment = currentState.isNewDeployment;
 
@@ -900,6 +901,7 @@ public class AddManagementHostWorkflowService extends StatefulService {
     CreateContainersWorkflowService.State startState = new CreateContainersWorkflowService.State();
     startState.deploymentServiceLink = currentState.deploymentServiceLink;
     startState.isAuthEnabled = deploymentState.oAuthEnabled;
+    startState.isPhotonDHCPEnabled = deploymentState.usePhotonDHCP;
     startState.isNewDeployment = currentState.isNewDeployment;
     startState.vmServiceLink = currentState.vmServiceLink;
     startState.taskPollDelay = currentState.taskPollDelay;

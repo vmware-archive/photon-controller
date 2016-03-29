@@ -869,6 +869,7 @@ public class CreateContainersWorkflowServiceTest {
     private void createDeploymentServiceDocuments() throws Throwable {
       startState.deploymentServiceLink = TestHelper.createDeploymentService(cloudStoreMachine).documentSelfLink;
       startState.isAuthEnabled = false;
+      startState.isPhotonDHCPEnabled = false;
     }
 
     private TestEnvironment createTestEnvironment(
@@ -905,6 +906,7 @@ public class CreateContainersWorkflowServiceTest {
     startState.taskPollDelay = DeployerDefaults.DEFAULT_TASK_POLL_DELAY;
     startState.deploymentServiceLink = "DEPLOYMENT_SERVICE_LINK";
     startState.isAuthEnabled = false;
+    startState.isPhotonDHCPEnabled = false;
 
     if (null != taskStage) {
       startState.taskState = new CreateContainersWorkflowService.TaskState();
