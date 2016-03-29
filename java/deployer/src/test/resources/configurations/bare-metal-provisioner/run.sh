@@ -1,0 +1,1 @@
+../../../../../../bare-metal-provisioner/src/dist/configuration/run.sh

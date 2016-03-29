@@ -1,15 +1,19 @@
 {
   "serviceName": "BareMetalProvisioner",
-  "cpuCount": 4,
-  "memoryMb": 4096,
+  "cpuCount": 2,
+  "memoryMb": 2048,
   "diskGb": 8,
   "isReplicated": false,
-  "isPrivileged": false,
+  "isPrivileged": true,
   "useHostNetwork": true,
   "containerImage": "esxcloud/bare-metal-provisioner",
   "portBindings": {
     "21000": 21000,
-    "21001": 21001
+    "21001": 21001,
+    "67" : 67,
+    "68" : 68,
+    "69" : 69,
+    "70" : 70
   },
   "volumeBindings": {
     "/var/log": "/var/log"
