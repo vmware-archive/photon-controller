@@ -13,8 +13,6 @@
 
 package com.vmware.photon.controller.nsxclient.models;
 
-import com.vmware.photon.controller.nsxclient.datatypes.TransportType;
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -23,53 +21,42 @@ import java.lang.reflect.Field;
 import java.util.Objects;
 
 /**
- * This class represents a CreateTransportZoneRequest JSON structure.
+ * This class represents a GetTransportZoneSummaryResponse JSON structure.
  */
 @JsonIgnoreProperties(ignoreUnknown =  true)
-public class CreateTransportZoneRequest {
+public class GetTransportZoneSummaryResponse {
 
-  @JsonProperty(value = "display_name", required = false)
-  private String displayName;
+  @JsonProperty(value = "num_logical_ports", required = true)
+  private Integer numLogicalPorts;
 
-  @JsonProperty(value = "description", required = false)
-  private String description;
+  @JsonProperty(value = "num_logical_switches", required = true)
+  private Integer numLogicalSwitches;
 
-  @JsonProperty(value = "host_switch_name", required = true)
-  private String hostSwitchName;
+  @JsonProperty(value = "num_transport_nodes", required = true)
+  private Integer numTransportNodes;
 
-  @JsonProperty(value = "transport_type", required = true)
-  private TransportType transportType;
-
-  public String getDisplayName() {
-    return this.displayName;
+  public Integer getNumLogicalPorts() {
+    return this.numLogicalPorts;
   }
 
-  public void setDisplayName(String displayName) {
-    this.displayName = displayName;
+  public void setNumLogicalPorts(Integer numLogicalPorts) {
+    this.numLogicalPorts = numLogicalPorts;
   }
 
-  public String getDescription() {
-    return this.description;
+  public Integer getNumLogicalSwitches() {
+    return this.numLogicalSwitches;
   }
 
-  public void setDescription(String description) {
-    this.description = description;
+  public void setNumLogicalSwitches(Integer numLogicalSwitches) {
+    this.numLogicalSwitches = numLogicalSwitches;
   }
 
-  public String getHostSwitchName() {
-    return this.hostSwitchName;
+  public Integer getNumTransportNodes() {
+    return this.numTransportNodes;
   }
 
-  public void setHostSwitchName(String hostSwitchName) {
-    this.hostSwitchName = hostSwitchName;
-  }
-
-  public TransportType getTransportType() {
-    return this.transportType;
-  }
-
-  public void setTransportType(TransportType transportType) {
-    this.transportType = transportType;
+  public void setNumTransportNodes(Integer numTransportNodes) {
+    this.numTransportNodes = numTransportNodes;
   }
 
   @Override
@@ -82,20 +69,18 @@ public class CreateTransportZoneRequest {
       return false;
     }
 
-    CreateTransportZoneRequest other = (CreateTransportZoneRequest) o;
-    return Objects.equals(getDisplayName(), other.getDisplayName())
-        && Objects.equals(getDescription(), other.getDescription())
-        && Objects.equals(getHostSwitchName(), other.getHostSwitchName())
-        && Objects.equals(getTransportType(), other.getTransportType());
+    GetTransportZoneSummaryResponse other = (GetTransportZoneSummaryResponse) o;
+    return Objects.equals(getNumLogicalPorts(), other.getNumLogicalPorts())
+        && Objects.equals(getNumLogicalSwitches(), other.getNumLogicalSwitches())
+        && Objects.equals(getNumTransportNodes(), other.getNumTransportNodes());
   }
 
   @Override
   public int hashCode() {
     return Objects.hash(super.hashCode(),
-        getDisplayName(),
-        getDescription(),
-        getHostSwitchName(),
-        getTransportType());
+        getNumLogicalPorts(),
+        getNumLogicalSwitches(),
+        getNumTransportNodes());
   }
 
   @Override

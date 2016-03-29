@@ -13,6 +13,8 @@
 
 package com.vmware.photon.controller.nsxclient.models;
 
+import com.vmware.photon.controller.nsxclient.datatypes.TransportType;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
