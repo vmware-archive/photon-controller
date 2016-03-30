@@ -27,10 +27,6 @@ import com.vmware.photon.controller.resource.gen.Resource;
 import com.vmware.photon.controller.resource.gen.ResourceConstraint;
 import com.vmware.photon.controller.roles.gen.GetSchedulersResponse;
 import com.vmware.photon.controller.rootscheduler.Config;
-import com.vmware.photon.controller.rootscheduler.interceptors.RequestId;
-import com.vmware.photon.controller.scheduler.gen.ConfigureRequest;
-import com.vmware.photon.controller.scheduler.gen.ConfigureResponse;
-import com.vmware.photon.controller.scheduler.gen.ConfigureResultCode;
 import com.vmware.photon.controller.scheduler.gen.PlaceRequest;
 import com.vmware.photon.controller.scheduler.gen.PlaceResponse;
 import com.vmware.photon.controller.scheduler.gen.PlaceResultCode;
@@ -126,12 +122,6 @@ public class FlatSchedulerService implements RootScheduler.Iface, ServiceNodeEve
   @Override
   public synchronized Status get_status(GetStatusRequest request) throws TException{
     return new Status(StatusType.READY);
-  }
-
-  @Override
-  @RequestId
-  public synchronized ConfigureResponse configure(ConfigureRequest request) throws TException {
-    return new ConfigureResponse(ConfigureResultCode.OK);
   }
 
   /**
@@ -264,11 +254,11 @@ public class FlatSchedulerService implements RootScheduler.Iface, ServiceNodeEve
 
   @Override
   public synchronized void onJoin() {
-    logger.info("Is now the root scheduler leader");
+    logger.info("SchedulerService joined.");
   }
 
   @Override
   public synchronized void onLeave() {
-    logger.info("Is no longer the root scheduler leader");
+    logger.info("SchedulerService left.");
   }
 }
