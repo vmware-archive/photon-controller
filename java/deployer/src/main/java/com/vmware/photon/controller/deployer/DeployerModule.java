@@ -80,6 +80,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class DeployerModule extends AbstractModule {
 
+  public static final String APIFE_SERVICE_NAME = "apife";
   public static final String DEPLOYER_SERVICE_NAME = "deployer";
   public static final String CLOUDSTORE_SERVICE_NAME = "cloudstore";
   public static final String HOUSEKEEPER_SERVICE_NAME = "housekeeper";
@@ -185,7 +186,7 @@ public class DeployerModule extends AbstractModule {
   @Singleton
   @ApiFeServerSet
   public ServerSet getApiFeServerSet(ZookeeperServerSetFactory serverSetFactory) {
-    return serverSetFactory.createServiceServerSet("apife", true);
+    return serverSetFactory.createServiceServerSet(APIFE_SERVICE_NAME, true);
   }
 
   @Provides
