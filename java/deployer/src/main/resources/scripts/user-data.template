@@ -36,6 +36,12 @@ write_files:
     owner: root:root
     permissions: 0644
     path: /tmp/update-ntp.sh
+  - content: |
+        [Unit]
+        ConditionVirtualization=
+    owner: root:root
+    permissions: 0644
+    path: /etc/systemd/system/systemd-timesyncd.service.d/allow_virt.conf
 
 runcmd:
   - mkdir -p /etc/esxcloud/
