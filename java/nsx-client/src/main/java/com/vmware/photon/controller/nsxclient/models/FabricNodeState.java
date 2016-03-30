@@ -18,45 +18,57 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
+import java.util.List;
 import java.util.Objects;
 
 /**
- * This class represents a GetTransportZoneSummaryResponse JSON structure.
+ * This class represents a FabricNodeState JSON structure.
  */
 @JsonIgnoreProperties(ignoreUnknown =  true)
-public class GetTransportZoneSummaryResponse {
+public class FabricNodeState {
 
-  @JsonProperty(value = "num_logical_ports", required = true)
-  private Integer numLogicalPorts;
+  @JsonProperty(value = "failure_code", required = false)
+  private Integer errorCode;
 
-  @JsonProperty(value = "num_logical_switches", required = true)
-  private Integer numLogicalSwitches;
+  @JsonProperty(value = "failure_message", required = false)
+  private String errorMessage;
 
-  @JsonProperty(value = "num_transport_nodes", required = true)
-  private Integer numTransportNodes;
+  @JsonProperty(value = "state", required = false)
+  private com.vmware.photon.controller.nsxclient.datatypes.FabricNodeState state;
 
-  public Integer getNumLogicalPorts() {
-    return this.numLogicalPorts;
+  @JsonProperty(value = "details", required = false)
+  private List<ConfigurationStateElement> details;
+
+  public Integer getErrorCode() {
+    return this.errorCode;
   }
 
-  public void setNumLogicalPorts(Integer numLogicalPorts) {
-    this.numLogicalPorts = numLogicalPorts;
+  public void setErrorCode(Integer errorCode) {
+    this.errorCode = errorCode;
   }
 
-  public Integer getNumLogicalSwitches() {
-    return this.numLogicalSwitches;
+  public String getErrorMessage() {
+    return this.errorMessage;
   }
 
-  public void setNumLogicalSwitches(Integer numLogicalSwitches) {
-    this.numLogicalSwitches = numLogicalSwitches;
+  public void setErrorMessage(String errorMessage) {
+    this.errorMessage = errorMessage;
   }
 
-  public Integer getNumTransportNodes() {
-    return this.numTransportNodes;
+  public com.vmware.photon.controller.nsxclient.datatypes.FabricNodeState getState() {
+    return this.state;
   }
 
-  public void setNumTransportNodes(Integer numTransportNodes) {
-    this.numTransportNodes = numTransportNodes;
+  public void setState(com.vmware.photon.controller.nsxclient.datatypes.FabricNodeState state) {
+    this.state = state;
+  }
+
+  public List<ConfigurationStateElement> getDetails() {
+    return this.details;
+  }
+
+  public void setDetails(List<ConfigurationStateElement> details) {
+    this.details = details;
   }
 
   @Override
@@ -69,18 +81,20 @@ public class GetTransportZoneSummaryResponse {
       return false;
     }
 
-    GetTransportZoneSummaryResponse other = (GetTransportZoneSummaryResponse) o;
-    return Objects.equals(getNumLogicalPorts(), other.getNumLogicalPorts())
-        && Objects.equals(getNumLogicalSwitches(), other.getNumLogicalSwitches())
-        && Objects.equals(getNumTransportNodes(), other.getNumTransportNodes());
+    FabricNodeState other = (FabricNodeState) o;
+    return Objects.equals(getErrorCode(), other.getErrorCode())
+        && Objects.equals(getErrorMessage(), other.getErrorMessage())
+        && Objects.equals(getState(), other.getState())
+        && Objects.deepEquals(getDetails(), other.getDetails());
   }
 
   @Override
   public int hashCode() {
     return Objects.hash(super.hashCode(),
-        getNumLogicalPorts(),
-        getNumLogicalSwitches(),
-        getNumTransportNodes());
+        getErrorCode(),
+        getErrorMessage(),
+        getState(),
+        getDetails());
   }
 
   @Override

@@ -18,34 +18,68 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
+import java.util.List;
 import java.util.Objects;
 
 /**
- * This class represents a RegisterFabricNodeResponse JSON structure.
+ * This class represents a TransportNodeCreateSpec JSON structure.
  */
 @JsonIgnoreProperties(ignoreUnknown =  true)
-public class RegisterFabricNodeResponse {
+public class TransportNodeCreateSpec {
 
-  @JsonProperty(value = "id", required = true)
-  private String id;
+  @JsonProperty(value = "description", required = false)
+  private String description;
 
-  @JsonProperty(value = "external_id", required = true)
-  private String externalId;
+  @JsonProperty(value = "display_name", required = false)
+  private String displayName;
 
-  public String getId() {
-    return this.id;
+  @JsonProperty(value = "node_id", required = true)
+  private String nodeId;
+
+  @JsonProperty(value = "host_switches", required = true)
+  private List<HostSwitch> hostSwitches;
+
+  @JsonProperty(value = "transport_zone_endpoints", required = false)
+  private List<TransportZoneEndPoint> transportZoneEndPoints;
+
+  public String getDescription() {
+    return this.description;
   }
 
-  public void setId(String id) {
-    this.id = id;
+  public void setDescription(String description) {
+    this.description = description;
   }
 
-  public String getExternalId() {
-    return this.externalId;
+  public String getDisplayName() {
+    return this.displayName;
   }
 
-  public void setExternalId(String externalId) {
-    this.externalId = externalId;
+  public void setDisplayName(String displayName) {
+    this.displayName = displayName;
+  }
+
+  public String getNodeId() {
+    return nodeId;
+  }
+
+  public void setNodeId(String nodeId) {
+    this.nodeId = nodeId;
+  }
+
+  public List<HostSwitch> getHostSwitches() {
+    return this.hostSwitches;
+  }
+
+  public void setHostSwitches(List<HostSwitch> hostSwitches) {
+    this.hostSwitches = hostSwitches;
+  }
+
+  public List<TransportZoneEndPoint> getTransportZoneEndPoints() {
+    return this.transportZoneEndPoints;
+  }
+
+  public void setTransportZoneEndPoints(List<TransportZoneEndPoint> transportZoneEndPoints) {
+    this.transportZoneEndPoints = transportZoneEndPoints;
   }
 
   @Override
@@ -58,16 +92,22 @@ public class RegisterFabricNodeResponse {
       return false;
     }
 
-    RegisterFabricNodeResponse other = (RegisterFabricNodeResponse) o;
-    return Objects.equals(getId(), other.getId())
-        && Objects.equals(getExternalId(), other.getExternalId());
+    TransportNodeCreateSpec other = (TransportNodeCreateSpec) o;
+    return Objects.equals(getDescription(), other.getDescription())
+        && Objects.equals(getDisplayName(), other.getDisplayName())
+        && Objects.equals(getNodeId(), other.getNodeId())
+        && Objects.deepEquals(getHostSwitches(), other.getHostSwitches())
+        && Objects.deepEquals(getTransportZoneEndPoints(), other.getTransportZoneEndPoints());
   }
 
   @Override
   public int hashCode() {
     return Objects.hash(super.hashCode(),
-        getId(),
-        getExternalId());
+        getDescription(),
+        getDisplayName(),
+        getNodeId(),
+        getHostSwitches(),
+        getTransportZoneEndPoints());
   }
 
   @Override

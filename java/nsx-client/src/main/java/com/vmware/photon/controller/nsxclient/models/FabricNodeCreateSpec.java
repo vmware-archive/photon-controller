@@ -13,20 +13,22 @@
 
 package com.vmware.photon.controller.nsxclient.models;
 
-import com.vmware.photon.controller.nsxclient.datatypes.TransportType;
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
+import java.util.List;
 import java.util.Objects;
 
 /**
- * This class represents a CreateTransportZoneRequest JSON structure.
+ * This class represents a FabricNodeCreateSpec JSON structure.
  */
 @JsonIgnoreProperties(ignoreUnknown =  true)
-public class CreateTransportZoneRequest {
+public class FabricNodeCreateSpec {
+
+  @JsonProperty(value = "resource_type", required = true)
+  private String resourceType;
 
   @JsonProperty(value = "display_name", required = false)
   private String displayName;
@@ -34,11 +36,22 @@ public class CreateTransportZoneRequest {
   @JsonProperty(value = "description", required = false)
   private String description;
 
-  @JsonProperty(value = "host_switch_name", required = true)
-  private String hostSwitchName;
+  @JsonProperty(value = "ip_addresses", required = true)
+  private List<String> ipAddresses;
 
-  @JsonProperty(value = "transport_type", required = true)
-  private TransportType transportType;
+  @JsonProperty(value = "os_type", required = true)
+  private String osType;
+
+  @JsonProperty(value = "host_credential", required = false)
+  private HostNodeLoginCredential hostCredential;
+
+  public String getResourceType() {
+    return this.resourceType;
+  }
+
+  public void setResourceType(String resourceType) {
+    this.resourceType = resourceType;
+  }
 
   public String getDisplayName() {
     return this.displayName;
@@ -56,21 +69,30 @@ public class CreateTransportZoneRequest {
     this.description = description;
   }
 
-  public String getHostSwitchName() {
-    return this.hostSwitchName;
+  public List<String> getIpAddresses() {
+    return this.ipAddresses;
   }
 
-  public void setHostSwitchName(String hostSwitchName) {
-    this.hostSwitchName = hostSwitchName;
+  public void setIpAddresses(List<String> ipAddresses) {
+    this.ipAddresses = ipAddresses;
   }
 
-  public TransportType getTransportType() {
-    return this.transportType;
+  public String getOsType() {
+    return this.osType;
   }
 
-  public void setTransportType(TransportType transportType) {
-    this.transportType = transportType;
+  public void setOsType(String osType) {
+    this.osType = osType;
   }
+
+  public HostNodeLoginCredential getHostCredential() {
+    return this.hostCredential;
+  }
+
+  public void setHostCredential(HostNodeLoginCredential hostCredential) {
+    this.hostCredential = hostCredential;
+  }
+
 
   @Override
   public boolean equals(Object o) {
@@ -82,20 +104,24 @@ public class CreateTransportZoneRequest {
       return false;
     }
 
-    CreateTransportZoneRequest other = (CreateTransportZoneRequest) o;
-    return Objects.equals(getDisplayName(), other.getDisplayName())
+    FabricNodeCreateSpec other = (FabricNodeCreateSpec) o;
+    return Objects.equals(getResourceType(), other.getResourceType())
+        && Objects.equals(getDisplayName(), other.getDisplayName())
         && Objects.equals(getDescription(), other.getDescription())
-        && Objects.equals(getHostSwitchName(), other.getHostSwitchName())
-        && Objects.equals(getTransportType(), other.getTransportType());
+        && Objects.deepEquals(getIpAddresses(), other.getDisplayName())
+        && Objects.equals(getOsType(), other.getOsType())
+        && Objects.equals(getHostCredential(), other.getHostCredential());
   }
 
   @Override
   public int hashCode() {
     return Objects.hash(super.hashCode(),
+        getResourceType(),
         getDisplayName(),
         getDescription(),
-        getHostSwitchName(),
-        getTransportType());
+        getIpAddresses().toString(),
+        getOsType(),
+        getHostCredential().toString());
   }
 
   @Override

@@ -14,18 +14,15 @@
 package com.vmware.photon.controller.nsxclient.apis;
 
 import com.vmware.photon.controller.nsxclient.RestClient;
-import com.vmware.photon.controller.nsxclient.models.CreateTransportNodeRequest;
-import com.vmware.photon.controller.nsxclient.models.CreateTransportNodeResponse;
-import com.vmware.photon.controller.nsxclient.models.CreateTransportZoneRequest;
-import com.vmware.photon.controller.nsxclient.models.CreateTransportZoneResponse;
-import com.vmware.photon.controller.nsxclient.models.GetFabricNodeResponse;
-import com.vmware.photon.controller.nsxclient.models.GetFabricNodeStateResponse;
-import com.vmware.photon.controller.nsxclient.models.GetTransportNodeResponse;
-import com.vmware.photon.controller.nsxclient.models.GetTransportNodeStateResponse;
-import com.vmware.photon.controller.nsxclient.models.GetTransportZoneResponse;
-import com.vmware.photon.controller.nsxclient.models.GetTransportZoneSummaryResponse;
-import com.vmware.photon.controller.nsxclient.models.RegisterFabricNodeRequest;
-import com.vmware.photon.controller.nsxclient.models.RegisterFabricNodeResponse;
+import com.vmware.photon.controller.nsxclient.models.FabricNode;
+import com.vmware.photon.controller.nsxclient.models.FabricNodeCreateSpec;
+import com.vmware.photon.controller.nsxclient.models.FabricNodeState;
+import com.vmware.photon.controller.nsxclient.models.TransportNode;
+import com.vmware.photon.controller.nsxclient.models.TransportNodeCreateSpec;
+import com.vmware.photon.controller.nsxclient.models.TransportNodeState;
+import com.vmware.photon.controller.nsxclient.models.TransportZone;
+import com.vmware.photon.controller.nsxclient.models.TransportZoneCreateSpec;
+import com.vmware.photon.controller.nsxclient.models.TransportZoneSummary;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.util.concurrent.FutureCallback;
@@ -48,26 +45,26 @@ public class FabricApi extends NsxClientApi {
   /**
    * Registers a resource with NSX as a fabric node.
    */
-  public RegisterFabricNodeResponse registerFabricNode(RegisterFabricNodeRequest request) throws IOException {
+  public FabricNode registerFabricNode(FabricNodeCreateSpec request) throws IOException {
     final String path = basePath + "/fabric/nodes";
     return post(path,
         serializeObjectAsJson(request),
         HttpStatus.SC_CREATED,
-        new TypeReference<RegisterFabricNodeResponse>() {
+        new TypeReference<FabricNode>() {
         });
   }
 
   /**
    * Registers a resource with NSX as a fabric node.
    */
-  public void registerFabricNodeAsync(RegisterFabricNodeRequest request,
-                                      FutureCallback<RegisterFabricNodeResponse> responseCallback)
+  public void registerFabricNodeAsync(FabricNodeCreateSpec request,
+                                      FutureCallback<FabricNode> responseCallback)
       throws IOException {
     final String path = basePath + "/fabric/nodes";
     postAsync(path,
         serializeObjectAsJson(request),
         HttpStatus.SC_CREATED,
-        new TypeReference<RegisterFabricNodeResponse>() {
+        new TypeReference<FabricNode>() {
         },
         responseCallback);
   }
@@ -75,11 +72,11 @@ public class FabricApi extends NsxClientApi {
   /**
    * Gets a NSX fabric node.
    */
-  public GetFabricNodeResponse getFabricNode(String nodeId) throws IOException {
+  public FabricNode getFabricNode(String nodeId) throws IOException {
     final String path = basePath + "/fabric/nodes/" + nodeId;
     return get(path,
         HttpStatus.SC_OK,
-        new TypeReference<GetFabricNodeResponse>() {
+        new TypeReference<FabricNode>() {
         });
   }
 
@@ -87,12 +84,12 @@ public class FabricApi extends NsxClientApi {
    * Gets a NSX fabric node.
    */
   public void getFabricNodeAsync(String nodeId,
-                                 FutureCallback<GetFabricNodeResponse> responseCallback)
+                                 FutureCallback<FabricNode> responseCallback)
       throws IOException {
     final String path = basePath + "/fabric/nodes/" + nodeId;
     getAsync(path,
         HttpStatus.SC_OK,
-        new TypeReference<GetFabricNodeResponse>() {
+        new TypeReference<FabricNode>() {
         },
         responseCallback);
   }
@@ -100,11 +97,11 @@ public class FabricApi extends NsxClientApi {
   /**
    * Gets the state of a NSX fabric node.
    */
-  public GetFabricNodeStateResponse getFabricNodeState(String nodeId) throws IOException {
+  public FabricNodeState getFabricNodeState(String nodeId) throws IOException {
     final String path = basePath + "/fabric/nodes/" + nodeId + "/state";
     return get(path,
         HttpStatus.SC_OK,
-        new TypeReference<GetFabricNodeStateResponse>() {
+        new TypeReference<FabricNodeState>() {
         });
   }
 
@@ -112,12 +109,12 @@ public class FabricApi extends NsxClientApi {
    * Gets the state of a NSX fabric node.
    */
   public void getFabricNodeStateAsync(String nodeId,
-                                      FutureCallback<GetFabricNodeStateResponse> responseCallback)
+                                      FutureCallback<FabricNodeState> responseCallback)
       throws IOException {
     final String path = basePath + "/fabric/nodes/" + nodeId + "/state";
     getAsync(path,
         HttpStatus.SC_OK,
-        new TypeReference<GetFabricNodeStateResponse>() {
+        new TypeReference<FabricNodeState>() {
         },
         responseCallback);
   }
@@ -143,26 +140,26 @@ public class FabricApi extends NsxClientApi {
   /**
    * Creates a NSX transport node.
    */
-  public CreateTransportNodeResponse createTransportNode(CreateTransportNodeRequest request) throws IOException {
+  public TransportNode createTransportNode(TransportNodeCreateSpec request) throws IOException {
     final String path = basePath + "/transport-nodes";
     return post(path,
         serializeObjectAsJson(request),
         HttpStatus.SC_CREATED,
-        new TypeReference<CreateTransportNodeResponse>() {
+        new TypeReference<TransportNode>() {
         });
   }
 
   /**
    * Creates a NSX transport node.
    */
-  public void createTransportNodeAsync(CreateTransportNodeRequest request,
-                                       FutureCallback<CreateTransportNodeResponse> responseCallback)
+  public void createTransportNodeAsync(TransportNodeCreateSpec request,
+                                       FutureCallback<TransportNode> responseCallback)
       throws IOException {
     final String path = basePath + "/transport-nodes";
     postAsync(path,
         serializeObjectAsJson(request),
         HttpStatus.SC_CREATED,
-        new TypeReference<CreateTransportNodeResponse>() {
+        new TypeReference<TransportNode>() {
         },
         responseCallback);
   }
@@ -170,11 +167,11 @@ public class FabricApi extends NsxClientApi {
   /**
    * Gets a NSX transport node.
    */
-  public GetTransportNodeResponse getTransportNode(String id) throws IOException {
+  public TransportNode getTransportNode(String id) throws IOException {
     final String path = basePath + "/transport-nodes/" + id;
     return get(path,
         HttpStatus.SC_OK,
-        new TypeReference<GetTransportNodeResponse>() {
+        new TypeReference<TransportNode>() {
         });
   }
 
@@ -182,12 +179,12 @@ public class FabricApi extends NsxClientApi {
    * Gets a NSX transport node.
    */
   public void getTransportNodeAsync(String id,
-                                    FutureCallback<GetTransportNodeResponse> responseFutureCallback)
+                                    FutureCallback<TransportNode> responseFutureCallback)
       throws IOException {
     final String path = basePath + "/transport-nodes/" + id;
     getAsync(path,
         HttpStatus.SC_OK,
-        new TypeReference<GetTransportNodeResponse>() {
+        new TypeReference<TransportNode>() {
         },
         responseFutureCallback);
   }
@@ -195,11 +192,11 @@ public class FabricApi extends NsxClientApi {
   /**
    * Gets the state of a NSX transport node.
    */
-  public GetTransportNodeStateResponse getTransportNodeState(String id) throws IOException {
+  public TransportNodeState getTransportNodeState(String id) throws IOException {
     final String path = basePath + "/transport-nodes/" + id + "/state";
     return get(path,
         HttpStatus.SC_OK,
-        new TypeReference<GetTransportNodeStateResponse>() {
+        new TypeReference<TransportNodeState>() {
         });
   }
 
@@ -207,12 +204,12 @@ public class FabricApi extends NsxClientApi {
    * Gets the state of a NSX transport node.
    */
   public void getTransportNodeStateAsync(String id,
-                                         FutureCallback<GetTransportNodeStateResponse> responseCallback)
+                                         FutureCallback<TransportNodeState> responseCallback)
       throws IOException {
     final String path = basePath + "/transport-nodes/" + id + "/state";
     getAsync(path,
         HttpStatus.SC_OK,
-        new TypeReference<GetTransportNodeStateResponse>() {
+        new TypeReference<TransportNodeState>() {
         },
         responseCallback);
   }
@@ -238,26 +235,26 @@ public class FabricApi extends NsxClientApi {
   /**
    * Creates a NSX transport zone.
    */
-  public CreateTransportZoneResponse createTransportZone(CreateTransportZoneRequest request) throws IOException {
+  public TransportZone createTransportZone(TransportZoneCreateSpec request) throws IOException {
     final String path = basePath + "/transport-zones";
     return post(path,
         serializeObjectAsJson(request),
         HttpStatus.SC_CREATED,
-        new TypeReference<CreateTransportZoneResponse>() {
+        new TypeReference<TransportZone>() {
         });
   }
 
   /**
    * Creates a NSX transport zone.
    */
-  public void createTransportZoneAsync(CreateTransportZoneRequest request,
-                                       FutureCallback<CreateTransportZoneResponse> responseCallback)
+  public void createTransportZoneAsync(TransportZoneCreateSpec request,
+                                       FutureCallback<TransportZone> responseCallback)
       throws IOException {
     final String path = basePath + "/transport-zones";
     postAsync(path,
         serializeObjectAsJson(request),
         HttpStatus.SC_CREATED,
-        new TypeReference<CreateTransportZoneResponse>() {
+        new TypeReference<TransportZone>() {
         },
         responseCallback);
   }
@@ -265,11 +262,11 @@ public class FabricApi extends NsxClientApi {
   /**
    * Gets a NSX transport zone.
    */
-  public GetTransportZoneResponse getTransportZone(String id) throws IOException {
+  public TransportZone getTransportZone(String id) throws IOException {
     final String path = basePath + "/transport-zones/" + id;
     return get(path,
         HttpStatus.SC_OK,
-        new TypeReference<GetTransportZoneResponse>() {
+        new TypeReference<TransportZone>() {
         });
   }
 
@@ -277,12 +274,12 @@ public class FabricApi extends NsxClientApi {
    * Gets a NSX transport zone.
    */
   public void getTransportZoneAsync(String id,
-                                    FutureCallback<GetTransportZoneResponse> responseCallback)
+                                    FutureCallback<TransportZone> responseCallback)
       throws IOException {
     final String path = basePath + "/transport-zones/" + id;
     getAsync(path,
         HttpStatus.SC_OK,
-        new TypeReference<GetTransportZoneResponse>() {
+        new TypeReference<TransportZone>() {
         },
         responseCallback);
   }
@@ -290,11 +287,11 @@ public class FabricApi extends NsxClientApi {
   /**
    * Gets the summary of a NSX transport zone.
    */
-  public GetTransportZoneSummaryResponse getTransportZoneSummary(String id) throws IOException {
+  public TransportZoneSummary getTransportZoneSummary(String id) throws IOException {
     final String path = basePath + "/transport-zones/" + id + "/summary";
     return get(path,
         HttpStatus.SC_OK,
-        new TypeReference<GetTransportZoneSummaryResponse>() {
+        new TypeReference<TransportZoneSummary>() {
         });
   }
 
@@ -302,12 +299,12 @@ public class FabricApi extends NsxClientApi {
    * Gets the summary of a NSX transport zone.
    */
   public void getTransportZoneSummaryAsync(String id,
-                                           FutureCallback<GetTransportZoneSummaryResponse> responseCallback)
+                                           FutureCallback<TransportZoneSummary> responseCallback)
       throws IOException {
     final String path = basePath + "/transport-zones/" + id + "/summary";
     getAsync(path,
         HttpStatus.SC_OK,
-        new TypeReference<GetTransportZoneSummaryResponse>() {
+        new TypeReference<TransportZoneSummary>() {
         },
         responseCallback);
   }
