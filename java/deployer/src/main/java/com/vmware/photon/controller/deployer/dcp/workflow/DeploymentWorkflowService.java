@@ -48,6 +48,7 @@ import com.vmware.xenon.common.Utils;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.FutureCallback;
 import org.eclipse.jetty.util.BlockingArrayQueue;
+
 import static com.google.common.base.Preconditions.checkState;
 
 import javax.annotation.Nullable;
@@ -146,6 +147,10 @@ public class DeploymentWorkflowService extends StatefulService {
     @WriteOnce
     public String deploymentServiceLink;
 
+    /**
+     * This value represents the desired state of the deployed management plane.
+     */
+    public DeploymentState desiredState;
   }
 
   public DeploymentWorkflowService() {
@@ -170,6 +175,10 @@ public class DeploymentWorkflowService extends StatefulService {
 
     if (null == startState.taskPollDelay) {
       startState.taskPollDelay = HostUtils.getDeployerContext(this).getTaskPollDelay();
+    }
+
+    if (null == startState.desiredState) {
+      startState.desiredState = DeploymentState.PAUSED;
     }
 
     if (TaskState.TaskStage.CREATED == startState.taskState.stage) {
