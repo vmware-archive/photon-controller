@@ -50,6 +50,9 @@ public class ProvisionerConfig {
   @NotNull
   private LoggingConfiguration logging = new LoggingConfiguration();
 
+  @NotNull
+  private String slingshotLogDirectory;
+
   public XenonConfig getXenonConfig() {
     return checkNotNull(this.xenonConfig);
   }
@@ -76,6 +79,10 @@ public class ProvisionerConfig {
 
   public Integer getSlingshotLogVerbosity() {
     return slingshotLogVerbosity;
+  }
+
+  public String getSlingshotLogDirectory() {
+    return slingshotLogDirectory;
   }
 
 

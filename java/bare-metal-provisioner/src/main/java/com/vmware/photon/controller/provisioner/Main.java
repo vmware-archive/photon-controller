@@ -96,7 +96,9 @@ public class Main {
     if (provisionerConfig.getUsePhotonDHCP()) {
       logger.info("Photon Controller DHCP server is enabled. Will start Slingshot");
       try {
-        provisionerXenonHost.startSlingshotService(provisionerConfig.getSlingshotLogVerbosity());
+        provisionerXenonHost.startSlingshotService(
+            provisionerConfig.getSlingshotLogVerbosity(),
+            provisionerConfig.getSlingshotLogDirectory());
       } catch (Throwable t) {
         logger.error("Cannot run startSlingshotService", t);
       }
