@@ -14,8 +14,11 @@
 package com.vmware.photon.controller.apibackend.helpers;
 
 import com.vmware.photon.controller.apibackend.ApiBackendFactory;
+import com.vmware.photon.controller.common.thrift.ServerSet;
+import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.MultiHostEnvironment;
 
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.testng.Assert.assertTrue;
 
@@ -38,14 +41,24 @@ public class TestEnvironment extends MultiHostEnvironment<TestHost> {
   public static class Builder {
 
     private int hostCount;
+    private CloudStoreHelper cloudStoreHelper;
 
     public Builder hostCount(int hostCount) {
       this.hostCount = hostCount;
       return this;
     }
 
+    public Builder cloudStoreServerSet(ServerSet cloudStoreServerSet) {
+      this.cloudStoreHelper = new CloudStoreHelper(cloudStoreServerSet);
+      return this;
+    }
+
     public TestEnvironment build() throws Throwable {
       ApiBackendFactory apiBackendFactory = mock(ApiBackendFactory.class);
+
+      if (this.cloudStoreHelper != null) {
+        doReturn(this.cloudStoreHelper).when(apiBackendFactory).createCloudStoreHelper();
+      }
 
       TestEnvironment environment = new TestEnvironment(hostCount, apiBackendFactory);
       environment.start();

@@ -14,6 +14,9 @@
 package com.vmware.photon.controller.apibackend;
 
 import com.vmware.photon.controller.apibackend.tasks.CreateLogicalRouterTaskService;
+import com.vmware.photon.controller.apibackend.tasks.CreateVirtualNetworkTaskService;
+import com.vmware.photon.controller.common.thrift.ServerSet;
+import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Service;
 
@@ -27,10 +30,29 @@ import java.util.function.Supplier;
  */
 public class ApiBackendFactory {
 
+  private ServerSet cloudStoreServerSet;
+
   /**
    * All Xenon Factory Services in api-backend.
    */
   public static final Map<Class<? extends Service>, Supplier<FactoryService>> FACTORY_SERVICES_MAP = ImmutableMap.of(
-      CreateLogicalRouterTaskService.class, CreateLogicalRouterTaskService::createFactory
+      CreateLogicalRouterTaskService.class, CreateLogicalRouterTaskService::createFactory,
+      CreateVirtualNetworkTaskService.class, CreateVirtualNetworkTaskService::createFactory
   );
+
+  /**
+   * Overloaded Constructor.
+   *
+   * @param cloudStoreServerSet
+   */
+  public ApiBackendFactory(ServerSet cloudStoreServerSet) {
+    this.cloudStoreServerSet = cloudStoreServerSet;
+  }
+
+  /**
+   * Creates an instance of {@link com.vmware.photon.controller.common.xenon.CloudStoreHelper}.
+   */
+  public CloudStoreHelper createCloudStoreHelper() {
+    return new CloudStoreHelper(this.cloudStoreServerSet);
+  }
 }
