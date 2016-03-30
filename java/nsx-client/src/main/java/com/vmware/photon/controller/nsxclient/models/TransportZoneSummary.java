@@ -13,64 +13,50 @@
 
 package com.vmware.photon.controller.nsxclient.models;
 
-import com.vmware.photon.controller.nsxclient.datatypes.TransportNodeState;
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
-import java.util.List;
 import java.util.Objects;
 
 /**
- * This class represents a GetFabricNodeStateResponse JSON structure.
+ * This class represents a TransportZoneSummary JSON structure.
  */
 @JsonIgnoreProperties(ignoreUnknown =  true)
-public class GetTransportNodeStateResponse {
+public class TransportZoneSummary {
 
-  @JsonProperty(value = "failure_code", required = false)
-  private Integer errorCode;
+  @JsonProperty(value = "num_logical_ports", required = true)
+  private Integer numLogicalPorts;
 
-  @JsonProperty(value = "failure_message", required = false)
-  private String errorMessage;
+  @JsonProperty(value = "num_logical_switches", required = true)
+  private Integer numLogicalSwitches;
 
-  @JsonProperty(value = "state", required = false)
-  private TransportNodeState state;
+  @JsonProperty(value = "num_transport_nodes", required = true)
+  private Integer numTransportNodes;
 
-  @JsonProperty(value = "details", required = false)
-  private List<ConfigurationStateElement> details;
-
-  public Integer getErrorCode() {
-    return this.errorCode;
+  public Integer getNumLogicalPorts() {
+    return this.numLogicalPorts;
   }
 
-  public void setErrorCode(Integer errorCode) {
-    this.errorCode = errorCode;
+  public void setNumLogicalPorts(Integer numLogicalPorts) {
+    this.numLogicalPorts = numLogicalPorts;
   }
 
-  public String getErrorMessage() {
-    return this.errorMessage;
+  public Integer getNumLogicalSwitches() {
+    return this.numLogicalSwitches;
   }
 
-  public void setErrorMessage(String errorMessage) {
-    this.errorMessage = errorMessage;
+  public void setNumLogicalSwitches(Integer numLogicalSwitches) {
+    this.numLogicalSwitches = numLogicalSwitches;
   }
 
-  public TransportNodeState getState() {
-    return this.state;
+  public Integer getNumTransportNodes() {
+    return this.numTransportNodes;
   }
 
-  public void setState(TransportNodeState state) {
-    this.state = state;
-  }
-
-  public List<ConfigurationStateElement> getDetails() {
-    return this.details;
-  }
-
-  public void setDetails(List<ConfigurationStateElement> details) {
-    this.details = details;
+  public void setNumTransportNodes(Integer numTransportNodes) {
+    this.numTransportNodes = numTransportNodes;
   }
 
   @Override
@@ -83,20 +69,18 @@ public class GetTransportNodeStateResponse {
       return false;
     }
 
-    GetTransportNodeStateResponse other = (GetTransportNodeStateResponse) o;
-    return Objects.equals(getErrorCode(), other.getErrorCode())
-        && Objects.equals(getErrorMessage(), other.getErrorMessage())
-        && Objects.equals(getState(), other.getState())
-        && Objects.deepEquals(getDetails(), other.getDetails());
+    TransportZoneSummary other = (TransportZoneSummary) o;
+    return Objects.equals(getNumLogicalPorts(), other.getNumLogicalPorts())
+        && Objects.equals(getNumLogicalSwitches(), other.getNumLogicalSwitches())
+        && Objects.equals(getNumTransportNodes(), other.getNumTransportNodes());
   }
 
   @Override
   public int hashCode() {
     return Objects.hash(super.hashCode(),
-        getErrorCode(),
-        getErrorMessage(),
-        getState(),
-        getDetails());
+        getNumLogicalPorts(),
+        getNumLogicalSwitches(),
+        getNumTransportNodes());
   }
 
   @Override

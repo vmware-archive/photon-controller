@@ -13,6 +13,8 @@
 
 package com.vmware.photon.controller.nsxclient.models;
 
+import com.vmware.photon.controller.nsxclient.datatypes.TransportType;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -21,20 +23,53 @@ import java.lang.reflect.Field;
 import java.util.Objects;
 
 /**
- * This class represents a CreateTransportNodeResponse JSON structure.
+ * This class represents a TransportZoneCreateSpec JSON structure.
  */
 @JsonIgnoreProperties(ignoreUnknown =  true)
-public class CreateTransportNodeResponse {
+public class TransportZoneCreateSpec {
 
-  @JsonProperty(value = "id", required = true)
-  private String id;
+  @JsonProperty(value = "display_name", required = false)
+  private String displayName;
 
-  public String getId() {
-    return this.id;
+  @JsonProperty(value = "description", required = false)
+  private String description;
+
+  @JsonProperty(value = "host_switch_name", required = true)
+  private String hostSwitchName;
+
+  @JsonProperty(value = "transport_type", required = true)
+  private TransportType transportType;
+
+  public String getDisplayName() {
+    return this.displayName;
   }
 
-  public void setId(String id) {
-    this.id = id;
+  public void setDisplayName(String displayName) {
+    this.displayName = displayName;
+  }
+
+  public String getDescription() {
+    return this.description;
+  }
+
+  public void setDescription(String description) {
+    this.description = description;
+  }
+
+  public String getHostSwitchName() {
+    return this.hostSwitchName;
+  }
+
+  public void setHostSwitchName(String hostSwitchName) {
+    this.hostSwitchName = hostSwitchName;
+  }
+
+  public TransportType getTransportType() {
+    return this.transportType;
+  }
+
+  public void setTransportType(TransportType transportType) {
+    this.transportType = transportType;
   }
 
   @Override
@@ -47,14 +82,20 @@ public class CreateTransportNodeResponse {
       return false;
     }
 
-    CreateTransportNodeResponse other = (CreateTransportNodeResponse) o;
-    return Objects.equals(getId(), other.getId());
+    TransportZoneCreateSpec other = (TransportZoneCreateSpec) o;
+    return Objects.equals(getDisplayName(), other.getDisplayName())
+        && Objects.equals(getDescription(), other.getDescription())
+        && Objects.equals(getHostSwitchName(), other.getHostSwitchName())
+        && Objects.equals(getTransportType(), other.getTransportType());
   }
 
   @Override
   public int hashCode() {
     return Objects.hash(super.hashCode(),
-        getId());
+        getDisplayName(),
+        getDescription(),
+        getHostSwitchName(),
+        getTransportType());
   }
 
   @Override

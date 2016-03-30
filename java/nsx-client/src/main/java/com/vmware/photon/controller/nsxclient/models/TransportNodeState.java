@@ -13,8 +13,6 @@
 
 package com.vmware.photon.controller.nsxclient.models;
 
-import com.vmware.photon.controller.nsxclient.datatypes.FabricNodeState;
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -24,10 +22,10 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * This class represents a GetFabricNodeStateResponse JSON structure.
+ * This class represents a TransportNodeState JSON structure.
  */
 @JsonIgnoreProperties(ignoreUnknown =  true)
-public class GetFabricNodeStateResponse {
+public class TransportNodeState {
 
   @JsonProperty(value = "failure_code", required = false)
   private Integer errorCode;
@@ -36,7 +34,7 @@ public class GetFabricNodeStateResponse {
   private String errorMessage;
 
   @JsonProperty(value = "state", required = false)
-  private FabricNodeState state;
+  private com.vmware.photon.controller.nsxclient.datatypes.TransportNodeState state;
 
   @JsonProperty(value = "details", required = false)
   private List<ConfigurationStateElement> details;
@@ -57,11 +55,11 @@ public class GetFabricNodeStateResponse {
     this.errorMessage = errorMessage;
   }
 
-  public FabricNodeState getState() {
+  public com.vmware.photon.controller.nsxclient.datatypes.TransportNodeState getState() {
     return this.state;
   }
 
-  public void setState(FabricNodeState state) {
+  public void setState(com.vmware.photon.controller.nsxclient.datatypes.TransportNodeState state) {
     this.state = state;
   }
 
@@ -83,7 +81,7 @@ public class GetFabricNodeStateResponse {
       return false;
     }
 
-    GetFabricNodeStateResponse other = (GetFabricNodeStateResponse) o;
+    TransportNodeState other = (TransportNodeState) o;
     return Objects.equals(getErrorCode(), other.getErrorCode())
         && Objects.equals(getErrorMessage(), other.getErrorMessage())
         && Objects.equals(getState(), other.getState())

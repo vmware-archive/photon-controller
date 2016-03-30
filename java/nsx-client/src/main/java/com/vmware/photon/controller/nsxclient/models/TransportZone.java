@@ -13,22 +13,23 @@
 
 package com.vmware.photon.controller.nsxclient.models;
 
+import com.vmware.photon.controller.nsxclient.datatypes.TransportType;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
-import java.util.List;
 import java.util.Objects;
 
 /**
- * This class represents a RegisterFabricNodeRequest JSON structure.
+ * This class represents a TransportZone JSON structure.
  */
 @JsonIgnoreProperties(ignoreUnknown =  true)
-public class RegisterFabricNodeRequest {
+public class TransportZone {
 
-  @JsonProperty(value = "resource_type", required = true)
-  private String resourceType;
+  @JsonProperty(value = "id", required = true)
+  private String id;
 
   @JsonProperty(value = "display_name", required = false)
   private String displayName;
@@ -36,21 +37,18 @@ public class RegisterFabricNodeRequest {
   @JsonProperty(value = "description", required = false)
   private String description;
 
-  @JsonProperty(value = "ip_addresses", required = true)
-  private List<String> ipAddresses;
+  @JsonProperty(value = "host_switch_name", required = true)
+  private String hostSwitchName;
 
-  @JsonProperty(value = "os_type", required = true)
-  private String osType;
+  @JsonProperty(value = "transport_type", required = true)
+  private TransportType transportType;
 
-  @JsonProperty(value = "host_credential", required = false)
-  private HostNodeLoginCredential hostCredential;
-
-  public String getResourceType() {
-    return this.resourceType;
+  public String getId() {
+    return this.id;
   }
 
-  public void setResourceType(String resourceType) {
-    this.resourceType = resourceType;
+  public void setId(String id) {
+    this.id = id;
   }
 
   public String getDisplayName() {
@@ -69,30 +67,21 @@ public class RegisterFabricNodeRequest {
     this.description = description;
   }
 
-  public List<String> getIpAddresses() {
-    return this.ipAddresses;
+  public String getHostSwitchName() {
+    return this.hostSwitchName;
   }
 
-  public void setIpAddresses(List<String> ipAddresses) {
-    this.ipAddresses = ipAddresses;
+  public void setHostSwitchName(String hostSwitchName) {
+    this.hostSwitchName = hostSwitchName;
   }
 
-  public String getOsType() {
-    return this.osType;
+  public TransportType getTransportType() {
+    return this.transportType;
   }
 
-  public void setOsType(String osType) {
-    this.osType = osType;
+  public void setTransportType(TransportType transportType) {
+    this.transportType = transportType;
   }
-
-  public HostNodeLoginCredential getHostCredential() {
-    return this.hostCredential;
-  }
-
-  public void setHostCredential(HostNodeLoginCredential hostCredential) {
-    this.hostCredential = hostCredential;
-  }
-
 
   @Override
   public boolean equals(Object o) {
@@ -104,24 +93,22 @@ public class RegisterFabricNodeRequest {
       return false;
     }
 
-    RegisterFabricNodeRequest other = (RegisterFabricNodeRequest) o;
-    return Objects.equals(getResourceType(), other.getResourceType())
+    TransportZone other = (TransportZone) o;
+    return Objects.equals(getId(), other.getId())
         && Objects.equals(getDisplayName(), other.getDisplayName())
         && Objects.equals(getDescription(), other.getDescription())
-        && Objects.deepEquals(getIpAddresses(), other.getDisplayName())
-        && Objects.equals(getOsType(), other.getOsType())
-        && Objects.equals(getHostCredential(), other.getHostCredential());
+        && Objects.equals(getHostSwitchName(), other.getHostSwitchName())
+        && Objects.equals(getTransportType(), other.getTransportType());
   }
 
   @Override
   public int hashCode() {
     return Objects.hash(super.hashCode(),
-        getResourceType(),
+        getId(),
         getDisplayName(),
         getDescription(),
-        getIpAddresses().toString(),
-        getOsType(),
-        getHostCredential().toString());
+        getHostSwitchName(),
+        getTransportType());
   }
 
   @Override

@@ -22,34 +22,28 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * This class represents a GetFabricNodeResponse JSON structure.
+ * This class represents a TransportNode JSON structure.
  */
 @JsonIgnoreProperties(ignoreUnknown =  true)
-public class GetFabricNodeResponse {
+public class TransportNode {
 
   @JsonProperty(value = "id", required = true)
   private String id;
 
-  @JsonProperty(value = "external_id", required = true)
-  private String externalId;
-
-  @JsonProperty(value = "resource_type", required = true)
-  private String resourceType;
+  @JsonProperty(value = "description", required = false)
+  private String description;
 
   @JsonProperty(value = "display_name", required = false)
   private String displayName;
 
-  @JsonProperty(value = "description", required = false)
-  private String description;
+  @JsonProperty(value = "node_id", required = true)
+  private String nodeId;
 
-  @JsonProperty(value = "ip_addresses", required = true)
-  private List<String> ipAddresses;
+  @JsonProperty(value = "host_switches", required = true)
+  private List<HostSwitch> hostSwitches;
 
-  @JsonProperty(value = "os_type", required = true)
-  private String osType;
-
-  @JsonProperty(value = "host_credential", required = false)
-  private HostNodeLoginCredential hostCredential;
+  @JsonProperty(value = "transport_zone_endpoints", required = false)
+  private List<TransportZoneEndPoint> transportZoneEndPoints;
 
   public String getId() {
     return this.id;
@@ -59,20 +53,12 @@ public class GetFabricNodeResponse {
     this.id = id;
   }
 
-  public String getExternalId() {
-    return this.externalId;
+  public String getDescription() {
+    return this.description;
   }
 
-  public void setExternalId(String externalId) {
-    this.externalId = externalId;
-  }
-
-  public String getResourceType() {
-    return this.resourceType;
-  }
-
-  public void setResourceType(String resourceType) {
-    this.resourceType = resourceType;
+  public void setDescription(String description) {
+    this.description = description;
   }
 
   public String getDisplayName() {
@@ -83,36 +69,28 @@ public class GetFabricNodeResponse {
     this.displayName = displayName;
   }
 
-  public String getDescription() {
-    return this.description;
+  public String getNodeId() {
+    return nodeId;
   }
 
-  public void setDescription(String descrption) {
-    this.description = descrption;
+  public void setNodeId(String nodeId) {
+    this.nodeId = nodeId;
   }
 
-  public List<String> getIpAddresses() {
-    return this.ipAddresses;
+  public List<HostSwitch> getHostSwitches() {
+    return this.hostSwitches;
   }
 
-  public void setIpAddresses(List<String> ipAddresses) {
-    this.ipAddresses = ipAddresses;
+  public void setHostSwitches(List<HostSwitch> hostSwitches) {
+    this.hostSwitches = hostSwitches;
   }
 
-  public String getOsType() {
-    return this.osType;
+  public List<TransportZoneEndPoint> getTransportZoneEndPoints() {
+    return this.transportZoneEndPoints;
   }
 
-  public void setOsType(String osType) {
-    this.osType = osType;
-  }
-
-  public HostNodeLoginCredential getHostCredential() {
-    return this.hostCredential;
-  }
-
-  public void setHostCredential(HostNodeLoginCredential hostCredential) {
-    this.hostCredential = hostCredential;
+  public void setTransportZoneEndPoints(List<TransportZoneEndPoint> transportZoneEndPoints) {
+    this.transportZoneEndPoints = transportZoneEndPoints;
   }
 
   @Override
@@ -125,28 +103,24 @@ public class GetFabricNodeResponse {
       return false;
     }
 
-    GetFabricNodeResponse other = (GetFabricNodeResponse) o;
+    TransportNode other = (TransportNode) o;
     return Objects.equals(getId(), other.getId())
-        && Objects.equals(getExternalId(), other.getExternalId())
-        && Objects.equals(getResourceType(), other.getResourceType())
-        && Objects.equals(getDisplayName(), other.getDisplayName())
         && Objects.equals(getDescription(), other.getDescription())
-        && Objects.deepEquals(getIpAddresses(), other.getDisplayName())
-        && Objects.equals(getOsType(), other.getOsType())
-        && Objects.equals(getHostCredential(), other.getHostCredential());
+        && Objects.equals(getDisplayName(), other.getDisplayName())
+        && Objects.equals(getNodeId(), other.getNodeId())
+        && Objects.deepEquals(getHostSwitches(), other.getHostSwitches())
+        && Objects.deepEquals(getTransportZoneEndPoints(), other.getTransportZoneEndPoints());
   }
 
   @Override
   public int hashCode() {
     return Objects.hash(super.hashCode(),
         getId(),
-        getExternalId(),
-        getResourceType(),
-        getDisplayName(),
         getDescription(),
-        getIpAddresses().toString(),
-        getOsType(),
-        getHostCredential().toString());
+        getDisplayName(),
+        getNodeId(),
+        getHostSwitches(),
+        getTransportZoneEndPoints());
   }
 
   @Override
