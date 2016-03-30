@@ -96,11 +96,12 @@ public class ProvisionerXenonHost extends AbstractServiceHost implements XenonHo
     return FACTORY_SERVICES;
   }
 
-  public void startSlingshotService(Integer slingshotLogVerbosity) throws Throwable {
+  public void startSlingshotService(Integer slingshotLogVerbosity, String logDirectory) throws Throwable {
     logger.info("Running startSlingshotService");
     try {
       StartSlingshotService.State state = new StartSlingshotService.State();
       state.httpPort = this.getPort() + 2;
+      state.logDirectory = logDirectory;
       if (slingshotLogVerbosity != null && slingshotLogVerbosity > 0) {
         state.slingshotLogVLevel = slingshotLogVerbosity;
       }

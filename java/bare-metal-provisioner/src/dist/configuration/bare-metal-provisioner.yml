@@ -3,8 +3,6 @@ xenon:
   port: 21000
   registrationAddress: "{{{REGISTRATION_ADDRESS}}}"
   storagePath: "{{{BARE-METAL-PROVISIONER_XENON_STORAGE_PATH}}}"
-  usePhotonDHCP: "{{{USE_PHOTON_DHCP}}}"
-  slingshotLogVerbosity: "{{{GO_LOG_VERBOSITY}}}"
   peerNodes:
 {{#PEER_NODES}}
   - http://{{peerAddress}}:{{peerPort}}
@@ -12,6 +10,10 @@ xenon:
 {{^PEER_NODES}}
   - http://{{{REGISTRATION_ADDRESS}}}:21000
 {{/PEER_NODES}}
+
+usePhotonDHCP: "{{{USE_PHOTON_DHCP}}}"
+slingshotLogVerbosity: "{{{GO_LOG_VERBOSITY}}}"
+slingshotLogDirectory: {{{LOG_DIRECTORY}}}
 
 zookeeper:
   quorum: "{{{ZOOKEEPER_QUORUM}}}"
