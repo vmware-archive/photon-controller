@@ -16,6 +16,7 @@ package com.vmware.photon.controller.apife.resources;
 import com.vmware.photon.controller.api.ClusterConfiguration;
 import com.vmware.photon.controller.api.ClusterConfigurationSpec;
 import com.vmware.photon.controller.api.Deployment;
+import com.vmware.photon.controller.api.DeploymentDeployOperation;
 import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
@@ -96,11 +97,13 @@ public class DeploymentResource {
   @ApiResponses(value = {
       @ApiResponse(code = 201, message = "Task created, system pause process can be fetched via the task")
   })
-  public Response performDeployment(@Context Request request, @PathParam("id") String id)
+  public Response performDeployment(@Context Request request,
+                                    @PathParam("id") String id,
+                                    @Validated DeploymentDeployOperation config)
       throws InternalException, ExternalException {
     return generateCustomResponse(
         Response.Status.CREATED,
-        client.perform(id),
+        client.perform(id, config),
         (ContainerRequest) request,
         TaskResourceRoutes.TASK_PATH);
   }

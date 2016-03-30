@@ -25,6 +25,8 @@ import java.util.Set;
 public enum DeploymentState {
   CREATING,
   READY,
+  PAUSED,
+  BACKGROUND_PAUSED,
   ERROR,
   NOT_DEPLOYED,
   DELETED;
