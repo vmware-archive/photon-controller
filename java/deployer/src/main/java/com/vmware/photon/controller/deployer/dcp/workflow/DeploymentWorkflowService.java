@@ -24,6 +24,7 @@ import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
 import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
+import com.vmware.photon.controller.common.xenon.validation.DefaultString;
 import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
@@ -146,6 +147,10 @@ public class DeploymentWorkflowService extends StatefulService {
     @WriteOnce
     public String deploymentServiceLink;
 
+    /**
+     * This value represents the desired state of the deployed management plane.
+     */
+    public DeploymentState desiredState;
   }
 
   public DeploymentWorkflowService() {
@@ -170,6 +175,10 @@ public class DeploymentWorkflowService extends StatefulService {
 
     if (null == startState.taskPollDelay) {
       startState.taskPollDelay = HostUtils.getDeployerContext(this).getTaskPollDelay();
+    }
+
+    if (null == startState.desiredState) {
+      startState.desiredState = DeploymentState.PAUSED;
     }
 
     if (TaskState.TaskStage.CREATED == startState.taskState.stage) {
