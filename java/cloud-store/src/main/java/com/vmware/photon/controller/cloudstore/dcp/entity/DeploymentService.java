@@ -273,19 +273,19 @@ public class DeploymentService extends StatefulService {
     public Boolean oAuthEnabled;
 
     /**
-     * The tenant name on lotus.
+     * The tenant name on LightWave.
      */
     @Immutable
     public String oAuthTenantName;
 
     /**
-     * Lotus user name.
+     * LightWave user name.
      */
     @Immutable
     public String oAuthUserName;
 
     /**
-     * Password for the given lotus user.
+     * Password for the given LightWave user.
      */
     @Immutable
     public String oAuthPassword;
