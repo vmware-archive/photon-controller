@@ -18,6 +18,7 @@ import com.vmware.photon.controller.api.ClusterConfigurationSpec;
 import com.vmware.photon.controller.api.ClusterType;
 import com.vmware.photon.controller.api.Deployment;
 import com.vmware.photon.controller.api.DeploymentCreateSpec;
+import com.vmware.photon.controller.api.DeploymentDeployOperation;
 import com.vmware.photon.controller.api.Host;
 import com.vmware.photon.controller.api.Project;
 import com.vmware.photon.controller.api.ResourceList;
@@ -95,7 +96,8 @@ public class DeploymentFeClient {
     return task;
   }
 
-  public Task perform(String deploymentId) throws InternalException, ExternalException {
+  public Task perform(String deploymentId, DeploymentDeployOperation config)
+      throws InternalException, ExternalException {
     TaskEntity taskEntity = deploymentBackend.prepareDeploy(deploymentId);
     Task task = taskBackend.getApiRepresentation(taskEntity);
 
