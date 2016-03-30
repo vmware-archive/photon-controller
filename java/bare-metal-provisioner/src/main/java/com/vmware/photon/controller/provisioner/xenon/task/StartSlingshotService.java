@@ -22,6 +22,7 @@ import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
 import com.vmware.photon.controller.common.xenon.scheduler.TaskSchedulerServiceFactory;
 import com.vmware.photon.controller.common.xenon.validation.DefaultBoolean;
+import com.vmware.photon.controller.common.xenon.validation.DefaultString;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.common.xenon.validation.WriteOnce;
 import com.vmware.xenon.common.FileUtils;
@@ -83,6 +84,12 @@ public class StartSlingshotService extends StatefulService {
     public int slingshotLogVLevel;
 
     /**
+     * Glog log directory.
+     */
+    @DefaultString(value = ".")
+    public String logDirectory;
+
+    /**
      * Start Slingshot service stage.
      */
     @NotNull
@@ -133,6 +140,7 @@ public class StartSlingshotService extends StatefulService {
       if (httpPort == 0) {
         httpPort = GO_DCP_HOST_PORT;
       }
+
 
       this.startProcess(startOperation, state, httpPort, gLogVLevel);
     } catch (IllegalStateException t) {
@@ -267,6 +275,7 @@ public class StartSlingshotService extends StatefulService {
     String[] arguments = new String[]{
         processPath,
         "-logtostderr",
+        String.format("-log_dir=%s", currentState.logDirectory),
         String.format("--v=%d", gLogVLevel),
         String.format("-dcp=%s:%s", hostURI.getHost(), hostURI.getPort()),
         String.format("-bind=127.0.0.1:%d", httpPort),

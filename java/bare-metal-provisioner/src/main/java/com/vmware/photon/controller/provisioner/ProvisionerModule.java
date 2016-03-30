@@ -34,7 +34,7 @@ public class ProvisionerModule extends AbstractModule {
 
   @Override
   protected void configure() {
-    bind(BuildInfo.class).toInstance(BuildInfo.get(this.getClass()));
+    //bind(BuildInfo.class).toInstance(BuildInfo.get(this.getClass()));
     bind(ProvisionerConfig.class).toInstance(provisionerConfig);
     bind(XenonConfig.class).toInstance(provisionerConfig.getXenonConfig());
     bindConstant().annotatedWith(ProvisionerConfig.UsePhotonDHCP.class).to(provisionerConfig.getUsePhotonDHCP());
