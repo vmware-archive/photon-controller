@@ -49,23 +49,24 @@ class _FileSystemType(Enum):
     vmfs = 0
     # NFS, also implies we are running in ESX.
     vmw_nfs = 1
+    # VSAN
+    vsan = 2
     # Any posix compliant implementation like ext3, assumes a non esx
     # runtime (e.g. dev setup/fake agent)
-    posix = 2
+    posix = 3
 
     @staticmethod
     def from_thrift(thrift_fs_type):
         """
         Returns the ref count type to use for the datastore type
         """
-        if (thrift_fs_type is DatastoreType.LOCAL_VMFS or
-                thrift_fs_type is DatastoreType.SHARED_VMFS or
-                thrift_fs_type is DatastoreType.VSAN):
+        if thrift_fs_type is DatastoreType.LOCAL_VMFS or thrift_fs_type is DatastoreType.SHARED_VMFS:
             return _FileSystemType.vmfs
-        if (thrift_fs_type is DatastoreType.NFS_3 or
-                thrift_fs_type is DatastoreType.NFS_41):
+        if thrift_fs_type is DatastoreType.NFS_3 or thrift_fs_type is DatastoreType.NFS_41:
             return _FileSystemType.vmw_nfs
-        if (thrift_fs_type is DatastoreType.EXT3):
+        if thrift_fs_type is DatastoreType.VSAN:
+            return _FileSystemType.vsan
+        if thrift_fs_type is DatastoreType.EXT3:
             return _FileSystemType.posix
         raise UnsupportedFileSystem("FS type %d" % thrift_fs_type)
 
@@ -139,6 +140,15 @@ class _EsxFileIOImpl(_FileIOBaseImpl):
         return fd
 
 
+class _VsanFileIOImpl(_FileIOBaseImpl):
+    """
+    Implementation of file i/o operations for VSAN
+    """
+
+    def lock_and_open(self, file_name):
+        return None
+
+
 class _PosixFileIOImpl(_FileIOBaseImpl):
     """
     Implementation of file i/o operations for posix FS
@@ -172,6 +182,7 @@ class FileIOImplFactory(object):
 
     file_io_objects = {_FileSystemType.vmfs: _EsxFileIOImpl,
                        _FileSystemType.vmw_nfs: _EsxFileIOImpl,
+                       _FileSystemType.vsan: _VsanFileIOImpl,
                        _FileSystemType.posix: _PosixFileIOImpl}
 
     @staticmethod
