@@ -27,6 +27,7 @@ import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.common.xenon.validation.Positive;
+import com.vmware.photon.controller.deployer.DeployerModule;
 import com.vmware.photon.controller.deployer.dcp.ContainersConfig;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerService;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateService;
@@ -327,7 +328,9 @@ public class CreateContainersWorkflowService extends StatefulService {
 
   private void pauseBackgroundTasks(DeploymentService.State deploymentState) throws Throwable {
     ZookeeperClient zookeeperClient = HostUtils.getZookeeperClient(this);
-    zookeeperClient.getServiceConfig(deploymentState.zookeeperQuorum, "apife").pauseBackground();
+    zookeeperClient
+      .getServiceConfig(deploymentState.zookeeperQuorum, DeployerModule.APIFE_SERVICE_NAME)
+      .pauseBackground();
     sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.CREATE_LIGHTWAVE_CONTAINER);
   }
 

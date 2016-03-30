@@ -286,6 +286,9 @@ public class DeploymentWorkFlowServiceClientTest {
             case MIGRATE_DEPLOYMENT_DATA:
               startState.taskSubStates.add(TaskState.TaskStage.FAILED);
               break;
+            case SET_DEPLOYMENT_STATE:
+              startState.taskSubStates.add(null);
+              break;
           }
         }
       }
@@ -422,6 +425,7 @@ public class DeploymentWorkFlowServiceClientTest {
           case PROVISION_CLOUD_HOSTS:
           case ALLOCATE_CM_RESOURCES:
           case MIGRATE_DEPLOYMENT_DATA:
+          case SET_DEPLOYMENT_STATE:
             status.setCode(DeployStatusCode.FINISHED);
             break;
           default:

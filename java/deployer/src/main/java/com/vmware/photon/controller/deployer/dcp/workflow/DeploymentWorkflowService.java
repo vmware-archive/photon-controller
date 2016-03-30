@@ -30,6 +30,7 @@ import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.common.xenon.validation.Positive;
 import com.vmware.photon.controller.common.xenon.validation.WriteOnce;
+import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
 import com.vmware.photon.controller.deployer.DeployerModule;
 import com.vmware.photon.controller.deployer.dcp.DeployerXenonServiceHost;
 import com.vmware.photon.controller.deployer.dcp.task.AllocateClusterManagerResourcesTaskFactoryService;
@@ -89,7 +90,8 @@ public class DeploymentWorkflowService extends StatefulService {
       CREATE_MANAGEMENT_PLANE,
       PROVISION_CLOUD_HOSTS,
       ALLOCATE_CM_RESOURCES,
-      MIGRATE_DEPLOYMENT_DATA
+      MIGRATE_DEPLOYMENT_DATA,
+      SET_DEPLOYMENT_STATE
     }
   }
 
@@ -183,6 +185,10 @@ public class DeploymentWorkflowService extends StatefulService {
       startState.desiredState = DeploymentState.PAUSED;
     }
 
+    if (null == startState.desiredState) {
+      startState.desiredState = DeploymentState.PAUSED;
+    }
+
     if (TaskState.TaskStage.CREATED == startState.taskState.stage) {
       checkState(null == startState.taskSubStates);
       startState.taskSubStates = new ArrayList<>(TaskState.SubStage.values().length);
@@ -261,6 +267,7 @@ public class DeploymentWorkflowService extends StatefulService {
         case PROVISION_CLOUD_HOSTS:
         case ALLOCATE_CM_RESOURCES:
         case MIGRATE_DEPLOYMENT_DATA:
+        case SET_DEPLOYMENT_STATE:
           break;
         default:
           throw new IllegalStateException("Unknown task sub-stage: " + currentState.taskState.subStage);
@@ -380,6 +387,10 @@ public class DeploymentWorkflowService extends StatefulService {
         break;
       case MIGRATE_DEPLOYMENT_DATA:
         migrateDeploymentData(currentState);
+        break;
+      case SET_DEPLOYMENT_STATE:
+        setDesiredDeploymentState(currentState);
+        break;
     }
   }
 
@@ -711,7 +722,9 @@ public class DeploymentWorkflowService extends StatefulService {
                 if (null != failure) {
                   failTask(failure);
                 } else {
-                  TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FINISHED, null, null));
+                  TaskUtils.sendSelfPatch(
+                      this,
+                      buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.SET_DEPLOYMENT_STATE, null));
                 }
               }
           ));
@@ -763,6 +776,40 @@ public class DeploymentWorkflowService extends StatefulService {
         BulkProvisionHostsWorkflowService.State.class,
         currentState.taskPollDelay,
         callback);
+  }
+
+  private void setDesiredDeploymentState(State currentState) {
+    HostUtils.getCloudStoreHelper(this).createGet(currentState.deploymentServiceLink)
+      .setCompletion((o, t) -> {
+        if (t != null) {
+          failTask(t);
+          return;
+        }
+        DeploymentService.State deployment = o.getBody(DeploymentService.State.class);
+        ZookeeperClient zookeeperClient = HostUtils.getZookeeperClient(this);
+        ServiceConfig serviceConfig
+          = zookeeperClient.getServiceConfig(deployment.zookeeperQuorum, DeployerModule.APIFE_SERVICE_NAME);
+
+        try {
+          switch (currentState.desiredState) {
+            case PAUSED:
+              serviceConfig.pause();
+              break;
+            case BACKGROUND_PAUSED:
+              serviceConfig.pauseBackground();
+              break;
+            case READY:
+              serviceConfig.resume();
+              break;
+            default:
+              throw new Exception("Unexpected desired DeploymentState [" + currentState.desiredState.name() + "]");
+          }
+          TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FINISHED, null, null));
+        } catch (Throwable throwable) {
+          failTask(throwable);
+        }
+      })
+      .sendWith(this);
   }
 
   /**
