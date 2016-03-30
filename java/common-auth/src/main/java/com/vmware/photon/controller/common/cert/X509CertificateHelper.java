@@ -39,7 +39,7 @@ import java.util.UUID;
 
 /**
  * Generates the X509 certificate to be used to identify the client
- * when accessing lotus service.
+ * when accessing LightWave service.
  */
 public class X509CertificateHelper {
 

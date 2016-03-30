@@ -39,7 +39,7 @@ import java.util.Objects;
 public class AuthInfo extends Auth {
 
   @JsonProperty
-  @ApiModelProperty(value = "The tenant name on lotus", required = false)
+  @ApiModelProperty(value = "The tenant name on LightWave", required = false)
   @Null(groups = {AuthDisabled.class})
   @NotNull(groups = {AuthEnabled.class})
   @Size(min = 1, groups = {AuthEnabled.class})

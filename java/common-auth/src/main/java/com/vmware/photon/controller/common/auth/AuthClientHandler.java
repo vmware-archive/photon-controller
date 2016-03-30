@@ -63,8 +63,8 @@ public class AuthClientHandler {
    * Constructor.
    *
    * @param oidcClient - Provides the oidc client.
-   * @param user       - Provides the user of the Lotus Admin.
-   * @param password   - Provides the password of the Lotus Admin.
+   * @param user       - Provides the user of the LightWave Admin.
+   * @param password   - Provides the password of the LightWave Admin.
    * @throws AuthException
    * @throws URISyntaxException
    */
