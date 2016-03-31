@@ -192,7 +192,8 @@ else
 
   if [ -z "$DISABLE_CLUSTER_INTEGRATION" ]; then
     env
-    bundle exec parallel_rspec -o '--tag cluster --format RspecJunitFormatter --out reports/rspec-cluster.xml --tag ~slow' -- spec/api/cluster/*_spec.rb
+    # The report being created by following line is not sane XML, so we are naming it such that Jenkins JUnit reporting will ignore it.
+    bundle exec parallel_rspec -o '--tag cluster --format RspecJunitFormatter --out reports/rspec-cluster.Xxml --tag ~slow' -- spec/api/cluster/*_spec.rb
   fi
 
   # run the availability zone integration test
