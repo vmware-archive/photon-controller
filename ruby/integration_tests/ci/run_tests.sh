@@ -42,10 +42,6 @@ if [ -z "$DISABLE_API_TESTS" ]; then
   drivers+=(api)
 fi
 
-if [ -z "$DISABLE_CLI_TESTS" ] && [ -z "$DISABLE_RUBY_CLI_TESTS" ]; then
-  drivers+=(cli)
-fi
-
 pids=()
 for driver in "${drivers[@]}"; do
   DRIVER="${driver}" bundle exec rake "esxcloud:${driver}" & pids+=($!)
