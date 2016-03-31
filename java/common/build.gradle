@@ -3,10 +3,6 @@ apply plugin: 'thrift'
 dependencies {
 
   compile "org.apache.commons:commons-lang3:${versions.commons_lang3}"
-  compile 'org.apache.httpcomponents:httpclient:4.3.3'
-  compile 'org.apache.httpcomponents:httpasyncclient:4.0.1'
-  compile 'org.apache.commons:commons-lang3:3.1'
-  compile 'org.apache.httpcomponents:httpmime:4.2.3'
   compile 'org.apache.thrift:libthrift:0.9.3'
   compile 'ch.qos.logback:logback-classic:1.0.9'
   compile "com.fasterxml.jackson.core:jackson-databind:${versions.jackson_core}"
@@ -40,14 +36,12 @@ dependencies {
       '../../thrift/server_address.thrift',
       '../../thrift/status.thrift',
       '../../thrift/stats_plugin.thrift',
-      '../../thrift/tracing.thrift',
-      '../../thrift/nsx.thrift')
+      '../../thrift/tracing.thrift')
 
   testCompile("org.apache.curator:curator-test:${versions.curator}") {
     exclude group: 'org.slf4j', module: 'slf4j-log4j12'
     exclude group: 'log4j', module: 'log4j'
   }
-  testCompile 'commons-io:commons-io:2.4'
   testCompile 'org.hamcrest:hamcrest-all:1.3'
   testCompile 'org.testng:testng:6.8'
   testCompile "org.mockito:mockito-core:${versions.mockito}"
