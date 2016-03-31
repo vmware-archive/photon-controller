@@ -13,11 +13,11 @@
 
 package com.vmware.photon.controller.nsxclient.models;
 
+import com.vmware.photon.controller.nsxclient.utils.ToStringHelper;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import java.lang.annotation.Annotation;
-import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Objects;
 
@@ -126,28 +126,6 @@ public class FabricNodeCreateSpec {
 
   @Override
   public String toString() {
-    try {
-      com.google.common.base.Objects.ToStringHelper helper = com.google.common.base.Objects.toStringHelper(this);
-      Field[] declaredFields = this.getClass().getDeclaredFields();
-      for (Field field : declaredFields) {
-        Annotation[] declaredAnnotations = field.getDeclaredAnnotations();
-        for (Annotation annotation : declaredAnnotations) {
-          if (annotation instanceof JsonProperty) {
-            JsonProperty jsonProperty = (JsonProperty) annotation;
-            if (jsonProperty.required()) {
-              helper.add(field.getName(), field.get(this));
-            } else {
-              if (field.get(this) != null) {
-                helper.add(field.getName(), field.get(this));
-              }
-            }
-          }
-        }
-      }
-
-      return helper.toString();
-    } catch (Throwable t) {
-      throw new RuntimeException(t);
-    }
+    return ToStringHelper.jsonObjectToString(this);
   }
 }

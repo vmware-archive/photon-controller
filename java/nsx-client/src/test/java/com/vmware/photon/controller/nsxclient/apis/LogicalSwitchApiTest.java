@@ -56,6 +56,7 @@ public class LogicalSwitchApiTest {
           .transportZoneId(UUID.randomUUID().toString())
           .displayName("switch1")
           .build();
+      System.out.println(spec);
       LogicalSwitch logicalSwitch = new LogicalSwitch();
       logicalSwitch.setDisplayName("switch1");
 
