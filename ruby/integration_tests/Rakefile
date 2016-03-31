@@ -180,7 +180,6 @@ RSpec::Core::RakeTask.new(:cluster) do |task|
   task.pattern = FileList['spec/api/cluster/*_spec.rb']
   # The report being created by following line is not sane XML, so we are naming it such that Jenkins JUnit reporting will ignore it.
   task.rspec_opts = "--tag cluster --format RspecJunitFormatter --out reports/rspec-cluster.Xxml --tag ~slow"
-dd
 end
 
 desc 'Run integration test for housekeeper service'

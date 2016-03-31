@@ -42,8 +42,8 @@ if [ -z "$DISABLE_API_TESTS" ]; then
   drivers+=(api)
 fi
 
-if [ -z "$DISABLE_CLI_TESTS" ] && [ -z "$DISABLE_RUBY_CLI_TESTS" ]; then
-  drivers+=(cli)
+if [ -z "$DISABLE_CLI_TESTS" ]; then
+  drivers+=(gocli)
 fi
 
 pids=()
@@ -57,11 +57,6 @@ done
 
 # Wait for parallel tests, will do nothing if not parallel
 for pid in "${pids[@]}"; do wait "$pid"; done
-
-# Don't run gocli tests in parallel
-if [ -z "$DISABLE_CLI_TESTS" ]; then
-  DRIVER=gocli bundle exec rake esxcloud:gocli
-fi
 
 # Make sure driver is set to API for remaining tests
 export DRIVER=api
