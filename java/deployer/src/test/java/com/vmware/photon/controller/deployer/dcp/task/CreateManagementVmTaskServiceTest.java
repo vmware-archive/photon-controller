@@ -555,8 +555,11 @@ public class CreateManagementVmTaskServiceTest {
       TestHelper.assertNoServicesOfType(testEnvironment, ContainerTemplateService.State.class);
       TestHelper.assertNoServicesOfType(testEnvironment, VmService.State.class);
 
-      HostService.State hostState = TestHelper.createHostService(cloudStoreEnvironment,
-          Collections.singleton(UsageTag.MGMT.name()));
+      HostService.State hostStartState = TestHelper.getHostServiceStartState(
+          Collections.singleton(UsageTag.MGMT.name()), HostState.READY);
+      hostStartState.cpuCount = 1;
+      hostStartState.memoryMb = 2048;
+      HostService.State hostState = TestHelper.createHostService(cloudStoreEnvironment, hostStartState);
 
       VmService.State vmStartState = TestHelper.getVmServiceStartState(hostState);
       vmStartState.imageId = "IMAGE_ID";
@@ -654,8 +657,6 @@ public class CreateManagementVmTaskServiceTest {
 
       TestHelper.assertTaskStateFinished(finalState.taskState);
       assertThat(finalState.taskState.subStage, nullValue());
-      assertThat(finalState.cpuCount, is(expectedCpuCount));
-      assertThat(finalState.memoryMb, is(expectedMemoryMb));
       assertThat(finalState.createVmFlavorTaskId, is("CREATE_VM_FLAVOR_TASK_ID"));
       assertThat(finalState.createVmFlavorPollCount, is(3));
       assertThat(finalState.vmFlavorId, is("VM_FLAVOR_ID"));
@@ -783,8 +784,6 @@ public class CreateManagementVmTaskServiceTest {
 
       TestHelper.assertTaskStateFinished(finalState.taskState);
       assertThat(finalState.taskState.subStage, nullValue());
-      assertThat(finalState.cpuCount, is(4));
-      assertThat(finalState.memoryMb, is(13312L));
       assertThat(finalState.createVmFlavorTaskId, nullValue());
       assertThat(finalState.createVmFlavorPollCount, is(0));
       assertThat(finalState.vmFlavorId, is("VM_FLAVOR_ID"));
@@ -803,7 +802,7 @@ public class CreateManagementVmTaskServiceTest {
       assertThat(finalState.dockerPollIterations, is(1));
 
       verify(flavorApi).createAsync(
-          eq(getExpectedVmFlavorCreateSpec(4, 13312L)),
+          eq(getExpectedVmFlavorCreateSpec(1, 1636L)),
           Matchers.<FutureCallback<Task>>any());
 
       verify(flavorApi).createAsync(
@@ -849,11 +848,6 @@ public class CreateManagementVmTaskServiceTest {
     @DataProvider(name = "HostStates")
     private Object[][] getHostStates() {
 
-      HostService.State basicHostState = TestHelper.getHostServiceStartState(
-          Collections.singleton(UsageTag.MGMT.name()), HostState.READY);
-      checkState(basicHostState.cpuCount == null);
-      checkState(basicHostState.memoryMb == null);
-
       HostService.State hostStateWithResourceValues = TestHelper.getHostServiceStartState(
           Collections.singleton(UsageTag.MGMT.name()), HostState.READY);
       hostStateWithResourceValues.cpuCount = 8;
@@ -871,7 +865,6 @@ public class CreateManagementVmTaskServiceTest {
           HostService.State.METADATA_KEY_NAME_MANAGEMENT_VM_DISK_GB_OVERWRITE, Integer.toString(80));
 
       return new Object[][]{
-          {basicHostState, 4, 13312L},
           {hostStateWithResourceValues, 6, 1636L},
           {hostStateWithResourceOverrides, 7, 1792L},
       };
@@ -944,6 +937,35 @@ public class CreateManagementVmTaskServiceTest {
                   (hostPort -> containerSpec.getServiceName())))
               .entrySet().stream())
           .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    }
+
+    @Test
+    public void testCreateVmFlavorFailureNullHostResources() throws Throwable {
+
+      HostService.State basicHostState = TestHelper.getHostServiceStartState(
+          Collections.singleton(UsageTag.MGMT.name()), HostState.READY);
+      checkState(basicHostState.cpuCount == null);
+      checkState(basicHostState.memoryMb == null);
+      HostService.State hostState = TestHelper.createHostService(cloudStoreEnvironment, basicHostState);
+
+      VmService.State vmStartState = TestHelper.getVmServiceStartState(hostState);
+      vmStartState.imageId = "IMAGE_ID";
+      vmStartState.projectId = "PROJECT_ID";
+      VmService.State vmState = TestHelper.createVmService(testEnvironment, vmStartState);
+      startState.vmServiceLink = vmState.documentSelfLink;
+
+      CreateManagementVmTaskService.State finalState =
+          testEnvironment.callServiceAndWaitForState(
+              CreateManagementVmTaskFactoryService.SELF_LINK,
+              startState,
+              CreateManagementVmTaskService.State.class,
+              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
+
+      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
+      assertThat(finalState.taskState.subStage, nullValue());
+      assertThat(finalState.taskState.failure.statusCode, is(400));
+      assertThat(finalState.taskState.failure.message, containsString(
+          "Failed to calculate host resources for host hostAddress"));
     }
 
     @Test
