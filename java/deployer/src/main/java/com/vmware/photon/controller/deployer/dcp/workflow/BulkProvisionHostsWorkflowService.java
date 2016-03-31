@@ -34,6 +34,7 @@ import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
+import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.NodeGroupBroadcastResponse;
 import com.vmware.xenon.services.common.QueryTask;
@@ -52,24 +53,6 @@ import java.util.concurrent.atomic.AtomicInteger;
  * This class implements a DCP microservice which performs the task of provisioning a set of ESX hosts.
  */
 public class BulkProvisionHostsWorkflowService extends StatefulService {
-
-  /**
-   * This class represents the state of a {@link BulkProvisionHostsWorkflowService} task.
-   */
-  public static class TaskState extends com.vmware.xenon.common.TaskState {
-
-    /**
-     * This value represents the sub-stage of the current task.
-     */
-    public SubStage subStage;
-
-    /**
-     * This value represents the possible sub-stages for a task.
-     */
-    public enum SubStage {
-      UPLOAD_VIB,
-    }
-  }
 
   /**
    * This class represents the document state associated with a {@link BulkProvisionHostsWorkflowService} instance.
@@ -142,7 +125,6 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
 
     if (TaskState.TaskStage.CREATED == startState.taskState.stage) {
       startState.taskState.stage = TaskState.TaskStage.STARTED;
-      startState.taskState.subStage = TaskState.SubStage.UPLOAD_VIB;
     }
 
     if (startState.documentExpirationTimeMicros <= 0) {
@@ -156,7 +138,7 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
       if (ControlFlags.isOperationProcessingDisabled(startState.controlFlags)) {
         ServiceUtils.logInfo(this, "Skipping start operation processing (disabled)");
       } else if (TaskState.TaskStage.STARTED == startState.taskState.stage) {
-        sendStageProgressPatch(startState.taskState.stage, startState.taskState.subStage);
+        sendStageProgressPatch(startState.taskState.stage);
       }
     } catch (Throwable t) {
       failTask(t);
@@ -226,49 +208,17 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
   private void validateState(State state) {
     ValidationUtils.validateState(state);
     ValidationUtils.validateTaskStage(state.taskState);
-    validateTaskSubStage(state.taskState);
-
-    if (TaskState.TaskStage.STARTED == state.taskState.stage) {
-      switch (state.taskState.subStage) {
-          case UPLOAD_VIB:
-          break;
-        default:
-          throw new IllegalStateException("Unknown task sub-stage: " + state.taskState.subStage);
-      }
-    }
-  }
-
-  private void validateTaskSubStage(TaskState taskState) {
-    switch (taskState.stage) {
-      case CREATED:
-        checkState(null == taskState.subStage);
-        break;
-      case STARTED:
-        checkState(null != taskState.subStage);
-        break;
-      case FINISHED:
-      case FAILED:
-      case CANCELLED:
-        checkState(null == taskState.subStage);
-        break;
-    }
   }
 
   private void validatePatchState(State startState, State patchState) {
     ValidationUtils.validatePatch(startState, patchState);
     ValidationUtils.validateTaskStage(patchState.taskState);
-    validateTaskSubStage(patchState.taskState);
     ValidationUtils.validateTaskStageProgression(startState.taskState, patchState.taskState);
-
-    if (null != startState.taskState.subStage && null != patchState.taskState.subStage) {
-      checkState(patchState.taskState.subStage.ordinal() >= startState.taskState.subStage.ordinal());
-    }
   }
 
   private State applyPatch(State startState, State patchState) {
-    if (patchState.taskState.stage != startState.taskState.stage
-        || patchState.taskState.subStage != startState.taskState.subStage) {
-      ServiceUtils.logInfo(this, "Moving to stage %s:%s", patchState.taskState.stage, patchState.taskState.subStage);
+    if (patchState.taskState.stage != startState.taskState.stage) {
+      ServiceUtils.logInfo(this, "Moving to stage %s", patchState.taskState.stage);
       startState.taskState = patchState.taskState;
     }
 
@@ -276,11 +226,7 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
   }
 
   private void processStartedStage(State currentState) {
-    switch (currentState.taskState.subStage) {
-      case UPLOAD_VIB:
-        processUploadVibSubStage(currentState);
-        break;
-    }
+    processUploadVibSubStage(currentState);
   }
 
   private void processUploadVibSubStage(final State currentState) {
@@ -302,7 +248,7 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
                     if (UsageTag.CLOUD.name().equals(currentState.usageTag)) {
                       if (documentLinks.isEmpty()) {
                         TaskUtils.sendSelfPatch(BulkProvisionHostsWorkflowService.this,
-                            buildPatch(TaskState.TaskStage.FINISHED, null, null));
+                            buildPatch(TaskState.TaskStage.FINISHED, null));
                         return;
                       }
                     } else {
@@ -319,16 +265,16 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
                               switch (state.taskState.stage) {
                                 case FINISHED:
                                   if (pendingChildren.decrementAndGet() == 0) {
-                                    sendStageProgressPatch(TaskState.TaskStage.FINISHED, null);
+                                    sendStageProgressPatch(TaskState.TaskStage.FINISHED);
                                   }
                                   break;
                                 case FAILED:
-                                  State patchState = buildPatch(TaskState.TaskStage.FAILED, null, null);
+                                  State patchState = buildPatch(TaskState.TaskStage.FAILED, null);
                                   patchState.taskState.failure = state.taskState.failure;
                                   TaskUtils.sendSelfPatch(BulkProvisionHostsWorkflowService.this, patchState);
                                   break;
                                 case CANCELLED:
-                                  sendStageProgressPatch(TaskState.TaskStage.CANCELLED, null);
+                                  sendStageProgressPatch(TaskState.TaskStage.CANCELLED);
                                   break;
                               }
                             }
@@ -360,13 +306,13 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
             break;
           }
           case FAILED: {
-            State patchState = buildPatch(TaskState.TaskStage.FAILED, null, null);
+            State patchState = buildPatch(TaskState.TaskStage.FAILED, null);
             patchState.taskState.failure = result.taskState.failure;
             TaskUtils.sendSelfPatch(service, patchState);
             break;
           }
           case CANCELLED:
-            sendStageProgressPatch(TaskState.TaskStage.CANCELLED, null);
+            sendStageProgressPatch(TaskState.TaskStage.CANCELLED);
             break;
         }
       }
@@ -418,22 +364,21 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
         provisionHostFutureCallback);
   }
 
-  private void sendStageProgressPatch(TaskState.TaskStage stage, TaskState.SubStage subStage) {
-    ServiceUtils.logInfo(this, "Sending self-patch to stage %s:%s", stage, subStage);
-    TaskUtils.sendSelfPatch(this, buildPatch(stage, subStage, null));
+  private void sendStageProgressPatch(TaskState.TaskStage stage) {
+    ServiceUtils.logInfo(this, "Sending self-patch to stage %s", stage);
+    TaskUtils.sendSelfPatch(this, buildPatch(stage, null));
   }
 
   private void failTask(Throwable t) {
     ServiceUtils.logSevere(this, t);
-    TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, null, t));
+    TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, t));
   }
 
   @VisibleForTesting
-  protected static State buildPatch(TaskState.TaskStage stage, TaskState.SubStage subStage, Throwable t) {
+  protected static State buildPatch(TaskState.TaskStage stage, Throwable t) {
     State patchState = new State();
     patchState.taskState = new TaskState();
     patchState.taskState.stage = stage;
-    patchState.taskState.subStage = subStage;
 
     if (null != t) {
       patchState.taskState.failure = Utils.toServiceErrorResponse(t);

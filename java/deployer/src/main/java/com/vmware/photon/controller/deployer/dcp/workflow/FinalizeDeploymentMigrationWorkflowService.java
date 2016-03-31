@@ -583,9 +583,8 @@ public class FinalizeDeploymentMigrationWorkflowService extends StatefulService 
         };
 
     BulkProvisionHostsWorkflowService.State startState = new BulkProvisionHostsWorkflowService.State();
-    startState.taskState = new BulkProvisionHostsWorkflowService.TaskState();
-    startState.taskState.stage = com.vmware.xenon.common.TaskState.TaskStage.STARTED;
-    startState.taskState.subStage = BulkProvisionHostsWorkflowService.TaskState.SubStage.UPLOAD_VIB;
+    startState.taskState = new TaskState();
+    startState.taskState.stage = TaskState.TaskStage.STARTED;
     startState.deploymentServiceLink = deploymentState.documentSelfLink;
     startState.usageTag = UsageTag.CLOUD.name();
     startState.querySpecification = MiscUtils.generateHostQuerySpecification(null, UsageTag.CLOUD.name());
