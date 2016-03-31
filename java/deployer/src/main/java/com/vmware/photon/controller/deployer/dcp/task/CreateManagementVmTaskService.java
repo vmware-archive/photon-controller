@@ -84,7 +84,6 @@ import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -185,20 +184,6 @@ public class CreateManagementVmTaskService extends StatefulService {
      */
     @Positive
     public Integer taskPollDelay;
-
-    /**
-     * This value represents the number of vCPUs with which the VM will be created. It is
-     * informational only.
-     */
-    @WriteOnce
-    public Integer cpuCount;
-
-    /**
-     * This value represents the amount of memory, in MB, with which the VM will be created. It is
-     * informational only.
-     */
-    @WriteOnce
-    public Long memoryMb;
 
     /**
      * This value represents the ID of the API-level task to create the VM flavor.
@@ -500,25 +485,6 @@ public class CreateManagementVmTaskService extends StatefulService {
 
   private void processCreateVmFlavorSubStage(State currentState) {
 
-    if (currentState.cpuCount == null) {
-
-      //
-      // Compute the resource requirements of the VM.
-      //
-
-      computeVmFlavorRequirements(currentState);
-
-    } else {
-
-      //
-      // Create the VM flavor.
-      //
-      createVmFlavor(currentState);
-    }
-  }
-
-  private void computeVmFlavorRequirements(State currentState) {
-
     sendRequest(Operation
         .createGet(this, currentState.vmServiceLink)
         .setCompletion(
@@ -557,7 +523,7 @@ public class CreateManagementVmTaskService extends StatefulService {
 
   private void computeVmFlavorRequirements(State currentState,
                                            VmService.State vmState,
-                                           HostService.State hostState) {
+                                           HostService.State hostState) throws Throwable {
 
     //
     // If the user has specified override values for the management VM flavor, then attempt to
@@ -566,128 +532,38 @@ public class CreateManagementVmTaskService extends StatefulService {
     // containers placed on the VM.
     //
 
+    int cpuCount;
+    long memoryMb;
+
     if (hostState.metadata.containsKey(HostService.State.METADATA_KEY_NAME_MANAGEMENT_VM_CPU_COUNT_OVERWRITE) &&
         hostState.metadata.containsKey(HostService.State.METADATA_KEY_NAME_MANAGEMENT_VM_MEMORY_MB_OVERWRITE) &&
         hostState.metadata.containsKey(HostService.State.METADATA_KEY_NAME_MANAGEMENT_VM_DISK_GB_OVERWRITE)) {
 
-      int cpuCount = Integer.parseInt(
+      cpuCount = Integer.parseInt(
           hostState.metadata.get(HostService.State.METADATA_KEY_NAME_MANAGEMENT_VM_CPU_COUNT_OVERWRITE));
-      long memoryMb = Long.parseLong(
+      memoryMb = Long.parseLong(
           hostState.metadata.get(HostService.State.METADATA_KEY_NAME_MANAGEMENT_VM_MEMORY_MB_OVERWRITE));
 
       ServiceUtils.logInfo(this, "Found flavor override values for VM %s: %d vCPUs, %d MB memory",
           vmState.name, cpuCount, memoryMb);
 
-      State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.CREATE_VM_FLAVOR, null);
-      patchState.cpuCount = cpuCount;
-      patchState.memoryMb = memoryMb;
-      TaskUtils.sendSelfPatch(this, patchState);
-      return;
-
     } else if (hostState.cpuCount != null && hostState.memoryMb != null) {
 
-      int cpuCount = MiscUtils.getAdjustedManagementHostCpu(hostState);
-      long memoryMb = MiscUtils.getAdjustedManagementHostMemory(hostState);
+      cpuCount = MiscUtils.getAdjustedManagementHostCpu(hostState);
+      memoryMb = MiscUtils.getAdjustedManagementHostMemory(hostState);
 
       ServiceUtils.logInfo(this, "Computed flavor values for VM %s from host size: %d vCPUs, %d MB memory",
           vmState.name, cpuCount, memoryMb);
 
-      State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.CREATE_VM_FLAVOR, null);
-      patchState.cpuCount = cpuCount;
-      patchState.memoryMb = memoryMb;
-      TaskUtils.sendSelfPatch(this, patchState);
-      return;
+    } else {
+      throw new IllegalStateException("Failed to calculate host resources for host " + hostState.hostAddress);
     }
-
-    QueryTask queryTask = QueryTask.Builder.createDirectTask()
-        .setQuery(QueryTask.Query.Builder.create()
-            .addKindFieldClause(ContainerService.State.class)
-            .addFieldClause(ContainerService.State.FIELD_NAME_VM_SERVICE_LINK, currentState.vmServiceLink)
-            .build())
-        .addOptions(EnumSet.of(
-            QueryTask.QuerySpecification.QueryOption.BROADCAST,
-            QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT))
-        .build();
-
-    sendRequest(Operation
-        .createPost(this, ServiceUriPaths.CORE_QUERY_TASKS)
-        .setBody(queryTask)
-        .setCompletion(
-            (o, e) -> {
-              if (e != null) {
-                failTask(e);
-                return;
-              }
-
-              try {
-                getContainersForVmFlavor(o.getBody(QueryTask.class).results.documents);
-              } catch (Throwable t) {
-                failTask(t);
-              }
-            }));
-  }
-
-  private void getContainersForVmFlavor(Map<String, Object> containerDocuments) {
-
-    OperationJoin
-        .create(containerDocuments.values().stream()
-            .map((containerDocument) -> Utils.fromJson(containerDocument, ContainerService.State.class))
-            .map((containerState) -> containerState.containerTemplateServiceLink)
-            .map((templateServiceLink) -> Operation.createGet(this, templateServiceLink)))
-        .setCompletion(
-            (ops, exs) -> {
-              if (exs != null && !exs.isEmpty()) {
-                failTask(exs.values());
-                return;
-              }
-
-              try {
-                getTemplatesForVmFlavor(ops.values());
-              } catch (Throwable t) {
-                failTask(t);
-              }
-            })
-        .sendWith(this);
-  }
-
-  private void getTemplatesForVmFlavor(Collection<Operation> templateOps) {
-
-    Set<ContainerTemplateService.State> templateStates = templateOps.stream()
-        .map((op) -> op.getBody(ContainerTemplateService.State.class))
-        .collect(Collectors.toSet());
-
-    State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.CREATE_VM_FLAVOR, null);
-    patchState.cpuCount = templateStates.stream().mapToInt((templateState) -> templateState.cpuCount).max().orElse(0);
-    patchState.memoryMb = templateStates.stream().mapToLong((templateState) -> templateState.memoryMb).sum();
-    TaskUtils.sendSelfPatch(this, patchState);
-  }
-
-  private void createVmFlavor(State currentState) {
-
-    sendRequest(Operation
-        .createGet(this, currentState.vmServiceLink)
-        .setCompletion(
-            (o, e) -> {
-              if (e != null) {
-                failTask(e);
-                return;
-              }
-
-              try {
-                createVmFlavor(currentState, o.getBody(VmService.State.class));
-              } catch (Throwable t) {
-                failTask(t);
-              }
-            }));
-  }
-
-  private void createVmFlavor(State currentState, VmService.State vmState) throws Throwable {
 
     List<QuotaLineItem> vmCost = new ArrayList<>();
     vmCost.add(new QuotaLineItem("vm", 1.0, QuotaUnit.COUNT));
     vmCost.add(new QuotaLineItem("vm.flavor." + vmState.name, 1.0, QuotaUnit.COUNT));
-    vmCost.add(new QuotaLineItem("vm.cpu", currentState.cpuCount, QuotaUnit.COUNT));
-    vmCost.add(new QuotaLineItem("vm.memory", currentState.memoryMb, QuotaUnit.MB));
+    vmCost.add(new QuotaLineItem("vm.cpu", cpuCount, QuotaUnit.COUNT));
+    vmCost.add(new QuotaLineItem("vm.memory", memoryMb, QuotaUnit.MB));
     vmCost.add(new QuotaLineItem("vm.cost", 1.0, QuotaUnit.COUNT));
 
     FlavorCreateSpec vmFlavorCreateSpec = new FlavorCreateSpec();
