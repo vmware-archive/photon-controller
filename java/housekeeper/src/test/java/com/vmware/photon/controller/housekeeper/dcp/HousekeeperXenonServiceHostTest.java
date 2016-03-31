@@ -22,6 +22,7 @@ import com.vmware.photon.controller.common.xenon.scheduler.TaskSchedulerServiceF
 import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
 import com.vmware.photon.controller.housekeeper.Config;
 import com.vmware.photon.controller.housekeeper.ConfigTest;
+import com.vmware.photon.controller.housekeeper.engines.NsxClientFactory;
 import com.vmware.photon.controller.housekeeper.helpers.TestHelper;
 import com.vmware.xenon.services.common.LuceneDocumentIndexService;
 import com.vmware.xenon.services.common.LuceneQueryTaskFactoryService;
@@ -144,6 +145,12 @@ public class HousekeeperXenonServiceHostTest {
       HousekeeperXenonServiceHost host = injector.getInstance(HousekeeperXenonServiceHost.class);
       assertThat(host.getServiceConfig(), notNullValue());
     }
+
+    @Test
+    public void testGetNsxClientFactory() {
+      HousekeeperXenonServiceHost host = injector.getInstance(HousekeeperXenonServiceHost.class);
+      assertThat(host.getNsxClientFactory(), notNullValue());
+    }
   }
 
   /**
@@ -245,7 +252,8 @@ public class HousekeeperXenonServiceHostTest {
           xenonConfig,
           injector.getInstance(CloudStoreHelper.class),
           injector.getInstance(HostClientFactory.class),
-          injector.getInstance(ServiceConfigFactory.class));
+          injector.getInstance(ServiceConfigFactory.class),
+          injector.getInstance(NsxClientFactory.class));
 
       host.setMaintenanceIntervalMicros(maintenanceInterval);
       host.start();
@@ -260,7 +268,8 @@ public class HousekeeperXenonServiceHostTest {
           xenonConfig2,
           injector.getInstance(CloudStoreHelper.class),
           injector.getInstance(HostClientFactory.class),
-          injector.getInstance(ServiceConfigFactory.class));
+          injector.getInstance(ServiceConfigFactory.class),
+          injector.getInstance(NsxClientFactory.class));
       host2.setMaintenanceIntervalMicros(maintenanceInterval);
       host2.start();
       ServiceHostUtils.waitForServiceAvailability(host2, SERVICES_STARTUP_TIMEOUT, serviceSelfLinks.clone());

@@ -35,6 +35,7 @@ import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeExceptio
 import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
 import com.vmware.photon.controller.housekeeper.dcp.mock.HostClientCopyImageErrorMock;
 import com.vmware.photon.controller.housekeeper.dcp.mock.HostClientMock;
+import com.vmware.photon.controller.housekeeper.engines.NsxClientFactory;
 import com.vmware.photon.controller.housekeeper.helpers.dcp.TestEnvironment;
 import com.vmware.photon.controller.housekeeper.helpers.dcp.TestHost;
 import com.vmware.xenon.common.Operation;
@@ -1022,6 +1023,7 @@ public class ImageReplicatorServiceTest {
     private HostClientFactory hostClientFactory;
     private ServiceConfigFactory serviceConfigFactory;
     private CloudStoreHelper cloudStoreHelper;
+    private NsxClientFactory nsxClientFactory;
 
     private ImageReplicatorService.State newImageReplicator;
 
@@ -1030,6 +1032,7 @@ public class ImageReplicatorServiceTest {
       hostClientFactory = mock(HostClientFactory.class);
       serviceConfigFactory = mock(ServiceConfigFactory.class);
       cloudStoreHelper = new CloudStoreHelper();
+      nsxClientFactory = mock(NsxClientFactory.class);
 
       // Build input.
       newImageReplicator = buildValidStartupState();
@@ -1055,7 +1058,8 @@ public class ImageReplicatorServiceTest {
     public void testImageReplicatorSuccess(int hostCount) throws Throwable {
       doReturn(new HostClientMock()).when(hostClientFactory).create();
 
-      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, serviceConfigFactory, hostCount);
+      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, serviceConfigFactory, nsxClientFactory,
+          hostCount);
       ImageService.State createdImageState = createNewImageEntity();
       createHostService(3, 3);
       createDatastoreService(3);
@@ -1092,7 +1096,8 @@ public class ImageReplicatorServiceTest {
     public void testNewImageReplicatorCopyImageFail(int hostCount) throws Throwable {
       doReturn(new HostClientCopyImageErrorMock()).when(hostClientFactory).create();
 
-      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, serviceConfigFactory, hostCount);
+      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, serviceConfigFactory, nsxClientFactory,
+          hostCount);
       ImageService.State createdImageState = createNewImageEntity();
       newImageReplicator.image = ServiceUtils.getIDFromDocumentSelfLink(createdImageState.documentSelfLink);
       createHostService(3, 3);

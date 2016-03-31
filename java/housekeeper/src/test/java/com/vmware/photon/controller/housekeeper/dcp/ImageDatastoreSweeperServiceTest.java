@@ -42,6 +42,7 @@ import com.vmware.photon.controller.housekeeper.dcp.mock.hostclient.ErrorMockGet
 import com.vmware.photon.controller.housekeeper.dcp.mock.hostclient.ErrorMockGetInactiveImages;
 import com.vmware.photon.controller.housekeeper.dcp.mock.hostclient.ErrorMockStartImageScan;
 import com.vmware.photon.controller.housekeeper.dcp.mock.hostclient.ErrorMockStartImageSweep;
+import com.vmware.photon.controller.housekeeper.engines.NsxClientFactory;
 import com.vmware.photon.controller.housekeeper.helpers.dcp.TestEnvironment;
 import com.vmware.photon.controller.housekeeper.helpers.dcp.TestHost;
 import com.vmware.photon.controller.resource.gen.InactiveImageDescriptor;
@@ -859,6 +860,7 @@ public class ImageDatastoreSweeperServiceTest {
     private HostClientFactory hostClientFactory;
     private ServiceConfigFactory serviceConfigFactory;
     private CloudStoreHelper cloudStoreHelper;
+    private NsxClientFactory nsxClientFactory;
 
     @BeforeMethod
     public void setUp() throws Throwable {
@@ -866,6 +868,7 @@ public class ImageDatastoreSweeperServiceTest {
       doReturn(new HostClientMock()).when(hostClientFactory).create();
       serviceConfigFactory = mock(ServiceConfigFactory.class);
       cloudStoreHelper = new CloudStoreHelper();
+      nsxClientFactory = mock(NsxClientFactory.class);
 
       // Build input.
       request = buildValidStartupState();
@@ -909,7 +912,8 @@ public class ImageDatastoreSweeperServiceTest {
                             int deletedImages,
                             int deletedCloudStoreImages) throws Throwable {
 
-      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, serviceConfigFactory, hostCount);
+      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, serviceConfigFactory, nsxClientFactory,
+          hostCount);
       ServiceHost host = machine.getHosts()[0];
 
       machine.startFactoryServiceSynchronously(
@@ -1089,7 +1093,8 @@ public class ImageDatastoreSweeperServiceTest {
     @Test(dataProvider = "HostClientErrors")
     public void testHostClientErrors(int hostCount, double patchCount, String reason, HostClientMock hostClient)
         throws Throwable {
-      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, serviceConfigFactory, hostCount);
+      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, serviceConfigFactory, nsxClientFactory,
+          hostCount);
       machine.startFactoryServiceSynchronously(
           ImageServiceFactory.class, ImageServiceFactory.SELF_LINK);
 

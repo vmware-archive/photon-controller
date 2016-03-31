@@ -36,6 +36,7 @@ import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
 import com.vmware.photon.controller.host.gen.TransferImageResultCode;
 import com.vmware.photon.controller.housekeeper.dcp.mock.CloudStoreHelperMock;
 import com.vmware.photon.controller.housekeeper.dcp.mock.HostClientMock;
+import com.vmware.photon.controller.housekeeper.engines.NsxClientFactory;
 import com.vmware.photon.controller.housekeeper.helpers.dcp.TestEnvironment;
 import com.vmware.photon.controller.housekeeper.helpers.dcp.TestHost;
 import com.vmware.photon.controller.resource.gen.Datastore;
@@ -696,6 +697,7 @@ public class ImageSeederServiceTest {
     private HostClientFactory hostClientFactory;
     private ServiceConfigFactory serviceConfigFactory;
     private CloudStoreHelper cloudStoreHelper;
+    private NsxClientFactory nsxClientFactory;
 
     private ImageSeederService.State newImageSeeder;
 
@@ -705,6 +707,7 @@ public class ImageSeederServiceTest {
       service = spy(new ImageSeederService());
       hostClientFactory = mock(HostClientFactory.class);
       serviceConfigFactory = mock(ServiceConfigFactory.class);
+      nsxClientFactory = mock(NsxClientFactory.class);
       cloudStoreHelper = new CloudStoreHelper();
 
       // Build input.
@@ -741,7 +744,8 @@ public class ImageSeederServiceTest {
       hostClient.setTransferImageResultCode(code);
       doReturn(hostClient).when(hostClientFactory).create();
 
-      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, serviceConfigFactory, hostCount);
+      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, serviceConfigFactory, nsxClientFactory,
+          hostCount);
       ImageService.State createdImageState = createNewImageEntity();
 
       Set<Datastore> imageDatastores = buildImageDatastoreSet(3);
@@ -784,7 +788,8 @@ public class ImageSeederServiceTest {
       hostClient.setTransferImageResultCode(TransferImageResultCode.OK);
       doReturn(hostClient).when(hostClientFactory).create();
 
-      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, serviceConfigFactory, hostCount);
+      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, serviceConfigFactory, nsxClientFactory,
+          hostCount);
       ImageService.State createdImageState = createNewImageEntity();
       Set<Datastore> imageDatastores = buildImageDatastoreSet(1);
       createHostService(imageDatastores);
@@ -804,7 +809,8 @@ public class ImageSeederServiceTest {
     @Test(dataProvider = "hostCount")
     public void testNewImageSeederGetImageDatastoresFail(int hostCount) throws Throwable {
       doReturn(new HostClientMock()).when(hostClientFactory).create();
-      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, serviceConfigFactory, hostCount);
+      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, serviceConfigFactory, nsxClientFactory,
+          hostCount);
       ImageService.State createdImageState = createNewImageEntity();
       newImageSeeder.image = ServiceUtils.getIDFromDocumentSelfLink(createdImageState.documentSelfLink);
 
@@ -820,7 +826,8 @@ public class ImageSeederServiceTest {
     public void testNewImageSeederNoDatastore(int hostCount) throws Throwable {
       doReturn(new HostClientMock()).when(hostClientFactory).create();
 
-      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, serviceConfigFactory, hostCount);
+      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, serviceConfigFactory, nsxClientFactory,
+          hostCount);
       ImageService.State createdImageState = createNewImageEntity();
 
       Set<Datastore> imageDatastores = buildImageDatastoreSet(0);
@@ -838,7 +845,8 @@ public class ImageSeederServiceTest {
     public void testNewImageSeederGetHostsForDatastoresFail(int hostCount) throws Throwable {
       doReturn(new HostClientMock()).when(hostClientFactory).create();
 
-      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, serviceConfigFactory, hostCount);
+      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, serviceConfigFactory, nsxClientFactory,
+          hostCount);
       ImageService.State createdImageState = createNewImageEntity();
       newImageSeeder.image = ServiceUtils.getIDFromDocumentSelfLink(createdImageState.documentSelfLink);
 

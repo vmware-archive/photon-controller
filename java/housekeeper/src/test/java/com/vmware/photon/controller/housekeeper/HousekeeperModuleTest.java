@@ -21,6 +21,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 
 /**
  * Test {@link HousekeeperModule}.
@@ -55,6 +56,13 @@ public class HousekeeperModuleTest {
       assertThat(test.getXenonPort(), is(16001));
       assertThat(test.getXenonRegistrationAddress(), is("127.0.0.1"));
       assertThat(test.getXenonStoragePath(), is("/tmp/dcp/housekeeper/"));
+    }
+
+    @Test
+    public void testInjectNsxClientFactory() {
+      TestHelper.TestInjectedNsxClientFactory testInjectedNsxClientFactory =
+          injector.getInstance(TestHelper.TestInjectedNsxClientFactory.class);
+      assertThat(testInjectedNsxClientFactory.factory, notNullValue());
     }
   }
 }

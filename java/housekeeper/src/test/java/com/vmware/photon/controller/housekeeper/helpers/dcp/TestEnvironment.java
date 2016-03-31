@@ -21,6 +21,7 @@ import com.vmware.photon.controller.common.xenon.host.XenonConfig;
 import com.vmware.photon.controller.common.xenon.scheduler.TaskSchedulerServiceStateBuilder;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
 import com.vmware.photon.controller.housekeeper.dcp.HousekeeperXenonServiceHost;
+import com.vmware.photon.controller.housekeeper.engines.NsxClientFactory;
 import com.vmware.xenon.common.ServiceHost;
 
 import org.apache.commons.io.FileUtils;
@@ -40,6 +41,7 @@ public class TestEnvironment extends MultiHostEnvironment<HousekeeperXenonServic
   public TestEnvironment(CloudStoreHelper cloudStoreHelper,
                          HostClientFactory hostClientFactory,
                          ServiceConfigFactory serviceConfigFactory,
+                         NsxClientFactory nsxClientFactory,
                          int hostCount) throws Throwable {
 
     assertTrue(hostCount > 0);
@@ -54,7 +56,7 @@ public class TestEnvironment extends MultiHostEnvironment<HousekeeperXenonServic
       xenonConfig.setStoragePath(sandbox);
 
       hosts[i] = new HousekeeperXenonServiceHost(xenonConfig, cloudStoreHelper, hostClientFactory,
-          serviceConfigFactory);
+          serviceConfigFactory, nsxClientFactory);
     }
   }
 
@@ -79,9 +81,10 @@ public class TestEnvironment extends MultiHostEnvironment<HousekeeperXenonServic
   public static TestEnvironment create(CloudStoreHelper cloudStoreHelper,
                                        HostClientFactory hostClientFactory,
                                        ServiceConfigFactory serviceConfigFactory,
+                                       NsxClientFactory nsxClientFactory,
                                        int hostCount) throws Throwable {
     TestEnvironment testEnvironment = new TestEnvironment(cloudStoreHelper, hostClientFactory,
-        serviceConfigFactory, hostCount);
+        serviceConfigFactory, nsxClientFactory, hostCount);
     testEnvironment.start();
     return testEnvironment;
   }
