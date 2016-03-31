@@ -63,28 +63,10 @@ end
 
 namespace :api do
   namespace :seed do
-    desc "Creates a host from environement variables"
-    task :host do
-      EsxCloud::Config.init
-      EsxCloud::Config.client = ApiClientHelper.management
-
-      deployments = EsxCloud::Deployment.find_all.items
-      fail "Unexpected deployment list #{deployments.inspect}" unless deployments.size == 1
-
-      metadata = {
-          "ALLOWED_DATASTORES" => EsxCloud::TestHelpers.get_datastore_name,
-          "ALLOWED_NETWORKS" => EsxCloud::TestHelpers.get_vm_port_groups.join(",")
-      }
-
-      spec = EsxCloud::HostCreateSpec.new(
-        EsxCloud::TestHelpers.get_esx_username,
-        EsxCloud::TestHelpers.get_esx_password,
-        ["CLOUD"],
-        EsxCloud::TestHelpers.get_esx_ip,
-        metadata
-      )
-      host = EsxCloud::Host.create deployments.first.id, spec
-      puts host
+    desc 'Seed host'
+    RSpec::Core::RakeTask.new(:host) do |task|
+      task.pattern = FileList['seed_host_spec.rb']
+      task.rspec_opts = "--tag seed_host --format RspecJunitFormatter --out reports/rspec-seed-host.xml --tag ~slow --profile"
     end
   end
 end
