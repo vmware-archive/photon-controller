@@ -804,7 +804,7 @@ class EsxImageManager(ImageManager):
         for sub_dir in os.listdir(dir_path):
             rm_rf(os.path.join(dir_path, sub_dir), ignore_errors=True)
 
-    def create_image(self, datastore_id, tmp_dir, image_id):
+    def finalize_image(self, datastore_id, tmp_dir, image_id):
         """ Installs an image using image data staged at a temp directory.
         """
         src_path = os_datastore_path(datastore_id, tmp_dir)
@@ -850,7 +850,7 @@ class EsxImageManager(ImageManager):
                           destSpec=_vd_spec)
 
         try:
-            self.create_image(datastore_id, tmp_dir, image_id)
+            self.finalize_image(datastore_id, tmp_dir, image_id)
         except:
             self._logger.warning("Delete copied disk %s" % dst_vmdk_ds_path)
             self._manage_disk(vim.VirtualDiskManager.DeleteVirtualDisk_Task,

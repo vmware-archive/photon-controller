@@ -107,11 +107,11 @@ public class VsphereImageStore implements ImageStore {
   @Override
   public void finalizeImage(String imageId) throws InternalException {
     String tmpImagePath = TMP_IMAGE_UPLOAD_FOLDER_PREFIX + imageId;
-    logger.info("Calling createImage {} on {} {}", imageId, this.getDatastore(), tmpImagePath);
+    logger.info("Calling finalizeImage {} on {} {}", imageId, this.getDatastore(), tmpImagePath);
     try {
-      getHostClient().createImage(imageId, this.getDatastore(), tmpImagePath);
+      getHostClient().finalizeImage(imageId, this.getDatastore(), tmpImagePath);
     } catch (RpcException | InterruptedException e) {
-      String errorMsg = String.format("Failed to call HostClient create_image %s on %s %s",
+      String errorMsg = String.format("Failed to call HostClient finalize_image %s on %s %s",
           imageId, this.getDatastore(), tmpImagePath);
       throw new InternalException(errorMsg, e);
     }
@@ -130,13 +130,13 @@ public class VsphereImageStore implements ImageStore {
       throws ExternalException, InternalException {
     String tmpImagePath = TMP_IMAGE_UPLOAD_FOLDER_PREFIX + imageId;
     String datastore = this.getDatastore(hostIp);
-    logger.info("Calling createImage {} on {} {}", imageId, datastore, tmpImagePath);
+    logger.info("Calling createImageFromVm {} on {} {}", imageId, datastore, tmpImagePath);
     try {
       getHostClient(hostIp, false).createImageFromVm(vmId, imageId, datastore, tmpImagePath);
     } catch (InvalidVmPowerStateException e) {
       throw new InvalidVmStateException(e);
     } catch (RpcException | InterruptedException e) {
-      logger.warn("Unexpected error for create_image {} from vm {} on {} {}",
+      logger.warn("Unexpected error for create_image_from_vm {} from vm {} on {} {}",
           imageId, vmId, this.getDatastore(), tmpImagePath, e);
       throw new InternalException(e);
     }
