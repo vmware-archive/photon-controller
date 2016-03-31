@@ -68,7 +68,7 @@ if [ -n "$REAL_AGENT" ]; then
   if [ -z "$DEPLOYER_TEST" ]; then
     (
       cd $TESTS
-      bundle exec rake api:seed:host
+      bundle exec rake seed:host
     )
   fi
 fi
