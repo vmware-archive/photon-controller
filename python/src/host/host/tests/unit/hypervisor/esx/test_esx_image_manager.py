@@ -421,12 +421,12 @@ class TestEsxImageManager(unittest.TestCase):
     @patch.object(EsxImageManager, "check_image_dir", return_value=False)
     @patch.object(EsxImageManager, "_create_image_timestamp_file_from_ids")
     @patch("os.path.exists")
-    def test_create_image(self, _exists, _create_timestamp,
-                          check_image_dir, move_image):
+    def test_finalize_image(self, _exists, _create_timestamp,
+                            check_image_dir, move_image):
 
         # Happy path verify move is called with the right args.
         _exists.side_effect = ([True])
-        self.image_manager.create_image("ds1", "foo", "img_1")
+        self.image_manager.finalize_image("ds1", "foo", "img_1")
         check_image_dir.assert_called_once_with("img_1", "ds1")
         move_image.assert_called_once_with('img_1', 'ds1',
                                            '/vmfs/volumes/ds1/foo')
@@ -436,7 +436,7 @@ class TestEsxImageManager(unittest.TestCase):
         _exists.side_effect = ([False])
         move_image.reset_mock()
         self.assertRaises(ImageNotFoundException,
-                          self.image_manager.create_image,
+                          self.image_manager.finalize_image,
                           "ds1", "foo", "img_1")
         self.assertFalse(move_image.called)
 
@@ -445,11 +445,11 @@ class TestEsxImageManager(unittest.TestCase):
         move_image.reset_mock()
         check_image_dir.return_value = True
         self.assertRaises(DiskAlreadyExistException,
-                          self.image_manager.create_image,
+                          self.image_manager.finalize_image,
                           "ds1", "foo", "img_1")
         self.assertFalse(move_image.called)
 
-    @patch.object(EsxImageManager, "create_image")
+    @patch.object(EsxImageManager, "finalize_image")
     @patch.object(EsxImageManager, "_manage_disk")
     @patch("os.path.exists", return_value=True)
     def test_create_image_with_vm_disk(self, _exists, _manage_disk,

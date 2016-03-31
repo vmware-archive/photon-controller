@@ -20,8 +20,8 @@ from eccli.format import print_response
 from eccli.optparser import default_parser
 from eccli.thrift import get_client
 
-from gen.host.ttypes import CreateImageRequest, ServiceTicketRequest, \
-    ServiceType, CreateImageResultCode
+from gen.host.ttypes import FinalizeImageRequest, ServiceTicketRequest, \
+    ServiceType, FinalizeImageResultCode
 
 parser = default_parser(usage="eccli-image-create [options]",
                         add_help=True)
@@ -170,7 +170,7 @@ finally:
     upload_lease.Complete()
 
 # create image
-request = CreateImageRequest()
+request = FinalizeImageRequest()
 request.image_id = image_id
 request.datastore = datastore
 request.tmp_image_path = os.path.join(compond_path_join(TMP_IMAGE_FOLDER_NAME_PREFIX, image_id))
@@ -179,8 +179,8 @@ if not options.datastore.startswith("vsan"):
     request.tmp_image_path = os.path.join(request.tmp_image_path, image_id)
 
 print_request(request)
-response = client.create_image(request)
+response = client.finalize_image(request)
 print_response(response)
 
-if response.result == CreateImageResultCode.OK:
+if response.result == FinalizeImageResultCode.OK:
     print_result("image id: %s" % image_id)

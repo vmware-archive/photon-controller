@@ -137,27 +137,27 @@ public class VsphereImageStoreImageTest {
   public void testFinalizeImage() throws Exception {
     imageStore.finalizeImage(imageId);
     verify(hostClient).setHostIp(imageConfig.getEndpointHostAddress());
-    verify(hostClient).createImage(imageId, imageDatastore, String.format("tmp_upload_%s", imageId));
+    verify(hostClient).finalizeImage(imageId, imageDatastore, String.format("tmp_upload_%s", imageId));
     verifyNoMoreInteractions(hostClient);
   }
 
   @Test
   public void testFinalizeImageError() throws Exception {
     String tmpImagePath = String.format("tmp_upload_%s", imageId);
-    when(hostClient.createImage(imageId, imageDatastore, tmpImagePath))
+    when(hostClient.finalizeImage(imageId, imageDatastore, tmpImagePath))
         .thenThrow(new SystemErrorException("Error"));
 
     try {
       imageStore.finalizeImage(imageId);
       fail("finalizeImage should fail");
     } catch (InternalException e) {
-      String errorMsg = String.format("Failed to call HostClient create_image %s on %s %s",
+      String errorMsg = String.format("Failed to call HostClient finalize_image %s on %s %s",
           imageId, imageDatastore, tmpImagePath);
       assertTrue(e.getMessage().equals(errorMsg));
     }
 
     verify(hostClient).setHostIp(imageConfig.getEndpointHostAddress());
-    verify(hostClient).createImage(imageId, imageDatastore, tmpImagePath);
+    verify(hostClient).finalizeImage(imageId, imageDatastore, tmpImagePath);
     verifyNoMoreInteractions(hostClient);
   }
 }
