@@ -133,7 +133,7 @@ class FakeImageManager(ImageManager):
     def get_tombstone_mod_time_from_dir(self, dirname):
         return False, 0
 
-    def create_image(self, datastore_id, tmp_dir, image_id):
+    def finalize_image(self, datastore_id, tmp_dir, image_id):
         return
 
     def delete_tmp_dir(self, datastore_id, tmp_dir):

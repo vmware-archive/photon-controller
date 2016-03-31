@@ -28,8 +28,8 @@ from gen.agent.ttypes import ProvisionResultCode
 from gen.common.ttypes import ServerAddress
 from gen.host import Host
 from gen.host.ttypes import CopyImageResultCode
-from gen.host.ttypes import CreateImageRequest
-from gen.host.ttypes import CreateImageResultCode
+from gen.host.ttypes import FinalizeImageRequest
+from gen.host.ttypes import FinalizeImageResultCode
 from gen.host.ttypes import CreateVmResultCode
 from gen.host.ttypes import DeleteDirectoryRequest
 from gen.host.ttypes import DeleteDirectoryResultCode
@@ -1151,7 +1151,7 @@ class TestRemoteAgent(BaseKazooTestCase, AgentCommonTests):
             str(vim.VirtualDiskManager.VirtualDiskAdapterType.lsiLogic)
         return spec
 
-    def test_create_image(self):
+    def test_finalize_image(self):
         """ Integration test for atomic image create """
         img_id = "test-create-image"
         tmp_img_id = "-tmp-" + img_id
@@ -1172,11 +1172,11 @@ class TestRemoteAgent(BaseKazooTestCase, AgentCommonTests):
                 name=src_vmdk)
             raise
         dst_image = Image(img_id, ds)
-        req = CreateImageRequest(image_id=img_id,
+        req = FinalizeImageRequest(image_id=img_id,
                                  datastore=ds.id,
                                  tmp_image_path=tmp_image_path)
-        response = self.host_client.create_image(req)
-        self.assertEqual(response.result, CreateImageResultCode.OK)
+        response = self.host_client.finalize_image(req)
+        self.assertEqual(response.result, FinalizeImageResultCode.OK)
         request = Host.GetImagesRequest(ds.id)
         response = self.host_client.get_images(request)
         assert_that(response.result, is_(GetImagesResultCode.OK))
@@ -1184,21 +1184,21 @@ class TestRemoteAgent(BaseKazooTestCase, AgentCommonTests):
 
         # Issue another create call and it should fail as the source doesn't
         # exist.
-        req = CreateImageRequest(image_id=img_id,
+        req = FinalizeImageRequest(image_id=img_id,
                                  datastore=ds.id,
                                  tmp_image_path=tmp_image_path)
-        response = self.host_client.create_image(req)
+        response = self.host_client.finalize_image(req)
         self.assertEqual(response.result,
-                         CreateImageResultCode.IMAGE_NOT_FOUND)
+                         FinalizeImageResultCode.IMAGE_NOT_FOUND)
 
         # Verify that we fail if the destination already exists.
         tmp_image, ds = self._create_test_image(tmp_img_id)
-        req = CreateImageRequest(image_id=img_id,
+        req = FinalizeImageRequest(image_id=img_id,
                                  datastore=ds.id,
                                  tmp_image_path=tmp_image_path)
-        response = self.host_client.create_image(req)
+        response = self.host_client.finalize_image(req)
         self.assertEqual(response.result,
-                         CreateImageResultCode.DESTINATION_ALREADY_EXIST)
+                         FinalizeImageResultCode.DESTINATION_ALREADY_EXIST)
 
         # cleanup
         self.host_client.delete_image(DeleteImageRequest(dst_image,
@@ -1423,12 +1423,12 @@ class TestRemoteAgent(BaseKazooTestCase, AgentCommonTests):
 
         # Issue another create call and it should fail as the source doesn't
         # exist.
-        req = CreateImageRequest(image_id=img_id,
+        req = FinalizeImageRequest(image_id=img_id,
                                  datastore=ds.id,
                                  tmp_image_path=tmp_image_path)
-        response = self.host_client.create_image(req)
+        response = self.host_client.finalize_image(req)
         self.assertEqual(response.result,
-                         CreateImageResultCode.IMAGE_NOT_FOUND)
+                         FinalizeImageResultCode.IMAGE_NOT_FOUND)
 
         # Verify that we fail if the destination already exists.
         tmp_image, ds = self._create_test_image(tmp_img_id)

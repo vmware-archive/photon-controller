@@ -137,14 +137,14 @@ public class VsphereImageStoreImageTest {
   public void testFinalizeImage() throws Exception {
     imageStore.finalizeImage(imageId);
     verify(hostClient).setHostIp(imageConfig.getEndpointHostAddress());
-    verify(hostClient).createImage(imageId, imageDatastore, String.format("tmp_upload_%s", imageId));
+    verify(hostClient).finalizeImage(imageId, imageDatastore, String.format("tmp_upload_%s", imageId));
     verifyNoMoreInteractions(hostClient);
   }
 
   @Test
   public void testFinalizeImageError() throws Exception {
     String tmpImagePath = String.format("tmp_upload_%s", imageId);
-    when(hostClient.createImage(imageId, imageDatastore, tmpImagePath))
+    when(hostClient.finalizeImage(imageId, imageDatastore, tmpImagePath))
         .thenThrow(new SystemErrorException("Error"));
 
     try {
@@ -157,7 +157,7 @@ public class VsphereImageStoreImageTest {
     }
 
     verify(hostClient).setHostIp(imageConfig.getEndpointHostAddress());
-    verify(hostClient).createImage(imageId, imageDatastore, tmpImagePath);
+    verify(hostClient).finalizeImage(imageId, imageDatastore, tmpImagePath);
     verifyNoMoreInteractions(hostClient);
   }
 }

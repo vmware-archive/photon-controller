@@ -250,8 +250,8 @@ class ImageManager(object):
         """
 
     @abc.abstractmethod
-    def create_image(self, datastore_id, tmp_dir, image_id):
-        """ Create an image with a given id by doing an atomic move from a tmp
+    def finalize_image(self, datastore_id, tmp_dir, image_id):
+        """ Finalize image creation by doing an atomic move from a tmp
             folder location.
         """
         pass

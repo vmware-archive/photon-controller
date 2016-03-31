@@ -421,12 +421,12 @@ class TestEsxImageManager(unittest.TestCase):
     @patch.object(EsxImageManager, "check_image_dir", return_value=False)
     @patch.object(EsxImageManager, "_create_image_timestamp_file_from_ids")
     @patch("os.path.exists")
-    def test_create_image(self, _exists, _create_timestamp,
-                          check_image_dir, move_image):
+    def test_finalize_image(self, _exists, _create_timestamp,
+                            check_image_dir, move_image):
 
         # Happy path verify move is called with the right args.
         _exists.side_effect = ([True])
-        self.image_manager.create_image("ds1", "foo", "img_1")
+        self.image_manager.finalize_image("ds1", "foo", "img_1")
         check_image_dir.assert_called_once_with("img_1", "ds1")
         move_image.assert_called_once_with('img_1', 'ds1',
                                            '/vmfs/volumes/ds1/foo')
