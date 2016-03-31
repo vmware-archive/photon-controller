@@ -40,8 +40,8 @@ from gen.host.ttypes import CreateDisksResponse
 from gen.host.ttypes import CreateDisksResultCode
 from gen.host.ttypes import CreateImageFromVmResponse
 from gen.host.ttypes import CreateImageFromVmResultCode
-from gen.host.ttypes import CreateImageResponse
-from gen.host.ttypes import CreateImageResultCode
+from gen.host.ttypes import FinalizeImageResponse
+from gen.host.ttypes import FinalizeImageResultCode
 from gen.host.ttypes import CreateVmResponse
 from gen.host.ttypes import CreateVmResultCode
 from gen.host.ttypes import DeleteDirectoryResponse
@@ -1792,8 +1792,8 @@ class HostHandler(Host.Iface):
         return response
 
     @log_request
-    @error_handler(CreateImageResponse, CreateImageResultCode)
-    def create_image(self, request):
+    @error_handler(FinalizeImageResponse, FinalizeImageResultCode)
+    def finalize_image(self, request):
         """ Create an image by atomically moving it from a temp location
             to the specified image_id location.
         """
@@ -1802,31 +1802,31 @@ class HostHandler(Host.Iface):
                 self.hypervisor.datastore_manager.normalize(request.datastore)
         except DatastoreNotFoundException:
             return self._error_response(
-                CreateImageResultCode.DATASTORE_NOT_FOUND,
+                FinalizeImageResultCode.DATASTORE_NOT_FOUND,
                 "Datastore not found",
-                CreateImageResponse())
+                FinalizeImageResponse())
 
         try:
-            self.hypervisor.image_manager.create_image(datastore_id,
-                                                       request.tmp_image_path,
-                                                       request.image_id)
+            self.hypervisor.image_manager.finalize_image(datastore_id,
+                                                         request.tmp_image_path,
+                                                         request.image_id)
         except ImageNotFoundException:
             return self._error_response(
-                CreateImageResultCode.IMAGE_NOT_FOUND,
+                FinalizeImageResultCode.IMAGE_NOT_FOUND,
                 "Temp image dir not found",
-                CreateImageResponse())
+                FinalizeImageResponse())
         except DiskAlreadyExistException:
             return self._error_response(
-                CreateImageResultCode.DESTINATION_ALREADY_EXIST,
+                FinalizeImageResultCode.DESTINATION_ALREADY_EXIST,
                 "Image disk already exists",
-                CreateImageResponse())
+                FinalizeImageResponse())
         except:
             return self._error_response(
-                CreateImageResultCode.SYSTEM_ERROR,
+                FinalizeImageResultCode.SYSTEM_ERROR,
                 str(sys.exc_info()[1]),
-                CreateImageResponse())
+                FinalizeImageResponse())
 
-        return CreateImageResponse(CreateImageResultCode.OK)
+        return FinalizeImageResponse(FinalizeImageResultCode.OK)
 
     @log_request
     @error_handler(TransferImageResponse, TransferImageResultCode)
@@ -1925,7 +1925,7 @@ class HostHandler(Host.Iface):
                 self.hypervisor.datastore_manager.normalize(request.datastore)
         except DatastoreNotFoundException:
             return self._error_response(
-                CreateImageResultCode.SYSTEM_ERROR,
+                CreateImageFromVmResultCode.SYSTEM_ERROR,
                 "Invalid datastore %s" % request.datastore,
                 CreateImageFromVmResponse())
 

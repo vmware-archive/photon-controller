@@ -50,9 +50,6 @@ import com.vmware.photon.controller.host.gen.CreateDisksResultCode;
 import com.vmware.photon.controller.host.gen.CreateImageFromVmRequest;
 import com.vmware.photon.controller.host.gen.CreateImageFromVmResponse;
 import com.vmware.photon.controller.host.gen.CreateImageFromVmResultCode;
-import com.vmware.photon.controller.host.gen.CreateImageRequest;
-import com.vmware.photon.controller.host.gen.CreateImageResponse;
-import com.vmware.photon.controller.host.gen.CreateImageResultCode;
 import com.vmware.photon.controller.host.gen.CreateVmRequest;
 import com.vmware.photon.controller.host.gen.CreateVmResponse;
 import com.vmware.photon.controller.host.gen.CreateVmResultCode;
@@ -65,6 +62,9 @@ import com.vmware.photon.controller.host.gen.DeleteImageResultCode;
 import com.vmware.photon.controller.host.gen.DetachISORequest;
 import com.vmware.photon.controller.host.gen.DetachISOResponse;
 import com.vmware.photon.controller.host.gen.DetachISOResultCode;
+import com.vmware.photon.controller.host.gen.FinalizeImageRequest;
+import com.vmware.photon.controller.host.gen.FinalizeImageResponse;
+import com.vmware.photon.controller.host.gen.FinalizeImageResultCode;
 import com.vmware.photon.controller.host.gen.GetConfigRequest;
 import com.vmware.photon.controller.host.gen.GetConfigResponse;
 import com.vmware.photon.controller.host.gen.GetConfigResultCode;
@@ -1207,7 +1207,7 @@ public class HostClientTest {
   }
 
   /**
-   * Tests {@link HostClient#createImage(String, String, String)}.
+   * Tests {@link HostClient#finalizeImage(String, String, String)}.
    */
   public class CreateImageTest {
 
@@ -1225,13 +1225,13 @@ public class HostClientTest {
       hostClient = null;
     }
 
-    private Answer getAnswer(final Host.AsyncClient.create_image_call createImageCall) {
+    private Answer getAnswer(final Host.AsyncClient.finalize_image_call finalizeImageCall) {
       return new Answer() {
         @Override
         public Object answer(InvocationOnMock invocation) throws Throwable {
           Object[] args = invocation.getArguments();
-          AsyncMethodCallback<Host.AsyncClient.create_image_call> handler = (AsyncMethodCallback) args[1];
-          handler.onComplete(createImageCall);
+          AsyncMethodCallback<Host.AsyncClient.finalize_image_call> handler = (AsyncMethodCallback) args[1];
+          handler.onComplete(finalizeImageCall);
           return null;
         }
       };
@@ -1239,22 +1239,22 @@ public class HostClientTest {
 
     @Test
     public void testSuccess() throws Exception {
-      CreateImageResponse createImageResponse = new CreateImageResponse();
-      createImageResponse.setResult(CreateImageResultCode.OK);
-      final Host.AsyncClient.create_image_call createImageCall = mock(Host.AsyncClient.create_image_call.class);
-      doReturn(createImageResponse).when(createImageCall).getResult();
+      FinalizeImageResponse finalizeImageResponse = new FinalizeImageResponse();
+      finalizeImageResponse.setResult(FinalizeImageResultCode.OK);
+      final Host.AsyncClient.finalize_image_call createImageCall = mock(Host.AsyncClient.finalize_image_call.class);
+      doReturn(finalizeImageResponse).when(createImageCall).getResult();
       doAnswer(getAnswer(createImageCall))
-          .when(clientProxy).create_image(any(CreateImageRequest.class), any(AsyncMethodCallback.class));
+          .when(clientProxy).finalize_image(any(FinalizeImageRequest.class), any(AsyncMethodCallback.class));
 
       hostClient.setClientProxy(clientProxy);
-      assertThat(hostClient.createImage(imageId, dataStore, tmpImagePath), is(createImageResponse));
+      assertThat(hostClient.finalizeImage(imageId, dataStore, tmpImagePath), is(finalizeImageResponse));
     }
 
     @Test
     public void testFailureNullHostIp() throws Exception {
       try {
-        hostClient.createImage(imageId, dataStore, tmpImagePath);
-        fail("Synchronous createImage call should throw with null async clientProxy");
+        hostClient.finalizeImage(imageId, dataStore, tmpImagePath);
+        fail("Synchronous finalizeImage call should throw with null async clientProxy");
       } catch (IllegalArgumentException e) {
         assertThat(e.toString(), is("java.lang.IllegalArgumentException: hostname can't be null"));
       }
@@ -1263,13 +1263,13 @@ public class HostClientTest {
     @Test
     public void testFailureTExceptionOnCall() throws Exception {
       doThrow(new TException("Thrift exception"))
-          .when(clientProxy).create_image(any(CreateImageRequest.class), any(AsyncMethodCallback.class));
+          .when(clientProxy).finalize_image(any(FinalizeImageRequest.class), any(AsyncMethodCallback.class));
 
       hostClient.setClientProxy(clientProxy);
 
       try {
-        hostClient.createImage(imageId, dataStore, tmpImagePath);
-        fail("Synchronous createImage call should convert TException on call to RpcException");
+        hostClient.finalizeImage(imageId, dataStore, tmpImagePath);
+        fail("Synchronous finalizeImage call should convert TException on call to RpcException");
       } catch (RpcException e) {
         assertThat(e.getMessage(), is("Thrift exception"));
       }
@@ -1277,40 +1277,40 @@ public class HostClientTest {
 
     @Test
     public void testFailureTExceptionOnGetResult() throws Exception {
-      final Host.AsyncClient.create_image_call createImageCall = mock(Host.AsyncClient.create_image_call.class);
-      doThrow(new TException("Thrift exception")).when(createImageCall).getResult();
-      doAnswer(getAnswer(createImageCall))
-          .when(clientProxy).create_image(any(CreateImageRequest.class), any(AsyncMethodCallback.class));
+      final Host.AsyncClient.finalize_image_call finalizeImageCall = mock(Host.AsyncClient.finalize_image_call.class);
+      doThrow(new TException("Thrift exception")).when(finalizeImageCall).getResult();
+      doAnswer(getAnswer(finalizeImageCall))
+          .when(clientProxy).finalize_image(any(FinalizeImageRequest.class), any(AsyncMethodCallback.class));
 
       hostClient.setClientProxy(clientProxy);
 
       try {
-        hostClient.createImage(imageId, dataStore, tmpImagePath);
-        fail("Synchronous createImage call should convert TException on call to RpcException");
+        hostClient.finalizeImage(imageId, dataStore, tmpImagePath);
+        fail("Synchronous finalizeImage call should convert TException on call to RpcException");
       } catch (RpcException e) {
         assertThat(e.getMessage(), is("Thrift exception"));
       }
     }
 
     @Test(dataProvider = "CreateImageFailureResultCodes")
-    public void testFailureResult(CreateImageResultCode resultCode,
+    public void testFailureResult(FinalizeImageResultCode resultCode,
                                   Class<RuntimeException> exceptionClass) throws Exception {
-      CreateImageResponse createImageResponse = new CreateImageResponse();
-      createImageResponse.setResult(resultCode);
-      createImageResponse.setError(resultCode.toString());
+      FinalizeImageResponse finalizeImageResponse = new FinalizeImageResponse();
+      finalizeImageResponse.setResult(resultCode);
+      finalizeImageResponse.setError(resultCode.toString());
 
-      final Host.AsyncClient.create_image_call createImageCall = mock(Host.AsyncClient.create_image_call.class);
-      doReturn(createImageResponse).when(createImageCall).getResult();
+      final Host.AsyncClient.finalize_image_call finalizeImageCall = mock(Host.AsyncClient.finalize_image_call.class);
+      doReturn(finalizeImageResponse).when(finalizeImageCall).getResult();
 
 
-      doAnswer(getAnswer(createImageCall))
-          .when(clientProxy).create_image(any(CreateImageRequest.class), any(AsyncMethodCallback.class));
+      doAnswer(getAnswer(finalizeImageCall))
+          .when(clientProxy).finalize_image(any(FinalizeImageRequest.class), any(AsyncMethodCallback.class));
 
       hostClient.setClientProxy(clientProxy);
 
       try {
-        hostClient.createImage(imageId, dataStore, tmpImagePath);
-        fail("Synchronous createImage call should throw on failure result: " + resultCode.toString());
+        hostClient.finalizeImage(imageId, dataStore, tmpImagePath);
+        fail("Synchronous finalizeImage call should throw on failure result: " + resultCode.toString());
       } catch (Exception e) {
         assertTrue(e.getClass() == exceptionClass);
         assertThat(e.getMessage(), is(resultCode.toString()));
@@ -1320,10 +1320,10 @@ public class HostClientTest {
     @DataProvider(name = "CreateImageFailureResultCodes")
     public Object[][] getCreateImageFailureResultCodes() {
       return new Object[][]{
-          {CreateImageResultCode.DATASTORE_NOT_FOUND, DatastoreNotFoundException.class},
-          {CreateImageResultCode.IMAGE_NOT_FOUND, ImageNotFoundException.class},
-          {CreateImageResultCode.DESTINATION_ALREADY_EXIST, DestinationAlreadyExistException.class},
-          {CreateImageResultCode.SYSTEM_ERROR, SystemErrorException.class},
+          {FinalizeImageResultCode.DATASTORE_NOT_FOUND, DatastoreNotFoundException.class},
+          {FinalizeImageResultCode.IMAGE_NOT_FOUND, ImageNotFoundException.class},
+          {FinalizeImageResultCode.DESTINATION_ALREADY_EXIST, DestinationAlreadyExistException.class},
+          {FinalizeImageResultCode.SYSTEM_ERROR, SystemErrorException.class},
       };
     }
   }

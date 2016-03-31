@@ -55,8 +55,6 @@ import com.vmware.photon.controller.host.gen.CreateDisksRequest;
 import com.vmware.photon.controller.host.gen.CreateDisksResponse;
 import com.vmware.photon.controller.host.gen.CreateImageFromVmRequest;
 import com.vmware.photon.controller.host.gen.CreateImageFromVmResponse;
-import com.vmware.photon.controller.host.gen.CreateImageRequest;
-import com.vmware.photon.controller.host.gen.CreateImageResponse;
 import com.vmware.photon.controller.host.gen.CreateVmRequest;
 import com.vmware.photon.controller.host.gen.CreateVmResponse;
 import com.vmware.photon.controller.host.gen.DeleteDirectoryRequest;
@@ -70,6 +68,8 @@ import com.vmware.photon.controller.host.gen.DeleteVmRequest;
 import com.vmware.photon.controller.host.gen.DeleteVmResponse;
 import com.vmware.photon.controller.host.gen.DetachISORequest;
 import com.vmware.photon.controller.host.gen.DetachISOResponse;
+import com.vmware.photon.controller.host.gen.FinalizeImageRequest;
+import com.vmware.photon.controller.host.gen.FinalizeImageResponse;
 import com.vmware.photon.controller.host.gen.GetConfigRequest;
 import com.vmware.photon.controller.host.gen.GetConfigResponse;
 import com.vmware.photon.controller.host.gen.GetDeletedImagesRequest;
@@ -583,12 +583,12 @@ public class HostClient {
    * @throws RpcException
    */
   @RpcMethod
-  public CreateImageResponse createImage(String imageId, String datastore, String tmpImagePath)
+  public FinalizeImageResponse finalizeImage(String imageId, String datastore, String tmpImagePath)
       throws InterruptedException, RpcException {
-    SyncHandler<CreateImageResponse, Host.AsyncClient.create_image_call> syncHandler = new SyncHandler<>();
-    createImage(imageId, datastore, tmpImagePath, syncHandler);
+    SyncHandler<FinalizeImageResponse, Host.AsyncClient.finalize_image_call> syncHandler = new SyncHandler<>();
+    finalizeImage(imageId, datastore, tmpImagePath, syncHandler);
     syncHandler.await();
-    return ResponseValidator.checkCreateImageResponse(syncHandler.getResponse());
+    return ResponseValidator.checkFinalizeImageResponse(syncHandler.getResponse());
   }
 
   /**
@@ -602,19 +602,19 @@ public class HostClient {
    * @throws RpcException
    */
   @RpcMethod
-  public void createImage(String imageId, String datastore, String tmpImagePath,
-                          AsyncMethodCallback<Host.AsyncClient.delete_vm_call> handler)
+  public void finalizeImage(String imageId, String datastore, String tmpImagePath,
+                          AsyncMethodCallback<Host.AsyncClient.finalize_image_call> handler)
       throws RpcException {
     ensureClient();
-    CreateImageRequest createImageRequest = new CreateImageRequest();
-    createImageRequest.setImage_id(imageId);
-    createImageRequest.setDatastore(datastore);
-    createImageRequest.setTmp_image_path(tmpImagePath);
+    FinalizeImageRequest finalizeImageRequest = new FinalizeImageRequest();
+    finalizeImageRequest.setImage_id(imageId);
+    finalizeImageRequest.setDatastore(datastore);
+    finalizeImageRequest.setTmp_image_path(tmpImagePath);
     clientProxy.setTimeout(CREATE_IMAGE_TIMEOUT_MS);
-    logger.info("create_image target {}, request {}", getHostIp(), createImageRequest);
+    logger.info("create_image target {}, request {}", getHostIp(), finalizeImageRequest);
 
     try {
-      clientProxy.create_image(createImageRequest, handler);
+      clientProxy.finalize_image(finalizeImageRequest, handler);
     } catch (TException e) {
       throw new RpcException(e.getMessage());
     }
@@ -1851,25 +1851,25 @@ public class HostClient {
       return deleteDisksResponse;
     }
 
-    private static CreateImageResponse checkCreateImageResponse(CreateImageResponse createImageResponse)
+    private static FinalizeImageResponse checkFinalizeImageResponse(FinalizeImageResponse finalizeImageResponse)
         throws RpcException {
-      logger.info("Checking {}", createImageResponse);
-      switch (createImageResponse.getResult()) {
+      logger.info("Checking {}", finalizeImageResponse);
+      switch (finalizeImageResponse.getResult()) {
         case OK:
           break;
         case SYSTEM_ERROR:
-          throw new SystemErrorException(createImageResponse.getError());
+          throw new SystemErrorException(finalizeImageResponse.getError());
         case IMAGE_NOT_FOUND:
-          throw new ImageNotFoundException(createImageResponse.getError());
+          throw new ImageNotFoundException(finalizeImageResponse.getError());
         case DATASTORE_NOT_FOUND:
-          throw new DatastoreNotFoundException(createImageResponse.getError());
+          throw new DatastoreNotFoundException(finalizeImageResponse.getError());
         case DESTINATION_ALREADY_EXIST:
-          throw new DestinationAlreadyExistException(createImageResponse.getError());
+          throw new DestinationAlreadyExistException(finalizeImageResponse.getError());
         default:
-          throw new RpcException(String.format("Unknown result: %s", createImageResponse.getResult()));
+          throw new RpcException(String.format("Unknown result: %s", finalizeImageResponse.getResult()));
       }
 
-      return createImageResponse;
+      return finalizeImageResponse;
     }
 
     /**

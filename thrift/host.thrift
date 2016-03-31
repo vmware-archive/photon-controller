@@ -512,7 +512,7 @@ struct ReceiveImageResponse {
 }
 
 // Create Image
-struct CreateImageRequest {
+struct FinalizeImageRequest {
   // The ID of the Image.
   1: required string image_id
 
@@ -525,7 +525,7 @@ struct CreateImageRequest {
   99: optional tracing.TracingInfo tracing_info
 }
 
-enum CreateImageResultCode {
+enum FinalizeImageResultCode {
   /* The image was created successfully. */
   OK = 0
   /* Catch all error. */
@@ -538,8 +538,8 @@ enum CreateImageResultCode {
   DATASTORE_NOT_FOUND = 4
 }
 
-struct CreateImageResponse {
-  1: required CreateImageResultCode result
+struct FinalizeImageResponse {
+  1: required FinalizeImageResultCode result
   2: optional string error
 }
 
@@ -946,7 +946,7 @@ service Host {
   /**
    * Image
    */
-  CreateImageResponse create_image(1: CreateImageRequest request)
+  FinalizeImageResponse finalize_image(1: FinalizeImageRequest request)
   CopyImageResponse copy_image(1: CopyImageRequest request)
   DeleteImageResponse delete_image(1: DeleteImageRequest request)
   GetImagesResponse get_images(1: GetImagesRequest request)
