@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.deployer.dcp.workflow;
 
 import com.vmware.photon.controller.api.UsageTag;
+import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
@@ -30,6 +31,11 @@ import com.vmware.photon.controller.deployer.dcp.task.ProvisionHostTaskService;
 import com.vmware.photon.controller.deployer.dcp.task.UploadVibTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.UploadVibTaskService;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
+import com.vmware.photon.controller.nsxclient.NsxClient;
+import com.vmware.photon.controller.nsxclient.datatypes.TransportType;
+import com.vmware.photon.controller.nsxclient.models.TransportZone;
+import com.vmware.photon.controller.nsxclient.models.TransportZoneCreateSpec;
+import com.vmware.photon.controller.nsxclient.utils.NameUtils;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceDocument;
@@ -198,7 +204,7 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
       if (ControlFlags.isOperationProcessingDisabled(currentState.controlFlags)) {
         ServiceUtils.logInfo(this, "Skipping patch operation processing (disabled)");
       } else if (TaskState.TaskStage.STARTED == currentState.taskState.stage) {
-        processStartedStage(currentState);
+        processBulkProvisionHosts(currentState);
       }
     } catch (Throwable t) {
       failTask(t);
@@ -225,11 +231,7 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
     return startState;
   }
 
-  private void processStartedStage(State currentState) {
-    processUploadVibSubStage(currentState);
-  }
-
-  private void processUploadVibSubStage(final State currentState) {
+  private void processBulkProvisionHosts(final State currentState) {
 
     sendRequest(
         HostUtils.getCloudStoreHelper(this)
@@ -258,14 +260,14 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
                     final AtomicInteger pendingChildren = new AtomicInteger(documentLinks.size());
 
                     for (String documentLink : documentLinks) {
-                      processUploadVibSubStage(currentState, documentLink,
+                      uploadVib(currentState, documentLink,
                           new FutureCallback<ProvisionHostTaskService.State>() {
                             @Override
                             public void onSuccess(@Nullable ProvisionHostTaskService.State state) {
                               switch (state.taskState.stage) {
                                 case FINISHED:
                                   if (pendingChildren.decrementAndGet() == 0) {
-                                    sendStageProgressPatch(TaskState.TaskStage.FINISHED);
+                                    getDeploymentState(currentState);
                                   }
                                   break;
                                 case FAILED:
@@ -292,8 +294,8 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
             ));
   }
 
-  private void processUploadVibSubStage(State currentState, String hostServiceLink,
-                                        FutureCallback<ProvisionHostTaskService.State> provisionHostFutureCallback) {
+  private void uploadVib(State currentState, String hostServiceLink,
+                         FutureCallback<ProvisionHostTaskService.State> provisionHostFutureCallback) {
     final Service service = this;
 
     FutureCallback<UploadVibTaskService.State> futureCallback = new FutureCallback<UploadVibTaskService.State>() {
@@ -362,6 +364,84 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
         ProvisionHostTaskService.State.class,
         currentState.taskPollDelay,
         provisionHostFutureCallback);
+  }
+
+  private void getDeploymentState(State currentState) {
+
+    HostUtils.getCloudStoreHelper(this)
+        .createGet(currentState.deploymentServiceLink)
+        .setCompletion((op, ex) -> {
+          if (ex != null) {
+            failTask(ex);
+            return;
+          }
+
+          try {
+            provisionNetwork(currentState, op.getBody(DeploymentService.State.class));
+          } catch (Throwable t) {
+            failTask(t);
+          }
+        })
+        .sendWith(this);
+  }
+
+  private void provisionNetwork(State currentState, DeploymentService.State deploymentState) {
+
+    if (!deploymentState.virtualNetworkEnabled || deploymentState.networkZoneId != null) {
+      ServiceUtils.logInfo(this, "Skip setting up virtual network (disabled)");
+      sendStageProgressPatch(TaskState.TaskStage.FINISHED);
+      return;
+    }
+
+    try {
+      NsxClient nsxClient = HostUtils.getNsxClientFactory(this).create(
+          deploymentState.networkManagerAddress,
+          deploymentState.networkManagerUsername,
+          deploymentState.networkManagerPassword);
+
+      String deploymentId = ServiceUtils.getIDFromDocumentSelfLink(deploymentState.documentSelfLink);
+      TransportZoneCreateSpec request = new TransportZoneCreateSpec();
+      request.setDisplayName(NameUtils.getTransportZoneName(deploymentId));
+      request.setDescription(NameUtils.getTransportZoneDescription(deploymentId));
+      request.setHostSwitchName(NameUtils.HOST_SWITCH_NAME);
+      request.setTransportType(TransportType.OVERLAY);
+
+      nsxClient.getFabricApi().createTransportZoneAsync(request,
+          new FutureCallback<TransportZone>() {
+            @Override
+            public void onSuccess(@Nullable TransportZone transportZone) {
+              // TODO(ysheng): it seems like transport zone does not have a state - we guess that
+              // the creation of the zone completes immediately after the API call. We need to
+              // verify this with a real NSX deployment.
+              DeploymentService.State patchState = new DeploymentService.State();
+              patchState.networkZoneId = transportZone.getId();
+              patchDeployment(currentState, patchState);
+            }
+
+            @Override
+            public void onFailure(Throwable throwable) {
+              failTask(throwable);
+            }
+          });
+    } catch (Throwable t) {
+      failTask(t);
+    }
+  }
+
+  private void patchDeployment(State currentState, DeploymentService.State patchState) {
+
+    HostUtils.getCloudStoreHelper(this)
+        .createPatch(currentState.deploymentServiceLink)
+        .setBody(patchState)
+        .setCompletion((op, ex) -> {
+          if (ex != null) {
+            failTask(ex);
+            return;
+          }
+
+          sendStageProgressPatch(TaskState.TaskStage.FINISHED);
+        })
+        .sendWith(this);
   }
 
   private void sendStageProgressPatch(TaskState.TaskStage stage) {

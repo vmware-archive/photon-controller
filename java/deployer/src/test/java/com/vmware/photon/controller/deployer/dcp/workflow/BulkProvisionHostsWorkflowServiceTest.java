@@ -16,6 +16,7 @@ package com.vmware.photon.controller.deployer.dcp.workflow;
 import com.vmware.photon.controller.agent.gen.AgentStatusCode;
 import com.vmware.photon.controller.agent.gen.ProvisionResultCode;
 import com.vmware.photon.controller.api.UsageTag;
+import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.common.clients.AgentControlClientFactory;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
@@ -27,9 +28,11 @@ import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.dcp.mock.AgentControlClientMock;
 import com.vmware.photon.controller.deployer.dcp.mock.HostClientMock;
+import com.vmware.photon.controller.deployer.dcp.mock.NsxClientMock;
 import com.vmware.photon.controller.deployer.dcp.task.ProvisionHostTaskService;
 import com.vmware.photon.controller.deployer.dcp.util.MiscUtils;
 import com.vmware.photon.controller.deployer.deployengine.HttpFileServiceClientFactory;
+import com.vmware.photon.controller.deployer.deployengine.NsxClientFactory;
 import com.vmware.photon.controller.deployer.helpers.ReflectionUtils;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
 import com.vmware.photon.controller.deployer.helpers.dcp.MockHelper;
@@ -55,6 +58,7 @@ import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 
@@ -383,6 +387,7 @@ public class BulkProvisionHostsWorkflowServiceTest {
     private DeployerConfig deployerConfig;
     private AgentControlClientFactory agentControlClientFactory;
     private HostClientFactory hostClientFactory;
+    private NsxClientFactory nsxClientFactory;
     private HttpFileServiceClientFactory httpFileServiceClientFactory;
     private ListeningExecutorService listeningExecutorService;
     private BulkProvisionHostsWorkflowService.State startState;
@@ -392,7 +397,6 @@ public class BulkProvisionHostsWorkflowServiceTest {
 
     @BeforeClass
     public void setUpClass() throws Throwable {
-      cloudStoreMachine = com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.create(1);
       FileUtils.deleteDirectory(storageDirectory);
       vibDirectory.mkdirs();
       vibSourceFile = TestHelper.createSourceFile(null, vibDirectory);
@@ -410,11 +414,13 @@ public class BulkProvisionHostsWorkflowServiceTest {
 
     @BeforeMethod
     public void setUpTest() throws Throwable {
+      cloudStoreMachine = com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.create(1);
       destinationDirectory.mkdirs();
       scriptDirectory.mkdirs();
       scriptLogDirectory.mkdirs();
       agentControlClientFactory = mock(AgentControlClientFactory.class);
       hostClientFactory = mock(HostClientFactory.class);
+      nsxClientFactory = mock(NsxClientFactory.class);
       httpFileServiceClientFactory = mock(HttpFileServiceClientFactory.class);
     }
 
@@ -425,13 +431,12 @@ public class BulkProvisionHostsWorkflowServiceTest {
           .deployerContext(deployerConfig.getDeployerContext())
           .agentControlClientFactory(agentControlClientFactory)
           .hostClientFactory(hostClientFactory)
+          .nsxClientFactory(nsxClientFactory)
           .httpFileServiceClientFactory(httpFileServiceClientFactory)
           .listeningExecutorService(listeningExecutorService)
           .cloudServerSet(cloudStoreMachine.getServerSet())
           .hostCount(hostCount)
           .build();
-
-      startState.deploymentServiceLink = TestHelper.createDeploymentService(cloudStoreMachine).documentSelfLink;
 
       AgentControlClientMock agentControlClientMock = new AgentControlClientMock.Builder()
           .provisionResultCode(ProvisionResultCode.OK)
@@ -446,6 +451,13 @@ public class BulkProvisionHostsWorkflowServiceTest {
           .build();
 
       doReturn(hostClientMock).when(hostClientFactory).create();
+
+      NsxClientMock nsxClientMock = new NsxClientMock.Builder()
+          .registerFabricNode(true, "fabricNodeId")
+          .createTransportNode(true, "transportNodeId")
+          .createTransportZone(true, "transportZoneId")
+          .build();
+      doReturn(nsxClientMock).when(nsxClientFactory).create(anyString(), anyString(), anyString());
 
     }
 
@@ -484,6 +496,11 @@ public class BulkProvisionHostsWorkflowServiceTest {
         testEnvironment = null;
       }
 
+      if (null != cloudStoreMachine) {
+        cloudStoreMachine.stop();
+        cloudStoreMachine = null;
+      }
+
       FileUtils.deleteDirectory(destinationDirectory);
       FileUtils.deleteDirectory(scriptDirectory);
       FileUtils.deleteDirectory(scriptLogDirectory);
@@ -493,11 +510,6 @@ public class BulkProvisionHostsWorkflowServiceTest {
     public void tearDownClass() throws Throwable {
       listeningExecutorService.shutdown();
       FileUtils.deleteDirectory(storageDirectory);
-
-      if (null != cloudStoreMachine) {
-        cloudStoreMachine.stop();
-        cloudStoreMachine = null;
-      }
     }
 
     @DataProvider(name = "HostCounts")
@@ -514,7 +526,7 @@ public class BulkProvisionHostsWorkflowServiceTest {
     }
 
     @Test(dataProvider = "HostCounts")
-    public void testEndToEndSuccess(
+    public void testEndToEndSuccessWithoutVirtualNetwork(
         Integer hostCount,
         Integer mgmtHostCount,
         Integer cloudHostCout,
@@ -524,6 +536,7 @@ public class BulkProvisionHostsWorkflowServiceTest {
       createTestEnvironment(hostCount);
       createHostEntities(mgmtHostCount, cloudHostCout, mixedHostCount);
       startState.querySpecification = null;
+      startState.deploymentServiceLink = TestHelper.createDeploymentService(cloudStoreMachine).documentSelfLink;
 
       for (String usageTage : Arrays.asList(UsageTag.MGMT.name(), UsageTag.CLOUD.name())) {
         startState.usageTag = usageTage;
@@ -539,6 +552,38 @@ public class BulkProvisionHostsWorkflowServiceTest {
       }
     }
 
+    @Test(dataProvider = "HostCounts")
+    public void testEndToEndSuccessWithVirtualNetwork(
+        Integer hostCount,
+        Integer mgmtHostCount,
+        Integer cloudHostCout,
+        Integer mixedHostCount) throws Throwable {
+      MockHelper.mockHttpFileServiceClient(httpFileServiceClientFactory, true);
+      MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(), ProvisionHostTaskService.SCRIPT_NAME, true);
+      createTestEnvironment(hostCount);
+      createHostEntities(mgmtHostCount, cloudHostCout, mixedHostCount);
+      startState.querySpecification = null;
+      startState.deploymentServiceLink = TestHelper.createDeploymentService(cloudStoreMachine, false, true)
+          .documentSelfLink;
+
+      for (String usageTage : Arrays.asList(UsageTag.MGMT.name(), UsageTag.CLOUD.name())) {
+        startState.usageTag = usageTage;
+
+        BulkProvisionHostsWorkflowService.State finalState =
+            testEnvironment.callServiceAndWaitForState(
+                BulkProvisionHostsWorkflowFactoryService.SELF_LINK,
+                startState,
+                BulkProvisionHostsWorkflowService.State.class,
+                (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
+
+        TestHelper.assertTaskStateFinished(finalState.taskState);
+
+        DeploymentService.State deploymentState =
+            cloudStoreMachine.getServiceState(startState.deploymentServiceLink, DeploymentService.State.class);
+        assertThat(deploymentState.networkZoneId, is("transportZoneId"));
+      }
+    }
+
     @Test(enabled = false)
     public void testEndToEndFailNoMgmtHost() throws Throwable {
       MockHelper.mockHttpFileServiceClient(httpFileServiceClientFactory, true);
@@ -546,6 +591,8 @@ public class BulkProvisionHostsWorkflowServiceTest {
       MockHelper.mockProvisionAgent(agentControlClientFactory, hostClientFactory, true);
       createTestEnvironment(1);
       createHostEntities(0, 2, 0);
+      startState.deploymentServiceLink = TestHelper.createDeploymentService(cloudStoreMachine, false, true)
+          .documentSelfLink;
 
       BulkProvisionHostsWorkflowService.State finalState =
           testEnvironment.callServiceAndWaitForState(

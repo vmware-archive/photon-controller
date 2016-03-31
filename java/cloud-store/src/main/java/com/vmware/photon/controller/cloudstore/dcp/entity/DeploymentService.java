@@ -346,6 +346,12 @@ public class DeploymentService extends StatefulService {
     public String networkManagerPassword;
 
     /**
+     * This value represents the network zone ID.
+     */
+    @WriteOnce
+    public String networkZoneId;
+
+    /**
      * This value represents the syslog endpoint for the deployment.
      */
     @Immutable

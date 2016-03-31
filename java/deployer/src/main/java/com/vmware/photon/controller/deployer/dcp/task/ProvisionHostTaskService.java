@@ -49,6 +49,7 @@ import com.vmware.photon.controller.nsxclient.models.HostSwitch;
 import com.vmware.photon.controller.nsxclient.models.TransportNode;
 import com.vmware.photon.controller.nsxclient.models.TransportNodeCreateSpec;
 import com.vmware.photon.controller.nsxclient.models.TransportNodeState;
+import com.vmware.photon.controller.nsxclient.utils.NameUtils;
 import com.vmware.photon.controller.resource.gen.Datastore;
 import com.vmware.photon.controller.resource.gen.Network;
 import com.vmware.photon.controller.resource.gen.NetworkType;
@@ -884,6 +885,12 @@ public class ProvisionHostTaskService extends StatefulService {
                                   DeploymentService.State deploymentState,
                                   HostService.State hostState) {
 
+    if (hostState.nsxFabricNodeId != null) {
+      ServiceUtils.logInfo(this, "Skip registering fabric node");
+      createTransportNode(currentState, deploymentState, hostState, hostState.nsxFabricNodeId);
+      return;
+    }
+
     try {
       NsxClient nsxClient = HostUtils.getNsxClientFactory(this).create(
           deploymentState.networkManagerAddress,
@@ -891,8 +898,8 @@ public class ProvisionHostTaskService extends StatefulService {
           deploymentState.networkManagerPassword);
 
       FabricNodeCreateSpec request = new FabricNodeCreateSpec();
-      request.setDisplayName("fabricNode-" + hostState.hostAddress);
-      request.setDescription("Fabric Node " + hostState.hostAddress);
+      request.setDisplayName(NameUtils.getFabricNodeName(hostState.hostAddress));
+      request.setDescription(NameUtils.getFabricNodeDescription(hostState.hostAddress));
       request.setIpAddresses(Arrays.asList(hostState.hostAddress));
       request.setOsType("ESXI");
       request.setResourceType("HostNode");
@@ -964,6 +971,11 @@ public class ProvisionHostTaskService extends StatefulService {
                                    HostService.State hostState,
                                    String fabricNodeId) {
 
+    if (hostState.nsxTransportNodeId != null) {
+      ServiceUtils.logInfo(this, "Skip creating transport node");
+      return;
+    }
+
     try {
       NsxClient nsxClient = HostUtils.getNsxClientFactory(this).create(
           deploymentState.networkManagerAddress,
@@ -971,19 +983,18 @@ public class ProvisionHostTaskService extends StatefulService {
           deploymentState.networkManagerPassword);
 
       TransportNodeCreateSpec request = new TransportNodeCreateSpec();
-      request.setDisplayName("transportNode-" + hostState.hostAddress);
-      request.setDescription("Transport Node " + hostState.hostAddress);
+      request.setDisplayName(NameUtils.getTransportNodeName(hostState.hostAddress));
+      request.setDescription(NameUtils.getTransportNodeDescription(hostState.hostAddress));
       request.setNodeId(fabricNodeId);
       HostSwitch hostSwitch = new HostSwitch();
-      hostSwitch.setName("photonControllerHostSwitch");
+      hostSwitch.setName(NameUtils.HOST_SWITCH_NAME);
       request.setHostSwitches(Arrays.asList(hostSwitch));
 
       nsxClient.getFabricApi().createTransportNodeAsync(request,
           new FutureCallback<TransportNode>() {
             @Override
             public void onSuccess(@Nullable TransportNode response) {
-              waitForCreateTransportNode(currentState, deploymentState, hostState,
-                  fabricNodeId, response.getId());
+              waitForCreateTransportNode(currentState, deploymentState, fabricNodeId, response.getId());
             }
 
             @Override
@@ -998,7 +1009,6 @@ public class ProvisionHostTaskService extends StatefulService {
 
   private void waitForCreateTransportNode(State currentState,
                                           DeploymentService.State deploymentState,
-                                          HostService.State hostState,
                                           String fabricNodeId,
                                           String transportNodeId) {
 
@@ -1022,7 +1032,7 @@ public class ProvisionHostTaskService extends StatefulService {
                   break;
                 case PENDING:
                 case IN_PROGRESS:
-                  waitForCreateTransportNode(currentState, deploymentState, hostState, fabricNodeId, transportNodeId);
+                  waitForCreateTransportNode(currentState, deploymentState, fabricNodeId, transportNodeId);
                   break;
                 case PARTIAL_SUCCESS:
                 case FAILED:
