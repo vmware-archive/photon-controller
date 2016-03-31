@@ -21,6 +21,8 @@ import com.vmware.photon.controller.nsxclient.models.FabricNodeState;
 import com.vmware.photon.controller.nsxclient.models.TransportNode;
 import com.vmware.photon.controller.nsxclient.models.TransportNodeCreateSpec;
 import com.vmware.photon.controller.nsxclient.models.TransportNodeState;
+import com.vmware.photon.controller.nsxclient.models.TransportZone;
+import com.vmware.photon.controller.nsxclient.models.TransportZoneCreateSpec;
 
 import com.google.common.util.concurrent.FutureCallback;
 import static org.mockito.Matchers.any;
@@ -113,6 +115,33 @@ public class NsxClientMock extends NsxClient {
               .onFailure(error);
           return null;
         }).when(mockFabricApi).createTransportNodeAsync(any(TransportNodeCreateSpec.class),
+            any(FutureCallback.class));
+      }
+
+      return this;
+    }
+
+    public Builder createTransportZone(boolean isSuccess,
+                                       String transportZoneId) throws Throwable {
+      if (mockFabricApi == null) {
+        mockFabricApi = mock(FabricApi.class);
+      }
+
+      if (isSuccess) {
+        TransportZone response = new TransportZone();
+        response.setId(transportZoneId);
+        doAnswer(invocation -> {
+          ((FutureCallback<TransportZone>) invocation.getArguments()[1])
+              .onSuccess(response);
+          return null;
+        }).when(mockFabricApi).createTransportZoneAsync(any(TransportZoneCreateSpec.class), any(FutureCallback.class));
+      } else {
+        RuntimeException error = new RuntimeException("createTransportZone failed");
+        doAnswer(invocation -> {
+          ((FutureCallback<TransportZone>) invocation.getArguments()[1])
+              .onFailure(error);
+          return null;
+        }).when(mockFabricApi).createTransportZoneAsync(any(TransportZoneCreateSpec.class),
             any(FutureCallback.class));
       }
 
