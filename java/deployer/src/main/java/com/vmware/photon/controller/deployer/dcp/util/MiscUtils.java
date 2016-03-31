@@ -291,7 +291,7 @@ public class MiscUtils {
 
   public static int getAdjustedManagementHostCpu(HostService.State hostState) {
     float managementVmHostRatio = getManagementVmHostRatio(hostState);
-    return (int) (hostState.cpuCount * managementVmHostRatio);
+    return Math.max((int) (hostState.cpuCount * managementVmHostRatio), 1);
   }
 
   public static long getAdjustedManagementHostMemory(HostService.State hostState) {

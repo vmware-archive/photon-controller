@@ -253,6 +253,10 @@ public class TestHelper {
     return startState;
   }
 
+  public static HostService.State getHostServiceStartState(UsageTag usageTag, HostState hostState) {
+    return getHostServiceStartState(Collections.singleton(usageTag.name()), hostState);
+  }
+
   public static HostService.State getHostServiceStartState(Set<String> usageTags, HostState state) {
     HostService.State startState = new HostService.State();
     startState.state = state;
@@ -260,7 +264,9 @@ public class TestHelper {
     startState.userName = "userName";
     startState.password = "password";
     startState.availabilityZoneId = "availabilityZone";
+    startState.cpuCount = 1;
     startState.esxVersion = "6.0";
+    startState.memoryMb = 2048;
     startState.usageTags = new HashSet<>(usageTags);
 
     if (usageTags.contains(UsageTag.MGMT.name())) {
