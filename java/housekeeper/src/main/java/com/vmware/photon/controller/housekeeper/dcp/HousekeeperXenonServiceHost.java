@@ -28,6 +28,8 @@ import com.vmware.photon.controller.common.xenon.scheduler.TaskSchedulerServiceS
 import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfigProvider;
+import com.vmware.photon.controller.housekeeper.engines.NsxClientFactory;
+import com.vmware.photon.controller.housekeeper.engines.NsxClientFactoryProvider;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceHost;
 import com.vmware.xenon.common.UriUtils;
@@ -50,7 +52,7 @@ import java.util.Map;
 public class HousekeeperXenonServiceHost
     extends AbstractServiceHost
     implements XenonHostInfoProvider,
-    HostClientProvider, CloudStoreHelperProvider, ServiceConfigProvider {
+    HostClientProvider, CloudStoreHelperProvider, ServiceConfigProvider, NsxClientFactoryProvider {
 
   protected static final String IMAGE_COPY_SCHEDULER_SERVICE =
       TaskSchedulerServiceFactory.SELF_LINK + "/image-copy";
@@ -84,18 +86,21 @@ public class HousekeeperXenonServiceHost
   private final HostClientFactory hostClientFactory;
   private final CloudStoreHelper cloudStoreHelper;
   private final ServiceConfigFactory serviceConfigFactory;
+  private final NsxClientFactory nsxClientFactory;
 
   @Inject
   public HousekeeperXenonServiceHost(
       XenonConfig xenonConfig,
       CloudStoreHelper cloudStoreHelper,
       HostClientFactory hostClientFactory,
-      ServiceConfigFactory serviceConfigFactory) throws Throwable {
+      ServiceConfigFactory serviceConfigFactory,
+      NsxClientFactory nsxClientFactory) throws Throwable {
 
     super(xenonConfig);
     this.hostClientFactory = checkNotNull(hostClientFactory);
-    this.serviceConfigFactory =  checkNotNull(serviceConfigFactory);
+    this.serviceConfigFactory = checkNotNull(serviceConfigFactory);
     this.cloudStoreHelper = checkNotNull(cloudStoreHelper);
+    this.nsxClientFactory = checkNotNull(nsxClientFactory);
   }
 
   @Override
@@ -179,6 +184,11 @@ public class HousekeeperXenonServiceHost
   @Override
   public Class[] getFactoryServices() {
     return FACTORY_SERVICES;
+  }
+
+  @Override
+  public NsxClientFactory getNsxClientFactory() {
+    return nsxClientFactory;
   }
 
   private void startImageCleanerTriggerService() {

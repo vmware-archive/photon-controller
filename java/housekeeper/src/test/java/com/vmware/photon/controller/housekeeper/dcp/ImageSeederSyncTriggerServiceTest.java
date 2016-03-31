@@ -29,6 +29,7 @@ import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.BadRequestException;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
 import com.vmware.photon.controller.housekeeper.dcp.mock.HostClientMock;
+import com.vmware.photon.controller.housekeeper.engines.NsxClientFactory;
 import com.vmware.photon.controller.housekeeper.helpers.dcp.TestEnvironment;
 import com.vmware.photon.controller.housekeeper.helpers.dcp.TestHost;
 import com.vmware.xenon.common.Operation;
@@ -186,6 +187,7 @@ public class ImageSeederSyncTriggerServiceTest {
     private HostClientFactory hostClientFactory;
     private CloudStoreHelper cloudStoreHelper;
     private ServiceConfigFactory serviceConfigFactory;
+    private NsxClientFactory nsxClientFactory;
 
     private ImageSeederSyncTriggerService.State request;
 
@@ -194,7 +196,7 @@ public class ImageSeederSyncTriggerServiceTest {
       hostClientFactory = mock(HostClientFactory.class);
       serviceConfigFactory = mock(ServiceConfigFactory.class);
       cloudStoreHelper = new CloudStoreHelper();
-      ;
+      nsxClientFactory = mock(NsxClientFactory.class);
       doReturn(new HostClientMock()).when(hostClientFactory).create();
       serviceConfigFactory = mock(ServiceConfigFactory.class);
 
@@ -224,7 +226,8 @@ public class ImageSeederSyncTriggerServiceTest {
       request.shouldTriggerTasks = false;
       request.triggersError = (long) random.nextInt(Integer.MAX_VALUE);
       request.triggersSuccess = (long) random.nextInt(Integer.MAX_VALUE);
-      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, serviceConfigFactory, hostCount);
+      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, serviceConfigFactory, nsxClientFactory,
+          hostCount);
 
       ServiceHost host = machine.getHosts()[0];
       StaticServerSet serverSet = new StaticServerSet(
@@ -260,7 +263,8 @@ public class ImageSeederSyncTriggerServiceTest {
     @Test(dataProvider = "hostCount")
     public void testTriggerSuccess(int hostCount) throws Throwable {
       request.shouldTriggerTasks = true;
-      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, serviceConfigFactory, hostCount);
+      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, serviceConfigFactory, nsxClientFactory,
+          hostCount);
 
       ServiceHost host = machine.getHosts()[0];
       StaticServerSet serverSet = new StaticServerSet(

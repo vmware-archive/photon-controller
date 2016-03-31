@@ -20,6 +20,7 @@ import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.BadRequestException;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
 import com.vmware.photon.controller.housekeeper.dcp.mock.HostClientMock;
+import com.vmware.photon.controller.housekeeper.engines.NsxClientFactory;
 import com.vmware.photon.controller.housekeeper.helpers.dcp.TestEnvironment;
 import com.vmware.photon.controller.housekeeper.helpers.dcp.TestHost;
 import com.vmware.xenon.common.Operation;
@@ -288,6 +289,7 @@ public class ImageCleanerTriggerServiceTest {
     private HostClientFactory hostClientFactory;
     private CloudStoreHelper cloudStoreHelper;
     private ServiceConfigFactory serviceConfigFactory;
+    private NsxClientFactory nsxClientFactory;
 
     private ImageCleanerTriggerService.State request;
 
@@ -298,6 +300,7 @@ public class ImageCleanerTriggerServiceTest {
       cloudStoreHelper = mock(CloudStoreHelper.class);
       doReturn(new HostClientMock()).when(hostClientFactory).create();
       serviceConfigFactory = mock(ServiceConfigFactory.class);
+      nsxClientFactory = mock(NsxClientFactory.class);
 
       // Build input.
       request = buildValidStartupState();
@@ -321,7 +324,7 @@ public class ImageCleanerTriggerServiceTest {
     @Test(dataProvider = "hostCount")
     public void testTriggerActivationSuccess(int hostCount) throws Throwable {
       machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory,
-          serviceConfigFactory, hostCount);
+          serviceConfigFactory, nsxClientFactory, hostCount);
 
       //Call Service.
       ImageCleanerTriggerService.State response = machine.checkServiceIsResponding(
@@ -343,7 +346,7 @@ public class ImageCleanerTriggerServiceTest {
       request.shouldTriggerTasks = true;
 
       machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory,
-          serviceConfigFactory, hostCount);
+          serviceConfigFactory, nsxClientFactory, hostCount);
 
       // Send a patch to the trigger service to simulate a maintenance interval kicking in
       machine.sendPatchAndWait(machine.getTriggerCleanerServiceUri(), request);

@@ -43,6 +43,7 @@ import com.vmware.photon.controller.host.gen.TransferImageResultCode;
 import com.vmware.photon.controller.housekeeper.dcp.mock.CloudStoreHelperMock;
 import com.vmware.photon.controller.housekeeper.dcp.mock.HostClientMock;
 import com.vmware.photon.controller.housekeeper.dcp.mock.HostClientTransferImageErrorMock;
+import com.vmware.photon.controller.housekeeper.engines.NsxClientFactory;
 import com.vmware.photon.controller.housekeeper.helpers.dcp.TestEnvironment;
 import com.vmware.photon.controller.housekeeper.helpers.dcp.TestHost;
 import com.vmware.xenon.common.Operation;
@@ -735,12 +736,14 @@ public class ImageHostToHostCopyServiceTest {
     private ServiceConfigFactory serviceConfigFactory;
     private CloudStoreHelper cloudStoreHelper;
     private ImageHostToHostCopyService.State copyTask;
+    private NsxClientFactory nsxClientFactory;
 
     @BeforeMethod
     public void setUp() throws Throwable {
       hostClientFactory = mock(HostClientFactory.class);
       serviceConfigFactory = mock(ServiceConfigFactory.class);
       cloudStoreHelper = mock(CloudStoreHelper.class);
+      nsxClientFactory = mock(NsxClientFactory.class);
       // Build input.
       copyTask = new ImageHostToHostCopyService.State();
       copyTask.image = "WindowsRelease9.0";
@@ -802,7 +805,8 @@ public class ImageHostToHostCopyServiceTest {
       doReturn(hostClient).when(hostClientFactory).create();
 
       cloudStoreHelper = new CloudStoreHelper();
-      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, serviceConfigFactory, hostCount);
+      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, serviceConfigFactory, nsxClientFactory,
+          hostCount);
 
       ImageService.State createdImageState = createNewImageEntity(type);
       int initialReplicatedImageDatastoreCount = createdImageState.replicatedImageDatastore;
@@ -876,7 +880,8 @@ public class ImageHostToHostCopyServiceTest {
       doReturn(hostClient).when(hostClientFactory).create();
 
       cloudStoreHelper = new CloudStoreHelper();
-      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, serviceConfigFactory, hostCount);
+      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, serviceConfigFactory, nsxClientFactory,
+          hostCount);
 
       ImageService.State createdImageState = createNewImageEntity(ImageReplicationType.EAGER);
       int initialReplicatedImageDatastoreCount = createdImageState.replicatedImageDatastore;
@@ -957,7 +962,8 @@ public class ImageHostToHostCopyServiceTest {
       doReturn(hostClient).when(hostClientFactory).create();
 
       cloudStoreHelper = new CloudStoreHelper();
-      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, serviceConfigFactory, hostCount);
+      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, serviceConfigFactory, nsxClientFactory,
+          hostCount);
 
       ImageService.State createdImageState = createNewImageEntity(type);
       int initialReplicatedImageDatastoreCount = createdImageState.replicatedImageDatastore;
@@ -1037,7 +1043,8 @@ public class ImageHostToHostCopyServiceTest {
       doReturn(hostClient).when(hostClientFactory).create();
 
       cloudStoreHelper = new CloudStoreHelper();
-      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, serviceConfigFactory, hostCount);
+      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, serviceConfigFactory, nsxClientFactory,
+          hostCount);
 
       ImageService.State createdImageState = createNewImageEntity(type);
       int initialReplicatedImageDatastoreCount = createdImageState.replicatedImageDatastore;
@@ -1089,7 +1096,8 @@ public class ImageHostToHostCopyServiceTest {
     @Test(dataProvider = "hostCount")
     public void testSuccessWithSameSourceDatastoreAndDestinationDatastore(int hostCount) throws Throwable {
       cloudStoreHelper = new CloudStoreHelper();
-      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, serviceConfigFactory, hostCount);
+      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, serviceConfigFactory, nsxClientFactory,
+          hostCount);
 
       ImageService.State createdImageState = createNewImageEntity(ImageReplicationType.EAGER);
       int initialReplicatedImageDatastoreCount = createdImageState.replicatedImageDatastore;
@@ -1141,7 +1149,8 @@ public class ImageHostToHostCopyServiceTest {
       doReturn(new HostClientTransferImageErrorMock()).when(hostClientFactory).create();
 
       cloudStoreHelper = new CloudStoreHelper();
-      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, serviceConfigFactory, hostCount);
+      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, serviceConfigFactory, nsxClientFactory,
+          hostCount);
       createHostService("datastore1-id", HostState.READY);
       createHostService("datastore0-id", HostState.ERROR);
 
@@ -1177,7 +1186,8 @@ public class ImageHostToHostCopyServiceTest {
       doReturn(new HostClientTransferImageErrorMock()).when(hostClientFactory).create();
 
       cloudStoreHelper = new CloudStoreHelper();
-      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, serviceConfigFactory, hostCount);
+      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, serviceConfigFactory, nsxClientFactory,
+          hostCount);
       createHostService("datastore0-id", HostState.READY);
       createHostService("datastore1-id", HostState.ERROR);
 
@@ -1213,7 +1223,8 @@ public class ImageHostToHostCopyServiceTest {
       doReturn(new HostClientTransferImageErrorMock()).when(hostClientFactory).create();
 
       cloudStoreHelper = new CloudStoreHelper();
-      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, serviceConfigFactory, hostCount);
+      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, serviceConfigFactory, nsxClientFactory,
+          hostCount);
       createHostService("datastore0-id", HostState.READY);
       createHostService("datastore1-id", HostState.READY);
 
@@ -1257,7 +1268,8 @@ public class ImageHostToHostCopyServiceTest {
       doReturn(hostClient).when(hostClientFactory).create();
 
       cloudStoreHelper = new CloudStoreHelper();
-      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, serviceConfigFactory, hostCount);
+      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, serviceConfigFactory, nsxClientFactory,
+          hostCount);
       createHostService("datastore0-id", HostState.READY);
       createHostService("datastore1-id", HostState.READY);
 

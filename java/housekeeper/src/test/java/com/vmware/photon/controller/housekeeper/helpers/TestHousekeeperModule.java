@@ -26,6 +26,7 @@ import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
 import com.vmware.photon.controller.housekeeper.Config;
 import com.vmware.photon.controller.housekeeper.HousekeeperServerSet;
 import com.vmware.photon.controller.housekeeper.dcp.HousekeeperXenonServiceHost;
+import com.vmware.photon.controller.housekeeper.engines.NsxClientFactory;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
@@ -76,8 +77,10 @@ public class TestHousekeeperModule extends AbstractModule {
       XenonConfig xenonConfig,
       CloudStoreHelper cloudStoreHelper,
       HostClientFactory hostClientFactory,
-      ServiceConfigFactory serviceConfigFactory) throws Throwable {
-    return spy(new HousekeeperXenonServiceHost(xenonConfig, cloudStoreHelper, hostClientFactory, serviceConfigFactory));
+      ServiceConfigFactory serviceConfigFactory,
+      NsxClientFactory nsxClientFactory) throws Throwable {
+    return spy(new HousekeeperXenonServiceHost(xenonConfig, cloudStoreHelper, hostClientFactory,
+        serviceConfigFactory, nsxClientFactory));
   }
 
   @Provides
@@ -139,6 +142,12 @@ public class TestHousekeeperModule extends AbstractModule {
   public CloudStoreHelper getCloudStoreHelper(@CloudStoreServerSet ServerSet cloudStoreServerSet) {
     CloudStoreHelper cloudStoreHelper = new CloudStoreHelper(cloudStoreServerSet);
     return cloudStoreHelper;
+  }
+
+  @Provides
+  @Singleton
+  public NsxClientFactory getNsxClientFactory() {
+    return spy(new NsxClientFactory());
   }
 
   @Provides

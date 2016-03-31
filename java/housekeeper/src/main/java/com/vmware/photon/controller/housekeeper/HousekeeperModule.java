@@ -25,6 +25,7 @@ import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperServerSetFactory;
 import com.vmware.photon.controller.housekeeper.dcp.HousekeeperXenonServiceHost;
+import com.vmware.photon.controller.housekeeper.engines.NsxClientFactory;
 import com.vmware.photon.controller.housekeeper.service.HousekeeperService;
 
 import com.google.inject.AbstractModule;
@@ -95,5 +96,11 @@ public class HousekeeperModule extends AbstractModule {
   @Singleton
   public CloudStoreHelper getCloudStoreHelper(@CloudStoreServerSet ServerSet cloudStoreServerSet) {
     return new CloudStoreHelper(cloudStoreServerSet);
+  }
+
+  @Provides
+  @Singleton
+  public NsxClientFactory getNsxClientFactory() {
+    return new NsxClientFactory();
   }
 }

@@ -22,6 +22,7 @@ import com.vmware.photon.controller.host.gen.Host;
 import com.vmware.photon.controller.housekeeper.Config;
 import com.vmware.photon.controller.housekeeper.ConfigTest;
 import com.vmware.photon.controller.housekeeper.HousekeeperServer;
+import com.vmware.photon.controller.housekeeper.engines.NsxClientFactory;
 import com.vmware.photon.controller.housekeeper.gen.Housekeeper;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceHost;
@@ -159,4 +160,15 @@ public class TestHelper {
     }
   }
 
+  /**
+   * Class that is used to verify the NsxClientFactory can be injected properly.
+   */
+  public static class TestInjectedNsxClientFactory {
+    public NsxClientFactory factory;
+
+    @Inject
+    public TestInjectedNsxClientFactory(NsxClientFactory factory) {
+      this.factory = factory;
+    }
+  }
 }
