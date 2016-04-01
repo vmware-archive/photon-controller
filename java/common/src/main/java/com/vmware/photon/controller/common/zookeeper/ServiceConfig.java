@@ -17,6 +17,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
 import com.google.inject.assistedinject.Assisted;
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.recipes.cache.ChildData;
 import org.apache.curator.framework.recipes.cache.PathChildrenCache;
 import org.apache.curator.framework.recipes.cache.PathChildrenCacheEvent;
 import org.apache.curator.framework.recipes.cache.PathChildrenCacheListener;
@@ -112,7 +113,14 @@ public class ServiceConfig implements PathChildrenCacheListener {
    */
   public boolean isPaused() throws Exception {
     if (!isServiceFullyFunctional()) {
-      return PAUSED_STRING.equals(new String(this.configCache.getCurrentData(this.serviceStatusZKPath).getData()));
+      ChildData statusData = this.configCache.getCurrentData(this.serviceStatusZKPath);
+      if (statusData != null) {
+        return PAUSED_STRING.equals(new String(statusData.getData()));
+      }
+      String errMsg = String.format("No entry (null) for %s is unexpected. Seems potential race condition",
+          this.serviceStatusZKPath);
+      logger.info(errMsg);
+      throw new NullPointerException(errMsg);
     }
     return false;
   }
@@ -125,8 +133,14 @@ public class ServiceConfig implements PathChildrenCacheListener {
    */
   public boolean isBackgroundPaused() throws Exception {
     if (!isServiceFullyFunctional()) {
-      return isPaused() || PAUSED_BACKGROUND_STRING.equals(
-          new String(this.configCache.getCurrentData(this.serviceStatusZKPath).getData()));
+      ChildData statusData = this.configCache.getCurrentData(this.serviceStatusZKPath);
+      if (statusData != null) {
+        return isPaused() || PAUSED_BACKGROUND_STRING.equals(new String(statusData.getData()));
+      }
+      String errMsg = String.format("No entry (null) for %s is unexpected. Seems potential race condition",
+          this.serviceStatusZKPath);
+      logger.info(errMsg);
+      throw new NullPointerException(errMsg);
     }
     return false;
   }
