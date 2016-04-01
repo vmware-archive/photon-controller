@@ -111,6 +111,23 @@ class Vm(BaseResource):
         self.project_id = project_id
 
     @staticmethod
+    def from_thrift_constraints(thrift_object):
+        """Parse vm constraints, skipping scheduling only constraints
+
+        :type ThriftVm
+        :rtype list of ResourceConstraint
+        """
+        if not hasattr(thrift_object, 'resource_constraints') or thrift_object.resource_constraints is None:
+            return []
+
+        vm_constraints = []
+        for thrift_constraint in thrift_object.resource_constraints:
+            if not hasattr(thrift_constraint, 'scheduling_only') or not thrift_constraint.scheduling_only:
+                vm_constraints.append(thrift_constraint)
+
+        return vm_constraints
+
+    @staticmethod
     def from_thrift(thrift_object):
         instance = Vm(
             vm_id=thrift_object.id,
@@ -119,16 +136,13 @@ class Vm(BaseResource):
             environment=thrift_object.environment,
             tenant_id=thrift_object.tenant_id,
             project_id=thrift_object.project_id,
+            resource_constraints=Vm.from_thrift_constraints(thrift_object)
         )
         if thrift_object.disks:
             instance.disks = [Disk.from_thrift(d)
                               for d in thrift_object.disks]
         if thrift_object.datastore:
             instance.datastore = thrift_object.datastore.id
-
-        if thrift_object.resource_constraints:
-            instance.resource_constraints = \
-                thrift_object.resource_constraints
 
         return instance
 
@@ -230,16 +244,14 @@ class Disk(BaseResource):
         :type ThriftDisk
         :rtype list of ResourceConstraint
         """
-        if not hasattr(thrift_object, 'resource_constraints') or \
-                thrift_object.resource_constraints is None:
+        if not hasattr(thrift_object, 'resource_constraints') or thrift_object.resource_constraints is None:
             return None
 
         disk_constraints = []
         for thrift_constraint in thrift_object.resource_constraints:
-            if thrift_constraint.type in \
-                (ResourceConstraintType.DATASTORE,
-                 ResourceConstraintType.DATASTORE_TAG):
-                disk_constraints.append(thrift_constraint)
+            if not hasattr(thrift_constraint, 'scheduling_only') or not thrift_constraint.scheduling_only:
+                if thrift_constraint.type in (ResourceConstraintType.DATASTORE, ResourceConstraintType.DATASTORE_TAG):
+                    disk_constraints.append(thrift_constraint)
 
         return disk_constraints
 

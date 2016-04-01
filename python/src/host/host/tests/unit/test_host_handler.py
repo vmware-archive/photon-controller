@@ -9,11 +9,13 @@
 # warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
 # License for then specific language governing permissions and limitations
 # under the License.
+import copy
 import tempfile
 import time
 
 import common
 from gen.scheduler import Scheduler
+from host.hypervisor import resources
 from host.hypervisor.image_scanner import DatastoreImageScanner
 from host.hypervisor.image_sweeper import DatastoreImageSweeper
 from host.hypervisor.system import DatastoreInfo
@@ -277,6 +279,31 @@ class HostHandlerTestCase(unittest.TestCase):
 
         response = handler.place(request)
         assert_that(response.result, is_(PlaceResultCode.NO_SUCH_RESOURCE))
+
+    def test_scheduling_only_constraints(self):
+        constraints = [ResourceConstraint(type=ResourceConstraintType.DATASTORE, values=["ds1"]),
+                       ResourceConstraint(type=ResourceConstraintType.DATASTORE, values=["ds3"], scheduling_only=False)]
+        all_constraints = copy.copy(constraints)
+        all_constraints.append(
+                ResourceConstraint(type=ResourceConstraintType.DATASTORE, values=["ds2"], scheduling_only=True))
+
+        disk = Disk(id="disk_id",
+                    flavor="disk_flavor",
+                    persistent=True,
+                    new_disk=True,
+                    capacity_gb=2,
+                    resource_constraints=all_constraints)
+        vm = Vm(id="vm_id",
+                flavor="vm_flavor",
+                state=State.STOPPED,
+                disks=[disk],
+                resource_constraints=all_constraints)
+
+        # all_constraints has a scheduling_only constraint that should be filtered out by from_thrift
+        new_vm = resources.Vm.from_thrift(vm)
+
+        assert_that(new_vm.resource_constraints, is_(constraints))
+        assert_that(new_vm.disks[0].constraints, is_(constraints))
 
     def test_reserve_vm(self):
         disk_ids = ["disk_id_1", "disk_id_2", "disk_id_3"]
