@@ -121,6 +121,8 @@ struct ResourceConstraint {
   2: required list<string> values
   // Negative constraint, do not place where resource is available
   3: optional bool negative
+  // Indicate whether this constraint is for routing only
+  4: optional bool routing_only
 }
 
 // The ResourcePlacement are set by the scheduler
