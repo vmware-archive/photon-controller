@@ -44,6 +44,7 @@ import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyObject;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
@@ -123,7 +124,7 @@ public class ImageUploadStepCmdTest extends PowerMockTestCase {
     command = spy(new ImageUploadStepCmd(taskCommand, stepBackend, step, imageBackend, imageStore, imageConfig));
 
     when(imageStore.createImage(anyString())).thenReturn(image);
-    doNothing().when(imageStore).finalizeImage(anyString());
+    doNothing().when(imageStore).finalizeImage(anyObject());
     when(imageStore.getDatastore()).thenReturn(datastoreName);
     when(image.addDisk(anyString(), any(InputStream.class))).thenReturn(imageSize);
   }
@@ -161,7 +162,7 @@ public class ImageUploadStepCmdTest extends PowerMockTestCase {
     command.execute();
 
     verify(imageStore).createImage(imageId);
-    verify(imageStore).finalizeImage(imageId);
+    verify(imageStore).finalizeImage(anyObject());
     verify(imageStore).getDatastore();
     verify(image).addDisk(anyString(), inputStreamArgument.capture());
     InputStream capturedStream = inputStreamArgument.getAllValues().get(0);
@@ -195,7 +196,7 @@ public class ImageUploadStepCmdTest extends PowerMockTestCase {
     command.execute();
 
     verify(imageStore, times(2)).createImage(imageId);
-    verify(imageStore, times(2)).finalizeImage(imageId);
+    verify(imageStore, times(2)).finalizeImage(anyObject());
     verify(imageStore, times(2)).getDatastore();
     verify(image, times(2)).addDisk(anyString(), inputStreamArgument.capture());
     InputStream capturedStream = inputStreamArgument.getAllValues().get(0);

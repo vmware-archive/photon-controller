@@ -37,7 +37,7 @@ from common.thread import Periodic
 from gen.resource.ttypes import ImageReplication
 from gen.resource.ttypes import ImageType
 from host.hypervisor.datastore_manager import DatastoreNotFoundException
-from host.hypervisor.esx.vm_config import IMAGE_FOLDER_NAME_PREFIX
+from host.hypervisor.esx.vm_config import IMAGE_FOLDER_NAME_PREFIX, compond_path_join
 from host.hypervisor.esx.vm_config import TMP_IMAGE_FOLDER_NAME_PREFIX
 from host.hypervisor.esx.vm_config import os_datastore_root
 from host.hypervisor.esx.vm_config import datastore_to_os_path
@@ -803,6 +803,14 @@ class EsxImageManager(ImageManager):
         dir_path = os_datastore_path(datastore_id, GC_IMAGE_FOLDER)
         for sub_dir in os.listdir(dir_path):
             rm_rf(os.path.join(dir_path, sub_dir), ignore_errors=True)
+
+    def create_image(self, datastore_id):
+        """ Create a temp image on given datastore, return its path.
+        """
+        tmp_image_id = compond_path_join(TMP_IMAGE_FOLDER_NAME_PREFIX, str(uuid.uuid4()))
+        tmp_image_path = os_datastore_path(datastore_id, tmp_image_id)
+        self._vim_client.make_directory(tmp_image_path)
+        return tmp_image_path
 
     def finalize_image(self, datastore_id, tmp_dir, image_id):
         """ Installs an image using image data staged at a temp directory.

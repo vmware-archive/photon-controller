@@ -40,8 +40,8 @@ from gen.host.ttypes import CreateDisksResponse
 from gen.host.ttypes import CreateDisksResultCode
 from gen.host.ttypes import CreateImageFromVmResponse
 from gen.host.ttypes import CreateImageFromVmResultCode
-from gen.host.ttypes import FinalizeImageResponse
-from gen.host.ttypes import FinalizeImageResultCode
+from gen.host.ttypes import CreateImageResponse
+from gen.host.ttypes import CreateImageResultCode
 from gen.host.ttypes import CreateVmResponse
 from gen.host.ttypes import CreateVmResultCode
 from gen.host.ttypes import DeleteDirectoryResponse
@@ -56,6 +56,8 @@ from gen.host.ttypes import DeleteVmResponse
 from gen.host.ttypes import DeleteVmResultCode
 from gen.host.ttypes import DetachISOResponse
 from gen.host.ttypes import DetachISOResultCode
+from gen.host.ttypes import FinalizeImageResponse
+from gen.host.ttypes import FinalizeImageResultCode
 from gen.host.ttypes import GetConfigResponse
 from gen.host.ttypes import GetConfigResultCode
 from gen.host.ttypes import GetDatastoresResponse
@@ -1792,6 +1794,28 @@ class HostHandler(Host.Iface):
         return response
 
     @log_request
+    @error_handler(CreateImageResponse, CreateImageResultCode)
+    def create_image(self, request):
+        """
+        """
+        try:
+            datastore_id = self.hypervisor.datastore_manager.normalize(request.datastore)
+        except DatastoreNotFoundException:
+            return self._error_response(
+                CreateImageResultCode.DATASTORE_NOT_FOUND,
+                "Datastore not found",
+                CreateImageResponse())
+
+        try:
+            tmp_image_path = self.hypervisor.image_manager.create_image(datastore_id)
+            return CreateImageResponse(CreateImageResultCode.OK, tmp_image_path)
+        except:
+            return self._error_response(
+                CreateImageResultCode.SYSTEM_ERROR,
+                str(sys.exc_info()[1]),
+                CreateImageResponse())
+
+    @log_request
     @error_handler(FinalizeImageResponse, FinalizeImageResultCode)
     def finalize_image(self, request):
         """ Create an image by atomically moving it from a temp location
@@ -1931,8 +1955,7 @@ class HostHandler(Host.Iface):
 
         try:
             self.hypervisor.image_manager.create_image_with_vm_disk(
-                datastore_id, request.tmp_image_path, request.image_id,
-                linked_clone_os_path)
+                datastore_id, request.image_id, linked_clone_os_path)
         except DiskAlreadyExistException:
             return self._error_response(
                 CreateImageFromVmResultCode.IMAGE_ALREADY_EXIST,

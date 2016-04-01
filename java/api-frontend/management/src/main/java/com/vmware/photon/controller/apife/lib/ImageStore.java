@@ -32,9 +32,9 @@ public interface ImageStore {
   /**
    * Make image usable to the system.
    *
-   * @param imageId
+   * @param image
    */
-  void finalizeImage(String imageId) throws InternalException;
+  void finalizeImage(Image image) throws InternalException;
 
   /**
    * Create image by cloning vm.
@@ -57,7 +57,7 @@ public interface ImageStore {
   /**
    * Delete the entire upload folder on the host.
    */
-  void deleteUploadFolder(String imageId) throws InternalException;
+  void deleteUploadFolder(Image image) throws InternalException;
 
   /**
    * @return true if replication of image file needs to be performed, otherwise false

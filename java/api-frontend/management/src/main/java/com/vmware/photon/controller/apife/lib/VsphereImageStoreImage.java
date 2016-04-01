@@ -33,13 +33,23 @@ import java.io.InputStream;
 public class VsphereImageStoreImage implements Image {
   private static final Logger logger = LoggerFactory.getLogger(VsphereImageStoreImage.class);
   private final NfcClient nfcClient;
-  private final String imageFolder;
+  private final String uploadFolder;
   private final String imageId;
 
-  public VsphereImageStoreImage(NfcClient nfcClient, String imageFolder, String imageId) {
+  public VsphereImageStoreImage(NfcClient nfcClient, String uploadFolder, String imageId) {
     this.nfcClient = nfcClient;
-    this.imageFolder = imageFolder;
+    this.uploadFolder = uploadFolder;
     this.imageId = imageId;
+  }
+
+  @Override
+  public String getImageId() {
+    return imageId;
+  }
+
+  @Override
+  public String getUploadFolder() {
+    return uploadFolder;
   }
 
   /**
@@ -98,6 +108,6 @@ public class VsphereImageStoreImage implements Image {
    * @return
    */
   private String getImageFilePath(String fileName) {
-    return String.format("%s/%s%s", imageFolder, imageId, fileName);
+    return String.format("%s/%s%s", uploadFolder, imageId, fileName);
   }
 }
