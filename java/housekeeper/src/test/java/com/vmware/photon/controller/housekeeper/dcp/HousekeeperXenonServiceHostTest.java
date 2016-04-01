@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.housekeeper.dcp;
 
+import com.vmware.photon.controller.apibackend.ApiBackendFactory;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
@@ -24,6 +25,7 @@ import com.vmware.photon.controller.housekeeper.Config;
 import com.vmware.photon.controller.housekeeper.ConfigTest;
 import com.vmware.photon.controller.housekeeper.engines.NsxClientFactory;
 import com.vmware.photon.controller.housekeeper.helpers.TestHelper;
+import com.vmware.xenon.common.Service;
 import com.vmware.xenon.services.common.LuceneDocumentIndexService;
 import com.vmware.xenon.services.common.LuceneQueryTaskFactoryService;
 import com.vmware.xenon.services.common.RootNamespaceService;
@@ -31,6 +33,7 @@ import com.vmware.xenon.services.common.ServiceUriPaths;
 
 import com.google.inject.Injector;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.ArrayUtils;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -42,8 +45,12 @@ import static org.mockito.Mockito.doReturn;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -63,20 +70,7 @@ public class HousekeeperXenonServiceHostTest {
   private Injector injector;
   private HousekeeperXenonServiceHost host;
 
-  private String[] serviceSelfLinks = new String[]{
-      RootNamespaceService.SELF_LINK,
-      ImageReplicatorServiceFactory.SELF_LINK,
-      ImageCopyServiceFactory.SELF_LINK,
-      ImageHostToHostCopyServiceFactory.SELF_LINK,
-      ImageDatastoreSweeperServiceFactory.SELF_LINK,
-      ImageCleanerServiceFactory.SELF_LINK,
-      ImageCleanerTriggerServiceFactory.SELF_LINK,
-      ImageSeederSyncTriggerServiceFactory.SELF_LINK,
-      TaskSchedulerServiceFactory.SELF_LINK,
-      HousekeeperXenonServiceHost.getTriggerCleanerServiceUri(),
-      HousekeeperXenonServiceHost.getImageSeederSyncServiceUri(),
-      HousekeeperXenonServiceHost.IMAGE_COPY_SCHEDULER_SERVICE
-  };
+  private String[] serviceSelfLinks = createServiceSelfLinks();
 
   /**
    * Dummy test case to make Intellij recognize this as a test class.
@@ -298,5 +292,32 @@ public class HousekeeperXenonServiceHostTest {
           ServiceHostUtils.DEFAULT_NODE_GROUP_CONVERGENCE_MAX_RETRIES,
           ServiceHostUtils.DEFAULT_NODE_GROUP_CONVERGENCE_SLEEP);
     }
+  }
+
+  private String[] createServiceSelfLinks() {
+    List<String> apiBackendServiceSelfLinks = new ArrayList<>();
+    Set<Class<? extends Service>> set = ApiBackendFactory.FACTORY_SERVICES_MAP.keySet();
+    for (Class cls : set) {
+      try {
+        Field fld = cls.getField("FACTORY_LINK");
+        apiBackendServiceSelfLinks.add((String) fld.get(null));
+      } catch (IllegalAccessException | NoSuchFieldException e) {
+        // Simply ignore them
+      }
+    }
+
+    return ArrayUtils.addAll(apiBackendServiceSelfLinks.toArray(new String[0]),
+        RootNamespaceService.SELF_LINK,
+        ImageReplicatorServiceFactory.SELF_LINK,
+        ImageCopyServiceFactory.SELF_LINK,
+        ImageHostToHostCopyServiceFactory.SELF_LINK,
+        ImageDatastoreSweeperServiceFactory.SELF_LINK,
+        ImageCleanerServiceFactory.SELF_LINK,
+        ImageCleanerTriggerServiceFactory.SELF_LINK,
+        ImageSeederSyncTriggerServiceFactory.SELF_LINK,
+        TaskSchedulerServiceFactory.SELF_LINK,
+        HousekeeperXenonServiceHost.getTriggerCleanerServiceUri(),
+        HousekeeperXenonServiceHost.getImageSeederSyncServiceUri(),
+        HousekeeperXenonServiceHost.IMAGE_COPY_SCHEDULER_SERVICE);
   }
 }
