@@ -23,3 +23,8 @@ require_relative "../../lib/integration"
 require_relative "../../lib/dcp/houskeeper_client"
 
 EsxCloud::Config.init
+
+RSpec.configure do |config|
+  config.color = true
+  config.formatter = :documentation
+end

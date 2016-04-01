@@ -137,14 +137,10 @@ RSpec.configure do |config|
 
   config.filter_run_excluding go_cli: true unless ENV["DRIVER"] == "gocli"
 
-  if RSpec.configuration.inclusion_filter[:management]
-  end
-
   config.after(:suite) do
     cleaner = EsxCloud::SystemCleaner.new(ApiClientHelper.management)
     cleaner.clean_images(EsxCloud::SystemSeeder.instance)
     cleaner.delete_network(EsxCloud::SystemSeeder.instance.network) if EsxCloud::SystemSeeder.instance.network
     cleaner.delete_tenant(EsxCloud::SystemSeeder.instance.tenant) if EsxCloud::SystemSeeder.instance.tenant
   end
-
 end
