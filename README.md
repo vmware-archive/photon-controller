@@ -33,7 +33,7 @@ The product is arranged in a single repository, with subdirectories arranged by 
 
 If you'd like to make changes to Photon Controller, you can submit pull requests on [GitHub](http://github.com/vmware/photon-controller).
 
-Contributors to Photon Controller must have signed and submitted a copy of the [Contributor License Agreement](http://vmware.github.io/photon/assets/files/vmware_cla.pdf) to osscontributions@vmware.com.
+If you have not signed our contributor license agreement (CLA), our bot will update the issue when you open a [Pull Request](https://help.github.com/articles/creating-a-pull-request). For any questions about the CLA process, please refer to our [FAQ](https://cla.vmware.com/faq).
 
 All pull requests satisfy the following criteria:
 
