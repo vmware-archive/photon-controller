@@ -13,9 +13,12 @@
 
 package com.vmware.photon.controller.apife.clients;
 
+import com.vmware.photon.controller.api.Auth;
+import com.vmware.photon.controller.api.AuthInfo;
 import com.vmware.photon.controller.api.ClusterConfiguration;
 import com.vmware.photon.controller.api.ClusterConfigurationSpec;
 import com.vmware.photon.controller.api.ClusterType;
+import com.vmware.photon.controller.api.Deployment;
 import com.vmware.photon.controller.api.DeploymentCreateSpec;
 import com.vmware.photon.controller.api.Project;
 import com.vmware.photon.controller.api.ResourceList;
@@ -32,6 +35,7 @@ import com.vmware.photon.controller.apife.backends.TenantBackend;
 import com.vmware.photon.controller.apife.backends.VmBackend;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommandFactory;
+import com.vmware.photon.controller.apife.config.AuthConfig;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.common.Constants;
@@ -44,12 +48,14 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.powermock.api.mockito.PowerMockito.verifyNoMoreInteractions;
 
+import java.util.ArrayList;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 
@@ -65,6 +71,7 @@ public class DeploymentFeClientTest {
   private HostBackend hostBackend;
   private TenantBackend tenantBackend;
   private ProjectBackend projectBackend;
+  private AuthConfig authConfig;
   private TaskCommandFactory commandFactory;
   private ExecutorService executorService;
 
@@ -75,12 +82,14 @@ public class DeploymentFeClientTest {
     hostBackend = mock(HostBackend.class);
     tenantBackend = mock(TenantBackend.class);
     projectBackend = mock(ProjectBackend.class);
+    authConfig = new AuthConfig();
 
     commandFactory = mock(TaskCommandFactory.class);
     executorService = mock(TaskCommandExecutorService.class);
 
     feClient = new DeploymentFeClient(
-        taskBackend, deploymentBackend, vmBackend, hostBackend, tenantBackend, projectBackend, commandFactory,
+        taskBackend, deploymentBackend, vmBackend, hostBackend, tenantBackend, projectBackend, authConfig,
+        commandFactory,
         executorService);
   }
 
@@ -391,6 +400,52 @@ public class DeploymentFeClientTest {
 
       assertThat(config.getType(), is(ClusterType.KUBERNETES));
       assertThat(config.getImageId(), is("imageId"));
+    }
+  }
+
+  /**
+   * Tests the getAuth method.
+   */
+  public class GetAuthTest {
+    @BeforeMethod
+    public void setUp() {
+      setUpCommon();
+    }
+
+    @Test
+    public void testAuthDisabled() {
+      Auth auth = feClient.getAuth();
+      assertThat(auth.getEnabled(), is(false));
+      assertThat(auth.getEndpoint(), nullValue());
+      assertThat(auth.getPort(), nullValue());
+    }
+
+    @Test
+    public void testAuthEnabled() {
+      AuthInfo authInfo = new AuthInfo();
+      authInfo.setEnabled(true);
+      authInfo.setEndpoint("10.146.1.1");
+      authInfo.setPort(443);
+
+      Deployment deployment = new Deployment();
+      deployment.setAuth(authInfo);
+
+      authConfig.setEnableAuth(true);
+      doReturn(ImmutableList.of(deployment)).when(deploymentBackend).getAll();
+
+      Auth auth = feClient.getAuth();
+      assertThat(auth.getEnabled(), is(authInfo.getEnabled()));
+      assertThat(auth.getEndpoint(), is(authInfo.getEndpoint()));
+      assertThat(auth.getPort(), is(authInfo.getPort()));
+    }
+
+    @Test(expectedExceptions = IllegalStateException.class,
+    expectedExceptionsMessageRegExp = "Must have one or more deployments present to display auth info.")
+    public void testAuthEnabledInConfigNoDeployment() {
+      authConfig.setEnableAuth(true);
+      doReturn(new ArrayList<>()).when(deploymentBackend).getAll();
+
+      feClient.getAuth();
     }
   }
 }

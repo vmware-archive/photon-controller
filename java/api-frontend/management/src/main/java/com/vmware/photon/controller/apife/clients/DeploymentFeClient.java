@@ -37,6 +37,7 @@ import com.vmware.photon.controller.apife.backends.TenantBackend;
 import com.vmware.photon.controller.apife.backends.VmBackend;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommandFactory;
+import com.vmware.photon.controller.apife.config.AuthConfig;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
@@ -47,7 +48,7 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkState;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -67,6 +68,8 @@ public class DeploymentFeClient {
   private final TenantBackend tenantBackend;
   private final ProjectBackend projectBackend;
 
+  private final AuthConfig authConfig;
+
   private final TaskCommandFactory commandFactory;
   private final ExecutorService executor;
 
@@ -78,6 +81,7 @@ public class DeploymentFeClient {
       HostBackend hostBackend,
       TenantBackend tenantBackend,
       ProjectBackend projectBackend,
+      AuthConfig authConfig,
       TaskCommandFactory commandFactory,
       @BackendTaskExecutor ExecutorService executor) {
     this.taskBackend = taskBackend;
@@ -86,6 +90,7 @@ public class DeploymentFeClient {
     this.hostBackend = hostBackend;
     this.tenantBackend = tenantBackend;
     this.projectBackend = projectBackend;
+    this.authConfig = authConfig;
     this.commandFactory = commandFactory;
     this.executor = executor;
   }
@@ -141,8 +146,14 @@ public class DeploymentFeClient {
   }
 
   public Auth getAuth() {
+    if (!authConfig.isAuthEnabled()) {
+      return new Auth();
+    }
+
     List<Deployment> deploymentList = deploymentBackend.getAll();
-    checkArgument(deploymentList.size() > 0, "Must have one or more deployments present to display auth info.");
+    checkState(deploymentList.size() > 0, "Must have one or more deployments present to display auth info.");
+
+    // deployment object exists
     Deployment deployment = deploymentList.get(0);
 
     AuthInfo authInfo = deployment.getAuth();
