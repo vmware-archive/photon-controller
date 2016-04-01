@@ -55,6 +55,8 @@ import com.vmware.photon.controller.host.gen.CreateDisksRequest;
 import com.vmware.photon.controller.host.gen.CreateDisksResponse;
 import com.vmware.photon.controller.host.gen.CreateImageFromVmRequest;
 import com.vmware.photon.controller.host.gen.CreateImageFromVmResponse;
+import com.vmware.photon.controller.host.gen.CreateImageRequest;
+import com.vmware.photon.controller.host.gen.CreateImageResponse;
 import com.vmware.photon.controller.host.gen.CreateVmRequest;
 import com.vmware.photon.controller.host.gen.CreateVmResponse;
 import com.vmware.photon.controller.host.gen.DeleteDirectoryRequest;
@@ -156,6 +158,7 @@ public class HostClient {
   private static final long CREATE_VM_TIMEOUT_MS = 7200000; // two hours
   private static final long DELETE_DISK_TIMEOUT_MS = 1800000;
   private static final long CREATE_IMAGE_TIMEOUT_MS = 60000;
+  private static final long FINALIZE_IMAGE_TIMEOUT_MS = 60000;
   private static final long DELETE_IMAGE_TIMEOUT_MS = 60000;
   private static final long START_IMAGE_SCAN_TIMEOUT_MS = 60000;
   private static final long START_IMAGE_SWEEP_TIMEOUT_MS = 60000;
@@ -576,6 +579,49 @@ public class HostClient {
    * This method performs an synchronous Thrift call to create an image by moving the image
    * file from tmp path. On completion, the specified handler is invoked.
    *
+   * @param datastore    Supplies the data store on which the image exists.
+   * @throws InterruptedException
+   * @throws RpcException
+   */
+  @RpcMethod
+  public CreateImageResponse createImage(String datastore)
+      throws InterruptedException, RpcException {
+    SyncHandler<CreateImageResponse, Host.AsyncClient.create_image_call> syncHandler = new SyncHandler<>();
+    createImage(datastore, syncHandler);
+    syncHandler.await();
+    return ResponseValidator.checkCreateImageResponse(syncHandler.getResponse());
+  }
+
+  /**
+   * This method performs an asynchronous Thrift call to create an image by moving the image
+   * file from tmp path. On completion, the specified handler is invoked.
+   *
+   * @param datastore    Supplies the data store on which the image exists.
+   * @param handler      Supplies a handler object to be invoked on completion.
+   * @throws RpcException
+   */
+  @RpcMethod
+  public void createImage(String datastore,
+                           AsyncMethodCallback<Host.AsyncClient.create_image_call> handler)
+      throws RpcException {
+    ensureClient();
+
+    CreateImageRequest createImageRequest = new CreateImageRequest();
+    createImageRequest.setDatastore(datastore);
+    clientProxy.setTimeout(CREATE_IMAGE_TIMEOUT_MS);
+    logger.info("create_image target {}, request {}", getHostIp(), createImageRequest);
+
+    try {
+      clientProxy.create_image(createImageRequest, handler);
+    } catch (TException e) {
+      throw new RpcException(e.getMessage());
+    }
+  }
+
+  /**
+   * This method performs an synchronous Thrift call to create an image by moving the image
+   * file from tmp path. On completion, the specified handler is invoked.
+   *
    * @param imageId      Supplies the ID of an image to be created.
    * @param datastore    Supplies the data store on which the image exists.
    * @param tmpImagePath Supplies the temporary path of the image to move from.
@@ -610,8 +656,8 @@ public class HostClient {
     finalizeImageRequest.setImage_id(imageId);
     finalizeImageRequest.setDatastore(datastore);
     finalizeImageRequest.setTmp_image_path(tmpImagePath);
-    clientProxy.setTimeout(CREATE_IMAGE_TIMEOUT_MS);
-    logger.info("create_image target {}, request {}", getHostIp(), finalizeImageRequest);
+    clientProxy.setTimeout(FINALIZE_IMAGE_TIMEOUT_MS);
+    logger.info("finalize_image target {}, request {}", getHostIp(), finalizeImageRequest);
 
     try {
       clientProxy.finalize_image(finalizeImageRequest, handler);
@@ -1849,6 +1895,23 @@ public class HostClient {
       }
 
       return deleteDisksResponse;
+    }
+
+    private static CreateImageResponse checkCreateImageResponse(CreateImageResponse createImageResponse)
+        throws RpcException {
+      logger.info("Checking {}", createImageResponse);
+      switch (createImageResponse.getResult()) {
+        case OK:
+          break;
+        case SYSTEM_ERROR:
+          throw new SystemErrorException(createImageResponse.getError());
+        case DATASTORE_NOT_FOUND:
+          throw new DatastoreNotFoundException(createImageResponse.getError());
+        default:
+          throw new RpcException(String.format("Unknown result: %s", createImageResponse.getResult()));
+      }
+
+      return createImageResponse;
     }
 
     private static FinalizeImageResponse checkFinalizeImageResponse(FinalizeImageResponse finalizeImageResponse)

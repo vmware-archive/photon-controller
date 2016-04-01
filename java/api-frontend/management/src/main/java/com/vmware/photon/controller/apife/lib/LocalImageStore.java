@@ -45,13 +45,13 @@ public class LocalImageStore implements ImageStore {
   }
 
   @Override
-  public void finalizeImage(String imageId) {
-    logger.debug("LocalImageStore finalizeImage empty {}", imageId);
+  public void finalizeImage(Image image) {
+    logger.debug("LocalImageStore finalizeImage {}", image.getImageId());
   }
 
   @Override
   public void createImageFromVm(String imageId, String vmId, String hostIp) {
-    logger.debug("LocalImageStore createImageFromVm empty {}", imageId);
+    logger.debug("LocalImageStore createImageFromVm {}", imageId);
   }
 
   @Override
@@ -66,10 +66,10 @@ public class LocalImageStore implements ImageStore {
   }
 
   @Override
-  public void deleteUploadFolder(String imageId) throws DeleteUploadFolderException {
+  public void deleteUploadFolder(Image image) throws DeleteUploadFolderException {
     // To be implemented if it is needed in the future.
     throw new DeleteUploadFolderException("deleteUploadFolder method has not been " +
-        "                                 implemented for class LocalImageStore.");
+        "implemented for class LocalImageStore.");
   }
 
   @Override

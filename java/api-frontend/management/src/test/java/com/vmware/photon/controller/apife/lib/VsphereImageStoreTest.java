@@ -26,6 +26,7 @@ import com.vmware.photon.controller.common.clients.exceptions.DirectoryNotFoundE
 import com.vmware.photon.controller.common.clients.exceptions.ImageInUseException;
 import com.vmware.photon.controller.common.clients.exceptions.ImageNotFoundException;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
+import com.vmware.photon.controller.host.gen.CreateImageResponse;
 import com.vmware.photon.controller.host.gen.DeleteImageResponse;
 import com.vmware.photon.controller.host.gen.DeleteImageResultCode;
 import com.vmware.photon.controller.host.gen.ServiceTicketResponse;
@@ -138,6 +139,7 @@ public class VsphereImageStoreTest extends PowerMockTestCase {
     public void testSuccessWithConfiguredHostAddress() throws Exception {
       doReturn(nfcClient).when(imageStore).getNfcClient(any(HostServiceTicket.class));
       when(hostClient.getNfcServiceTicket(anyString())).thenReturn(serviceTicketResponse);
+      when(hostClient.createImage(anyString())).thenReturn(new CreateImageResponse());
 
       Image imageFolder = spy(imageStore.createImage(imageId));
       assertThat(imageFolder, notNullValue());
@@ -149,10 +151,11 @@ public class VsphereImageStoreTest extends PowerMockTestCase {
 
       doReturn(nfcClient).when(imageStore).getNfcClient(any(HostServiceTicket.class));
       when(hostClient.getNfcServiceTicket(anyString())).thenReturn(serviceTicketResponse);
+      when(hostClient.createImage(anyString())).thenReturn(new CreateImageResponse());
 
       Image imageFolder = spy(imageStore.createImage(imageId));
       assertThat(imageFolder, notNullValue());
-      verify(hostClient).setHostIp(HOST_ADDRESS);
+      verify(hostClient, times(2)).setHostIp(HOST_ADDRESS);
     }
 
     @Test(expectedExceptions = RuntimeException.class)
@@ -336,9 +339,10 @@ public class VsphereImageStoreTest extends PowerMockTestCase {
    */
   public class DeleteUploadFolderTest {
 
+    private Image image;
     @BeforeMethod
     public void setUp() throws RpcException, InterruptedException, InternalException {
-      imageId = "image-id";
+      image = new VsphereImageStoreImage(null, "upload_folder", "image-id");
 
       imageConfig = new ImageConfig();
       imageConfig.setEndpoint(HOST_ADDRESS);
@@ -355,7 +359,7 @@ public class VsphereImageStoreTest extends PowerMockTestCase {
 
     @Test
     public void testDeleteFolderSuccess() throws RpcException, InterruptedException, InternalException, IOException {
-      imageStore.deleteUploadFolder(imageId);
+      imageStore.deleteUploadFolder(image);
       verify(hostClient, times(1)).deleteDirectory(anyString(), anyString());
     }
 
@@ -364,7 +368,7 @@ public class VsphereImageStoreTest extends PowerMockTestCase {
         InternalException, IOException {
       doThrow(new DirectoryNotFoundException("Failed to delete folder")).when(hostClient).deleteDirectory(anyString(),
           anyString());
-      imageStore.deleteUploadFolder(imageId);
+      imageStore.deleteUploadFolder(image);
       verify(hostClient, times(1)).deleteDirectory(anyString(), anyString());
     }
 
@@ -373,7 +377,7 @@ public class VsphereImageStoreTest extends PowerMockTestCase {
         InternalException, IOException {
       doThrow(new RpcException("Rpc failed")).when(hostClient).deleteDirectory(anyString(), anyString());
       try {
-        imageStore.deleteUploadFolder(imageId);
+        imageStore.deleteUploadFolder(image);
         fail("should have thrown internal exception");
       } catch (InternalException e) {
         verify(hostClient, times(1)).deleteDirectory(anyString(), anyString());

@@ -26,6 +26,16 @@ import java.io.InputStream;
 public interface Image extends AutoCloseable {
 
   /**
+   * Get image id.
+   */
+  String getImageId();
+
+  /**
+   * Get upload folder.
+   */
+  String getUploadFolder();
+
+  /**
    * Upload an image file.
    *
    * @param fileName    file in the image
