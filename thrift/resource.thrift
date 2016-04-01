@@ -121,6 +121,9 @@ struct ResourceConstraint {
   2: required list<string> values
   // Negative constraint, do not place where resource is available
   3: optional bool negative
+  // Scheduling_only constraints are used by schedulers to select hosts, and agent should
+  // ignore them when handling scoring or vm creation.
+  4: optional bool scheduling_only
 }
 
 // The ResourcePlacement are set by the scheduler
