@@ -33,4 +33,8 @@ public class ApiBackendFactory {
   public static final Map<Class<? extends Service>, Supplier<FactoryService>> FACTORY_SERVICES_MAP = ImmutableMap.of(
       CreateLogicalRouterTaskService.class, CreateLogicalRouterTaskService::createFactory
   );
+
+  public static final String[] FACTORY_LINKS = new String[]{
+      CreateLogicalRouterTaskService.FACTORY_LINK
+  };
 }

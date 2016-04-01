@@ -16,7 +16,7 @@ package com.vmware.photon.controller.housekeeper.engines;
 import com.vmware.photon.controller.nsxclient.NsxClient;
 
 /**
- * Factory for instances of {@link com.vmware.photon.controller.common.clients.nsx.NsxClient}.
+ * Factory for instances of {@link NsxClient}.
  */
 public class NsxClientFactory {
 

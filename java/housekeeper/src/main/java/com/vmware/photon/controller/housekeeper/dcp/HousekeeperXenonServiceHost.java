@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.housekeeper.dcp;
 
+import com.vmware.photon.controller.apibackend.ApiBackendFactory;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.clients.HostClientProvider;
@@ -144,6 +145,9 @@ public class HousekeeperXenonServiceHost
 
     // Start all the factories
     ServiceHostUtils.startServices(this, FACTORY_SERVICES);
+
+    // Start all factory services from api-backend
+    ServiceHostUtils.startFactoryServices(this, ApiBackendFactory.FACTORY_SERVICES_MAP);
 
     // Kick start the special services
     startImageCleanerTriggerService();
