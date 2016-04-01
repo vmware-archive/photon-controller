@@ -379,20 +379,12 @@ public class ResourceReserveStepCmd extends StepCommand {
         PlaceResponse placeResponse;
         ReserveResponse reserveResponse;
         if (targetHostIp == null) {
-          ResourceConstraint resourceConstraint = null;
-          List<ResourceConstraint> origResourceConstraints = null;
-
           placeResponse = taskCommand.getRootSchedulerClient().place(resource);
           ServerAddress serverAddress = placeResponse.getAddress();
           String hostIp = serverAddress.getHost();
           int port = serverAddress.getPort();
           logger.info("placed resource, agent host ip: {}, port: {}", hostIp, port);
           taskCommand.getHostClient().setIpAndPort(hostIp, port);
-
-          // Remove constraints added for unfinished image seeding
-          if (entityKind.equals(Vm.KIND) && resourceConstraint != null) {
-            resource.getVm().setResource_constraints(origResourceConstraints);
-          }
         } else {
           taskCommand.getHostClient().setHostIp(targetHostIp);
           placeResponse = taskCommand.getHostClient().place(resource);

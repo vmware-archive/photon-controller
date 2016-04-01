@@ -412,44 +412,6 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
     assertThat(resource.getPlacement_list().getPlacements().get(1).getType(), is(ResourcePlacementType.DISK));
   }
 
-  @Test
-  public void testSuccessfulVmExecutionWithImageSeedingConstraints() throws Exception {
-    List<QuotaLineItem> quotaLineItems = new ArrayList<>();
-    quotaLineItems.add(new QuotaLineItem("vm.cost", "100.0", com.vmware.photon.controller.flavors.gen.QuotaUnit.COUNT));
-
-    Flavor expectedFlavor = new Flavor();
-    expectedFlavor.setName("vm-100");
-    expectedFlavor.setCost(quotaLineItems);
-
-    PlaceResponse placeResponse = generateResourcePlacementList();
-    placeResponse.getPlacementList().addToPlacements(generateResourcePlacement(ResourcePlacementType.VM, "vm-id"));
-
-    when(rootSchedulerClient.place(any(Resource.class))).thenReturn(placeResponse);
-    when(hostClient.reserve(any(Resource.class), eq(42))).thenReturn(SUCCESSFUL_RESERVE_RESPONSE);
-
-    List<String> candidateImageDatastores = ImmutableList.of("imageDatastore1", "imageDatastore2");
-    ResourceReserveStepCmd command = getVmReservationCommand(true, candidateImageDatastores);
-    command.execute();
-
-    verify(rootSchedulerClient).place(resourceCaptor.capture());
-    Resource resource = resourceCaptor.getValue();
-    assertThat(resource.getVm().getId(), is("foo"));
-    assertThat(resource.getVm().getFlavor(), is("vm-100"));
-    assertThat(resource.getVm().getFlavor_info(), is(expectedFlavor));
-    assertThat(resource.getVm().getProject_id(), is(project.getId()));
-    assertThat(resource.getVm().getTenant_id(), is(project.getTenantId()));
-
-    assertThat(resource.getVm().isSetResource_constraints(), is(false));
-
-    assertThat(resource.getPlacement_list().getPlacements().size(), is(1));
-    assertThat(resource.getPlacement_list().getPlacements().get(0).getType(), is(ResourcePlacementType.VM));
-    assertThat(resource.getPlacement_list().getPlacements().get(0).getResource_id(), is("vm-id"));
-
-    verify(rootSchedulerClient).place(resourceCaptor.capture());
-    verify(hostClient).reserve(resourceCaptor.capture(), eq(42));
-    assertThat(resourceCaptor.getValue(), is(resource));
-  }
-
   @Test(expectedExceptions = InternalException.class,
         expectedExceptionsMessageRegExp = "Project entity not found in the step.")
   public void testFailedVmExecutionNoProject() throws Throwable {
