@@ -221,10 +221,9 @@ class ImageManager(object):
         pass
 
     @abc.abstractmethod
-    def mark_unused(self, image_scanner, active_image_list):
+    def mark_unused(self, image_scanner):
         """Mark unused image as candidates for removal
         :param image_scanner: image_scanner
-        :param image_list: list of active images
         :raise TimeoutError
         """
 
@@ -248,6 +247,12 @@ class ImageManager(object):
         :param image_id:
         :return:
         """
+
+    @abc.abstractmethod
+    def create_image(self, datastore_id):
+        """ Create a temp image on given datastore, return its path.
+        """
+        pass
 
     @abc.abstractmethod
     def finalize_image(self, datastore_id, tmp_dir, image_id):

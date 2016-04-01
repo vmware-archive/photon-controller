@@ -512,6 +512,30 @@ struct ReceiveImageResponse {
 }
 
 // Create Image
+struct CreateImageRequest {
+  // The datastore name or id.
+  1: required string datastore
+
+  99: optional tracing.TracingInfo tracing_info
+}
+
+enum CreateImageResultCode {
+  /* The image was created successfully. */
+  OK = 0
+  /* Catch all error. */
+  SYSTEM_ERROR = 1
+  /* The datastore was not found. */
+  DATASTORE_NOT_FOUND = 2
+}
+
+struct CreateImageResponse {
+  1: required CreateImageResultCode result
+  // The path of temporary image directory relative to the datastore mount point.
+  2: optional string upload_folder
+  3: optional string error
+}
+
+// Finalize Image
 struct FinalizeImageRequest {
   // The ID of the Image.
   1: required string image_id
@@ -946,6 +970,7 @@ service Host {
   /**
    * Image
    */
+  CreateImageResponse create_image(1: CreateImageRequest request)
   FinalizeImageResponse finalize_image(1: FinalizeImageRequest request)
   CopyImageResponse copy_image(1: CopyImageRequest request)
   DeleteImageResponse delete_image(1: DeleteImageRequest request)

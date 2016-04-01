@@ -30,6 +30,7 @@ import com.vmware.photon.controller.common.clients.exceptions.ImageInUseExceptio
 import com.vmware.photon.controller.common.clients.exceptions.ImageNotFoundException;
 import com.vmware.photon.controller.common.clients.exceptions.InvalidVmPowerStateException;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
+import com.vmware.photon.controller.host.gen.CreateImageResponse;
 import com.vmware.photon.controller.host.gen.ServiceTicketResponse;
 import com.vmware.transfer.nfc.HostServiceTicket;
 import com.vmware.transfer.nfc.NfcClient;
@@ -83,36 +84,35 @@ public class VsphereImageStore implements ImageStore {
    */
   @Override
   public Image createImage(String imageId) throws InternalException {
-    logger.info("create image folder {} on datastore {}", imageId, this.getDatastore());
-    String imageFolder = dsImageFolder(imageId);
-    logger.info("mkdir {}", imageFolder);
+    logger.info("create image {} on datastore {}", imageId, this.getDatastore());
 
     final HostServiceTicket hostServiceTicket = getHostServiceTicket();
     NfcClient nfcClient = getNfcClient(hostServiceTicket);
+    String uploadFolder;
     try {
-      nfcClient.mkdir(imageFolder);
-    } catch (IOException e) {
-      logger.error("nfc client failed to create dir '{}', due to {}", imageFolder, e);
+      CreateImageResponse response = getHostClient().createImage(this.getDatastore());
+      uploadFolder = response.getUpload_folder();
+    } catch (InterruptedException | RpcException e) {
+      logger.error("Failed to call HostClient to create image '{}', due to {}", imageId, e);
       throw new InternalException(e);
     }
-    return new VsphereImageStoreImage(nfcClient, imageFolder, imageId);
+    return new VsphereImageStoreImage(nfcClient, uploadFolder, imageId);
   }
 
   /**
    * Call agent to move uploaded image from tmp_uploads to
    * where image is stored for system to use.
    *
-   * @param imageId
+   * @param image
    */
   @Override
-  public void finalizeImage(String imageId) throws InternalException {
-    String tmpImagePath = TMP_IMAGE_UPLOAD_FOLDER_PREFIX + imageId;
-    logger.info("Calling finalizeImage {} on {} {}", imageId, this.getDatastore(), tmpImagePath);
+  public void finalizeImage(Image image) throws InternalException {
+    logger.info("Calling finalizeImage {} on {} {}", image.getImageId(), this.getDatastore(), image.getUploadFolder());
     try {
-      getHostClient().finalizeImage(imageId, this.getDatastore(), tmpImagePath);
+      getHostClient().finalizeImage(image.getImageId(), this.getDatastore(), image.getUploadFolder());
     } catch (RpcException | InterruptedException e) {
       String errorMsg = String.format("Failed to call HostClient finalize_image %s on %s %s",
-          imageId, this.getDatastore(), tmpImagePath);
+          image.getImageId(), this.getDatastore(), image.getUploadFolder());
       throw new InternalException(errorMsg, e);
     }
   }
@@ -164,17 +164,17 @@ public class VsphereImageStore implements ImageStore {
   }
 
   @Override
-  public void deleteUploadFolder(String imageId) throws DeleteUploadFolderException {
-    String imageFolder = dsImageFolder(imageId);
-    logger.info("delete upload folder {} on datastore {}", imageFolder, this.getDatastore());
+  public void deleteUploadFolder(Image image) throws DeleteUploadFolderException {
+    logger.info("delete upload folder {} on datastore {}", image.getUploadFolder(), this.getDatastore());
     try {
-      getHostClient().deleteDirectory(imageFolder, this.getDatastore());
+      getHostClient().deleteDirectory(image.getUploadFolder(), this.getDatastore());
     } catch (DirectoryNotFoundException e) {
-      logger.info("Directory {} not found on datastore {}. Nothing to delete.", imageFolder, this.getDatastore(), e);
+      logger.info("Directory {} not found on datastore {}. Nothing to delete.",
+          image.getUploadFolder(), this.getDatastore(), e);
     } catch (InterruptedException | RpcException e) {
-      logger.warn("Deleting upload folder {} failed.", imageFolder, e);
-      throw new DeleteUploadFolderException(
-          String.format("Failed to delete upload folder %s on datastore %s.", imageFolder, this.getDatastore()), e);
+      logger.warn("Deleting upload folder {} failed.", image.getUploadFolder(), e);
+      throw new DeleteUploadFolderException(String.format("Failed to delete upload folder %s on datastore %s.",
+          image.getUploadFolder(), this.getDatastore()), e);
     }
   }
 
@@ -271,17 +271,6 @@ public class VsphereImageStore implements ImageStore {
   }
 
   /**
-   * Image's datastore folder for an image. A typical datastore folder for image id 123456789 is:
-   * [datastore1] tmp_uploads/123456789
-   *
-   * @param imageId image id
-   * @return image
-   */
-  private String dsImageFolder(String imageId) {
-    return String.format("[%s] %s%s", this.getDatastore(), TMP_IMAGE_UPLOAD_FOLDER_PREFIX, imageId);
-  }
-
-  /**
    * Configured the HostClient according to the config.
    */
   private HostClient getHostClient(String hostIp, Boolean lookForManagementHostsIfNeeded) {
@@ -292,7 +281,8 @@ public class VsphereImageStore implements ImageStore {
     return hostClient;
   }
 
-  private HostClient getHostClient() {
+  @VisibleForTesting
+  public HostClient getHostClient() {
     return getHostClient(getHostAddress(), true);
   }
 

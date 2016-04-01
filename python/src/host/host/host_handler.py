@@ -40,8 +40,8 @@ from gen.host.ttypes import CreateDisksResponse
 from gen.host.ttypes import CreateDisksResultCode
 from gen.host.ttypes import CreateImageFromVmResponse
 from gen.host.ttypes import CreateImageFromVmResultCode
-from gen.host.ttypes import FinalizeImageResponse
-from gen.host.ttypes import FinalizeImageResultCode
+from gen.host.ttypes import CreateImageResponse
+from gen.host.ttypes import CreateImageResultCode
 from gen.host.ttypes import CreateVmResponse
 from gen.host.ttypes import CreateVmResultCode
 from gen.host.ttypes import DeleteDirectoryResponse
@@ -56,6 +56,8 @@ from gen.host.ttypes import DeleteVmResponse
 from gen.host.ttypes import DeleteVmResultCode
 from gen.host.ttypes import DetachISOResponse
 from gen.host.ttypes import DetachISOResultCode
+from gen.host.ttypes import FinalizeImageResponse
+from gen.host.ttypes import FinalizeImageResultCode
 from gen.host.ttypes import GetConfigResponse
 from gen.host.ttypes import GetConfigResultCode
 from gen.host.ttypes import GetDatastoresResponse
@@ -1790,6 +1792,28 @@ class HostHandler(Host.Iface):
         response.result = GetNetworksResultCode.OK
         response.networks = self._hypervisor.network_manager.get_networks()
         return response
+
+    @log_request
+    @error_handler(CreateImageResponse, CreateImageResultCode)
+    def create_image(self, request):
+        """
+        """
+        try:
+            datastore_id = self.hypervisor.datastore_manager.normalize(request.datastore)
+        except DatastoreNotFoundException:
+            return self._error_response(
+                CreateImageResultCode.DATASTORE_NOT_FOUND,
+                "Datastore not found",
+                CreateImageResponse())
+
+        try:
+            tmp_image_path = self.hypervisor.image_manager.create_image(datastore_id)
+            return CreateImageResponse(CreateImageResultCode.OK, tmp_image_path)
+        except:
+            return self._error_response(
+                CreateImageResultCode.SYSTEM_ERROR,
+                str(sys.exc_info()[1]),
+                CreateImageResponse())
 
     @log_request
     @error_handler(FinalizeImageResponse, FinalizeImageResultCode)

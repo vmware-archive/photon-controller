@@ -71,15 +71,21 @@ public class ImageLoader {
     checkArgument(StringUtils.isNotBlank(hostIp), "loadImage: hostIp cannot be empty");
     logger.info("creating image {} by cloning from vm {} on host {}", imageEntity, vmId, hostIp);
 
-    try (Image image = imageStore.createImage(imageEntity.getId())) {
+    Image image = null;
+    try {
+      image = imageStore.createImage(imageEntity.getId());
       uploadManifestConfigurationFile(imageEntity, image);
       uploadECVFile(EsxCloudVmx.fromImageSettings(imageEntity.getImageSettingsMap()), image);
+
+      image.close();
+      imageStore.createImageFromVm(imageEntity.getId(), vmId, hostIp);
+
     } catch (Exception e) {
-      deleteUploadFolder(imageEntity.getId());
+      if (image != null) {
+        deleteUploadFolder(image);
+      }
       throw e;
     }
-
-    imageStore.createImageFromVm(imageEntity.getId(), vmId, hostIp);
   }
 
   /**
@@ -101,44 +107,49 @@ public class ImageLoader {
     }
 
     Result result;
+    // Generate configuration files.
+    EsxCloudVmx ecv = null;
+    EsxOvaFile esxOvaFile = null;
+    if (isTarFile) {
+      esxOvaFile = new EsxOvaFile(inputStream);
+      ecv = EsxCloudVmxGenerator.generate(esxOvaFile.getOvf());
+    }
+
+    // Upload image in data store.
+    result = new Result();
+    Image image = null;
     try {
-      // Generate configuration files.
-      EsxCloudVmx ecv = null;
-      EsxOvaFile esxOvaFile = null;
-      if (isTarFile) {
-        esxOvaFile = new EsxOvaFile(inputStream);
-        ecv = EsxCloudVmxGenerator.generate(esxOvaFile.getOvf());
+      image = imageStore.createImage(imageEntity.getId());
+
+      // Upload MANIFEST configuration file.
+      result.imageSize += uploadManifestConfigurationFile(imageEntity, image);
+
+      if (isVmdkFile) {
+        logger.info("Reading disk image from VMDK file.");
+        result.imageSize += image.addDisk(DISK_FILE_SUFFIX, inputStream);
+      } else {
+        logger.info("Reading disk image from OVA file.");
+        result.imageSize += loadImageFromOva(esxOvaFile, image, ecv);
+        result.imageSettings.putAll(EsxCloudVmx.toImageSettings(ecv));
       }
 
-      // Upload image in data store.
-      result = new Result();
-      try (Image image = imageStore.createImage(imageEntity.getId())) {
+      image.close();
+      imageStore.finalizeImage(image);
 
-        // Upload MANIFEST configuration file.
-        result.imageSize += uploadManifestConfigurationFile(imageEntity, image);
-
-        if (isVmdkFile) {
-          logger.info("Reading disk image from VMDK file.");
-          result.imageSize += image.addDisk(DISK_FILE_SUFFIX, inputStream);
-        } else {
-          logger.info("Reading disk image from OVA file.");
-          result.imageSize += loadImageFromOva(esxOvaFile, image, ecv);
-          result.imageSettings.putAll(EsxCloudVmx.toImageSettings(ecv));
-        }
-      }
     } catch (Exception e) {
-      deleteUploadFolder(imageEntity.getId());
+      if (image != null) {
+        deleteUploadFolder(image);
+      }
       throw e;
     }
 
-    imageStore.finalizeImage(imageEntity.getId());
     return result;
   }
 
-  private void deleteUploadFolder(String imageId) {
-    logger.info("Uploading image {} failed. Cleaning up partially uploaded files ...", imageId);
+  private void deleteUploadFolder(Image image) {
+    logger.info("Uploading image {} failed. Cleaning up partially uploaded files ...", image.getImageId());
     try {
-      imageStore.deleteUploadFolder(imageId);
+      imageStore.deleteUploadFolder(image);
     } catch (InternalException e) {
       logger.warn("Did not clean up partially uploaded files. Moving out ...", e);
     }

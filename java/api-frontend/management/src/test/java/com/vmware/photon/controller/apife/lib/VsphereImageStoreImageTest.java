@@ -22,6 +22,8 @@ import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.clients.exceptions.SystemErrorException;
+import com.vmware.photon.controller.host.gen.CreateImageResponse;
+import com.vmware.photon.controller.host.gen.CreateImageResultCode;
 import com.vmware.photon.controller.host.gen.ServiceTicketResponse;
 import com.vmware.photon.controller.host.gen.ServiceTicketResultCode;
 import com.vmware.transfer.nfc.HostServiceTicket;
@@ -61,7 +63,6 @@ public class VsphereImageStoreImageTest {
   private ImageConfig imageConfig;
   private String imageId = "image-id";
   private String imageDatastore = "datastore-name";
-  private String imageContent;
   private InputStream inputStream;
 
   @BeforeMethod
@@ -74,7 +75,7 @@ public class VsphereImageStoreImageTest {
     serviceTicketResponse = new ServiceTicketResponse(ServiceTicketResultCode.OK);
     serviceTicketResponse.setTicket(hostServiceTicketResource);
 
-    imageContent = FileUtils.readFileToString(
+    String imageContent = FileUtils.readFileToString(
         new File(VsphereImageStoreImageTest.class.getResource("/vmdk/good.vmdk").getPath()));
 
     Host host = new Host();
@@ -115,11 +116,12 @@ public class VsphereImageStoreImageTest {
         any(InputStream.class)))
         .thenReturn(1000L);
     when(hostClient.getNfcServiceTicket(anyString())).thenReturn(serviceTicketResponse);
+    when(hostClient.createImage(imageDatastore)).thenReturn(new CreateImageResponse(CreateImageResultCode.OK));
 
     Image imageFolder = spy(imageStore.createImage(imageId));
     imageFolder.addDisk("disk1.vmdk", inputStream);
 
-    verify(nfcClient).mkdir(String.format("[%s] tmp_upload_%s", imageDatastore, imageId));
+    verify(hostClient).createImage(imageDatastore);
   }
 
   @Test(expectedExceptions = RuntimeException.class)
@@ -135,20 +137,23 @@ public class VsphereImageStoreImageTest {
 
   @Test
   public void testFinalizeImage() throws Exception {
-    imageStore.finalizeImage(imageId);
+    String tmpImagePath = String.format("tmp_upload_%s", imageId);
+    Image image = new VsphereImageStoreImage(null, tmpImagePath, imageId);
+    imageStore.finalizeImage(image);
     verify(hostClient).setHostIp(imageConfig.getEndpointHostAddress());
-    verify(hostClient).finalizeImage(imageId, imageDatastore, String.format("tmp_upload_%s", imageId));
+    verify(hostClient).finalizeImage(imageId, imageDatastore, tmpImagePath);
     verifyNoMoreInteractions(hostClient);
   }
 
   @Test
   public void testFinalizeImageError() throws Exception {
     String tmpImagePath = String.format("tmp_upload_%s", imageId);
+    Image image = new VsphereImageStoreImage(null, tmpImagePath, imageId);
     when(hostClient.finalizeImage(imageId, imageDatastore, tmpImagePath))
         .thenThrow(new SystemErrorException("Error"));
 
     try {
-      imageStore.finalizeImage(imageId);
+      imageStore.finalizeImage(image);
       fail("finalizeImage should fail");
     } catch (InternalException e) {
       String errorMsg = String.format("Failed to call HostClient finalize_image %s on %s %s",

@@ -34,12 +34,22 @@ import java.io.OutputStream;
  */
 class LocalImageStoreImage implements Image {
   private static final Logger logger = LoggerFactory.getLogger(LocalImageStoreImage.class);
-  private final String imageFolder;
+  private final String uploadFolder;
   private final String imageId;
 
-  public LocalImageStoreImage(String imageFolder, String imageId) {
-    this.imageFolder = imageFolder;
+  public LocalImageStoreImage(String uploadFolder, String imageId) {
+    this.uploadFolder = uploadFolder;
     this.imageId = imageId;
+  }
+
+  @Override
+  public String getImageId() {
+    return imageId;
+  }
+
+  @Override
+  public String getUploadFolder() {
+    return uploadFolder;
   }
 
   @Override
@@ -89,6 +99,6 @@ class LocalImageStoreImage implements Image {
     StringBuilder imageFileName = new StringBuilder();
     imageFileName.append(imageId).append(fileName);
     // Create file.
-    return new File(imageFolder, imageFileName.toString());
+    return new File(uploadFolder, imageFileName.toString());
   }
 }
