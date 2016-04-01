@@ -189,6 +189,7 @@ public class ResourceReserveStepCmd extends StepCommand {
     ResourceConstraint resourceConstraint = new ResourceConstraint();
     resourceConstraint.setType(ResourceConstraintType.DATASTORE);
     resourceConstraint.setValues((List<String>) candidateImageDatastores);
+    resourceConstraint.setScheduling_only(true);
 
     return resourceConstraint;
   }
