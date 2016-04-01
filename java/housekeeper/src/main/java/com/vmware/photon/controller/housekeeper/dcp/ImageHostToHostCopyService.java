@@ -324,7 +324,7 @@ public class ImageHostToHostCopyService extends StatefulService {
       return;
     }
 
-    if (current.host.equals(current.destinationHost)) {
+    if (current.host.equals(current.destinationHost.getHost())) {
       invokeCopyImage(current);
     } else {
       invokeTransferImage(current);
