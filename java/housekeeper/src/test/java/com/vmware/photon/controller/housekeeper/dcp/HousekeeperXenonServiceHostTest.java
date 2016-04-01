@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.housekeeper.dcp;
 
+import com.vmware.photon.controller.apibackend.ApiBackendFactory;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
@@ -31,6 +32,7 @@ import com.vmware.xenon.services.common.ServiceUriPaths;
 
 import com.google.inject.Injector;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.ArrayUtils;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -63,7 +65,7 @@ public class HousekeeperXenonServiceHostTest {
   private Injector injector;
   private HousekeeperXenonServiceHost host;
 
-  private String[] serviceSelfLinks = new String[]{
+  private String[] serviceSelfLinks = ArrayUtils.addAll(ApiBackendFactory.FACTORY_LINKS,
       RootNamespaceService.SELF_LINK,
       ImageReplicatorServiceFactory.SELF_LINK,
       ImageCopyServiceFactory.SELF_LINK,
@@ -76,7 +78,7 @@ public class HousekeeperXenonServiceHostTest {
       HousekeeperXenonServiceHost.getTriggerCleanerServiceUri(),
       HousekeeperXenonServiceHost.getImageSeederSyncServiceUri(),
       HousekeeperXenonServiceHost.IMAGE_COPY_SCHEDULER_SERVICE
-  };
+  );
 
   /**
    * Dummy test case to make Intellij recognize this as a test class.
