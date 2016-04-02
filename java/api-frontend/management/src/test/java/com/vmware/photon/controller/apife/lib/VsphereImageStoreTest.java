@@ -198,6 +198,7 @@ public class VsphereImageStoreTest extends PowerMockTestCase {
    */
   public class CreateImageFromVmTest {
 
+    private Image image;
     @BeforeMethod
     public void setUp() {
       hostBackend = mock(HostBackend.class);
@@ -216,6 +217,8 @@ public class VsphereImageStoreTest extends PowerMockTestCase {
 
       imageStore = spy(new VsphereImageStore(hostBackend, hostClientFactory, imageConfig));
       imageId = "image-id";
+      image = new VsphereImageStoreImage(null, "upload_folder", imageId);
+
     }
 
     @Test
@@ -227,10 +230,10 @@ public class VsphereImageStoreTest extends PowerMockTestCase {
 
     @Test
     public void testSuccessWithConfiguredHostAddress() throws Exception {
-      imageStore.createImageFromVm(imageId, null, VM_HOST_ADDRESS);
+      imageStore.createImageFromVm(image, null, VM_HOST_ADDRESS);
       verify(hostClient).setHostIp(VM_HOST_ADDRESS);
       verify(imageStore).getDatastore(VM_HOST_ADDRESS);
-      imageStore.createImageFromVm(imageId, null, HOST_ADDRESS);
+      imageStore.createImageFromVm(image, null, HOST_ADDRESS);
       verify(hostClient).setHostIp(HOST_ADDRESS);
       verify(imageStore).getDatastore(HOST_ADDRESS);
     }
@@ -238,29 +241,29 @@ public class VsphereImageStoreTest extends PowerMockTestCase {
     @Test
     public void testSuccessWithoutConfiguredHostAddress() throws Exception {
       imageConfig.setEndpoint(null);
-      imageStore.createImageFromVm(imageId, null, VM_HOST_ADDRESS);
+      imageStore.createImageFromVm(image, null, VM_HOST_ADDRESS);
       verify(hostClient).setHostIp(VM_HOST_ADDRESS);
-      imageStore.createImageFromVm(imageId, null, HOST_ADDRESS);
+      imageStore.createImageFromVm(image, null, HOST_ADDRESS);
       verify(hostClient).setHostIp(HOST_ADDRESS);
     }
 
     @Test(expectedExceptions = RuntimeException.class)
     public void testWithHostClientException() throws Exception {
       when(hostClient.getNfcServiceTicket(anyString())).thenThrow(new Exception());
-      imageStore.createImageFromVm(imageId, null, VM_HOST_ADDRESS);
+      imageStore.createImageFromVm(image, null, VM_HOST_ADDRESS);
     }
 
     @Test(expectedExceptions = IllegalStateException.class,
         expectedExceptionsMessageRegExp = "Could not find any host to upload image.")
     public void testWithHostIpProvidedNoHostFound() throws Exception {
-      imageStore.createImageFromVm(imageId, null, "NonExistentHostIp");
+      imageStore.createImageFromVm(image, null, "NonExistentHostIp");
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class,
         expectedExceptionsMessageRegExp = "Blank hostIp passed to VsphereImageStore.getDatastore")
     public void testNoHostIpProvidedNoHostFound() throws Exception {
       imageConfig.setEndpoint(null);
-      imageStore.createImageFromVm(imageId, null, null);
+      imageStore.createImageFromVm(image, null, null);
     }
   }
 

@@ -39,12 +39,12 @@ public interface ImageStore {
   /**
    * Create image by cloning vm.
    *
-   * @param imageId
+   * @param image
    * @param vmId
    * @param hostIp
    * @throws InternalException
    */
-  void createImageFromVm(String imageId, String vmId, String hostIp) throws ExternalException, InternalException;
+  void createImageFromVm(Image image, String vmId, String hostIp) throws ExternalException, InternalException;
 
   /**
    * Delete an image based on image id.
