@@ -73,7 +73,7 @@ public class VmCreateImageStepCmd extends StepCommand {
         "image id is inconsistent: %s v.s. %s", vmImage.getId(), vm.getImageId());
 
     try {
-      getImageLoader().loadImage(imageEntity, vm.getId(), vm.getHost());
+      getImageLoader().createImageFromVm(imageEntity, vm.getId(), vm.getHost());
       if (imageEntity.getReplicationType() == ImageReplicationType.ON_DEMAND) {
         imageBackend.updateState(imageEntity, ImageState.READY);
       }

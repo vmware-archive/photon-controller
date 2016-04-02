@@ -117,7 +117,7 @@ public class VmCreateImageStepCmdTest extends PowerMockTestCase {
     command.execute();
 
     InOrder inOrder = inOrder(imageBackend, imageLoader);
-    inOrder.verify(imageLoader).loadImage(image, vm.getId(), vm.getHost());
+    inOrder.verify(imageLoader).createImageFromVm(image, vm.getId(), vm.getHost());
     verifyNoMoreInteractions(imageBackend, imageLoader);
   }
 
@@ -132,14 +132,14 @@ public class VmCreateImageStepCmdTest extends PowerMockTestCase {
     command.execute();
 
     InOrder inOrder = inOrder(imageBackend, imageLoader);
-    inOrder.verify(imageLoader).loadImage(image, vm.getId(), vm.getHost());
+    inOrder.verify(imageLoader).createImageFromVm(image, vm.getId(), vm.getHost());
     inOrder.verify(imageBackend).updateState(image, ImageState.READY);
     verifyNoMoreInteractions(imageBackend, imageLoader);
   }
 
   @Test
   public void testExternalException() throws Throwable {
-    doThrow(new NameTakenException("vm", "vm1")).when(imageLoader).loadImage(image, vm.getId(), vm.getHost());
+    doThrow(new NameTakenException("vm", "vm1")).when(imageLoader).createImageFromVm(image, vm.getId(), vm.getHost());
 
     try {
       command.execute();
@@ -148,14 +148,14 @@ public class VmCreateImageStepCmdTest extends PowerMockTestCase {
     }
 
     InOrder inOrder = inOrder(imageBackend, imageLoader);
-    inOrder.verify(imageLoader).loadImage(image, vm.getId(), vm.getHost());
+    inOrder.verify(imageLoader).createImageFromVm(image, vm.getId(), vm.getHost());
     inOrder.verify(imageBackend).updateState(image, ImageState.ERROR);
     verifyNoMoreInteractions(imageBackend, imageLoader);
   }
 
   @Test
   public void testInternalException() throws Throwable {
-    doThrow(new IOException()).when(imageLoader).loadImage(image, vm.getId(), vm.getHost());
+    doThrow(new IOException()).when(imageLoader).createImageFromVm(image, vm.getId(), vm.getHost());
 
     try {
       command.execute();
@@ -164,7 +164,7 @@ public class VmCreateImageStepCmdTest extends PowerMockTestCase {
     }
 
     InOrder inOrder = inOrder(imageBackend, imageLoader);
-    inOrder.verify(imageLoader).loadImage(image, vm.getId(), vm.getHost());
+    inOrder.verify(imageLoader).createImageFromVm(image, vm.getId(), vm.getHost());
     inOrder.verify(imageBackend).updateState(image, ImageState.ERROR);
     verifyNoMoreInteractions(imageBackend, imageLoader);
   }

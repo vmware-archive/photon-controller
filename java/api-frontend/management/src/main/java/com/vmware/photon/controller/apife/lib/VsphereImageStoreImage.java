@@ -32,7 +32,7 @@ import java.io.InputStream;
  */
 public class VsphereImageStoreImage implements Image {
   private static final Logger logger = LoggerFactory.getLogger(VsphereImageStoreImage.class);
-  private final NfcClient nfcClient;
+  private NfcClient nfcClient;
   private final String uploadFolder;
   private final String imageId;
 
@@ -94,11 +94,16 @@ public class VsphereImageStoreImage implements Image {
 
   @Override
   public void close() {
+    if (nfcClient == null) {
+      return;
+    }
+
     try {
       nfcClient.close();
     } catch (IOException e) {
       // Ignore.
     }
+    nfcClient = null;
   }
 
   /**
