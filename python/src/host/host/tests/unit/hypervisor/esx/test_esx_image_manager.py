@@ -32,7 +32,7 @@ from gen.resource.ttypes import DatastoreType
 from gen.resource.ttypes import ImageReplication
 from gen.resource.ttypes import ImageType
 from host.hypervisor.disk_manager import DiskAlreadyExistException
-from host.hypervisor.esx.vm_config import IMAGE_FOLDER_NAME_PREFIX, os_datastore_path
+from host.hypervisor.esx.vm_config import IMAGE_FOLDER_NAME_PREFIX
 from host.hypervisor.esx.vm_config import compond_path_join
 from host.hypervisor.esx.vm_config import TMP_IMAGE_FOLDER_NAME_PREFIX
 from host.hypervisor.image_manager import DirectoryNotFound
@@ -420,7 +420,7 @@ class TestEsxImageManager(unittest.TestCase):
     def test_create_image(self):
         datastore_id = "ds1"
         tmp_image_path = self.image_manager.create_image(datastore_id)
-        self.assertTrue(tmp_image_path.startswith(os_datastore_path(datastore_id, TMP_IMAGE_FOLDER_NAME_PREFIX)))
+        self.assertTrue(tmp_image_path.startswith(TMP_IMAGE_FOLDER_NAME_PREFIX))
 
     @patch.object(EsxImageManager, "_move_image")
     @patch.object(EsxImageManager, "check_image_dir", return_value=False)

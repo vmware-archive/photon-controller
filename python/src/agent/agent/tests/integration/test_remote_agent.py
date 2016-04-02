@@ -1391,14 +1391,6 @@ class TestRemoteAgent(BaseKazooTestCase, AgentCommonTests):
         request = vm_wrapper.create_request(res_id=reservation)
         vm_wrapper.create(request=request)
 
-        # We do not support creating with alternate disk id today
-        vm_wrapper.create_image_from_vm(
-            image_id=img_id,
-            datastore=ds.id,
-            disk_id=new_id(),
-            tmp_image_path=tmp_image_path,
-            expect=Host.CreateImageFromVmResultCode.SYSTEM_ERROR)
-
         # VM in wrong state
         vm_wrapper.power(Host.PowerVmOp.ON, Host.PowerVmOpResultCode.OK)
         vm_wrapper.create_image_from_vm(

@@ -138,7 +138,7 @@ public class VsphereImageStoreImageTest {
   @Test
   public void testFinalizeImage() throws Exception {
     String tmpImagePath = String.format("tmp_upload_%s", imageId);
-    Image image = new VsphereImageStoreImage(null, tmpImagePath, imageId);
+    Image image = new VsphereImageStoreImage(null, imageDatastore, tmpImagePath, imageId);
     imageStore.finalizeImage(image);
     verify(hostClient).setHostIp(imageConfig.getEndpointHostAddress());
     verify(hostClient).finalizeImage(imageId, imageDatastore, tmpImagePath);
@@ -148,7 +148,7 @@ public class VsphereImageStoreImageTest {
   @Test
   public void testFinalizeImageError() throws Exception {
     String tmpImagePath = String.format("tmp_upload_%s", imageId);
-    Image image = new VsphereImageStoreImage(null, tmpImagePath, imageId);
+    Image image = new VsphereImageStoreImage(null, imageDatastore, tmpImagePath, imageId);
     when(hostClient.finalizeImage(imageId, imageDatastore, tmpImagePath))
         .thenThrow(new SystemErrorException("Error"));
 

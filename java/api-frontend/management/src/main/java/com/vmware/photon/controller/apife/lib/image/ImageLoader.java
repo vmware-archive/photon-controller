@@ -66,9 +66,9 @@ public class ImageLoader {
    * @throws InternalException
    * @throws IOException
    */
-  public void loadImage(ImageEntity imageEntity, String vmId, String hostIp)
+  public void createImageFromVm(ImageEntity imageEntity, String vmId, String hostIp)
       throws ExternalException, InternalException, IOException {
-    checkArgument(StringUtils.isNotBlank(hostIp), "loadImage: hostIp cannot be empty");
+    checkArgument(StringUtils.isNotBlank(hostIp), "createImageFromVm: hostIp cannot be empty");
     logger.info("creating image {} by cloning from vm {} on host {}", imageEntity, vmId, hostIp);
 
     Image image = null;
@@ -78,10 +78,11 @@ public class ImageLoader {
       uploadECVFile(EsxCloudVmx.fromImageSettings(imageEntity.getImageSettingsMap()), image);
 
       image.close();
-      imageStore.createImageFromVm(imageEntity.getId(), vmId, hostIp);
+      imageStore.createImageFromVm(image, vmId, hostIp);
 
     } catch (Exception e) {
       if (image != null) {
+        image.close();
         deleteUploadFolder(image);
       }
       throw e;
@@ -93,7 +94,7 @@ public class ImageLoader {
    *
    * @return
    */
-  public Result loadImage(ImageEntity imageEntity, InputStream inputStream)
+  public Result uploadImage(ImageEntity imageEntity, InputStream inputStream)
       throws IOException, InternalException, VmdkFormatException, ExternalException {
 
     // Detect file type. Stream mark support is required.
@@ -138,6 +139,7 @@ public class ImageLoader {
 
     } catch (Exception e) {
       if (image != null) {
+        image.close();
         deleteUploadFolder(image);
       }
       throw e;
