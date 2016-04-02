@@ -50,8 +50,8 @@ public class LocalImageStore implements ImageStore {
   }
 
   @Override
-  public void createImageFromVm(String imageId, String vmId, String hostIp) {
-    logger.debug("LocalImageStore createImageFromVm {}", imageId);
+  public void createImageFromVm(Image image, String vmId, String hostIp) {
+    logger.debug("LocalImageStore createImageFromVm {}", image.getImageId());
   }
 
   @Override

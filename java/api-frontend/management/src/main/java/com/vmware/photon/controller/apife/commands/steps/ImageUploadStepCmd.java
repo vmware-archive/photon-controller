@@ -71,7 +71,7 @@ public class ImageUploadStepCmd extends StepCommand {
 
     ImageEntity imageEntity = entityList.get(0);
     try {
-      ImageLoader.Result result = getImageLoader().loadImage(imageEntity, inputStream);
+      ImageLoader.Result result = getImageLoader().uploadImage(imageEntity, inputStream);
       imageBackend.updateSettings(imageEntity, result.imageSettings);
       imageBackend.updateSize(imageEntity, result.imageSize);
       imageBackend.updateImageDatastore(imageEntity.getId(), imageStore.getDatastore());

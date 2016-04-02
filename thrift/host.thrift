@@ -583,11 +583,6 @@ struct CreateImageFromVmRequest {
   // datastore will be staged.
   4: required string tmp_image_path
 
-  // The ID of the disk in the vm to used to create the image from.
-  // If not specified, the VM's disk that was copied/COW-ed from
-  // an image disk will be used.
-  5: optional string disk_id
-
   99: optional tracing.TracingInfo tracing_info
 }
 
