@@ -1916,14 +1916,6 @@ class HostHandler(Host.Iface):
     def create_image_from_vm(self, request):
         """ Create an image by cloning it from a VM's disk. """
 
-        # Setting of the disk_id is not supported for now.
-        # We always assume the root disk is the one from which
-        # the new image is cloned.
-        if request.disk_id is not None:
-            self._logger.info(
-                "Alternate disk id %s not supported" % request.vm_id)
-            raise NotImplementedError()
-
         vm_mgr = self.hypervisor.vm_manager
 
         if not vm_mgr.has_vm(request.vm_id):
@@ -1945,8 +1937,7 @@ class HostHandler(Host.Iface):
             raise NotImplementedError()
 
         try:
-            datastore_id = \
-                self.hypervisor.datastore_manager.normalize(request.datastore)
+            datastore_id = self.hypervisor.datastore_manager.normalize(request.datastore)
         except DatastoreNotFoundException:
             return self._error_response(
                 CreateImageFromVmResultCode.SYSTEM_ERROR,

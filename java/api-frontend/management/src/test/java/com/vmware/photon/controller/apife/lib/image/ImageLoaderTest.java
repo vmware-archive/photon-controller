@@ -59,7 +59,7 @@ public class ImageLoaderTest {
   }
 
   /**
-   * Tests {@link ImageLoader#loadImage(ImageEntity, java.io.InputStream)}.
+   * Tests {@link ImageLoader#uploadImage(ImageEntity, java.io.InputStream)}.
    */
   public class LoadImageTest {
     private static final int CONFIG_SIZE = 10;
@@ -78,7 +78,7 @@ public class ImageLoaderTest {
     public void setUp() throws Throwable {
       imageStore = mock(VsphereImageStore.class);
       imageLoader = new ImageLoader(imageStore);
-      image = spy(new VsphereImageStoreImage(mock(NfcClient.class), imageFolder, imageId));
+      image = spy(new VsphereImageStoreImage(mock(NfcClient.class), "datastore", imageFolder, imageId));
       doReturn(image).when(imageStore).createImage(anyString());
       doReturn((long) CONFIG_SIZE).when(image).addFile(anyString(), any(InputStream.class), anyLong());
       doReturn((long) DISK_SIZE).when(image).addDisk(anyString(), any(InputStream.class));
@@ -111,7 +111,7 @@ public class ImageLoaderTest {
       ova = OvaTestModule.generateOva(OvaTestModule.GOOD_OVF_FILE_CONTENT);
       inputStream = ova.getOvaStream();
 
-      ImageLoader.Result result = imageLoader.loadImage(imageEntity, inputStream);
+      ImageLoader.Result result = imageLoader.uploadImage(imageEntity, inputStream);
       verify(image, times(1)).addFile(eq(ImageLoader.MANIFEST_FILE_SUFFIX), any(InputStream.class), anyLong());
       verify(image, times(1)).addFile(eq(ImageLoader.CONFIG_FILE_SUFFIX), any(InputStream.class), anyLong());
       verify(image, times(1)).addDisk(eq(ImageLoader.DISK_FILE_SUFFIX), any(InputStream.class));
@@ -124,7 +124,7 @@ public class ImageLoaderTest {
       ova = OvaTestModule.generateOva(OvaTestModule.GOOD_OVF_FILE_CONTENT);
       inputStream = ova.getRawVmdkStream();
 
-      ImageLoader.Result result = imageLoader.loadImage(imageEntity, inputStream);
+      ImageLoader.Result result = imageLoader.uploadImage(imageEntity, inputStream);
       verify(image, times(1)).addFile(eq(ImageLoader.MANIFEST_FILE_SUFFIX), any(InputStream.class), anyLong());
       verify(image, times(1)).addDisk(eq(ImageLoader.DISK_FILE_SUFFIX), any(InputStream.class));
       assertThat("check upload size", result.imageSize == CONFIG_SIZE + DISK_SIZE);
@@ -135,12 +135,12 @@ public class ImageLoaderTest {
     void badLoadImageTest() throws Throwable {
       ova = OvaTestModule.generateOva(OvaTestModule.BAD_OVF_UNKNOWN_CONTROLLER);
       inputStream = ova.getOvaStream();
-      imageLoader.loadImage(imageEntity, inputStream);
+      imageLoader.uploadImage(imageEntity, inputStream);
     }
   }
 
   /**
-   * Tests {@link ImageLoader#loadImage(ImageEntity, String, String)}.
+   * Tests {@link ImageLoader#createImageFromVm(ImageEntity, String, String)}.
    */
   public class LoadImageFromVmTest {
 
@@ -157,7 +157,7 @@ public class ImageLoaderTest {
     public void setUp() throws Throwable {
       imageStore = mock(VsphereImageStore.class);
       imageLoader = new ImageLoader(imageStore);
-      image = spy(new VsphereImageStoreImage(mock(NfcClient.class), imageFolder, imageId));
+      image = spy(new VsphereImageStoreImage(mock(NfcClient.class), "datastore", imageFolder, imageId));
       doReturn(image).when(imageStore).createImage(anyString());
       imageEntity = new ImageEntity();
       imageEntity.setId(imageId);
@@ -167,14 +167,14 @@ public class ImageLoaderTest {
     @Test
     public void testSuccess() throws Throwable {
       doReturn(1L).when(image).addFile(anyString(), any(InputStream.class), anyLong());
-      doNothing().when(imageStore).createImageFromVm(imageId, vmId, hostIp);
+      doNothing().when(imageStore).createImageFromVm(image, vmId, hostIp);
 
-      imageLoader.loadImage(imageEntity, vmId, hostIp);
+      imageLoader.createImageFromVm(imageEntity, vmId, hostIp);
       InOrder inOrder = inOrder(image, imageStore);
       inOrder.verify(imageStore).createImage(imageId);
       inOrder.verify(image, times(2)).addFile(anyString(), any(InputStream.class), anyLong());
       inOrder.verify(image).close();
-      inOrder.verify(imageStore).createImageFromVm(imageId, vmId, hostIp);
+      inOrder.verify(imageStore).createImageFromVm(image, vmId, hostIp);
 
       verifyNoMoreInteractions(imageStore, image);
     }
@@ -183,7 +183,7 @@ public class ImageLoaderTest {
     public void testAddFile() throws Throwable {
       doThrow(new IOException()).when(image).addFile(anyString(), any(InputStream.class), anyLong());
 
-      imageLoader.loadImage(imageEntity, vmId, hostIp);
+      imageLoader.createImageFromVm(imageEntity, vmId, hostIp);
     }
   }
 

@@ -241,7 +241,7 @@ class VmWrapper(object):
 
         request = Host.CreateImageFromVmRequest(
             vm_id=self.id, image_id=image_id, tmp_image_path=tmp_image_path,
-            datastore=datastore, disk_id=disk_id)
+            datastore=datastore)
 
         response = rpc_call(self.host_client.create_image_from_vm, request)
         assert_that(response.result, equal_to(expect))
