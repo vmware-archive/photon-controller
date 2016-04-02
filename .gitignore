@@ -10,6 +10,10 @@ Session.vim
 
 # IDEA
 .idea
+*.iml
+*.ipr
+*.iws
+*.ids
 
 # Local Dev DB
 mem.h2.db
