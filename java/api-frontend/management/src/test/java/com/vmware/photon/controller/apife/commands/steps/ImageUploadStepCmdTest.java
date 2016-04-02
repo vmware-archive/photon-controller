@@ -232,7 +232,7 @@ public class ImageUploadStepCmdTest extends PowerMockTestCase {
     step.createOrUpdateTransientResource(ImageUploadStepCmd.INPUT_STREAM, imageStream);
     ImageLoader imageLoader = mock(ImageLoader.class);
     doReturn(imageLoader).when(command).getImageLoader();
-    doThrow(ex).when(imageLoader).loadImage(any(ImageEntity.class), any(InputStream.class));
+    doThrow(ex).when(imageLoader).uploadImage(any(ImageEntity.class), any(InputStream.class));
 
     try {
       command.execute();
