@@ -810,7 +810,7 @@ class EsxImageManager(ImageManager):
         tmp_image_id = compond_path_join(TMP_IMAGE_FOLDER_NAME_PREFIX, str(uuid.uuid4()))
         tmp_image_path = os_datastore_path(datastore_id, tmp_image_id)
         self._vim_client.make_directory(tmp_image_path)
-        return tmp_image_path
+        return tmp_image_id
 
     def finalize_image(self, datastore_id, tmp_dir, image_id):
         """ Installs an image using image data staged at a temp directory.

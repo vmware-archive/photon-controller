@@ -55,7 +55,6 @@ public class VsphereImageStore implements ImageStore {
   // Nfc client timeout in millisecond
   public static final int NFC_CLIENT_TIMEOUT = 0;
   private static final Logger logger = LoggerFactory.getLogger(VsphereImageStore.class);
-  private static final String TMP_IMAGE_UPLOAD_FOLDER_PREFIX = "tmp_upload_";
 
   private final HostBackend hostBackend;
   private final HostClientFactory hostClientFactory;
@@ -120,24 +119,23 @@ public class VsphereImageStore implements ImageStore {
   /**
    * Create image by cloning vm.
    *
-   * @param imageId
+   * @param image
    * @param vmId
    * @param hostIp
    * @throws InternalException
    */
   @Override
-  public void createImageFromVm(String imageId, String vmId, String hostIp)
+  public void createImageFromVm(Image image, String vmId, String hostIp)
       throws ExternalException, InternalException {
-    String tmpImagePath = TMP_IMAGE_UPLOAD_FOLDER_PREFIX + imageId;
     String datastore = this.getDatastore(hostIp);
-    logger.info("Calling createImageFromVm {} on {} {}", imageId, datastore, tmpImagePath);
+    logger.info("Calling createImageFromVm {} on {} {}", image.getImageId(), datastore, image.getUploadFolder());
     try {
-      getHostClient(hostIp, false).createImageFromVm(vmId, imageId, datastore, tmpImagePath);
+      getHostClient(hostIp, false).createImageFromVm(vmId, image.getImageId(), datastore, image.getUploadFolder());
     } catch (InvalidVmPowerStateException e) {
       throw new InvalidVmStateException(e);
     } catch (RpcException | InterruptedException e) {
       logger.warn("Unexpected error for create_image_from_vm {} from vm {} on {} {}",
-          imageId, vmId, this.getDatastore(), tmpImagePath, e);
+          image.getImageId(), vmId, this.getDatastore(), image.getUploadFolder(), e);
       throw new InternalException(e);
     }
   }
