@@ -48,8 +48,6 @@ from gen.host.ttypes import GetMonitoredImagesResultCode
 from gen.host.ttypes import GetResourcesRequest
 from gen.host.ttypes import GetResourcesResultCode
 from gen.host.ttypes import HostMode
-from gen.host.ttypes import ImageInfoRequest
-from gen.host.ttypes import ImageInfoResultCode
 from gen.host.ttypes import PowerVmOpRequest
 from gen.host.ttypes import PowerVmOpResultCode
 from gen.host.ttypes import ReserveRequest
@@ -65,8 +63,6 @@ from gen.resource.ttypes import Datastore
 from gen.resource.ttypes import DatastoreType
 from gen.resource.ttypes import Disk
 from gen.resource.ttypes import Image
-from gen.resource.ttypes import ImageReplication
-from gen.resource.ttypes import ImageType
 from gen.resource.ttypes import InactiveImageDescriptor
 from gen.resource.ttypes import Resource
 from gen.resource.ttypes import ResourceConstraint
@@ -970,61 +966,6 @@ class HostHandlerTestCase(unittest.TestCase):
         response = handler.detach_iso(request)
         self.assertEqual(response.result,
                          DetachISOResultCode.ISO_NOT_ATTACHED)
-
-    def test_get_image_info(self):
-        handler = HostHandler(MagicMock())
-
-        ds_mgr = MagicMock()
-        ds_mgr.normalize.side_effect = DatastoreNotFoundException
-        handler.hypervisor.datastore_manager = ds_mgr
-
-        # Verify return DATASTORE_NOT_FOUND
-        request = ImageInfoRequest("image_id", "datastore_id")
-        response = handler.get_image_info(request)
-        self.assertEqual(response.result,
-                         ImageInfoResultCode.DATASTORE_NOT_FOUND)
-
-        # Verify return IMAGE_NOT_FOUND
-        ds_mgr.normalize.side_effect = None
-        ds_mgr.normalize.return_value = "datastore_id"
-        ds_mgr.datastore_type.return_value = DatastoreType.EXT3
-        image_mgr = MagicMock()
-        image_mgr.check_image.return_value = False
-        image_mgr.get_image_manifest.return_value = (ImageType.CLOUD,
-                                                     ImageReplication.EAGER)
-
-        handler.hypervisor.image_manager = image_mgr
-
-        response = handler.get_image_info(request)
-        self.assertEqual(response.result,
-                         ImageInfoResultCode.IMAGE_NOT_FOUND)
-
-        image_mgr.check_image.return_value = True
-        image_file = os.path.join(mkdtemp(delete=True), "image.vmdk")
-        open(image_file, 'a').close()
-        image_mgr.get_image_path.return_value = image_file
-
-        # Verify normal case
-        image_mgr.get_timestamp_mod_time_from_dir.return_value = (True, 0)
-        image_mgr.get_tombstone_mod_time_from_dir.return_value = (False, 200)
-
-        response = handler.get_image_info(request)
-        self.assertEqual(response.result,
-                         ImageInfoResultCode.OK)
-        self.assertEqual(len(response.image_info.vm_ids), 0)
-        self.assertEqual(response.image_info.ref_count, 0)
-        self.assertFalse(response.image_info.tombstone)
-        self.assertEqual(response.image_info.type, ImageType.CLOUD)
-        self.assertEqual(response.image_info.replication,
-                         ImageReplication.EAGER)
-
-        # Verify tombstone case
-        image_mgr.get_timestamp_mod_time_from_dir.return_value = (True, 0)
-        image_mgr.get_tombstone_mod_time_from_dir.return_value = (True, 200)
-        response = handler.get_image_info(request)
-        self.assertEqual(response.result,
-                         ImageInfoResultCode.OK)
-        self.assertTrue(response.image_info.tombstone)
 
     def test_delete_image(self):
         """ Test image delete """

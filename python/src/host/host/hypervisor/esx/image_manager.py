@@ -34,8 +34,6 @@ from common.file_util import rm_rf
 from common import services
 from common.service_name import ServiceName
 from common.thread import Periodic
-from gen.resource.ttypes import ImageReplication
-from gen.resource.ttypes import ImageType
 from host.hypervisor.datastore_manager import DatastoreNotFoundException
 from host.hypervisor.esx.vm_config import IMAGE_FOLDER_NAME_PREFIX, compond_path_join
 from host.hypervisor.esx.vm_config import TMP_IMAGE_FOLDER_NAME_PREFIX
@@ -264,30 +262,6 @@ class EsxImageManager(ImageManager):
                                          IMAGE_FOLDER_NAME_PREFIX)
         self._logger.info("Loading metadata %s" % metadata_path)
         return self._load_json(metadata_path)
-
-    def get_image_manifest(self, image_id):
-        # This is a shortcut for ttylinux. ttylinux doesn't have manifest file.
-        if image_id == "ttylinux":
-            return ImageType.CLOUD, ImageReplication.EAGER
-
-        manifest_path = None
-        for image_ds in self._ds_manager.image_datastores():
-            path = os_image_manifest_path(image_ds, image_id)
-            if os.path.isfile(path):
-                manifest_path = path
-                break
-
-        if not manifest_path:
-            self._logger.info("Manifest file %s not found" % manifest_path)
-            return None, None
-
-        self._logger.info("Loading manifest %s" % manifest_path)
-        data = self._load_json(manifest_path)
-        type = ImageType._NAMES_TO_VALUES[data["imageType"]]
-        replication = ImageReplication._NAMES_TO_VALUES[
-            data["imageReplication"]]
-
-        return type, replication
 
     def _get_datastore_type(self, datastore_id):
         datastores = self._ds_manager.get_datastores()

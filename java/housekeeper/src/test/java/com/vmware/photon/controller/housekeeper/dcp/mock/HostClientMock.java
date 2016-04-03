@@ -27,19 +27,15 @@ import com.vmware.photon.controller.host.gen.GetImagesResultCode;
 import com.vmware.photon.controller.host.gen.GetInactiveImagesResponse;
 import com.vmware.photon.controller.host.gen.GetMonitoredImagesResultCode;
 import com.vmware.photon.controller.host.gen.Host;
-import com.vmware.photon.controller.host.gen.ImageInfoResponse;
-import com.vmware.photon.controller.host.gen.ImageInfoResultCode;
 import com.vmware.photon.controller.host.gen.StartImageOperationResultCode;
 import com.vmware.photon.controller.host.gen.StartImageScanResponse;
 import com.vmware.photon.controller.host.gen.StartImageSweepResponse;
 import com.vmware.photon.controller.host.gen.TransferImageResponse;
 import com.vmware.photon.controller.host.gen.TransferImageResultCode;
 import com.vmware.photon.controller.housekeeper.dcp.mock.hostclient.MethodCallBuilder;
-import com.vmware.photon.controller.resource.gen.ImageInfo;
 import com.vmware.photon.controller.resource.gen.InactiveImageDescriptor;
 
 import org.apache.thrift.async.AsyncMethodCallback;
-import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import static org.mockito.Mockito.mock;
@@ -71,16 +67,11 @@ public class HostClientMock extends HostClient {
 
   private GetImagesResultCode getImagesResultCode;
 
-  private ImageInfoResultCode imageInfoResultCode;
-
   private DeleteImageResultCode deleteImageResultCode;
 
   private TransferImageResultCode transferImageResultCode;
 
   private List<String> imagesForGetImagesRequest;
-
-  private ImageInfo imageInfo;
-
 
   /**
    * Fine grained images being returned for a specific datastoreId.
@@ -92,7 +83,6 @@ public class HostClientMock extends HostClient {
     state = Collections.synchronizedMap(new HashMap<>());
     copyImageResultCode = CopyImageResultCode.OK;
     getImagesResultCode = GetImagesResultCode.OK;
-    imageInfoResultCode = ImageInfoResultCode.OK;
     transferImageResultCode = TransferImageResultCode.OK;
 
     deleteImageResultCode = DeleteImageResultCode.OK;
@@ -121,14 +111,6 @@ public class HostClientMock extends HostClient {
 
   public void setImageListForGetImagesRequest(Map<String, List<String>> imageListForGetImagesRequest) {
     this.imageListForGetImagesRequest = imageListForGetImagesRequest;
-  }
-
-  public void setImageInfoResultCode(ImageInfoResultCode imageInfoResultCode) {
-    this.imageInfoResultCode = imageInfoResultCode;
-  }
-
-  public void setImageInfo(ImageInfo info) {
-    this.imageInfo = info;
   }
 
   public void setInactiveImages(String datastore, List<InactiveImageDescriptor> imageList) {
@@ -214,22 +196,6 @@ public class HostClientMock extends HostClient {
   }
 
   @Override
-  public void getImageInfo(String imageId, String datastoreId, AsyncMethodCallback<Host.AsyncClient.get_image_info_call>
-      callback) {
-    logger.info("Host imageInfo complete invocation");
-    ImageInfoResponse response = new ImageInfoResponse(this.imageInfoResultCode);
-    response.setImage_info(this.buildImageInfo());
-
-    Host.AsyncClient.get_image_info_call imageInfoCall = mock(Host.AsyncClient.get_image_info_call.class);
-    try {
-      when(imageInfoCall.getResult()).thenReturn(response);
-    } catch (Exception e) {
-      throw new RuntimeException("Failed to mock imageInfoCall.getResult");
-    }
-    callback.onComplete(imageInfoCall);
-  }
-
-  @Override
   public void startImageScan(String datastore, Long scanRate, Long timeout,
                              AsyncMethodCallback<Host.AsyncClient.start_image_scan_call> callback) {
     this.incrementImageGCCounter(datastore);
@@ -284,16 +250,6 @@ public class HostClientMock extends HostClient {
     response.setImage_descs(
         (List<InactiveImageDescriptor>) this.state.get(String.format(DELETED_IMAGES_KEY_FORMAT_STRING, datastore)));
     callback.onComplete(MethodCallBuilder.buildGetDeletedImagesMethodCall(response));
-  }
-
-  private ImageInfo buildImageInfo() {
-    if (null != this.imageInfo) {
-      return this.imageInfo;
-    }
-
-    ImageInfo info = new ImageInfo();
-    info.setCreated_time(DateTime.now().minusDays(10).toString());
-    return info;
   }
 
   private void incrementImageGCCounter(String datastore) {

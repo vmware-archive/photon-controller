@@ -702,29 +702,6 @@ struct GetImagesResponse {
   3: optional list<string> image_ids
 }
 
-struct ImageInfoRequest {
-  1: required string image_id
-
-  // If datastore name is specified, server will normalize it.
-  2: required string datastore_id
-
-  99: optional tracing.TracingInfo tracing_info
-}
-
-enum ImageInfoResultCode {
-  OK = 0
-  SYSTEM_ERROR = 1
-  IMAGE_NOT_FOUND = 2
-  DATASTORE_NOT_FOUND = 3
-  INVALID_REF_COUNT_FILE = 4
-}
-
-struct ImageInfoResponse {
-  1: required ImageInfoResultCode result
-  2: optional string error
-  3: optional resource.ImageInfo image_info
-}
-
 // APIs to trigger scan/sweep of unused images
 
 enum StartImageOperationResultCode {
@@ -970,7 +947,6 @@ service Host {
   CopyImageResponse copy_image(1: CopyImageRequest request)
   DeleteImageResponse delete_image(1: DeleteImageRequest request)
   GetImagesResponse get_images(1: GetImagesRequest request)
-  ImageInfoResponse get_image_info(1: ImageInfoRequest request)
 
   TransferImageResponse transfer_image(1: TransferImageRequest request)
   ReceiveImageResponse receive_image(1: ReceiveImageRequest request)
