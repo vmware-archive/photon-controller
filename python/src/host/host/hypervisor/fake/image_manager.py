@@ -16,8 +16,6 @@ import logging
 import os
 
 from common.file_util import mkdir_p
-from gen.resource.ttypes import ImageReplication
-from gen.resource.ttypes import ImageType
 from host.hypervisor.fake.disk_manager import FakeDiskManager
 from host.hypervisor.image_manager import ImageManager
 
@@ -108,9 +106,6 @@ class FakeImageManager(ImageManager):
         # The image path looks like: /tmp/tmprWGCzm/datastore1/ttylinux.vmdk
         basename = os.path.basename(image_path)
         return os.path.splitext(basename)[0]
-
-    def get_image_manifest(self, image_id):
-        return ImageType.CLOUD, ImageReplication.EAGER
 
     def image_size(self, image_id):
         return self._disk_manager.disk_size(self._image_datastore, image_id)

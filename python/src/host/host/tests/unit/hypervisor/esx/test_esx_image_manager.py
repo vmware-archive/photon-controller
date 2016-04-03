@@ -29,8 +29,6 @@ from common import file_util
 from common import services
 from common.service_name import ServiceName
 from gen.resource.ttypes import DatastoreType
-from gen.resource.ttypes import ImageReplication
-from gen.resource.ttypes import ImageType
 from host.hypervisor.disk_manager import DiskAlreadyExistException
 from host.hypervisor.esx.vm_config import IMAGE_FOLDER_NAME_PREFIX, os_datastore_path
 from host.hypervisor.esx.vm_config import compond_path_join
@@ -383,39 +381,6 @@ class TestEsxImageManager(unittest.TestCase):
         vmdk_flat_path.assert_called_once_with("ds1", "foo")
         mock_rm.side_effect = OSError
         self.assertFalse(self.image_manager._lock_data_disk("ds1", "foo"))
-
-    @parameterized.expand([
-        ("CLOUD", "EAGER", ImageType.CLOUD, ImageReplication.EAGER),
-        ("MANAGEMENT", "EAGER", ImageType.MANAGEMENT, ImageReplication.EAGER),
-        ("CLOUD", "ON_DEMAND", ImageType.CLOUD, ImageReplication.ON_DEMAND),
-        ("MANAGEMENT", "ON_DEMAND", ImageType.MANAGEMENT,
-         ImageReplication.ON_DEMAND),
-    ])
-    def test_image_type(self, type, replication, expected_type,
-                        expected_replication):
-
-        self.ds_manager.image_datastores.return_value = ["ds1", "ds2"]
-        with patch("host.hypervisor.esx.image_manager.os_image_manifest_path"
-                   "") as manifest_path:
-            tmpdir = file_util.mkdtemp(delete=True)
-            tmpfile = os.path.join(tmpdir, "ds1.manifest")
-            manifest_path.return_value = tmpfile
-
-            with open(tmpfile, 'w+') as f:
-                f.write('{"imageType":"%s","imageReplication":"%s"}' % (
-                    type, replication))
-
-            type, replication = self.image_manager.get_image_manifest(
-                "image_id")
-            self.assertEqual(type, expected_type)
-            self.assertEqual(replication, expected_replication)
-
-    def test_image_type_not_exist(self):
-        self.ds_manager.image_datastores.return_value = ["ds1", "ds2"]
-        type, replication = self.image_manager.get_image_manifest(
-            "image_id")
-        self.assertEqual(type, None)
-        self.assertEqual(replication, None)
 
     def test_create_image(self):
         datastore_id = "ds1"

@@ -47,8 +47,6 @@ from gen.host.ttypes import GetNetworksRequest
 from gen.host.ttypes import GetResourcesRequest
 from gen.host.ttypes import GetResourcesResultCode
 from gen.host.ttypes import HostMode
-from gen.host.ttypes import ImageInfoRequest
-from gen.host.ttypes import ImageInfoResultCode
 from gen.host.ttypes import PowerVmOpResultCode
 from gen.host.ttypes import ServiceTicketRequest
 from gen.host.ttypes import ServiceTicketResultCode
@@ -646,16 +644,6 @@ class TestRemoteAgent(BaseKazooTestCase, AgentCommonTests):
         res = self.host_client.delete_image(DeleteImageRequest(dst_image_2,
                                             True, False))
         self.assertEqual(res.result, DeleteImageResultCode.OK)
-
-        request = ImageInfoRequest(image_id=dst_image.id, datastore_id=ds.id)
-        response = self.host_client.get_image_info(request)
-        self.assertEqual(response.result, ImageInfoResultCode.OK)
-        self.assertTrue(response.image_info.tombstone)
-
-        request = ImageInfoRequest(image_id=dst_image_2.id, datastore_id=ds.id)
-        response = self.host_client.get_image_info(request)
-        self.assertEqual(response.result, ImageInfoResultCode.OK)
-        self.assertTrue(response.image_info.tombstone)
 
         # Clean up images
         res = self.host_client.delete_image(DeleteImageRequest(dst_image,

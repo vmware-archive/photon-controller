@@ -34,8 +34,6 @@ enum State {
   SUSPENDED = 2
 }
 
-const string NEVER_UPDATED = "never updated"
-
 // Resource constraint could only be datastore, host, or network.
 enum ResourceConstraintType {
   DATASTORE = 0
@@ -164,36 +162,6 @@ enum ImageReplication {
 struct Image {
   1: required string id
   2: required Datastore datastore
-}
-
-struct ImageInfo {
-  // Last updated time in UTC in format of RFC 3339
-  // Or if image is not updated before, it's NEVER_UPDATED.
-  1: required string last_updated_time
-
-  // ref_count is the number of vms that uses this image
-  2: required i32 ref_count
-
-  // a list of vm ids that use this image
-  3: required list<string> vm_ids
-
-  // Tombstone bit
-  4: required bool tombstone
-
-  // TODO(agui): Change optional to required after implementing it in agent.
-
-  // Image created time in UTC in format of RFC 3339
-  5: optional string created_time
-
-  /**
-   * General image information
-   */
-
-  // For management vm or cloud vm
-  6: optional ImageType type
-
-  // On demand (lazy copy) or eager copy
-  7: optional ImageReplication replication
 }
 
 struct InactiveImageDescriptor {

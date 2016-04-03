@@ -207,16 +207,6 @@ class ImageManager(object):
         pass
 
     @abc.abstractmethod
-    def get_image_manifest(self, image_id):
-        """ Get image replication and type (eager or on demand, used for
-        cloud vms or management vms
-
-        :param image_id: str, image id
-        :return: (ImageType, ImageReplication)
-        """
-        pass
-
-    @abc.abstractmethod
     def image_size(self, image_id):
         pass
 
