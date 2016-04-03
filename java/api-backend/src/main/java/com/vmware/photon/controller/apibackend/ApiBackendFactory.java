@@ -15,6 +15,7 @@ package com.vmware.photon.controller.apibackend;
 
 import com.vmware.photon.controller.apibackend.tasks.CreateLogicalRouterTaskService;
 import com.vmware.photon.controller.apibackend.tasks.CreateLogicalSwitchTaskService;
+import com.vmware.photon.controller.apibackend.workflow.CreateVirtualNetworkWorkflowService;
 import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Service;
 
@@ -32,7 +33,11 @@ public class ApiBackendFactory {
    * All Xenon Factory Services in api-backend.
    */
   public static final Map<Class<? extends Service>, Supplier<FactoryService>> FACTORY_SERVICES_MAP = ImmutableMap.of(
+      // tasks
       CreateLogicalRouterTaskService.class, CreateLogicalRouterTaskService::createFactory,
-      CreateLogicalSwitchTaskService.class, CreateLogicalSwitchTaskService::createFactory
+      CreateLogicalSwitchTaskService.class, CreateLogicalSwitchTaskService::createFactory,
+
+      // workflows
+      CreateVirtualNetworkWorkflowService.class, CreateVirtualNetworkWorkflowService::createFactory
   );
 }

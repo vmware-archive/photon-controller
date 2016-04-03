@@ -91,7 +91,7 @@ public class BaseWorkflowService <S extends ServiceDocument, T extends TaskState
    *
    * @param current
    */
-  private void initializeState(ServiceDocument current) {
+  private void initializeState(S current) {
     InitializationUtils.initialize(current);
 
     if (current.documentExpirationTimeMicros <= 0) {
@@ -294,7 +294,7 @@ public class BaseWorkflowService <S extends ServiceDocument, T extends TaskState
    * @return
    * @throws Throwable
    */
-  private E getTaskStateSubStage(TaskState taskState) throws Throwable {
+  private E getTaskStateSubStage(T taskState) throws Throwable {
     Field taskStateSubStageField = taskStateType.getField(FIELD_NAME_TASK_STATE_SUB_STAGE);
     return (E) taskStateSubStageField.get(taskState);
   }
@@ -326,7 +326,7 @@ public class BaseWorkflowService <S extends ServiceDocument, T extends TaskState
    * @param taskStateSubStage
    * @throws Throwable
    */
-  private void setTaskStateSubStage(TaskState taskState, E taskStateSubStage) throws Throwable {
+  private void setTaskStateSubStage(T taskState, E taskStateSubStage) throws Throwable {
     Field taskStateSubStageField = taskStateType.getField(FIELD_NAME_TASK_STATE_SUB_STAGE);
     taskStateSubStageField.set(taskState, taskStateSubStage);
   }
@@ -338,7 +338,7 @@ public class BaseWorkflowService <S extends ServiceDocument, T extends TaskState
    * @param taskState
    * @throws Throwable
    */
-  private void setTaskState(S state, TaskState taskState) throws Throwable {
+  private void setTaskState(S state, T taskState) throws Throwable {
     Field taskStateField = getStateType().getField(FIELD_NAME_TASK_STATE);
     taskStateField.set(state, taskState);
   }

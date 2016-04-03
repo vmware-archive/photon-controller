@@ -66,6 +66,7 @@ public enum Operation {
   CREATE_DATASTORE("CreateDatastore"),
   DELETE_DATASTORE("DeleteDatastore"),
   CREATE_NETWORK("CreateNetwork"),
+  CREATE_VIRTUAL_NETWORK("CreateVirtualNetwork"),
   DELETE_NETWORK("DeleteNetwork"),
   SET_PORT_GROUPS("SetPortGroups"),
   CREATE_PORT_GROUP("CreatePortGroup"),
@@ -158,6 +159,11 @@ public enum Operation {
   DELETE_CLUSTER_UPDATE_CLUSTER_DOCUMENT("UpdateClusterDocument"),
   DELETE_CLUSTER_DELETE_VMS("DeleteVMs"),
   DELETE_CLUSTER_DOCUMENT("DeleteClusterDocument"),
+
+  GET_NSX_CONFIGURATION("GetNsxConfiguration"),
+  CREATE_LOGICAL_SWITCH("CreateLogicalSwitch"),
+  CREATE_LOGICAL_ROUTER("CreateLogicalRouter"),
+  SET_UP_LOGICAL_ROUTER("SetupLogicalRouter"),
 
   WAIT_FOR_TASKS("WaitForTasks"),
 
