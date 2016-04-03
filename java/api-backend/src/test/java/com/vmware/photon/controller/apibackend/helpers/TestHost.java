@@ -13,7 +13,7 @@
 package com.vmware.photon.controller.apibackend.helpers;
 
 import com.vmware.photon.controller.apibackend.ApiBackendFactory;
-import com.vmware.photon.controller.apibackend.ApiBackendFactoryProvider;
+import com.vmware.photon.controller.cloudstore.dcp.CloudStoreXenonHost;
 import com.vmware.photon.controller.common.xenon.BasicServiceHost;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.xenon.common.Operation;
@@ -24,22 +24,15 @@ import java.util.logging.LogManager;
 /**
  * This class implements helper routines used to test service hosts in isolation.
  */
-public class TestHost extends BasicServiceHost implements ApiBackendFactoryProvider {
+public class TestHost extends BasicServiceHost {
 
-  private ApiBackendFactory apiBackendFactory;
-
-  public TestHost(ApiBackendFactory apiBackendFactory) throws Throwable {
+  public TestHost() throws Throwable {
     super();
-    this.apiBackendFactory = apiBackendFactory;
     this.initialize();
   }
 
   public static TestHost create() throws Throwable {
-    return create(null);
-  }
-
-  public static TestHost create(ApiBackendFactory apiBackendFactory) throws Throwable {
-    TestHost host = new TestHost(apiBackendFactory);
+    TestHost host = new TestHost();
     host.start();
     return host;
   }
@@ -50,6 +43,8 @@ public class TestHost extends BasicServiceHost implements ApiBackendFactoryProvi
 
     this.startWithCoreServices();
     ServiceHostUtils.startFactoryServices(this, ApiBackendFactory.FACTORY_SERVICES_MAP);
+    ServiceHostUtils.startFactoryServices(this, CloudStoreXenonHost.FACTORY_SERVICES_MAP);
+    ServiceHostUtils.startServices(this, CloudStoreXenonHost.FACTORY_SERVICES);
 
     return this;
   }
@@ -70,10 +65,5 @@ public class TestHost extends BasicServiceHost implements ApiBackendFactoryProvi
       operation.setStatusCode(200);
     }
     return operation;
-  }
-
-  @Override
-  public ApiBackendFactory getApiBackendFactory() {
-    return this.apiBackendFactory;
   }
 }

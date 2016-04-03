@@ -13,10 +13,8 @@
 
 package com.vmware.photon.controller.apibackend.helpers;
 
-import com.vmware.photon.controller.apibackend.ApiBackendFactory;
 import com.vmware.photon.controller.common.xenon.MultiHostEnvironment;
 
-import static org.mockito.Mockito.mock;
 import static org.testng.Assert.assertTrue;
 
 /**
@@ -24,12 +22,25 @@ import static org.testng.Assert.assertTrue;
  */
 public class TestEnvironment extends MultiHostEnvironment<TestHost> {
 
-  private TestEnvironment(int hostCount, ApiBackendFactory apiBackendFactory) throws Throwable {
+  private TestEnvironment(int hostCount) throws Throwable {
     assertTrue(hostCount > 0);
     hosts = new TestHost[hostCount];
     for (int i = 0; i < hosts.length; i++) {
-      hosts[i] = new TestHost(apiBackendFactory);
+      hosts[i] = new TestHost();
     }
+  }
+
+  /**
+   * Create instance of TestEnvironment with specified count of hosts and start all hosts.
+   *
+   * @param hostCount
+   * @return
+   * @throws Throwable
+   */
+  public static TestEnvironment create(int hostCount) throws Throwable {
+    TestEnvironment testEnvironment = new TestEnvironment(hostCount);
+    testEnvironment.start();
+    return testEnvironment;
   }
 
   /**
@@ -45,9 +56,7 @@ public class TestEnvironment extends MultiHostEnvironment<TestHost> {
     }
 
     public TestEnvironment build() throws Throwable {
-      ApiBackendFactory apiBackendFactory = mock(ApiBackendFactory.class);
-
-      TestEnvironment environment = new TestEnvironment(hostCount, apiBackendFactory);
+      TestEnvironment environment = new TestEnvironment(hostCount);
       environment.start();
       return environment;
     }
