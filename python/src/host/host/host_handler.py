@@ -12,9 +12,7 @@
 
 """ Implements the interfaces that are defined in the thrift Host service."""
 
-import datetime
 import logging
-import os
 import sys
 import threading
 import uuid
@@ -79,8 +77,6 @@ from gen.host.ttypes import HostConfig
 from gen.host.ttypes import HostMode
 from gen.host.ttypes import HttpTicketResponse
 from gen.host.ttypes import HttpTicketResultCode
-from gen.host.ttypes import ImageInfoResponse
-from gen.host.ttypes import ImageInfoResultCode
 from gen.host.ttypes import MksTicketResponse
 from gen.host.ttypes import MksTicketResultCode
 from gen.host.ttypes import PowerVmOp
@@ -106,7 +102,6 @@ from gen.host.ttypes import VmDiskOpResultCode
 from gen.host.ttypes import VmDisksOpResponse
 from gen.resource.ttypes import CloneType
 from gen.resource.ttypes import Datastore
-from gen.resource.ttypes import ImageInfo
 from gen.resource.ttypes import InactiveImageDescriptor
 from gen.roles.ttypes import Roles
 from gen.scheduler import Scheduler
@@ -1043,80 +1038,6 @@ class HostHandler(Host.Iface):
                 CopyImageResponse())
 
         return CopyImageResponse(result=CopyImageResultCode.OK)
-
-    @log_request
-    @error_handler(ImageInfoResponse, ImageInfoResultCode)
-    def get_image_info(self, request):
-        """Get image info for an image in specific datastore
-
-        :type request: ImageInfoRequest
-        :rtype: ImageInfoResponse
-        """
-        im = self.hypervisor.image_manager
-        dm = self.hypervisor.datastore_manager
-
-        try:
-            datastore_id = dm.normalize(request.datastore_id)
-        except DatastoreNotFoundException:
-            return ImageInfoResponse(
-                result=ImageInfoResultCode.DATASTORE_NOT_FOUND)
-
-        if not im.check_image(request.image_id, datastore_id):
-            return ImageInfoResponse(
-                result=ImageInfoResultCode.IMAGE_NOT_FOUND)
-
-        image_path = im.get_image_path(datastore_id, request.image_id)
-        ctime = os.stat(image_path).st_ctime
-        created_time = datetime.datetime.fromtimestamp(ctime).isoformat('T')
-
-        try:
-            image_type, replication = im.get_image_manifest(request.image_id)
-        except Exception as e:
-            self._logger.warning("Cannot get type and replication",
-                                 exc_info=True)
-            return ImageInfoResponse(
-                result=ImageInfoResultCode.SYSTEM_ERROR,
-                error=str(e)
-            )
-
-        try:
-            image_dir = os.path.dirname(image_path)
-            timestamp_exists, timestamp_mod_time = \
-                im.get_timestamp_mod_time_from_dir(image_dir)
-            tombstone_exists, tombstone_mod_time = \
-                im.get_tombstone_mod_time_from_dir(image_dir)
-
-            if not timestamp_exists:
-                # Try the renamed timestamp file
-                timestamp_exists, timestamp_mod_time = \
-                    im.get_timestamp_mod_time_from_dir(image_dir, True)
-
-            if timestamp_exists:
-                last_updated_time = \
-                    datetime.datetime.fromtimestamp(
-                        timestamp_mod_time).isoformat('T')
-            else:
-                last_updated_time = "unknown"
-
-            return ImageInfoResponse(
-                result=ImageInfoResultCode.OK,
-                image_info=ImageInfo(
-                    type=image_type,
-                    replication=replication,
-                    last_updated_time=last_updated_time,
-                    created_time=created_time,
-                    tombstone=tombstone_exists,
-                    ref_count=0,
-                    vm_ids=[]
-                )
-            )
-        except Exception as e:
-            self._logger.warning("Unexpected exception %s" % (e),
-                                 exc_info=True)
-            return ImageInfoResponse(
-                result=ImageInfoResultCode.SYSTEM_ERROR,
-                error=str(e)
-            )
 
     @log_request
     @error_handler(DeleteImageResponse, DeleteImageResultCode)

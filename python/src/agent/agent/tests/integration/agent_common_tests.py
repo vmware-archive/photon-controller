@@ -37,8 +37,6 @@ from gen.host.ttypes import GetImagesResultCode
 from gen.host.ttypes import GetResourcesRequest
 from gen.host.ttypes import GetResourcesResultCode
 from gen.host.ttypes import HostMode
-from gen.host.ttypes import ImageInfoRequest
-from gen.host.ttypes import ImageInfoResultCode
 from gen.host.ttypes import Ipv4Address
 from gen.host.ttypes import MksTicketRequest
 from gen.host.ttypes import MksTicketResultCode
@@ -49,14 +47,11 @@ from gen.host.ttypes import ServiceTicketResultCode
 from gen.host.ttypes import ServiceType
 from gen.host.ttypes import SetHostModeRequest
 from gen.host.ttypes import SetHostModeResultCode
-from gen.resource.constants import NEVER_UPDATED
 from gen.resource.ttypes import CloneType
 from gen.resource.ttypes import Disk
 from gen.resource.ttypes import DiskImage
 from gen.resource.ttypes import DiskLocator
 from gen.resource.ttypes import Image
-from gen.resource.ttypes import ImageReplication
-from gen.resource.ttypes import ImageType
 from gen.resource.ttypes import Locator
 from gen.resource.ttypes import NetworkType
 from gen.resource.ttypes import Resource
@@ -725,54 +720,6 @@ class AgentCommonTests(object):
         response = self.host_client.get_images(request)
         assert_that(response.result, is_(
             GetImagesResultCode.DATASTORE_NOT_FOUND))
-
-    def test_get_image_info(self):
-        datastore = self._find_configured_datastore_in_host_config()
-
-        request = ImageInfoRequest(image_id="ttylinux",
-                                   datastore_id=datastore.id)
-        response = self.host_client.get_image_info(request)
-        assert_that(response.result, is_(ImageInfoResultCode.OK))
-        assert_that(response.image_info.tombstone, is_(False))
-        if response.image_info.last_updated_time != NEVER_UPDATED:
-            assert_that(response.image_info.last_updated_time, matches_regexp(
-                self.REGEX_TIME)
-            )
-        assert_that(response.image_info.created_time, matches_regexp(
-            self.REGEX_TIME)
-        )
-        assert_that(response.image_info.vm_ids, has_length(
-            response.image_info.ref_count))
-        assert_that(response.image_info.type, is_(ImageType.CLOUD))
-        assert_that(response.image_info.replication, is_(
-            ImageReplication.EAGER))
-
-        vm_wrapper = VmWrapper(self.host_client)
-
-        image = DiskImage("ttylinux", CloneType.COPY_ON_WRITE)
-        disks = [
-            Disk(new_id(), self.DEFAULT_DISK_FLAVOR.name, False, True,
-                 image=image,
-                 capacity_gb=0, flavor_info=self.DEFAULT_DISK_FLAVOR),
-        ]
-
-        reservation = \
-            vm_wrapper.place_and_reserve(vm_disks=disks).reservation
-        request = vm_wrapper.create_request(res_id=reservation)
-        response = vm_wrapper.create(request=request)
-        assert_that(response.vm, not_none())
-
-        request = ImageInfoRequest(image_id="ttylinux",
-                                   datastore_id=datastore.id)
-        response = self.host_client.get_image_info(request)
-        assert_that(response.result, is_(ImageInfoResultCode.OK))
-        assert_that(response.image_info.tombstone, is_(False))
-        assert_that(len(response.image_info.vm_ids),
-                    is_(response.image_info.ref_count))
-
-        assert_that(response.image_info.vm_ids, has_length(
-            response.image_info.ref_count))
-        vm_wrapper.delete(request=vm_wrapper.delete_request(disk_ids=[]))
 
     def test_invalid_reservation(self):
         """Test that the agent rejects invalid reservations."""
