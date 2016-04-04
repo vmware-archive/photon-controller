@@ -26,6 +26,7 @@ describe EsxCloud::CliClient do
   context "when auth is not enabled" do
     let(:spec) do
       EsxCloud::DeploymentCreateSpec.new(['d'], EsxCloud::AuthConfigurationSpec.new(false),
+                                         EsxCloud::NetworkConfigurationCreateSpec.new(false),
                                          EsxCloud::StatsInfo.new(false),
                                          "0.0.0.1",
                                          "0.0.0.2",
@@ -47,6 +48,7 @@ describe EsxCloud::CliClient do
     let(:spec) do
       EsxCloud::DeploymentCreateSpec.new(['d'],
                                          EsxCloud::AuthConfigurationSpec.new(true, 't', 'p', ['sg1', 'sg2']),
+                                         EsxCloud::NetworkConfigurationCreateSpec.new(false),
                                          EsxCloud::StatsInfo.new(false),
                                          "0.0.0.1",
                                          "0.0.0.2",
@@ -68,6 +70,7 @@ describe EsxCloud::CliClient do
   context "when stats is not enabled" do
     let(:spec) do
       EsxCloud::DeploymentCreateSpec.new(['d'], EsxCloud::AuthConfigurationSpec.new(false),
+                                         EsxCloud::NetworkConfigurationCreateSpec.new(false),
                                          EsxCloud::StatsInfo.new(false),
                                          "0.0.0.1",
                                          "0.0.0.2",
@@ -89,6 +92,7 @@ describe EsxCloud::CliClient do
     let(:spec) do
       EsxCloud::DeploymentCreateSpec.new(['d'],
                                          EsxCloud::AuthConfigurationSpec.new(true, 't', 'p', ['sg1', 'sg2']),
+                                         EsxCloud::NetworkConfigurationCreateSpec.new(false),
                                          EsxCloud::StatsInfo.new(true, '0.1.2.3', '2004'),
                                          "0.0.0.1",
                                          "0.0.0.2",
