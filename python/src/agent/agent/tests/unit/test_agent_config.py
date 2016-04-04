@@ -80,19 +80,16 @@ class TestUnitAgent(unittest.TestCase):
         """
         self.agent._parse_options(["--memory-overcommit", "1.5",
                                    "--datastore", ["datastore1"],
-                                   "--in-uwsim",
                                    "--config-path", self.agent_conf_dir,
                                    "--utilization-transfer-ratio", "0.5"])
 
         self.assertEqual(self.agent.memory_overcommit, 1.5)
-        self.assertEqual(self.agent.in_uwsim, True)
         self.assertEqual(self.agent.utilization_transfer_ratio, 0.5)
         self.agent._persist_config()
 
         # Simulate an agent restart.
         new_agent = AgentConfig(["--config-path", self.agent_conf_dir])
         self.assertEqual(new_agent.memory_overcommit, 1.5)
-        self.assertEqual(new_agent.in_uwsim, True)
         self.assertEqual(self.agent.utilization_transfer_ratio, 0.5)
 
     def test_property_accessors(self):

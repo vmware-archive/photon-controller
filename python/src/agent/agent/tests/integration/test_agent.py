@@ -70,10 +70,6 @@ class TestAgent(unittest.TestCase, AgentCommonTests):
         self.proc, self.host_client, self.control_client = res
         self._validate_post_boostrap_config(req)
 
-    @property
-    def agent_in_uwsim(self):
-        return False
-
     def setUp(self):
         self.runtime = RuntimeUtils()
         self.config = self.runtime.get_default_agent_config()
