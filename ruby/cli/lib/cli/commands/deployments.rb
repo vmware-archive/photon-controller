@@ -38,6 +38,12 @@ module EsxCloud::Cli
                   options[:oauth_password],
                   oauth_security_groups
               ),
+              EsxCloud::NetworkConfigurationCreateSpec.new(
+                  options[:virtual_network_enabled],
+                  options[:network_manager_address],
+                  options[:network_manager_username],
+                  options[:network_manager_password]
+              ),
               EsxCloud::StatsInfo.new(
                   options[:stats_enabled],
                   options[:stats_store_endpoint],
@@ -160,6 +166,9 @@ g2)') do |g|
         puts "  Auth Port:                    #{deployment.auth.port || "-"}"
         puts "  Auth Tenant:                  #{deployment.auth.tenant || "-"}"
         puts "  Auth Security Groups:         #{deployment.auth.securityGroups || "-"}"
+        puts
+        puts "  Virtual Network Enabled:      #{deployment.network_configuration.virtual_network_enabled}"
+        puts "  Network Manager Address:      #{deployment.network_configuration.network_manager_address}"
         puts
         puts "  Syslog Endpoint:              #{deployment.syslog_endpoint || "-"}"
         puts "  Ntp Endpoint:                 #{deployment.ntp_endpoint || "-"}"
@@ -292,6 +301,10 @@ g2)') do |g|
             :oauth_tenant => nil,
             :oauth_password => nil,
             :oauth_security_groups => nil,
+            :virtual_network_enabled => nil,
+            :network_manager_address => nil,
+            :network_manager_username => nil,
+            :network_manager_password => nil,
             :syslog_endpoint => nil,
             :ntp_endpoint => nil,
             :stats_enabled => false,
@@ -320,6 +333,18 @@ g2)') do |g|
           end
           opts.on('-g', '--oauth_security_groups SECURITY_GROUPS', 'Comma-separated list of security groups') do |g|
             options[:oauth_security_groups] = g
+          end
+          opts.on('--virtual_network_enabled', 'Enable virtual network for deployment') do |_|
+            options[:virtual_network_enabled] = true
+          end
+          opts.on('--network_manager_address', 'Network manager address') do |v|
+            options[:network_manager_address] = v
+          end
+          opts.on('--network_manager_username', 'Network manager username') do |v|
+            options[:network_manager_username] = v
+          end
+          opts.on('--network_manager_password', 'Network manager password') do |v|
+            options[:network_manager_password] = v
           end
           opts.on('-s', '--syslog_endpoint ENDPOINT', 'Syslog Endpoint/IP') do |s|
             options[:syslog_endpoint] = s

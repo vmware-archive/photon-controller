@@ -12,8 +12,8 @@
 module EsxCloud
   class Deployment
 
-    attr_accessor :id, :state, :image_datastores, :auth, :syslog_endpoint, :ntp_endpoint, :stats,
-                  :use_image_datastore_for_vms, :loadbalancer_enabled, :migration, :cluster_configurations
+    attr_accessor :id, :state, :image_datastores, :auth, :network_configuration, :syslog_endpoint, :ntp_endpoint,
+                  :stats, :use_image_datastore_for_vms, :loadbalancer_enabled, :migration, :cluster_configurations
 
     # @param[DeploymentCreateSpec] spec
     # @return [Deployment]
@@ -41,6 +41,7 @@ module EsxCloud
       end
 
       new(hash["id"], hash["state"], hash["imageDatastores"], AuthInfo.create_from_hash(hash["auth"]),
+          NetworkConfiguration.create_from_hash(hash["networkConfiguration"]),
           StatsInfo.create_from_hash(hash["stats"]),
           hash["syslogEndpoint"], hash["ntpEndpoint"], hash["useImageDatastoreForVms"],
           hash["loadBalancerEnabled"],
@@ -110,19 +111,21 @@ module EsxCloud
     # @param [String] state
     # @param [Array<String>] image_datastores
     # @param [AuthInfo] auth
+    # @param [NetworkConfiguration] network_configuration
     # @param [StatsInfo] stats
     # @param [String] syslog_endpoint
     # @param [String] ntp_endpoint
     # @param [Boolean] use_image_datastore_for_vms
     # @param [Boolean] loadbalancer_enabled
     # @param [MigrationStatus] migration_status
-    def initialize(id, state, image_datastores, auth, stats,
+    def initialize(id, state, image_datastores, auth, network_configuration, stats,
       syslog_endpoint = nil, ntp_endpoint = nil, use_image_datastore_for_vms = false, loadbalancer_enabled = true,
       migration, cluster_configurations)
       @id = id
       @state = state
       @image_datastores = image_datastores
       @auth = auth
+      @network_configuration = network_configuration
       @stats = stats
       @syslog_endpoint = syslog_endpoint
       @ntp_endpoint = ntp_endpoint
@@ -142,6 +145,7 @@ module EsxCloud
         state: @state,
         imageDatastores: @image_datastores,
         auth: @auth.to_hash,
+        network_configuration: @network_configuration,
         stats: @stats.to_hash,
         syslogEndpoint: @syslog_endpoint,
         ntpEndpoint: @ntp_endpoint,
@@ -157,6 +161,7 @@ module EsxCloud
       @state == other.state &&
       @image_datastores == other.image_datastores &&
       @auth == other.auth &&
+      @network_configuration == other.network_configuration &&
       @stats == other.stats &&
       @syslog_endpoint == other.syslog_endpoint &&
       @ntp_endpoint == other.ntp_endpoint &&
