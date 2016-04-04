@@ -857,12 +857,8 @@ class AgentCommonTests(object):
 
         # In a host simulator environment the vm network portgroup is
         # named differently.
-        if self.agent_in_uwsim:
-            nic = [NicConnectionSpec("Virtual Machine Network", ip),
-                   NicConnectionSpec("Virtual Machine Network", ip2)]
-        else:
-            nic = [NicConnectionSpec("VM Network", ip),
-                   NicConnectionSpec("VM Network", ip2)]
+        nic = [NicConnectionSpec("VM Network", ip),
+               NicConnectionSpec("VM Network", ip2)]
         network = NetworkConnectionSpec(nic, "10.146.30.1")
         request = vm_wrapper.create_request(res_id=reservation,
                                             network=network)
@@ -889,12 +885,8 @@ class AgentCommonTests(object):
 
         # In a host simulator environment the vm network portgroup is
         # named differently.
-        if self.agent_in_uwsim:
-            nic = [NicConnectionSpec("Virtual Machine Network"),
-                   NicConnectionSpec("Virtual Machine Network")]
-        else:
-            nic = [NicConnectionSpec("VM Network"),
-                   NicConnectionSpec("VM Network")]
+        nic = [NicConnectionSpec("VM Network"),
+               NicConnectionSpec("VM Network")]
         network = NetworkConnectionSpec(nic, "10.146.30.1")
         request = vm_wrapper.create_request(res_id=reservation,
                                             network=network)
