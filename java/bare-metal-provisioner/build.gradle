@@ -47,29 +47,29 @@ tasks.withType(Test) {
   exclude "**/helpers/*.class"
 }
 
-//tasks.create(name: 'buildSlingshot', type:Exec) {
-//  println 'Building Slingshot'
-//
-//  workingDir '../../go/bmp-adapters/src/main/go'
-//
-//  commandLine 'make'
-//  standardOutput = new ByteArrayOutputStream()
-//  //extension method foo.output() can be used to obtain the output String
-//  ext.output = {
-//    return standardOutput.toString()
-//  }
-//}
-//
-//tasks.create(name: 'copySlingshot', type:Copy, dependsOn:buildSlingshot) {
-//  println 'Copying Slingshot binary'
-//
-//  from('../../go/bmp-adapters/src/main/go/bin') {
-//    include 'go-bmp*'
-//
-//  }
-//
-//  into 'src/main/resources/bin'
-//}
-//
-//compileJava.dependsOn(buildSlingshot)
-//compileJava.dependsOn(copySlingshot)
+tasks.create(name: 'buildSlingshot', type: Exec) {
+  println 'Building Slingshot'
+
+  workingDir '../../go/bmp-adapters/src/main/go'
+
+  executable 'make'
+  args 'build'
+
+  standardOutput = new ByteArrayOutputStream()
+  ext.output = {
+    return standardOutput.toString()
+  }
+}
+
+tasks.create(name: 'copySlingshot', type: Copy, dependsOn: buildSlingshot) {
+  println 'Copying Slingshot binary'
+
+  from('../../go/bmp-adapters/src/main/go/bin') {
+    include 'go-bmp*'
+  }
+
+  into 'src/main/resources/bin'
+}
+
+compileJava.dependsOn(buildSlingshot)
+compileJava.dependsOn(copySlingshot)
