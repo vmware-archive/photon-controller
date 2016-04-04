@@ -32,8 +32,6 @@ from common.file_io import FileBackedLock
 from common.file_io import InvalidFile
 from common.file_util import mkdir_p
 from common.file_util import rm_rf
-from common import services
-from common.service_name import ServiceName
 from common.thread import Periodic
 from host.hypervisor.datastore_manager import DatastoreNotFoundException
 from host.hypervisor.esx.vm_config import IMAGE_FOLDER_NAME_PREFIX, compond_path_join
@@ -82,9 +80,6 @@ class EsxImageManager(ImageManager):
         self._vim_client = vim_client
         self._ds_manager = ds_manager
         self._image_reaper = None
-        self._uwsim_nas_exist = None
-        agent_config = services.get(ServiceName.AGENT_CONFIG)
-        self._in_uwsim = agent_config.in_uwsim
 
     def monitor_for_cleanup(self,
                             reap_interval=DEFAULT_TMP_IMAGES_CLEANUP_INTERVAL):
@@ -599,10 +594,6 @@ class EsxImageManager(ImageManager):
                           sourceName=src, destName=dst)
 
     def _manage_disk(self, op, **kwargs):
-        if self._in_uwsim:
-            self._manage_disk_uwsim(op, **kwargs)
-            return
-
         try:
             self._logger.debug("Invoking %s(%s)" % (op.info.name, kwargs))
             task = op(self._manager, **kwargs)
@@ -815,28 +806,6 @@ class EsxImageManager(ImageManager):
             self._logger.info("Tmp dir %s not" % file_path)
             raise DirectoryNotFound("Directory %s not found" % file_path)
         rm_rf(file_path)
-
-    def _manage_disk_uwsim(self, op, **kwargs):
-        def _vmdk_pairs(ds_path):
-            vmdk_path = datastore_to_os_path(ds_path)
-            pos = vmdk_path.rfind(".vmdk")
-            vmdk_flat_path = vmdk_path[:pos] + "-flat" + vmdk_path[pos:]
-            return (vmdk_path, vmdk_flat_path)
-
-        if (op is vim.VirtualDiskManager.DeleteVirtualDisk_Task):
-            (vmdk, flatvmdk) = _vmdk_pairs(kwargs["name"])
-            os.unlink(vmdk)
-            os.unlink(flatvmdk)
-        elif (op is vim.VirtualDiskManager.CopyVirtualDisk_Task):
-            (src_vmdk, src_flatvmdk) = _vmdk_pairs(kwargs["sourceName"])
-            (dst_vmdk, dst_flatvmdk) = _vmdk_pairs(kwargs["destName"])
-            shutil.copyfile(src_vmdk, dst_vmdk)
-            shutil.copyfile(src_flatvmdk, dst_flatvmdk)
-        elif (op is vim.VirtualDiskManager.MoveVirtualDisk_Task):
-            (src_vmdk, src_flatvmdk) = _vmdk_pairs(kwargs["sourceName"])
-            (dst_vmdk, dst_flatvmdk) = _vmdk_pairs(kwargs["destName"])
-            shutil.move(src_vmdk, dst_vmdk)
-            shutil.move(src_flatvmdk, dst_flatvmdk)
 
     @staticmethod
     def _read_marker_file(filename):

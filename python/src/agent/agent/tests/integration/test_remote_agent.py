@@ -221,16 +221,11 @@ class TestRemoteAgent(unittest.TestCase, AgentCommonTests):
         config_request.roles = Roles([leaf_scheduler])
         self.host_client.configure(config_request)
 
-    @property
-    def agent_in_uwsim(self):
-        return self._agent_in_uwsim
-
     def setUp(self):
         from testconfig import config
         if "agent_remote_test" not in config:
             raise SkipTest()
 
-        self._agent_in_uwsim = "agent_in_uwsim" in config["agent_remote_test"]
         self.runtime = RuntimeUtils()
 
         # Set the default netork name and datastore name

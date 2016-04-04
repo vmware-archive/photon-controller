@@ -388,11 +388,6 @@ class AgentConfig(object):
 
     @property
     @locked
-    def in_uwsim(self):
-        return self._options.in_uwsim
-
-    @property
-    @locked
     def host_id(self):
         return getattr(self._options, self.HOST_ID)
 
@@ -535,10 +530,6 @@ class AgentConfig(object):
         parser.add_option("--management-only", dest="management_only",
                           action="store_true",
                           default=False, help="Management only host")
-
-        parser.add_option("--in-uwsim", dest="in_uwsim",
-                          action="store_true",
-                          default=False, help="Running in UWSim enviroinment")
 
         parser.add_option("--host-id", dest=self.HOST_ID,
                           type="string", default=None,

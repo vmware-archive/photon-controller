@@ -13,12 +13,6 @@ endif
 ifdef REMOTE_ISO
 	TEST_OPTS += --tc=agent_remote_test.iso_file:"$(REMOTE_ISO)"
 endif
-ifdef AGENT_IN_UWSIM
-	TEST_OPTS += --tc=agent_remote_test.agent_in_uwsim:1
-endif
-ifdef ZOOKEEPER
-	TEST_OPTS += --tc=agent_remote_test.zookeeper:$(ZOOKEEPER)
-endif
 ifdef SANITY
 	TESTS += agent/tests/integration/test_remote_agent.py:TestRemoteAgent.test_power_ops
 else
