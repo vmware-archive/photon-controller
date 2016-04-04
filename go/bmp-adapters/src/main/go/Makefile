@@ -60,7 +60,7 @@ godcp.darwin-amd64:
 godcp.linux-amd64:
 	GOOS=linux GOARCH=amd64 $(GO) build -o bin/$(NAME)-linux -pkgdir ./pkg bmp/cmd/godcp
 
-build: deps godcp.linux-amd64 godcp.darwin-amd64
+build: godcp.linux-amd64 godcp.darwin-amd64
 
 package:
 	mkdir -p ../resources/bin/
@@ -70,24 +70,6 @@ check-static:
 ifeq ($(OS), Linux)
 	! ldd $(CURDIR)/bin/*
 endif
-
-deps:
-	$(GO) get github.com/golang/glog
-	$(GO) get github.com/golang/groupcache/singleflight
-	$(GO) get github.com/pborman/uuid
-	$(GO) get golang.org/x/net/context
-	$(GO) get golang.org/x/net/ipv4
-	$(GO) get golang.org/x/crypto/ssh
-	$(GO) get golang.org/x/crypto/ssh/testdata
-	$(GO) get github.com/golang/protobuf/proto
-	$(GO) get golang.org/x/text/encoding
-	$(GO) get golang.org/x/text/encoding/charmap
-	$(GO) get golang.org/x/text/encoding/htmlindex
-	$(GO) get golang.org/x/text/transform
-	$(GO) get golang.org/x/crypto/ssh/terminal
-	$(GO) get github.com/stretchr/testify/mock
-
-
 
 clean:
 	rm -rf pkg bin $(GOVENDOR)/pkg $(GOVENDOR)/bin $(DIST_DIR)
