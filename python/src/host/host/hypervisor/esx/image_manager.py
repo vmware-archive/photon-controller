@@ -40,14 +40,12 @@ from host.hypervisor.esx.vm_config import TMP_IMAGE_FOLDER_NAME_PREFIX
 from host.hypervisor.esx.vm_config import os_datastore_root
 from host.hypervisor.esx.vm_config import datastore_to_os_path
 from host.hypervisor.esx.vm_config import metadata_filename
-from host.hypervisor.esx.vm_config import manifest_filename
 from host.hypervisor.esx.vm_config import SUPPORT_VSAN
 from host.hypervisor.esx.vm_config import os_datastore_path_pattern
 from host.hypervisor.esx.vm_config import COMPOND_PATH_SEPARATOR
 from host.hypervisor.esx.vm_config import vmdk_add_suffix
 from host.hypervisor.esx.vm_config import image_directory_path
 from host.hypervisor.esx.vm_config import os_datastore_path
-from host.hypervisor.esx.vm_config import os_image_manifest_path
 from host.hypervisor.esx.vm_config import os_metadata_path
 from host.hypervisor.esx.vm_config import os_to_datastore_path
 from host.hypervisor.esx.vm_config import os_vmdk_flat_path
@@ -315,18 +313,6 @@ class EsxImageManager(ImageManager):
                     self._logger.exception("Failed to copy metadata file %s",
                                            source_meta)
                     raise
-
-            # Copy the manifest file if it exists
-            source_manifest = os_image_manifest_path(source_datastore,
-                                                     source_id)
-            if os.path.exists(source_manifest):
-                try:
-                    dest_manifest = os.path.join(tmp_image_dir_path,
-                                                 manifest_filename(dest_id))
-                    shutil.copy(source_manifest, dest_manifest)
-                except:
-                    # Swallow it. Not critical.
-                    pass
 
             # Create the timestamp file
             self._create_image_timestamp_file(tmp_image_dir_path)
@@ -839,8 +825,7 @@ class EsxImageManager(ImageManager):
                               name=dst_vmdk_ds_path)
             raise
 
-    def receive_image(self, image_id, datastore_id, imported_vm_name, metadata,
-                      manifest):
+    def receive_image(self, image_id, datastore_id, imported_vm_name, metadata):
         """ Creates an image using the data from the imported vm.
 
         This is run at the destination host end of the host-to-host
@@ -862,11 +847,6 @@ class EsxImageManager(ImageManager):
                                   (image_id, datastore_id))
                 raise DiskAlreadyExistException()
             self._move_image(image_id, datastore_id, vm_dir)
-
-            # Save raw manifest
-            manifest_path = os_image_manifest_path(datastore_id, image_id)
-            with open(manifest_path, 'w') as f:
-                f.write(manifest)
 
             # Save raw metadata
             if metadata:

@@ -36,7 +36,6 @@ DEFAULT_DISK_CONTROLLER_CLASS = vim.vm.device.VirtualLsiLogicController
 DEFAULT_NIC_CONTROLLER_CLASS = vim.vm.device.VirtualE1000
 
 METADATA_FILE_EXT = "ecv"
-MANIFEST_FILE_EXT = "manifest"
 DEFAULT_VMX_VERSION = "vmx-10"
 SHADOW_VM_NAME_PREFIX = "shadow_"
 
@@ -178,11 +177,6 @@ def os_metadata_path(datastore, disk_id, folder=DISK_FOLDER_NAME_PREFIX):
                              partial_path(disk_id, disk_id, METADATA_FILE_EXT))
 
 
-def os_image_manifest_path(image_datastore, image_id):
-    return compond_path_join(os_datastore_path(image_datastore, IMAGE_FOLDER_NAME_PREFIX),
-                             partial_path(image_id, image_id, MANIFEST_FILE_EXT))
-
-
 def image_directory_path(datastore, image_id):
     """Returns absolute path of the image directory. It looks something like:
 
@@ -213,10 +207,6 @@ def partial_path(disk_id, name_no_extension, extension):
 
 def metadata_filename(disk_id):
     return "%s.%s" % (disk_id, METADATA_FILE_EXT)
-
-
-def manifest_filename(disk_id):
-    return "%s.%s" % (disk_id, MANIFEST_FILE_EXT)
 
 
 def partial_vmdk_path(disk_id):

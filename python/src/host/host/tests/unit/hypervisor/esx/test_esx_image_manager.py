@@ -38,7 +38,6 @@ from host.hypervisor.image_manager import ImageNotFoundException
 
 from host.hypervisor.esx.image_manager import EsxImageManager, GC_IMAGE_FOLDER
 from host.hypervisor.esx.vim_client import VimClient
-from host.hypervisor.esx.vm_config import MANIFEST_FILE_EXT
 from host.hypervisor.esx.vm_config import METADATA_FILE_EXT
 
 
@@ -163,8 +162,7 @@ class TestEsxImageManager(unittest.TestCase):
     def test_copy_image(self, _flock, _create_image_timestamp, check_image, _check_image_repair,
                         _get_ds_type, _manage_disk, _mv_dir, _copy, _exists, _uuid, _wait_for_task):
         _exists.side_effect = (True,  # dest image vmdk missing
-                               True,  # source meta file present
-                               True)  # source manifest file present
+                               True)  # source meta file present
 
         self.image_manager.copy_image("ds1", "foo", "ds2", "bar")
 
@@ -172,14 +170,11 @@ class TestEsxImageManager(unittest.TestCase):
         os_path_prefix2 = '/vmfs/volumes/ds2'
         ds_tmp_path_prefix = '[] /vmfs/volumes/ds2'
 
-        assert_that(_copy.call_count, equal_to(2))
+        assert_that(_copy.call_count, equal_to(1))
         _copy.assert_has_calls([
             call('%s/image_foo/foo.%s' % (os_path_prefix1, METADATA_FILE_EXT),
                  '/vmfs/volumes/ds2/tmp_image_fake_id/bar.%s' %
                  METADATA_FILE_EXT),
-            call('%s/image_foo/foo.%s' % (os_path_prefix1, MANIFEST_FILE_EXT),
-                 '/vmfs/volumes/ds2/tmp_image_fake_id/bar.%s' %
-                 MANIFEST_FILE_EXT),
         ])
 
         ds_path_prefix1 = '[] ' + os_path_prefix1

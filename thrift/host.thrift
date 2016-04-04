@@ -490,7 +490,6 @@ struct ReceiveImageRequest {
 
   // Raw image metadata
   4: optional string metadata
-  5: required string manifest
 
   99: optional tracing.TracingInfo tracing_info
 }

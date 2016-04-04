@@ -262,7 +262,7 @@ class TestHttpTransfer(unittest.TestCase):
         import_spec_mock = MagicMock()
         xferer = self.http_transferer
 
-        file_contents = ["fake_metadata", "fake_manifest"]
+        file_contents = ["fake_metadata"]
 
         def fake_read():
             return file_contents.pop()
@@ -295,7 +295,6 @@ class TestHttpTransfer(unittest.TestCase):
                     has_length(1))
         request = agent_conn_mock.receive_image.call_args_list[0][0][0]
         assert_that(request.metadata, equal_to("fake_metadata"))
-        assert_that(request.manifest, equal_to("fake_manifest"))
 
         xferer._get_image_stream_from_shadow_vm.assert_called_once_with(
             image_id, image_datastore, self.shadow_vm_id)
