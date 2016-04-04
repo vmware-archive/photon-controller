@@ -18,7 +18,6 @@ import time
 import unittest
 import uuid
 
-from agent.tests.base_kazoo_test import BaseKazooTestCase
 from agent.tests.common_helper_functions import RuntimeUtils
 from common.photon_thrift.direct_client import DirectClient
 from gen.agent import AgentControl
@@ -101,7 +100,7 @@ from agent_common_tests import stable_uuid
 logger = logging.getLogger(__name__)
 
 
-class TestRemoteAgent(BaseKazooTestCase, AgentCommonTests):
+class TestRemoteAgent(AgentCommonTests):
     def shortDescription(self):
         return None
 
