@@ -1,5 +1,8 @@
 #!/bin/bash -xe
 
+yum -y install --nogpgcheck http://ftp.riken.jp/Linux/fedora/epel/6/i386/epel-release-6-8.noarch.rpm && yum clean all
+yum -y install --nogpgcheck golang && yum clean all
+
 cd /esxcloud/java
 if [ -d /esxcloud/java/distributions ] ; then
   rm -rf /esxcloud/java/distributions/*
@@ -44,5 +47,10 @@ mv /esxcloud/java/root-scheduler/build/distributions/root-scheduler-*.tar \
   /esxcloud/java/distributions/root-scheduler.tar
 cp -r /esxcloud/java/root-scheduler/src/dist/configuration \
   /esxcloud/java/distributions/configurations/configuration-root-scheduler
+
+mv /esxcloud/java/bare-metal-provisioner/build/distributions/*.tar \
+  /esxcloud/java/distributions/bare-metal-provisioner.tar
+cp -r /esxcloud/java/bare-metal-provisioner/src/dist/configuration \
+  /esxcloud/java/distributions/configurations/configuration-bare-metal-provisioner
 
 cp -r /esxcloud/java/deployer/src/dist/configuration-* /esxcloud/java/distributions/configurations/
