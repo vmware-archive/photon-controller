@@ -153,25 +153,8 @@ nosetests host.tests.unit.test_host_handler:HostHandlerTestCase.test_get_resourc
 
 To run integration tests:
 
-Integration test only runs while ZOOKEEPER\_PATH environment variable is
-provided and points to an extracted Zookeeper installation:
-
 ```bash
-ZOOKEEPER_PATH=/usr/local/Cellar/zookeeper/3.4.5/libexec make test INTEGRATION=1
-```
-
-Zookeeper tests will only run if ZOOKEEPER\_PATH environment variable is
-provided and points to an extracted Zookeeper installation:
-
-```bash
-ZOOKEEPER_PATH=/usr/local/Cellar/zookeeper/3.4.5/libexec make test
-```
-
-ZOOKEEPER\_PATH environment variable must be set in order to run
-integration tests against root scheduler:
-
-```bash
-ZOOKEEPER_PATH=/usr/local/Cellar/zookeeper/3.4.5/libexec make test SCHEDULER_INTEGRATION=1
+make test INTEGRATION=1
 ```
 
 ### Run agent stress test
@@ -215,11 +198,6 @@ To build and deploy a VIB for debug purposes (i.e. with tests and .py files)
 make vib REMOTE_SERVER=host IMAGES_DIR=$PWD/develop/images DEBUG=1
 ```
 
-ZOOKEEPER\_PATH environment variable must be set in order to run
-remote host tests:
-
 ```bash
-ZOOKEEPER_PATH=/usr/local/Cellar/zookeeper/3.4.5/libexec make test INTEGRATION=1 \
-DATASTORES=datastore1 REMOTE_ISO="[datastore1] path/to/test.iso" REMOTE_SERVER=host1
+make test INTEGRATION=1 DATASTORES=datastore1 REMOTE_ISO="[datastore1] path/to/test.iso" REMOTE_SERVER=host1
 ```
-

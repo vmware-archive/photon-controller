@@ -75,7 +75,7 @@ class TestAgent(unittest.TestCase, AgentCommonTests):
         return False
 
     def setUp(self):
-        self.runtime = RuntimeUtils(self.id())
+        self.runtime = RuntimeUtils()
         self.config = self.runtime.get_default_agent_config()
         self._datastores = ["datastore1", "datastore2"]
         self.config["--datastores"] = ",".join(self._datastores)

@@ -18,7 +18,6 @@ import time
 import unittest
 import uuid
 
-from agent.tests.base_kazoo_test import BaseKazooTestCase
 from agent.tests.common_helper_functions import RuntimeUtils
 from common.photon_thrift.direct_client import DirectClient
 from gen.agent import AgentControl
@@ -101,7 +100,7 @@ from agent_common_tests import stable_uuid
 logger = logging.getLogger(__name__)
 
 
-class TestRemoteAgent(BaseKazooTestCase, AgentCommonTests):
+class TestRemoteAgent(unittest.TestCase, AgentCommonTests):
     def shortDescription(self):
         return None
 
@@ -232,7 +231,7 @@ class TestRemoteAgent(BaseKazooTestCase, AgentCommonTests):
             raise SkipTest()
 
         self._agent_in_uwsim = "agent_in_uwsim" in config["agent_remote_test"]
-        self.runtime = RuntimeUtils(self.id())
+        self.runtime = RuntimeUtils()
 
         # Set the default netork name and datastore name
         self._vm_network = "VM Network"
@@ -570,9 +569,6 @@ class TestRemoteAgent(BaseKazooTestCase, AgentCommonTests):
                 sleep_time *= 2
 
         self._validate_post_boostrap_config(req)
-
-    def test_get_vim_ticket_by_vim_client(self):
-        self.vim_client.host_system
 
     def test_get_nfc_ticket_with_ds_id(self):
         datastores = self.vim_client.get_all_datastores()
