@@ -79,6 +79,7 @@ public class ImageLoader {
       imageStore.createImageFromVm(image, vmId, hostIp);
 
     } catch (Exception e) {
+      logger.warn("Create image {} failed.", e);
       if (image != null) {
         image.close();
         deleteUploadFolder(image);
@@ -133,6 +134,7 @@ public class ImageLoader {
       imageStore.finalizeImage(image);
 
     } catch (Exception e) {
+      logger.warn("Upload image {} failed.", e);
       if (image != null) {
         image.close();
         deleteUploadFolder(image);
@@ -144,11 +146,11 @@ public class ImageLoader {
   }
 
   private void deleteUploadFolder(Image image) {
-    logger.info("Uploading image {} failed. Cleaning up partially uploaded files ...", image.getImageId());
+    logger.info("Cleaning up partially uploaded files for image {} ...", image.getImageId());
     try {
       imageStore.deleteUploadFolder(image);
-    } catch (InternalException e) {
-      logger.warn("Did not clean up partially uploaded files. Moving out ...", e);
+    } catch (Exception e) {
+      logger.warn("Did not clean up partially uploaded files. Moving on ...", e);
     }
   }
 
