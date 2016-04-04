@@ -42,30 +42,10 @@ test-src/%: src/%
 	@echo "$(HEADER)Test $<$(NORMAL)"
 	@$(MAKE) -C $< test
 
-# we need to compile root scheduler to run integration tests.
-ifdef SCHEDULER_INTEGRATION
-    COMPILE_JAVA = 1
-endif
-ifdef INTEGRATION
-    COMPILE_JAVA = 1
-endif
-
-# check ZOOKEEPER_PATH environment variable set.
-check-zookeeper-path:
-ifndef ZOOKEEPER_PATH
-	$(error ZOOKEEPER_PATH is undefined)
-endif
-
-compile-java: check-zookeeper-path
-ifdef COMPILE_JAVA
-	cd ../java/cloud-store && ../gradlew clean installDist
-	cd ../java/root-scheduler && ../gradlew clean installDist
-endif
-
 TEST_TARGETS := $(patsubst %,test-%,$(PACKAGES))
-test: compile-java $(TEST_TARGETS)
+test: $(TEST_TARGETS)
 
-.PHONY: test test-src/% compile-java check-zookeeper-path
+.PHONY: test test-src/%
 
 coverage-src/%: src/%
 	@echo "$(HEADER)Coverage $<$(NORMAL)"
@@ -74,7 +54,7 @@ coverage-src/%: src/%
 COVERAGE_TARGETS := $(patsubst %,coverage-%,$(PACKAGES))
 coverage: $(COVERAGE_TARGETS)
 
-.PHONY: coverage test-src/% compile-java check-zookeeper-path
+.PHONY: coverage test-src/%
 
 check-src/%: src/%
 	@echo "$(HEADER)Check $<$(NORMAL)"
