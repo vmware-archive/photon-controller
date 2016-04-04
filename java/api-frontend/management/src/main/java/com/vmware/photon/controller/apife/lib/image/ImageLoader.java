@@ -43,7 +43,6 @@ import java.util.Map;
  * Class representing the loader of an Image file into the first ECX Cloud data store.
  */
 public class ImageLoader {
-  public static final String MANIFEST_FILE_SUFFIX = ".manifest";
   public static final String CONFIG_FILE_SUFFIX = ".ecv";
   public static final String DISK_FILE_SUFFIX = ".vmdk";
   private static final Logger logger = LoggerFactory.getLogger(ImageLoader.class);
@@ -74,7 +73,6 @@ public class ImageLoader {
     Image image = null;
     try {
       image = imageStore.createImage(imageEntity.getId());
-      uploadManifestConfigurationFile(imageEntity, image);
       uploadECVFile(EsxCloudVmx.fromImageSettings(imageEntity.getImageSettingsMap()), image);
 
       image.close();
@@ -121,9 +119,6 @@ public class ImageLoader {
     Image image = null;
     try {
       image = imageStore.createImage(imageEntity.getId());
-
-      // Upload MANIFEST configuration file.
-      result.imageSize += uploadManifestConfigurationFile(imageEntity, image);
 
       if (isVmdkFile) {
         logger.info("Reading disk image from VMDK file.");
@@ -205,15 +200,6 @@ public class ImageLoader {
     }
 
     return increasedImageSize;
-  }
-
-  private long uploadManifestConfigurationFile(ImageEntity imageEntity, Image image)
-      throws InternalException, IOException, NameTakenException {
-    ImageManifest imageManifest = ImageManifestGenerator.generate(imageEntity);
-    String manifestJson = generateJsonEncoding(imageManifest);
-
-    return image.addFile(MANIFEST_FILE_SUFFIX, new ByteArrayInputStream(manifestJson.getBytes()),
-        manifestJson.length());
   }
 
   private long uploadECVFile(EsxCloudVmx ecv, Image image)

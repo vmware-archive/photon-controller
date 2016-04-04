@@ -53,13 +53,6 @@ class ImageManager(object):
                     is created. The information is saved in .ecv file located
                     together with the image in every datastore.
 
-    Image manifest: Contains image general information which is useful for
-                    housekeeper (and maybe other components). Basically it
-                    contains information like: image type (management or
-                    cloud), image replication type (eager or on demand). The
-                    information is saved in .manifest file located together
-                    with the image only in shared image datastore.
-
     """
     __metaclass__ = abc.ABCMeta
 

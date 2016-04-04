@@ -112,10 +112,9 @@ public class ImageLoaderTest {
       inputStream = ova.getOvaStream();
 
       ImageLoader.Result result = imageLoader.uploadImage(imageEntity, inputStream);
-      verify(image, times(1)).addFile(eq(ImageLoader.MANIFEST_FILE_SUFFIX), any(InputStream.class), anyLong());
       verify(image, times(1)).addFile(eq(ImageLoader.CONFIG_FILE_SUFFIX), any(InputStream.class), anyLong());
       verify(image, times(1)).addDisk(eq(ImageLoader.DISK_FILE_SUFFIX), any(InputStream.class));
-      assertThat("check upload size", result.imageSize == 2 * CONFIG_SIZE + DISK_SIZE);
+      assertThat("check upload size", result.imageSize == CONFIG_SIZE + DISK_SIZE);
       assertThat(result.imageSettings, is(expectedImageSettings));
     }
 
@@ -125,9 +124,8 @@ public class ImageLoaderTest {
       inputStream = ova.getRawVmdkStream();
 
       ImageLoader.Result result = imageLoader.uploadImage(imageEntity, inputStream);
-      verify(image, times(1)).addFile(eq(ImageLoader.MANIFEST_FILE_SUFFIX), any(InputStream.class), anyLong());
       verify(image, times(1)).addDisk(eq(ImageLoader.DISK_FILE_SUFFIX), any(InputStream.class));
-      assertThat("check upload size", result.imageSize == CONFIG_SIZE + DISK_SIZE);
+      assertThat("check upload size", result.imageSize == DISK_SIZE);
       assertThat(result.imageSettings.size(), is(0));
     }
 
@@ -172,7 +170,7 @@ public class ImageLoaderTest {
       imageLoader.createImageFromVm(imageEntity, vmId, hostIp);
       InOrder inOrder = inOrder(image, imageStore);
       inOrder.verify(imageStore).createImage(imageId);
-      inOrder.verify(image, times(2)).addFile(anyString(), any(InputStream.class), anyLong());
+      inOrder.verify(image, times(1)).addFile(anyString(), any(InputStream.class), anyLong());
       inOrder.verify(image).close();
       inOrder.verify(imageStore).createImageFromVm(image, vmId, hostIp);
 

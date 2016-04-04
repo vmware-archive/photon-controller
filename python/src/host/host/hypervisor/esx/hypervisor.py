@@ -88,10 +88,8 @@ class EsxHypervisor(object):
             source_image_id, source_datastore,
             destination_image_id, destination_datastore, host, port)
 
-    def receive_image(self, image_id, datastore, imported_vm_name, metadata,
-                      manifest):
-        self.image_manager.receive_image(
-            image_id, datastore, imported_vm_name, metadata, manifest)
+    def receive_image(self, image_id, datastore, imported_vm_name, metadata):
+        self.image_manager.receive_image(image_id, datastore, imported_vm_name, metadata)
 
     def set_memory_overcommit(self, memory_overcommit):
         # Enable/Disable large page support. If this host is removed

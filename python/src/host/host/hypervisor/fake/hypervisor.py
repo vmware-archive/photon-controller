@@ -87,8 +87,7 @@ class FakeHypervisor(object):
                        host, port):
         return ""
 
-    def receive_image(self, image_id, datastore, imported_vm_name, metadata,
-                      manifest):
+    def receive_image(self, image_id, datastore, imported_vm_name, metadata):
         pass
 
     def set_memory_overcommit(self, memory_overcommit):

@@ -25,7 +25,6 @@ from host.hypervisor.esx.vm_config import EsxVmConfig
 from host.hypervisor.esx.vm_config import is_ephemeral_disk
 from host.hypervisor.esx.vm_config import is_image
 from host.hypervisor.esx.vm_config import is_persistent_disk
-from host.hypervisor.esx.vm_config import os_image_manifest_path
 from host.hypervisor.esx.vm_config import uuid_to_vmdk_uuid
 from host.hypervisor.esx.vm_config import vmdk_path
 
@@ -374,16 +373,6 @@ class TestEsxVmConfig(unittest.TestCase):
         assert_that(is_image(disk_files), equal_to(image))
         assert_that(is_ephemeral_disk(disk_files), equal_to(ephemeral))
         assert_that(is_persistent_disk(disk_files), equal_to(persistent))
-
-    @parameterized.expand([
-        ("ds1", "image_id",
-         "/vmfs/volumes/ds1/image_image_id/image_id.manifest"),
-        ("123 456", "image_id",
-         "/vmfs/volumes/123 456/image_image_id/image_id.manifest"),
-    ])
-    def test_os_image_manifest_path(self, datastore, image_id, expected):
-        assert_that(os_image_manifest_path(datastore, image_id),
-                    equal_to(expected))
 
     def test_vmdk_uuid_conversion(self):
         for id in ['01234567-89ab-cedf-0123-456789abcdef',

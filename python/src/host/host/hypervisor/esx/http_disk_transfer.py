@@ -38,7 +38,6 @@ from host.hypervisor.esx.vm_config import os_datastore_path
 from host.hypervisor.esx.vm_config import compond_path_join
 from host.hypervisor.esx.vm_config import VM_FOLDER_NAME_PREFIX
 from host.hypervisor.esx.vm_config import EsxVmConfig, SHADOW_VM_NAME_PREFIX
-from host.hypervisor.esx.vm_config import os_image_manifest_path
 from host.hypervisor.esx.vm_config import os_metadata_path
 from host.hypervisor.esx.vm_manager import EsxVmManager
 from pyVmomi import vim
@@ -378,7 +377,7 @@ class HttpNfcTransferer(HttpTransferer):
 
     def _register_imported_image_at_host(self, agent_client,
                                          image_id, destination_datastore,
-                                         imported_vm_name, metadata, manifest):
+                                         imported_vm_name, metadata):
         """ Installs an image at another host.
 
         Image data was transferred via ImportVApp to said host.
@@ -388,9 +387,7 @@ class HttpNfcTransferer(HttpTransferer):
             image_id=image_id,
             datastore_id=destination_datastore,
             transferred_image_id=imported_vm_name,
-            metadata=metadata,
-            manifest=manifest,
-        )
+            metadata=metadata)
 
         response = agent_client.receive_image(request)
         if response.result == ReceiveImageResultCode.DESTINATION_ALREADY_EXIST:
@@ -400,11 +397,6 @@ class HttpNfcTransferer(HttpTransferer):
 
     def _read_metadata(self, image_datastore, image_id):
         try:
-            # Transfer raw manifest
-            manifest_path = os_image_manifest_path(image_datastore, image_id)
-            with open(manifest_path) as f:
-                manifest = f.read()
-
             # Transfer raw metadata
             metadata_path = os_metadata_path(image_datastore, image_id,
                                              IMAGE_FOLDER_NAME_PREFIX)
@@ -413,13 +405,12 @@ class HttpNfcTransferer(HttpTransferer):
                 with open(metadata_path, 'r') as f:
                     metadata = f.read()
 
-            return manifest, metadata
+            return metadata
         except:
             self._logger.exception("Failed to read metadata")
             raise
 
-    def _send_image(self, tmp_path, manifest, metadata, spec,
-                    destination_image_id, destination_datastore, host, port):
+    def _send_image(self, tmp_path, metadata, spec, destination_image_id, destination_datastore, host, port):
         agent_client, vim_client = self._get_remote_connections(host, port)
         try:
             write_lease, disk_url = self._get_url_from_import_vm(vim_client,
@@ -434,8 +425,7 @@ class HttpNfcTransferer(HttpTransferer):
             imported_vm_name = destination_image_id
 
             self._register_imported_image_at_host(
-                agent_client, destination_image_id, destination_datastore,
-                imported_vm_name, metadata, manifest)
+                agent_client, destination_image_id, destination_datastore, imported_vm_name, metadata)
 
         finally:
             agent_client.close()
@@ -446,7 +436,7 @@ class HttpNfcTransferer(HttpTransferer):
     def send_image_to_host(self, image_id, image_datastore,
                            destination_image_id, destination_datastore,
                            host, port):
-        manifest, metadata = self._read_metadata(image_datastore, image_id)
+        metadata = self._read_metadata(image_datastore, image_id)
 
         shadow_vm_id = self._create_shadow_vm()
         tmp_path = "/vmfs/volumes/%s/%s_transfer.vmdk" % (
@@ -468,8 +458,7 @@ class HttpNfcTransferer(HttpTransferer):
                 destination_image_id, destination_datastore)
 
             imported_vm_name = self._send_image(
-                tmp_path, manifest, metadata, spec, destination_image_id,
-                destination_datastore, host, port)
+                tmp_path, metadata, spec, destination_image_id, destination_datastore, host, port)
 
             return imported_vm_name
 
