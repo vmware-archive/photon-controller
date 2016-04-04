@@ -5,7 +5,7 @@ GOVENDOR ?= $(CURDIR)/_vendor
 GOPATH := $(CURDIR):$(GOVENDOR)
 
 GO ?= go
-GOVERSION ?= go1.5
+GOVERSION ?= go1.6
 OS := $(shell uname)
 NAME := go-bmp
 
