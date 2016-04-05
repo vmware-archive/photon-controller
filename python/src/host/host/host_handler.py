@@ -1728,7 +1728,7 @@ class HostHandler(Host.Iface):
                 CreateImageResponse())
 
         try:
-            tmp_image_path = self.hypervisor.image_manager.create_image(datastore_id)
+            tmp_image_path = self.hypervisor.image_manager.create_image(request.image_id, datastore_id)
             return CreateImageResponse(CreateImageResultCode.OK, tmp_image_path)
         except:
             return self._error_response(

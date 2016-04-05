@@ -78,7 +78,7 @@ public class ImageLoaderTest {
     public void setUp() throws Throwable {
       imageStore = mock(VsphereImageStore.class);
       imageLoader = new ImageLoader(imageStore);
-      image = spy(new VsphereImageStoreImage(mock(NfcClient.class), "datastore", imageFolder, imageId));
+      image = spy(new VsphereImageStoreImage(mock(NfcClient.class), imageFolder, imageId));
       doReturn(image).when(imageStore).createImage(anyString());
       doReturn((long) CONFIG_SIZE).when(image).addFile(anyString(), any(InputStream.class), anyLong());
       doReturn((long) DISK_SIZE).when(image).addDisk(anyString(), any(InputStream.class));
@@ -155,7 +155,7 @@ public class ImageLoaderTest {
     public void setUp() throws Throwable {
       imageStore = mock(VsphereImageStore.class);
       imageLoader = new ImageLoader(imageStore);
-      image = spy(new VsphereImageStoreImage(mock(NfcClient.class), "datastore", imageFolder, imageId));
+      image = spy(new VsphereImageStoreImage(mock(NfcClient.class), imageFolder, imageId));
       doReturn(image).when(imageStore).createImage(anyString());
       imageEntity = new ImageEntity();
       imageEntity.setId(imageId);

@@ -24,6 +24,7 @@ import os.path
 import shutil
 import uuid
 
+from gen.resource.ttypes import DatastoreType
 from pyVmomi import vim
 
 from common.file_io import AcquireLockFailure
@@ -351,6 +352,11 @@ class EsxImageManager(ImageManager):
         ds_type = self._get_datastore_type(datastore)
         image_path = os.path.dirname(os_vmdk_path(datastore, image_id,
                                                   IMAGE_FOLDER_NAME_PREFIX))
+        self._logger.info("_move_image: %s => %s, ds_type: %s" % (tmp_dir, image_path, ds_type))
+
+        if not os.path.exists(tmp_dir):
+            raise ImageNotFoundException("Temp image %s not found" % tmp_dir)
+
         parent_path = os.path.dirname(image_path)
         # Create the parent image directory if it doesn't exist.
         if not os.path.exists(parent_path):
@@ -365,17 +371,27 @@ class EsxImageManager(ImageManager):
                 if self._check_image_repair(image_id, datastore):
                     raise DiskAlreadyExistException("Image already exists")
 
-                self._vim_client.move_file(tmp_dir, image_path)
+                if ds_type == DatastoreType.VSAN:
+                    # on VSAN, move all files under [datastore]/image_[image_id]/tmp_image_[uuid]/* to
+                    # [datastore]/image_[image_id]/*
+                    for entry in os.listdir(tmp_dir):
+                        shutil.move(os.path.join(tmp_dir, entry), os.path.join(image_path, entry))
+                else:
+                    # on VMFS/NFS/etc, rename [datastore]/tmp_image_[uuid] to [datastore]/tmp_image_[image_id]
+                    self._vim_client.move_file(tmp_dir, image_path)
+
         except (AcquireLockFailure, InvalidFile):
             self._logger.info("Unable to lock %s for atomic move" % image_id)
             raise
         except DiskAlreadyExistException:
             self._logger.info("Image %s already copied" % image_id)
-            rm_rf(tmp_dir)
             raise
         except:
             self._logger.exception("Move image %s to %s failed" % (image_id, image_path))
             raise
+        finally:
+            # delete tmp_image regardless of success or failure
+            rm_rf(tmp_dir)
 
     """
     The following method should be used to check
@@ -762,32 +778,32 @@ class EsxImageManager(ImageManager):
         """
         dir_path = os_datastore_path(datastore_id, GC_IMAGE_FOLDER)
         for sub_dir in os.listdir(dir_path):
-            rm_rf(os.path.join(dir_path, sub_dir), ignore_errors=True)
+            rm_rf(os.path.join(dir_path, sub_dir))
 
-    def create_image(self, datastore_id):
+    def create_image(self, image_id, datastore_id):
         """ Create a temp image on given datastore, return its path.
         """
-        tmp_image_id = compond_path_join(TMP_IMAGE_FOLDER_NAME_PREFIX, str(uuid.uuid4()))
-        tmp_image_path = os_datastore_path(datastore_id, tmp_image_id)
-        self._vim_client.make_directory(tmp_image_path)
-        return tmp_image_id
+        datastore_type = self._get_datastore_type(datastore_id)
+        if datastore_type == DatastoreType.VSAN:
+            # on VSAN, tmp_dir is [datastore]/image_[image_id]/tmp_image_[uuid]
+            # Because VSAN does not allow moving top-level directories, we place tmp_image
+            # under image's dir.
+            relative_path = os.path.join(compond_path_join(IMAGE_FOLDER_NAME_PREFIX, image_id),
+                                         compond_path_join(TMP_IMAGE_FOLDER_NAME_PREFIX, str(uuid.uuid4())))
+            tmp_dir = os_datastore_path(datastore_id, relative_path)
+        else:
+            # on VMFS/NFS/etc, tmp_dir is [datastore]/tmp_image_[uuid]
+            tmp_dir = os_datastore_path(datastore_id,
+                                        compond_path_join(TMP_IMAGE_FOLDER_NAME_PREFIX, str(uuid.uuid4())))
+
+        self._vim_client.make_directory(tmp_dir)
+        # return datastore path, so that it can be passed to nfc client
+        return os_to_datastore_path(tmp_dir)
 
     def finalize_image(self, datastore_id, tmp_dir, image_id):
         """ Installs an image using image data staged at a temp directory.
         """
-        src_path = os_datastore_path(datastore_id, tmp_dir)
-        if not os.path.exists(src_path):
-            self._logger.info("Tmp dir %s on datastore %s not found" %
-                              (tmp_dir, datastore_id))
-            raise ImageNotFoundException("Image %s not found" % src_path)
-
-        # Check if the dest image id already exists
-        if self.check_image_dir(image_id, datastore_id):
-            self._logger.info("Image %s on datastore %s already exists" %
-                              (image_id, datastore_id))
-            raise DiskAlreadyExistException()
-
-        self._move_image(image_id, datastore_id, src_path)
+        self._move_image(image_id, datastore_id, datastore_to_os_path(tmp_dir))
         self._create_image_timestamp_file_from_ids(datastore_id, image_id)
 
     def create_image_with_vm_disk(self, datastore_id, tmp_dir, image_id,
@@ -796,13 +812,7 @@ class EsxImageManager(ImageManager):
             then installs directory in the shared image folder.
         """
         # Create parent directory as required by CopyVirtualDisk_Task
-        dst_parent_dir = os_datastore_path(datastore_id, tmp_dir)
-        if os.path.exists(dst_parent_dir):
-            self._logger.debug("Parent directory %s exists" % dst_parent_dir)
-        else:
-            mkdir_p(dst_parent_dir)
-
-        dst_vmdk_path = os.path.join(dst_parent_dir, "%s.vmdk" % image_id)
+        dst_vmdk_path = os.path.join(datastore_to_os_path(tmp_dir), "%s.vmdk" % image_id)
         if os.path.exists(dst_vmdk_path):
             self._logger.warning(
                 "Unexpected disk %s present, overwriting" % dst_vmdk_path)
@@ -842,10 +852,6 @@ class EsxImageManager(ImageManager):
         vm.Unregister()
 
         try:
-            if self.check_image_dir(image_id, datastore_id):
-                self._logger.info("Image %s on datastore %s already exists" %
-                                  (image_id, datastore_id))
-                raise DiskAlreadyExistException()
             self._move_image(image_id, datastore_id, vm_dir)
 
             # Save raw metadata
