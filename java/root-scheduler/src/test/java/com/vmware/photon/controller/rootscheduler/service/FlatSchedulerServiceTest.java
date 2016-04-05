@@ -13,6 +13,9 @@
 
 package com.vmware.photon.controller.rootscheduler.service;
 
+import com.vmware.photon.controller.cloudstore.dcp.entity.ImageToImageDatastoreMappingService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.ImageToImageDatastoreMappingServiceFactory;
+import com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.xenon.XenonRestClient;
 import com.vmware.photon.controller.common.zookeeper.gen.ServerAddress;
@@ -21,6 +24,7 @@ import com.vmware.photon.controller.resource.gen.Resource;
 import com.vmware.photon.controller.resource.gen.ResourceConstraint;
 import com.vmware.photon.controller.rootscheduler.Config;
 import com.vmware.photon.controller.rootscheduler.SchedulerConfig;
+import com.vmware.photon.controller.rootscheduler.exceptions.NoSuchResourceException;
 import com.vmware.photon.controller.scheduler.gen.PlaceParams;
 import com.vmware.photon.controller.scheduler.gen.PlaceRequest;
 import com.vmware.photon.controller.scheduler.gen.PlaceResponse;
@@ -47,10 +51,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.testng.Assert.assertNotNull;
 
 import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.Executors;
 
 /**
  * Test cases for FlatSchedulerService.
@@ -204,5 +210,50 @@ public class FlatSchedulerServiceTest {
     PlaceResponse response = scheduler.place(request);
     assertThat(response, is(scoreCalculator.pickBestResponse(responses)));
     verify(client, times(4)).place(any(), any());
+  }
+
+  /**
+   * Image seeding tests.
+   */
+  public class ImageSeedingTests {
+    @Test
+    public void testSuccess() throws Throwable {
+      TestEnvironment cloudStoreMachine = TestEnvironment.create(1);
+      XenonRestClient cloudStoreClient = new XenonRestClient(
+          cloudStoreMachine.getServerSet(), Executors.newFixedThreadPool(1));
+      cloudStoreClient.start();
+
+      String imageId = "test-image-id";
+      String imageDatastoreId = "test-image-datastoreId";
+
+      ImageToImageDatastoreMappingService.State state = new ImageToImageDatastoreMappingService.State();
+      state.imageId = imageId;
+      state.imageDatastoreId = imageDatastoreId;
+
+      cloudStoreMachine.sendPostAndWait(ImageToImageDatastoreMappingServiceFactory.SELF_LINK, state);
+
+      CloudStoreConstraintChecker checker = new CloudStoreConstraintChecker(cloudStoreClient);
+      FlatSchedulerService service = new FlatSchedulerService(null, checker, cloudStoreClient, null, null);
+      ResourceConstraint constraint = service.createImageSeedingConstraint(imageId);
+      assertNotNull(constraint);
+      assertThat(constraint.getValues().contains(state.imageDatastoreId), is(true));
+
+      cloudStoreMachine.stop();
+    }
+
+    @Test(expectedExceptions = NoSuchResourceException.class)
+    public void testWithZeroDatastores() throws Throwable {
+      TestEnvironment cloudStoreMachine = TestEnvironment.create(1);
+      XenonRestClient cloudStoreClient = new XenonRestClient(
+          cloudStoreMachine.getServerSet(), Executors.newFixedThreadPool(1));
+      cloudStoreClient.start();
+
+      CloudStoreConstraintChecker checker = new CloudStoreConstraintChecker(cloudStoreClient);
+      FlatSchedulerService service = new FlatSchedulerService(
+          null, checker, cloudStoreClient, null, null);
+
+      service.createImageSeedingConstraint("test-image-id");
+      cloudStoreMachine.stop();
+    }
   }
 }

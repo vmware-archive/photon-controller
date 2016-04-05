@@ -396,15 +396,6 @@ public class ResourceReserveStepCmd extends StepCommand {
         if (targetHostIp == null) {
           ResourceConstraint resourceConstraint = null;
           List<ResourceConstraint> origResourceConstraints = null;
-          if (entityKind.equals(Vm.KIND)) {
-            // Add constraints caused by unfinished image seeding
-            resourceConstraint = createImageSeedingResourceConstraints();
-
-            origResourceConstraints = resource.getVm().getResource_constraints();
-            if (resourceConstraint != null) {
-              resource.getVm().addToResource_constraints(resourceConstraint);
-            }
-          }
 
           placeResponse = taskCommand.getRootSchedulerClient().place(resource);
           ServerAddress serverAddress = placeResponse.getAddress();
