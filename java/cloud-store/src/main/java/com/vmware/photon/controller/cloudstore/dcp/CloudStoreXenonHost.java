@@ -62,6 +62,7 @@ import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceHost;
 import com.vmware.xenon.common.UriUtils;
+import com.vmware.xenon.services.common.LuceneDocumentIndexService;
 import com.vmware.xenon.services.common.RootNamespaceService;
 
 import com.google.common.collect.ImmutableMap;
@@ -83,6 +84,7 @@ public class CloudStoreXenonHost
     ServiceConfigProvider {
   private static final Logger logger = LoggerFactory.getLogger(CloudStoreXenonHost.class);
   public static final int DEFAULT_CONNECTION_LIMIT_PER_HOST = 1024;
+  public static final int INDEX_SEARCHER_COUNT_THRESHOLD = 512;
 
   private static final TaskStateBuilder[] TASK_TRIGGERS = new TaskStateBuilder[]{
       new TombstoneCleanerTriggerBuilder(
@@ -184,6 +186,8 @@ public class CloudStoreXenonHost
   @Override
   public ServiceHost start() throws Throwable {
     super.start();
+
+    LuceneDocumentIndexService.setSearcherCountThreshold(INDEX_SEARCHER_COUNT_THRESHOLD);
 
     this.getClient().setConnectionLimitPerHost(DEFAULT_CONNECTION_LIMIT_PER_HOST);
     startDefaultCoreServicesSynchronously();
