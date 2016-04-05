@@ -196,6 +196,8 @@ struct Vm {
   8: optional list<ResourceConstraint> resource_constraints
   9: optional string tenant_id
   10: optional string project_id
+  11: required string image_id
+  12: optional bool useImageSeedingHints
 }
 
 // Resource
