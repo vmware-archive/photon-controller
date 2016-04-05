@@ -582,10 +582,10 @@ public class HostClient {
    * @throws RpcException
    */
   @RpcMethod
-  public CreateImageResponse createImage(String datastore)
+  public CreateImageResponse createImage(String imageId, String datastore)
       throws InterruptedException, RpcException {
     SyncHandler<CreateImageResponse, Host.AsyncClient.create_image_call> syncHandler = new SyncHandler<>();
-    createImage(datastore, syncHandler);
+    createImage(imageId, datastore, syncHandler);
     syncHandler.await();
     return ResponseValidator.checkCreateImageResponse(syncHandler.getResponse());
   }
@@ -599,12 +599,13 @@ public class HostClient {
    * @throws RpcException
    */
   @RpcMethod
-  public void createImage(String datastore,
-                           AsyncMethodCallback<Host.AsyncClient.create_image_call> handler)
+  public void createImage(String imageId, String datastore,
+                          AsyncMethodCallback<Host.AsyncClient.create_image_call> handler)
       throws RpcException {
     ensureClient();
 
     CreateImageRequest createImageRequest = new CreateImageRequest();
+    createImageRequest.setImage_id(imageId);
     createImageRequest.setDatastore(datastore);
     clientProxy.setTimeout(CREATE_IMAGE_TIMEOUT_MS);
     logger.info("create_image target {}, request {}", getHostIp(), createImageRequest);

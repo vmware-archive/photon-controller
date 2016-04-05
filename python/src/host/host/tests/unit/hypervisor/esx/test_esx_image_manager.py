@@ -161,7 +161,8 @@ class TestEsxImageManager(unittest.TestCase):
     @patch("host.hypervisor.esx.image_manager.FileBackedLock")
     def test_copy_image(self, _flock, _create_image_timestamp, check_image, _check_image_repair,
                         _get_ds_type, _manage_disk, _mv_dir, _copy, _exists, _uuid, _wait_for_task):
-        _exists.side_effect = (True,  # dest image vmdk missing
+        _exists.side_effect = (True,  # tmp_dir exists
+                               True,  # dest image vmdk missing
                                True)  # source meta file present
 
         self.image_manager.copy_image("ds1", "foo", "ds2", "bar")
@@ -253,6 +254,7 @@ class TestEsxImageManager(unittest.TestCase):
         _create_image_timestamp.assert_called_once_with(
             "/vmfs/volumes/ds2/tmp_image_fake_id")
 
+    @patch("os.path.exists", return_value=True)
     @patch("os.makedirs")
     @patch("shutil.rmtree")
     @patch("shutil.move")
@@ -262,7 +264,7 @@ class TestEsxImageManager(unittest.TestCase):
     @patch("host.hypervisor.esx.image_manager.FileBackedLock")
     @raises(DiskAlreadyExistException)
     def test_move_image(self, _flock, check_image, _get_ds_type, _mv_dir,
-                        _rmtree, _makedirs):
+                        _rmtree, _makedirs, _exists):
         # Common case is covered in test_copy_image.
 
         # check that if destination image directory exists we don't call move
@@ -377,42 +379,30 @@ class TestEsxImageManager(unittest.TestCase):
         mock_rm.side_effect = OSError
         self.assertFalse(self.image_manager._lock_data_disk("ds1", "foo"))
 
-    def test_create_image(self):
+    @patch.object(EsxImageManager, "_get_datastore_type")
+    def test_create_image(self, _get_ds_type):
+        image_id = "image_id"
         datastore_id = "ds1"
-        tmp_image_path = self.image_manager.create_image(datastore_id)
-        self.assertTrue(tmp_image_path.startswith(TMP_IMAGE_FOLDER_NAME_PREFIX))
+        _get_ds_type.side_effect = (DatastoreType.LOCAL_VMFS, DatastoreType.VSAN)
+
+        tmp_image_path = self.image_manager.create_image(image_id, datastore_id)
+        prefix = "[] /vmfs/volumes/%s/tmp_image_" % datastore_id
+        self.assertTrue(tmp_image_path.startswith(prefix))
+
+        tmp_image_path = self.image_manager.create_image(image_id, datastore_id)
+        prefix = "[] /vmfs/volumes/%s/image_%s/tmp_image_" % (datastore_id, image_id)
+        self.assertTrue(tmp_image_path.startswith(prefix))
 
     @patch.object(EsxImageManager, "_move_image")
-    @patch.object(EsxImageManager, "check_image_dir", return_value=False)
     @patch.object(EsxImageManager, "_create_image_timestamp_file_from_ids")
     @patch("os.path.exists")
-    def test_finalize_image(self, _exists, _create_timestamp,
-                            check_image_dir, move_image):
+    def test_finalize_image(self, _exists, _create_timestamp, move_image):
 
         # Happy path verify move is called with the right args.
         _exists.side_effect = ([True])
-        self.image_manager.finalize_image("ds1", "foo", "img_1")
-        check_image_dir.assert_called_once_with("img_1", "ds1")
-        move_image.assert_called_once_with('img_1', 'ds1',
-                                           '/vmfs/volumes/ds1/foo')
+        self.image_manager.finalize_image("ds1", "[] /vmfs/volumes/ds1/foo", "img_1")
+        move_image.assert_called_once_with('img_1', 'ds1', '/vmfs/volumes/ds1/foo')
         _create_timestamp.assert_called_once_with("ds1", "img_1")
-
-        # Verify error if tmp image doesn't exist
-        _exists.side_effect = ([False])
-        move_image.reset_mock()
-        self.assertRaises(ImageNotFoundException,
-                          self.image_manager.finalize_image,
-                          "ds1", "foo", "img_1")
-        self.assertFalse(move_image.called)
-
-        # Verify error if destination image already exists.
-        _exists.side_effect = ([True])
-        move_image.reset_mock()
-        check_image_dir.return_value = True
-        self.assertRaises(DiskAlreadyExistException,
-                          self.image_manager.finalize_image,
-                          "ds1", "foo", "img_1")
-        self.assertFalse(move_image.called)
 
     @patch.object(EsxImageManager, "finalize_image")
     @patch.object(EsxImageManager, "_manage_disk")
@@ -421,7 +411,7 @@ class TestEsxImageManager(unittest.TestCase):
                                        _create_image):
         vm_disk_path = "/vmfs/volumes/dsname/vms/ab/cd.vmdk"
         self.image_manager.create_image_with_vm_disk(
-            "ds1", "foo", "img_1", vm_disk_path)
+            "ds1", "[] /vmfs/volumes/ds1/foo", "img_1", vm_disk_path)
 
         # Verify that we copy the disk correctly
         expected_tmp_disk_ds_path = \
@@ -436,7 +426,7 @@ class TestEsxImageManager(unittest.TestCase):
         expected_vim_calls = [copy_call]
         self.assertEqual(expected_vim_calls, _manage_disk.call_args_list)
 
-        _create_image.assert_called_once_with("ds1", "foo", "img_1")
+        _create_image.assert_called_once_with("ds1", "[] /vmfs/volumes/ds1/foo", "img_1")
 
     @patch("shutil.rmtree")
     @patch("os.path.exists")
