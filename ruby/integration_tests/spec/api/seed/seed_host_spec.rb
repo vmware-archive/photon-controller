@@ -17,12 +17,15 @@ describe "Seed host", seed_host: true do
     EsxCloud::Config.init
     EsxCloud::Config.client = ApiClientHelper.management
 
+    allowed_networks = EsxCloud::TestHelpers.get_vm_port_groups.join(",")
+    fail "No port group defined for VMs in ESX_VM_PORT_GROUP" if allowed_networks.nil? || allowed_networks.empty?
+
     deployments = EsxCloud::Deployment.find_all.items
     fail "Unexpected deployment list #{deployments.inspect}" unless deployments.size == 1
 
     metadata = {
         "ALLOWED_DATASTORES" => EsxCloud::TestHelpers.get_datastore_name,
-        "ALLOWED_NETWORKS" => EsxCloud::TestHelpers.get_vm_port_groups.join(",")
+        "ALLOWED_NETWORKS" => allowed_networks
     }
 
     spec = EsxCloud::HostCreateSpec.new(
