@@ -178,21 +178,6 @@ public class ResourceReserveStepCmd extends StepCommand {
     this.infrastructureEntity = infrastructureEntity;
   }
 
-  private ResourceConstraint createImageSeedingResourceConstraints() {
-    Object candidateImageDatastores = step.getTask().getTransientResources
-        (ImageSeedingProgressCheckStepCmd.CANDIDATE_IMAGE_STORES_KEY_NAME);
-
-    if (candidateImageDatastores == null || ((List<String>) candidateImageDatastores).isEmpty()) {
-      return null;
-    }
-
-    ResourceConstraint resourceConstraint = new ResourceConstraint();
-    resourceConstraint.setType(ResourceConstraintType.DATASTORE);
-    resourceConstraint.setValues((List<String>) candidateImageDatastores);
-
-    return resourceConstraint;
-  }
-
   private Resource createResource(InfrastructureEntity entity)
       throws InternalException, ExternalException, ResourceConstraintException {
     switch (entity.getKind()) {

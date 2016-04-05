@@ -39,7 +39,6 @@ import com.vmware.photon.controller.api.common.exceptions.external.ExternalExcep
 import com.vmware.photon.controller.api.common.exceptions.external.NotImplementedException;
 import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
-import com.vmware.photon.controller.apife.commands.steps.ImageSeedingProgressCheckStepCmd;
 import com.vmware.photon.controller.apife.commands.steps.IsoUploadStepCmd;
 import com.vmware.photon.controller.apife.entities.AttachedDiskEntity;
 import com.vmware.photon.controller.apife.entities.BaseDiskEntity;
@@ -784,7 +783,6 @@ public class VmDcpBackend implements VmBackend {
     entityList.add(vm);
 
     StepEntity step = new StepEntity();
-    step.setOperation(Operation.IMAGE_SEEDING_PROGRESS_CHECK);
     stepEntities.add(step);
 
     step = new StepEntity();
@@ -811,10 +809,6 @@ public class VmDcpBackend implements VmBackend {
 
     TaskEntity task = taskBackend.createTaskWithSteps(vm, Operation.CREATE_VM, false, stepEntities);
     task.getToBeLockedEntityIds().add(vm.getId());
-
-    // Image ID needs to be written in the context of the task so that
-    // the image seeding progress can be check.
-    task.setTransientResources(ImageSeedingProgressCheckStepCmd.IMAGE_ID_KEY_NAME, vm.getImageId());
 
     return task;
   }

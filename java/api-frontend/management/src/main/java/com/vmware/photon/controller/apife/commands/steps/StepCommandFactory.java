@@ -106,8 +106,6 @@ public class StepCommandFactory {
   public StepCommand createCommand(TaskCommand taskCommand, StepEntity stepEntity) throws InternalException {
     checkNotNull(stepEntity);
     switch (stepEntity.getOperation()) {
-      case IMAGE_SEEDING_PROGRESS_CHECK:
-        return new ImageSeedingProgressCheckStepCmd(taskCommand, stepBackend, stepEntity, imageBackend);
       case RESERVE_RESOURCE:
         return new ResourceReserveStepCmd(
             taskCommand, stepBackend, stepEntity, diskBackend, vmBackend, networkBackend, flavorBackend);

@@ -714,8 +714,6 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
 
     TaskEntity task = new TaskEntity();
     task.setId("task-1");
-    task.setTransientResources(ImageSeedingProgressCheckStepCmd.CANDIDATE_IMAGE_STORES_KEY_NAME,
-        candidateImageDatastores);
     step.setTask(task);
 
     if (addProjectEntity) {

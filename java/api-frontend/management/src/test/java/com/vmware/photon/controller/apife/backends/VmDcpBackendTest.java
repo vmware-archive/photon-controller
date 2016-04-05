@@ -42,7 +42,6 @@ import com.vmware.photon.controller.api.common.exceptions.external.ExternalExcep
 import com.vmware.photon.controller.api.common.exceptions.external.NotImplementedException;
 import com.vmware.photon.controller.apife.TestModule;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
-import com.vmware.photon.controller.apife.commands.steps.ImageSeedingProgressCheckStepCmd;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.entities.FlavorEntity;
 import com.vmware.photon.controller.apife.entities.HostEntity;
@@ -593,10 +592,6 @@ public class VmDcpBackendTest {
     public void testPrepareVmCreate() throws Throwable {
       String vmId = createdVmTaskEntity.getEntityId();
       assertThat(createdVmTaskEntity.getSteps().size(), is(3));
-      assertThat(createdVmTaskEntity.getSteps().get(0).getOperation(),
-          is(com.vmware.photon.controller.api.Operation.IMAGE_SEEDING_PROGRESS_CHECK));
-      assertThat(createdVmTaskEntity.getTransientResources(ImageSeedingProgressCheckStepCmd.IMAGE_ID_KEY_NAME),
-          is(CoreMatchers.notNullValue()));
       assertThat(createdVmTaskEntity.getSteps().get(1).getOperation(),
           is(com.vmware.photon.controller.api.Operation.RESERVE_RESOURCE));
       assertThat(createdVmTaskEntity.getSteps().get(1).getTransientResourceEntities(ProjectEntity.KIND).size(), is(1));
