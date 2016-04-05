@@ -42,7 +42,6 @@ import com.vmware.photon.controller.api.common.exceptions.external.ExternalExcep
 import com.vmware.photon.controller.api.common.exceptions.external.NotImplementedException;
 import com.vmware.photon.controller.apife.TestModule;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
-import com.vmware.photon.controller.apife.commands.steps.ImageSeedingProgressCheckStepCmd;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.entities.FlavorEntity;
 import com.vmware.photon.controller.apife.entities.HostEntity;
@@ -592,17 +591,13 @@ public class VmDcpBackendTest {
     @Test
     public void testPrepareVmCreate() throws Throwable {
       String vmId = createdVmTaskEntity.getEntityId();
-      assertThat(createdVmTaskEntity.getSteps().size(), is(3));
+      assertThat(createdVmTaskEntity.getSteps().size(), is(2));
       assertThat(createdVmTaskEntity.getSteps().get(0).getOperation(),
-          is(com.vmware.photon.controller.api.Operation.IMAGE_SEEDING_PROGRESS_CHECK));
-      assertThat(createdVmTaskEntity.getTransientResources(ImageSeedingProgressCheckStepCmd.IMAGE_ID_KEY_NAME),
-          is(CoreMatchers.notNullValue()));
-      assertThat(createdVmTaskEntity.getSteps().get(1).getOperation(),
           is(com.vmware.photon.controller.api.Operation.RESERVE_RESOURCE));
-      assertThat(createdVmTaskEntity.getSteps().get(1).getTransientResourceEntities(ProjectEntity.KIND).size(), is(1));
-      assertThat(createdVmTaskEntity.getSteps().get(1).getTransientResourceEntities(ProjectEntity.KIND).get(0).getId(),
+      assertThat(createdVmTaskEntity.getSteps().get(0).getTransientResourceEntities(ProjectEntity.KIND).size(), is(1));
+      assertThat(createdVmTaskEntity.getSteps().get(0).getTransientResourceEntities(ProjectEntity.KIND).get(0).getId(),
           is(projectId));
-      assertThat(createdVmTaskEntity.getSteps().get(2).getOperation(),
+      assertThat(createdVmTaskEntity.getSteps().get(1).getOperation(),
           is(com.vmware.photon.controller.api.Operation.CREATE_VM));
       assertThat(createdVmTaskEntity.getToBeLockedEntityIds().size(), is(1));
       assertThat(createdVmTaskEntity.getToBeLockedEntityIds().get(0), is(vmId));
