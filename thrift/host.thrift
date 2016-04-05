@@ -512,8 +512,11 @@ struct ReceiveImageResponse {
 
 // Create Image
 struct CreateImageRequest {
+  // The ID of the Image.
+  1: required string image_id
+
   // The datastore name or id.
-  1: required string datastore
+  2: required string datastore
 
   99: optional tracing.TracingInfo tracing_info
 }
@@ -529,7 +532,7 @@ enum CreateImageResultCode {
 
 struct CreateImageResponse {
   1: required CreateImageResultCode result
-  // The path of temporary image directory relative to the datastore mount point.
+  // The datastore path of temporary image directory for upload.
   2: optional string upload_folder
   3: optional string error
 }
@@ -542,7 +545,7 @@ struct FinalizeImageRequest {
   // The datastore name or id.
   2: required string datastore
 
-  // The path of temporary image directory relative to the datastore mount point.
+  // The datastore path of temporary image directory, as from CreateImageResponse.
   3: required string tmp_image_path
 
   99: optional tracing.TracingInfo tracing_info
@@ -577,9 +580,7 @@ struct CreateImageFromVmRequest {
   // The datastore name or id to the image datastore.
   3: required string datastore
 
-  // The path of temporary image directory relative to the datastore mount point.
-  // This is the location where the image files to be moved to the image
-  // datastore will be staged.
+  // The datastore path of temporary image directory, as from CreateImageResponse.
   4: required string tmp_image_path
 
   99: optional tracing.TracingInfo tracing_info

@@ -81,7 +81,7 @@ from hamcrest import is_
 from hamcrest import is_in
 from hamcrest import not_none
 from host.hypervisor.esx.vim_client import VimClient
-from host.hypervisor.esx.vm_config import IMAGE_FOLDER_NAME_PREFIX
+from host.hypervisor.esx.vm_config import IMAGE_FOLDER_NAME_PREFIX, datastore_path
 from host.hypervisor.esx.vm_config import vmdk_path
 from host.hypervisor.esx.vm_manager import EsxVmManager
 from nose.plugins.skip import SkipTest
@@ -1140,9 +1140,9 @@ class TestRemoteAgent(unittest.TestCase, AgentCommonTests):
         img_id = "test-create-image"
         tmp_img_id = "-tmp-" + img_id
         tmp_image, ds = self._create_test_image(tmp_img_id)
-        tmp_image_path = "image_" + tmp_img_id
+        tmp_image_path = datastore_path(ds.name, "image_" + tmp_img_id)
         src_vmdk = vmdk_path(ds.id, tmp_img_id, IMAGE_FOLDER_NAME_PREFIX)
-        dst_vmdk = "[%s] %s/%s.vmdk" % (ds.name, tmp_image_path, img_id)
+        dst_vmdk = "%s/%s.vmdk" % (tmp_image_path, img_id)
 
         try:
             self._manage_disk(
@@ -1344,7 +1344,7 @@ class TestRemoteAgent(unittest.TestCase, AgentCommonTests):
         tmp_img_id = "-tmp-" + img_id
         tmp_image, ds = self._create_test_image(tmp_img_id)
 
-        tmp_image_path = "image_" + tmp_img_id
+        tmp_image_path = datastore_path(ds.id, "image_" + tmp_img_id)
         src_vmdk = vmdk_path(ds.id, tmp_img_id, IMAGE_FOLDER_NAME_PREFIX)
         vm_wrapper = VmWrapper(self.host_client)
 
