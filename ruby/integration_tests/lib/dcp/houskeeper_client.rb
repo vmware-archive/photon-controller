@@ -23,7 +23,7 @@ module EsxCloud
       end
 
       def self.address
-        ENV["HOUSEKEEPER_ADDRESS"] || ENV["PUBLIC_NETWORK_IP"] || "172.31.253.10"
+        ENV["HOUSEKEEPER_ADDRESS"] || ENV["API_ADDRESS"] || ENV["PUBLIC_NETWORK_IP"] || "172.31.253.10"
       end
 
       def self.port
