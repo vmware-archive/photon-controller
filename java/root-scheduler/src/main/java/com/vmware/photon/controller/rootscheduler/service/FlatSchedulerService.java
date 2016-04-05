@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.rootscheduler.service;
 
+import com.vmware.photon.controller.cloudstore.dcp.entity.ImageToImageDatastoreMappingService;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.clients.HostClientProvider;
@@ -25,8 +26,11 @@ import com.vmware.photon.controller.host.gen.Host;
 import com.vmware.photon.controller.resource.gen.Disk;
 import com.vmware.photon.controller.resource.gen.Resource;
 import com.vmware.photon.controller.resource.gen.ResourceConstraint;
+import com.vmware.photon.controller.resource.gen.ResourceConstraintType;
+import com.vmware.photon.controller.resource.gen.Vm;
 import com.vmware.photon.controller.roles.gen.GetSchedulersResponse;
 import com.vmware.photon.controller.rootscheduler.Config;
+import com.vmware.photon.controller.rootscheduler.exceptions.NoSuchResourceException;
 import com.vmware.photon.controller.rootscheduler.interceptors.RequestId;
 import com.vmware.photon.controller.scheduler.gen.ConfigureRequest;
 import com.vmware.photon.controller.scheduler.gen.ConfigureResponse;
@@ -39,8 +43,12 @@ import com.vmware.photon.controller.status.gen.GetStatusRequest;
 import com.vmware.photon.controller.status.gen.Status;
 import com.vmware.photon.controller.status.gen.StatusType;
 import com.vmware.photon.controller.tracing.gen.TracingInfo;
+import com.vmware.xenon.common.ServiceDocumentQueryResult;
+import com.vmware.xenon.common.Utils;
 
+import com.google.common.base.Optional;
 import com.google.common.base.Stopwatch;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import com.google.inject.Inject;
 import org.apache.thrift.TException;
@@ -48,6 +56,7 @@ import org.apache.thrift.async.AsyncMethodCallback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -78,6 +87,7 @@ public class FlatSchedulerService implements RootScheduler.Iface, ServiceNodeEve
   private ConstraintChecker checker;
   private final ScoreCalculator scoreCalculator;
   private final HostClientFactory hostClientFactory;
+  private XenonRestClient cloudStoreClient;
 
   @Inject
   public FlatSchedulerService(Config config,
@@ -89,6 +99,7 @@ public class FlatSchedulerService implements RootScheduler.Iface, ServiceNodeEve
     this.checker = checker;
     this.scoreCalculator = scoreCalculator;
     this.hostClientFactory = hostClientFactory;
+    this.cloudStoreClient = dcpRestClient;
 
     if (this.checker instanceof InMemoryConstraintChecker) {
       final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
@@ -140,7 +151,7 @@ public class FlatSchedulerService implements RootScheduler.Iface, ServiceNodeEve
    * @param request place request
    * @return a list of resource constraints.
    */
-  private List<ResourceConstraint> getResourceConstraints(PlaceRequest request) {
+  private List<ResourceConstraint> getResourceConstraints(PlaceRequest request) throws NoSuchResourceException {
     Resource resource = request.getResource();
     List<ResourceConstraint> constraints = new LinkedList<>();
     if (resource == null) {
@@ -148,7 +159,12 @@ public class FlatSchedulerService implements RootScheduler.Iface, ServiceNodeEve
     }
 
     if (resource.isSetVm() && resource.getVm().isSetResource_constraints()) {
-      constraints.addAll(resource.getVm().getResource_constraints());
+      Vm vm = resource.getVm();
+      constraints.addAll(vm.getResource_constraints());
+
+      if (vm.isSetUseImageSeedingHints() && vm.isUseImageSeedingHints()) {
+        constraints.add(createImageSeedingConstraint(vm.getImage_id()));
+      }
     }
 
     if (resource.isSetDisks()) {
@@ -172,7 +188,16 @@ public class FlatSchedulerService implements RootScheduler.Iface, ServiceNodeEve
 
     // Pick candidates that satisfy the resource constraints.
     Stopwatch getCandidatesStopwatch = Stopwatch.createStarted();
-    List<ResourceConstraint> constraints = getResourceConstraints(request);
+
+    // Get the list of resource constraints
+    List<ResourceConstraint> constraints;
+    try {
+      constraints = getResourceConstraints(request);
+    } catch (NoSuchResourceException ex) {
+      return new PlaceResponse(PlaceResultCode.NO_SUCH_RESOURCE);
+    }
+
+    // Get all the candidates that satisfy the constraint
     Map<String, ServerAddress> candidates = checker.getCandidates(constraints, numSamples);
     logger.info("elapsed-time flat-place-get-candidates {} milliseconds",
         getCandidatesStopwatch.elapsed(TimeUnit.MILLISECONDS));
@@ -270,5 +295,37 @@ public class FlatSchedulerService implements RootScheduler.Iface, ServiceNodeEve
   @Override
   public synchronized void onLeave() {
     logger.info("Is no longer the root scheduler leader");
+  }
+
+  public ResourceConstraint createImageSeedingConstraint(String imageId)
+      throws NoSuchResourceException {
+    final ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
+    termsBuilder.put("imageId", imageId);
+
+    List<String> seededImageDatastores = new ArrayList<>();
+    try {
+      ServiceDocumentQueryResult queryResult = cloudStoreClient.queryDocuments(
+          ImageToImageDatastoreMappingService.State.class,
+          termsBuilder.build(), Optional.<Integer>absent(), true, false);
+
+      queryResult.documents.values().forEach(item -> {
+        String datastoreId = Utils.fromJson(
+            item, ImageToImageDatastoreMappingService.State.class).imageDatastoreId;
+        seededImageDatastores.add(datastoreId);
+      });
+    } catch (Throwable t) {
+      logger.error("Failed to call cloud-store to lookup image datastores", t);
+      throw new RuntimeException(t);
+    }
+
+    if (seededImageDatastores.isEmpty()) {
+      throw new NoSuchResourceException("No seeded image datastores found for the imageId: " + imageId);
+    }
+
+    ResourceConstraint constraint = new ResourceConstraint();
+    constraint.setType(ResourceConstraintType.DATASTORE);
+    constraint.setValues(seededImageDatastores);
+
+    return constraint;
   }
 }

@@ -253,6 +253,7 @@ public class ResourceReserveStepCmd extends StepCommand {
     vm.setFlavor_info(getFlavor(entity));
     vm.setProject_id(entity.getProjectId());
     vm.setTenant_id(this.getTenantId(entity));
+    vm.setImage_id(entity.getImageId());
 
     setEnvironments(entity, vm);
     createAffinityConstraints(entity, vm);
