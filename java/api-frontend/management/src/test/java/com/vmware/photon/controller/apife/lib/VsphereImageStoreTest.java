@@ -139,7 +139,7 @@ public class VsphereImageStoreTest extends PowerMockTestCase {
     public void testSuccessWithConfiguredHostAddress() throws Exception {
       doReturn(nfcClient).when(imageStore).getNfcClient(any(HostServiceTicket.class));
       when(hostClient.getNfcServiceTicket(anyString())).thenReturn(serviceTicketResponse);
-      when(hostClient.createImage(anyString())).thenReturn(new CreateImageResponse());
+      when(hostClient.createImage(anyString(), imageId)).thenReturn(new CreateImageResponse());
 
       Image imageFolder = spy(imageStore.createImage(imageId));
       assertThat(imageFolder, notNullValue());
@@ -151,7 +151,7 @@ public class VsphereImageStoreTest extends PowerMockTestCase {
 
       doReturn(nfcClient).when(imageStore).getNfcClient(any(HostServiceTicket.class));
       when(hostClient.getNfcServiceTicket(anyString())).thenReturn(serviceTicketResponse);
-      when(hostClient.createImage(anyString())).thenReturn(new CreateImageResponse());
+      when(hostClient.createImage(anyString(), imageId)).thenReturn(new CreateImageResponse());
 
       Image imageFolder = spy(imageStore.createImage(imageId));
       assertThat(imageFolder, notNullValue());
@@ -217,7 +217,7 @@ public class VsphereImageStoreTest extends PowerMockTestCase {
 
       imageStore = spy(new VsphereImageStore(hostBackend, hostClientFactory, imageConfig));
       imageId = "image-id";
-      image = new VsphereImageStoreImage(null, IMAGE_DATASTORE_NAME, "upload_folder", imageId);
+      image = new VsphereImageStoreImage(null, "upload_folder", imageId);
 
     }
 
@@ -345,7 +345,7 @@ public class VsphereImageStoreTest extends PowerMockTestCase {
     private Image image;
     @BeforeMethod
     public void setUp() throws RpcException, InterruptedException, InternalException {
-      image = new VsphereImageStoreImage(null, IMAGE_DATASTORE_NAME, "upload_folder", "image-id");
+      image = new VsphereImageStoreImage(null, "upload_folder", "image-id");
 
       imageConfig = new ImageConfig();
       imageConfig.setEndpoint(HOST_ADDRESS);

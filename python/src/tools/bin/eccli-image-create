@@ -12,8 +12,7 @@ import re
 from host.hypervisor.esx.vim_client import VimClient
 from pyVmomi import vim
 
-from host.hypervisor.esx.vm_config import TMP_IMAGE_FOLDER_NAME_PREFIX, compond_path_join
-from host.hypervisor.esx.vm_config import EsxVmConfigSpec, datastore_path
+from host.hypervisor.esx.vm_config import EsxVmConfigSpec
 
 from eccli.format import print_request, print_result
 from eccli.format import print_response
@@ -21,7 +20,7 @@ from eccli.optparser import default_parser
 from eccli.thrift import get_client
 
 from gen.host.ttypes import FinalizeImageRequest, ServiceTicketRequest, \
-    ServiceType, FinalizeImageResultCode
+    ServiceType, FinalizeImageResultCode, CreateImageRequest
 
 parser = default_parser(usage="eccli-image-create [options]",
                         add_help=True)
@@ -47,9 +46,8 @@ def normalize_datastore(vim_client, datastore):
 
 
 # create import spec
-def create_import_spec(datastore, image_id):
-    vm_path = datastore_path(datastore, compond_path_join(TMP_IMAGE_FOLDER_NAME_PREFIX, image_id))
-    vm_spec = EsxVmConfigSpec(image_id, "otherGuest", 32, 1, vm_path, None)
+def create_import_spec(image_id, upload_folder):
+    vm_spec = EsxVmConfigSpec(image_id, "otherGuest", 32, 1, upload_folder, None)
     disk_controller = vim.vm.device.VirtualLsiLogicController(
         key=0,
         sharedBus=vim.vm.device.VirtualSCSIController.Sharing.noSharing,
@@ -77,12 +75,26 @@ def create_import_spec(datastore, image_id):
     return vim.vm.VmImportSpec(configSpec=vm_spec)
 
 
-def get_ticket(client):
-    ticket_request = ServiceTicketRequest(service_type=ServiceType.VIM)
+def get_ticket(client, datastore):
+    ticket_request = ServiceTicketRequest()
+    ticket_request.service_type=ServiceType.VIM
+    ticket_request.datastore_name = datastore
     print_request(ticket_request)
     ticket_response = client.get_service_ticket(ticket_request)
     print_response(ticket_response)
     return ticket_response.vim_ticket
+
+
+def create_image(client, image_id, datastore):
+    # create image
+    create_request = CreateImageRequest()
+    create_request.image_id = image_id
+    create_request.datastore = datastore
+
+    print_request(create_request)
+    create_response = client.create_image(create_request)
+    print_response(create_response)
+    return create_response.upload_folder
 
 
 def wait_for_lease(lease):
@@ -146,16 +158,21 @@ def upload_file(file_path, upload_url, upload_lease):
             raise Exception(resp.status, resp.reason)
 
 
+# create image and get upload_folder
+print_result("Calling agent to create image")
 client = get_client(options, "Host")
-# create service ticket
-ticket = get_ticket(client)
-# create vim_client using ticket
-vim_client = VimClient(host=options.host, ticket=ticket, auto_sync=False)
-datastore = normalize_datastore(vim_client, options.datastore)
-# create import spec
 image_id = str(uuid.uuid1())
-importSpec = create_import_spec(datastore, image_id)
-vim_client.make_directory(importSpec.configSpec.files.vmPathName)
+upload_folder = create_image(client, image_id, options.datastore)
+
+# create service ticket
+print_result("Calling agent to get ticket")
+ticket = get_ticket(client, options.datastore)
+# create vim_client using ticket
+print_result("Connecting nfc")
+vim_client = VimClient(host=options.host, ticket=ticket, auto_sync=False)
+# create import spec
+print_result("Importing VApp")
+importSpec = create_import_spec(image_id, upload_folder)
 # importVApp and get upload url
 vm_folder = vim_client.vm_folder
 root_rp = vim_client.root_resource_pool
@@ -164,23 +181,27 @@ wait_for_lease(upload_lease)
 upload_url = upload_lease.info.deviceUrl[0].url.replace("*", options.host)
 
 # upload file
+print_result("Uploading")
 try:
     upload_file(options.file_path, upload_url, upload_lease)
 finally:
     upload_lease.Complete()
 
-# create image
-request = FinalizeImageRequest()
-request.image_id = image_id
-request.datastore = datastore
-request.tmp_image_path = os.path.join(compond_path_join(TMP_IMAGE_FOLDER_NAME_PREFIX, image_id))
-if not options.datastore.startswith("vsan"):
-    # on vmfs, hostd creates an extra subfolder when importing vm
-    request.tmp_image_path = os.path.join(request.tmp_image_path, image_id)
+# unregister vm
+print_result("Unregistering vm")
+vim_client.wait_for_vm_create(image_id)
+vm = vim_client.get_vm_obj_in_cache(image_id)
+vm.Unregister()
 
-print_request(request)
-response = client.finalize_image(request)
-print_response(response)
+# finalize image
+print_result("Calling agent to finalize image")
+finalize_request = FinalizeImageRequest()
+finalize_request.image_id = image_id
+finalize_request.datastore = options.datastore
+finalize_request.tmp_image_path = upload_folder
+print_request(finalize_request)
+finalize_response = client.finalize_image(finalize_request)
+print_response(finalize_response)
 
-if response.result == FinalizeImageResultCode.OK:
+if finalize_response.result == FinalizeImageResultCode.OK:
     print_result("image id: %s" % image_id)
