@@ -24,8 +24,8 @@ describe "Image Cleaner", housekeeper: true do
 
     task = run_task payload
     expect(task["taskInfo"]["stage"]).to eq "FINISHED"
-    expect(task["dataStoreCount"]).to eq 1
-    expect(task["finishedDeletes"]).to eq 1
+    expect(task["dataStoreCount"]).to be be >= 1
+    expect(task["finishedDeletes"]).to eq task["dataStoreCount"]
     expect(task["failedOrCanceledDeletes"]).to eq 0
   end
 
