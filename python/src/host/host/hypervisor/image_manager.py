@@ -232,7 +232,7 @@ class ImageManager(object):
         """
 
     @abc.abstractmethod
-    def create_image(self, datastore_id):
+    def create_image(self, image_id, datastore_id):
         """ Create a temp image on given datastore, return its path.
         """
         pass

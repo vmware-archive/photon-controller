@@ -89,13 +89,13 @@ public class VsphereImageStore implements ImageStore {
     NfcClient nfcClient = getNfcClient(hostServiceTicket);
     String uploadFolder;
     try {
-      CreateImageResponse response = getHostClient().createImage(this.getDatastore());
+      CreateImageResponse response = getHostClient().createImage(imageId, this.getDatastore());
       uploadFolder = response.getUpload_folder();
     } catch (InterruptedException | RpcException e) {
       logger.error("Failed to call HostClient to create image '{}', due to {}", imageId, e);
       throw new InternalException(e);
     }
-    return new VsphereImageStoreImage(nfcClient, this.getDatastore(), uploadFolder, imageId);
+    return new VsphereImageStoreImage(nfcClient, uploadFolder, imageId);
   }
 
   /**
