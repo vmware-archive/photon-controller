@@ -125,7 +125,6 @@ public class StepCommandFactoryTest {
         {Operation.UPLOAD_IMAGE, ImageUploadStepCmd.class},
         {Operation.REPLICATE_IMAGE, ImageReplicateStepCmd.class},
         {Operation.DELETE_IMAGE, ImageDeleteStepCmd.class},
-        {Operation.IMAGE_SEEDING_PROGRESS_CHECK, ImageSeedingProgressCheckStepCmd.class},
 
         // Host
         {Operation.CREATE_HOST, HostCreateStepCmd.class},
