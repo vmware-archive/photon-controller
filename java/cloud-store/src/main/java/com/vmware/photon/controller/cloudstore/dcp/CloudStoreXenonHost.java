@@ -82,9 +82,12 @@ public class CloudStoreXenonHost
     extends AbstractServiceHost
     implements XenonHostInfoProvider, HostClientProvider, AgentControlClientProvider,
     ServiceConfigProvider {
+
   private static final Logger logger = LoggerFactory.getLogger(CloudStoreXenonHost.class);
+
   public static final int DEFAULT_CONNECTION_LIMIT_PER_HOST = 1024;
-  public static final int INDEX_SEARCHER_COUNT_THRESHOLD = 512;
+
+  public static final int INDEX_SEARCHER_COUNT_THRESHOLD = 1024;
 
   private static final TaskStateBuilder[] TASK_TRIGGERS = new TaskStateBuilder[]{
       new TombstoneCleanerTriggerBuilder(
@@ -187,6 +190,13 @@ public class CloudStoreXenonHost
   public ServiceHost start() throws Throwable {
     super.start();
 
+    /**
+     * Xenon currently uses a garbage collection algorithm for its Lucene index searchers which
+     * results in index searchers being closed while still in use by paginated queries. As a
+     * temporary workaround until the issue is fixed on the framework side (v0.7.6), raise the
+     * threshold at which index searcher garbage collection is triggered to limit the impact of
+     * this issue.
+     */
     LuceneDocumentIndexService.setSearcherCountThreshold(INDEX_SEARCHER_COUNT_THRESHOLD);
 
     this.getClient().setConnectionLimitPerHost(DEFAULT_CONNECTION_LIMIT_PER_HOST);
