@@ -29,8 +29,8 @@ import com.vmware.photon.controller.common.xenon.scheduler.TaskSchedulerServiceS
 import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfigProvider;
-import com.vmware.photon.controller.housekeeper.engines.NsxClientFactory;
-import com.vmware.photon.controller.housekeeper.engines.NsxClientFactoryProvider;
+import com.vmware.photon.controller.nsxclient.NsxClientFactory;
+import com.vmware.photon.controller.nsxclient.NsxClientFactoryProvider;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceHost;
 import com.vmware.xenon.common.UriUtils;
