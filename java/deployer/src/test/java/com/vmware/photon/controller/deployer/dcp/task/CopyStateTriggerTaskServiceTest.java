@@ -295,6 +295,7 @@ public class CopyStateTriggerTaskServiceTest {
     state.destinationIp = "0.0.0.0";
     state.factoryLink = ContainerFactoryService.SELF_LINK;
     state.destinationPort = 1234;
+    state.enableMaintenance = false;
     return state;
   }
 }

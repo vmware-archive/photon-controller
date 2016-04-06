@@ -119,6 +119,10 @@ public class CopyStateTriggerTaskService extends StatefulService {
     @Immutable
     @DefaultBoolean(value = false)
     public Boolean performHostTransformation;
+
+    @Immutable
+    @DefaultBoolean(value = true)
+    public Boolean enableMaintenance;
   }
 
   public CopyStateTriggerTaskService() {
@@ -127,8 +131,6 @@ public class CopyStateTriggerTaskService extends StatefulService {
     super.toggleOption(ServiceOption.REPLICATION, true);
     super.toggleOption(ServiceOption.PERSISTENCE, true);
     super.toggleOption(ServiceOption.INSTRUMENTATION, true);
-    super.toggleOption(ServiceOption.PERIODIC_MAINTENANCE, true);
-    super.setMaintenanceIntervalMicros(DEFAULT_TRIGGER_INTERVAL);
   }
 
   @Override
@@ -150,13 +152,18 @@ public class CopyStateTriggerTaskService extends StatefulService {
 
     try {
       validateState(state);
-      start.setBody(state).complete();
-    } catch (Throwable e) {
-      ServiceUtils.logSevere(this, e);
-      if (!OperationUtils.isCompleted(start)) {
-        start.fail(e);
-      }
+    } catch (Throwable t) {
+      ServiceUtils.logSevere(this, t);
+      start.fail(t);
+      return;
     }
+
+    if (state.enableMaintenance) {
+      this.toggleOption(ServiceOption.PERIODIC_MAINTENANCE, true);
+      this.setMaintenanceIntervalMicros(DEFAULT_TRIGGER_INTERVAL);
+    }
+
+    start.setBody(state).complete();
   }
 
   /**
