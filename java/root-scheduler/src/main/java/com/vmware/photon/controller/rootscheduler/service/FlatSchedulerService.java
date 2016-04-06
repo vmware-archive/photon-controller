@@ -163,16 +163,13 @@ public class FlatSchedulerService implements RootScheduler.Iface, ServiceNodeEve
     if (resource.isSetVm() && resource.getVm().isSetResource_constraints()) {
       Vm vm = resource.getVm();
       constraints.addAll(vm.getResource_constraints());
+      createImageSeedingConstraint(vm);
     }
 
     if (resource.isSetDisks()) {
       for (Disk disk : resource.getDisks()) {
         if (disk.isSetResource_constraints()) {
           constraints.addAll(disk.getResource_constraints());
-        }
-        if (disk.isSetImage()) {
-          String imageId = disk.getImage().getId();
-          constraints.add(createImageSeedingConstraint(imageId));
         }
       }
     }
@@ -301,8 +298,30 @@ public class FlatSchedulerService implements RootScheduler.Iface, ServiceNodeEve
     logger.info("Is no longer the root scheduler leader");
   }
 
-  public ResourceConstraint createImageSeedingConstraint(String imageId)
+  /**
+   * New images may not be available on all the image datastores. We look at
+   * image seeding information available in cloud-store to add placement constraints
+   * such that only hosts with the requested image are selected in the placement process.
+   */
+  public ResourceConstraint createImageSeedingConstraint(Vm vm)
       throws SystemErrorException, NoSuchResourceException {
+    String imageId = null;
+    if (vm.isSetDisks()) {
+      for (Disk disk : vm.getDisks()) {
+        if (disk.isSetImage()) {
+          imageId = disk.getImage().getId();
+          break;
+        }
+      }
+    }
+    // It is necessary for a VM placement request to have an associated diskImage. If none are
+    // found, we fail placement.
+    if (imageId == null) {
+      String errorMsg = "Vm resource does not have an associated diskImage";
+      logger.error(errorMsg);
+      throw new SystemErrorException(errorMsg);
+    }
+
     final ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
     termsBuilder.put("imageId", imageId);
 

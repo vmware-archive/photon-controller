@@ -17,11 +17,15 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.ImageToImageDatastoreM
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageToImageDatastoreMappingServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
+import com.vmware.photon.controller.common.clients.exceptions.SystemErrorException;
 import com.vmware.photon.controller.common.xenon.XenonRestClient;
 import com.vmware.photon.controller.common.zookeeper.gen.ServerAddress;
 import com.vmware.photon.controller.host.gen.Host;
+import com.vmware.photon.controller.resource.gen.Disk;
+import com.vmware.photon.controller.resource.gen.DiskImage;
 import com.vmware.photon.controller.resource.gen.Resource;
 import com.vmware.photon.controller.resource.gen.ResourceConstraint;
+import com.vmware.photon.controller.resource.gen.Vm;
 import com.vmware.photon.controller.rootscheduler.Config;
 import com.vmware.photon.controller.rootscheduler.SchedulerConfig;
 import com.vmware.photon.controller.rootscheduler.exceptions.NoSuchResourceException;
@@ -37,6 +41,8 @@ import org.apache.thrift.async.AsyncMethodCallback;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.invocation.InvocationOnMock;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -53,6 +59,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.testng.Assert.assertNotNull;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
@@ -216,44 +223,63 @@ public class FlatSchedulerServiceTest {
    * Image seeding tests.
    */
   public class ImageSeedingTests {
-    @Test
-    public void testSuccess() throws Throwable {
-      TestEnvironment cloudStoreMachine = TestEnvironment.create(1);
+    final String imageId = "test-image-id";
+    final String imageDatastoreId = "test-image-datastoreId";
+
+    TestEnvironment cloudStoreMachine;
+    FlatSchedulerService service;
+
+    @BeforeClass
+    public void testSetup() throws Throwable {
+      cloudStoreMachine = TestEnvironment.create(1);
       XenonRestClient cloudStoreClient = new XenonRestClient(
           cloudStoreMachine.getServerSet(), Executors.newFixedThreadPool(1));
       cloudStoreClient.start();
-
-      String imageId = "test-image-id";
-      String imageDatastoreId = "test-image-datastoreId";
 
       ImageToImageDatastoreMappingService.State state = new ImageToImageDatastoreMappingService.State();
       state.imageId = imageId;
       state.imageDatastoreId = imageDatastoreId;
 
       cloudStoreMachine.sendPostAndWait(ImageToImageDatastoreMappingServiceFactory.SELF_LINK, state);
-
       CloudStoreConstraintChecker checker = new CloudStoreConstraintChecker(cloudStoreClient);
-      FlatSchedulerService service = new FlatSchedulerService(null, checker, cloudStoreClient, null, null);
-      ResourceConstraint constraint = service.createImageSeedingConstraint(imageId);
-      assertNotNull(constraint);
-      assertThat(constraint.getValues().contains(state.imageDatastoreId), is(true));
 
+      service = new FlatSchedulerService(null, checker, cloudStoreClient, null, null);
+    }
+
+    @AfterClass
+    public void testCleanup() throws Throwable {
       cloudStoreMachine.stop();
+    }
+
+    @Test
+    public void testSuccess() throws Throwable {
+      ResourceConstraint constraint = service.createImageSeedingConstraint(createVmResource(imageId));
+      assertNotNull(constraint);
+      assertThat(constraint.getValues().contains(imageDatastoreId), is(true));
     }
 
     @Test(expectedExceptions = NoSuchResourceException.class)
     public void testWithZeroDatastores() throws Throwable {
-      TestEnvironment cloudStoreMachine = TestEnvironment.create(1);
-      XenonRestClient cloudStoreClient = new XenonRestClient(
-          cloudStoreMachine.getServerSet(), Executors.newFixedThreadPool(1));
-      cloudStoreClient.start();
+      service.createImageSeedingConstraint(createVmResource("new-test-image-id"));
+    }
 
-      CloudStoreConstraintChecker checker = new CloudStoreConstraintChecker(cloudStoreClient);
-      FlatSchedulerService service = new FlatSchedulerService(
-          null, checker, cloudStoreClient, null, null);
+    @Test(expectedExceptions = SystemErrorException.class)
+    public void testWithNoDiskImages() throws Throwable {
+      service.createImageSeedingConstraint(createVmResource(null));
+    }
 
-      service.createImageSeedingConstraint("test-image-id");
-      cloudStoreMachine.stop();
+    private Vm createVmResource(String imageId) {
+      Disk disk = new Disk();
+
+      if (imageId != null) {
+        DiskImage image = new DiskImage();
+        image.setId(imageId);
+        disk.setImage(image);
+      }
+
+      Vm vm = new Vm();
+      vm.setDisks(Arrays.asList(disk));
+      return vm;
     }
   }
 }
