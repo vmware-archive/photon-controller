@@ -73,7 +73,7 @@ module EsxCloud::Cli
 
         # delete all the hosts
         deployments.each do |d|
-          hosts = client.get_deployment_hosts(d.id)
+          hosts = client.get_deployment_hosts(d.id).items
           puts "Cleaning Host(s):" unless hosts.size == 0
           hosts.each do |h|
             puts "  removing host #{h.id}"
