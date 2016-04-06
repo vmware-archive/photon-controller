@@ -50,8 +50,7 @@ describe "migrate finalize", upgrade: true do
       destination_map = destination_map.select { |key,_| key.include? "photon" }
 
       # the two lists should be equal
-      expect(destination_map.keys() - upgrade_cloudstore_map.keys()).to_be eq []
-      expect(upgrade_cloudstore_map.keys() - destination_map.keys()).to_be eq []
+      expect(destination_map.keys).to match_array(upgrade_cloudstore_map.keys)
     end
 
     it "should destination contain all the cloudstore content of the source" do
@@ -73,7 +72,7 @@ describe "migrate finalize", upgrade: true do
         source_set = parse_id_set(source_json)
         destination_json = destination_cloud_store.get v
         destination_set = parse_id_set(destination_json)
-        expect(destination_set.superset?(source_set)).to eq true
+        expect(destination_set).to include(source_set)
       end
     end
   end
