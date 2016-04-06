@@ -38,7 +38,7 @@ import com.vmware.photon.controller.host.gen.CopyImageResultCode;
 import com.vmware.photon.controller.housekeeper.dcp.mock.CloudStoreHelperMock;
 import com.vmware.photon.controller.housekeeper.dcp.mock.HostClientCopyImageErrorMock;
 import com.vmware.photon.controller.housekeeper.dcp.mock.HostClientMock;
-import com.vmware.photon.controller.housekeeper.engines.NsxClientFactory;
+import com.vmware.photon.controller.nsxclient.NsxClientFactory;
 import com.vmware.photon.controller.housekeeper.helpers.dcp.TestEnvironment;
 import com.vmware.photon.controller.housekeeper.helpers.dcp.TestHost;
 import com.vmware.xenon.common.Operation;

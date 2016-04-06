@@ -26,7 +26,7 @@ import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
 import com.vmware.photon.controller.housekeeper.Config;
 import com.vmware.photon.controller.housekeeper.HousekeeperServerSet;
 import com.vmware.photon.controller.housekeeper.dcp.HousekeeperXenonServiceHost;
-import com.vmware.photon.controller.housekeeper.engines.NsxClientFactory;
+import com.vmware.photon.controller.nsxclient.NsxClientFactory;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
