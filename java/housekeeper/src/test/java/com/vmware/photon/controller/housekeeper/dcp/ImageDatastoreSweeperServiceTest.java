@@ -42,9 +42,9 @@ import com.vmware.photon.controller.housekeeper.dcp.mock.hostclient.ErrorMockGet
 import com.vmware.photon.controller.housekeeper.dcp.mock.hostclient.ErrorMockGetInactiveImages;
 import com.vmware.photon.controller.housekeeper.dcp.mock.hostclient.ErrorMockStartImageScan;
 import com.vmware.photon.controller.housekeeper.dcp.mock.hostclient.ErrorMockStartImageSweep;
-import com.vmware.photon.controller.housekeeper.engines.NsxClientFactory;
 import com.vmware.photon.controller.housekeeper.helpers.dcp.TestEnvironment;
 import com.vmware.photon.controller.housekeeper.helpers.dcp.TestHost;
+import com.vmware.photon.controller.nsxclient.NsxClientFactory;
 import com.vmware.photon.controller.resource.gen.InactiveImageDescriptor;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;

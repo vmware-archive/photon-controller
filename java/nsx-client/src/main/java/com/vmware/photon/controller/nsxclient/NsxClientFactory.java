@@ -10,12 +10,17 @@
  * conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package com.vmware.photon.controller.housekeeper.engines;
+
+package com.vmware.photon.controller.nsxclient;
+
+import com.vmware.photon.controller.nsxclient.NsxClient;
 
 /**
- * Interface for an NsxClientFactory provider.
+ * Factory for instances of {@link NsxClient}.
  */
-public interface NsxClientFactoryProvider {
+public class NsxClientFactory {
 
-  NsxClientFactory getNsxClientFactory();
+  public NsxClient create(String endpoint, String username, String password) {
+    return new NsxClient(endpoint, username, password);
+  }
 }

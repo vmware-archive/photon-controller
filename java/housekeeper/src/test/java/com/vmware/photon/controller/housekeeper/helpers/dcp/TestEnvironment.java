@@ -21,7 +21,7 @@ import com.vmware.photon.controller.common.xenon.host.XenonConfig;
 import com.vmware.photon.controller.common.xenon.scheduler.TaskSchedulerServiceStateBuilder;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
 import com.vmware.photon.controller.housekeeper.dcp.HousekeeperXenonServiceHost;
-import com.vmware.photon.controller.housekeeper.engines.NsxClientFactory;
+import com.vmware.photon.controller.nsxclient.NsxClientFactory;
 import com.vmware.xenon.common.ServiceHost;
 
 import org.apache.commons.io.FileUtils;

@@ -23,8 +23,8 @@ import com.vmware.photon.controller.common.xenon.scheduler.TaskSchedulerServiceF
 import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
 import com.vmware.photon.controller.housekeeper.Config;
 import com.vmware.photon.controller.housekeeper.ConfigTest;
-import com.vmware.photon.controller.housekeeper.engines.NsxClientFactory;
 import com.vmware.photon.controller.housekeeper.helpers.TestHelper;
+import com.vmware.photon.controller.nsxclient.NsxClientFactory;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.services.common.LuceneDocumentIndexService;
 import com.vmware.xenon.services.common.LuceneQueryTaskFactoryService;
