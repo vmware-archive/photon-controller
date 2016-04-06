@@ -36,7 +36,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
  */
 public class VirtualNetworkService extends StatefulService {
 
-  public static final String FACTORY_LINK = ServiceUriPaths.CLOUDSTORE_ROOT + "/virtualNetworks";
+  public static final String FACTORY_LINK = ServiceUriPaths.CLOUDSTORE_ROOT + "/virtual-networks";
 
   public static FactoryService createFactory() {
     return FactoryService.createIdempotent(VirtualNetworkService.class);

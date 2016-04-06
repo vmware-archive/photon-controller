@@ -49,7 +49,7 @@ describe "migrate finalize", upgrade: true do
       destination_map = get_service_map URI.parse(ApiClientHelper.endpoint(nil, nil, nil))
       destination_map = destination_map.select { |key,_| key.include? "photon" }
 
-      expected_new_services_at_destination = ["/photon/cloudstore/virtualNetworks"]
+      expected_new_services_at_destination = ["/photon/cloudstore/virtual-networks"]
 
       # the two lists should be equal
       source_services = upgrade_cloudstore_map.keys
