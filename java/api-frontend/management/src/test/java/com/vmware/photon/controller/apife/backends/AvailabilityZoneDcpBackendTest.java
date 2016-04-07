@@ -162,20 +162,6 @@ public class AvailabilityZoneDcpBackendTest {
       assertThat(availabilityZone.getState(), is(AvailabilityZoneState.READY));
       assertThat(availabilityZone.getId(), is(availabilityZoneId));
     }
-
-    @Test
-    public void testCreateAvailabilityZoneTwiceWithSameName() throws Throwable {
-      createdAvailabilityZoneTaskEntity = availabilityZoneDcpBackend.createAvailabilityZone(availabilityZoneCreateSpec);
-      AvailabilityZoneEntity availabilityZone = availabilityZoneDcpBackend
-          .getEntityById(createdAvailabilityZoneTaskEntity.getEntityId());
-
-      try {
-        availabilityZoneDcpBackend.createAvailabilityZone(availabilityZoneCreateSpec);
-        fail("availabilityZoneDcpBackend.createAvailabilityZone for existing availability zone should have failed ");
-      } catch (NameTakenException e) {
-        assertThat(e.getMessage(), containsString(availabilityZone.getName()));
-      }
-    }
   }
 
   /**

@@ -66,11 +66,6 @@ public class AvailabilityZoneDcpBackend implements AvailabilityZoneBackend {
 
   @Override
   public TaskEntity createAvailabilityZone(AvailabilityZoneCreateSpec availabilityZone) throws ExternalException {
-    if (!(findEntitiesByName(Optional.of(availabilityZone.getName()),
-        Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE))).getItems().isEmpty()) {
-      throw new NameTakenException(AvailabilityZone.KIND, availabilityZone.getName());
-    }
-
     AvailabilityZoneService.State state = new AvailabilityZoneService.State();
     state.name = availabilityZone.getName();
     state.state = AvailabilityZoneState.READY;

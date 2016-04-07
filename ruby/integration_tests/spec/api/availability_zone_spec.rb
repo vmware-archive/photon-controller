@@ -55,21 +55,6 @@ describe "availability_zone" do
     end
   end
 
-  it "should raise exception for duplicate availability_zone name" do
-    availability_zone_name = random_name("availability-zone-")
-    create_availability_zone(EsxCloud::AvailabilityZoneCreateSpec.new(availability_zone_name))
-    begin
-      create_availability_zone(EsxCloud::AvailabilityZoneCreateSpec.new(availability_zone_name))
-      fail("AvailabilityZone create with duplicate name should fail")
-    rescue EsxCloud::ApiError => e
-      e.response_code.should == 400
-      e.errors.size.should == 1
-      e.errors[0].code.should include("NameTaken")
-    rescue EsxCloud::CliError => e
-      e.output.should include("name '#{availability_zone_name}' already taken")
-    end
-  end
-
   xit "should list multiple availability_zones" do
     availability_zones = find_all_availability_zones()
     availability_zones.items.size.should == 0
