@@ -41,7 +41,6 @@ from host.hypervisor.esx.vm_config import TMP_IMAGE_FOLDER_NAME_PREFIX
 from host.hypervisor.esx.vm_config import os_datastore_root
 from host.hypervisor.esx.vm_config import datastore_to_os_path
 from host.hypervisor.esx.vm_config import metadata_filename
-from host.hypervisor.esx.vm_config import SUPPORT_VSAN
 from host.hypervisor.esx.vm_config import os_datastore_path_pattern
 from host.hypervisor.esx.vm_config import COMPOND_PATH_SEPARATOR
 from host.hypervisor.esx.vm_config import vmdk_add_suffix
@@ -572,69 +571,18 @@ class EsxImageManager(ImageManager):
         """
         image_ids = []
 
-        if SUPPORT_VSAN:
-            if not os.path.exists(os_datastore_root(datastore)):
-                raise DatastoreNotFoundException()
+        if not os.path.exists(os_datastore_root(datastore)):
+            raise DatastoreNotFoundException()
 
-            # image_folder is /vmfs/volumes/${datastore}/images_*
-            image_folder_pattern = os_datastore_path_pattern(datastore,
-                                                             IMAGE_FOLDER_NAME_PREFIX)
-            for dir in glob.glob(image_folder_pattern):
-                image_id = dir.split(COMPOND_PATH_SEPARATOR)[1]
-                if self.check_image(image_id, datastore):
-                    image_ids.append(image_id)
-        else:
-            # image_folder is /vmfs/volumes/${datastore}/images
-            image_folder = os_datastore_path(datastore, IMAGE_FOLDER_NAME_PREFIX)
-
-            if not os.path.exists(image_folder):
-                raise DatastoreNotFoundException()
-
-            # prefix is the 2-digit prefix of image id
-            for prefix in os.listdir(image_folder):
-                # outer path is something like
-                # /vmfs/volumes/${datastore}/images/${image_id}[0:2]
-                outer_path = os.path.join(image_folder, prefix)
-                if not os.path.isdir(outer_path):
-                    continue
-
-                for image_id in os.listdir(outer_path):
-                    if self.check_image(image_id, datastore):
-                        image_ids.append(image_id)
+        # image_folder is /vmfs/volumes/${datastore}/images_*
+        image_folder_pattern = os_datastore_path_pattern(datastore,
+                                                         IMAGE_FOLDER_NAME_PREFIX)
+        for dir in glob.glob(image_folder_pattern):
+            image_id = dir.split(COMPOND_PATH_SEPARATOR)[1]
+            if self.check_image(image_id, datastore):
+                image_ids.append(image_id)
 
         return image_ids
-
-    def mark_unused(self, image_scanner):
-        images_dir_path = os_datastore_path(image_scanner.datastore_id,
-                                            IMAGE_FOLDER_NAME_PREFIX)
-        # Log messages with prefix: "IMAGE SCANNER" are for debugging
-        # and will be removed after basic testing
-        self._logger.info("IMAGE SCANNER: images_dir: %s" % images_dir_path)
-        if not os.path.isdir(images_dir_path):
-            self._logger.info("images_dir_path: images_dir: %s, doesn't exist"
-                              % images_dir_path)
-            raise DatastoreNotFoundException(
-                "Image scanner, cannot find image "
-                "directory for datastore: %s"
-                % image_scanner.datastore_id)
-
-        return self._mark_unused_images(image_scanner, images_dir_path)
-
-    def delete_unused(self, image_sweeper):
-        images_dir_path = os_datastore_path(image_sweeper.datastore_id,
-                                            IMAGE_FOLDER_NAME_PREFIX)
-        # Log messages with prefix: "IMAGE SWEEPER" are for debugging
-        # and will be removed after basic testing
-        self._logger.info("IMAGE SWEEPER: images_dir: %s" % images_dir_path)
-        if not os.path.isdir(images_dir_path):
-            self._logger.info("images_dir_path: images_dir: %s, doesn't exist"
-                              % images_dir_path)
-            raise DatastoreNotFoundException(
-                "Image sweeper, cannot find image "
-                "directory for datastore: %s"
-                % image_sweeper.datastore_id)
-
-        return self._delete_unused_images(image_sweeper, images_dir_path)
 
     def _unzip(self, src, dst):
         self._logger.info("unzip %s -> %s" % (src, dst))
@@ -729,16 +677,11 @@ class EsxImageManager(ImageManager):
 
         The image path looks something like this:
 
-            /vmfs/volumes/datastore1/image_ttylinux/ttylinux.vmdk
-            or with SUPPORT_VSAN:
             /vmfs/volumes/datastore1/images_ttylinux/ttylinux.vmdk
 
         This method returns "ttylinux" with this input.
         """
-        if SUPPORT_VSAN:
-            return image_path.split(os.sep)[4].split(COMPOND_PATH_SEPARATOR)[1]
-        else:
-            return image_path.split(os.sep)[6]
+        return image_path.split(os.sep)[4].split(COMPOND_PATH_SEPARATOR)[1]
 
     def _gc_image_dir(self, datastore_id, image_id):
         """
@@ -897,183 +840,11 @@ class EsxImageManager(ImageManager):
             shutil.move(src_vmdk, dst_vmdk)
             shutil.move(src_flatvmdk, dst_flatvmdk)
 
-    """
-    This method scans the image tree for the current
-    datastore starting from the directory "root"
-    (e.g.: /vmfs/volumes/<ds-id>/images). It looks for
-    unused images and creates a marker file in the
-    directory containing the image.
-    """
-    def _mark_unused_images(self, image_scanner, root):
-        self._logger.info("IMAGE SCANNER: Mark unused started on %s" % root)
-        active_images = image_scanner.get_active_images()
-        unused_images = dict()
-        # Compute scan rest interval
-        rest_interval_sec = image_scanner.get_image_mark_rest_interval()
-        apply_rate_limiter = False
-        for curdir, dirs, files in os.walk(root):
-
-            # If this contains only other directories skip it
-            if len(files) == 0 and len(dirs) >= 0:
-                continue
-
-            if apply_rate_limiter:
-                waste_time(rest_interval_sec)
-            apply_rate_limiter = True
-
-            # On a directory change check if it still needs to run
-            if image_scanner.is_stopped():
-                return unused_images
-
-            image_id = self._get_and_validate_image_id(curdir, files)
-
-            if not image_id:
-                continue
-
-            if image_id in active_images:
-                self._logger.info(
-                    "IMAGE SCANNER: skipping active image %s" % image_id)
-                continue
-
-            # If there is already a marker file skip it
-            # but record this image in the unused dictionary
-            marker_pathname = os.path.join(curdir,
-                                           self.IMAGE_MARKER_FILE_NAME)
-            if os.path.isfile(marker_pathname):
-                self._logger.info("IMAGE_SCANNER: Adding dir: %s"
-                                  % curdir)
-                unused_images[image_id] = curdir
-                continue
-
-            # Write the content of _start_time to the
-            # marker file, any change occurred to
-            # the image after _start_time,
-            # invalidates the image as a candidate
-            # for removal
-            try:
-                self._write_marker_file(marker_pathname,
-                                        image_scanner.start_time_str)
-            except Exception as ex:
-                self._logger.warning("Failed to write maker file: %s, %s"
-                                     % (marker_pathname, ex))
-                continue
-
-            self._logger.info("IMAGE_SCANNER: Adding dir: %s"
-                              % curdir)
-            unused_images[image_id] = curdir
-
-        return unused_images
-
-    @staticmethod
-    def _validate_image_id(image_id):
-        image_uuid = uuid.UUID(image_id)
-        return str(image_uuid) == image_id
-
-    @staticmethod
-    def _write_marker_file(filename, content):
-        with open(filename, "wx") as marker_file:
-            marker_file.write(content)
-
     @staticmethod
     def _read_marker_file(filename):
         with open(filename, "r") as marker_file:
             start_time_str = marker_file.read()
         return float(start_time_str)
-
-    def _get_and_validate_image_id(self, imagedir, files):
-        try:
-            _, image_id = os.path.split(imagedir)
-            # Validate directory name, if
-            # not valid skip it
-            if not self._validate_image_id(image_id):
-                self._logger.info("Invalid image id for directory: "
-                                  "%s", imagedir)
-                return None
-            vmdk_filename = vmdk_add_suffix(image_id)
-            # If a file of the format: <image-id>.vmdk
-            # does not exists, we assume this is
-            # the result of a partial image copy,
-            # it should be deleted, log a message
-            # and continue
-            if vmdk_filename not in files:
-                self._logger.info("No vmdk file found in "
-                                  "image directory: %s", imagedir)
-            return image_id
-        except Exception as ex:
-            self._logger.info("Failed to get image vmdk: %s, %s" %
-                              (imagedir, ex))
-            return None
-
-    """
-    This method scans the image tree for the current
-    datastore starting from the directory "root"
-    (e.g.: /vmfs/volumes/<ds-id>/images). It looks for
-    unused images in a directory containing the marker
-    file, moves the directory to a GC location and
-    deletes it.
-    """
-    def _delete_unused_images(self, image_sweeper, root):
-        self._logger.info("IMAGE SCANNER: Sweeper started on %s" % root)
-
-        deleted_images = list()
-        target_images = image_sweeper.get_target_images()
-
-        # Compute sweep rest interval
-        rest_interval_sec = image_sweeper.get_image_sweep_rest_interval()
-
-        apply_rate_limiter = False
-        for curdir, dirs, files in os.walk(root):
-
-            # If this contains only other directories skip it
-            if len(files) == 0:
-                continue
-
-            if apply_rate_limiter:
-                waste_time(rest_interval_sec)
-            apply_rate_limiter = True
-
-            # On a directory change check if it still needs to run
-            if image_sweeper.is_stopped():
-                return
-
-            image_id = self._get_and_validate_image_id(curdir, files)
-
-            if not image_id:
-                continue
-
-            # If there is not a marker file skip it
-            marker_pathname = os.path.join(curdir,
-                                           self.IMAGE_MARKER_FILE_NAME)
-            if not os.path.isfile(marker_pathname):
-                continue
-
-            # If this is not a part of target images skip it
-            if image_id not in target_images:
-                continue
-
-            # Write the content of _start_time as an ISO date
-            # inside the the marker file, any change occurred to
-            # the image after _start_time invalidates the image
-            # as a candidate for removal
-            try:
-                if self._delete_single_image(image_sweeper,
-                                             curdir, image_id):
-                    deleted_images.append(image_id)
-            except Exception as ex:
-                self._logger.warning("Failed to remove image: %s, %s"
-                                     % (curdir, ex))
-                continue
-
-        # Now attempt GCing the image directory.
-        datastore_id = image_sweeper.datastore_id
-        try:
-            self._clean_gc_dir(datastore_id)
-        except Exception:
-            # Swallow the exception the next clean call will clear it all.
-            self._logger.exception("Failed to delete gc dir on datastore %s" %
-                                   datastore_id)
-
-        return deleted_images
 
     """
     Delete a single image following the delete image steps. This

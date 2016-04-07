@@ -15,8 +15,6 @@ import os
 import shutil
 import uuid
 
-from common import services
-from common.service_name import ServiceName
 from mock import MagicMock
 from mock import PropertyMock
 from mock import patch
@@ -701,89 +699,6 @@ class TestEsxVmManager(unittest.TestCase):
         vm.config.extraConfig.append(
             vim.OptionValue(key="RemoteDisplay.vnc.enabled", value="True"))
         return vm
-
-
-class ImageScannerTestCase(unittest.TestCase):
-    DATASTORE_ID = "DS01"
-    BASE_TEMP_DIR = "image_scanner"
-
-    @patch.object(VimClient, "acquire_credentials")
-    @patch.object(VimClient, "update_cache")
-    @patch("pysdk.connect.Connect")
-    def setUp(self, connect, update, creds):
-        # Create VM manager
-        creds.return_value = ["username", "password"]
-        self.vim_client = VimClient(auto_sync=False)
-        self.vim_client.wait_for_task = MagicMock()
-        self.patcher = patch("host.hypervisor.esx.vm_config.GetEnv")
-        self.patcher.start()
-        self.vm_manager = EsxVmManager(self.vim_client, MagicMock())
-        services.register(ServiceName.AGENT_CONFIG, MagicMock())
-
-        # Set up test files
-        self.base_dir = os.path.dirname(__file__)
-        self.test_dir = os.path.join(self.base_dir, "../../test_files")
-        self.image_manager = EsxImageManager(MagicMock(), MagicMock())
-        self.image_scanner = DatastoreImageScanner(self.image_manager,
-                                                   self.vm_manager,
-                                                   self.DATASTORE_ID)
-        self.image_scanner._task_runner = MagicMock()
-        self.image_scanner._task_runner.is_stopped.return_value = False
-        self.write_count = 0
-
-    def tearDown(self):
-        self.patcher.stop()
-        self.vim_client.disconnect(wait=True)
-
-    def test_vm_scan(self):
-        self.image_scanner.vm_scan_rate = 60000
-        dictionary = self.vm_manager.\
-            _collect_active_images(self.image_scanner, self.test_dir)
-        assert_that(len(dictionary) is 1)
-        assert_that(dictionary["92e62599-6689-4a8f-ba2a-633914b5048e"] ==
-                    "/vmfs/volumes/555ca9f8-9f24fa2c-41c1-0025b5414043/"
-                    "image_92e62599-6689-4a8f-ba2a-633914b5048e/92e"
-                    "62599-6689-4a8f-ba2a-633914b5048e.vmdk")
-
-    def test_vm_scan_bad_root(self):
-        self.image_scanner.vm_scan_rate = 60000
-        bad_dir = os.path.join(self.base_dir,
-                               "test_files",
-                               "vms",
-                               "test",
-                               "bad",
-                               "bad.vmdk")
-        dictionary = self.vm_manager.\
-            _collect_active_images(self.image_scanner, bad_dir)
-        assert_that(len(dictionary) is 0)
-
-    def test_vm_scan_bad_vmdk(self):
-        self.image_scanner.vm_scan_rate = 60000
-        bad_dir = os.path.join(self.base_dir,
-                               "test_files",
-                               "vms",
-                               "test",
-                               "bad")
-        dictionary = self.vm_manager.\
-            _collect_active_images(self.image_scanner, bad_dir)
-        assert_that(len(dictionary) is 0)
-
-    @patch("host.hypervisor.image_scanner.waste_time")
-    def test_vm_scan_rate(self, waste_time):
-        waste_time.side_effect = self.fake_waste_time
-        # fake activation
-        self.image_scanner.vm_scan_rate = 30
-        dictionary = self.vm_manager.\
-            _collect_active_images(self.image_scanner, self.test_dir)
-        assert_that(len(dictionary) is 1)
-        assert_that(dictionary["92e62599-6689-4a8f-ba2a-633914b5048e"] ==
-                    "/vmfs/volumes/555ca9f8-9f24fa2c-41c1-0025b5414043/"
-                    "image_92e62599-6689-4a8f-ba2a-633914b5048e/92e"
-                    "62599-6689-4a8f-ba2a-633914b5048e.vmdk")
-
-    def fake_waste_time(self, seconds):
-        assert_that((seconds > 1.0) is True)
-
 
 if __name__ == '__main__':
     unittest.main()

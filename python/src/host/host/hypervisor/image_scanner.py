@@ -20,7 +20,6 @@ import time
 
 from common.lock import locked
 from host.hypervisor.esx.vm_config import VM_FOLDER_NAME_PREFIX, IMAGE_FOLDER_NAME_PREFIX
-from host.hypervisor.esx.vm_config import SUPPORT_VSAN
 from host.hypervisor.esx.vm_config import os_datastore_path_pattern
 from host.hypervisor.esx.vm_config import vmdk_add_suffix
 
@@ -58,10 +57,9 @@ class DatastoreImageScannerTaskRunner(TaskRunner):
         try:
             # Scan the vms first
             self._ds_image_scanner.set_state(DatastoreImageScanner.State.VM_SCAN)
-            if SUPPORT_VSAN:
-                active_images = self._scan_vms_for_active_images(self._ds_image_scanner)
-            else:
-                active_images = self._vm_manager.get_vm_images(self._ds_image_scanner)
+            active_images = self._scan_vms_for_active_images(
+                    self._ds_image_scanner,
+                    os_datastore_path_pattern(self._ds_image_scanner.datastore_id, VM_FOLDER_NAME_PREFIX))
             self._ds_image_scanner.set_active_images(active_images)
 
             # Check if we are still running
@@ -70,10 +68,10 @@ class DatastoreImageScannerTaskRunner(TaskRunner):
 
             # Mark the images
             self._ds_image_scanner.set_state(DatastoreImageScanner.State.IMAGE_MARK)
-            if SUPPORT_VSAN:
-                unused_images = self._scan_for_unused_images(self._ds_image_scanner)
-            else:
-                unused_images = self._image_manager.mark_unused(self._ds_image_scanner)
+            unused_images = self._scan_for_unused_images(
+                    self._ds_image_scanner,
+                    os_datastore_path_pattern(self._ds_image_scanner.datastore_id, IMAGE_FOLDER_NAME_PREFIX)
+)
             self._ds_image_scanner.set_unused_images(unused_images)
 
         except Exception as e:
@@ -91,8 +89,7 @@ class DatastoreImageScannerTaskRunner(TaskRunner):
         finally:
             self._ds_image_scanner.set_state(DatastoreImageScanner.State.IDLE)
 
-    def _scan_vms_for_active_images(self, image_scanner):
-        vm_folder_pattern = os_datastore_path_pattern(image_scanner.datastore_id, VM_FOLDER_NAME_PREFIX)
+    def _scan_vms_for_active_images(self, image_scanner, vm_folder_pattern):
         rest_interval_sec = image_scanner.get_vm_scan_rest_interval()
         active_images = dict()
         for vm_dir in glob.glob(vm_folder_pattern):
@@ -148,8 +145,7 @@ class DatastoreImageScannerTaskRunner(TaskRunner):
     unused images and creates a marker file in the
     directory containing the image.
     """
-    def _scan_for_unused_images(self, image_scanner):
-        image_folder_pattern = os_datastore_path_pattern(image_scanner.datastore_id, IMAGE_FOLDER_NAME_PREFIX)
+    def _scan_for_unused_images(self, image_scanner, image_folder_pattern):
         active_images = image_scanner.get_active_images()
         unused_images = dict()
         # Compute scan rest interval

@@ -15,8 +15,8 @@ import logging
 import threading
 
 from common.lock import locked
-from host.hypervisor.esx.vm_config import SUPPORT_VSAN
-from host.hypervisor.esx.vm_config import image_directory_path
+from host.hypervisor.esx.vm_config import IMAGE_FOLDER_NAME_PREFIX, compond_path_join, \
+    os_datastore_root
 
 from host.hypervisor.task_runner import TaskRunner, TaskAlreadyRunning
 from host.hypervisor.image_scanner import InvalidStateTransition
@@ -39,10 +39,8 @@ class DatastoreImageSweeperTaskRunner(TaskRunner):
     def execute_task(self):
         try:
             self._ds_image_sweeper.set_state(DatastoreImageSweeper.State.IMAGE_SWEEP)
-            if SUPPORT_VSAN:
-                deleted_images = self._delete_unused_images(self._ds_image_sweeper)
-            else:
-                deleted_images = self._image_manager.delete_unused(self._ds_image_sweeper)
+            deleted_images = self._delete_unused_images(self._ds_image_sweeper,
+                                                        os_datastore_root(self._ds_image_sweeper.datastore_id))
             self._ds_image_sweeper.set_deleted_images(deleted_images)
         except Exception as e:
             self._logger.exception("Exception caught by image "
@@ -69,7 +67,7 @@ class DatastoreImageSweeperTaskRunner(TaskRunner):
     file, moves the directory to a GC location and
     deletes it.
     """
-    def _delete_unused_images(self, image_sweeper):
+    def _delete_unused_images(self, image_sweeper, datastore_root):
         deleted_images = list()
         target_images = image_sweeper.get_target_images()
 
@@ -81,7 +79,7 @@ class DatastoreImageSweeperTaskRunner(TaskRunner):
             if image_sweeper.is_stopped():
                 return
 
-            image_dir = image_directory_path(image_sweeper.datastore_id, image_id)
+            image_dir = os.path.join(datastore_root, compond_path_join(IMAGE_FOLDER_NAME_PREFIX, image_id))
             # If there is not a marker file, skip it
             marker_pathname = os.path.join(image_dir, self._image_manager.IMAGE_MARKER_FILE_NAME)
             if not os.path.isfile(marker_pathname):

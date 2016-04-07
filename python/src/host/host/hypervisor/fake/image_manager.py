@@ -110,16 +110,10 @@ class FakeImageManager(ImageManager):
     def image_size(self, image_id):
         return self._disk_manager.disk_size(self._image_datastore, image_id)
 
-    def mark_unused(self, image_scanner):
-        return
-
     def touch_image_timestamp(self, dsid, image_id):
         return
 
     def create_image_tombstone(self, dsid, image_id):
-        return
-
-    def delete_unused(self, image_scanner):
         return
 
     def get_timestamp_mod_time_from_dir(self, dirname, renamed=False):

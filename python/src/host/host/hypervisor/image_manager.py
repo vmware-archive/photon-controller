@@ -204,13 +204,6 @@ class ImageManager(object):
         pass
 
     @abc.abstractmethod
-    def mark_unused(self, image_scanner):
-        """Mark unused image as candidates for removal
-        :param image_scanner: image_scanner
-        :raise TimeoutError
-        """
-
-    @abc.abstractmethod
     def touch_image_timestamp(self, ds_id, image_id):
         """
         Update Image timestamp, mod file. Throws exception
