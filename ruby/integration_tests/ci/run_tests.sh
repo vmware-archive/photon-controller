@@ -32,10 +32,13 @@ if [ "$DEPLOYER_TEST" ]; then
   exit $?
 fi
 
+# Zookeeper tests should never be disabled since they verify the health of the devbox
 bundle exec rake zookeeper
 
 # API tests
-bundle exec rake esxcloud:authorization
+if [ -z “$DISABLE_AUTHORIZATION_TESTS” ]; then
+  bundle exec rake esxcloud:authorization
+fi
 
 drivers=()
 if [ -z "$DISABLE_API_TESTS" ]; then
@@ -62,7 +65,9 @@ for pid in "${pids[@]}"; do wait "$pid"; done
 export DRIVER=api
 
 # run life_cycle tests
-bundle exec rake esxcloud:life_cycle
+if [ -z “DISABLE_LIFECYCLE_TESTS” ]; then
+  bundle exec rake esxcloud:life_cycle
+fi
 
 # run the housekeeper integration test
 if [ -z "$DISABLE_HOUSEKEEPER" ]; then
