@@ -63,9 +63,6 @@ def install_logging_hooks(rspec_config)
   counter = TestCounter.new
   log_dir = File.expand_path(File.join(File.dirname(__FILE__), "..", "reports", "log", ENV["DRIVER"]))
 
-  FileUtils.rm_rf(log_dir)
-  FileUtils.mkdir_p(log_dir)
-
   rspec_config.before :all do |example_group|
     reset_logger(log_dir, counter, "before_#{example_group.class.description}")
   end
