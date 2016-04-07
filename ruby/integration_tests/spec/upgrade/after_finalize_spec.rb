@@ -68,16 +68,18 @@ describe "migrate finalize", upgrade: true do
 
       upgrade_cloudstore_map.each do |k, v|
         puts k
-        begin
-          source_json = source_cloud_store.get k
-        rescue StandardError => e
-          next if e.message.include? "404"
-          raise e
+        if k != "/photon/cloudstore/deployments"
+          begin
+            source_json = source_cloud_store.get k
+          rescue StandardError => e
+            next if e.message.include? "404"
+            raise e
+          end
+          source_service_docs = parse_id_set(source_json).to_a
+          destination_json = destination_cloud_store.get v
+          destination_service_docs = parse_id_set(destination_json).to_a
+          expect(destination_service_docs).to include(*source_service_docs)
         end
-        source_arr = parse_id_set(source_json).to_a
-        destination_json = destination_cloud_store.get v
-        destination_arr = parse_id_set(destination_json).to_a
-        expect(destination_arr).to include(*source_arr)
       end
     end
   end
