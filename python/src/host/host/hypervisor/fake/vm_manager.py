@@ -347,9 +347,6 @@ class FakeVmManager(VmManager):
                          port=902,
                          ticket='52579d02-a80d-55eb-648b-f7ae461a7505')
 
-    def get_vm_images(self, image_scanner):
-        return list()
-
 
 class FakeNic(object):
     """

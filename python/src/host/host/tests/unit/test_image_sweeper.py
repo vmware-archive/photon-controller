@@ -38,12 +38,9 @@ class ImageSweeperTestCase(unittest.TestCase):
     # thread.
     def setUp(self):
         self.image_manager = MagicMock()
-        self.image_manager.delete_unused.side_effect = \
-            self.fake_delete_unused
+        self.image_manager.delete_unused.side_effect = self.fake_delete_unused_images
 
-        self.image_sweeper = DatastoreImageSweeper(
-            self.image_manager,
-            self.DATASTORE_ID)
+        self.image_sweeper = DatastoreImageSweeper(self.image_manager, self.DATASTORE_ID)
         self.synchronizer = TestSynchronizer()
 
         self.timeout = self.TIMEOUT
@@ -52,32 +49,26 @@ class ImageSweeperTestCase(unittest.TestCase):
         self.image_sweeper.stop()
 
     @patch("host.hypervisor.image_sweeper.DatastoreImageSweeperTaskRunner._delete_unused_images")
-    def test_lifecycle(self, delete_unused):
-        assert_that(self.image_sweeper.get_state() is
-                    DatastoreImageSweeper.State.IDLE)
+    def test_lifecycle(self, delete_unused_images):
+        assert_that(self.image_sweeper.get_state() is DatastoreImageSweeper.State.IDLE)
 
-        delete_unused.side_effect = self.fake_delete_unused
+        delete_unused_images.side_effect = self.fake_delete_unused_images
 
-        self.image_sweeper.start(self.timeout,
-                                 list(),
-                                 self.IMAGE_SWEEP_RATE)
+        self.image_sweeper.start(self.timeout, list(), self.IMAGE_SWEEP_RATE)
 
         self.image_sweeper.wait_for_task_end()
 
-        assert_that(self.image_sweeper.get_state() is
-                    DatastoreImageSweeper.State.IDLE)
+        assert_that(self.image_sweeper.get_state() is DatastoreImageSweeper.State.IDLE)
 
-        delete_unused.assert_called_once_with(self.image_sweeper)
+        delete_unused_images.assert_called_once_with(self.image_sweeper, "/vmfs/volumes/DS01")
 
-        deleted_images, _ = self.image_sweeper.\
-            get_deleted_images()
+        deleted_images, _ = self.image_sweeper.get_deleted_images()
 
         assert_that(len(deleted_images) is 3)
 
-    def fake_delete_unused(self, image_sweeper):
+    def fake_delete_unused_images(self, image_sweeper, datastore_root):
         assert_that(image_sweeper.datastore_id is self.DATASTORE_ID)
-        assert_that(self.image_sweeper.get_state() is
-                    DatastoreImageSweeper.State.IMAGE_SWEEP)
+        assert_that(self.image_sweeper.get_state() is DatastoreImageSweeper.State.IMAGE_SWEEP)
         assert_that(image_sweeper.image_sweep_rate is self.IMAGE_SWEEP_RATE)
         deleted_images = list()
         deleted_images.append("image_id_1")
