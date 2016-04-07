@@ -22,6 +22,13 @@ import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
 public interface ImageStore {
 
   /**
+   * Set hostIp to use for subsequent calls.
+   *
+   * @param hostIp
+   */
+  void setHostIp(String hostIp);
+
+  /**
    * Create an image folder.
    *
    * @param imageId
@@ -41,10 +48,9 @@ public interface ImageStore {
    *
    * @param image
    * @param vmId
-   * @param hostIp
    * @throws InternalException
    */
-  void createImageFromVm(Image image, String vmId, String hostIp) throws ExternalException, InternalException;
+  void createImageFromVm(Image image, String vmId) throws ExternalException, InternalException;
 
   /**
    * Delete an image based on image id.

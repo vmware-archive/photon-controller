@@ -60,6 +60,8 @@ public class VsphereImageStore implements ImageStore {
   private final HostClientFactory hostClientFactory;
   private final ImageConfig config;
 
+  private String hostIp;
+  private boolean lookForManagementHostsIfNeeded;
   private Host host;
 
   /**
@@ -72,6 +74,28 @@ public class VsphereImageStore implements ImageStore {
     this.hostBackend = hostBackend;
     this.hostClientFactory = hostClientFactory;
     this.config = config;
+
+    this.lookForManagementHostsIfNeeded = true;
+    try {
+      this.hostIp = this.config.getEndpointHostAddress();
+    } catch (NullPointerException e) {
+      logger.warn("No host IP is specified for image upload.");
+    }
+  }
+
+  /**
+   * Set hostIp to use for subsequent calls.
+   *
+   * @param hostIp
+   */
+  @Override
+  public void setHostIp(String hostIp) {
+    checkArgument(StringUtils.isNotBlank(hostIp), "Blank hostIp passed to VsphereImageStore.getDatastore");
+
+    this.hostIp = hostIp;
+    this.lookForManagementHostsIfNeeded = false;
+
+    ensureHost();
   }
 
   /**
@@ -121,16 +145,15 @@ public class VsphereImageStore implements ImageStore {
    *
    * @param image
    * @param vmId
-   * @param hostIp
    * @throws InternalException
    */
   @Override
-  public void createImageFromVm(Image image, String vmId, String hostIp)
+  public void createImageFromVm(Image image, String vmId)
       throws ExternalException, InternalException {
-    String datastore = this.getDatastore(hostIp);
+    String datastore = this.getDatastore();
     logger.info("Calling createImageFromVm {} on {} {}", image.getImageId(), datastore, image.getUploadFolder());
     try {
-      getHostClient(hostIp, false).createImageFromVm(vmId, image.getImageId(), datastore, image.getUploadFolder());
+      getHostClient().createImageFromVm(vmId, image.getImageId(), datastore, image.getUploadFolder());
     } catch (InvalidVmPowerStateException e) {
       throw new InvalidVmStateException(e);
     } catch (RpcException | InterruptedException e) {
@@ -183,13 +206,7 @@ public class VsphereImageStore implements ImageStore {
 
   @Override
   public String getDatastore() {
-    ensureHost(this.getHostAddress(), true);
-    return getImageDataStoreMountPoint(this.host.getDatastores());
-  }
-
-  public String getDatastore(String hostIp) {
-    checkArgument(StringUtils.isNotBlank(hostIp), "Blank hostIp passed to VsphereImageStore.getDatastore");
-    ensureHost(hostIp, false);
+    ensureHost();
     return getImageDataStoreMountPoint(this.host.getDatastores());
   }
 
@@ -224,19 +241,19 @@ public class VsphereImageStore implements ImageStore {
    * Retrieves the host information from CloudStore.
    * We should not lookForMgmtHosts where we are creating image from a VM on a particular host
    */
-  private void ensureHost(String ip, Boolean lookForManagementHostsIfNeeded) {
-    if (null != this.host && (null == ip || ip.equals(this.host.getAddress()))) {
+  private void ensureHost() {
+    if (null != this.host && (null == this.hostIp || this.hostIp.equals(this.host.getAddress()))) {
       // if we already have a host and it matches the requested IP we just exit
       // we also exit if we have a host and there is no requested IP
       return;
     }
 
     ResourceList<Host> hostList = null;
-    if (null != ip) {
-      hostList = this.hostBackend.filterByAddress(ip, Optional.absent());
+    if (null != this.hostIp) {
+      hostList = this.hostBackend.filterByAddress(this.hostIp, Optional.absent());
     }
 
-    if ((null == hostList || 0 == hostList.getItems().size()) && lookForManagementHostsIfNeeded) {
+    if ((null == hostList || 0 == hostList.getItems().size()) && this.lookForManagementHostsIfNeeded) {
       hostList = this.hostBackend.filterByUsage(UsageTag.MGMT, Optional.absent());
     }
 
@@ -271,26 +288,12 @@ public class VsphereImageStore implements ImageStore {
   /**
    * Configured the HostClient according to the config.
    */
-  private HostClient getHostClient(String hostIp, Boolean lookForManagementHostsIfNeeded) {
-    ensureHost(hostIp, lookForManagementHostsIfNeeded);
+  @VisibleForTesting
+  public HostClient getHostClient() {
+    ensureHost();
 
     HostClient hostClient = this.hostClientFactory.create();
     hostClient.setHostIp(this.host.getAddress());
     return hostClient;
-  }
-
-  @VisibleForTesting
-  public HostClient getHostClient() {
-    return getHostClient(getHostAddress(), true);
-  }
-
-  private String getHostAddress() {
-    try {
-      return this.config.getEndpointHostAddress();
-    } catch (NullPointerException e) {
-      logger.warn("No host IP is specified for image upload.");
-    }
-
-    return null;
   }
 }

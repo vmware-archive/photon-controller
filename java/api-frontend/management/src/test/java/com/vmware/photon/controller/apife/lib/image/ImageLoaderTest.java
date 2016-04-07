@@ -165,14 +165,16 @@ public class ImageLoaderTest {
     @Test
     public void testSuccess() throws Throwable {
       doReturn(1L).when(image).addFile(anyString(), any(InputStream.class), anyLong());
-      doNothing().when(imageStore).createImageFromVm(image, vmId, hostIp);
+      doNothing().when(imageStore).setHostIp(hostIp);
+      doNothing().when(imageStore).createImageFromVm(image, vmId);
 
       imageLoader.createImageFromVm(imageEntity, vmId, hostIp);
       InOrder inOrder = inOrder(image, imageStore);
+      inOrder.verify(imageStore).setHostIp(hostIp);
       inOrder.verify(imageStore).createImage(imageId);
       inOrder.verify(image, times(1)).addFile(anyString(), any(InputStream.class), anyLong());
       inOrder.verify(image).close();
-      inOrder.verify(imageStore).createImageFromVm(image, vmId, hostIp);
+      inOrder.verify(imageStore).createImageFromVm(image, vmId);
 
       verifyNoMoreInteractions(imageStore, image);
     }

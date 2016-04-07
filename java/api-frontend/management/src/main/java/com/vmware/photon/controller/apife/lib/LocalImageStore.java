@@ -40,6 +40,10 @@ public class LocalImageStore implements ImageStore {
   }
 
   @Override
+  public void setHostIp(String hostIp) {
+  }
+
+  @Override
   public Image createImage(String imageId) throws InternalException {
     return new LocalImageStoreImage(dir, imageId);
   }
@@ -50,7 +54,7 @@ public class LocalImageStore implements ImageStore {
   }
 
   @Override
-  public void createImageFromVm(Image image, String vmId, String hostIp) {
+  public void createImageFromVm(Image image, String vmId) {
     logger.debug("LocalImageStore createImageFromVm {}", image.getImageId());
   }
 
