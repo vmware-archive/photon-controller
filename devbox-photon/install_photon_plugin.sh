@@ -11,25 +11,25 @@
 # conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the License for the
 # specific language governing permissions and limitations under the License.
 
-photon_vagrant_plugin_url="https://bintray.com/artifact/download/photon-controller/public/27/resource/vagrant-guests-photon-0.0.1.gem"
-if [ -n "$DEVBOX_VAGRANT_PLUGIN_URL" ]
-then
-  photon_vagrant_plugin_url="$DEVBOX_VAGRANT_PLUGIN_URL"
+if [ "$1" = "--force" ] || [ "$1" = "-f" ]; then
+    DEVBOX_FORCE_PHOTON_PLUGIN_REINSTALL=true
+    shift
 fi
 
-if [ -z "$(vagrant plugin list | grep vagrant-guests-photon)" ]
-then
+if [ ! -z "$1" ]; then
+    echo "Usage: install_photon_plugin [--force | -f]"
+    exit
+fi
+
+if [ -z "$(vagrant plugin list | grep vagrant-guests-photon)" ]; then
   echo "Installing Photon plugin for Vagrant."
-  wget --no-proxy $photon_vagrant_plugin_url
-  vagrant plugin install vagrant-guests-photon-0.0.1.gem
-  rm vagrant-guests-photon-0.0.1.gem
-elif [ ! -z "$DEVBOX_FORCE_PHOTON_PLUGIN_REINSTALL" ]
-then
+  vagrant plugin install vagrant-guests-photon
+elif [ ! -z "$DEVBOX_FORCE_PHOTON_PLUGIN_REINSTALL" ]; then
   echo "Forcing photon plugin reinstall"
+  # Note that it's safe to uninstall even if it's not installed
+  # Vagrant is polite about such requests.
   vagrant plugin uninstall vagrant-guests-photon
-  wget --no-proxy $photon_vagrant_plugin_url
-  vagrant plugin install vagrant-guests-photon-0.0.1.gem
-  rm vagrant-guests-photon-0.0.1.gem
+  vagrant plugin install vagrant-guests-photon
 else
   echo "Photon plugin for Vagrant is already installed."
 fi
