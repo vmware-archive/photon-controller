@@ -11,7 +11,6 @@
 
 require "spec_helper"
 require "ipaddr"
-require_relative "../../../lib/dcp/cloud_store/host_factory"
 
 describe "host", management: true, devbox: true do
   before(:all) do
@@ -385,25 +384,6 @@ describe "host", management: true, devbox: true do
         rescue EsxCloud::CliError => e
           expect(e.output).to include(error_msg)
         end
-      end
-    end
-  end
-
-  describe "#host_monitoring" do
-    context "when a host gets added" do
-      it "is pingable" do
-        host = client.get_deployment_hosts(@deployment.id).items.first
-        host_service = EsxCloud::Dcp::CloudStore::HostFactory.get_host host.id
-        # Poll the host service for 60 seconds before giving up
-        # This is needed since we have a maintenance interval of 60 seconds
-        max_poll_timeout = 60
-        poll_interval = 5
-        sleep_counter = 0
-        while host_service["agentState"] != "ACTIVE" and sleep_counter <= max_poll_timeout
-          sleep poll_interval
-          sleep_counter += poll_interval
-        end
-        expect(host_service["agentState"]).to eq("ACTIVE")
       end
     end
   end
