@@ -18,6 +18,7 @@ import com.vmware.photon.controller.nsxclient.utils.ToStringHelper;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -44,6 +45,12 @@ public class LogicalSwitch {
 
   @JsonProperty(value = "vni", required = true)
   private int vni;
+
+  @JsonProperty(value = "address_bindings", required = false)
+  private List<String> addressBindings;
+
+  @JsonProperty(value = "switching_profile_ids", required = true)
+  private List<NsxPair> switchingProfileIds;
 
   public String getId() {
     return id;
@@ -101,6 +108,22 @@ public class LogicalSwitch {
     this.vni = vni;
   }
 
+  public List<String> getAddressBindings() {
+    return addressBindings;
+  }
+
+  public void setAddressBindings(List<String> addressBindings) {
+    this.addressBindings = addressBindings;
+  }
+
+  public List<NsxPair> getSwitchingProfileIds() {
+    return switchingProfileIds;
+  }
+
+  public void setSwitchingProfileIds(List<NsxPair> switchingProfileIds) {
+    this.switchingProfileIds = switchingProfileIds;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -118,13 +141,15 @@ public class LogicalSwitch {
         && Objects.equals(this.replicationMode, other.replicationMode)
         && Objects.equals(this.transportZoneId, other.transportZoneId)
         && Objects.equals(this.adminState, other.adminState)
-        && Objects.equals(this.vni, other.vni);
+        && Objects.equals(this.vni, other.vni)
+        && Objects.equals(this.addressBindings, other.addressBindings)
+        && Objects.equals(this.switchingProfileIds, other.switchingProfileIds);
   }
 
   @Override
   public int hashCode() {
     return Objects.hash(super.hashCode(), id, displayName, resourceType, replicationMode, transportZoneId,
-        adminState, vni);
+        adminState, vni, addressBindings, switchingProfileIds);
   }
 
   @Override
