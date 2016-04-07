@@ -79,6 +79,8 @@ describe "deployment pause/pause_background/resume" do
       expect(value).to_not be_nil
       expect(value[:data]).to eq "PAUSED_BACKGROUND"
 
+      expect(client.find_deployment_by_id(deployment.id).state).to eq "BACKGROUND_PAUSED"
+
       # resume system
       client.resume_system(deployment.id)
 
