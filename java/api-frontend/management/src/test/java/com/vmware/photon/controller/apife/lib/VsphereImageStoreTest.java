@@ -224,46 +224,56 @@ public class VsphereImageStoreTest extends PowerMockTestCase {
     @Test
     public void testGetDatastore() throws Exception {
       assertThat(imageStore.getDatastore(), equalTo(VM_IMAGE_DATASTORE_NAME));
-      assertThat(imageStore.getDatastore(HOST_ADDRESS), equalTo(IMAGE_DATASTORE_NAME));
-      assertThat(imageStore.getDatastore(VM_HOST_ADDRESS), equalTo(VM_IMAGE_DATASTORE_NAME));
+      imageStore.setHostIp(HOST_ADDRESS);
+      assertThat(imageStore.getDatastore(), equalTo(IMAGE_DATASTORE_NAME));
+      imageStore.setHostIp(VM_HOST_ADDRESS);
+      assertThat(imageStore.getDatastore(), equalTo(VM_IMAGE_DATASTORE_NAME));
     }
 
     @Test
     public void testSuccessWithConfiguredHostAddress() throws Exception {
-      imageStore.createImageFromVm(image, null, VM_HOST_ADDRESS);
+      imageStore.setHostIp(VM_HOST_ADDRESS);
+      imageStore.createImageFromVm(image, null);
       verify(hostClient).setHostIp(VM_HOST_ADDRESS);
-      verify(imageStore).getDatastore(VM_HOST_ADDRESS);
-      imageStore.createImageFromVm(image, null, HOST_ADDRESS);
+      verify(imageStore).getDatastore();
+
+      imageStore.setHostIp(HOST_ADDRESS);
+      imageStore.createImageFromVm(image, null);
       verify(hostClient).setHostIp(HOST_ADDRESS);
-      verify(imageStore).getDatastore(HOST_ADDRESS);
+      verify(imageStore, times(2)).getDatastore();
     }
 
     @Test
     public void testSuccessWithoutConfiguredHostAddress() throws Exception {
       imageConfig.setEndpoint(null);
-      imageStore.createImageFromVm(image, null, VM_HOST_ADDRESS);
+      imageStore.setHostIp(VM_HOST_ADDRESS);
+      imageStore.createImageFromVm(image, null);
       verify(hostClient).setHostIp(VM_HOST_ADDRESS);
-      imageStore.createImageFromVm(image, null, HOST_ADDRESS);
+      imageStore.setHostIp(HOST_ADDRESS);
+      imageStore.createImageFromVm(image, null);
       verify(hostClient).setHostIp(HOST_ADDRESS);
     }
 
     @Test(expectedExceptions = RuntimeException.class)
     public void testWithHostClientException() throws Exception {
       when(hostClient.getNfcServiceTicket(anyString())).thenThrow(new Exception());
-      imageStore.createImageFromVm(image, null, VM_HOST_ADDRESS);
+      imageStore.setHostIp(VM_HOST_ADDRESS);
+      imageStore.createImageFromVm(image, null);
     }
 
     @Test(expectedExceptions = IllegalStateException.class,
         expectedExceptionsMessageRegExp = "Could not find any host to upload image.")
     public void testWithHostIpProvidedNoHostFound() throws Exception {
-      imageStore.createImageFromVm(image, null, "NonExistentHostIp");
+      imageStore.setHostIp("NonExistentHostIp");
+      imageStore.createImageFromVm(image, null);
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class,
-        expectedExceptionsMessageRegExp = "Blank hostIp passed to VsphereImageStore.getDatastore")
+        expectedExceptionsMessageRegExp = "Blank hostIp passed to VsphereImageStore.setHostIp")
     public void testNoHostIpProvidedNoHostFound() throws Exception {
       imageConfig.setEndpoint(null);
-      imageStore.createImageFromVm(image, null, null);
+      imageStore.setHostIp(null);
+      imageStore.createImageFromVm(image, null);
     }
   }
 
