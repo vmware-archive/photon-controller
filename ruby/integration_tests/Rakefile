@@ -69,6 +69,14 @@ namespace :seed do
   end
 end
 
+namespace :monitor do
+  desc 'Monitor host'
+  RSpec::Core::RakeTask.new(:host) do |task|
+    task.pattern = FileList['spec/api/host/host_monitor_spec.rb']
+    task.rspec_opts = "--tag monitor_host --format RspecJunitFormatter --out reports/rspec-monitor-host.xml --tag ~slow --profile"
+  end
+end
+
 namespace "cloudstore" do
   desc "Seeds the cloudstore with entities required to mimic a deployment"
   task :seed do
