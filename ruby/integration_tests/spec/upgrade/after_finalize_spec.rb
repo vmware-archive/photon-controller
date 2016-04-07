@@ -49,7 +49,7 @@ describe "migrate finalize", upgrade: true do
       destination_map = get_service_map URI.parse(ApiClientHelper.endpoint(nil, nil, nil))
       destination_map = destination_map.select { |key,_| key.include? "photon" }
 
-      expected_new_services_at_destination = ["/photon/cloudstore/virtual-networks"]
+      expected_new_services_at_destination = ["/photon/cloudstore/virtualNetworks"]
 
       # the two lists should be equal
       source_services = upgrade_cloudstore_map.keys
@@ -74,10 +74,10 @@ describe "migrate finalize", upgrade: true do
           next if e.message.include? "404"
           raise e
         end
-        source_set = parse_id_set(source_json)
+        source_arr = parse_id_set(source_json).to_a
         destination_json = destination_cloud_store.get v
-        destination_set = parse_id_set(destination_json)
-        expect(destination_set).to include(*source_set)
+        destination_arr = parse_id_set(destination_json).to_a
+        expect(destination_arr).to include(*source_arr)
       end
     end
   end
