@@ -22,12 +22,10 @@ import com.vmware.photon.controller.api.common.exceptions.external.ExternalExcep
 import com.vmware.photon.controller.api.common.exceptions.external.NotImplementedException;
 import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
-import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.entities.AvailabilityZoneEntity;
 import com.vmware.photon.controller.apife.entities.EntityStateValidator;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.exceptions.external.AvailabilityZoneNotFoundException;
-import com.vmware.photon.controller.apife.exceptions.external.NameTakenException;
 import com.vmware.photon.controller.apife.utils.PaginationUtils;
 import com.vmware.photon.controller.cloudstore.dcp.entity.AvailabilityZoneService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.AvailabilityZoneServiceFactory;
@@ -66,11 +64,6 @@ public class AvailabilityZoneDcpBackend implements AvailabilityZoneBackend {
 
   @Override
   public TaskEntity createAvailabilityZone(AvailabilityZoneCreateSpec availabilityZone) throws ExternalException {
-    if (!(findEntitiesByName(Optional.of(availabilityZone.getName()),
-        Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE))).getItems().isEmpty()) {
-      throw new NameTakenException(AvailabilityZone.KIND, availabilityZone.getName());
-    }
-
     AvailabilityZoneService.State state = new AvailabilityZoneService.State();
     state.name = availabilityZone.getName();
     state.state = AvailabilityZoneState.READY;

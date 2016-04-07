@@ -23,7 +23,6 @@ import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.entities.AvailabilityZoneEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.exceptions.external.AvailabilityZoneNotFoundException;
-import com.vmware.photon.controller.apife.exceptions.external.NameTakenException;
 import com.vmware.photon.controller.cloudstore.dcp.entity.AvailabilityZoneService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.AvailabilityZoneServiceFactory;
 import com.vmware.photon.controller.common.xenon.BasicServiceHost;
@@ -161,20 +160,6 @@ public class AvailabilityZoneDcpBackendTest {
       assertThat(availabilityZone.getKind(), is("availability-zone"));
       assertThat(availabilityZone.getState(), is(AvailabilityZoneState.READY));
       assertThat(availabilityZone.getId(), is(availabilityZoneId));
-    }
-
-    @Test
-    public void testCreateAvailabilityZoneTwiceWithSameName() throws Throwable {
-      createdAvailabilityZoneTaskEntity = availabilityZoneDcpBackend.createAvailabilityZone(availabilityZoneCreateSpec);
-      AvailabilityZoneEntity availabilityZone = availabilityZoneDcpBackend
-          .getEntityById(createdAvailabilityZoneTaskEntity.getEntityId());
-
-      try {
-        availabilityZoneDcpBackend.createAvailabilityZone(availabilityZoneCreateSpec);
-        fail("availabilityZoneDcpBackend.createAvailabilityZone for existing availability zone should have failed ");
-      } catch (NameTakenException e) {
-        assertThat(e.getMessage(), containsString(availabilityZone.getName()));
-      }
     }
   }
 

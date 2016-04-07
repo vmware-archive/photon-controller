@@ -12,9 +12,17 @@
 require "spec_helper"
 
 describe "availability_zone" do
+  let(:availabilityZones_to_delete) { [] }
+
+  after(:each) do
+    availabilityZones_to_delete.each do |availabilityZone|
+      availabilityZone.delete unless availabilityZone.nil?
+    end
+  end
+
   it "should create one, get it, and then delete it" do
     availability_zone_name = random_name("availability-zone-")
-    availability_zone = create_availability_zone(EsxCloud::AvailabilityZoneCreateSpec.new(availability_zone_name))
+    availability_zone = create_availabilityZone(availability_zone_name)
     availability_zone = find_availability_zone_by_id(availability_zone.id)
     expect(availability_zone.name).to eq(availability_zone_name)
     expect(availability_zone.state).to eq("READY")
@@ -55,19 +63,21 @@ describe "availability_zone" do
     end
   end
 
-  it "should raise exception for duplicate availability_zone name" do
+  it "should create two availability zones with the same name" do
     availability_zone_name = random_name("availability-zone-")
-    create_availability_zone(EsxCloud::AvailabilityZoneCreateSpec.new(availability_zone_name))
-    begin
-      create_availability_zone(EsxCloud::AvailabilityZoneCreateSpec.new(availability_zone_name))
-      fail("AvailabilityZone create with duplicate name should fail")
-    rescue EsxCloud::ApiError => e
-      e.response_code.should == 400
-      e.errors.size.should == 1
-      e.errors[0].code.should include("NameTaken")
-    rescue EsxCloud::CliError => e
-      e.output.should include("name '#{availability_zone_name}' already taken")
-    end
+
+    availability_zone1 = create_availabilityZone(availability_zone_name)
+    expect(availability_zone1.name).to eq(availability_zone_name)
+    expect(availability_zone1.state).to eq("READY")
+
+    availability_zone2 = create_availabilityZone(availability_zone_name)
+    expect(availability_zone2.name).to eq(availability_zone_name)
+    expect(availability_zone2.state).to eq("READY")
+
+    availability_zones = find_all_availability_zones().items.select { |az| az.name == availability_zone_name }
+    availability_zones.size.should == 2
+    expect(availability_zones[0].id).not_to eq(availability_zones[1].id)
+
   end
 
   xit "should list multiple availability_zones" do
@@ -75,7 +85,7 @@ describe "availability_zone" do
     availability_zones.items.size.should == 0
 
     availability_zone_name = random_name("availability-zone-")
-    availability_zone = create_availability_zone(EsxCloud::AvailabilityZoneCreateSpec.new(availability_zone_name))
+    availability_zone = create_availabilityZone(availability_zone_name)
 
     tasks = client.get_availability_zone_tasks(availability_zone.id).items
     expect(tasks.size).to eq(1)
@@ -87,7 +97,7 @@ describe "availability_zone" do
     availability_zones.items[0].name.should == availability_zone_name
 
     availability_zone_name = random_name("availability-zone-")
-    availability_zone = create_availability_zone(EsxCloud::AvailabilityZoneCreateSpec.new(availability_zone_name))
+    availability_zone = create_availabilityZone(availability_zone_name)
 
     tasks = client.get_availability_zone_tasks(availability_zone.id).items
     expect(tasks.size).to eq(1)
@@ -96,5 +106,18 @@ describe "availability_zone" do
 
     availability_zones = find_all_availability_zones()
     availability_zones.items.size.should == 2
+  end
+
+  private
+
+  def create_availabilityZone(name)
+    begin
+      availabilityZone = create_availability_zone(EsxCloud::AvailabilityZoneCreateSpec.new(name))
+      availabilityZones_to_delete << availabilityZone
+      availabilityZone
+    rescue
+      availabilityZones_to_delete << EsxCloud::AvailabilityZone.find_all.items.find_all { |az| az.name == name }
+      raise
+    end
   end
 end
