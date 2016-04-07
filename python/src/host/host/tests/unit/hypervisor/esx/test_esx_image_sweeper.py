@@ -20,6 +20,8 @@ import unittest
 
 from hamcrest import *  # noqa
 from host.hypervisor.esx import vm_config
+from host.hypervisor.esx.vim_client import VimClient
+from host.hypervisor.esx.vm_manager import EsxVmManager
 from mock import MagicMock
 from mock import patch
 from nose_parameterized import parameterized
@@ -33,7 +35,80 @@ from host.hypervisor.image_manager import InvalidImageState
 from host.hypervisor.image_scanner import DatastoreImageScanner
 from host.hypervisor.image_sweeper import DatastoreImageSweeper
 
-from host.hypervisor.esx.vm_config import os_vmdk_path, _disk_path
+from host.hypervisor.esx.vm_config import os_vmdk_path
+
+
+class ImageScannerVmTestCase(unittest.TestCase):
+    DATASTORE_ID = "DS01"
+    BASE_TEMP_DIR = "image_scanner"
+
+    @patch.object(VimClient, "acquire_credentials")
+    @patch.object(VimClient, "update_cache")
+    @patch("pysdk.connect.Connect")
+    def setUp(self, connect, update, creds):
+        # Create VM manager
+        creds.return_value = ["username", "password"]
+        self.vim_client = VimClient(auto_sync=False)
+        self.vim_client.wait_for_task = MagicMock()
+        self.patcher = patch("host.hypervisor.esx.vm_config.GetEnv")
+        self.patcher.start()
+        self.vm_manager = EsxVmManager(self.vim_client, MagicMock())
+        services.register(ServiceName.AGENT_CONFIG, MagicMock())
+
+        # Set up test files
+        self.base_dir = os.path.dirname(__file__)
+        self.test_dir = os.path.join(self.base_dir, "../../test_files")
+        self.image_manager = EsxImageManager(MagicMock(), MagicMock())
+        self.image_scanner = DatastoreImageScanner(self.image_manager,
+                                                   self.vm_manager,
+                                                   self.DATASTORE_ID)
+        self.write_count = 0
+
+    def tearDown(self):
+        self.patcher.stop()
+        self.vim_client.disconnect(wait=True)
+
+    @patch("host.hypervisor.image_scanner.DatastoreImageScanner.is_stopped", return_value=False)
+    def test_vm_scan(self, is_stopped):
+        self.image_scanner.vm_scan_rate = 60000
+        dictionary = self.image_scanner._task_runner._scan_vms_for_active_images(
+                self.image_scanner, self.test_dir + "/vm_*")
+        assert_that(len(dictionary) is 1)
+        assert_that(dictionary["92e62599-6689-4a8f-ba2a-633914b5048e"] ==
+                    "/vmfs/volumes/555ca9f8-9f24fa2c-41c1-0025b5414043/"
+                    "image_92e62599-6689-4a8f-ba2a-633914b5048e/92e"
+                    "62599-6689-4a8f-ba2a-633914b5048e.vmdk")
+
+    @patch("host.hypervisor.image_scanner.DatastoreImageScanner.is_stopped", return_value=False)
+    def test_vm_scan_bad_root(self, is_stopped):
+        self.image_scanner.vm_scan_rate = 60000
+        bad_dir = os.path.join(self.base_dir, "test_files", "vm_bad")
+        dictionary = self.image_scanner._task_runner._scan_vms_for_active_images(self.image_scanner, bad_dir)
+        assert_that(len(dictionary) is 0)
+
+    @patch("host.hypervisor.image_scanner.DatastoreImageScanner.is_stopped", return_value=False)
+    def test_vm_scan_bad_vmdk(self, is_stopped):
+        self.image_scanner.vm_scan_rate = 60000
+        bad_dir = os.path.join(self.base_dir, "test_files", "vm_bad")
+        dictionary = self.image_scanner._task_runner._scan_vms_for_active_images(self.image_scanner, bad_dir)
+        assert_that(len(dictionary) is 0)
+
+    @patch("host.hypervisor.image_scanner.DatastoreImageScanner.is_stopped", return_value=False)
+    @patch("host.hypervisor.image_scanner.waste_time")
+    def test_vm_scan_rate(self, waste_time, is_stopped):
+        waste_time.side_effect = self.fake_waste_time
+        # fake activation
+        self.image_scanner.vm_scan_rate = 30
+        dictionary = self.image_scanner._task_runner._scan_vms_for_active_images(
+                self.image_scanner, self.test_dir + "/vm_*")
+        assert_that(len(dictionary) is 1)
+        assert_that(dictionary["92e62599-6689-4a8f-ba2a-633914b5048e"] ==
+                    "/vmfs/volumes/555ca9f8-9f24fa2c-41c1-0025b5414043/"
+                    "image_92e62599-6689-4a8f-ba2a-633914b5048e/92e"
+                    "62599-6689-4a8f-ba2a-633914b5048e.vmdk")
+
+    def fake_waste_time(self, seconds):
+        assert_that((seconds > 1.0) is True)
 
 
 class ImageScannerTestCase(unittest.TestCase):
@@ -48,30 +123,25 @@ class ImageScannerTestCase(unittest.TestCase):
         self.image_scanner = DatastoreImageScanner(self.image_manager,
                                                    self.vm_manager,
                                                    self.DATASTORE_ID)
-        self.image_scanner._task_runner = MagicMock()
-        self.image_scanner._task_runner.is_stopped.return_value = False
         self.write_count = 0
 
         # Create various image directories and empty vmdks
-        dir0 = os.path.join(self.test_dir, "images/im")
-
         image_id_1 = str(uuid.uuid4())
         image_id_2 = str(uuid.uuid4())
         image_id_3 = str(uuid.uuid4())
         image_id_4 = "invalid_image_id"
-        self.image_ids = ["", image_id_1, image_id_2,
-                          image_id_3, image_id_4]
-        dir1 = os.path.join(dir0, image_id_1)
+        self.image_ids = ["*", image_id_1, image_id_2, image_id_3, image_id_4]
+        dir1 = os.path.join(self.test_dir, "image_" + image_id_1)
         os.makedirs(dir1)
-        dir2 = os.path.join(dir0, image_id_2)
+        dir2 = os.path.join(self.test_dir, "image_" + image_id_2)
         os.makedirs(dir2)
-        dir3 = os.path.join(dir0, image_id_3)
+        dir3 = os.path.join(self.test_dir, "image_" + image_id_3)
         os.makedirs(dir3)
-        dir4 = os.path.join(dir0, image_id_4)
+        dir4 = os.path.join(self.test_dir, "image_" + image_id_4)
         os.makedirs(dir4)
         # Create a vmdk under "im", since the image_id is
         # not a valid uuid it should be skipped
-        open(os.path.join(dir0, "im.vmdk"), 'w').close()
+        open(os.path.join(self.test_dir, "image_im.vmdk"), 'w').close()
         # Create a good image vmdk under image_id_1, the name
         # of the vmdk matches the directory that contains it
         # so this is a valid image to remove
@@ -107,39 +177,26 @@ class ImageScannerTestCase(unittest.TestCase):
         (4, 0, 0),   # single invalid image id, 0 write, 0 found
         (0, 1, 2),   # three images, 1 writes, 2 found
     ])
-    @patch("host.hypervisor.esx.image_manager."
-           "EsxImageManager._write_marker_file")
-    def test_image_marker(self,
-                          image_id_index,
-                          write_count,
-                          dict_size,
-                          write_marker_file):
+    @patch("host.hypervisor.image_scanner.DatastoreImageScannerTaskRunner._write_marker_file")
+    @patch("host.hypervisor.image_scanner.DatastoreImageScanner.is_stopped", return_value=False)
+    def test_image_marker(self, image_id_index, write_count, dict_size, is_stopped, write_marker_file):
         image_id = self.image_ids[image_id_index]
         write_marker_file.side_effect = self.fake_write_marker_file
         self.image_scanner.image_mark_rate = 60000
-        good_dir = os.path.join(self.test_dir,
-                                "images",
-                                "im",
-                                image_id)
-        dictionary = self.image_manager.\
-            _mark_unused_images(self.image_scanner, good_dir)
+        good_dir = os.path.join(self.test_dir, "image_" + image_id)
+        dictionary = self.image_scanner._task_runner._scan_for_unused_images(self.image_scanner, good_dir)
         assert_that(len(dictionary) is dict_size)
         assert_that(self.write_count is write_count)
 
     def test_image_marker_bad_root(self):
         self.image_scanner.image_mark_rate = 60000
-        bad_dir = os.path.join(self.test_dir,
-                               "images",
-                               "im",
-                               "im.vmdk")
-        dictionary = self.image_manager.\
-            _mark_unused_images(self.image_scanner, bad_dir)
+        bad_dir = os.path.join(self.test_dir, "image_im.vmdk")
+        dictionary = self.image_scanner._task_runner._scan_for_unused_images(self.image_scanner, bad_dir)
         assert_that(len(dictionary) is 0)
 
     def fake_write_marker_file(self, filename, content):
         basename = os.path.basename(filename)
-        assert_that(basename, equal_to(
-            self.image_manager.IMAGE_MARKER_FILE_NAME))
+        assert_that(basename, equal_to(self.image_manager.IMAGE_MARKER_FILE_NAME))
         self.write_count += 1
 
 
@@ -155,32 +212,27 @@ class ImageSweeperTestCase(unittest.TestCase):
         services.register(ServiceName.AGENT_CONFIG, MagicMock())
         self.image_manager = EsxImageManager(MagicMock(), MagicMock())
         self.vm_manager = MagicMock()
-        self.image_sweeper = DatastoreImageSweeper(self.image_manager,
-                                                   self.DATASTORE_ID)
-        self.image_sweeper._task_runner = MagicMock()
-        self.image_sweeper._task_runner.is_stopped.return_value = False
+        self.image_sweeper = DatastoreImageSweeper(self.image_manager, self.DATASTORE_ID)
         self.delete_count = 0
 
         # Create various image directories and empty vmdks
-        dir0 = os.path.join(self.test_dir, "images/im")
         image_id_1 = str(uuid.uuid4())
         image_id_2 = str(uuid.uuid4())
         image_id_3 = str(uuid.uuid4())
         image_id_4 = "invalid_image_id"
-        self.image_ids = ["", image_id_1, image_id_2,
-                          image_id_3, image_id_4]
-        dir1 = os.path.join(dir0, image_id_1)
+        self.image_ids = ["*", image_id_1, image_id_2, image_id_3, image_id_4]
+        dir1 = os.path.join(self.test_dir, "image_" + image_id_1)
         os.makedirs(dir1)
-        dir2 = os.path.join(dir0, image_id_2)
+        dir2 = os.path.join(self.test_dir, "image_" + image_id_2)
         os.makedirs(dir2)
-        dir3 = os.path.join(dir0, image_id_3)
+        dir3 = os.path.join(self.test_dir, "image_" + image_id_3)
         os.makedirs(dir3)
-        dir4 = os.path.join(dir0, image_id_4)
+        dir4 = os.path.join(self.test_dir, "image_" + image_id_4)
         os.makedirs(dir4)
 
         # Create a vmdk under "im", since the image_id is
         # not a valid uuid it should be skipped
-        open(os.path.join(dir0, "im.vmdk"), 'w').close()
+        open(os.path.join(self.test_dir, "image_im.vmdk"), 'w').close()
 
         # Create a good image vmdk under image_id_1 but
         # no image marker file, this should not be deleted
@@ -213,68 +265,47 @@ class ImageSweeperTestCase(unittest.TestCase):
 
     @parameterized.expand([
         # image_id, target image_id, delete count
-        (1, 1, 0),  # 1 image, no marker file, 0 delete
-        (2, 2, 1),  # 1 image, marker file, 1 delete
-        (3, 3, 1),  # 0 image, marker file, 1 delete
-        (4, 4, 0),  # 1 image, marker file, 0 delete (invalid image id)
-        (2, 1, 0)   # 1 image, marker file, 0 delete
-                    # incorrect target image
+        (1, 0),  # 1 image, no marker file, 0 delete
+        (2, 1),  # 1 image, marker file, 1 delete
+        (3, 1),  # 0 image, marker file, 1 delete
     ])
-    @patch("host.hypervisor.esx."
-           "image_manager.EsxImageManager._delete_single_image")
-    def test_image_sweeper(self,
-                           image_id_index,
-                           target_image_id_index,
-                           deleted_count,
-                           delete_single_image):
-        delete_single_image.side_effect = \
-            self.patched_delete_single_image
+    @patch("host.hypervisor.esx.image_manager.EsxImageManager._delete_single_image")
+    @patch("host.hypervisor.image_sweeper.DatastoreImageSweeper.is_stopped", return_value=False)
+    def test_image_sweeper(self, target_image_id_index, deleted_count, is_stopped, delete_single_image):
+        delete_single_image.side_effect = self.patched_delete_single_image
 
         self.image_sweeper.image_sweep_rate = 60000
 
-        image_id = self.image_ids[image_id_index]
         target_image_id = self.image_ids[target_image_id_index]
         self.image_sweeper.set_target_images([target_image_id])
-        good_dir = os.path.join(self.test_dir,
-                                "images",
-                                "im",
-                                image_id)
-        deleted_list = self.image_manager.\
-            _delete_unused_images(self.image_sweeper, good_dir)
+        deleted_list = self.image_sweeper._task_runner._delete_unused_images(self.image_sweeper, self.test_dir)
         assert_that(len(deleted_list) is deleted_count)
         assert_that(self.delete_count is deleted_count)
 
-    @patch("host.hypervisor.esx."
-           "image_manager.EsxImageManager._delete_single_image")
-    def test_image_sweeper_bad_root(self, delete_single_image):
-        delete_single_image.side_effect = \
-            self.patched_delete_single_image
+    @patch("host.hypervisor.esx.image_manager.EsxImageManager._delete_single_image")
+    @patch("host.hypervisor.image_sweeper.DatastoreImageSweeper.is_stopped", return_value=False)
+    def test_image_sweeper_bad_root(self, is_stopped, delete_single_image):
+        delete_single_image.side_effect = self.patched_delete_single_image
         self.image_sweeper.image_sweep_rate = 60000
         self.image_sweeper.set_target_images(["image_id_5"])
-        bad_dir = os.path.join(self.test_dir,
-                               "images",
-                               "im",
-                               "im.vmdk")
-        dictionary = self.image_manager.\
-            _delete_unused_images(self.image_sweeper, bad_dir)
+        dictionary = self.image_sweeper._task_runner._delete_unused_images(self.image_sweeper, self.test_dir)
         assert_that(len(dictionary) is 0)
         assert_that(self.delete_count is 0)
 
-    def patched_delete_single_image(self, image_sweeper,
-                                    pathname, image_id):
+    def patched_delete_single_image(self, image_sweeper, pathname, image_id):
         self.delete_count += 1
         return True
+
+    def patched_image_directory_path(datastore, image_id):
+        return "abc" + image_id
 
 
 class ImageSweeperDeleteSingleImageTestCase(unittest.TestCase):
     DATASTORE_ID = "DS01"
     BASE_TEMP_DIR = "delete_single_image"
-    IMAGE_MARKER_FILENAME = \
-        EsxImageManager.IMAGE_MARKER_FILE_NAME
-    IMAGE_TIMESTAMP_FILENAME = \
-        EsxImageManager.IMAGE_TIMESTAMP_FILE_NAME
-    IMAGE_TIMESTAMP_FILE_RENAME_SUFFIX = \
-        EsxImageManager.IMAGE_TIMESTAMP_FILE_RENAME_SUFFIX
+    IMAGE_MARKER_FILENAME = EsxImageManager.IMAGE_MARKER_FILE_NAME
+    IMAGE_TIMESTAMP_FILENAME = EsxImageManager.IMAGE_TIMESTAMP_FILE_NAME
+    IMAGE_TIMESTAMP_FILE_RENAME_SUFFIX = EsxImageManager.IMAGE_TIMESTAMP_FILE_RENAME_SUFFIX
 
     def setUp(self):
         self.test_dir = os.path.join(tempfile.mkdtemp(), self.BASE_TEMP_DIR)
@@ -288,7 +319,6 @@ class ImageSweeperDeleteSingleImageTestCase(unittest.TestCase):
         self.marker_unlinked = False
 
         # Create various image directories and empty vmdks
-        dir0 = os.path.join(self.test_dir, "images/im")
         image_id_1 = str(uuid.uuid4())
         image_id_2 = str(uuid.uuid4())
         image_id_3 = str(uuid.uuid4())
@@ -299,13 +329,13 @@ class ImageSweeperDeleteSingleImageTestCase(unittest.TestCase):
         self.image_id_3 = image_id_3
         self.image_id_4 = image_id_4
 
-        dir1 = os.path.join(dir0, image_id_1)
+        dir1 = os.path.join(self.test_dir, "image_" + image_id_1)
         os.makedirs(dir1)
-        dir2 = os.path.join(dir0, image_id_2)
+        dir2 = os.path.join(self.test_dir, "image_" + image_id_2)
         os.makedirs(dir2)
-        dir3 = os.path.join(dir0, image_id_3)
+        dir3 = os.path.join(self.test_dir, "image_" + image_id_3)
         os.makedirs(dir3)
-        dir4 = os.path.join(dir0, image_id_4)
+        dir4 = os.path.join(self.test_dir, "image_" + image_id_4)
         os.makedirs(dir4)
 
         self.marker_file_content_time = 0
@@ -317,19 +347,16 @@ class ImageSweeperDeleteSingleImageTestCase(unittest.TestCase):
         # and a valid timestamp file
         vmdk_filename = image_id_1 + ".vmdk"
         open(os.path.join(dir1, vmdk_filename), 'w').close()
-        timestamp_filename = \
-            os.path.join(dir1, self.IMAGE_TIMESTAMP_FILENAME)
+        timestamp_filename = os.path.join(dir1, self.IMAGE_TIMESTAMP_FILENAME)
         open(timestamp_filename, 'w').close()
-        marker_filename = \
-            os.path.join(dir1, self.IMAGE_MARKER_FILENAME)
+        marker_filename = os.path.join(dir1, self.IMAGE_MARKER_FILENAME)
         open(marker_filename, 'w').close()
 
         # Create a good image vmdk under image_id_2,
         # create timestamp but no image marker file,
         vmdk_filename = image_id_2 + ".vmdk"
         open(os.path.join(dir2, vmdk_filename), 'w').close()
-        timestamp_filename = \
-            os.path.join(dir2, self.IMAGE_TIMESTAMP_FILENAME)
+        timestamp_filename = os.path.join(dir2, self.IMAGE_TIMESTAMP_FILENAME)
         open(timestamp_filename, 'w').close()
 
         # Create a good image vmdk under image_id_3,
@@ -337,8 +364,7 @@ class ImageSweeperDeleteSingleImageTestCase(unittest.TestCase):
         # and no renamed timestamp file
         vmdk_filename = image_id_3 + ".vmdk"
         open(os.path.join(dir3, vmdk_filename), 'w').close()
-        marker_filename = \
-            os.path.join(dir3, self.IMAGE_MARKER_FILENAME)
+        marker_filename = os.path.join(dir3, self.IMAGE_MARKER_FILENAME)
         open(marker_filename, 'w').close()
 
         # Create a good image vmdk under image_id_4,
@@ -346,14 +372,10 @@ class ImageSweeperDeleteSingleImageTestCase(unittest.TestCase):
         # but no timestamp file
         vmdk_filename = image_id_4 + ".vmdk"
         open(os.path.join(dir4, vmdk_filename), 'w').close()
-        marker_filename = \
-            os.path.join(dir4, self.IMAGE_MARKER_FILENAME)
+        marker_filename = os.path.join(dir4, self.IMAGE_MARKER_FILENAME)
         open(marker_filename, 'w').close()
-        timestamp_filename = \
-            os.path.join(dir4, self.IMAGE_TIMESTAMP_FILENAME)
-        renamed_timestamp_filename = \
-            timestamp_filename + \
-            self.IMAGE_TIMESTAMP_FILE_RENAME_SUFFIX
+        timestamp_filename = os.path.join(dir4, self.IMAGE_TIMESTAMP_FILENAME)
+        renamed_timestamp_filename = timestamp_filename + self.IMAGE_TIMESTAMP_FILE_RENAME_SUFFIX
         open(renamed_timestamp_filename, 'w').close()
 
     def tearDown(self):
@@ -380,18 +402,12 @@ class ImageSweeperDeleteSingleImageTestCase(unittest.TestCase):
         (1000, 1001, 1001, False),
         (2000, 1000, 2010, False)
     ])
-    @patch("host.hypervisor.esx."
-           "image_manager.EsxImageManager._read_marker_file")
-    @patch("host.hypervisor.esx."
-           "image_manager.EsxImageManager._get_datastore_type")
-    @patch("host.hypervisor.esx.image_manager."
-           "EsxImageManager._get_mod_time")
-    @patch("host.hypervisor.esx."
-           "image_manager.EsxImageManager._image_sweeper_rename")
-    @patch("host.hypervisor.esx."
-           "image_manager.EsxImageManager._image_sweeper_unlink")
-    @patch("host.hypervisor.esx."
-           "image_manager.EsxImageManager._image_sweeper_rm_rf")
+    @patch("host.hypervisor.esx.image_manager.EsxImageManager._read_marker_file")
+    @patch("host.hypervisor.esx.image_manager.EsxImageManager._get_datastore_type")
+    @patch("host.hypervisor.esx.image_manager.EsxImageManager._get_mod_time")
+    @patch("host.hypervisor.esx.image_manager.EsxImageManager._image_sweeper_rename")
+    @patch("host.hypervisor.esx.image_manager.EsxImageManager._image_sweeper_unlink")
+    @patch("host.hypervisor.esx.image_manager.EsxImageManager._image_sweeper_rm_rf")
     def test_delete_single_image(
             self,
             marker_file_content_time,
@@ -405,45 +421,29 @@ class ImageSweeperDeleteSingleImageTestCase(unittest.TestCase):
             get_datastore_type,
             read_marker_file):
 
-        self.marker_file_content_time = \
-            marker_file_content_time
-        self.timestamp_file_mod_time = \
-            timestamp_file_mod_time
-        self.renamed_timestamp_file_mod_time = \
-            renamed_timestamp_file_mod_time
+        self.marker_file_content_time = marker_file_content_time
+        self.timestamp_file_mod_time = timestamp_file_mod_time
+        self.renamed_timestamp_file_mod_time = renamed_timestamp_file_mod_time
         marker_unlinked = not deleted
 
-        read_marker_file.side_effect = \
-            self.patched_read_marker_file
-        get_datastore_type.side_effect = \
-            self.patched_get_datastore_type
-        get_mod_time.side_effect = \
-            self.patched_get_mod_time
+        read_marker_file.side_effect = self.patched_read_marker_file
+        get_datastore_type.side_effect = self.patched_get_datastore_type
+        get_mod_time.side_effect = self.patched_get_mod_time
         rename.side_effect = self.patched_rename
         unlink.side_effect = self.patched_unlink
         rm_rf.side_effect = self.patched_rm_rf
 
-        good_dir = os.path.join(self.test_dir,
-                                "images",
-                                "im",
-                                self.image_id_1)
-        ret = self.image_manager.\
-            _delete_single_image(self.image_sweeper,
-                                 good_dir,
-                                 self.image_id_1)
+        good_dir = os.path.join(self.test_dir, "image_" + self.image_id_1)
+        ret = self.image_manager._delete_single_image(self.image_sweeper, good_dir, self.image_id_1)
 
         assert_that(deleted is ret)
         assert_that(deleted is self.deleted)
         assert_that(marker_unlinked is self.marker_unlinked)
 
-    @patch("host.hypervisor.esx."
-           "image_manager.EsxImageManager._get_datastore_type")
-    @patch("host.hypervisor.esx.image_manager."
-           "EsxImageManager._get_mod_time")
-    @patch("host.hypervisor.esx."
-           "image_manager.EsxImageManager._image_sweeper_rename")
-    @patch("host.hypervisor.esx."
-           "image_manager.EsxImageManager._image_sweeper_rm_rf")
+    @patch("host.hypervisor.esx.image_manager.EsxImageManager._get_datastore_type")
+    @patch("host.hypervisor.esx.image_manager.EsxImageManager._get_mod_time")
+    @patch("host.hypervisor.esx.image_manager.EsxImageManager._image_sweeper_rename")
+    @patch("host.hypervisor.esx.image_manager.EsxImageManager._image_sweeper_rm_rf")
     def test_delete_single_image_no_marker_file(
             self,
             rm_rf,
@@ -451,35 +451,22 @@ class ImageSweeperDeleteSingleImageTestCase(unittest.TestCase):
             get_mod_time,
             get_datastore_type):
 
-        get_datastore_type.side_effect = \
-            self.patched_get_datastore_type
-
-        get_mod_time.side_effect = \
-            self.patched_get_mod_time
+        get_datastore_type.side_effect = self.patched_get_datastore_type
+        get_mod_time.side_effect = self.patched_get_mod_time
 
         rename.side_effect = self.patched_rename
         rm_rf.side_effect = self.patched_rm_rf
 
-        good_dir = os.path.join(self.test_dir,
-                                "images",
-                                "im",
-                                self.image_id_2)
-        deleted = self.image_manager.\
-            _delete_single_image(self.image_sweeper,
-                                 good_dir,
-                                 self.image_id_2)
+        good_dir = os.path.join(self.test_dir, "image_" + self.image_id_2)
+        deleted = self.image_manager._delete_single_image(self.image_sweeper, good_dir, self.image_id_2)
 
         assert_that(deleted is False)
         assert_that(self.deleted is False)
 
-    @patch("host.hypervisor.esx."
-           "image_manager.EsxImageManager._read_marker_file")
-    @patch("host.hypervisor.esx."
-           "image_manager.EsxImageManager._get_datastore_type")
-    @patch("host.hypervisor.esx."
-           "image_manager.EsxImageManager._image_sweeper_rename")
-    @patch("host.hypervisor.esx."
-           "image_manager.EsxImageManager._image_sweeper_rm_rf")
+    @patch("host.hypervisor.esx.image_manager.EsxImageManager._read_marker_file")
+    @patch("host.hypervisor.esx.image_manager.EsxImageManager._get_datastore_type")
+    @patch("host.hypervisor.esx.image_manager.EsxImageManager._image_sweeper_rename")
+    @patch("host.hypervisor.esx.image_manager.EsxImageManager._image_sweeper_rm_rf")
     def test_delete_single_image_no_timestamp_files(
             self,
             rm_rf,
@@ -487,24 +474,15 @@ class ImageSweeperDeleteSingleImageTestCase(unittest.TestCase):
             get_datastore_type,
             read_marker_file):
 
-        read_marker_file.side_effect = \
-            self.patched_read_marker_file
-
-        get_datastore_type.side_effect = \
-            self.patched_get_datastore_type
+        read_marker_file.side_effect = self.patched_read_marker_file
+        get_datastore_type.side_effect = self.patched_get_datastore_type
 
         rename.side_effect = self.patched_rename
         rm_rf.side_effect = self.patched_rm_rf
 
         self.marker_file_content_time = 1000
-        good_dir = os.path.join(self.test_dir,
-                                "images",
-                                "im",
-                                self.image_id_3)
-        deleted = self.image_manager.\
-            _delete_single_image(self.image_sweeper,
-                                 good_dir,
-                                 self.image_id_3)
+        good_dir = os.path.join(self.test_dir, "image_" + self.image_id_3)
+        deleted = self.image_manager._delete_single_image(self.image_sweeper, good_dir, self.image_id_3)
 
         assert_that(deleted is True)
         assert_that(self.deleted is True)
@@ -516,18 +494,12 @@ class ImageSweeperDeleteSingleImageTestCase(unittest.TestCase):
         (1000, 1000, False),
         (1000, 1001, False)
     ])
-    @patch("host.hypervisor.esx."
-           "image_manager.EsxImageManager._read_marker_file")
-    @patch("host.hypervisor.esx."
-           "image_manager.EsxImageManager._get_datastore_type")
-    @patch("host.hypervisor.esx.image_manager."
-           "EsxImageManager._get_mod_time")
-    @patch("host.hypervisor.esx."
-           "image_manager.EsxImageManager._image_sweeper_rename")
-    @patch("host.hypervisor.esx."
-           "image_manager.EsxImageManager._image_sweeper_unlink")
-    @patch("host.hypervisor.esx."
-           "image_manager.EsxImageManager._image_sweeper_rm_rf")
+    @patch("host.hypervisor.esx.image_manager.EsxImageManager._read_marker_file")
+    @patch("host.hypervisor.esx.image_manager.EsxImageManager._get_datastore_type")
+    @patch("host.hypervisor.esx.image_manager.EsxImageManager._get_mod_time")
+    @patch("host.hypervisor.esx.image_manager.EsxImageManager._image_sweeper_rename")
+    @patch("host.hypervisor.esx.image_manager.EsxImageManager._image_sweeper_unlink")
+    @patch("host.hypervisor.esx.image_manager.EsxImageManager._image_sweeper_rm_rf")
     def test_delete_single_image_no_timestamp_file(
             self,
             marker_file_content_time,
@@ -540,30 +512,19 @@ class ImageSweeperDeleteSingleImageTestCase(unittest.TestCase):
             get_datastore_type,
             read_marker_file):
 
-        self.marker_file_content_time = \
-            marker_file_content_time
-        self.renamed_timestamp_file_mod_time = \
-            renamed_timestamp_file_mod_time
+        self.marker_file_content_time = marker_file_content_time
+        self.renamed_timestamp_file_mod_time = renamed_timestamp_file_mod_time
         marker_unlinked = not deleted
 
-        read_marker_file.side_effect = \
-            self.patched_read_marker_file
-        get_datastore_type.side_effect = \
-            self.patched_get_datastore_type
-        get_mod_time.side_effect = \
-            self.patched_get_mod_time
+        read_marker_file.side_effect = self.patched_read_marker_file
+        get_datastore_type.side_effect = self.patched_get_datastore_type
+        get_mod_time.side_effect = self.patched_get_mod_time
         rename.side_effect = self.patched_rename
         unlink.side_effect = self.patched_unlink
         rm_rf.side_effect = self.patched_rm_rf
 
-        good_dir = os.path.join(self.test_dir,
-                                "images",
-                                "im",
-                                self.image_id_4)
-        ret = self.image_manager.\
-            _delete_single_image(self.image_sweeper,
-                                 good_dir,
-                                 self.image_id_4)
+        good_dir = os.path.join(self.test_dir, "image_" + self.image_id_4)
+        ret = self.image_manager._delete_single_image(self.image_sweeper, good_dir, self.image_id_4)
 
         assert_that(deleted is ret)
         assert_that(deleted is self.deleted)
@@ -624,14 +585,13 @@ class ImageSweeperTouchTimestampTestCase(unittest.TestCase):
         self.delete_count = 0
 
         # Create various image directories and empty vmdks
-        dir0 = os.path.join(self.test_dir, self.DATASTORE_ID, "images/im")
+        dir0 = os.path.join(self.test_dir, self.DATASTORE_ID, "image_")
         self.dir0 = dir0
 
         # Image dir with correct timestamp file
         image_id_1 = str(uuid.uuid4())
         dir1 = self.create_dir(image_id_1)
-        open(os.path.join(
-            dir1, self.IMAGE_TIMESTAMP_FILENAME), 'w').close()
+        open(os.path.join(dir1, self.IMAGE_TIMESTAMP_FILENAME), 'w').close()
 
         # Image dir without the correct timestamp file
         image_id_2 = str(uuid.uuid4())
@@ -680,8 +640,7 @@ class ImageSweeperTouchTimestampTestCase(unittest.TestCase):
         image_dir = self.image_dirs[image_index]
         os_vmdk_path.side_effect = self.patched_os_vmdk_path
 
-        timestamp_filename_path = \
-            os.path.join(image_dir, self.IMAGE_TIMESTAMP_FILENAME)
+        timestamp_filename_path = os.path.join(image_dir, self.IMAGE_TIMESTAMP_FILENAME)
 
         pre_mod_time = 0
 
@@ -691,9 +650,7 @@ class ImageSweeperTouchTimestampTestCase(unittest.TestCase):
 
         try:
             time.sleep(1)
-            self.image_manager.\
-                touch_image_timestamp(self.DATASTORE_ID,
-                                      image_id)
+            self.image_manager.touch_image_timestamp(self.DATASTORE_ID, image_id)
             assert_that(exception_class is None)
             # check new timestamp
             post_mod_time = os.path.getmtime(timestamp_filename_path)
@@ -710,8 +667,7 @@ class ImageSweeperTouchTimestampTestCase(unittest.TestCase):
         image_dir = self.image_dirs[image_index]
         os_vmdk_path.side_effect = self.patched_os_vmdk_path
 
-        tombstone_filename_path = \
-            os.path.join(image_dir, self.IMAGE_TOMBSTONE_FILENAME)
+        tombstone_filename_path = os.path.join(image_dir, self.IMAGE_TOMBSTONE_FILENAME)
 
         self.image_manager.create_image_tombstone(self.DATASTORE_ID,
                                                   image_id)
@@ -726,6 +682,6 @@ class ImageSweeperTouchTimestampTestCase(unittest.TestCase):
         return ret
 
     def create_dir(self, image_id):
-        dirname = vm_config.compond_path_join(self.dir0, _disk_path(image_id))
+        dirname = vm_config.compond_path_join(self.dir0, image_id)
         os.makedirs(dirname)
         return dirname

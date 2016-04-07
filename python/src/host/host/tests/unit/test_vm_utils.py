@@ -22,9 +22,7 @@ class VmUtilsTest(unittest.TestCase):
 
     def setUp(self):
         self.base_dir = os.path.dirname(__file__)
-        self.test_dir = os.path.join(self.base_dir,
-                                     "test_files", "vms",
-                                     "test", "good")
+        self.test_dir = os.path.join(self.base_dir, "test_files", "vm_good")
 
     def test_parse_vmdk(self):
         vmdk_pathname = os.path.join(self.test_dir, 'good.vmdk')

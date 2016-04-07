@@ -39,7 +39,6 @@ METADATA_FILE_EXT = "ecv"
 DEFAULT_VMX_VERSION = "vmx-10"
 SHADOW_VM_NAME_PREFIX = "shadow_"
 
-SUPPORT_VSAN = True
 COMPOND_PATH_SEPARATOR = '_'
 VMFS_VOLUMES = "/vmfs/volumes"
 
@@ -128,16 +127,10 @@ def os_to_datastore_path(os_path):
 
 
 def compond_path_join(s1, s2, s3=None):
-    if SUPPORT_VSAN:
-        dir = s1 + COMPOND_PATH_SEPARATOR + s2
-        if s3:
-            dir += COMPOND_PATH_SEPARATOR + s3
-        return dir
-    else:
-        if s3:
-            return os.path.join(s1, s2, s3)
-        else:
-            return os.path.join(s1, s2)
+    dir = s1 + COMPOND_PATH_SEPARATOR + s2
+    if s3:
+        dir += COMPOND_PATH_SEPARATOR + s3
+    return dir
 
 
 def os_vmdk_path(datastore, disk_id, folder=DISK_FOLDER_NAME_PREFIX):
@@ -184,25 +177,16 @@ def image_directory_path(datastore, image_id):
 
     where $image_id_prefix is the first two characters of image_id.
     """
-    return compond_path_join(os_datastore_path(datastore, IMAGE_FOLDER_NAME_PREFIX),
-                             _disk_path(image_id))
-
-
-def _disk_path(disk_id):
-    if SUPPORT_VSAN:
-        return disk_id
-    else:
-        return os.path.join(disk_id[0:2], disk_id)
+    return compond_path_join(os_datastore_path(datastore, IMAGE_FOLDER_NAME_PREFIX), image_id)
 
 
 def partial_vmx_path(vm_id):
-    return os.path.join(compond_path_join(VM_FOLDER_NAME_PREFIX, _disk_path(vm_id)),
+    return os.path.join(compond_path_join(VM_FOLDER_NAME_PREFIX, vm_id),
                         vmx_add_suffix(vm_id))
 
 
 def partial_path(disk_id, name_no_extension, extension):
-    return os.path.join(_disk_path(disk_id),
-                        "%s.%s" % (name_no_extension, extension))
+    return os.path.join(disk_id, "%s.%s" % (name_no_extension, extension))
 
 
 def metadata_filename(disk_id):
@@ -373,10 +357,7 @@ class EsxVmConfig(object):
         """
         if disk_id:
             if with_vm:
-                if SUPPORT_VSAN:
-                    vm_folder = cfg_spec.files.vmPathName
-                else:
-                    vm_folder = compond_path_join(cfg_spec.files.vmPathName, cfg_spec.name)
+                vm_folder = cfg_spec.files.vmPathName
                 vmdk_file = os.path.join(vm_folder, "%s.vmdk" % disk_id)
             else:
                 vmdk_file = vmdk_path(datastore, disk_id,
@@ -751,10 +732,7 @@ class EsxVmConfig(object):
         :type env: dictionary
         :rtype: EsxVmConfigSpec
         """
-        if SUPPORT_VSAN:
-            vm_path = datastore_path(datastore, compond_path_join(VM_FOLDER_NAME_PREFIX, vm_id))
-        else:
-            vm_path = datastore_path(datastore, os.path.join(VM_FOLDER_NAME_PREFIX, vm_id[0:2]))
+        vm_path = datastore_path(datastore, compond_path_join(VM_FOLDER_NAME_PREFIX, vm_id))
 
         filled_metadata = {}
         meta_config = metadata.get("configuration") if metadata else {}

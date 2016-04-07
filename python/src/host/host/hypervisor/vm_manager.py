@@ -428,12 +428,3 @@ class VmManager(object):
         :raise OperationNotAllowedException when vm is not powered on.
         """
         pass
-
-    @abc.abstractmethod
-    def get_vm_images(self, image_scanner):
-        """Get the image list for all vms
-        :param image_scanner: id of target datastore
-        :return image_list: list of vm images
-        :raise TimeoutError
-        """
-        pass

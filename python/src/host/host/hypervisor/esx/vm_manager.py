@@ -15,8 +15,6 @@ import logging
 from operator import itemgetter
 
 from host.hypervisor.esx.vm_config import SHADOW_VM_NAME_PREFIX
-from host.hypervisor.vm_utils import parse_vmdk
-from host.hypervisor.image_scanner import waste_time
 
 import os
 import socket
@@ -55,7 +53,6 @@ from host.hypervisor.esx.vm_config import is_persistent_disk
 from host.hypervisor.esx.vm_config import os_datastore_path
 from host.hypervisor.esx.vm_config import vmdk_id
 from host.hypervisor.esx.vm_config import VM_FOLDER_NAME_PREFIX
-from host.hypervisor.datastore_manager import DatastoreNotFoundException
 
 from common.log import log_duration
 
@@ -909,80 +906,3 @@ class EsxVmManager(VmManager):
                          port=mks.port,
                          ssl_thumbprint=mks.sslThumbprint,
                          ticket=mks.ticket)
-
-    def get_vm_images(self, image_scanner):
-        vms_dir_path = os_datastore_path(image_scanner.datastore_id,
-                                         VM_FOLDER_NAME_PREFIX)
-        # Log messages with prefix: "IMAGE SCANNER" are for debugging
-        # and will be removed after basic testing
-        self._logger.info("IMAGE SCANNER: vms_dir: %s" % vms_dir_path)
-        if not os.path.isdir(vms_dir_path):
-            self._logger.info("get_vm_images: vms_dir: %s, doesn't exist"
-                              % vms_dir_path)
-            raise DatastoreNotFoundException(
-                "Image scanner, cannot find vms "
-                "directory for datastore: %s"
-                % image_scanner.datastore_id)
-
-        return self._collect_active_images(image_scanner, vms_dir_path)
-
-    def _collect_active_images(self, image_scanner, root):
-        """
-        :param root: top directory
-        :return: dictionary of used images, key is image id
-        """
-        # Log messages with prefix: "IMAGE SCANNER" are for debugging
-        # and will be removed after basic testing
-        self._logger.info("IMAGE SCANNER: calling collect_active_images()")
-        # Compute scan rest interval
-        rest_interval_sec = image_scanner.get_vm_scan_rest_interval()
-        active_images = dict()
-        for curdir, dirs, files in os.walk(root):
-
-            # On a directory change check if it still needs to run
-            if image_scanner.is_stopped():
-                return active_images
-
-            # If this contains only other directories skip it
-            if len(files) == 0:
-                continue
-
-            # Look for the vmdk file
-            for vm_file in files:
-                self._logger.info("IMAGE SCANNER: current file %s" % vm_file)
-                # Skip non vmdk files
-                if not vm_file.endswith(".vmdk"):
-                    continue
-                # Skip vmdk delta files
-                if vm_file.endswith("delta.vmdk"):
-                    continue
-                # Skip vmdk flat file
-                if vm_file.endswith("flat.vmdk"):
-                    continue
-                vmdk_pathname = os.path.join(curdir, vm_file)
-                self._logger.info("IMAGE SCANNER: found vmdk: %s"
-                                  % vmdk_pathname)
-                try:
-                    vmdk_dictionary = parse_vmdk(vmdk_pathname)
-                    # If there is no file_name_hint, skip it
-                    if image_scanner.FILE_NAME_HINT not in vmdk_dictionary:
-                        # This should be a common occurrence
-                        # the log level should debug
-                        self._logger.info("IMAGE_SCANNER: Vm scan, "
-                                          "skipping file: %s "
-                                          "missing parent hint"
-                                          % vmdk_pathname)
-                        continue
-                    file_name_hint = \
-                        vmdk_dictionary[image_scanner.FILE_NAME_HINT]
-                    image_id = image_scanner.image_manager.\
-                        get_image_id_from_path(file_name_hint)
-                    if image_id not in active_images:
-                        self._logger.info(
-                            "IMAGE SCANNER: adding image_id: %s" % image_id)
-                        active_images[image_id] = file_name_hint
-                except Exception as ex:
-                    self._logger.warn("Vm scan, skipping file: %s : %s"
-                                      % (vmdk_pathname, ex))
-            waste_time(rest_interval_sec)
-        return active_images
