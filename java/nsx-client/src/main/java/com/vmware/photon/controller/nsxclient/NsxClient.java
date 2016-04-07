@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.nsxclient;
 
 import com.vmware.photon.controller.nsxclient.apis.FabricApi;
+import com.vmware.photon.controller.nsxclient.apis.LogicalSwitchApi;
 
 /**
  * This class represents the NSX client.
@@ -23,6 +24,7 @@ public class NsxClient {
   private final RestClient restClient;
 
   private final FabricApi fabricApi;
+  private final LogicalSwitchApi logicalSwitchApi;
 
   public NsxClient(String target,
                    String username,
@@ -30,9 +32,14 @@ public class NsxClient {
     this.restClient = new RestClient(target, username, password);
 
     this.fabricApi = new FabricApi(restClient);
+    this.logicalSwitchApi = new LogicalSwitchApi(restClient);
   }
 
   public FabricApi getFabricApi() {
     return this.fabricApi;
+  }
+
+  public LogicalSwitchApi getLogicalSwitchApi() {
+    return this.logicalSwitchApi;
   }
 }
