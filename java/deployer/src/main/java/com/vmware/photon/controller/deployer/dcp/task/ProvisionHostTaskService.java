@@ -49,6 +49,7 @@ import com.vmware.photon.controller.nsxclient.models.HostSwitch;
 import com.vmware.photon.controller.nsxclient.models.TransportNode;
 import com.vmware.photon.controller.nsxclient.models.TransportNodeCreateSpec;
 import com.vmware.photon.controller.nsxclient.models.TransportNodeState;
+import com.vmware.photon.controller.nsxclient.models.TransportZoneEndPoint;
 import com.vmware.photon.controller.nsxclient.utils.NameUtils;
 import com.vmware.photon.controller.resource.gen.Datastore;
 import com.vmware.photon.controller.resource.gen.Network;
@@ -949,9 +950,7 @@ public class ProvisionHostTaskService extends StatefulService {
                 case FAILED:
                 case ORPHANED:
                   failTask(new IllegalStateException(
-                      String.format("Failed to register host as fabric node: code [%d], message [%s]",
-                          response.getErrorCode(),
-                          response.getErrorMessage())));
+                      String.format("Failed to register host as fabric node: %s", response.toString())));
                   break;
               }
             }
@@ -989,6 +988,11 @@ public class ProvisionHostTaskService extends StatefulService {
       HostSwitch hostSwitch = new HostSwitch();
       hostSwitch.setName(NameUtils.HOST_SWITCH_NAME);
       request.setHostSwitches(Arrays.asList(hostSwitch));
+      if (deploymentState.networkZoneId != null) {
+        TransportZoneEndPoint transportZoneEndPoint = new TransportZoneEndPoint();
+        transportZoneEndPoint.setTransportZoneId(deploymentState.networkZoneId);
+        request.setTransportZoneEndPoints(Arrays.asList(transportZoneEndPoint));
+      }
 
       nsxClient.getFabricApi().createTransportNodeAsync(request,
           new FutureCallback<TransportNode>() {
@@ -1038,9 +1042,7 @@ public class ProvisionHostTaskService extends StatefulService {
                 case FAILED:
                 case ORPHANED:
                   failTask(new IllegalStateException(
-                      String.format("Failed to create transport node for host: code [%d], message [%s]",
-                          response.getErrorCode(),
-                          response.getErrorMessage())));
+                      String.format("Failed to create transport node for host: %s", response.toString())));
                   break;
               }
             }

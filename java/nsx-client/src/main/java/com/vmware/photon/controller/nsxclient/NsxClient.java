@@ -29,6 +29,10 @@ public class NsxClient {
   public NsxClient(String target,
                    String username,
                    String password) {
+    if (!target.startsWith("https")) {
+      target = "https://" + target;
+    }
+
     this.restClient = new RestClient(target, username, password);
 
     this.fabricApi = new FabricApi(restClient);

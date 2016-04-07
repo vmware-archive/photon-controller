@@ -13,12 +13,31 @@
 
 package com.vmware.photon.controller.nsxclient.datatypes;
 
+import com.fasterxml.jackson.annotation.JsonSetter;
+import com.fasterxml.jackson.annotation.JsonValue;
+
 /**
  * This enum represents the ConfigurationState.
  */
 public enum ConfigurationState {
-  IN_PROGRESS,
-  SUCCESS,
-  FAILED,
-  PARTIAL_SUCCESS
+  IN_PROGRESS("in_progress"),
+  SUCCESS("success"),
+  FAILED("failed"),
+  PARTIAL_SUCCESS("partial_success");
+
+  private String type;
+
+  private ConfigurationState(String type) {
+    this.type = type.toLowerCase();
+  }
+
+  @JsonValue
+  public String getDataType() {
+    return type;
+  }
+
+  @JsonSetter
+  public void setDataType(String t) {
+    type = t.toLowerCase();
+  }
 }

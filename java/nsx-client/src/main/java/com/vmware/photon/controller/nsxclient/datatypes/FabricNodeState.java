@@ -13,14 +13,33 @@
 
 package com.vmware.photon.controller.nsxclient.datatypes;
 
+import com.fasterxml.jackson.annotation.JsonSetter;
+import com.fasterxml.jackson.annotation.JsonValue;
+
 /**
  * This enum represents the FabricNodeState.
  */
 public enum FabricNodeState {
-  PENDING,
-  IN_PROGRESS,
-  SUCCESS,
-  FAILED,
-  PARTIAL_SUCCESS,
-  ORPHANED
+  PENDING("pending"),
+  IN_PROGRESS("in_progress"),
+  SUCCESS("success"),
+  FAILED("failed"),
+  PARTIAL_SUCCESS("partial_success"),
+  ORPHANED("orphaned");
+
+  private String type;
+
+  private FabricNodeState(String type) {
+    this.type = type.toLowerCase();
+  }
+
+  @JsonValue
+  public String getDataType() {
+    return type;
+  }
+
+  @JsonSetter
+  public void setDataType(String t) {
+    type = t.toLowerCase();
+  }
 }
