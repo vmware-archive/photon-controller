@@ -69,8 +69,9 @@ if [ -n "$REAL_AGENT" ]; then
     (
       cd $TESTS
       bundle exec rake seed:host
+
+      # Wait for the host monitoring service to detect the newly added host
+      bundle exec rake monitor:host
     )
   fi
 fi
-# sleep 30 seconds to wait for root-scheduler to get live child
-sleep 30
