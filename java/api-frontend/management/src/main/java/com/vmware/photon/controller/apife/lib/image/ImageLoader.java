@@ -72,11 +72,12 @@ public class ImageLoader {
 
     Image image = null;
     try {
+      imageStore.setHostIp(hostIp);
       image = imageStore.createImage(imageEntity.getId());
       uploadECVFile(EsxCloudVmx.fromImageSettings(imageEntity.getImageSettingsMap()), image);
 
       image.close();
-      imageStore.createImageFromVm(image, vmId, hostIp);
+      imageStore.createImageFromVm(image, vmId);
 
     } catch (Exception e) {
       logger.warn("Create image {} failed.", e);
