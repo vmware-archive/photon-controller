@@ -14,6 +14,8 @@
 package com.vmware.photon.controller.nsxclient.apis;
 
 import com.vmware.photon.controller.nsxclient.RestClient;
+import com.vmware.photon.controller.nsxclient.datatypes.NsxSwitch;
+import com.vmware.photon.controller.nsxclient.models.LogicalSwitchState;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -35,6 +37,7 @@ import org.testng.annotations.Test;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -45,6 +48,7 @@ import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
+import java.util.concurrent.TimeoutException;
 
 /**
  * A dummy class used for test purpose.
@@ -522,6 +526,71 @@ public class NsxClientApiBaseTest extends NsxClientApi {
           }
       );
       latch.await();
+    }
+  }
+
+  /**
+   * Tests for method of waitForConfigurationFinished.
+   */
+  public static class WaitForConfigurationFinishedTest {
+    private NsxClientApiBaseTest nsxClientApi;
+
+    @BeforeMethod
+    public void beforeMethod() {
+      nsxClientApi = spy(new NsxClientApiBaseTest(mock(RestClient.class)));
+    }
+
+    @Test
+    public void testSuccessfullyConfigured() throws Exception {
+      final String switchStateUrl = "state-url";
+
+      LogicalSwitchState logicalSwitchState1 = new LogicalSwitchState();
+      logicalSwitchState1.setState(NsxSwitch.State.PENDING);
+
+      LogicalSwitchState logicalSwitchState2 = new LogicalSwitchState();
+      logicalSwitchState2.setState(NsxSwitch.State.IN_PROGRESS);
+
+      LogicalSwitchState logicalSwitchState3 = new LogicalSwitchState();
+      logicalSwitchState3.setState(NsxSwitch.State.SUCCESS);
+
+      doReturn(logicalSwitchState1).doReturn(logicalSwitchState2).doReturn(logicalSwitchState3)
+          .when(nsxClientApi)
+          .get(eq(switchStateUrl),
+              eq(HttpStatus.SC_OK),
+              any(TypeReference.class));
+
+      LogicalSwitchState result = nsxClientApi.waitForConfigurationFinished(
+          switchStateUrl,
+          HttpStatus.SC_OK,
+          new TypeReference<LogicalSwitchState>() {},
+          p -> p.getState() == NsxSwitch.State.SUCCESS
+      );
+
+      assertThat(result, is(logicalSwitchState3));
+    }
+
+    @Test
+    public void testConfigurationTimeout() throws Exception {
+      final String switchStateUrl = "state-url";
+
+      LogicalSwitchState logicalSwitchState = new LogicalSwitchState();
+      logicalSwitchState.setState(NsxSwitch.State.IN_PROGRESS);
+
+      doReturn(logicalSwitchState).when(nsxClientApi).get(eq(switchStateUrl),
+          eq(HttpStatus.SC_OK), any(TypeReference.class));
+
+      try {
+        LogicalSwitchState result = nsxClientApi.waitForConfigurationFinished(
+            switchStateUrl,
+            HttpStatus.SC_OK,
+            new TypeReference<LogicalSwitchState>() {},
+            p -> p.getState() == NsxSwitch.State.SUCCESS,
+            1,
+            500
+        );
+      } catch (TimeoutException e) {
+        assertThat(e.getMessage(), is("Timed out when waiting for the configuration to be finished"));
+      }
     }
   }
 }

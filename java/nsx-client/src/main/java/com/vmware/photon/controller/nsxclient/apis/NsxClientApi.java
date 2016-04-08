@@ -27,6 +27,9 @@ import org.apache.http.entity.StringEntity;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.function.Predicate;
 
 /**
  * This is the base class of the NSX client API implementations, and
@@ -34,6 +37,9 @@ import java.io.IOException;
  * should extends this class.
  */
 public class NsxClientApi {
+  private static final int WAIT_ITERATION_SLEEP_MILLISECONDS = 500;
+  private static final int WAIT_ITERATION_COUNT = 30;
+
   private final RestClient restClient;
   private final ObjectMapper objectMapper;
   protected final String basePath = "/api/v1";
@@ -210,6 +216,42 @@ public class NsxClientApi {
           }
         }
     );
+  }
+
+  protected <T> T waitForConfigurationFinished(final String url,
+                                               final int expectedResponseStatus,
+                                               final TypeReference<T> typeReference,
+                                               final Predicate<T> predicate) throws Exception {
+
+    return waitForConfigurationFinished(url,
+        expectedResponseStatus,
+        typeReference,
+        predicate,
+        this.WAIT_ITERATION_COUNT,
+        this.WAIT_ITERATION_SLEEP_MILLISECONDS);
+  }
+
+  /**
+   * When an NSX equipment is created, SC_CREATED is returned.
+   * Therefore, the configuration state needs to be checked to
+   * determine whether keep waiting is needed.
+   */
+  protected <T> T waitForConfigurationFinished(final String url,
+                                               final int expectedResponseStatus,
+                                               final TypeReference<T> typeReference,
+                                               final Predicate<T> predicate,
+                                               final int iterationCount,
+                                               final int iterationSleepMilliseconds) throws Exception {
+
+    for (int i = 0; i < iterationCount; i++) {
+      T response = get(url, expectedResponseStatus, typeReference);
+      if (predicate.test(response)) {
+        return response;
+      }
+      TimeUnit.MILLISECONDS.sleep(iterationSleepMilliseconds);
+    }
+
+    throw new TimeoutException("Timed out when waiting for the configuration to be finished");
   }
 
   /**

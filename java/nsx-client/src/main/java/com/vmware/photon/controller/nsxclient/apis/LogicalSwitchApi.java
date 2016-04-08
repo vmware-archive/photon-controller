@@ -14,6 +14,8 @@
 package com.vmware.photon.controller.nsxclient.apis;
 
 import com.vmware.photon.controller.nsxclient.RestClient;
+import com.vmware.photon.controller.nsxclient.datatypes.NsxSwitch;
+import com.vmware.photon.controller.nsxclient.exceptions.CreateLogicalSwitchException;
 import com.vmware.photon.controller.nsxclient.models.LogicalSwitch;
 import com.vmware.photon.controller.nsxclient.models.LogicalSwitchCreateSpec;
 import com.vmware.photon.controller.nsxclient.models.LogicalSwitchState;
@@ -36,11 +38,32 @@ public class LogicalSwitchApi extends NsxClientApi {
   }
 
   public LogicalSwitch createLogicalSwitch(LogicalSwitchCreateSpec spec) throws Exception {
-    return post(logicalSwitchBasePath,
-        serializeObjectAsJson(spec),
-        HttpStatus.SC_CREATED,
-        new TypeReference<LogicalSwitch>() {}
-    );
+
+    LogicalSwitch logicalSwitch;
+    LogicalSwitchState logicalSwitchState;
+    try {
+      logicalSwitch = post(logicalSwitchBasePath,
+          serializeObjectAsJson(spec),
+          HttpStatus.SC_CREATED,
+          new TypeReference<LogicalSwitch>() {
+          }
+      );
+
+      String switchStateUrl = UriBuilder.fromPath(logicalSwitchStatePath).build(logicalSwitch.getId()).toString();
+      logicalSwitchState = waitForConfigurationFinished(switchStateUrl,
+          HttpStatus.SC_OK,
+          new TypeReference<LogicalSwitchState>() {},
+          p -> p.getState() != NsxSwitch.State.PENDING && p.getState() != NsxSwitch.State.IN_PROGRESS);
+    } catch (Exception e) {
+      throw new CreateLogicalSwitchException(e.getMessage());
+    }
+
+    if (logicalSwitchState.getState() != NsxSwitch.State.SUCCESS) {
+      throw new CreateLogicalSwitchException("Creating logical switch " + logicalSwitch.getDisplayName() +
+          " failed with a state " + logicalSwitchState.getState());
+    }
+
+    return logicalSwitch;
   }
 
   public LogicalSwitchState getLogicalSwitchState(String id) throws Exception {

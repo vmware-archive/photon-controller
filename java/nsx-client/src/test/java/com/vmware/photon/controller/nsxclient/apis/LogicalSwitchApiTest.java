@@ -16,6 +16,7 @@ package com.vmware.photon.controller.nsxclient.apis;
 import com.vmware.photon.controller.nsxclient.RestClient;
 import com.vmware.photon.controller.nsxclient.builders.LogicalSwitchCreateSpecBuilder;
 import com.vmware.photon.controller.nsxclient.datatypes.NsxSwitch;
+import com.vmware.photon.controller.nsxclient.exceptions.CreateLogicalSwitchException;
 import com.vmware.photon.controller.nsxclient.models.LogicalSwitch;
 import com.vmware.photon.controller.nsxclient.models.LogicalSwitchCreateSpec;
 import com.vmware.photon.controller.nsxclient.models.LogicalSwitchState;
@@ -36,7 +37,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.testng.Assert.fail;
 
+import javax.ws.rs.core.UriBuilder;
+
 import java.util.UUID;
+import java.util.function.Predicate;
 
 /**
  * Tests for {@link com.vmware.photon.controller.nsxclient.apis.LogicalSwitchApi}.
@@ -60,12 +64,9 @@ public class LogicalSwitchApiTest {
 
     @Test
     public void testSuccessfullyCreated() throws Exception {
-      LogicalSwitchCreateSpec spec = new LogicalSwitchCreateSpecBuilder()
-          .transportZoneId(UUID.randomUUID().toString())
-          .displayName("switch1")
-          .build();
       LogicalSwitch logicalSwitch = new LogicalSwitch();
       logicalSwitch.setDisplayName("switch1");
+      logicalSwitch.setId(UUID.randomUUID().toString());
 
       doReturn(logicalSwitch)
           .when(logicalSwitchApi)
@@ -74,12 +75,28 @@ public class LogicalSwitchApiTest {
               eq(HttpStatus.SC_CREATED),
               any(TypeReference.class));
 
+      LogicalSwitchState logicalSwitchState = new LogicalSwitchState();
+      logicalSwitchState.setState(NsxSwitch.State.SUCCESS);
+
+      String switchStateUrl = UriBuilder.fromPath(logicalSwitchApi.logicalSwitchStatePath)
+          .build(logicalSwitch.getId()).toString();
+
+      doReturn(logicalSwitchState).when(logicalSwitchApi)
+          .waitForConfigurationFinished(eq(switchStateUrl),
+              eq(HttpStatus.SC_OK),
+              any(TypeReference.class),
+              any(Predicate.class));
+
+      LogicalSwitchCreateSpec spec = new LogicalSwitchCreateSpecBuilder()
+          .transportZoneId(UUID.randomUUID().toString())
+          .displayName("switch1")
+          .build();
       LogicalSwitch createdLogicalSwitch = logicalSwitchApi.createLogicalSwitch(spec);
       assertThat(createdLogicalSwitch, is(logicalSwitch));
     }
 
     @Test
-    public void testFailedToCreate() throws Exception {
+    public void testFailedToCreateTask() throws Exception {
       final String errorMsg = "Service is not available";
 
       doThrow(new RuntimeException(errorMsg))
@@ -97,8 +114,84 @@ public class LogicalSwitchApiTest {
       try {
         logicalSwitchApi.createLogicalSwitch(spec);
         fail("Should have failed due to " + errorMsg);
-      } catch (RuntimeException e) {
+      } catch (CreateLogicalSwitchException e) {
         assertThat(e.getMessage(), is(errorMsg));
+      }
+    }
+
+    @Test
+    public void testConfigurationTimeout() throws Exception {
+      final String errorMsg = "timeout";
+
+      LogicalSwitch logicalSwitch = new LogicalSwitch();
+      logicalSwitch.setDisplayName("switch1");
+      logicalSwitch.setId(UUID.randomUUID().toString());
+
+      doReturn(logicalSwitch)
+          .when(logicalSwitchApi)
+          .post(eq(logicalSwitchApi.logicalSwitchBasePath),
+              any(HttpEntity.class),
+              eq(HttpStatus.SC_CREATED),
+              any(TypeReference.class));
+
+      String switchStateUrl = UriBuilder.fromPath(logicalSwitchApi.logicalSwitchStatePath)
+          .build(logicalSwitch.getId()).toString();
+
+      doThrow(new CreateLogicalSwitchException(errorMsg))
+          .when(logicalSwitchApi).waitForConfigurationFinished(eq(switchStateUrl),
+              eq(HttpStatus.SC_OK),
+              any(TypeReference.class),
+              any(Predicate.class));
+
+      LogicalSwitchCreateSpec spec = new LogicalSwitchCreateSpecBuilder()
+          .transportZoneId(UUID.randomUUID().toString())
+          .displayName("switch1")
+          .build();
+
+      try {
+        logicalSwitchApi.createLogicalSwitch(spec);
+        fail("Should have failed due to " + errorMsg);
+      } catch (CreateLogicalSwitchException e) {
+        assertThat(e.getMessage(), is(errorMsg));
+      }
+    }
+
+    @Test
+    public void testFailedToConfigure() throws Exception {
+      LogicalSwitch logicalSwitch = new LogicalSwitch();
+      logicalSwitch.setDisplayName("switch1");
+      logicalSwitch.setId(UUID.randomUUID().toString());
+
+      doReturn(logicalSwitch)
+          .when(logicalSwitchApi)
+          .post(eq(logicalSwitchApi.logicalSwitchBasePath),
+              any(HttpEntity.class),
+              eq(HttpStatus.SC_CREATED),
+              any(TypeReference.class));
+
+      LogicalSwitchState logicalSwitchState = new LogicalSwitchState();
+      logicalSwitchState.setState(NsxSwitch.State.FAILED);
+
+      String switchStateUrl = UriBuilder.fromPath(logicalSwitchApi.logicalSwitchStatePath)
+          .build(logicalSwitch.getId()).toString();
+
+      doReturn(logicalSwitchState).when(logicalSwitchApi)
+          .waitForConfigurationFinished(eq(switchStateUrl),
+              eq(HttpStatus.SC_OK),
+              any(TypeReference.class),
+              any(Predicate.class));
+
+      LogicalSwitchCreateSpec spec = new LogicalSwitchCreateSpecBuilder()
+          .transportZoneId(UUID.randomUUID().toString())
+          .displayName("switch1")
+          .build();
+
+      try {
+        logicalSwitchApi.createLogicalSwitch(spec);
+      } catch (CreateLogicalSwitchException e) {
+        String errorMessage = "Creating logical switch " + logicalSwitch.getDisplayName()
+            + " failed with a state " + logicalSwitchState.getState();
+        assertThat(e.getMessage(), is(errorMessage));
       }
     }
   }
