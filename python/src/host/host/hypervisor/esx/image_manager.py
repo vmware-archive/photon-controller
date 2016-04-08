@@ -370,25 +370,18 @@ class EsxImageManager(ImageManager):
 
                 if ds_type == DatastoreType.VSAN:
                     # on VSAN, move all files under [datastore]/image_[image_id]/tmp_image_[uuid]/* to
-                    # [datastore]/image_[image_id]/*
+                    # [datastore]/image_[image_id]/*.
+                    # Also we do not delete tmp_image folder in success case, because VSAN accesses it
+                    # when creating linked VM, even the folder is now empty.
                     for entry in os.listdir(tmp_dir):
                         shutil.move(os.path.join(tmp_dir, entry), os.path.join(image_path, entry))
                 else:
                     # on VMFS/NFS/etc, rename [datastore]/tmp_image_[uuid] to [datastore]/tmp_image_[image_id]
                     self._vim_client.move_file(tmp_dir, image_path)
-
-        except (AcquireLockFailure, InvalidFile):
-            self._logger.info("Unable to lock %s for atomic move" % image_id)
-            raise
-        except DiskAlreadyExistException:
-            self._logger.info("Image %s already copied" % image_id)
-            raise
         except:
             self._logger.exception("Move image %s to %s failed" % (image_id, image_path))
+            self._vim_client.delete_file(tmp_dir)
             raise
-        finally:
-            # delete tmp_image regardless of success or failure
-            rm_rf(tmp_dir)
 
     """
     The following method should be used to check

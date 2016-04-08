@@ -681,6 +681,12 @@ class VimClient(object):
         self.file_manager.MakeDirectory(os_to_datastore_path(path), createParentDirectories=True)
 
     @hostd_error_handler
+    def delete_file(self, path):
+        """Delete directory or file using vim.fileManager.DeleteFile
+        """
+        self.file_manager.DeleteFile(os_to_datastore_path(path))
+
+    @hostd_error_handler
     def move_file(self, src, dest):
         """Move directory or file using vim.fileManager.MoveFile
         """
