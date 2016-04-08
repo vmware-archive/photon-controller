@@ -63,8 +63,6 @@ fi
 
 # Register real agent to devbox
 if [ -n "$REAL_AGENT" ]; then
-  echo vagrant ssh -c "sudo WORKSPACE=/esxcloud DEVBOX_PHOTON=1 /esxcloud/python/misc/register_agent $ESX_IP $PUBLIC_NETWORK_IP:13000 $ESX_DATASTORE" -- -T
-
   if [ -z "$DEPLOYER_TEST" ]; then
     (
       cd $TESTS
