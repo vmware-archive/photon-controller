@@ -16,6 +16,7 @@ package com.vmware.photon.controller.nsxclient.apis;
 import com.vmware.photon.controller.nsxclient.RestClient;
 import com.vmware.photon.controller.nsxclient.models.LogicalSwitch;
 import com.vmware.photon.controller.nsxclient.models.LogicalSwitchCreateSpec;
+import com.vmware.photon.controller.nsxclient.models.LogicalSwitchState;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.apache.http.HttpStatus;
@@ -36,5 +37,16 @@ public class LogicalSwitchApi extends NsxClientApi {
         HttpStatus.SC_CREATED,
         new TypeReference<LogicalSwitch>() {}
     );
+  }
+
+  public LogicalSwitchState getLogicalSwitchState(String id) throws Exception {
+    return get(logicalSwitchBasePath + "/" + id + "/state",
+        HttpStatus.SC_OK,
+        new TypeReference<LogicalSwitchState>() {}
+    );
+  }
+
+  public void deleteLogicalSwitch(String id) throws Exception {
+    delete(logicalSwitchBasePath + "/" + id, HttpStatus.SC_OK);
   }
 }
