@@ -37,6 +37,8 @@ import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
@@ -118,22 +120,7 @@ public class VmCreateImageStepCmdTest extends PowerMockTestCase {
 
     InOrder inOrder = inOrder(imageBackend, imageLoader);
     inOrder.verify(imageLoader).createImageFromVm(image, vm.getId(), vm.getHost());
-    verifyNoMoreInteractions(imageBackend, imageLoader);
-  }
-
-  @Test
-  public void testSuccessfulExecuteWithOnDemandImage() throws Throwable {
-    image.setReplicationType(ImageReplicationType.ON_DEMAND);
-    assertThat(vmImage.getImageSettings(), is(imageSettings));
-    assertThat(image.getImageSettings().isEmpty(), is(true));
-    assertThat(vmImage.getSize(), is(100L));
-    assertThat(image.getSize(), nullValue());
-
-    command.execute();
-
-    InOrder inOrder = inOrder(imageBackend, imageLoader);
-    inOrder.verify(imageLoader).createImageFromVm(image, vm.getId(), vm.getHost());
-    inOrder.verify(imageBackend).updateState(image, ImageState.READY);
+    inOrder.verify(imageBackend).updateImageDatastore(eq(image.getId()), anyString());
     verifyNoMoreInteractions(imageBackend, imageLoader);
   }
 
