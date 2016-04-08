@@ -11,12 +11,12 @@
 
 require "spec_helper"
 
-describe "availability_zone" do
+describe "availability_zone", management: true do
   let(:availabilityZones_to_delete) { [] }
 
   after(:each) do
     availabilityZones_to_delete.each do |availabilityZone|
-      availabilityZone.delete unless availabilityZone.nil?
+      ignoring_all_errors { availabilityZone.delete unless availabilityZone.nil? }
     end
   end
 
