@@ -160,6 +160,7 @@ public class WaitForNetworkTaskService extends StatefulService {
 
   private void processVmNetworks(final State currentState, Task task) throws IOException {
     VmNetworks vmNetworks = VmApi.parseVmNetworksFromTask(task);
+    ServiceUtils.logInfo(this, "Received VM networks response: " + Utils.toJsonHtml(vmNetworks));
     for (NetworkConnection networkConnection : vmNetworks.getNetworkConnections()) {
       if (null != networkConnection.getNetwork() && null != networkConnection.getIpAddress()) {
         State patchState = buildPatch(TaskState.TaskStage.FINISHED, null);
