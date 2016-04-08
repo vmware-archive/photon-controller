@@ -16,6 +16,7 @@ package com.vmware.photon.controller.rootscheduler.service;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageToImageDatastoreMappingService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageToImageDatastoreMappingServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment;
+import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.clients.exceptions.SystemErrorException;
 import com.vmware.photon.controller.common.xenon.XenonRestClient;
@@ -43,7 +44,7 @@ import org.mockito.MockitoAnnotations;
 import org.mockito.invocation.InvocationOnMock;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
-import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.BeforeTest;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -54,9 +55,11 @@ import static org.mockito.Matchers.anyListOf;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertNotNull;
 
 import java.util.Arrays;
@@ -75,20 +78,20 @@ public class FlatSchedulerServiceTest {
   private Config config;
 
   @Mock
-  private Host.AsyncClient client;
+  private HostClient client;
 
   @Mock
   private ConstraintChecker checker;
 
   @Mock
-  private XenonRestClient dcpRestClient;
+  private XenonRestClient xenonRestClient;
 
   @Mock
   private HostClientFactory hostClientFactory;
 
   private ScoreCalculator scoreCalculator;
 
-  @BeforeMethod
+  @BeforeTest
   public void setUp() throws Exception {
     MockitoAnnotations.initMocks(this);
     PlaceParams rootPlaceParams = new PlaceParams();
@@ -100,7 +103,7 @@ public class FlatSchedulerServiceTest {
     doReturn(schedulerConfig).when(config).getRoot();
     doReturn(rootPlaceParams).when(config).getRootPlaceParams();
     scoreCalculator = new ScoreCalculator(config);
-    doReturn(client).when(hostClientFactory.create());
+    when(hostClientFactory.create()).thenReturn(client);
   }
 
   /**
@@ -111,7 +114,7 @@ public class FlatSchedulerServiceTest {
       doReturn(ImmutableMap.of()).when(checker)
           .getCandidates(anyListOf(ResourceConstraint.class), anyInt());
       return new Object[][]{
-        {new FlatSchedulerService(config, checker, dcpRestClient, scoreCalculator, hostClientFactory)},
+        {new FlatSchedulerService(config, checker, xenonRestClient, scoreCalculator, hostClientFactory)},
     };
   }
 
@@ -120,11 +123,13 @@ public class FlatSchedulerServiceTest {
    */
   @Test(dataProvider = "empty")
   public void testNoCandidate(RootScheduler.Iface scheduler) throws Exception {
+    reset(client);
     PlaceRequest request = new PlaceRequest();
     Resource resource = new Resource();
     request.setResource(resource);
     PlaceResponse response = scheduler.place(request);
     assertThat(response.getResult(), is(PlaceResultCode.NO_SUCH_RESOURCE));
+    verifyNoMoreInteractions(client);
   }
 
   /**
@@ -141,7 +146,7 @@ public class FlatSchedulerServiceTest {
     doReturn(matches).when(checker)
         .getCandidates(anyListOf(ResourceConstraint.class), anyInt());
     return new Object[][]{
-        {new FlatSchedulerService(config, checker, dcpRestClient, scoreCalculator, hostClientFactory)},
+        {new FlatSchedulerService(config, checker, xenonRestClient, scoreCalculator, hostClientFactory)},
     };
   }
 
@@ -150,6 +155,7 @@ public class FlatSchedulerServiceTest {
    */
   @Test(dataProvider = "four-candidates")
   public void testNoResponse(RootScheduler.Iface scheduler) throws Exception {
+    reset(client);
     doAnswer((InvocationOnMock invocation) -> {
       Object[] arguments = invocation.getArguments();
       AsyncMethodCallback<Host.AsyncClient.place_call> call =
@@ -161,7 +167,7 @@ public class FlatSchedulerServiceTest {
     PlaceRequest request = new PlaceRequest();
     PlaceResponse response = scheduler.place(request);
     assertThat(response.getResult(), is(PlaceResultCode.SYSTEM_ERROR));
-    verifyNoMoreInteractions(client);
+    verify(client, times(4)).place(any(), any());
   }
 
   /**
@@ -169,6 +175,7 @@ public class FlatSchedulerServiceTest {
    */
   @Test(dataProvider = "four-candidates")
   public void testSuccess(RootScheduler.Iface scheduler) throws Exception {
+    reset(client);
     Set<PlaceResponse> responses = new HashSet<>();
     doAnswer((InvocationOnMock invocation) -> {
       Object[] arguments = invocation.getArguments();
@@ -194,6 +201,7 @@ public class FlatSchedulerServiceTest {
    */
   @Test(dataProvider = "four-candidates")
   public void testPartialSuccess(RootScheduler.Iface scheduler) throws Exception {
+    reset(client);
     int numResponses = 2;
     Set<PlaceResponse> responses = new HashSet<>();
     doAnswer((InvocationOnMock invocation) -> {

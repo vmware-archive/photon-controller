@@ -198,6 +198,8 @@ public class FlatSchedulerService implements RootScheduler.Iface, ServiceNodeEve
       return new PlaceResponse(PlaceResultCode.SYSTEM_ERROR);
     }
 
+    logger.info("Resource constraints from place request: {}", constraints);
+
     // Get all the candidates that satisfy the constraint
     Map<String, ServerAddress> candidates = checker.getCandidates(constraints, numSamples);
     logger.info("elapsed-time flat-place-get-candidates {} milliseconds",
