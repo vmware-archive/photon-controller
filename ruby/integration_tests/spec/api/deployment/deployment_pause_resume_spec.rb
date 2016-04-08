@@ -79,6 +79,8 @@ describe "deployment pause/pause_background/resume" do
       expect(value).to_not be_nil
       expect(value[:data]).to eq "PAUSED_BACKGROUND"
 
+      expect(client.find_deployment_by_id(deployment.id).state).to eq "BACKGROUND_PAUSED"
+
       # resume system
       client.resume_system(deployment.id)
 
@@ -92,6 +94,8 @@ describe "deployment pause/pause_background/resume" do
       value = zkClient.get(path: "/config/apife/status")
       expect(value).to_not be_nil
       expect(value[:data]).to be_nil
+      expect(client.find_deployment_by_id(deployment.id).state).to eq "READY"
+
     end
 
     it "should pause/pause_background/resume system successfully" do
@@ -115,6 +119,7 @@ describe "deployment pause/pause_background/resume" do
       expect(value[:data]).to eq "PAUSED"
 
       client.pause_background_tasks(deployment.id)
+      expect(client.find_deployment_by_id(deployment.id).state).to eq "PAUSED"
 
       # testing that after pause_background_tasks the system we accept posts
       tenant_name = random_name("tenant-")
@@ -140,6 +145,9 @@ describe "deployment pause/pause_background/resume" do
       value = zkClient.get(path: "/config/apife/status")
       expect(value).to_not be_nil
       expect(value[:data]).to be_nil
+
+      expect(client.find_deployment_by_id(deployment.id).state).to eq "READY"
+
     end
   end
 
