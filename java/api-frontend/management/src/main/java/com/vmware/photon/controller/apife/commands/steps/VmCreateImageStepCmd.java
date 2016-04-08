@@ -74,9 +74,7 @@ public class VmCreateImageStepCmd extends StepCommand {
 
     try {
       getImageLoader().createImageFromVm(imageEntity, vm.getId(), vm.getHost());
-      if (imageEntity.getReplicationType() == ImageReplicationType.ON_DEMAND) {
-        imageBackend.updateState(imageEntity, ImageState.READY);
-      }
+      imageBackend.updateImageDatastore(imageEntity.getId(), imageStore.getDatastore());
     } catch (ExternalException e) {
       imageBackend.updateState(imageEntity, ImageState.ERROR);
       throw e;
