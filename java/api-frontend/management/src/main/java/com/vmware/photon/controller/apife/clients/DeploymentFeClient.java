@@ -20,12 +20,15 @@ import com.vmware.photon.controller.api.ClusterConfigurationSpec;
 import com.vmware.photon.controller.api.ClusterType;
 import com.vmware.photon.controller.api.Deployment;
 import com.vmware.photon.controller.api.DeploymentCreateSpec;
+import com.vmware.photon.controller.api.DeploymentState;
 import com.vmware.photon.controller.api.Host;
 import com.vmware.photon.controller.api.Project;
 import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.Tenant;
 import com.vmware.photon.controller.api.Vm;
+import com.vmware.photon.controller.api.common.Responses;
+import com.vmware.photon.controller.api.common.exceptions.external.ErrorCode;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
 import com.vmware.photon.controller.apife.BackendTaskExecutor;
@@ -42,6 +45,7 @@ import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
 import com.vmware.photon.controller.common.Constants;
+import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
 
 import com.google.common.base.Optional;
 import com.google.inject.Inject;
@@ -49,6 +53,8 @@ import com.google.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import static com.google.common.base.Preconditions.checkState;
+
+import javax.ws.rs.WebApplicationException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -69,6 +75,7 @@ public class DeploymentFeClient {
   private final ProjectBackend projectBackend;
 
   private final AuthConfig authConfig;
+  private final ServiceConfig serviceConfig;
 
   private final TaskCommandFactory commandFactory;
   private final ExecutorService executor;
@@ -82,6 +89,7 @@ public class DeploymentFeClient {
       TenantBackend tenantBackend,
       ProjectBackend projectBackend,
       AuthConfig authConfig,
+      ServiceConfig serviceConfig,
       TaskCommandFactory commandFactory,
       @BackendTaskExecutor ExecutorService executor) {
     this.taskBackend = taskBackend;
@@ -91,6 +99,7 @@ public class DeploymentFeClient {
     this.tenantBackend = tenantBackend;
     this.projectBackend = projectBackend;
     this.authConfig = authConfig;
+    this.serviceConfig = serviceConfig;
     this.commandFactory = commandFactory;
     this.executor = executor;
   }
@@ -142,6 +151,23 @@ public class DeploymentFeClient {
   public Deployment get(String id) throws ExternalException {
     Deployment deployment = deploymentBackend.toApiRepresentation(id);
     deployment.setClusterConfigurations(deploymentBackend.getClusterConfigurations());
+
+    if (deployment.getState() != DeploymentState.READY) {
+      return deployment;
+    }
+
+    try {
+      if (serviceConfig.isPaused()) {
+        deployment.setState(DeploymentState.PAUSED);
+      } else if (serviceConfig.isBackgroundPaused()) {
+        deployment.setState(DeploymentState.BACKGROUND_PAUSED);
+      }
+    } catch (Exception ex) {
+      logger.error("Getting serviceConfig isBackgroundPaused() or isPaused() throws error", ex);
+      ExternalException e = new ExternalException(ErrorCode.INTERNAL_ERROR, ex.getMessage(), null);
+      throw new WebApplicationException(ex, Responses.externalException(e));
+    }
+
     return deployment;
   }
 
