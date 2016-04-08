@@ -39,12 +39,17 @@ describe "migrate finalize", upgrade: true do
   end
 
   let(:upgrade_cloudstore_map) do
-    uri = URI.parse(EsxCloud::TestHelpers.get_upgrade_source_address)
-    map = get_service_map uri
-    map.select { |key,_| key.include? "photon" }
+    get_upgrade_cloudstore_map
   end
 
   describe "#data_check" do
+    let(:uri) { URI.parse(EsxCloud::TestHelpers.get_upgrade_source_address) }
+    let(:source_cloud_store) { EsxCloud::Dcp::CloudStore::CloudStoreClient.connect_to_endpoint(uri.host, nil) }
+
+    let(:destination_uri) { URI.parse(ApiClientHelper.endpoint(nil, nil, nil)) }
+    let(:destination_cloud_store) { EsxCloud::Dcp::CloudStore::CloudStoreClient.connect_to_endpoint(
+        destination_uri.host, nil) }
+
     it "should have all expected factories" do
       destination_map = get_service_map URI.parse(ApiClientHelper.endpoint(nil, nil, nil))
       destination_map = destination_map.select { |key,_| key.include? "photon" }
@@ -58,17 +63,27 @@ describe "migrate finalize", upgrade: true do
       expect(destination_services - source_services).to match_array(expected_new_services_at_destination)
     end
 
-    it "should destination contain all the cloudstore content of the source" do
+    def self.get_upgrade_cloudstore_map
       uri = URI.parse(EsxCloud::TestHelpers.get_upgrade_source_address)
-      source_cloud_store =  EsxCloud::Dcp::CloudStore::CloudStoreClient.connect_to_endpoint(uri.host, nil)
+      map = get_service_map uri
+      map.select { |key,_| key.include? "photon" }
+    end
 
-      destination_uri = URI.parse(ApiClientHelper.endpoint(nil, nil, nil))
-      destination_cloud_store =  EsxCloud::Dcp::CloudStore::CloudStoreClient.connect_to_endpoint(
-          destination_uri.host, nil)
+    self.get_upgrade_cloudstore_map.each do |k, v|
+      it "should destination contain all the cloudstore content of the source" do
 
-      upgrade_cloudstore_map.each do |k, v|
+        exclusion_list = ["/photon/cloudstore/deployments",
+                          "/photon/cloudstore/availabilityzones",
+                          "/photon/cloudstore/cluster-configurations",
+                          "/photon/cloudstore/clusters",
+                          "/photon/cloudstore/entity-locks",
+                          "/photon/cloudstore/groomers/availability-zone-entity-cleaners",
+                          "/photon/cloudstore/groomers/entity-lock-cleaners",
+                          "/photon/cloudstore/groomers/tombstone-entity-cleaners",
+                          "/photon/task-triggers",
+                          "/photon/cloudstore/virtual-networks"]
         puts k
-        if k != "/photon/cloudstore/deployments"
+        if !exclusion_list.include?(k)
           begin
             source_json = source_cloud_store.get k
           rescue StandardError => e
