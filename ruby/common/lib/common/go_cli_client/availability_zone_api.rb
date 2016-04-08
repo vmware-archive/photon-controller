@@ -16,7 +16,7 @@ module EsxCloud
       # @param [Hash] payload
       # @return [AvailabilityZone]
       def create_availability_zone(payload)
-        cmd = "availability-zone create -n #{payload[:name]}"
+        cmd = "availability-zone create #{payload[:name]}"
         availability_zone_id = run_cli(cmd)
 
         find_availability_zone_by_id(availability_zone_id)
