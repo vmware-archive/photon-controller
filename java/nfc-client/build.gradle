@@ -1,7 +1,10 @@
 apply plugin: 'java'
+apply plugin: 'thrift'
 
 dependencies {
   compile project(':common')
+
+  thrift files('../../thrift/host.thrift')
 
   testCompile 'org.testng:testng:6.8'
   testCompile 'org.hamcrest:hamcrest-all:1.3'
