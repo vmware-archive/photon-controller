@@ -7,6 +7,7 @@
   "isPrivileged": false,
   "useHostNetwork": true,
   "containerImage": "esxcloud/zookeeper",
+  "containerName": "zookeeper",
   "portBindings": {
     "2181": 2181,
     "2888": 2888,
