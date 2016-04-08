@@ -1,0 +1,23 @@
+{
+  "serviceName": "Zookeeper",
+  "cpuCount": 1,
+  "memoryMb": 1024,
+  "diskGb": 1,
+  "isReplicated": true,
+  "isPrivileged": false,
+  "containerImage": "photon/zookeeper",
+  "portBindings": {
+    "2181": 2181,
+    "2188": 2188,
+    "3188": 3188
+  },
+  "volumeBindings": {
+    "/vagrant/log/zookeeper": "/var/log/zookeeper",
+    "/devbox_data/java/containers/zookeeper/build/config": "/var/devbox_data/data/zookeeper",
+    "/devbox_data/java/containers/zookeeper/build/config": "/usr/lib/zookeeper/conf"
+  },
+  "dynamicParameters": {
+    "ZOOKEEPER_DATA_DIRECTORY": "/var/devbox_data/data/zookeeper",
+    "ZOOKEEPER_MYID": "1"
+  }
+}

@@ -6,7 +6,6 @@
   "isReplicated": false,
   "isPrivileged": true,
   "useHostNetwork": true,
-  "containerImage": "esxcloud/haproxy",
   "portBindings": {
     "28080": 28080,
     "443": 443,
