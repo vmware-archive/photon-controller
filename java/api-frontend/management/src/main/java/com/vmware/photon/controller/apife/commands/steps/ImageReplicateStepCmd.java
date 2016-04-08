@@ -27,6 +27,7 @@ import com.vmware.photon.controller.resource.gen.ImageReplication;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkState;
 
 import java.util.List;
 
@@ -55,9 +56,7 @@ public class ImageReplicateStepCmd extends StepCommand {
         "There should be only 1 image referenced by step %s", step.getId());
 
     ImageEntity imageEntity = entityList.get(0);
-
     ImageReplication replicationType;
-
     switch (imageEntity.getReplicationType()) {
       case ON_DEMAND:
         replicationType = ImageReplication.ON_DEMAND;
@@ -70,11 +69,14 @@ public class ImageReplicateStepCmd extends StepCommand {
     }
 
     if (imageStore.isReplicationNeeded()) {
-      logger.info("Start replicating image {} in datastore {}", imageEntity.getId(), imageStore.getDatastore());
       try {
-        taskCommand.getHousekeeperClient().replicateImage(imageStore.getDatastore(), imageEntity.getId(),
-            replicationType);
-      } catch (RpcException | InterruptedException e) {
+        List<String> dataStoreIdList = imageBackend.getSeededImageDatastores(imageEntity.getId());
+        checkState(dataStoreIdList.size() >= 1, "The image should be present on at least one image datastore.");
+        logger.info("Start replicating image {} in datastore {}", imageEntity.getId(), dataStoreIdList.get(0));
+
+        taskCommand.getHousekeeperClient().replicateImage(
+            dataStoreIdList.get(0), imageEntity.getId(), replicationType);
+      } catch (RpcException | InterruptedException | IllegalStateException e) {
         imageBackend.updateState(imageEntity, ImageState.ERROR);
         throw new ApiFeException(e);
       }
