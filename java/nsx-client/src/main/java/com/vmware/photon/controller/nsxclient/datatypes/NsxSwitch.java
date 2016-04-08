@@ -13,6 +13,9 @@
 
 package com.vmware.photon.controller.nsxclient.datatypes;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
+
 /**
  * Class to hold the datatypes used for an NSX logical switch.
  */
@@ -46,5 +49,33 @@ public class NsxSwitch {
      * Not being managed by nsx manager.
      */
     DOWN
+  }
+
+  /**
+   * Current state of the logical switch configuration.
+   */
+  public static enum State {
+    PENDING("pending"),
+    IN_PROGRESS("in_progress"),
+    SUCCESS("success"),
+    FAILED("failed"),
+    PARTIAL_SUCCESS("partial_success"),
+    ORPHANED("orphaned");
+
+    private String value;
+
+    State(String value) {
+      this.value = value;
+    }
+
+    @JsonCreator
+    public static State fromString(String value) {
+      return null == value ? null : State.valueOf(value.toUpperCase());
+    }
+
+    @JsonValue
+    public String getValue() {
+      return value;
+    }
   }
 }
