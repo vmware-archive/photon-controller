@@ -11,12 +11,12 @@
 
 require "spec_helper"
 
-describe "availability_zone" do
+describe "availability_zone", management: true do
   let(:availabilityZones_to_delete) { [] }
 
   after(:each) do
     availabilityZones_to_delete.each do |availabilityZone|
-      availabilityZone.delete unless availabilityZone.nil?
+      ignoring_all_errors { availabilityZone.delete unless availabilityZone.nil? }
     end
   end
 
@@ -48,6 +48,8 @@ describe "availability_zone" do
       e.response_code.should == 404
       e.errors.size.should == 1
       e.errors[0].code.should include("AvailabilityZoneNotFound")
+    rescue EsxCloud::CliError => e
+      e.message.should match("AvailabilityZoneNotFound")
     end
   end
 
@@ -60,6 +62,8 @@ describe "availability_zone" do
       e.response_code.should == 404
       e.errors.size.should == 1
       e.errors[0].code.should include("AvailabilityZoneNotFound")
+    rescue EsxCloud::CliError => e
+      e.message.should match("AvailabilityZoneNotFound")
     end
   end
 
