@@ -20,6 +20,7 @@ import com.vmware.photon.controller.api.ClusterConfigurationSpec;
 import com.vmware.photon.controller.api.ClusterType;
 import com.vmware.photon.controller.api.Deployment;
 import com.vmware.photon.controller.api.DeploymentCreateSpec;
+import com.vmware.photon.controller.api.DeploymentState;
 import com.vmware.photon.controller.api.Project;
 import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
@@ -39,6 +40,7 @@ import com.vmware.photon.controller.apife.config.AuthConfig;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.common.Constants;
+import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
@@ -72,6 +74,7 @@ public class DeploymentFeClientTest {
   private TenantBackend tenantBackend;
   private ProjectBackend projectBackend;
   private AuthConfig authConfig;
+  private ServiceConfig serviceConfig;
   private TaskCommandFactory commandFactory;
   private ExecutorService executorService;
 
@@ -83,14 +86,14 @@ public class DeploymentFeClientTest {
     tenantBackend = mock(TenantBackend.class);
     projectBackend = mock(ProjectBackend.class);
     authConfig = new AuthConfig();
+    serviceConfig = mock(ServiceConfig.class);
 
     commandFactory = mock(TaskCommandFactory.class);
     executorService = mock(TaskCommandExecutorService.class);
 
     feClient = new DeploymentFeClient(
         taskBackend, deploymentBackend, vmBackend, hostBackend, tenantBackend, projectBackend, authConfig,
-        commandFactory,
-        executorService);
+        serviceConfig, commandFactory, executorService);
   }
 
   /**
@@ -404,6 +407,52 @@ public class DeploymentFeClientTest {
   }
 
   /**
+   * Tests the pause from serviceConfig.
+   */
+  public class PauseTest {
+    String deploymentId;
+    ClusterConfiguration configuration;
+
+    @BeforeMethod
+    public void setUp() throws Throwable {
+      setUpCommon();
+    }
+
+    @Test
+    public void testSystemPausedSuccess() throws Throwable {
+      doReturn(true).when(serviceConfig).isPaused();
+      Deployment deployment = new Deployment();
+      deployment.setState(DeploymentState.READY);
+      deploymentId = "deployment-id";
+      doReturn(deployment).when(deploymentBackend).toApiRepresentation(deploymentId);
+
+      assertThat(feClient.get(deploymentId).getState(), is(DeploymentState.PAUSED));
+    }
+
+    @Test
+    public void testBackgroundPausedSuccess() throws Throwable {
+      doReturn(true).when(serviceConfig).isBackgroundPaused();
+      Deployment deployment = new Deployment();
+      deployment.setState(DeploymentState.READY);
+      deploymentId = "deployment-id";
+      doReturn(deployment).when(deploymentBackend).toApiRepresentation(deploymentId);
+
+      assertThat(feClient.get(deploymentId).getState(), is(DeploymentState.BACKGROUND_PAUSED));
+    }
+
+    @Test
+    public void testSystemError() throws Throwable {
+      doReturn(true).when(serviceConfig).isPaused();
+      Deployment deployment = new Deployment();
+      deployment.setState(DeploymentState.ERROR);
+      deploymentId = "deployment-id";
+      doReturn(deployment).when(deploymentBackend).toApiRepresentation(deploymentId);
+
+      assertThat(feClient.get(deploymentId).getState(), is(DeploymentState.ERROR));
+    }
+  }
+
+  /**
    * Tests the getAuth method.
    */
   public class GetAuthTest {
@@ -440,7 +489,7 @@ public class DeploymentFeClientTest {
     }
 
     @Test(expectedExceptions = IllegalStateException.class,
-    expectedExceptionsMessageRegExp = "Must have one or more deployments present to display auth info.")
+        expectedExceptionsMessageRegExp = "Must have one or more deployments present to display auth info.")
     public void testAuthEnabledInConfigNoDeployment() {
       authConfig.setEnableAuth(true);
       doReturn(new ArrayList<>()).when(deploymentBackend).getAll();
