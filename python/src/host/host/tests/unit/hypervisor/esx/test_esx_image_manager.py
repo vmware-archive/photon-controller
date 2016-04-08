@@ -223,7 +223,7 @@ class TestEsxImageManager(unittest.TestCase):
         ds_path_prefix1 = '[] /vmfs/volumes/ds1'
         expected_tmp_disk_ds_path = \
             "[] /vmfs/volumes/ds2/tmp_image_fake_id/bar.vmdk"
-        self.image_manager._create_tmp_image("ds1", "foo", "ds2", "bar")
+        self.image_manager._copy_to_tmp_image("ds1", "foo", "ds2", "bar")
         _flock.assert_called_once_with("/vmfs/volumes/ds2/tmp_image_fake_id",
                                        DatastoreType.EXT3)
         # Verify that we don't copy the metadata file.
@@ -246,7 +246,7 @@ class TestEsxImageManager(unittest.TestCase):
         _exists.side_effect = (True, True)
         _manage_disk.reset_mock()
         _flock.reset_mock()
-        self.assertRaises(IOError, self.image_manager._create_tmp_image,
+        self.assertRaises(IOError, self.image_manager._copy_to_tmp_image,
                           "ds1", "foo", "ds2", "bar")
         self.assertFalse(_manage_disk.called)
         _flock.assert_called_once_with("/vmfs/volumes/ds2/tmp_image_fake_id",

@@ -49,7 +49,6 @@ from host.hypervisor.esx.vm_config import os_metadata_path
 from host.hypervisor.esx.vm_config import os_to_datastore_path
 from host.hypervisor.esx.vm_config import os_vmdk_flat_path
 from host.hypervisor.esx.vm_config import os_vmdk_path
-from host.hypervisor.esx.vm_config import tmp_image_path
 from host.hypervisor.esx.vm_config import vmdk_path
 from host.hypervisor.image_manager import DirectoryNotFound
 from host.hypervisor.image_manager import ImageManager
@@ -274,8 +273,7 @@ class EsxImageManager(ImageManager):
 
         return _vd_spec
 
-    def _create_tmp_image(self, source_datastore, source_id, dest_datastore,
-                          dest_id):
+    def _copy_to_tmp_image(self, source_datastore, source_id, dest_datastore, dest_id):
         """ Copy an image into a temp location.
             1. Lock a tmp image destination file with an exclusive lock. This
             is to prevent the GC thread from garbage collecting directories
@@ -288,41 +286,44 @@ class EsxImageManager(ImageManager):
 
             @return the tmp image directory on success.
         """
-        source = vmdk_path(source_datastore, source_id, IMAGE_FOLDER_NAME_PREFIX)
-        temp_dest = tmp_image_path(dest_datastore, dest_id)
         ds_type = self._get_datastore_type(dest_datastore)
-        tmp_image_dir_path = os.path.dirname(datastore_to_os_path(temp_dest))
+        if ds_type == DatastoreType.VSAN:
+            tmp_image_dir = os_datastore_path(dest_datastore,
+                                              compond_path_join(IMAGE_FOLDER_NAME_PREFIX, dest_id),
+                                              compond_path_join(TMP_IMAGE_FOLDER_NAME_PREFIX, str(uuid.uuid4())))
+        else:
+            tmp_image_dir = os_datastore_path(dest_datastore,
+                                              compond_path_join(TMP_IMAGE_FOLDER_NAME_PREFIX, str(uuid.uuid4())))
+
         # Try grabbing the lock on the temp directory if it fails
         # (very unlikely) someone else is copying an image just retry
         # later.
-        with FileBackedLock(tmp_image_dir_path, ds_type):
-            source_meta = os_metadata_path(source_datastore, source_id,
-                                           IMAGE_FOLDER_NAME_PREFIX)
+        with FileBackedLock(tmp_image_dir, ds_type):
             # Create the temp directory
-            self._vim_client.make_directory(tmp_image_dir_path)
+            self._vim_client.make_directory(tmp_image_dir)
 
             # Copy the metadata file if it exists.
+            source_meta = os_metadata_path(source_datastore, source_id, IMAGE_FOLDER_NAME_PREFIX)
             if os.path.exists(source_meta):
                 try:
-                    dest_meta = os.path.join(tmp_image_dir_path,
-                                             metadata_filename(dest_id))
+                    dest_meta = os.path.join(tmp_image_dir, metadata_filename(dest_id))
                     shutil.copy(source_meta, dest_meta)
                 except:
-                    self._logger.exception("Failed to copy metadata file %s",
-                                           source_meta)
+                    self._logger.exception("Failed to copy metadata file %s", source_meta)
                     raise
 
             # Create the timestamp file
-            self._create_image_timestamp_file(tmp_image_dir_path)
+            self._create_image_timestamp_file(tmp_image_dir)
 
             _vd_spec = self._prepare_virtual_disk_spec(
                 vim.VirtualDiskManager.VirtualDiskType.thin,
                 vim.VirtualDiskManager.VirtualDiskAdapterType.lsiLogic)
 
             self._manage_disk(vim.VirtualDiskManager.CopyVirtualDisk_Task,
-                              sourceName=source, destName=temp_dest,
+                              sourceName=vmdk_path(source_datastore, source_id, IMAGE_FOLDER_NAME_PREFIX),
+                              destName=os_to_datastore_path(os.path.join(tmp_image_dir, "%s.vmdk" % dest_id)),
                               destSpec=_vd_spec)
-        return tmp_image_dir_path
+        return tmp_image_dir
 
     def _move_image(self, image_id, datastore, tmp_dir):
         """
@@ -475,8 +476,8 @@ class EsxImageManager(ImageManager):
             raise DiskAlreadyExistException("Image already exists")
 
         # Copy image to the tmp directory.
-        tmp_dir = self._create_tmp_image(source_datastore, source_id,
-                                         dest_datastore, dest_id)
+        tmp_dir = self._copy_to_tmp_image(source_datastore, source_id,
+                                          dest_datastore, dest_id)
 
         self._move_image(dest_id, dest_datastore, tmp_dir)
 
