@@ -15,7 +15,6 @@
 import os.path
 import logging
 import re
-import uuid
 
 from common.log import log_duration
 
@@ -96,8 +95,11 @@ def os_datastore_root(datastore):
     return os.path.join(VMFS_VOLUMES, datastore)
 
 
-def os_datastore_path(datastore, folder):
-    return os.path.join(VMFS_VOLUMES, datastore, folder)
+def os_datastore_path(datastore, folder1, folder2=None):
+    path = os.path.join(VMFS_VOLUMES, datastore, folder1)
+    if folder2:
+        path = os.path.join(path, folder2)
+    return path
 
 
 def os_datastore_path_pattern(datastore, folder_prefix):
@@ -134,19 +136,16 @@ def compond_path_join(s1, s2, s3=None):
 
 
 def os_vmdk_path(datastore, disk_id, folder=DISK_FOLDER_NAME_PREFIX):
-    return compond_path_join(os_datastore_path(datastore, folder),
-                             partial_vmdk_path(disk_id))
+    return compond_path_join(os_datastore_path(datastore, folder), partial_vmdk_path(disk_id))
 
 
 def os_vmdk_flat_path(datastore, disk_id, folder=IMAGE_FOLDER_NAME_PREFIX):
     """ Return the path for the flat vmdk file """
-    return compond_path_join(os_datastore_path(datastore, folder),
-                             partial_flat_vmdk_path(disk_id))
+    return compond_path_join(os_datastore_path(datastore, folder), partial_flat_vmdk_path(disk_id))
 
 
 def vmdk_path(datastore, disk_id, folder=DISK_FOLDER_NAME_PREFIX):
-    return compond_path_join(datastore_path(datastore, folder),
-                             partial_vmdk_path(disk_id))
+    return compond_path_join(datastore_path(datastore, folder), partial_vmdk_path(disk_id))
 
 
 def vmdk_add_suffix(pathname):
@@ -155,14 +154,6 @@ def vmdk_add_suffix(pathname):
 
 def vmx_add_suffix(vm_id):
     return "%s.%s" % (vm_id, "vmx")
-
-
-def tmp_image_path(datastore, image_id):
-    """ Datastore path to the temporary location to copy the image to. """
-
-    subdir = compond_path_join(TMP_IMAGE_FOLDER_NAME_PREFIX, str(uuid.uuid4()))
-    return os.path.join(
-        datastore_path(datastore, subdir), "%s.vmdk" % image_id)
 
 
 def os_metadata_path(datastore, disk_id, folder=DISK_FOLDER_NAME_PREFIX):
