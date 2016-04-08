@@ -61,13 +61,11 @@ import java.net.InetSocketAddress;
 public class ImageReplicatorTest {
 
   private static final String configFilePath = "/config.yml";
-  private static final int minReqCopies = 10;
 
   private Injector injector;
   private TestHost dcpHost;
   private ImageReplicator replicator;
-  private DatastoreService.State datastoreService;
-  private String datastoreName;
+  private String datastoreId;
 
   private String startTestReplicatorServiceInStage(ImageReplicatorService.TaskState.TaskStage stage) throws Throwable {
     ImageReplicatorService.State state = new ImageReplicatorService.State();
@@ -125,14 +123,7 @@ public class ImageReplicatorTest {
 
       LoggingUtils.setRequestId(null);
 
-      datastoreName = "name";
-
-      datastoreService = new DatastoreService.State();
-      datastoreService.id = "datastore-id";
-      datastoreService.name = datastoreName;
-      datastoreService.isImageDatastore = true;
-      datastoreService.type = "MGMT";
-      datastoreService.documentSelfLink = "datastore-id";
+      datastoreId = "datastore-id";
     }
 
     @AfterMethod
@@ -175,8 +166,6 @@ public class ImageReplicatorTest {
 
     @Test
     public void testOperationWithOnDemandReplicationType() throws Throwable {
-      startTestDatastoreService(datastoreService);
-
       ImageSeederService.State state = new ImageSeederService.State();
       state.taskInfo = new ImageSeederService.TaskState();
       state.taskInfo.stage = TaskState.TaskStage.FINISHED;
@@ -184,7 +173,7 @@ public class ImageReplicatorTest {
 
       ReplicateImageRequest request = new ReplicateImageRequest();
       request.setReplicationType(ImageReplication.ON_DEMAND);
-      request.setDatastore(datastoreName);
+      request.setDatastore(datastoreId);
       ReplicateImageResponse response = replicator.replicateImage(request);
 
       assertThat(response.getResult().getCode(), is(ReplicateImageResultCode.OK));
@@ -193,15 +182,14 @@ public class ImageReplicatorTest {
 
     @Test
     public void testOperationWithEagerReplicationType() throws Throwable {
-      startTestDatastoreService(datastoreService);
-
       ImageSeederService.State state = new ImageSeederService.State();
       state.taskInfo = new ImageSeederService.TaskState();
       state.taskInfo.stage = TaskState.TaskStage.FINISHED;
-      startTestSeederService(state);
-      String opId = startTestReplicatorServiceInStage(TaskState.TaskStage.FINISHED);
+
+      String opId = startTestSeederService(state);
+      startTestReplicatorServiceInStage(TaskState.TaskStage.FINISHED);
       ReplicateImageRequest request = new ReplicateImageRequest();
-      request.setDatastore(datastoreName);
+      request.setDatastore(datastoreId);
       request.setReplicationType(ImageReplication.EAGER);
 
       ReplicateImageResponse response = replicator.replicateImage(request);
