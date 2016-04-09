@@ -79,7 +79,6 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 import static org.powermock.api.mockito.PowerMockito.doThrow;
 import static org.powermock.api.mockito.PowerMockito.spy;
 import static org.powermock.api.mockito.PowerMockito.verifyNoMoreInteractions;
@@ -588,13 +587,11 @@ public class TaskCommandTest {
     TestTaskCommand command = new TestTaskCommand(apiFeXenonRestClient, rootSchedulerClient, hostClient,
         housekeeperClient, taskBackend, stepCommandFactory, task, deployerClient);
 
-    when(hostClient.findDisk("disk-1")).thenReturn(true);
     disk.setId("disk-1");
     disk.setAgent(agentId);
     command.findHost(disk);
     InOrder inOrder = inOrder(rootSchedulerClient, hostClient);
     inOrder.verify(hostClient).setHostIp("host-ip");
-    inOrder.verify(hostClient).findDisk("disk-1");
     verifyNoMoreInteractions(rootSchedulerClient, hostClient);
   }
 

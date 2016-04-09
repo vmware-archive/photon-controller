@@ -159,7 +159,6 @@ public class VmPowerOpStepCmdTest extends PowerMockTestCase {
     vm.setAgent("some-agent");
     step.setOperation(operation);
 
-    when(hostClient.findVm("vm-1")).thenReturn(true);
     when(hostClient.powerVmOp(anyString(), any(PowerVmOp.class))).thenReturn(
         new PowerVmOpResponse(PowerVmOpResultCode.OK));
 
