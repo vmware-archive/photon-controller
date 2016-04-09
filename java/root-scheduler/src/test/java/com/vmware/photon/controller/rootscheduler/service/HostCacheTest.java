@@ -25,7 +25,7 @@ import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.XenonRestClient;
 import com.vmware.photon.controller.rootscheduler.Config;
 import com.vmware.photon.controller.rootscheduler.ConfigTest;
-import com.vmware.photon.controller.rootscheduler.SchedulerDcpHost;
+import com.vmware.photon.controller.rootscheduler.xenon.SchedulerXenonHost;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.UriUtils;
 
@@ -72,7 +72,7 @@ public class HostCacheTest {
 
   private TestEnvironment cloudStoreTestEnvironment;
   private XenonRestClient cloudstoreClient;
-  private SchedulerDcpHost schedulerHost;
+  private SchedulerXenonHost schedulerHost;
 
   @BeforeClass
   public void setUpClass() throws Throwable {
@@ -109,7 +109,7 @@ public class HostCacheTest {
     // Guice in the scheduler,
     // so we're not adding extra usages of it until necessary.
     Config config = ConfigBuilder.build(Config.class, ConfigTest.class.getResource(configFilePath).getPath());
-    this.schedulerHost = new SchedulerDcpHost(config.getXenonConfig());
+    this.schedulerHost = new SchedulerXenonHost(config.getXenonConfig(), () -> null, config, null, null);
     this.schedulerHost.start();
     while (!this.schedulerHost.isReady()) {
       Thread.sleep(100);
