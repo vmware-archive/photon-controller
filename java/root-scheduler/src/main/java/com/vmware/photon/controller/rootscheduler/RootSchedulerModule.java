@@ -30,6 +30,7 @@ import com.vmware.photon.controller.rootscheduler.service.CloudStoreConstraintCh
 import com.vmware.photon.controller.rootscheduler.service.ConstraintChecker;
 import com.vmware.photon.controller.rootscheduler.service.InMemoryConstraintChecker;
 import com.vmware.photon.controller.rootscheduler.service.SchedulerService;
+import com.vmware.photon.controller.rootscheduler.xenon.SchedulerXenonHost;
 import com.vmware.photon.controller.scheduler.root.gen.RootScheduler;
 
 import com.google.inject.AbstractModule;
@@ -100,10 +101,20 @@ public class RootSchedulerModule extends AbstractModule {
 
   @Provides
   @Singleton
-  public XenonRestClient getDcpRestClient(ZookeeperServerSetFactory serverSetFactory) {
+  public XenonRestClient getXenonRestClient(ZookeeperServerSetFactory serverSetFactory) {
     ServerSet serverSet = serverSetFactory.createServiceServerSet("cloudstore", true);
     XenonRestClient client = new XenonRestClient(serverSet, Executors.newFixedThreadPool(4));
     client.start();
     return client;
+  }
+
+  @Provides
+  @Singleton
+  public SchedulerXenonHost getSchedulerXenonHost(XenonConfig xenonConfig,
+                                                HostClientFactory hostClientFactory,
+                                                Config config,
+                                                ConstraintChecker checker,
+                                                XenonRestClient xenonRestClient) throws Throwable {
+    return new SchedulerXenonHost(xenonConfig, hostClientFactory, config, checker, xenonRestClient);
   }
 }

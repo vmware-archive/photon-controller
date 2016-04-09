@@ -11,14 +11,17 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package com.vmware.photon.controller.rootscheduler;
+package com.vmware.photon.controller.rootscheduler.xenon;
 
 import com.vmware.photon.controller.common.config.BadConfigException;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.xenon.MultiHostEnvironment;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.host.XenonConfig;
+import com.vmware.photon.controller.rootscheduler.Config;
+import com.vmware.photon.controller.rootscheduler.ConfigTest;
 import com.vmware.photon.controller.rootscheduler.helpers.TestHelper;
+import com.vmware.photon.controller.rootscheduler.service.CloudStoreConstraintChecker;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.services.common.LuceneDocumentIndexService;
 import com.vmware.xenon.services.common.ServiceUriPaths;
@@ -46,24 +49,24 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 /**
- * This class implements tests for the {@link SchedulerDcpHost} class.
+ * This class implements tests for the {@link SchedulerXenonHost} class.
  */
-public class SchedulerDcpHostTest {
+public class SchedulerXenonHostTest {
 
   private static File storageDir;
 
   private static final String configFilePath = "/config.yml";
 
   private Injector injector;
-  private SchedulerDcpHost host;
+  private SchedulerXenonHost host;
   private Collection<String> serviceSelfLinks;
 
-  private void waitForServicesStartup(SchedulerDcpHost host)
+  private void waitForServicesStartup(SchedulerXenonHost host)
       throws TimeoutException, InterruptedException, NoSuchFieldException, IllegalAccessException {
 
     serviceSelfLinks = ServiceHostUtils.getServiceSelfLinks(
-        SchedulerDcpHost.FACTORY_SERVICE_FIELD_NAME_SELF_LINK,
-        SchedulerDcpHost.FACTORY_SERVICES);
+        SchedulerXenonHost.FACTORY_SERVICE_FIELD_NAME_SELF_LINK,
+        SchedulerXenonHost.FACTORY_SERVICES);
 
     final CountDownLatch latch = new CountDownLatch(serviceSelfLinks.size());
     Operation.CompletionHandler handler = (operation, throwable) -> {
@@ -113,7 +116,7 @@ public class SchedulerDcpHostTest {
       // make sure folder exists
       storageDir.mkdirs();
 
-      SchedulerDcpHost host = injector.getInstance(SchedulerDcpHost.class);
+      SchedulerXenonHost host = injector.getInstance(SchedulerXenonHost.class);
       assertThat(storageDir.exists(), is(true));
       assertThat(host, is(notNullValue()));
     }
@@ -123,14 +126,14 @@ public class SchedulerDcpHostTest {
       // make sure folder does not exist
       FileUtils.deleteDirectory(storageDir);
 
-      SchedulerDcpHost host = injector.getInstance(SchedulerDcpHost.class);
+      SchedulerXenonHost host = injector.getInstance(SchedulerXenonHost.class);
       assertThat(storageDir.exists(), is(true));
       assertThat(host, is(notNullValue()));
     }
 
     @Test
     public void testParams() {
-      SchedulerDcpHost host = injector.getInstance(SchedulerDcpHost.class);
+      SchedulerXenonHost host = injector.getInstance(SchedulerXenonHost.class);
       assertThat(host.getPort(), is(15001));
       Path storagePath = Paths.get(storageDir.getPath()).resolve(Integer.toString(15001));
       assertThat(host.getStorageSandbox().getPath(), is(storagePath.toString()));
@@ -154,7 +157,7 @@ public class SchedulerDcpHostTest {
     @BeforeMethod
     private void setUp() throws Throwable {
       injector = TestHelper.createInjector(configFilePath);
-      host = injector.getInstance(SchedulerDcpHost.class);
+      host = injector.getInstance(SchedulerXenonHost.class);
     }
 
     @AfterMethod
@@ -207,7 +210,7 @@ public class SchedulerDcpHostTest {
     private void setUp() throws Throwable {
       injector = TestHelper.createInjector(configFilePath);
 
-      host = injector.getInstance(SchedulerDcpHost.class);
+      host = injector.getInstance(SchedulerXenonHost.class);
     }
 
     @AfterMethod
@@ -232,12 +235,12 @@ public class SchedulerDcpHostTest {
       // host maintenance. (Making
       // the spy makes an extra object, and the original isn't initialized
       // properly)
-      SchedulerDcpHost spyHost = spy(host);
+      SchedulerXenonHost spyHost = spy(host);
       doReturn(false).when(spyHost).checkServiceAvailable(anyString());
       assertThat(spyHost.isReady(), is(false));
     }
 
-    private void startHost(SchedulerDcpHost host) throws Throwable {
+    private void startHost(SchedulerXenonHost host) throws Throwable {
       host.start();
       waitForServicesStartup(host);
     }
@@ -250,7 +253,7 @@ public class SchedulerDcpHostTest {
 
     private final File storageDir2 = new File("/tmp/dcp/18002/");
     private final long maintenanceInterval = TimeUnit.MILLISECONDS.toMicros(500);
-    private SchedulerDcpHost host2;
+    private SchedulerXenonHost host2;
 
     @BeforeClass
     private void setUpClass() throws IOException {
@@ -265,8 +268,8 @@ public class SchedulerDcpHostTest {
       xenonConfig.setBindAddress("0.0.0.0");
       xenonConfig.setPort(18000);
       xenonConfig.setStoragePath(storageDir.getAbsolutePath());
-
-      host = new SchedulerDcpHost(xenonConfig);
+      CloudStoreConstraintChecker checker = new CloudStoreConstraintChecker(null);
+      host = new SchedulerXenonHost(xenonConfig, () -> null, null, checker, null);
       host.setMaintenanceIntervalMicros(maintenanceInterval);
       host.start();
       waitForServicesStartup(host);
@@ -276,7 +279,7 @@ public class SchedulerDcpHostTest {
       xenonConfig2.setPort(18002);
       xenonConfig2.setStoragePath(storageDir2.getAbsolutePath());
 
-      host2 = new SchedulerDcpHost(xenonConfig2);
+      host2 = new SchedulerXenonHost(xenonConfig2, () -> null, null, checker, null);
       host2.setMaintenanceIntervalMicros(maintenanceInterval);
       host2.start();
       waitForServicesStartup(host2);
@@ -300,7 +303,7 @@ public class SchedulerDcpHostTest {
       ServiceHostUtils.joinNodeGroup(host2, host.getUri().getHost(), host.getPort());
 
       ServiceHostUtils.waitForNodeGroupConvergence(
-          new SchedulerDcpHost[]{host, host2},
+          new SchedulerXenonHost[]{host, host2},
           ServiceUriPaths.DEFAULT_NODE_GROUP,
           ServiceHostUtils.DEFAULT_NODE_GROUP_CONVERGENCE_MAX_RETRIES,
           MultiHostEnvironment.TEST_NODE_GROUP_CONVERGENCE_SLEEP);
