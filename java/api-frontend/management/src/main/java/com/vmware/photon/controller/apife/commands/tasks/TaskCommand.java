@@ -232,23 +232,19 @@ public class TaskCommand extends BaseCommand {
       throws RpcException, InterruptedException, DiskNotFoundException {
     checkNotNull(hostClient);
 
-    boolean foundDisk = false;
     if (disk.getAgent() != null) {
       try {
         String hostIp = lookupHostIp(disk.getAgent());
-        hostClient.setHostIp(hostIp);
-        foundDisk = hostClient.findDisk(disk.getId());
+        if (StringUtils.isNotBlank(hostIp)) {
+          hostClient.setHostIp(hostIp);
+          return hostClient;
+        }
       } catch (DocumentNotFoundException ex) {
         logger.error(String.format("Host %s does not exist.", disk.getAgent()), ex);
-        foundDisk = false;
       }
     }
 
-    if (disk.getAgent() == null || !foundDisk) {
-      throw new DiskNotFoundException(disk.getKind(), disk.getId());
-    }
-
-    return hostClient;
+    throw new DiskNotFoundException(disk.getKind(), disk.getId());
   }
 
   public String lookupAgentId(String hostIp) {
