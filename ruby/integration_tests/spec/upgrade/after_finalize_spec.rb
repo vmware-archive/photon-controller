@@ -63,9 +63,19 @@ describe "migrate finalize", upgrade: true do
       expect(destination_services - source_services).to match_array(expected_new_services_at_destination)
     end
 
+    def self.get_service_map(uri)
+      source_cloud_store =  EsxCloud::Dcp::CloudStore::CloudStoreClient.connect_to_endpoint(uri.host, nil)
+      json = source_cloud_store.get "/"
+      result = {}
+      json["documentLinks"].map do |item|
+        result[item] = item
+      end
+      result
+    end
+
     def self.get_upgrade_cloudstore_map
       uri = URI.parse(EsxCloud::TestHelpers.get_upgrade_source_address)
-      map = get_service_map uri
+      map = self.get_service_map uri
       map.select { |key,_| key.include? "photon" }
     end
 
