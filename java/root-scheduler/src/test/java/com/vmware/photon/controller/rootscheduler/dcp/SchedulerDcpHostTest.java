@@ -11,14 +11,17 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package com.vmware.photon.controller.rootscheduler;
+package com.vmware.photon.controller.rootscheduler.dcp;
 
 import com.vmware.photon.controller.common.config.BadConfigException;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.xenon.MultiHostEnvironment;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.host.XenonConfig;
+import com.vmware.photon.controller.rootscheduler.Config;
+import com.vmware.photon.controller.rootscheduler.ConfigTest;
 import com.vmware.photon.controller.rootscheduler.helpers.TestHelper;
+import com.vmware.photon.controller.rootscheduler.service.CloudStoreConstraintChecker;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.services.common.LuceneDocumentIndexService;
 import com.vmware.xenon.services.common.ServiceUriPaths;
@@ -265,8 +268,8 @@ public class SchedulerDcpHostTest {
       xenonConfig.setBindAddress("0.0.0.0");
       xenonConfig.setPort(18000);
       xenonConfig.setStoragePath(storageDir.getAbsolutePath());
-
-      host = new SchedulerDcpHost(xenonConfig);
+      CloudStoreConstraintChecker checker = new CloudStoreConstraintChecker(null);
+      host = new SchedulerDcpHost(xenonConfig, () -> null, null, checker, null);
       host.setMaintenanceIntervalMicros(maintenanceInterval);
       host.start();
       waitForServicesStartup(host);
@@ -276,7 +279,7 @@ public class SchedulerDcpHostTest {
       xenonConfig2.setPort(18002);
       xenonConfig2.setStoragePath(storageDir2.getAbsolutePath());
 
-      host2 = new SchedulerDcpHost(xenonConfig2);
+      host2 = new SchedulerDcpHost(xenonConfig2, () -> null, null, checker, null);
       host2.setMaintenanceIntervalMicros(maintenanceInterval);
       host2.start();
       waitForServicesStartup(host2);

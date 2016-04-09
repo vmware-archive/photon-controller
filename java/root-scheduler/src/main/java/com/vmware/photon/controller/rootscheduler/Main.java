@@ -20,6 +20,7 @@ import com.vmware.photon.controller.common.thrift.ThriftModule;
 import com.vmware.photon.controller.common.thrift.ThriftServiceModule;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperModule;
 import com.vmware.photon.controller.host.gen.Host;
+import com.vmware.photon.controller.rootscheduler.dcp.SchedulerDcpHost;
 import com.vmware.photon.controller.scheduler.gen.Scheduler;
 
 import com.google.inject.Guice;

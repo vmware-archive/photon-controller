@@ -24,6 +24,7 @@ import com.vmware.photon.controller.common.thrift.ThriftConfig;
 import com.vmware.photon.controller.common.xenon.XenonRestClient;
 import com.vmware.photon.controller.common.xenon.host.XenonConfig;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperServerSetFactory;
+import com.vmware.photon.controller.rootscheduler.dcp.SchedulerDcpHost;
 import com.vmware.photon.controller.rootscheduler.interceptors.RequestId;
 import com.vmware.photon.controller.rootscheduler.interceptors.RequestIdInterceptor;
 import com.vmware.photon.controller.rootscheduler.service.CloudStoreConstraintChecker;
@@ -105,5 +106,15 @@ public class RootSchedulerModule extends AbstractModule {
     XenonRestClient client = new XenonRestClient(serverSet, Executors.newFixedThreadPool(4));
     client.start();
     return client;
+  }
+
+  @Provides
+  @Singleton
+  public SchedulerDcpHost getSchedulerDcpHost(XenonConfig xenonConfig,
+                                              HostClientFactory hostClientFactory,
+                                              Config config,
+                                              ConstraintChecker checker,
+                                              XenonRestClient xenonRestClient) throws Throwable {
+    return new SchedulerDcpHost(xenonConfig, hostClientFactory, config, checker, xenonRestClient);
   }
 }

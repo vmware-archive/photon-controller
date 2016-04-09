@@ -14,23 +14,20 @@
 package com.vmware.photon.controller.rootscheduler.service;
 
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageToImageDatastoreMappingService;
-import com.vmware.photon.controller.common.clients.HostClient;
-import com.vmware.photon.controller.common.clients.HostClientFactory;
-import com.vmware.photon.controller.common.clients.HostClientProvider;
-import com.vmware.photon.controller.common.clients.exceptions.RpcException;
 import com.vmware.photon.controller.common.clients.exceptions.SystemErrorException;
 import com.vmware.photon.controller.common.logging.LoggingUtils;
+import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.XenonRestClient;
 import com.vmware.photon.controller.common.zookeeper.ServiceNodeEventHandler;
-import com.vmware.photon.controller.common.zookeeper.gen.ServerAddress;
-import com.vmware.photon.controller.host.gen.Host;
 import com.vmware.photon.controller.resource.gen.Disk;
-import com.vmware.photon.controller.resource.gen.Resource;
 import com.vmware.photon.controller.resource.gen.ResourceConstraint;
 import com.vmware.photon.controller.resource.gen.ResourceConstraintType;
 import com.vmware.photon.controller.resource.gen.Vm;
 import com.vmware.photon.controller.roles.gen.GetSchedulersResponse;
 import com.vmware.photon.controller.rootscheduler.Config;
+import com.vmware.photon.controller.rootscheduler.dcp.SchedulerDcpHost;
+import com.vmware.photon.controller.rootscheduler.dcp.task.PlacementTask;
+import com.vmware.photon.controller.rootscheduler.dcp.task.PlacementTaskFactoryService;
 import com.vmware.photon.controller.rootscheduler.exceptions.NoSuchResourceException;
 import com.vmware.photon.controller.rootscheduler.interceptors.RequestId;
 import com.vmware.photon.controller.scheduler.gen.ConfigureRequest;
@@ -38,35 +35,24 @@ import com.vmware.photon.controller.scheduler.gen.ConfigureResponse;
 import com.vmware.photon.controller.scheduler.gen.ConfigureResultCode;
 import com.vmware.photon.controller.scheduler.gen.PlaceRequest;
 import com.vmware.photon.controller.scheduler.gen.PlaceResponse;
-import com.vmware.photon.controller.scheduler.gen.PlaceResultCode;
 import com.vmware.photon.controller.scheduler.root.gen.RootScheduler;
 import com.vmware.photon.controller.status.gen.GetStatusRequest;
 import com.vmware.photon.controller.status.gen.Status;
 import com.vmware.photon.controller.status.gen.StatusType;
-import com.vmware.photon.controller.tracing.gen.TracingInfo;
+import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocumentQueryResult;
+import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
 
 import com.google.common.base.Optional;
-import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Sets;
 import com.google.inject.Inject;
 import org.apache.thrift.TException;
-import org.apache.thrift.async.AsyncMethodCallback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Scheduler thrift service.
@@ -82,52 +68,21 @@ import java.util.concurrent.TimeUnit;
  *
  * (1) http://www.eecs.berkeley.edu/~keo/publications/sosp13-final17.pdf
  */
-public class FlatSchedulerService implements RootScheduler.Iface, ServiceNodeEventHandler, HostClientProvider {
+public class FlatSchedulerService implements RootScheduler.Iface, ServiceNodeEventHandler {
   private static final Logger logger = LoggerFactory.getLogger(FlatSchedulerService.class);
+  private static final String REFERRER_PATH = "/rootscheduler";
   private final Config config;
-  private ConstraintChecker checker;
-  private final ScoreCalculator scoreCalculator;
-  private final HostClientFactory hostClientFactory;
+
   private XenonRestClient cloudStoreClient;
+  private SchedulerDcpHost schedulerDcpHost;
 
   @Inject
   public FlatSchedulerService(Config config,
-                              ConstraintChecker checker,
                               XenonRestClient dcpRestClient,
-                              ScoreCalculator scoreCalculator,
-                              HostClientFactory hostClientFactory) {
+                              SchedulerDcpHost schedulerDcpHost) {
     this.config = config;
-    this.checker = checker;
-    this.scoreCalculator = scoreCalculator;
-    this.hostClientFactory = hostClientFactory;
     this.cloudStoreClient = dcpRestClient;
-
-    if (this.checker instanceof InMemoryConstraintChecker) {
-      final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-      scheduler.scheduleAtFixedRate(() -> {
-        try {
-          this.checker = new InMemoryConstraintChecker(dcpRestClient);
-        } catch (Throwable ex) {
-          logger.warn("Failed to initialize in-memory constraint checker", ex);
-        }
-      }, 0, config.getRefreshIntervalSec(), TimeUnit.SECONDS);
-    }
-    logger.info("Initialized scheduler service with {}", this.checker.getClass());
-  }
-
-  private static void initRequestId(PlaceRequest request) {
-    if (!request.isSetTracing_info()) {
-      request.setTracing_info(new TracingInfo());
-    }
-    if (!request.getTracing_info().isSetRequest_id()) {
-      request.getTracing_info().setRequest_id(UUID.randomUUID().toString());
-    }
-    LoggingUtils.setRequestId(request.getTracing_info().getRequest_id());
-  }
-
-  @Override
-  public HostClient getHostClient() {
-    return hostClientFactory.create();
+    this.schedulerDcpHost = schedulerDcpHost;
   }
 
   @Override
@@ -146,150 +101,27 @@ public class FlatSchedulerService implements RootScheduler.Iface, ServiceNodeEve
     return new ConfigureResponse(ConfigureResultCode.OK);
   }
 
-  /**
-   * Extracts resource constraints from a give place request.
-   *
-   * @param request place request
-   * @return a list of resource constraints.
-   */
-  private List<ResourceConstraint> getResourceConstraints(PlaceRequest request)
-      throws NoSuchResourceException, SystemErrorException {
-    Resource resource = request.getResource();
-    List<ResourceConstraint> constraints = new LinkedList<>();
-    if (resource == null) {
-      return constraints;
-    }
-
-    if (resource.isSetVm()) {
-      Vm vm = resource.getVm();
-      if (vm.isSetResource_constraints()) {
-        constraints.addAll(vm.getResource_constraints());
-      }
-      constraints.add(createImageSeedingConstraint(vm));
-    }
-
-    if (resource.isSetDisks()) {
-      for (Disk disk : resource.getDisks()) {
-        if (disk.isSetResource_constraints()) {
-          constraints.addAll(disk.getResource_constraints());
-        }
-      }
-    }
-    return constraints;
-  }
-
   @Override
   public PlaceResponse place(PlaceRequest request) throws TException {
-    initRequestId(request);
-    logger.info("Place request: {}", request);
-    Stopwatch watch = Stopwatch.createStarted();
+    PlacementTask placementTask = new PlacementTask();
+    placementTask.resource = request.getResource();
+    placementTask.numSamples = config.getRootPlaceParams().getMaxFanoutCount();
+    placementTask.timeoutMs = config.getRootPlaceParams().getTimeout();
 
-    int numSamples = config.getRootPlaceParams().getMaxFanoutCount();
-    long timeoutMs = config.getRootPlaceParams().getTimeout();
+    Operation post = Operation
+        .createPost(UriUtils.buildUri(schedulerDcpHost, PlacementTaskFactoryService.SELF_LINK))
+        .setBody(placementTask)
+        .setContextId(LoggingUtils.getRequestId())
+        .setReferer(UriUtils.buildUri(schedulerDcpHost, REFERRER_PATH));
 
-    // Pick candidates that satisfy the resource constraints.
-    Stopwatch getCandidatesStopwatch = Stopwatch.createStarted();
-
-    // Get the list of resource constraints
-    List<ResourceConstraint> constraints;
     try {
-      constraints = getResourceConstraints(request);
-    } catch (NoSuchResourceException ex) {
-      return new PlaceResponse(PlaceResultCode.NO_SUCH_RESOURCE);
-    } catch (SystemErrorException ex) {
-      return new PlaceResponse(PlaceResultCode.SYSTEM_ERROR);
+      // Return Operation response
+      Operation operation = ServiceHostUtils.sendRequestAndWait(schedulerDcpHost, post, REFERRER_PATH);
+      return operation.getBody(PlacementTask.class).response;
+    } catch (Throwable t) {
+      logger.error("Calling placement service failed ", t);
+      throw new TException(t);
     }
-
-    logger.info("Resource constraints from place request: {}", constraints);
-
-    // Get all the candidates that satisfy the constraint
-    Map<String, ServerAddress> candidates = checker.getCandidates(constraints, numSamples);
-    logger.info("elapsed-time flat-place-get-candidates {} milliseconds",
-        getCandidatesStopwatch.elapsed(TimeUnit.MILLISECONDS));
-
-    if (candidates.isEmpty()) {
-      logger.warn("Place failure, constraints cannot be satisfied for request: {}", request);
-      return new PlaceResponse(PlaceResultCode.NO_SUCH_RESOURCE);
-    }
-
-    // Send place request to the candidates.
-    logger.info("Sending place requests to {} with timeout {} ms", candidates, timeoutMs);
-    Stopwatch scoreCandidatesStopwatch = Stopwatch.createStarted();
-    final Set<PlaceResponse> okResponses = Sets.newConcurrentHashSet();
-    final Set<PlaceResultCode> returnCodes = Sets.newConcurrentHashSet();
-    final CountDownLatch done = new CountDownLatch(candidates.size());
-    for (Map.Entry<String, ServerAddress> entry : candidates.entrySet()) {
-      ServerAddress address = entry.getValue();
-      try {
-        HostClient hostClient = getHostClient();
-        hostClient.setIpAndPort(address.getHost(), address.getPort());
-        hostClient.place(request.getResource(), new AsyncMethodCallback<Host.AsyncClient.place_call>() {
-          @Override
-          public void onComplete(Host.AsyncClient.place_call call) {
-            initRequestId(request);
-            PlaceResponse response;
-            try {
-              response = call.getResult();
-            } catch (TException ex) {
-              onError(ex);
-              return;
-            }
-            logger.info("Received a place response from {}: {}", entry, response);
-            returnCodes.add(response.getResult());
-            if (response.getResult() == PlaceResultCode.OK) {
-              okResponses.add(response);
-            }
-            done.countDown();
-          }
-
-          @Override
-          public void onError(Exception ex) {
-            initRequestId(request);
-            logger.warn("Failed to get a placement response from {}: {}", entry, ex);
-            done.countDown();
-          }
-        });
-      } catch (RpcException ex) {
-        logger.warn("Failed to get a placement response from {}: {}", entry, ex);
-        done.countDown();
-      }
-    }
-
-    // Wait for responses to come back.
-    try {
-      done.await(timeoutMs, TimeUnit.MILLISECONDS);
-    } catch (InterruptedException ex) {
-      logger.debug("Got interrupted waiting for place responses", ex);
-    }
-    logger.info("elapsed-time flat-place-score-candidates {} milliseconds",
-        scoreCandidatesStopwatch.elapsed(TimeUnit.MILLISECONDS));
-
-
-    // Return the best response.
-    PlaceResponse response = scoreCalculator.pickBestResponse(okResponses);
-    watch.stop();
-    if (response == null) {
-      // TODO(mmutsuzaki) Arbitrarily defining a precedence for return codes doesn't make sense.
-      if (returnCodes.contains(PlaceResultCode.NOT_ENOUGH_CPU_RESOURCE)) {
-        response = new PlaceResponse(PlaceResultCode.NOT_ENOUGH_CPU_RESOURCE);
-      } else if (returnCodes.contains(PlaceResultCode.NOT_ENOUGH_MEMORY_RESOURCE)) {
-        response = new PlaceResponse(PlaceResultCode.NOT_ENOUGH_MEMORY_RESOURCE);
-      } else if (returnCodes.contains((PlaceResultCode.NOT_ENOUGH_DATASTORE_CAPACITY))) {
-        response = new PlaceResponse(PlaceResultCode.NOT_ENOUGH_DATASTORE_CAPACITY);
-      } else if (returnCodes.contains(PlaceResultCode.NO_SUCH_RESOURCE)) {
-        response = new PlaceResponse(PlaceResultCode.NO_SUCH_RESOURCE);
-      } else if (returnCodes.contains(PlaceResultCode.INVALID_SCHEDULER)) {
-        response = new PlaceResponse(PlaceResultCode.INVALID_SCHEDULER);
-      } else {
-        response = new PlaceResponse(PlaceResultCode.SYSTEM_ERROR);
-        String msg = String.format("Received no response in %d ms", watch.elapsed(TimeUnit.MILLISECONDS));
-        response.setError(msg);
-        logger.error(msg);
-      }
-    } else {
-      logger.info("Returning bestResponse: {} in {} ms", response, watch.elapsed(TimeUnit.MILLISECONDS));
-    }
-    return response;
   }
 
   @Override
