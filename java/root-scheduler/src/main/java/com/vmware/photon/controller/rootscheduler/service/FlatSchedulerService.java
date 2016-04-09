@@ -160,9 +160,11 @@ public class FlatSchedulerService implements RootScheduler.Iface, ServiceNodeEve
       return constraints;
     }
 
-    if (resource.isSetVm() && resource.getVm().isSetResource_constraints()) {
+    if (resource.isSetVm()) {
       Vm vm = resource.getVm();
-      constraints.addAll(vm.getResource_constraints());
+      if (vm.isSetResource_constraints()) {
+        constraints.addAll(vm.getResource_constraints());
+      }
       createImageSeedingConstraint(vm);
     }
 
