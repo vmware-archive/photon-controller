@@ -50,6 +50,22 @@ describe "migrate finalize", upgrade: true do
     let(:destination_cloud_store) { EsxCloud::Dcp::CloudStore::CloudStoreClient.connect_to_endpoint(
         destination_uri.host, nil) }
 
+    def self.get_service_map(uri)
+      source_cloud_store =  EsxCloud::Dcp::CloudStore::CloudStoreClient.connect_to_endpoint(uri.host, nil)
+      json = source_cloud_store.get "/"
+      result = {}
+      json["documentLinks"].map do |item|
+        result[item] = item
+      end
+      result
+    end
+
+    def self.get_upgrade_cloudstore_map
+      uri = URI.parse(EsxCloud::TestHelpers.get_upgrade_source_address)
+      map = self.get_service_map uri
+      map.select { |key,_| key.include? "photon" }
+    end
+
     it "should have all expected factories" do
       destination_map = get_service_map URI.parse(ApiClientHelper.endpoint(nil, nil, nil))
       destination_map = destination_map.select { |key,_| key.include? "photon" }
@@ -57,16 +73,10 @@ describe "migrate finalize", upgrade: true do
       expected_new_services_at_destination = ["/photon/cloudstore/virtual-networks"]
 
       # the two lists should be equal
-      source_services = upgrade_cloudstore_map.keys
+      source_services = self.get_upgrade_cloudstore_map.keys
       destination_services = destination_map.keys
       expect(destination_services).to include(*source_services)
       expect(destination_services - source_services).to match_array(expected_new_services_at_destination)
-    end
-
-    def self.get_upgrade_cloudstore_map
-      uri = URI.parse(EsxCloud::TestHelpers.get_upgrade_source_address)
-      map = get_service_map uri
-      map.select { |key,_| key.include? "photon" }
     end
 
     self.get_upgrade_cloudstore_map.each do |k, v|
