@@ -160,9 +160,11 @@ public class FlatSchedulerService implements RootScheduler.Iface, ServiceNodeEve
       return constraints;
     }
 
-    if (resource.isSetVm() && resource.getVm().isSetResource_constraints()) {
+    if (resource.isSetVm()) {
       Vm vm = resource.getVm();
-      constraints.addAll(vm.getResource_constraints());
+      if (resource.getVm().isSetResource_constraints()) {
+        constraints.addAll(vm.getResource_constraints());
+      }
       createImageSeedingConstraint(vm);
     }
 
@@ -197,8 +199,6 @@ public class FlatSchedulerService implements RootScheduler.Iface, ServiceNodeEve
     } catch (SystemErrorException ex) {
       return new PlaceResponse(PlaceResultCode.SYSTEM_ERROR);
     }
-
-    logger.info("Resource constraints from place request: {}", constraints);
 
     // Get all the candidates that satisfy the constraint
     Map<String, ServerAddress> candidates = checker.getCandidates(constraints, numSamples);
