@@ -27,6 +27,7 @@ module StatsHelper
     uri = URI.parse("http://#{endpoint}:#{port}/render?target=#{pattern}&format=json")
     maxSeconds = 180
     start = Time.now
+    # Wait for agent to send data
     sleep(5)
     begin
       res = Net::HTTP.get(uri)
@@ -44,7 +45,7 @@ module StatsHelper
     puts "Graphite server collection Start time: #{start_time_utc}, End time: #{end_time_utc}"
     data_items = json.first["datapoints"].select { |x| x.first != nil }
     puts "Data items: #{data_items}"
-    return json.first["datapoints"].select { |x| x.first != nil }
+    return data_items
   end
 
 
