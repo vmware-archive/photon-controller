@@ -42,8 +42,8 @@ describe "Agent stats plugin", stats: true do
 
     # Redeploy host
     @host = EsxCloud::Host.create(@deployment.id, @host.to_spec())
-    
-    stats = get_stats_from_graphite(@stats_endpoint, @graphite_web_port, "photon.*.CLOUD.cpu.cpuUsagePercentage")
-    # expect(stats).to have_graphite_data
+
+    stats = get_stats_from_graphite(@stats_endpoint, @graphite_web_port, "photon.*.CLOUD.cpu.usagePercentage")
+    expect(stats).to have_graphite_data
   end
 end
