@@ -115,18 +115,13 @@ public class ImageCleanerServiceTest {
   }
 
   private ImageCleanerService.State updateFieldsNeededForSubStage(
-          ImageCleanerService.TaskState.SubStage subStage, ImageCleanerService.State state) {
+      ImageCleanerService.TaskState.SubStage subStage, ImageCleanerService.State state) {
     return updateFieldsNeededForSubStage(subStage, state, 1);
   }
 
   private ImageCleanerService.State updateFieldsNeededForSubStage(
       ImageCleanerService.TaskState.SubStage subStage, ImageCleanerService.State state, int datastoreCount) {
     if (subStage != null) {
-      if (subStage.ordinal() >= ImageCleanerService.TaskState.SubStage.TRIGGER_DELETES.ordinal()) {
-        state.dataStore = "datastore1";
-        state.host = "127.0.0.1";
-      }
-
       if (subStage.ordinal() >= ImageCleanerService.TaskState.SubStage.AWAIT_COMPLETION.ordinal()) {
         state.dataStoreCount = datastoreCount;
       }
@@ -201,7 +196,7 @@ public class ImageCleanerServiceTest {
       ImageCleanerService.State savedState = host.getServiceState(ImageCleanerService.State.class);
       assertThat(savedState.taskInfo, notNullValue());
       assertThat(savedState.taskInfo.stage, is(ImageCleanerService.TaskState.TaskStage.STARTED));
-      assertThat(savedState.taskInfo.subStage, is(ImageCleanerService.TaskState.SubStage.GET_REFERENCE_DATASTORE_INFO));
+      assertThat(savedState.taskInfo.subStage, is(ImageCleanerService.TaskState.SubStage.TRIGGER_DELETES));
       assertThat(savedState.queryPollDelay, is(10000));
 
       assertThat(new BigDecimal(savedState.documentExpirationTimeMicros),
@@ -247,26 +242,6 @@ public class ImageCleanerServiceTest {
     @DataProvider(name = "ExplicitStartStage")
     public Object[][] getExplicitStartStageTestData() {
       return new Object[][]{
-          {ImageCleanerService.TaskState.TaskStage.CREATED, null,
-              ImageCleanerService.TaskState.TaskStage.STARTED,
-              ImageCleanerService.TaskState.SubStage.GET_REFERENCE_DATASTORE_INFO},
-          {ImageCleanerService.TaskState.TaskStage.CREATED,
-              ImageCleanerService.TaskState.SubStage.GET_REFERENCE_DATASTORE_INFO,
-              ImageCleanerService.TaskState.TaskStage.STARTED,
-              ImageCleanerService.TaskState.SubStage.GET_REFERENCE_DATASTORE_INFO},
-          {ImageCleanerService.TaskState.TaskStage.CREATED,
-              ImageCleanerService.TaskState.SubStage.TRIGGER_DELETES,
-              ImageCleanerService.TaskState.TaskStage.STARTED,
-              ImageCleanerService.TaskState.SubStage.GET_REFERENCE_DATASTORE_INFO},
-          {ImageCleanerService.TaskState.TaskStage.CREATED,
-              ImageCleanerService.TaskState.SubStage.AWAIT_COMPLETION,
-              ImageCleanerService.TaskState.TaskStage.STARTED,
-              ImageCleanerService.TaskState.SubStage.GET_REFERENCE_DATASTORE_INFO},
-
-          {ImageCleanerService.TaskState.TaskStage.STARTED,
-              ImageCleanerService.TaskState.SubStage.GET_REFERENCE_DATASTORE_INFO,
-              ImageCleanerService.TaskState.TaskStage.STARTED,
-              ImageCleanerService.TaskState.SubStage.GET_REFERENCE_DATASTORE_INFO},
           {ImageCleanerService.TaskState.TaskStage.STARTED,
               ImageCleanerService.TaskState.SubStage.TRIGGER_DELETES,
               ImageCleanerService.TaskState.TaskStage.STARTED,
@@ -312,21 +287,15 @@ public class ImageCleanerServiceTest {
           {ImageCleanerService.TaskState.TaskStage.STARTED, null},
 
           {ImageCleanerService.TaskState.TaskStage.FINISHED,
-              ImageCleanerService.TaskState.SubStage.GET_REFERENCE_DATASTORE_INFO},
-          {ImageCleanerService.TaskState.TaskStage.FINISHED,
               ImageCleanerService.TaskState.SubStage.TRIGGER_DELETES},
           {ImageCleanerService.TaskState.TaskStage.FINISHED,
               ImageCleanerService.TaskState.SubStage.AWAIT_COMPLETION},
 
           {ImageCleanerService.TaskState.TaskStage.FAILED,
-              ImageCleanerService.TaskState.SubStage.GET_REFERENCE_DATASTORE_INFO},
-          {ImageCleanerService.TaskState.TaskStage.FAILED,
               ImageCleanerService.TaskState.SubStage.TRIGGER_DELETES},
           {ImageCleanerService.TaskState.TaskStage.FAILED,
               ImageCleanerService.TaskState.SubStage.AWAIT_COMPLETION},
 
-          {ImageCleanerService.TaskState.TaskStage.CANCELLED,
-              ImageCleanerService.TaskState.SubStage.GET_REFERENCE_DATASTORE_INFO},
           {ImageCleanerService.TaskState.TaskStage.CANCELLED,
               ImageCleanerService.TaskState.SubStage.TRIGGER_DELETES},
           {ImageCleanerService.TaskState.TaskStage.CANCELLED,
@@ -445,7 +414,7 @@ public class ImageCleanerServiceTest {
       CloudStoreHelper cloudStoreHelper = new CloudStoreHelper();
       host = TestHost.create(new HostClientMock(), cloudStoreHelper);
       StaticServerSet serverSet = new StaticServerSet(
-        new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
+          new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
       cloudStoreHelper.setServerSet(serverSet);
       host.startFactoryServiceSynchronously(new DatastoreServiceFactory(), DatastoreServiceFactory.SELF_LINK);
       host.startFactoryServiceSynchronously(new HostServiceFactory(), HostServiceFactory.SELF_LINK);
@@ -529,18 +498,6 @@ public class ImageCleanerServiceTest {
     public Object[][] getValidStageUpdatesData() throws Throwable {
       return new Object[][]{
           {ImageCleanerService.TaskState.TaskStage.STARTED,
-              ImageCleanerService.TaskState.SubStage.GET_REFERENCE_DATASTORE_INFO,
-              ImageCleanerService.TaskState.TaskStage.STARTED,
-              ImageCleanerService.TaskState.SubStage.GET_REFERENCE_DATASTORE_INFO},
-          {ImageCleanerService.TaskState.TaskStage.STARTED,
-              ImageCleanerService.TaskState.SubStage.GET_REFERENCE_DATASTORE_INFO,
-              ImageCleanerService.TaskState.TaskStage.STARTED,
-              ImageCleanerService.TaskState.SubStage.TRIGGER_DELETES},
-          {ImageCleanerService.TaskState.TaskStage.STARTED,
-              ImageCleanerService.TaskState.SubStage.GET_REFERENCE_DATASTORE_INFO,
-              ImageCleanerService.TaskState.TaskStage.STARTED,
-              ImageCleanerService.TaskState.SubStage.AWAIT_COMPLETION},
-          {ImageCleanerService.TaskState.TaskStage.STARTED,
               ImageCleanerService.TaskState.SubStage.TRIGGER_DELETES,
               ImageCleanerService.TaskState.TaskStage.STARTED,
               ImageCleanerService.TaskState.SubStage.TRIGGER_DELETES},
@@ -548,29 +505,6 @@ public class ImageCleanerServiceTest {
               ImageCleanerService.TaskState.SubStage.TRIGGER_DELETES,
               ImageCleanerService.TaskState.TaskStage.STARTED,
               ImageCleanerService.TaskState.SubStage.AWAIT_COMPLETION},
-          {ImageCleanerService.TaskState.TaskStage.STARTED,
-              ImageCleanerService.TaskState.SubStage.GET_REFERENCE_DATASTORE_INFO,
-              ImageCleanerService.TaskState.TaskStage.FINISHED, null},
-          {ImageCleanerService.TaskState.TaskStage.STARTED,
-              ImageCleanerService.TaskState.SubStage.GET_REFERENCE_DATASTORE_INFO,
-              ImageCleanerService.TaskState.TaskStage.FAILED, null},
-          {ImageCleanerService.TaskState.TaskStage.STARTED,
-              ImageCleanerService.TaskState.SubStage.GET_REFERENCE_DATASTORE_INFO,
-              ImageCleanerService.TaskState.TaskStage.CANCELLED, null},
-
-          {ImageCleanerService.TaskState.TaskStage.STARTED,
-              ImageCleanerService.TaskState.SubStage.GET_REFERENCE_DATASTORE_INFO,
-              ImageCleanerService.TaskState.TaskStage.STARTED,
-              ImageCleanerService.TaskState.SubStage.AWAIT_COMPLETION},
-          {ImageCleanerService.TaskState.TaskStage.STARTED,
-              ImageCleanerService.TaskState.SubStage.GET_REFERENCE_DATASTORE_INFO,
-              ImageCleanerService.TaskState.TaskStage.FINISHED, null},
-          {ImageCleanerService.TaskState.TaskStage.STARTED,
-              ImageCleanerService.TaskState.SubStage.GET_REFERENCE_DATASTORE_INFO,
-              ImageCleanerService.TaskState.TaskStage.FAILED, null},
-          {ImageCleanerService.TaskState.TaskStage.STARTED,
-              ImageCleanerService.TaskState.SubStage.GET_REFERENCE_DATASTORE_INFO,
-              ImageCleanerService.TaskState.TaskStage.CANCELLED, null},
 
           {ImageCleanerService.TaskState.TaskStage.STARTED,
               ImageCleanerService.TaskState.SubStage.TRIGGER_DELETES,
@@ -643,24 +577,6 @@ public class ImageCleanerServiceTest {
     public Object[][] getIllegalStageUpdateData() throws Throwable {
       return new Object[][]{
           {ImageCleanerService.TaskState.TaskStage.STARTED,
-              ImageCleanerService.TaskState.SubStage.GET_REFERENCE_DATASTORE_INFO,
-              ImageCleanerService.TaskState.TaskStage.CREATED, null},
-          {ImageCleanerService.TaskState.TaskStage.STARTED,
-              ImageCleanerService.TaskState.SubStage.GET_REFERENCE_DATASTORE_INFO,
-              null, null},
-          {ImageCleanerService.TaskState.TaskStage.STARTED,
-              ImageCleanerService.TaskState.SubStage.GET_REFERENCE_DATASTORE_INFO,
-              ImageCleanerService.TaskState.TaskStage.FINISHED,
-              ImageCleanerService.TaskState.SubStage.GET_REFERENCE_DATASTORE_INFO},
-          {ImageCleanerService.TaskState.TaskStage.STARTED,
-              ImageCleanerService.TaskState.SubStage.GET_REFERENCE_DATASTORE_INFO,
-              ImageCleanerService.TaskState.TaskStage.FAILED,
-              ImageCleanerService.TaskState.SubStage.GET_REFERENCE_DATASTORE_INFO},
-          {ImageCleanerService.TaskState.TaskStage.STARTED,
-              ImageCleanerService.TaskState.SubStage.GET_REFERENCE_DATASTORE_INFO,
-              ImageCleanerService.TaskState.TaskStage.CANCELLED,
-              ImageCleanerService.TaskState.SubStage.GET_REFERENCE_DATASTORE_INFO},
-          {ImageCleanerService.TaskState.TaskStage.STARTED,
               ImageCleanerService.TaskState.SubStage.TRIGGER_DELETES,
               ImageCleanerService.TaskState.TaskStage.CREATED, null},
           {ImageCleanerService.TaskState.TaskStage.STARTED,
@@ -674,15 +590,7 @@ public class ImageCleanerServiceTest {
               ImageCleanerService.TaskState.SubStage.TRIGGER_DELETES,
               ImageCleanerService.TaskState.TaskStage.FAILED,
               ImageCleanerService.TaskState.SubStage.TRIGGER_DELETES},
-          {ImageCleanerService.TaskState.TaskStage.STARTED,
-              ImageCleanerService.TaskState.SubStage.TRIGGER_DELETES,
-              ImageCleanerService.TaskState.TaskStage.CANCELLED,
-              ImageCleanerService.TaskState.SubStage.GET_REFERENCE_DATASTORE_INFO},
 
-          {ImageCleanerService.TaskState.TaskStage.STARTED,
-              ImageCleanerService.TaskState.SubStage.AWAIT_COMPLETION,
-              ImageCleanerService.TaskState.TaskStage.STARTED,
-              ImageCleanerService.TaskState.SubStage.GET_REFERENCE_DATASTORE_INFO},
           {ImageCleanerService.TaskState.TaskStage.STARTED,
               ImageCleanerService.TaskState.SubStage.AWAIT_COMPLETION,
               ImageCleanerService.TaskState.TaskStage.STARTED,
@@ -711,9 +619,6 @@ public class ImageCleanerServiceTest {
               null},
           {ImageCleanerService.TaskState.TaskStage.FINISHED, null,
               ImageCleanerService.TaskState.TaskStage.STARTED,
-              ImageCleanerService.TaskState.SubStage.GET_REFERENCE_DATASTORE_INFO},
-          {ImageCleanerService.TaskState.TaskStage.FINISHED, null,
-              ImageCleanerService.TaskState.TaskStage.STARTED,
               ImageCleanerService.TaskState.SubStage.TRIGGER_DELETES},
           {ImageCleanerService.TaskState.TaskStage.FINISHED, null,
               ImageCleanerService.TaskState.TaskStage.STARTED,
@@ -721,9 +626,6 @@ public class ImageCleanerServiceTest {
           {ImageCleanerService.TaskState.TaskStage.FINISHED, null,
               ImageCleanerService.TaskState.TaskStage.FINISHED,
               null},
-          {ImageCleanerService.TaskState.TaskStage.FINISHED, null,
-              ImageCleanerService.TaskState.TaskStage.FINISHED,
-              ImageCleanerService.TaskState.SubStage.GET_REFERENCE_DATASTORE_INFO},
           {ImageCleanerService.TaskState.TaskStage.FINISHED, null,
               ImageCleanerService.TaskState.TaskStage.FINISHED,
               ImageCleanerService.TaskState.SubStage.TRIGGER_DELETES},
@@ -742,9 +644,6 @@ public class ImageCleanerServiceTest {
               ImageCleanerService.TaskState.TaskStage.CREATED, null},
           {ImageCleanerService.TaskState.TaskStage.FAILED, null,
               ImageCleanerService.TaskState.TaskStage.STARTED,
-              ImageCleanerService.TaskState.SubStage.GET_REFERENCE_DATASTORE_INFO},
-          {ImageCleanerService.TaskState.TaskStage.FAILED, null,
-              ImageCleanerService.TaskState.TaskStage.STARTED,
               ImageCleanerService.TaskState.SubStage.TRIGGER_DELETES},
           {ImageCleanerService.TaskState.TaskStage.FAILED, null,
               ImageCleanerService.TaskState.TaskStage.STARTED,
@@ -754,9 +653,6 @@ public class ImageCleanerServiceTest {
               null},
           {ImageCleanerService.TaskState.TaskStage.FAILED, null,
               ImageCleanerService.TaskState.TaskStage.FAILED, null},
-          {ImageCleanerService.TaskState.TaskStage.FAILED, null,
-              ImageCleanerService.TaskState.TaskStage.FAILED,
-              ImageCleanerService.TaskState.SubStage.GET_REFERENCE_DATASTORE_INFO},
           {ImageCleanerService.TaskState.TaskStage.FAILED, null,
               ImageCleanerService.TaskState.TaskStage.FAILED,
               ImageCleanerService.TaskState.SubStage.AWAIT_COMPLETION},
@@ -770,9 +666,6 @@ public class ImageCleanerServiceTest {
               null},
           {ImageCleanerService.TaskState.TaskStage.CANCELLED, null,
               ImageCleanerService.TaskState.TaskStage.STARTED,
-              ImageCleanerService.TaskState.SubStage.GET_REFERENCE_DATASTORE_INFO},
-          {ImageCleanerService.TaskState.TaskStage.CANCELLED, null,
-              ImageCleanerService.TaskState.TaskStage.STARTED,
               ImageCleanerService.TaskState.SubStage.TRIGGER_DELETES},
           {ImageCleanerService.TaskState.TaskStage.CANCELLED, null,
               ImageCleanerService.TaskState.TaskStage.STARTED,
@@ -783,9 +676,6 @@ public class ImageCleanerServiceTest {
               ImageCleanerService.TaskState.TaskStage.FAILED, null},
           {ImageCleanerService.TaskState.TaskStage.CANCELLED, null,
               ImageCleanerService.TaskState.TaskStage.CANCELLED, null},
-          {ImageCleanerService.TaskState.TaskStage.CANCELLED, null,
-              ImageCleanerService.TaskState.TaskStage.CANCELLED,
-              ImageCleanerService.TaskState.SubStage.GET_REFERENCE_DATASTORE_INFO},
           {ImageCleanerService.TaskState.TaskStage.CANCELLED, null,
               ImageCleanerService.TaskState.TaskStage.CANCELLED,
               ImageCleanerService.TaskState.SubStage.TRIGGER_DELETES},
@@ -841,47 +731,6 @@ public class ImageCleanerServiceTest {
 
       ImageCleanerService.State savedState = host.getServiceState(ImageCleanerService.State.class);
       assertThat(savedState.dataStoreCount, is(10));
-    }
-
-    /**
-     * Test validation of host not being null in TRIGGER_DELETES stage.
-     *
-     * @throws Throwable
-     */
-    @Test
-    public void testNullHostField() throws Throwable {
-      ImageCleanerService.State startState = buildValidStartupState(
-          ImageCleanerService.TaskState.TaskStage.STARTED,
-          ImageCleanerService.TaskState.SubStage.TRIGGER_DELETES);
-
-      try {
-        host.startServiceSynchronously(service, startState);
-        fail("validation did not fail when host was 'null' " +
-            "in STARTED:TRIGGER_DELETES stage");
-      } catch (XenonRuntimeException e) {
-        assertThat(e.getMessage(), is("host cannot be null"));
-      }
-    }
-
-    /**
-     * Test validation of host not being null in TRIGGER_DELETES stage.
-     *
-     * @throws Throwable
-     */
-    @Test
-    public void testNullDataStoreField() throws Throwable {
-      ImageCleanerService.State startState = buildValidStartupState(
-          ImageCleanerService.TaskState.TaskStage.STARTED,
-          ImageCleanerService.TaskState.SubStage.TRIGGER_DELETES);
-      startState.host = "127.0.0.1";
-
-      try {
-        host.startServiceSynchronously(service, startState);
-        fail("validation did not fail when dataStore was 'null' " +
-            "in STARTED:TRIGGER_DELETES stage");
-      } catch (XenonRuntimeException e) {
-        assertThat(e.getMessage(), is("dataStore cannot be null"));
-      }
     }
 
     /**
@@ -1036,15 +885,15 @@ public class ImageCleanerServiceTest {
       createHostService(datastores, imageDatastores);
 
       ImageCleanerService.State startState = buildValidStartupState(
-        ImageCleanerService.TaskState.TaskStage.STARTED, ImageCleanerService.TaskState.SubStage.TRIGGER_DELETES);
+          ImageCleanerService.TaskState.TaskStage.STARTED, ImageCleanerService.TaskState.SubStage.TRIGGER_DELETES);
       updateFieldsNeededForSubStage(ImageCleanerService.TaskState.SubStage.TRIGGER_DELETES, startState,
-        datastoreCount + imageDatastoreCount);
+          datastoreCount + imageDatastoreCount);
 
       host.startServiceSynchronously(service, startState);
       host.startFactoryServiceSynchronously(
-        new ImageDatastoreSweeperServiceFactory(), ImageDatastoreSweeperServiceFactory.SELF_LINK);
+          new ImageDatastoreSweeperServiceFactory(), ImageDatastoreSweeperServiceFactory.SELF_LINK);
       host.startFactoryServiceSynchronously(
-        new ImageCleanerServiceFactory(), ImageCleanerServiceFactory.SELF_LINK);
+          new ImageCleanerServiceFactory(), ImageCleanerServiceFactory.SELF_LINK);
 
       // trigger the stage execution
       ImageCleanerService.State patchState = new ImageCleanerService.State();
@@ -1053,30 +902,30 @@ public class ImageCleanerServiceTest {
       patchState.taskInfo.subStage = ImageCleanerService.TaskState.SubStage.TRIGGER_DELETES;
 
       Operation patchOp = spy(Operation
-        .createPatch(UriUtils.buildUri(host, TestHost.SERVICE_URI, null))
-        .setBody(patchState));
+          .createPatch(UriUtils.buildUri(host, TestHost.SERVICE_URI, null))
+          .setBody(patchState));
 
       host.sendRequestAndWait(patchOp);
 
       // check that services were created
       QueryTask.QuerySpecification spec =
-        QueryTaskUtils.buildChildServiceTaskStatusQuerySpec(
-          service.getSelfLink(), ImageDatastoreSweeperService.State.class, TaskState.TaskStage.CANCELLED,
-            TaskState.TaskStage.STARTED, TaskState.TaskStage.FINISHED);
+          QueryTaskUtils.buildChildServiceTaskStatusQuerySpec(
+              service.getSelfLink(), ImageDatastoreSweeperService.State.class, TaskState.TaskStage.CANCELLED,
+              TaskState.TaskStage.STARTED, TaskState.TaskStage.FINISHED);
       spec.options = EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
 
       QueryTask query = QueryTask.create(spec)
-        .setDirect(true);
+          .setDirect(true);
 
       QueryTask response = host.waitForQuery(query,
-        (queryTask) -> queryTask.results.documentLinks.size() >= (datastoreCount + imageDatastoreCount));
+          (queryTask) -> queryTask.results.documentLinks.size() >= (datastoreCount + imageDatastoreCount));
       assertThat(response.results.documentLinks.size(), is(datastoreCount + imageDatastoreCount));
 
       // verify fields are passed down correctly
       int hadIsImageDatastoreFlag = 0;
       for (Map.Entry<String, Object> document : response.results.documents.entrySet()) {
         ImageDatastoreSweeperService.State docState =
-          Utils.fromJson(document.getValue(), ImageDatastoreSweeperService.State.class);
+            Utils.fromJson(document.getValue(), ImageDatastoreSweeperService.State.class);
         assertThat(docState.imageCreateWatermarkTime, is(startState.imageWatermarkTime));
         assertThat(docState.imageDeleteWatermarkTime, is(startState.imageDeleteWatermarkTime));
         assertThat(docState.hostPollIntervalMilliSeconds, is(startState.queryPollDelay));
@@ -1113,7 +962,7 @@ public class ImageCleanerServiceTest {
       }
 
       ImageCleanerService.State startState = buildValidStartupState(
-        ImageCleanerService.TaskState.TaskStage.STARTED, ImageCleanerService.TaskState.SubStage.AWAIT_COMPLETION);
+          ImageCleanerService.TaskState.TaskStage.STARTED, ImageCleanerService.TaskState.SubStage.AWAIT_COMPLETION);
       updateFieldsNeededForSubStage(ImageCleanerService.TaskState.SubStage.AWAIT_COMPLETION, startState);
 
       startState.isSelfProgressionDisabled = false;
@@ -1121,12 +970,12 @@ public class ImageCleanerServiceTest {
 
       host.startServiceSynchronously(service, startState);
       host.waitForState(ImageCleanerService.State.class,
-        new Predicate<ImageCleanerService.State>() {
-          @Override
-          public boolean test(ImageCleanerService.State state) {
-            return state.taskInfo.stage == finalStage;
-          }
-        });
+          new Predicate<ImageCleanerService.State>() {
+            @Override
+            public boolean test(ImageCleanerService.State state) {
+              return state.taskInfo.stage == finalStage;
+            }
+          });
 
       ImageCleanerService.State savedState = host.getServiceState(ImageCleanerService.State.class);
       assertThat(savedState.taskInfo, notNullValue());
@@ -1200,8 +1049,8 @@ public class ImageCleanerServiceTest {
         datastoreService.isImageDatastore = isImageDatastore;
         datastores.add(datastoreService.id);
         Operation patch = Operation
-                .createPost(UriUtils.buildUri(host, DatastoreServiceFactory.SELF_LINK, null))
-                .setBody(datastoreService);
+            .createPost(UriUtils.buildUri(host, DatastoreServiceFactory.SELF_LINK, null))
+            .setBody(datastoreService);
         host.sendRequestAndWait(patch);
       }
 
@@ -1219,8 +1068,8 @@ public class ImageCleanerServiceTest {
       state.reportedDatastores = datastoreSet;
       state.reportedImageDatastores = imageDatastore;
       Operation patch = Operation
-        .createPost(UriUtils.buildUri(host, HostServiceFactory.SELF_LINK, null))
-        .setBody(state);
+          .createPost(UriUtils.buildUri(host, HostServiceFactory.SELF_LINK, null))
+          .setBody(state);
       host.sendRequestAndWait(patch);
     }
   }
@@ -1326,7 +1175,7 @@ public class ImageCleanerServiceTest {
           hostCount);
       machine.startFactoryServiceSynchronously(ImageServiceFactory.class, ImageServiceFactory.SELF_LINK);
       machine.startFactoryServiceSynchronously(
-              ImageDatastoreSweeperServiceFactory.class, ImageDatastoreSweeperServiceFactory.SELF_LINK);
+          ImageDatastoreSweeperServiceFactory.class, ImageDatastoreSweeperServiceFactory.SELF_LINK);
 
       dataStoreCount = hostCount;
       setServerSet(machine.getHosts()[0]);
@@ -1348,12 +1197,6 @@ public class ImageCleanerServiceTest {
 
       // Check response
       assertThat(
-          String.format("Invalid 'host' field for %s", response.documentSelfLink), response.host, notNullValue());
-      assertThat(
-          String.format("Invalid 'dataStore' field for %s", response.documentSelfLink),
-          response.dataStore,
-          notNullValue());
-      assertThat(
           String.format("Invalid 'dataStoreCount' field for %s", response.documentSelfLink),
           response.dataStoreCount,
           is(dataStoreCount + imageDataStoresCount));
@@ -1368,8 +1211,7 @@ public class ImageCleanerServiceTest {
           String.format("Invalid patch count for %s", response.documentSelfLink),
           stats.entries.get(Service.Action.PATCH + Service.STAT_NAME_REQUEST_COUNT).latestValue,
           greaterThanOrEqualTo(
-              1.0 + // START:GET_REFERENCE_DATASTORE_INFO
-                  1.0 + // START:TRIGGER_DELETES
+              1.0 + // START:TRIGGER_DELETES
                   1.0 + // START:AWAIT_COMPLETION
                   1.0 + // FINISHED
                   2.0   // At least two query patches
@@ -1401,7 +1243,7 @@ public class ImageCleanerServiceTest {
           hostCount);
       machine.startFactoryServiceSynchronously(ImageServiceFactory.class, ImageServiceFactory.SELF_LINK);
       machine.startFactoryServiceSynchronously(
-              ImageDatastoreSweeperServiceFactory.class, ImageDatastoreSweeperServiceFactory.SELF_LINK);
+          ImageDatastoreSweeperServiceFactory.class, ImageDatastoreSweeperServiceFactory.SELF_LINK);
 
       dataStoreCount = hostCount;
       setServerSet(machine.getHosts()[0]);
@@ -1418,12 +1260,6 @@ public class ImageCleanerServiceTest {
       );
 
       // Check response
-      assertThat(
-          String.format("Invalid 'host' field for %s", response.documentSelfLink), response.host, notNullValue());
-      assertThat(
-          String.format("Invalid 'dataStore' field for %s", response.documentSelfLink),
-          response.dataStore,
-          notNullValue());
       assertThat(
           String.format("Invalid 'dataStoreCount' field for %s", response.documentSelfLink),
           response.dataStoreCount,
@@ -1443,8 +1279,7 @@ public class ImageCleanerServiceTest {
           String.format("Invalid patch count for %s", response.documentSelfLink),
           stats.entries.get(Service.Action.PATCH + Service.STAT_NAME_REQUEST_COUNT).latestValue,
           greaterThanOrEqualTo(
-              1.0 + // START:GET_REFERENCE_DATASTORE_INFO
-                  1.0 + // START:TRIGGER_DELETES
+              1.0 + // START:TRIGGER_DELETES
                   1.0 + // START:AWAIT_COMPLETION
                   1.0 + // FINISHED
                   2.0   // At least two query patches
@@ -1467,8 +1302,8 @@ public class ImageCleanerServiceTest {
                                    List<DatastoreService.State> imageDatastores) throws Throwable {
       ServiceHost host = machine.getHosts()[0];
       machine.startFactoryServiceSynchronously(
-              HostServiceFactory.class,
-              HostServiceFactory.SELF_LINK);
+          HostServiceFactory.class,
+          HostServiceFactory.SELF_LINK);
 
 
       Iterator<DatastoreService.State> datastoreIterator = datastores.iterator();
@@ -1487,13 +1322,13 @@ public class ImageCleanerServiceTest {
         state.reportedImageDatastores.add(imageDatastore.id);
 
         Operation op = cloudStoreHelper
-                .createPost(HostServiceFactory.SELF_LINK)
-                .setBody(state)
-                .setCompletion((operation, throwable) -> {
-                  if (null != throwable) {
-                    Assert.fail("Failed to create a host in cloud store.");
-                  }
-                });
+            .createPost(HostServiceFactory.SELF_LINK)
+            .setBody(state)
+            .setCompletion((operation, throwable) -> {
+              if (null != throwable) {
+                Assert.fail("Failed to create a host in cloud store.");
+              }
+            });
         Operation ops = ServiceHostUtils.sendRequestAndWait(host, op, "test-host");
         int i = 0;
         i++;
@@ -1505,8 +1340,8 @@ public class ImageCleanerServiceTest {
       ServiceHost host = machine.getHosts()[0];
 
       machine.startFactoryServiceSynchronously(
-              DatastoreServiceFactory.class,
-              DatastoreServiceFactory.SELF_LINK);
+          DatastoreServiceFactory.class,
+          DatastoreServiceFactory.SELF_LINK);
 
       for (int i = 0; i < datastoreNum; i++) {
         DatastoreService.State state = new DatastoreService.State();
@@ -1518,13 +1353,13 @@ public class ImageCleanerServiceTest {
         datastores.add(state);
 
         Operation op = cloudStoreHelper
-                .createPost(DatastoreServiceFactory.SELF_LINK)
-                .setBody(state)
-                .setCompletion((operation, throwable) -> {
-                  if (null != throwable) {
-                    Assert.fail("Failed to create a datastore document in cloud store.");
-                  }
-                });
+            .createPost(DatastoreServiceFactory.SELF_LINK)
+            .setBody(state)
+            .setCompletion((operation, throwable) -> {
+              if (null != throwable) {
+                Assert.fail("Failed to create a datastore document in cloud store.");
+              }
+            });
         ServiceHostUtils.sendRequestAndWait(host, op, "test-host");
       }
 
@@ -1537,19 +1372,19 @@ public class ImageCleanerServiceTest {
       imageDatastores.add(state);
 
       Operation op = cloudStoreHelper
-              .createPost(DatastoreServiceFactory.SELF_LINK)
-              .setBody(state)
-              .setCompletion((operation, throwable) -> {
-                if (null != throwable) {
-                  Assert.fail("Failed to create a datastore document in cloud store.");
-                }
-              });
+          .createPost(DatastoreServiceFactory.SELF_LINK)
+          .setBody(state)
+          .setCompletion((operation, throwable) -> {
+            if (null != throwable) {
+              Assert.fail("Failed to create a datastore document in cloud store.");
+            }
+          });
       ServiceHostUtils.sendRequestAndWait(host, op, "test-host");
     }
 
     private void setServerSet(ServiceHost host) {
       StaticServerSet serverSet = new StaticServerSet(
-              new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
+          new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
       cloudStoreHelper.setServerSet(serverSet);
     }
 
