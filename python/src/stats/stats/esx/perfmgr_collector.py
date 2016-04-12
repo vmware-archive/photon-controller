@@ -24,8 +24,8 @@ from stats.collector import Collector
 
 
 class PerfManagerCollector(Collector):
-    host_cpu_usage_metric_name = "cpu.cpuUsagePercentage"
-    host_mem_usage_metric_name = "mem.memoryUsagePercentage"
+    host_cpu_usage_metric_name = "cpu.usagePercentage"
+    host_mem_usage_metric_name = "mem.usagePercentage"
 
     metric_names = [
         # level 0 => collect nothing

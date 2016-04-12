@@ -27,6 +27,7 @@ module StatsHelper
     uri = URI.parse("http://#{endpoint}:#{port}/render?target=#{pattern}&format=json")
     maxSeconds = 180
     start = Time.now
+    # Wait for agent to send data
     sleep(5)
     begin
       res = Net::HTTP.get(uri)
