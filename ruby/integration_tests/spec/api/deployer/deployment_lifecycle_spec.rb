@@ -46,7 +46,47 @@ describe "deployment lifecycle", order: :defined, deployer: true do
         true)
   end
 
-  it 'should deploy esxcloud successfully' do
+  context "should destroy failed deployment successfully" do
+    let(:host_spec1) do
+      host_spec.username = "fakeusername"
+      host_spec
+    end
+
+    let(:host_create_metadata) do
+      host_metadata["MANAGEMENT_NETWORK_GATEWAY"] = ""
+      host_metadata
+    end
+
+    let(:host_spec2) do
+      host_spec.metadata = host_create_metadata
+      host_spec
+    end
+
+    it 'should fail deployment on Create host step ' do
+      deployment = EsxCloud::Deployment.create(deployment_spec)
+      begin
+        EsxCloud::Host.create(deployment.id, host_spec1)
+        fail "deploy with bad host username should have failed"
+      rescue EsxCloud::ApiError => e
+        expect(e.output).to include("varnika")
+      end
+      destroy_created_deployment deployment.id
+    end
+
+    it 'fail deployment on perform deployment step ' do
+        deployment = EsxCloud::Deployment.create(deployment_spec)
+        begin
+          EsxCloud::Host.create(deployment.id, host_spec2)
+          api_client.deploy_deployment(deployment.id)
+          fail "deploy with bad host metadata should have failed"
+        rescue EsxCloud::ApiError => e
+          expect(e.output).to include("varnika")
+        end
+        destroy_created_deployment deployment.id
+    end
+  end
+
+  it 'should deploy and destroy esxcloud successfully' do
     deployment = EsxCloud::Deployment.create(deployment_spec)
     host = EsxCloud::Host.create(deployment.id, host_spec)
     api_client.deploy_deployment(deployment.id)
@@ -86,6 +126,8 @@ describe "deployment lifecycle", order: :defined, deployer: true do
       expect(component.name).not_to be_nil
       expect(component.status).to eq("READY")
     end
+
+    destroy_created_deployment deployment.id
   end
 
   private
@@ -99,5 +141,47 @@ describe "deployment lifecycle", order: :defined, deployer: true do
       end
     end
     nil
+  end
+
+  def destroy_created_deployment deploymentID
+    # Destroy the created deployment
+    api_client.destroy_deployment deploymentID
+
+    hosts = api_client.get_deployment_hosts(deploymentID).items
+    hosts.each { |host| api_client.mgmt_delete_host(host.id)}
+
+    availabilityZones = api_client.find_all_availability_zones().items
+    availabilityZones.each { |aZone| api_client.delete_availability_zone(aZone.id)}
+
+    api_client.delete_api_deployment deploymentID
+    verify_deployment_destroyed_successfuly deploymentID
+  end
+
+  def verify_deployment_destroyed_successfuly(deploymentID)
+    # Verify that destroy deployment succeeded
+    task_list = api_client.find_tasks(deploymentID, "deployment", "COMPLETED")
+    tasks = task_list.items
+
+    destroy_deployment_task = tasks.select {|task| task.operation == "DESTROY_DEPLOYMENT" }.first
+    expect(destroy_deployment_task).not_to be_nil
+
+    # Verify destroy deployment has no errors and warnings
+    expect(destroy_deployment_task.errors).to be_empty
+    expect(destroy_deployment_task.warnings).to be_empty
+
+    delete_deployment_task = tasks.select {|task| task.operation == "DELETE_DEPLOYMENT" }.first
+    expect(delete_deployment_task).not_to be_nil
+
+    # Verify delete deployment has no errors and warnings
+    expect(delete_deployment_task.errors).to be_empty
+    expect(delete_deployment_task.warnings).to be_empty
+
+    # Verify availabilityZone is deleted
+    availabilityZones = api_client.find_all_availability_zones().items
+    availabilityZones.each { |aZone| expect(aZone.state).to eq("PENDING_DELETE")}
+
+    # Verify deployment is deleted
+    deployments = api_client.find_all_api_deployments().items
+    expect(deployments.size).to eq(0)
   end
 end
