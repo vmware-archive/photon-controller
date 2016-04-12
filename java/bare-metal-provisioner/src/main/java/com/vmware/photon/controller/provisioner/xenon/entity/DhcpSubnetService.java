@@ -258,6 +258,7 @@ public class DhcpSubnetService extends StatefulService {
 
     Operation leasePost = Operation
         .createPost(UriUtils.buildUri(getHost(), DhcpLeaseServiceFactory.class))
+        .addPragmaDirective(Operation.PRAGMA_DIRECTIVE_FORCE_INDEX_UPDATE)
         .setBody(leasePostBody)
         .setCompletion(
             (op, ex) -> {
