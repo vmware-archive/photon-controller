@@ -13,9 +13,7 @@
 
 package com.vmware.photon.controller.housekeeper.dcp;
 
-import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientProvider;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
@@ -78,7 +76,7 @@ public class ImageCleanerService extends StatefulService {
       if (s.taskInfo == null || s.taskInfo.stage == TaskState.TaskStage.CREATED) {
         s.taskInfo = new TaskState();
         s.taskInfo.stage = TaskState.TaskStage.STARTED;
-        s.taskInfo.subStage = TaskState.SubStage.GET_REFERENCE_DATASTORE_INFO;
+        s.taskInfo.subStage = TaskState.SubStage.TRIGGER_DELETES;
       }
 
       // If the service got restarted in AWAIT_COMPLETION substage, clean finishedCount
@@ -182,10 +180,6 @@ public class ImageCleanerService extends StatefulService {
             checkNotNull(current.dataStoreCount, "dataStoreCount cannot be null");
             // fall through
           case TRIGGER_DELETES:
-            checkNotNull(current.host, "host cannot be null");
-            checkNotNull(current.dataStore, "dataStore cannot be null");
-            // fall through
-          case GET_REFERENCE_DATASTORE_INFO:
             break;
           default:
             checkState(false, "unsupported sub-state: " + current.taskInfo.subStage.toString());
@@ -236,14 +230,6 @@ public class ImageCleanerService extends StatefulService {
       current.taskInfo = patch.taskInfo;
     }
 
-    if (patch.dataStore != null) {
-      current.dataStore = patch.dataStore;
-    }
-
-    if (patch.host != null) {
-      current.host = patch.host;
-    }
-
     if (patch.dataStoreCount != null) {
       current.dataStoreCount = patch.dataStoreCount;
     }
@@ -285,9 +271,6 @@ public class ImageCleanerService extends StatefulService {
   private void processStartedStage(final State current, final State patch)
       throws IOException, RpcException {
     switch (current.taskInfo.subStage) {
-      case GET_REFERENCE_DATASTORE_INFO:
-        this.processGetReferenceDatastoreInfo(current);
-        break;
       case TRIGGER_DELETES:
         this.processTriggerDeletes(current);
         break;
@@ -304,47 +287,6 @@ public class ImageCleanerService extends StatefulService {
   }
 
   /**
-   * Get the reference datastore by iterating through all datastores.
-   *
-   * @param current
-   */
-  private void processGetReferenceDatastoreInfo(final State current) {
-    try {
-      Operation queryDatastoreSet = buildDatastoreSetQuery(true);
-
-      OperationSequence.create(queryDatastoreSet)
-      .setCompletion((operations, throwable) -> {
-        if (throwable != null) {
-          failTask(throwable.values().iterator().next());
-          return;
-        }
-
-        Operation op = operations.get(queryDatastoreSet.getId());
-        NodeGroupBroadcastResponse queryResponse = op.getBody(NodeGroupBroadcastResponse.class);
-        List<DatastoreService.State> documentLinks = QueryTaskUtils
-                .getBroadcastQueryDocuments(DatastoreService.State.class, queryResponse);
-
-        Set<String> datastoreSet = new HashSet<String>();
-        for (DatastoreService.State state : documentLinks) {
-          datastoreSet.add(state.id);
-        }
-
-        checkState(datastoreSet.size() > 0, "No reference datastore found.");
-        if (datastoreSet.size() > 1) {
-          // log a warning if we detected more than one image datastores
-          ServiceUtils.logWarning(ImageCleanerService.this,
-                  "There were %s datastores detected. Only 1 datastore is expected. %s",
-                  datastoreSet.size(), Utils.toJson(datastoreSet));
-        }
-        String datastore = ServiceUtils.selectRandomItem(datastoreSet);
-        getHosts(current, datastore);
-      }).sendWith(this);
-    } catch (Exception e) {
-      failTask(e);
-    }
-  }
-
-  /**
    * Retrieves the list of datastores in the system and triggers an ImageDatastoreSweeperService
    * instance for each.
    *
@@ -354,42 +296,42 @@ public class ImageCleanerService extends StatefulService {
     try {
       Operation queryDatastoreSet = buildDatastoreSetQuery(false);
       OperationSequence.create(queryDatastoreSet)
-        .setCompletion((operations, throwable) -> {
-          if (throwable != null) {
-            failTask(throwable.values().iterator().next());
-            return;
-          }
+          .setCompletion((operations, throwable) -> {
+            if (throwable != null) {
+              failTask(throwable.values().iterator().next());
+              return;
+            }
 
-          Operation op = operations.get(queryDatastoreSet.getId());
-          NodeGroupBroadcastResponse queryResponse = op.getBody(NodeGroupBroadcastResponse.class);
-          List<DatastoreService.State> documentLinks = QueryTaskUtils
-                  .getBroadcastQueryDocuments(DatastoreService.State.class, queryResponse);
+            Operation op = operations.get(queryDatastoreSet.getId());
+            NodeGroupBroadcastResponse queryResponse = op.getBody(NodeGroupBroadcastResponse.class);
+            List<DatastoreService.State> documentLinks = QueryTaskUtils
+                .getBroadcastQueryDocuments(DatastoreService.State.class, queryResponse);
 
-          Set<DatastoreService.State> datastoreSet = new HashSet<DatastoreService.State>();
-          for (DatastoreService.State state : documentLinks) {
-            datastoreSet.add(state);
-          }
+            Set<DatastoreService.State> datastoreSet = new HashSet<DatastoreService.State>();
+            for (DatastoreService.State state : documentLinks) {
+              datastoreSet.add(state);
+            }
 
-          ServiceUtils.logInfo(this,
-                  "getAllDatastores returned %s. [count=%s]", Utils.toJson(datastoreSet), datastoreSet.size());
+            ServiceUtils.logInfo(this,
+                "getAllDatastores returned %s. [count=%s]", Utils.toJson(datastoreSet), datastoreSet.size());
 
-          // create the ImageDatastoreSweeperService instances
-          int dataStoreSweeperCount = 0;
-          for (DatastoreService.State datastore : datastoreSet) {
-            triggerImageDatastoreSweeperService(current, datastore.id, datastore.isImageDatastore);
-            dataStoreSweeperCount++;
-          }
+            // create the ImageDatastoreSweeperService instances
+            int dataStoreSweeperCount = 0;
+            for (DatastoreService.State datastore : datastoreSet) {
+              triggerImageDatastoreSweeperService(current, datastore.id, datastore.isImageDatastore);
+              dataStoreSweeperCount++;
+            }
 
-          if (current.isSelfProgressionDisabled) {
-            return;
-          }
+            if (current.isSelfProgressionDisabled) {
+              return;
+            }
 
-          // move to next stage
-          State patch = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.AWAIT_COMPLETION, null);
-          patch.dataStoreCount = dataStoreSweeperCount;
+            // move to next stage
+            State patch = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.AWAIT_COMPLETION, null);
+            patch.dataStoreCount = dataStoreSweeperCount;
 
-          sendSelfPatch(patch);
-        }).sendWith(this);
+            sendSelfPatch(patch);
+          }).sendWith(this);
     } catch (Exception e) {
       failTask(e);
     }
@@ -648,89 +590,8 @@ public class ImageCleanerService extends StatefulService {
     querySpecification.options = EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
 
     return getCloudStoreHelper()
-            .createBroadcastPost(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS, ServiceUriPaths.DEFAULT_NODE_SELECTOR)
-            .setBody(QueryTask.create(querySpecification).setDirect(true));
-  }
-
-  /**
-   * Querying hosts for image data store from cloud store.
-   *
-   * @param current
-   * @param imageDatastore
-   * @return
-   */
-  private void getHosts(final State current, final String imageDatastore)  {
-    try {
-      Operation queryHostSet = buildHostQuery(imageDatastore);
-
-      OperationSequence.create(queryHostSet)
-        .setCompletion((operations, throwable) -> {
-          if (throwable != null) {
-            failTask(throwable.values().iterator().next());
-            return;
-          }
-
-          Operation op = operations.get(queryHostSet.getId());
-          NodeGroupBroadcastResponse queryResponse = op.getBody(NodeGroupBroadcastResponse.class);
-          List<HostService.State> documentLinks = QueryTaskUtils
-                  .getBroadcastQueryDocuments(HostService.State.class, queryResponse);
-
-          Set<String> hostSet = new HashSet<String>();
-          for (HostService.State state : documentLinks) {
-            hostSet.add(state.hostAddress);
-          }
-
-          checkState(hostSet.size() > 0, "No hosts found for reference datastore. [%s].", imageDatastore);
-          String host = ServiceUtils.selectRandomItem(hostSet);
-
-          if (current.isSelfProgressionDisabled) {
-            return;
-          }
-
-          // move to next stage
-          State patch = buildPatch(
-                  TaskState.TaskStage.STARTED, TaskState.SubStage.TRIGGER_DELETES, null);
-          patch.host = host;
-          patch.dataStore = imageDatastore;
-
-          sendSelfPatch(patch);
-          }
-        ).sendWith(this);
-    } catch (Exception e) {
-      failTask(e);
-    }
-  }
-
-  /**
-   * Build a QuerySpecification for querying hosts with access to image datastore.
-   *
-   * @param imageDataStore
-   * @return
-   */
-  private Operation buildHostQuery(final String imageDataStore) {
-    QueryTask.Query kindClause = new QueryTask.Query()
-      .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
-      .setTermMatchValue(Utils.buildKind(HostService.State.class));
-
-    String fieldName = QueryTask.QuerySpecification.buildCollectionItemName(
-      HostService.State.FIELD_NAME_REPORTED_IMAGE_DATASTORES);
-    QueryTask.Query imageDatastoreClause = new QueryTask.Query()
-      .setTermPropertyName(fieldName)
-      .setTermMatchValue(imageDataStore);
-
-    QueryTask.Query stateClause = new QueryTask.Query()
-      .setTermPropertyName("state")
-      .setTermMatchValue(HostState.READY.toString());
-
-    QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
-    querySpecification.query.addBooleanClause(kindClause);
-    querySpecification.query.addBooleanClause(imageDatastoreClause);
-    querySpecification.query.addBooleanClause(stateClause);
-    querySpecification.options = EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
-
-    return getCloudStoreHelper()
-            .createBroadcastPost(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS, ServiceUriPaths.DEFAULT_NODE_SELECTOR)
-            .setBody(QueryTask.create(querySpecification).setDirect(true));
+        .createBroadcastPost(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS, ServiceUriPaths.DEFAULT_NODE_SELECTOR)
+        .setBody(QueryTask.create(querySpecification).setDirect(true));
   }
 
   /**
@@ -740,8 +601,8 @@ public class ImageCleanerService extends StatefulService {
    */
   private QueryTask.Query buildKindClause() {
     return new QueryTask.Query()
-            .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
-            .setTermMatchValue(Utils.buildKind(DatastoreService.State.class));
+        .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
+        .setTermMatchValue(Utils.buildKind(DatastoreService.State.class));
   }
 
   /**
@@ -751,8 +612,8 @@ public class ImageCleanerService extends StatefulService {
    */
   private QueryTask.Query buildDatastoreTypeClause() {
     return new QueryTask.Query()
-            .setTermPropertyName("isImageDatastore")
-            .setTermMatchValue("true");
+        .setTermPropertyName("isImageDatastore")
+        .setTermMatchValue("true");
   }
 
   /**
@@ -768,7 +629,6 @@ public class ImageCleanerService extends StatefulService {
      * Execution sub-stage.
      */
     public static enum SubStage {
-      GET_REFERENCE_DATASTORE_INFO,
       TRIGGER_DELETES,
       AWAIT_COMPLETION
     }
@@ -794,16 +654,6 @@ public class ImageCleanerService extends StatefulService {
      * Time in milliseconds to delay before issuing query tasks.
      */
     public Integer queryPollDelay;
-
-    /**
-     * IP address of host having access to reference datastore.
-     */
-    public String host;
-
-    /**
-     * The dataStore id corresponding to dataStoreInventoryName.
-     */
-    public String dataStore;
 
     /**
      * The timestamp indicating when the reference images were retrieved.
