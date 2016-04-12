@@ -39,7 +39,7 @@ public class VirtualNetworkService extends StatefulService {
   public static final String FACTORY_LINK = ServiceUriPaths.CLOUDSTORE_ROOT + "/virtual-networks";
 
   public static FactoryService createFactory() {
-    return FactoryService.createIdempotent(VirtualNetworkService.class);
+    return FactoryService.create(VirtualNetworkService.class, VirtualNetworkService.State.class);
   }
 
   public VirtualNetworkService() {

@@ -39,7 +39,7 @@ public class CreateLogicalRouterTaskService extends StatefulService {
   public static final String FACTORY_LINK = ServiceUriPaths.APIBACKEND_ROOT + "/create-logical-router-tasks";
 
   public static FactoryService createFactory() {
-    return FactoryService.createIdempotent(CreateLogicalRouterTaskService.class);
+    return FactoryService.create(CreateLogicalRouterTaskService.class, CreateLogicalRouterTask.class);
   }
 
   public CreateLogicalRouterTaskService() {

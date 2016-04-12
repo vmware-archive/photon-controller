@@ -40,7 +40,7 @@ public class CreateLogicalSwitchTaskService extends StatefulService {
   public static final String FACTORY_LINK = ServiceUriPaths.APIBACKEND_ROOT + "/create-logical-switch-tasks";
 
   public static FactoryService createFactory() {
-    return FactoryService.createIdempotent(CreateLogicalSwitchTaskService.class);
+    return FactoryService.create(CreateLogicalSwitchTaskService.class, CreateLogicalSwitchTask.class);
   }
 
   public CreateLogicalSwitchTaskService() {
