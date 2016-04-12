@@ -29,7 +29,7 @@ public class TestServiceWithStage extends StatefulService {
   public static final String FACTORY_LINK = ServiceUriPaths.SERVICES_ROOT + "/test-service-with-stage";
 
   public static FactoryService createFactory() {
-    return FactoryService.createIdempotent(TestServiceWithStage.class);
+    return FactoryService.create(TestServiceWithStage.class, TestServiceWithStage.State.class);
   }
 
   public TestServiceWithStage() {
