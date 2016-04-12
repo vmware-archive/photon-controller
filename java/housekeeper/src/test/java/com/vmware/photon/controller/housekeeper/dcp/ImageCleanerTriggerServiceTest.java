@@ -17,6 +17,7 @@ import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
+import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.BadRequestException;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
 import com.vmware.photon.controller.housekeeper.dcp.mock.HostClientMock;
@@ -25,8 +26,10 @@ import com.vmware.photon.controller.housekeeper.helpers.dcp.TestHost;
 import com.vmware.photon.controller.nsxclient.NsxClientFactory;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
+import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
+import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.QueryTask;
 
 import org.testng.annotations.AfterMethod;
@@ -34,6 +37,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.closeTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
@@ -44,7 +48,10 @@ import static org.mockito.Mockito.spy;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.fail;
 
+import java.math.BigDecimal;
 import java.util.EnumSet;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
 /**
@@ -358,6 +365,7 @@ public class ImageCleanerTriggerServiceTest {
               TaskState.TaskStage.STARTED,
               TaskState.TaskStage.FINISHED,
               TaskState.TaskStage.FAILED);
+      spec.options.add(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);;
 
       QueryTask query = QueryTask.create(spec)
           .setDirect(true);
@@ -369,6 +377,20 @@ public class ImageCleanerTriggerServiceTest {
             }
           });
       assertThat(queryResponse.results.documentLinks.size(), greaterThanOrEqualTo(1));
+
+      /*
+       * Verify that expiration time is set correctly.
+       */
+      BigDecimal delta = new BigDecimal(TimeUnit.SECONDS.toMicros(10));
+      BigDecimal expectedExpiration = new BigDecimal(
+          ServiceUtils.computeExpirationTime(
+              ImageCleanerTriggerService.DEFAULT_TRIGGER_INTERVAL *
+                  ImageCleanerTriggerService.EXPIRATION_TIME_MULTIPLIER));
+
+      for (Object document : queryResponse.results.documents.values()) {
+        ServiceDocument doc = Utils.fromJson(document, ServiceDocument.class);
+        assertThat(new BigDecimal(doc.documentExpirationTimeMicros), is(closeTo(expectedExpiration, delta)));
+      }
     }
   }
 }

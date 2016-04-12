@@ -35,12 +35,14 @@ import java.util.concurrent.TimeUnit;
  * running one.
  */
 public class ImageCleanerTriggerService extends StatefulService {
+  protected static final long DEFAULT_TRIGGER_INTERVAL = TimeUnit.HOURS.toMicros(1);
+  protected static final long EXPIRATION_TIME_MULTIPLIER = 5;
+
   private static final long OWNER_SELECTION_TIMEOUT = TimeUnit.SECONDS.toMillis(5);
 
   private static final long UNUSED_IMAGE_AGE = TimeUnit.MINUTES.toSeconds(30);
 
-  private static final long DEFAULT_TRIGGER_INTERVAL = TimeUnit.HOURS.toMicros(1);
-  private static final long EXPIRATION_TIME_MULTIPLIER = 5;
+
 
   /**
    * Default constructor.
@@ -193,7 +195,7 @@ public class ImageCleanerTriggerService extends StatefulService {
     postState.imageDeleteWatermarkTime =
         TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis()) - UNUSED_IMAGE_AGE;
     postState.documentExpirationTimeMicros = ServiceUtils.computeExpirationTime(
-        TimeUnit.MICROSECONDS.toMillis(EXPIRATION_TIME_MULTIPLIER * this.getMaintenanceIntervalMicros()));
+        EXPIRATION_TIME_MULTIPLIER * this.getMaintenanceIntervalMicros());
 
     Operation createImageOperation = Operation
         .createPost(UriUtils.buildUri(getHost(), ImageCleanerServiceFactory.SELF_LINK))
