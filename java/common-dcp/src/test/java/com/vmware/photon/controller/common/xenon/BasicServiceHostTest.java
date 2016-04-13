@@ -40,6 +40,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.EnumSet;
 import java.util.Map;
+import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
@@ -50,7 +51,7 @@ import java.util.function.Predicate;
 public class BasicServiceHostTest {
 
   public static final String BIND_ADDRESS = "0.0.0.0";
-  public static final Integer BIND_PORT = 46001;
+  public static final Integer BIND_PORT = 0;
   public static final String SERVICE_URI = ServiceUriPaths.SERVICES_ROOT + "/BasicServiceHostTest";
   public static final String STORAGE_PATH = "/tmp/dcp/BasicServiceHostTest/" + UUID.randomUUID().toString() + "/";
   public static final int WAIT_ITERATION_SLEEP = 10;
@@ -122,16 +123,19 @@ public class BasicServiceHostTest {
     @Test
     public void testParamsPassedToConstructor() throws Throwable {
 
+      final Random random = new Random();
+      Integer bindPort = 46000 + random.nextInt(999);
+
       host = new BasicServiceHost(BIND_ADDRESS,
-          BIND_PORT,
+          bindPort,
           STORAGE_PATH,
           SERVICE_URI,
           WAIT_ITERATION_SLEEP,
           WAIT_ITERATION_COUNT);
 
       host.initialize();
-      assertThat(host.getPort(), is(BIND_PORT));
-      Path storagePath = Paths.get(storageDir.getPath()).resolve(Integer.toString(BIND_PORT));
+      assertThat(host.getPort(), is(bindPort));
+      Path storagePath = Paths.get(storageDir.getPath()).resolve(Integer.toString(bindPort));
       assertThat(host.getStorageSandbox().getPath(), is(storagePath.toString()));
       assertThat(host.serviceUri, is(SERVICE_URI));
       assertThat(host.waitIterationSleep, is(WAIT_ITERATION_SLEEP));
@@ -141,15 +145,18 @@ public class BasicServiceHostTest {
     @Test
     public void testParamsPassedToCreate() throws Throwable {
 
+      final Random random = new Random();
+      Integer bindPort = 46000 + random.nextInt(999);
+
       host = BasicServiceHost.create(BIND_ADDRESS,
-          BIND_PORT,
+          bindPort,
           STORAGE_PATH,
           SERVICE_URI,
           WAIT_ITERATION_SLEEP,
           WAIT_ITERATION_COUNT);
 
-      assertThat(host.getPort(), is(BIND_PORT));
-      Path storagePath = Paths.get(storageDir.getPath()).resolve(Integer.toString(BIND_PORT));
+      assertThat(host.getPort(), is(bindPort));
+      Path storagePath = Paths.get(storageDir.getPath()).resolve(Integer.toString(bindPort));
       assertThat(host.getStorageSandbox().getPath(), is(storagePath.toString()));
       assertThat(host.serviceUri, is(SERVICE_URI));
       assertThat(host.waitIterationSleep, is(WAIT_ITERATION_SLEEP));
