@@ -24,8 +24,14 @@ import os.path
 import shutil
 import uuid
 
+from common.photon_thrift.direct_client import DirectClient
+from gen.host import Host
+from gen.host.ttypes import ServiceTicketRequest, ServiceType, ServiceTicketResultCode, CreateImageRequest, \
+    CreateImageResultCode
 from gen.resource.ttypes import DatastoreType
+from host.hypervisor.esx.vim_client import VimClient, NFC_VERSION
 from pyVmomi import vim
+from pyVmomi import nfc
 
 from common.file_io import AcquireLockFailure
 from common.file_io import FileBackedLock
@@ -36,7 +42,7 @@ from common import services
 from common.service_name import ServiceName
 from common.thread import Periodic
 from host.hypervisor.datastore_manager import DatastoreNotFoundException
-from host.hypervisor.esx.vm_config import IMAGE_FOLDER_NAME_PREFIX, compond_path_join
+from host.hypervisor.esx.vm_config import IMAGE_FOLDER_NAME_PREFIX, compond_path_join, datastore_path, vmdk_add_suffix
 from host.hypervisor.esx.vm_config import TMP_IMAGE_FOLDER_NAME_PREFIX
 from host.hypervisor.esx.vm_config import os_datastore_root
 from host.hypervisor.esx.vm_config import datastore_to_os_path
@@ -62,6 +68,7 @@ from host.hypervisor.placement_manager import NoSuchResourceException
 from host.hypervisor.placement_manager import ResourceType
 
 from common.log import log_duration
+from pysdk import connect
 
 GC_IMAGE_FOLDER = "deleted_images"
 
@@ -769,6 +776,76 @@ class EsxImageManager(ImageManager):
             self._manage_disk(vim.VirtualDiskManager.DeleteVirtualDisk_Task,
                               name=dst_vmdk_ds_path)
             raise
+
+    def transfer_image(self, source_image_id, source_datastore,
+                       destination_image_id, destination_datastore,
+                       destination_host, destination_port):
+        self._logger.warning("transfer_image: connecting to remote host")
+        remote_agent_client = DirectClient("Host", Host.Client, destination_host, destination_port)
+        remote_agent_client.connect()
+
+        nfc_ticket = self._get_nfc_ticket(remote_agent_client, destination_datastore)
+        nfc_vim_client = VimClient(version=NFC_VERSION, auto_sync=False)
+
+        self._logger.warning("transfer_image: creating remote image")
+        if destination_image_id is None:
+            destination_image_id = source_image_id
+        upload_folder = self._create_remote_image(remote_agent_client, destination_image_id, destination_datastore)
+
+        source_file_path = datastore_path(source_datastore,
+                                          compond_path_join(IMAGE_FOLDER_NAME_PREFIX, source_image_id),
+                                          vmdk_add_suffix(source_image_id))
+        destination_file_path = os.path.join(upload_folder, vmdk_add_suffix(destination_image_id))
+        self._logger.warning("transfer_image: nfc copy image %s => %s", source_file_path, destination_file_path)
+        self._nfc_copy_image(nfc_vim_client, source_file_path, destination_host, destination_port,
+                             nfc_ticket, destination_file_path)
+
+    def _get_nfc_ticket(self, remote_agent_client, datastore):
+        request = ServiceTicketRequest(ServiceType.NFC, datastore)
+        response = remote_agent_client.get_service_ticket(request)
+        if response.result != ServiceTicketResultCode.OK:
+            err_msg = "Get service ticket failed. Response = %s" % str(response)
+            self._logger.info(err_msg)
+            raise ValueError(err_msg)
+        return response.vim_ticket
+
+    def _create_remote_image(self, remote_agent_client, image_id, datastore):
+        request = CreateImageRequest(image_id, datastore)
+        response = remote_agent_client.create_image(request)
+        if response.result != CreateImageResultCode.OK:
+            err_msg = "Failed to create image. Response = %s" % str(response)
+            self._logger.info(err_msg)
+            raise ValueError(err_msg)
+        return response.upload_folder
+
+    def _nfc_copy_image(self, nfc_vim_client, source_file_path, destination_host, destination_port,
+                        nfc_ticket, destination_file_path):
+        copySpec = nfc.CopySpec()
+        copySpec.source = nfc.CopySpec.Location()
+        copySpec.source.filePath = source_file_path
+
+        copySpec.destination = nfc.CopySpec.Location()
+        copySpec.destination.filePath = destination_file_path
+        copySpec.destination.cnxSpec = nfc.CopySpec.CnxSpec()
+        copySpec.destination.cnxSpec.host = destination_host
+        copySpec.destination.cnxSpec.port = destination_port
+        copySpec.destination.cnxSpec.authData = nfc.CopySpec.TicketAuthData()
+        copySpec.destination.cnxSpec.authData.ticket = nfc_ticket
+        copySpec.destination.cnxSpec.useSSL = False
+
+        copySpec.opType = "copy"
+        copySpec.fileSpec = nfc.VmfsFlatDiskSpec()
+        copySpec.fileSpec.adapterType = "lsiLogic"
+        copySpec.fileSpec.preserveIdentity = True
+        copySpec.fileSpec.allocateType = "thick"
+        copySpec.option = nfc.CopySpec.CopyOptions()
+        copySpec.option.failOnError = True
+        copySpec.option.overwriteDestination = True
+        copySpec.option.useRawModeForChildDisk = False
+
+        nfcman = nfc_vim_client.nfc_manager
+        vim_task = nfcman.Copy([copySpec, ])
+        nfc_vim_client.spin_wait_for_task(vim_task)
 
     def receive_image(self, image_id, datastore_id, imported_vm_name, metadata):
         """ Creates an image using the data from the imported vm.

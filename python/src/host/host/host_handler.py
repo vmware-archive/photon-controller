@@ -1778,11 +1778,14 @@ class HostHandler(Host.Iface):
     def transfer_image(self, request):
         """ Transfer an image to another host via host-to-host transfer. """
         try:
-            self.hypervisor.transfer_image(
+            source_datastore_id = self.hypervisor.datastore_manager.normalize(request.source_datastore_id)
+            destination_datastore_id = self.hypervisor.datastore_manager.normalize(request.destination_datastore_id)
+
+            self.hypervisor.image_manager.transfer_image(
                 request.source_image_id,
-                request.source_datastore_id,
+                source_datastore_id,
                 request.destination_image_id,
-                request.destination_datastore_id,
+                destination_datastore_id,
                 request.destination_host.host,
                 request.destination_host.port)
         except AlreadyLocked:

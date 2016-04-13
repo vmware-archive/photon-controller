@@ -37,6 +37,7 @@ from pysdk import invt
 from pysdk import task
 from pyVmomi import SoapStubAdapter
 from pyVmomi import vim
+from pyVmomi import nfc
 from pyVmomi import vmodl
 
 
@@ -53,7 +54,7 @@ DATASTORE_FOLDER_NAME = "datastore"
 VM_FOLDER_NAME = "vm"
 NETWORK_FOLDER_NAME = "network"
 VIM_VERSION = "vim.version.version9"
-VIM_NAMESPACE = "vim25/5.5"
+NFC_VERSION = "nfc.version.version1"
 
 HOSTD_PORT = 443
 DEFAULT_TASK_TIMEOUT = 60 * 60  # one hour timeout
@@ -95,7 +96,7 @@ class VimClient(object):
 
     def __init__(self, host="localhost", user=None, pwd=None,
                  wait_timeout=10, min_interval=1, auto_sync=True,
-                 ticket=None, stats_interval=600, errback=None):
+                 ticket=None, version=VIM_VERSION, stats_interval=600, errback=None):
         self._logger = logging.getLogger(__name__)
         self.host = host
         self.current_version = None
@@ -120,14 +121,13 @@ class VimClient(object):
         self.update_listeners = set()
 
         if ticket:
-            self._si = self.connect_ticket(host, ticket)
+            self._si = self.connect_ticket(host, ticket, version)
         else:
             if not user or not pwd:
-                (self.username, self.password) = \
-                    VimClient.acquire_credentials()
+                (self.username, self.password) = VimClient.acquire_credentials()
             else:
                 (self.username, self.password) = (user, pwd)
-            self._si = self.connect_userpwd(host, self.username, self.password)
+            self._si = self.connect_userpwd(host, self.username, self.password, version)
 
         self._content = self._si.RetrieveContent()
 
@@ -225,10 +225,10 @@ class VimClient(object):
                 results[self.id_to_counter_map[counter_id]] = average
         return results
 
-    def connect_ticket(self, host, ticket):
+    def connect_ticket(self, host, ticket, version):
         if ticket:
             try:
-                stub = SoapStubAdapter(host, HOSTD_PORT, VIM_NAMESPACE)
+                stub = SoapStubAdapter(host, HOSTD_PORT, version=version)
                 si = vim.ServiceInstance("ServiceInstance", stub)
                 si.RetrieveContent().sessionManager.CloneSession(ticket)
                 return si
@@ -237,12 +237,12 @@ class VimClient(object):
                                   % http_exception)
                 raise AcquireCredentialsException(http_exception)
 
-    def connect_userpwd(self, host, user, pwd):
+    def connect_userpwd(self, host, user, pwd, version):
         try:
             si = connect.Connect(host=host,
                                  user=user,
                                  pwd=pwd,
-                                 version=VIM_VERSION)
+                                 version=version)
             return si
         except vim.fault.HostConnectFault as connection_exception:
             self._logger.info(
@@ -315,6 +315,11 @@ class VimClient(object):
     @hostd_error_handler
     def nfc_service(self):
         return vim.NfcService('ha-nfc-service', self._si._stub)
+
+    @property
+    @hostd_error_handler
+    def nfc_manager(self):
+        return nfc.NfcManager('ha-nfc-manager', self._si._stub)
 
     @property
     @hostd_error_handler

@@ -80,7 +80,7 @@ from hamcrest import has_length
 from hamcrest import is_
 from hamcrest import is_in
 from hamcrest import not_none
-from host.hypervisor.esx.vim_client import VimClient
+from host.hypervisor.esx.vim_client import VimClient, VIM_VERSION
 from host.hypervisor.esx.vm_config import IMAGE_FOLDER_NAME_PREFIX, datastore_path
 from host.hypervisor.esx.vm_config import vmdk_path
 from host.hypervisor.esx.vm_manager import EsxVmManager
@@ -111,8 +111,7 @@ class TestRemoteAgent(unittest.TestCase, AgentCommonTests):
         self.assertEqual(response.result, ServiceTicketResultCode.OK)
 
         hostd_port = 443
-        vim_namespace = "vim25/5.0"
-        stub = SoapStubAdapter(self.server, hostd_port, vim_namespace)
+        stub = SoapStubAdapter(self.server, hostd_port, version=VIM_VERSION)
         si = vim.ServiceInstance("ServiceInstance", stub)
         si.RetrieveContent().sessionManager.CloneSession(response.vim_ticket)
         connect.SetSi(si)

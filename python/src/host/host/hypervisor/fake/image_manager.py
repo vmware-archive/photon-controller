@@ -134,3 +134,8 @@ class FakeImageManager(ImageManager):
     def create_image_with_vm_disk(self, datastore_id, tmp_dir, image_id,
                                   vm_disk_os_path):
         return
+
+    def transfer_image(self, source_image_id, source_datastore,
+                       destination_image_id, destination_datastore,
+                       destination_host, destination_port):
+        return

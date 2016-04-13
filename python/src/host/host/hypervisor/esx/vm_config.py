@@ -106,8 +106,8 @@ def os_datastore_path_pattern(datastore, folder_prefix):
     return os_datastore_path(datastore, folder_prefix) + COMPOND_PATH_SEPARATOR + "*"
 
 
-def datastore_path(datastore, folder):
-    return "[] %s" % os_datastore_path(datastore, folder)
+def datastore_path(datastore, folder1, folder2):
+    return "[] %s" % os_datastore_path(datastore, folder1, folder2)
 
 
 def os_vmx_path(datastore, vm_id):
