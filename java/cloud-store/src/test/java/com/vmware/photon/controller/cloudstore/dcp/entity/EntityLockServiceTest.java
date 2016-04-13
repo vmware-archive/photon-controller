@@ -81,8 +81,7 @@ public class EntityLockServiceTest {
     @BeforeMethod
     public void setUp() throws Throwable {
       service = new EntityLockService();
-      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
-          BasicServiceHost.BIND_PORT,
+      host = BasicServiceHost.create(
           null,
           EntityLockServiceFactory.SELF_LINK,
           10, 10);

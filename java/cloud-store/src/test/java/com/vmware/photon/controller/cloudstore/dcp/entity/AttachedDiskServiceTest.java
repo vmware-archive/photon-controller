@@ -83,8 +83,7 @@ public class AttachedDiskServiceTest {
     @BeforeMethod
     public void setUp() throws Throwable {
       service = new AttachedDiskService();
-      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
-          BasicServiceHost.BIND_PORT,
+      host = BasicServiceHost.create(
           null,
           AttachedDiskServiceFactory.SELF_LINK,
           10, 10);
@@ -162,8 +161,7 @@ public class AttachedDiskServiceTest {
     @BeforeMethod
     public void setUp() throws Throwable {
       service = new AttachedDiskService();
-      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
-          BasicServiceHost.BIND_PORT,
+      host = BasicServiceHost.create(
           null,
           AttachedDiskServiceFactory.SELF_LINK,
           10, 10);

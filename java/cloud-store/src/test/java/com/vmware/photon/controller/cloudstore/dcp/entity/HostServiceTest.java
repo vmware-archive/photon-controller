@@ -105,8 +105,7 @@ public class HostServiceTest {
     @BeforeMethod
     public void setUp() throws Throwable {
       service = new HostService();
-      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
-          BasicServiceHost.BIND_PORT,
+      host = BasicServiceHost.create(
           null,
           HostServiceFactory.SELF_LINK,
           10, 10);
@@ -303,8 +302,7 @@ public class HostServiceTest {
     @BeforeMethod
     public void setUp() throws Throwable {
       service = new HostService();
-      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
-          BasicServiceHost.BIND_PORT,
+      host = BasicServiceHost.create(
           null,
           HostServiceFactory.SELF_LINK,
           10, 10);
@@ -586,8 +584,7 @@ public class HostServiceTest {
     @BeforeMethod
     public void setUp() throws Throwable {
       service = new HostService();
-      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
-          BasicServiceHost.BIND_PORT,
+      host = BasicServiceHost.create(
           null,
           HostServiceFactory.SELF_LINK,
           10, 10);

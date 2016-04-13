@@ -84,8 +84,7 @@ public class AvailabilityZoneServiceTest {
     @BeforeMethod
     public void setUp() throws Throwable {
       service = new AvailabilityZoneService();
-      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
-          BasicServiceHost.BIND_PORT,
+      host = BasicServiceHost.create(
           null,
           AvailabilityZoneServiceFactory.SELF_LINK,
           10, 10);
@@ -227,8 +226,7 @@ public class AvailabilityZoneServiceTest {
     @BeforeMethod
     public void setUp() throws Throwable {
       service = new AvailabilityZoneService();
-      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
-          BasicServiceHost.BIND_PORT,
+      host = BasicServiceHost.create(
           null,
           AvailabilityZoneServiceFactory.SELF_LINK,
           10, 10);

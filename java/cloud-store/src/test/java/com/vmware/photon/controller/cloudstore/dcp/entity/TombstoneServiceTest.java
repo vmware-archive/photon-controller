@@ -93,7 +93,7 @@ public class TombstoneServiceTest {
     @BeforeMethod
     public void setUp() throws Throwable {
       service = new TombstoneService();
-      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS, BasicServiceHost.BIND_PORT,
+      host = BasicServiceHost.create(
           null, BasicServiceHost.SERVICE_URI, 10, 10);
     }
 
@@ -186,7 +186,7 @@ public class TombstoneServiceTest {
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS, BasicServiceHost.BIND_PORT,
+      host = BasicServiceHost.create(
           null, BasicServiceHost.SERVICE_URI, 10, 10);
 
       TombstoneService.State startState = buildValidStartState();
@@ -241,8 +241,7 @@ public class TombstoneServiceTest {
     @BeforeMethod
     public void setUp() throws Throwable {
       service = new TombstoneService();
-      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
-          BasicServiceHost.BIND_PORT,
+      host = BasicServiceHost.create(
           null,
           TombstoneServiceFactory.SELF_LINK,
           10, 10);

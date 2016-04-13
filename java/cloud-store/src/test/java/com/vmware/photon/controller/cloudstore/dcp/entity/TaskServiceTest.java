@@ -86,8 +86,7 @@ public class TaskServiceTest {
     @BeforeMethod
     public void setUp() throws Throwable {
       service = new TaskService();
-      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
-          BasicServiceHost.BIND_PORT,
+      host = BasicServiceHost.create(
           null,
           TaskServiceFactory.SELF_LINK,
           10, 10);
@@ -278,8 +277,7 @@ public class TaskServiceTest {
     @BeforeMethod
     public void setUp() throws Throwable {
       service = new TaskService();
-      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
-          BasicServiceHost.BIND_PORT,
+      host = BasicServiceHost.create(
           null,
           TaskServiceFactory.SELF_LINK,
           10, 10);

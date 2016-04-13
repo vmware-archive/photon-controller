@@ -69,14 +69,12 @@ public class BasicServiceHost
   @VisibleForTesting
   protected String storagePath;
 
-  public BasicServiceHost(String bindAddress,
-                          Integer bindPort,
-                          String storagePath,
+  public BasicServiceHost(String storagePath,
                           String serviceUri,
                           int waitIterationSleep,
                           int waitIterationCount) {
-    this.bindAddress = bindAddress;
-    this.bindPort = bindPort;
+    this.bindAddress = BIND_ADDRESS;
+    this.bindPort = BIND_PORT;
     this.storagePath = storagePath;
     this.serviceUri = serviceUri;
     this.waitIterationSleep = waitIterationSleep;
@@ -84,20 +82,16 @@ public class BasicServiceHost
   }
 
   public BasicServiceHost() {
-    this(BIND_ADDRESS, BIND_PORT, null, SERVICE_URI,
+    this(null, SERVICE_URI,
         WAIT_ITERATION_SLEEP, WAIT_ITERATION_COUNT);
   }
 
-  public static BasicServiceHost create(String bindAddress,
-                                        Integer bindPort,
-                                        String storagePath,
+  public static BasicServiceHost create(String storagePath,
                                         String serviceUri,
                                         int waitIterationSleep,
                                         int waitIterationCount)
       throws Throwable {
-    BasicServiceHost host = new BasicServiceHost(bindAddress,
-        bindPort,
-        storagePath,
+    BasicServiceHost host = new BasicServiceHost(storagePath,
         serviceUri,
         waitIterationSleep,
         waitIterationCount);

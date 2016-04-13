@@ -71,8 +71,7 @@ public class PortGroupDcpBackendTest {
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
-          BasicServiceHost.BIND_PORT,
+      host = BasicServiceHost.create(
           null,
           PortGroupServiceFactory.SELF_LINK,
           10, 10);
@@ -125,8 +124,7 @@ public class PortGroupDcpBackendTest {
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
-          BasicServiceHost.BIND_PORT,
+      host = BasicServiceHost.create(
           null,
           PortGroupServiceFactory.SELF_LINK,
           10, 10);
