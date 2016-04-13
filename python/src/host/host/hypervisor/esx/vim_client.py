@@ -53,7 +53,6 @@ DATASTORE_FOLDER_NAME = "datastore"
 VM_FOLDER_NAME = "vm"
 NETWORK_FOLDER_NAME = "network"
 VIM_VERSION = "vim.version.version9"
-VIM_NAMESPACE = "vim25/5.5"
 
 HOSTD_PORT = 443
 DEFAULT_TASK_TIMEOUT = 60 * 60  # one hour timeout
@@ -228,7 +227,7 @@ class VimClient(object):
     def connect_ticket(self, host, ticket):
         if ticket:
             try:
-                stub = SoapStubAdapter(host, HOSTD_PORT, VIM_NAMESPACE)
+                stub = SoapStubAdapter(host, HOSTD_PORT, version=VIM_VERSION)
                 si = vim.ServiceInstance("ServiceInstance", stub)
                 si.RetrieveContent().sessionManager.CloneSession(ticket)
                 return si
