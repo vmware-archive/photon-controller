@@ -27,13 +27,15 @@ import org.testng.annotations.BeforeMethod;
  */
 public class BaseTestWithRealZookeeper {
 
+  public static final int RETRIES = 10;
+
   protected TestingServer zookeeper;
   protected CuratorFramework zkClient;
   protected CuratorFramework zkClient2;
 
   @BeforeMethod
   public void startZookeeper() throws Exception {
-    this.zookeeper = new TestingServer();
+    this.zookeeper = createTestingServer();
     Timing timing = new Timing();
 
     this.zkClient = CuratorFrameworkFactory
@@ -47,6 +49,21 @@ public class BaseTestWithRealZookeeper {
             timing.session(),
             timing.connection(),
             new RetryOneTime(1));
+  }
+
+  private TestingServer createTestingServer() {
+    int retriesLeft = RETRIES;
+    while (retriesLeft > 0) {
+      try {
+        return new TestingServer();
+      } catch (Throwable t) {
+        retriesLeft--;
+        if (retriesLeft <= 0) {
+          throw new RuntimeException("Zookeeper could not be started", t);
+        }
+      }
+    }
+    return null;
   }
 
   @AfterMethod
