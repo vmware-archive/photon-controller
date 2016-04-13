@@ -138,8 +138,7 @@ public class ClusterServiceTest {
     @BeforeMethod
     public void setUp() throws Throwable {
       service = new ClusterService();
-      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
-          BasicServiceHost.BIND_PORT,
+      host = BasicServiceHost.create(
           null,
           ClusterServiceFactory.SELF_LINK,
           10, 10);

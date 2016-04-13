@@ -106,8 +106,7 @@ public class VmServiceTest {
     @BeforeMethod
     public void setUp() throws Throwable {
       service = new VmService();
-      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
-          BasicServiceHost.BIND_PORT,
+      host = BasicServiceHost.create(
           null,
           VmServiceFactory.SELF_LINK,
           10, 10);
@@ -244,8 +243,7 @@ public class VmServiceTest {
     @BeforeMethod
     public void setUp() throws Throwable {
       service = new VmService();
-      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
-          BasicServiceHost.BIND_PORT,
+      host = BasicServiceHost.create(
           null,
           VmServiceFactory.SELF_LINK,
           10, 10);
@@ -304,8 +302,7 @@ public class VmServiceTest {
     @BeforeMethod
     public void setUp() throws Throwable {
       service = new VmService();
-      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
-          BasicServiceHost.BIND_PORT,
+      host = BasicServiceHost.create(
           null,
           VmServiceFactory.SELF_LINK,
           10, 10);
@@ -389,5 +386,4 @@ public class VmServiceTest {
           ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_ON_DELETE_DOC_EXPIRATION_TIME_MICROS));
     }
   }
-
 }

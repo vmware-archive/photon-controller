@@ -92,7 +92,7 @@ public class DeploymentServiceTest {
     @BeforeMethod
     public void setUpTest() throws Throwable {
       deploymentService = new DeploymentService();
-      testHost = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS, BasicServiceHost.BIND_PORT,
+      testHost = BasicServiceHost.create(
           null, BasicServiceHost.SERVICE_URI, 10, 10);
     }
 
@@ -143,7 +143,7 @@ public class DeploymentServiceTest {
     @BeforeMethod
     public void setUpTest() throws Throwable {
       deploymentService = new DeploymentService();
-      testHost = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS, BasicServiceHost.BIND_PORT,
+      testHost = BasicServiceHost.create(
           null, BasicServiceHost.SERVICE_URI, 10, 10);
     }
 
@@ -227,8 +227,7 @@ public class DeploymentServiceTest {
     @BeforeMethod
     public void setUp() throws Throwable {
       service = new DeploymentService();
-      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
-          BasicServiceHost.BIND_PORT,
+      host = BasicServiceHost.create(
           null,
           DeploymentServiceFactory.SELF_LINK,
           10, 10);

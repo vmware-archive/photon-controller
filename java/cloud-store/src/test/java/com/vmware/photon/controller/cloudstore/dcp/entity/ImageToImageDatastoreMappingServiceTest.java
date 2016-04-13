@@ -84,8 +84,7 @@ public class ImageToImageDatastoreMappingServiceTest {
     @BeforeMethod
     public void setUp() throws Throwable {
       service = new ImageToImageDatastoreMappingService();
-      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
-          BasicServiceHost.BIND_PORT,
+      host = BasicServiceHost.create(
           null,
           ImageToImageDatastoreMappingServiceFactory.SELF_LINK,
           10, 10);
@@ -176,8 +175,7 @@ public class ImageToImageDatastoreMappingServiceTest {
     @BeforeMethod
     public void setUp() throws Throwable {
       service = new ImageToImageDatastoreMappingService();
-      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
-          BasicServiceHost.BIND_PORT,
+      host = BasicServiceHost.create(
           null,
           ImageToImageDatastoreMappingServiceFactory.SELF_LINK,
           10, 10);

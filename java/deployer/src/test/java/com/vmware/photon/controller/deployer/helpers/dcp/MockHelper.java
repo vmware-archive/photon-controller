@@ -250,8 +250,7 @@ public class MockHelper {
   }
 
   public static StaticServerSet mockCloudStoreServerSet() throws Throwable {
-    BasicServiceHost host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
-        BasicServiceHost.BIND_PORT,
+    BasicServiceHost host = BasicServiceHost.create(
         null,
         DatastoreServiceFactory.SELF_LINK,
         10, 10);

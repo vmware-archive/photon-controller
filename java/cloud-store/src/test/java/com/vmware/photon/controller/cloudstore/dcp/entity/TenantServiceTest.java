@@ -110,8 +110,7 @@ public class TenantServiceTest {
     @BeforeMethod
     public void setUp() throws Throwable {
       service = new TenantService();
-      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
-          BasicServiceHost.BIND_PORT,
+      host = BasicServiceHost.create(
           null,
           TenantServiceFactory.SELF_LINK,
           10, 10);
@@ -186,8 +185,7 @@ public class TenantServiceTest {
 
     @BeforeMethod
     public void setupTest() throws Throwable {
-      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
-          BasicServiceHost.BIND_PORT,
+      host = BasicServiceHost.create(
           null,
           TenantServiceFactory.SELF_LINK,
           10,
@@ -274,8 +272,7 @@ public class TenantServiceTest {
     @BeforeMethod
     public void setUp() throws Throwable {
       service = new TenantService();
-      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
-          BasicServiceHost.BIND_PORT,
+      host = BasicServiceHost.create(
           null,
           TenantServiceFactory.SELF_LINK,
           10, 10);

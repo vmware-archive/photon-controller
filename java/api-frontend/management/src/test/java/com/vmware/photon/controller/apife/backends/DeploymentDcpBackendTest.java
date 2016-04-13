@@ -1026,8 +1026,7 @@ public class DeploymentDcpBackendTest {
     }
 
     private void createAnotherDeployment() throws Throwable {
-      host2 = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
-          0,
+      host2 = BasicServiceHost.create(
           null,
           DeploymentServiceFactory.SELF_LINK,
           10, 10);

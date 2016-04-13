@@ -109,8 +109,7 @@ public class ProjectServiceTest {
     @BeforeMethod
     public void setUp() throws Throwable {
       service = new ProjectService();
-      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
-          BasicServiceHost.BIND_PORT,
+      host = BasicServiceHost.create(
           null,
           ProjectServiceFactory.SELF_LINK,
           10, 10);
@@ -211,8 +210,7 @@ public class ProjectServiceTest {
 
     @BeforeMethod
     public void setupTest() throws Throwable {
-      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
-          BasicServiceHost.BIND_PORT,
+      host = BasicServiceHost.create(
           null,
           ProjectServiceFactory.SELF_LINK,
           10, 10);
@@ -295,8 +293,7 @@ public class ProjectServiceTest {
     @BeforeMethod
     public void setUp() throws Throwable {
       service = new ProjectService();
-      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
-          BasicServiceHost.BIND_PORT,
+      host = BasicServiceHost.create(
           null,
           ProjectServiceFactory.SELF_LINK,
           10, 10);

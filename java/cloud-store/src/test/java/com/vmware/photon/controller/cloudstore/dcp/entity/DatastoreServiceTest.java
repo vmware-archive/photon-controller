@@ -110,7 +110,7 @@ public class DatastoreServiceTest {
   public class HandleStartTest {
     @BeforeMethod
     public void setUp() throws Throwable {
-      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS, BasicServiceHost.BIND_PORT, null,
+      host = BasicServiceHost.create(null,
           DatastoreServiceFactory.SELF_LINK, 10, 10);
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
@@ -227,7 +227,7 @@ public class DatastoreServiceTest {
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS, BasicServiceHost.BIND_PORT, null,
+      host = BasicServiceHost.create(null,
           DatastoreServiceFactory.SELF_LINK, 10, 10);
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
@@ -338,7 +338,7 @@ public class DatastoreServiceTest {
   public class HandlePatchTest {
     @BeforeMethod
     public void setUp() throws Throwable {
-      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS, BasicServiceHost.BIND_PORT, null,
+      host = BasicServiceHost.create(null,
           DatastoreServiceFactory.SELF_LINK, 10, 10);
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
@@ -457,8 +457,7 @@ public class DatastoreServiceTest {
   public class HandleDeleteTest {
     @BeforeMethod
     public void setUp() throws Throwable {
-      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
-          BasicServiceHost.BIND_PORT,
+      host = BasicServiceHost.create(
           null,
           DatastoreServiceFactory.SELF_LINK,
           10, 10);

@@ -97,8 +97,7 @@ public class DiskServiceTest {
     @BeforeMethod
     public void setUp() throws Throwable {
       service = new DiskService();
-      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
-          BasicServiceHost.BIND_PORT,
+      host = BasicServiceHost.create(
           null,
           DiskServiceFactory.SELF_LINK,
           10, 10);
@@ -279,8 +278,7 @@ public class DiskServiceTest {
     @BeforeMethod
     public void setUp() throws Throwable {
       service = new DiskService();
-      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
-          BasicServiceHost.BIND_PORT,
+      host = BasicServiceHost.create(
           null,
           DiskServiceFactory.SELF_LINK,
           10, 10);
@@ -342,8 +340,7 @@ public class DiskServiceTest {
     @BeforeMethod
     public void setUp() throws Throwable {
       service = new DiskService();
-      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
-          BasicServiceHost.BIND_PORT,
+      host = BasicServiceHost.create(
           null,
           DiskServiceFactory.SELF_LINK,
           10, 10);
