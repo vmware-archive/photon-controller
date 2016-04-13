@@ -87,8 +87,7 @@ public class FlavorServiceTest {
     @BeforeMethod
     public void setUp() throws Throwable {
       service = new FlavorService();
-      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
-          BasicServiceHost.BIND_PORT,
+      host = BasicServiceHost.create(
           null,
           FlavorServiceFactory.SELF_LINK,
           10, 10);
@@ -260,8 +259,7 @@ public class FlavorServiceTest {
     @BeforeMethod
     public void setUp() throws Throwable {
       service = new FlavorService();
-      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
-          BasicServiceHost.BIND_PORT,
+      host = BasicServiceHost.create(
           null,
           FlavorServiceFactory.SELF_LINK,
           10, 10);

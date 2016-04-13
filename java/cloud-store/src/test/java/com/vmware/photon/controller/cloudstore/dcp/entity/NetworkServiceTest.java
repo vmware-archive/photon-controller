@@ -91,8 +91,7 @@ public class NetworkServiceTest {
     @BeforeMethod
     public void setUp() throws Throwable {
       service = new NetworkService();
-      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
-          BasicServiceHost.BIND_PORT,
+      host = BasicServiceHost.create(
           null,
           NetworkServiceFactory.SELF_LINK,
           10, 10);
@@ -330,8 +329,7 @@ public class NetworkServiceTest {
     @BeforeMethod
     public void setUp() throws Throwable {
       service = new NetworkService();
-      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
-          BasicServiceHost.BIND_PORT,
+      host = BasicServiceHost.create(
           null,
           NetworkServiceFactory.SELF_LINK,
           10, 10);

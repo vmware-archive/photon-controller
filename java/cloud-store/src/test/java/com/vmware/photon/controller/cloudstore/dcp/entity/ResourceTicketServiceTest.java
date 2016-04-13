@@ -56,8 +56,7 @@ public class ResourceTicketServiceTest {
 
   private static void commonSetup() throws Throwable {
     service = new ResourceTicketService();
-    host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
-        BasicServiceHost.BIND_PORT,
+    host = BasicServiceHost.create(
         null,
         ResourceTicketServiceFactory.SELF_LINK,
         10, 10);

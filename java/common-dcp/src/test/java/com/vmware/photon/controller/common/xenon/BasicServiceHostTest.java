@@ -49,8 +49,6 @@ import java.util.function.Predicate;
  */
 public class BasicServiceHostTest {
 
-  public static final String BIND_ADDRESS = "0.0.0.0";
-  public static final Integer BIND_PORT = 46001;
   public static final String SERVICE_URI = ServiceUriPaths.SERVICES_ROOT + "/BasicServiceHostTest";
   public static final String STORAGE_PATH = "/tmp/dcp/BasicServiceHostTest/" + UUID.randomUUID().toString() + "/";
   public static final int WAIT_ITERATION_SLEEP = 10;
@@ -90,8 +88,7 @@ public class BasicServiceHostTest {
     @Test
     public void testInitializeWithStorageDirExisting() throws Throwable {
 
-      host = new BasicServiceHost(BIND_ADDRESS,
-          BIND_PORT,
+      host = new BasicServiceHost(
           STORAGE_PATH,
           SERVICE_URI,
           WAIT_ITERATION_SLEEP,
@@ -106,8 +103,7 @@ public class BasicServiceHostTest {
     @Test
     public void testInitializeWithStorageDirNotExisting() throws Throwable {
 
-      host = new BasicServiceHost(BIND_ADDRESS,
-          BIND_PORT,
+      host = new BasicServiceHost(
           STORAGE_PATH,
           SERVICE_URI,
           WAIT_ITERATION_SLEEP,
@@ -122,16 +118,15 @@ public class BasicServiceHostTest {
     @Test
     public void testParamsPassedToConstructor() throws Throwable {
 
-      host = new BasicServiceHost(BIND_ADDRESS,
-          BIND_PORT,
+      host = new BasicServiceHost(
+
           STORAGE_PATH,
           SERVICE_URI,
           WAIT_ITERATION_SLEEP,
           WAIT_ITERATION_COUNT);
 
       host.initialize();
-      assertThat(host.getPort(), is(BIND_PORT));
-      Path storagePath = Paths.get(storageDir.getPath()).resolve(Integer.toString(BIND_PORT));
+      Path storagePath = Paths.get(storageDir.getPath()).resolve(Integer.toString(host.getPort()));
       assertThat(host.getStorageSandbox().getPath(), is(storagePath.toString()));
       assertThat(host.serviceUri, is(SERVICE_URI));
       assertThat(host.waitIterationSleep, is(WAIT_ITERATION_SLEEP));
@@ -141,15 +136,13 @@ public class BasicServiceHostTest {
     @Test
     public void testParamsPassedToCreate() throws Throwable {
 
-      host = BasicServiceHost.create(BIND_ADDRESS,
-          BIND_PORT,
+      host = BasicServiceHost.create(
           STORAGE_PATH,
           SERVICE_URI,
           WAIT_ITERATION_SLEEP,
           WAIT_ITERATION_COUNT);
 
-      assertThat(host.getPort(), is(BIND_PORT));
-      Path storagePath = Paths.get(storageDir.getPath()).resolve(Integer.toString(BIND_PORT));
+      Path storagePath = Paths.get(storageDir.getPath()).resolve(Integer.toString(host.getPort()));
       assertThat(host.getStorageSandbox().getPath(), is(storagePath.toString()));
       assertThat(host.serviceUri, is(SERVICE_URI));
       assertThat(host.waitIterationSleep, is(WAIT_ITERATION_SLEEP));
@@ -187,8 +180,7 @@ public class BasicServiceHostTest {
     public void startWithCoreServices() throws Throwable {
       //check if a few of the core services are available in the host
 
-      host = new BasicServiceHost(BIND_ADDRESS,
-          BIND_PORT,
+      host = new BasicServiceHost(
           STORAGE_PATH,
           SERVICE_URI,
           WAIT_ITERATION_SLEEP,
@@ -222,8 +214,7 @@ public class BasicServiceHostTest {
     @Test
     public void testDestroy() throws Throwable {
 
-      host = new BasicServiceHost(BIND_ADDRESS,
-          BIND_PORT,
+      host = new BasicServiceHost(
           STORAGE_PATH,
           SERVICE_URI,
           WAIT_ITERATION_SLEEP,
@@ -268,8 +259,7 @@ public class BasicServiceHostTest {
     @BeforeMethod
     public void setUp() throws Throwable {
 
-      host = new BasicServiceHost(BIND_ADDRESS,
-          BIND_PORT,
+      host = new BasicServiceHost(
           STORAGE_PATH,
           SERVICE_URI,
           WAIT_ITERATION_SLEEP,
@@ -324,8 +314,7 @@ public class BasicServiceHostTest {
     @BeforeMethod
     public void setUpTest() throws Throwable {
 
-      host = new BasicServiceHost(BIND_ADDRESS,
-          BIND_PORT,
+      host = new BasicServiceHost(
           STORAGE_PATH,
           SERVICE_URI,
           WAIT_ITERATION_SLEEP,

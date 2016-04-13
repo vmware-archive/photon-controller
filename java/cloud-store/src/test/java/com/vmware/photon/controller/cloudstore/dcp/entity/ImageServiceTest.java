@@ -91,8 +91,7 @@ public class ImageServiceTest {
     @BeforeMethod
     public void setUp() throws Throwable {
       service = new ImageService();
-      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
-          BasicServiceHost.BIND_PORT,
+      host = BasicServiceHost.create(
           null,
           ImageServiceFactory.SELF_LINK,
           10, 10);
@@ -511,8 +510,7 @@ public class ImageServiceTest {
     @BeforeMethod
     public void setUp() throws Throwable {
       service = new ImageService();
-      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
-          BasicServiceHost.BIND_PORT,
+      host = BasicServiceHost.create(
           null,
           ImageServiceFactory.SELF_LINK,
           10, 10);

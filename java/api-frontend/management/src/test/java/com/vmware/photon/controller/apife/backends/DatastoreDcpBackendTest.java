@@ -73,8 +73,7 @@ public class DatastoreDcpBackendTest {
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
-          BasicServiceHost.BIND_PORT,
+      host = BasicServiceHost.create(
           null,
           DatastoreServiceFactory.SELF_LINK,
           10, 10);
@@ -128,8 +127,7 @@ public class DatastoreDcpBackendTest {
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      host = BasicServiceHost.create(BasicServiceHost.BIND_ADDRESS,
-          BasicServiceHost.BIND_PORT,
+      host = BasicServiceHost.create(
           null,
           DatastoreServiceFactory.SELF_LINK,
           10, 10);
