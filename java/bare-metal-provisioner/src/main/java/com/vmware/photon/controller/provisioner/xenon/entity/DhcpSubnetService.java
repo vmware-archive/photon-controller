@@ -22,8 +22,12 @@ import com.vmware.xenon.common.StatefulService;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
 
+import java.io.IOException;
+import java.net.HttpURLConnection;
 import java.net.InetAddress;
+import java.net.SocketException;
 import java.net.URI;
+import java.net.URL;
 import java.net.UnknownHostException;
 import java.util.concurrent.TimeUnit;
 
@@ -290,9 +294,30 @@ public class DhcpSubnetService extends StatefulService {
     // Pick first available address from first non-empty range
     for (DhcpSubnetState.Range range : curSubnetState.ranges) {
       IPRange ipRange = new IPRange(range);
-
       if (!ipRange.isFull()) {
         String nextIP = ipRange.getNextUnused().getHostAddress();
+        boolean isUsed = true;
+        while (isUsed) {
+          try {
+            URL destinationURL = new URL("http", nextIP, "/tmp");
+            HttpURLConnection httpConnection = (HttpURLConnection) destinationURL.openConnection();
+            httpConnection.getContent();
+          } catch (SocketException se) {
+            // OK to use
+            isUsed = false;
+            break;
+          } catch (IOException e) {
+            ServiceUtils.logWarning(this, "IO Error connecting: %s %s", nextIP, e.getMessage());
+            break;
+          }
+          ServiceUtils.logWarning(this, "IP seems to be in use: %s", nextIP);
+          try {
+            ipRange.setUsed(InetAddress.getByName(nextIP));
+          } catch (UnknownHostException e) {
+            break;
+          }
+          nextIP = ipRange.getNextUnused().getHostAddress();
+        }
         range.usedIps = ipRange.toByteArray();
         return nextIP;
       }
