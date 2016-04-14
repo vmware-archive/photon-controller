@@ -46,6 +46,35 @@ describe "deployment lifecycle", order: :defined, deployer: true do
         true)
   end
 
+  let(:host_spec_with_wrong_credentials) do
+    EsxCloud::HostCreateSpec.new(
+        "fake-user-name",
+        EsxCloud::TestHelpers.get_esx_password,
+        ["MGMT", "CLOUD"],
+        EsxCloud::TestHelpers.get_esx_ip,
+        host_metadata)
+  end
+
+  after(:each) do
+    destroy_created_deployment
+  end
+
+  it 'should fail deployment for invalid login credentials of host' do
+    deployment = EsxCloud::Deployment.create(deployment_spec)
+    begin
+      EsxCloud::Host.create(deployment.id, host_spec_with_wrong_credentials)
+      fail "deploy with bad host username should have failed"
+    rescue EsxCloud::ApiError => e
+      e.response_code.should == 200
+      e.errors.size.should == 1
+      e.errors.first.size.should == 1
+      step_error = e.errors.first.first
+      step_error.code.should == "InvalidLoginCredentials"
+      step_error.message.should == "Invalid Username or Password"
+      step_error.step["operation"].should == "CREATE_HOST"
+    end
+  end
+
   it 'should deploy esxcloud successfully' do
     deployment = EsxCloud::Deployment.create(deployment_spec)
     host = EsxCloud::Host.create(deployment.id, host_spec)
@@ -99,5 +128,54 @@ describe "deployment lifecycle", order: :defined, deployer: true do
       end
     end
     nil
+  end
+
+  def destroy_created_deployment
+    deployments = api_client.find_all_api_deployments.items
+    deploymentID = deployments.first.id
+    # Destroy the created deployment
+    api_client.destroy_deployment deploymentID
+
+    # Delete the created hosts
+    hosts = api_client.get_deployment_hosts(deploymentID).items
+    hosts.each { |host| api_client.mgmt_delete_host(host.id)}
+
+    # Delete the created availability zones
+    availabilityZones = api_client.find_all_availability_zones.items
+    availabilityZones.each { |aZone| api_client.delete_availability_zone(aZone.id)}
+
+    # Delete the deployment
+    api_client.delete_api_deployment deploymentID
+
+    verify_deployment_destroyed_successfuly deploymentID
+  end
+
+  def verify_deployment_destroyed_successfuly(deploymentID)
+    task_list = api_client.find_tasks(deploymentID, "deployment", "COMPLETED")
+    tasks = task_list.items
+
+    # Verify that destroy deployment succeeded
+    destroy_deployment_task = tasks.select {|task| task.operation == "DESTROY_DEPLOYMENT" }.first
+    expect(destroy_deployment_task).not_to be_nil
+
+    # Verify destroy deployment has no errors and warnings
+    expect(destroy_deployment_task.errors).to be_empty
+    expect(destroy_deployment_task.warnings).to be_empty
+
+    # Verify availabilityZone is deleted
+    availabilityZones = api_client.find_all_availability_zones.items
+    availabilityZones.each { |aZone| expect(aZone.state).to eq("PENDING_DELETE")}
+
+    # Verify that delete deployment succeeded
+    delete_deployment_task = tasks.select {|task| task.operation == "DELETE_DEPLOYMENT" }.first
+    expect(delete_deployment_task).not_to be_nil
+
+    # Verify delete deployment has no errors and warnings
+    expect(delete_deployment_task.errors).to be_empty
+    expect(delete_deployment_task.warnings).to be_empty
+
+    # Verify deployment is deleted
+    deployments = api_client.find_all_api_deployments.items
+    expect(deployments.size).to eq(0)
   end
 end
