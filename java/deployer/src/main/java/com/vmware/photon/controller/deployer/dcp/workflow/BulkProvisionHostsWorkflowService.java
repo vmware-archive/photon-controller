@@ -204,7 +204,7 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
       if (ControlFlags.isOperationProcessingDisabled(currentState.controlFlags)) {
         ServiceUtils.logInfo(this, "Skipping patch operation processing (disabled)");
       } else if (TaskState.TaskStage.STARTED == currentState.taskState.stage) {
-        processBulkProvisionHosts(currentState);
+        getDeploymentState(currentState);
       }
     } catch (Throwable t) {
       failTask(t);
@@ -229,6 +229,83 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
     }
 
     return startState;
+  }
+
+  private void getDeploymentState(State currentState) {
+
+    HostUtils.getCloudStoreHelper(this)
+        .createGet(currentState.deploymentServiceLink)
+        .setCompletion((op, ex) -> {
+          if (ex != null) {
+            failTask(ex);
+            return;
+          }
+
+          try {
+            provisionNetwork(currentState, op.getBody(DeploymentService.State.class));
+          } catch (Throwable t) {
+            failTask(t);
+          }
+        })
+        .sendWith(this);
+  }
+
+  private void provisionNetwork(State currentState, DeploymentService.State deploymentState) {
+
+    if (!deploymentState.virtualNetworkEnabled || deploymentState.networkZoneId != null) {
+      ServiceUtils.logInfo(this, "Skip setting up virtual network");
+      processBulkProvisionHosts(currentState);
+      return;
+    }
+
+    try {
+      NsxClient nsxClient = HostUtils.getNsxClientFactory(this).create(
+          deploymentState.networkManagerAddress,
+          deploymentState.networkManagerUsername,
+          deploymentState.networkManagerPassword);
+
+      String deploymentId = ServiceUtils.getIDFromDocumentSelfLink(deploymentState.documentSelfLink);
+      TransportZoneCreateSpec request = new TransportZoneCreateSpec();
+      request.setDisplayName(NameUtils.getTransportZoneName(deploymentId));
+      request.setDescription(NameUtils.getTransportZoneDescription(deploymentId));
+      request.setHostSwitchName(NameUtils.HOST_SWITCH_NAME);
+      request.setTransportType(TransportType.OVERLAY);
+
+      nsxClient.getFabricApi().createTransportZoneAsync(request,
+          new FutureCallback<TransportZone>() {
+            @Override
+            public void onSuccess(@Nullable TransportZone transportZone) {
+              // TODO(ysheng): it seems like transport zone does not have a state - we guess that
+              // the creation of the zone completes immediately after the API call. We need to
+              // verify this with a real NSX deployment.
+              DeploymentService.State patchState = new DeploymentService.State();
+              patchState.networkZoneId = transportZone.getId();
+              patchDeployment(currentState, patchState);
+            }
+
+            @Override
+            public void onFailure(Throwable throwable) {
+              failTask(throwable);
+            }
+          });
+    } catch (Throwable t) {
+      failTask(t);
+    }
+  }
+
+  private void patchDeployment(State currentState, DeploymentService.State patchState) {
+
+    HostUtils.getCloudStoreHelper(this)
+        .createPatch(currentState.deploymentServiceLink)
+        .setBody(patchState)
+        .setCompletion((op, ex) -> {
+          if (ex != null) {
+            failTask(ex);
+            return;
+          }
+          processBulkProvisionHosts(currentState);
+        })
+        .sendWith(this);
   }
 
   private void processBulkProvisionHosts(final State currentState) {
@@ -267,7 +344,7 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
                               switch (state.taskState.stage) {
                                 case FINISHED:
                                   if (pendingChildren.decrementAndGet() == 0) {
-                                    getDeploymentState(currentState);
+                                    sendStageProgressPatch(TaskState.TaskStage.FINISHED);
                                   }
                                   break;
                                 case FAILED:
@@ -364,84 +441,6 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
         ProvisionHostTaskService.State.class,
         currentState.taskPollDelay,
         provisionHostFutureCallback);
-  }
-
-  private void getDeploymentState(State currentState) {
-
-    HostUtils.getCloudStoreHelper(this)
-        .createGet(currentState.deploymentServiceLink)
-        .setCompletion((op, ex) -> {
-          if (ex != null) {
-            failTask(ex);
-            return;
-          }
-
-          try {
-            provisionNetwork(currentState, op.getBody(DeploymentService.State.class));
-          } catch (Throwable t) {
-            failTask(t);
-          }
-        })
-        .sendWith(this);
-  }
-
-  private void provisionNetwork(State currentState, DeploymentService.State deploymentState) {
-
-    if (!deploymentState.virtualNetworkEnabled || deploymentState.networkZoneId != null) {
-      ServiceUtils.logInfo(this, "Skip setting up virtual network (disabled)");
-      sendStageProgressPatch(TaskState.TaskStage.FINISHED);
-      return;
-    }
-
-    try {
-      NsxClient nsxClient = HostUtils.getNsxClientFactory(this).create(
-          deploymentState.networkManagerAddress,
-          deploymentState.networkManagerUsername,
-          deploymentState.networkManagerPassword);
-
-      String deploymentId = ServiceUtils.getIDFromDocumentSelfLink(deploymentState.documentSelfLink);
-      TransportZoneCreateSpec request = new TransportZoneCreateSpec();
-      request.setDisplayName(NameUtils.getTransportZoneName(deploymentId));
-      request.setDescription(NameUtils.getTransportZoneDescription(deploymentId));
-      request.setHostSwitchName(NameUtils.HOST_SWITCH_NAME);
-      request.setTransportType(TransportType.OVERLAY);
-
-      nsxClient.getFabricApi().createTransportZoneAsync(request,
-          new FutureCallback<TransportZone>() {
-            @Override
-            public void onSuccess(@Nullable TransportZone transportZone) {
-              // TODO(ysheng): it seems like transport zone does not have a state - we guess that
-              // the creation of the zone completes immediately after the API call. We need to
-              // verify this with a real NSX deployment.
-              DeploymentService.State patchState = new DeploymentService.State();
-              patchState.networkZoneId = transportZone.getId();
-              patchDeployment(currentState, patchState);
-            }
-
-            @Override
-            public void onFailure(Throwable throwable) {
-              failTask(throwable);
-            }
-          });
-    } catch (Throwable t) {
-      failTask(t);
-    }
-  }
-
-  private void patchDeployment(State currentState, DeploymentService.State patchState) {
-
-    HostUtils.getCloudStoreHelper(this)
-        .createPatch(currentState.deploymentServiceLink)
-        .setBody(patchState)
-        .setCompletion((op, ex) -> {
-          if (ex != null) {
-            failTask(ex);
-            return;
-          }
-
-          sendStageProgressPatch(TaskState.TaskStage.FINISHED);
-        })
-        .sendWith(this);
   }
 
   private void sendStageProgressPatch(TaskState.TaskStage stage) {

@@ -43,7 +43,6 @@ import com.vmware.photon.controller.host.gen.GetConfigResponse;
 import com.vmware.photon.controller.host.gen.Host;
 import com.vmware.photon.controller.host.gen.HostConfig;
 import com.vmware.photon.controller.nsxclient.NsxClient;
-//import com.vmware.photon.controller.nsxclient.models.ConfigurationStateElement;
 import com.vmware.photon.controller.nsxclient.models.FabricNode;
 import com.vmware.photon.controller.nsxclient.models.FabricNodeCreateSpec;
 import com.vmware.photon.controller.nsxclient.models.FabricNodeState;
