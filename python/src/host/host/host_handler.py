@@ -19,7 +19,6 @@ import uuid
 
 import common
 from common.lock import AlreadyLocked
-from common.lock import lock_with
 from common.lock_vm import lock_vm
 from common.log import log_duration
 from common.mode import MODE
@@ -103,28 +102,21 @@ from gen.host.ttypes import VmDisksOpResponse
 from gen.resource.ttypes import CloneType
 from gen.resource.ttypes import Datastore
 from gen.resource.ttypes import InactiveImageDescriptor
-from gen.roles.ttypes import Roles
-from gen.scheduler import Scheduler
-from gen.scheduler.ttypes import ConfigureResponse
-from gen.scheduler.ttypes import ConfigureResultCode
 from gen.scheduler.ttypes import FindResponse
 from gen.scheduler.ttypes import FindResultCode
 from gen.scheduler.ttypes import PlaceResponse
 from gen.scheduler.ttypes import PlaceResultCode
 from gen.scheduler.ttypes import Score
-from host.host_configuration import HostConfiguration
 from host.hypervisor.datastore_manager import DatastoreNotFoundException
 from host.hypervisor.image_manager import DirectoryNotFound
 from host.hypervisor.image_manager import ImageNotFoundException
 from host.hypervisor.image_scanner import DatastoreImageScanner
 from host.hypervisor.image_sweeper import DatastoreImageSweeper
 from host.hypervisor.placement_manager import InvalidReservationException
-from host.hypervisor.placement_manager import \
-    MissingPlacementDescriptorException
+from host.hypervisor.placement_manager import MissingPlacementDescriptorException
 from host.hypervisor.placement_manager import NoSuchResourceException
 from host.hypervisor.placement_manager import NotEnoughCpuResourceException
-from host.hypervisor.placement_manager import \
-    NotEnoughDatastoreCapacityException
+from host.hypervisor.placement_manager import NotEnoughDatastoreCapacityException
 from host.hypervisor.placement_manager import NotEnoughMemoryResourceException
 from host.hypervisor.resources import AgentResourcePlacementList
 from host.hypervisor.resources import Disk
@@ -205,33 +197,6 @@ class HostHandler(Host.Iface):
             self._configuration_observers.remove(observer)
         except ValueError:
             pass  # observer not found
-
-    def configure_host(self, leaf_scheduler, roles=Roles(), host_id=None):
-        # Call registered observers
-        config = HostConfiguration(leaf_scheduler,
-                                   roles,
-                                   host_id)
-        for observer in self._configuration_observers:
-            observer(config)
-
-        # Configure the scheduler plugin if it's registered.
-        scheduler = common.services.get(Scheduler.Iface)
-        if scheduler:
-            scheduler.configure(roles.schedulers or [])
-
-    @log_request
-    @error_handler(ConfigureResponse, ConfigureResultCode)
-    @lock_with("_configure_lock")
-    def configure(self, request):
-        """Configure Host.
-
-        :type request: ConfigureRequest
-        :rtype: ConfigureResponse
-        """
-        self.configure_host(request.scheduler,
-                            request.roles,
-                            request.host_id)
-        return ConfigureResponse(ConfigureResultCode.OK)
 
     @error_handler(GetConfigResponse, GetConfigResultCode)
     def get_host_config_no_logging(self, request):

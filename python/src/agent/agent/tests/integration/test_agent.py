@@ -26,31 +26,13 @@ from agent.tests.common_helper_functions import RuntimeUtils
 from common.file_util import mkdir_p, rm_rf
 from gen.host import Host
 from gen.host.ttypes import HostMode
-from gen.roles.ttypes import Roles
-from gen.roles.ttypes import SchedulerRole
-from gen.scheduler.ttypes import ConfigureRequest
 from host.hypervisor.fake.hypervisor import FakeHypervisor
 from agent_common_tests import AgentCommonTests
-from agent_common_tests import stable_uuid
 
 
 class TestAgent(unittest.TestCase, AgentCommonTests):
     def shortDescription(self):
         return None
-
-    def configure_host(self):
-        config_req = Host.GetConfigRequest()
-        host_config = self.host_client.get_host_config(config_req).hostConfig
-
-        leaf_scheduler = SchedulerRole(stable_uuid("leaf scheduler"))
-        leaf_scheduler.parent_id = stable_uuid("parent scheduler")
-        leaf_scheduler.hosts = [host_config.agent_id]
-
-        config_request = ConfigureRequest(
-            stable_uuid("leaf scheduler"),
-            Roles([leaf_scheduler]))
-
-        self.host_client.configure(config_request)
 
     def test_bootstrap(self):
         # Verify the negative case first as it has no sideeffect.
@@ -77,7 +59,6 @@ class TestAgent(unittest.TestCase, AgentCommonTests):
         self.config["--datastores"] = ",".join(self._datastores)
         res = self.runtime.start_agent(self.config)
         self.proc, self.host_client, self.control_client = res
-        self.configure_host()
         self.set_host_mode(HostMode.NORMAL)
 
     def tearDown(self):

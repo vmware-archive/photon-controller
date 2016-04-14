@@ -22,6 +22,5 @@ include 'status.thrift'
 service RootScheduler {
   roles.GetSchedulersResponse get_schedulers()
   status.Status get_status(1:status.GetStatusRequest request)
-  scheduler.ConfigureResponse configure(1: scheduler.ConfigureRequest request)
   scheduler.PlaceResponse place(1: scheduler.PlaceRequest request)
 }

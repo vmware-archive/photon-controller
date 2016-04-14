@@ -67,10 +67,6 @@ from gen.resource.ttypes import Image
 from gen.resource.ttypes import ImageDatastore
 from gen.resource.ttypes import ResourceConstraint
 from gen.resource.ttypes import ResourceConstraintType
-from gen.roles.ttypes import ChildInfo
-from gen.roles.ttypes import Roles
-from gen.roles.ttypes import SchedulerRole
-from gen.scheduler.ttypes import ConfigureRequest
 from gen.scheduler.ttypes import FindResultCode
 from gen.scheduler.ttypes import PlaceResultCode
 from hamcrest import assert_that
@@ -95,7 +91,6 @@ from agent_common_tests import AgentCommonTests
 from agent_common_tests import VmWrapper
 from agent_common_tests import new_id
 from agent_common_tests import rpc_call
-from agent_common_tests import stable_uuid
 
 logger = logging.getLogger(__name__)
 
@@ -204,23 +199,6 @@ class TestRemoteAgent(unittest.TestCase, AgentCommonTests):
                   self.server)
         return host_id
 
-    def configure_hosts(self):
-        config_req = Host.GetConfigRequest()
-
-        agent_ids = [
-            self.host_client.get_host_config(config_req).hostConfig.agent_id
-        ]
-
-        leaf_scheduler = SchedulerRole(stable_uuid("leaf scheduler"))
-        leaf_scheduler.parent_id = stable_uuid("parent scheduler")
-        leaf_scheduler.hosts = agent_ids
-        leaf_scheduler.host_children = [ChildInfo(agent_id, 'host', 8835)
-                                        for agent_id in agent_ids]
-
-        config_request = ConfigureRequest(stable_uuid("leaf scheduler"))
-        config_request.roles = Roles([leaf_scheduler])
-        self.host_client.configure(config_request)
-
     def setUp(self):
         from testconfig import config
         if "agent_remote_test" not in config:
@@ -271,7 +249,6 @@ class TestRemoteAgent(unittest.TestCase, AgentCommonTests):
         self.provision_hosts()
         # Reconnect to account for the restart
         self.client_connections()
-        self.configure_hosts()
         self.clear()
 
     @classmethod
@@ -590,7 +567,6 @@ class TestRemoteAgent(unittest.TestCase, AgentCommonTests):
         # Restart agent by provisioning with different configuration
         self.provision_hosts(mem_overcommit=2.1)
         self.client_connections()
-        self.configure_hosts()
 
         # Check mode. It should still be MAINTENANCE.
         response = self.host_client.get_host_mode(GetHostModeRequest())
