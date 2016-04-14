@@ -21,6 +21,7 @@ import com.vmware.photon.controller.nsxclient.models.LogicalSwitchCreateSpec;
 import com.vmware.photon.controller.nsxclient.models.LogicalSwitchState;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.google.common.util.concurrent.FutureCallback;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpStatus;
 import org.testng.annotations.BeforeMethod;
@@ -29,14 +30,13 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.testng.Assert.fail;
 
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
 
 /**
  * Tests for {@link com.vmware.photon.controller.nsxclient.apis.LogicalSwitchApi}.
@@ -51,11 +51,15 @@ public class LogicalSwitchApiTest {
    * Tests for creating logical switches.
    */
   public static class NsxSwitchCreateTest {
+    private static final int CALLBACK_ARG_INDEX = 4;
+
     private LogicalSwitchApi logicalSwitchApi;
+    private CountDownLatch latch;
 
     @BeforeMethod
     public void setup() {
       logicalSwitchApi = spy(new LogicalSwitchApi(mock(RestClient.class)));
+      latch = new CountDownLatch(1);
     }
 
     @Test
@@ -67,39 +71,74 @@ public class LogicalSwitchApiTest {
       LogicalSwitch logicalSwitch = new LogicalSwitch();
       logicalSwitch.setDisplayName("switch1");
 
-      doReturn(logicalSwitch)
-          .when(logicalSwitchApi)
-          .post(eq(logicalSwitchApi.logicalSwitchBasePath),
+      doAnswer(invocation -> {
+        if (invocation.getArguments()[CALLBACK_ARG_INDEX] != null) {
+          ((FutureCallback<LogicalSwitch>) invocation.getArguments()[CALLBACK_ARG_INDEX]).onSuccess(logicalSwitch);
+        }
+        return null;
+      }).when(logicalSwitchApi)
+          .postAsync(eq(logicalSwitchApi.logicalSwitchBasePath),
               any(HttpEntity.class),
               eq(HttpStatus.SC_CREATED),
-              any(TypeReference.class));
+              any(TypeReference.class),
+              any(FutureCallback.class));
 
-      LogicalSwitch createdLogicalSwitch = logicalSwitchApi.createLogicalSwitch(spec);
-      assertThat(createdLogicalSwitch, is(logicalSwitch));
+      logicalSwitchApi.createLogicalSwitch(spec,
+          new FutureCallback<LogicalSwitch>() {
+            @Override
+            public void onSuccess(LogicalSwitch result) {
+              assertThat(result, is(logicalSwitch));
+              latch.countDown();
+            }
+
+            @Override
+            public void onFailure(Throwable t) {
+              fail("Should not have failed");
+              latch.countDown();
+            }
+          }
+      );
+      latch.await();
     }
 
     @Test
     public void testFailedToCreate() throws Exception {
       final String errorMsg = "Service is not available";
 
-      doThrow(new RuntimeException(errorMsg))
-          .when(logicalSwitchApi)
-          .post(eq(logicalSwitchApi.logicalSwitchBasePath),
+      doAnswer(invocation -> {
+        if (invocation.getArguments()[CALLBACK_ARG_INDEX] != null) {
+          ((FutureCallback<LogicalSwitch>) invocation.getArguments()[CALLBACK_ARG_INDEX])
+              .onFailure(new RuntimeException(errorMsg));
+        }
+        return null;
+      }).when(logicalSwitchApi)
+          .postAsync(eq(logicalSwitchApi.logicalSwitchBasePath),
               any(HttpEntity.class),
               eq(HttpStatus.SC_CREATED),
-              any(TypeReference.class));
+              any(TypeReference.class),
+              any(FutureCallback.class));
 
       LogicalSwitchCreateSpec spec = new LogicalSwitchCreateSpecBuilder()
           .transportZoneId(UUID.randomUUID().toString())
           .displayName("switch1")
           .build();
 
-      try {
-        logicalSwitchApi.createLogicalSwitch(spec);
-        fail("Should have failed due to " + errorMsg);
-      } catch (RuntimeException e) {
-        assertThat(e.getMessage(), is(errorMsg));
-      }
+      logicalSwitchApi.createLogicalSwitch(spec,
+          new FutureCallback<LogicalSwitch>() {
+            @Override
+            public void onSuccess(LogicalSwitch result) {
+              fail("Should not have succeeded");
+              latch.countDown();
+            }
+
+            @Override
+            public void onFailure(Throwable t) {
+              assertThat(t.getMessage(), is(errorMsg));
+              latch.countDown();
+            }
+          }
+      );
+      latch.await();
     }
   }
 
@@ -107,11 +146,15 @@ public class LogicalSwitchApiTest {
    * Tests for getting logical switch state.
    */
   public static class NsxSwitchGetStateTest {
+    private static final int CALLBACK_ARG_INDEX = 3;
+
     private LogicalSwitchApi logicalSwitchApi;
+    private CountDownLatch latch;
 
     @BeforeMethod
     public void setup() {
       logicalSwitchApi = spy(new LogicalSwitchApi(mock(RestClient.class)));
+      latch = new CountDownLatch(1);
     }
 
     @Test
@@ -121,11 +164,34 @@ public class LogicalSwitchApiTest {
       state.setId(switchId);
       state.setState(NsxSwitch.State.IN_PROGRESS);
 
-      doReturn(state).when(logicalSwitchApi).get(eq(logicalSwitchApi.logicalSwitchBasePath + "/" + switchId + "/state"),
-          eq(HttpStatus.SC_OK), any(TypeReference.class));
+      doAnswer(invocation -> {
+        if (invocation.getArguments()[CALLBACK_ARG_INDEX] != null) {
+          ((FutureCallback<LogicalSwitchState>) invocation.getArguments()[CALLBACK_ARG_INDEX]).onSuccess(state);
+        }
+        return null;
+      }).when(logicalSwitchApi)
+          .getAsync(eq(logicalSwitchApi.logicalSwitchBasePath + "/" + switchId + "/state"),
+              eq(HttpStatus.SC_OK),
+              any(TypeReference.class),
+              any(FutureCallback.class));
 
-      LogicalSwitchState result = logicalSwitchApi.getLogicalSwitchState(switchId);
-      assertThat(result, is(state));
+      logicalSwitchApi.getLogicalSwitchState(switchId,
+          new FutureCallback<LogicalSwitchState>() {
+            @Override
+            public void onSuccess(LogicalSwitchState result) {
+              assertThat(result, is(state));
+              latch.countDown();
+            }
+
+            @Override
+            public void onFailure(Throwable t) {
+              fail("Should not have failed");
+              latch.countDown();
+            }
+          }
+      );
+
+      latch.await();
     }
 
     @Test
@@ -133,17 +199,35 @@ public class LogicalSwitchApiTest {
       final String switchId = UUID.randomUUID().toString();
       final String errorMsg = "Service is not available";
 
-      doThrow(new RuntimeException(errorMsg))
-          .when(logicalSwitchApi)
-          .get(eq(logicalSwitchApi.logicalSwitchBasePath + "/" + switchId + "/state"),
-              eq(HttpStatus.SC_OK), any(TypeReference.class));
+      doAnswer(invocation -> {
+        if (invocation.getArguments()[CALLBACK_ARG_INDEX] != null) {
+          ((FutureCallback<LogicalSwitchState>) invocation.getArguments()[CALLBACK_ARG_INDEX])
+              .onFailure(new RuntimeException(errorMsg));
+        }
+        return null;
+      }).when(logicalSwitchApi)
+          .getAsync(eq(logicalSwitchApi.logicalSwitchBasePath + "/" + switchId + "/state"),
+              eq(HttpStatus.SC_OK),
+              any(TypeReference.class),
+              any(FutureCallback.class));
 
-      try {
-        logicalSwitchApi.getLogicalSwitchState(switchId);
-        fail("Should have failed to due to service is not available");
-      } catch (RuntimeException e) {
-        assertThat(e.getMessage(), is(errorMsg));
-      }
+      logicalSwitchApi.getLogicalSwitchState(switchId,
+          new FutureCallback<LogicalSwitchState>() {
+            @Override
+            public void onSuccess(LogicalSwitchState result) {
+              fail("Should not have succeeded");
+              latch.countDown();
+            }
+
+            @Override
+            public void onFailure(Throwable t) {
+              assertThat(t.getMessage(), is(errorMsg));
+              latch.countDown();
+            }
+          }
+      );
+
+      latch.await();
     }
   }
 
@@ -151,20 +235,47 @@ public class LogicalSwitchApiTest {
    * Tests for deleting logical switches.
    */
   public static class NsxSwitchDeleteTest {
+    private static final int CALLBACK_ARG_INDEX = 2;
+
     private LogicalSwitchApi logicalSwitchApi;
+    private CountDownLatch latch;
 
     @BeforeMethod
     public void setup() {
       logicalSwitchApi = spy(new LogicalSwitchApi(mock(RestClient.class)));
+      latch = new CountDownLatch(1);
     }
 
     @Test
     public void testSuccessfullyDeleted() throws Exception {
       final String switchId = UUID.randomUUID().toString();
-      doNothing().when(logicalSwitchApi)
-          .delete(logicalSwitchApi.logicalSwitchBasePath + "/" + switchId, HttpStatus.SC_OK);
 
-      logicalSwitchApi.deleteLogicalSwitch(switchId);
+      doAnswer(invocation -> {
+        if (invocation.getArguments()[CALLBACK_ARG_INDEX] != null) {
+          ((FutureCallback<Void>) invocation.getArguments()[CALLBACK_ARG_INDEX])
+              .onSuccess(null);
+        }
+        return null;
+      }).when(logicalSwitchApi)
+          .deleteAsync(eq(logicalSwitchApi.logicalSwitchBasePath + "/" + switchId),
+              eq(HttpStatus.SC_OK),
+              any(FutureCallback.class));
+
+      logicalSwitchApi.deleteLogicalSwitch(switchId,
+          new FutureCallback<Void>() {
+            @Override
+            public void onSuccess(Void result) {
+              latch.countDown();
+            }
+
+            @Override
+            public void onFailure(Throwable t) {
+              fail("Should not have failed");
+              latch.countDown();
+            }
+          }
+      );
+      latch.await();
     }
 
     @Test
@@ -172,16 +283,33 @@ public class LogicalSwitchApiTest {
       final String errorMsg = "Service is not available";
       final String switchId = UUID.randomUUID().toString();
 
-      doThrow(new RuntimeException(errorMsg))
-          .when(logicalSwitchApi)
-          .delete(logicalSwitchApi.logicalSwitchBasePath + "/" + switchId, HttpStatus.SC_OK);
+      doAnswer(invocation -> {
+        if (invocation.getArguments()[CALLBACK_ARG_INDEX] != null) {
+          ((FutureCallback<Void>) invocation.getArguments()[CALLBACK_ARG_INDEX])
+              .onFailure(new RuntimeException(errorMsg));
+        }
+        return null;
+      }).when(logicalSwitchApi)
+          .deleteAsync(eq(logicalSwitchApi.logicalSwitchBasePath + "/" + switchId),
+              eq(HttpStatus.SC_OK),
+              any(FutureCallback.class));
 
-      try {
-        logicalSwitchApi.deleteLogicalSwitch(switchId);
-        fail("Should have failed to due to service is not available");
-      } catch (RuntimeException e) {
-        assertThat(e.getMessage(), is(errorMsg));
-      }
+      logicalSwitchApi.deleteLogicalSwitch(switchId,
+          new FutureCallback<Void>() {
+            @Override
+            public void onSuccess(Void result) {
+              fail("Should not have succeeded");
+              latch.countDown();
+            }
+
+            @Override
+            public void onFailure(Throwable t) {
+              assertThat(t.getMessage(), is(errorMsg));
+              latch.countDown();
+            }
+          }
+      );
+      latch.await();
     }
   }
 }
