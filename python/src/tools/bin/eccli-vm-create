@@ -24,7 +24,7 @@ request = CreateVmRequest()
 request.reservation = options.reservation
 
 print_request(request)
-client = get_client(options, "Host")
+client = get_client(options.host)
 response = client.create_vm(request)
 print_response(response)
 

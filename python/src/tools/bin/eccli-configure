@@ -46,7 +46,7 @@ if options.host_children:
     role.host_children = children
 
 print_request(request)
-client = get_client(options)
+client = get_client(options.host)
 response = client.configure(request)
 print_response(response)
 

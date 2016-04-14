@@ -22,7 +22,7 @@ if not options.datastores:
     parser.print_help()
     exit(1)
 
-client = get_client(options, "AgentControl")
+client = get_client(options.host, "AgentControl")
 
 request = ProvisionRequest()
 request.address = ServerAddress(options.host, options.port)

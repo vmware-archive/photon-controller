@@ -40,7 +40,7 @@ else:
 place_request = PlaceRequest()
 place_request.resource = resource
 print_request(place_request)
-client = get_client(options, "Host")
+client = get_client(options.host)
 place_response = client.place(place_request)
 print_response(place_response)
 if place_response.result != PlaceResultCode.OK:

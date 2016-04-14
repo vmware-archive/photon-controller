@@ -11,10 +11,9 @@ parser = default_parser(usage="eccli-upgrade [options]",
                         add_help=True)
 (options, args) = parser.parse_args()
 
-client = get_client(options, "AgentControl")
-
 request = UpgradeRequest()
 
 print_request(request)
+client = get_client(options.host, "AgentControl")
 response = client.upgrade(request)
 print_response(response)

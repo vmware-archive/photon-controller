@@ -21,7 +21,7 @@ if options.agent:
     request.agent_id = options.agent
 
 print_request(request)
-client = get_client(options)
+client = get_client(options.host)
 response = client.get_host_config(request)
 print_response(response)
 

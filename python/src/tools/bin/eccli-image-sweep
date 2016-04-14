@@ -22,7 +22,7 @@ if not options.datastore:
     parser.print_help()
     exit(1)
 
-client = get_client(options)
+client = get_client(options.host)
 
 get_request = GetInactiveImagesRequest()
 get_request.datastore_id = options.datastore

@@ -21,12 +21,11 @@ if not options.datastore:
     parser.print_help()
     exit(1)
 
-client = get_client(options)
-
 request = GetImagesRequest()
 request.datastore_id = options.datastore
 
 print_request(request)
+client = get_client(options.host)
 response = client.get_images(request)
 print_response(response)
 

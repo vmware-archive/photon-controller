@@ -27,6 +27,6 @@ request.vm_id = options.vm_id
 request.disk_ids = [options.disk_id]
 
 print_request(request)
-client = get_client(options, "Host")
+client = get_client(options.host)
 response = client.detach_disks(request)
 print_response(response)

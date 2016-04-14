@@ -28,8 +28,6 @@ if not options.image:
     parser.print_help()
     exit(1)
 
-client = get_client(options)
-
 request = DeleteImageRequest()
 ds, image = options.image.split(':')
 request.image = Image(image, Datastore(ds))
@@ -37,6 +35,7 @@ request.force = options.force
 request.tombstone = options.tombstone
 
 print_request(request)
+client = get_client(options.host)
 response = client.delete_image(request)
 print_response(response)
 
