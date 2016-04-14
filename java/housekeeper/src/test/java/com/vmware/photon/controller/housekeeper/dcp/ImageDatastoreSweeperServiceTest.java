@@ -530,8 +530,8 @@ public class ImageDatastoreSweeperServiceTest {
         ImageDatastoreSweeperService.TaskState.SubStage targetSubStage) throws Throwable {
 
       ImageDatastoreSweeperService.State startState = buildValidStartupState(initialStage, initialSubStage);
-      host.startServiceSynchronously(service, startState);
       doNothing().when(service).sendRequest(any());
+      host.startServiceSynchronously(service, startState);
 
       ImageDatastoreSweeperService.State patchState = buildMinimalPatch(targetStage, targetSubStage);
       Operation patchOp = Operation
