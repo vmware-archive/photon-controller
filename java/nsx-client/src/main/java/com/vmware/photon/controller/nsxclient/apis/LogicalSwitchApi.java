@@ -19,7 +19,10 @@ import com.vmware.photon.controller.nsxclient.models.LogicalSwitchCreateSpec;
 import com.vmware.photon.controller.nsxclient.models.LogicalSwitchState;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.google.common.util.concurrent.FutureCallback;
 import org.apache.http.HttpStatus;
+
+import java.io.IOException;
 
 /**
  * Class for NSX logical switch related APIs.
@@ -31,22 +34,36 @@ public class LogicalSwitchApi extends NsxClientApi {
     super(restClient);
   }
 
-  public LogicalSwitch createLogicalSwitch(LogicalSwitchCreateSpec spec) throws Exception {
-    return post(logicalSwitchBasePath,
+  public void createLogicalSwitch(LogicalSwitchCreateSpec spec,
+                                  FutureCallback<LogicalSwitch> responseCallback)
+      throws IOException {
+
+    postAsync(logicalSwitchBasePath,
         serializeObjectAsJson(spec),
         HttpStatus.SC_CREATED,
-        new TypeReference<LogicalSwitch>() {}
+        new TypeReference<LogicalSwitch>() {
+        },
+        responseCallback
     );
   }
 
-  public LogicalSwitchState getLogicalSwitchState(String id) throws Exception {
-    return get(logicalSwitchBasePath + "/" + id + "/state",
+  public void getLogicalSwitchState(String id,
+                                    FutureCallback<LogicalSwitchState> responseCallback)
+      throws Exception {
+
+    getAsync(logicalSwitchBasePath + "/" + id + "/state",
         HttpStatus.SC_OK,
-        new TypeReference<LogicalSwitchState>() {}
+        new TypeReference<LogicalSwitchState>() {
+        },
+        responseCallback
     );
   }
 
-  public void deleteLogicalSwitch(String id) throws Exception {
-    delete(logicalSwitchBasePath + "/" + id, HttpStatus.SC_OK);
+  public void deleteLogicalSwitch(String id,
+                                  FutureCallback<Void> responseCallback) throws Exception {
+
+    deleteAsync(logicalSwitchBasePath + "/" + id,
+        HttpStatus.SC_OK,
+        responseCallback);
   }
 }
