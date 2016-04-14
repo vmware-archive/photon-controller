@@ -12,6 +12,8 @@
 
 import httplib
 import logging
+import tempfile
+
 import os
 import re
 import socket
@@ -26,6 +28,8 @@ from gen.host import Host
 from gen.host.ttypes import HttpTicketRequest
 from gen.host.ttypes import HttpTicketResultCode
 from gen.host.ttypes import HttpOp
+from gen.host.ttypes import PrepareReceiveImageRequest
+from gen.host.ttypes import PrepareReceiveImageResultCode
 from gen.host.ttypes import ReceiveImageRequest
 from gen.host.ttypes import ReceiveImageResultCode
 from gen.host.ttypes import ServiceTicketRequest
@@ -34,6 +38,7 @@ from gen.host.ttypes import ServiceType
 from host.hypervisor.disk_manager import DiskAlreadyExistException
 from host.hypervisor.esx.vim_client import VimClient
 from host.hypervisor.esx.vm_config import IMAGE_FOLDER_NAME_PREFIX
+from host.hypervisor.esx.vm_config import EsxVmConfigSpec
 from host.hypervisor.esx.vm_config import os_datastore_path
 from host.hypervisor.esx.vm_config import compond_path_join
 from host.hypervisor.esx.vm_config import VM_FOLDER_NAME_PREFIX
@@ -225,18 +230,14 @@ class HttpNfcTransferer(HttpTransferer):
         self._vm_config = EsxVmConfig(self._vim_client)
         self._vm_manager = EsxVmManager(self._vim_client, None)
 
-    def _get_remote_connections(self, host, port):
-        agent_client = DirectClient("Host", Host.Client, host, port)
-        agent_client.connect()
+    def _create_remote_vim_client(self, agent_client, host):
         request = ServiceTicketRequest(service_type=ServiceType.VIM)
         response = agent_client.get_service_ticket(request)
         if response.result != ServiceTicketResultCode.OK:
-            self._logger.info("Get service ticket failed. Response = %s" %
-                              str(response))
+            self._logger.info("Get service ticket failed. Response = %s" % str(response))
             raise ValueError("No ticket")
-        vim_client = VimClient(
-            host=host, ticket=response.vim_ticket, auto_sync=False)
-        return agent_client, vim_client
+        vim_client = VimClient(host=host, ticket=response.vim_ticket, auto_sync=False)
+        return vim_client
 
     def _get_disk_url_from_lease(self, lease):
         for dev_url in lease.info.deviceUrl:
@@ -350,18 +351,20 @@ class HttpNfcTransferer(HttpTransferer):
                                             self._lease_url_host_name)
         return lease, disk_url
 
-    def _create_import_vm_spec(self, image_id, datastore):
-        vm_name = str(uuid.uuid4())
-        spec = self._vm_config.create_spec_for_import(vm_id=vm_name,
-                                                      image_id=image_id,
-                                                      datastore=datastore,
-                                                      memory=32,
-                                                      cpus=1)
+    def _prepare_receive_image(self, agent_client, image_id, datastore):
+        request = PrepareReceiveImageRequest(image_id, datastore)
+        response = agent_client.prepare_receive_image(request)
+        if response.result != PrepareReceiveImageResultCode.OK:
+            err_msg = "Failed to prepare receive image. Response = %s" % str(response)
+            self._logger.info(err_msg)
+            raise ValueError(err_msg)
+        return response.import_vm_path, response.import_vm_id
 
+    def _create_import_vm_spec(self, vm_id, datastore, vm_path):
+        spec = EsxVmConfigSpec(vm_id, "otherGuest", 32, 1, vm_path, None)
         # Just specify a tiny capacity in the spec for now; the eventual vm
         # disk will be based on what is uploaded via the http nfc url.
-        spec = self._vm_manager.create_empty_disk(spec, datastore, None,
-                                                  size_mb=1)
+        spec = self._vm_manager.create_empty_disk(spec, datastore, None, size_mb=1)
 
         import_spec = vim.vm.VmImportSpec(configSpec=spec)
         return import_spec
@@ -410,41 +413,32 @@ class HttpNfcTransferer(HttpTransferer):
             self._logger.exception("Failed to read metadata")
             raise
 
-    def _send_image(self, tmp_path, metadata, spec, destination_image_id, destination_datastore, host, port):
-        agent_client, vim_client = self._get_remote_connections(host, port)
+    def _send_image(self, agent_client, host, tmp_path, spec):
+        vim_client = self._create_remote_vim_client(agent_client, host)
         try:
-            write_lease, disk_url = self._get_url_from_import_vm(vim_client,
-                                                                 spec)
+            write_lease, disk_url = self._get_url_from_import_vm(vim_client, spec)
             try:
                 self.upload_file(tmp_path, disk_url, write_lease)
             finally:
                 write_lease.Complete()
-
-            # TODO(vui): imported vm name should be made unique to remove
-            # ambiguity during subsequent lookup
-            imported_vm_name = destination_image_id
-
-            self._register_imported_image_at_host(
-                agent_client, destination_image_id, destination_datastore, imported_vm_name, metadata)
-
         finally:
-            agent_client.close()
             vim_client.disconnect()
-        return imported_vm_name
 
     @lock_non_blocking
     def send_image_to_host(self, image_id, image_datastore,
                            destination_image_id, destination_datastore,
                            host, port):
+        if destination_image_id is None:
+            destination_image_id = image_id
         metadata = self._read_metadata(image_datastore, image_id)
 
         shadow_vm_id = self._create_shadow_vm()
-        tmp_path = "/vmfs/volumes/%s/%s_transfer.vmdk" % (
-            self._get_shadow_vm_datastore(), shadow_vm_id)
+        tmp_path = os.path.join(tempfile.gettempdir(), "%s_transfer.vmdk" % shadow_vm_id)
+        self._logger.info("http_disk_transfer: tmp_path = %s" % tmp_path)
 
+        agent_client = None
         try:
-            read_lease, disk_url =\
-                self._get_image_stream_from_shadow_vm(
+            read_lease, disk_url = self._get_image_stream_from_shadow_vm(
                     image_id, image_datastore, shadow_vm_id)
 
             try:
@@ -452,16 +446,17 @@ class HttpNfcTransferer(HttpTransferer):
             finally:
                 read_lease.Complete()
 
-            if destination_image_id is None:
-                destination_image_id = image_id
-            spec = self._create_import_vm_spec(
-                destination_image_id, destination_datastore)
+            agent_client = DirectClient("Host", Host.Client, host, port)
+            agent_client.connect()
 
-            imported_vm_name = self._send_image(
-                tmp_path, metadata, spec, destination_image_id, destination_datastore, host, port)
+            vm_path, vm_id = self._prepare_receive_image(agent_client, destination_image_id, destination_datastore)
+            spec = self._create_import_vm_spec(vm_id, destination_datastore, vm_path)
 
-            return imported_vm_name
+            self._send_image(agent_client, host, tmp_path, spec)
+            self._register_imported_image_at_host(
+                agent_client, destination_image_id, destination_datastore, vm_id, metadata)
 
+            return vm_id
         finally:
             try:
                 os.unlink(tmp_path)
@@ -470,3 +465,5 @@ class HttpNfcTransferer(HttpTransferer):
             self._delete_shadow_vm(shadow_vm_id)
             rm_rf(os_datastore_path(self._get_shadow_vm_datastore(),
                                     compond_path_join(VM_FOLDER_NAME_PREFIX, shadow_vm_id)))
+            if agent_client:
+                agent_client.close()

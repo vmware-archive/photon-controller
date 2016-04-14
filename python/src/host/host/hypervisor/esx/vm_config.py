@@ -746,19 +746,6 @@ class EsxVmConfig(object):
                                filled_metadata)
         return spec
 
-    def create_spec_for_import(self, vm_id, image_id, datastore, memory, cpus):
-        """ create a vm config spec for import a VM
-
-        The VM will be created in a random directory under the destination host
-        datastore's tmp image folder, with the VM named the same as that of the
-        id of the image disk we we planning to send over via this import.
-        """
-        vm_path = datastore_path(datastore,
-                                 compond_path_join(TMP_IMAGE_FOLDER_NAME_PREFIX, vm_id))
-        spec = EsxVmConfigSpec(image_id, "otherGuest", memory, cpus, vm_path,
-                               None)
-        return spec
-
     def update_spec(self):
         """Create a VM ConfigSpec for updating VM.
 

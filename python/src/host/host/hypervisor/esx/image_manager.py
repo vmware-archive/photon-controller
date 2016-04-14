@@ -34,7 +34,10 @@ from common.file_util import mkdir_p
 from common.file_util import rm_rf
 from common.thread import Periodic
 from host.hypervisor.datastore_manager import DatastoreNotFoundException
-from host.hypervisor.esx.vm_config import IMAGE_FOLDER_NAME_PREFIX, compond_path_join
+from host.hypervisor.esx.vm_config import IMAGE_FOLDER_NAME_PREFIX
+from host.hypervisor.esx.vm_config import compond_path_join
+from host.hypervisor.esx.vm_config import datastore_path
+from host.hypervisor.esx.vm_config import vmdk_add_suffix
 from host.hypervisor.esx.vm_config import TMP_IMAGE_FOLDER_NAME_PREFIX
 from host.hypervisor.esx.vm_config import os_datastore_root
 from host.hypervisor.esx.vm_config import datastore_to_os_path
@@ -343,20 +346,11 @@ class EsxImageManager(ImageManager):
                 destination image.
         """
         ds_type = self._get_datastore_type(datastore)
-        image_path = os.path.dirname(os_vmdk_path(datastore, image_id,
-                                                  IMAGE_FOLDER_NAME_PREFIX))
+        image_path = os_datastore_path(datastore, compond_path_join(IMAGE_FOLDER_NAME_PREFIX, image_id))
         self._logger.info("_move_image: %s => %s, ds_type: %s" % (tmp_dir, image_path, ds_type))
 
         if not os.path.exists(tmp_dir):
             raise ImageNotFoundException("Temp image %s not found" % tmp_dir)
-
-        parent_path = os.path.dirname(image_path)
-        # Create the parent image directory if it doesn't exist.
-        if not os.path.exists(parent_path):
-            try:
-                self._vim_client.make_directory(parent_path)
-            except vim.fault.FileAlreadyExists:
-                pass
 
         try:
             with FileBackedLock(image_path, ds_type, retry=300,
@@ -761,6 +755,22 @@ class EsxImageManager(ImageManager):
                               name=dst_vmdk_ds_path)
             raise
 
+    def prepare_receive_image(self, image_id, datastore_id):
+        ds_type = self._get_datastore_type(datastore_id)
+        if ds_type == DatastoreType.VSAN:
+            # on VSAN datastore, vm is imported to [vsanDatastore] image_[image_id]/[random_uuid].vmdk,
+            # then the file is renamed to [vsanDatastore] image_[image_id]/[image_id].vmdk during receive_image.
+            import_vm_path = datastore_path(datastore_id, compond_path_join(IMAGE_FOLDER_NAME_PREFIX, image_id))
+            self._vim_client.make_directory(import_vm_path)
+            import_vm_id = str(uuid.uuid4())
+        else:
+            # on other types of datastore, vm is imported to [datastore] tmp_image_[random_uuid]/[image_id].vmdk,
+            # then the directory is renamed to [datastore] image_[image_id] during receive_image
+            import_vm_path = datastore_path(datastore_id,
+                                            compond_path_join(TMP_IMAGE_FOLDER_NAME_PREFIX, str(uuid.uuid4())))
+            import_vm_id = image_id
+        return import_vm_path, import_vm_id
+
     def receive_image(self, image_id, datastore_id, imported_vm_name, metadata):
         """ Creates an image using the data from the imported vm.
 
@@ -770,28 +780,36 @@ class EsxImageManager(ImageManager):
 
         self._vim_client.wait_for_vm_create(imported_vm_name)
         vm = self._vim_client.get_vm_obj_in_cache(imported_vm_name)
-        self._logger.warning("receive_image found vm %s, %s" %
-                             (imported_vm_name, vm))
-        vmx_os_path = datastore_to_os_path(vm.config.files.vmPathName)
-        vm_dir = os.path.dirname(vmx_os_path)
+        self._logger.warning("receive_image found vm %s, %s" % (imported_vm_name, vm))
+        vm_dir = os.path.dirname(datastore_to_os_path(vm.config.files.vmPathName))
 
         vm.Unregister()
 
-        try:
+        ds_type = self._get_datastore_type(datastore_id)
+        if ds_type == DatastoreType.VSAN:
+            # on VSAN datastore, vm_dir is [vsanDatastore] image_[image_id], we only need to
+            # rename the vmdk file to [image_id].vmdk
+            try:
+                with FileBackedLock(vm_dir, ds_type, retry=300, wait_secs=0.01):  # wait lock for 3 seconds
+                    if self._check_image_repair(image_id, datastore_id):
+                        raise DiskAlreadyExistException("Image already exists")
+
+                self._vim_client.move_file(os.path.join(vm_dir, vmdk_add_suffix(imported_vm_name)),
+                                           os.path.join(vm_dir, vmdk_add_suffix(image_id)))
+            except:
+                self._logger.exception("Move image %s to %s failed" % (image_id, vm_dir))
+                self._vim_client.delete_file(vm_dir)
+                raise
+        else:
             self._move_image(image_id, datastore_id, vm_dir)
 
-            # Save raw metadata
-            if metadata:
-                metadata_path = os_metadata_path(datastore_id, image_id,
-                                                 IMAGE_FOLDER_NAME_PREFIX)
-                with open(metadata_path, 'w') as f:
-                    f.write(metadata)
+        # Save raw metadata
+        if metadata:
+            metadata_path = os_metadata_path(datastore_id, image_id, IMAGE_FOLDER_NAME_PREFIX)
+            with open(metadata_path, 'w') as f:
+                f.write(metadata)
 
-            self._create_image_timestamp_file_from_ids(datastore_id, image_id)
-        finally:
-            parent_dir = os.path.dirname(vm_dir)
-            if os.path.basename(parent_dir).startswith(TMP_IMAGE_FOLDER_NAME_PREFIX):
-                rm_rf(parent_dir)
+        self._create_image_timestamp_file_from_ids(datastore_id, image_id)
 
     def delete_tmp_dir(self, datastore_id, tmp_dir):
         """ Deletes a temp image directory by moving it to a GC directory """

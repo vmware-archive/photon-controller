@@ -15,12 +15,12 @@ import uuid
 
 from hamcrest import *  # noqa
 from mock import MagicMock
+from mock import ANY
 from mock import patch
 from nose_parameterized import parameterized
 
 from common import services
 from common.service_name import ServiceName
-from gen.host import Host
 from gen.host.ttypes import ReceiveImageResultCode
 from gen.host.ttypes import ServiceTicketRequest
 from gen.host.ttypes import ServiceTicketResultCode
@@ -54,39 +54,28 @@ class TestHttpTransfer(unittest.TestCase):
         (True,), (False,)
     ])
     @patch("host.hypervisor.esx.http_disk_transfer.VimClient")
-    @patch("host.hypervisor.esx.http_disk_transfer.DirectClient")
-    def test_get_remote_connections(self, get_svc_ticket_success, _client_cls,
-                                    _vim_client_cls):
+    def test_create_remote_vim_client(self, get_svc_ticket_success, _vim_client_cls):
         host = "mock_host"
-        port = 8835
         get_service_ticket_mock = MagicMock()
         if get_svc_ticket_success:
             get_service_ticket_mock.result = ServiceTicketResultCode.OK
         else:
             get_service_ticket_mock.result = ServiceTicketResultCode.NOT_FOUND
-        instance = _client_cls.return_value
-        instance.get_service_ticket.return_value = get_service_ticket_mock
+        agent_client = MagicMock()
+        agent_client.get_service_ticket.return_value = get_service_ticket_mock
 
         if get_svc_ticket_success:
-            (agent_conn,
-             vim_conn) = self.http_transferer._get_remote_connections(
-                 host, port)
-            _client_cls.assert_called_once_with(
-                "Host", Host.Client, host, port)
-            instance.connect.assert_called_once_with()
+            vim_conn = self.http_transferer._create_remote_vim_client(agent_client, host)
             request = ServiceTicketRequest(service_type=ServiceType.VIM)
-            instance.get_service_ticket.assert_called_once_with(request)
+            agent_client.get_service_ticket.assert_called_once_with(request)
 
             _vim_client_cls.assert_called_once_with(
                 host=host, ticket=get_service_ticket_mock.vim_ticket,
                 auto_sync=False)
 
-            self.assertEqual(agent_conn, instance)
             self.assertEqual(vim_conn, _vim_client_cls.return_value)
         else:
-            self.assertRaises(
-                ValueError, self.http_transferer._get_remote_connections,
-                host, port)
+            self.assertRaises(ValueError, self.http_transferer._create_remote_vim_client, agent_client, host)
 
     @parameterized.expand([
         (None, "http://*/ha-nfc/x.vmdk", "http://actual_host/ha-nfc/x.vmdk"),
@@ -196,21 +185,16 @@ class TestHttpTransfer(unittest.TestCase):
     def test_create_import_vm_spec(self, mock_vm_imp_spec_cls, mock_uuid):
         image_id = "fake_image_id"
         destination_datastore = "fake_datastore"
-        create_spec_mock = MagicMock()
+        vm_path = "[] /vmfs/volumes/vsanDatastore/image_fake_image_id"
         create_empty_disk_mock = MagicMock()
 
         xferer = self.http_transferer
-        xferer._vm_config.create_spec_for_import = create_spec_mock
         xferer._vm_manager.create_empty_disk = create_empty_disk_mock
 
-        spec = xferer._create_import_vm_spec(image_id, destination_datastore)
+        spec = xferer._create_import_vm_spec(image_id, destination_datastore, vm_path)
 
-        expected_vm_id = "fake_id"
-        create_spec_mock.assert_called_once_with(
-            vm_id=expected_vm_id, image_id=image_id,
-            datastore=destination_datastore, memory=32, cpus=1)
         create_empty_disk_mock.assert_called_once_with(
-            create_spec_mock.return_value, destination_datastore, None,
+            ANY, destination_datastore, None,
             size_mb=1)
         mock_vm_imp_spec_cls.assert_called_once_with(
             configSpec=create_empty_disk_mock.return_value)
@@ -246,15 +230,19 @@ class TestHttpTransfer(unittest.TestCase):
         self.assertEqual(lease, lease_mock)
         self.assertEqual(url, url_mock)
 
+    @patch("host.hypervisor.esx.http_disk_transfer.DirectClient")
+    @patch("tempfile.gettempdir")
     @patch("os.path.exists")
     @patch("__builtin__.open")
     @patch("os.unlink")
-    def test_send_image_to_host(self, mock_unlink, mock_open, mock_exists):
+    def test_send_image_to_host(self, mock_unlink, mock_open, mock_exists, mock_tempdir, _client_cls):
         host = "mock_host"
         port = 8835
         image_id = "fake_image_id"
         image_datastore = "fake_image_ds"
         destination_datastore = "fake_destination_image_ds"
+        vm_path = "vm_path"
+        vm_id = "vm_id"
         read_lease_mock = MagicMock()
         from_url_mock = MagicMock()
         write_lease_mock = MagicMock()
@@ -268,6 +256,7 @@ class TestHttpTransfer(unittest.TestCase):
             return file_contents.pop()
         mock_open().__enter__().read.side_effect = fake_read
         mock_exists.return_value = True
+        mock_tempdir.return_value = "/tmp"
 
         xferer._create_shadow_vm = MagicMock(
             return_value=self.shadow_vm_id)
@@ -276,13 +265,11 @@ class TestHttpTransfer(unittest.TestCase):
             return_value=(read_lease_mock, from_url_mock))
         xferer.download_file = MagicMock()
         vim_conn_mock = MagicMock()
-        agent_conn_mock = MagicMock()
-        xferer._get_remote_connections = MagicMock(
-            return_value=(agent_conn_mock, vim_conn_mock))
-        xferer._create_import_vm_spec = MagicMock(
-            return_value=import_spec_mock)
-        xferer._get_url_from_import_vm = MagicMock(
-            return_value=(write_lease_mock, to_url_mock))
+        agent_conn_mock = _client_cls.return_value
+        xferer._prepare_receive_image = MagicMock(return_value=(vm_path, vm_id))
+        xferer._create_remote_vim_client = MagicMock(return_value=vim_conn_mock)
+        xferer._create_import_vm_spec = MagicMock(return_value=import_spec_mock)
+        xferer._get_url_from_import_vm = MagicMock(return_value=(write_lease_mock, to_url_mock))
         xferer.upload_file = MagicMock()
         receive_image_resp_mock = MagicMock()
         receive_image_resp_mock.result = ReceiveImageResultCode.OK
@@ -298,18 +285,13 @@ class TestHttpTransfer(unittest.TestCase):
 
         xferer._get_image_stream_from_shadow_vm.assert_called_once_with(
             image_id, image_datastore, self.shadow_vm_id)
-        expected_tmp_file = "/vmfs/volumes/%s/%s_transfer.vmdk" % (
-            self.image_datastores[0], self.shadow_vm_id)
-        xferer.download_file.assert_called_once_with(
-            from_url_mock, expected_tmp_file, read_lease_mock)
+        expected_tmp_file = "/tmp/%s_transfer.vmdk" % self.shadow_vm_id
+        xferer.download_file.assert_called_once_with(from_url_mock, expected_tmp_file, read_lease_mock)
         read_lease_mock.Complete.assert_called_once_with()
-        xferer._create_import_vm_spec.assert_called_once_with(
-            image_id, destination_datastore)
-        xferer._get_url_from_import_vm.assert_called_once_with(
-            vim_conn_mock, import_spec_mock)
-        xferer.upload_file.assert_called_once_with(
-            expected_tmp_file, to_url_mock, write_lease_mock)
+        xferer._prepare_receive_image.assert_called_once_with(agent_conn_mock, image_id, destination_datastore)
+        xferer._create_import_vm_spec.assert_called_once_with(vm_id, destination_datastore, vm_path)
+        xferer._get_url_from_import_vm.assert_called_once_with(vim_conn_mock, import_spec_mock)
+        xferer.upload_file.assert_called_once_with(expected_tmp_file, to_url_mock, write_lease_mock)
         write_lease_mock.Complete.assert_called_once_with()
-        xferer._delete_shadow_vm.assert_called_once_with(
-            self.shadow_vm_id)
+        xferer._delete_shadow_vm.assert_called_once_with(self.shadow_vm_id)
         mock_unlink.assert_called_once_with(expected_tmp_file)

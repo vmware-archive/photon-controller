@@ -87,6 +87,9 @@ class FakeHypervisor(object):
                        host, port):
         return ""
 
+    def prepare_receive_image(self, image_id, datastore):
+        pass
+
     def receive_image(self, image_id, datastore, imported_vm_name, metadata):
         pass
 

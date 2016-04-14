@@ -81,6 +81,8 @@ from gen.host.ttypes import MksTicketResultCode
 from gen.host.ttypes import PowerVmOp
 from gen.host.ttypes import PowerVmOpResponse
 from gen.host.ttypes import PowerVmOpResultCode
+from gen.host.ttypes import PrepareReceiveImageResponse
+from gen.host.ttypes import PrepareReceiveImageResultCode
 from gen.host.ttypes import ReceiveImageResponse
 from gen.host.ttypes import ReceiveImageResultCode
 from gen.host.ttypes import ReserveResponse
@@ -1768,6 +1770,27 @@ class HostHandler(Host.Iface):
                 TransferImageResponse())
 
         return TransferImageResponse(TransferImageResultCode.OK)
+
+    @log_request
+    @error_handler(PrepareReceiveImageResponse, PrepareReceiveImageResultCode)
+    def prepare_receive_image(self, request):
+        """ Prepare for receive image.
+        """
+        try:
+            datastore_id = self.hypervisor.datastore_manager.normalize(request.datastore)
+            import_vm_path, import_vm_id = self.hypervisor.prepare_receive_image(request.image_id, datastore_id)
+        except DatastoreNotFoundException:
+            return self._error_response(
+                PrepareReceiveImageResultCode.DATASTORE_NOT_FOUND,
+                "Datastore not found",
+                PrepareReceiveImageResponse())
+        except:
+            return self._error_response(
+                PrepareReceiveImageResultCode.SYSTEM_ERROR,
+                str(sys.exc_info()[1]),
+                PrepareReceiveImageResponse())
+
+        return PrepareReceiveImageResponse(PrepareReceiveImageResultCode.OK, import_vm_path, import_vm_id)
 
     @log_request
     @error_handler(ReceiveImageResponse, ReceiveImageResultCode)
