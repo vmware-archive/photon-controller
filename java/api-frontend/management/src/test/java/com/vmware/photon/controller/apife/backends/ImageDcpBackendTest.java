@@ -13,10 +13,12 @@
 
 package com.vmware.photon.controller.apife.backends;
 
+import com.vmware.photon.controller.api.Image;
 import com.vmware.photon.controller.api.ImageCreateSpec;
 import com.vmware.photon.controller.api.ImageReplicationType;
 import com.vmware.photon.controller.api.ImageState;
 import com.vmware.photon.controller.api.Operation;
+import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.TestModule;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
@@ -309,6 +311,69 @@ public class ImageDcpBackendTest {
       imageBackend.prepareImageUpload(inputStream, testImage, ImageReplicationType.ON_DEMAND);
 
       assertThat(imageBackend.getAll(Optional.absent()).getItems().size(), is(currentCountOfImages + 2));
+    }
+  }
+
+  /**
+   * Tests for get an image/images.
+   */
+  @Guice(modules = {DcpBackendTestModule.class, TestModule.class})
+  public static class ImageQueryTest {
+
+    private static String imageName;
+
+    @Mock
+    private InputStream inputStream;
+
+    @Inject
+    private BasicServiceHost basicServiceHost;
+
+    @Inject
+    private ApiFeXenonRestClient apiFeXenonRestClient;
+
+    @Inject
+    private ImageBackend imageBackend;
+
+    @BeforeMethod
+    public void setUp() throws Throwable {
+      commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
+    }
+
+    @AfterMethod
+    public void tearDown() throws Throwable {
+      commonHostDocumentsCleanup();
+    }
+
+    @AfterClass
+    public static void afterClassCleanup() throws Throwable {
+      commonHostAndClientTeardown();
+    }
+
+    @Test
+    public void testImageFindById() throws Throwable {
+      imageName = UUID.randomUUID().toString();
+      String id = createImageDocument(dcpClient, imageName, ImageState.READY, 1L, 10, 8, 5, 2);
+
+      ImageEntity image = imageBackend.findById(id);
+      assertThat(image.getId(), is(id));
+      assertThat(image.getName(), is(imageName));
+      assertThat(image.getState(), is(ImageState.READY));
+    }
+
+    @Test(expectedExceptions = ImageNotFoundException.class)
+    public void testFindAnNonExistingImage() throws Throwable {
+      imageBackend.findById("non-existing-id");
+    }
+
+    @Test
+    public void testFilter() throws Throwable {
+      imageName = UUID.randomUUID().toString();
+      String id = createImageDocument(dcpClient, imageName, ImageState.READY, 1L, 10, 8, 5, 2);
+      ResourceList<Image> imageResourceList = imageBackend.filter(Optional.of(imageName), Optional.absent());
+      List<Image> images = imageResourceList.getItems();
+      assertThat(images.size(), is(1));
+      assertThat(images.get(0).getId(), is(id));
+      assertThat(images.get(0).getName(), is(imageName));
     }
   }
 
