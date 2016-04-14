@@ -20,7 +20,7 @@ if not options.host:
 request = GetResourcesRequest()
 
 print_request(request)
-client = get_client(options, "Host")
+client = get_client(options.host)
 response = client.get_resources(request)
 print_response(response)
 

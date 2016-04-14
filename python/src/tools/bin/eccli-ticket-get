@@ -24,14 +24,13 @@ if not options.type:
     parser.print_help()
     exit(1)
 
-client = get_client(options)
-
 request = ServiceTicketRequest()
 type = ServiceType._NAMES_TO_VALUES[options.type]
 request.service_type = type
 request.datastore_name = options.datastore
 
 print_request(request)
+client = get_client(options.host)
 response = client.get_service_ticket(request)
 print_response(response)
 
