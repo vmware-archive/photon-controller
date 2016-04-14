@@ -160,7 +160,7 @@ def upload_file(file_path, upload_url, upload_lease):
 
 # create image and get upload_folder
 print_result("Calling agent to create image")
-client = get_client(options, "Host")
+client = get_client(options.host)
 image_id = str(uuid.uuid1())
 upload_folder = create_image(client, image_id, options.datastore)
 

@@ -21,11 +21,10 @@ if not options.vm_id:
     parser.print_help()
     exit(1)
 
-client = get_client(options)
-
 request = DeleteVmRequest()
 request.vm_id = options.vm_id
 
 print_request(request)
+client = get_client(options.host)
 response = client.delete_vm(request)
 print_response(response)

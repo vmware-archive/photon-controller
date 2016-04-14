@@ -27,6 +27,6 @@ request.vm_id = options.vm_id
 request.op = getattr(PowerVmOp, options.operation.upper())
 
 print_request(request)
-client = get_client(options, "Host")
+client = get_client(options.host)
 response = client.power_vm_op(request)
 print_response(response)

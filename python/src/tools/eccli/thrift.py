@@ -16,8 +16,8 @@ from gen.host import Host
 from gen.scheduler import Scheduler
 
 
-def get_client(options, ns="Host"):
-    host, port = options.host, options.port
+def get_client(host, ns="Host"):
+    port = 8835
     print "Connecting %s:%d ..." % (host, port)
     if ns == "Host":
         client = DirectClient("Host", Host.Client, host, port)

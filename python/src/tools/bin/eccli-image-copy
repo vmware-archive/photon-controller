@@ -25,8 +25,6 @@ if not options.source_image or not options.dest_image:
     parser.print_help()
     exit(1)
 
-client = get_client(options)
-
 request = CopyImageRequest()
 ds, image = options.source_image.split(':')
 request.source = Image(image, Datastore(ds))
@@ -34,6 +32,7 @@ ds, image = options.dest_image.split(':')
 request.destination = Image(image, Datastore(ds))
 
 print_request(request)
+client = get_client(options.host)
 response = client.copy_image(request)
 print_response(response)
 

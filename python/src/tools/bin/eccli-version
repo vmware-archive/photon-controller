@@ -10,10 +10,9 @@ parser = default_parser(usage="eccli-version",
                         add_help=True)
 (options, args) = parser.parse_args()
 
-client = get_client(options, "AgentControl")
-
 request = VersionRequest()
 
 print_request(request)
+client = get_client(options.host, "AgentControl")
 response = client.get_version(request)
 print_response(response)

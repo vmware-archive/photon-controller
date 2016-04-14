@@ -1,12 +1,15 @@
 #!/usr/bin/env python
 # Copyright (c) 2016 VMware, Inc. All Rights Reserved.
+import uuid
 
-from eccli.format import print_request
+from eccli.format import print_request, print_result
 from eccli.format import print_response
 from eccli.optparser import default_parser
 from eccli.thrift import get_client
 from gen.common.ttypes import ServerAddress
-from gen.host.ttypes import TransferImageRequest
+from gen.host.ttypes import TransferImageRequest, ServiceTicketRequest, ServiceType, FinalizeImageResultCode, \
+    TransferImageResultCode
+from host.hypervisor.esx.vim_client import VimClient
 
 parser = default_parser(usage="eccli-image-transfer [options]",
                         add_help=True)
@@ -16,22 +19,50 @@ parser.add_option("-s", "--source-image",
 parser.add_option("-d", "--destination",
                   action="store", type="string", dest="destination",
                   help="destination host:datastore (e.g. host1:ds1)")
+parser.add_option("-i", "--generate-destination-image-id",
+                  action="store_true", dest="generate_destination_image_id",
+                  help="generate destination image id")
+
 (options, args) = parser.parse_args()
 
 if not options.source_image or not options.destination:
     parser.print_help()
     exit(1)
 
-client = get_client(options)
+
+def get_ticket(client, datastore):
+    ticket_request = ServiceTicketRequest()
+    ticket_request.service_type=ServiceType.VIM
+    ticket_request.datastore_name = datastore
+    ticket_response = client.get_service_ticket(ticket_request)
+    return ticket_response.vim_ticket
+
+
+def normalize_datastore(host, datastore):
+    client = get_client(host)
+    ticket = get_ticket(client, datastore)
+    # create vim_client using ticket
+    vim_client = VimClient(host=host, ticket=ticket, auto_sync=False)
+    for ds in vim_client.get_all_datastores():
+        if ds.name == datastore and ds.info.url:
+            return ds.info.url.rsplit("/", 1)[1]
+    return datastore
+
 
 request = TransferImageRequest()
 ds, image = options.source_image.split(':')
-request.source_datastore_id = ds
+request.source_datastore_id = normalize_datastore(options.host, ds)
 request.source_image_id = image
 host, ds = options.destination.split(':')
 request.destination_host = ServerAddress(host, 8835)
-request.destination_datastore_id = ds
+request.destination_datastore_id = normalize_datastore(host, ds)
+if options.generate_destination_image_id:
+    request.destination_image_id = str(uuid.uuid1())
 
 print_request(request)
+client = get_client(options.host)
 response = client.transfer_image(request)
 print_response(response)
+if response.result == TransferImageResultCode.OK:
+    image_id = request.destination_image_id if options.generate_destination_image_id else request.source_image_id
+    print_result("image id: %s" % image_id)
