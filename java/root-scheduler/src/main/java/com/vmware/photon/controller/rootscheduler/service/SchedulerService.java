@@ -15,9 +15,6 @@ package com.vmware.photon.controller.rootscheduler.service;
 import com.vmware.photon.controller.common.zookeeper.ServiceNodeEventHandler;
 import com.vmware.photon.controller.roles.gen.GetSchedulersResponse;
 import com.vmware.photon.controller.rootscheduler.Config;
-import com.vmware.photon.controller.rootscheduler.interceptors.RequestId;
-import com.vmware.photon.controller.scheduler.gen.ConfigureRequest;
-import com.vmware.photon.controller.scheduler.gen.ConfigureResponse;
 import com.vmware.photon.controller.scheduler.gen.PlaceRequest;
 import com.vmware.photon.controller.scheduler.gen.PlaceResponse;
 import com.vmware.photon.controller.scheduler.root.gen.RootScheduler;
@@ -68,12 +65,6 @@ public class SchedulerService implements RootScheduler.Iface, ServiceNodeEventHa
   @Override
   public Status get_status(GetStatusRequest request) throws TException {
     return flatSchedulerService.get_status(request);
-  }
-
-  @Override
-  @RequestId
-  public ConfigureResponse configure(ConfigureRequest request) throws TException {
-    return flatSchedulerService.configure(request);
   }
 
   @Override
