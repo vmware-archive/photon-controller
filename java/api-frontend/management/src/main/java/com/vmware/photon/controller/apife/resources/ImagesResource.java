@@ -99,6 +99,7 @@ public class ImagesResource {
       @ApiResponse(code = 200, message = "List of Images")
   })
   public Response list(@Context Request request,
+                       @QueryParam("name") Optional<String> name,
                        @QueryParam("pageSize") Optional<Integer> pageSize,
                        @QueryParam("pageLink") Optional<String> pageLink) throws ExternalException {
 
@@ -107,7 +108,7 @@ public class ImagesResource {
       resourceList = imageFeClient.getImagesPage(pageLink.get());
     } else {
       Optional<Integer> adjustedPageSize = PaginationUtils.determinePageSize(paginationConfig, pageSize);
-      resourceList = imageFeClient.list(adjustedPageSize);
+      resourceList = imageFeClient.list(name, adjustedPageSize);
     }
     return generateResourceListResponse(
         Response.Status.OK,

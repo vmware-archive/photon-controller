@@ -55,8 +55,6 @@ public interface ImageBackend {
 
   Image toApiRepresentation(String id) throws ExternalException;
 
-  ResourceList<Image> getListApiRepresentation(Optional<Integer> pageSize) throws ExternalException;
-
   ResourceList<Image> getImagesPage(String pageLink) throws PageExpiredException;
 
   void updateSettings(ImageEntity imageEntity, Map<String, String> imageSettings) throws ExternalException;
@@ -66,4 +64,7 @@ public interface ImageBackend {
   boolean isImageSeedingDone(String imageId) throws ExternalException;
 
   List<String> getSeededImageDatastores(String imageId) throws ExternalException;
+
+  ResourceList<Image> filter(Optional<String> name, Optional<Integer> pageSize)
+      throws ExternalException;
 }

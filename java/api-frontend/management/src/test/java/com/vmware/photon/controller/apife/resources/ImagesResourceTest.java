@@ -108,15 +108,15 @@ public class ImagesResourceTest extends ResourceTest {
 
   @Test(dataProvider = "pageSizes")
   public void testGetImages(Optional<Integer> pageSize, List<Image> expectedImages) throws Throwable {
-    when(imageFeClient.list(Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE)))
+    when(imageFeClient.list(Optional.absent(), Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE)))
         .thenReturn(new ResourceList<>(ImmutableList.of(image1, image2), null, null));
-    when(imageFeClient.list(Optional.absent()))
+    when(imageFeClient.list(Optional.absent(), Optional.absent()))
         .thenReturn(new ResourceList<>(ImmutableList.of(image1, image2), null, null));
-    when(imageFeClient.list(Optional.of(1)))
+    when(imageFeClient.list(Optional.absent(), Optional.of(1)))
         .thenReturn(new ResourceList<>(ImmutableList.of(image1), UUID.randomUUID().toString(), null));
-    when(imageFeClient.list(Optional.of(2)))
+    when(imageFeClient.list(Optional.absent(), Optional.of(2)))
         .thenReturn(new ResourceList<>(ImmutableList.of(image1, image2), null, null));
-    when(imageFeClient.list(Optional.of(3)))
+    when(imageFeClient.list(Optional.absent(), Optional.of(3)))
         .thenReturn(new ResourceList<>(Collections.emptyList(), null, null));
 
     Response response = getImages(pageSize);
