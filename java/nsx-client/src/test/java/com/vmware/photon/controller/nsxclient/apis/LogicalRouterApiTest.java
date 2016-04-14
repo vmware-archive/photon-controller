@@ -38,17 +38,6 @@ import java.util.concurrent.TimeUnit;
 public class LogicalRouterApiTest extends NsxClientApiTest {
 
   @Test
-  public void testCreateLogicalRouter() throws IOException {
-    LogicalRouter mockResponse = createLogicalRouter();
-    setupMocks(objectMapper.writeValueAsString(mockResponse), HttpStatus.SC_CREATED);
-
-    LogicalRouterApi client = new LogicalRouterApi(restClient);
-    LogicalRouterCreateSpec spec = createLogicalRouterCreateSpec();
-    LogicalRouter response = client.createLogicalRouter(spec);
-    assertEquals(response, mockResponse);
-  }
-
-  @Test
   public void testCreateLogicalRouterAsync() throws IOException, InterruptedException {
     final LogicalRouter mockResponse = new LogicalRouter();
     mockResponse.setId("id");
@@ -73,16 +62,6 @@ public class LogicalRouterApiTest extends NsxClientApiTest {
         });
 
     assertThat(latch.await(COUNTDOWNLATCH_AWAIT_TIMEOUT, TimeUnit.SECONDS), is(true));
-  }
-
-  @Test
-  public void testGetLogicalRouter() throws IOException {
-    LogicalRouter mockResponse = createLogicalRouter();
-    setupMocks(objectMapper.writeValueAsString(mockResponse), HttpStatus.SC_OK);
-
-    LogicalRouterApi client = new LogicalRouterApi(restClient);
-    LogicalRouter response = client.getLogicalRouter("nodeId");
-    assertEquals(response, mockResponse);
   }
 
   @Test
@@ -111,13 +90,6 @@ public class LogicalRouterApiTest extends NsxClientApiTest {
   }
 
   @Test
-  public void testDeleteLogicalRouter() throws IOException {
-    setupMocks(null, HttpStatus.SC_OK);
-    LogicalRouterApi client = new LogicalRouterApi(restClient);
-    client.deleteLogicalRouter("id");
-  }
-
-  @Test
   public void testDeleteLogicalRouterAsync() throws IOException, InterruptedException {
     setupMocks(null, HttpStatus.SC_OK);
     LogicalRouterApi client = new LogicalRouterApi(restClient);
@@ -138,15 +110,6 @@ public class LogicalRouterApiTest extends NsxClientApiTest {
         });
 
     assertThat(latch.await(COUNTDOWNLATCH_AWAIT_TIMEOUT, TimeUnit.SECONDS), is(true));
-  }
-
-  private LogicalRouterCreateSpec createLogicalRouterCreateSpec() {
-    LogicalRouterCreateSpec spec = new LogicalRouterCreateSpec();
-    spec.setRouterType(RouterType.TIER1);
-    spec.setDisplayName("name");
-    spec.setDescription("desc");
-    spec.setLogicalRouterConfig(createLogicalRouterConfig());
-    return spec;
   }
 
   private LogicalRouter createLogicalRouter() {
