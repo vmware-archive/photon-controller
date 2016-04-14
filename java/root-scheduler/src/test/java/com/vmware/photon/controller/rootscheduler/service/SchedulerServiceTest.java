@@ -14,8 +14,6 @@ package com.vmware.photon.controller.rootscheduler.service;
 
 import com.vmware.photon.controller.roles.gen.GetSchedulersResponse;
 import com.vmware.photon.controller.rootscheduler.Config;
-import com.vmware.photon.controller.scheduler.gen.ConfigureRequest;
-import com.vmware.photon.controller.scheduler.gen.ConfigureResponse;
 import com.vmware.photon.controller.scheduler.gen.PlaceRequest;
 import com.vmware.photon.controller.scheduler.gen.PlaceResponse;
 import com.vmware.photon.controller.status.gen.GetStatusRequest;
@@ -63,15 +61,6 @@ public class SchedulerServiceTest {
     doReturn(new Status()).when(flatSchedulerService).get_status(request);
     schedulerService.get_status(request);
     verify(flatSchedulerService, times(1)).get_status(request);
-  }
-
-  @Test
-  public void testConfigure() throws TException {
-    schedulerService = new SchedulerService(config, flatSchedulerService);
-    ConfigureRequest request = new ConfigureRequest();
-    doReturn(new ConfigureResponse()).when(flatSchedulerService).configure(request);
-    schedulerService.configure(request);
-    verify(flatSchedulerService, times(1)).configure(request);
   }
 
   @Test
