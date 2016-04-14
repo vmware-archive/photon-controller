@@ -228,13 +228,6 @@ public class ImageDcpBackend implements ImageBackend {
   }
 
   @Override
-  public ResourceList<Image> getListApiRepresentation(Optional<Integer> pageSize) throws ExternalException {
-    ServiceDocumentQueryResult queryResult = findDocumentsByName(Optional.<String>absent(), pageSize);
-    return PaginationUtils.xenonQueryResultToResourceList(ImageService.State.class, queryResult,
-        state -> toApiRepresentation(state));
-  }
-
-  @Override
   public void updateSettings(ImageEntity imageEntity, Map<String, String> imageSettings)
       throws ExternalException {
     List<ImageService.State.ImageSetting> imageSettingsList = new ArrayList<>();
@@ -339,6 +332,14 @@ public class ImageDcpBackend implements ImageBackend {
     });
 
     return seededImageDatastores;
+  }
+
+  @Override
+  public ResourceList<Image> filter(Optional<String> name, Optional<Integer> pageSize)
+      throws ExternalException {
+    ServiceDocumentQueryResult queryResult = findDocumentsByName(name, pageSize);
+    return PaginationUtils.xenonQueryResultToResourceList(ImageService.State.class, queryResult,
+        state -> toApiRepresentation(state));
   }
 
   private void patchImageService(String imageId, ImageService.State imageState)

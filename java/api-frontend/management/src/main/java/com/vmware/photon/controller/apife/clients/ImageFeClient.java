@@ -92,8 +92,8 @@ public class ImageFeClient {
     return imageBackend.toApiRepresentation(id);
   }
 
-  public ResourceList<Image> list(Optional<Integer> pageSize) throws ExternalException {
-    return imageBackend.getListApiRepresentation(pageSize);
+  public ResourceList<Image> list(Optional<String> name, Optional<Integer> pageSize) throws ExternalException {
+    return imageBackend.filter(name, pageSize);
   }
 
   public ResourceList<Image> getImagesPage(String pageLink) throws PageExpiredException {
