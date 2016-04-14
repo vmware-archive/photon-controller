@@ -178,20 +178,6 @@ Remote debugging is enabled by default for the Java services in Dev Box. Debugge
 
 To connect the remote debugger, add a new remote debug configuration with the hostname set to Dev Box's IP address (default for private configuration is `172.31.253.66`) and the corresponding service port.
 
-## Deploy Photon Controller from Dev Box
-To deploy photon controller on to one or multiple hosts, follow the set of steps given below.
-
-The following enviroment variables need to be set in addition to the ones mentioned above.
-
-* `OVFTOOL_FULL_PATH` to specify the path of the ovftool installation on your machine
-* `RUN_ON_MAC=true` if you are running Dev Box on Mac
- 
-Then run the script `./prepare-devbox-deployment.sh`. On successful completion of the script you will be able to see 
-that `Dev Box is ready for deployment`.
-
-Then you can point the CLI against the endpoint `http://PUBLIC_NETWORK_IP:9000` and do a deployment. To find out how 
-to use CLI, please refer to the Readme under ruby/cli.
-
 [Vagrant]: http://vagrantup.com
 [Docker]: http://www.docker.com
 [Photon OS]: https://vmware.github.io/photon/
