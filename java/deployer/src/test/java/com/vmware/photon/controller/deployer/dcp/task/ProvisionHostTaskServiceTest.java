@@ -174,12 +174,12 @@ public class ProvisionHostTaskServiceTest {
       return new Object[][]{
           {null, null},
           {TaskState.TaskStage.CREATED, null},
+          {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.PROVISION_NETWORK},
           {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.INSTALL_AGENT},
           {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.WAIT_FOR_INSTALLATION},
           {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.PROVISION_AGENT},
           {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.WAIT_FOR_PROVISION},
           {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.GET_HOST_CONFIG},
-          {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.PROVISION_NETWORK},
           {TaskState.TaskStage.FINISHED, null},
           {TaskState.TaskStage.FAILED, null},
           {TaskState.TaskStage.CANCELLED, null},
@@ -196,7 +196,7 @@ public class ProvisionHostTaskServiceTest {
 
       ProvisionHostTaskService.State serviceState = testHost.getServiceState(ProvisionHostTaskService.State.class);
       assertThat(serviceState.taskState.stage, is(TaskState.TaskStage.STARTED));
-      assertThat(serviceState.taskState.subStage, is(ProvisionHostTaskService.TaskState.SubStage.INSTALL_AGENT));
+      assertThat(serviceState.taskState.subStage, is(ProvisionHostTaskService.TaskState.SubStage.PROVISION_NETWORK));
     }
 
     @DataProvider(name = "TransitionalStartStages")
@@ -204,7 +204,7 @@ public class ProvisionHostTaskServiceTest {
       return new Object[][]{
           {null, null},
           {TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.INSTALL_AGENT},
+          {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.PROVISION_NETWORK},
       };
     }
 
@@ -340,6 +340,8 @@ public class ProvisionHostTaskServiceTest {
     public Object[][] getValidStageTransitions() {
       return new Object[][]{
           {TaskState.TaskStage.CREATED, null,
+              TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.PROVISION_NETWORK},
+          {TaskState.TaskStage.CREATED, null,
               TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.INSTALL_AGENT},
           {TaskState.TaskStage.CREATED, null,
               TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.WAIT_FOR_INSTALLATION},
@@ -350,12 +352,27 @@ public class ProvisionHostTaskServiceTest {
           {TaskState.TaskStage.CREATED, null,
               TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.GET_HOST_CONFIG},
           {TaskState.TaskStage.CREATED, null,
-              TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.PROVISION_NETWORK},
-          {TaskState.TaskStage.CREATED, null,
               TaskState.TaskStage.FINISHED, null},
           {TaskState.TaskStage.CREATED, null,
               TaskState.TaskStage.FAILED, null},
           {TaskState.TaskStage.CREATED, null,
+              TaskState.TaskStage.CANCELLED, null},
+
+          {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.PROVISION_NETWORK,
+              TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.INSTALL_AGENT},
+          {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.PROVISION_NETWORK,
+              TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.WAIT_FOR_INSTALLATION},
+          {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.PROVISION_NETWORK,
+              TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.PROVISION_AGENT},
+          {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.PROVISION_NETWORK,
+              TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.WAIT_FOR_PROVISION},
+          {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.PROVISION_NETWORK,
+              TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.GET_HOST_CONFIG},
+          {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.PROVISION_NETWORK,
+              TaskState.TaskStage.FINISHED, null},
+          {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.PROVISION_NETWORK,
+              TaskState.TaskStage.FAILED, null},
+          {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.PROVISION_NETWORK,
               TaskState.TaskStage.CANCELLED, null},
 
           {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.INSTALL_AGENT,
@@ -367,8 +384,6 @@ public class ProvisionHostTaskServiceTest {
           {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.INSTALL_AGENT,
               TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.GET_HOST_CONFIG},
           {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.INSTALL_AGENT,
-              TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.PROVISION_NETWORK},
-          {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.INSTALL_AGENT,
               TaskState.TaskStage.FINISHED, null},
           {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.INSTALL_AGENT,
               TaskState.TaskStage.FAILED, null},
@@ -382,8 +397,6 @@ public class ProvisionHostTaskServiceTest {
           {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.WAIT_FOR_INSTALLATION,
               TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.GET_HOST_CONFIG},
           {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.WAIT_FOR_INSTALLATION,
-              TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.PROVISION_NETWORK},
-          {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.WAIT_FOR_INSTALLATION,
               TaskState.TaskStage.FINISHED, null},
           {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.WAIT_FOR_INSTALLATION,
               TaskState.TaskStage.FAILED, null},
@@ -395,8 +408,6 @@ public class ProvisionHostTaskServiceTest {
           {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.PROVISION_AGENT,
               TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.GET_HOST_CONFIG},
           {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.PROVISION_AGENT,
-              TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.PROVISION_NETWORK},
-          {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.PROVISION_AGENT,
               TaskState.TaskStage.FINISHED, null},
           {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.PROVISION_AGENT,
               TaskState.TaskStage.FAILED, null},
@@ -406,8 +417,6 @@ public class ProvisionHostTaskServiceTest {
           {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.WAIT_FOR_PROVISION,
               TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.GET_HOST_CONFIG},
           {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.WAIT_FOR_PROVISION,
-              TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.PROVISION_NETWORK},
-          {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.WAIT_FOR_PROVISION,
               TaskState.TaskStage.FINISHED, null},
           {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.WAIT_FOR_PROVISION,
               TaskState.TaskStage.FAILED, null},
@@ -415,19 +424,10 @@ public class ProvisionHostTaskServiceTest {
               TaskState.TaskStage.CANCELLED, null},
 
           {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.GET_HOST_CONFIG,
-              TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.PROVISION_NETWORK},
-          {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.GET_HOST_CONFIG,
               TaskState.TaskStage.FINISHED, null},
           {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.GET_HOST_CONFIG,
               TaskState.TaskStage.FAILED, null},
           {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.GET_HOST_CONFIG,
-              TaskState.TaskStage.CANCELLED, null},
-
-          {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.PROVISION_NETWORK,
-              TaskState.TaskStage.FINISHED, null},
-          {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.PROVISION_NETWORK,
-              TaskState.TaskStage.FAILED, null},
-          {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.PROVISION_NETWORK,
               TaskState.TaskStage.CANCELLED, null},
       };
     }
@@ -455,16 +455,25 @@ public class ProvisionHostTaskServiceTest {
           {TaskState.TaskStage.CREATED, null,
               TaskState.TaskStage.CREATED, null},
 
+          {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.PROVISION_NETWORK,
+              TaskState.TaskStage.CREATED, null},
+
           {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.INSTALL_AGENT,
               TaskState.TaskStage.CREATED, null},
+          {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.INSTALL_AGENT,
+              TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.PROVISION_NETWORK},
 
           {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.WAIT_FOR_INSTALLATION,
               TaskState.TaskStage.CREATED, null},
           {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.WAIT_FOR_INSTALLATION,
+              TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.PROVISION_NETWORK},
+          {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.WAIT_FOR_INSTALLATION,
               TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.INSTALL_AGENT},
 
           {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.PROVISION_AGENT,
               TaskState.TaskStage.CREATED, null},
+          {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.PROVISION_AGENT,
+              TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.PROVISION_NETWORK},
           {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.PROVISION_AGENT,
               TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.INSTALL_AGENT},
           {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.PROVISION_AGENT,
@@ -472,6 +481,8 @@ public class ProvisionHostTaskServiceTest {
 
           {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.WAIT_FOR_PROVISION,
               TaskState.TaskStage.CREATED, null},
+          {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.WAIT_FOR_PROVISION,
+              TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.PROVISION_NETWORK},
           {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.WAIT_FOR_PROVISION,
               TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.INSTALL_AGENT},
           {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.WAIT_FOR_PROVISION,
@@ -481,6 +492,8 @@ public class ProvisionHostTaskServiceTest {
 
           {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.GET_HOST_CONFIG,
               TaskState.TaskStage.CREATED, null},
+          {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.GET_HOST_CONFIG,
+              TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.PROVISION_NETWORK},
           {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.GET_HOST_CONFIG,
               TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.INSTALL_AGENT},
           {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.GET_HOST_CONFIG,
@@ -490,33 +503,20 @@ public class ProvisionHostTaskServiceTest {
           {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.GET_HOST_CONFIG,
               TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.WAIT_FOR_PROVISION},
 
-          {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.PROVISION_NETWORK,
-              TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.PROVISION_NETWORK,
-              TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.INSTALL_AGENT},
-          {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.PROVISION_NETWORK,
-              TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.WAIT_FOR_INSTALLATION},
-          {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.PROVISION_NETWORK,
-              TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.PROVISION_AGENT},
-          {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.PROVISION_NETWORK,
-              TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.WAIT_FOR_PROVISION},
-          {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.PROVISION_NETWORK,
-              TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.GET_HOST_CONFIG},
-
           {TaskState.TaskStage.FINISHED, null,
               TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.FINISHED, null,
-              TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.INSTALL_AGENT},
-          {TaskState.TaskStage.FINISHED, null,
-              TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.WAIT_FOR_INSTALLATION},
-          {TaskState.TaskStage.FINISHED, null,
-              TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.PROVISION_AGENT},
-          {TaskState.TaskStage.FINISHED, null,
-              TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.WAIT_FOR_PROVISION},
-          {TaskState.TaskStage.FINISHED, null,
-              TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.GET_HOST_CONFIG},
           {TaskState.TaskStage.FINISHED, null,
               TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.PROVISION_NETWORK},
+          {TaskState.TaskStage.FINISHED, null,
+              TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.INSTALL_AGENT},
+          {TaskState.TaskStage.FINISHED, null,
+              TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.WAIT_FOR_INSTALLATION},
+          {TaskState.TaskStage.FINISHED, null,
+              TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.PROVISION_AGENT},
+          {TaskState.TaskStage.FINISHED, null,
+              TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.WAIT_FOR_PROVISION},
+          {TaskState.TaskStage.FINISHED, null,
+              TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.GET_HOST_CONFIG},
           {TaskState.TaskStage.FINISHED, null,
               TaskState.TaskStage.FINISHED, null},
           {TaskState.TaskStage.FINISHED, null,
@@ -527,6 +527,8 @@ public class ProvisionHostTaskServiceTest {
           {TaskState.TaskStage.FAILED, null,
               TaskState.TaskStage.CREATED, null},
           {TaskState.TaskStage.FAILED, null,
+              TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.PROVISION_NETWORK},
+          {TaskState.TaskStage.FAILED, null,
               TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.INSTALL_AGENT},
           {TaskState.TaskStage.FAILED, null,
               TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.WAIT_FOR_INSTALLATION},
@@ -536,8 +538,6 @@ public class ProvisionHostTaskServiceTest {
               TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.WAIT_FOR_PROVISION},
           {TaskState.TaskStage.FAILED, null,
               TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.GET_HOST_CONFIG},
-          {TaskState.TaskStage.FAILED, null,
-              TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.PROVISION_NETWORK},
           {TaskState.TaskStage.FAILED, null,
               TaskState.TaskStage.FINISHED, null},
           {TaskState.TaskStage.FAILED, null,
@@ -548,6 +548,8 @@ public class ProvisionHostTaskServiceTest {
           {TaskState.TaskStage.CANCELLED, null,
               TaskState.TaskStage.CREATED, null},
           {TaskState.TaskStage.CANCELLED, null,
+              TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.PROVISION_NETWORK},
+          {TaskState.TaskStage.CANCELLED, null,
               TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.INSTALL_AGENT},
           {TaskState.TaskStage.CANCELLED, null,
               TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.WAIT_FOR_INSTALLATION},
@@ -557,8 +559,6 @@ public class ProvisionHostTaskServiceTest {
               TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.WAIT_FOR_PROVISION},
           {TaskState.TaskStage.CANCELLED, null,
               TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.GET_HOST_CONFIG},
-          {TaskState.TaskStage.CANCELLED, null,
-              TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.PROVISION_NETWORK},
           {TaskState.TaskStage.CANCELLED, null,
               TaskState.TaskStage.FINISHED, null},
           {TaskState.TaskStage.CANCELLED, null,
@@ -575,7 +575,7 @@ public class ProvisionHostTaskServiceTest {
       assertThat(op.getStatusCode(), is(200));
 
       ProvisionHostTaskService.State patchState = ProvisionHostTaskService.buildPatch(TaskState.TaskStage.STARTED,
-          ProvisionHostTaskService.TaskState.SubStage.INSTALL_AGENT, null);
+          ProvisionHostTaskService.TaskState.SubStage.PROVISION_NETWORK, null);
       Field declaredField = patchState.getClass().getDeclaredField(fieldName);
       declaredField.set(patchState, getDefaultAttributeFieldValue(declaredField, null));
 
@@ -1230,8 +1230,7 @@ public class ProvisionHostTaskServiceTest {
               ProvisionHostTaskFactoryService.SELF_LINK,
               startState,
               ProvisionHostTaskService.State.class,
-              (state) -> state.taskState.stage == TaskState.TaskStage.STARTED &&
-                  state.taskState.subStage == ProvisionHostTaskService.TaskState.SubStage.PROVISION_NETWORK);
+              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
 
       assertThat(finalState.controlFlags, is(ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED));
 
@@ -1321,6 +1320,9 @@ public class ProvisionHostTaskServiceTest {
     private String fabricNodeId;
     private String transportNodeId;
 
+    public ProvisionNetworkTest() {
+    }
+
     @BeforeClass
     public void setUpClass() throws Throwable {
       cloudStoreEnvironment = com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.create(1);
@@ -1381,9 +1383,11 @@ public class ProvisionHostTaskServiceTest {
               ProvisionHostTaskFactoryService.SELF_LINK,
               startState,
               ProvisionHostTaskService.State.class,
-              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
+              (state) -> state.taskState.stage == TaskState.TaskStage.STARTED &&
+                state.taskState.subStage == ProvisionHostTaskService.TaskState.SubStage.INSTALL_AGENT);
 
-      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FINISHED));
+      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.STARTED));
+      assertThat(finalState.taskState.subStage, is(ProvisionHostTaskService.TaskState.SubStage.INSTALL_AGENT));
       assertThat(finalState.controlFlags, is(ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED));
 
       HostService.State hostState = cloudStoreEnvironment.getServiceState(startState.hostServiceLink,
