@@ -16,7 +16,6 @@ namespace py gen.host
 
 include 'agent.thrift'
 include 'resource.thrift'
-include 'roles.thrift'
 include 'scheduler.thrift'
 include 'server_address.thrift'
 include 'tracing.thrift'
@@ -924,7 +923,6 @@ struct GetNetworksResponse {
 
 // Host service
 service Host {
-  scheduler.ConfigureResponse configure(1: scheduler.ConfigureRequest request)
   GetConfigResponse get_host_config(1: GetConfigRequest request)
 
   GetDatastoresResponse get_datastores(1: GetDatastoresRequest request)
