@@ -36,15 +36,18 @@ import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.common.xenon.validation.Positive;
 import com.vmware.photon.controller.deployer.dcp.DeployerContext;
+import com.vmware.photon.controller.deployer.dcp.constant.ServicePortConstants;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
 import com.vmware.photon.controller.deployer.deployengine.ScriptRunner;
 import com.vmware.photon.controller.host.gen.GetConfigResponse;
 import com.vmware.photon.controller.host.gen.Host;
 import com.vmware.photon.controller.host.gen.HostConfig;
 import com.vmware.photon.controller.nsxclient.NsxClient;
+//import com.vmware.photon.controller.nsxclient.models.ConfigurationStateElement;
 import com.vmware.photon.controller.nsxclient.models.FabricNode;
 import com.vmware.photon.controller.nsxclient.models.FabricNodeCreateSpec;
 import com.vmware.photon.controller.nsxclient.models.FabricNodeState;
+import com.vmware.photon.controller.nsxclient.models.HostNodeLoginCredential;
 import com.vmware.photon.controller.nsxclient.models.HostSwitch;
 import com.vmware.photon.controller.nsxclient.models.TransportNode;
 import com.vmware.photon.controller.nsxclient.models.TransportNodeCreateSpec;
@@ -62,6 +65,8 @@ import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
 import com.vmware.xenon.common.Utils;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
 import com.google.common.util.concurrent.FutureCallback;
@@ -104,12 +109,12 @@ public class ProvisionHostTaskService extends StatefulService {
      * This type defines the possible sub-states for this task.
      */
     public enum SubStage {
+      PROVISION_NETWORK,
       INSTALL_AGENT,
       WAIT_FOR_INSTALLATION,
       PROVISION_AGENT,
       WAIT_FOR_PROVISION,
       GET_HOST_CONFIG,
-      PROVISION_NETWORK
     }
 
     /**
@@ -219,7 +224,7 @@ public class ProvisionHostTaskService extends StatefulService {
 
     if (startState.taskState.stage == TaskState.TaskStage.CREATED) {
       startState.taskState.stage = TaskState.TaskStage.STARTED;
-      startState.taskState.subStage = TaskState.SubStage.INSTALL_AGENT;
+      startState.taskState.subStage = TaskState.SubStage.PROVISION_NETWORK;
     }
 
     if (startState.documentExpirationTimeMicros <= 0) {
@@ -293,12 +298,12 @@ public class ProvisionHostTaskService extends StatefulService {
       case STARTED:
         checkState(taskState.subStage != null);
         switch (taskState.subStage) {
+          case PROVISION_NETWORK:
           case INSTALL_AGENT:
           case WAIT_FOR_INSTALLATION:
           case PROVISION_AGENT:
           case WAIT_FOR_PROVISION:
           case GET_HOST_CONFIG:
-          case PROVISION_NETWORK:
             break;
           default:
             throw new IllegalStateException("Unknown task sub-stage: " + taskState.subStage);
@@ -315,6 +320,9 @@ public class ProvisionHostTaskService extends StatefulService {
 
   private void processStartedStage(State currentState) {
     switch (currentState.taskState.subStage) {
+      case PROVISION_NETWORK:
+        processProvisionNetworkSubStage(currentState);
+        break;
       case INSTALL_AGENT:
         processInstallAgentSubStage(currentState);
         break;
@@ -330,10 +338,252 @@ public class ProvisionHostTaskService extends StatefulService {
       case GET_HOST_CONFIG:
         processGetHostConfigSubStage(currentState);
         break;
-      case PROVISION_NETWORK:
-        processProvisionNetworkSubStage(currentState);
-        break;
     }
+  }
+
+  //
+  // PROVISION_NETWORK sub-stage routines
+  //
+
+  private void processProvisionNetworkSubStage(State currentState) {
+
+    HostUtils.getCloudStoreHelper(this)
+        .createGet(currentState.deploymentServiceLink)
+        .setCompletion((op, ex) -> {
+          if (ex != null) {
+            failTask(ex);
+            return;
+          }
+
+          try {
+            processProvisionNetworkSubStage(currentState, op.getBody(DeploymentService.State.class));
+          } catch (Throwable t) {
+            failTask(t);
+          }
+        })
+        .sendWith(this);
+  }
+
+  private void processProvisionNetworkSubStage(State currentState, DeploymentService.State deploymentState) {
+
+    if (!deploymentState.virtualNetworkEnabled) {
+      ServiceUtils.logInfo(this, "Skip setting up virtual network (disabled)");
+      sendStageProgressPatch(currentState, TaskState.TaskStage.STARTED, TaskState.SubStage.INSTALL_AGENT);
+      return;
+    }
+
+    HostUtils.getCloudStoreHelper(this)
+        .createGet(currentState.hostServiceLink)
+        .setCompletion((op, ex) -> {
+          if (ex != null) {
+            failTask(ex);
+            return;
+          }
+
+          try {
+            registerFabricNode(currentState, deploymentState, op.getBody(HostService.State.class));
+          } catch (Throwable t) {
+            failTask(t);
+          }
+        })
+        .sendWith(this);
+  }
+
+  private void registerFabricNode(State currentState,
+                                  DeploymentService.State deploymentState,
+                                  HostService.State hostState) {
+
+    if (hostState.nsxFabricNodeId != null) {
+      ServiceUtils.logInfo(this, "Skip registering fabric node");
+      createTransportNode(currentState, deploymentState, hostState, hostState.nsxFabricNodeId);
+      return;
+    }
+
+    try {
+      NsxClient nsxClient = HostUtils.getNsxClientFactory(this).create(
+          deploymentState.networkManagerAddress,
+          deploymentState.networkManagerUsername,
+          deploymentState.networkManagerPassword);
+
+      FabricNodeCreateSpec request = new FabricNodeCreateSpec();
+      request.setDisplayName(NameUtils.getFabricNodeName(hostState.hostAddress));
+      request.setDescription(NameUtils.getFabricNodeDescription(hostState.hostAddress));
+      request.setIpAddresses(Arrays.asList(hostState.hostAddress));
+      request.setOsType("ESXI");
+      request.setResourceType("HostNode");
+      HostNodeLoginCredential hostNodeLoginCredential = new HostNodeLoginCredential();
+      hostNodeLoginCredential.setUsername(hostState.userName);
+      hostNodeLoginCredential.setPassword(hostState.password);
+      hostNodeLoginCredential.setThumbprint(nsxClient.getHostThumbprint(
+          hostState.hostAddress,
+          ServicePortConstants.ESXI_PORT));
+      request.setHostCredential(hostNodeLoginCredential);
+
+      ObjectMapper om = new ObjectMapper();
+      om.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+      String payload = om.writeValueAsString(request);
+      ServiceUtils.logInfo(this, "FC request: " + payload);
+
+      nsxClient.getFabricApi().registerFabricNodeAsync(request,
+          new FutureCallback<FabricNode>() {
+            @Override
+            public void onSuccess(@Nullable FabricNode response) {
+              waitForRegisterFabricNode(currentState, deploymentState, hostState,
+                  response.getId());
+            }
+
+            @Override
+            public void onFailure(Throwable throwable) {
+              failTask(throwable);
+            }
+          });
+    } catch (Throwable t) {
+      failTask(t);
+    }
+  }
+
+  private void waitForRegisterFabricNode(State currentState,
+                                         DeploymentService.State deploymentState,
+                                         HostService.State hostState,
+                                         String fabricNodeId) {
+
+    getHost().schedule(() -> {
+          try {
+            NsxClient nsxClient = HostUtils.getNsxClientFactory(this).create(
+                deploymentState.networkManagerAddress,
+                deploymentState.networkManagerUsername,
+                deploymentState.networkManagerPassword);
+
+            nsxClient.getFabricApi().getFabricNodeStateAsync(fabricNodeId,
+                new FutureCallback<FabricNodeState>() {
+                  @Override
+                  public void onSuccess(@Nullable FabricNodeState response) {
+                    switch (response.getState()) {
+                      case SUCCESS:
+                        createTransportNode(currentState, deploymentState, hostState, fabricNodeId);
+                        break;
+                      case PENDING:
+                      case IN_PROGRESS:
+                        waitForRegisterFabricNode(currentState, deploymentState, hostState, fabricNodeId);
+                        break;
+                      case FAILED:
+                      case PARTIAL_SUCCESS:
+                      case ORPHANED:
+                        failTask(new IllegalStateException(
+                            String.format("Failed to register host as fabric node: %s", response.toString())));
+                        break;
+                    }
+                  }
+
+                  @Override
+                  public void onFailure(Throwable throwable) {
+                    failTask(throwable);
+                  }
+                });
+          } catch (Throwable t) {
+            failTask(t);
+          }
+        },
+        currentState.pollInterval,
+        TimeUnit.MILLISECONDS);
+  }
+
+  private void createTransportNode(State currentState,
+                                   DeploymentService.State deploymentState,
+                                   HostService.State hostState,
+                                   String fabricNodeId) {
+
+    if (hostState.nsxTransportNodeId != null) {
+      ServiceUtils.logInfo(this, "Skip creating transport node");
+      sendStageProgressPatch(currentState, TaskState.TaskStage.STARTED, TaskState.SubStage.INSTALL_AGENT);
+      return;
+    }
+
+    try {
+      NsxClient nsxClient = HostUtils.getNsxClientFactory(this).create(
+          deploymentState.networkManagerAddress,
+          deploymentState.networkManagerUsername,
+          deploymentState.networkManagerPassword);
+
+      TransportNodeCreateSpec request = new TransportNodeCreateSpec();
+      request.setDisplayName(NameUtils.getTransportNodeName(hostState.hostAddress));
+      request.setDescription(NameUtils.getTransportNodeDescription(hostState.hostAddress));
+      request.setNodeId(fabricNodeId);
+      HostSwitch hostSwitch = new HostSwitch();
+      hostSwitch.setName(NameUtils.HOST_SWITCH_NAME);
+      request.setHostSwitches(Arrays.asList(hostSwitch));
+      if (deploymentState.networkZoneId != null) {
+        TransportZoneEndPoint transportZoneEndPoint = new TransportZoneEndPoint();
+        transportZoneEndPoint.setTransportZoneId(deploymentState.networkZoneId);
+        request.setTransportZoneEndPoints(Arrays.asList(transportZoneEndPoint));
+      }
+
+      nsxClient.getFabricApi().createTransportNodeAsync(request,
+          new FutureCallback<TransportNode>() {
+            @Override
+            public void onSuccess(@Nullable TransportNode response) {
+              waitForCreateTransportNode(currentState, deploymentState, fabricNodeId, response.getId());
+            }
+
+            @Override
+            public void onFailure(Throwable throwable) {
+              failTask(throwable);
+            }
+          });
+    } catch (Throwable t) {
+      failTask(t);
+    }
+  }
+
+  private void waitForCreateTransportNode(State currentState,
+                                          DeploymentService.State deploymentState,
+                                          String fabricNodeId,
+                                          String transportNodeId) {
+
+    getHost().schedule(() -> {
+          try {
+            NsxClient nsxClient = HostUtils.getNsxClientFactory(this).create(
+                deploymentState.networkManagerAddress,
+                deploymentState.networkManagerUsername,
+                deploymentState.networkManagerPassword);
+
+            nsxClient.getFabricApi().getTransportNodeStateAsync(transportNodeId,
+                new FutureCallback<TransportNodeState>() {
+                  @Override
+                  public void onSuccess(@Nullable TransportNodeState response) {
+                    switch (response.getState()) {
+                      case SUCCESS:
+                        HostService.State hostPatch = new HostService.State();
+                        hostPatch.nsxFabricNodeId = fabricNodeId;
+                        hostPatch.nsxTransportNodeId = transportNodeId;
+
+                        patchHost(currentState, hostPatch, TaskState.TaskStage.STARTED,
+                            TaskState.SubStage.INSTALL_AGENT);
+                        break;
+                      case PENDING:
+                      case IN_PROGRESS:
+                        waitForCreateTransportNode(currentState, deploymentState, fabricNodeId, transportNodeId);
+                        break;
+                      case PARTIAL_SUCCESS:
+                      case FAILED:
+                      case ORPHANED:
+                        failTask(new IllegalStateException(
+                            String.format("Failed to create transport node for host: %s", response.toString())));
+                        break;
+                    }
+                  }
+
+                  @Override
+                  public void onFailure(Throwable throwable) {
+                    failTask(throwable);
+                  }
+                });
+          } catch (Throwable t) {
+            failTask(t);
+          }
+        },
+        currentState.pollInterval,
+        TimeUnit.MILLISECONDS);
   }
 
   //
@@ -810,7 +1060,7 @@ public class ProvisionHostTaskService extends StatefulService {
     }
 
     if (datastoreStartStates == null) {
-      patchHost(currentState, patchState, TaskState.TaskStage.STARTED, TaskState.SubStage.PROVISION_NETWORK);
+      patchHost(currentState, patchState, TaskState.TaskStage.FINISHED, null);
       return;
     }
 
@@ -826,235 +1076,12 @@ public class ProvisionHostTaskService extends StatefulService {
           }
 
           try {
-            patchHost(currentState, patchState, TaskState.TaskStage.STARTED, TaskState.SubStage.PROVISION_NETWORK);
+            patchHost(currentState, patchState, TaskState.TaskStage.FINISHED, null);
           } catch (Throwable t) {
             failTask(t);
           }
         })
         .sendWith(this);
-  }
-
-  //
-  // PROVISION_NETWORK sub-stage routines
-  //
-
-  private void processProvisionNetworkSubStage(State currentState) {
-
-    HostUtils.getCloudStoreHelper(this)
-        .createGet(currentState.deploymentServiceLink)
-        .setCompletion((op, ex) -> {
-          if (ex != null) {
-            failTask(ex);
-            return;
-          }
-
-          try {
-            processProvisionNetworkSubStage(currentState, op.getBody(DeploymentService.State.class));
-          } catch (Throwable t) {
-            failTask(t);
-          }
-        })
-        .sendWith(this);
-  }
-
-  private void processProvisionNetworkSubStage(State currentState, DeploymentService.State deploymentState) {
-
-    if (!deploymentState.virtualNetworkEnabled) {
-      ServiceUtils.logInfo(this, "Skip setting up virtual network (disabled)");
-      sendStageProgressPatch(currentState, TaskState.TaskStage.FINISHED, null);
-      return;
-    }
-
-    HostUtils.getCloudStoreHelper(this)
-        .createGet(currentState.hostServiceLink)
-        .setCompletion((op, ex) -> {
-          if (ex != null) {
-            failTask(ex);
-            return;
-          }
-
-          try {
-            registerFabricNode(currentState, deploymentState, op.getBody(HostService.State.class));
-          } catch (Throwable t) {
-            failTask(t);
-          }
-        })
-        .sendWith(this);
-  }
-
-  private void registerFabricNode(State currentState,
-                                  DeploymentService.State deploymentState,
-                                  HostService.State hostState) {
-
-    if (hostState.nsxFabricNodeId != null) {
-      ServiceUtils.logInfo(this, "Skip registering fabric node");
-      createTransportNode(currentState, deploymentState, hostState, hostState.nsxFabricNodeId);
-      return;
-    }
-
-    try {
-      NsxClient nsxClient = HostUtils.getNsxClientFactory(this).create(
-          deploymentState.networkManagerAddress,
-          deploymentState.networkManagerUsername,
-          deploymentState.networkManagerPassword);
-
-      FabricNodeCreateSpec request = new FabricNodeCreateSpec();
-      request.setDisplayName(NameUtils.getFabricNodeName(hostState.hostAddress));
-      request.setDescription(NameUtils.getFabricNodeDescription(hostState.hostAddress));
-      request.setIpAddresses(Arrays.asList(hostState.hostAddress));
-      request.setOsType("ESXI");
-      request.setResourceType("HostNode");
-
-      nsxClient.getFabricApi().registerFabricNodeAsync(request,
-          new FutureCallback<FabricNode>() {
-            @Override
-            public void onSuccess(@Nullable FabricNode response) {
-              waitForRegisterFabricNode(currentState, deploymentState, hostState,
-                  response.getId());
-            }
-
-            @Override
-            public void onFailure(Throwable throwable) {
-              failTask(throwable);
-            }
-          });
-    } catch (Throwable t) {
-      failTask(t);
-    }
-  }
-
-  private void waitForRegisterFabricNode(State currentState,
-                                         DeploymentService.State deploymentState,
-                                         HostService.State hostState,
-                                         String fabricNodeId) {
-
-    try {
-      NsxClient nsxClient = HostUtils.getNsxClientFactory(this).create(
-          deploymentState.networkManagerAddress,
-          deploymentState.networkManagerUsername,
-          deploymentState.networkManagerPassword);
-
-      nsxClient.getFabricApi().getFabricNodeStateAsync(fabricNodeId,
-          new FutureCallback<FabricNodeState>() {
-            @Override
-            public void onSuccess(@Nullable FabricNodeState response) {
-              switch (response.getState()) {
-                case SUCCESS:
-                  createTransportNode(currentState, deploymentState, hostState, fabricNodeId);
-                  break;
-                case PENDING:
-                case IN_PROGRESS:
-                  waitForRegisterFabricNode(currentState, deploymentState, hostState, fabricNodeId);
-                  break;
-                case PARTIAL_SUCCESS:
-                case FAILED:
-                case ORPHANED:
-                  failTask(new IllegalStateException(
-                      String.format("Failed to register host as fabric node: %s", response.toString())));
-                  break;
-              }
-            }
-
-            @Override
-            public void onFailure(Throwable throwable) {
-              failTask(throwable);
-            }
-          });
-    } catch (Throwable t) {
-      failTask(t);
-    }
-  }
-
-  private void createTransportNode(State currentState,
-                                   DeploymentService.State deploymentState,
-                                   HostService.State hostState,
-                                   String fabricNodeId) {
-
-    if (hostState.nsxTransportNodeId != null) {
-      ServiceUtils.logInfo(this, "Skip creating transport node");
-      return;
-    }
-
-    try {
-      NsxClient nsxClient = HostUtils.getNsxClientFactory(this).create(
-          deploymentState.networkManagerAddress,
-          deploymentState.networkManagerUsername,
-          deploymentState.networkManagerPassword);
-
-      TransportNodeCreateSpec request = new TransportNodeCreateSpec();
-      request.setDisplayName(NameUtils.getTransportNodeName(hostState.hostAddress));
-      request.setDescription(NameUtils.getTransportNodeDescription(hostState.hostAddress));
-      request.setNodeId(fabricNodeId);
-      HostSwitch hostSwitch = new HostSwitch();
-      hostSwitch.setName(NameUtils.HOST_SWITCH_NAME);
-      request.setHostSwitches(Arrays.asList(hostSwitch));
-      if (deploymentState.networkZoneId != null) {
-        TransportZoneEndPoint transportZoneEndPoint = new TransportZoneEndPoint();
-        transportZoneEndPoint.setTransportZoneId(deploymentState.networkZoneId);
-        request.setTransportZoneEndPoints(Arrays.asList(transportZoneEndPoint));
-      }
-
-      nsxClient.getFabricApi().createTransportNodeAsync(request,
-          new FutureCallback<TransportNode>() {
-            @Override
-            public void onSuccess(@Nullable TransportNode response) {
-              waitForCreateTransportNode(currentState, deploymentState, fabricNodeId, response.getId());
-            }
-
-            @Override
-            public void onFailure(Throwable throwable) {
-              failTask(throwable);
-            }
-          });
-    } catch (Throwable t) {
-      failTask(t);
-    }
-  }
-
-  private void waitForCreateTransportNode(State currentState,
-                                          DeploymentService.State deploymentState,
-                                          String fabricNodeId,
-                                          String transportNodeId) {
-
-    try {
-      NsxClient nsxClient = HostUtils.getNsxClientFactory(this).create(
-          deploymentState.networkManagerAddress,
-          deploymentState.networkManagerUsername,
-          deploymentState.networkManagerPassword);
-
-      nsxClient.getFabricApi().getTransportNodeStateAsync(transportNodeId,
-          new FutureCallback<TransportNodeState>() {
-            @Override
-            public void onSuccess(@Nullable TransportNodeState response) {
-              switch (response.getState()) {
-                case SUCCESS:
-                  HostService.State hostPatch = new HostService.State();
-                  hostPatch.nsxFabricNodeId = fabricNodeId;
-                  hostPatch.nsxTransportNodeId = transportNodeId;
-
-                  patchHost(currentState, hostPatch, TaskState.TaskStage.FINISHED, null);
-                  break;
-                case PENDING:
-                case IN_PROGRESS:
-                  waitForCreateTransportNode(currentState, deploymentState, fabricNodeId, transportNodeId);
-                  break;
-                case PARTIAL_SUCCESS:
-                case FAILED:
-                case ORPHANED:
-                  failTask(new IllegalStateException(
-                      String.format("Failed to create transport node for host: %s", response.toString())));
-                  break;
-              }
-            }
-
-            @Override
-            public void onFailure(Throwable throwable) {
-              failTask(throwable);
-            }
-          });
-    } catch (Throwable t) {
-      failTask(t);
-    }
   }
 
   //

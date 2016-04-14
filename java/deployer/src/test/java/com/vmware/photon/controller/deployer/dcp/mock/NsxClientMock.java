@@ -45,6 +45,11 @@ public class NsxClientMock extends NsxClient {
     return mockFabricApi;
   }
 
+  @Override
+  public String getHostThumbprint(String ipAddress, int port) {
+    return "hostThumbprint";
+  }
+
   /**
    * This class implements a builder for {@link NsxClientMock} objects.
    */
