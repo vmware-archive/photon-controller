@@ -15,7 +15,6 @@ namespace java com.vmware.photon.controller.agent.gen
 namespace py gen.agent
 
 include 'resource.thrift'
-include 'roles.thrift'
 include 'server_address.thrift'
 include 'stats_plugin.thrift'
 include 'tracing.thrift'

@@ -72,11 +72,6 @@ from gen.resource.ttypes import ResourcePlacementList
 from gen.resource.ttypes import ResourcePlacementType
 from gen.resource.ttypes import State
 from gen.resource.ttypes import Vm
-from gen.roles.ttypes import Roles
-from gen.roles.ttypes import SchedulerRole
-from gen.scheduler import Scheduler
-from gen.scheduler.ttypes import ConfigureRequest
-from gen.scheduler.ttypes import ConfigureResultCode
 from gen.scheduler.ttypes import PlaceRequest
 from gen.scheduler.ttypes import PlaceResultCode
 from gen.scheduler.ttypes import Score
@@ -167,30 +162,6 @@ class HostHandlerTestCase(unittest.TestCase):
 
         return resource
 
-    def test_configuration_observer(self):
-        requests = []
-
-        def observer(request):
-            requests.append(request)
-
-        request = ConfigureRequest(
-            "fake-scheduler", Roles())
-
-        hv = Hypervisor(self._config)
-        handler = HostHandler(hv)
-        assert_that(requests, is_(empty()))
-
-        handler.configure(request)
-        assert_that(requests, is_(empty()))
-
-        handler.add_configuration_observer(observer)
-        handler.configure(request)
-        assert_that(requests[0].scheduler, equal_to(request.scheduler))
-
-        handler.remove_configuration_observer(observer)
-        handler.configure(request)
-        assert_that(requests[0].scheduler, equal_to(request.scheduler))
-
     def test_get_resources(self):
         hv = Hypervisor(self._config)
         handler = HostHandler(hv)
@@ -218,19 +189,6 @@ class HostHandlerTestCase(unittest.TestCase):
         common.services.register(ServiceName.AGENT_CONFIG, self._config)
         hv = Hypervisor(self._config)
         handler = HostHandler(hv)
-
-        leaf_scheduler = SchedulerRole(stable_uuid("leaf scheduler"))
-        leaf_scheduler.parent_id = stable_uuid("parent scheduler")
-        leaf_scheduler.hosts = [agent_id]
-
-        configure_request = ConfigureRequest(stable_uuid("leaf scheduler"),
-                                             Roles([leaf_scheduler]))
-
-        common.services.register(Scheduler.Iface, MagicMock())
-        response = handler.configure(configure_request)
-        assert_that(response.result, equal_to(ConfigureResultCode.OK))
-        assert_that(configure_lock.acquire.called, is_(True))
-        assert_that(configure_lock.release.called, is_(True))
 
     def test_place(self):
         handler = HostHandler(MagicMock())
