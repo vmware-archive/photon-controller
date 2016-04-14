@@ -80,25 +80,22 @@ module EsxCloud
       # @param [String] deployment_id
       # @return [Boolean]
       def pause_system(deployment_id)
-        cmd = "deployment pause_system #{deployment_id}"
+        cmd = "deployment pause #{deployment_id}"
         run_cli(cmd)
-        true
       end
 
       # @param [String] deployment_id
       # @return [Boolean]
       def pause_background_tasks(deployment_id)
-        cmd = "deployment pause_background_tasks #{deployment_id}"
+        cmd = "deployment pause-background-tasks #{deployment_id}"
         run_cli(cmd)
-        true
       end
 
       # @param [String] deployment_id
       # @return [Boolean]
       def resume_system(deployment_id)
-        cmd = "deployment resume_system #{deployment_id}"
+        cmd = "deployment resume #{deployment_id}"
         run_cli(cmd)
-        true
       end
 
       # @param [String] deployment_id
@@ -118,7 +115,7 @@ module EsxCloud
       # @param [String] id
       # @param [String] payload
       def update_image_datastores(id, payload)
-        cmd = "deployment update-image-datastores #{id} #{payload}"
+        cmd = "deployment update-image-datastores #{id} -d '#{payload.join(",")}'"
         run_cli(cmd)
       end
     end

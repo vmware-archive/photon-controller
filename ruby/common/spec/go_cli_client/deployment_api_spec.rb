@@ -26,17 +26,22 @@ describe EsxCloud::GoCliClient do
   end
 
   it "pauses a system under deployment" do
-    expect(client).to receive(:run_cli).with("deployment pause_system d1")
-    expect(client.pause_system("d1")).to eq true
+    expect(client).to receive(:run_cli).with("deployment pause d1")
+    expect(client.pause_system("d1")).to be_nil
   end
 
   it "pauses background tasks under deployment" do
-    expect(client).to receive(:run_cli).with("deployment pause_background_tasks d1")
-    expect(client.pause_background_tasks("d1")).to eq true
+    expect(client).to receive(:run_cli).with("deployment pause-background-tasks d1")
+    expect(client.pause_background_tasks("d1")).to be_nil
   end
 
   it "resumes a system under deployment" do
-    expect(client).to receive(:run_cli).with("deployment resume_system d1")
-    expect(client.resume_system("d1")).to eq true
+    expect(client).to receive(:run_cli).with("deployment resume d1")
+    expect(client.resume_system("d1")).to be_nil
+  end
+
+  it "updates image datastores under deployment" do
+    expect(client).to receive(:run_cli).with("deployment update-image-datastores d1 -d 'ds1,ds2'")
+    expect(client.update_image_datastores("d1", ["ds1","ds2"])).to be_nil
   end
 end
