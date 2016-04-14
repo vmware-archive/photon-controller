@@ -477,6 +477,34 @@ struct TransferImageResponse {
   2: optional string error
 }
 
+// Prepare Receive Image
+struct PrepareReceiveImageRequest {
+  // The ID of the Image.
+  1: required string image_id
+
+  // The datastore name or id.
+  2: required string datastore
+
+  99: optional tracing.TracingInfo tracing_info
+}
+
+enum PrepareReceiveImageResultCode {
+  /* The image was created successfully. */
+  OK = 0
+  /* Catch all error. */
+  SYSTEM_ERROR = 1
+  /* The datastore was not found. */
+  DATASTORE_NOT_FOUND = 2
+}
+
+struct PrepareReceiveImageResponse {
+  1: required PrepareReceiveImageResultCode result
+  // vm path and id to use for VmImportSpec
+  2: optional string import_vm_path
+  3: optional string import_vm_id
+  4: optional string error
+}
+
 // Receive Image
 struct ReceiveImageRequest {
   // The ID of the Image.
@@ -949,6 +977,7 @@ service Host {
   GetImagesResponse get_images(1: GetImagesRequest request)
 
   TransferImageResponse transfer_image(1: TransferImageRequest request)
+  PrepareReceiveImageResponse prepare_receive_image(1: PrepareReceiveImageRequest request)
   ReceiveImageResponse receive_image(1: ReceiveImageRequest request)
 
   /**
