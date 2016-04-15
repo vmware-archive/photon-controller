@@ -29,7 +29,6 @@ import com.vmware.photon.controller.resource.gen.Resource;
 import com.vmware.photon.controller.resource.gen.ResourceConstraint;
 import com.vmware.photon.controller.resource.gen.ResourceConstraintType;
 import com.vmware.photon.controller.resource.gen.Vm;
-import com.vmware.photon.controller.roles.gen.GetSchedulersResponse;
 import com.vmware.photon.controller.rootscheduler.Config;
 import com.vmware.photon.controller.rootscheduler.exceptions.NoSuchResourceException;
 import com.vmware.photon.controller.scheduler.gen.PlaceRequest;
@@ -124,11 +123,6 @@ public class FlatSchedulerService implements RootScheduler.Iface, ServiceNodeEve
   @Override
   public HostClient getHostClient() {
     return hostClientFactory.create();
-  }
-
-  @Override
-  public synchronized GetSchedulersResponse get_schedulers() {
-    throw new UnsupportedOperationException();
   }
 
   @Override
