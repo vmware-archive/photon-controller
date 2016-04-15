@@ -56,12 +56,12 @@ public class NsxClientMock extends NsxClient {
   public static class Builder {
     private FabricApi mockFabricApi;
 
+    public Builder() {
+      mockFabricApi = mock(FabricApi.class);
+    }
+
     public Builder registerFabricNode(boolean isSuccess,
                                       String fabricNodeId) throws Throwable {
-      if (mockFabricApi == null) {
-        mockFabricApi = mock(FabricApi.class);
-      }
-
       if (isSuccess) {
         FabricNode response = new FabricNode();
         response.setId(fabricNodeId);
@@ -92,10 +92,6 @@ public class NsxClientMock extends NsxClient {
 
     public Builder createTransportNode(boolean isSuccess,
                                        String transportNodeId) throws Throwable {
-      if (mockFabricApi == null) {
-        mockFabricApi = mock(FabricApi.class);
-      }
-
       if (isSuccess) {
         TransportNode response = new TransportNode();
         response.setId(transportNodeId);
@@ -128,10 +124,6 @@ public class NsxClientMock extends NsxClient {
 
     public Builder createTransportZone(boolean isSuccess,
                                        String transportZoneId) throws Throwable {
-      if (mockFabricApi == null) {
-        mockFabricApi = mock(FabricApi.class);
-      }
-
       if (isSuccess) {
         TransportZone response = new TransportZone();
         response.setId(transportZoneId);
@@ -154,11 +146,6 @@ public class NsxClientMock extends NsxClient {
     }
 
     public Builder deleteTransportNode(boolean isSuccess) throws Throwable {
-
-      if (mockFabricApi == null) {
-        mockFabricApi = mock(FabricApi.class);
-      }
-
       if (isSuccess) {
         doAnswer(invocation -> {
           ((FutureCallback<Void>) invocation.getArguments()[1])
@@ -172,6 +159,25 @@ public class NsxClientMock extends NsxClient {
               .onFailure(error);
           return null;
         }).when(mockFabricApi).deleteTransportNode(any(String.class), any(FutureCallback.class));
+      }
+
+      return this;
+    }
+
+    public Builder deleteTransportZone(boolean isSuccess) throws Throwable {
+      if (isSuccess) {
+        doAnswer(invocation -> {
+          ((FutureCallback<Void>) invocation.getArguments()[1])
+              .onSuccess(null);
+          return null;
+        }).when(mockFabricApi).deleteTransportZone(any(String.class), any(FutureCallback.class));
+      } else {
+        RuntimeException error = new RuntimeException("deleteTransportZone failed");
+        doAnswer(invocation -> {
+          ((FutureCallback<Void>) invocation.getArguments()[1])
+              .onFailure(error);
+          return null;
+        }).when(mockFabricApi).deleteTransportZone(any(String.class), any(FutureCallback.class));
       }
 
       return this;
