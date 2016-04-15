@@ -47,14 +47,6 @@ public class SchedulerServiceTest {
   }
 
   @Test
-  public void testGetSchedulers() throws TException {
-    schedulerService = new SchedulerService(config, flatSchedulerService);
-    doReturn(new GetSchedulersResponse()).when(flatSchedulerService).get_schedulers();
-    schedulerService.get_schedulers();
-    verify(flatSchedulerService, times(1)).get_schedulers();
-  }
-
-  @Test
   public void testGetStatus() throws TException {
     schedulerService = new SchedulerService(config, flatSchedulerService);
     GetStatusRequest request = new GetStatusRequest();

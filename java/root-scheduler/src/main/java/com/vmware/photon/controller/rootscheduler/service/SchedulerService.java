@@ -58,11 +58,6 @@ public class SchedulerService implements RootScheduler.Iface, ServiceNodeEventHa
   }
 
   @Override
-  public GetSchedulersResponse get_schedulers() {
-    return flatSchedulerService.get_schedulers();
-  }
-
-  @Override
   public Status get_status(GetStatusRequest request) throws TException {
     return flatSchedulerService.get_status(request);
   }

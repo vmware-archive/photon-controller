@@ -127,11 +127,6 @@ public class FlatSchedulerService implements RootScheduler.Iface, ServiceNodeEve
   }
 
   @Override
-  public synchronized GetSchedulersResponse get_schedulers() {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
   public synchronized Status get_status(GetStatusRequest request) throws TException{
     return new Status(StatusType.READY);
   }
