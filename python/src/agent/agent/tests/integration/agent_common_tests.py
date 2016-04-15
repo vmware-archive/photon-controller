@@ -58,8 +58,6 @@ from gen.resource.ttypes import Resource
 from gen.resource.ttypes import State
 from gen.resource.ttypes import Vm
 from gen.resource.ttypes import VmLocator
-from gen.scheduler.ttypes import FindRequest
-from gen.scheduler.ttypes import FindResultCode
 from gen.scheduler.ttypes import PlaceRequest
 from gen.scheduler.ttypes import PlaceResponse
 from gen.scheduler.ttypes import PlaceResultCode
@@ -166,11 +164,16 @@ class VmWrapper(object):
         response = rpc_call(self.host_client.power_vm_op, request)
         assert_that(response.result, equal_to(expect))
 
-    def find(self, expect=FindResultCode.OK):
-        request = FindRequest(Locator(VmLocator(self.id)))
-        response = rpc_call(self.host_client.find, request)
-        assert_that(response.result, equal_to(expect))
-        return response
+    def get_vm(self, expect_found=True):
+        request = GetResourcesRequest([Locator(vm=VmLocator(self.id))])
+        response = rpc_call(self.host_client.get_resources, request)
+        assert_that(response.result, equal_to(GetResourcesResultCode.OK))
+        if expect_found:
+            assert_that(len(response.resources), is_(1))
+            return response.resources[0].vm
+        else:
+            assert_that(len(response.resources), is_(0))
+            return None
 
     def place_and_reserve(self, disks=None, vm_disks=None,
                           expect=PlaceResultCode.OK):
@@ -241,11 +244,16 @@ class VmWrapper(object):
         assert_that(response.result, equal_to(expect))
         return response
 
-    def find_disk(self, disk_id, expect=FindResultCode.OK):
-        request = FindRequest(Locator(disk=DiskLocator(disk_id)))
-        response = rpc_call(self.host_client.find, request)
-        assert_that(response.result, equal_to(expect))
-        return response.datastore
+    def get_disk(self, disk_id, expect_found=True):
+        request = GetResourcesRequest([Locator(disk=DiskLocator(disk_id))])
+        response = rpc_call(self.host_client.get_resources, request)
+        assert_that(response.result, equal_to(GetResourcesResultCode.OK))
+        if expect_found:
+            assert_that(len(response.resources), is_(1))
+            return response.resources[0].disks[0]
+        else:
+            assert_that(len(response.resources), is_(0))
+            return None
 
     def delete_disks(self, disk_ids,
                      expect=Host.DeleteDisksResultCode.OK, validate=False):
@@ -370,11 +378,11 @@ class AgentCommonTests(object):
         """Test that the agent can create and delete a VM."""
         vm = VmWrapper(self.host_client)
 
-        vm.find(expect=FindResultCode.NOT_FOUND)
+        vm.get_vm(False)
         vm.create()
 
         # VM already exists
-        vm.find()
+        vm.get_vm(True)
         vm.create(expect=Host.CreateVmResultCode.VM_ALREADY_EXIST)
 
         # VM in wrong state
@@ -439,35 +447,6 @@ class AgentCommonTests(object):
             request = vm_wrapper.create_request(res_id=reservation)
             vm_wrapper.create(request=request)
             vm_wrapper.delete(request=vm_wrapper.delete_request(disk_ids=[]))
-
-    def test_get_vm_path(self):
-        vm_wrapper = VmWrapper(self.host_client)
-
-        # create a vm without disk
-        reservation = vm_wrapper.place_and_reserve().reservation
-        request = vm_wrapper.create_request(res_id=reservation)
-        vm_wrapper.create(request=request)
-
-        find_response = vm_wrapper.find()
-        vm_id = vm_wrapper.id
-        assert_that(find_response.path,
-                    matches_regexp("\[.*\] vm_%s/%s/%s\.vmx" %
-                                   (vm_id, vm_id, vm_id)))
-
-    def test_find_vm(self):
-        vm_wrapper = VmWrapper(self.host_client)
-
-        # create a vm without disk
-        reservation = vm_wrapper.place_and_reserve().reservation
-        request = vm_wrapper.create_request(res_id=reservation)
-        vm_wrapper.create(request=request)
-
-        find_response = vm_wrapper.find()
-        assert_that(find_response.datastore, is_not(None))
-        assert_that(find_response.datastore.id, is_not(None))
-        assert_that(find_response.datastore.name, is_not(None))
-
-        self._validate_datastore_id(find_response.datastore.id)
 
     def test_batch_get_resources(self):
         """Test that the agent can return resources in batch."""

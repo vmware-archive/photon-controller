@@ -102,8 +102,6 @@ from gen.host.ttypes import VmDisksOpResponse
 from gen.resource.ttypes import CloneType
 from gen.resource.ttypes import Datastore
 from gen.resource.ttypes import InactiveImageDescriptor
-from gen.scheduler.ttypes import FindResponse
-from gen.scheduler.ttypes import FindResultCode
 from gen.scheduler.ttypes import PlaceResponse
 from gen.scheduler.ttypes import PlaceResultCode
 from gen.scheduler.ttypes import Score
@@ -1285,52 +1283,6 @@ class HostHandler(Host.Iface):
                 GetDeletedImagesResponse())
 
     @log_request
-    @error_handler(FindResponse, FindResultCode)
-    def find(self, request):
-        """Find requested resource.
-
-        :type request: FindRequest
-        :rtype: FindResponse
-        """
-        if request.locator.disk:
-            datastore_id = self.hypervisor.disk_manager.get_datastore(
-                request.locator.disk.id)
-            if datastore_id:
-                datastore_name = \
-                    self.hypervisor.datastore_manager.datastore_name(
-                        datastore_id)
-                return FindResponse(FindResultCode.OK,
-                                    agent_id=self._agent_id,
-                                    datastore=Datastore(id=datastore_id,
-                                                        name=datastore_name),
-                                    address=self._address)
-        elif request.locator.vm:
-            found = self.hypervisor.vm_manager.has_vm(request.locator.vm.id)
-            if found:
-                try:
-                    config = self.hypervisor.vm_manager.get_vm_config(
-                        request.locator.vm.id)
-                    path = self.hypervisor.vm_manager.get_vm_path(config)
-                    datastore_id = self.hypervisor.vm_manager.get_vm_datastore(
-                        config)
-                    datastore_name = \
-                        self.hypervisor.datastore_manager.datastore_name(
-                            datastore_id)
-                except Exception, e:
-                    self._logger.warning("failed to get vm information")
-                    self._logger.exception(e)
-                    return FindResponse(FindResponse.MISSING_DETAILS,
-                                        agent_id=self._agent_id)
-
-                return FindResponse(FindResultCode.OK,
-                                    agent_id=self._agent_id,
-                                    datastore=Datastore(id=datastore_id,
-                                                        name=datastore_name),
-                                    path=path, address=self._address)
-
-        return FindResponse(FindResultCode.NOT_FOUND)
-
-    @log_request
     @error_handler(PlaceResponse, PlaceResultCode)
     def place(self, request):
         """Place requested resource.
@@ -1408,13 +1360,6 @@ class HostHandler(Host.Iface):
         :rtype string (datastore id)
         """
         return self.hypervisor.disk_manager.get_datastore(disk_id)
-
-    def _select_freest_datastore(self, datastores):
-        if len(datastores) is 0:
-            return None
-        if len(datastores) is 1:
-            return datastores[0]
-        return sorted(datastores, key=self._datastore_freespace)[-1]
 
     """
     Datastore selection is now performed during the

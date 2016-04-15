@@ -67,7 +67,6 @@ from gen.resource.ttypes import Image
 from gen.resource.ttypes import ImageDatastore
 from gen.resource.ttypes import ResourceConstraint
 from gen.resource.ttypes import ResourceConstraintType
-from gen.scheduler.ttypes import FindResultCode
 from gen.scheduler.ttypes import PlaceResultCode
 from hamcrest import assert_that
 from hamcrest import equal_to
@@ -841,7 +840,7 @@ class TestRemoteAgent(unittest.TestCase, AgentCommonTests):
         # delete vm with force succeeds
         vm_wrapper.delete(request=vm_wrapper.delete_request(force=True))
         for disk_id in disk_ids:
-            vm_wrapper.find_disk(disk_id, expect=FindResultCode.NOT_FOUND)
+            vm_wrapper.get_disk(disk_id, expect_found=False)
 
     def test_vminfo(self):
         vm_wrapper = VmWrapper(self.host_client)
