@@ -57,7 +57,7 @@ describe "Image Cleaner", housekeeper: true do
   end
 
   def poll_task(task)
-    task = client.poll_task(task["documentSelfLink"], 10, 100) do |b|
+    task = client.poll_task(task["documentSelfLink"], 10, 200) do |b|
       task_completion_stages.include? b["taskInfo"]["stage"]
     end
     EsxCloud::Config.logger.debug "Image Cleaner Task: #{task.inspect}"
