@@ -273,7 +273,7 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
       request.setHostSwitchName(NameUtils.HOST_SWITCH_NAME);
       request.setTransportType(TransportType.OVERLAY);
 
-      nsxClient.getFabricApi().createTransportZoneAsync(request,
+      nsxClient.getFabricApi().createTransportZone(request,
           new FutureCallback<TransportZone>() {
             @Override
             public void onSuccess(@Nullable TransportZone transportZone) {

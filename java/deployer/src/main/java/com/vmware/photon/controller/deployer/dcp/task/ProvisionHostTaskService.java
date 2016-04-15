@@ -425,7 +425,7 @@ public class ProvisionHostTaskService extends StatefulService {
       String payload = om.writeValueAsString(request);
       ServiceUtils.logInfo(this, "FC request: " + payload);
 
-      nsxClient.getFabricApi().registerFabricNodeAsync(request,
+      nsxClient.getFabricApi().registerFabricNode(request,
           new FutureCallback<FabricNode>() {
             @Override
             public void onSuccess(@Nullable FabricNode response) {
@@ -455,7 +455,7 @@ public class ProvisionHostTaskService extends StatefulService {
                 deploymentState.networkManagerUsername,
                 deploymentState.networkManagerPassword);
 
-            nsxClient.getFabricApi().getFabricNodeStateAsync(fabricNodeId,
+            nsxClient.getFabricApi().getFabricNodeState(fabricNodeId,
                 new FutureCallback<FabricNodeState>() {
                   @Override
                   public void onSuccess(@Nullable FabricNodeState response) {
@@ -519,7 +519,7 @@ public class ProvisionHostTaskService extends StatefulService {
         request.setTransportZoneEndPoints(Arrays.asList(transportZoneEndPoint));
       }
 
-      nsxClient.getFabricApi().createTransportNodeAsync(request,
+      nsxClient.getFabricApi().createTransportNode(request,
           new FutureCallback<TransportNode>() {
             @Override
             public void onSuccess(@Nullable TransportNode response) {
@@ -548,7 +548,7 @@ public class ProvisionHostTaskService extends StatefulService {
                 deploymentState.networkManagerUsername,
                 deploymentState.networkManagerPassword);
 
-            nsxClient.getFabricApi().getTransportNodeStateAsync(transportNodeId,
+            nsxClient.getFabricApi().getTransportNodeState(transportNodeId,
                 new FutureCallback<TransportNodeState>() {
                   @Override
                   public void onSuccess(@Nullable TransportNodeState response) {
