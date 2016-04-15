@@ -25,7 +25,6 @@ from gen.resource.ttypes import ResourcePlacement
 from gen.resource.ttypes import ResourcePlacementList
 from gen.resource.ttypes import State as ThriftState
 from gen.resource.ttypes import Vm as ThriftVm
-from gen.roles.ttypes import ChildInfo as ThriftChildInfo
 from gen.resource.ttypes import CloneType
 
 
@@ -325,27 +324,6 @@ class Host(BaseResource):
             thrift_host_config.vm_network = self.vm_network
 
         return thrift_host_config
-
-
-class ChildInfo(BaseResource):
-    """Child info, representing thrift interface on the child and resource
-       constraint list
-    """
-
-    def __init__(self, id, address, port, constraints=set()):
-        self.id = id
-        self.address = address
-        self.port = port
-        self.constraints = constraints
-
-    def to_thrift(self):
-        # Set to List
-        constraints = None
-        if self.constraints:
-            constraints = list(self.constraints)
-        # for constraint in self.constraints:
-        #   constraints.append(constraint)
-        return ThriftChildInfo(self.id, self.address, self.port, constraints)
 
 
 class AgentResourcePlacement(BaseResource):

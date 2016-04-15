@@ -12,7 +12,6 @@
  */
 package com.vmware.photon.controller.rootscheduler.service;
 
-import com.vmware.photon.controller.roles.gen.GetSchedulersResponse;
 import com.vmware.photon.controller.rootscheduler.Config;
 import com.vmware.photon.controller.scheduler.gen.PlaceRequest;
 import com.vmware.photon.controller.scheduler.gen.PlaceResponse;
@@ -44,14 +43,6 @@ public class SchedulerServiceTest {
   @BeforeMethod
   public void setUp() {
     MockitoAnnotations.initMocks(this);
-  }
-
-  @Test
-  public void testGetSchedulers() throws TException {
-    schedulerService = new SchedulerService(config, flatSchedulerService);
-    doReturn(new GetSchedulersResponse()).when(flatSchedulerService).get_schedulers();
-    schedulerService.get_schedulers();
-    verify(flatSchedulerService, times(1)).get_schedulers();
   }
 
   @Test
