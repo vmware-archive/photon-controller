@@ -29,9 +29,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 
@@ -146,8 +148,25 @@ public class BasicServiceHost
   public synchronized void destroy() throws Throwable {
     super.stop();
     File sandbox = new File(this.getStorageSandbox());
-    if (sandbox.exists()) {
-      FileUtils.forceDelete(sandbox);
+    for (int i = 0; i < 10; i++) {
+      try {
+        if (sandbox.exists()) {
+          FileUtils.forceDelete(sandbox);
+        }
+        break;
+      } catch (FileNotFoundException ignored) {
+        // Some file disappeared from the sandbox during deletion, it is possible that sandbox deletion was terminated
+        // prematurely. Hence retrying a few times may help recover.
+        logger.warn("Some file disappeared from the sandbox during deletion, will retry deleting sandbox a few times",
+            ignored);
+        Thread.sleep(TimeUnit.SECONDS.toMillis(1));
+      }
+      // If all previous attempts fail then we may see leak of
+      // sandbox files and we will need to investigate what process is messing with the sandbox even after the host
+      // is stopped. To catch that error try one more time without ignoring the FileNotFoundException.
+      if (sandbox.exists()) {
+        FileUtils.forceDelete(sandbox);
+      }
     }
   }
 
