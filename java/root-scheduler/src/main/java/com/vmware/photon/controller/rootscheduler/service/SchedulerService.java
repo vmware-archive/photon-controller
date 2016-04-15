@@ -13,7 +13,6 @@
 package com.vmware.photon.controller.rootscheduler.service;
 
 import com.vmware.photon.controller.common.zookeeper.ServiceNodeEventHandler;
-import com.vmware.photon.controller.roles.gen.GetSchedulersResponse;
 import com.vmware.photon.controller.rootscheduler.Config;
 import com.vmware.photon.controller.scheduler.gen.PlaceRequest;
 import com.vmware.photon.controller.scheduler.gen.PlaceResponse;
@@ -55,11 +54,6 @@ public class SchedulerService implements RootScheduler.Iface, ServiceNodeEventHa
 
   public void setConfig(Config config) {
     this.config = config;
-  }
-
-  @Override
-  public GetSchedulersResponse get_schedulers() {
-    return flatSchedulerService.get_schedulers();
   }
 
   @Override

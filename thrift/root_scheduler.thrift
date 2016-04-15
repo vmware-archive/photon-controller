@@ -14,13 +14,11 @@
 namespace java com.vmware.photon.controller.scheduler.root.gen
 namespace py gen.scheduler.root
 
-include 'roles.thrift'
 include 'scheduler.thrift'
 include 'status.thrift'
 
 // Root scheduler service
 service RootScheduler {
-  roles.GetSchedulersResponse get_schedulers()
   status.Status get_status(1:status.GetStatusRequest request)
   scheduler.PlaceResponse place(1: scheduler.PlaceRequest request)
 }
