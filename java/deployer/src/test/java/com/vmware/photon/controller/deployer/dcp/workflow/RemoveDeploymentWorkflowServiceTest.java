@@ -31,6 +31,7 @@ import com.vmware.photon.controller.client.resource.ProjectApi;
 import com.vmware.photon.controller.client.resource.TasksApi;
 import com.vmware.photon.controller.client.resource.TenantsApi;
 import com.vmware.photon.controller.client.resource.VmApi;
+import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.FlavorService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ProjectService;
@@ -50,8 +51,10 @@ import com.vmware.photon.controller.deployer.dcp.DeployerContext;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerFactoryService;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerService;
 import com.vmware.photon.controller.deployer.dcp.entity.VmService;
+import com.vmware.photon.controller.deployer.dcp.mock.NsxClientMock;
 import com.vmware.photon.controller.deployer.dcp.task.DeleteAgentTaskService;
 import com.vmware.photon.controller.deployer.deployengine.ApiClientFactory;
+import com.vmware.photon.controller.deployer.deployengine.NsxClientFactory;
 import com.vmware.photon.controller.deployer.helpers.ReflectionUtils;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
 import com.vmware.photon.controller.deployer.helpers.dcp.MockHelper;
@@ -366,6 +369,13 @@ public class RemoveDeploymentWorkflowServiceTest {
               TaskState.TaskStage.FAILED, null},
           {TaskState.TaskStage.STARTED, RemoveDeploymentWorkflowService.TaskState.SubStage.DEPROVISION_HOSTS,
               TaskState.TaskStage.CANCELLED, null},
+
+          {TaskState.TaskStage.STARTED, RemoveDeploymentWorkflowService.TaskState.SubStage.DEPROVISION_NETWORK,
+              TaskState.TaskStage.FINISHED, null},
+          {TaskState.TaskStage.STARTED, RemoveDeploymentWorkflowService.TaskState.SubStage.DEPROVISION_NETWORK,
+              TaskState.TaskStage.FAILED, null},
+          {TaskState.TaskStage.STARTED, RemoveDeploymentWorkflowService.TaskState.SubStage.DEPROVISION_NETWORK,
+              TaskState.TaskStage.CANCELLED, null},
       };
     }
 
@@ -402,6 +412,10 @@ public class RemoveDeploymentWorkflowServiceTest {
               TaskState.TaskStage.CREATED, null},
           {TaskState.TaskStage.STARTED, RemoveDeploymentWorkflowService.TaskState.SubStage.DEPROVISION_HOSTS,
               TaskState.TaskStage.STARTED, RemoveDeploymentWorkflowService.TaskState.SubStage.REMOVE_FROM_API_FE},
+          {TaskState.TaskStage.STARTED, RemoveDeploymentWorkflowService.TaskState.SubStage.DEPROVISION_NETWORK,
+              TaskState.TaskStage.STARTED, RemoveDeploymentWorkflowService.TaskState.SubStage.REMOVE_FROM_API_FE},
+          {TaskState.TaskStage.STARTED, RemoveDeploymentWorkflowService.TaskState.SubStage.DEPROVISION_NETWORK,
+              TaskState.TaskStage.STARTED, RemoveDeploymentWorkflowService.TaskState.SubStage.DEPROVISION_HOSTS},
 
           {TaskState.TaskStage.FINISHED, null,
               TaskState.TaskStage.CREATED, null},
@@ -409,6 +423,8 @@ public class RemoveDeploymentWorkflowServiceTest {
               TaskState.TaskStage.STARTED, RemoveDeploymentWorkflowService.TaskState.SubStage.REMOVE_FROM_API_FE},
           {TaskState.TaskStage.FINISHED, null,
               TaskState.TaskStage.STARTED, RemoveDeploymentWorkflowService.TaskState.SubStage.DEPROVISION_HOSTS},
+          {TaskState.TaskStage.FINISHED, null,
+              TaskState.TaskStage.STARTED, RemoveDeploymentWorkflowService.TaskState.SubStage.DEPROVISION_NETWORK},
           {TaskState.TaskStage.FINISHED, null,
               TaskState.TaskStage.FINISHED, null},
           {TaskState.TaskStage.FINISHED, null,
@@ -423,6 +439,8 @@ public class RemoveDeploymentWorkflowServiceTest {
           {TaskState.TaskStage.FAILED, null,
               TaskState.TaskStage.STARTED, RemoveDeploymentWorkflowService.TaskState.SubStage.DEPROVISION_HOSTS},
           {TaskState.TaskStage.FAILED, null,
+              TaskState.TaskStage.STARTED, RemoveDeploymentWorkflowService.TaskState.SubStage.DEPROVISION_NETWORK},
+          {TaskState.TaskStage.FAILED, null,
               TaskState.TaskStage.FINISHED, null},
           {TaskState.TaskStage.FAILED, null,
               TaskState.TaskStage.FAILED, null},
@@ -435,6 +453,8 @@ public class RemoveDeploymentWorkflowServiceTest {
               TaskState.TaskStage.STARTED, RemoveDeploymentWorkflowService.TaskState.SubStage.REMOVE_FROM_API_FE},
           {TaskState.TaskStage.CANCELLED, null,
               TaskState.TaskStage.STARTED, RemoveDeploymentWorkflowService.TaskState.SubStage.DEPROVISION_HOSTS},
+          {TaskState.TaskStage.CANCELLED, null,
+              TaskState.TaskStage.STARTED, RemoveDeploymentWorkflowService.TaskState.SubStage.DEPROVISION_NETWORK},
           {TaskState.TaskStage.CANCELLED, null,
               TaskState.TaskStage.FINISHED, null},
           {TaskState.TaskStage.CANCELLED, null,
@@ -491,6 +511,7 @@ public class RemoveDeploymentWorkflowServiceTest {
 
     private AgentControlClientFactory agentControlClientFactory;
     private HostClientFactory hostClientFactory;
+    private NsxClientFactory nsxClientFactory;
     private ListeningExecutorService listeningExecutorService;
     private ApiClientFactory apiClientFactory;
 
@@ -518,6 +539,7 @@ public class RemoveDeploymentWorkflowServiceTest {
       cloudStoreTestEnvironment = com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.create(1);
       agentControlClientFactory = mock(AgentControlClientFactory.class);
       hostClientFactory = mock(HostClientFactory.class);
+      nsxClientFactory = mock(NsxClientFactory.class);
       apiClientFactory = mock(ApiClientFactory.class);
     }
 
@@ -573,21 +595,34 @@ public class RemoveDeploymentWorkflowServiceTest {
     }
 
     @Test(dataProvider = "HostCounts")
-    public void testEndToEndSuccess(Integer hostCount) throws Throwable {
-      MockHelper.mockCreateScriptFile(deployerContext, DeleteAgentTaskService.SCRIPT_NAME, true);
-      MockHelper.mockHostClient(agentControlClientFactory, hostClientFactory, true);
-      mockApiClient(true);
-      startTestEnvironment(hostCount);
+    public void testEndToEndSuccessWithoutVirtualNetwork(Integer hostCount) throws Throwable {
+      startTestEnvironment(hostCount, false, true, true, true);
 
-      createHostServices(
-          Collections.singleton(UsageTag.MGMT.name()),
-          NUMBER_OF_MGMT_ONLY_HOST);
-      createHostServices(
-          Collections.singleton(UsageTag.CLOUD.name()),
-          NUMBER_OF_CLOUD_ONLY_HOST);
-      createHostServices(
-          new HashSet<>(Arrays.asList(UsageTag.CLOUD.name(), UsageTag.MGMT.name())),
-          NUMBER_OF_MGMT_AND_CLOUD_HOST);
+      createContainerService("containerName1");
+      int numOfContainers = queryNumOfContainers();
+      assertThat(numOfContainers, is(1));
+
+      RemoveDeploymentWorkflowService.State finalState =
+          testEnvironment.callServiceAndWaitForState(
+              RemoveDeploymentWorkflowFactoryService.SELF_LINK,
+              startState,
+              RemoveDeploymentWorkflowService.State.class,
+              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
+
+      numOfContainers = queryNumOfContainers();
+      assertThat(numOfContainers, is(0));
+
+      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FINISHED));
+      verifyVmServiceStates();
+      verifyTenantServiceState();
+      verifyProjectServiceState();
+      verifyImageServiceState();
+      verifyFlavorServiceStates();
+    }
+
+    @Test(dataProvider = "HostCounts")
+    public void testEndToEndSuccessWithVirtualNetwork(Integer hostCount) throws Throwable {
+      startTestEnvironment(hostCount, true, true, true, true);
 
       createContainerService("containerName1");
       int numOfContainers = queryNumOfContainers();
@@ -613,20 +648,21 @@ public class RemoveDeploymentWorkflowServiceTest {
 
     @Test(dataProvider = "HostCounts")
     public void testEndToEndFailFromRemoveAPIFE(Integer hostCount) throws Throwable {
-      MockHelper.mockCreateScriptFile(deployerContext, DeleteAgentTaskService.SCRIPT_NAME, true);
-      MockHelper.mockHostClient(agentControlClientFactory, hostClientFactory, true);
-      mockApiClient(false);
-      startTestEnvironment(hostCount);
+      startTestEnvironment(hostCount, false, false, true, true);
 
-      createHostServices(
-          Collections.singleton(UsageTag.MGMT.name()),
-          NUMBER_OF_MGMT_ONLY_HOST);
-      createHostServices(
-          Collections.singleton(UsageTag.CLOUD.name()),
-          NUMBER_OF_CLOUD_ONLY_HOST);
-      createHostServices(
-          new HashSet<>(Arrays.asList(UsageTag.CLOUD.name(), UsageTag.MGMT.name())),
-          NUMBER_OF_MGMT_AND_CLOUD_HOST);
+      RemoveDeploymentWorkflowService.State finalState =
+          testEnvironment.callServiceAndWaitForState(
+              RemoveDeploymentWorkflowFactoryService.SELF_LINK,
+              startState,
+              RemoveDeploymentWorkflowService.State.class,
+              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
+
+      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
+    }
+
+    @Test(dataProvider = "HostCounts")
+    public void testEndToEndFailDeprovisionNetwork(Integer hostCount) throws Throwable {
+      startTestEnvironment(hostCount, true, true, false, true);
 
       RemoveDeploymentWorkflowService.State finalState =
           testEnvironment.callServiceAndWaitForState(
@@ -640,20 +676,7 @@ public class RemoveDeploymentWorkflowServiceTest {
 
     @Test(dataProvider = "HostCounts")
     public void testEndToEndFailDeprovisionManagementHosts(Integer hostCount) throws Throwable {
-      MockHelper.mockCreateScriptFile(deployerContext, DeleteAgentTaskService.SCRIPT_NAME, false);
-      MockHelper.mockHostClient(agentControlClientFactory, hostClientFactory, false);
-      mockApiClient(true);
-      startTestEnvironment(hostCount);
-
-      createHostServices(
-          Collections.singleton(UsageTag.MGMT.name()),
-          NUMBER_OF_MGMT_ONLY_HOST);
-      createHostServices(
-          Collections.singleton(UsageTag.CLOUD.name()),
-          NUMBER_OF_CLOUD_ONLY_HOST);
-      createHostServices(
-          new HashSet<>(Arrays.asList(UsageTag.CLOUD.name(), UsageTag.MGMT.name())),
-          NUMBER_OF_MGMT_AND_CLOUD_HOST);
+      startTestEnvironment(hostCount, false, true, true, false);
 
       RemoveDeploymentWorkflowService.State finalState =
           testEnvironment.callServiceAndWaitForState(
@@ -720,10 +743,52 @@ public class RemoveDeploymentWorkflowServiceTest {
       }
     }
 
-    private void createHostServices(Set<String> usageTags, int count) throws Throwable {
-      for (int i = 0; i < count; i++) {
-        TestHelper.createHostService(cloudStoreTestEnvironment, usageTags);
+
+    private void startTestEnvironment(Integer hostCount,
+                                      boolean virtualNetworkEnabled,
+                                      boolean removeFromApifeSuccess,
+                                      boolean deprovisionNetworkSuccess,
+                                      boolean deprovisionHostSuccess) throws Throwable {
+      mockApiClient(removeFromApifeSuccess);
+
+      MockHelper.mockCreateScriptFile(deployerContext, DeleteAgentTaskService.SCRIPT_NAME, deprovisionHostSuccess);
+      MockHelper.mockHostClient(agentControlClientFactory, hostClientFactory, deprovisionHostSuccess);
+
+      NsxClientMock nsxClientMock = new NsxClientMock.Builder()
+          .deleteTransportZone(deprovisionNetworkSuccess)
+          .build();
+      doReturn(nsxClientMock).when(nsxClientFactory).create(anyString(), anyString(), anyString());
+
+      testEnvironment = new TestEnvironment.Builder()
+          .deployerContext(deployerContext)
+          .containersConfig(null)
+          .hostClientFactory(hostClientFactory)
+          .nsxClientFactory(nsxClientFactory)
+          .listeningExecutorService(listeningExecutorService)
+          .apiClientFactory(apiClientFactory)
+          .dockerProvisionerFactory(null)
+          .cloudServerSet(cloudStoreTestEnvironment.getServerSet())
+          .hostCount(hostCount)
+          .build();
+
+      startState.deploymentServiceLink =
+          TestHelper.createDeploymentService(cloudStoreTestEnvironment, false, virtualNetworkEnabled)
+              .documentSelfLink;
+      if (virtualNetworkEnabled) {
+        DeploymentService.State deploymentPatchState = new DeploymentService.State();
+        deploymentPatchState.networkZoneId = "networkZoneId";
+        cloudStoreTestEnvironment.sendPatchAndWait(startState.deploymentServiceLink, deploymentPatchState);
       }
+
+      createHostServices(
+          Collections.singleton(UsageTag.MGMT.name()),
+          NUMBER_OF_MGMT_ONLY_HOST);
+      createHostServices(
+          Collections.singleton(UsageTag.CLOUD.name()),
+          NUMBER_OF_CLOUD_ONLY_HOST);
+      createHostServices(
+          new HashSet<>(Arrays.asList(UsageTag.CLOUD.name(), UsageTag.MGMT.name())),
+          NUMBER_OF_MGMT_AND_CLOUD_HOST);
     }
 
     private void mockApiClient(boolean isSuccess) throws Throwable {
@@ -949,17 +1014,10 @@ public class RemoveDeploymentWorkflowServiceTest {
       doReturn(apiClient).when(apiClientFactory).create();
     }
 
-    private void startTestEnvironment(Integer hostCount) throws Throwable {
-      testEnvironment = new TestEnvironment.Builder()
-          .deployerContext(deployerContext)
-          .containersConfig(null)
-          .hostClientFactory(hostClientFactory)
-          .listeningExecutorService(listeningExecutorService)
-          .apiClientFactory(apiClientFactory)
-          .dockerProvisionerFactory(null)
-          .cloudServerSet(cloudStoreTestEnvironment.getServerSet())
-          .hostCount(hostCount)
-          .build();
+    private void createHostServices(Set<String> usageTags, int count) throws Throwable {
+      for (int i = 0; i < count; i++) {
+        TestHelper.createHostService(cloudStoreTestEnvironment, usageTags);
+      }
     }
   }
 }
