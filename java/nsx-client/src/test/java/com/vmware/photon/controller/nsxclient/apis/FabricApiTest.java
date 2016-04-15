@@ -40,19 +40,7 @@ import java.util.concurrent.TimeUnit;
 public class FabricApiTest extends NsxClientApiTest {
 
   @Test
-  public void testRegisterFabricNode() throws IOException {
-    FabricNode mockResponse = new FabricNode();
-    mockResponse.setId("id");
-    mockResponse.setExternalId("externalId");
-    setupMocks(objectMapper.writeValueAsString(mockResponse), HttpStatus.SC_CREATED);
-
-    FabricApi client = new FabricApi(restClient);
-    FabricNode response = client.registerFabricNode(new FabricNodeCreateSpec());
-    assertEquals(response, mockResponse);
-  }
-
-  @Test
-  public void testRegisterFabricNodeAsync() throws IOException, InterruptedException {
+  public void testRegisterFabricNode() throws IOException, InterruptedException {
     final FabricNode mockResponse = new FabricNode();
     mockResponse.setId("id");
     mockResponse.setExternalId("externalId");
@@ -60,7 +48,7 @@ public class FabricApiTest extends NsxClientApiTest {
 
     FabricApi client = new FabricApi(restClient);
     final CountDownLatch latch = new CountDownLatch(1);
-    client.registerFabricNodeAsync(new FabricNodeCreateSpec(),
+    client.registerFabricNode(new FabricNodeCreateSpec(),
         new com.google.common.util.concurrent.FutureCallback<FabricNode>() {
           @Override
           public void onSuccess(FabricNode result) {
@@ -79,25 +67,14 @@ public class FabricApiTest extends NsxClientApiTest {
   }
 
   @Test
-  public void testGetFabricNode() throws IOException {
-    FabricNode mockResponse = new FabricNode();
-    mockResponse.setId("id");
-    setupMocks(objectMapper.writeValueAsString(mockResponse), HttpStatus.SC_OK);
-
-    FabricApi client = new FabricApi(restClient);
-    FabricNode response = client.getFabricNode("nodeId");
-    assertEquals(response, mockResponse);
-  }
-
-  @Test
-  public void testGetFabricNodeAsync() throws IOException, InterruptedException {
+  public void testGetFabricNode() throws IOException, InterruptedException {
     final FabricNode mockResponse = new FabricNode();
     mockResponse.setId("id");
     setupMocks(objectMapper.writeValueAsString(mockResponse), HttpStatus.SC_OK);
 
     FabricApi client = new FabricApi(restClient);
     final CountDownLatch latch = new CountDownLatch(1);
-    client.getFabricNodeAsync("nodeId",
+    client.getFabricNode("nodeId",
         new com.google.common.util.concurrent.FutureCallback<FabricNode>() {
           @Override
           public void onSuccess(FabricNode result) {
@@ -116,25 +93,14 @@ public class FabricApiTest extends NsxClientApiTest {
   }
 
   @Test
-  public void testGetFabricNodeState() throws IOException {
-    FabricNodeState mockResponse = new FabricNodeState();
-    mockResponse.setState(com.vmware.photon.controller.nsxclient.datatypes.FabricNodeState.SUCCESS);
-    setupMocks(objectMapper.writeValueAsString(mockResponse), HttpStatus.SC_OK);
-
-    FabricApi client = new FabricApi(restClient);
-    FabricNodeState response = client.getFabricNodeState("nodeId");
-    assertEquals(response, mockResponse);
-  }
-
-  @Test
-  public void testGetFabricNodeStateAsync() throws IOException, InterruptedException {
+  public void testGetFabricNodeState() throws IOException, InterruptedException {
     final FabricNodeState mockResponse = new FabricNodeState();
     mockResponse.setState(com.vmware.photon.controller.nsxclient.datatypes.FabricNodeState.SUCCESS);
     setupMocks(objectMapper.writeValueAsString(mockResponse), HttpStatus.SC_OK);
 
     FabricApi client = new FabricApi(restClient);
     final CountDownLatch latch = new CountDownLatch(1);
-    client.getFabricNodeStateAsync("nodeId",
+    client.getFabricNodeState("nodeId",
         new com.google.common.util.concurrent.FutureCallback<FabricNodeState>() {
           @Override
           public void onSuccess(FabricNodeState result) {
@@ -153,20 +119,12 @@ public class FabricApiTest extends NsxClientApiTest {
   }
 
   @Test
-  public void testUnregisterFabricNode() throws IOException {
-    setupMocks(null, HttpStatus.SC_OK);
-
-    FabricApi client = new FabricApi(restClient);
-    client.unregisterFabricNode("nodeId");
-  }
-
-  @Test
-  public void testUnregisterFabricNodeAsync() throws IOException, InterruptedException {
+  public void testUnregisterFabricNode() throws IOException, InterruptedException {
     setupMocks(null, HttpStatus.SC_OK);
 
     FabricApi client = new FabricApi(restClient);
     final CountDownLatch latch = new CountDownLatch(1);
-    client.unregisterFabricNodeAsync("nodeId",
+    client.unregisterFabricNode("nodeId",
         new com.google.common.util.concurrent.FutureCallback<Void>() {
           @Override
           public void onSuccess(Void result) {
@@ -184,25 +142,14 @@ public class FabricApiTest extends NsxClientApiTest {
   }
 
   @Test
-  public void testCreateTransportNode() throws IOException {
-    TransportNode mockResponse = new TransportNode();
-    mockResponse.setId("id");
-    setupMocks(objectMapper.writeValueAsString(mockResponse), HttpStatus.SC_CREATED);
-
-    FabricApi client = new FabricApi(restClient);
-    TransportNode response = client.createTransportNode(new TransportNodeCreateSpec());
-    assertEquals(response, mockResponse);
-  }
-
-  @Test
-  public void testCreateTransportNodeAsync() throws IOException, InterruptedException {
+  public void testCreateTransportNode() throws IOException, InterruptedException {
     final TransportNode mockResponse = new TransportNode();
     mockResponse.setId("id");
     setupMocks(objectMapper.writeValueAsString(mockResponse), HttpStatus.SC_CREATED);
 
     FabricApi client = new FabricApi(restClient);
     final CountDownLatch latch = new CountDownLatch(1);
-    client.createTransportNodeAsync(new TransportNodeCreateSpec(),
+    client.createTransportNode(new TransportNodeCreateSpec(),
         new com.google.common.util.concurrent.FutureCallback<TransportNode>() {
           @Override
           public void onSuccess(TransportNode result) {
@@ -222,25 +169,14 @@ public class FabricApiTest extends NsxClientApiTest {
   }
 
   @Test
-  public void testGetTransportNode() throws IOException {
-    TransportNode mockResponse = new TransportNode();
-    mockResponse.setId("id");
-    setupMocks(objectMapper.writeValueAsString(mockResponse), HttpStatus.SC_OK);
-
-    FabricApi client = new FabricApi(restClient);
-    TransportNode response = client.getTransportNode("id");
-    assertEquals(response, mockResponse);
-  }
-
-  @Test
-  public void testGetTransportNodeAsync() throws IOException, InterruptedException {
+  public void testGetTransportNode() throws IOException, InterruptedException {
     final TransportNode mockResponse = new TransportNode();
     mockResponse.setId("id");
     setupMocks(objectMapper.writeValueAsString(mockResponse), HttpStatus.SC_OK);
 
     FabricApi client = new FabricApi(restClient);
     final CountDownLatch latch = new CountDownLatch(1);
-    client.getTransportNodeAsync("id",
+    client.getTransportNode("id",
         new com.google.common.util.concurrent.FutureCallback<TransportNode>() {
           @Override
           public void onSuccess(TransportNode result) {
@@ -259,25 +195,14 @@ public class FabricApiTest extends NsxClientApiTest {
   }
 
   @Test
-  public void testGetTransportNodeState() throws IOException {
-    TransportNodeState mockResponse = new TransportNodeState();
-    mockResponse.setState(com.vmware.photon.controller.nsxclient.datatypes.TransportNodeState.SUCCESS);
-    setupMocks(objectMapper.writeValueAsString(mockResponse), HttpStatus.SC_OK);
-
-    FabricApi client = new FabricApi(restClient);
-    TransportNodeState response = client.getTransportNodeState("id");
-    assertEquals(response, mockResponse);
-  }
-
-  @Test
-  public void testGetTransportNodeStateAsync() throws IOException, InterruptedException {
+  public void testGetTransportNodeState() throws IOException, InterruptedException {
     final TransportNodeState mockResponse = new TransportNodeState();
     mockResponse.setState(com.vmware.photon.controller.nsxclient.datatypes.TransportNodeState.SUCCESS);
     setupMocks(objectMapper.writeValueAsString(mockResponse), HttpStatus.SC_OK);
 
     FabricApi client = new FabricApi(restClient);
     final CountDownLatch latch = new CountDownLatch(1);
-    client.getTransportNodeStateAsync("id",
+    client.getTransportNodeState("id",
         new com.google.common.util.concurrent.FutureCallback<TransportNodeState>() {
           @Override
           public void onSuccess(TransportNodeState result) {
@@ -296,20 +221,12 @@ public class FabricApiTest extends NsxClientApiTest {
   }
 
   @Test
-  public void testDeleteTransportNode() throws IOException {
-    setupMocks(null, HttpStatus.SC_OK);
-
-    FabricApi client = new FabricApi(restClient);
-    client.deleteTransportNode("id");
-  }
-
-  @Test
-  public void testDeleteTransportNodeAsync() throws IOException, InterruptedException {
+  public void testDeleteTransportNode() throws IOException, InterruptedException {
     setupMocks(null, HttpStatus.SC_OK);
 
     FabricApi client = new FabricApi(restClient);
     final CountDownLatch latch = new CountDownLatch(1);
-    client.deleteTransportNodeAsync("id",
+    client.deleteTransportNode("id",
         new com.google.common.util.concurrent.FutureCallback<Void>() {
           @Override
           public void onSuccess(Void result) {
@@ -327,25 +244,14 @@ public class FabricApiTest extends NsxClientApiTest {
   }
 
   @Test
-  public void testCreateTransportZone() throws IOException {
-    TransportZone mockResponse = new TransportZone();
-    mockResponse.setId("id");
-    setupMocks(objectMapper.writeValueAsString(mockResponse), HttpStatus.SC_CREATED);
-
-    FabricApi client = new FabricApi(restClient);
-    TransportZone response = client.createTransportZone(new TransportZoneCreateSpec());
-    assertEquals(response, mockResponse);
-  }
-
-  @Test
-  public void testCreateTransportZoneAsync() throws IOException, InterruptedException {
+  public void testCreateTransportZone() throws IOException, InterruptedException {
     final TransportZone mockResponse = new TransportZone();
     mockResponse.setId("id");
     setupMocks(objectMapper.writeValueAsString(mockResponse), HttpStatus.SC_CREATED);
 
     FabricApi client = new FabricApi(restClient);
     final CountDownLatch latch = new CountDownLatch(1);
-    client.createTransportZoneAsync(new TransportZoneCreateSpec(),
+    client.createTransportZone(new TransportZoneCreateSpec(),
         new com.google.common.util.concurrent.FutureCallback<TransportZone>() {
           @Override
           public void onSuccess(TransportZone result) {
@@ -365,25 +271,14 @@ public class FabricApiTest extends NsxClientApiTest {
   }
 
   @Test
-  public void testGetTransportZone() throws IOException {
-    TransportZone mockResponse = new TransportZone();
-    mockResponse.setId("id");
-    setupMocks(objectMapper.writeValueAsString(mockResponse), HttpStatus.SC_OK);
-
-    FabricApi client = new FabricApi(restClient);
-    TransportZone response = client.getTransportZone("id");
-    assertEquals(response, mockResponse);
-  }
-
-  @Test
-  public void testGetTransportZoneAsync() throws IOException, InterruptedException {
+  public void testGetTransportZone() throws IOException, InterruptedException {
     final TransportZone mockResponse = new TransportZone();
     mockResponse.setId("id");
     setupMocks(objectMapper.writeValueAsString(mockResponse), HttpStatus.SC_OK);
 
     FabricApi client = new FabricApi(restClient);
     final CountDownLatch latch = new CountDownLatch(1);
-    client.getTransportZoneAsync("id",
+    client.getTransportZone("id",
         new com.google.common.util.concurrent.FutureCallback<TransportZone>() {
           @Override
           public void onSuccess(TransportZone result) {
@@ -402,25 +297,14 @@ public class FabricApiTest extends NsxClientApiTest {
   }
 
   @Test
-  public void testGetTransportSummaryZone() throws IOException {
-    TransportZoneSummary mockResponse = new TransportZoneSummary();
-    mockResponse.setNumTransportNodes(5);
-    setupMocks(objectMapper.writeValueAsString(mockResponse), HttpStatus.SC_OK);
-
-    FabricApi client = new FabricApi(restClient);
-    TransportZoneSummary response = client.getTransportZoneSummary("id");
-    assertEquals(response, mockResponse);
-  }
-
-  @Test
-  public void testGetTransportZoneSummaryAsync() throws IOException, InterruptedException {
+  public void testGetTransportZoneSummary() throws IOException, InterruptedException {
     final TransportZoneSummary mockResponse = new TransportZoneSummary();
     mockResponse.setNumTransportNodes(5);
     setupMocks(objectMapper.writeValueAsString(mockResponse), HttpStatus.SC_OK);
 
     FabricApi client = new FabricApi(restClient);
     final CountDownLatch latch = new CountDownLatch(1);
-    client.getTransportZoneSummaryAsync("id",
+    client.getTransportZoneSummary("id",
         new com.google.common.util.concurrent.FutureCallback<TransportZoneSummary>() {
           @Override
           public void onSuccess(TransportZoneSummary result) {
@@ -439,20 +323,12 @@ public class FabricApiTest extends NsxClientApiTest {
   }
 
   @Test
-  public void testDeleteTransportZone() throws IOException {
-    setupMocks(null, HttpStatus.SC_OK);
-
-    FabricApi client = new FabricApi(restClient);
-    client.deleteTransportZone("id");
-  }
-
-  @Test
-  public void testDeleteTransportZoneAsync() throws IOException, InterruptedException {
+  public void testDeleteTransportZone() throws IOException, InterruptedException {
     setupMocks(null, HttpStatus.SC_OK);
 
     FabricApi client = new FabricApi(restClient);
     final CountDownLatch latch = new CountDownLatch(1);
-    client.deleteTransportZoneAsync("id",
+    client.deleteTransportZone("id",
         new com.google.common.util.concurrent.FutureCallback<Void>() {
           @Override
           public void onSuccess(Void result) {

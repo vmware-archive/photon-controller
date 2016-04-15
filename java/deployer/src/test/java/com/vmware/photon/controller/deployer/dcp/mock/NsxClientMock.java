@@ -69,7 +69,7 @@ public class NsxClientMock extends NsxClient {
           ((FutureCallback<FabricNode>) invocation.getArguments()[1])
               .onSuccess(response);
           return null;
-        }).when(mockFabricApi).registerFabricNodeAsync(any(FabricNodeCreateSpec.class), any(FutureCallback.class));
+        }).when(mockFabricApi).registerFabricNode(any(FabricNodeCreateSpec.class), any(FutureCallback.class));
 
         FabricNodeState stateResponse = new FabricNodeState();
         stateResponse.setState(com.vmware.photon.controller.nsxclient.datatypes.FabricNodeState.SUCCESS);
@@ -77,14 +77,14 @@ public class NsxClientMock extends NsxClient {
           ((FutureCallback<FabricNodeState>) invocation.getArguments()[1])
               .onSuccess(stateResponse);
           return null;
-        }).when(mockFabricApi).getFabricNodeStateAsync(any(String.class), any(FutureCallback.class));
+        }).when(mockFabricApi).getFabricNodeState(any(String.class), any(FutureCallback.class));
       } else {
         RuntimeException error = new RuntimeException("registerFabricNode failed");
         doAnswer(invocation -> {
           ((FutureCallback<FabricNode>) invocation.getArguments()[1])
               .onFailure(error);
           return null;
-        }).when(mockFabricApi).registerFabricNodeAsync(any(FabricNodeCreateSpec.class), any(FutureCallback.class));
+        }).when(mockFabricApi).registerFabricNode(any(FabricNodeCreateSpec.class), any(FutureCallback.class));
       }
 
       return this;
@@ -103,7 +103,7 @@ public class NsxClientMock extends NsxClient {
           ((FutureCallback<TransportNode>) invocation.getArguments()[1])
               .onSuccess(response);
           return null;
-        }).when(mockFabricApi).createTransportNodeAsync(any(TransportNodeCreateSpec.class),
+        }).when(mockFabricApi).createTransportNode(any(TransportNodeCreateSpec.class),
             any(FutureCallback.class));
 
         TransportNodeState stateResponse = new TransportNodeState();
@@ -112,14 +112,14 @@ public class NsxClientMock extends NsxClient {
           ((FutureCallback<TransportNodeState>) invocation.getArguments()[1])
               .onSuccess(stateResponse);
           return null;
-        }).when(mockFabricApi).getTransportNodeStateAsync(any(String.class), any(FutureCallback.class));
+        }).when(mockFabricApi).getTransportNodeState(any(String.class), any(FutureCallback.class));
       } else {
         RuntimeException error = new RuntimeException("createTransportNode failed");
         doAnswer(invocation -> {
           ((FutureCallback<TransportNode>) invocation.getArguments()[1])
               .onFailure(error);
           return null;
-        }).when(mockFabricApi).createTransportNodeAsync(any(TransportNodeCreateSpec.class),
+        }).when(mockFabricApi).createTransportNode(any(TransportNodeCreateSpec.class),
             any(FutureCallback.class));
       }
 
@@ -139,14 +139,14 @@ public class NsxClientMock extends NsxClient {
           ((FutureCallback<TransportZone>) invocation.getArguments()[1])
               .onSuccess(response);
           return null;
-        }).when(mockFabricApi).createTransportZoneAsync(any(TransportZoneCreateSpec.class), any(FutureCallback.class));
+        }).when(mockFabricApi).createTransportZone(any(TransportZoneCreateSpec.class), any(FutureCallback.class));
       } else {
         RuntimeException error = new RuntimeException("createTransportZone failed");
         doAnswer(invocation -> {
           ((FutureCallback<TransportZone>) invocation.getArguments()[1])
               .onFailure(error);
           return null;
-        }).when(mockFabricApi).createTransportZoneAsync(any(TransportZoneCreateSpec.class),
+        }).when(mockFabricApi).createTransportZone(any(TransportZoneCreateSpec.class),
             any(FutureCallback.class));
       }
 
