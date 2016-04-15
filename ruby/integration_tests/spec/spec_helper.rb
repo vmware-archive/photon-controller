@@ -30,6 +30,7 @@ require_relative "support/deployer_client_helper"
 require_relative "support/system_cleaner"
 require_relative "support/system_seeder"
 require_relative "support/cluster_helper"
+require_relative "support/log_helper"
 
 EsxCloud::Config.init
 EsxCloud::Config.client = ApiClientHelper.management
@@ -47,44 +48,6 @@ if defined?(RSpec::Core::Formatters::JUnitFormatter)
     alias_method :old_example_classname, :example_classname
     alias_method :example_classname, :driver_aware_example_classname
   end
-end
-
-class TestCounter
-  def initialize
-    @counter = 0
-  end
-
-  def next
-    @counter += 1
-  end
-end
-
-def install_logging_hooks(rspec_config)
-  counter = TestCounter.new
-  log_dir = File.expand_path(File.join(File.dirname(__FILE__), "..", "reports", "log", ENV["DRIVER"]))
-
-  FileUtils.mkdir_p(log_dir)
-  
-  rspec_config.before :all do |example_group|
-    reset_logger(log_dir, counter, "before_#{example_group.class.description}")
-  end
-
-  # N.B. For now 'after all' hook for each example group will get appended to the last test in the group
-  rspec_config.before :each do |example_group|
-    full_example_name = "%s %s" % [example_group.class.description, example_group.example.description]
-    reset_logger(log_dir, counter, full_example_name)
-  end
-end
-
-def reset_logger(log_dir, counter, name)
-  path = "%03d_%s.log" % [counter.next, name.gsub(/[^a-z0-9\s_-]/i, "").gsub(/\s+/, "_") ]
-  log_file_name = File.join(log_dir, path)
-
-  logger = Logger.new(log_file_name)
-  logger.level = Logger::DEBUG
-
-  EsxCloud::Config.logger = logger
-  EsxCloud::Config.log_file_name = log_file_name
 end
 
 RSpec.configure do |config|

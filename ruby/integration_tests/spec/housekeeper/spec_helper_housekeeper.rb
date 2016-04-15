@@ -21,10 +21,12 @@ end
 
 require_relative "../../lib/integration"
 require_relative "../../lib/dcp/houskeeper_client"
+require_relative "../support/log_helper"
 
 EsxCloud::Config.init
 
 RSpec.configure do |config|
   config.color = true
   config.formatter = :documentation
+  install_logging_hooks(config)
 end
