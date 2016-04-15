@@ -43,11 +43,13 @@ import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateService
 import com.vmware.photon.controller.deployer.dcp.entity.VmService;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
 import com.vmware.photon.controller.deployer.dcp.util.MiscUtils;
+import com.vmware.photon.controller.nsxclient.NsxClient;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.OperationJoin;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
+import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.QueryTask;
@@ -83,7 +85,8 @@ public class RemoveDeploymentWorkflowService extends StatefulService {
      */
     public enum SubStage {
       REMOVE_FROM_API_FE,
-      DEPROVISION_HOSTS
+      DEPROVISION_HOSTS,
+      DEPROVISION_NETWORK
     }
   }
 
@@ -214,6 +217,7 @@ public class RemoveDeploymentWorkflowService extends StatefulService {
       switch (currentState.taskState.subStage) {
         case REMOVE_FROM_API_FE:
         case DEPROVISION_HOSTS:
+        case DEPROVISION_NETWORK:
           break;
         default:
           throw new IllegalStateException("Unknown task sub-stage: " + currentState.taskState.subStage);
@@ -267,6 +271,9 @@ public class RemoveDeploymentWorkflowService extends StatefulService {
         break;
       case DEPROVISION_HOSTS:
         queryAndDeprovisionHosts(currentState);
+        break;
+      case DEPROVISION_NETWORK:
+        deprovisionNetwork(currentState);
         break;
     }
   }
@@ -845,6 +852,52 @@ public class RemoveDeploymentWorkflowService extends StatefulService {
     return querySpecification;
   }
 
+  private void deprovisionNetwork(final State currentState) {
+    HostUtils.getCloudStoreHelper(this)
+        .createGet(currentState.deploymentServiceLink)
+        .setCompletion((op, ex) -> {
+          if (null != ex) {
+            failTask(ex);
+            return;
+          }
+
+          deprovisionNetwork(op.getBody(DeploymentService.State.class));
+        })
+        .sendWith(this);
+  }
+
+  private void deprovisionNetwork(final DeploymentService.State deploymentState) {
+    if (deploymentState == null || deploymentState.virtualNetworkEnabled == null ||
+        !deploymentState.virtualNetworkEnabled || deploymentState.networkZoneId == null) {
+      ServiceUtils.logInfo(this, "Skip deprovisioning network");
+      TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FINISHED, null, null));
+      return;
+    }
+
+    try {
+      NsxClient nsxClient = HostUtils.getNsxClientFactory(this).create(
+          deploymentState.networkManagerAddress,
+          deploymentState.networkManagerUsername,
+          deploymentState.networkManagerPassword);
+
+      nsxClient.getFabricApi().deleteTransportZone(deploymentState.networkZoneId,
+          new FutureCallback<Void>() {
+            @Override
+            public void onSuccess(@Nullable Void aVoid) {
+              TaskUtils.sendSelfPatch(RemoveDeploymentWorkflowService.this,
+                  buildPatch(TaskState.TaskStage.FINISHED, null, null));
+            }
+
+            @Override
+            public void onFailure(Throwable throwable) {
+              failTask(throwable);
+            }
+          });
+    } catch (Throwable t) {
+      failTask(t);
+    }
+  }
+
   private void queryAndDeprovisionHosts(final State currentState) {
 
     sendRequest(
@@ -864,7 +917,8 @@ public class RemoveDeploymentWorkflowService extends StatefulService {
                     if (documentLinks.size() > 0) {
                       deprovisionHosts(currentState, documentLinks);
                     } else {
-                      TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FINISHED, null, null));
+                      TaskUtils.sendSelfPatch(this,
+                          buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.DEPROVISION_NETWORK, null));
                     }
                   } catch (Throwable t) {
                     failTask(t);
@@ -887,8 +941,8 @@ public class RemoveDeploymentWorkflowService extends StatefulService {
           case FINISHED:
             if (0 == numOfPendingHosts.decrementAndGet()) {
               TaskUtils.sendSelfPatch(service, buildPatch(
-                  TaskState.TaskStage.FINISHED,
-                  null,
+                  TaskState.TaskStage.STARTED,
+                  TaskState.SubStage.DEPROVISION_NETWORK,
                   null));
             }
             break;
