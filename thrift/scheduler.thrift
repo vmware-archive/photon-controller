@@ -33,11 +33,6 @@ struct PlaceParams {
   7: required i32 fastPlaceResponseMinCount
 }
 
-// Same as above for find
-struct FindParams {
-  1: required i32 timeout
-}
-
 // Place a resource
 struct PlaceRequest {
   1: required resource.Resource resource
@@ -109,62 +104,12 @@ struct PlaceResponse {
   99: optional tracing.TracingInfo tracing_info
 }
 
-// Find a resource
-struct FindRequest {
-  1: required resource.Locator locator
-  2: optional string scheduler_id
-  3: optional FindParams params
-  99: optional tracing.TracingInfo tracing_info
-}
-
-enum FindResultCode {
-  // Resource is found, agent id set
-  OK = 0
-
-  SYSTEM_ERROR = 1
-
-  // Root scheduler is not the current leader, resources are not placed
-  // Does not apply to intermeddiate schedulers
-  NOT_LEADER = 2
-
-  // Resource not found
-  NOT_FOUND = 3
-
-  // Invalid scheduler id, only applies to branch schedulers
-  INVALID_SCHEDULER = 4
-
-  // Resource is found, but can not get detailed information of that resource.
-  // Maybe hostd is not responding, while agent is still working.
-  MISSING_DETAILS = 5
-}
-
-struct FindResponse {
-  1: required FindResultCode result
-
-  2: optional string error
-
-  // Agent that has the requested resource
-  3: optional string agent_id
-
-  // Datastore that has the requested resource
-  4: optional resource.Datastore datastore
-
-  // Path of VM or disk
-  5: optional string path
-
-  // host:port of the agent that has the requested resource. This field is set
-  // if and only if the find request was successful.
-  6: optional server_address.ServerAddress address
-}
-
 // Scheduler service
 service Scheduler {
   PlaceResponse place(1: PlaceRequest request)
-  FindResponse find(1: FindRequest request)
 
   // place/find handlers for hosts. These methods are in the Scheduler service
   // as opposed to the Host service to avoid getting stuck behind slow create_vm
   // requests.
   PlaceResponse host_place(1: PlaceRequest request)
-  FindResponse host_find(1: FindRequest request)
 }
