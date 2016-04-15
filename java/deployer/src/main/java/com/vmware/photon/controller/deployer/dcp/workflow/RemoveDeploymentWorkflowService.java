@@ -43,6 +43,7 @@ import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateService
 import com.vmware.photon.controller.deployer.dcp.entity.VmService;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
 import com.vmware.photon.controller.deployer.dcp.util.MiscUtils;
+import com.vmware.photon.controller.nsxclient.NsxClient;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.OperationJoin;
 import com.vmware.xenon.common.Service;
@@ -83,6 +84,7 @@ public class RemoveDeploymentWorkflowService extends StatefulService {
      */
     public enum SubStage {
       REMOVE_FROM_API_FE,
+      DEPROVISION_NETWORK,
       DEPROVISION_HOSTS
     }
   }
@@ -213,6 +215,7 @@ public class RemoveDeploymentWorkflowService extends StatefulService {
     if (TaskState.TaskStage.STARTED == currentState.taskState.stage) {
       switch (currentState.taskState.subStage) {
         case REMOVE_FROM_API_FE:
+        case DEPROVISION_NETWORK:
         case DEPROVISION_HOSTS:
           break;
         default:
@@ -265,6 +268,9 @@ public class RemoveDeploymentWorkflowService extends StatefulService {
       case REMOVE_FROM_API_FE:
         removeFromAPIFE(currentState);
         break;
+      case DEPROVISION_NETWORK:
+        deprovisionNetwork(currentState);
+        break;
       case DEPROVISION_HOSTS:
         queryAndDeprovisionHosts(currentState);
         break;
@@ -297,7 +303,7 @@ public class RemoveDeploymentWorkflowService extends StatefulService {
           @Override
           public void onSuccess(@Nullable Task result) {
             try {
-              sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.DEPROVISION_HOSTS);
+              sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.DEPROVISION_NETWORK);
             } catch (Throwable t) {
               failTask(t);
             }
@@ -843,6 +849,52 @@ public class RemoveDeploymentWorkflowService extends StatefulService {
         .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
         .setTermMatchValue(Utils.buildKind(dcpEntityClass));
     return querySpecification;
+  }
+
+  private void deprovisionNetwork(final State currentState) {
+    HostUtils.getCloudStoreHelper(this)
+        .createGet(currentState.deploymentServiceLink)
+        .setCompletion((op, ex) -> {
+          if (null != ex) {
+            failTask(ex);
+            return;
+          }
+
+          deprovisionNetwork(currentState, op.getBody(DeploymentService.State.class));
+        })
+        .sendWith(this);
+  }
+
+  private void deprovisionNetwork(final State currentState, final DeploymentService.State deploymentState) {
+    if (!deploymentState.virtualNetworkEnabled || deploymentState.networkZoneId == null) {
+      ServiceUtils.logInfo(this, "Skip deprovisioning network");
+      TaskUtils.sendSelfPatch(this,
+          buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.DEPROVISION_HOSTS, null));
+      return;
+    }
+
+    try {
+      NsxClient nsxClient = HostUtils.getNsxClientFactory(this).create(
+          deploymentState.networkManagerAddress,
+          deploymentState.networkManagerUsername,
+          deploymentState.networkManagerPassword);
+
+      nsxClient.getFabricApi().deleteTransportZone(deploymentState.networkZoneId,
+          new FutureCallback<Void>() {
+            @Override
+            public void onSuccess(@Nullable Void aVoid) {
+              TaskUtils.sendSelfPatch(RemoveDeploymentWorkflowService.this,
+                  buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.DEPROVISION_HOSTS, null));
+            }
+
+            @Override
+            public void onFailure(Throwable throwable) {
+              failTask(throwable);
+            }
+          });
+    } catch (Throwable t) {
+      failTask(t);
+    }
   }
 
   private void queryAndDeprovisionHosts(final State currentState) {
