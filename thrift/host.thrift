@@ -1003,7 +1003,6 @@ service Host {
   HttpTicketResponse get_http_ticket(1: HttpTicketRequest request)
 
   scheduler.PlaceResponse place(1: scheduler.PlaceRequest request)
-  scheduler.FindResponse find(1: scheduler.FindRequest request)
 
   /* API to delete a directory.
    * NFC delete directory implementation doesn't work correctly so the API FE
