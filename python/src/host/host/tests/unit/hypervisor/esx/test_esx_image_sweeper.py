@@ -31,7 +31,6 @@ from common.service_name import ServiceName
 from gen.resource.ttypes import DatastoreType
 
 from host.hypervisor.esx.image_manager import EsxImageManager
-from host.hypervisor.image_manager import InvalidImageState
 from host.hypervisor.image_scanner import DatastoreImageScanner
 from host.hypervisor.image_sweeper import DatastoreImageSweeper
 
@@ -205,7 +204,6 @@ class ImageSweeperTestCase(unittest.TestCase):
     BASE_TEMP_DIR = "image_sweeper"
     IMAGE_MARKER_FILENAME = EsxImageManager.IMAGE_MARKER_FILE_NAME
     IMAGE_TIMESTAMP_FILENAME = EsxImageManager.IMAGE_TIMESTAMP_FILE_NAME
-    IMAGE_TOMBSTONE_FILE_NAME = EsxImageManager.IMAGE_TOMBSTONE_FILE_NAME
 
     def setUp(self):
         self.test_dir = os.path.join(tempfile.mkdtemp(), self.BASE_TEMP_DIR)
@@ -571,7 +569,6 @@ class ImageSweeperTouchTimestampTestCase(unittest.TestCase):
     DATASTORE_ID = "DS01"
     BASE_TEMP_DIR = "image_sweeper"
     IMAGE_TIMESTAMP_FILENAME = EsxImageManager.IMAGE_TIMESTAMP_FILE_NAME
-    IMAGE_TOMBSTONE_FILENAME = EsxImageManager.IMAGE_TOMBSTONE_FILE_NAME
 
     def setUp(self):
         self.test_dir = os.path.join(tempfile.mkdtemp(), self.BASE_TEMP_DIR)
@@ -603,8 +600,6 @@ class ImageSweeperTouchTimestampTestCase(unittest.TestCase):
         dir3 = self.create_dir(image_id_3)
         open(os.path.join(
             dir3, self.IMAGE_TIMESTAMP_FILENAME), 'w').close()
-        open(os.path.join(
-            dir3, self.IMAGE_TOMBSTONE_FILENAME), 'w').close()
 
         self.image_ids = ["", image_id_1, image_id_2, image_id_3]
         self.image_dirs = ["", dir1, dir2, dir3]
@@ -613,10 +608,9 @@ class ImageSweeperTouchTimestampTestCase(unittest.TestCase):
         shutil.rmtree(self.test_dir, True)
 
     @parameterized.expand([
-        # timestamp_exists, tombstone_exists
-        (True, False),
-        (True, True),
-        (False, False)
+        # timestamp_exists
+        (True, ),
+        (False, )
     ])
     # The os_vmdk_path method is defined in vm_config.py
     # but it is imported in esx/image_manager.py, that is
@@ -624,12 +618,8 @@ class ImageSweeperTouchTimestampTestCase(unittest.TestCase):
     @patch("host.hypervisor.esx.image_manager.os_vmdk_path")
     def test_touch_timestamp_file(self,
                                   timestamp_exists,
-                                  tombstone_exists,
                                   os_vmdk_path):
-        if tombstone_exists:
-            image_index = 3
-            exception_class = type(InvalidImageState())
-        elif not timestamp_exists:
+        if not timestamp_exists:
             image_index = 2
             exception_class = type(OSError())
         else:
@@ -657,24 +647,6 @@ class ImageSweeperTouchTimestampTestCase(unittest.TestCase):
             assert_that((post_mod_time > pre_mod_time) is True)
         except Exception as ex:
             assert_that((type(ex) == exception_class) is True)
-
-    @patch("host.hypervisor.esx.image_manager.os_vmdk_path")
-    def test_create_tombstone_file(self,
-                                   os_vmdk_path):
-        image_index = 1
-
-        image_id = self.image_ids[image_index]
-        image_dir = self.image_dirs[image_index]
-        os_vmdk_path.side_effect = self.patched_os_vmdk_path
-
-        tombstone_filename_path = os.path.join(image_dir, self.IMAGE_TOMBSTONE_FILENAME)
-
-        self.image_manager.create_image_tombstone(self.DATASTORE_ID,
-                                                  image_id)
-
-        # check tombstone exists
-        exists = os.path.exists(tombstone_filename_path)
-        assert_that(exists is True)
 
     def patched_os_vmdk_path(self, datastore, disk_id, folder):
         folder = self.dir0

@@ -55,11 +55,6 @@ class FakeImageManager(ImageManager):
         self._disk_manager.copy_disk(src_datastore, src_id,
                                      dst_datastore, dst_id)
 
-    def delete_image(self, datastore_id, image_id, ds_type, force):
-        self._logger.info("deleting fake image %s in datastore %s" %
-                          (image_id, datastore_id))
-        self._disk_manager.delete_disk(datastore_id, image_id)
-
     def get_image_metadata(self, image_id, datastore):
         return None
 
@@ -113,14 +108,8 @@ class FakeImageManager(ImageManager):
     def touch_image_timestamp(self, dsid, image_id):
         return
 
-    def create_image_tombstone(self, dsid, image_id):
-        return
-
     def get_timestamp_mod_time_from_dir(self, dirname, renamed=False):
         return True, 0
-
-    def get_tombstone_mod_time_from_dir(self, dirname):
-        return False, 0
 
     def create_image(self, image_id, datastore_id):
         return

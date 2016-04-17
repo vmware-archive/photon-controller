@@ -47,8 +47,6 @@ from gen.host.ttypes import DeleteDiskError
 from gen.host.ttypes import DeleteDiskResultCode
 from gen.host.ttypes import DeleteDisksResponse
 from gen.host.ttypes import DeleteDisksResultCode
-from gen.host.ttypes import DeleteImageResponse
-from gen.host.ttypes import DeleteImageResultCode
 from gen.host.ttypes import DeleteVmResponse
 from gen.host.ttypes import DeleteVmResultCode
 from gen.host.ttypes import DetachISOResponse
@@ -125,8 +123,6 @@ from host.hypervisor.resources import Vm
 from host.hypervisor.task_runner import TaskAlreadyRunning
 
 from hypervisor.disk_manager import DiskAlreadyExistException
-from hypervisor.image_manager import ImageInUse
-from hypervisor.image_manager import InvalidImageState
 from hypervisor.vm_manager import DiskNotFoundException
 from hypervisor.vm_manager import IsoNotAttachedException
 from hypervisor.vm_manager import OperationNotAllowedException
@@ -576,11 +572,6 @@ class HostHandler(Host.Iface):
         try:
             im.touch_image_timestamp(ds_id, image_id)
             return CreateVmResponse(rc.OK)
-        except InvalidImageState:
-            # tombstone
-            self._logger.debug(sys.exc_info()[1])
-            return CreateVmResponse(rc.IMAGE_TOMBSTONED,
-                                    "%s has been tombstoned" % image_id)
         except Exception as e:
             self._logger.exception("Failed to touch image timestamp %s, vm %s"
                                    % (e, vm_id))
@@ -1003,45 +994,6 @@ class HostHandler(Host.Iface):
                 CopyImageResponse())
 
         return CopyImageResponse(result=CopyImageResultCode.OK)
-
-    @log_request
-    @error_handler(DeleteImageResponse, DeleteImageResultCode)
-    def delete_image(self, request):
-        """Delete an image from datastore
-
-        :param request: DeleteImageRequest
-        :return: DeleteImageResponse
-        """
-
-        image = request.image
-        im = self.hypervisor.image_manager
-        datastore_id = self.hypervisor.datastore_manager.normalize(
-            image.datastore.id)
-        ds_type = self.hypervisor.datastore_manager.datastore_type(
-            datastore_id)
-        try:
-            im.delete_image(datastore_id, image.id,
-                            ds_type, request.force)
-
-        except ImageNotFoundException as e:
-            return self._error_response(
-                DeleteImageResultCode.IMAGE_NOT_FOUND,
-                "Delete image %s error: %s" % (image.id, e),
-                DeleteImageResponse())
-
-        except ImageInUse as e:
-            return self._error_response(
-                DeleteImageResultCode.IMAGE_IN_USE,
-                "Delete image %s error: %s" % (image.id, e),
-                DeleteImageResponse())
-
-        except Exception as e:
-            return self._error_response(
-                DeleteImageResultCode.SYSTEM_ERROR,
-                "Delete image %s error: %s" % (image.id, e),
-                DeleteImageResponse())
-
-        return DeleteImageResponse(result=DeleteImageResultCode.OK)
 
     @log_request
     @error_handler(GetImagesResponse, GetImagesResultCode)
