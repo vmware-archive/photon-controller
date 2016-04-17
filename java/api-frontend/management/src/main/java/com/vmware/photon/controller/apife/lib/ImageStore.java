@@ -53,14 +53,6 @@ public interface ImageStore {
   void createImageFromVm(Image image, String vmId) throws ExternalException, InternalException;
 
   /**
-   * Delete an image based on image id.
-   *
-   * @param imageId
-   * @throws InternalException
-   */
-  void deleteImage(String imageId) throws InternalException;
-
-  /**
    * Delete the entire upload folder on the host.
    */
   void deleteUploadFolder(Image image) throws InternalException;

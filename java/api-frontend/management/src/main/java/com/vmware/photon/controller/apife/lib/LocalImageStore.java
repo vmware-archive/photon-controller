@@ -59,17 +59,6 @@ public class LocalImageStore implements ImageStore {
   }
 
   @Override
-  public void deleteImage(String imageId) throws InternalException {
-    logger.debug("delete image {}", imageId);
-    File theDir = new File(dir);
-    for (File file : theDir.listFiles()) {
-      if (file.getName().startsWith(imageId)) {
-        file.delete();
-      }
-    }
-  }
-
-  @Override
   public void deleteUploadFolder(Image image) throws DeleteUploadFolderException {
     // To be implemented if it is needed in the future.
     throw new DeleteUploadFolderException("deleteUploadFolder method has not been " +

@@ -165,12 +165,6 @@ enum CreateVmResultCode {
   IMAGE_NOT_FOUND = 5
   PLACEMENT_NOT_FOUND = 6
   DATASTORE_UNAVAILABLE = 7
-  // VM got created, but failed to increment refcount for the base image. Note
-  // that in this case the agent tries to delete the VM that just got created,
-  // but it does not guarantee the VM to be deleted.
-  REF_UPDATE_FAILED = 8
-  // The image exists, but it's tombstoned.
-  IMAGE_TOMBSTONED = 9
   VM_ALREADY_EXIST = 10
   OPERATION_NOT_ALLOWED = 11
 }
@@ -654,41 +648,6 @@ struct CopyImageResponse {
   2: optional string error
 }
 
-struct DeleteImageRequest {
-  // Image to be deleted
-  1: required resource.Image image
-  // If True the image is marked as tombstoned. Defaults to True.
-  // A tombstoned image cannot be used for creating new VMs.
-  2: optional bool tombstone
-  // Force the delete of the image regardless of ref. count. Defaults to False.
-  // If there are powered on VMs referencing the image, esx(vmfs/nfs) will
-  // prevent the deletion of the image.
-  3: optional bool force
-
-  99: optional tracing.TracingInfo tracing_info
-}
-
-enum DeleteImageResultCode {
-  OK = 0
-  SYSTEM_ERROR = 1
-  // The delete failed due to the image not being found on the datastore.
-  IMAGE_NOT_FOUND = 2
-  // The delete failed as the image is being referenced by virtual machines.
-  IMAGE_IN_USE = 3
-  // The delete failed as the ref count associated with the image is invalid.
-  // This can happen due to many reasons, common examples include
-  // 1 - no permissions to read the file.
-  // 2 - File is not deserializable.
-  // 3 - Ref count file version is not understood by this host.
-  // 4 - Filesystem and OS issues.
-  INVALID_REF_COUNT_FILE = 4
-}
-
-struct DeleteImageResponse {
-  1: required DeleteImageResultCode result
-  2: optional string error
-}
-
 struct DeleteDirectoryRequest {
   // The datastore name or id for the directory.
   1: required string datastore
@@ -971,7 +930,6 @@ service Host {
   CreateImageResponse create_image(1: CreateImageRequest request)
   FinalizeImageResponse finalize_image(1: FinalizeImageRequest request)
   CopyImageResponse copy_image(1: CopyImageRequest request)
-  DeleteImageResponse delete_image(1: DeleteImageRequest request)
   GetImagesResponse get_images(1: GetImagesRequest request)
 
   TransferImageResponse transfer_image(1: TransferImageRequest request)

@@ -29,11 +29,8 @@ from gen.host import Host
 from gen.host.ttypes import CopyImageResultCode
 from gen.host.ttypes import FinalizeImageRequest
 from gen.host.ttypes import FinalizeImageResultCode
-from gen.host.ttypes import CreateVmResultCode
 from gen.host.ttypes import DeleteDirectoryRequest
 from gen.host.ttypes import DeleteDirectoryResultCode
-from gen.host.ttypes import DeleteImageRequest
-from gen.host.ttypes import DeleteImageResultCode
 from gen.host.ttypes import DeleteVmResultCode
 from gen.host.ttypes import GetConfigResultCode
 from gen.host.ttypes import GetDatastoresRequest
@@ -316,12 +313,7 @@ class TestRemoteAgent(unittest.TestCase, AgentCommonTests):
                 if image_id == "ttylinux":
                     continue  # To be removed when we remove ttylinux.
                 logging.info("Cleaning up stray image %s " % image_id)
-                resp = self.host_client.delete_image(
-                    DeleteImageRequest(Image(image_id, datastore),
-                                       tombstone=True,
-                                       force=True))
-                if not resp.result == DeleteImageResultCode.OK:
-                    logger.warning("Failed to cleanup image %s " % image_id)
+                self._delete_image(Image(image_id, datastore))
         else:
             logger.warning("Failed to obtain the list of images to cleanup")
 
@@ -342,13 +334,9 @@ class TestRemoteAgent(unittest.TestCase, AgentCommonTests):
         self.assertEqual(res.result, TransferImageResultCode.OK)
 
         # clean up images created in test
-        res = self.host_client.delete_image(DeleteImageRequest(dst_image,
-                                            True, False))
-        self.assertEqual(res.result, DeleteImageResultCode.OK)
+        self._delete_image(dst_image)
         xfered_image = Image(image_id_2, datastore)
-        res = self.host_client.delete_image(DeleteImageRequest(xfered_image,
-                                            True, False))
-        self.assertEqual(res.result, DeleteImageResultCode.OK)
+        self._delete_image(xfered_image)
 
     def test_host_config_after_provision(self):
         """
@@ -588,39 +576,6 @@ class TestRemoteAgent(unittest.TestCase, AgentCommonTests):
 
         return dst_image, datastore
 
-    def test_delete_image(self):
-        """
-        Test deletes an image and verifies that the image gets deleted
-        correctly.
-        """
-        image_id = new_id() + "-test-delete-image"
-        dst_image, _ = self._create_test_image(image_id)
-
-        # dst_image_2's datastore is specified by datastore name
-        image_id_2 = new_id() + "-test-delete-image_2"
-        dst_image_2, ds = self._create_test_image(image_id_2)
-        dst_image_2.datastore.id = ds.name
-
-        # Delete the image with datastore id
-        res = self.host_client.delete_image(DeleteImageRequest(dst_image,
-                                            True, False))
-        self.assertEqual(res.result, DeleteImageResultCode.OK)
-
-        # Delete the image with datastore name
-        res = self.host_client.delete_image(DeleteImageRequest(dst_image_2,
-                                            True, False))
-        self.assertEqual(res.result, DeleteImageResultCode.OK)
-
-        # Clean up images
-        res = self.host_client.delete_image(DeleteImageRequest(dst_image,
-                                            True, True))
-        self.assertEqual(res.result, DeleteImageResultCode.OK)
-
-        # Delete the image with datastore name
-        res = self.host_client.delete_image(DeleteImageRequest(dst_image_2,
-                                            True, True))
-        self.assertEqual(res.result, DeleteImageResultCode.OK)
-
     def _get_vim_ticket(self):
         request = ServiceTicketRequest(ServiceType.VIM)
         response = self.host_client.get_service_ticket(request)
@@ -661,32 +616,6 @@ class TestRemoteAgent(unittest.TestCase, AgentCommonTests):
 
         # Reprovision using defaults for other tests.
         _update_host_config(self, 2.0)
-
-    def test_tombstone_behavior(self):
-        """ Integration test for tombstone behavior """
-        img_id = "test_tombstone_image"
-        dst_image, ds = self._create_test_image(img_id)
-
-        # Mark image as deleted
-        res = self.host_client.delete_image(DeleteImageRequest(dst_image,
-                                            True, False))
-        self.assertEqual(res.result, DeleteImageResultCode.OK)
-
-        # Create a VM referencing the image.
-        image = DiskImage(img_id, CloneType.COPY_ON_WRITE)
-        disks = [
-            Disk(new_id(), self.DEFAULT_DISK_FLAVOR.name, False, True,
-                 image=image,
-                 capacity_gb=0, flavor_info=self.DEFAULT_DISK_FLAVOR),
-        ]
-
-        # Create a new VM referencing the tombstone image.
-        vm_wrapper = VmWrapper(self.host_client)
-        reservation = \
-            vm_wrapper.place_and_reserve(vm_disks=disks).reservation
-        request = vm_wrapper.create_request(res_id=reservation)
-        vm_wrapper.create(request=request,
-                          expect=CreateVmResultCode.IMAGE_TOMBSTONED)
 
     def test_create_vm_with_ephemeral_disks_concurrent(self):
         concurrency = 5
@@ -761,54 +690,12 @@ class TestRemoteAgent(unittest.TestCase, AgentCommonTests):
             thread.join()
 
         # Clean destination image
-        self.host_client.delete_image(DeleteImageRequest(dst_image))
+        self._delete_image(dst_image)
 
         # Only one copy is successful, all others return
         # DESTINATION_ALREADY_EXIST
         assert_that(results["ok"], is_(1))
         assert_that(results["existed"], is_(concurrency - 1))
-
-    def test_force_delete_image(self):
-        """
-        Test force deleting an image
-        """
-        image_id = new_id() + "_test_force_delete_image"
-        dst_image, _ = self._create_test_image(image_id)
-
-        vm_wrapper = VmWrapper(self.host_client)
-        image = DiskImage(image_id, CloneType.COPY_ON_WRITE)
-        disks = [
-            Disk(new_id(), self.DEFAULT_DISK_FLAVOR.name, False, True,
-                 image=image,
-                 capacity_gb=0, flavor_info=self.DEFAULT_DISK_FLAVOR),
-        ]
-        reservation = \
-            vm_wrapper.place_and_reserve(vm_disks=disks).reservation
-        request = vm_wrapper.create_request(res_id=reservation)
-        vm_wrapper.create(request=request)
-
-        rc = Host.PowerVmOpResultCode
-        op = Host.PowerVmOp
-
-        vm_wrapper.power(op.ON, rc.OK)
-        # Test 1: Verify that we disallow the image to be delete if a VM
-        # is using it and the VM is powered on.
-        res = self.host_client.delete_image(DeleteImageRequest(dst_image,
-                                            True, True))
-        self.assertEqual(res.result, DeleteImageResultCode.IMAGE_IN_USE)
-
-        vm_wrapper.power(op.OFF, rc.OK)
-
-        # Test 2: Verify that we allow the image to be deleted if a VM is
-        # using it, but the VM is powered off.
-        res = self.host_client.delete_image(DeleteImageRequest(dst_image,
-                                            True, True))
-        self.assertEqual(res.result, DeleteImageResultCode.OK)
-
-        # force delete VM.
-        delete_request = vm_wrapper.delete_request(force=True)
-        vm_wrapper.delete(expect=DeleteVmResultCode.OK,
-                          request=delete_request)
 
     def test_force_delete_vm(self):
         vm_wrapper = VmWrapper(self.host_client)
@@ -991,13 +878,6 @@ class TestRemoteAgent(unittest.TestCase, AgentCommonTests):
         response = self.host_client.copy_image(request)
         assert_that(response.result, is_(CopyImageResultCode.OK))
 
-        # Check image is not in datastore[1]
-        image = Image(new_image_id, Datastore(id=dest_datastore.name))
-        request = Host.DeleteImageRequest(image)
-        response = self.host_client.delete_image(request)
-        assert_that(response.result,
-                    is_(DeleteImageResultCode.IMAGE_NOT_FOUND))
-
         def _thread():
             self._test_create_vm_with_ephemeral_disks(new_image_id,
                                                       concurrent=True,
@@ -1018,8 +898,7 @@ class TestRemoteAgent(unittest.TestCase, AgentCommonTests):
         # them up.
         for ds in (image_datastore, dest_datastore):
             image = Image(datastore=Datastore(id=ds.name), id=new_image_id)
-            response = self.host_client.delete_image(DeleteImageRequest(image))
-            assert_that(response.result, is_(DeleteImageResultCode.OK))
+            self._delete_image(image)
 
         assert_that(results["count"], is_(concurrency))
 
@@ -1155,9 +1034,7 @@ class TestRemoteAgent(unittest.TestCase, AgentCommonTests):
                          FinalizeImageResultCode.DESTINATION_ALREADY_EXIST)
 
         # cleanup
-        self.host_client.delete_image(DeleteImageRequest(dst_image,
-                                                         tombstone=True,
-                                                         force=True))
+        self._delete_image(dst_image)
 
     def test_start_image_scanner(self):
         """
@@ -1221,12 +1098,8 @@ class TestRemoteAgent(unittest.TestCase, AgentCommonTests):
                                            True)
         # cleanup
         vm_wrapper.delete()
-        self.host_client.delete_image(DeleteImageRequest(dst_image_1,
-                                                         tombstone=True,
-                                                         force=True))
-        self.host_client.delete_image(DeleteImageRequest(dst_image_2,
-                                                         tombstone=True,
-                                                         force=True))
+        self._delete_image(dst_image_1, DeleteDirectoryResultCode.DIRECTORY_NOT_FOUND)
+        self._delete_image(dst_image_2)
 
     def _get_and_check_inactive_images(self, datastore_id, image_id, found):
         get_inactive_images_request = GetInactiveImagesRequest()
@@ -1410,9 +1283,7 @@ class TestRemoteAgent(unittest.TestCase, AgentCommonTests):
         vm_wrapper2.delete()
 
         # cleanup
-        self.host_client.delete_image(DeleteImageRequest(dst_image,
-                                                         tombstone=True,
-                                                         force=True))
+        self._delete_image(dst_image)
 
     def test_delete_tmp_image(self):
         """ Integration test for deleting temp image directory """

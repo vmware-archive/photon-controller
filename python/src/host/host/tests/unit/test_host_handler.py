@@ -34,8 +34,6 @@ from gen.host.ttypes import CreateDisksRequest
 from gen.host.ttypes import CreateDisksResultCode
 from gen.host.ttypes import CreateVmRequest
 from gen.host.ttypes import CreateVmResultCode
-from gen.host.ttypes import DeleteImageRequest
-from gen.host.ttypes import DeleteImageResultCode
 from gen.host.ttypes import DeleteVmRequest
 from gen.host.ttypes import DeleteVmResultCode
 from gen.host.ttypes import DetachISORequest
@@ -79,9 +77,6 @@ from host.host_handler import HostHandler
 from host.hypervisor.datastore_manager import DatastoreNotFoundException
 from host.hypervisor.disk_manager import DiskAlreadyExistException
 from host.hypervisor.hypervisor import Hypervisor
-from host.hypervisor.image_manager import ImageInUse
-from host.hypervisor.image_manager import ImageNotFoundException
-from host.hypervisor.image_manager import InvalidImageState
 from host.hypervisor.image_scanner import DatastoreImageScanner
 from host.hypervisor.image_sweeper import DatastoreImageSweeper
 from host.hypervisor.placement_manager import InvalidReservationException
@@ -906,56 +901,6 @@ class HostHandlerTestCase(unittest.TestCase):
         self.assertEqual(response.result,
                          DetachISOResultCode.ISO_NOT_ATTACHED)
 
-    def test_delete_image(self):
-        """ Test image delete """
-        handler = HostHandler(MagicMock())
-        img = Image("dummy", Datastore("datastore1"))
-        request = DeleteImageRequest(img)
-        request.force = False
-
-        ds_mgr = handler.hypervisor.datastore_manager
-        ds_mgr.datastore_type.return_value = 0
-        ds_mgr.normalize.return_value = "datastore1"
-        img_mgr = handler.hypervisor.image_manager
-
-        # Delete image success
-        response = handler.delete_image(request)
-        img_mgr.delete_image.assert_called_with(
-            "datastore1",
-            "dummy",
-            0,
-            False
-        )
-        assert_that(response.result is DeleteImageResultCode.OK)
-
-        # Test when force is set
-        request.force = True
-        response = handler.delete_image(request)
-        img_mgr.delete_image.assert_called_with(
-            "datastore1",
-            "dummy",
-            0,
-            True
-        )
-        assert_that(response.result is DeleteImageResultCode.OK)
-
-        # Can't find the image
-        img_mgr.delete_image.side_effect = ImageNotFoundException
-        response = handler.delete_image(request)
-        self.assertEqual(response.result,
-                         DeleteImageResultCode.IMAGE_NOT_FOUND)
-
-        # Image in use
-        img_mgr.delete_image.side_effect = ImageInUse
-        response = handler.delete_image(request)
-        self.assertEqual(response.result,
-                         DeleteImageResultCode.IMAGE_IN_USE)
-
-        # System error
-        img_mgr.delete_image.side_effect = ValueError
-        response = handler.delete_image(request)
-        self.assertEqual(response.result, DeleteImageResultCode.SYSTEM_ERROR)
-
     def test_get_mode(self):
         handler = HostHandler(MagicMock())
         response = handler.get_host_mode(GetHostModeRequest())
@@ -988,12 +933,6 @@ class HostHandlerTestCase(unittest.TestCase):
         vm_id = uuid.uuid4()
         res = handler._touch_image_timestamp(vm_id, "ds", "image")
         assert_that(res.result, equal_to(CreateVmResultCode.OK))
-
-        # image has been tombstoned
-        handler.hypervisor.image_manager.\
-            touch_image_timestamp.side_effect = InvalidImageState()
-        res = handler._touch_image_timestamp(vm_id, "ds", "image")
-        assert_that(res.result, equal_to(CreateVmResultCode.IMAGE_TOMBSTONED))
 
         # image not found
         handler.hypervisor.image_manager.\
