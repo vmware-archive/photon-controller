@@ -19,9 +19,7 @@ import com.vmware.photon.controller.common.clients.exceptions.DiskAttachedExcept
 import com.vmware.photon.controller.common.clients.exceptions.DiskDetachedException;
 import com.vmware.photon.controller.common.clients.exceptions.DiskNotFoundException;
 import com.vmware.photon.controller.common.clients.exceptions.ImageAlreadyExistException;
-import com.vmware.photon.controller.common.clients.exceptions.ImageInUseException;
 import com.vmware.photon.controller.common.clients.exceptions.ImageNotFoundException;
-import com.vmware.photon.controller.common.clients.exceptions.ImageRefCountFileException;
 import com.vmware.photon.controller.common.clients.exceptions.ImageTransferInProgressException;
 import com.vmware.photon.controller.common.clients.exceptions.InvalidReservationException;
 import com.vmware.photon.controller.common.clients.exceptions.InvalidVmPowerStateException;
@@ -56,9 +54,6 @@ import com.vmware.photon.controller.host.gen.CreateVmResultCode;
 import com.vmware.photon.controller.host.gen.DeleteDisksRequest;
 import com.vmware.photon.controller.host.gen.DeleteDisksResponse;
 import com.vmware.photon.controller.host.gen.DeleteDisksResultCode;
-import com.vmware.photon.controller.host.gen.DeleteImageRequest;
-import com.vmware.photon.controller.host.gen.DeleteImageResponse;
-import com.vmware.photon.controller.host.gen.DeleteImageResultCode;
 import com.vmware.photon.controller.host.gen.DetachISORequest;
 import com.vmware.photon.controller.host.gen.DetachISOResponse;
 import com.vmware.photon.controller.host.gen.DetachISOResultCode;
@@ -1319,129 +1314,6 @@ public class HostClientTest {
           {FinalizeImageResultCode.DESTINATION_ALREADY_EXIST, DestinationAlreadyExistException.class},
           {FinalizeImageResultCode.SYSTEM_ERROR, SystemErrorException.class},
       };
-    }
-  }
-
-  /**
-   * This class implements tests for the deleteImage method.
-   */
-  public class DeleteImageTest {
-
-    private String dataStore = "dataStore";
-    private String imageId = "imageId";
-
-    @BeforeMethod
-    private void setUp() {
-      HostClientTest.this.setUp();
-    }
-
-    @AfterMethod
-    private void tearDown() {
-      hostClient = null;
-    }
-
-    private Answer getAnswer(final Host.AsyncClient.delete_image_call deleteImageCall) {
-      return new Answer() {
-        @Override
-        public Object answer(InvocationOnMock invocation) throws Throwable {
-          Object[] args = invocation.getArguments();
-          AsyncMethodCallback<Host.AsyncClient.delete_image_call> handler = (AsyncMethodCallback) args[1];
-          handler.onComplete(deleteImageCall);
-          return null;
-        }
-      };
-    }
-
-    @Test
-    public void testSuccess() throws Exception {
-      DeleteImageResponse deleteImageResponse = new DeleteImageResponse();
-      deleteImageResponse.setResult(DeleteImageResultCode.OK);
-      final Host.AsyncClient.delete_image_call deleteImageCall = mock(Host.AsyncClient.delete_image_call.class);
-      doReturn(deleteImageResponse).when(deleteImageCall).getResult();
-      doAnswer(getAnswer(deleteImageCall))
-          .when(clientProxy).delete_image(any(DeleteImageRequest.class), any(AsyncMethodCallback.class));
-
-      hostClient.setClientProxy(clientProxy);
-      assertThat(hostClient.deleteImage(imageId, dataStore), is(deleteImageResponse));
-    }
-
-    @Test
-    public void testFailureNullHostIp() throws Exception {
-      try {
-        hostClient.deleteImage(imageId, dataStore);
-        fail("Synchronous deleteImage call should throw with null async clientProxy");
-      } catch (IllegalArgumentException e) {
-        assertThat(e.toString(), is("java.lang.IllegalArgumentException: hostname can't be null"));
-      }
-    }
-
-    @Test
-    public void testFailureTExceptionOnCall() throws Exception {
-      doThrow(new TException("Thrift exception"))
-          .when(clientProxy).delete_image(any(DeleteImageRequest.class), any(AsyncMethodCallback.class));
-
-      hostClient.setClientProxy(clientProxy);
-
-      try {
-        hostClient.deleteImage(imageId, dataStore);
-        fail("Synchronous deleteImage call should convert TException on call to RpcException");
-      } catch (RpcException e) {
-        assertThat(e.getMessage(), is("Thrift exception"));
-      }
-    }
-
-    @Test
-    public void testFailureTExceptionOnGetResult() throws Exception {
-      final Host.AsyncClient.delete_image_call deleteImageCall = mock(Host.AsyncClient.delete_image_call.class);
-      doThrow(new TException("Thrift exception")).when(deleteImageCall).getResult();
-      doAnswer(getAnswer(deleteImageCall))
-          .when(clientProxy).delete_image(any(DeleteImageRequest.class), any(AsyncMethodCallback.class));
-
-      hostClient.setClientProxy(clientProxy);
-
-      try {
-        hostClient.deleteImage(imageId, dataStore);
-        fail("Synchronous deleteImage call should convert TException on call to RpcException");
-      } catch (RpcException e) {
-        assertThat(e.getMessage(), is("Thrift exception"));
-      }
-    }
-
-    @Test(dataProvider = "DeleteImageFailureResultCodes")
-    public void testFailureResult(DeleteImageResultCode resultCode,
-                                  Class<RuntimeException> exceptionClass) throws Exception {
-      DeleteImageResponse deleteImageResponse = new DeleteImageResponse();
-      deleteImageResponse.setResult(resultCode);
-      deleteImageResponse.setError(resultCode.toString());
-
-      final Host.AsyncClient.delete_image_call deleteImageCall = mock(Host.AsyncClient.delete_image_call.class);
-      doReturn(deleteImageResponse).when(deleteImageCall).getResult();
-      doAnswer(getAnswer(deleteImageCall))
-          .when(clientProxy).delete_image(any(DeleteImageRequest.class), any(AsyncMethodCallback.class));
-
-      hostClient.setClientProxy(clientProxy);
-
-      try {
-        hostClient.deleteImage(imageId, dataStore);
-        fail("Synchronous deleteImage call should throw on failure result: " + resultCode.toString());
-      } catch (Exception e) {
-        assertTrue(e.getClass() == exceptionClass);
-        assertThat(e.getMessage(), is(resultCode.toString()));
-      }
-    }
-
-    @DataProvider(name = "DeleteImageFailureResultCodes")
-    public Object[][] getDeleteImageFailureResultCodes() {
-      return new Object[][]{
-          {DeleteImageResultCode.IMAGE_IN_USE, ImageInUseException.class},
-          {DeleteImageResultCode.IMAGE_NOT_FOUND, ImageNotFoundException.class},
-          {DeleteImageResultCode.INVALID_REF_COUNT_FILE, ImageRefCountFileException.class},
-          {DeleteImageResultCode.SYSTEM_ERROR, SystemErrorException.class},
-      };
-    }
-
-    @Test(enabled = false)
-    public void testFailureUnknownResult() {
     }
   }
 

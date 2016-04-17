@@ -26,8 +26,6 @@ import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.clients.exceptions.DirectoryNotFoundException;
-import com.vmware.photon.controller.common.clients.exceptions.ImageInUseException;
-import com.vmware.photon.controller.common.clients.exceptions.ImageNotFoundException;
 import com.vmware.photon.controller.common.clients.exceptions.InvalidVmPowerStateException;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
 import com.vmware.photon.controller.host.gen.CreateImageResponse;
@@ -160,27 +158,6 @@ public class VsphereImageStore implements ImageStore {
       logger.warn("Unexpected error for create_image_from_vm {} from vm {} on {} {}",
           image.getImageId(), vmId, this.getDatastore(), image.getUploadFolder(), e);
       throw new InternalException(e);
-    }
-  }
-
-  /**
-   * Delete an image folder.
-   *
-   * @param imageId
-   * @throws InternalException
-   */
-  @Override
-  public void deleteImage(String imageId) throws InternalException {
-    logger.info("delete image {} on datastore {}", imageId, this.getDatastore());
-    try {
-      getHostClient().deleteImage(imageId, this.getDatastore());
-    } catch (ImageInUseException | ImageNotFoundException e) {
-      // Ignore error, image was marked for deletion or did not exist.
-      // Agent will not use the image for new VMs.
-      logger.info("DeleteImage {} on {} failed.", imageId, this.getDatastore(), e);
-    } catch (InterruptedException | RpcException e) {
-      throw new InternalException(
-          String.format("Failed to delete image %s on datastore %s", imageId, this.getDatastore()), e);
     }
   }
 
