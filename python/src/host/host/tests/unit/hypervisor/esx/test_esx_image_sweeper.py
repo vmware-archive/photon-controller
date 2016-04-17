@@ -658,24 +658,6 @@ class ImageSweeperTouchTimestampTestCase(unittest.TestCase):
         except Exception as ex:
             assert_that((type(ex) == exception_class) is True)
 
-    @patch("host.hypervisor.esx.image_manager.os_vmdk_path")
-    def test_create_tombstone_file(self,
-                                   os_vmdk_path):
-        image_index = 1
-
-        image_id = self.image_ids[image_index]
-        image_dir = self.image_dirs[image_index]
-        os_vmdk_path.side_effect = self.patched_os_vmdk_path
-
-        tombstone_filename_path = os.path.join(image_dir, self.IMAGE_TOMBSTONE_FILENAME)
-
-        self.image_manager.create_image_tombstone(self.DATASTORE_ID,
-                                                  image_id)
-
-        # check tombstone exists
-        exists = os.path.exists(tombstone_filename_path)
-        assert_that(exists is True)
-
     def patched_os_vmdk_path(self, datastore, disk_id, folder):
         folder = self.dir0
         ret = os_vmdk_path(datastore, disk_id, folder)
