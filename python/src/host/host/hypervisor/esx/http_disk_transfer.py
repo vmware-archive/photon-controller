@@ -12,7 +12,6 @@
 
 import httplib
 import logging
-import tempfile
 
 import os
 import re
@@ -433,7 +432,7 @@ class HttpNfcTransferer(HttpTransferer):
         metadata = self._read_metadata(image_datastore, image_id)
 
         shadow_vm_id = self._create_shadow_vm()
-        tmp_path = os.path.join(tempfile.gettempdir(), "%s_transfer.vmdk" % shadow_vm_id)
+        tmp_path = "/vmfs/volumes/%s/%s_transfer.vmdk" % (self._get_shadow_vm_datastore(), shadow_vm_id)
         self._logger.info("http_disk_transfer: tmp_path = %s" % tmp_path)
 
         agent_client = None

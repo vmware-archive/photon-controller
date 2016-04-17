@@ -231,11 +231,10 @@ class TestHttpTransfer(unittest.TestCase):
         self.assertEqual(url, url_mock)
 
     @patch("host.hypervisor.esx.http_disk_transfer.DirectClient")
-    @patch("tempfile.gettempdir")
     @patch("os.path.exists")
     @patch("__builtin__.open")
     @patch("os.unlink")
-    def test_send_image_to_host(self, mock_unlink, mock_open, mock_exists, mock_tempdir, _client_cls):
+    def test_send_image_to_host(self, mock_unlink, mock_open, mock_exists, _client_cls):
         host = "mock_host"
         port = 8835
         image_id = "fake_image_id"
@@ -256,7 +255,6 @@ class TestHttpTransfer(unittest.TestCase):
             return file_contents.pop()
         mock_open().__enter__().read.side_effect = fake_read
         mock_exists.return_value = True
-        mock_tempdir.return_value = "/tmp"
 
         xferer._create_shadow_vm = MagicMock(
             return_value=self.shadow_vm_id)
@@ -285,7 +283,7 @@ class TestHttpTransfer(unittest.TestCase):
 
         xferer._get_image_stream_from_shadow_vm.assert_called_once_with(
             image_id, image_datastore, self.shadow_vm_id)
-        expected_tmp_file = "/tmp/%s_transfer.vmdk" % self.shadow_vm_id
+        expected_tmp_file = "/vmfs/volumes/image_ds/%s_transfer.vmdk" % self.shadow_vm_id
         xferer.download_file.assert_called_once_with(from_url_mock, expected_tmp_file, read_lease_mock)
         read_lease_mock.Complete.assert_called_once_with()
         xferer._prepare_receive_image.assert_called_once_with(agent_conn_mock, image_id, destination_datastore)
