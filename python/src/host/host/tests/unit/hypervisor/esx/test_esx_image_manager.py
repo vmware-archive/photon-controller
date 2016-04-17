@@ -30,13 +30,11 @@ from common import services
 from common.service_name import ServiceName
 from gen.resource.ttypes import DatastoreType
 from host.hypervisor.disk_manager import DiskAlreadyExistException
-from host.hypervisor.esx.vm_config import IMAGE_FOLDER_NAME_PREFIX
 from host.hypervisor.esx.vm_config import compond_path_join
 from host.hypervisor.esx.vm_config import TMP_IMAGE_FOLDER_NAME_PREFIX
 from host.hypervisor.image_manager import DirectoryNotFound
-from host.hypervisor.image_manager import ImageNotFoundException
 
-from host.hypervisor.esx.image_manager import EsxImageManager, GC_IMAGE_FOLDER
+from host.hypervisor.esx.image_manager import EsxImageManager
 from host.hypervisor.esx.vim_client import VimClient
 from host.hypervisor.esx.vm_config import METADATA_FILE_EXT
 
@@ -316,68 +314,12 @@ class TestEsxImageManager(unittest.TestCase):
         else:
             return True
 
-    @patch.object(EsxImageManager, "_clean_gc_dir")
-    @patch.object(EsxImageManager, "_gc_image_dir")
-    @patch.object(EsxImageManager, "_lock_data_disk")
-    @patch.object(EsxImageManager, "create_image_tombstone")
-    @patch.object(EsxImageManager, "check_image_dir")
-    def test_delete(self, check_image_dir, create_image_tombstone,
-                    lock_data_disk, gc_image_dir, clean_gc_dir):
-
-        # Test successful delete
-        check_image_dir.return_value = True
-        self.image_manager.delete_image("ds1", "foo", 0, False)
-        check_image_dir.assert_called_with("foo", "ds1")
-        create_image_tombstone.assert_called_with("ds1", "foo")
-
-        # Test successful delete with force option
-        self.image_manager.delete_image("ds1", "foo", 0, True)
-        check_image_dir.assert_called_with("foo", "ds1")
-        create_image_tombstone.assert_called_with("ds1", "foo")
-        lock_data_disk.assert_called_with("ds1", "foo")
-        gc_image_dir.assert_called_with("ds1", "foo")
-        clean_gc_dir.assert_called()
-
-        # Test image not found
-        check_image_dir.return_value = False
-        self.assertRaises(ImageNotFoundException,
-                          self.image_manager.delete_image,
-                          "ds1", "foo", 0, False)
-
-    @patch("host.hypervisor.esx.image_manager.os_vmdk_path")
-    @patch("host.hypervisor.esx.image_manager.os_datastore_path")
-    def test_gc_image_dir(self, dst_path, src_path):
-        """ Test that we move the directory correctly to the GC location """
-        src_dir = file_util.mkdtemp(delete=True)
-        dst_dir = file_util.mkdtemp(delete=True)
-        src_path.return_value = os.path.join(src_dir, "test.vmdk")
-        dst_path.return_value = dst_dir
-
-        self.image_manager._gc_image_dir("ds1", "foo")
-        uuid_dir = os.path.join(dst_dir, os.listdir(dst_dir)[0])
-
-        # Verify the src directory has been moved into the garbage dir.
-        self.assertEqual(os.listdir(uuid_dir), [os.path.basename(src_dir)])
-
-        src_path.assert_called_once_with("ds1", "foo", IMAGE_FOLDER_NAME_PREFIX)
-        dst_path.assert_called_once_with("ds1", GC_IMAGE_FOLDER)
-
     def test_image_path(self):
         image_path = "/vmfs/volumes/ds/image_ttylinux/ttylinux.vmdk"
         ds = self.image_manager.get_datastore_id_from_path(image_path)
         image = self.image_manager.get_image_id_from_path(image_path)
         self.assertEqual(ds, "ds")
         self.assertEqual(image, "ttylinux")
-
-    @patch("host.hypervisor.esx.image_manager.os_vmdk_flat_path")
-    @patch("host.hypervisor.esx.image_manager.os.remove")
-    def test_lock_data_disk(self, mock_rm, vmdk_flat_path):
-        """ Test acquisition of the lock on the flat file. """
-        vmdk_flat_path.return_value = "fake_f_name"
-        self.assertTrue(self.image_manager._lock_data_disk("ds1", "foo"))
-        vmdk_flat_path.assert_called_once_with("ds1", "foo")
-        mock_rm.side_effect = OSError
-        self.assertFalse(self.image_manager._lock_data_disk("ds1", "foo"))
 
     @patch.object(EsxImageManager, "_get_datastore_type")
     def test_create_image(self, _get_ds_type):

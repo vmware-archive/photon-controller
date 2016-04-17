@@ -29,8 +29,9 @@ from gen.flavors.ttypes import QuotaUnit
 from gen.host import Host
 from gen.host.ttypes import CopyImageResultCode
 from gen.host.ttypes import CreateDiskResultCode
+from gen.host.ttypes import DeleteDirectoryRequest
+from gen.host.ttypes import DeleteDirectoryResultCode
 from gen.host.ttypes import DeleteDiskResultCode
-from gen.host.ttypes import DeleteImageRequest
 from gen.host.ttypes import GetHostModeRequest
 from gen.host.ttypes import GetHostModeResultCode
 from gen.host.ttypes import GetImagesResultCode
@@ -64,6 +65,8 @@ from gen.scheduler.ttypes import PlaceResultCode
 from hamcrest import *  # noqa
 from hamcrest.library.text.stringmatches import matches_regexp  # hamcrest bug
 from host.host_handler import HostHandler
+from host.hypervisor.esx.vm_config import compond_path_join
+from host.hypervisor.esx.vm_config import IMAGE_FOLDER_NAME_PREFIX
 from matchers import *  # noqa
 from thrift.transport import TTransport
 
@@ -322,6 +325,11 @@ class AgentCommonTests(object):
         assert_that(datastore_id, matches_regexp("^[0-9a-f-]+$"))
         assert_that(len(datastore_id),
                     any_of(equal_to(17), equal_to(35), equal_to(36)))
+
+    def _delete_image(self, image):
+        resp = self.host_client.delete_directory(
+            DeleteDirectoryRequest(image.datastore.id, compond_path_join(IMAGE_FOLDER_NAME_PREFIX, image.id)))
+        assert_that(resp.result, is_(DeleteDirectoryResultCode.OK))
 
     def test_get_nfc_ticket(self):
         request = ServiceTicketRequest(
@@ -690,8 +698,8 @@ class AgentCommonTests(object):
         assert_that(response.result, is_(CopyImageResultCode.OK))
 
         # Clean destination image
-        self.host_client.delete_image(DeleteImageRequest(dst_image))
-        self.host_client.delete_image(DeleteImageRequest(dst_image2))
+        self._delete_image(dst_image)
+        self._delete_image(dst_image2)
 
     def test_get_images_datastore_not_found(self):
         request = Host.GetImagesRequest("datastore_not_there")
