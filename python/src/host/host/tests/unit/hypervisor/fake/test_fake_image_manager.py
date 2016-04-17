@@ -18,7 +18,6 @@ from nose_parameterized import parameterized
 from nose.tools import raises
 
 from common.file_util import mkdtemp
-from gen.resource.ttypes import DatastoreType
 from host.hypervisor.datastore_manager import DatastoreNotFoundException
 from host.hypervisor.fake.image_manager import FakeImageManager as Fim
 
@@ -69,17 +68,12 @@ class TestFakeImageManager(unittest.TestCase):
         ("ds1", "disk1", "ds2", "disk2"),
         ("ds1", "disk1", "ds2", "disk1"),
     ])
-    def test_deploy_copy_delete_image(self, src_ds, src_id, dst_ds, dst_id):
+    def test_deploy_copy_image(self, src_ds, src_id, dst_ds, dst_id):
         self.im.deploy_image("ignored", src_id, src_ds)
         assert_that(self.im.check_image(src_id, src_ds), is_(True))
 
         self.im.copy_image(src_ds, src_id, dst_ds, dst_id)
         assert_that(self.im.check_image(dst_id, dst_ds), is_(True))
-
-        self.im.delete_image(src_ds, src_id, True, DatastoreType.EXT3)
-        assert_that(self.im.check_image(src_id, src_ds), is_(False))
-        self.im.delete_image(dst_ds, dst_id, True, DatastoreType.EXT3)
-        assert_that(self.im.check_image(dst_id, dst_ds), is_(False))
 
     def test_image_path(self):
         ds = "ds"
