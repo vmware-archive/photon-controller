@@ -19,7 +19,6 @@ import com.vmware.photon.controller.common.thrift.ClientProxyFactory;
 import com.vmware.photon.controller.common.zookeeper.gen.ServerAddress;
 import com.vmware.photon.controller.host.gen.CopyImageResponse;
 import com.vmware.photon.controller.host.gen.CopyImageResultCode;
-import com.vmware.photon.controller.host.gen.DeleteImageResponse;
 import com.vmware.photon.controller.host.gen.DeleteImageResultCode;
 import com.vmware.photon.controller.host.gen.GetDeletedImagesResponse;
 import com.vmware.photon.controller.host.gen.GetImagesResponse;
@@ -159,21 +158,6 @@ public class HostClientMock extends HostClient {
   @Override
   public void setIpAndPort(String ip, int port) {
     // do nothing as we do not want to open a real connection.
-  }
-
-  @Override
-  public void deleteImage(String imageId, String datasource, boolean isTombStone, AsyncMethodCallback callback) {
-    logger.info("Host deleteImage complete invocation");
-    DeleteImageResponse response = new DeleteImageResponse();
-    response.setResult(deleteImageResultCode);
-
-    Host.AsyncClient.delete_image_call deleteImageCall = mock(Host.AsyncClient.delete_image_call.class);
-    try {
-      when(deleteImageCall.getResult()).thenReturn(response);
-    } catch (Exception e) {
-      throw new RuntimeException("Failed to mock deleteImageCall.getResult");
-    }
-    callback.onComplete(deleteImageCall);
   }
 
   @Override
