@@ -110,18 +110,6 @@ class ImageManager(object):
         pass
 
     @abc.abstractmethod
-    def delete_image(self, datastore_id, image_id, ds_type, force):
-        """
-        Delete an image from a datastore of a given type
-        datastore_id: The datastore id of the datastore
-        image_id: The id of the image to delete.
-        ds_type: The thrift datastore type.
-        force: boolean indicating force delete.
-        @throws ImageInUse if force is true and the image is inuse.
-        """
-        pass
-
-    @abc.abstractmethod
     def get_image_metadata(self, image_id, datastore):
         pass
 
@@ -209,16 +197,6 @@ class ImageManager(object):
         Update Image timestamp, mod file. Throws exception
         if the image doesn't exists or the image has
         been tombstoned
-        :param dsid:
-        :param image_id:
-        :return:
-        """
-
-    @abc.abstractmethod
-    def create_image_tombstone(self, ds_id, image_id):
-        """
-        Create tombstone file for image. Throws exception
-        if the image doesn't exists
         :param dsid:
         :param image_id:
         :return:

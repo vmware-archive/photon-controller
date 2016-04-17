@@ -177,33 +177,6 @@ class EsxImageManager(ImageManager):
                 "Exception looking up %s, %s" % (timestamp_pathname, ex))
             raise ex
 
-    """
-    This method is used to create a tombstone marker
-    in the new image management work flow. The tombstone
-    marker is a file under the image directory.
-    """
-    def create_image_tombstone(self, ds_id, image_id):
-        """
-        :param ds_id:
-        :param image_id:
-        :return:
-        """
-        image_path = os.path.dirname(
-            os_vmdk_path(ds_id, image_id, IMAGE_FOLDER_NAME_PREFIX))
-
-        # Create tombstone file for the image
-        tombstone_pathname = \
-            os.path.join(image_path,
-                         self.IMAGE_TOMBSTONE_FILE_NAME)
-        try:
-            open(tombstone_pathname, 'w').close()
-        except Exception as ex:
-            self._logger.exception(
-                "Exception creating %s, %s" % (tombstone_pathname, ex))
-            raise ex
-
-        self._logger.info("Image: %s tombstoned" % tombstone_pathname)
-
     @log_duration
     def check_image_dir(self, image_id, datastore):
         image_path = os_vmdk_path(datastore, image_id, IMAGE_FOLDER_NAME_PREFIX)
@@ -501,50 +474,6 @@ class EsxImageManager(ImageManager):
                 except:
                     self._logger.info("Unable to remove %s" % image_dir, exc_info=True)
 
-    def delete_image(self, datastore_id, image_id, ds_type, force):
-        # Check if the image currently exists
-        if not self.check_image_dir(image_id, datastore_id):
-            self._logger.info("Image %s on datastore %s not found" % (image_id,
-                              datastore_id))
-            raise ImageNotFoundException("Image %s not found" % image_id)
-
-        # Mark image as tombstoned
-        self.create_image_tombstone(datastore_id, image_id)
-
-        if not force:
-            return
-
-        # If force try to actively garbage collect the image here
-        if self._lock_data_disk(datastore_id, image_id):
-            self._gc_image_dir(datastore_id, image_id)
-        else:
-            raise ImageInUse("Image %s is currently in use" % image_id)
-
-        # Now attempt GCing the image directory.
-        try:
-            self._clean_gc_dir(datastore_id)
-        except Exception:
-            # Swallow the exception the next clean call will clear it all.
-            self._logger.exception("Failed to delete gc dir on datastore %s" %
-                                   datastore_id)
-
-    def _lock_data_disk(self, datastore_id, image_id):
-        """
-        Lock the data disks associated with the VMs in the provided ref file.
-        Return True if locking was successful false otherwise.
-        """
-        data_disk = os_vmdk_flat_path(datastore_id, image_id)
-        try:
-            # Its ok to delete the data disk as a subsequent power on will
-            # fail if the data disk is not there.
-            os.remove(data_disk)
-        except OSError:
-            # Remove failed so disk is locked.
-            self._logger.debug("Disk %s on datastore %s is already locked"
-                               % (data_disk, datastore_id))
-            return False
-        return True
-
     def get_images(self, datastore):
         """ Get image list from datastore
         :param datastore: datastore id
@@ -659,38 +588,6 @@ class EsxImageManager(ImageManager):
         This method returns "ttylinux" with this input.
         """
         return image_path.split(os.sep)[4].split(COMPOND_PATH_SEPARATOR)[1]
-
-    def _gc_image_dir(self, datastore_id, image_id):
-        """
-        Moves the current image directory into the GC image folder and
-        relies on the later GC call for cleanup.
-        Exception is thrown if the move fails.
-        Assumes the ref files contained in the image director are locked, so
-        there can only be one move happening at any point in time.
-        """
-        src_path = os.path.dirname(os_vmdk_path(datastore_id, image_id,
-                                                IMAGE_FOLDER_NAME_PREFIX))
-        self._logger.info("Image path to be cleaned: %s" % src_path)
-        # Verify locking held.
-        assert(os.path.exists(src_path))
-        # Generate a random suffix, this is to address the following.
-        # a - Image disk say i1 was moved to the gc_dir
-        # b - Cleanup of i1 failed for whatever reason.
-        # c - New copy of i1 was uploaded to the datastore.
-        # d - The new copy is now being deleted.
-        # The location of the move in d needs to be different from the
-        # location of the move from b, hence use a random uuid.
-        rnd_uuid = str(uuid.uuid4())
-        gc_dir = os_datastore_path(datastore_id, GC_IMAGE_FOLDER)
-        dst_dir = os.path.join(gc_dir, rnd_uuid)
-        os.makedirs(dst_dir)
-        if os.path.islink(src_path):
-            # if dir is a symlink, move the link target and remove link
-            link = os.readlink(src_path)
-            shutil.move(link, dst_dir)
-            os.remove(src_path)
-        else:
-            shutil.move(src_path, dst_dir)
 
     def _clean_gc_dir(self, datastore_id):
         """

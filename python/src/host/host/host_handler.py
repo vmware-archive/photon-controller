@@ -1005,45 +1005,6 @@ class HostHandler(Host.Iface):
         return CopyImageResponse(result=CopyImageResultCode.OK)
 
     @log_request
-    @error_handler(DeleteImageResponse, DeleteImageResultCode)
-    def delete_image(self, request):
-        """Delete an image from datastore
-
-        :param request: DeleteImageRequest
-        :return: DeleteImageResponse
-        """
-
-        image = request.image
-        im = self.hypervisor.image_manager
-        datastore_id = self.hypervisor.datastore_manager.normalize(
-            image.datastore.id)
-        ds_type = self.hypervisor.datastore_manager.datastore_type(
-            datastore_id)
-        try:
-            im.delete_image(datastore_id, image.id,
-                            ds_type, request.force)
-
-        except ImageNotFoundException as e:
-            return self._error_response(
-                DeleteImageResultCode.IMAGE_NOT_FOUND,
-                "Delete image %s error: %s" % (image.id, e),
-                DeleteImageResponse())
-
-        except ImageInUse as e:
-            return self._error_response(
-                DeleteImageResultCode.IMAGE_IN_USE,
-                "Delete image %s error: %s" % (image.id, e),
-                DeleteImageResponse())
-
-        except Exception as e:
-            return self._error_response(
-                DeleteImageResultCode.SYSTEM_ERROR,
-                "Delete image %s error: %s" % (image.id, e),
-                DeleteImageResponse())
-
-        return DeleteImageResponse(result=DeleteImageResultCode.OK)
-
-    @log_request
     @error_handler(GetImagesResponse, GetImagesResultCode)
     def get_images(self, request):
         """ Get image list from datastore

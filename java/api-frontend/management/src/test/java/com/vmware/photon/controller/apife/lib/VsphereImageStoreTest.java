@@ -23,12 +23,8 @@ import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.clients.exceptions.DirectoryNotFoundException;
-import com.vmware.photon.controller.common.clients.exceptions.ImageInUseException;
-import com.vmware.photon.controller.common.clients.exceptions.ImageNotFoundException;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
 import com.vmware.photon.controller.host.gen.CreateImageResponse;
-import com.vmware.photon.controller.host.gen.DeleteImageResponse;
-import com.vmware.photon.controller.host.gen.DeleteImageResultCode;
 import com.vmware.photon.controller.host.gen.ServiceTicketResponse;
 import com.vmware.photon.controller.host.gen.ServiceTicketResultCode;
 import com.vmware.transfer.nfc.HostServiceTicket;
@@ -38,11 +34,9 @@ import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import org.powermock.modules.testng.PowerMockTestCase;
 import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
@@ -274,76 +268,6 @@ public class VsphereImageStoreTest extends PowerMockTestCase {
       imageConfig.setEndpoint(null);
       imageStore.setHostIp(null);
       imageStore.createImageFromVm(image, null);
-    }
-  }
-
-  /**
-   * Tests for deleteImage method.
-   */
-  public class DeleteImageTest {
-
-    @BeforeMethod
-    public void setUp() {
-      hostBackend = mock(HostBackend.class);
-      when(hostBackend.filterByUsage(any(), any())).thenReturn(buildHostList());
-
-      hostClient = mock(HostClient.class);
-      hostClientFactory = mock(HostClientFactory.class);
-      when(hostClientFactory.create()).thenReturn(hostClient);
-
-      imageConfig = new ImageConfig();
-      imageConfig.setEndpoint(HOST_ADDRESS);
-
-      imageStore = spy(new VsphereImageStore(hostBackend, hostClientFactory, imageConfig));
-      imageId = "image-id";
-    }
-
-    @Test
-    public void testSuccess() throws Throwable {
-      doReturn(new DeleteImageResponse(DeleteImageResultCode.OK))
-          .when(hostClient).deleteImage(imageId, IMAGE_DATASTORE_NAME);
-      imageStore.deleteImage(imageId);
-      verify(hostClient).deleteImage(imageId, IMAGE_DATASTORE_NAME);
-    }
-
-    /**
-     * Tests that appropriate exceptions are swallowed.
-     *
-     * @throws Throwable
-     */
-    @Test(dataProvider = "IgnoredExceptions")
-    public void testIgnoredExceptions(Exception ex) throws Throwable {
-      doThrow(ex).when(hostClient).deleteImage(imageId, IMAGE_DATASTORE_NAME);
-
-      imageStore.deleteImage(imageId);
-      verify(hostClient).deleteImage(imageId, IMAGE_DATASTORE_NAME);
-    }
-
-    @DataProvider(name = "IgnoredExceptions")
-    public Object[][] getIgnoredExceptionsData() {
-      return new Object[][]{
-          {new ImageInUseException("Image in use")},
-          {new ImageNotFoundException("Image not found")}
-      };
-    }
-
-    /**
-     * Tests that exceptions are wrapped and rethrown.
-     *
-     * @throws Throwable
-     */
-    @Test
-    public void testExceptions() throws Throwable {
-      doThrow(new InterruptedException("InterruptedException")).when(hostClient).deleteImage(
-          imageId, IMAGE_DATASTORE_NAME);
-
-      try {
-        imageStore.deleteImage(imageId);
-        fail("did not propagate the exception");
-      } catch (InternalException ex) {
-        assertThat(ex.getCause().getMessage(), is("InterruptedException"));
-      }
-      verify(hostClient).deleteImage(imageId, IMAGE_DATASTORE_NAME);
     }
   }
 
