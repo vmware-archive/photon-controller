@@ -22,6 +22,10 @@ import uuid
 
 from gen.resource.ttypes import DatastoreType
 
+LOCK_EXTENSION = "ec_lock"
+# From lib/public/fileIO.h
+O_EXCLUSIVE_LOCK = 0x10000000
+
 
 class UnsupportedFileSystem(Exception):
     """
@@ -78,6 +82,10 @@ class _FileIOBaseImpl(object):
     __metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod
+    def build_lock_path(self, lock_target):
+        pass
+
+    @abc.abstractmethod
     def lock_and_open(self, file_name):
         """
         Lock the file with an exclusive lock and return the open file
@@ -113,8 +121,8 @@ class _EsxFileIOImpl(_FileIOBaseImpl):
         it is transparent to user space here.
     """
 
-    # From lib/public/fileIO.h
-    O_EXCLUSIVE_LOCK = 0x10000000
+    def build_lock_path(self, lock_target):
+        return "%s.%s" % (lock_target, LOCK_EXTENSION)
 
     def lock_and_open(self, file_name):
         """
@@ -125,10 +133,9 @@ class _EsxFileIOImpl(_FileIOBaseImpl):
         # If the file doesn't exist we need to create a file so we prevent
         # concurrent edits of the file.
         try:
-            fd = os.open(file_name, os.O_CREAT | os.O_RDWR | os.O_DIRECT |
-                         self.O_EXCLUSIVE_LOCK)
+            fd = os.open(file_name, os.O_CREAT | os.O_RDWR | os.O_DIRECT | O_EXCLUSIVE_LOCK)
         except OSError as e:
-            if (e.errno == errno.EBUSY):
+            if e.errno == errno.EBUSY:
                 logging.info("File %s already locked" % file_name)
                 raise AcquireLockFailure("File %s locked" % file_name)
             else:
@@ -144,15 +151,36 @@ class _VsanFileIOImpl(_FileIOBaseImpl):
     """
     Implementation of file i/o operations for VSAN
     """
+    def build_lock_path(self, lock_target):
+        return os.path.join(lock_target, "lock.%s" % LOCK_EXTENSION)
 
     def lock_and_open(self, file_name):
-        return None
+        # Opening with O_EXCLUSIVE_LOCK will cause the exclusive FS lock to be
+        # held.
+        # If the file doesn't exist we need to create a file so we prevent
+        # concurrent edits of the file.
+        try:
+            fd = os.open(file_name, os.O_CREAT | os.O_RDWR | os.O_DIRECT | O_EXCLUSIVE_LOCK)
+        except OSError as e:
+            if e.errno == errno.EBUSY:
+                logging.info("File %s already locked" % file_name)
+                raise AcquireLockFailure("File %s locked" % file_name)
+            else:
+                logging.info("Failed to open file:", exc_info=True)
+                raise InvalidFile("Can't access file %s" % file_name)
+        except Exception:
+            logging.info("Failed to open file:", exc_info=True)
+            raise InvalidFile("Can't read file %s " % file_name)
+        return fd
 
 
 class _PosixFileIOImpl(_FileIOBaseImpl):
     """
     Implementation of file i/o operations for posix FS
     """
+
+    def build_lock_path(self, lock_target):
+        return "%s.%s" % (lock_target, LOCK_EXTENSION)
 
     def lock_and_open(self, file_name):
         """
@@ -203,6 +231,9 @@ class _FileLock(object):
         self._f_obj = FileIOImplFactory.createFileIOImplObj(fs_type)
         self._fds = []
         self._closed = False
+
+    def build_lock_path(self, lock_target):
+        return self._f_obj.build_lock_path(lock_target)
 
     def lock_and_open(self, file_name, retry=0, wait=0.1):
         """
@@ -265,9 +296,7 @@ class FileBackedLock(object):
     the last modification time of the lock file.
     """
 
-    LOCK_EXTENSION = "ec_lock"
-
-    def __init__(self, path, ds_type, retry=0, wait_secs=1.0):
+    def __init__(self, lock_target, ds_type, retry=0, wait_secs=1.0):
         """
         :param path: file system path based on which the lock is created
         :param ds_type: DatastoreType
@@ -276,15 +305,14 @@ class FileBackedLock(object):
         """
 
         self._file_io = _FileLock(ds_type)
-        self._lock_path = "%s.%s" % (path, self.LOCK_EXTENSION)
+        self._lock_path = self._file_io.build_lock_path(lock_target)
         self._acquired = False
         self.retry = retry
         self.wait_secs = wait_secs
 
     def lock(self):
         try:
-            self._file_io.lock_and_open(self._lock_path, self.retry,
-                                        self.wait_secs)
+            self._file_io.lock_and_open(self._lock_path, self.retry, self.wait_secs)
             self._acquired = True
         except (AcquireLockFailure, InvalidFile):
             logging.info("Unable to lock %s", self._lock_path)
@@ -308,8 +336,7 @@ class FileBackedLock(object):
             self._file_io.close()
             os.remove(lock_path_to_delete)
         except:
-            logging.info("Unable to clean up lock file %s",
-                         self._lock_path, exc_info=True)
+            logging.info("Unable to clean up lock file %s", self._lock_path, exc_info=True)
             if not self._file_io.closed:
                 self._file_io.close()
 
