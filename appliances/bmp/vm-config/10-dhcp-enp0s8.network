@@ -1,0 +1,5 @@
+[Match]
+Name=enp0s8
+
+[Network]
+Address=172.31.253.37/24
