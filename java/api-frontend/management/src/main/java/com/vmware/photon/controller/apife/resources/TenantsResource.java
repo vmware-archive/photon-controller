@@ -82,10 +82,10 @@ public class TenantsResource {
   }
 
   @GET
-  @ApiOperation(value = "Find tenants, optionally filtering by name",
+  @ApiOperation(value = "List tenants, optionally filtering by name",
       response = Tenant.class, responseContainer = ResourceList.CLASS_NAME)
   @ApiResponses(value = {@ApiResponse(code = 200, message = "List of tenants")})
-  public Response find(@Context Request request,
+  public Response list(@Context Request request,
                        @QueryParam("name") Optional<String> name,
                        @QueryParam("pageSize") Optional<Integer> pageSize,
                        @QueryParam("pageLink") Optional<String> pageLink)
