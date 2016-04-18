@@ -27,9 +27,9 @@ import uuid
 from gen.resource.ttypes import DatastoreType
 from pyVmomi import vim
 
-from common.file_io import AcquireLockFailure
-from common.file_io import FileBackedLock
-from common.file_io import InvalidFile
+from common.file_lock import AcquireLockFailure
+from common.file_lock import FileBackedLock
+from common.file_lock import InvalidFile
 from common.file_util import mkdir_p
 from common.file_util import rm_rf
 from common.thread import Periodic
@@ -246,34 +246,30 @@ class EsxImageManager(ImageManager):
             tmp_image_dir = os_datastore_path(dest_datastore,
                                               compond_path_join(TMP_IMAGE_FOLDER_NAME_PREFIX, str(uuid.uuid4())))
 
-        # Try grabbing the lock on the temp directory if it fails
-        # (very unlikely) someone else is copying an image just retry
-        # later.
-        with FileBackedLock(tmp_image_dir, ds_type):
-            # Create the temp directory
-            self._vim_client.make_directory(tmp_image_dir)
+        # Create the temp directory
+        self._vim_client.make_directory(tmp_image_dir)
 
-            # Copy the metadata file if it exists.
-            source_meta = os_metadata_path(source_datastore, source_id, IMAGE_FOLDER_NAME_PREFIX)
-            if os.path.exists(source_meta):
-                try:
-                    dest_meta = os.path.join(tmp_image_dir, metadata_filename(dest_id))
-                    shutil.copy(source_meta, dest_meta)
-                except:
-                    self._logger.exception("Failed to copy metadata file %s", source_meta)
-                    raise
+        # Copy the metadata file if it exists.
+        source_meta = os_metadata_path(source_datastore, source_id, IMAGE_FOLDER_NAME_PREFIX)
+        if os.path.exists(source_meta):
+            try:
+                dest_meta = os.path.join(tmp_image_dir, metadata_filename(dest_id))
+                shutil.copy(source_meta, dest_meta)
+            except:
+                self._logger.exception("Failed to copy metadata file %s", source_meta)
+                raise
 
-            # Create the timestamp file
-            self._create_image_timestamp_file(tmp_image_dir)
+        # Create the timestamp file
+        self._create_image_timestamp_file(tmp_image_dir)
 
-            _vd_spec = self._prepare_virtual_disk_spec(
-                vim.VirtualDiskManager.VirtualDiskType.thin,
-                vim.VirtualDiskManager.VirtualDiskAdapterType.lsiLogic)
+        _vd_spec = self._prepare_virtual_disk_spec(
+            vim.VirtualDiskManager.VirtualDiskType.thin,
+            vim.VirtualDiskManager.VirtualDiskAdapterType.lsiLogic)
 
-            self._manage_disk(vim.VirtualDiskManager.CopyVirtualDisk_Task,
-                              sourceName=vmdk_path(source_datastore, source_id, IMAGE_FOLDER_NAME_PREFIX),
-                              destName=os_to_datastore_path(os.path.join(tmp_image_dir, "%s.vmdk" % dest_id)),
-                              destSpec=_vd_spec)
+        self._manage_disk(vim.VirtualDiskManager.CopyVirtualDisk_Task,
+                          sourceName=vmdk_path(source_datastore, source_id, IMAGE_FOLDER_NAME_PREFIX),
+                          destName=os_to_datastore_path(os.path.join(tmp_image_dir, "%s.vmdk" % dest_id)),
+                          destSpec=_vd_spec)
         return tmp_image_dir
 
     def _move_image(self, image_id, datastore, tmp_dir):
@@ -306,8 +302,7 @@ class EsxImageManager(ImageManager):
             raise ImageNotFoundException("Temp image %s not found" % tmp_dir)
 
         try:
-            with FileBackedLock(image_path, ds_type, retry=300,
-                                wait_secs=0.01):  # wait lock for 3 seconds
+            with FileBackedLock(image_path, ds_type, retry=300, wait_secs=0.01):  # wait lock for 3 seconds
                 if self._check_image_repair(image_id, datastore):
                     raise DiskAlreadyExistException("Image already exists")
 
