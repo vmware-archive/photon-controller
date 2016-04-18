@@ -89,7 +89,7 @@ public class DeploymentsResource {
   @ApiOperation(value = "Enumerate all deployments", response = Deployment.class,
       responseContainer = ResourceList.CLASS_NAME)
   @ApiResponses(value = {@ApiResponse(code = 200, message = "Success")})
-  public Response listAll(@Context Request request) {
+  public Response list(@Context Request request) {
     ResourceList<Deployment> deployments = deploymentFeClient.listAllDeployments();
     return generateResourceListResponse(
         Response.Status.OK,

@@ -62,12 +62,12 @@ public class ClusterVmsResource {
   }
 
   @GET
-  @ApiOperation(value = "Find VMs in a cluster", response = Vm.class, responseContainer = ResourceList.CLASS_NAME)
+  @ApiOperation(value = "List VMs in a cluster", response = Vm.class, responseContainer = ResourceList.CLASS_NAME)
   @ApiResponses(value = {@ApiResponse(code = 200, message = "List of VMs in the cluster")})
-  public Response get(@Context Request request,
-                      @PathParam("id") String clusterId,
-                      @QueryParam("pageSize") Optional<Integer> pageSize,
-                      @QueryParam("pageLink") Optional<String> pageLink) throws ExternalException {
+  public Response list(@Context Request request,
+                       @PathParam("id") String clusterId,
+                       @QueryParam("pageSize") Optional<Integer> pageSize,
+                       @QueryParam("pageLink") Optional<String> pageLink) throws ExternalException {
 
     ResourceList<Vm> resourceList;
     if (pageLink.isPresent()) {

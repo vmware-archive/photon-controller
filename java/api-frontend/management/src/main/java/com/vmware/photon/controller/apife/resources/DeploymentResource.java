@@ -220,7 +220,7 @@ public class DeploymentResource {
   @ApiOperation(value = "Delete cluster configuration for a give cluster type", response = Task.class)
   @ApiResponses(value = {
       @ApiResponse(code = 201, message = "Task created, cluster configuration delete process can be fetched " +
-                   "via the task")
+          "via the task")
   })
   public Response deleteClusterConfiguration(@Context Request request,
                                              @PathParam("id") String id,

@@ -77,8 +77,7 @@ public class ProjectVmsResource {
   private final PaginationConfig paginationConfig;
 
   @Inject
-  public ProjectVmsResource(VmFeClient vmFeClient, PaginationConfig paginationConfig)
-  {
+  public ProjectVmsResource(VmFeClient vmFeClient, PaginationConfig paginationConfig) {
     this.vmFeClient = vmFeClient;
     this.paginationConfig = paginationConfig;
   }
@@ -101,10 +100,10 @@ public class ProjectVmsResource {
   }
 
   @GET
-  @ApiOperation(value = "Find VMs in a project",
+  @ApiOperation(value = "List VMs in a project",
       response = Vm.class, responseContainer = ResourceList.CLASS_NAME)
   @ApiResponses(value = {@ApiResponse(code = 200, message = "List of VMs in the project")})
-  public Response find(@Context Request request,
+  public Response list(@Context Request request,
                        @PathParam("id") String projectId,
                        @QueryParam("name") Optional<String> name,
                        @QueryParam("pageSize") Optional<Integer> pageSize,

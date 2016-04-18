@@ -59,10 +59,10 @@ public class TasksResource {
   }
 
   @GET
-  @ApiOperation(value = "Find tasks, filtering by entityId and entityKind. If pageLink is provided, " +
+  @ApiOperation(value = "List tasks, filtering by entityId and entityKind. If pageLink is provided, " +
       "then get the tasks on that specific page", response = Task.class, responseContainer = ResourceList.CLASS_NAME)
   @ApiResponses(value = {@ApiResponse(code = 200, message = "List of tasks")})
-  public Response find(@Context Request request,
+  public Response list(@Context Request request,
                        @QueryParam("entityId") Optional<String> entityId,
                        @QueryParam("entityKind") Optional<String> entityKind,
                        @QueryParam("state") Optional<String> state,

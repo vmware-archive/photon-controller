@@ -63,10 +63,10 @@ public class DatastoresResource {
   @ApiOperation(value = "Enumerate all datastores", response = Datastore.class,
       responseContainer = ResourceList.CLASS_NAME)
   @ApiResponses(value = {@ApiResponse(code = 200, message = "Success")})
-  public Response find(@Context Request request,
+  public Response list(@Context Request request,
                        @QueryParam("tag") Optional<String> tag,
                        @QueryParam("pageSize") Optional<Integer> pageSize,
-                       @QueryParam("pageLink") Optional<String> pageLink)  throws ExternalException {
+                       @QueryParam("pageLink") Optional<String> pageLink) throws ExternalException {
     ResourceList<Datastore> resourceList;
     if (pageLink.isPresent()) {
       resourceList = datastoreFeClient.getDatastoresPage(pageLink.get());

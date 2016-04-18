@@ -1,0 +1,41 @@
+---
+deployment:
+  image_datastores: wdc-ucs-ch5-0,wdc-ucs-ch6-0,wdc-ucs-ch5-1,wdc-ucs-ch6-1
+  syslog_endpoint: 10.146.64.225
+  auth_enabled: false
+  use_image_datastore_for_vms: false
+hosts:
+- address_ranges: 10.146.36.51-10.146.36.52
+  username: root
+  password: ca$hc0w
+  usage_tags:
+  - MGMT
+  metadata:
+    ALLOWED_NETWORKS: VM Network, VM Network2
+    MANAGEMENT_DATASTORE: datastore1
+    MANAGEMENT_VM_IPS: 10.146.36.201-10.146.36.202
+    MANAGEMENT_PORTGROUP: Management VLAN
+    MANAGEMENT_NETWORK_GATEWAY: 10.146.37.253
+    MANAGEMENT_NETWORK_NETMASK: 255.255.254.0
+    MANAGEMENT_NETWORK_DNS_SERVER : 10.142.7.1
+- address_ranges: 10.146.36.61-10.146.36.62
+  username: root
+  password: ca$hc0w
+  usage_tags:
+  - MGMT
+  - CLOUD
+  metadata:
+    ALLOWED_NETWORKS: VM Network, VM Network2
+    MANAGEMENT_DATASTORE: datastore1
+    MANAGEMENT_VM_IPS: 10.146.36.203-10.146.36.204
+    MANAGEMENT_PORTGROUP: Management VLAN
+    MANAGEMENT_NETWORK_GATEWAY: 10.146.37.253
+    MANAGEMENT_NETWORK_NETMASK: 255.255.254.0
+    MANAGEMENT_NETWORK_DNS_SERVER : 10.142.7.1
+- address_ranges: 10.146.36.53-10.146.36.54,10.146.36.63-10.146.36.64
+  username: root
+  password: ca$hc0w
+  usage_tags:
+  - CLOUD
+  metadata:
+    ALLOWED_NETWORKS: VM Network, VM Network2
