@@ -32,6 +32,7 @@ import com.vmware.xenon.services.common.NodeGroupBroadcastResponse;
 import com.vmware.xenon.services.common.QueryTask;
 
 import com.google.common.collect.ImmutableSet;
+import org.hamcrest.Matchers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.annotations.AfterClass;
@@ -340,10 +341,10 @@ public class HostServiceTest {
       HostService.State patchState = new HostService.State();
       patchState.reportedDatastores = new HashSet<>();
       patchState.reportedDatastores.add("d1");
-
       dcpRestClient.patch(createdState.documentSelfLink, patchState);
       HostService.State savedState = dcpRestClient.get(createdState.documentSelfLink)
           .getBody(HostService.State.class);
+      assertThat(savedState, is(Matchers.notNullValue()));
     }
 
     @Test

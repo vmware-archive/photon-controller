@@ -44,6 +44,7 @@ import com.vmware.photon.controller.resource.gen.Datastore;
 import com.vmware.photon.controller.resource.gen.Network;
 import com.vmware.photon.controller.resource.gen.NetworkType;
 import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.OperationJoin;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.ServiceMaintenanceRequest;
@@ -53,7 +54,6 @@ import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.QueryTask;
 
 import org.apache.thrift.async.AsyncMethodCallback;
-
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
@@ -64,7 +64,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
@@ -210,7 +209,6 @@ public class HostService extends StatefulService {
     if (HostService.inUnitTests) {
       return;
     }
-
     try {
       // Return if the maintenance call is not the periodically scheduled one
       ServiceMaintenanceRequest request = maintenance.getBody(ServiceMaintenanceRequest.class);
@@ -218,7 +216,6 @@ public class HostService extends StatefulService {
         maintenance.complete();
         return;
       }
-
       getHost().schedule(() -> {
         Operation getOperation = Operation.createGet(this, maintenance.getUri().getPath())
             .setCompletion((op, ex) -> {
@@ -227,8 +224,15 @@ public class HostService extends StatefulService {
                 maintenance.complete();
                 return;
               }
+
               State hostState = op.getBody(State.class);
-              pingHost(maintenance, hostState);
+              // Retrieve host metadata if the interval has elapsed. Otherwise, just ping the
+              // host to perform a health-check.
+              if (System.currentTimeMillis() - lastHostMetadataUpdateTime >= UPDATE_HOST_METADATA_INTERVAL) {
+                getHostConfig(maintenance, hostState);
+              } else {
+                pingHost(maintenance, hostState);
+              }
             });
         sendRequest(getOperation);
       }, ThreadLocalRandom.current().nextInt(1, DEFAULT_MAX_PING_WAIT_TIME_MILLIS), TimeUnit.MILLISECONDS);
@@ -244,6 +248,7 @@ public class HostService extends StatefulService {
    * The thrift call to ping the agent is implemented as a runnable, which will be scheduled to run in the future.
    * The time after which it runs is determined by a random integer between 1 and maxPingWaitTimeMillis. This is needed
    * to achieve a randomized distribution of the polling task so that we reduce the number of concurrent connections.
+   *
    * @param maintenance
    * @param hostState
    */
@@ -255,13 +260,7 @@ public class HostService extends StatefulService {
       agentControlClient.ping(new AsyncMethodCallback<AgentControl.AsyncClient.ping_call>() {
         @Override
         public void onComplete(AgentControl.AsyncClient.ping_call pingCall) {
-          // Get the host metadata if we have reached the UPDATE_HOST_METADATA_INTERVAL
-          if (System.currentTimeMillis() - lastHostMetadataUpdateTime >= UPDATE_HOST_METADATA_INTERVAL) {
-            lastHostMetadataUpdateTime = System.currentTimeMillis();
-            getHostConfig(maintenance, hostState);
-          } else {
-            updateHostState(maintenance, hostState, AgentState.ACTIVE);
-          }
+          updateHostState(maintenance, hostState, AgentState.ACTIVE);
         }
 
         @Override
@@ -280,11 +279,13 @@ public class HostService extends StatefulService {
 
   /**
    * This method gets the host config (datastores, networks, etc.) from agent.
+   *
    * @param hostState
    */
   private void getHostConfig(Operation maintenance, State hostState) {
     try {
       final Service service = this;
+      lastHostMetadataUpdateTime = System.currentTimeMillis();
       HostClient hostClient = ((HostClientProvider) getHost()).getHostClient();
       hostClient.setIpAndPort(hostState.hostAddress, hostState.agentPort);
       hostClient.getHostConfig(new AsyncMethodCallback<Host.AsyncClient.get_host_config_call>() {
@@ -295,28 +296,29 @@ public class HostService extends StatefulService {
             HostClient.ResponseValidator.checkGetConfigResponse(response);
             processHostConfig(maintenance, hostState, response.getHostConfig());
           } catch (Throwable t) {
-            ServiceUtils.logWarning(service, "Get host config failed, host metadata will not be updated" +
-                t.getMessage());
-            updateHostState(maintenance, hostState, AgentState.ACTIVE);
+            ServiceUtils.logWarning(service, "Failed to retrieve host config. Setting agentState to MISSING. " +
+                "Exception:" + t.getMessage());
+            updateHostState(maintenance, hostState, AgentState.MISSING);
           }
         }
 
         @Override
         public void onError(Exception e) {
-          ServiceUtils.logWarning(service, "Get host config failed, host metadata will not be updated" +
-              e.getMessage());
-          updateHostState(maintenance, hostState, AgentState.ACTIVE);
+          ServiceUtils.logWarning(service, "Failed to retrieve host config. Setting agentState to MISSING. " +
+              "Exception:" + e.getMessage());
+          updateHostState(maintenance, hostState, AgentState.MISSING);
         }
       });
     } catch (Exception e) {
-      ServiceUtils.logWarning(this, "Get host config failed, host metadata will not be updated" +
-          e.getMessage());
-      updateHostState(maintenance, hostState, AgentState.ACTIVE);
+      ServiceUtils.logWarning(this, "Failed to retrieve host config. Setting agentState to MISSING. " +
+          "Exception:" + e.getMessage());
+      updateHostState(maintenance, hostState, AgentState.MISSING);
     }
   }
 
   /**
    * This method updates the host state with the received host config.
+   *
    * @param maintenance
    * @param hostState
    * @param hostConfig
@@ -350,10 +352,10 @@ public class HostService extends StatefulService {
         }
       }
 
-      Set<String> imageDatastores = hostConfig.getImage_datastore_ids();
-      if (imageDatastores != null && imageDatastores.size() > 0) {
+      Set<String> imageDatastoreIds = hostConfig.getImage_datastore_ids();
+      if (imageDatastoreIds != null && imageDatastoreIds.size() > 0) {
         patchState.reportedImageDatastores = new HashSet<>();
-        for (String datastoreId : imageDatastores) {
+        for (String datastoreId : imageDatastoreIds) {
           patchState.reportedImageDatastores.add(datastoreId);
         }
       }
@@ -361,64 +363,52 @@ public class HostService extends StatefulService {
       TaskUtils.sendSelfPatch(this, patchState);
 
       // Update datastore state
-      setDatastoreState(datastores, imageDatastores, maintenance);
+      setDatastoreState(hostState, datastores, imageDatastoreIds, maintenance);
     } catch (Throwable ex) {
       ServiceUtils.logWarning(this, "Failed to update " + hostState.hostAddress + " with state: " +
           Utils.toJson(hostState) + " " + ex.getMessage());
-      updateHostState(maintenance, hostState, AgentState.ACTIVE);
+      updateHostState(maintenance, hostState, AgentState.MISSING);
     }
   }
 
   /**
    * This method creates or updates datastore state that was sent as a part of host config.
+   *
    * @param datastores
    * @param imageDatastores
    * @param maintenance
    */
-  private void setDatastoreState(List<Datastore> datastores, Set<String> imageDatastores, Operation maintenance) {
+  private void setDatastoreState(
+      HostService.State hostState, List<Datastore> datastores, Set<String> imageDatastores, Operation maintenance) {
     if (datastores != null) {
-      // Create datastore documents.
-      final CountDownLatch done = new CountDownLatch(datastores.size());
-      for (Datastore datastore : datastores) {
-        DatastoreService.State datastoreState = new DatastoreService.State();
-        datastoreState.documentSelfLink = datastore.getId();
-        datastoreState.id = datastore.getId();
-        datastoreState.name = datastore.getName();
-        datastoreState.type = datastore.getType().toString();
-        datastoreState.tags = datastore.getTags();
-        if (imageDatastores.contains(datastore.getId())) {
-          datastoreState.isImageDatastore = true;
-        } else {
-          datastoreState.isImageDatastore = false;
-        }
-
-        try {
-          Operation post = Operation
-              .createPost(UriUtils.buildUri(getHost(), DatastoreServiceFactory.SELF_LINK))
-              .setBody(datastoreState)
-              .setCompletion((op, ex) -> {
-                if (ex != null) {
-                  ServiceUtils.logWarning(this, "Set datastore state failed " + ex.getMessage());
-                }
-                done.countDown();
-              });
-          sendRequest(post);
-        } catch (Throwable t) {
-          ServiceUtils.logWarning(this, "Set datastore state failed " + t.getMessage());
-          done.countDown();
-        }
-      }
-      try {
-        done.await(UPDATE_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-      } catch (InterruptedException ex) {
-        logWarning("Got interrupted waiting for datastore update operations to complete");
-      }
+      OperationJoin
+          .create(datastores.stream().map((datastore) -> {
+            DatastoreService.State datastoreState = new DatastoreService.State();
+            datastoreState.documentSelfLink = datastore.getId();
+            datastoreState.id = datastore.getId();
+            datastoreState.name = datastore.getName();
+            datastoreState.type = datastore.getType().toString();
+            datastoreState.tags = datastore.getTags();
+            datastoreState.isImageDatastore = imageDatastores.contains(datastore.getId());
+            return Operation
+                .createPost(UriUtils.buildUri(getHost(), DatastoreServiceFactory.SELF_LINK))
+                .setBody(datastoreState);
+          }))
+          .setCompletion((ops, exs) -> {
+            if (exs != null) {
+              ServiceUtils.logWarning(this,
+                  "Failed to add/update datastore documents for Host: " + hostState.hostAddress + ". " +
+                      "Failures: " + exs.values());
+            }
+            maintenance.complete();
+          })
+          .sendWith(this);
     }
-    maintenance.complete();
   }
 
   /**
    * Patch the Host Service document with the agent state if it has changed.
+   *
    * @param maintenance
    * @param hostState
    * @param agentState
