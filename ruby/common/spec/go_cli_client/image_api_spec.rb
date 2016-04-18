@@ -66,6 +66,15 @@ describe EsxCloud::GoCliClient do
     client.find_all_images.should == images
   end
 
+  it "finds images by name" do
+    images = double(EsxCloud::ImageList)
+    result = "foo1  image1  READY 4194417 EAGER 100.0%  100.0%"
+    expect(client).to receive(:run_cli).with("image list -n 'image1'").and_return(result)
+    expect(client).to receive(:get_image_list_from_response).with(result).and_return(images)
+
+    client.find_images_by_name("image1").should == images
+  end
+
   it "deletes an image" do
     image_id = double("bar")
     expect(client).to receive(:run_cli).with("image delete '#{image_id}'")

@@ -59,6 +59,11 @@ module EsxCloud
         @api_client.find_all_images
       end
 
+      # @return [ImageList]
+      def find_images_by_name(name)
+        @api_client.find_images_by_name(name)
+      end
+
       # @param [String] id
       # @return [Boolean]
       def delete_image(id)

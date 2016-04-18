@@ -49,6 +49,12 @@ module EsxCloud
         get_image_list_from_response(result)
       end
 
+      # @return [ImageList]
+      def find_images_by_name(name)
+        result = run_cli("image list -n '#{name}'")
+        get_image_list_from_response(result)
+      end
+
       # @param [String] id
       # @return [Boolean]
       def delete_image(id)
