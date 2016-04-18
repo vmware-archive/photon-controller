@@ -51,6 +51,11 @@ module EsxCloud
       Config.client.find_all_images
     end
 
+    # @return [ImageList]
+    def self.find_by_name
+      Config.client.find_images_by_name
+    end
+
     # @param [String] json
     # @return [Image]
     def self.create_from_json(json)
