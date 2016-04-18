@@ -138,7 +138,6 @@ public class DeploymentDcpBackendTest {
         .storeType(StatsStoreType.GRAPHITE)
         .build());
     deploymentCreateSpec.setUseImageDatastoreForVms(true);
-    deploymentCreateSpec.setUsePhotonDHCP(true);
     deploymentCreateSpec.setAuth(new AuthConfigurationSpecBuilder()
         .enabled(true)
         .tenant("t")
@@ -225,7 +224,6 @@ public class DeploymentDcpBackendTest {
       assertThat(deployment.getStatsStorePort(), is(2004));
       assertThat(deployment.getStatsStoreType(), is(StatsStoreType.GRAPHITE));
       assertThat(deployment.getUseImageDatastoreForVms(), is(true));
-      assertThat(deployment.getUsePhotonDHCP(), is(true));
       assertThat(deployment.getAuthEnabled(), is(true));
       assertThat(deployment.getOauthEndpoint(), nullValue());
       assertThat(deployment.getOauthPort(), nullValue());
@@ -694,7 +692,6 @@ public class DeploymentDcpBackendTest {
       assertThat(CollectionUtils.isEqualCollection(
           deployment.getImageDatastores(), entity.getImageDatastores()), is(true));
       assertThat(deployment.isUseImageDatastoreForVms(), is(entity.getUseImageDatastoreForVms()));
-      assertThat(deployment.isUsePhotonDHCP(), is(entity.getUsePhotonDHCP()));
       AuthInfo authInfo = deployment.getAuth();
       assertThat(authInfo.getEnabled(), is(entity.getAuthEnabled()));
       assertThat(authInfo.getEndpoint(), is(entity.getOauthEndpoint()));
@@ -1051,7 +1048,6 @@ public class DeploymentDcpBackendTest {
         deployment2.statsStoreType = stats.getStoreType();
       }
       deployment2.imageDataStoreUsedForVMs = deploymentCreateSpec.isUseImageDatastoreForVms();
-      deployment2.usePhotonDHCP = deploymentCreateSpec.isUsePhotonDHCP();
       deployment2.oAuthEnabled = deploymentCreateSpec.getAuth().getEnabled();
       deployment2.oAuthTenantName = deploymentCreateSpec.getAuth().getTenant();
       deployment2.oAuthPassword = deploymentCreateSpec.getAuth().getPassword();

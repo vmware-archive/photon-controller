@@ -13,7 +13,6 @@
       "image-datastore"
     ],
     "useImageDatastoreForVms": false,
-    "usePhotonDHCP": false,
     "state": "CREATING",
     "auth": {
         "enabled": true,

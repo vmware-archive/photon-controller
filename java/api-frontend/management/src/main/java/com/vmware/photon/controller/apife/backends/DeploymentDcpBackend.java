@@ -254,7 +254,6 @@ public class DeploymentDcpBackend implements DeploymentBackend {
 
     deployment.setNtpEndpoint(deploymentEntity.getNtpEndpoint());
     deployment.setUseImageDatastoreForVms(deploymentEntity.getUseImageDatastoreForVms());
-    deployment.setUsePhotonDHCP(deploymentEntity.getUsePhotonDHCP());
 
     AuthInfo authInfo = new AuthInfo();
     authInfo.setEnabled(deploymentEntity.getAuthEnabled());
@@ -434,7 +433,6 @@ public class DeploymentDcpBackend implements DeploymentBackend {
     deployment.state = DeploymentState.NOT_DEPLOYED;
     deployment.imageDataStoreNames = spec.getImageDatastores();
     deployment.imageDataStoreUsedForVMs = spec.isUseImageDatastoreForVms();
-    deployment.usePhotonDHCP = spec.isUsePhotonDHCP();
     deployment.syslogEndpoint = spec.getSyslogEndpoint();
 
     StatsInfo stats = spec.getStats();
@@ -485,7 +483,6 @@ public class DeploymentDcpBackend implements DeploymentBackend {
     entity.setState(deployment.state);
     entity.setImageDatastores(deployment.imageDataStoreNames);
     entity.setUseImageDatastoreForVms(deployment.imageDataStoreUsedForVMs);
-    entity.setUsePhotonDHCP(deployment.usePhotonDHCP);
     entity.setSyslogEndpoint(deployment.syslogEndpoint);
     entity.setStatsEnabled(deployment.statsEnabled);
     entity.setStatsStoreEndpoint(deployment.statsStoreEndpoint);
