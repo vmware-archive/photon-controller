@@ -32,7 +32,10 @@ import java.io.File;
  * TestMachine class hosting a DCP host.
  */
 public class TestEnvironment extends MultiHostEnvironment<CloudStoreXenonHost> {
-  private TestEnvironment(int hostCount) throws Throwable {
+  private TestEnvironment(
+      int hostCount, HostClientFactory hostClientFactory, AgentControlClientFactory agentControlClientFactory,
+      ServiceConfigFactory serviceConfigFactory) throws Throwable {
+
     assertTrue(hostCount > 0);
     hosts = new CloudStoreXenonHost[hostCount];
     for (int i = 0; i < hosts.length; i++) {
@@ -47,22 +50,73 @@ public class TestEnvironment extends MultiHostEnvironment<CloudStoreXenonHost> {
 
       BuildInfo buildInfo = BuildInfo.get(this.getClass());
 
-      hosts[i] = new CloudStoreXenonHost(xenonConfig, mock(HostClientFactory.class),
-          mock(AgentControlClientFactory.class), mock(ServiceConfigFactory.class), buildInfo);
+      hosts[i] = new CloudStoreXenonHost(xenonConfig, hostClientFactory,
+          agentControlClientFactory, serviceConfigFactory, buildInfo);
     }
     // Disable host ping: we have fake hosts and don't want them to be marked as missing
     HostService.setInUnitTests(true);
   }
 
-  /**
-   * Create instance of TestEnvironment with specified count of hosts and start all hosts.
-   *
-   * @return
-   * @throws Throwable
-   */
   public static TestEnvironment create(int hostCount) throws Throwable {
-    TestEnvironment testEnvironment = new TestEnvironment(hostCount);
-    testEnvironment.start();
-    return testEnvironment;
+    Builder builder = new Builder();
+    builder.hostCount(hostCount);
+    return builder.build();
+  }
+
+  /**
+   * Utility class to build objects of TestEnvironment
+   */
+  public static class Builder {
+    private int hostCount;
+    private HostClientFactory hostClientFactory;
+    private AgentControlClientFactory agentControlClientFactory;
+    private ServiceConfigFactory serviceConfigFactory;
+
+    public Builder hostCount(int hostCount) {
+      this.hostCount = hostCount;
+      return this;
+    }
+
+    public Builder hostClientFactory(HostClientFactory hostClientFactory) {
+      this.hostClientFactory = hostClientFactory;
+      return this;
+    }
+
+    public Builder agentControlClientFactory(AgentControlClientFactory agentControlClientFactory) {
+      this.agentControlClientFactory = agentControlClientFactory;
+      return this;
+    }
+
+    public Builder serviceConfigFactory(ServiceConfigFactory serviceConfigFactory) {
+      this.serviceConfigFactory = serviceConfigFactory;
+      return this;
+    }
+
+    public TestEnvironment build() throws Throwable {
+      int hostCount = this.hostCount;
+      if (this.hostCount == 0) {
+        hostCount = 1;
+      }
+
+      ServiceConfigFactory serviceConfigFactory = this.serviceConfigFactory;
+      if (this.serviceConfigFactory == null) {
+        serviceConfigFactory = mock(ServiceConfigFactory.class);
+      }
+
+      HostClientFactory hostClientFactory = this.hostClientFactory;
+      if (this.hostClientFactory == null) {
+        hostClientFactory = mock(HostClientFactory.class);
+      }
+
+      AgentControlClientFactory agentControlClientFactory = this.agentControlClientFactory;
+      if (this.agentControlClientFactory == null) {
+        agentControlClientFactory = mock(AgentControlClientFactory.class);
+      }
+
+      TestEnvironment testEnvironment = new TestEnvironment(
+          hostCount, hostClientFactory, agentControlClientFactory, serviceConfigFactory);
+      testEnvironment.start();
+      return testEnvironment;
+    }
   }
 }
