@@ -96,7 +96,7 @@ describe "image", management: true, image: true do
       expect(tasks.size).to eq(1)
       expect([tasks.first.operation, tasks.first.state]).to eq(["CREATE_IMAGE", "COMPLETED"])
 
-      image_list = EsxCloud::Image.find_all.items.select { |i| i.name == image_name }
+      image_list = client.find_images_by_name(image_name)
       expect(image_list.size).to eq 2
     end
 
