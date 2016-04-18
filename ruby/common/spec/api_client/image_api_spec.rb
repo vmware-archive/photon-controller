@@ -62,6 +62,13 @@ describe EsxCloud::ApiClient do
     client.find_all_images.should == images
   end
 
+  it "finds images by name" do
+    expect(http_client).to receive(:get).with("/images?name=image1").and_return(ok_response("images"))
+    expect(EsxCloud::ImageList).to receive(:create_from_json).with("images").and_return(images)
+
+    client.find_all_images.should == images
+  end
+
   it "deletes an image" do
     expect(http_client).to receive(:delete).with("/images/foo").and_return(task_created("aaa"))
     expect(http_client).to receive(:get).with(URL_HOST + "/tasks/aaa").and_return(task_done("aaa", "foo"))
