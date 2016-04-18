@@ -17,12 +17,9 @@ import com.vmware.photon.controller.agent.gen.AgentControl;
 import com.vmware.photon.controller.agent.gen.AgentStatusResponse;
 import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.UsageTag;
-import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.common.clients.AgentControlClient;
-import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
@@ -40,9 +37,6 @@ import com.vmware.photon.controller.deployer.dcp.DeployerContext;
 import com.vmware.photon.controller.deployer.dcp.constant.ServicePortConstants;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
 import com.vmware.photon.controller.deployer.deployengine.ScriptRunner;
-import com.vmware.photon.controller.host.gen.GetConfigResponse;
-import com.vmware.photon.controller.host.gen.Host;
-import com.vmware.photon.controller.host.gen.HostConfig;
 import com.vmware.photon.controller.nsxclient.NsxClient;
 import com.vmware.photon.controller.nsxclient.models.FabricNode;
 import com.vmware.photon.controller.nsxclient.models.FabricNodeCreateSpec;
@@ -54,9 +48,6 @@ import com.vmware.photon.controller.nsxclient.models.TransportNodeCreateSpec;
 import com.vmware.photon.controller.nsxclient.models.TransportNodeState;
 import com.vmware.photon.controller.nsxclient.models.TransportZoneEndPoint;
 import com.vmware.photon.controller.nsxclient.utils.NameUtils;
-import com.vmware.photon.controller.resource.gen.Datastore;
-import com.vmware.photon.controller.resource.gen.Network;
-import com.vmware.photon.controller.resource.gen.NetworkType;
 import com.vmware.photon.controller.stats.plugin.gen.StatsPluginConfig;
 import com.vmware.photon.controller.stats.plugin.gen.StatsStoreType;
 import com.vmware.xenon.common.Operation;
@@ -83,11 +74,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -98,7 +85,14 @@ public class ProvisionHostTaskService extends StatefulService {
   public static final String SCRIPT_NAME = "esx-install-agent2";
   private static final String COMMA_DELIMITED_REGEX = "\\s*,\\s*";
   private static final String DEFAULT_AGENT_LOG_LEVEL = "debug";
-  private static final String DEFAULT_AVAILABILITY_ZONE = "1";
+
+  /**
+   * This defines the total number of retries made by the task
+   * to check if the Host Service has been updated with configuration
+   * data. Given that the interval between each retry is 5secs,
+   * the task will timeout after 1-minute approx.
+   */
+  private static final int HOST_UPDATE_RETRY_COUNT = 12;
 
   /**
    * This class defines the state of a {@link ProvisionHostTaskService} task.
@@ -114,7 +108,8 @@ public class ProvisionHostTaskService extends StatefulService {
       WAIT_FOR_INSTALLATION,
       PROVISION_AGENT,
       WAIT_FOR_PROVISION,
-      GET_HOST_CONFIG,
+      UPDATE_HOST_STATE,
+      WAIT_FOR_HOST_UPDATES,
     }
 
     /**
@@ -140,13 +135,6 @@ public class ProvisionHostTaskService extends StatefulService {
      */
     @DefaultInteger(value = 0)
     public Integer controlFlags;
-
-    /**
-     * This value represents the interval, in milliseconds, between child task polling iterations.
-     */
-    @Positive
-    @Immutable
-    public Integer taskPollDelay;
 
     /**
      * This value represents the document link of the {@link HostService} object which represents
@@ -189,8 +177,9 @@ public class ProvisionHostTaskService extends StatefulService {
     public Integer pollInterval;
 
     /**
-     * This value represents the number of agent status polling iterations which have been attempted by the current
-     * task.
+     * This value is used for counting polling iterations for two stages:
+     * 1) retrieving agent provisioning status
+     * 2) waiting for host configuration to get updated.
      */
     @DefaultInteger(value = 0)
     public Integer pollCount;
@@ -216,10 +205,6 @@ public class ProvisionHostTaskService extends StatefulService {
     ServiceUtils.logTrace(this, "Handling start operation");
     State startState = operation.getBody(State.class);
     InitializationUtils.initialize(startState);
-
-    if (startState.taskPollDelay == null) {
-      startState.taskPollDelay = HostUtils.getDeployerContext(this).getTaskPollDelay();
-    }
 
     validateState(startState);
 
@@ -281,10 +266,6 @@ public class ProvisionHostTaskService extends StatefulService {
     ValidationUtils.validatePatch(currentState, patchState);
     validateTaskState(patchState.taskState);
     validateTaskStageProgression(currentState.taskState, patchState.taskState);
-
-    if (patchState.pollCount != null && currentState.pollCount != null) {
-      checkState(patchState.pollCount >= currentState.pollCount);
-    }
   }
 
   private void validateTaskState(TaskState taskState) {
@@ -304,7 +285,8 @@ public class ProvisionHostTaskService extends StatefulService {
           case WAIT_FOR_INSTALLATION:
           case PROVISION_AGENT:
           case WAIT_FOR_PROVISION:
-          case GET_HOST_CONFIG:
+          case UPDATE_HOST_STATE:
+          case WAIT_FOR_HOST_UPDATES:
             break;
           default:
             throw new IllegalStateException("Unknown task sub-stage: " + taskState.subStage);
@@ -336,8 +318,11 @@ public class ProvisionHostTaskService extends StatefulService {
       case WAIT_FOR_PROVISION:
         processWaitForProvisionSubStage(currentState);
         break;
-      case GET_HOST_CONFIG:
-        processGetHostConfigSubStage(currentState);
+      case UPDATE_HOST_STATE:
+        processUpdateHostState(currentState);
+        break;
+      case WAIT_FOR_HOST_UPDATES:
+        processWaitForHostUpdates(currentState);
         break;
     }
   }
@@ -871,17 +856,17 @@ public class ProvisionHostTaskService extends StatefulService {
     HostUtils.getCloudStoreHelper(this)
         .createGet(currentState.hostServiceLink)
         .setCompletion((o, e) -> {
-              if (e != null) {
-                failTask(e);
-                return;
-              }
+          if (e != null) {
+            failTask(e);
+            return;
+          }
 
-              try {
-                processWaitForProvisionSubStage(currentState, o.getBody(HostService.State.class));
-              } catch (Throwable t) {
-                failTask(t);
-              }
-            })
+          try {
+            processWaitForProvisionSubStage(currentState, o.getBody(HostService.State.class));
+          } catch (Throwable t) {
+            failTask(t);
+          }
+        })
         .sendWith(this);
   }
 
@@ -895,7 +880,7 @@ public class ProvisionHostTaskService extends StatefulService {
           try {
             AgentStatusResponse agentStatusResponse = getAgentStatusCall.getResult();
             AgentControlClient.ResponseValidator.checkAgentStatusResponse(agentStatusResponse, hostState.hostAddress);
-            sendStageProgressPatch(currentState, TaskState.TaskStage.STARTED, TaskState.SubStage.GET_HOST_CONFIG);
+            sendStageProgressPatch(currentState, TaskState.TaskStage.STARTED, TaskState.SubStage.UPDATE_HOST_STATE);
           } catch (Throwable t) {
             retryGetProvisionStatusOrFail(currentState, hostState, t);
           }
@@ -929,160 +914,65 @@ public class ProvisionHostTaskService extends StatefulService {
   }
 
   //
-  // GET_HOST_CONFIG sub-stage routines
+  // UPDATE_HOST_STATE sub-stage routines
   //
 
-  private void processGetHostConfigSubStage(State currentState) {
+  private void processUpdateHostState(State currentState) {
+    HostService.State hostPatchState = new HostService.State();
+    hostPatchState.state = HostState.READY;
 
-    HostUtils.getCloudStoreHelper(this)
-        .createGet(currentState.hostServiceLink)
-        .setCompletion((op, ex) -> {
-          if (ex != null) {
-            failTask(ex);
-            return;
-          }
+    State patchState = buildPatch(
+        TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_FOR_HOST_UPDATES, null);
+    patchState.pollCount = 0;
 
-          try {
-            processGetHostConfigSubStage(currentState, op.getBody(HostService.State.class));
-          } catch (Throwable t) {
-            failTask(t);
-          }
-        })
-        .sendWith(this);
+    patchHost(currentState, hostPatchState, patchState);
   }
 
-  private void processGetHostConfigSubStage(State currentState, HostService.State hostState) {
+  //
+  // WAIT_FOR_HOST_Updates sub-stage routines
+  //
+
+  private void processWaitForHostUpdates(State currentState) {
     try {
-      HostClient hostClient = HostUtils.getHostClient(this);
-      hostClient.setIpAndPort(hostState.hostAddress, hostState.agentPort);
-      hostClient.getHostConfig(new AsyncMethodCallback<Host.AsyncClient.get_host_config_call>() {
-        @Override
-        public void onComplete(Host.AsyncClient.get_host_config_call getHostConfigCall) {
-          try {
-            GetConfigResponse response = getHostConfigCall.getResult();
-            HostClient.ResponseValidator.checkGetConfigResponse(response);
-            processHostConfig(currentState, hostState, response.getHostConfig());
-          } catch (Throwable t) {
-            failTask(t);
-          }
-        }
-
-        @Override
-        public void onError(Exception e) {
-          failTask(e);
-        }
-      });
+      HostUtils.getCloudStoreHelper(this)
+          .createGet(currentState.hostServiceLink)
+          .setCompletion((o, e) -> {
+            if (e != null) {
+              retryWaitForHostUpdatesOrFail(currentState, e);
+              return;
+            }
+            try {
+              HostService.State hostState = o.getBody(HostService.State.class);
+              if (hostState.esxVersion == null) {
+                retryWaitForHostUpdatesOrFail(currentState, null);
+              }
+              TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FINISHED, null, null));
+            } catch (Throwable t) {
+              retryWaitForHostUpdatesOrFail(currentState, t);
+            }
+          })
+          .sendWith(this);
     } catch (Throwable t) {
-      failTask(t);
+      retryWaitForHostUpdatesOrFail(currentState, t);
     }
   }
 
-  private void processHostConfig(State currentState,
-                                 HostService.State hostState,
-                                 HostConfig hostConfig) {
-
-    ServiceUtils.logInfo(this, "Received host config from agent " +
-        ServiceUtils.getIDFromDocumentSelfLink(currentState.hostServiceLink) + " [" + hostState.hostAddress + "]: " +
-        Utils.toJsonHtml(hostConfig));
-
-    Set<String> reportedDataStores = null;
-    Set<String> reportedImageDataStores = null;
-    Set<String> reportedNetworks = null;
-    Map<String, String> datastoreServiceLinks = null;
-    Set<DatastoreService.State> datastoreStartStates = null;
-
-    if (hostConfig.isSetDatastores()
-        && hostConfig.getDatastores() != null
-        && !hostConfig.getDatastores().isEmpty()) {
-
-      reportedDataStores = new HashSet<>();
-      for (Datastore datastore : hostConfig.getDatastores()) {
-        reportedDataStores.add(datastore.getId());
-      }
-
-      datastoreServiceLinks = new HashMap<>();
-      for (Datastore datastore : hostConfig.getDatastores()) {
-        datastoreServiceLinks.put(datastore.getName(), DatastoreServiceFactory.SELF_LINK + "/" + datastore.getId());
-      }
-
-      datastoreStartStates = new HashSet<>();
-      for (Datastore datastore : hostConfig.getDatastores()) {
-        DatastoreService.State datastoreStartState = new DatastoreService.State();
-        datastoreStartState.id = datastore.getId();
-        datastoreStartState.name = datastore.getName();
-        datastoreStartState.tags = datastore.getTags();
-        datastoreStartState.type = datastore.getType().name();
-        datastoreStartState.documentSelfLink = datastore.getId();
-        datastoreStartState.isImageDatastore = false;
-
-        if (hostConfig.isSetImage_datastore_ids()
-            && hostConfig.getImage_datastore_ids() != null
-            && hostConfig.getImage_datastore_ids().contains(datastore.getId())) {
-          datastoreStartState.isImageDatastore = true;
-        }
-
-        datastoreStartStates.add(datastoreStartState);
-      }
+  private void retryWaitForHostUpdatesOrFail(State currentState, Throwable failure) {
+    if (failure != null) {
+      ServiceUtils.logSevere(this, failure);
     }
-
-    if (hostConfig.isSetNetworks() && hostConfig.getNetworks() != null) {
-      reportedNetworks = new HashSet<>();
-      for (Network network : hostConfig.getNetworks()) {
-        if (network.getTypes() != null && network.getTypes().contains(NetworkType.VM)) {
-          reportedNetworks.add(network.getId());
-        }
-      }
+    if (currentState.pollCount + 1 >= HOST_UPDATE_RETRY_COUNT) {
+      State patchState = buildPatch(TaskState.TaskStage.FAILED, null, new IllegalStateException(
+          "The hostService " + currentState.hostServiceLink + " failed to get updated with configuration details " +
+              "after " + Integer.toString(currentState.maximumPollCount) + " retries"));
+      patchState.pollCount = currentState.pollCount + 1;
+      TaskUtils.sendSelfPatch(this, patchState);
+    } else {
+      State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_FOR_HOST_UPDATES, null);
+      patchState.pollCount = currentState.pollCount + 1;
+      getHost().schedule(() -> TaskUtils.sendSelfPatch(this, patchState), currentState.pollInterval,
+          TimeUnit.MILLISECONDS);
     }
-
-    if (hostConfig.isSetImage_datastore_ids() && hostConfig.getImage_datastore_ids() != null) {
-      reportedImageDataStores = new HashSet<>();
-      for (String datastoreId : hostConfig.getImage_datastore_ids()) {
-        reportedImageDataStores.add(datastoreId);
-      }
-    }
-
-    HostService.State patchState = new HostService.State();
-    patchState.state = HostState.READY;
-    patchState.reportedDatastores = reportedDataStores;
-    patchState.reportedImageDatastores = reportedImageDataStores;
-    patchState.reportedNetworks = reportedNetworks;
-    patchState.datastoreServiceLinks = datastoreServiceLinks;
-
-    if (hostConfig.isSetCpu_count()) {
-      patchState.cpuCount = hostConfig.getCpu_count();
-    }
-
-    if (hostConfig.isSetEsx_version()) {
-      patchState.esxVersion = hostConfig.getEsx_version();
-    }
-
-    if (hostConfig.isSetMemory_mb()) {
-      patchState.memoryMb = hostConfig.getMemory_mb();
-    }
-
-    if (datastoreStartStates == null) {
-      patchHost(currentState, patchState, TaskState.TaskStage.FINISHED, null);
-      return;
-    }
-
-    OperationJoin
-        .create(datastoreStartStates.stream()
-            .map((datastoreState) -> HostUtils.getCloudStoreHelper(this)
-                .createPost(DatastoreServiceFactory.SELF_LINK)
-                .setBody(datastoreState)))
-        .setCompletion((ops, exs) -> {
-          if (exs != null && !exs.isEmpty()) {
-            failTask(exs.values());
-            return;
-          }
-
-          try {
-            patchHost(currentState, patchState, TaskState.TaskStage.FINISHED, null);
-          } catch (Throwable t) {
-            failTask(t);
-          }
-        })
-        .sendWith(this);
   }
 
   //
@@ -1093,23 +983,34 @@ public class ProvisionHostTaskService extends StatefulService {
                          HostService.State patchState,
                          TaskState.TaskStage nextStage,
                          TaskState.SubStage nextSubStage) {
+    patchHost(currentState, patchState, buildPatch(nextStage, nextSubStage, null));
+  }
 
+  private void patchHost(State currentState,
+                         HostService.State hostPatchState,
+                         State patchState) {
     HostUtils.getCloudStoreHelper(this)
         .createPatch(currentState.hostServiceLink)
-        .setBody(patchState)
+        .setBody(hostPatchState)
         .setCompletion((o, e) -> {
           if (e != null) {
             failTask(e);
           } else {
-            sendStageProgressPatch(currentState, nextStage, nextSubStage);
+            sendStageProgressPatch(currentState, patchState);
           }
         })
         .sendWith(this);
   }
 
-  private void sendStageProgressPatch(State currentState, TaskState.TaskStage taskStage, TaskState.SubStage subStage) {
-    ServiceUtils.logTrace(this, "Sending self-patch to stage %s : %s", taskStage, subStage);
-    State patchState = buildPatch(taskStage, subStage, null);
+  private void sendStageProgressPatch(State currentState,
+                                      TaskState.TaskStage taskStage,
+                                      TaskState.SubStage subStage) {
+    sendStageProgressPatch(currentState, buildPatch(taskStage, subStage, null));
+  }
+
+  private void sendStageProgressPatch(State currentState, State patchState) {
+    ServiceUtils.logInfo(this, "Sending self-patch to stage %s : %s",
+        patchState.taskState.stage, patchState.taskState.subStage);
     if (ControlFlags.disableOperationProcessingOnStageTransition(currentState.controlFlags)) {
       patchState.controlFlags = ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED;
     }
