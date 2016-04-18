@@ -10,22 +10,81 @@
 # License for then specific language governing permissions and limitations
 # under the License.
 
-import os
+import random
+import tempfile
 import threading
+import unittest
+
 import time
 
+import os
+
+from hamcrest import assert_that, equal_to
+from mock import MagicMock
+from mock import patch
+
 from common.file_util import mkdtemp
-from common.file_io import AcquireLockFailure, FileBackedLock
+from common.file_lock import AcquireLockFailure, FileBackedLock, LOCK_EXTENSION
+from common.file_lock import InvalidFile
+from common.file_lock import _FileLock
+from gen.resource.ttypes import DatastoreType
 
 
-class FileIOCommonTests(object):
+class TestFileLock(unittest.TestCase):
+
+    def setUp(self):
+        self.file_lock = _FileLock(DatastoreType.EXT3)
+        self.tempfile = tempfile.mktemp()
+
+    def tearDown(self):
+        self.file_lock.close()
+        try:
+            os.unlink(self.tempfile)
+        except:
+            pass
+
+    def test_dup_lock(self):
+        self.file_lock.lock_and_open(self.tempfile)
+        # Second lock_and_open will raise AcquireLockFailure
+        self.assertRaises(AcquireLockFailure, self.file_lock.lock_and_open,
+                          self.tempfile)
+
+    def test_file_exist(self):
+        assert_that(os.path.exists(self.tempfile), equal_to(False))
+        self.file_lock.lock_and_open(self.tempfile)
+        assert_that(os.path.exists(self.tempfile), equal_to(True))
+
+    @patch("time.sleep")
+    def test_retry(self, sleep):
+        def raise_lock_and_open_failure(file_name):
+            if random.randint(0, 1) > 0:
+                raise AcquireLockFailure()
+            else:
+                raise InvalidFile()
+
+        file_lock = _FileLock(DatastoreType.EXT3)
+        file_lock._lock_and_open = MagicMock()
+        file_lock._lock_and_open.side_effect = raise_lock_and_open_failure
+
+        try:
+            file_lock.lock_and_open(self.tempfile, retry=100, wait=0.1)
+        except AcquireLockFailure:
+            pass
+        except InvalidFile:
+            pass
+        assert_that(file_lock._lock_and_open.call_count, equal_to(101))
+
+
+class TestFileBackedLock(unittest.TestCase):
     """ Base class for cross file system file io tests """
 
-    def init(self):
+    def setUp(self):
+        self._test_dir = "/tmp"
+        self._fs_type = DatastoreType.EXT3
+
         tempdir = mkdtemp(delete=True, dir=self._test_dir)
         self._file_name = os.path.join(tempdir, "fileio_lock_test")
-        self._lock_path = "%s.%s" % (self._file_name,
-                                     FileBackedLock.LOCK_EXTENSION)
+        self._lock_path = "%s.%s" % (self._file_name, LOCK_EXTENSION)
 
     def test_lock(self):
         """ Test file based lock behavior. """
