@@ -911,6 +911,7 @@ public class RemoveDeploymentWorkflowService extends StatefulService {
 
     DeprovisionHostWorkflowService.State startState = new DeprovisionHostWorkflowService.State();
     startState.taskPollDelay = currentState.taskPollDelay;
+    startState.deploymentServiceLink = currentState.deploymentServiceLink;
 
     for (String hostServiceLink : documentLinks) {
       startState.hostServiceLink = hostServiceLink;

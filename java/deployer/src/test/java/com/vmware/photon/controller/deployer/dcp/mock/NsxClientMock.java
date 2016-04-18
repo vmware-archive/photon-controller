@@ -153,6 +153,30 @@ public class NsxClientMock extends NsxClient {
       return this;
     }
 
+    public Builder deleteTransportNode(boolean isSuccess) throws Throwable {
+
+      if (mockFabricApi == null) {
+        mockFabricApi = mock(FabricApi.class);
+      }
+
+      if (isSuccess) {
+        doAnswer(invocation -> {
+          ((FutureCallback<Void>) invocation.getArguments()[1])
+              .onSuccess(null);
+          return null;
+        }).when(mockFabricApi).deleteTransportNode(any(String.class), any(FutureCallback.class));
+      } else {
+        RuntimeException error = new RuntimeException("deleteTransportNode failed");
+        doAnswer(invocation -> {
+          ((FutureCallback<Void>) invocation.getArguments()[1])
+              .onFailure(error);
+          return null;
+        }).when(mockFabricApi).deleteTransportNode(any(String.class), any(FutureCallback.class));
+      }
+
+      return this;
+    }
+
     public NsxClientMock build() {
       return new NsxClientMock(mockFabricApi);
     }

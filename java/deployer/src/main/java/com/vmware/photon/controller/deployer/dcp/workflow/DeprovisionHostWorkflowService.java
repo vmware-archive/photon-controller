@@ -41,6 +41,7 @@ import com.vmware.photon.controller.deployer.dcp.util.MiscUtils;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClient;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClientFactoryProvider;
 import com.vmware.photon.controller.host.gen.HostMode;
+import com.vmware.photon.controller.nsxclient.NsxClient;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.OperationJoin;
 import com.vmware.xenon.common.Service;
@@ -48,6 +49,7 @@ import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.NodeGroupBroadcastResponse;
 import com.vmware.xenon.services.common.QueryTask;
 import com.vmware.xenon.services.common.ServiceUriPaths;
 
@@ -61,6 +63,7 @@ import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -85,6 +88,7 @@ public class DeprovisionHostWorkflowService extends StatefulService {
       PUT_HOST_TO_DEPROVISION_MODE,
       RECONFIGURE_ZOOKEEPER,
       DELETE_AGENT,
+      DEPROVISION_NETWORK,
       DELETE_ENTITIES,
     }
   }
@@ -94,6 +98,13 @@ public class DeprovisionHostWorkflowService extends StatefulService {
    */
   @NoMigrationDuringUpgrade
   public static class State extends ServiceDocument {
+
+    /**
+     * This value represents the document link of the {@link DeploymentService}
+     * object which represents the deployment.
+     */
+    @Immutable
+    public String deploymentServiceLink;
 
     /**
      * This value represents the document link of the {@link HostService}
@@ -232,7 +243,7 @@ public class DeprovisionHostWorkflowService extends StatefulService {
   private State applyPatch(State startState, State patchState) {
     if (startState.taskState.stage != patchState.taskState.stage
         || startState.taskState.subStage != patchState.taskState.subStage) {
-      ServiceUtils.logInfo(this, "Moving to stage %s:%s", startState.taskState.stage, startState.taskState.subStage);
+      ServiceUtils.logInfo(this, "Moving to stage %s:%s", patchState.taskState.stage, patchState.taskState.subStage);
       startState.taskState = patchState.taskState;
     }
 
@@ -275,6 +286,9 @@ public class DeprovisionHostWorkflowService extends StatefulService {
                       break;
                     case DELETE_AGENT:
                       handleDeleteAgent(currentState, ignoreError);
+                      break;
+                    case DEPROVISION_NETWORK:
+                      deprovisionNetwork(currentState, hostState, ignoreError);
                       break;
                     case DELETE_ENTITIES:
                       deleteEntities(currentState, ignoreError);
@@ -341,23 +355,7 @@ public class DeprovisionHostWorkflowService extends StatefulService {
       public void onSuccess(@Nullable DeleteAgentTaskService.State result) {
         switch (result.taskState.stage) {
           case FINISHED:
-            HostService.State hostService = new HostService.State();
-            hostService.state = HostState.NOT_PROVISIONED;
-
-            sendRequest(
-                HostUtils.getCloudStoreHelper(service)
-                    .createPatch(currentState.hostServiceLink)
-                    .setBody(hostService)
-                    .setCompletion(
-                        (completedOp, failure) -> {
-                          if (null != failure) {
-                            failTask(failure);
-                          } else {
-                            sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.DELETE_ENTITIES);
-                          }
-                        }
-                    ));
-
+            sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.DEPROVISION_NETWORK);
             break;
           case FAILED:
             if (ignoreError) {
@@ -465,7 +463,7 @@ public class DeprovisionHostWorkflowService extends StatefulService {
             .setCompletion(
                 (completedOp, failure) -> {
                   if (null != failure) {
-                    handleZookeeperStepFailure(failure, "Error while getting DeploymentService" , ignoreError);
+                    handleZookeeperStepFailure(failure, "Error while getting DeploymentService", ignoreError);
                     return;
                   }
 
@@ -558,9 +556,101 @@ public class DeprovisionHostWorkflowService extends StatefulService {
             ));
   }
 
+  private void deprovisionNetwork(State currentState, HostService.State hostState, boolean ignoreError) {
+
+    if (null == currentState.deploymentServiceLink) {
+      QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
+      querySpecification.query = new QueryTask.Query()
+          .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
+          .setTermMatchValue(Utils.buildKind(DeploymentService.State.class));
+      QueryTask queryTask = QueryTask.create(querySpecification).setDirect(true);
+
+      HostUtils.getCloudStoreHelper(this)
+          .createBroadcastPost(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS, ServiceUriPaths.DEFAULT_NODE_SELECTOR)
+          .setBody(queryTask)
+          .setCompletion((op, ex) -> {
+            if (null != ex) {
+              failTask(ex);
+              return;
+            }
+
+            NodeGroupBroadcastResponse queryResponse = op.getBody(NodeGroupBroadcastResponse.class);
+            Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(queryResponse);
+            if (documentLinks.isEmpty()) {
+              ServiceUtils.logInfo(this, "Skip deprovisioning network because no deployment was found");
+              patchHostStateAndSendStageProgress(currentState, HostState.NOT_PROVISIONED,
+                  TaskState.TaskStage.STARTED, TaskState.SubStage.DELETE_ENTITIES);
+              return;
+            }
+
+            getDeploymentState(currentState, hostState, documentLinks.iterator().next(), ignoreError);
+          })
+          .sendWith(this);
+    } else {
+      getDeploymentState(currentState, hostState, currentState.deploymentServiceLink, ignoreError);
+    }
+  }
+
+  private void getDeploymentState(State currentState,
+                                  HostService.State hostState,
+                                  String deploymentServiceLink,
+                                  boolean ignoreError) {
+    HostUtils.getCloudStoreHelper(this)
+        .createGet(deploymentServiceLink)
+        .setCompletion((op, ex) -> {
+          if (ex != null) {
+            failTask(ex);
+            return;
+          }
+
+          deleteTransportNode(currentState, hostState, op.getBody(DeploymentService.State.class), ignoreError);
+        })
+        .sendWith(this);
+  }
+
+  private void deleteTransportNode(State currentState,
+                                   HostService.State hostState,
+                                   DeploymentService.State deploymentState,
+                                   boolean ignoreError) {
+    if (hostState.nsxTransportNodeId == null) {
+      ServiceUtils.logInfo(this, "Skip deleting transport node");
+      patchHostStateAndSendStageProgress(currentState, HostState.NOT_PROVISIONED,
+          TaskState.TaskStage.STARTED, TaskState.SubStage.DELETE_ENTITIES);
+      return;
+    }
+
+    try {
+      NsxClient nsxClient = HostUtils.getNsxClientFactory(this).create(
+          deploymentState.networkManagerAddress,
+          deploymentState.networkManagerUsername,
+          deploymentState.networkManagerPassword);
+
+      nsxClient.getFabricApi().deleteTransportNode(hostState.nsxTransportNodeId,
+          new FutureCallback<Void>() {
+            @Override
+            public void onSuccess(@Nullable Void aVoid) {
+              patchHostStateAndSendStageProgress(currentState, HostState.NOT_PROVISIONED,
+                  TaskState.TaskStage.STARTED, TaskState.SubStage.DELETE_ENTITIES);
+            }
+
+            @Override
+            public void onFailure(Throwable throwable) {
+              if (ignoreError) {
+                ServiceUtils.logSevere(DeprovisionHostWorkflowService.this,
+                    "Ignoring error while deleting transport node: ", throwable);
+              } else {
+                failTask(throwable);
+              }
+            }
+          }
+      );
+    } catch (Throwable t) {
+      failTask(t);
+    }
+  }
+
   private void deleteEntities(State currentState, boolean ignoreError) {
     // TODO(giskender): Delete flavors
-
     final AtomicInteger latch = new AtomicInteger(currentState.vmServiceStates.size());
 
     final FutureCallback<Task> finishedCallback = new FutureCallback<Task>() {
@@ -626,6 +716,7 @@ public class DeprovisionHostWorkflowService extends StatefulService {
           failTask(t);
         } else {
           ServiceUtils.logSevere(DeprovisionHostWorkflowService.this, "Ignoring error while finish Deprovision ", t);
+          latch.decrementAndGet();
         }
       }
     };
@@ -651,6 +742,7 @@ public class DeprovisionHostWorkflowService extends StatefulService {
                   } else {
                     ServiceUtils.logSevere(DeprovisionHostWorkflowService.this, "Ignoring error while querying " +
                         "containers ", failure);
+                    finishedCallback.onSuccess(null);
                   }
                   return;
                 }
@@ -711,6 +803,28 @@ public class DeprovisionHostWorkflowService extends StatefulService {
   private void failTask(Throwable t) {
     ServiceUtils.logSevere(this, t);
     TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, null, t));
+  }
+
+  private void patchHostStateAndSendStageProgress(State currentState,
+                                                  HostState hostState,
+                                                  TaskState.TaskStage stage,
+                                                  TaskState.SubStage subStage) {
+    HostService.State hostService = new HostService.State();
+    hostService.state = hostState;
+
+    HostUtils.getCloudStoreHelper(this)
+        .createPatch(currentState.hostServiceLink)
+        .setBody(hostService)
+        .setCompletion(
+            (completedOp, failure) -> {
+              if (null != failure) {
+                failTask(failure);
+              } else {
+                sendStageProgressPatch(stage, subStage);
+              }
+            }
+        )
+        .sendWith(this);
   }
 
   @VisibleForTesting
