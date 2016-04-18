@@ -53,7 +53,6 @@ import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.QueryTask;
 
 import org.apache.thrift.async.AsyncMethodCallback;
-
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
@@ -172,10 +171,23 @@ public class HostService extends StatefulService {
       State patchState = patchOperation.getBody(State.class);
       validatePatchState(startState, patchState);
 
+      boolean stateChangedToReady =
+          startState.state != HostState.READY && patchState.state == HostState.READY;
+
       PatchUtils.patchState(startState, patchState);
       validateState(startState);
 
       patchOperation.complete();
+
+      // If the host state changed to READY, the host service
+      // proactively calls the agent to get host configuration
+      // and update the host document. This is done as an
+      // optimization for host provisioning.
+      // In-general, host configuration is updated as part of
+      // handleMaintenance of the Host Service.
+      if (stateChangedToReady) {
+        getHostConfig(null, startState);
+      }
     } catch (IllegalStateException t) {
       ServiceUtils.failOperationAsBadRequest(this, patchOperation, t);
     } catch (Throwable t) {
@@ -210,7 +222,6 @@ public class HostService extends StatefulService {
     if (HostService.inUnitTests) {
       return;
     }
-
     try {
       // Return if the maintenance call is not the periodically scheduled one
       ServiceMaintenanceRequest request = maintenance.getBody(ServiceMaintenanceRequest.class);
@@ -218,7 +229,6 @@ public class HostService extends StatefulService {
         maintenance.complete();
         return;
       }
-
       getHost().schedule(() -> {
         Operation getOperation = Operation.createGet(this, maintenance.getUri().getPath())
             .setCompletion((op, ex) -> {
@@ -227,8 +237,15 @@ public class HostService extends StatefulService {
                 maintenance.complete();
                 return;
               }
+
               State hostState = op.getBody(State.class);
-              pingHost(maintenance, hostState);
+              // Retrieve host metadata if the interval has elapsed. Otherwise, just ping the
+              // host to perform a health-check.
+              if (System.currentTimeMillis() - lastHostMetadataUpdateTime >= UPDATE_HOST_METADATA_INTERVAL) {
+                getHostConfig(maintenance, hostState);
+              } else {
+                pingHost(maintenance, hostState);
+              }
             });
         sendRequest(getOperation);
       }, ThreadLocalRandom.current().nextInt(1, DEFAULT_MAX_PING_WAIT_TIME_MILLIS), TimeUnit.MILLISECONDS);
@@ -244,6 +261,7 @@ public class HostService extends StatefulService {
    * The thrift call to ping the agent is implemented as a runnable, which will be scheduled to run in the future.
    * The time after which it runs is determined by a random integer between 1 and maxPingWaitTimeMillis. This is needed
    * to achieve a randomized distribution of the polling task so that we reduce the number of concurrent connections.
+   *
    * @param maintenance
    * @param hostState
    */
@@ -255,13 +273,7 @@ public class HostService extends StatefulService {
       agentControlClient.ping(new AsyncMethodCallback<AgentControl.AsyncClient.ping_call>() {
         @Override
         public void onComplete(AgentControl.AsyncClient.ping_call pingCall) {
-          // Get the host metadata if we have reached the UPDATE_HOST_METADATA_INTERVAL
-          if (System.currentTimeMillis() - lastHostMetadataUpdateTime >= UPDATE_HOST_METADATA_INTERVAL) {
-            lastHostMetadataUpdateTime = System.currentTimeMillis();
-            getHostConfig(maintenance, hostState);
-          } else {
-            updateHostState(maintenance, hostState, AgentState.ACTIVE);
-          }
+          updateHostState(maintenance, hostState, AgentState.ACTIVE);
         }
 
         @Override
@@ -280,11 +292,17 @@ public class HostService extends StatefulService {
 
   /**
    * This method gets the host config (datastores, networks, etc.) from agent.
-   * @param hostState
+   * It also sets the agentState to ACTIVE or MISSING, depending on the result
+   * of the getHostConfig call. Because this updates agentState, handleMaintenance
+   * does not call pingHost when host configuration is updated.
+   *
+   * The operation parameter is null when executed by handlePatch. But it
+   * is set for handleMaintenance.
    */
-  private void getHostConfig(Operation maintenance, State hostState) {
+  private void getHostConfig(Operation operation, State hostState) {
     try {
       final Service service = this;
+      lastHostMetadataUpdateTime = System.currentTimeMillis();
       HostClient hostClient = ((HostClientProvider) getHost()).getHostClient();
       hostClient.setIpAndPort(hostState.hostAddress, hostState.agentPort);
       hostClient.getHostConfig(new AsyncMethodCallback<Host.AsyncClient.get_host_config_call>() {
@@ -293,43 +311,49 @@ public class HostService extends StatefulService {
           try {
             GetConfigResponse response = getHostConfigCall.getResult();
             HostClient.ResponseValidator.checkGetConfigResponse(response);
-            processHostConfig(maintenance, hostState, response.getHostConfig());
+            processHostConfig(operation, hostState, response.getHostConfig());
           } catch (Throwable t) {
-            ServiceUtils.logWarning(service, "Get host config failed, host metadata will not be updated" +
-                t.getMessage());
-            updateHostState(maintenance, hostState, AgentState.ACTIVE);
+            ServiceUtils.logWarning(service, "Failed to retrieve host config. Setting agentState to MISSING. " +
+                "Exception:" + t.getMessage());
+            updateHostState(operation, hostState, AgentState.MISSING);
           }
         }
 
         @Override
         public void onError(Exception e) {
-          ServiceUtils.logWarning(service, "Get host config failed, host metadata will not be updated" +
-              e.getMessage());
-          updateHostState(maintenance, hostState, AgentState.ACTIVE);
+          ServiceUtils.logWarning(service, "Failed to retrieve host config. Setting agentState to MISSING. " +
+              "Exception:" + e.getMessage());
+          updateHostState(operation, hostState, AgentState.MISSING);
         }
       });
     } catch (Exception e) {
-      ServiceUtils.logWarning(this, "Get host config failed, host metadata will not be updated" +
-          e.getMessage());
-      updateHostState(maintenance, hostState, AgentState.ACTIVE);
+      ServiceUtils.logWarning(this, "Failed to retrieve host config. Setting agentState to MISSING. " +
+          "Exception:" + e.getMessage());
+      updateHostState(operation, hostState, AgentState.MISSING);
     }
   }
 
   /**
    * This method updates the host state with the received host config.
-   * @param maintenance
+   *
+   * @param operation
    * @param hostState
    * @param hostConfig
    */
-  private void processHostConfig(Operation maintenance, State hostState, HostConfig hostConfig) {
-    try {
-      State patchState = new State();
-      patchState.agentState = AgentState.ACTIVE;
+  private void processHostConfig(Operation operation, State hostState, HostConfig hostConfig) {
+    List<Datastore> datastores = hostConfig.getDatastores();
+    List<Network> networks = hostConfig.getNetworks();
+    Set<String> imageDatastoreIds = hostConfig.getImage_datastore_ids();
 
-      List<Datastore> datastores = hostConfig.getDatastores();
+    try {
+      HostService.State patchState = new HostService.State();
+      patchState.agentState = AgentState.ACTIVE;
+      patchState.reportedDatastores = new HashSet<>();
+      patchState.datastoreServiceLinks = new HashMap<>();
+      patchState.reportedImageDatastores = new HashSet<>();
+      patchState.reportedNetworks = new HashSet<>();
+
       if (datastores != null && datastores.size() > 0) {
-        patchState.reportedDatastores = new HashSet<>();
-        patchState.datastoreServiceLinks = new HashMap<>();
         for (Datastore datastore : datastores) {
           patchState.reportedDatastores.add(datastore.getId());
           patchState.datastoreServiceLinks
@@ -337,9 +361,7 @@ public class HostService extends StatefulService {
         }
       }
 
-      List<Network> networks = hostConfig.getNetworks();
       if (networks != null && networks.size() > 0) {
-        patchState.reportedNetworks = new HashSet<>();
         for (Network network : networks) {
           if (network.getTypes() != null && network.getTypes().contains(NetworkType.VM)) {
             // TEMPORARY WORKAROUND: Currently the portgroup document doesn't
@@ -350,32 +372,40 @@ public class HostService extends StatefulService {
         }
       }
 
-      Set<String> imageDatastores = hostConfig.getImage_datastore_ids();
-      if (imageDatastores != null && imageDatastores.size() > 0) {
-        patchState.reportedImageDatastores = new HashSet<>();
-        for (String datastoreId : imageDatastores) {
+      if (imageDatastoreIds != null && imageDatastoreIds.size() > 0) {
+        for (String datastoreId : imageDatastoreIds) {
           patchState.reportedImageDatastores.add(datastoreId);
         }
       }
 
-      TaskUtils.sendSelfPatch(this, patchState);
+      if (hostConfig.isSetCpu_count()) {
+        patchState.cpuCount = hostConfig.getCpu_count();
+      }
+      if (hostConfig.isSetEsx_version()) {
+        patchState.esxVersion = hostConfig.getEsx_version();
+      }
+      if (hostConfig.isSetMemory_mb()) {
+        patchState.memoryMb = hostConfig.getMemory_mb();
+      }
 
-      // Update datastore state
-      setDatastoreState(datastores, imageDatastores, maintenance);
+      TaskUtils.sendSelfPatch(this, patchState);
     } catch (Throwable ex) {
       ServiceUtils.logWarning(this, "Failed to update " + hostState.hostAddress + " with state: " +
           Utils.toJson(hostState) + " " + ex.getMessage());
-      updateHostState(maintenance, hostState, AgentState.ACTIVE);
     }
+
+    // Update datastore state
+    setDatastoreState(operation, datastores, imageDatastoreIds);
   }
 
   /**
    * This method creates or updates datastore state that was sent as a part of host config.
+   *
    * @param datastores
    * @param imageDatastores
-   * @param maintenance
+   * @param operation
    */
-  private void setDatastoreState(List<Datastore> datastores, Set<String> imageDatastores, Operation maintenance) {
+  private void setDatastoreState(Operation operation, List<Datastore> datastores, Set<String> imageDatastores) {
     if (datastores != null) {
       // Create datastore documents.
       final CountDownLatch done = new CountDownLatch(datastores.size());
@@ -386,11 +416,7 @@ public class HostService extends StatefulService {
         datastoreState.name = datastore.getName();
         datastoreState.type = datastore.getType().toString();
         datastoreState.tags = datastore.getTags();
-        if (imageDatastores.contains(datastore.getId())) {
-          datastoreState.isImageDatastore = true;
-        } else {
-          datastoreState.isImageDatastore = false;
-        }
+        datastoreState.isImageDatastore = imageDatastores.contains(datastore.getId());
 
         try {
           Operation post = Operation
@@ -414,16 +440,19 @@ public class HostService extends StatefulService {
         logWarning("Got interrupted waiting for datastore update operations to complete");
       }
     }
-    maintenance.complete();
+    if (operation != null) {
+      operation.complete();
+    }
   }
 
   /**
    * Patch the Host Service document with the agent state if it has changed.
-   * @param maintenance
+   *
+   * @param operation
    * @param hostState
    * @param agentState
    */
-  private void updateHostState(Operation maintenance, State hostState, AgentState agentState) {
+  private void updateHostState(Operation operation, State hostState, AgentState agentState) {
     if (hostState.agentState != agentState) {
       State patchState = new State();
       patchState.agentState = agentState;
@@ -431,7 +460,9 @@ public class HostService extends StatefulService {
           hostState.agentState + " " + "-> " + agentState);
       TaskUtils.sendSelfPatch(this, patchState);
     }
-    maintenance.complete();
+    if (operation != null) {
+      operation.complete();
+    }
   }
 
   @Override
