@@ -10,7 +10,6 @@
 # License for then specific language governing permissions and limitations
 # under the License.
 
-import filecmp
 import logging
 import os
 import re
@@ -18,14 +17,12 @@ import tempfile
 import unittest
 
 from hamcrest import *  # noqa
-from mock import patch, MagicMock
+from mock import patch
 from nose.plugins.skip import SkipTest
 from testconfig import config
 
-from gen.host.ttypes import HttpOp
 from host.hypervisor.esx.vim_client import VimClient
 from host.hypervisor.esx.http_disk_transfer import HttpNfcTransferer
-from host.hypervisor.esx.http_disk_transfer import TransferException
 
 
 class TestHttpTransfer(unittest.TestCase):
@@ -77,47 +74,6 @@ class TestHttpTransfer(unittest.TestCase):
         url = 'https://%s/folder/%s?dcPath=%s&dsName=%s' % (
             self.host, relpath, quoted_dc_name, datastore)
         return url
-
-    def test_download_missing_file(self):
-        url = self._datastore_path_url(self.image_datastore,
-                                       "_missing_file_.bin")
-        ticket = self.http_transferer._get_cgi_ticket(
-            self.host, self.agent_port, url, http_op=HttpOp.GET)
-        with tempfile.NamedTemporaryFile(delete=True) as local_file:
-            self.assertRaises(TransferException,
-                              self.http_transferer.download_file, url,
-                              local_file.name, MagicMock(), ticket=ticket)
-
-    def test_upload_file_bad_destination(self):
-        url = self._datastore_path_url("_missing__datastore_",
-                                       "random.bin")
-        ticket = self.http_transferer._get_cgi_ticket(
-            self.host, self.agent_port, url, http_op=HttpOp.PUT)
-        self.assertRaises(
-            TransferException, self.http_transferer.upload_file,
-            self.random_file, url, MagicMock(), ticket=ticket)
-
-    def test_raw_file_transfer_roundtrip(self):
-        relpath = "_test_http_xfer_random.bin"
-        url = self._datastore_path_url(self.image_datastore, relpath)
-        ticket = self.http_transferer._get_cgi_ticket(
-            self.host, self.agent_port, url, http_op=HttpOp.PUT)
-        self.http_transferer.upload_file(self.random_file, url, MagicMock(), ticket=ticket)
-
-        self.remote_files_to_delete.append(
-            self._remote_ds_path(self.image_datastore, relpath))
-
-        ticket = self.http_transferer._get_cgi_ticket(
-            self.host, self.agent_port, url, http_op=HttpOp.GET)
-        with tempfile.NamedTemporaryFile(delete=True) as downloaded_file:
-            self.http_transferer.download_file(url, downloaded_file.name,
-                                               MagicMock(), ticket=ticket)
-            # check that file uploaded and immediately downloaded back is
-            # identical to the source file used.
-            assert_that(
-                filecmp.cmp(self.random_file, downloaded_file.name,
-                            shallow=False),
-                is_(True))
 
     @patch('os.path.exists', return_value=True)
     def test_get_streamoptimized_image_stream(self, _exists):

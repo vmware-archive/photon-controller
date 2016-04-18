@@ -24,9 +24,6 @@ from common.file_util import rm_rf
 from common.photon_thrift.direct_client import DirectClient
 from common.lock import lock_non_blocking
 from gen.host import Host
-from gen.host.ttypes import HttpTicketRequest
-from gen.host.ttypes import HttpTicketResultCode
-from gen.host.ttypes import HttpOp
 from gen.host.ttypes import PrepareReceiveImageRequest
 from gen.host.ttypes import PrepareReceiveImageResultCode
 from gen.host.ttypes import ReceiveImageRequest
@@ -126,15 +123,6 @@ class HttpTransferer(object):
                 self._logger.debug("Received %d MB, Progress %d%%." %
                                    (CHUNK_SIZE * counter // (1024 * 1024), progress))
             data = src.read(CHUNK_SIZE)
-
-    def _get_cgi_ticket(self, host, port, url, http_op=HttpOp.GET):
-        client = DirectClient("Host", Host.Client, host, port)
-        client.connect()
-        request = HttpTicketRequest(op=http_op, url="%s" % url)
-        response = client.get_http_ticket(request)
-        if response.result != HttpTicketResultCode.OK:
-            raise ValueError("No ticket")
-        return response.ticket
 
     def upload_stream(self, source_file_obj, file_size, url, write_lease, ticket):
         protocol, host, selector = self._split_url(url)

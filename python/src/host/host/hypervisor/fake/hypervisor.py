@@ -72,9 +72,6 @@ class FakeHypervisor(object):
         return 'cst-526d7e8f-b126-1686-9b49-bde6f34f0be8--tp-71-18-5C-87' + \
             '-F9-DB-C1-B9-D7-92-7A-19-99-1E-45-56-73-D6-CC-99'
 
-    def acquire_cgi_ticket(self, url, op):
-        return '52524918-2252-f24d-3a2b-2609c0fe795e'
-
     def add_update_listener(self, listener):
         # Only triggers VM update listener
         self.vm_manager.add_update_listener(listener)

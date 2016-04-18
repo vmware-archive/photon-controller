@@ -853,33 +853,6 @@ struct MksTicketResponse {
   3: optional resource.MksTicket ticket
 }
 
-enum HttpOp {
-  GET = 0
-  PUT = 1
-  POST = 2
-}
-
-struct HttpTicketRequest {
-  // URL to host resource to access via HTTP CGI
-  1: required string url
-
-  // The operation to perform on the URL
-  2: required HttpOp op
-
-  99: optional tracing.TracingInfo tracing_info
-}
-
-enum HttpTicketResultCode {
-  OK = 0
-  SYSTEM_ERROR = 1
-}
-
-struct HttpTicketResponse {
-  1: required HttpTicketResultCode result
-  2: optional string error
-  3: optional string ticket
-}
-
 struct GetDatastoresRequest {
   99: optional tracing.TracingInfo tracing_info
 }
@@ -958,7 +931,6 @@ service Host {
 
   ServiceTicketResponse get_service_ticket(1: ServiceTicketRequest request)
   MksTicketResponse get_mks_ticket(1: MksTicketRequest request)
-  HttpTicketResponse get_http_ticket(1: HttpTicketRequest request)
 
   scheduler.PlaceResponse place(1: scheduler.PlaceRequest request)
 

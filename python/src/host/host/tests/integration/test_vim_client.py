@@ -14,7 +14,6 @@ import logging
 import random
 import time
 import unittest
-import uuid
 
 from hamcrest import *  # noqa
 from mock import MagicMock
@@ -22,7 +21,6 @@ from nose.plugins.skip import SkipTest
 from testconfig import config
 
 from gen.agent.ttypes import PowerState
-from gen.host.ttypes import HttpOp
 from host.hypervisor.esx.vim_client import VimClient
 from host.hypervisor.esx.vm_config import EsxVmConfig
 from host.hypervisor.vm_manager import VmNotFoundException
@@ -267,16 +265,6 @@ class TestVimClient(unittest.TestCase):
         ticket = self.vim_client.acquire_clone_ticket()
         vim_client2 = VimClient(host=self.host, ticket=ticket)
         vim_client2.host_system
-
-    def test_http_ticket(self):
-        datastore = self.vim_client.get_datastore().name
-        filename = "%s.bin" % str(uuid.uuid4())
-        quoted_dc_name = 'ha%252ddatacenter'
-        url = 'https://%s/folder/%s?dcPath=%s&dsName=%s' % (
-            self.host, filename, quoted_dc_name, datastore)
-
-        ticket = self.vim_client.acquire_cgi_ticket(url, HttpOp.PUT)
-        assert_that(ticket, is_not(equal_to(None)))
 
     def test_host_stats(self):
         """ Skip host stats test.

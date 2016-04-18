@@ -72,9 +72,6 @@ class EsxHypervisor(object):
     def acquire_vim_ticket(self):
         return self.vim_client.acquire_clone_ticket()
 
-    def acquire_cgi_ticket(self, url, op):
-        return self.vim_client.acquire_cgi_ticket(url, op)
-
     def add_update_listener(self, listener):
         self.vim_client.add_update_listener(listener)
 

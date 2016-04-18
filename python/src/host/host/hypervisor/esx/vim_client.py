@@ -43,7 +43,6 @@ from pyVmomi import vmodl
 from host.hypervisor.vm_manager import VmNotFoundException
 from host.hypervisor.esx import logging_wrappers
 from gen.agent.ttypes import VmCache, PowerState, TaskState
-from gen.host.ttypes import HttpOp
 
 # constants from bora/vim/hostd/private/hostdCommon.h
 HA_DATACENTER_ID = "ha-datacenter"
@@ -423,25 +422,6 @@ class VimClient(object):
         :return: str, ticket
         """
         return self.session_manager.AcquireCloneTicket()
-
-    @hostd_error_handler
-    def acquire_cgi_ticket(self, url, op):
-        """
-        acquire a cgi ticket to perform a HTTP operation on a URL
-        :return: str, ticket
-        """
-        http_method = vim.SessionManager.HttpServiceRequestSpec.Method
-        _op_map = {
-            HttpOp.GET: http_method.httpGet,
-            HttpOp.PUT: http_method.httpPut,
-            HttpOp.POST: http_method.httpPost
-        }
-
-        httpsvc_spec = vim.SessionManager.HttpServiceRequestSpec()
-        httpsvc_spec.url = url
-        httpsvc_spec.method = _op_map[op]
-        ticket = self.session_manager.AcquireGenericServiceTicket(httpsvc_spec)
-        return ticket.id
 
     @hostd_error_handler
     def inventory_path(self, *path):
