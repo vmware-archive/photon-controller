@@ -58,6 +58,14 @@ module EsxCloud
         ImageList.create_from_json(response.body)
       end
 
+      # @return [ImageList]
+      def find_images_by_name(name)
+        response = @http_client.get("#{IMAGES_ROOT}?name=#{name}")
+        check_response("Get images by name '#{name}'", response, 200)
+
+        ImageList.create_from_json(response.body)
+      end
+
       # @param [String] id
       # @return [Boolean]
       def delete_image(id)
