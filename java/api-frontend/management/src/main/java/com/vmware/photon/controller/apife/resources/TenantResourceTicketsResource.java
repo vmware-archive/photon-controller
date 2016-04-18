@@ -84,10 +84,10 @@ public class TenantResourceTicketsResource {
   }
 
   @GET
-  @ApiOperation(value = "Find resource tickets by name",
+  @ApiOperation(value = "List resource tickets by name",
       response = ResourceTicket.class, responseContainer = ResourceList.CLASS_NAME)
   @ApiResponses(value = {@ApiResponse(code = 200, message = "List of resource tickets for the tenant")})
-  public Response find(@Context Request request,
+  public Response List(@Context Request request,
                        @PathParam("id") String tenantId,
                        @QueryParam("name") Optional<String> name,
                        @QueryParam("pageSize") Optional<Integer> pageSize,

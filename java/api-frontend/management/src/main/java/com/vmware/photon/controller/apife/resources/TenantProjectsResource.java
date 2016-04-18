@@ -88,7 +88,7 @@ public class TenantProjectsResource {
   @ApiOperation(value = "List projects under tenant",
       response = Project.class, responseContainer = ResourceList.CLASS_NAME)
   @ApiResponses(value = {@ApiResponse(code = 200, message = "Success")})
-  public Response find(@Context Request request,
+  public Response list(@Context Request request,
                        @PathParam("id") String tenantId,
                        @QueryParam("name") Optional<String> name,
                        @QueryParam("pageSize") Optional<Integer> pageSize,

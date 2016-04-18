@@ -153,8 +153,8 @@ public class HostResource {
       @ApiResponse(code = 201, message = "Setting Host availability zone, progress communicated via the task")
   })
   public Response setHostAvailabilityZone(@Context Request request,
-                      @PathParam("id") String id,
-                      @Validated HostSetAvailabilityZoneOperation hostSetAvailabilityZoneOperation)
+                                          @PathParam("id") String id,
+                                          @Validated HostSetAvailabilityZoneOperation hostSetAvailabilityZoneOperation)
       throws ExternalException {
     Task task = hostFeClient.setAvailabilityZone(id, hostSetAvailabilityZoneOperation);
     return generateCustomResponse(
