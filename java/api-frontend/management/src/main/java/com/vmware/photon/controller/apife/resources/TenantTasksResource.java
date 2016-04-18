@@ -61,16 +61,16 @@ public class TenantTasksResource {
   }
 
   @GET
-  @ApiOperation(value = "Find tasks associated with a tenant, such as CREATE_TENANT. If pageLink is provided, " +
+  @ApiOperation(value = "List tasks associated with a tenant, such as CREATE_TENANT. If pageLink is provided, " +
       "then get the tasks on that specific page", response = Task.class, responseContainer = ResourceList.CLASS_NAME)
   @ApiResponses(value = {
       @ApiResponse(code = 200, message = "List of tasks for a tenant")
   })
-  public Response get(@Context Request request,
-                      @PathParam("id") String id,
-                      @QueryParam("state") Optional<String> state,
-                      @QueryParam("pageSize") Optional<Integer> pageSize,
-                      @QueryParam("pageLink") Optional<String> pageLink) throws ExternalException {
+  public Response list(@Context Request request,
+                       @PathParam("id") String id,
+                       @QueryParam("state") Optional<String> state,
+                       @QueryParam("pageSize") Optional<Integer> pageSize,
+                       @QueryParam("pageLink") Optional<String> pageLink) throws ExternalException {
 
     ResourceList<Task> resourceList;
     if (pageLink.isPresent()) {

@@ -96,10 +96,10 @@ public class ProjectDisksResource {
   }
 
   @GET
-  @ApiOperation(value = "Find Disks in a project",
+  @ApiOperation(value = "List Disks in a project",
       response = PersistentDisk.class, responseContainer = ResourceList.CLASS_NAME)
   @ApiResponses(value = {@ApiResponse(code = 200, message = "List of disks in the project")})
-  public Response find(@Context Request request,
+  public Response list(@Context Request request,
                        @PathParam("id") String projectId,
                        @QueryParam("name") Optional<String> name,
                        @QueryParam("pageSize") Optional<Integer> pageSize,

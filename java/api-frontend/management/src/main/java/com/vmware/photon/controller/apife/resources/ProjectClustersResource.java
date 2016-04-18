@@ -83,12 +83,12 @@ public class ProjectClustersResource {
   }
 
   @GET
-  @ApiOperation(value = "Find all clusters in a project",
+  @ApiOperation(value = "List all clusters in a project",
       response = Cluster.class, responseContainer = ResourceList.CLASS_NAME)
   @ApiResponses(value = {
       @ApiResponse(code = 200, message = "List of clusters in the project")
   })
-  public Response find(@Context Request request,
+  public Response list(@Context Request request,
                        @PathParam("id") String projectId,
                        @QueryParam("pageSize") Optional<Integer> pageSize,
                        @QueryParam("pageLink") Optional<String> pageLink) throws ExternalException {

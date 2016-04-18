@@ -61,11 +61,11 @@ public class VmTasksResource {
   @GET
   @ApiOperation(value = "Find tasks associated with a VM, such as CREATE_VM. If pageLink is provided, " +
       "then get the tasks on that specific page\"", response = Task.class, responseContainer = ResourceList.CLASS_NAME)
-  public Response get(@Context Request request,
-                      @PathParam("id") String id,
-                      @QueryParam("state") Optional<String> state,
-                      @QueryParam("pageSize") Optional<Integer> pageSize,
-                      @QueryParam("pageLink") Optional<String> pageLink)
+  public Response list(@Context Request request,
+                       @PathParam("id") String id,
+                       @QueryParam("state") Optional<String> state,
+                       @QueryParam("pageSize") Optional<Integer> pageSize,
+                       @QueryParam("pageLink") Optional<String> pageLink)
       throws ExternalException {
 
     ResourceList<Task> resourceList;

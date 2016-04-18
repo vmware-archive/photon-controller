@@ -64,7 +64,7 @@ public class PortGroupsResource {
   @ApiOperation(value = "Enumerate all port groups", response = PortGroup.class,
       responseContainer = ResourceList.CLASS_NAME)
   @ApiResponses(value = {@ApiResponse(code = 200, message = "Success")})
-  public Response find(@Context Request request,
+  public Response list(@Context Request request,
                        @QueryParam("name") Optional<String> name,
                        @QueryParam("usageTag") Optional<UsageTag> usageTag,
                        @QueryParam("pageSize") Optional<Integer> pageSize,
