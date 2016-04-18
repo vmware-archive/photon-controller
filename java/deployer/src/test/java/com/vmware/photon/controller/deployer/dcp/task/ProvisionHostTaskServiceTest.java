@@ -21,6 +21,7 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.common.clients.AgentControlClientFactory;
+import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
@@ -32,7 +33,6 @@ import com.vmware.photon.controller.common.xenon.validation.Positive;
 import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.dcp.DeployerContext;
 import com.vmware.photon.controller.deployer.dcp.mock.AgentControlClientMock;
-import com.vmware.photon.controller.deployer.dcp.mock.HostClientMock;
 import com.vmware.photon.controller.deployer.dcp.mock.NsxClientMock;
 import com.vmware.photon.controller.deployer.deployengine.NsxClientFactory;
 import com.vmware.photon.controller.deployer.helpers.ReflectionUtils;
@@ -40,7 +40,9 @@ import com.vmware.photon.controller.deployer.helpers.TestHelper;
 import com.vmware.photon.controller.deployer.helpers.dcp.MockHelper;
 import com.vmware.photon.controller.deployer.helpers.dcp.TestEnvironment;
 import com.vmware.photon.controller.deployer.helpers.dcp.TestHost;
+import com.vmware.photon.controller.host.gen.GetConfigResponse;
 import com.vmware.photon.controller.host.gen.GetConfigResultCode;
+import com.vmware.photon.controller.host.gen.Host;
 import com.vmware.photon.controller.host.gen.HostConfig;
 import com.vmware.photon.controller.resource.gen.Datastore;
 import com.vmware.photon.controller.resource.gen.DatastoreType;
@@ -54,6 +56,7 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import org.apache.commons.io.FileUtils;
 import org.apache.thrift.TException;
+import org.apache.thrift.async.AsyncMethodCallback;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
@@ -66,7 +69,9 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -179,7 +184,7 @@ public class ProvisionHostTaskServiceTest {
           {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.WAIT_FOR_INSTALLATION},
           {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.PROVISION_AGENT},
           {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.WAIT_FOR_PROVISION},
-          {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.GET_HOST_CONFIG},
+          {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.UPDATE_HOST_STATE},
           {TaskState.TaskStage.FINISHED, null},
           {TaskState.TaskStage.FAILED, null},
           {TaskState.TaskStage.CANCELLED, null},
@@ -350,7 +355,7 @@ public class ProvisionHostTaskServiceTest {
           {TaskState.TaskStage.CREATED, null,
               TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.WAIT_FOR_PROVISION},
           {TaskState.TaskStage.CREATED, null,
-              TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.GET_HOST_CONFIG},
+              TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.UPDATE_HOST_STATE},
           {TaskState.TaskStage.CREATED, null,
               TaskState.TaskStage.FINISHED, null},
           {TaskState.TaskStage.CREATED, null,
@@ -367,7 +372,7 @@ public class ProvisionHostTaskServiceTest {
           {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.PROVISION_NETWORK,
               TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.WAIT_FOR_PROVISION},
           {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.PROVISION_NETWORK,
-              TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.GET_HOST_CONFIG},
+              TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.UPDATE_HOST_STATE},
           {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.PROVISION_NETWORK,
               TaskState.TaskStage.FINISHED, null},
           {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.PROVISION_NETWORK,
@@ -382,7 +387,7 @@ public class ProvisionHostTaskServiceTest {
           {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.INSTALL_AGENT,
               TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.WAIT_FOR_PROVISION},
           {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.INSTALL_AGENT,
-              TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.GET_HOST_CONFIG},
+              TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.UPDATE_HOST_STATE},
           {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.INSTALL_AGENT,
               TaskState.TaskStage.FINISHED, null},
           {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.INSTALL_AGENT,
@@ -395,7 +400,7 @@ public class ProvisionHostTaskServiceTest {
           {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.WAIT_FOR_INSTALLATION,
               TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.WAIT_FOR_PROVISION},
           {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.WAIT_FOR_INSTALLATION,
-              TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.GET_HOST_CONFIG},
+              TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.UPDATE_HOST_STATE},
           {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.WAIT_FOR_INSTALLATION,
               TaskState.TaskStage.FINISHED, null},
           {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.WAIT_FOR_INSTALLATION,
@@ -406,7 +411,7 @@ public class ProvisionHostTaskServiceTest {
           {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.PROVISION_AGENT,
               TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.WAIT_FOR_PROVISION},
           {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.PROVISION_AGENT,
-              TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.GET_HOST_CONFIG},
+              TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.UPDATE_HOST_STATE},
           {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.PROVISION_AGENT,
               TaskState.TaskStage.FINISHED, null},
           {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.PROVISION_AGENT,
@@ -415,7 +420,7 @@ public class ProvisionHostTaskServiceTest {
               TaskState.TaskStage.CANCELLED, null},
 
           {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.WAIT_FOR_PROVISION,
-              TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.GET_HOST_CONFIG},
+              TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.UPDATE_HOST_STATE},
           {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.WAIT_FOR_PROVISION,
               TaskState.TaskStage.FINISHED, null},
           {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.WAIT_FOR_PROVISION,
@@ -423,11 +428,11 @@ public class ProvisionHostTaskServiceTest {
           {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.WAIT_FOR_PROVISION,
               TaskState.TaskStage.CANCELLED, null},
 
-          {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.GET_HOST_CONFIG,
+          {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.UPDATE_HOST_STATE,
               TaskState.TaskStage.FINISHED, null},
-          {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.GET_HOST_CONFIG,
+          {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.UPDATE_HOST_STATE,
               TaskState.TaskStage.FAILED, null},
-          {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.GET_HOST_CONFIG,
+          {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.UPDATE_HOST_STATE,
               TaskState.TaskStage.CANCELLED, null},
       };
     }
@@ -490,17 +495,17 @@ public class ProvisionHostTaskServiceTest {
           {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.WAIT_FOR_PROVISION,
               TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.PROVISION_AGENT},
 
-          {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.GET_HOST_CONFIG,
+          {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.UPDATE_HOST_STATE,
               TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.GET_HOST_CONFIG,
+          {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.UPDATE_HOST_STATE,
               TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.PROVISION_NETWORK},
-          {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.GET_HOST_CONFIG,
+          {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.UPDATE_HOST_STATE,
               TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.INSTALL_AGENT},
-          {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.GET_HOST_CONFIG,
+          {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.UPDATE_HOST_STATE,
               TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.WAIT_FOR_INSTALLATION},
-          {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.GET_HOST_CONFIG,
+          {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.UPDATE_HOST_STATE,
               TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.PROVISION_AGENT},
-          {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.GET_HOST_CONFIG,
+          {TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.UPDATE_HOST_STATE,
               TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.WAIT_FOR_PROVISION},
 
           {TaskState.TaskStage.FINISHED, null,
@@ -516,7 +521,7 @@ public class ProvisionHostTaskServiceTest {
           {TaskState.TaskStage.FINISHED, null,
               TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.WAIT_FOR_PROVISION},
           {TaskState.TaskStage.FINISHED, null,
-              TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.GET_HOST_CONFIG},
+              TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.UPDATE_HOST_STATE},
           {TaskState.TaskStage.FINISHED, null,
               TaskState.TaskStage.FINISHED, null},
           {TaskState.TaskStage.FINISHED, null,
@@ -537,7 +542,7 @@ public class ProvisionHostTaskServiceTest {
           {TaskState.TaskStage.FAILED, null,
               TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.WAIT_FOR_PROVISION},
           {TaskState.TaskStage.FAILED, null,
-              TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.GET_HOST_CONFIG},
+              TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.UPDATE_HOST_STATE},
           {TaskState.TaskStage.FAILED, null,
               TaskState.TaskStage.FINISHED, null},
           {TaskState.TaskStage.FAILED, null,
@@ -558,7 +563,7 @@ public class ProvisionHostTaskServiceTest {
           {TaskState.TaskStage.CANCELLED, null,
               TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.WAIT_FOR_PROVISION},
           {TaskState.TaskStage.CANCELLED, null,
-              TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.GET_HOST_CONFIG},
+              TaskState.TaskStage.STARTED, ProvisionHostTaskService.TaskState.SubStage.UPDATE_HOST_STATE},
           {TaskState.TaskStage.CANCELLED, null,
               TaskState.TaskStage.FINISHED, null},
           {TaskState.TaskStage.CANCELLED, null,
@@ -1034,7 +1039,7 @@ public class ProvisionHostTaskServiceTest {
                   ProvisionHostTaskService.TaskState.SubStage.WAIT_FOR_PROVISION);
 
       assertThat(finalState.taskState.stage, is(TaskState.TaskStage.STARTED));
-      assertThat(finalState.taskState.subStage, is(ProvisionHostTaskService.TaskState.SubStage.GET_HOST_CONFIG));
+      assertThat(finalState.taskState.subStage, is(ProvisionHostTaskService.TaskState.SubStage.UPDATE_HOST_STATE));
       assertThat(finalState.controlFlags, is(ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED));
     }
 
@@ -1069,7 +1074,7 @@ public class ProvisionHostTaskServiceTest {
                   ProvisionHostTaskService.TaskState.SubStage.WAIT_FOR_PROVISION);
 
       assertThat(finalState.taskState.stage, is(TaskState.TaskStage.STARTED));
-      assertThat(finalState.taskState.subStage, is(ProvisionHostTaskService.TaskState.SubStage.GET_HOST_CONFIG));
+      assertThat(finalState.taskState.subStage, is(ProvisionHostTaskService.TaskState.SubStage.UPDATE_HOST_STATE));
       assertThat(finalState.controlFlags, is(ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED));
     }
 
@@ -1117,193 +1122,6 @@ public class ProvisionHostTaskServiceTest {
       assertThat(finalState.taskState.failure.statusCode, is(400));
       assertThat(finalState.taskState.failure.message, containsString(
           "The agent on host hostAddress failed to become ready after provisioning after 3 retries"));
-    }
-  }
-
-  /**
-   * This class implements tests for the GET_HOST_CONFIG sub-stage.
-   */
-  public class GetHostConfigTest {
-
-    private com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment cloudStoreEnvironment;
-    private List<Datastore> datastoreList;
-    private DeployerContext deployerContext;
-    private HostClientFactory hostClientFactory;
-    private Set<String> imageDatastoreIds;
-    private ProvisionHostTaskService.State startState;
-    private TestEnvironment testEnvironment;
-
-    @BeforeClass
-    public void setUpClass() throws Throwable {
-      cloudStoreEnvironment = com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.create(1);
-      deployerContext = ConfigBuilder.build(DeployerConfig.class,
-          this.getClass().getResource(configFilePath).getPath()).getDeployerContext();
-      hostClientFactory = mock(HostClientFactory.class);
-
-      testEnvironment = new TestEnvironment.Builder()
-          .cloudServerSet(cloudStoreEnvironment.getServerSet())
-          .deployerContext(deployerContext)
-          .hostClientFactory(hostClientFactory)
-          .hostCount(1)
-          .build();
-
-      startState = buildValidStartState(TaskState.TaskStage.STARTED,
-          ProvisionHostTaskService.TaskState.SubStage.GET_HOST_CONFIG);
-      startState.controlFlags = ControlFlags.CONTROL_FLAG_DISABLE_OPERATION_PROCESSING_ON_STAGE_TRANSITION;
-      startState.deploymentServiceLink = TestHelper.createDeploymentService(cloudStoreEnvironment).documentSelfLink;
-    }
-
-    @BeforeMethod
-    public void setUpTest() throws Throwable {
-      datastoreList = buildDatastoreList(10);
-
-      imageDatastoreIds = datastoreList.stream()
-          .limit(3)
-          .map((datastore) -> datastore.getId())
-          .collect(Collectors.toSet());
-
-      TestHelper.assertNoServicesOfType(cloudStoreEnvironment, DatastoreService.State.class);
-      TestHelper.assertNoServicesOfType(cloudStoreEnvironment, HostService.State.class);
-      startState.hostServiceLink = TestHelper.createHostService(cloudStoreEnvironment,
-          Collections.singleton(UsageTag.MGMT.name()), HostState.NOT_PROVISIONED).documentSelfLink;
-    }
-
-    @AfterMethod
-    public void tearDownTest() throws Throwable {
-      TestHelper.deleteServicesOfType(cloudStoreEnvironment, DatastoreService.State.class);
-      TestHelper.deleteServicesOfType(cloudStoreEnvironment, HostService.State.class);
-    }
-
-    @AfterClass
-    public void tearDownClass() throws Throwable {
-      if (cloudStoreEnvironment != null) {
-        cloudStoreEnvironment.stop();
-        cloudStoreEnvironment = null;
-      }
-
-      if (testEnvironment != null) {
-        testEnvironment.stop();
-        testEnvironment = null;
-      }
-    }
-
-    @Test
-    public void testGetHostConfigSuccessWithNoDatastores() throws Throwable {
-      testGetHostConfigSuccess();
-    }
-
-    @Test
-    public void testGetHostConfigSuccessWithExistingDatastores() throws Throwable {
-
-      for (Datastore datastore : datastoreList) {
-        DatastoreService.State datastoreState = new DatastoreService.State();
-        datastoreState.id = datastore.getId();
-        datastoreState.name = datastore.getName();
-        datastoreState.tags = datastore.getTags();
-        datastoreState.type = datastore.getType().name();
-        datastoreState.documentSelfLink = datastore.getId();
-        Operation op = cloudStoreEnvironment.sendPostAndWait(DatastoreServiceFactory.SELF_LINK, datastoreState);
-        assertThat(op.getStatusCode(), is(200));
-      }
-
-      testGetHostConfigSuccess();
-    }
-
-    private void testGetHostConfigSuccess() throws Throwable {
-
-      HostConfig hostConfig = new HostConfig();
-      hostConfig.setDatastores(datastoreList);
-      hostConfig.setImage_datastore_ids(imageDatastoreIds);
-      hostConfig.setCpu_count(4);
-      hostConfig.setMemory_mb(8192);
-      hostConfig.setEsx_version("6.0");
-
-      HostClientMock hostClientMock = new HostClientMock.Builder()
-          .getConfigResultCode(GetConfigResultCode.OK)
-          .hostConfig(hostConfig)
-          .build();
-
-      doReturn(hostClientMock).when(hostClientFactory).create();
-
-      ProvisionHostTaskService.State finalState =
-          testEnvironment.callServiceAndWaitForState(
-              ProvisionHostTaskFactoryService.SELF_LINK,
-              startState,
-              ProvisionHostTaskService.State.class,
-              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
-
-      assertThat(finalState.controlFlags, is(ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED));
-
-      List<DatastoreService.State> datastoreStates = TestHelper.getServicesOfType(cloudStoreEnvironment,
-          DatastoreService.State.class);
-
-      assertThat(datastoreStates.stream().map((datastoreState) -> datastoreState.id).collect(Collectors.toSet()),
-          containsInAnyOrder(datastoreList.stream().map((datastore) -> datastore.getId()).toArray()));
-      assertThat(datastoreStates.stream().map((datastoreState) -> datastoreState.name).collect(Collectors.toSet()),
-          containsInAnyOrder(datastoreList.stream().map((datastore) -> datastore.getName()).toArray()));
-
-      HostService.State hostState = cloudStoreEnvironment.getServiceState(startState.hostServiceLink,
-          HostService.State.class);
-
-      assertThat(hostState.state, is(HostState.READY));
-      assertThat(hostState.reportedDatastores, containsInAnyOrder(datastoreList.stream()
-          .map((datastore) -> datastore.getId()).toArray()));
-      assertThat(hostState.reportedImageDatastores, containsInAnyOrder(datastoreList.stream()
-          .map((datastore) -> datastore.getId()).filter((id) -> imageDatastoreIds.contains(id)).toArray()));
-
-      assertThat(hostState.datastoreServiceLinks.entrySet(), containsInAnyOrder(datastoreList.stream()
-          .collect(Collectors.toMap(
-              (datastore) -> datastore.getName(),
-              (datastore) -> DatastoreServiceFactory.SELF_LINK + "/" + datastore.getId()))
-          .entrySet().toArray()));
-
-      assertThat(hostState.esxVersion, is("6.0"));
-      assertThat(hostState.cpuCount, is(4));
-      assertThat(hostState.memoryMb, is(8192));
-    }
-
-    @Test
-    public void testGetHostConfigFailureSystemErrorResponse() throws Throwable {
-
-      HostClientMock hostClientMock = new HostClientMock.Builder()
-          .getConfigResultCode(GetConfigResultCode.SYSTEM_ERROR)
-          .build();
-
-      doReturn(hostClientMock).when(hostClientFactory).create();
-
-      ProvisionHostTaskService.State finalState =
-          testEnvironment.callServiceAndWaitForState(
-              ProvisionHostTaskFactoryService.SELF_LINK,
-              startState,
-              ProvisionHostTaskService.State.class,
-              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
-
-      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
-      assertThat(finalState.taskState.subStage, nullValue());
-      assertThat(finalState.taskState.failure.statusCode, is(400));
-      assertThat(finalState.taskState.failure.message, nullValue());
-    }
-
-    @Test
-    public void testGetHostConfigFailureThriftException() throws Throwable {
-
-      HostClientMock hostClientMock = new HostClientMock.Builder()
-          .getConfigFailure(new TException("Thrift exception when contacting host"))
-          .build();
-
-      doReturn(hostClientMock).when(hostClientFactory).create();
-
-      ProvisionHostTaskService.State finalState =
-          testEnvironment.callServiceAndWaitForState(
-              ProvisionHostTaskFactoryService.SELF_LINK,
-              startState,
-              ProvisionHostTaskService.State.class,
-              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
-
-      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
-      assertThat(finalState.taskState.subStage, nullValue());
-      assertThat(finalState.taskState.failure.statusCode, is(400));
-      assertThat(finalState.taskState.failure.message, containsString("Thrift exception when contacting host"));
     }
   }
 
@@ -1384,7 +1202,7 @@ public class ProvisionHostTaskServiceTest {
               startState,
               ProvisionHostTaskService.State.class,
               (state) -> state.taskState.stage == TaskState.TaskStage.STARTED &&
-                state.taskState.subStage == ProvisionHostTaskService.TaskState.SubStage.INSTALL_AGENT);
+                  state.taskState.subStage == ProvisionHostTaskService.TaskState.SubStage.INSTALL_AGENT);
 
       assertThat(finalState.taskState.stage, is(TaskState.TaskStage.STARTED));
       assertThat(finalState.taskState.subStage, is(ProvisionHostTaskService.TaskState.SubStage.INSTALL_AGENT));
@@ -1411,18 +1229,23 @@ public class ProvisionHostTaskServiceTest {
     private List<Datastore> datastoreList;
     private DeployerContext deployerContext;
     private AgentControlClientFactory agentControlClientFactory;
-    private HostClientFactory hostClientFactory;
     private Set<String> imageDatastoreIds;
     private ListeningExecutorService listeningExecutorService;
     private ProvisionHostTaskService.State startState;
     private TestEnvironment testEnvironment;
+    private HostClient hostClient;
 
     @BeforeClass
     public void setUpClass() throws Throwable {
-
       FileUtils.deleteDirectory(storageDirectory);
+      HostClientFactory hostClientFactory = mock(HostClientFactory.class);
+      this.hostClient = mock(HostClient.class);
+      doReturn(hostClient).when(hostClientFactory).create();
+      cloudStoreEnvironment = new com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.Builder()
+          .hostClientFactory(hostClientFactory)
+          .hostCount(1)
+          .build();
 
-      cloudStoreEnvironment = com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.create(1);
       deployerContext = ConfigBuilder.build(DeployerConfig.class,
           this.getClass().getResource(configFilePath).getPath()).getDeployerContext();
       agentControlClientFactory = mock(AgentControlClientFactory.class);
@@ -1445,11 +1268,6 @@ public class ProvisionHostTaskServiceTest {
 
     @BeforeMethod
     public void setUpTest() throws Throwable {
-      datastoreList = buildDatastoreList(datastoreCount);
-      imageDatastoreIds = datastoreList.stream()
-          .limit(3)
-          .map((datastore) -> datastore.getId())
-          .collect(Collectors.toSet());
       assertTrue(scriptDirectory.mkdirs());
       assertTrue(scriptLogDirectory.mkdirs());
       TestHelper.assertNoServicesOfType(cloudStoreEnvironment, DatastoreService.State.class);
@@ -1495,12 +1313,12 @@ public class ProvisionHostTaskServiceTest {
 
       MockHelper.mockCreateScriptFile(deployerContext, ProvisionHostTaskService.SCRIPT_NAME, true);
 
-      HostConfig hostConfig = new HostConfig();
-      hostConfig.setDatastores(datastoreList);
-      hostConfig.setImage_datastore_ids(imageDatastoreIds);
-      hostConfig.setCpu_count(4);
-      hostConfig.setMemory_mb(8192);
-      hostConfig.setEsx_version("6.0");
+      datastoreList = buildDatastoreList(preExistingDatastoresCount);
+      imageDatastoreIds = datastoreList.stream()
+          .limit(3)
+          .map((datastore) -> datastore.getId())
+          .collect(Collectors.toSet());
+      mockHostConfigCall(datastoreList, imageDatastoreIds);
 
       // This is to make sure datastore update succeeds even if there is an already existing datastore document
       createDatastoreDocuments(datastoreList, preExistingDatastoresCount);
@@ -1511,13 +1329,6 @@ public class ProvisionHostTaskServiceTest {
           .build();
 
       doReturn(agentControlClientMock).when(agentControlClientFactory).create();
-
-      HostClientMock hostClientMock = new HostClientMock.Builder()
-          .getConfigResultCode(GetConfigResultCode.OK)
-          .hostConfig(hostConfig)
-          .build();
-
-      doReturn(hostClientMock).when(hostClientFactory).create();
 
       ProvisionHostTaskService.State finalState =
           testEnvironment.callServiceAndWaitForState(
@@ -1540,6 +1351,7 @@ public class ProvisionHostTaskServiceTest {
           HostService.State.class);
 
       assertThat(hostState.state, is(HostState.READY));
+
       assertThat(hostState.reportedDatastores, containsInAnyOrder(datastoreList.stream()
           .map((datastore) -> datastore.getId()).toArray()));
       assertThat(hostState.reportedImageDatastores, containsInAnyOrder(datastoreList.stream()
@@ -1556,6 +1368,26 @@ public class ProvisionHostTaskServiceTest {
       assertThat(hostState.memoryMb, is(8192));
     }
 
+    private void mockHostConfigCall(List<Datastore> datastores, Set<String> imageDatastoreIds) throws Throwable {
+      HostConfig hostConfig = new HostConfig();
+      hostConfig.setDatastores(datastores);
+      hostConfig.setImage_datastore_ids(imageDatastoreIds);
+      hostConfig.setCpu_count(4);
+      hostConfig.setMemory_mb(8192);
+      hostConfig.setEsx_version("6.0");
+
+      GetConfigResponse response = new GetConfigResponse(GetConfigResultCode.OK);
+      response.setHostConfig(hostConfig);
+
+      Host.AsyncClient.get_host_config_call call = mock(Host.AsyncClient.get_host_config_call.class);
+      doReturn(response).when(call).getResult();
+
+      doAnswer(invocation -> {
+        ((AsyncMethodCallback<Host.AsyncClient.get_host_config_call>) invocation.getArguments()[0]).onComplete(call);
+        return null;
+      }).when(this.hostClient).getHostConfig(any(AsyncMethodCallback.class));
+    }
+
     private void createDatastoreDocuments(List<Datastore> datastoreList, int count) throws Throwable {
       for (int i = 0; i < count; i++) {
         Datastore datastore = datastoreList.get(i);
@@ -1568,6 +1400,31 @@ public class ProvisionHostTaskServiceTest {
         Operation result = cloudStoreEnvironment.sendPostAndWait(DatastoreServiceFactory.SELF_LINK, datastoreState);
         assertThat(result.getStatusCode(), equalTo(200));
       }
+    }
+
+    private List<Datastore> buildDatastoreList(int count) {
+      List<Datastore> returnValue = new ArrayList<>(count);
+      for (int i = 0; i < count; i++) {
+        String datastoreName = UUID.randomUUID().toString();
+        Datastore datastore = new Datastore("datastore-id-" + datastoreName);
+        datastore.setName("datastore-name-" + datastoreName);
+        switch (i % 3) {
+          case 0:
+            datastore.setTags(Collections.singleton("tag1"));
+            datastore.setType(DatastoreType.SHARED_VMFS);
+            break;
+          case 1:
+            datastore.setTags(new HashSet<>(Arrays.asList("tag1", "tag2")));
+            datastore.setType(DatastoreType.LOCAL_VMFS);
+            break;
+          case 2:
+            // Don't set tags
+            datastore.setType(DatastoreType.EXT3);
+            break;
+        }
+        returnValue.add(datastore);
+      }
+      return returnValue;
     }
   }
 
@@ -1590,32 +1447,5 @@ public class ProvisionHostTaskServiceTest {
     }
 
     return startState;
-  }
-
-  private List<Datastore> buildDatastoreList(int count) {
-    List<Datastore> returnValue = new ArrayList<>(count);
-    for (int i = 0; i < count; i++) {
-      String datastoreName = UUID.randomUUID().toString();
-      Datastore datastore = new Datastore("datastore-id-" + datastoreName);
-      datastore.setName("datastore-name-" + datastoreName);
-      switch (i % 3) {
-        case 0:
-          datastore.setTags(Collections.singleton("tag1"));
-          datastore.setType(DatastoreType.SHARED_VMFS);
-          break;
-        case 1:
-          datastore.setTags(new HashSet<>(Arrays.asList("tag1", "tag2")));
-          datastore.setType(DatastoreType.LOCAL_VMFS);
-          break;
-        case 2:
-          // Don't set tags
-          datastore.setType(DatastoreType.EXT3);
-          break;
-      }
-
-      returnValue.add(datastore);
-    }
-
-    return returnValue;
   }
 }
