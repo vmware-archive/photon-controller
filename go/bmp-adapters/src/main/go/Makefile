@@ -7,7 +7,7 @@ GOPATH := $(CURDIR):$(GOVENDOR)
 GO ?= go
 GOVERSION ?= go1.6
 OS := $(shell uname)
-NAME := go-bmp
+NAME := go-dcp-bmp
 
 TEST_OPTS ?= -v
 
