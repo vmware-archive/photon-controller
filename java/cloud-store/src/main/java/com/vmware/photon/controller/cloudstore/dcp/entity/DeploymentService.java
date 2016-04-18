@@ -243,13 +243,6 @@ public class DeploymentService extends StatefulService {
     public Boolean imageDataStoreUsedForVMs;
 
     /**
-     * This value represents whether Photon DHCP/PXE component slingshot will be used.
-     */
-    @Immutable
-    @DefaultBoolean(value = false)
-    public Boolean usePhotonDHCP;
-
-    /**
      * Id of image entity in cloudstore.
      */
     @WriteOnce

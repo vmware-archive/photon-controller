@@ -68,7 +68,6 @@ public class DeploymentEntityTest {
       entity.setNtpEndpoint("http://ntp");
       entity.setImageDatastores(Collections.singleton("datastore1"));
       entity.setUseImageDatastoreForVms(true);
-      entity.setUsePhotonDHCP(true);
       entity.setOperationId("opid");
       entity.setLoadBalancerAddress("0.0.0.1");
 
@@ -88,7 +87,6 @@ public class DeploymentEntityTest {
       assertThat(entity.getNtpEndpoint(), is("http://ntp"));
       Assert.assertTrue(entity.getImageDatastores().contains("datastore1"));
       assertThat(entity.getUseImageDatastoreForVms(), is(true));
-      assertThat(entity.getUsePhotonDHCP(), is(true));
       assertThat(entity.getOperationId(), is("opid"));
       assertThat(entity.getLoadBalancerAddress(), is("0.0.0.1"));
     }
@@ -119,7 +117,6 @@ public class DeploymentEntityTest {
       entity.setNtpEndpoint("http://ntp");
       entity.setImageDatastores(Collections.singleton("datastore1"));
       entity.setUseImageDatastoreForVms(true);
-      entity.setUsePhotonDHCP(true);
       entity.setLoadBalancerAddress("0.0.0.1");
     }
 

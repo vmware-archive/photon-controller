@@ -153,7 +153,7 @@ public class DeploymentTest {
           "Deployment{id=id, Kind=deployment, imageDatastores=image-datastore1,image-datastore2, " +
               "syslogEndpoint=0.0.0.1, stats=StatsInfo{enabled=true, storeEndpoint=10.146.64.111, " +
               "storePort=2004, storeType=GRAPHITE}, " +
-              "ntpEndpoint=0.0.0.2, useImageDatastoreForVms=false, usePhotonDHCP=false, " +
+              "ntpEndpoint=0.0.0.2, useImageDatastoreForVms=false, " +
               "auth=AuthInfo{enabled=true, endpoint=10.146.64.236, port=443, " +
               "tenant=t, username=u, password=p, securityGroups=adminGroup1,adminGroup2}, " +
               "networkConfiguration=NetworkConfiguration{virtualNetworkEnabled=true, networkManagerAddress=1.2.3.4, " +

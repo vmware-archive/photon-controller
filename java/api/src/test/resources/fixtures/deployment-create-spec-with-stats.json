@@ -10,7 +10,6 @@
         "storePort" : 2004
     },
     "useImageDatastoreForVms": false,
-    "usePhotonDHCP": false,
     "auth": {
         "enabled": false
     },

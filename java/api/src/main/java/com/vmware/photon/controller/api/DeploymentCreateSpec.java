@@ -46,10 +46,6 @@ public class DeploymentCreateSpec {
   private boolean useImageDatastoreForVms;
 
   @JsonProperty
-  @ApiModelProperty(value = "Flag for whether to use Photon DHCP/BMP component")
-  private boolean usePhotonDHCP;
-
-  @JsonProperty
   @ApiModelProperty(value = "End point of Syslog")
   @NullableDomainOrIP
   private String syslogEndpoint;
@@ -117,13 +113,6 @@ public class DeploymentCreateSpec {
     this.useImageDatastoreForVms = useImageDatastoreForVms;
   }
 
-  public boolean isUsePhotonDHCP() {
-    return usePhotonDHCP;
-  }
-
-  public void setUsePhotonDHCP(boolean usePhotonDHCP) {
-    this.usePhotonDHCP = usePhotonDHCP;
-  }
   public AuthConfigurationSpec getAuth() {
     return auth;
   }
@@ -164,7 +153,6 @@ public class DeploymentCreateSpec {
         Objects.equals(getStats(), other.getStats()) &&
         Objects.equals(getNtpEndpoint(), other.getNtpEndpoint()) &&
         Objects.equals(isUseImageDatastoreForVms(), other.isUseImageDatastoreForVms()) &&
-        Objects.equals(isUsePhotonDHCP(), other.isUsePhotonDHCP()) &&
         Objects.equals(getAuth(), other.getAuth()) &&
         Objects.equals(getNetworkConfiguration(), other.getNetworkConfiguration()) &&
         Objects.equals(getLoadBalancerEnabled(), other.getLoadBalancerEnabled());
@@ -178,7 +166,6 @@ public class DeploymentCreateSpec {
         stats,
         ntpEndpoint,
         useImageDatastoreForVms,
-        usePhotonDHCP,
         auth,
         networkConfiguration
     );
@@ -192,7 +179,6 @@ public class DeploymentCreateSpec {
         .add("stats", stats)
         .add("ntpEndpoint", ntpEndpoint)
         .add("useImageDatastoreForVms", useImageDatastoreForVms)
-        .add("usePhotonDHCP", usePhotonDHCP)
         .add("auth", auth)
         .add("networkConfiguration", networkConfiguration)
         .add("loadBalancerEnabled", loadBalancerEnabled)
