@@ -13,15 +13,25 @@
 
 package com.vmware.photon.controller.cloudstore.dcp.entity;
 
+import com.vmware.photon.controller.api.AgentState;
+import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment;
 import com.vmware.photon.controller.cloudstore.dcp.helpers.TestHelper;
+import com.vmware.photon.controller.common.clients.HostClient;
+import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.common.xenon.BasicServiceHost;
 import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.XenonRestClient;
 import com.vmware.photon.controller.common.xenon.exceptions.BadRequestException;
+import com.vmware.photon.controller.host.gen.GetConfigResponse;
+import com.vmware.photon.controller.host.gen.GetConfigResultCode;
+import com.vmware.photon.controller.host.gen.Host;
+import com.vmware.photon.controller.host.gen.HostConfig;
+import com.vmware.photon.controller.resource.gen.Datastore;
+import com.vmware.photon.controller.resource.gen.DatastoreType;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceConfiguration;
@@ -32,10 +42,13 @@ import com.vmware.xenon.services.common.NodeGroupBroadcastResponse;
 import com.vmware.xenon.services.common.QueryTask;
 
 import com.google.common.collect.ImmutableSet;
+import org.apache.thrift.async.AsyncMethodCallback;
+import org.hamcrest.Matchers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
+import org.testng.annotations.AfterTest;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
@@ -46,22 +59,35 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.fail;
 
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Random;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * This class implements tests for the {@link HostService} class.
  */
 public class HostServiceTest {
+  private final String esxVersion = "6.0";
+  private final int hostCpuCount = 4;
+  private final int hostMemoryMb = 8192;
 
   private final Logger logger = LoggerFactory.getLogger(HostServiceTest.class);
 
@@ -137,7 +163,7 @@ public class HostServiceTest {
       host.startServiceSynchronously(new HostServiceFactory(), null);
       HostService.State testState = TestHelper.getHostServiceStartState(usageTags);
       Operation result = dcpRestClient.post(HostServiceFactory.SELF_LINK, testState);
-      assertThat(result.getStatusCode(), is(200));
+      assertThat(result.getStatusCode(), is(Operation.STATUS_CODE_OK));
 
       HostService.State createdState = result.getBody(HostService.State.class);
       HostService.State savedState = host.getServiceState(
@@ -148,7 +174,7 @@ public class HostServiceTest {
       assertThat(savedState.userName, is("userName"));
       assertThat(savedState.password, is("password"));
       assertThat(savedState.availabilityZoneId, is("availabilityZone"));
-      assertThat(savedState.esxVersion, is("6.0"));
+      assertThat(savedState.esxVersion, is(esxVersion));
       assertThat(savedState.usageTags, is(usageTags));
       assertThat(savedState.reportedImageDatastores, is(new HashSet<>(Arrays.asList("datastore1"))));
       assertThat(savedState.schedulingConstant, notNullValue());
@@ -284,7 +310,7 @@ public class HostServiceTest {
       host.startServiceSynchronously(new HostServiceFactory(), null);
       Operation result = dcpRestClient.post(HostServiceFactory.SELF_LINK,
           startState);
-      assertThat(result.getStatusCode(), is(200));
+      assertThat(result.getStatusCode(), is(Operation.STATUS_CODE_OK));
       HostService.State createdState = result.getBody(HostService.State.class);
 
       ServiceConfiguration config = host.getServiceState(ServiceConfiguration.class, createdState.documentSelfLink +
@@ -334,16 +360,16 @@ public class HostServiceTest {
       host.startServiceSynchronously(new HostServiceFactory(), null);
       Operation result = dcpRestClient.post(HostServiceFactory.SELF_LINK,
           TestHelper.getHostServiceStartState());
-      assertThat(result.getStatusCode(), is(200));
+      assertThat(result.getStatusCode(), is(Operation.STATUS_CODE_OK));
       HostService.State createdState = result.getBody(HostService.State.class);
 
       HostService.State patchState = new HostService.State();
       patchState.reportedDatastores = new HashSet<>();
       patchState.reportedDatastores.add("d1");
-
       dcpRestClient.patch(createdState.documentSelfLink, patchState);
       HostService.State savedState = dcpRestClient.get(createdState.documentSelfLink)
           .getBody(HostService.State.class);
+      assertThat(savedState, is(Matchers.notNullValue()));
     }
 
     @Test
@@ -351,7 +377,7 @@ public class HostServiceTest {
       host.startServiceSynchronously(new HostServiceFactory(), null);
       Operation result = dcpRestClient.post(HostServiceFactory.SELF_LINK,
           TestHelper.getHostServiceStartState());
-      assertThat(result.getStatusCode(), is(200));
+      assertThat(result.getStatusCode(), is(Operation.STATUS_CODE_OK));
       HostService.State createdState = result.getBody(HostService.State.class);
 
       HostService.State patchState = new HostService.State();
@@ -370,7 +396,7 @@ public class HostServiceTest {
       host.startServiceSynchronously(new HostServiceFactory(), null);
       Operation result = dcpRestClient.post(HostServiceFactory.SELF_LINK,
           TestHelper.getHostServiceStartState());
-      assertThat(result.getStatusCode(), is(200));
+      assertThat(result.getStatusCode(), is(Operation.STATUS_CODE_OK));
       HostService.State createdState = result.getBody(HostService.State.class);
 
       HostService.State patchState = new HostService.State();
@@ -389,7 +415,7 @@ public class HostServiceTest {
       host.startServiceSynchronously(new HostServiceFactory(), null);
       Operation result = dcpRestClient.post(HostServiceFactory.SELF_LINK,
           TestHelper.getHostServiceStartState());
-      assertThat(result.getStatusCode(), is(200));
+      assertThat(result.getStatusCode(), is(Operation.STATUS_CODE_OK));
       HostService.State createdState = result.getBody(HostService.State.class);
 
       HostService.State patchState = new HostService.State();
@@ -408,7 +434,7 @@ public class HostServiceTest {
       host.startServiceSynchronously(new HostServiceFactory(), null);
       Operation result = dcpRestClient.post(HostServiceFactory.SELF_LINK,
           TestHelper.getHostServiceStartState());
-      assertThat(result.getStatusCode(), is(200));
+      assertThat(result.getStatusCode(), is(Operation.STATUS_CODE_OK));
       HostService.State createdState = result.getBody(HostService.State.class);
 
       HostService.State patchState = new HostService.State();
@@ -427,7 +453,7 @@ public class HostServiceTest {
       host.startServiceSynchronously(new HostServiceFactory(), null);
       Operation result = dcpRestClient.post(HostServiceFactory.SELF_LINK,
           TestHelper.getHostServiceStartState());
-      assertThat(result.getStatusCode(), is(200));
+      assertThat(result.getStatusCode(), is(Operation.STATUS_CODE_OK));
       HostService.State createdState = result.getBody(HostService.State.class);
 
       HostService.State patchState = new HostService.State();
@@ -446,7 +472,7 @@ public class HostServiceTest {
       host.startServiceSynchronously(new HostServiceFactory(), null);
       Operation result = dcpRestClient.post(HostServiceFactory.SELF_LINK,
           TestHelper.getHostServiceStartState());
-      assertThat(result.getStatusCode(), is(200));
+      assertThat(result.getStatusCode(), is(Operation.STATUS_CODE_OK));
       HostService.State createdState = result.getBody(HostService.State.class);
 
       HostService.State patchState = new HostService.State();
@@ -469,7 +495,7 @@ public class HostServiceTest {
       host.startServiceSynchronously(new HostServiceFactory(), null);
       Operation result = dcpRestClient.post(HostServiceFactory.SELF_LINK,
           TestHelper.getHostServiceStartState());
-      assertThat(result.getStatusCode(), is(200));
+      assertThat(result.getStatusCode(), is(Operation.STATUS_CODE_OK));
       HostService.State createdState = result.getBody(HostService.State.class);
 
       // Patch reportedImageDatastores and verify the result.
@@ -477,7 +503,7 @@ public class HostServiceTest {
       String newDs = "newds";
       patchState.reportedImageDatastores = new HashSet<>(Arrays.asList(newDs));
       result = dcpRestClient.patch(createdState.documentSelfLink, patchState);
-      assertThat(result.getStatusCode(), is(200));
+      assertThat(result.getStatusCode(), is(Operation.STATUS_CODE_OK));
       HostService.State patchedState = result.getBody(HostService.State.class);
       assertThat(patchedState.reportedImageDatastores, containsInAnyOrder(newDs));
     }
@@ -487,18 +513,157 @@ public class HostServiceTest {
       host.startServiceSynchronously(new HostServiceFactory(), null);
       Operation result = dcpRestClient.post(HostServiceFactory.SELF_LINK,
           TestHelper.getHostServiceStartState());
-      assertThat(result.getStatusCode(), is(200));
+      assertThat(result.getStatusCode(), is(Operation.STATUS_CODE_OK));
       HostService.State createdState = result.getBody(HostService.State.class);
 
       HostService.State patchState = new HostService.State();
-      patchState.memoryMb = 4096;
-      patchState.cpuCount = 2;
+      patchState.memoryMb = hostMemoryMb;
+      patchState.cpuCount = hostCpuCount;
 
       dcpRestClient.patch(createdState.documentSelfLink, patchState);
       HostService.State savedState = dcpRestClient.get(createdState.documentSelfLink)
           .getBody(HostService.State.class);
-      assertThat(savedState.cpuCount, is(2));
-      assertThat(savedState.memoryMb, is(4096));
+      assertThat(savedState.cpuCount, is(hostCpuCount));
+      assertThat(savedState.memoryMb, is(hostMemoryMb));
+    }
+  }
+
+  /**
+   * These tests verify the behavior if a HostService document is set to the READY
+   * state, the HostService retrieves the host configuration from the agent and
+   * updates the host service document.
+   */
+  public class UpdateHostConfigTests {
+    private TestEnvironment testEnvironment;
+    private List<Datastore> datastoreList;
+    private Set<String> imageDatastoreIds;
+
+    @AfterTest
+    public void tearDown() throws Throwable {
+      if (testEnvironment != null) {
+        testEnvironment.stop();
+      }
+    }
+
+    @Test
+    public void updateHostConfigSuccess() throws Throwable {
+      HostClientFactory hostClient = mockHostClient(true);
+      testEnvironment = new TestEnvironment.Builder()
+          .hostClientFactory(hostClient)
+          .hostCount(1)
+          .build();
+
+      Operation result = testEnvironment.sendPostAndWait(HostServiceFactory.SELF_LINK,
+          TestHelper.getHostServiceStartState());
+      assertThat(result.getStatusCode(), is(Operation.STATUS_CODE_OK));
+      HostService.State createdState = result.getBody(HostService.State.class);
+
+      HostService.State patchState = new HostService.State();
+      patchState.state = HostState.READY;
+      testEnvironment.sendPatchAndWait(createdState.documentSelfLink, patchState);
+
+      int retryCount = 0;
+      HostService.State savedState;
+      do {
+        savedState = testEnvironment.getServiceState(createdState.documentSelfLink, HostService.State.class);
+        Thread.sleep(500);
+      } while (savedState.cpuCount == null && retryCount++ < 10);
+      assertNotNull(savedState.cpuCount, "Failed to update Host configuration");
+
+      assertThat(savedState.cpuCount, is(hostCpuCount));
+      assertThat(savedState.memoryMb, is(hostMemoryMb));
+      assertThat(savedState.esxVersion, is(esxVersion));
+    }
+
+    @Test
+    public void updateHostConfigOnFailure() throws Throwable {
+      HostClientFactory hostClient = mockHostClient(false);
+      testEnvironment = new TestEnvironment.Builder()
+          .hostClientFactory(hostClient)
+          .hostCount(1)
+          .build();
+
+      Operation result = testEnvironment.sendPostAndWait(HostServiceFactory.SELF_LINK,
+          TestHelper.getHostServiceStartState());
+      assertThat(result.getStatusCode(), is(Operation.STATUS_CODE_OK));
+      HostService.State createdState = result.getBody(HostService.State.class);
+
+      HostService.State patchState = new HostService.State();
+      patchState.state = HostState.READY;
+      testEnvironment.sendPatchAndWait(createdState.documentSelfLink, patchState);
+
+      int retryCount = 0;
+      HostService.State savedState;
+      do {
+        savedState = testEnvironment.getServiceState(createdState.documentSelfLink, HostService.State.class);
+        Thread.sleep(500);
+      } while (savedState.agentState == null && retryCount++ < 10);
+
+      assertNotNull(savedState.agentState, "Failed to update the agent state");
+      assertThat(savedState.agentState, is(AgentState.MISSING));
+    }
+
+    private HostClientFactory mockHostClient(boolean success) throws Throwable {
+      HostClientFactory hostClientFactory = mock(HostClientFactory.class);
+      HostClient hostClient = mock(HostClient.class);
+      doReturn(hostClient).when(hostClientFactory).create();
+
+      GetConfigResponse response;
+      if (success) {
+        datastoreList = buildDatastoreList(10);
+        imageDatastoreIds = datastoreList.stream()
+            .limit(3)
+            .map((datastore) -> datastore.getId())
+            .collect(Collectors.toSet());
+
+        HostConfig hostConfig = new HostConfig();
+        hostConfig.setDatastores(datastoreList);
+        hostConfig.setImage_datastore_ids(imageDatastoreIds);
+        hostConfig.setCpu_count(hostCpuCount);
+        hostConfig.setMemory_mb(hostMemoryMb);
+        hostConfig.setEsx_version(esxVersion);
+
+        response = new GetConfigResponse(GetConfigResultCode.OK);
+        response.setHostConfig(hostConfig);
+
+      } else {
+        response = new GetConfigResponse(GetConfigResultCode.SYSTEM_ERROR);
+      }
+
+      Host.AsyncClient.get_host_config_call call = mock(Host.AsyncClient.get_host_config_call.class);
+      doReturn(response).when(call).getResult();
+
+      doAnswer(invocation -> {
+        ((AsyncMethodCallback<Host.AsyncClient.get_host_config_call>) invocation.getArguments()[0]).onComplete(call);
+        return null;
+      }).when(hostClient).getHostConfig(any(AsyncMethodCallback.class));
+
+      return hostClientFactory;
+    }
+
+    private List<Datastore> buildDatastoreList(int count) {
+      List<Datastore> returnValue = new ArrayList<>(count);
+      for (int i = 0; i < count; i++) {
+        String datastoreName = UUID.randomUUID().toString();
+        Datastore datastore = new Datastore("datastore-id-" + datastoreName);
+        datastore.setName("datastore-name-" + datastoreName);
+        switch (i % 3) {
+          case 0:
+            datastore.setTags(Collections.singleton("tag1"));
+            datastore.setType(DatastoreType.SHARED_VMFS);
+            break;
+          case 1:
+            datastore.setTags(new HashSet<>(Arrays.asList("tag1", "tag2")));
+            datastore.setType(DatastoreType.LOCAL_VMFS);
+            break;
+          case 2:
+            // Don't set tags
+            datastore.setType(DatastoreType.EXT3);
+            break;
+        }
+        returnValue.add(datastore);
+      }
+      return returnValue;
     }
   }
 
@@ -521,7 +686,7 @@ public class HostServiceTest {
       for (int i = 0; i < HOST_COUNT; i++) {
         HostService.State hostState = TestHelper.getHostServiceStartState();
         Operation completedOp = testEnvironment.sendPostAndWait(HostServiceFactory.SELF_LINK, hostState);
-        assertThat(completedOp.getStatusCode(), is(200));
+        assertThat(completedOp.getStatusCode(), is(Operation.STATUS_CODE_OK));
       }
     }
 
