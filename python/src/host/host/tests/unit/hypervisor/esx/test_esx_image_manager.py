@@ -210,11 +210,8 @@ class TestEsxImageManager(unittest.TestCase):
                   return_value=DatastoreType.EXT3)
     @patch.object(EsxImageManager, "check_image", return_value=False)
     @patch.object(EsxImageManager, "_create_image_timestamp_file")
-    @patch("host.hypervisor.esx.image_manager.FileBackedLock")
-    def test_create_tmp_image(self, _flock, _create_image_timestamp,
-                              check_image, _get_ds_type,
-                              _manage_disk, _copy, _makedirs, _exists,
-                              _uuid, _wait_for_task):
+    def test_create_tmp_image(self, _create_image_timestamp, check_image, _get_ds_type,
+                              _manage_disk, _copy, _makedirs, _exists, _uuid, _wait_for_task):
 
         # Common case is the same as the one covered by test_copy_image.
 
@@ -224,8 +221,6 @@ class TestEsxImageManager(unittest.TestCase):
         expected_tmp_disk_ds_path = \
             "[] /vmfs/volumes/ds2/tmp_image_fake_id/bar.vmdk"
         self.image_manager._copy_to_tmp_image("ds1", "foo", "ds2", "bar")
-        _flock.assert_called_once_with("/vmfs/volumes/ds2/tmp_image_fake_id",
-                                       DatastoreType.EXT3)
         # Verify that we don't copy the metadata file.
         self.assertFalse(_copy.called)
 
