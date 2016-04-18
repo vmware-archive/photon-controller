@@ -74,7 +74,7 @@ describe "image", management: true, image: true do
       end
     end
 
-    it "should allow duplicated name", disable_for_cli_test: true do
+    it "should allow duplicated name" do
       # create one image
       expect(subject.name).to eq image_name
       expect(subject.state).to eq "READY"
@@ -96,8 +96,8 @@ describe "image", management: true, image: true do
       expect(tasks.size).to eq(1)
       expect([tasks.first.operation, tasks.first.state]).to eq(["CREATE_IMAGE", "COMPLETED"])
 
-      image_list = EsxCloud::Image.find_all.items.select { |i| i.name == image_name }
-      expect(image_list.size).to eq 2
+      image_list = EsxCloud::Image.find_by_name(image_name)
+      expect(image_list.items.size).to eq 2
     end
 
     context "when image disk is not stream optimized" do
@@ -352,7 +352,7 @@ describe "image", management: true, image: true do
       images_to_delete << image
       image
     rescue
-      images_to_delete << EsxCloud::Image.find_all.items.find { |i| i.name == name }
+      images_to_delete << EsxCloud::Image.find_by_name(image_name).items
       raise
     end
   end
