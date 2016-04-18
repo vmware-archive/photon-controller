@@ -1,0 +1,105 @@
+{
+  "variables": {
+    "artifact_dir": "/etc/bmp"
+  },
+  "builders": [
+    {
+      "type": "virtualbox-iso",
+      "iso_checksum": "{{ user `photon_iso_sha1` }}",
+      "iso_checksum_type": "sha1",
+      "iso_url": "{{ user `photon_iso_url` }}",
+      "ssh_username": "root",
+      "ssh_password": "vmware",
+      "shutdown_command": "echo 'packer' | shutdown -P now",
+      "headless": true,
+      "output_directory": "build/",
+      "vm_name": "bmp-vm-vb",
+      "guest_os_type": "Linux_64",
+      "guest_additions_mode": "upload",
+      "guest_additions_url": "{{ user `vbox_iso_url` }}",
+      "guest_additions_sha256": "{{ user `vbox_iso_sha256` }}",
+      "hard_drive_interface": "scsi",
+      "vboxmanage": [
+        [ "modifyvm", "{{.Name}}", "--memory", "2048" ],
+        [ "modifyvm", "{{.Name}}", "--cpus", "2" ]
+      ],
+      "boot_wait": "20s",
+      "boot_command": [
+        "<enter><wait10><wait10><wait10>",
+        "<enter><wait10>",
+        "<enter><wait10>",
+        "<enter><wait10>",
+        "<enter><wait10>",
+        "<enter><wait10>",
+        "mkLv45RdBP<enter><wait10>",
+        "mkLv45RdBP<enter><wait10>",
+        "<enter><wait10><wait10><wait10><wait10>",
+        "<enter><wait10><wait10><wait10><wait10><wait10>",
+        "root<enter><wait10>",
+        "mkLv45RdBP<enter>",
+        "<wait10>",
+        "echo root:vmware | chpasswd<enter><wait10>",
+        "sed -i 's/PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config<enter><wait10>",
+        "systemctl restart sshd<enter><wait10>",
+        "logout<enter>",
+        "<wait10>"
+      ]
+    }
+  ],
+  "provisioners": [
+    {
+      "type": "shell",
+      "inline": "tdnf install -y tar && tdnf install -y less && tdnf install -y unzip && tdnf install -y gawk && tdnf install -y wget"
+    },
+    {
+      "type": "file",
+      "source": "./vm-config/10-dhcp-enp0s3.network",
+      "destination": "/etc/systemd/network/10-dhcp-enp0s3.network"
+    },
+    {
+      "type": "file",
+      "source": "./vm-config/10-dhcp-enp0s8.network",
+      "destination": "/etc/systemd/network/10-dhcp-enp0s8.network"
+    },
+    {
+      "type": "file",
+      "source": "./vm-config/configure-guest.service",
+      "destination": "/lib/systemd/system/configure-guest.service"
+    },
+    {
+      "type": "file",
+      "source": "./vm-config/configure-guest.sh",
+      "destination": "/var/photon/configure-guest.sh"
+    },
+    {
+      "type": "shell",
+      "inline": "chmod +x /var/photon/configure-guest.sh"
+    },
+    {
+      "type": "file",
+      "source": "./bmp",
+      "destination": "/etc"
+    },
+    {
+      "type": "shell",
+      "inline": "chmod +x /etc/bmp/run.sh"
+    },
+    {
+      "type": "shell",
+      "script": "./scripts/configure-vm.sh"
+    },
+    {
+      "type": "shell",
+      "inline": "echo 'docker pull andyshinn/dnsmasq' && docker pull andyshinn/dnsmasq"
+    },
+    {
+      "type": "shell",
+      "inline": "echo 'docker pull httpd' && docker pull httpd"
+    },
+    {
+      "type": "shell",
+      "script": "./scripts/sshd-config.sh",
+      "environment_vars": [ "SSHD_ENABLE_ROOT_LOGIN={{ user `sshd_enable_root_login` }}" ]
+    }
+  ]
+}
