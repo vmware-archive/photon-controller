@@ -14,7 +14,6 @@
 
 import logging
 import os
-import shutil
 
 from pyVmomi import vim
 
@@ -30,24 +29,6 @@ from host.hypervisor.esx.vm_config import uuid_to_vmdk_uuid
 from host.hypervisor.esx.vm_config import vmdk_path
 from host.hypervisor.vm_manager import DiskNotFoundException
 from host.hypervisor.resources import Disk
-
-
-def vmdk_mkdir(datastore, disk_id, logger):
-    path = os.path.dirname(os_vmdk_path(datastore, disk_id))
-    # On shared volumes makedirs can fail with not found in rare corner
-    # cases if two directory creates collide. Just retry in that case
-    for attempt in range(1, 10):
-        try:
-            os.makedirs(path)
-        except OSError:
-            logger.debug("Retrying (%u) while creating %s" %
-                         (attempt, path))
-            if attempt == 10:
-                raise
-            else:
-                continue
-        # Directory got created, stop the for loop
-        break
 
 
 class EsxDiskManager(DiskManager):
@@ -78,7 +59,7 @@ class EsxDiskManager(DiskManager):
     def create_disk(self, datastore, disk_id, size):
         spec = self._create_spec(size)
         name = vmdk_path(datastore, disk_id)
-        vmdk_mkdir(datastore, disk_id, self._logger)
+        self._vmdk_mkdir(datastore, disk_id)
         self._manage_disk(vim.VirtualDiskManager.CreateVirtualDisk_Task,
                           name=name, spec=spec)
         self._manage_disk(vim.VirtualDiskManager.SetVirtualDiskUuid,
@@ -93,7 +74,7 @@ class EsxDiskManager(DiskManager):
     def move_disk(self, source_datastore, source_id, dest_datastore, dest_id):
         source = vmdk_path(source_datastore, source_id)
         dest = vmdk_path(dest_datastore, dest_id)
-        vmdk_mkdir(dest_datastore, dest_id, self._logger)
+        self._vmdk_mkdir(dest_datastore, dest_id)
         self._manage_disk(vim.VirtualDiskManager.MoveVirtualDisk_Task,
                           sourceName=source, destName=dest)
         self._vmdk_rmdir(source_datastore, source_id)
@@ -110,7 +91,7 @@ class EsxDiskManager(DiskManager):
         """
         source = vmdk_path(source_datastore, source_id, IMAGE_FOLDER_NAME_PREFIX)
         dest = vmdk_path(dest_datastore, dest_id)
-        vmdk_mkdir(dest_datastore, dest_id, self._logger)
+        self._vmdk_mkdir(dest_datastore, dest_id)
         self._manage_disk(vim.VirtualDiskManager.CopyVirtualDisk_Task,
                           sourceName=source, destName=dest)
         self._manage_disk(vim.VirtualDiskManager.SetVirtualDiskUuid,
@@ -172,6 +153,10 @@ class EsxDiskManager(DiskManager):
         name = vmdk_path(datastore, disk_id)
         return self._manager.QueryVirtualDiskUuid(name=name)
 
+    def _vmdk_mkdir(self, datastore, disk_id):
+        path = os.path.dirname(os_vmdk_path(datastore, disk_id))
+        self._vim_client.make_directory(path)
+
     def _vmdk_rmdir(self, datastore, disk_id):
         path = os.path.dirname(os_vmdk_path(datastore, disk_id))
-        shutil.rmtree(path)
+        self._vim_client.delete_file(path)
