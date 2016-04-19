@@ -830,12 +830,15 @@ class HostHandler(Host.Iface):
             response.disk_errors[disk_id] = disk_error
 
             datastore = self._datastore_for_disk(disk_id)
+            if not datastore:
+                disk_error.result = DeleteDiskResultCode.DISK_NOT_FOUND
+                continue
+
             try:
                 self.hypervisor.disk_manager.delete_disk(datastore, disk_id)
                 disk_error.result = DeleteDiskResultCode.OK
             except Exception, e:
-                self._logger.warning("Unexpected exception %s" % (e),
-                                     exc_info=True)
+                self._logger.warning("Unexpected exception %s" % e, exc_info=True)
                 disk_error.result = DeleteDiskResultCode.SYSTEM_ERROR
                 disk_error.error = str(e)
                 continue

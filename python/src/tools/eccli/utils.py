@@ -18,7 +18,7 @@ from gen.resource.ttypes import Disk, DiskImage, CloneType, Vm, State
 def createVmResource(image):
     disk = Disk()
     disk.flavor = "some-disk-flavor"
-    disk.id = str(uuid.uuid1())
+    disk.id = str(uuid.uuid4())
     disk.persistent = False
     disk.new_disk = True
     disk.capacity_gb = 0
@@ -30,7 +30,7 @@ def createVmResource(image):
     disk.flavor_info.cost = []
 
     vm = Vm()
-    vm.id = str(uuid.uuid1())
+    vm.id = str(uuid.uuid4())
     vm.flavor = "some-vm-flavor"
     vm.state = State.STOPPED
     vm.flavor_info = Flavor()
@@ -46,7 +46,7 @@ def createVmResource(image):
 def createDisksResource():
     disk = Disk()
     disk.flavor = "some-disk-flavor"
-    disk.id = str(uuid.uuid1())
+    disk.id = str(uuid.uuid4())
     disk.persistent = True
     disk.new_disk = True
     disk.capacity_gb = 2

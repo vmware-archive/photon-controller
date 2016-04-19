@@ -58,7 +58,7 @@ def create_import_spec(image_id, upload_folder):
                 operation=vim.vm.device.VirtualDeviceSpec.Operation.add))
     disk_backing = vim.vm.device.VirtualDisk.FlatVer2BackingInfo(
         fileName="",
-        uuid=str(uuid.uuid1()),
+        uuid=str(uuid.uuid4()),
         diskMode=vim.vm.device.VirtualDiskOption.DiskMode.persistent,
         thinProvisioned=True)
     disk_spec = vim.vm.device.VirtualDisk(
@@ -161,7 +161,7 @@ def upload_file(file_path, upload_url, upload_lease):
 # create image and get upload_folder
 print_result("Calling agent to create image")
 client = get_client(options.host)
-image_id = str(uuid.uuid1())
+image_id = str(uuid.uuid4())
 upload_folder = create_image(client, image_id, options.datastore)
 
 # create service ticket
