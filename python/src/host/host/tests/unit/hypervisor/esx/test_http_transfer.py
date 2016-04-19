@@ -283,7 +283,7 @@ class TestHttpTransfer(unittest.TestCase):
 
         xferer._get_image_stream_from_shadow_vm.assert_called_once_with(
             image_id, image_datastore, self.shadow_vm_id)
-        expected_tmp_file = "/vmfs/volumes/image_ds/%s_transfer.vmdk" % self.shadow_vm_id
+        expected_tmp_file = "/vmfs/volumes/image_ds/vm_%s/transfer.vmdk" % self.shadow_vm_id
         xferer.download_file.assert_called_once_with(from_url_mock, expected_tmp_file, read_lease_mock)
         read_lease_mock.Complete.assert_called_once_with()
         xferer._prepare_receive_image.assert_called_once_with(agent_conn_mock, image_id, destination_datastore)

@@ -420,8 +420,13 @@ class HttpNfcTransferer(HttpTransferer):
         metadata = self._read_metadata(image_datastore, image_id)
 
         shadow_vm_id = self._create_shadow_vm()
-        tmp_path = "/vmfs/volumes/%s/%s_transfer.vmdk" % (self._get_shadow_vm_datastore(), shadow_vm_id)
-        self._logger.info("http_disk_transfer: tmp_path = %s" % tmp_path)
+
+        # place transfer.vmdk under shadow_vm_path to work around VSAN's restriction on
+        # files at datastore top-level
+        shadow_vm_path = os_datastore_path(self._get_shadow_vm_datastore(),
+                                           compond_path_join(VM_FOLDER_NAME_PREFIX, shadow_vm_id))
+        transfer_vmdk_path = os.path.join(shadow_vm_path, "transfer.vmdk")
+        self._logger.info("transfer_vmdk_path = %s" % transfer_vmdk_path)
 
         agent_client = None
         try:
@@ -429,7 +434,7 @@ class HttpNfcTransferer(HttpTransferer):
                     image_id, image_datastore, shadow_vm_id)
 
             try:
-                self.download_file(disk_url, tmp_path, read_lease)
+                self.download_file(disk_url, transfer_vmdk_path, read_lease)
             finally:
                 read_lease.Complete()
 
@@ -439,18 +444,17 @@ class HttpNfcTransferer(HttpTransferer):
             vm_path, vm_id = self._prepare_receive_image(agent_client, destination_image_id, destination_datastore)
             spec = self._create_import_vm_spec(vm_id, destination_datastore, vm_path)
 
-            self._send_image(agent_client, host, tmp_path, spec)
+            self._send_image(agent_client, host, transfer_vmdk_path, spec)
             self._register_imported_image_at_host(
                 agent_client, destination_image_id, destination_datastore, vm_id, metadata)
 
             return vm_id
         finally:
             try:
-                os.unlink(tmp_path)
+                os.unlink(transfer_vmdk_path)
             except OSError:
                 pass
             self._delete_shadow_vm(shadow_vm_id)
-            rm_rf(os_datastore_path(self._get_shadow_vm_datastore(),
-                                    compond_path_join(VM_FOLDER_NAME_PREFIX, shadow_vm_id)))
+            rm_rf(shadow_vm_path)
             if agent_client:
                 agent_client.close()
