@@ -47,6 +47,7 @@ import com.vmware.xenon.common.OperationJoin;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
+import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.NodeGroupBroadcastResponse;
@@ -629,6 +630,47 @@ public class DeprovisionHostWorkflowService extends StatefulService {
           new FutureCallback<Void>() {
             @Override
             public void onSuccess(@Nullable Void aVoid) {
+              unregisterFabricNode(currentState, hostState, deploymentState, ignoreError);
+            }
+
+            @Override
+            public void onFailure(Throwable throwable) {
+              if (ignoreError) {
+                ServiceUtils.logSevere(DeprovisionHostWorkflowService.this,
+                    "Ignoring error while deleting transport node: ", throwable);
+                unregisterFabricNode(currentState, hostState, deploymentState, ignoreError);
+              } else {
+                failTask(throwable);
+              }
+            }
+          }
+      );
+    } catch (Throwable t) {
+      failTask(t);
+    }
+  }
+
+  private void unregisterFabricNode(State currentState,
+                                    HostService.State hostState,
+                                    DeploymentService.State deploymentState,
+                                    boolean ignoreError) {
+    if (hostState.nsxFabricNodeId == null) {
+      ServiceUtils.logInfo(this, "Skip unregistering fabric node");
+      patchHostStateAndSendStageProgress(currentState, HostState.NOT_PROVISIONED,
+          TaskState.TaskStage.STARTED, TaskState.SubStage.DELETE_ENTITIES);
+      return;
+    }
+
+    try {
+      NsxClient nsxClient = HostUtils.getNsxClientFactory(this).create(
+          deploymentState.networkManagerAddress,
+          deploymentState.networkManagerUsername,
+          deploymentState.networkManagerPassword);
+
+      nsxClient.getFabricApi().unregisterFabricNode(hostState.nsxFabricNodeId,
+          new FutureCallback<Void>() {
+            @Override
+            public void onSuccess(@Nullable Void aVoid) {
               patchHostStateAndSendStageProgress(currentState, HostState.NOT_PROVISIONED,
                   TaskState.TaskStage.STARTED, TaskState.SubStage.DELETE_ENTITIES);
             }
@@ -637,7 +679,9 @@ public class DeprovisionHostWorkflowService extends StatefulService {
             public void onFailure(Throwable throwable) {
               if (ignoreError) {
                 ServiceUtils.logSevere(DeprovisionHostWorkflowService.this,
-                    "Ignoring error while deleting transport node: ", throwable);
+                    "Ignoring error while unregistering fabric node: ", throwable);
+                patchHostStateAndSendStageProgress(currentState, HostState.NOT_PROVISIONED,
+                    TaskState.TaskStage.STARTED, TaskState.SubStage.DELETE_ENTITIES);
               } else {
                 failTask(throwable);
               }

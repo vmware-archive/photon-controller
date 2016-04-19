@@ -600,6 +600,7 @@ public class DeprovisionHostWorkflowServiceTest {
 
       NsxClientMock nsxClientMock = new NsxClientMock.Builder()
           .deleteTransportNode(true)
+          .unregisterFabricNode(true)
           .build();
       doReturn(nsxClientMock).when(nsxClientFactory).create(anyString(), anyString(), anyString());
 
