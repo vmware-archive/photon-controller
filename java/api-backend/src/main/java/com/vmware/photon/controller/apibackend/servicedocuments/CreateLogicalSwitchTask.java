@@ -16,6 +16,9 @@ package com.vmware.photon.controller.apibackend.servicedocuments;
 import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
 import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
+import com.vmware.photon.controller.common.xenon.validation.NotBlank;
+import com.vmware.photon.controller.common.xenon.validation.NotNull;
+import com.vmware.photon.controller.common.xenon.validation.WriteOnce;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.TaskState;
 
@@ -24,6 +27,47 @@ import com.vmware.xenon.common.TaskState;
  * {@link com.vmware.photon.controller.apibackend.tasks.CreateLogicalSwitchTaskService} instance.
  */
 public class CreateLogicalSwitchTask extends ServiceDocument {
+
+  /**
+   * Id of the logical switch.
+   */
+  @WriteOnce
+  public String id;
+
+  /**
+   * Endpoint to the nsx manager.
+   */
+  @NotBlank
+  @Immutable
+  public String nsxManagerEndpoint;
+
+  /**
+   * Username to access nsx manager.
+   */
+  @NotBlank
+  @Immutable
+  public String username;
+
+  /**
+   * Password to access nsx manager.
+   */
+  @NotBlank
+  @Immutable
+  public String password;
+
+  /**
+   * ID of the transport zone.
+   */
+  @NotBlank
+  @Immutable
+  public String transportZoneId;
+
+  /**
+   * Display name.
+   */
+  @NotBlank
+  @Immutable
+  public String displayName;
 
   /**
    * State of this task.
@@ -38,4 +82,10 @@ public class CreateLogicalSwitchTask extends ServiceDocument {
   @Immutable
   public Integer controlFlags;
 
+  /**
+   * Exeuction delay time to verify the state of logical switch.
+   */
+  @NotNull
+  @Immutable
+  public Integer executionDelay;
 }

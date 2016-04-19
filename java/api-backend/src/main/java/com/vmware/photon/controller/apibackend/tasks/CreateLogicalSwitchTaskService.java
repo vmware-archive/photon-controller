@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.apibackend.tasks;
 
+import com.vmware.photon.controller.apibackend.CreateLogicalSwitchException;
 import com.vmware.photon.controller.apibackend.servicedocuments.CreateLogicalSwitchTask;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
@@ -21,6 +22,13 @@ import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
+import com.vmware.photon.controller.nsxclient.RestClient;
+import com.vmware.photon.controller.nsxclient.apis.LogicalSwitchApi;
+import com.vmware.photon.controller.nsxclient.builders.LogicalSwitchCreateSpecBuilder;
+import com.vmware.photon.controller.nsxclient.datatypes.NsxSwitch;
+import com.vmware.photon.controller.nsxclient.models.LogicalSwitch;
+import com.vmware.photon.controller.nsxclient.models.LogicalSwitchCreateSpec;
+import com.vmware.photon.controller.nsxclient.models.LogicalSwitchState;
 import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceErrorResponse;
@@ -28,9 +36,13 @@ import com.vmware.xenon.common.StatefulService;
 import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.Utils;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.util.concurrent.FutureCallback;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import javax.annotation.Nullable;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  * Implements an Xenon service that represents a task to create a logical switch.
@@ -110,18 +122,39 @@ public class CreateLogicalSwitchTaskService extends StatefulService {
       if (ControlFlags.isOperationProcessingDisabled(currentState.controlFlags)) {
         ServiceUtils.logInfo(this, "Skipping patch handling (disabled)");
       } else if (TaskState.TaskStage.STARTED == currentState.taskState.stage) {
-        createLogicalSwitch();
+        createLogicalSwitch(currentState);
       }
     } catch (Throwable t) {
       failTask(t);
     }
   }
 
-  private void createLogicalSwitch() {
+  private void createLogicalSwitch(CreateLogicalSwitchTask currentState) {
     ServiceUtils.logInfo(this, "Creating logical switch");
 
     try {
-      TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FINISHED));
+      LogicalSwitchApi logicalSwitchApi = getLogicalSwitchApi(currentState);
+
+      LogicalSwitchCreateSpec logicalSwitchCreateSpec = new LogicalSwitchCreateSpecBuilder()
+          .displayName(currentState.displayName)
+          .transportZoneId(currentState.transportZoneId)
+          .build();
+      logicalSwitchApi.createLogicalSwitch(logicalSwitchCreateSpec,
+          new FutureCallback<LogicalSwitch>() {
+            @Override
+            public void onSuccess(@Nullable LogicalSwitch result) {
+              currentState.id = result.getId();
+              getHost().schedule(() -> waitForConfigurationComplete(currentState),
+                  currentState.executionDelay,
+                  TimeUnit.MILLISECONDS);
+            }
+
+            @Override
+            public void onFailure(Throwable t) {
+              failTask(t);
+            }
+          }
+      );
     } catch (Throwable t) {
       failTask(t);
     }
@@ -159,5 +192,52 @@ public class CreateLogicalSwitchTaskService extends StatefulService {
   private void failTask(Throwable e) {
     ServiceUtils.logSevere(this, e);
     TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, e));
+  }
+
+  private void finishTask(String logicalSwitchId) {
+    CreateLogicalSwitchTask patch = buildPatch(TaskState.TaskStage.FINISHED);
+    patch.id = logicalSwitchId;
+
+    TaskUtils.sendSelfPatch(this, patch);
+  }
+
+  private void waitForConfigurationComplete(CreateLogicalSwitchTask currentState) {
+    ServiceUtils.logInfo(this, "Checking the configuration status of logical switch");
+
+    try {
+      LogicalSwitchApi logicalSwitchApi = getLogicalSwitchApi(currentState);
+
+      logicalSwitchApi.getLogicalSwitchState(currentState.id,
+          new FutureCallback<LogicalSwitchState>() {
+            @Override
+            public void onSuccess(@Nullable LogicalSwitchState result) {
+              NsxSwitch.State state = result.getState();
+              if (state == NsxSwitch.State.IN_PROGRESS || state == NsxSwitch.State.PENDING) {
+                getHost().schedule(() -> waitForConfigurationComplete(currentState), currentState.executionDelay,
+                    TimeUnit.MILLISECONDS);
+              } else if (state == NsxSwitch.State.SUCCESS) {
+                finishTask(result.getId());
+              } else {
+                failTask(new CreateLogicalSwitchException("Creating logical switch " + currentState.id + " failed " +
+                    "with state " + state));
+              }
+            }
+
+            @Override
+            public void onFailure(Throwable t) {
+              failTask(t);
+            }
+          }
+      );
+    } catch (Throwable t) {
+      failTask(t);
+    }
+  }
+
+  @VisibleForTesting
+  public LogicalSwitchApi getLogicalSwitchApi(CreateLogicalSwitchTask currentState) {
+    RestClient restClient = new RestClient(currentState.nsxManagerEndpoint,
+        currentState.username, currentState.password);
+    return new LogicalSwitchApi(restClient);
   }
 }
