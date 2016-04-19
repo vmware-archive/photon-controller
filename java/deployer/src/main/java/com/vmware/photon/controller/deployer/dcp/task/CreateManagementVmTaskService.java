@@ -1224,7 +1224,7 @@ public class CreateManagementVmTaskService extends StatefulService {
     Map<String, ContainerService.State> containerStates = containerDocuments.entrySet().stream()
         .collect(Collectors.toMap(
             Map.Entry::getKey,
-            (entry) -> Utils.fromJson(entry.getValue(), ContainerService.State.class)));
+            (entry) -> Utils.fromJson((String) entry.getValue(), ContainerService.State.class)));
 
     Map<String, Operation> templateOperationMap = containerStates.entrySet().stream()
         .collect(Collectors.toMap(

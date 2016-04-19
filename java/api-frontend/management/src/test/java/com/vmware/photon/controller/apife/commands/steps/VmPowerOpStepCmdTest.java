@@ -107,7 +107,7 @@ public class VmPowerOpStepCmdTest extends PowerMockTestCase {
     when(taskCommand.getRootSchedulerClient()).thenReturn(rootSchedulerClient);
     HostService.State hostServiceState = new HostService.State();
     hostServiceState.hostAddress = "host-ip";
-    when(hostServiceOp.getBody(Matchers.<Class>any())).thenReturn(hostServiceState);
+    when(hostServiceOp.getBody(Matchers.any())).thenReturn(hostServiceState);
     when(dcpClient.get(Matchers.startsWith(HostServiceFactory.SELF_LINK))).thenReturn(hostServiceOp);
   }
 
