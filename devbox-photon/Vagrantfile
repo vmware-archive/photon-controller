@@ -24,21 +24,19 @@ Vagrant.configure("2") do |config|
 
 
   SERVICE_PORT_MAP = {
-      :management_api         => "-p 9000:9000",
-      :root_scheduler         => "-p 13010:13010",
-      :housekeeper            => "-p 16000:16000 -p 16001:16001",
-      :cloud_store            => "-p 19000:19000",
-      :deployer               => "-p 18000:18000 -p 18001:18001",
-      :bare_metal_provisioner => "-p 21000:21000 -p 21001:21001 -p 67:67/udp -p 68:68/udp -p 69:69/udp -p 70:70/udp"
+      :management_api => "-p 9000:9000",
+      :root_scheduler => "-p 13010:13010",
+      :housekeeper    => "-p 16000:16000 -p 16001:16001",
+      :cloud_store    => "-p 19000:19000",
+      :deployer       => "-p 18000:18000 -p 18001:18001"
   }
 
   SERVICE_NAME_MAP = {
-      :management_api         => "management-api",
-      :root_scheduler         => "root-scheduler",
-      :housekeeper            => "housekeeper",
-      :deployer               => "deployer",
-      :cloud_store            => "cloud-store",
-      :bare_metal_provisioner => "bare-metal-provisioner"
+      :management_api => "management-api",
+      :root_scheduler => "root-scheduler",
+      :housekeeper    => "housekeeper",
+      :deployer       => "deployer",
+      :cloud_store    => "cloud-store"
   }
 
   BASE_SERVICE_PORT_MAP = {
