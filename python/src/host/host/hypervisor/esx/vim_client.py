@@ -658,13 +658,20 @@ class VimClient(object):
     def make_directory(self, path):
         """Make directory using vim.fileManager.MakeDirectory
         """
-        self.file_manager.MakeDirectory(os_to_datastore_path(path), createParentDirectories=True)
+        try:
+            self.file_manager.MakeDirectory(os_to_datastore_path(path), createParentDirectories=True)
+        except vim.fault.FileAlreadyExists:
+            pass
 
     @hostd_error_handler
     def delete_file(self, path):
         """Delete directory or file using vim.fileManager.DeleteFile
         """
-        self.file_manager.DeleteFile(os_to_datastore_path(path))
+        try:
+            vim_task = self.file_manager.DeleteFile(os_to_datastore_path(path))
+            self.wait_for_task(vim_task)
+        except vim.fault.FileNotFound:
+            pass
 
     @hostd_error_handler
     def move_file(self, src, dest):

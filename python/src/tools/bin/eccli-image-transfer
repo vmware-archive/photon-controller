@@ -57,7 +57,7 @@ host, ds = options.destination.split(':')
 request.destination_host = ServerAddress(host, 8835)
 request.destination_datastore_id = normalize_datastore(host, ds)
 if options.generate_destination_image_id:
-    request.destination_image_id = str(uuid.uuid1())
+    request.destination_image_id = str(uuid.uuid4())
 
 print_request(request)
 client = get_client(options.host)

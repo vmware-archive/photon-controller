@@ -36,7 +36,7 @@ class TestHttpTransfer(unittest.TestCase):
     @patch.object(VimClient, "acquire_credentials")
     @patch("pysdk.connect.Connect")
     def setUp(self, connect, creds):
-        self.shadow_vm_id = SHADOW_VM_NAME_PREFIX + str(uuid.uuid1())
+        self.shadow_vm_id = SHADOW_VM_NAME_PREFIX + str(uuid.uuid4())
         self.image_datastores = ["image_ds", "alt_image_ds"]
         creds.return_value = ["username", "password"]
         self.vim_client = VimClient(auto_sync=False)

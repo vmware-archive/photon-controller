@@ -27,7 +27,7 @@ if not options.vm_id or not options.datastore:
 
 request = CreateImageFromVmRequest()
 request.vm_id = options.vm_id
-request.image_id = str(uuid.uuid1())
+request.image_id = str(uuid.uuid4())
 request.datastore = options.datastore
 request.tmp_image_path = "tmp_upload_" + request.image_id
 
