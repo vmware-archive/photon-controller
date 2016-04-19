@@ -91,7 +91,7 @@ public class FabricApi extends NsxClientApi {
   public void unregisterFabricNode(String nodeId,
                                    FutureCallback<Void> responseCallback)
       throws IOException {
-    final String path = basePath + "/fabric/nodes/" + nodeId;
+    final String path = basePath + "/fabric/nodes/" + nodeId + "?unprepare_host=true";
     deleteAsync(path, HttpStatus.SC_OK, responseCallback);
   }
 

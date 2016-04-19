@@ -145,6 +145,25 @@ public class NsxClientMock extends NsxClient {
       return this;
     }
 
+    public Builder unregisterFabricNode(boolean isSuccess) throws Throwable {
+      if (isSuccess) {
+        doAnswer(invocation -> {
+          ((FutureCallback<Void>) invocation.getArguments()[1])
+              .onSuccess(null);
+          return null;
+        }).when(mockFabricApi).unregisterFabricNode(any(String.class), any(FutureCallback.class));
+      } else {
+        RuntimeException error = new RuntimeException("unregisterFabricNode failed");
+        doAnswer(invocation -> {
+          ((FutureCallback<Void>) invocation.getArguments()[1])
+              .onFailure(error);
+          return null;
+        }).when(mockFabricApi).unregisterFabricNode(any(String.class), any(FutureCallback.class));
+      }
+
+      return this;
+    }
+
     public Builder deleteTransportNode(boolean isSuccess) throws Throwable {
       if (isSuccess) {
         doAnswer(invocation -> {
