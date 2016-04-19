@@ -49,6 +49,7 @@ import static org.testng.Assert.fail;
 
 import java.lang.reflect.Field;
 import java.util.EnumSet;
+import java.util.UUID;
 
 /**
  * This class implements tests for the {@link CreateVirtualNetworkWorkflowService} class.
@@ -243,6 +244,11 @@ public class CreateVirtualNetworkWorkflowServiceTest {
       testHost = TestHost.create();
     }
 
+    @AfterClass
+    public void tearDownClass() throws Throwable {
+      TestHost.destroy(testHost);
+    }
+
     @BeforeMethod
     public void setUpTest() throws Throwable {
       createVirtualNetworkWorkflowService = new CreateVirtualNetworkWorkflowService();
@@ -256,11 +262,6 @@ public class CreateVirtualNetworkWorkflowServiceTest {
       } catch (ServiceHost.ServiceNotFoundException e) {
         // Exceptions are expected in the case where a service instance was not successfully created.
       }
-    }
-
-    @AfterClass
-    public void tearDownClass() throws Throwable {
-      TestHost.destroy(testHost);
     }
 
     @Test
@@ -404,19 +405,20 @@ public class CreateVirtualNetworkWorkflowServiceTest {
       testHost = TestHost.create();
     }
 
+    @AfterClass
+    public void tearDownClass() throws Throwable {
+      TestHost.destroy(testHost);
+    }
+
     @BeforeMethod
     public void setUpTest() {
       createVirtualNetworkWorkflowService = new CreateVirtualNetworkWorkflowService();
+      testHost.setDefaultServiceUri(UUID.randomUUID().toString());
     }
 
     @AfterMethod
     public void tearDownTest() throws Throwable {
       testHost.deleteServiceSynchronously();
-    }
-
-    @AfterClass
-    public void tearDownClass() throws Throwable {
-      TestHost.destroy(testHost);
     }
 
     @Test(dataProvider = "ValidStageUpdates")
@@ -426,17 +428,24 @@ public class CreateVirtualNetworkWorkflowServiceTest {
         TaskState.TaskStage patchStage,
         CreateVirtualNetworkWorkflowDocument.TaskState.SubStage patchSubStage
         ) throws Throwable {
+
+      // start service in desired state
       CreateVirtualNetworkWorkflowDocument startState = buildValidStartState(startStage, startSubStage);
       Operation startOperation = testHost.startServiceSynchronously(createVirtualNetworkWorkflowService, startState);
       assertThat(startOperation.getStatusCode(), is(200));
 
+      // send patch
       CreateVirtualNetworkWorkflowDocument patchState = buildPatch(patchStage, patchSubStage);
       Operation patchOperation = Operation
-          .createPatch(UriUtils.buildUri(testHost, TestHost.SERVICE_URI, null))
+          .createPatch(UriUtils.buildUri(testHost,
+              startOperation.getBody(CreateVirtualNetworkWorkflowDocument.class).documentSelfLink,
+              null))
           .setBody(patchState);
 
       Operation patchResult = testHost.sendRequestAndWait(patchOperation);
       assertThat(patchResult.getStatusCode(), is(200));
+
+      // check results
       CreateVirtualNetworkWorkflowDocument savedState =
           testHost.getServiceState(CreateVirtualNetworkWorkflowDocument.class);
       assertThat(savedState.taskState.stage, is(patchStage));
@@ -459,30 +468,36 @@ public class CreateVirtualNetworkWorkflowServiceTest {
         TaskState.TaskStage secondPatchStage,
         CreateVirtualNetworkWorkflowDocument.TaskState.SubStage secondPatchSubStage
     ) throws Throwable {
+
+      // start service in CREATED state
       CreateVirtualNetworkWorkflowDocument startState = buildValidStartState();
       Operation startOperation = testHost.startServiceSynchronously(createVirtualNetworkWorkflowService, startState);
       assertThat(startOperation.getStatusCode(), is(200));
 
+      String documentUri = startOperation.getBody(CreateVirtualNetworkWorkflowDocument.class).documentSelfLink;
+
+      // Send patch to move the stage from CREATED to STARTED
+      // Simulate the action in handleStart() to sendSelfPatch to move the stage of itself
       CreateVirtualNetworkWorkflowDocument patchState = buildPatch(TaskState.TaskStage.STARTED,
           CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.GET_NSX_CONFIGURATION);
       Operation patchOperation = Operation
-          .createPatch(UriUtils.buildUri(testHost, TestHost.SERVICE_URI, null))
+          .createPatch(UriUtils.buildUri(testHost, documentUri, null))
           .setBody(patchState);
 
       Operation patchResult = testHost.sendRequestAndWait(patchOperation);
       assertThat(patchResult.getStatusCode(), is(200));
-      CreateVirtualNetworkWorkflowDocument savedState =
-          testHost.getServiceState(CreateVirtualNetworkWorkflowDocument.class);
-      assertThat(savedState.taskState.stage, is(TaskState.TaskStage.STARTED));
 
       patchState = buildPatch(secondPatchStage, secondPatchSubStage);
       patchOperation = Operation
-          .createPatch(UriUtils.buildUri(testHost, TestHost.SERVICE_URI, null))
+          .createPatch(UriUtils.buildUri(testHost, documentUri, null))
           .setBody(patchState);
 
       patchResult = testHost.sendRequestAndWait(patchOperation);
       assertThat(patchResult.getStatusCode(), is(200));
-      savedState = testHost.getServiceState(CreateVirtualNetworkWorkflowDocument.class);
+
+      // Evaluate results
+      CreateVirtualNetworkWorkflowDocument savedState = testHost.getServiceState(
+          CreateVirtualNetworkWorkflowDocument.class);
       assertThat(savedState.taskState.stage, is(secondPatchStage));
       assertThat(savedState.taskState.subStage, is(secondPatchSubStage));
     }
@@ -505,22 +520,27 @@ public class CreateVirtualNetworkWorkflowServiceTest {
         TaskState.TaskStage secondPatchStage,
         CreateVirtualNetworkWorkflowDocument.TaskState.SubStage secondPatchSubStage)
         throws Throwable {
+
+      // start service in CREATED state
       CreateVirtualNetworkWorkflowDocument startState = buildValidStartState();
       Operation startOperation = testHost.startServiceSynchronously(createVirtualNetworkWorkflowService, startState);
       assertThat(startOperation.getStatusCode(), is(200));
 
+      String documentUri = startOperation.getBody(CreateVirtualNetworkWorkflowDocument.class).documentSelfLink;
+
+      // Move the stage from CREATED to STARTED
+      // Simulate the process in handleStart()
       CreateVirtualNetworkWorkflowDocument patchState = buildPatch(TaskState.TaskStage.STARTED,
           CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.GET_NSX_CONFIGURATION);
       Operation patchOperation = Operation
-          .createPatch(UriUtils.buildUri(testHost, TestHost.SERVICE_URI, null))
+          .createPatch(UriUtils.buildUri(testHost, documentUri, null))
           .setBody(patchState);
+      testHost.sendRequestAndWait(patchOperation);
 
-      patchOperation = testHost.sendRequestAndWait(patchOperation);
-      assertThat(patchOperation.getStatusCode(), is(200));
-
+      // send invalid patch
       patchState = buildPatch(secondPatchStage, secondPatchSubStage);
       patchOperation = Operation
-          .createPatch(UriUtils.buildUri(testHost, TestHost.SERVICE_URI, null))
+          .createPatch(UriUtils.buildUri(testHost, documentUri, null))
           .setBody(patchState);
       testHost.sendRequestAndWait(patchOperation);
     }
@@ -547,7 +567,8 @@ public class CreateVirtualNetworkWorkflowServiceTest {
       declaredField.set(patchState, ReflectionUtils.getDefaultAttributeValue(declaredField));
 
       Operation patchOperation = Operation
-          .createPatch(UriUtils.buildUri(testHost, TestHost.SERVICE_URI))
+          .createPatch(UriUtils.buildUri(testHost,
+              startOperation.getBody(CreateVirtualNetworkWorkflowDocument.class).documentSelfLink))
           .setBody(patchState);
 
       testHost.sendRequestAndWait(patchOperation);
