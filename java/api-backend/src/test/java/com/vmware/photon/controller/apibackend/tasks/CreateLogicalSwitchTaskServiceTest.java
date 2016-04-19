@@ -13,13 +13,9 @@
 
 package com.vmware.photon.controller.apibackend.tasks;
 
-import com.vmware.photon.controller.apibackend.ApiBackendFactory;
+import com.vmware.photon.controller.apibackend.helpers.TestHost;
 import com.vmware.photon.controller.apibackend.servicedocuments.CreateLogicalSwitchTask;
-import com.vmware.photon.controller.common.thrift.StaticServerSet;
-import com.vmware.photon.controller.common.xenon.BasicServiceHost;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
-import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
-import com.vmware.photon.controller.common.xenon.XenonRestClient;
 import com.vmware.photon.controller.common.xenon.exceptions.BadRequestException;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
@@ -27,40 +23,25 @@ import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
 
 import org.apache.http.HttpStatus;
+import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
-import org.testng.annotations.AfterSuite;
-import org.testng.annotations.BeforeSuite;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.testng.Assert.fail;
 
-import java.net.InetSocketAddress;
 import java.util.EnumSet;
-import java.util.concurrent.Executors;
+import java.util.UUID;
 
 /**
  * Tests for {@link com.vmware.photon.controller.apibackend.tasks.CreateLogicalSwitchTaskService}.
  */
 public class CreateLogicalSwitchTaskServiceTest {
-  private static BasicServiceHost host;
-  private static XenonRestClient xenonClient;
-  @BeforeSuite
-  public void beforeSuite() throws Throwable {
-    host = BasicServiceHost.create();
-    ServiceHostUtils.startFactoryServices(host, ApiBackendFactory.FACTORY_SERVICES_MAP);
-
-    StaticServerSet serverSet = new StaticServerSet(new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-    xenonClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(128));
-    xenonClient.start();
-  }
-
-  @AfterSuite
-  public void afterSuite() throws Throwable {
-    xenonClient.stop();
-    host.destroy();
-  }
+  private static TestHost host;
+  private static CreateLogicalSwitchTaskService createLogicalSwitchTaskService;
 
   @Test(enabled = false)
   private void dummy() {
@@ -89,9 +70,25 @@ public class CreateLogicalSwitchTaskServiceTest {
    */
   public static class HandleStartTest {
 
+    @BeforeClass
+    public void setupClass() throws Throwable {
+      host = TestHost.create();
+    }
+
+    @AfterClass
+    public void tearDownClass() throws Throwable {
+      TestHost.destroy(host);
+    }
+
+    @BeforeMethod
+    public void setupTest() {
+      createLogicalSwitchTaskService = new CreateLogicalSwitchTaskService();
+      host.setDefaultServiceUri(UUID.randomUUID().toString());
+    }
+
     @AfterMethod
-    public void afterMethod() throws Throwable {
-      ServiceHostUtils.deleteAllDocuments(host, "test-host");
+    public void tearDownTest() throws Throwable {
+      host.deleteServiceSynchronously();
     }
 
     @Test(dataProvider = "expectedStateTransition")
@@ -124,9 +121,25 @@ public class CreateLogicalSwitchTaskServiceTest {
    */
   public static class HandlePatchTest {
 
+    @BeforeClass
+    public void setupClass() throws Throwable {
+      host = TestHost.create();
+    }
+
+    @AfterClass
+    public void tearDownClass() throws Throwable {
+      TestHost.destroy(host);
+    }
+
+    @BeforeMethod
+    public void setupTest() {
+      createLogicalSwitchTaskService = new CreateLogicalSwitchTaskService();
+      host.setDefaultServiceUri(UUID.randomUUID().toString());
+    }
+
     @AfterMethod
-    public void afterMethod() throws Throwable {
-      ServiceHostUtils.deleteAllDocuments(host, "test-host");
+    public void tearDownTest() throws Throwable {
+      host.deleteServiceSynchronously();
     }
 
     @Test(dataProvider = "validStageTransitions")
@@ -219,7 +232,28 @@ public class CreateLogicalSwitchTaskServiceTest {
   /**
    * End-to-end tests.
    */
-  public static class EndToEndTest {
+  public class EndToEndTest {
+
+    @BeforeClass
+    public void setupClass() throws Throwable {
+      host = TestHost.create();
+    }
+
+    @AfterClass
+    public void tearDownClass() throws Throwable {
+      TestHost.destroy(host);
+    }
+
+    @BeforeMethod
+    public void setupTest() {
+      createLogicalSwitchTaskService = new CreateLogicalSwitchTaskService();
+      host.setDefaultServiceUri(UUID.randomUUID().toString());
+    }
+
+    @AfterMethod
+    public void tearDownTest() throws Throwable {
+      host.deleteServiceSynchronously();
+    }
 
     @Test
     public void testSuccessfulCreate() throws Throwable {
@@ -241,7 +275,7 @@ public class CreateLogicalSwitchTaskServiceTest {
     startState.taskState.stage = startStage;
     startState.controlFlags = controlFlags;
 
-    Operation result = xenonClient.post(CreateLogicalSwitchTaskService.FACTORY_LINK, startState);
+    Operation result = host.startServiceSynchronously(createLogicalSwitchTaskService, startState);
     return result.getBody(CreateLogicalSwitchTask.class);
   }
 
