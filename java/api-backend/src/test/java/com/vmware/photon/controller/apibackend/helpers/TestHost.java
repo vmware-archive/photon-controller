@@ -49,6 +49,10 @@ public class TestHost extends BasicServiceHost {
     return this;
   }
 
+  public void setDefaultServiceUri(String serviceUri) {
+    this.serviceUri = serviceUri;
+  }
+
   @Override
   public void destroy() throws Throwable {
     super.destroy();
