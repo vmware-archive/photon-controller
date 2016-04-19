@@ -244,6 +244,7 @@ class TestEsxImageManager(unittest.TestCase):
         _create_image_timestamp.assert_called_once_with(
             "/vmfs/volumes/ds2/tmp_image_fake_id")
 
+    @patch.object(VimClient, "delete_file")
     @patch("os.path.exists", return_value=True)
     @patch("os.makedirs")
     @patch("shutil.rmtree")
@@ -254,7 +255,7 @@ class TestEsxImageManager(unittest.TestCase):
     @patch("host.hypervisor.esx.image_manager.FileBackedLock")
     @raises(DiskAlreadyExistException)
     def test_move_image(self, _flock, check_image, _get_ds_type, _mv_dir,
-                        _rmtree, _makedirs, _exists):
+                        _rmtree, _makedirs, _exists, _delete_file):
         # Common case is covered in test_copy_image.
 
         # check that if destination image directory exists we don't call move
@@ -268,6 +269,7 @@ class TestEsxImageManager(unittest.TestCase):
         _makedirs.assert_called_once_with('/vmfs/volumes/ds1/images/fo')
         _flock.assert_called_once_with('/vmfs/volumes/ds1/image_foo',
                                        DatastoreType.EXT3, 3)
+        _delete_file.assert_called_once_with('/vmfs/volumes/ds1/image_foo')
 
     @parameterized.expand([
         (True, ),

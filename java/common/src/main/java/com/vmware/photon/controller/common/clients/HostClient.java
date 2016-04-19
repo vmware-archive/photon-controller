@@ -148,7 +148,6 @@ public class HostClient {
   private static final long DELETE_DISK_TIMEOUT_MS = 1800000;
   private static final long CREATE_IMAGE_TIMEOUT_MS = 60000;
   private static final long FINALIZE_IMAGE_TIMEOUT_MS = 60000;
-  private static final long DELETE_IMAGE_TIMEOUT_MS = 60000;
   private static final long START_IMAGE_SCAN_TIMEOUT_MS = 60000;
   private static final long START_IMAGE_SWEEP_TIMEOUT_MS = 60000;
   private static final long GET_INACTIVE_IMAGES_TIMEOUT_MS = 60000;
@@ -157,10 +156,7 @@ public class HostClient {
   private static final long DELETE_VM_TIMEOUT_MS = 1800000;
   private static final long DETACH_DISKS_TIMEOUT_MS = 60000;
   private static final long DETACH_ISO_TIMEOUT_MS = 60000;
-  private static final long FIND_DISK_TIMEOUT_MS = 60000;
-  private static final long FIND_VM_TIMEOUT_MS = 60000;
   private static final long GET_HOST_CONFIG_TIMEOUT_MS = 60000;
-  private static final long GET_IMAGE_INFO_TIMEOUT_MS = 60000;
   private static final long GET_IMAGES_TIMEOUT_MS = 60000;
   private static final long GET_SERVICE_TICKET_TIMEOUT_MS = 60000;
   private static final long GET_VM_MKS_TICKET_TIMEOUT_MS = 60000;

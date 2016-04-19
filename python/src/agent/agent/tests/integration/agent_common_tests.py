@@ -524,10 +524,10 @@ class AgentCommonTests(object):
         assert_that(len(response.disk_errors), equal_to(2))
         assert_that(response.disk_errors, has_key(disk_1))
         assert_that(response.disk_errors[disk_1].result,
-                    is_(DeleteDiskResultCode.SYSTEM_ERROR))
+                    is_(DeleteDiskResultCode.DISK_NOT_FOUND))
         assert_that(response.disk_errors, has_key(disk_2))
         assert_that(response.disk_errors[disk_2].result,
-                    is_(DeleteDiskResultCode.SYSTEM_ERROR))
+                    is_(DeleteDiskResultCode.DISK_NOT_FOUND))
 
     def test_create_disk_from_image(self):
         """Test that the agent can clone images"""
