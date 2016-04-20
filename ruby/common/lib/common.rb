@@ -73,6 +73,7 @@ require "common/resources/security_group"
 require "common/resources/stats_info"
 require "common/resources/availability_zone"
 require "common/resources/availability_zone_list"
+require "common/resources/available"
 
 require "common/create_specs/auth_configuration_spec"
 require "common/create_specs/deployment_create_spec"

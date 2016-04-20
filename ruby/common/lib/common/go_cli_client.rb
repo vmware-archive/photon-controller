@@ -26,6 +26,7 @@ require_relative "go_cli_client/task_api"
 require_relative "go_cli_client/tenant_api"
 require_relative "go_cli_client/vm_api"
 require_relative "go_cli_client/availability_zone_api"
+require_relative "go_cli_client/available_api"
 
 module EsxCloud
   class GoCliClient
@@ -46,6 +47,7 @@ module EsxCloud
     include EsxCloud::GoCliClient::TenantApi
     include EsxCloud::GoCliClient::VmApi
     include EsxCloud::GoCliClient::AvailabilityZoneApi
+    include EsxCloud::GoCliClient::AvailableApi
 
     attr_reader :project_to_tenant, :vm_to_project, :disk_to_project, :api_client
 

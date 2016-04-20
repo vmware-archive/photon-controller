@@ -16,6 +16,13 @@ require_relative "../../lib/host_cleaner"
 describe "system" do
   let(:api_client) { ApiClientHelper.management }
 
+  # The /available API returns an empty response. It's used by a
+  # front-end load balancer to detect if the system is up and running
+  it "is available", management: true do
+    available = api_client.get_available
+    expect(available).to_not be_nil
+  end
+
   it "shows system status as ready", management: true do
     system_status = api_client.get_status
     expect(system_status.status).to_not be_nil
