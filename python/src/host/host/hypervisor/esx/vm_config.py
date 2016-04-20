@@ -171,6 +171,18 @@ def image_directory_path(datastore, image_id):
     return compond_path_join(os_datastore_path(datastore, IMAGE_FOLDER_NAME_PREFIX), image_id)
 
 
+def list_top_level_directory(datastore, folder_prefix):
+    """List datastore top level directories that has given prefix.
+
+       On VSAN, this is much faster than glob.glob, because VSAN caches folder names locally,
+       but stores folder attributes distributedly. os.listdir only accesses names, while
+       glob.glob reads attributes.
+    """
+    folder_prefix += COMPOND_PATH_SEPARATOR
+    root = os_datastore_root(datastore)
+    return [os.path.join(root, d) for d in os.listdir(root) if d.startswith(folder_prefix)]
+
+
 def partial_vmx_path(vm_id):
     return os.path.join(compond_path_join(VM_FOLDER_NAME_PREFIX, vm_id),
                         vmx_add_suffix(vm_id))
