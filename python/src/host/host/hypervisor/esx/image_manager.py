@@ -13,7 +13,6 @@
 """Temporary hack to deploy demo image from vib to datastore"""
 
 import errno
-import glob
 import gzip
 import json
 import logging
@@ -42,7 +41,7 @@ from host.hypervisor.esx.vm_config import TMP_IMAGE_FOLDER_NAME_PREFIX
 from host.hypervisor.esx.vm_config import os_datastore_root
 from host.hypervisor.esx.vm_config import datastore_to_os_path
 from host.hypervisor.esx.vm_config import metadata_filename
-from host.hypervisor.esx.vm_config import os_datastore_path_pattern
+from host.hypervisor.esx.vm_config import list_top_level_directory
 from host.hypervisor.esx.vm_config import COMPOND_PATH_SEPARATOR
 from host.hypervisor.esx.vm_config import image_directory_path
 from host.hypervisor.esx.vm_config import os_datastore_path
@@ -421,8 +420,7 @@ class EsxImageManager(ImageManager):
     def reap_tmp_images(self):
         """ Clean up unused directories in the temp image folder. """
         for ds in self._ds_manager.get_datastores():
-            tmp_image_pattern = os_datastore_path_pattern(ds.id, TMP_IMAGE_FOLDER_NAME_PREFIX)
-            for image_dir in glob.glob(tmp_image_pattern):
+            for image_dir in list_top_level_directory(ds.id, TMP_IMAGE_FOLDER_NAME_PREFIX):
                 if not os.path.isdir(image_dir):
                     continue
 
@@ -460,9 +458,7 @@ class EsxImageManager(ImageManager):
             raise DatastoreNotFoundException()
 
         # image_folder is /vmfs/volumes/${datastore}/images_*
-        image_folder_pattern = os_datastore_path_pattern(datastore,
-                                                         IMAGE_FOLDER_NAME_PREFIX)
-        for dir in glob.glob(image_folder_pattern):
+        for dir in list_top_level_directory(datastore, IMAGE_FOLDER_NAME_PREFIX):
             image_id = dir.split(COMPOND_PATH_SEPARATOR)[1]
             if self.check_image(image_id, datastore):
                 image_ids.append(image_id)

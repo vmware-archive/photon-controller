@@ -9,7 +9,6 @@
 # warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
 # License for then specific language governing permissions and limitations
 # under the License.
-import glob
 import uuid
 
 import os
@@ -19,8 +18,9 @@ import threading
 import time
 
 from common.lock import locked
-from host.hypervisor.esx.vm_config import VM_FOLDER_NAME_PREFIX, IMAGE_FOLDER_NAME_PREFIX
-from host.hypervisor.esx.vm_config import os_datastore_path_pattern
+from host.hypervisor.esx import vm_config
+from host.hypervisor.esx.vm_config import VM_FOLDER_NAME_PREFIX
+from host.hypervisor.esx.vm_config import IMAGE_FOLDER_NAME_PREFIX
 from host.hypervisor.esx.vm_config import vmdk_add_suffix
 
 from host.hypervisor.task_runner import TaskRunner, TaskAlreadyRunning
@@ -57,9 +57,8 @@ class DatastoreImageScannerTaskRunner(TaskRunner):
         try:
             # Scan the vms first
             self._ds_image_scanner.set_state(DatastoreImageScanner.State.VM_SCAN)
-            active_images = self._scan_vms_for_active_images(
-                    self._ds_image_scanner,
-                    os_datastore_path_pattern(self._ds_image_scanner.datastore_id, VM_FOLDER_NAME_PREFIX))
+            active_images = self._scan_vms_for_active_images(self._ds_image_scanner,
+                                                             self._ds_image_scanner.datastore_id)
             self._ds_image_scanner.set_active_images(active_images)
 
             # Check if we are still running
@@ -68,9 +67,7 @@ class DatastoreImageScannerTaskRunner(TaskRunner):
 
             # Mark the images
             self._ds_image_scanner.set_state(DatastoreImageScanner.State.IMAGE_MARK)
-            unused_images = self._scan_for_unused_images(
-                    self._ds_image_scanner,
-                    os_datastore_path_pattern(self._ds_image_scanner.datastore_id, IMAGE_FOLDER_NAME_PREFIX))
+            unused_images = self._scan_for_unused_images(self._ds_image_scanner, self._ds_image_scanner.datastore_id)
             self._ds_image_scanner.set_unused_images(unused_images)
 
         except Exception as e:
@@ -88,10 +85,10 @@ class DatastoreImageScannerTaskRunner(TaskRunner):
         finally:
             self._ds_image_scanner.set_state(DatastoreImageScanner.State.IDLE)
 
-    def _scan_vms_for_active_images(self, image_scanner, vm_folder_pattern):
+    def _scan_vms_for_active_images(self, image_scanner, datastore):
         rest_interval_sec = image_scanner.get_vm_scan_rest_interval()
         active_images = dict()
-        for vm_dir in glob.glob(vm_folder_pattern):
+        for vm_dir in self._list_top_level_directory(datastore, VM_FOLDER_NAME_PREFIX):
             # On a directory change check if it still needs to run
             if image_scanner.is_stopped():
                 break
@@ -144,12 +141,12 @@ class DatastoreImageScannerTaskRunner(TaskRunner):
     unused images and creates a marker file in the
     directory containing the image.
     """
-    def _scan_for_unused_images(self, image_scanner, image_folder_pattern):
+    def _scan_for_unused_images(self, image_scanner, datastore):
         active_images = image_scanner.get_active_images()
         unused_images = dict()
         # Compute scan rest interval
         rest_interval_sec = image_scanner.get_image_mark_rest_interval()
-        for image_dir in glob.glob(image_folder_pattern):
+        for image_dir in self._list_top_level_directory(datastore, IMAGE_FOLDER_NAME_PREFIX):
             # On a directory change check if it still needs to run
             if image_scanner.is_stopped():
                 break
@@ -202,6 +199,9 @@ class DatastoreImageScannerTaskRunner(TaskRunner):
         except Exception as ex:
             self._logger.info("Failed to get image vmdk: %s, %s" % (image_dir, ex))
             return None
+
+    def _list_top_level_directory(self, datastore, folder_prefix):
+        return vm_config.list_top_level_directory(datastore, folder_prefix)
 
     @staticmethod
     def _validate_image_id(image_id):

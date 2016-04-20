@@ -11,6 +11,7 @@
 # under the License.
 
 import errno
+import glob
 import shutil
 import uuid
 import time
@@ -67,39 +68,43 @@ class ImageScannerVmTestCase(unittest.TestCase):
         self.patcher.stop()
         self.vim_client.disconnect(wait=True)
 
+    @patch("host.hypervisor.image_scanner.DatastoreImageScannerTaskRunner._list_top_level_directory")
     @patch("host.hypervisor.image_scanner.DatastoreImageScanner.is_stopped", return_value=False)
-    def test_vm_scan(self, is_stopped):
+    def test_vm_scan(self, is_stopped, list_top_level_directory):
+        list_top_level_directory.return_value = glob.glob(os.path.join(self.test_dir, "vm_*"))
         self.image_scanner.vm_scan_rate = 60000
-        dictionary = self.image_scanner._task_runner._scan_vms_for_active_images(
-                self.image_scanner, self.test_dir + "/vm_*")
+        dictionary = self.image_scanner._task_runner._scan_vms_for_active_images(self.image_scanner, self.DATASTORE_ID)
         assert_that(len(dictionary) is 1)
         assert_that(dictionary["92e62599-6689-4a8f-ba2a-633914b5048e"] ==
                     "/vmfs/volumes/555ca9f8-9f24fa2c-41c1-0025b5414043/"
                     "image_92e62599-6689-4a8f-ba2a-633914b5048e/92e"
                     "62599-6689-4a8f-ba2a-633914b5048e.vmdk")
 
+    @patch("host.hypervisor.image_scanner.DatastoreImageScannerTaskRunner._list_top_level_directory")
     @patch("host.hypervisor.image_scanner.DatastoreImageScanner.is_stopped", return_value=False)
-    def test_vm_scan_bad_root(self, is_stopped):
+    def test_vm_scan_bad_root(self, is_stopped, list_top_level_directory):
         self.image_scanner.vm_scan_rate = 60000
-        bad_dir = os.path.join(self.base_dir, "test_files", "vm_bad")
-        dictionary = self.image_scanner._task_runner._scan_vms_for_active_images(self.image_scanner, bad_dir)
+        list_top_level_directory.return_value = [os.path.join(self.test_dir, "vm_bad")]
+        dictionary = self.image_scanner._task_runner._scan_vms_for_active_images(self.image_scanner, self.DATASTORE_ID)
         assert_that(len(dictionary) is 0)
 
+    @patch("host.hypervisor.image_scanner.DatastoreImageScannerTaskRunner._list_top_level_directory")
     @patch("host.hypervisor.image_scanner.DatastoreImageScanner.is_stopped", return_value=False)
-    def test_vm_scan_bad_vmdk(self, is_stopped):
+    def test_vm_scan_bad_vmdk(self, is_stopped, list_top_level_directory):
         self.image_scanner.vm_scan_rate = 60000
-        bad_dir = os.path.join(self.base_dir, "test_files", "vm_bad")
-        dictionary = self.image_scanner._task_runner._scan_vms_for_active_images(self.image_scanner, bad_dir)
+        list_top_level_directory.return_value = [os.path.join(self.test_dir, "vm_bad")]
+        dictionary = self.image_scanner._task_runner._scan_vms_for_active_images(self.image_scanner, self.DATASTORE_ID)
         assert_that(len(dictionary) is 0)
 
+    @patch("host.hypervisor.image_scanner.DatastoreImageScannerTaskRunner._list_top_level_directory")
     @patch("host.hypervisor.image_scanner.DatastoreImageScanner.is_stopped", return_value=False)
     @patch("host.hypervisor.image_scanner.waste_time")
-    def test_vm_scan_rate(self, waste_time, is_stopped):
+    def test_vm_scan_rate(self, waste_time, is_stopped, list_top_level_directory):
         waste_time.side_effect = self.fake_waste_time
         # fake activation
         self.image_scanner.vm_scan_rate = 30
-        dictionary = self.image_scanner._task_runner._scan_vms_for_active_images(
-                self.image_scanner, self.test_dir + "/vm_*")
+        list_top_level_directory.return_value = glob.glob(os.path.join(self.test_dir, "vm_*"))
+        dictionary = self.image_scanner._task_runner._scan_vms_for_active_images(self.image_scanner, self.DATASTORE_ID)
         assert_that(len(dictionary) is 1)
         assert_that(dictionary["92e62599-6689-4a8f-ba2a-633914b5048e"] ==
                     "/vmfs/volumes/555ca9f8-9f24fa2c-41c1-0025b5414043/"
@@ -178,19 +183,22 @@ class ImageScannerTestCase(unittest.TestCase):
     ])
     @patch("host.hypervisor.image_scanner.DatastoreImageScannerTaskRunner._write_marker_file")
     @patch("host.hypervisor.image_scanner.DatastoreImageScanner.is_stopped", return_value=False)
-    def test_image_marker(self, image_id_index, write_count, dict_size, is_stopped, write_marker_file):
+    @patch("host.hypervisor.image_scanner.DatastoreImageScannerTaskRunner._list_top_level_directory")
+    def test_image_marker(self, image_id_index, write_count, dict_size,
+                          list_top_level_directory, is_stopped, write_marker_file):
         image_id = self.image_ids[image_id_index]
         write_marker_file.side_effect = self.fake_write_marker_file
         self.image_scanner.image_mark_rate = 60000
-        good_dir = os.path.join(self.test_dir, "image_" + image_id)
-        dictionary = self.image_scanner._task_runner._scan_for_unused_images(self.image_scanner, good_dir)
+        list_top_level_directory.return_value = glob.glob(os.path.join(self.test_dir, "image_" + image_id))
+        dictionary = self.image_scanner._task_runner._scan_for_unused_images(self.image_scanner, self.DATASTORE_ID)
         assert_that(len(dictionary) is dict_size)
         assert_that(self.write_count is write_count)
 
-    def test_image_marker_bad_root(self):
+    @patch("host.hypervisor.image_scanner.DatastoreImageScannerTaskRunner._list_top_level_directory")
+    def test_image_marker_bad_root(self, list_top_level_directory):
         self.image_scanner.image_mark_rate = 60000
-        bad_dir = os.path.join(self.test_dir, "image_im.vmdk")
-        dictionary = self.image_scanner._task_runner._scan_for_unused_images(self.image_scanner, bad_dir)
+        list_top_level_directory.return_value = [os.path.join(self.test_dir, "image_im.vmdk")]
+        dictionary = self.image_scanner._task_runner._scan_for_unused_images(self.image_scanner, self.DATASTORE_ID)
         assert_that(len(dictionary) is 0)
 
     def fake_write_marker_file(self, filename, content):

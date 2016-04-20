@@ -91,14 +91,10 @@ class TestEsxImageManager(unittest.TestCase):
         (False, )
     ])
     @patch("uuid.uuid4", return_value="fake_id")
-    @patch("host.hypervisor.esx.vm_config.os_datastore_path")
-    def test_reap_tmp_images(self, _allow_grace_period, _os_datastore_path,
+    @patch("host.hypervisor.esx.vm_config.os_datastore_root")
+    def test_reap_tmp_images(self, _allow_grace_period, _os_datastore_root,
                              _uuid):
         """ Test that stray images are found and deleted by the reaper """
-
-        def _fake_ds_folder(datastore, folder):
-            return "%s/%s" % (datastore, folder)
-
         ds = MagicMock()
         ds.id = "dsid"
         ds.type = DatastoreType.EXT3
@@ -114,10 +110,10 @@ class TestEsxImageManager(unittest.TestCase):
 
         self.assertTrue(os.path.exists(path))
 
-        def _fake_os_datastore_path(datastore, folder):
-            return os.path.join(tmpdir, _fake_ds_folder(datastore, folder))
+        def _fake_os_datastore_root(datastore):
+            return os.path.join(tmpdir, datastore)
 
-        _os_datastore_path.side_effect = _fake_os_datastore_path
+        _os_datastore_root.side_effect = _fake_os_datastore_root
 
         ds_manager = MagicMock()
         ds_manager.get_datastores.return_value = [ds]
