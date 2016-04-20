@@ -18,6 +18,7 @@ import com.vmware.photon.controller.api.ClusterConfiguration;
 import com.vmware.photon.controller.api.ClusterConfigurationSpec;
 import com.vmware.photon.controller.api.ClusterType;
 import com.vmware.photon.controller.api.Deployment;
+import com.vmware.photon.controller.api.DeploymentDeployOperation;
 import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.builders.AuthInfoBuilder;
@@ -98,6 +99,30 @@ public class DeploymentResourceTest extends ResourceTest {
   }
 
   @Test
+  public void testPerformDeployment() throws Exception {
+    Task task = new Task();
+    task.setId(taskId);
+    when(feClient.perform(eq(deploymentId), any(DeploymentDeployOperation.class))).thenReturn(task);
+
+    String uri = UriBuilder
+        .fromPath(DeploymentResourceRoutes.DEPLOYMENT_PATH +
+            DeploymentResourceRoutes.PERFORM_DEPLOYMENT_ACTION)
+        .build(deploymentId)
+        .toString();
+
+    Response response = client()
+        .target(uri)
+        .request()
+        .post(Entity.entity("{\"desiredState\":\"WRONG\"}", MediaType.APPLICATION_JSON_TYPE));
+
+    assertThat(response.getStatus(), is(201));
+    Task responseTask = response.readEntity(Task.class);
+    assertThat(responseTask, Matchers.is(task));
+    assertThat(new URI(responseTask.getSelfLink()).isAbsolute(), is(true));
+    assertThat(responseTask.getSelfLink().endsWith(taskRoutePath), is(true));
+  }
+
+  @Test
   public void testInitializeDeploymentMigration() throws Exception {
     Task task = new Task();
     task.setId(taskId);
@@ -110,9 +135,9 @@ public class DeploymentResourceTest extends ResourceTest {
         .toString();
 
     Response response = client()
-      .target(uri)
-      .request()
-      .post(Entity.entity("address", MediaType.APPLICATION_JSON_TYPE));
+        .target(uri)
+        .request()
+        .post(Entity.entity("address", MediaType.APPLICATION_JSON_TYPE));
 
     assertThat(response.getStatus(), Matchers.is(201));
     Task responseTask = response.readEntity(Task.class);
@@ -319,7 +344,7 @@ public class DeploymentResourceTest extends ResourceTest {
         DeploymentResourceRoutes.SET_IMAGE_DATASTORES_ACTION)
         .build(deploymentId)
         .toString();
-    ResourceList<String> imageDatastores = new ResourceList<>(Arrays.asList(new String[] {"imageDatastore1",
+    ResourceList<String> imageDatastores = new ResourceList<>(Arrays.asList(new String[]{"imageDatastore1",
         "imageDatastore2"}));
 
     Response response = client()

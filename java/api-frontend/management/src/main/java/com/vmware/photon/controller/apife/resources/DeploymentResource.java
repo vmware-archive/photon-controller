@@ -16,6 +16,7 @@ package com.vmware.photon.controller.apife.resources;
 import com.vmware.photon.controller.api.ClusterConfiguration;
 import com.vmware.photon.controller.api.ClusterConfigurationSpec;
 import com.vmware.photon.controller.api.Deployment;
+import com.vmware.photon.controller.api.DeploymentDeployOperation;
 import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
@@ -26,6 +27,8 @@ import com.vmware.photon.controller.apife.resources.routes.DeploymentResourceRou
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
 import static com.vmware.photon.controller.api.common.Responses.generateCustomResponse;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Inject;
 import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
@@ -33,6 +36,8 @@ import com.wordnik.swagger.annotations.ApiResponse;
 import com.wordnik.swagger.annotations.ApiResponses;
 import io.dropwizard.validation.Validated;
 import org.glassfish.jersey.server.ContainerRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
@@ -46,6 +51,8 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
 
+import java.io.IOException;
+
 /**
  * This resource is for Deployment related API.
  */
@@ -55,6 +62,9 @@ import javax.ws.rs.core.Response;
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 public class DeploymentResource {
+  private static final Logger logger = LoggerFactory.getLogger(DeploymentResource.class);
+  private static final ObjectMapper objectMapper = new ObjectMapper();
+
   private final DeploymentFeClient client;
 
   @Inject
@@ -96,11 +106,13 @@ public class DeploymentResource {
   @ApiResponses(value = {
       @ApiResponse(code = 201, message = "Task created, system pause process can be fetched via the task")
   })
-  public Response performDeployment(@Context Request request, @PathParam("id") String id)
+  public Response performDeployment(@Context Request request,
+                                    @PathParam("id") String id,
+                                    @Validated String config)
       throws InternalException, ExternalException {
     return generateCustomResponse(
         Response.Status.CREATED,
-        client.perform(id),
+        client.perform(id, parseDeployConfig(config)),
         (ContainerRequest) request,
         TaskResourceRoutes.TASK_PATH);
   }
@@ -250,5 +262,29 @@ public class DeploymentResource {
         task,
         (ContainerRequest) request,
         TaskResourceRoutes.TASK_PATH);
+  }
+
+  private DeploymentDeployOperation parseDeployConfig(String operation) {
+    if (operation.isEmpty()) {
+      return new DeploymentDeployOperation();
+    }
+
+    try {
+      DeploymentDeployOperation deploymentDeployOperation = objectMapper.readValue(operation,
+          new TypeReference<DeploymentDeployOperation>() {
+          });
+      switch (deploymentDeployOperation.getDesiredState()) {
+        case PAUSED:
+        case BACKGROUND_PAUSED:
+        case READY:
+          return deploymentDeployOperation;
+        default:
+          throw new ExternalException(String.format("Desired state %s is not allowed to set for performing deployment.",
+              deploymentDeployOperation.getDesiredState()));
+      }
+    } catch (IOException | ExternalException ex) {
+      logger.error("Unexpected error desirializing {}", operation, ex);
+      return new DeploymentDeployOperation();
+    }
   }
 }
