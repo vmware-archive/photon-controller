@@ -23,6 +23,7 @@ ext {
       http_client     : '4.3.3',
       http_async_client: '4.0.1',
       http_core       : '4.4.4',
+      javax_validation: '1.1.0.Final',
   ]
 }
 

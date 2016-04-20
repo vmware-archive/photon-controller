@@ -6,6 +6,7 @@ dependencies {
   compile "org.apache.httpcomponents:httpcore:${versions.http_core}"
   compile "com.google.guava:guava:${versions.guava}"
   compile "com.fasterxml.jackson.core:jackson-databind:${versions.jackson_core}"
+  compile "javax.validation:validation-api:${versions.javax_validation}"
 
   testCompile "commons-io:commons-io:${versions.commons_io}"
   testCompile "org.hamcrest:hamcrest-all:${versions.hamcrest}"
