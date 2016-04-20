@@ -49,9 +49,9 @@ import com.vmware.xenon.common.OperationJoin;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
-import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.NodeGroupBroadcastResponse;
 import com.vmware.xenon.services.common.QueryTask;
 import com.vmware.xenon.services.common.ServiceUriPaths;
 
@@ -63,6 +63,7 @@ import javax.annotation.Nullable;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -853,8 +854,41 @@ public class RemoveDeploymentWorkflowService extends StatefulService {
   }
 
   private void deprovisionNetwork(final State currentState) {
+    if (null == currentState.deploymentServiceLink) {
+      QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
+      querySpecification.query = new QueryTask.Query()
+          .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
+          .setTermMatchValue(Utils.buildKind(DeploymentService.State.class));
+      QueryTask queryTask = QueryTask.create(querySpecification).setDirect(true);
+
+      HostUtils.getCloudStoreHelper(this)
+          .createBroadcastPost(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS, ServiceUriPaths.DEFAULT_NODE_SELECTOR)
+          .setBody(queryTask)
+          .setCompletion((op, ex) -> {
+            if (null != ex) {
+              failTask(ex);
+              return;
+            }
+
+            NodeGroupBroadcastResponse queryResponse = op.getBody(NodeGroupBroadcastResponse.class);
+            Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(queryResponse);
+            if (documentLinks.isEmpty()) {
+              ServiceUtils.logInfo(this, "Skip deprovisioning network because no deployment was found");
+              TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FINISHED, null, null));
+              return;
+            }
+
+            getDeploymentState(documentLinks.iterator().next());
+          })
+          .sendWith(this);
+    } else {
+      getDeploymentState(currentState.deploymentServiceLink);
+    }
+  }
+
+  private void getDeploymentState(String deploymentServiceLink) {
     HostUtils.getCloudStoreHelper(this)
-        .createGet(currentState.deploymentServiceLink)
+        .createGet(deploymentServiceLink)
         .setCompletion((op, ex) -> {
           if (null != ex) {
             failTask(ex);
@@ -867,8 +901,7 @@ public class RemoveDeploymentWorkflowService extends StatefulService {
   }
 
   private void deprovisionNetwork(final DeploymentService.State deploymentState) {
-    if (deploymentState == null || deploymentState.virtualNetworkEnabled == null ||
-        !deploymentState.virtualNetworkEnabled || deploymentState.networkZoneId == null) {
+    if (!deploymentState.virtualNetworkEnabled || deploymentState.networkZoneId == null) {
       ServiceUtils.logInfo(this, "Skip deprovisioning network");
       TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FINISHED, null, null));
       return;
