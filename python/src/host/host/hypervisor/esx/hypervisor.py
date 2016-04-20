@@ -40,7 +40,6 @@ class EsxHypervisor(object):
         atexit.register(lambda client: client.disconnect(), self.vim_client)
 
         self._uuid = self.vim_client.host_uuid
-        self.set_memory_overcommit(agent_config.memory_overcommit)
 
         self.datastore_manager = EsxDatastoreManager(
             self, agent_config.datastores, agent_config.image_datastores)
