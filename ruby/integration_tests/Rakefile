@@ -164,6 +164,29 @@ task :reboot_hosts, [:dc_yml] do |t, args|
   sleep(5 * 60)
 end
 
+desc 'Power off management vm'
+task :power_off_management_vm do
+  EsxCloud::Config.init
+  EsxCloud::Config.client = ApiClientHelper.management
+  deployments = EsxCloud::Deployment.find_all
+  management_vms = EsxCloud::Config.client.get_deployment_vms deployments.items[0].id
+  management_vms.items.each do |management_vm|
+    if !management_vm.metadata.has_value?("LoadBalancer")
+      EsxCloud::Config.client = ApiClientHelper.management(port: 9000)
+      ignoring_all_errors { management_vm.stop! }
+      puts management_vm.id # this acts as the return value from this rake task
+      break
+    end
+  end
+end
+
+desc 'Power on management vm'
+task :power_on_management_vm, [:vm_id] do |t, args|
+  EsxCloud::Config.init
+  EsxCloud::Config.client = ApiClientHelper.management
+  EsxCloud::Vm.start(args[:vm_id])
+end
+
 desc 'Run integration test to check deployment'
 RSpec::Core::RakeTask.new(:check_deployment) do |task|
   task.pattern = FileList['spec/api/check_deployment/*_spec.rb']
