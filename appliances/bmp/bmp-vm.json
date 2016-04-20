@@ -1,55 +1,49 @@
 {
   "variables": {
-    "artifact_dir": "/etc/bmp"
+    "package_dir": "/var/esxcloud/packages/",
+    "image_dir": "/var/photon/images/",
+    "artifacts_dir": "/var/esxcloud/"
   },
   "builders": [
     {
-      "type": "virtualbox-iso",
-      "iso_checksum": "{{ user `photon_iso_sha1` }}",
-      "iso_checksum_type": "sha1",
-      "iso_url": "{{ user `photon_iso_url` }}",
+      "type": "virtualbox-ovf",
+      "format": "ova",
+      "source_path": "{{ user `photon_vm_ova` }}",
       "ssh_username": "root",
       "ssh_password": "vmware",
       "shutdown_command": "echo 'packer' | shutdown -P now",
       "headless": true,
+      "guest_additions_mode": "disable",
       "output_directory": "build/",
       "vm_name": "bmp-vm-vb",
-      "guest_os_type": "Linux_64",
-      "guest_additions_mode": "upload",
-      "guest_additions_url": "{{ user `vbox_iso_url` }}",
-      "guest_additions_sha256": "{{ user `vbox_iso_sha256` }}",
-      "hard_drive_interface": "scsi",
       "vboxmanage": [
         [ "modifyvm", "{{.Name}}", "--memory", "2048" ],
-        [ "modifyvm", "{{.Name}}", "--cpus", "2" ]
-      ],
-      "boot_wait": "20s",
-      "boot_command": [
-        "<enter><wait10><wait10><wait10>",
-        "<enter><wait10>",
-        "<enter><wait10>",
-        "<enter><wait10>",
-        "<enter><wait10>",
-        "<enter><wait10>",
-        "mkLv45RdBP<enter><wait10>",
-        "mkLv45RdBP<enter><wait10>",
-        "<enter><wait10><wait10><wait10><wait10>",
-        "<enter><wait10><wait10><wait10><wait10><wait10>",
-        "root<enter><wait10>",
-        "mkLv45RdBP<enter>",
-        "<wait10>",
-        "echo root:vmware | chpasswd<enter><wait10>",
-        "sed -i 's/PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config<enter><wait10>",
-        "systemctl restart sshd<enter><wait10>",
-        "logout<enter>",
-        "<wait10>"
+        [ "modifyvm", "{{.Name}}", "--cpus", "2" ],
+        [ "storageattach", "{{.Name}}", "--storagectl", "IDE Controller", "--port", "0", "--device", "0", "--type",
+          "dvddrive", "--medium", "{{ user `photon_cached_iso` }}" ]
       ]
     }
   ],
   "provisioners": [
     {
       "type": "shell",
-      "inline": "tdnf install -y tar && tdnf install -y less && tdnf install -y unzip && tdnf install -y gawk && tdnf install -y wget"
+      "inline": "rm /etc/systemd/network/*"
+    },
+    {
+      "type": "shell",
+      "inline": "mount /dev/cdrom /mnt/cdrom"
+    },
+    {
+      "type": "shell",
+      "inline": "echo sed -i 's/enabled=0/enabled=1/g' /etc/yum.repos.d/photon-iso.repo && sed -i 's/enabled=0/enabled=1/g' /etc/yum.repos.d/photon-iso.repo"
+    },
+    {
+      "type": "shell",
+      "inline": "echo sed -i 's/enabled=1/enabled=0/g' /etc/yum.repos.d/photon.repo && sed -i 's/enabled=1/enabled=0/g' /etc/yum.repos.d/photon.repo"
+    },
+    {
+      "type": "shell",
+      "inline": "tdnf install -y dnsmasq  --nogpgcheck && tdnf install -y httpd  --nogpgcheck "
     },
     {
       "type": "file",
@@ -67,6 +61,14 @@
       "destination": "/lib/systemd/system/configure-guest.service"
     },
     {
+      "type": "shell",
+      "inline": "mkdir -p /var/photon"
+    },
+    {
+      "type": "shell",
+      "inline": "mkdir -p /usr/local/apache2"
+    },
+    {
       "type": "file",
       "source": "./vm-config/configure-guest.sh",
       "destination": "/var/photon/configure-guest.sh"
@@ -76,25 +78,35 @@
       "inline": "chmod +x /var/photon/configure-guest.sh"
     },
     {
+      "type": "shell",
+      "inline": "systemctl enable configure-guest"
+    },
+    {
+      "type": "shell",
+      "inline": "echo sed -i 's/enabled=1/enabled=0/g' /etc/yum.repos.d/photon-iso.repo && sed -i 's/enabled=1/enabled=0/g' /etc/yum.repos.d/photon-iso.repo"
+    },
+    {
+      "type": "shell",
+      "inline": "echo sed -i 's/enabled=0/enabled=1/g' /etc/yum.repos.d/photon.repo && sed -i 's/enabled=0/enabled=1/g' /etc/yum.repos.d/photon.repo"
+    },
+    {
       "type": "file",
       "source": "./bmp",
       "destination": "/etc"
     },
     {
-      "type": "shell",
-      "inline": "chmod +x /etc/bmp/run.sh"
+      "type": "file",
+      "source": "./bmp/dnsmasq.service",
+      "destination": "/etc/systemd/system/dnsmasq.service"
+    },
+    {
+      "type": "file",
+      "source": "./bmp/httpd.conf",
+      "destination": "/etc/httpd/conf/httpd.conf"
     },
     {
       "type": "shell",
       "script": "./scripts/configure-vm.sh"
-    },
-    {
-      "type": "shell",
-      "inline": "echo 'docker pull andyshinn/dnsmasq' && docker pull andyshinn/dnsmasq"
-    },
-    {
-      "type": "shell",
-      "inline": "echo 'docker pull httpd' && docker pull httpd"
     },
     {
       "type": "shell",

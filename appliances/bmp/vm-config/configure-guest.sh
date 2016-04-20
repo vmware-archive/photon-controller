@@ -60,7 +60,7 @@ EOF
 
   echo "Setting Network properties"
 
-  en_name=$(ip addr show label "en*" | head -n 1 | sed 's/^[0-9]*: \(en.*\): .*/\1/')
+  en_name=$(ip addr show label "e*" | head -n 1 | sed 's/^[0-9]*: \(e.*\): .*/\1/')
 
   cat > "/etc/systemd/network/10-dhcp-${en_name}.network" << EOF
 [Match]
@@ -94,6 +94,33 @@ function set_admin_password(){
   fi
 }
 
+function set_dhcp_conf(){
+  if [ -z "$dhcp_range" ]
+  then
+     echo "No dhcp range, not configuring DHCP."
+     return
+  fi
+
+  dhcp_conf=$dhcp_range
+  if [ ! -z "$dhcp_lease_expiry" ]
+  then
+    dhcp_conf="${dhcp_conf},${dhcp_lease_expiry}"
+  fi
+
+  sed -i "s/# dhcp-range=192.168.0.50,192.168.0.150,24h/dhcp-range=${dhcp_conf}/g" /etc/bmp/dnsmasq.conf
+}
+
+function set_esxboot_file_path(){
+  # adding vms ip address to the configuration files
+  HOST_IP=`ifconfig | grep -a1 eth0 | grep inet | awk '{print $2}' | awk -F\: '{print $2}'`
+  ## modify dhcp config
+  ## modify apache config
+  ## modify boot.cfg
+  sed -i "s/HOST_IP/${HOST_IP}/g" /etc/bmp/boot.cfg
+  ## modify ipxe.tmpl
+  sed -i "s/HOST_IP/${HOST_IP}/g" /etc/bmp/ipxe.tmpl
+}
+
 function parse_ovf_env(){
   ip0=$(xmllint $XML_FILE --xpath "string(//*/@*[local-name()='key' and .='ip0']/../@*[local-name()='value'])")
   netmask0=$(xmllint $XML_FILE --xpath "string(//*/@*[local-name()='key' and .='netmask0']/../@*[local-name()='value'])")
@@ -102,6 +129,8 @@ function parse_ovf_env(){
   admin_password=$(xmllint $XML_FILE --xpath "string(//*/@*[local-name()='key' and .='admin_password']/../@*[local-name()='value'])")
   enable_syslog=$(xmllint $XML_FILE --xpath "string(//*/@*[local-name()='key' and .='enable_syslog']/../@*[local-name()='value'])")
   syslog_endpoint=$(xmllint $XML_FILE --xpath "string(//*/@*[local-name()='key' and .='syslog_endpoint']/../@*[local-name()='value'])")
+  dhcp_range=$(xmllint $XML_FILE --xpath "string(//*/@*[local-name()='key' and .='dhcp_range']/../@*[local-name()='value'])")
+  dhcp_lease_expiry=$(xmllint $XML_FILE --xpath "string(//*/@*[local-name()='key' and .='dhcp_lease_expiry']/../@*[local-name()='value'])")
 
   echo "ip0" "$ip0"
   echo "gateway" "$gateway"
@@ -111,6 +140,8 @@ function parse_ovf_env(){
   echo "admin_password" "$admin_password"
   echo "enable_syslog" "$enable_syslog"
   echo "syslog_endpoint" "$syslog_endpoint"
+  echo "dhcp_range" "$dhcp_range"
+  echo "dhcp_lease_expiry" "$dhcp_lease_expiry"
 }
 
 set +e
@@ -130,6 +161,9 @@ set -e
 
 set_network_properties
 set_admin_password
+
+set_dhcp_conf
+set_esxboot_file_path
 
 #remove itself from startup
 systemctl disable configure-guest
