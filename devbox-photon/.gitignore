@@ -3,3 +3,4 @@ log/
 proxy.sh
 management-vm/
 stats_data
+.status

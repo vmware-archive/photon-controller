@@ -662,31 +662,62 @@ EOM
     $out
   EOS
 
+  #
+  # Wait for services to become ready
+  #
   config.vm.provision :shell, :inline => <<-EOS
     set +e
     echo "Containers:"
-    docker ps
+    docker ps -a
     MAX_RETRIES=300
     SLEEP_BETWEEN_RETRIES_SEC=1
-    success=-1
     echo "Checking status of services"
     i="0"
     while [ $i -lt $MAX_RETRIES ]
     do
-      status=$(curl -s --connect-timeout 60 --max-time 60 --header "Authorization: Bearer #{API_SHARED_SECRET}" http://127.0.0.1:9000/status/)
-      if [ '"READY"' == "$(echo $status | jq '.status')" ]
+      curl -s --connect-timeout 60 --max-time 60 --header "Authorization: Bearer #{API_SHARED_SECRET}" http://127.0.0.1:9000/status/ > /vagrant/.status
+      if [ 'READY' == "$(cat /vagrant/.status | jq -r '.status')" ]
       then
-        echo "Services started successfully"
-        success=0
         break
       fi
-      status=$(echo $status | tr  -d '"' | grep -oh ":[A-Z_]*,status:\\w*" | tr '\n' ' ')
+      status=$(cat /vagrant/.status | jq -jc '.components[] | {component, status}')
       echo "$status. Retry count: $i"
       sleep $SLEEP_BETWEEN_RETRIES_SEC
       i=$[$i+1]
     done
+  EOS
+
+  #
+  # Gather the Docker logs for the service containers
+  #
+  SERVICE_NAME_MAP.each do | service, service_name |
+    container_name="devbox_#{service}_container"
+    config.vm.provision :shell, :inline => <<-EOS
+      set +e
+      docker logs #{container_name} > /vagrant/log/docker_#{service}.log
+    EOS
+  end
+
+  config.vm.provision :shell, :inline => <<-EOS
+    set +e
+    echo Not gathering Docker logs for nameless graphite container
+    docker logs devbox_haproxy_container > /vagrant/log/docker_haproxy.log
     docker logs devbox_zookeeper_container > /vagrant/log/docker_zookeeper.log
-    exit $success
+  EOS
+
+  #
+  # Succeed or fail the "vagrant up" operation based on the output of the status call
+  #
+  config.vm.provision :shell, :inline => <<-EOS
+    set +e
+    if [ 'READY' == "$(cat /vagrant/.status | jq -r '.status')" ]
+    then
+      echo "Services started successfully"
+    else
+      status=$(cat /vagrant/.status | jq -jc '.components[] | {component, status}')
+      echo "Services failed to start. Status: $status"
+      exit -1
+    fi
   EOS
 
 end
