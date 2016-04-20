@@ -67,27 +67,3 @@ class TestHypervisor(unittest.TestCase):
                                         self.agent_config_dir,
                                         "--hypervisor", "dummy"])
         self.assertRaises(ValueError, Hypervisor, self.agent_config)
-
-    @patch("host.hypervisor.esx.vm_config.GetEnv")
-    @patch(
-        "host.hypervisor.esx.image_manager."
-        "EsxImageManager.monitor_for_cleanup")
-    @patch("host.hypervisor.esx.hypervisor.VimClient")
-    def test_large_page_disable(self, vim_client_mock,
-                                monitor_mock, get_env_mock):
-        vim_client_mock.return_value = MagicMock()
-        hypervisor = Hypervisor(self.agent_config)
-        vim_client = hypervisor.hypervisor.vim_client
-        assert_that(vim_client.set_large_page_support.called, is_(True))
-        vim_client.set_large_page_support.assert_called_once_with(
-            disable=False)
-        vim_client.reset_mock()
-
-        self.agent_config = AgentConfig(["--config-path",
-                                        self.agent_config_dir,
-                                        "--memory-overcommit", "1.5"])
-        hypervisor = Hypervisor(self.agent_config)
-        vim_client = hypervisor.hypervisor.vim_client
-        assert_that(vim_client.set_large_page_support.called, is_(True))
-        vim_client.set_large_page_support.assert_called_once_with(disable=True)
-        vim_client.reset_mock()

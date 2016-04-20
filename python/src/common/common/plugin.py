@@ -12,7 +12,6 @@
 
 import abc
 import logging
-import threading
 
 from pkg_resources import iter_entry_points
 
@@ -42,7 +41,6 @@ class Plugin(object):
         self.name = name
         self.is_core = is_core
         self._thrift_services = set()
-        self._backend_workers = set()
 
     @abc.abstractmethod
     def init(self):
@@ -59,16 +57,11 @@ class Plugin(object):
         only starts backend workers. If there is extra things that need to
         be done, overwrite this method in subclass.
         """
-        for worker in self._backend_workers:
-            worker.start()
+        pass
 
     @property
     def thrift_services(self):
         return self._thrift_services
-
-    @property
-    def backend_workers(self):
-        return self._backend_workers
 
     def add_thrift_service(self, service):
         assert isinstance(service, ThriftService)
@@ -77,14 +70,6 @@ class Plugin(object):
     def remove_thrift_service(self, service):
         assert isinstance(service, ThriftService)
         self._thrift_services.remove(service)
-
-    def add_backend_worker(self, worker):
-        assert isinstance(worker, threading.Thread)
-        self._backend_workers.add(worker)
-
-    def remove_backend_worker(self, worker):
-        assert isinstance(worker, threading.Thread)
-        self._backend_workers.remove(worker)
 
     def agent_config(self):
         """ Get agent configuration. Normally called in init. The agent
