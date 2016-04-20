@@ -19,11 +19,14 @@ from common.util import suicide
 from host.hypervisor.esx.datastore_manager import EsxDatastoreManager
 from host.hypervisor.esx.disk_manager import EsxDiskManager
 from host.hypervisor.esx.http_disk_transfer import HttpNfcTransferer
+from host.hypervisor.esx.logging_wrappers import ConnWrapper
 from host.hypervisor.esx.network_manager import EsxNetworkManager
 from host.hypervisor.esx.vim_client import VimClient
 from host.hypervisor.esx.vm_manager import EsxVmManager
 from host.hypervisor.esx.image_manager import EsxImageManager
 from host.hypervisor.esx.system import EsxSystem
+
+ConnWrapper.set_extra_headers({"User-Agent": "test-user-agent"})
 
 
 class EsxHypervisor(object):
