@@ -17,7 +17,8 @@ module EsxCloud
 
     class << self
 
-      DATASTORE_DIRS_TO_DELETE = ["disks", "deleted_images", "images", "tmp_images", "vms", "tmp_uploads"]
+      DATASTORE_DIRS_TO_DELETE = ["disks", "deleted_images", "images", "tmp_images", "vms", "tmp_uploads",
+                                  "disk_*", "deleted_image_*", "image_*", "tmp_image_*", "vm_*", "tmp_upload_*"]
 
       def clean_vms_on_real_host(server, user_name, password)
         dirty_vms = remove_vms server, user_name, password
