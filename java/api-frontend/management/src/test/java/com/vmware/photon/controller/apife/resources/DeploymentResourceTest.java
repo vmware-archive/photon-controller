@@ -18,6 +18,7 @@ import com.vmware.photon.controller.api.ClusterConfiguration;
 import com.vmware.photon.controller.api.ClusterConfigurationSpec;
 import com.vmware.photon.controller.api.ClusterType;
 import com.vmware.photon.controller.api.Deployment;
+import com.vmware.photon.controller.api.DeploymentDeployOperation;
 import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.builders.AuthInfoBuilder;
@@ -28,6 +29,7 @@ import com.vmware.photon.controller.apife.exceptions.external.DeploymentNotFound
 import com.vmware.photon.controller.apife.resources.routes.DeploymentResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
 
+import com.google.common.base.Optional;
 import org.hamcrest.Matchers;
 import org.mockito.Mock;
 import org.testng.annotations.Test;
@@ -95,6 +97,30 @@ public class DeploymentResourceTest extends ResourceTest {
     assertThat(deploymentRetrieved, is(deployment));
     assertThat(new URI(deploymentRetrieved.getSelfLink()).isAbsolute(), is(true));
     assertThat(deploymentRetrieved.getSelfLink().endsWith(deploymentRoutePath), is(true));
+  }
+
+  @Test
+  public void testPerformDeployment() throws Exception {
+    Task task = new Task();
+    task.setId(taskId);
+    when(feClient.perform(eq(deploymentId), any(DeploymentDeployOperation.class))).thenReturn(task);
+
+    String uri = UriBuilder
+        .fromPath(DeploymentResourceRoutes.DEPLOYMENT_PATH +
+            DeploymentResourceRoutes.PERFORM_DEPLOYMENT_ACTION)
+        .build(deploymentId)
+        .toString();
+
+    Response response = client()
+        .target(uri)
+        .request()
+        .post(Entity.entity("{\"desiredState\":\"WRONG\"}", MediaType.APPLICATION_JSON_TYPE));
+
+    assertThat(response.getStatus(), is(201));
+    Task responseTask = response.readEntity(Task.class);
+    assertThat(responseTask, Matchers.is(task));
+    assertThat(new URI(responseTask.getSelfLink()).isAbsolute(), is(true));
+    assertThat(responseTask.getSelfLink().endsWith(taskRoutePath), is(true));
   }
 
   @Test

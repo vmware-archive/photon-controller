@@ -20,6 +20,7 @@ import com.vmware.photon.controller.api.ClusterConfigurationSpec;
 import com.vmware.photon.controller.api.ClusterType;
 import com.vmware.photon.controller.api.Deployment;
 import com.vmware.photon.controller.api.DeploymentCreateSpec;
+import com.vmware.photon.controller.api.DeploymentDeployOperation;
 import com.vmware.photon.controller.api.DeploymentState;
 import com.vmware.photon.controller.api.Project;
 import com.vmware.photon.controller.api.ResourceList;
@@ -147,7 +148,7 @@ public class DeploymentFeClientTest {
       TaskCommand command = mock(TaskCommand.class);
       doReturn(command).when(commandFactory).create(taskEntity);
 
-      Task resp = feClient.perform("deployment-id");
+      Task resp = feClient.perform("deployment-id", new DeploymentDeployOperation());
       assertThat(resp, is(task));
       verify(executorService).submit(command);
     }
