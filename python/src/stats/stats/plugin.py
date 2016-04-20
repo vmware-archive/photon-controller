@@ -13,12 +13,15 @@
 import common.plugin
 
 from gen.stats.plugin import StatsService
+from pysdk import connect
 from .stats import StatsHandler
+from .free_esx import SoapStubAdapterWrapper
 
 
 class StatsPlugin(common.plugin.Plugin):
     def __init__(self):
         super(StatsPlugin, self).__init__("Stats", is_core=False)
+        connect.SoapStubAdapter = SoapStubAdapterWrapper
 
     def init(self):
         self._handler = StatsHandler()
