@@ -31,12 +31,13 @@ class SoapResponseDeserializerWrapper(SoapResponseDeserializer):
         logger.debug(body)
 
         # Deserialize accepts strings and file like objects
-        return SoapResponseDeserializer.Deserialize(self, body, resultType,
-                                                    nsMap)
+        return SoapResponseDeserializer.Deserialize(self, body, resultType, nsMap)
 
 
 class ConnWrapper(object):
     """Wraps the httplib connection to log the requests."""
+
+    _extra_headers = {}
 
     def __init__(self, conn):
         """Creates a new connection wrapper.
@@ -45,11 +46,15 @@ class ConnWrapper(object):
         """
         self._conn = conn
 
+    @staticmethod
+    def set_extra_headers(headers):
+        ConnWrapper._extra_headers = headers
+        logger.debug("set_extra_headers: %s" % headers)
+
     def request(self, method, url, body=None, headers={}):
-        formatted_headers = "\n".join(
-            ["%s: %s" % (key, value) for (key, value) in headers.items()])
-        logger.debug("%s %s\n%s\n\n%s" % (method, url, formatted_headers,
-                                          body))
+        formatted_headers = "\n".join(["%s: %s" % (key, value) for (key, value) in headers.items()])
+        logger.debug("%s %s\n%s\n\n%s" % (method, url, formatted_headers, body))
+        headers.update(ConnWrapper._extra_headers)
         self._conn.request(method, url, body, headers)
 
     def getresponse(self):
@@ -58,8 +63,7 @@ class ConnWrapper(object):
         response = self._conn.getresponse()
         end = time.time()
         logger.debug("[Duration:%f] HTTP/%s %s %s\n%s" %
-                     (end - start, response.version, response.status,
-                      response.reason, response.msg))
+                     (end - start, response.version, response.status, response.reason, response.msg))
         return response
 
     def __getattr__(self, name):
