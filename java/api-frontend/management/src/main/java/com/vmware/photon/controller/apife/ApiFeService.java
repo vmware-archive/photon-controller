@@ -31,6 +31,7 @@ import com.vmware.photon.controller.apife.resources.AuthResource;
 import com.vmware.photon.controller.apife.resources.AvailabilityZoneResource;
 import com.vmware.photon.controller.apife.resources.AvailabilityZoneTasksResource;
 import com.vmware.photon.controller.apife.resources.AvailabilityZonesResource;
+import com.vmware.photon.controller.apife.resources.AvailableResource;
 import com.vmware.photon.controller.apife.resources.ClusterResizeResource;
 import com.vmware.photon.controller.apife.resources.ClusterResource;
 import com.vmware.photon.controller.apife.resources.ClusterVmsResource;
@@ -226,6 +227,7 @@ public class ApiFeService extends Application<ApiFeStaticConfiguration> {
   private void registerResourcesWithSwagger(ApiFeConfiguration configuration, Environment environment) {
     List<Class<?>> resources = new ArrayList<>();
     resources.add(AuthResource.class);
+    resources.add(AvailableResource.class);
     resources.add(AvailabilityZoneResource.class);
     resources.add(AvailabilityZonesResource.class);
     resources.add(AvailabilityZoneTasksResource.class);

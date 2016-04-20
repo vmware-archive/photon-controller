@@ -20,6 +20,7 @@ import com.vmware.photon.controller.apife.auth.fetcher.Multiplexed;
 import com.vmware.photon.controller.apife.auth.fetcher.SecurityGroupFetcher;
 import com.vmware.photon.controller.apife.config.AuthConfig;
 import com.vmware.photon.controller.apife.resources.routes.AuthRoutes;
+import com.vmware.photon.controller.apife.resources.routes.AvailableRoutes;
 
 import com.google.inject.Inject;
 import org.glassfish.jersey.server.ContainerRequest;
@@ -47,9 +48,13 @@ public class AuthPolicyProvider implements PolicyProvider {
 
   /**
    * List of routes that do not require authentication.
+   *
+   * available is unauthenticated because it's intended for load balancers to detect if the system
+   * is responding.
    */
   private static final String[] OPEN_ACCESS_ROUTES = {
       AuthRoutes.API.toLowerCase(),
+      AvailableRoutes.API.toLowerCase(),
       "/api",
   };
 

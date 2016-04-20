@@ -134,7 +134,9 @@ public class BasicPolicyProviderTest {
           {AuthRoutes.API.substring(1)},
           {AuthRoutes.API.substring(1).toUpperCase()},
           {"api"},
-          {"API"}
+          {"API"},
+          {"available"},
+          {"AVAILABLE"}
       };
     }
 
