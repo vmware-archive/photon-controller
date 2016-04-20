@@ -26,7 +26,7 @@ end
 
 def install_logging_hooks(rspec_config)
   counter = TestCounter.new
-  log_dir = File.expand_path(File.join(File.dirname(__FILE__), "..", "reports", "log", ENV["DRIVER"]))
+  log_dir = File.expand_path(File.join(File.dirname(__FILE__), "..", "..", "reports", "log", ENV["DRIVER"]))
 
   FileUtils.mkdir_p(log_dir)
 
