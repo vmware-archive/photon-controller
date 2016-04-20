@@ -63,5 +63,8 @@ class HostPlugin(common.plugin.Plugin):
         )
         self.add_thrift_service(service)
 
+    def start(self):
+        hv = common.services.get(ServiceName.HYPERVISOR)
+        hv.set_memory_overcommit(self.agent_config().memory_overcommit)
 
 plugin = HostPlugin()

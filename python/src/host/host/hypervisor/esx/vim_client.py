@@ -59,7 +59,8 @@ DEFAULT_TASK_TIMEOUT = 60 * 60  # one hour timeout
 
 
 # monkey patch to enable request logging
-connect.SoapStubAdapter = logging_wrappers.SoapStubAdapterWrapper
+if connect.SoapStubAdapter.__name__ == "SoapStubAdapter":
+    connect.SoapStubAdapter = logging_wrappers.SoapStubAdapterWrapper
 
 
 class HostdConnectionFailure(Exception):
@@ -227,7 +228,7 @@ class VimClient(object):
     def connect_ticket(self, host, ticket):
         if ticket:
             try:
-                stub = SoapStubAdapter(host, HOSTD_PORT, VIM_NAMESPACE)
+                stub = connect.SoapStubAdapter(host, HOSTD_PORT, VIM_NAMESPACE)
                 si = vim.ServiceInstance("ServiceInstance", stub)
                 si.RetrieveContent().sessionManager.CloneSession(ticket)
                 return si
@@ -1234,5 +1235,5 @@ class Credentials(object):
             raise AcquireCredentialsException(http_exception)
 
     def _service_instance(self):
-        stub = SoapStubAdapter("localhost", HOSTD_PORT)
+        stub = connect.SoapStubAdapter("localhost", HOSTD_PORT)
         return vim.ServiceInstance("ServiceInstance", stub)

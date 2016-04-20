@@ -9,7 +9,6 @@
 # warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
 # License for then specific language governing permissions and limitations
 # under the License.
-import threading
 import unittest
 
 from hamcrest import *  # noqa
@@ -64,26 +63,3 @@ class TestPlugin(unittest.TestCase):
         # Not allow to add a string as service
         self.assertRaises(AssertionError,
                           plugin.add_thrift_service, "Sample Service")
-
-    def test_add_remove_worker(self):
-        plugin = SamplePlugin()
-        worker = threading.Thread()
-
-        # Add the first worker
-        plugin.add_backend_worker(worker)
-        assert_that(plugin.backend_workers, has_length(1))
-
-        # Add the same worker
-        plugin.add_backend_worker(worker)
-        assert_that(plugin.backend_workers, has_length(1))
-
-        # Remove the worker
-        plugin.remove_backend_worker(worker)
-        assert_that(plugin.backend_workers, has_length(0))
-
-    def test_add_bad_worker(self):
-        plugin = SamplePlugin()
-
-        # Not allow to add a string as worker
-        self.assertRaises(AssertionError,
-                          plugin.add_backend_worker, "Sample Service")
