@@ -13,6 +13,7 @@ require "rspec/core/rake_task"
 require_relative "lib/log_backup_helpers"
 require_relative "lib/host_cleaner"
 require_relative "lib/test_helpers"
+require_relative "lib/uptime_helper"
 require_relative "lib/dcp/cloud_store/deployment_factory"
 require_relative "lib/management_plane_seeder"
 require_relative "lib/dcp/cloud_store/task_factory"
@@ -162,6 +163,16 @@ task :reboot_hosts, [:dc_yml] do |t, args|
     EsxCloud::HostCleaner.reboot_host host.address, host.username, host.password
   end
   sleep(5 * 60)
+end
+
+desc 'Power off management vms'
+task :power_off_management_vms, [:count] do |t, args|
+  EsxCloud::UptimeHelper.power_off_management_vms args[:count]
+end
+
+desc 'Power on management vms'
+task :power_on_management_vms do
+  EsxCloud::UptimeHelper.power_on_management_vms
 end
 
 desc 'Run integration test to check deployment'
