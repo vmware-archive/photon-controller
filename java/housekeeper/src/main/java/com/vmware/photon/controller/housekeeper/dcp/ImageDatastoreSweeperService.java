@@ -329,7 +329,11 @@ public class ImageDatastoreSweeperService extends StatefulService {
                 Set<String> hostSet = new HashSet<>();
                 documentLinks.forEach(state -> hostSet.add(state.hostAddress));
 
-                checkState(hostSet.size() > 0, "Could not find any hosts for datastore '%s'.", current.datastore);
+                if (hostSet.size() == 0) {
+                  failTask(
+                      new IllegalArgumentException("Could not find any hosts for datastore " + current.datastore
+                   + "."));
+                }
                 ServiceUtils.logInfo(this, "GetHostsForDatastore '%s' returned '%s'", current.datastore,
                     Utils.toJson(hostSet));
 
