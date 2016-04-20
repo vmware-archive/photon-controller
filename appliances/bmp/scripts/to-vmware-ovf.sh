@@ -22,10 +22,6 @@ sed -i.bak $'s@<VirtualHardwareSection@ <ProductSection ovf:required="false"> \
         <Label>IP Address</Label> \
         <Description>The IP address for the ESXCloud Installer. Leave blank if DHCP is desired.</Description> \
       </Property> \
-      <Property ovf:key="use_photon_dhcp" ovf:userConfigurable="true" ovf:type="string"> \
-        <Label>Use DHCP Server provided by Photon Controller</Label> \
-        <Description>Use DCHP from Photon Controller to issue IP addresses and do Bare Metal Provisioning. Default is false.</Description> \
-      </Property> \
       <Property ovf:key="netmask0" ovf:userConfigurable="true" ovf:type="string"> \
         <Label>Netmask</Label> \
         <Description>The netmask for the ESXCloud Installer network. Leave blank if DHCP is desired.</Description> \
@@ -53,6 +49,14 @@ sed -i.bak $'s@<VirtualHardwareSection@ <ProductSection ovf:required="false"> \
       <Property ovf:key="syslog_endpoint" ovf:userConfigurable="true" ovf:type="string"> \
         <Label>Syslog Endpoint</Label> \
         <Description>IP address for syslog endpoint.</Description> \
+      </Property> \
+      <Property ovf:key="dhcp_range" ovf:userConfigurable="true" ovf:type="string"> \
+        <Label>DHCP IP Range</Label> \
+        <Description>IP address range for DHCP in the form of IPLow,IPHigh eg:192.168.0.50,192.168.0.150</Description> \
+      </Property> \
+      <Property ovf:key="dhcp_lease_expiry" ovf:userConfigurable="true" ovf:type="string"> \
+        <Label>DHCP Lease Expiry</Label> \
+        <Description></Description> \
       </Property> \
     </ProductSection> \
     <VirtualHardwareSection@' ${outputVM}.ovf
