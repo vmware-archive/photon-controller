@@ -59,7 +59,8 @@ DEFAULT_TASK_TIMEOUT = 60 * 60  # one hour timeout
 
 
 # monkey patch to enable request logging
-connect.SoapStubAdapter = logging_wrappers.SoapStubAdapterWrapper
+if connect.SoapStubAdapter.__name__ == "SoapStubAdapter":
+    connect.SoapStubAdapter = logging_wrappers.SoapStubAdapterWrapper
 
 
 class HostdConnectionFailure(Exception):
