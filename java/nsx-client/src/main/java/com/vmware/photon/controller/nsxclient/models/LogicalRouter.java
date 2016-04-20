@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.nsxclient.models;
 
-import com.vmware.photon.controller.nsxclient.datatypes.RouterType;
+import com.vmware.photon.controller.nsxclient.datatypes.NsxRouter;
 import com.vmware.photon.controller.nsxclient.utils.ToStringHelper;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -37,7 +37,7 @@ public class LogicalRouter {
   private LogicalRouterConfig logicalRouterConfig;
 
   @JsonProperty(value = "router_type", required = true)
-  private RouterType routerType;
+  private NsxRouter.RouterType routerType;
 
   @JsonProperty(value = "display_name", required = false)
   private String displayName;
@@ -61,11 +61,11 @@ public class LogicalRouter {
     this.resourceType = resourceType;
   }
 
-  public RouterType getRouterType() {
+  public NsxRouter.RouterType getRouterType() {
     return routerType;
   }
 
-  public void setRouterType(RouterType routerType) {
+  public void setRouterType(NsxRouter.RouterType routerType) {
     this.routerType = routerType;
   }
 

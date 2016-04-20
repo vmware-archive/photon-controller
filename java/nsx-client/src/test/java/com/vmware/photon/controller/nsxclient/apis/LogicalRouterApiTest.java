@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.nsxclient.apis;
 
-import com.vmware.photon.controller.nsxclient.datatypes.RouterType;
+import com.vmware.photon.controller.nsxclient.datatypes.NsxRouter;
 import com.vmware.photon.controller.nsxclient.models.IPv4CIDRBlock;
 import com.vmware.photon.controller.nsxclient.models.LogicalRouter;
 import com.vmware.photon.controller.nsxclient.models.LogicalRouterConfig;
@@ -41,7 +41,7 @@ public class LogicalRouterApiTest extends NsxClientApiTest {
   public void testCreateLogicalRouterAsync() throws IOException, InterruptedException {
     final LogicalRouter mockResponse = new LogicalRouter();
     mockResponse.setId("id");
-    mockResponse.setRouterType(RouterType.TIER1);
+    mockResponse.setRouterType(NsxRouter.RouterType.TIER1);
     setupMocks(objectMapper.writeValueAsString(mockResponse), HttpStatus.SC_CREATED);
 
     LogicalRouterApi client = new LogicalRouterApi(restClient);
@@ -115,7 +115,7 @@ public class LogicalRouterApiTest extends NsxClientApiTest {
   private LogicalRouter createLogicalRouter() {
     LogicalRouter logicalRouter = new LogicalRouter();
     logicalRouter.setId("id");
-    logicalRouter.setRouterType(RouterType.TIER1);
+    logicalRouter.setRouterType(NsxRouter.RouterType.TIER1);
     logicalRouter.setResourceType("resource-type");
     logicalRouter.setDisplayName("name");
     logicalRouter.setDescription("desc");
