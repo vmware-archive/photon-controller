@@ -106,7 +106,7 @@ class Agent:
             logging_file=hypervisor_file,
             logging_file_size=size,
             logging_file_backup_count=num_backups,
-            syslog=False)
+            syslog=syslog)
 
     def _setup_signal_handler(self):
         for signal_name in ["SIGINT", "SIGQUIT", "SIGTERM"]:
