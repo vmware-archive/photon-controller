@@ -33,4 +33,16 @@ tmp/
 ruby/common/test_files/deployment/dcmap.yml
 
 *.gem
+
+#image building related
+**/build/
+**/archive/
+**/packer_cache/
+*.tgz
+*.tar
+*.gz
+*.ova
+*.iso
 *.box
+.vagrant
+.bundle
