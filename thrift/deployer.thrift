@@ -127,8 +127,16 @@ struct DeployResult {
 
 struct DeployRequest {
   1:  required Deployment deployment
+  2:  optional DeployDesiredStateCode desired_state
   99: optional tracing.TracingInfo tracing_info
 }
+
+enum DeployDesiredStateCode {
+  READY = 0
+  PAUSED = 1
+  BACKGROUND_PAUSED = 2
+}
+
 
 struct DeployResponse {
   1: required DeployResult result

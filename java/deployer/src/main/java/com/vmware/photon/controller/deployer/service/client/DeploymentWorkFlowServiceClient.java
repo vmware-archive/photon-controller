@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.deployer.service.client;
 
+import com.vmware.photon.controller.api.DeploymentState;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentServiceFactory;
 import com.vmware.photon.controller.common.logging.LoggingUtils;
 import com.vmware.photon.controller.common.xenon.OperationJoinLatch;
@@ -87,6 +88,7 @@ public class DeploymentWorkFlowServiceClient {
     DeploymentWorkflowService.State state = new DeploymentWorkflowService.State();
     state.deploymentServiceLink = DeploymentServiceFactory.SELF_LINK + "/" + request.getDeployment().getId();
     state.managementVmImageFile = deployerConfig.getManagementImageFile();
+    state.desiredState = parseDesiredState(request.getDesired_state());
 
     Operation post = Operation
         .createPost(UriUtils.buildUri(dcpHost, DeploymentWorkflowFactoryService.SELF_LINK, null))
@@ -430,5 +432,21 @@ public class DeploymentWorkFlowServiceClient {
         throw new RuntimeException(String.format("Unexpected stage %s.", serviceState.taskState.stage));
     }
     return finalizeMigrateDeploymentStatus;
+  }
+
+  private DeploymentState parseDesiredState(String desiredState) {
+    if (desiredState != null) {
+      switch (desiredState) {
+        case "READY":
+          return DeploymentState.READY;
+        case "PAUSED":
+          return DeploymentState.PAUSED;
+        case "BACKGROUND_PAUSED":
+          return DeploymentState.BACKGROUND_PAUSED;
+        default:
+          throw new RuntimeException(String.format("Unexpected desired state for deployment: %s", desiredState));
+      }
+    }
+    return null;
   }
 }
