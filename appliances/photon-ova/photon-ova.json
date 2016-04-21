@@ -1,0 +1,58 @@
+{
+  "variables": {
+    "packages": "wget gawk tar sudo less unzip libxml2"
+  },
+  "builders": [
+    {
+      "type": "virtualbox-iso",
+      "format": "ova",
+      "vm_name": "photon-ova-virtualbox",
+      "guest_os_type": "Linux_64",
+      "iso_checksum": "{{ user `photon_iso_sha1` }}",
+      "iso_checksum_type": "sha1",
+      "iso_url": "{{ user `photon_iso_url` }}",
+      "ssh_username": "root",
+      "ssh_password": "vmware",
+      "shutdown_command": "shutdown -P now",
+      "headless": true,
+      "output_directory": "build/",
+      "guest_additions_mode": "disable",
+      "hard_drive_interface": "scsi",
+      "vboxmanage": [
+        [ "modifyvm", "{{.Name}}", "--memory", "2048" ],
+        [ "modifyvm", "{{.Name}}", "--cpus", "2" ]
+      ],
+      "boot_wait": "20s",
+      "boot_command": [
+        "<enter><wait10><wait10><wait10>",
+        "<enter><wait10>",
+        "<enter><wait10>",
+        "<enter><wait10>",
+        "<enter><wait10>",
+        "<enter><wait10>",
+        "mkLv45RdBP<enter><wait10>",
+        "mkLv45RdBP<enter><wait10>",
+        "<enter><wait10><wait10><wait10><wait10>",
+        "<enter><wait10><wait10><wait10><wait10><wait10>",
+        "root<enter><wait10>",
+        "mkLv45RdBP<enter>",
+        "<wait10>",
+        "echo root:vmware | chpasswd<enter><wait10>",
+        "sed -i 's/PermitRootLogin.*/PermitRootLogin yes/' /etc/ssh/sshd_config<enter><wait10>",
+        "systemctl restart sshd<enter><wait10>",
+        "logout<enter>",
+        "<wait10>"
+      ]
+    }
+  ],
+  "provisioners": [
+    {
+      "type": "shell",
+      "inline": "tdnf update -y tdnf || true"
+    },
+    {
+      "type": "shell",
+      "inline": "for pkg in {{ user `packages` }}; do tdnf install -y $pkg; done"
+    }
+  ]
+}
