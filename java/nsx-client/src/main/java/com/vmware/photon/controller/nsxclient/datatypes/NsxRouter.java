@@ -45,7 +45,12 @@ public class NsxRouter {
 
     @JsonCreator
     public static PortType fromString(String value) {
-      return null == value ? null : PortType.valueOf(value);
+      for (PortType portType : PortType.values()) {
+        if (portType.value.equals(value)) {
+          return portType;
+        }
+      }
+      return null;
     }
 
     @JsonValue

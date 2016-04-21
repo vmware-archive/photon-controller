@@ -144,9 +144,7 @@ public class CreateLogicalSwitchTaskService extends StatefulService {
             @Override
             public void onSuccess(@Nullable LogicalSwitch result) {
               currentState.id = result.getId();
-              getHost().schedule(() -> waitForConfigurationComplete(currentState),
-                  currentState.executionDelay,
-                  TimeUnit.MILLISECONDS);
+              waitForConfigurationComplete(currentState);
             }
 
             @Override
@@ -202,36 +200,42 @@ public class CreateLogicalSwitchTaskService extends StatefulService {
   }
 
   private void waitForConfigurationComplete(CreateLogicalSwitchTask currentState) {
-    ServiceUtils.logInfo(this, "Checking the configuration status of logical switch");
+    getHost().schedule(() -> {
+      try {
+        ServiceUtils.logInfo(this, "Checking the configuration status of logical switch");
 
-    try {
-      LogicalSwitchApi logicalSwitchApi = getLogicalSwitchApi(currentState);
+        LogicalSwitchApi logicalSwitchApi = getLogicalSwitchApi(currentState);
+        logicalSwitchApi.getLogicalSwitchState(currentState.id,
+            new FutureCallback<LogicalSwitchState>() {
+              @Override
+              public void onSuccess(@Nullable LogicalSwitchState result) {
+                NsxSwitch.State state = result.getState();
+                switch (state) {
+                  case IN_PROGRESS:
+                  case PENDING:
+                    waitForConfigurationComplete(currentState);
+                    break;
 
-      logicalSwitchApi.getLogicalSwitchState(currentState.id,
-          new FutureCallback<LogicalSwitchState>() {
-            @Override
-            public void onSuccess(@Nullable LogicalSwitchState result) {
-              NsxSwitch.State state = result.getState();
-              if (state == NsxSwitch.State.IN_PROGRESS || state == NsxSwitch.State.PENDING) {
-                getHost().schedule(() -> waitForConfigurationComplete(currentState), currentState.executionDelay,
-                    TimeUnit.MILLISECONDS);
-              } else if (state == NsxSwitch.State.SUCCESS) {
-                finishTask(result.getId());
-              } else {
-                failTask(new CreateLogicalSwitchException("Creating logical switch " + currentState.id + " failed " +
-                    "with state " + state));
+                  case SUCCESS:
+                    finishTask(result.getId());
+                    break;
+
+                  default:
+                    failTask(new CreateLogicalSwitchException("Creating logical switch " + currentState.id +
+                        " failed with state " + state));
+                }
+              }
+
+              @Override
+              public void onFailure(Throwable t) {
+                failTask(t);
               }
             }
-
-            @Override
-            public void onFailure(Throwable t) {
-              failTask(t);
-            }
-          }
-      );
-    } catch (Throwable t) {
-      failTask(t);
-    }
+        );
+      } catch (Throwable t) {
+        failTask(t);
+      }
+    }, currentState.executionDelay, TimeUnit.MILLISECONDS);
   }
 
   @VisibleForTesting
