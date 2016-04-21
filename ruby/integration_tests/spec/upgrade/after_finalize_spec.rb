@@ -79,7 +79,7 @@ describe "migrate finalize", upgrade: true do
       source_services = source_map.keys
       destination_services = destination_map.keys
       expect(destination_services).to include(*source_services)
-      expect(destination_services - source_services).to match_array(expected_new_services_at_destination)
+      expect((destination_services - source_services - expected_new_services_at_destination).size).to be 0
     end
 
     self.get_upgrade_cloudstore_map.each do |k, v|
@@ -113,6 +113,12 @@ describe "migrate finalize", upgrade: true do
   end
 
   describe "#old plane state" do
+    def self.get_upgrade_cloudstore_map
+      uri = URI.parse(EsxCloud::TestHelpers.get_upgrade_source_address)
+      map = self.get_service_map uri
+      map.select { |key,_| key.include? "photon" }
+    end
+
     it "should be paused" do
       uri = URI.parse(EsxCloud::TestHelpers.get_upgrade_source_address)
       zk_address = uri.host
@@ -120,6 +126,20 @@ describe "migrate finalize", upgrade: true do
       value = zk.get(path: "/config/apife/status")
       expect(value).to_not be_nil
       expect(value[:data]).to eq "PAUSED"
+    end
+
+    self.get_upgrade_cloudstore_map.each do |k, v|
+      it "all cloudstore factories should have entities" do
+        puts k
+        begin
+          source_json = source_cloud_store.get k
+        rescue StandardError => e
+          next if e.message.include? "404"
+          raise e
+        end
+        source_service_docs = parse_id_set(source_json).to_a
+        expect(source_service_docs.size).to be > 0
+      end
     end
   end
 
