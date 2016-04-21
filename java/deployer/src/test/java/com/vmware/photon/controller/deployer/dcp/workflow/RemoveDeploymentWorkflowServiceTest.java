@@ -51,7 +51,7 @@ import com.vmware.photon.controller.deployer.dcp.DeployerContext;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerFactoryService;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerService;
 import com.vmware.photon.controller.deployer.dcp.entity.VmService;
-import com.vmware.photon.controller.deployer.dcp.mock.NsxClientMock;
+import com.vmware.photon.controller.nsxclient.mock.NsxClientMock;
 import com.vmware.photon.controller.deployer.dcp.task.DeleteAgentTaskService;
 import com.vmware.photon.controller.deployer.deployengine.ApiClientFactory;
 import com.vmware.photon.controller.deployer.deployengine.NsxClientFactory;

@@ -33,7 +33,7 @@ import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.dcp.DeployerContext;
 import com.vmware.photon.controller.deployer.dcp.mock.AgentControlClientMock;
 import com.vmware.photon.controller.deployer.dcp.mock.HostClientMock;
-import com.vmware.photon.controller.deployer.dcp.mock.NsxClientMock;
+import com.vmware.photon.controller.nsxclient.mock.NsxClientMock;
 import com.vmware.photon.controller.deployer.deployengine.NsxClientFactory;
 import com.vmware.photon.controller.deployer.helpers.ReflectionUtils;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
