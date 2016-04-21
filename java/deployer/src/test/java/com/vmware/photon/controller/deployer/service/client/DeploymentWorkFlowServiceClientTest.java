@@ -108,6 +108,22 @@ public class DeploymentWorkFlowServiceClientTest {
     }
 
     @Test(expectedExceptions = Exception.class)
+    public void failsWhenSetDesiredStateThrowsException() throws Throwable {
+      DeployRequest request = createDeployRequest();
+      request.setDesired_state("INVALID");
+
+      setupMock(
+          true,
+          DeploymentWorkflowFactoryService.SELF_LINK,
+          DeploymentWorkflowService.State.class,
+          null,
+          serviceDocument,
+          host);
+
+      target.create(request);
+    }
+
+    @Test(expectedExceptions = Exception.class)
     public void failsWhenDcpHostThrowsException() throws Throwable {
       DeployRequest request = createDeployRequest();
 
@@ -125,6 +141,7 @@ public class DeploymentWorkFlowServiceClientTest {
     private DeployRequest createDeployRequest() {
       DeployRequest request = new DeployRequest();
       request.setDeployment(new Deployment());
+      request.setDesired_state("PAUSED");
       return request;
     }
   }
