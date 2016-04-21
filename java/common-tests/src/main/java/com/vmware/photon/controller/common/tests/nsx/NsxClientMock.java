@@ -15,11 +15,14 @@ package com.vmware.photon.controller.common.tests.nsx;
 
 import com.vmware.photon.controller.nsxclient.NsxClient;
 import com.vmware.photon.controller.nsxclient.apis.FabricApi;
+import com.vmware.photon.controller.nsxclient.apis.LogicalRouterApi;
 import com.vmware.photon.controller.nsxclient.apis.LogicalSwitchApi;
 import com.vmware.photon.controller.nsxclient.datatypes.NsxSwitch;
 import com.vmware.photon.controller.nsxclient.models.FabricNode;
 import com.vmware.photon.controller.nsxclient.models.FabricNodeCreateSpec;
 import com.vmware.photon.controller.nsxclient.models.FabricNodeState;
+import com.vmware.photon.controller.nsxclient.models.LogicalRouter;
+import com.vmware.photon.controller.nsxclient.models.LogicalRouterCreateSpec;
 import com.vmware.photon.controller.nsxclient.models.LogicalSwitch;
 import com.vmware.photon.controller.nsxclient.models.LogicalSwitchCreateSpec;
 import com.vmware.photon.controller.nsxclient.models.LogicalSwitchState;
@@ -30,8 +33,9 @@ import com.vmware.photon.controller.nsxclient.models.TransportZone;
 import com.vmware.photon.controller.nsxclient.models.TransportZoneCreateSpec;
 
 import com.google.common.util.concurrent.FutureCallback;
-import org.mockito.Matchers;
-import org.mockito.Mockito;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
 
 /**
  * This class implements a mock {@link NsxClientMock} object for use in testing.
@@ -39,12 +43,15 @@ import org.mockito.Mockito;
 public class NsxClientMock extends NsxClient {
   private FabricApi mockFabricApi;
   private LogicalSwitchApi mockLogicalSwitchApi;
+  private LogicalRouterApi mockLogicalRouterApi;
 
   private NsxClientMock(FabricApi mockFabricApi,
-                        LogicalSwitchApi mockLogicalSwitchApi) {
+                        LogicalSwitchApi mockLogicalSwitchApi,
+                        LogicalRouterApi mockLogicalRouterApi) {
     super("1.2.3.4", "username", "password");
     this.mockFabricApi = mockFabricApi;
     this.mockLogicalSwitchApi = mockLogicalSwitchApi;
+    this.mockLogicalRouterApi = mockLogicalRouterApi;
   }
 
   @Override
@@ -55,6 +62,10 @@ public class NsxClientMock extends NsxClient {
   @Override
   public LogicalSwitchApi getLogicalSwitchApi() {
     return mockLogicalSwitchApi;
+  }
+
+  public LogicalRouterApi getLogicalRouterApi() {
+    return mockLogicalRouterApi;
   }
 
   @Override
@@ -68,10 +79,12 @@ public class NsxClientMock extends NsxClient {
   public static class Builder {
     private FabricApi mockFabricApi;
     private LogicalSwitchApi mockLogicalSwitchApi;
+    private LogicalRouterApi mockLogicalRouterApi;
 
     public Builder() {
-      mockFabricApi = Mockito.mock(FabricApi.class);
-      mockLogicalSwitchApi = Mockito.mock(LogicalSwitchApi.class);
+      mockFabricApi = mock(FabricApi.class);
+      mockLogicalSwitchApi = mock(LogicalSwitchApi.class);
+      mockLogicalRouterApi = mock(LogicalRouterApi.class);
     }
 
     public Builder registerFabricNode(boolean isSuccess,
@@ -79,28 +92,27 @@ public class NsxClientMock extends NsxClient {
       if (isSuccess) {
         FabricNode response = new FabricNode();
         response.setId(fabricNodeId);
-        Mockito.doAnswer(invocation -> {
+        doAnswer(invocation -> {
           ((FutureCallback<FabricNode>) invocation.getArguments()[1])
               .onSuccess(response);
           return null;
-        }).when(mockFabricApi).registerFabricNode(Matchers.any(FabricNodeCreateSpec.class),
-            Matchers.any(FutureCallback.class));
+        }).when(mockFabricApi).registerFabricNode(any(FabricNodeCreateSpec.class), any(FutureCallback.class));
 
         FabricNodeState stateResponse = new FabricNodeState();
         stateResponse.setState(com.vmware.photon.controller.nsxclient.datatypes.FabricNodeState.SUCCESS);
-        Mockito.doAnswer(invocation -> {
+        doAnswer(invocation -> {
           ((FutureCallback<FabricNodeState>) invocation.getArguments()[1])
               .onSuccess(stateResponse);
           return null;
-        }).when(mockFabricApi).getFabricNodeState(Matchers.any(String.class), Matchers.any(FutureCallback.class));
+        }).when(mockFabricApi).getFabricNodeState(any(String.class), any(FutureCallback.class));
       } else {
         RuntimeException error = new RuntimeException("registerFabricNode failed");
-        Mockito.doAnswer(invocation -> {
+        doAnswer(invocation -> {
           ((FutureCallback<FabricNode>) invocation.getArguments()[1])
               .onFailure(error);
           return null;
-        }).when(mockFabricApi).registerFabricNode(Matchers.any(FabricNodeCreateSpec.class),
-            Matchers.any(FutureCallback.class));
+        }).when(mockFabricApi).registerFabricNode(any(FabricNodeCreateSpec.class),
+            any(FutureCallback.class));
       }
 
       return this;
@@ -111,28 +123,27 @@ public class NsxClientMock extends NsxClient {
       if (isSuccess) {
         TransportNode response = new TransportNode();
         response.setId(transportNodeId);
-        Mockito.doAnswer(invocation -> {
+        doAnswer(invocation -> {
           ((FutureCallback<TransportNode>) invocation.getArguments()[1])
               .onSuccess(response);
           return null;
-        }).when(mockFabricApi).createTransportNode(Matchers.any(TransportNodeCreateSpec.class),
-            Matchers.any(FutureCallback.class));
+        }).when(mockFabricApi).createTransportNode(any(TransportNodeCreateSpec.class), any(FutureCallback.class));
 
         TransportNodeState stateResponse = new TransportNodeState();
         stateResponse.setState(com.vmware.photon.controller.nsxclient.datatypes.TransportNodeState.SUCCESS);
-        Mockito.doAnswer(invocation -> {
+        doAnswer(invocation -> {
           ((FutureCallback<TransportNodeState>) invocation.getArguments()[1])
               .onSuccess(stateResponse);
           return null;
-        }).when(mockFabricApi).getTransportNodeState(Matchers.any(String.class), Matchers.any(FutureCallback.class));
+        }).when(mockFabricApi).getTransportNodeState(any(String.class), any(FutureCallback.class));
       } else {
         RuntimeException error = new RuntimeException("createTransportNode failed");
-        Mockito.doAnswer(invocation -> {
+        doAnswer(invocation -> {
           ((FutureCallback<TransportNode>) invocation.getArguments()[1])
               .onFailure(error);
           return null;
-        }).when(mockFabricApi).createTransportNode(Matchers.any(TransportNodeCreateSpec.class),
-            Matchers.any(FutureCallback.class));
+        }).when(mockFabricApi).createTransportNode(any(TransportNodeCreateSpec.class),
+            any(FutureCallback.class));
       }
 
       return this;
@@ -143,20 +154,19 @@ public class NsxClientMock extends NsxClient {
       if (isSuccess) {
         TransportZone response = new TransportZone();
         response.setId(transportZoneId);
-        Mockito.doAnswer(invocation -> {
+        doAnswer(invocation -> {
           ((FutureCallback<TransportZone>) invocation.getArguments()[1])
               .onSuccess(response);
           return null;
-        }).when(mockFabricApi).createTransportZone(Matchers.any(TransportZoneCreateSpec.class),
-            Matchers.any(FutureCallback.class));
+        }).when(mockFabricApi).createTransportZone(any(TransportZoneCreateSpec.class), any(FutureCallback.class));
       } else {
         RuntimeException error = new RuntimeException("createTransportZone failed");
-        Mockito.doAnswer(invocation -> {
+        doAnswer(invocation -> {
           ((FutureCallback<TransportZone>) invocation.getArguments()[1])
               .onFailure(error);
           return null;
-        }).when(mockFabricApi).createTransportZone(Matchers.any(TransportZoneCreateSpec.class),
-            Matchers.any(FutureCallback.class));
+        }).when(mockFabricApi).createTransportZone(any(TransportZoneCreateSpec.class),
+            any(FutureCallback.class));
       }
 
       return this;
@@ -164,18 +174,18 @@ public class NsxClientMock extends NsxClient {
 
     public Builder unregisterFabricNode(boolean isSuccess) throws Throwable {
       if (isSuccess) {
-        Mockito.doAnswer(invocation -> {
+        doAnswer(invocation -> {
           ((FutureCallback<Void>) invocation.getArguments()[1])
               .onSuccess(null);
           return null;
-        }).when(mockFabricApi).unregisterFabricNode(Matchers.any(String.class), Matchers.any(FutureCallback.class));
+        }).when(mockFabricApi).unregisterFabricNode(any(String.class), any(FutureCallback.class));
       } else {
         RuntimeException error = new RuntimeException("unregisterFabricNode failed");
-        Mockito.doAnswer(invocation -> {
+        doAnswer(invocation -> {
           ((FutureCallback<Void>) invocation.getArguments()[1])
               .onFailure(error);
           return null;
-        }).when(mockFabricApi).unregisterFabricNode(Matchers.any(String.class), Matchers.any(FutureCallback.class));
+        }).when(mockFabricApi).unregisterFabricNode(any(String.class), any(FutureCallback.class));
       }
 
       return this;
@@ -183,18 +193,18 @@ public class NsxClientMock extends NsxClient {
 
     public Builder deleteTransportNode(boolean isSuccess) throws Throwable {
       if (isSuccess) {
-        Mockito.doAnswer(invocation -> {
+        doAnswer(invocation -> {
           ((FutureCallback<Void>) invocation.getArguments()[1])
               .onSuccess(null);
           return null;
-        }).when(mockFabricApi).deleteTransportNode(Matchers.any(String.class), Matchers.any(FutureCallback.class));
+        }).when(mockFabricApi).deleteTransportNode(any(String.class), any(FutureCallback.class));
       } else {
         RuntimeException error = new RuntimeException("deleteTransportNode failed");
-        Mockito.doAnswer(invocation -> {
+        doAnswer(invocation -> {
           ((FutureCallback<Void>) invocation.getArguments()[1])
               .onFailure(error);
           return null;
-        }).when(mockFabricApi).deleteTransportNode(Matchers.any(String.class), Matchers.any(FutureCallback.class));
+        }).when(mockFabricApi).deleteTransportNode(any(String.class), any(FutureCallback.class));
       }
 
       return this;
@@ -202,18 +212,42 @@ public class NsxClientMock extends NsxClient {
 
     public Builder deleteTransportZone(boolean isSuccess) throws Throwable {
       if (isSuccess) {
-        Mockito.doAnswer(invocation -> {
+        doAnswer(invocation -> {
           ((FutureCallback<Void>) invocation.getArguments()[1])
               .onSuccess(null);
           return null;
-        }).when(mockFabricApi).deleteTransportZone(Matchers.any(String.class), Matchers.any(FutureCallback.class));
+        }).when(mockFabricApi).deleteTransportZone(any(String.class), any(FutureCallback.class));
       } else {
         RuntimeException error = new RuntimeException("deleteTransportZone failed");
-        Mockito.doAnswer(invocation -> {
+        doAnswer(invocation -> {
           ((FutureCallback<Void>) invocation.getArguments()[1])
               .onFailure(error);
           return null;
-        }).when(mockFabricApi).deleteTransportZone(Matchers.any(String.class), Matchers.any(FutureCallback.class));
+        }).when(mockFabricApi).deleteTransportZone(any(String.class), any(FutureCallback.class));
+      }
+
+      return this;
+    }
+
+    public Builder createLogicalRouter(boolean isSuccess,
+                                       String routerId) throws Throwable {
+      if (isSuccess) {
+        LogicalRouter response = new LogicalRouter();
+        response.setId(routerId);
+        doAnswer(invocation -> {
+          ((FutureCallback<LogicalRouter>) invocation.getArguments()[1])
+              .onSuccess(response);
+          return null;
+        }).when(mockLogicalRouterApi).createLogicalRouter(any(LogicalRouterCreateSpec.class),
+            any(FutureCallback.class));
+      } else {
+        RuntimeException error = new RuntimeException("createLogicalRouter failed");
+        doAnswer(invocation -> {
+          ((FutureCallback<TransportZone>) invocation.getArguments()[1])
+              .onFailure(error);
+          return null;
+        }).when(mockLogicalRouterApi).createLogicalRouter(any(LogicalRouterCreateSpec.class),
+            any(FutureCallback.class));
       }
 
       return this;
@@ -224,20 +258,20 @@ public class NsxClientMock extends NsxClient {
       if (isSuccess) {
         LogicalSwitch response = new LogicalSwitch();
         response.setId(logicalSwitchId);
-        Mockito.doAnswer(invocation -> {
+        doAnswer(invocation -> {
           ((FutureCallback<LogicalSwitch>) invocation.getArguments()[1])
               .onSuccess(response);
           return null;
-        }).when(mockLogicalSwitchApi).createLogicalSwitch(Matchers.any(LogicalSwitchCreateSpec.class),
-            Matchers.any(FutureCallback.class));
+        }).when(mockLogicalSwitchApi).createLogicalSwitch(any(LogicalSwitchCreateSpec.class),
+            any(FutureCallback.class));
       } else {
         RuntimeException error = new RuntimeException("createLogicalSwitch failed");
-        Mockito.doAnswer(invocation -> {
+        doAnswer(invocation -> {
           ((FutureCallback<LogicalSwitch>) invocation.getArguments()[1])
               .onFailure(error);
           return null;
-        }).when(mockLogicalSwitchApi).createLogicalSwitch(Matchers.any(LogicalSwitchCreateSpec.class),
-            Matchers.any(FutureCallback.class));
+        }).when(mockLogicalSwitchApi).createLogicalSwitch(any(LogicalSwitchCreateSpec.class),
+            any(FutureCallback.class));
       }
 
       return this;
@@ -254,7 +288,7 @@ public class NsxClientMock extends NsxClient {
         successState.setState(NsxSwitch.State.SUCCESS);
         successState.setId(logicalSwitchId);
 
-        Mockito.doAnswer(invocation -> {
+        doAnswer(invocation -> {
           ((FutureCallback<LogicalSwitchState>) invocation.getArguments()[1])
               .onSuccess(inProgressState);
           return null;
@@ -262,23 +296,23 @@ public class NsxClientMock extends NsxClient {
           ((FutureCallback<LogicalSwitchState>) invocation.getArguments()[1])
               .onSuccess(successState);
           return null;
-        }).when(mockLogicalSwitchApi).getLogicalSwitchState(Matchers.any(String.class),
-            Matchers.any(FutureCallback.class));
+        }).when(mockLogicalSwitchApi).getLogicalSwitchState(any(String.class),
+            any(FutureCallback.class));
       } else {
         RuntimeException error = new RuntimeException("getLogicalSwitchState failed");
-        Mockito.doAnswer(invocation -> {
+        doAnswer(invocation -> {
           ((FutureCallback<LogicalSwitchState>) invocation.getArguments()[1])
               .onFailure(error);
           return null;
-        }).when(mockLogicalSwitchApi).getLogicalSwitchState(Matchers.any(String.class),
-            Matchers.any(FutureCallback.class));
+        }).when(mockLogicalSwitchApi).getLogicalSwitchState(any(String.class),
+            any(FutureCallback.class));
       }
 
       return this;
     }
 
     public NsxClientMock build() {
-      return new NsxClientMock(mockFabricApi, mockLogicalSwitchApi);
+      return new NsxClientMock(mockFabricApi, mockLogicalSwitchApi, mockLogicalRouterApi);
     }
   }
 }
