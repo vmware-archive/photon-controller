@@ -1,6 +1,6 @@
 {
   "ENABLE_SYSLOG": "true",
-  "memoryMb": "1024",
+  "memoryMb": "4096",
   "SHARED_SECRET": "shared-secret",
   "LIGHTWAVE_ADDRESS": "0.0.0.0",
   "APIFE_PORT": "443",

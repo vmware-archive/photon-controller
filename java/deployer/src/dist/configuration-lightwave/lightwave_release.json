@@ -1,7 +1,7 @@
 {
   "serviceName": "Lightwave",
   "cpuCount": 1,
-  "memoryMb": 1024,
+  "memoryMb": 4096,
   "diskGb": 8,
   "isReplicated": false,
   "isPrivileged": true,
