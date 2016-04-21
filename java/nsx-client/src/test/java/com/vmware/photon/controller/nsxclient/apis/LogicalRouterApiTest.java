@@ -13,22 +13,35 @@
 
 package com.vmware.photon.controller.nsxclient.apis;
 
+import com.vmware.photon.controller.nsxclient.RestClient;
 import com.vmware.photon.controller.nsxclient.datatypes.NsxRouter;
 import com.vmware.photon.controller.nsxclient.models.IPv4CIDRBlock;
 import com.vmware.photon.controller.nsxclient.models.LogicalRouter;
 import com.vmware.photon.controller.nsxclient.models.LogicalRouterConfig;
 import com.vmware.photon.controller.nsxclient.models.LogicalRouterCreateSpec;
+import com.vmware.photon.controller.nsxclient.models.LogicalRouterDownLinkPort;
+import com.vmware.photon.controller.nsxclient.models.LogicalRouterDownLinkPortCreateSpec;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.google.common.util.concurrent.FutureCallback;
+import org.apache.http.HttpEntity;
 import org.apache.http.HttpStatus;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.fail;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -110,6 +123,158 @@ public class LogicalRouterApiTest extends NsxClientApiTest {
         });
 
     assertThat(latch.await(COUNTDOWNLATCH_AWAIT_TIMEOUT, TimeUnit.SECONDS), is(true));
+  }
+
+  /**
+   * Tests for functions to manage router ports.
+   */
+  public static class LogicalRouterPortTest {
+    private LogicalRouterApi logicalRouterApi;
+    private CountDownLatch latch;
+
+    @BeforeMethod
+    public void setup() {
+      logicalRouterApi = spy(new LogicalRouterApi(mock(RestClient.class)));
+      latch = new CountDownLatch(1);
+    }
+
+    @Test
+    public void testSuccessfullyCreated() throws Exception {
+      LogicalRouterDownLinkPortCreateSpec spec = new LogicalRouterDownLinkPortCreateSpec();
+      LogicalRouterDownLinkPort logicalRouterDownLinkPort = new LogicalRouterDownLinkPort();
+
+      doAnswer(invocation -> {
+        if (invocation.getArguments()[4] != null) {
+          ((FutureCallback<LogicalRouterDownLinkPort>) invocation.getArguments()[4])
+              .onSuccess(logicalRouterDownLinkPort);
+        }
+        return null;
+      }).when(logicalRouterApi)
+          .postAsync(eq(logicalRouterApi.logicalRouterPortBasePath),
+              any(HttpEntity.class),
+              eq(HttpStatus.SC_CREATED),
+              any(TypeReference.class),
+              any(FutureCallback.class));
+
+      logicalRouterApi.createLogicalRouterDownLinkPort(spec,
+          new FutureCallback<LogicalRouterDownLinkPort>() {
+            @Override
+            public void onSuccess(LogicalRouterDownLinkPort result) {
+              assertThat(result, is(logicalRouterDownLinkPort));
+              latch.countDown();
+            }
+
+            @Override
+            public void onFailure(Throwable t) {
+              fail("Should not have failed");
+              latch.countDown();
+            }
+          }
+      );
+      latch.await();
+    }
+
+    @Test
+    public void testFailedToCreate() throws Exception {
+      final String errorMsg = "Service is not available";
+      LogicalRouterDownLinkPortCreateSpec spec = new LogicalRouterDownLinkPortCreateSpec();
+
+      doAnswer(invocation -> {
+        if (invocation.getArguments()[4] != null) {
+          ((FutureCallback<LogicalRouterDownLinkPort>) invocation.getArguments()[4])
+              .onFailure(new RuntimeException(errorMsg));
+        }
+        return null;
+      }).when(logicalRouterApi)
+          .postAsync(eq(logicalRouterApi.logicalRouterPortBasePath),
+              any(HttpEntity.class),
+              eq(HttpStatus.SC_CREATED),
+              any(TypeReference.class),
+              any(FutureCallback.class));
+
+      logicalRouterApi.createLogicalRouterDownLinkPort(spec,
+          new FutureCallback<LogicalRouterDownLinkPort>() {
+            @Override
+            public void onSuccess(LogicalRouterDownLinkPort result) {
+              fail("Should not have succeeded");
+              latch.countDown();
+            }
+
+            @Override
+            public void onFailure(Throwable t) {
+              assertThat(t.getMessage(), is(errorMsg));
+              latch.countDown();
+            }
+          }
+      );
+      latch.await();
+    }
+
+    @Test
+    public void testSuccessfullyDeleted() throws Exception {
+      final String portId = UUID.randomUUID().toString();
+
+      doAnswer(invocation -> {
+        if (invocation.getArguments()[2] != null) {
+          ((FutureCallback<Void>) invocation.getArguments()[2])
+              .onSuccess(null);
+        }
+        return null;
+      }).when(logicalRouterApi)
+          .deleteAsync(eq(logicalRouterApi.logicalRouterPortBasePath + "/" + portId),
+              eq(HttpStatus.SC_OK),
+              any(FutureCallback.class));
+
+      logicalRouterApi.deleteLogicalRouterPort(portId,
+          new FutureCallback<Void>() {
+            @Override
+            public void onSuccess(Void result) {
+              latch.countDown();
+            }
+
+            @Override
+            public void onFailure(Throwable t) {
+              fail("Should not have failed");
+              latch.countDown();
+            }
+          }
+      );
+      latch.await();
+    }
+
+    @Test
+    public void testFailedToDelete() throws Exception {
+      final String portId = UUID.randomUUID().toString();
+      final String errorMsg = "Service is not available";
+
+      doAnswer(invocation -> {
+        if (invocation.getArguments()[2] != null) {
+          ((FutureCallback<Void>) invocation.getArguments()[2])
+              .onFailure(new RuntimeException(errorMsg));
+        }
+        return null;
+      }).when(logicalRouterApi)
+          .deleteAsync(eq(logicalRouterApi.logicalRouterPortBasePath + "/" + portId),
+              eq(HttpStatus.SC_OK),
+              any(FutureCallback.class));
+
+      logicalRouterApi.deleteLogicalRouterPort(portId,
+          new FutureCallback<Void>() {
+            @Override
+            public void onSuccess(Void result) {
+              fail("Should not have failed");
+              latch.countDown();
+            }
+
+            @Override
+            public void onFailure(Throwable t) {
+              assertThat(t.getMessage(), is(errorMsg));
+              latch.countDown();
+            }
+          }
+      );
+      latch.await();
+    }
   }
 
   private LogicalRouter createLogicalRouter() {
