@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.deployer.upgrade;
 
+import com.vmware.photon.controller.cloudstore.dcp.CloudStoreXenonHost;
 import com.vmware.photon.controller.common.xenon.upgrade.MigrateDuringUpgrade;
 import com.vmware.photon.controller.common.xenon.upgrade.NoMigrationDuringUpgrade;
 import com.vmware.photon.controller.deployer.dcp.DeployerXenonServiceHost;
@@ -114,6 +115,109 @@ public class AnnotationUsageTest {
       errorMessage += String.join("\n", transformationServicePaths);
     }
     assertThat(errorMessage, transformationServicePaths.size(), is(0));
+  }
+
+  @Test
+  public void checkSourceFactoriesExist() throws Throwable {
+    Set<String> factoryPaths = loadFactoryLinks();
+
+    ClassLoader cl = ClassLoader.getSystemClassLoader();
+    ClassPath classPath = ClassPath.from(cl);
+
+    Set<String> errors = new HashSet<>();
+
+    for (ClassInfo classFile : classPath.getAllClasses()) {
+      if (classFile.getName().contains(PHOTON_CONTROLLER_PACKAGE)
+          && !classFile.getName().endsWith("Test")
+          && !classFile.getName().contains(".Test")
+          && !classFile.getName().contains("Test$")) {
+        Collection<Class<?>> allClasses = getNestedClasses(classFile.load());
+
+        for (Class<?> type : allClasses) {
+          if (type.getSuperclass() != null && type.getSuperclass() == ServiceDocument.class) {
+            for (Annotation a : type.getAnnotations()) {
+              if (a.annotationType() == MigrateDuringUpgrade.class) {
+                MigrateDuringUpgrade u = (MigrateDuringUpgrade) a;
+
+                if (!factoryPaths.contains(u.sourceFactoryServicePath())) {
+                  errors.add(type.getName()
+                      + " refers to unknown sourceFactoryPath ["
+                      + u.sourceFactoryServicePath() + "]");
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    String errorMessage = "";
+    if (!errors.isEmpty()) {
+      errorMessage = String.join("\n", errors);
+    }
+    assertThat(errorMessage, errors.size(), is(0));
+  }
+
+  @Test
+  public void checkDestinationFactoriesExist() throws Throwable {
+    Set<String> factoryPaths = loadFactoryLinks();
+
+    ClassLoader cl = ClassLoader.getSystemClassLoader();
+    ClassPath classPath = ClassPath.from(cl);
+
+    Set<String> errors = new HashSet<>();
+
+    for (ClassInfo classFile : classPath.getAllClasses()) {
+      if (classFile.getName().contains(PHOTON_CONTROLLER_PACKAGE)
+          && !classFile.getName().endsWith("Test")
+          && !classFile.getName().contains(".Test")
+          && !classFile.getName().contains("Test$")) {
+        Collection<Class<?>> allClasses = getNestedClasses(classFile.load());
+
+        for (Class<?> type : allClasses) {
+          if (type.getSuperclass() != null && type.getSuperclass() == ServiceDocument.class) {
+            for (Annotation a : type.getAnnotations()) {
+              if (a.annotationType() == MigrateDuringUpgrade.class) {
+                MigrateDuringUpgrade u = (MigrateDuringUpgrade) a;
+
+                if (!factoryPaths.contains(u.destinationFactoryServicePath())) {
+                  errors.add(type.getName()
+                      + " refers to unknown sourceFactoryPath ["
+                      + u.sourceFactoryServicePath() + "]");
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    String errorMessage = "";
+    if (!errors.isEmpty()) {
+      errorMessage = String.join("\n", errors);
+    }
+    assertThat(errorMessage, errors.size(), is(0));
+  }
+
+  private Set<String> loadFactoryLinks() throws Throwable {
+    Set<String> factoryPaths = new HashSet<>();
+    factoryPaths.addAll(loadCloudStoreFactoryLinks());
+    return factoryPaths;
+  }
+
+  private Set<String> loadCloudStoreFactoryLinks() throws Throwable {
+    Set<String> factoryPaths = new HashSet<>();
+    for (Class<?> type : CloudStoreXenonHost.FACTORY_SERVICES) {
+      Field f = type.getField(UriUtils.FIELD_NAME_SELF_LINK);
+      String path = (String) f.get(null);
+      factoryPaths.add(path);
+    }
+    for (Class<?> type : CloudStoreXenonHost.FACTORY_SERVICES_MAP.keySet()) {
+      Field f = type.getField(UriUtils.FIELD_NAME_FACTORY_LINK);
+      String path = (String) f.get(null);
+      factoryPaths.add(path);
+    }
+    return factoryPaths;
   }
 
   private Collection<Class<?>> getNestedClasses(Class<?> type) {
