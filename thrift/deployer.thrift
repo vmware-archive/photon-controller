@@ -127,6 +127,7 @@ struct DeployResult {
 
 struct DeployRequest {
   1:  required Deployment deployment
+  2:  optional string desired_state
   99: optional tracing.TracingInfo tracing_info
 }
 
