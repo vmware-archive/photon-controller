@@ -16,6 +16,8 @@ package com.vmware.photon.controller.apibackend.servicedocuments;
 import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
 import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
+import com.vmware.photon.controller.common.xenon.validation.NotBlank;
+import com.vmware.photon.controller.common.xenon.validation.WriteOnce;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.TaskState;
 
@@ -39,12 +41,48 @@ public class CreateLogicalRouterTask extends ServiceDocument {
   public Integer controlFlags;
 
   /**
+   * The ID of the logical router.
+   */
+  @WriteOnce
+  public String id;
+
+  /**
    * The name of the logical router.
    */
-  public String name;
+  @NotBlank
+  @Immutable
+  public String displayName;
 
   /**
    * The description of the logical router.
    */
   public String description;
+
+  /**
+   * The ID of the Edge cluster.
+   */
+  @NotBlank
+  @Immutable
+  public String edgeClusterId;
+
+  /**
+   * Endpoint to the nsx manager.
+   */
+  @NotBlank
+  @Immutable
+  public String nsxManagerEndpoint;
+
+  /**
+   * Username to access nsx manager.
+   */
+  @NotBlank
+  @Immutable
+  public String username;
+
+  /**
+   * Password to access nsx manager.
+   */
+  @NotBlank
+  @Immutable
+  public String password;
 }

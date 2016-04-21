@@ -13,6 +13,7 @@
 package com.vmware.photon.controller.apibackend.tasks;
 
 import com.vmware.photon.controller.apibackend.servicedocuments.CreateLogicalRouterTask;
+import com.vmware.photon.controller.apibackend.utils.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
@@ -20,6 +21,9 @@ import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
+import com.vmware.photon.controller.nsxclient.datatypes.NsxRouter;
+import com.vmware.photon.controller.nsxclient.models.LogicalRouter;
+import com.vmware.photon.controller.nsxclient.models.LogicalRouterCreateSpec;
 import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceErrorResponse;
@@ -27,6 +31,7 @@ import com.vmware.xenon.common.StatefulService;
 import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.Utils;
 
+import com.google.common.util.concurrent.FutureCallback;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import javax.annotation.Nullable;
@@ -100,9 +105,37 @@ public class CreateLogicalRouterTaskService extends StatefulService {
     }
   }
 
-  private void createLogicalRouter(CreateLogicalRouterTask state) {
-    ServiceUtils.logInfo(this, "Create Logical Router (to be done)");
-    TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FINISHED));
+  private void createLogicalRouter(CreateLogicalRouterTask currentState) {
+    ServiceUtils.logInfo(this, "Create Logical Router");
+
+    try {
+      LogicalRouterCreateSpec logicalRouterCreateSpec = new LogicalRouterCreateSpec();
+      logicalRouterCreateSpec.setDisplayName(currentState.displayName);
+      logicalRouterCreateSpec.setDescription(currentState.description);
+      logicalRouterCreateSpec.setRouterType(NsxRouter.RouterType.TIER1);
+      logicalRouterCreateSpec.setEdgeClusterId(currentState.edgeClusterId);
+
+      ServiceHostUtils.getNsxClient(getHost(), currentState.nsxManagerEndpoint, currentState.username,
+          currentState.password).getLogicalRouterApi().createLogicalRouter(logicalRouterCreateSpec,
+          new FutureCallback<LogicalRouter>() {
+            @Override
+            public void onSuccess(@Nullable LogicalRouter result) {
+              // TODO(ysheng): there is no getState API for logical router. Not sure
+              // what is the correct way to wait for the completion of the router creation.
+              CreateLogicalRouterTask patchState = buildPatch(TaskState.TaskStage.FINISHED);
+              patchState.id = result.getId();
+              TaskUtils.sendSelfPatch(CreateLogicalRouterTaskService.this, patchState);
+            }
+
+            @Override
+            public void onFailure(Throwable t) {
+              failTask(t);
+            }
+          }
+      );
+    } catch (Throwable t) {
+      failTask(t);
+    }
   }
 
   private void validateStartState(CreateLogicalRouterTask startState) {
@@ -137,5 +170,4 @@ public class CreateLogicalRouterTaskService extends StatefulService {
     ServiceUtils.logSevere(this, e);
     TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, e));
   }
-
 }
