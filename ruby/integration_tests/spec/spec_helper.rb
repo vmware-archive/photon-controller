@@ -50,6 +50,30 @@ if defined?(RSpec::Core::Formatters::JUnitFormatter)
   end
 end
 
+def get_system_status(instances = 1)
+  raise "Number of instances cannot be nil" if instances.nil?
+
+  puts "Verifying system status..."
+  120.times do
+    begin
+      system_status = EsxCloud::Config.client.get_status
+      expect(system_status.status).to eq "READY"
+      expect(system_status.components.size).to eq 4
+
+      system_status.components.each do |component|
+        expect(component.name).to_not be_nil
+        expect(component.status).to eq "READY"
+        expect(component.instances.size).to eq instances.to_i
+      end
+      return
+    rescue
+      sleep 5
+    end
+  end
+
+  raise "System is not ready after 10 minutes"
+end
+
 RSpec.configure do |config|
   config.include EsxCloud::TestHelpers
   config.color = true
@@ -98,6 +122,10 @@ RSpec.configure do |config|
   config.filter_run_excluding single_vm_port_group: true if EsxCloud::TestHelpers.get_vm_port_groups.length == 1
 
   config.filter_run_excluding go_cli: true unless ENV["DRIVER"] == "gocli"
+
+  config.before(:suite) do
+    get_system_status(ENV["MANAGEMENT_VM_COUNT"]) if ENV["UPTIME"]
+  end
 
   config.after(:suite) do
     cleaner = EsxCloud::SystemCleaner.new(ApiClientHelper.management)
