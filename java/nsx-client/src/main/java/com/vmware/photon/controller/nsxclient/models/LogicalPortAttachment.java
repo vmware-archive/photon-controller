@@ -13,47 +13,45 @@
 
 package com.vmware.photon.controller.nsxclient.models;
 
+import com.vmware.photon.controller.nsxclient.datatypes.NsxSwitch;
 import com.vmware.photon.controller.nsxclient.utils.ToStringHelper;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Objects;
 
 /**
- * Represents the key-value pairs used in the Json files of NSX restful APIs.
- *
- * @param <K> key
- * @param <V> value
+ * Attachement on a logical port.
  */
-public class NsxPair<K, V> {
-  @JsonProperty(value = "key", required = true)
-  private K key;
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class LogicalPortAttachment {
 
-  @JsonProperty(value = "value", required = true)
-  private V value;
+  @JsonProperty(value = "attachment_type", defaultValue = "VIF", required = true)
+  private NsxSwitch.AttachmentType attachmentType;
 
-  public NsxPair() {
+  @JsonProperty(value = "id", required = true)
+  private String id;
+
+  public LogicalPortAttachment(NsxSwitch.AttachmentType attachmentType, String id) {
+    this.attachmentType = attachmentType;
+    this.id = id;
   }
 
-  public NsxPair(K key, V value) {
-    this.key = key;
-    this.value = value;
+  public NsxSwitch.AttachmentType getAttachmentType() {
+    return attachmentType;
   }
 
-  public K getKey() {
-    return key;
+  public void setAttachmentType(NsxSwitch.AttachmentType attachmentType) {
+    this.attachmentType = attachmentType;
   }
 
-  public void setKey(K key) {
-    this.key = key;
+  public String getId() {
+    return id;
   }
 
-  public V getValue() {
-    return value;
-  }
-
-  public void setValue(V value) {
-    this.value = value;
+  public void setId(String id) {
+    this.id = id;
   }
 
   @Override
@@ -66,14 +64,14 @@ public class NsxPair<K, V> {
       return false;
     }
 
-    NsxPair other = (NsxPair) o;
-    return Objects.equals(this.key, other.key)
-        && Objects.equals(this.value, other.value);
+    LogicalPortAttachment other = (LogicalPortAttachment) o;
+    return Objects.equals(this.attachmentType, other.attachmentType)
+        && Objects.equals(this.id, other.id);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode(), key, value);
+    return Objects.hash(super.hashCode(), attachmentType, id);
   }
 
   @Override

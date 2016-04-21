@@ -78,4 +78,45 @@ public class NsxSwitch {
       return value;
     }
   }
+
+  /**
+   * Attachment type for logical port.
+   */
+  public static enum AttachmentType {
+    VIF,
+    LOGICALROUTER,
+    BRIDGEENDPOINT
+  }
+
+  /**
+   * Available types of switching profiles.
+   */
+  public static enum SwitchingProfileType {
+    QOS("QosSwitchingProfile"),
+    PORT_MIRRORING("PortMirroringSwitchingProfile"),
+    IP_DISCOVERY("IpDiscoverySwitchingProfile"),
+    SPOOFGUARD("SpoofGuardSwitchingProfile"),
+    SWITCH_SECURITY("SwitchSecuritySwitchingProfile");
+
+    private String value;
+
+    SwitchingProfileType(String value) {
+      this.value = value;
+    }
+
+    @JsonCreator
+    public static SwitchingProfileType fromString(String value) {
+      for (SwitchingProfileType type : SwitchingProfileType.values()) {
+        if (type.value.equals(value)) {
+          return type;
+        }
+      }
+      return null;
+    }
+
+    @JsonValue
+    public String getValue() {
+      return value;
+    }
+  }
 }

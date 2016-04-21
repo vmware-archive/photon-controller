@@ -18,38 +18,39 @@ import com.vmware.photon.controller.nsxclient.utils.ToStringHelper;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import javax.validation.constraints.Size;
+
 import java.util.List;
 import java.util.Objects;
 
 /**
- * Represent the information of a created nsx logical switch.
+ * Represents a logical port.
  */
-public class LogicalSwitch {
+public class LogicalPort {
   @JsonProperty(value = "id", required = true)
   private String id;
 
-  @JsonProperty(value = "display_name", required = true)
+  @JsonProperty(value = "display_name", required = false)
+  @Size(max = 255)
   private String displayName;
 
   @JsonProperty(value = "resource_type", required = true)
   private String resourceType;
 
-  @JsonProperty(value = "replication_mode", required = true)
-  private NsxSwitch.ReplicationMode replicationMode;
+  @JsonProperty(value = "address_bindings", required = false)
+  @Size(min = 0, max = 100)
+  private List<PacketAddressClassifier> addressBindings;
 
-  @JsonProperty(value = "transport_zone_id", required = true)
-  private String transportZoneId;
+  @JsonProperty(value = "logical_switch_id", required = true)
+  private String logicalSwitchId;
 
   @JsonProperty(value = "admin_state", required = true)
   private NsxSwitch.AdminState adminState;
 
-  @JsonProperty(value = "vni", required = true)
-  private int vni;
+  @JsonProperty(value = "attachment", required = false)
+  private LogicalPortAttachment attachment;
 
-  @JsonProperty(value = "address_bindings", required = false)
-  private List<String> addressBindings;
-
-  @JsonProperty(value = "switching_profile_ids", required = true)
+  @JsonProperty(value = "switching_profile_ids", required = false)
   private List<NsxPair<NsxSwitch.SwitchingProfileType, String>> switchingProfileIds;
 
   public String getId() {
@@ -76,20 +77,20 @@ public class LogicalSwitch {
     this.resourceType = resourceType;
   }
 
-  public NsxSwitch.ReplicationMode getReplicationMode() {
-    return replicationMode;
+  public List<PacketAddressClassifier> getAddressBindings() {
+    return addressBindings;
   }
 
-  public void setReplicationMode(NsxSwitch.ReplicationMode replicationMode) {
-    this.replicationMode = replicationMode;
+  public void setAddressBindings(List<PacketAddressClassifier> addressBindings) {
+    this.addressBindings = addressBindings;
   }
 
-  public String getTransportZoneId() {
-    return transportZoneId;
+  public String getLogicalSwitchId() {
+    return logicalSwitchId;
   }
 
-  public void setTransportZoneId(String transportZoneId) {
-    this.transportZoneId = transportZoneId;
+  public void setLogicalSwitchId(String logicalSwitchId) {
+    this.logicalSwitchId = logicalSwitchId;
   }
 
   public NsxSwitch.AdminState getAdminState() {
@@ -100,20 +101,12 @@ public class LogicalSwitch {
     this.adminState = adminState;
   }
 
-  public int getVni() {
-    return vni;
+  public LogicalPortAttachment getAttachment() {
+    return attachment;
   }
 
-  public void setVni(int vni) {
-    this.vni = vni;
-  }
-
-  public List<String> getAddressBindings() {
-    return addressBindings;
-  }
-
-  public void setAddressBindings(List<String> addressBindings) {
-    this.addressBindings = addressBindings;
+  public void setAttachment(LogicalPortAttachment attachment) {
+    this.attachment = attachment;
   }
 
   public List<NsxPair<NsxSwitch.SwitchingProfileType, String>> getSwitchingProfileIds() {
@@ -134,22 +127,21 @@ public class LogicalSwitch {
       return false;
     }
 
-    LogicalSwitch other = (LogicalSwitch) o;
-    return Objects.equals(this.id, other.id)
-        && Objects.equals(this.displayName, other.displayName)
-        && Objects.equals(this.resourceType, other.resourceType)
-        && Objects.equals(this.replicationMode, other.replicationMode)
-        && Objects.equals(this.transportZoneId, other.transportZoneId)
+    LogicalPort other = (LogicalPort) o;
+    return Objects.equals(this.addressBindings, other.addressBindings)
         && Objects.equals(this.adminState, other.adminState)
-        && Objects.equals(this.vni, other.vni)
-        && Objects.equals(this.addressBindings, other.addressBindings)
+        && Objects.equals(this.attachment, other.attachment)
+        && Objects.equals(this.displayName, other.displayName)
+        && Objects.equals(this.id, other.id)
+        && Objects.equals(this.logicalSwitchId, other.logicalSwitchId)
+        && Objects.equals(this.resourceType, other.resourceType)
         && Objects.equals(this.switchingProfileIds, other.switchingProfileIds);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode(), id, displayName, resourceType, replicationMode, transportZoneId,
-        adminState, vni, addressBindings, switchingProfileIds);
+    return Objects.hash(super.hashCode(), addressBindings, adminState, attachment, id,
+        logicalSwitchId, resourceType, switchingProfileIds);
   }
 
   @Override
