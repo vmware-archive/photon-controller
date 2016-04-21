@@ -18,10 +18,13 @@ import com.vmware.photon.controller.apibackend.helpers.TestEnvironment;
 import com.vmware.photon.controller.apibackend.helpers.TestHelper;
 import com.vmware.photon.controller.apibackend.helpers.TestHost;
 import com.vmware.photon.controller.apibackend.servicedocuments.CreateLogicalRouterTask;
+import com.vmware.photon.controller.common.tests.nsx.NsxClientMock;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
+import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
+import com.vmware.photon.controller.nsxclient.NsxClientFactory;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceHost;
@@ -37,6 +40,9 @@ import org.testng.annotations.Test;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
 
 import java.lang.reflect.Field;
 import java.util.EnumSet;
@@ -65,6 +71,12 @@ public class CreateLogicalRouterTaskServiceTest {
     CreateLogicalRouterTask state = ReflectionUtils.buildValidStartState(CreateLogicalRouterTask.class);
     state.taskState.stage = stage;
     state.controlFlags = ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED;
+    state.displayName = "name";
+    state.description = "desc";
+    state.edgeClusterId = "edgeClusterId";
+    state.nsxManagerEndpoint = "nsxManagerEndpoint";
+    state.username = "username";
+    state.password = "password";
 
     return state;
   }
@@ -380,29 +392,24 @@ public class CreateLogicalRouterTaskServiceTest {
    */
   public class EndToEndTest {
 
-    private TestEnvironment machine;
-    private CreateLogicalRouterTask startState;
+    TestEnvironment testEnvironment;
+    NsxClientFactory nsxClientFactory;
 
     @BeforeMethod
-    public void setUpTest() throws Throwable {
-
-      machine = new TestEnvironment.Builder()
+    public void setupTest() throws Throwable {
+      nsxClientFactory = mock(NsxClientFactory.class);
+      testEnvironment = new TestEnvironment.Builder()
           .hostCount(1)
+          .nsxClientFactory(nsxClientFactory)
           .build();
-
-      startState = buildValidStartState(TaskState.TaskStage.CREATED);
-      startState.controlFlags = 0;
     }
 
     @AfterMethod
     public void tearDownTest() throws Throwable {
-
-      if (machine != null) {
-        machine.stop();
-        machine = null;
+      if (testEnvironment != null) {
+        testEnvironment.stop();
+        testEnvironment = null;
       }
-
-      startState = null;
     }
 
     /**
@@ -412,17 +419,42 @@ public class CreateLogicalRouterTaskServiceTest {
      */
     @Test
     public void testEndToEndSuccess() throws Throwable {
+      NsxClientMock nsxClientMock = new NsxClientMock.Builder()
+          .createLogicalRouter(true, "routerId")
+          .build();
+      doReturn(nsxClientMock).when(nsxClientFactory).create(any(String.class), any(String.class), any(String.class));
 
-      startState.name = "name";
-      startState.description = "desc";
+      CreateLogicalRouterTask savedState = startService();
 
-      CreateLogicalRouterTask savedState = machine.callServiceAndWaitForState(
+      TestHelper.assertTaskStateFinished(savedState.taskState);
+      assertThat(savedState.id, is("routerId"));
+    }
+
+    /**
+     * This test verifies an failed end-to-end scenario where CreateLogicalRouter fails.
+     *
+     * @throws Throwable Throws an exception if any error is encountered.
+     */
+    @Test
+    public void testFailedToCreateLogicalRouter() throws Throwable {
+      NsxClientMock nsxClientMock = new NsxClientMock.Builder()
+          .createLogicalRouter(false, "routerId")
+          .build();
+      doReturn(nsxClientMock).when(nsxClientFactory).create(any(String.class), any(String.class), any(String.class));
+
+      CreateLogicalRouterTask savedState = startService();
+
+      assertThat(savedState.taskState.stage, is(TaskState.TaskStage.FAILED));
+    }
+
+    private CreateLogicalRouterTask startService() throws Throwable {
+      CreateLogicalRouterTask startState = buildValidStartState();
+      startState.controlFlags = 0;
+      return testEnvironment.callServiceAndWaitForState(
           CreateLogicalRouterTaskService.FACTORY_LINK,
           startState,
           CreateLogicalRouterTask.class,
-          (state) -> TaskState.TaskStage.STARTED.ordinal() < state.taskState.stage.ordinal());
-
-      TestHelper.assertTaskStateFinished(savedState.taskState);
+          (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
     }
   }
 }

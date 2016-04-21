@@ -43,9 +43,9 @@ public class LogicalRouterApi extends NsxClientApi {
   }
 
   /**
-   * Creates a logical router async.
+   * Creates a logical router.
    */
-  public void createLogicalRouterAsync(LogicalRouterCreateSpec spec, FutureCallback<LogicalRouter> responseCallback)
+  public void createLogicalRouter(LogicalRouterCreateSpec spec, FutureCallback<LogicalRouter> responseCallback)
       throws IOException {
     postAsync(logicalRouterBasePath,
         serializeObjectAsJson(spec),
@@ -59,7 +59,7 @@ public class LogicalRouterApi extends NsxClientApi {
   /**
    * Gets a logical router async.
    */
-  public void getLogicalRouterAsync(String id, FutureCallback<LogicalRouter> responseCallback)
+  public void getLogicalRouter(String id, FutureCallback<LogicalRouter> responseCallback)
       throws IOException {
     getAsync(logicalRouterBasePath + "/" + id,
         HttpStatus.SC_OK,
@@ -71,7 +71,7 @@ public class LogicalRouterApi extends NsxClientApi {
   /**
    * Deletes a logical router async.
    */
-  public void deleteLogicalRouterAsync(String id, FutureCallback<Void> responseCallback)
+  public void deleteLogicalRouter(String id, FutureCallback<Void> responseCallback)
       throws IOException {
     deleteAsync(logicalRouterBasePath + "/" + id, HttpStatus.SC_OK, responseCallback);
   }
