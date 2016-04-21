@@ -42,6 +42,7 @@ dependencies {
   }
   testCompile "org.powermock:powermock-module-testng:${versions.powermock}"
   testCompile(project(path: ':cloud-store', configuration: 'tests'))
+  testCompile(project(path: ':nsx-client', configuration: 'tests'))
 }
 
 jar {
