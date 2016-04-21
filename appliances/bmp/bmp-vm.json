@@ -17,7 +17,7 @@
       "output_directory": "build/",
       "vm_name": "bmp-vm-vb",
       "vboxmanage": [
-        [ "modifyvm", "{{.Name}}", "--memory", "2048" ],
+        [ "modifyvm", "{{.Name}}", "--memory", "4096" ],
         [ "modifyvm", "{{.Name}}", "--cpus", "2" ],
         [ "storageattach", "{{.Name}}", "--storagectl", "IDE Controller", "--port", "0", "--device", "0", "--type",
           "dvddrive", "--medium", "{{ user `photon_cached_iso` }}" ]
