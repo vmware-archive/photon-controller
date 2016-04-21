@@ -323,6 +323,7 @@ public class ImageDatastoreSweeperService extends StatefulService {
 
                 Operation op = operations.get(queryHostSet.getId());
                 NodeGroupBroadcastResponse queryResponse = op.getBody(NodeGroupBroadcastResponse.class);
+                ServiceUtils.logInfo(this, "Host query result: %s", Utils.toJsonHtml(queryResponse));
                 List<HostService.State> documentLinks = QueryTaskUtils
                     .getBroadcastQueryDocuments(HostService.State.class, queryResponse);
 
