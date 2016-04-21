@@ -16,6 +16,8 @@ package com.vmware.photon.controller.nsxclient.apis;
 import com.vmware.photon.controller.nsxclient.RestClient;
 import com.vmware.photon.controller.nsxclient.models.LogicalRouter;
 import com.vmware.photon.controller.nsxclient.models.LogicalRouterCreateSpec;
+import com.vmware.photon.controller.nsxclient.models.LogicalRouterDownLinkPort;
+import com.vmware.photon.controller.nsxclient.models.LogicalRouterDownLinkPortCreateSpec;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.util.concurrent.FutureCallback;
@@ -29,6 +31,7 @@ import java.io.IOException;
 public class LogicalRouterApi extends NsxClientApi {
 
   public final String logicalRouterBasePath = basePath + "/logical-routers";
+  public final String logicalRouterPortBasePath = basePath + "/logical-router-ports";
 
   /**
    * Constructs a LogicalRouterApi class.
@@ -71,5 +74,32 @@ public class LogicalRouterApi extends NsxClientApi {
   public void deleteLogicalRouterAsync(String id, FutureCallback<Void> responseCallback)
       throws IOException {
     deleteAsync(logicalRouterBasePath + "/" + id, HttpStatus.SC_OK, responseCallback);
+  }
+
+  /**
+   * Create a downlink port on logical router.
+   * @param spec
+   * @param responseCallback
+   */
+  public void createLogicalRouterDownLinkPort(LogicalRouterDownLinkPortCreateSpec spec,
+                                              FutureCallback<LogicalRouterDownLinkPort> responseCallback)
+      throws IOException {
+
+    postAsync(logicalRouterPortBasePath,
+        serializeObjectAsJson(spec),
+        HttpStatus.SC_CREATED,
+        new TypeReference<LogicalRouterDownLinkPort>() {
+        },
+        responseCallback
+    );
+  }
+
+  /**
+   * Delete a router port.
+   * @param id
+   * @param responseCallback
+   */
+  public void deleteLogicalRouterPort(String id, FutureCallback<Void> responseCallback) throws IOException {
+    deleteAsync(logicalRouterPortBasePath + "/" + id, HttpStatus.SC_OK, responseCallback);
   }
 }
