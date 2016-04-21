@@ -872,9 +872,11 @@ class EsxVmConfig(object):
         return filtered_devices
 
     def disk_matcher(self, datastore, disk_id):
-        # device.backing.fileName is always in the form of:
-        # '[ds_name] disks/disk_id[0:2]/disk_id/disk_id.vmdk'
-        path = compond_path_join(DISK_FOLDER_NAME_PREFIX, partial_vmdk_path(disk_id))
+        # On VMFS, device.backing.fileName is in the form of: '[ds_name] disk_[disk_id]/[disk_id].vmdk'
+        # On VSAN, top-level folder is symlink to its internal object id, so the fileName field becomes
+        # '[ds_name] [vsan object id]/[disk_id].vmdk'.
+        # Since disk_id is unique, we only need to match [disk_id].vmdk.
+        path = vmdk_add_suffix(disk_id)
         return lambda device: device.backing.fileName.endswith(path)
 
     def get_device(self, devices, device_type, **kwargs):
