@@ -3,7 +3,7 @@
 SSHD_ENABLE_ROOT_LOGIN=${SSHD_ENABLE_ROOT_LOGIN:-"false"}
 
 PHOTON_ISO_URL=${ISO_URL:="http://artifactory.ec.eng.vmware.com/artifactory/esxcloud-archives/userContent/bmp/photon-1.0-0185afd.iso"}
-PHOTON_ISO_SHA1=${ISO_SHA1:="c0d7a57aae49f5420b3b48191b2ee187fde65723"}
+PHOTON_ISO_SHA1=${ISO_SHA1:="6cc1c646677ff8b8b48570b75286e496c85790f8"}
 VBOX_ISO_URL=${VBOX_ISO_URL:="http://download.virtualbox.org/virtualbox/5.0.14/VBoxGuestAdditions_5.0.14.iso"}
 VBOX_ISO_SHA256=${VBOX_ISO_SHA256:="cec0df18671adfe62a34d3810543f76f76206b212b2b61791fe026214c77507c"}
 
