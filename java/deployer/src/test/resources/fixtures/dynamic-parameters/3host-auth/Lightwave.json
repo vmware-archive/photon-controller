@@ -5,7 +5,7 @@
   "ENABLE_AUTH": "true",
   "SYSLOG_ENDPOINT": "SYSLOG_ENDPOINT",
   "LIGHTWAVE_PASSWORD": "PASSWORD",
-  "memoryMb": "1024",
+  "memoryMb": "4096",
   "APIFE_PORT": "443",
   "REGISTRATION_ADDRESS": "0.0.0.0",
   "diskGb": "8",

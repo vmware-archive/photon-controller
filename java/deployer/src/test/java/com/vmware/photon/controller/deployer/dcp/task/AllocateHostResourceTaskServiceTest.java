@@ -57,7 +57,6 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
@@ -506,9 +505,9 @@ public class AllocateHostResourceTaskServiceTest {
       Set<ContainerService.State> containerServices = getContainerServices(vmServiceLink);
       assertThat(containerServices.size(), lessThanOrEqualTo(ContainersConfig.ContainerType.values().length));
       assertThat(containerServices.stream().mapToLong(cs -> cs.memoryMb).sum(),
-          lessThan((long) (8192 * DeployerDefaults.MANAGEMENT_VM_TO_MANAGEMENT_ONLY_HOST_RESOURCE_RATIO)));
+          lessThanOrEqualTo((long) (8192 * DeployerDefaults.MANAGEMENT_VM_TO_MANAGEMENT_ONLY_HOST_RESOURCE_RATIO)));
       assertThat(containerServices.stream().mapToLong(cs -> cs.memoryMb).max().getAsLong(),
-          lessThan((long) (8192 * DeployerDefaults.MANAGEMENT_VM_TO_MANAGEMENT_ONLY_HOST_RESOURCE_RATIO)));
+          lessThanOrEqualTo((long) (8192 * DeployerDefaults.MANAGEMENT_VM_TO_MANAGEMENT_ONLY_HOST_RESOURCE_RATIO)));
       containerServices.stream().forEach(cs -> assertThat(cs.cpuShares,
           lessThanOrEqualTo(ContainerService.State.DOCKER_CPU_SHARES_MAX)));
       containerServices.stream().forEach(cs -> assertThat(cs.cpuShares,
@@ -538,9 +537,9 @@ public class AllocateHostResourceTaskServiceTest {
       Set<ContainerService.State> containerServices = getContainerServices(vmServiceLink);
       assertThat(containerServices.size(), lessThanOrEqualTo(ContainersConfig.ContainerType.values().length));
       assertThat(containerServices.stream().mapToLong(cs -> cs.memoryMb).sum(),
-          lessThan((long) (8192 * DeployerDefaults.MANAGEMENT_VM_TO_MIXED_HOST_RESOURCE_RATIO)));
+          lessThanOrEqualTo((long) (8192 * DeployerDefaults.MANAGEMENT_VM_TO_MIXED_HOST_RESOURCE_RATIO)));
       assertThat(containerServices.stream().mapToLong(cs -> cs.memoryMb).max().getAsLong(),
-          lessThan((long) (8192 * DeployerDefaults.MANAGEMENT_VM_TO_MIXED_HOST_RESOURCE_RATIO)));
+          lessThanOrEqualTo((long) (8192 * DeployerDefaults.MANAGEMENT_VM_TO_MIXED_HOST_RESOURCE_RATIO)));
       containerServices.stream().forEach(cs -> assertThat(cs.cpuShares,
           lessThanOrEqualTo(ContainerService.State.DOCKER_CPU_SHARES_MAX)));
       containerServices.stream().forEach(cs -> assertThat(cs.cpuShares,
