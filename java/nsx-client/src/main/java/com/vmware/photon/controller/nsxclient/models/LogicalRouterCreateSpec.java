@@ -36,7 +36,10 @@ public class LogicalRouterCreateSpec {
   @JsonProperty(value = "description", required = false)
   private String description;
 
-  @JsonProperty(value = "config", required = false)
+  @JsonProperty(value = "edge_cluster_id", required = false)
+  private String edgeClusterId;
+
+  @JsonProperty(value = "advanced_config", required = false)
   private LogicalRouterConfig logicalRouterConfig;
 
   public NsxRouter.RouterType getRouterType() {
@@ -63,6 +66,14 @@ public class LogicalRouterCreateSpec {
     this.displayName = displayName;
   }
 
+  public String getEdgeClusterId() {
+    return this.edgeClusterId;
+  }
+
+  public void setEdgeClusterId(String edgeClusterId) {
+    this.edgeClusterId = edgeClusterId;
+  }
+
   public LogicalRouterConfig getLogicalRouterConfig() {
     return this.logicalRouterConfig;
   }
@@ -85,6 +96,7 @@ public class LogicalRouterCreateSpec {
     return Objects.equals(getRouterType(), other.getRouterType())
         && Objects.equals(getDisplayName(), other.getDisplayName())
         && Objects.equals(getDescription(), other.getDescription())
+        && Objects.equals(getEdgeClusterId(), other.getEdgeClusterId())
         && Objects.deepEquals(getLogicalRouterConfig(), other.getLogicalRouterConfig());
   }
 
@@ -94,6 +106,7 @@ public class LogicalRouterCreateSpec {
         getRouterType(),
         getDescription(),
         getDisplayName(),
+        getEdgeClusterId(),
         getLogicalRouterConfig());
   }
 

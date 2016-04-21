@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.nsxclient;
 
 import com.vmware.photon.controller.nsxclient.apis.FabricApi;
+import com.vmware.photon.controller.nsxclient.apis.LogicalRouterApi;
 import com.vmware.photon.controller.nsxclient.apis.LogicalSwitchApi;
 
 import javax.net.ssl.SSLContext;
@@ -36,6 +37,7 @@ public class NsxClient {
 
   private final FabricApi fabricApi;
   private final LogicalSwitchApi logicalSwitchApi;
+  private final LogicalRouterApi logicalRouterApi;
 
   public NsxClient(String target,
                    String username,
@@ -48,6 +50,7 @@ public class NsxClient {
 
     this.fabricApi = new FabricApi(restClient);
     this.logicalSwitchApi = new LogicalSwitchApi(restClient);
+    this.logicalRouterApi = new LogicalRouterApi(restClient);
   }
 
   public FabricApi getFabricApi() {
@@ -56,6 +59,10 @@ public class NsxClient {
 
   public LogicalSwitchApi getLogicalSwitchApi() {
     return this.logicalSwitchApi;
+  }
+
+  public LogicalRouterApi getLogicalRouterApi() {
+    return this.logicalRouterApi;
   }
 
   public String getHostThumbprint(String ipAddress, int port) throws Throwable {

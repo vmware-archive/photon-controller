@@ -59,7 +59,7 @@ public class LogicalRouterApiTest extends NsxClientApiTest {
 
     LogicalRouterApi client = new LogicalRouterApi(restClient);
     final CountDownLatch latch = new CountDownLatch(1);
-    client.createLogicalRouterAsync(new LogicalRouterCreateSpec(),
+    client.createLogicalRouter(new LogicalRouterCreateSpec(),
         new com.google.common.util.concurrent.FutureCallback<LogicalRouter>() {
           @Override
           public void onSuccess(LogicalRouter result) {
@@ -84,7 +84,7 @@ public class LogicalRouterApiTest extends NsxClientApiTest {
 
     LogicalRouterApi client = new LogicalRouterApi(restClient);
     final CountDownLatch latch = new CountDownLatch(1);
-    client.getLogicalRouterAsync("id",
+    client.getLogicalRouter("id",
         new com.google.common.util.concurrent.FutureCallback<LogicalRouter>() {
           @Override
           public void onSuccess(LogicalRouter result) {
@@ -108,7 +108,7 @@ public class LogicalRouterApiTest extends NsxClientApiTest {
     LogicalRouterApi client = new LogicalRouterApi(restClient);
 
     final CountDownLatch latch = new CountDownLatch(1);
-    client.deleteLogicalRouterAsync("id",
+    client.deleteLogicalRouter("id",
         new com.google.common.util.concurrent.FutureCallback<Void>() {
           @Override
           public void onSuccess(Void result) {
