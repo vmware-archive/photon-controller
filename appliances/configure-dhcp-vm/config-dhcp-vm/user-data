@@ -1,0 +1,49 @@
+#cloud-config
+
+groups:
+  - photon: [photon]
+
+users:
+  - default
+  - name: root
+    plain_text_passwd: changeme
+    lock-passwd: false
+  - name: photon
+    gecos: photon user
+    primary-group: photon
+    plain_text_passwd: changeme
+    groups: root
+    lock-passwd: false
+    sudo: ALL=(ALL) NOPASSWD:ALL
+
+write_files:
+  - content: |
+        [Match]
+        Name=enp0s3
+
+        [Network]
+        DHCP=yes
+    owner: root:root
+    path: /etc/systemd/network/10-dhcp-enp0s3.network
+  - content: |
+        [Match]
+        Name=enp0s8
+
+        [Network]
+        Address=172.31.253.37/24
+    owner: root:root
+    path: /etc/systemd/network/10-dhcp-enp0s8.network
+
+
+runcmd:
+  - rm -f /etc/systemd/network/10-dhcp-en.network
+  - ip addr flush label "enp0s8"
+  - systemctl restart systemd-networkd
+  - sleep 30
+  - if [ ! -z "$(cat /etc/ssh/sshd_config | grep PermitRootLogin)" ] ; then sed -i 's/.*PermitRootLogin.*/PermitRootLogin yes/g' /etc/ssh/sshd_config ; else echo "PermitRootLogin yes" >> /etc/ssh/sshd_config ; fi
+  - if [ ! -z "$(cat /etc/ssh/sshd_config | grep UseDNS)" ] ; then sed -i 's/.*UseDNS.*/UseDNS no/g' /etc/ssh/sshd_config ; else echo "UseDNS no" >> /etc/ssh/sshd_config ; fi
+  - systemctl restart sshd
+  - sed -i 's/ExecStart.*/ExecStart=\/bin\/docker -d -s overlay -H tcp:\/\/0.0.0.0:2375 -H unix:\/\/\/var\/run\/docker.sock/g' /lib/systemd/system/docker.service
+  - systemctl daemon-reload
+  - systemctl enable docker
+  - systemctl start docker
