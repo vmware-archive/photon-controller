@@ -1,0 +1,26 @@
+xenon:
+  bindAddress: "0.0.0.0"
+  port: 19000
+  registrationAddress: "{{{REGISTRATION_ADDRESS}}}"
+  storagePath: "{{{DHCP-AGENT_DCP_STORAGE_PATH}}}"
+  peerNodes:
+{{#PEER_NODES}}
+  - http://{{peerAddress}}:{{peerPort}}
+{{/PEER_NODES}}
+{{^PEER_NODES}}
+  - http://{{{REGISTRATION_ADDRESS}}}:19000
+{{/PEER_NODES}}
+
+logging:
+  file:
+    enabled: true
+    currentLogFilename: {{{LOG_DIRECTORY}}}/dhcp-agent.log
+    archivedLogFilenamePattern: {{{LOG_DIRECTORY}}}/dhcp-agent-%d.log.gz
+    logFormat: "%-5p [%d{ISO8601}] %c: %m\n%ex"
+  syslog:
+    enabled: {{{ENABLE_SYSLOG}}}
+{{#ENABLE_SYSLOG}}
+    host: "{{{SYSLOG_ENDPOINT}}}"
+    logFormat: "%-5p [%d{ISO8601}] [dhcp-agent] [%property{instance}]%X{request}%X{task} %c: %m\n%ex"
+    facility: LOCAL0
+{{/ENABLE_SYSLOG}}
