@@ -10,7 +10,6 @@
 # License for then specific language governing permissions and limitations
 # under the License.
 
-import errno
 import os
 import tempfile
 import time
@@ -56,18 +55,6 @@ class TestEsxImageManager(unittest.TestCase):
 
     def tearDown(self):
         self.vim_client.disconnect(wait=True)
-
-    @patch("os.path.isdir", return_value=False)
-    @patch("os.makedirs", side_effect=OSError)
-    def test_make_image_dir(self, _makedirs, _isdir):
-        path = "/vmfs/volumes/ds/image_fake_iid"
-        self.assertRaises(
-            OSError, self.image_manager._make_image_dir, "ds", "fake_iid")
-        _isdir.assert_called_once_with(path)
-        self.assertEqual(
-            _makedirs.call_count, EsxImageManager.NUM_MAKEDIRS_ATTEMPTS)
-        for i in range(0, EsxImageManager.NUM_MAKEDIRS_ATTEMPTS):
-            self.assertEqual(_makedirs.call_args_list[i][0], (path,))
 
     @patch(
         "host.hypervisor.esx.image_manager.EsxImageManager.reap_tmp_images")
@@ -129,18 +116,6 @@ class TestEsxImageManager(unittest.TestCase):
         else:
             # verify stray image is deleted
             self.assertFalse(os.path.exists(path))
-
-    @patch("os.path.isdir")
-    @patch("os.makedirs")
-    def test_vmdk_mkdir_eexist(self, _makedirs, _isdir):
-        eexist = OSError()
-        eexist.errno = errno.EEXIST
-        _makedirs.side_effect = eexist
-        _isdir.side_effect = (False,  # dest image dir missing
-                              True)   # dest image dir is created
-
-        self.image_manager._make_image_dir("ds", "fake_iid")
-        _isdir.assert_called("/vmfs/volumes/ds/image_fake_iid")
 
     @patch("pysdk.task.WaitForTask")
     @patch("uuid.uuid4", return_value="fake_id")

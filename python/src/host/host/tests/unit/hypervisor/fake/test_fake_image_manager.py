@@ -15,10 +15,8 @@ import unittest
 from hamcrest import *  # noqa
 from mock import MagicMock
 from nose_parameterized import parameterized
-from nose.tools import raises
 
 from common.file_util import mkdtemp
-from host.hypervisor.datastore_manager import DatastoreNotFoundException
 from host.hypervisor.fake.image_manager import FakeImageManager as Fim
 
 
@@ -81,25 +79,3 @@ class TestFakeImageManager(unittest.TestCase):
         image_path = self.im.image_file(ds, image)
         assert_that(self.im.get_datastore_id_from_path(image_path), is_(ds))
         assert_that(self.im.get_image_id_from_path(image_path), is_(image))
-
-    @parameterized.expand([
-        (["disk1", "disk2"], ["disk3", "disk4"]),
-    ])
-    def test_get_images(self, deployed_images, copied_images):
-        assert_that(self.im.get_images(self.datastore_id), is_([]))
-        deployed_images = sorted(deployed_images)
-        for image_id in deployed_images:
-            self.im.deploy_image("ignored", image_id, self.datastore_id)
-
-        for image_id in copied_images:
-            self.im.copy_image(self.datastore_id, deployed_images[0],
-                               self.datastore_id, image_id)
-
-        expected_images = sorted(deployed_images + copied_images)
-
-        assert_that(sorted(self.im.get_images(self.datastore_id)),
-                    is_(expected_images))
-
-    @raises(DatastoreNotFoundException)
-    def test_get_images_datastore_notfound(self):
-        self.im.get_images("ds_not_found")

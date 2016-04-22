@@ -29,7 +29,7 @@ request = CreateImageFromVmRequest()
 request.vm_id = options.vm_id
 request.image_id = str(uuid.uuid4())
 request.datastore = options.datastore
-request.tmp_image_path = "tmp_upload_" + request.image_id
+request.tmp_image_path = "[] /vmfs/volumes/%s/tmp_upload_%s" % (request.datastore, request.image_id)
 
 print_request(request)
 client = get_client(options.host)
