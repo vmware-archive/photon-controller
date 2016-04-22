@@ -53,6 +53,13 @@ module EsxCloud
         end
       end
 
+      def stop_agent(server, user_name, password)
+        puts "stopping agent on host #{server}"
+        Net::SSH.start(server, user_name, {password: password, user_known_hosts_file: "/dev/null"}) do |ssh|
+          ssh.exec!("/etc/init.d/photon-controller-agent stop")
+        end
+      end
+
       def uninstall_vib(server, user_name, password, vib_name)
         puts "deleting vib #{vib_name} from #{server}"
         Net::SSH.start(server, user_name, {password: password, user_known_hosts_file: "/dev/null"}) do |ssh|

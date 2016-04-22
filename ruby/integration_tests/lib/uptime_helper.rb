@@ -52,6 +52,17 @@ module EsxCloud
         end
       end
 
+      def stop_agent(dc_yml, usage_tags)
+        host_specs = EsxCloud::HostsImporter.import_file dc_yml
+        usage_tags = usage_tags.split(" ")
+        host_specs.each do |host|
+          if host.usage_tags.sort == usage_tags.sort
+            EsxCloud::HostCleaner.stop_agent host.address, host.username, host.password
+            break
+          end
+        end
+      end
+
     end
   end
 end
