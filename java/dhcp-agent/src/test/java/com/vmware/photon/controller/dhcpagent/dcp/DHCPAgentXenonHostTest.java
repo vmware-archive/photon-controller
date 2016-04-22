@@ -115,8 +115,8 @@ public class DHCPAgentXenonHostTest {
     @Test
     public void testParams() {
       DHCPAgentXenonHost host = injector.getInstance(DHCPAgentXenonHost.class);
-      assertThat(host.getPort(), is(19000));
-      Path storagePath = Paths.get(storageDir.getPath()).resolve(Integer.toString(19000));
+      assertThat(host.getPort(), is(17000));
+      Path storagePath = Paths.get(storageDir.getPath()).resolve(Integer.toString(17000));
       assertThat(host.getStorageSandbox().getPath(), is(storagePath.toString()));
     }
   }
