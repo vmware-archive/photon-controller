@@ -8,14 +8,14 @@
   "useHostNetwork": true,
   "containerImage": "esxcloud/dhcp-agent",
   "portBindings": {
-    "19000": 19000,
-    "19001": 19001
+    "17000": 17000,
+    "17001": 17001
   },
   "volumeBindings": {
     "/var/log": "/var/log"
   },
   "dynamicParameters": {
-    "DHCP-AGENT_DCP_STORAGE_PATH": "/etc/esxcloud/dhcp-agent/sandbox_19000",
+    "DHCP-AGENT_DCP_STORAGE_PATH": "/etc/esxcloud/dhcp-agent/sandbox_17000",
     "LOG_DIRECTORY": "/var/log/esxcloud",
     "DHCP-AGENT_INSTALL_DIRECTORY": "/usr/lib/esxcloud/dhcp-agent"
   }
