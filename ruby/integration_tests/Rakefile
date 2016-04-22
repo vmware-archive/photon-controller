@@ -175,6 +175,11 @@ task :power_on_management_vms do
   EsxCloud::UptimeHelper.power_on_management_vms
 end
 
+desc 'Stop agent'
+task :stop_agent, [:dc_yml, :usage_tags] do |t, args|
+  EsxCloud::UptimeHelper.stop_agent(args[:dc_yml], args[:usage_tags])
+end
+
 desc 'Run integration test to check deployment'
 RSpec::Core::RakeTask.new(:check_deployment) do |task|
   task.pattern = FileList['spec/api/check_deployment/*_spec.rb']
