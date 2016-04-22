@@ -15,7 +15,7 @@ package com.vmware.photon.controller.apibackend;
 
 import com.vmware.photon.controller.apibackend.tasks.CreateLogicalRouterTaskService;
 import com.vmware.photon.controller.apibackend.tasks.CreateLogicalSwitchTaskService;
-import com.vmware.photon.controller.apibackend.workflow.CreateVirtualNetworkWorkflowService;
+import com.vmware.photon.controller.apibackend.workflows.CreateVirtualNetworkWorkflowService;
 import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Service;
 

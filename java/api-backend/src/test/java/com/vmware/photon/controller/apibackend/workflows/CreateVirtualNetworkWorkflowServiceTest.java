@@ -11,7 +11,7 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package com.vmware.photon.controller.apibackend.workflow;
+package com.vmware.photon.controller.apibackend.workflows;
 
 import com.vmware.photon.controller.apibackend.helpers.ReflectionUtils;
 import com.vmware.photon.controller.apibackend.helpers.TestEnvironment;
@@ -161,7 +161,7 @@ public class CreateVirtualNetworkWorkflowServiceTest {
 
     @Test
     public void testHandleCreateSuccessfullyCreateDocuments() throws Throwable {
-      testEnvironment = TestEnvironment.create(COUNT_ONE);
+      testEnvironment = new TestEnvironment.Builder().hostCount(COUNT_ONE).build();
       startState.controlFlags = 0;
 
       CreateVirtualNetworkWorkflowDocument finalState =
@@ -199,7 +199,7 @@ public class CreateVirtualNetworkWorkflowServiceTest {
 
     @Test
     public void testHandleCreateWithMinimumState() throws Throwable {
-      testEnvironment = TestEnvironment.create(COUNT_ONE);
+      testEnvironment = new TestEnvironment.Builder().hostCount(COUNT_ONE).build();
       startState = new CreateVirtualNetworkWorkflowDocument();
       startState.name = "network";
 
@@ -218,7 +218,7 @@ public class CreateVirtualNetworkWorkflowServiceTest {
 
     @Test
     public void testHandleCreateWithMissingName() throws Throwable {
-      testEnvironment = TestEnvironment.create(COUNT_ONE);
+      testEnvironment = new TestEnvironment.Builder().hostCount(COUNT_ONE).build();
       startState.name = null;
 
       try {
@@ -241,7 +241,7 @@ public class CreateVirtualNetworkWorkflowServiceTest {
 
     @BeforeClass
     public void setUpClass() throws Throwable {
-      testHost = TestHost.create();
+      testHost = new TestHost.Builder().build();
     }
 
     @AfterClass
@@ -402,7 +402,7 @@ public class CreateVirtualNetworkWorkflowServiceTest {
 
     @BeforeClass
     public void setUpClass() throws Throwable {
-      testHost = TestHost.create();
+      testHost = new TestHost.Builder().build();
     }
 
     @AfterClass
@@ -607,7 +607,7 @@ public class CreateVirtualNetworkWorkflowServiceTest {
 
     @Test(dataProvider = "testSuccessParams")
     public void testSuccess(int hostCount) throws Throwable {
-      testEnvironment = TestEnvironment.create(hostCount);
+      testEnvironment = new TestEnvironment.Builder().hostCount(hostCount).build();
 
       CreateVirtualNetworkWorkflowDocument finalState =
           testEnvironment.callServiceAndWaitForState(

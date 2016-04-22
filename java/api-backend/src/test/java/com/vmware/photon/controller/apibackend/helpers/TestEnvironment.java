@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.apibackend.helpers;
 
 import com.vmware.photon.controller.common.xenon.MultiHostEnvironment;
+import com.vmware.photon.controller.nsxclient.NsxClientFactory;
 
 import static org.testng.Assert.assertTrue;
 
@@ -22,25 +23,15 @@ import static org.testng.Assert.assertTrue;
  */
 public class TestEnvironment extends MultiHostEnvironment<TestHost> {
 
-  private TestEnvironment(int hostCount) throws Throwable {
+  private TestEnvironment(int hostCount,
+                          NsxClientFactory nsxClientFactory) throws Throwable {
     assertTrue(hostCount > 0);
     hosts = new TestHost[hostCount];
     for (int i = 0; i < hosts.length; i++) {
-      hosts[i] = new TestHost();
+      hosts[i] = new TestHost.Builder()
+        .nsxClientFactory(nsxClientFactory)
+        .build(false);
     }
-  }
-
-  /**
-   * Create instance of TestEnvironment with specified count of hosts and start all hosts.
-   *
-   * @param hostCount
-   * @return
-   * @throws Throwable
-   */
-  public static TestEnvironment create(int hostCount) throws Throwable {
-    TestEnvironment testEnvironment = new TestEnvironment(hostCount);
-    testEnvironment.start();
-    return testEnvironment;
   }
 
   /**
@@ -49,14 +40,24 @@ public class TestEnvironment extends MultiHostEnvironment<TestHost> {
   public static class Builder {
 
     private int hostCount;
+    private NsxClientFactory nsxClientFactory;
 
     public Builder hostCount(int hostCount) {
       this.hostCount = hostCount;
       return this;
     }
 
+    public Builder nsxClientFactory(NsxClientFactory nsxClientFactory) {
+      this.nsxClientFactory = nsxClientFactory;
+      return this;
+    }
+
     public TestEnvironment build() throws Throwable {
-      TestEnvironment environment = new TestEnvironment(hostCount);
+      TestEnvironment environment = new TestEnvironment(
+          hostCount,
+          nsxClientFactory);
+
+
       environment.start();
       return environment;
     }

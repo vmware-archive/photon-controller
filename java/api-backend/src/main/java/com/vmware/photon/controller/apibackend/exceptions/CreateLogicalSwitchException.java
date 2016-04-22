@@ -11,7 +11,7 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package com.vmware.photon.controller.apibackend;
+package com.vmware.photon.controller.apibackend.exceptions;
 
 /**
  * Exception thrown due to failing to create logical switch.

@@ -109,7 +109,7 @@ public class CreateLogicalRouterTaskServiceTest {
 
     @BeforeClass
     public void setUpClass() throws Throwable {
-      host = TestHost.create();
+      host = new TestHost.Builder().build();
     }
 
     @BeforeMethod
@@ -239,7 +239,7 @@ public class CreateLogicalRouterTaskServiceTest {
 
     @BeforeClass
     public void setUpClass() throws Throwable {
-      host = TestHost.create();
+      host = new TestHost.Builder().build();
     }
 
     @BeforeMethod
