@@ -51,8 +51,6 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
 
-import java.io.IOException;
-
 /**
  * This resource is for Deployment related API.
  */
@@ -264,7 +262,7 @@ public class DeploymentResource {
         TaskResourceRoutes.TASK_PATH);
   }
 
-  private DeploymentDeployOperation parseDeployConfig(String operation) {
+  private DeploymentDeployOperation parseDeployConfig(String operation) throws ExternalException {
     if (operation.isEmpty()) {
       return new DeploymentDeployOperation();
     }
@@ -279,12 +277,12 @@ public class DeploymentResource {
         case READY:
           return deploymentDeployOperation;
         default:
-          throw new ExternalException(String.format("Desired state %s is not allowed to set for performing deployment.",
-              deploymentDeployOperation.getDesiredState()));
+          throw new IllegalArgumentException("Invalid desiredState value");
       }
-    } catch (IOException | ExternalException ex) {
+    } catch (Exception ex) {
       logger.error("Unexpected error desirializing {}", operation, ex);
-      return new DeploymentDeployOperation();
+      throw new ExternalException(String.format("Desired state %s is invalid for performing deployment.",
+          operation));
     }
   }
 }
