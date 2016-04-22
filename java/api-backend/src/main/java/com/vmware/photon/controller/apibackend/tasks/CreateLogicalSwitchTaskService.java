@@ -22,7 +22,9 @@ import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
-import com.vmware.photon.controller.nsxclient.RestClient;
+import com.vmware.photon.controller.nsxclient.NsxClient;
+import com.vmware.photon.controller.nsxclient.NsxClientFactory;
+import com.vmware.photon.controller.nsxclient.NsxClientFactoryProvider;
 import com.vmware.photon.controller.nsxclient.apis.LogicalSwitchApi;
 import com.vmware.photon.controller.nsxclient.builders.LogicalSwitchCreateSpecBuilder;
 import com.vmware.photon.controller.nsxclient.datatypes.NsxSwitch;
@@ -240,8 +242,9 @@ public class CreateLogicalSwitchTaskService extends StatefulService {
 
   @VisibleForTesting
   public LogicalSwitchApi getLogicalSwitchApi(CreateLogicalSwitchTask currentState) {
-    RestClient restClient = new RestClient(currentState.nsxManagerEndpoint,
-        currentState.username, currentState.password);
-    return new LogicalSwitchApi(restClient);
+    NsxClientFactory nsxClientFactory = ((NsxClientFactoryProvider) getHost()).getNsxClientFactory();
+    NsxClient nsxClient = nsxClientFactory.create(currentState.nsxManagerEndpoint, currentState.username,
+        currentState.password);
+    return nsxClient.getLogicalSwitchApi();
   }
 }
