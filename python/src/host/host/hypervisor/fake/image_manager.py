@@ -71,7 +71,7 @@ class FakeImageManager(ImageManager):
         return os.path.join(image_dir, "%s.vmdk" % image_id)
 
     def get_images(self, datastore):
-        return list(self._disk_manager.get_resource_ids(datastore))
+        pass
 
     def get_inactive_images(self, datastore_id):
         return list()

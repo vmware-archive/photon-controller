@@ -18,7 +18,6 @@ import sys
 
 from common.file_util import mkdir_p, mkdtemp
 from common.kind import Flavor
-from host.hypervisor.datastore_manager import DatastoreNotFoundException
 from host.hypervisor.disk_manager import DatastoreOutOfSpaceException
 from host.hypervisor.disk_manager import DiskAlreadyExistException
 from host.hypervisor.disk_manager import DiskManager
@@ -107,22 +106,6 @@ class FakeDiskManager(DiskManager):
         resource.image = None
         resource.datastore = datastore
         return resource
-
-    def get_resource_ids(self, datastore=None):
-        resources = set()
-        if datastore:
-            datastore_path = self._datastore_path(datastore)
-            if not os.path.exists(datastore_path):
-                raise DatastoreNotFoundException()
-
-            if os.path.isdir(datastore_path):
-                [resources.add(disk[:-5])
-                 for disk in os.listdir(datastore_path)]
-        else:
-            for datastore in os.listdir(self.disk_path):
-                resources = resources.union(self.get_resource_ids(datastore))
-
-        return resources
 
     def used_storage(self, datastore):
         sum = 0

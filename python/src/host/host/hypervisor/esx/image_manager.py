@@ -13,7 +13,6 @@
 """Temporary hack to deploy demo image from vib to datastore"""
 
 import errno
-import gzip
 import json
 import logging
 
@@ -29,7 +28,6 @@ from pyVmomi import vim
 from common.file_lock import AcquireLockFailure
 from common.file_lock import FileBackedLock
 from common.file_lock import InvalidFile
-from common.file_util import mkdir_p
 from common.file_util import rm_rf
 from common.thread import Periodic
 from host.hypervisor.datastore_manager import DatastoreNotFoundException
@@ -79,8 +77,7 @@ class EsxImageManager(ImageManager):
         self._ds_manager = ds_manager
         self._image_reaper = None
 
-    def monitor_for_cleanup(self,
-                            reap_interval=DEFAULT_TMP_IMAGES_CLEANUP_INTERVAL):
+    def monitor_for_cleanup(self, reap_interval=DEFAULT_TMP_IMAGES_CLEANUP_INTERVAL):
         self._image_reaper = Periodic(self.reap_tmp_images, reap_interval)
         self._image_reaper.daemon = True
         self._image_reaper.start()
@@ -95,65 +92,49 @@ class EsxImageManager(ImageManager):
         try:
             return os.path.exists(image_dir)
         except:
-            self._logger.exception(
-                "Error looking up %s" % image_dir)
+            self._logger.exception("Error looking up %s" % image_dir)
             return False
 
     """
-    The following method is intended
-    as a replacement of check_image in
-    the vm creation workflow compatible
-    with the new image sweeper.
-    For an image to be valid both the
-    directory and the image timestamp
+    The following method is intended as a replacement of check_image in
+    the vm creation workflow compatible with the new image sweeper.
+    For an image to be valid both the directory and the image timestamp
     file must exists on the datastore.
     """
     def check_and_validate_image(self, image_id, ds_id):
-        image_dir = os.path.dirname(
-            os_vmdk_path(ds_id, image_id, IMAGE_FOLDER_NAME_PREFIX))
+        image_dir = os.path.dirname(os_vmdk_path(ds_id, image_id, IMAGE_FOLDER_NAME_PREFIX))
 
         try:
             if not os.path.exists(image_dir):
                 return False
         except:
-            self._logger.exception(
-                "Error looking up %s" % image_dir)
+            self._logger.exception("Error looking up %s" % image_dir)
             return False
 
         # Check the existence of the timestamp file
-        timestamp_pathname = \
-            os.path.join(image_dir,
-                         self.IMAGE_TIMESTAMP_FILE_NAME)
+        timestamp_pathname = os.path.join(image_dir, self.IMAGE_TIMESTAMP_FILE_NAME)
         try:
             if os.path.exists(timestamp_pathname):
                 return True
         except Exception as ex:
-            self._logger.exception(
-                "Exception looking up %s, %s" % (timestamp_pathname, ex))
+            self._logger.exception("Exception looking up %s, %s" % (timestamp_pathname, ex))
             return False
 
         return False
 
     """
-    This method is used to update the mod time on the
-    image timestamp file.
+    This method is used to update the mod time on the image timestamp file.
     """
     def touch_image_timestamp(self, ds_id, image_id):
-        """
-        :param ds_id:
-        :param image_id:
-        :return:
-        """
-        image_path = os.path.dirname(
-            os_vmdk_path(ds_id, image_id, IMAGE_FOLDER_NAME_PREFIX))
+
+        image_path = os.path.dirname(os_vmdk_path(ds_id, image_id, IMAGE_FOLDER_NAME_PREFIX))
 
         # Touch the timestamp file
         timestamp_pathname = os.path.join(image_path, self.IMAGE_TIMESTAMP_FILE_NAME)
         try:
             os.utime(timestamp_pathname, None)
         except Exception as ex:
-            self._logger.exception(
-                "Exception looking up %s, %s" % (timestamp_pathname, ex))
+            self._logger.exception("Exception looking up %s, %s" % (timestamp_pathname, ex))
             raise ex
 
     @log_duration
@@ -175,38 +156,25 @@ class EsxImageManager(ImageManager):
     def image_size(self, image_id):
         for image_ds in self._ds_manager.image_datastores():
             try:
-                image_path = os_vmdk_flat_path(image_ds, image_id,
-                                               IMAGE_FOLDER_NAME_PREFIX)
+                image_path = os_vmdk_flat_path(image_ds, image_id, IMAGE_FOLDER_NAME_PREFIX)
                 return os.path.getsize(image_path)
             except os.error:
-                self._logger.info("Image %s not found in DataStore %s" %
-                                  (image_id, image_ds))
+                self._logger.info("Image %s not found in DataStore %s" % (image_id, image_ds))
 
-        self._logger.warning("Failed to get image size:",
-                             exc_info=True)
+        self._logger.warning("Failed to get image size:", exc_info=True)
         # Failed to access shared image.
-        raise NoSuchResourceException(
-            ResourceType.IMAGE,
-            "Image does not exist.")
+        raise NoSuchResourceException(ResourceType.IMAGE, "Image does not exist.")
 
-    def _load_json(self, metadata_path):
+    def get_image_metadata(self, image_id, datastore):
+        metadata_path = os_metadata_path(datastore, image_id, IMAGE_FOLDER_NAME_PREFIX)
+        self._logger.info("Loading metadata %s" % metadata_path)
         if os.path.exists(metadata_path):
             with open(metadata_path) as fh:
                 try:
-                    data = json.load(fh)
-                    return data
+                    return json.load(fh)
                 except ValueError:
-                    self._logger.error(
-                        "Error loading metadata file %s" % metadata_path,
-                        exc_info=True)
+                    self._logger.error("Error loading metadata file %s" % metadata_path, exc_info=True)
         return {}
-
-    def get_image_metadata(self, image_id, datastore):
-        metadata_path = os_metadata_path(datastore,
-                                         image_id,
-                                         IMAGE_FOLDER_NAME_PREFIX)
-        self._logger.info("Loading metadata %s" % metadata_path)
-        return self._load_json(metadata_path)
 
     def _get_datastore_type(self, datastore_id):
         datastores = self._ds_manager.get_datastores()
@@ -321,47 +289,34 @@ class EsxImageManager(ImageManager):
             raise
 
     """
-    The following method should be used to check
-    and validate the existence of a previously
-    created image. With the new image delete path
-    the "timestamp" file must exists inside the
-    image directory. If the directory exists and
-    the file does not, it may mean that an image
-    delete operation was aborted mid-way. In this
-    case the following method recreate the timestamp
-    file. All operations are performed while
-    holding the image directory lock (FileBackedLock),
+    The following method should be used to check and validate the existence of a previously
+    created image. With the new image delete path the "timestamp" file must exists inside the
+    image directory. If the directory exists and the file does not, it may mean that an image
+    delete operation was aborted mid-way. In this case the following method recreate the timestamp
+    file. All operations are performed while holding the image directory lock (FileBackedLock),
     the caller is required to hold the lock.
     """
     def _check_image_repair(self, image_id, datastore):
-        vmdk_pathname = os_vmdk_path(datastore,
-                                     image_id,
-                                     IMAGE_FOLDER_NAME_PREFIX)
+        vmdk_pathname = os_vmdk_path(datastore, image_id, IMAGE_FOLDER_NAME_PREFIX)
 
         image_dirname = os.path.dirname(vmdk_pathname)
         try:
             # Check vmdk file
             if not os.path.exists(vmdk_pathname):
-                self._logger.info("Vmdk path doesn't exists: %s" %
-                                  vmdk_pathname)
+                self._logger.info("Vmdk path doesn't exists: %s" % vmdk_pathname)
                 return False
         except Exception as ex:
-            self._logger.exception(
-                "Exception validating %s, %s" % (image_dirname, ex))
+            self._logger.exception("Exception validating %s, %s" % (image_dirname, ex))
             return False
 
         # Check timestamp file
-        timestamp_pathname = \
-            os.path.join(image_dirname,
-                         self.IMAGE_TIMESTAMP_FILE_NAME)
+        timestamp_pathname = os.path.join(image_dirname, self.IMAGE_TIMESTAMP_FILE_NAME)
         try:
             if os.path.exists(timestamp_pathname):
-                self._logger.info("Timestamp file exists: %s" %
-                                  timestamp_pathname)
+                self._logger.info("Timestamp file exists: %s" % timestamp_pathname)
                 return True
         except Exception as ex:
-            self._logger.exception(
-                "Exception validating %s, %s" % (timestamp_pathname, ex))
+            self._logger.exception("Exception validating %s, %s" % (timestamp_pathname, ex))
 
         # The timestamp file is not accessible,
         # try creating one, if successful try to
@@ -371,12 +326,10 @@ class EsxImageManager(ImageManager):
             self._create_image_timestamp_file(image_dirname)
             self._delete_renamed_image_timestamp_file(image_dirname)
         except Exception as ex:
-            self._logger.exception(
-                "Exception creating %s, %s" % (timestamp_pathname, ex))
+            self._logger.exception("Exception creating %s, %s" % (timestamp_pathname, ex))
             return False
 
-        self._logger.info("Image repaired: %s" %
-                          image_dirname)
+        self._logger.info("Image repaired: %s" % image_dirname)
         return True
 
     def copy_image(self, source_datastore, source_id, dest_datastore, dest_id):
@@ -412,8 +365,7 @@ class EsxImageManager(ImageManager):
             raise DiskAlreadyExistException("Image already exists")
 
         # Copy image to the tmp directory.
-        tmp_dir = self._copy_to_tmp_image(source_datastore, source_id,
-                                          dest_datastore, dest_id)
+        tmp_dir = self._copy_to_tmp_image(source_datastore, source_id, dest_datastore, dest_id)
 
         self._move_image(dest_id, dest_datastore, tmp_dir)
 
@@ -432,9 +384,7 @@ class EsxImageManager(ImageManager):
                     # receiving end stores the uploaded file in temp images
                     # folder but does not lock it with FileBackedLock, so we
                     # need to allow a grace period before reaping it.
-                    self._logger.info(
-                        "Skip folder: %s, created: %s, now: %s" %
-                        (image_dir, create_time, current_time))
+                    self._logger.info("Skip folder: %s, created: %s, now: %s" % (image_dir, create_time, current_time))
                     continue
 
                 try:
@@ -465,21 +415,8 @@ class EsxImageManager(ImageManager):
 
         return image_ids
 
-    def _unzip(self, src, dst):
-        self._logger.info("unzip %s -> %s" % (src, dst))
-
-        fsrc = gzip.open(src, "rb")
-        fdst = open(dst, "wb")
-
-        try:
-            shutil.copyfileobj(fsrc, fdst)
-        finally:
-            fsrc.close()
-            fdst.close()
-
     def _copy_disk(self, src, dst):
-        self._manage_disk(vim.VirtualDiskManager.CopyVirtualDisk_Task,
-                          sourceName=src, destName=dst)
+        self._manage_disk(vim.VirtualDiskManager.CopyVirtualDisk_Task, sourceName=src, destName=dst)
 
     def _manage_disk(self, op, **kwargs):
         try:
@@ -493,50 +430,12 @@ class EsxImageManager(ImageManager):
         except vim.Fault.InvalidDatastore, e:
             raise DiskPathException(e.msg)
 
-    def _temp(self, file):
-        """ Generate a temp file name based on real file name
-            [] /vmfs/volumes/datastore1/image_ttylinux/ttylinux.vmdk
-            [] /vmfs/volumes/datastore1/image_ttylinux/ttylinux-tmp.vmdk
-        :param file: real file name
-        :return: temp file name
-        """
-        if file.endswith(".vmdk"):
-            return file[:-5] + "-tmp.vmdk"
-        else:
-            return file + "-tmp"
-
     @property
     def _manager(self):
         """Get the virtual disk manager for the host
         rtype:vim.VirtualDiskManager
         """
         return self._vim_client.virtual_disk_manager
-
-    def _make_image_dir(self, datastore, image_id,
-                        parent_folder_name=IMAGE_FOLDER_NAME_PREFIX):
-        path = os.path.dirname(
-            os_vmdk_path(
-                datastore,
-                image_id,
-                parent_folder_name))
-
-        if os.path.isdir(path):
-            return
-
-        # On shared volumes makedirs can fail with not found in rare corner
-        # cases if two directory creates collide. Just retry in that case
-        for attempt in range(1, self.NUM_MAKEDIRS_ATTEMPTS+1):
-            try:
-                mkdir_p(path)
-            except OSError:
-                self._logger.debug("Retrying (%u) while creating %s" %
-                                   (attempt, path))
-                if attempt == self.NUM_MAKEDIRS_ATTEMPTS:
-                    raise
-                else:
-                    continue
-            # Directory got created, stop the for loop
-            break
 
     def get_datastore_id_from_path(self, image_path):
         """Extract datastore id from the absolute path of an image.
@@ -701,182 +600,118 @@ class EsxImageManager(ImageManager):
     c) vm creation
 
     The steps are outlined here:
-    1) Read content of the unused_image_marker file.
-       If error move on to next image,
-    2) Acquire image-lock,
-    3) Read the mod time on the t-stamp file,
-       if t-stamp file doesn't exist go to 6
-    4) If the mod time of the t-stamp file is
-       newer than the content of the marker
-       file move on to next image
-    5) Move the t-stamp file to another name,
-    6) Check the mod time on the new name of
-       the t-stamp file. if the mod time has
-       changed, move on to next image
+    1) Read content of the unused_image_marker file. If error, move on to next image.
+    2) Acquire image-lock.
+    3) Read the mod time on the t-stamp file. If t-stamp file doesn't exist go to 6.
+    4) If the mod time of the t-stamp file is newer than the content of the marker
+       file move on to next image.
+    5) Move the t-stamp file to another name.
+    6) Check the mod time on the new name of the t-stamp file. if the mod time has
+       changed, move on to next image.
     7) move image directory to a trash location
 
-    This method returns True if the image was removed,
-    False if the image could not be removed.
+    This method returns True if the image was removed, False if the image could not be removed.
     """
 
-    def _delete_single_image(self, image_sweeper, curdir, image_id, modify=True):
-        self._logger.info("IMAGE SCANNER: Starting to "
-                          "delete image: %s, %s"
-                          % (curdir, image_id))
+    def _delete_single_image(self, image_sweeper, curdir, image_id):
+        self._logger.info("IMAGE SCANNER: Starting to delete image: %s, %s" % (curdir, image_id))
         # Read content of marker file
         try:
-            marker_pathname = os.path.join(curdir,
-                                           self.IMAGE_MARKER_FILE_NAME)
+            marker_pathname = os.path.join(curdir, self.IMAGE_MARKER_FILE_NAME)
             marker_time = self._read_marker_file(marker_pathname)
         except Exception as ex:
-            self._logger.warning("Cannot read marker file: %s, %s"
-                                 % (curdir, ex))
+            self._logger.warning("Cannot read marker file: %s, %s" % (curdir, ex))
             return False
 
-        self._logger.info("IMAGE SCANNER: Marker time: %s"
-                          % marker_time)
+        self._logger.info("IMAGE SCANNER: Marker time: %s" % marker_time)
 
-        # Subtract grace time to avoid
-        # errors due to small difference in clock
-        # values on different hosts. Pretend the scan
-        # started 60 seconds earlier.
+        # Subtract grace time to avoid errors due to small difference in clock
+        # values on different hosts. Pretend the scan started 60 seconds earlier.
         marker_time -= image_sweeper.get_grace_period()
 
-        self._logger.info(
-            "IMAGE SCANNER: Marker time after grace: %s"
-            % marker_time)
+        self._logger.info("IMAGE SCANNER: Marker time after grace: %s" % marker_time)
 
-        timestamp_pathname = \
-            os.path.join(curdir,
-                         self.IMAGE_TIMESTAMP_FILE_NAME)
-        renamed_timestamp_pathname = \
-            timestamp_pathname + \
-            self.IMAGE_TIMESTAMP_FILE_RENAME_SUFFIX
+        timestamp_pathname = os.path.join(curdir, self.IMAGE_TIMESTAMP_FILE_NAME)
+        renamed_timestamp_pathname = timestamp_pathname + self.IMAGE_TIMESTAMP_FILE_RENAME_SUFFIX
 
         # Lock image
         datastore_id = image_sweeper.datastore_id
         ds_type = self._get_datastore_type(datastore_id)
 
         with FileBackedLock(curdir, ds_type):
-            # Get mod time of the timestamp file,
-            # the method returns None if the file doesn't
-            # exists, throws exception if there are
-            # other errors
-            timestamp_exists, mod_time = \
-                self._get_mod_time(
-                    timestamp_pathname)
+            # Get mod time of the timestamp file, the method returns None if the file doesn't
+            # exists, throws exception if there are other errors
+            timestamp_exists, mod_time = self._get_mod_time(timestamp_pathname)
 
             if timestamp_exists:
-                # Marker time is out of date
-                # skip this image
-                self._logger.info(
-                    "IMAGE SCANNER: mod time: %s"
-                    % mod_time)
+                # Marker time is out of date skip this image
+                self._logger.info("IMAGE SCANNER: mod time: %s" % mod_time)
                 if mod_time >= marker_time:
                     # Remove marker file
-                    self._logger.info(
-                        "IMAGE SCANNER: mod time too recent")
+                    self._logger.info("IMAGE SCANNER: mod time too recent")
                     self._image_sweeper_unlink(marker_pathname)
                     return False
 
                 # Move timestamp file to a new name
-                if modify:
-                    self._image_sweeper_rename(
-                        timestamp_pathname,
-                        renamed_timestamp_pathname)
+                self._image_sweeper_rename(timestamp_pathname, renamed_timestamp_pathname)
 
             else:
-                # If we could not find the timestamp file
-                # it may mean that this was a partially
+                # If we could not find the timestamp file it may mean that this was a partially
                 # removed image, log message and continue
-                self._logger.info("Cannot find timestamp file: %s"
-                                  "continuing with image removal"
-                                  % timestamp_pathname)
+                self._logger.info("Cannot find timestamp file: %s, continuing with image removal" % timestamp_pathname)
 
-            if modify:
-                # Get mod time of the renamed timestamp file
-                renamed_timestamp_exists, renamed_mod_time = \
-                    self._get_mod_time(
-                        renamed_timestamp_pathname)
-            else:
-                renamed_timestamp_exists = True
-                renamed_mod_time = mod_time
+            # Get mod time of the renamed timestamp file
+            renamed_timestamp_exists, renamed_mod_time = self._get_mod_time(renamed_timestamp_pathname)
+            self._logger.info("IMAGE SCANNER: rename timestamp exists: %s, renamed mod time: %s" %
+                              (renamed_timestamp_exists, renamed_mod_time))
 
-            self._logger.info(
-                "IMAGE SCANNER: rename timestamp exists: %s, "
-                "renamed mod time: %s" %
-                (renamed_timestamp_exists, renamed_mod_time))
-
-            # If there was timestamp file but there
-            # is no renamed-timestamp file something
+            # If there was timestamp file but there is no renamed-timestamp file something
             # bad might have happened, skip this image
-            if timestamp_exists and \
-                    not renamed_timestamp_exists:
-                self._logger.warning("Error, missing renamed "
-                                     "timestamp file: %s"
-                                     % renamed_timestamp_pathname)
+            if timestamp_exists and not renamed_timestamp_exists:
+                self._logger.warning("Error, missing renamed timestamp file: %s" % renamed_timestamp_pathname)
                 return False
 
-            # Normal case both timestamp and renamed
-            # timestamp exist
+            # Normal case both timestamp and renamed timestamp exist
             if timestamp_exists and renamed_timestamp_exists:
-                # Normal case: both timestamp and renamed
-                # timestamp files exist. If the mod time on the
+                # Normal case: both timestamp and renamed timestamp files exist. If the mod time on the
                 # renamed-timestamp has changed skip this image.
                 if renamed_mod_time != mod_time:
-                    self._logger.info("mod time changed on renamed "
-                                      "timestamp file, %s: %d -> %d" %
-                                      (renamed_timestamp_pathname,
-                                       mod_time, renamed_mod_time))
+                    self._logger.info("mod time changed on renamed timestamp file, %s: %d -> %d" %
+                                      (renamed_timestamp_pathname, mod_time, renamed_mod_time))
                     self._image_sweeper_unlink(marker_pathname)
                     return False
             elif renamed_timestamp_exists:
-                # Only the renamed timestamp file exists
-                # Check the mod time of the renamed-timestamp
+                # Only the renamed timestamp file exists Check the mod time of the renamed-timestamp
                 # file against the marker time
                 if renamed_mod_time >= marker_time:
                     self._image_sweeper_unlink(marker_pathname)
                     return False
 
             # Move directory
-            self._logger.info("IMAGE SCANNER: removing image: %s"
-                              % curdir)
-            if modify:
-                trash_dir = os.path.join(
-                    os_datastore_path(datastore_id, GC_IMAGE_FOLDER),
-                    image_id)
-                self._image_sweeper_rename(curdir, trash_dir)
+            self._logger.info("IMAGE SCANNER: removing image: %s" % curdir)
+            trash_dir = os.path.join(os_datastore_path(datastore_id, GC_IMAGE_FOLDER), image_id)
+            self._image_sweeper_rename(curdir, trash_dir)
             # Unlock
 
         # Delete image
-        if modify:
-            self._image_sweeper_rm_rf(trash_dir)
+        self._image_sweeper_rm_rf(trash_dir)
         return True
 
     def get_timestamp_mod_time_from_dir(self, dirname, renamed=False):
-        filename = \
-            os.path.join(dirname,
-                         self.IMAGE_TIMESTAMP_FILE_NAME)
+        filename = os.path.join(dirname, self.IMAGE_TIMESTAMP_FILE_NAME)
 
         if renamed:
             filename += self.IMAGE_TIMESTAMP_FILE_RENAME_SUFFIX
 
-        return self.\
-            _get_mod_time(filename)
+        return self._get_mod_time(filename)
 
-    # Read the mod time on a file,
-    # returns two values, a boolean
-    # which is set to true if the
-    # file exists, otherwise set to false
-    # and the mod time of the existing
-    # file
+    # Read the mod time on a file, returns two values, a boolean which is set to true if the
+    # file exists, otherwise set to false and the mod time of the existing file
     def _get_mod_time(self, pathname):
         try:
             mod_time = os.path.getmtime(pathname)
         except OSError as ex:
-            self._logger.warning(
-                "Cannot read mod time for file: %s, %s"
-                % (pathname, ex))
+            self._logger.warning("Cannot read mod time for file: %s, %s" % (pathname, ex))
             if ex.errno == errno.ENOENT:
                 return False, 0
             else:
@@ -885,55 +720,39 @@ class EsxImageManager(ImageManager):
 
     def _create_image_timestamp_file(self, dirname):
         try:
-            timestamp_pathname = \
-                os.path.join(dirname,
-                             self.IMAGE_TIMESTAMP_FILE_NAME)
+            timestamp_pathname = os.path.join(dirname, self.IMAGE_TIMESTAMP_FILE_NAME)
             open(timestamp_pathname, 'w').close()
         except Exception as ex:
-            self._logger.exception(
-                "Exception creating %s, %s" %
-                (dirname, ex))
+            self._logger.exception("Exception creating %s, %s" % (dirname, ex))
             raise ex
 
     def _create_image_timestamp_file_from_ids(self, ds_id, image_id):
-        image_path = os.path.dirname(
-            os_vmdk_path(ds_id, image_id, IMAGE_FOLDER_NAME_PREFIX))
+        image_path = os.path.dirname(os_vmdk_path(ds_id, image_id, IMAGE_FOLDER_NAME_PREFIX))
         self._create_image_timestamp_file(image_path)
 
     def _delete_renamed_image_timestamp_file(self, dirname):
         try:
-            timestamp_pathname = \
-                os.path.join(dirname,
-                             self.IMAGE_TIMESTAMP_FILE_NAME)
-            timestamp_pathname += \
-                self.IMAGE_TIMESTAMP_FILE_RENAME_SUFFIX
+            timestamp_pathname = os.path.join(dirname, self.IMAGE_TIMESTAMP_FILE_NAME)
+            timestamp_pathname += self.IMAGE_TIMESTAMP_FILE_RENAME_SUFFIX
             os.unlink(timestamp_pathname)
         except Exception as ex:
-            self._logger.exception(
-                "Exception deleting %s, %s" %
-                (dirname, ex))
+            self._logger.exception("Exception deleting %s, %s" % (dirname, ex))
 
     def _image_sweeper_rename(self, src, dest):
         try:
             shutil.move(src, dest)
         except Exception as ex:
-            self._logger.warning(
-                "Cannot rename file/dir: %s => %s, %s"
-                % (src, dest, ex))
+            self._logger.warning("Cannot rename file/dir: %s => %s, %s" % (src, dest, ex))
             raise ex
 
     def _image_sweeper_unlink(self, filename):
         try:
             os.unlink(filename)
         except Exception as ex:
-            self._logger.warning(
-                "Cannot unlink file: %s, %s"
-                % (filename, ex))
+            self._logger.warning("Cannot unlink file: %s, %s" % (filename, ex))
 
     def _image_sweeper_rm_rf(self, directory):
         try:
             rm_rf(directory)
         except Exception as ex:
-            self._logger.warning(
-                "Cannot rm_rf dir: %s, %s"
-                % (directory, ex))
+            self._logger.warning("Cannot rm_rf dir: %s, %s" % (directory, ex))
