@@ -42,11 +42,11 @@ public class ResourceReference {
   @Size(max = 255)
   private String targetType;
 
-  public boolean isValid() {
+  public boolean getIsValid() {
     return isValid;
   }
 
-  public void setValid(boolean isValid) {
+  public void setIsValid(boolean isValid) {
     this.isValid = isValid;
   }
 
