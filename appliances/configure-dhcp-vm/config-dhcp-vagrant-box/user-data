@@ -1,0 +1,101 @@
+#cloud-config
+
+groups:
+  - vagrant: [vagrant]
+
+users:
+  - default
+  - name: root
+    plain_text_passwd: changeme
+    lock-passwd: false
+  - name: vagrant
+    gecos: vagrant user
+    primary-group: vagrant
+    plain_text_passwd: vagrant
+    groups: root
+    lock-passwd: false
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    ssh-authorized-keys:
+      - ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEA6NF8iallvQVp22WDkTkyrtvp9eWW6A8YVr+kz4TjGYe7gHzIw+niNltGEFHzD8+v1I2YJ6oXevct1YeS0o9HZyN1Q9qgCgzUFtdOKLv6IedplqoPkcmF0aYet2PkEDo3MlTBckFXPITAMzF8dJSIFo9D8HfdOV0IAdx4O7PtixWKn5y2hMNG0zQPyUecp4pzC6kivAIhyfHilFR61RGL+GPXQ2MWZWFYbAGjyiYJnAmCP3NOTd0jMZEnDkbUvxhMmBYSdETk1rRgm+R4LOzFUGaHqHDLKLX+FIPKcF96hrucXzcWyLbIbEgE98OHlnVYCzRdK8jlqm8tehUc9c9WhQ== vagrant insecure public key
+
+write_files:
+  - content: |
+        [Match]
+        Name=enp0s3
+
+        [Network]
+        DHCP=yes
+    owner: root:root
+    path: /etc/systemd/network/10-dhcp-enp0s3.network
+  - content: |
+        [Match]
+        Name=enp0s8
+
+        [Network]
+        Address=172.31.253.37/24
+    owner: root:root
+    path: /etc/systemd/network/10-dhcp-enp0s8.network
+  - content: |
+        [Unit]
+        Description=VirtualBox Kernel Modules and Guest Additions
+
+        [Service]
+        Type=oneshot
+        ExecStart=/usr/lib/systemd/scripts/vbox start
+        ExecStop=/usr/lib/systemd/scripts/vbox stop
+        RemainAfterExit=yes
+
+        [Install]
+        WantedBy=multi-user.target
+    owner: root:root
+    path: /lib/systemd/system/vboxadd.service
+  - content: |
+        #!/bin/bash -e
+
+        start() {
+          /etc/init.d/vboxadd start && /usr/sbin/VBoxService
+        }
+
+        stop() {
+          killall VBoxService
+          sleep 5
+          /etc/init.d/vboxadd stop
+        }
+
+        case $1 in
+          start|stop) "$1" ;;
+        esac
+    owner: root:root
+    path: /usr/lib/systemd/scripts/vbox
+    permissions: '0744'
+
+runcmd:
+  - rm -f /etc/systemd/network/10-dhcp-en.network
+  - ip addr flush label "enp0s8"
+  - systemctl restart systemd-networkd
+  - sleep 30
+  - tdnf install -y wget
+  - tdnf install -y gawk
+  - tdnf install -y tar
+  - tdnf install -y make
+  - tdnf install -y binutils
+  - tdnf install -y gcc
+  - tdnf install -y sudo
+  - tdnf install -y linux-dev
+  - tdnf install -y unzip
+  - mkdir -p /etc/init.d
+  - if [ ! -z "$(cat /etc/ssh/sshd_config | grep PermitRootLogin)" ] ; then sed -i 's/.*PermitRootLogin.*/PermitRootLogin yes/g' /etc/ssh/sshd_config ; else echo "PermitRootLogin yes" >> /etc/ssh/sshd_config ; fi
+  - if [ ! -z "$(cat /etc/ssh/sshd_config | grep UseDNS)" ] ; then sed -i 's/.*UseDNS.*/UseDNS no/g' /etc/ssh/sshd_config ; else echo "UseDNS no" >> /etc/ssh/sshd_config ; fi
+  - systemctl restart sshd
+  - sed -i 's/ExecStart.*/ExecStart=\/bin\/docker -d -s overlay --restart=true -H tcp:\/\/0.0.0.0:2375 -H unix:\/\/\/var\/run\/docker.sock/g' /lib/systemd/system/docker.service
+  - systemctl daemon-reload
+  - systemctl enable docker
+  - systemctl start docker
+  - [ wget, "http://download.virtualbox.org/virtualbox/4.3.30/VBoxGuestAdditions_4.3.30.iso", "-O", "/root/VBoxGuestAdditions_4.3.30.iso" ]
+  - mkdir -p /media/vboxiso
+  - mount /root/VBoxGuestAdditions_4.3.30.iso /media/vboxiso
+  - /media/vboxiso/VBoxLinuxAdditions.run
+  - umount -f /media/vboxiso
+  - rm -f /root/VBoxGuestAdditions_4.3.30.iso
+  - systemctl enable vboxadd
+  - touch /root/DONE
