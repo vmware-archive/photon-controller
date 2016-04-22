@@ -19,6 +19,7 @@ import com.vmware.photon.controller.api.common.Responses;
 import com.vmware.photon.controller.api.common.exceptions.external.ErrorCode;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.config.AuthConfig;
+import com.vmware.photon.controller.apife.resources.routes.AvailableRoutes;
 import com.vmware.photon.controller.common.auth.AuthException;
 import com.vmware.photon.controller.common.auth.AuthOIDCClient;
 import com.vmware.photon.controller.common.auth.AuthTokenHandler;
@@ -77,8 +78,13 @@ public class AuthFilter implements ContainerRequestFilter {
       // verify if access should be granted
       checkCallAuthorization(request);
 
-      // Continue servicing the request.
-      logger.info("Allow: API call: {}", request.getPath(true));
+      String requestPath = request.getPath(true);
+      // The load balancer hits the /available every few seconds and
+      // we don't need to spam the log, so we only log if it's
+      // not /available
+      if (!AvailableRoutes.API_PATH.equals(requestPath)) {
+        logger.info("Allow: API call: {}", requestPath);
+      }
     } catch (ExternalException e) {
       logger.warn("Deny: API call: {}", request.getPath(true), e);
       throw new WebApplicationException(e.getCause(), Responses.externalException(e));

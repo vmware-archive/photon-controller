@@ -18,5 +18,6 @@ package com.vmware.photon.controller.apife.resources.routes;
  */
 public class AvailableRoutes {
 
-  public static final String API = "/available";
+  public static final String API_PATH = "available";
+  public static final String API = "/" + API_PATH;
 }
