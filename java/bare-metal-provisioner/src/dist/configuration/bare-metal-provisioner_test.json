@@ -1,9 +1,0 @@
-{
-  "VM_IP": "localhost",
-  "BARE-METAL-PROVISIONER_BIND_ADDRESS": "0.0.0.0",
-  "BARE-METAL-PROVISIONER_XENON_STORAGE_PATH": "/etc/esxcloud/bare-metal-provisioner/sandbox_21000",
-  "LOG_DIRECTORY": "/vagrant/log",
-  "BARE-METAL-PROVISIONER_PORT": 21000,
-  "BARE-METAL-PROVISIONER_INSTALL_DIRECTORY": "/usr/lib/esxcloud/bare-metal-provisioner",
-  "JAVA_DEBUG": "-agentlib:jdwp=transport=dt_socket,server=y,address=29000,suspend=n"
-}
