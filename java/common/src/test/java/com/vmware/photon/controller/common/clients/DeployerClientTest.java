@@ -632,6 +632,9 @@ public class DeployerClientTest {
    * Tests {@link DeployerClient#deploy(com.vmware.photon.controller.deployer.gen.Deployment)}.
    */
   public class DeployTest {
+
+    private static final String desiredState = "PAUSED";
+
     @BeforeMethod
     private void setUp() throws Exception {
       DeployerClientTest.this.setUp();
@@ -660,7 +663,7 @@ public class DeployerClientTest {
       doAnswer(getAnswer(deployCall))
           .when(client).deploy(any(DeployRequest.class), any(AsyncMethodCallback.class));
 
-      assertThat(deployerClient.deploy(new Deployment()), is(deployResponse));
+      assertThat(deployerClient.deploy(new Deployment(), desiredState), is(deployResponse));
     }
 
     @Test
@@ -669,7 +672,7 @@ public class DeployerClientTest {
           .when(client).deploy(any(DeployRequest.class), any(AsyncMethodCallback.class));
 
       try {
-        deployerClient.deploy(new Deployment());
+        deployerClient.deploy(new Deployment(), desiredState);
         fail("Synchronous deploy call should transform TException on call to RpcException");
       } catch (RpcException e) {
         assertThat(e.getMessage(), containsString("Thrift exception"));
@@ -692,7 +695,7 @@ public class DeployerClientTest {
           .when(client).deploy(any(DeployRequest.class), any(AsyncMethodCallback.class));
 
       try {
-        deployerClient.deploy(new Deployment());
+        deployerClient.deploy(new Deployment(), "PAUSED");
         fail("Synchronous deploy call should throw on failure result: " + resultCode.toString());
       } catch (Exception e) {
         assertTrue(e.getClass() == exceptionClass);

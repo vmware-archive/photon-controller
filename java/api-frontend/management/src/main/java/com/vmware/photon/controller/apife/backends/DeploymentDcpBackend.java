@@ -19,6 +19,7 @@ import com.vmware.photon.controller.api.ClusterConfigurationSpec;
 import com.vmware.photon.controller.api.ClusterType;
 import com.vmware.photon.controller.api.Deployment;
 import com.vmware.photon.controller.api.DeploymentCreateSpec;
+import com.vmware.photon.controller.api.DeploymentDeployOperation;
 import com.vmware.photon.controller.api.DeploymentState;
 import com.vmware.photon.controller.api.MigrationStatus;
 import com.vmware.photon.controller.api.NetworkConfiguration;
@@ -27,6 +28,7 @@ import com.vmware.photon.controller.api.StatsInfo;
 import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
+import com.vmware.photon.controller.apife.commands.steps.DeploymentCreateStepCmd;
 import com.vmware.photon.controller.apife.commands.steps.DeploymentInitializeMigrationStepCmd;
 import com.vmware.photon.controller.apife.entities.DeploymentEntity;
 import com.vmware.photon.controller.apife.entities.EntityStateValidator;
@@ -143,12 +145,12 @@ public class DeploymentDcpBackend implements DeploymentBackend {
   }
 
   @Override
-  public TaskEntity prepareDeploy(String deploymentId) throws ExternalException {
+  public TaskEntity prepareDeploy(String deploymentId, DeploymentDeployOperation config) throws ExternalException {
     DeploymentEntity deploymentEntity = findById(deploymentId);
     EntityStateValidator.validateOperationState(deploymentEntity, deploymentEntity.getState(),
         Operation.PERFORM_DEPLOYMENT, DeploymentState.OPERATION_PREREQ_STATE);
 
-    TaskEntity taskEntity = createDeployTask(deploymentEntity);
+    TaskEntity taskEntity = createDeployTask(deploymentEntity, config);
     return taskEntity;
   }
 
@@ -516,12 +518,15 @@ public class DeploymentDcpBackend implements DeploymentBackend {
     return number;
   }
 
-  private TaskEntity createDeployTask(DeploymentEntity deploymentEntity) throws ExternalException {
+  private TaskEntity createDeployTask(DeploymentEntity deploymentEntity, DeploymentDeployOperation config) throws
+      ExternalException {
     TaskEntity taskEntity = this.taskBackend.createQueuedTask(deploymentEntity, Operation.PERFORM_DEPLOYMENT);
 
     // create the steps
-    this.taskBackend.getStepBackend().createQueuedStep(
+    StepEntity step = this.taskBackend.getStepBackend().createQueuedStep(
         taskEntity, deploymentEntity, Operation.SCHEDULE_DEPLOYMENT);
+    step.createOrUpdateTransientResource(DeploymentCreateStepCmd.DEPLOYMENT_DESIRED_STATE_RESOURCE_KEY,
+        config.getDesiredState().name());
     this.taskBackend.getStepBackend().createQueuedStep(
         taskEntity, deploymentEntity, Operation.PROVISION_CONTROL_PLANE_HOSTS);
     this.taskBackend.getStepBackend().createQueuedStep(
@@ -553,7 +558,7 @@ public class DeploymentDcpBackend implements DeploymentBackend {
   }
 
   private TaskEntity createFinalizeMigrateDeploymentTask(String sourceLoadbalancerAddress,
-                                                           DeploymentEntity deploymentEntity) throws ExternalException {
+                                                         DeploymentEntity deploymentEntity) throws ExternalException {
     TaskEntity taskEntity = this.taskBackend.createQueuedTask(deploymentEntity,
         Operation.FINALIZE_MIGRATE_DEPLOYMENT);
 

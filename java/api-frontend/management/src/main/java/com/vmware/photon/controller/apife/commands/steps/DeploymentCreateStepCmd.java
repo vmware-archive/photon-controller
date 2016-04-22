@@ -40,6 +40,8 @@ import java.util.List;
  */
 public class DeploymentCreateStepCmd extends StepCommand {
 
+  public static final String DEPLOYMENT_DESIRED_STATE_RESOURCE_KEY = "deployment_desired_state";
+
   private static final Logger logger = LoggerFactory.getLogger(DeploymentCreateStepCmd.class);
 
   private final DeploymentBackend deploymentBackend;
@@ -63,7 +65,8 @@ public class DeploymentCreateStepCmd extends StepCommand {
 
     // call deployer
     try {
-      DeployResponse response = taskCommand.getDeployerClient().deploy(deployment);
+      String desiredState = (String) step.getTransientResource(DEPLOYMENT_DESIRED_STATE_RESOURCE_KEY);
+      DeployResponse response = taskCommand.getDeployerClient().deploy(deployment, desiredState);
       this.entity.setOperationId(response.getOperation_id());
     } catch (com.vmware.photon.controller.common.clients.exceptions.NoManagementHostException e) {
       throw new NoManagementHostException(deployment.getId());
