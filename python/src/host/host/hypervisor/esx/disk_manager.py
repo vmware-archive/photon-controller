@@ -21,7 +21,6 @@ from common.kind import Flavor
 from host.hypervisor.disk_manager import DiskManager
 from host.hypervisor.disk_manager import DiskFileException
 from host.hypervisor.disk_manager import DiskPathException
-from host.hypervisor.esx.vm_config import DISK_FOLDER_NAME_PREFIX
 from host.hypervisor.esx.vm_config import IMAGE_FOLDER_NAME_PREFIX
 from host.hypervisor.esx.vm_config import DEFAULT_DISK_ADAPTER_TYPE
 from host.hypervisor.esx.vm_config import os_vmdk_path
@@ -60,23 +59,19 @@ class EsxDiskManager(DiskManager):
         spec = self._create_spec(size)
         name = vmdk_path(datastore, disk_id)
         self._vmdk_mkdir(datastore, disk_id)
-        self._manage_disk(vim.VirtualDiskManager.CreateVirtualDisk_Task,
-                          name=name, spec=spec)
-        self._manage_disk(vim.VirtualDiskManager.SetVirtualDiskUuid,
-                          name=name, uuid=uuid_to_vmdk_uuid(disk_id))
+        self._manage_disk(vim.VirtualDiskManager.CreateVirtualDisk_Task, name=name, spec=spec)
+        self._manage_disk(vim.VirtualDiskManager.SetVirtualDiskUuid, name=name, uuid=uuid_to_vmdk_uuid(disk_id))
 
     def delete_disk(self, datastore, disk_id):
         name = vmdk_path(datastore, disk_id)
-        self._manage_disk(vim.VirtualDiskManager.DeleteVirtualDisk_Task,
-                          name=name)
+        self._manage_disk(vim.VirtualDiskManager.DeleteVirtualDisk_Task, name=name)
         self._vmdk_rmdir(datastore, disk_id)
 
     def move_disk(self, source_datastore, source_id, dest_datastore, dest_id):
         source = vmdk_path(source_datastore, source_id)
         dest = vmdk_path(dest_datastore, dest_id)
         self._vmdk_mkdir(dest_datastore, dest_id)
-        self._manage_disk(vim.VirtualDiskManager.MoveVirtualDisk_Task,
-                          sourceName=source, destName=dest)
+        self._manage_disk(vim.VirtualDiskManager.MoveVirtualDisk_Task, sourceName=source, destName=dest)
         self._vmdk_rmdir(source_datastore, source_id)
 
     def copy_disk(self, source_datastore, source_id, dest_datastore, dest_id):
@@ -92,10 +87,8 @@ class EsxDiskManager(DiskManager):
         source = vmdk_path(source_datastore, source_id, IMAGE_FOLDER_NAME_PREFIX)
         dest = vmdk_path(dest_datastore, dest_id)
         self._vmdk_mkdir(dest_datastore, dest_id)
-        self._manage_disk(vim.VirtualDiskManager.CopyVirtualDisk_Task,
-                          sourceName=source, destName=dest)
-        self._manage_disk(vim.VirtualDiskManager.SetVirtualDiskUuid,
-                          name=dest, uuid=uuid_to_vmdk_uuid(dest_id))
+        self._manage_disk(vim.VirtualDiskManager.CopyVirtualDisk_Task, sourceName=source, destName=dest)
+        self._manage_disk(vim.VirtualDiskManager.SetVirtualDiskUuid, name=dest, uuid=uuid_to_vmdk_uuid(dest_id))
 
     def get_datastore(self, disk_id):
         for datastore in self._ds_manager.get_datastore_ids():
@@ -116,20 +109,6 @@ class EsxDiskManager(DiskManager):
         resource.image = None
         resource.datastore = datastore
         return resource
-
-    def get_resource_ids(self, datastore=None):
-        ext = "-flat.vmdk"
-        ids = set()
-        if datastore:
-            path = os.path.join("/vmfs/volumes", datastore, DISK_FOLDER_NAME_PREFIX)
-            for name in os.listdir(path):
-                if name.endswith(ext):
-                    ids.add(name[0:len(name) - len(ext)])
-        else:
-            for datastore in self._ds_manager.get_datastore_ids():
-                ids = ids.union(self.get_resource_ids(datastore))
-
-        return ids
 
     def _manage_disk(self, op, **kwargs):
         try:

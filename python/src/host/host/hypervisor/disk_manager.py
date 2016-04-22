@@ -101,11 +101,3 @@ class DiskManager(object):
         :rtype: resources.Disk
         """
         pass
-
-    @abc.abstractmethod
-    def get_resource_ids(self, datastore):
-        """Get the list of Disk resource ids on this datastore.
-
-        :rtype: set of str
-        """
-        pass
