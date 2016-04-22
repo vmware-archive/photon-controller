@@ -25,7 +25,6 @@ from pyVmomi import vim
 
 from common.exclusive_set import DuplicatedValue
 from common.exclusive_set import ExclusiveSet
-from common.file_util import rm_rf
 from common.kind import Flavor
 from common.kind import Unit
 from gen.agent.ttypes import PowerState
@@ -272,18 +271,24 @@ class EsxVmManager(VmManager):
         # Upon successful destroy of VM, log any stray files still left in the
         # VM directory and delete the directory.
         if os.path.isdir(vm_dir):
-            target_dir = vm_dir
-            if os.path.islink(vm_dir):
-                target_dir = os.readlink(vm_dir)
-            files = os.listdir(target_dir)
-            for f in files:
-                if f.endswith(".vmdk"):
-                    self._logger.info("Stray disk "
-                                      "(possible data leak): %s" % f)
-                else:
-                    self._logger.info("Stray file: %s" % f)
+            # log any stray files still left in the VM directory
+            try:
+                target_dir = vm_dir
+                if os.path.islink(vm_dir):
+                    target_dir = os.readlink(vm_dir)
+                if os.path.isdir(target_dir):   # check link-target exists and is dir
+                    files = os.listdir(target_dir)
+                    for f in files:
+                        if f.endswith(".vmdk"):
+                            self._logger.info("Stray disk (possible data leak): %s" % f)
+                        else:
+                            self._logger.info("Stray file: %s" % f)
+            except:
+                pass
+
+            # delete the directory
             self._logger.warning("Force delete vm directory %s" % vm_dir)
-            rm_rf(vm_dir)
+            self.vim_client.delete_file(vm_dir)
 
     @log_duration
     def delete_vm(self, vm_id, force=False):
@@ -301,8 +306,8 @@ class EsxVmManager(VmManager):
                                         vm.runtime.powerState)
 
         # Getting the path for the new dir structure if we have upgraded from older structure
-        datastore_name = self.get_vm_datastore(vm.config)
-        vm_path = os_datastore_path(datastore_name, compond_path_join(VM_FOLDER_NAME_PREFIX, vm_id))
+        datastore_id = self.get_vm_datastore(vm.config)
+        vm_path = os_datastore_path(datastore_id, compond_path_join(VM_FOLDER_NAME_PREFIX, vm_id))
 
         if not force:
             self._verify_disks(vm)
