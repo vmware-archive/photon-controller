@@ -32,6 +32,7 @@ import com.vmware.photon.controller.common.xenon.host.XenonConfig;
 import com.vmware.photon.controller.common.xenon.scheduler.TaskSchedulerService;
 import com.vmware.photon.controller.common.xenon.scheduler.TaskSchedulerServiceFactory;
 import com.vmware.photon.controller.common.xenon.scheduler.TaskSchedulerServiceStateBuilder;
+import com.vmware.photon.controller.common.xenon.service.UpgradeInformationService;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfiguratorFactory;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfiguratorFactoryProvider;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerFactoryService;
@@ -136,13 +137,13 @@ public class DeployerXenonServiceHost
 
   public static final String FACTORY_SERVICE_FIELD_NAME_SELF_LINK = "SELF_LINK";
 
-  public static final Class[] FACTORY_SERVICES_TO_MIGRATE = {
+  public static final Class<?>[] FACTORY_SERVICES_TO_MIGRATE = {
       ContainerFactoryService.class,
       ContainerTemplateFactoryService.class,
       VmFactoryService.class,
   };
 
-  public static final Class[] FACTORY_SERVICES = {
+  public static final Class<?>[] FACTORY_SERVICES = {
 
       // Entity Services
       ContainerFactoryService.class,
@@ -197,6 +198,9 @@ public class DeployerXenonServiceHost
       // Transformation
       HostTransformationService.class,
       ReflectionTransformationService.class,
+
+      // Upgrade
+      UpgradeInformationService.class,
   };
 
   private static final int DEFAULT_TASK_LIMIT = 8;
@@ -465,7 +469,7 @@ public class DeployerXenonServiceHost
   }
 
   @Override
-  public Class[] getFactoryServices() {
+  public Class<?>[] getFactoryServices() {
     return ObjectArrays.concat(
         FACTORY_SERVICES, ClusterManagerFactory.FACTORY_SERVICES,
         Class.class);

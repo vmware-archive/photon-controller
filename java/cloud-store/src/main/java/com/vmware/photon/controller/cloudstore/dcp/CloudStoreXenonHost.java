@@ -54,6 +54,7 @@ import com.vmware.photon.controller.common.xenon.host.AbstractServiceHost;
 import com.vmware.photon.controller.common.xenon.host.XenonConfig;
 import com.vmware.photon.controller.common.xenon.scheduler.TaskStateBuilder;
 import com.vmware.photon.controller.common.xenon.scheduler.TaskTriggerFactoryService;
+import com.vmware.photon.controller.common.xenon.service.UpgradeInformationService;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfigProvider;
@@ -132,6 +133,9 @@ public class CloudStoreXenonHost
 
       // Discovery
       RootNamespaceService.class,
+
+      // Upgrade
+      UpgradeInformationService.class,
   };
 
   public static final Map<Class<? extends Service>, Supplier<FactoryService>> FACTORY_SERVICES_MAP = ImmutableMap.of(
