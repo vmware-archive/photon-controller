@@ -13,8 +13,9 @@
 
 package com.vmware.photon.controller.apibackend.tasks;
 
-import com.vmware.photon.controller.apibackend.CreateLogicalSwitchException;
+import com.vmware.photon.controller.apibackend.exceptions.CreateLogicalSwitchException;
 import com.vmware.photon.controller.apibackend.servicedocuments.CreateLogicalSwitchTask;
+import com.vmware.photon.controller.apibackend.utils.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
@@ -22,8 +23,6 @@ import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
-import com.vmware.photon.controller.nsxclient.RestClient;
-import com.vmware.photon.controller.nsxclient.apis.LogicalSwitchApi;
 import com.vmware.photon.controller.nsxclient.builders.LogicalSwitchCreateSpecBuilder;
 import com.vmware.photon.controller.nsxclient.datatypes.NsxSwitch;
 import com.vmware.photon.controller.nsxclient.models.LogicalSwitch;
@@ -36,7 +35,6 @@ import com.vmware.xenon.common.StatefulService;
 import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.Utils;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.FutureCallback;
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -133,13 +131,13 @@ public class CreateLogicalSwitchTaskService extends StatefulService {
     ServiceUtils.logInfo(this, "Creating logical switch");
 
     try {
-      LogicalSwitchApi logicalSwitchApi = getLogicalSwitchApi(currentState);
-
       LogicalSwitchCreateSpec logicalSwitchCreateSpec = new LogicalSwitchCreateSpecBuilder()
           .displayName(currentState.displayName)
           .transportZoneId(currentState.transportZoneId)
           .build();
-      logicalSwitchApi.createLogicalSwitch(logicalSwitchCreateSpec,
+
+      ServiceHostUtils.getNsxClient(getHost(), currentState.nsxManagerEndpoint, currentState.username,
+          currentState.password).getLogicalSwitchApi().createLogicalSwitch(logicalSwitchCreateSpec,
           new FutureCallback<LogicalSwitch>() {
             @Override
             public void onSuccess(@Nullable LogicalSwitch result) {
@@ -204,8 +202,9 @@ public class CreateLogicalSwitchTaskService extends StatefulService {
       try {
         ServiceUtils.logInfo(this, "Checking the configuration status of logical switch");
 
-        LogicalSwitchApi logicalSwitchApi = getLogicalSwitchApi(currentState);
-        logicalSwitchApi.getLogicalSwitchState(currentState.id,
+        ServiceHostUtils.getNsxClient(getHost(), currentState.nsxManagerEndpoint, currentState.username,
+            currentState.password).getLogicalSwitchApi().getLogicalSwitchState(
+            currentState.id,
             new FutureCallback<LogicalSwitchState>() {
               @Override
               public void onSuccess(@Nullable LogicalSwitchState result) {
@@ -236,12 +235,5 @@ public class CreateLogicalSwitchTaskService extends StatefulService {
         failTask(t);
       }
     }, currentState.executionDelay, TimeUnit.MILLISECONDS);
-  }
-
-  @VisibleForTesting
-  public LogicalSwitchApi getLogicalSwitchApi(CreateLogicalSwitchTask currentState) {
-    RestClient restClient = new RestClient(currentState.nsxManagerEndpoint,
-        currentState.username, currentState.password);
-    return new LogicalSwitchApi(restClient);
   }
 }

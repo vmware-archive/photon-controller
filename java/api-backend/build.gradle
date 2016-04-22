@@ -15,6 +15,7 @@ dependencies {
     exclude group: 'org.mockito', module: 'mockito-all'
   }
   testCompile "org.powermock:powermock-module-testng:${versions.powermock}"
+  testCompile(project(path: ':common-tests'))
 }
 
 jar {

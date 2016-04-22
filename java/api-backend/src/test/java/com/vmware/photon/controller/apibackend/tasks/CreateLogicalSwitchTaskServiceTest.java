@@ -14,21 +14,19 @@
 package com.vmware.photon.controller.apibackend.tasks;
 
 import com.vmware.photon.controller.apibackend.helpers.ReflectionUtils;
+import com.vmware.photon.controller.apibackend.helpers.TestEnvironment;
 import com.vmware.photon.controller.apibackend.helpers.TestHost;
 import com.vmware.photon.controller.apibackend.servicedocuments.CreateLogicalSwitchTask;
+import com.vmware.photon.controller.common.tests.nsx.NsxClientMock;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
+import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.BadRequestException;
-import com.vmware.photon.controller.nsxclient.apis.LogicalSwitchApi;
-import com.vmware.photon.controller.nsxclient.datatypes.NsxSwitch;
-import com.vmware.photon.controller.nsxclient.models.LogicalSwitch;
-import com.vmware.photon.controller.nsxclient.models.LogicalSwitchCreateSpec;
-import com.vmware.photon.controller.nsxclient.models.LogicalSwitchState;
+import com.vmware.photon.controller.nsxclient.NsxClientFactory;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
 
-import com.google.common.util.concurrent.FutureCallback;
 import org.apache.http.HttpStatus;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
@@ -39,11 +37,8 @@ import org.testng.annotations.Test;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
 import static org.testng.Assert.fail;
 
 import java.lang.reflect.Field;
@@ -54,8 +49,6 @@ import java.util.UUID;
  * Tests for {@link com.vmware.photon.controller.apibackend.tasks.CreateLogicalSwitchTaskService}.
  */
 public class CreateLogicalSwitchTaskServiceTest {
-  private static TestHost host;
-  private static CreateLogicalSwitchTaskService createLogicalSwitchTaskService;
 
   @Test(enabled = false)
   private void dummy() {
@@ -83,14 +76,17 @@ public class CreateLogicalSwitchTaskServiceTest {
    * Tests for handleStart.
    */
   public static class HandleStartTest {
+    private static TestHost host;
+    private static CreateLogicalSwitchTaskService createLogicalSwitchTaskService;
 
     @BeforeClass
     public void setupClass() throws Throwable {
-      host = TestHost.create();
+      host = new TestHost.Builder().build();
     }
 
     @AfterClass
     public void tearDownClass() throws Throwable {
+      host.stop();
       TestHost.destroy(host);
     }
 
@@ -109,7 +105,10 @@ public class CreateLogicalSwitchTaskServiceTest {
     public void testStateTransition(TaskState.TaskStage startStage,
                                     TaskState.TaskStage expectedStage) throws Throwable {
 
-      CreateLogicalSwitchTask createdState = createLogicalSwitchTaskService(startStage,
+      CreateLogicalSwitchTask createdState = createLogicalSwitchTaskService(
+          host,
+          createLogicalSwitchTaskService,
+          startStage,
           ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED);
 
       CreateLogicalSwitchTask savedState = host.getServiceState(CreateLogicalSwitchTask.class,
@@ -164,10 +163,12 @@ public class CreateLogicalSwitchTaskServiceTest {
    * Tests for the handlePatch method.
    */
   public static class HandlePatchTest {
+    private static TestHost host;
+    private static CreateLogicalSwitchTaskService createLogicalSwitchTaskService;
 
     @BeforeClass
     public void setupClass() throws Throwable {
-      host = TestHost.create();
+      host = new TestHost.Builder().build();
     }
 
     @AfterClass
@@ -190,7 +191,10 @@ public class CreateLogicalSwitchTaskServiceTest {
     public void testValidStageTransition(TaskState.TaskStage startStage,
                                          TaskState.TaskStage patchStage) throws Throwable {
 
-      CreateLogicalSwitchTask createdState = createLogicalSwitchTaskService(startStage,
+      CreateLogicalSwitchTask createdState = createLogicalSwitchTaskService(
+          host,
+          createLogicalSwitchTaskService,
+          startStage,
           ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED);
 
       CreateLogicalSwitchTask patchState = buildPatchState(patchStage);
@@ -210,7 +214,10 @@ public class CreateLogicalSwitchTaskServiceTest {
     public void testInvalidStageTransition(TaskState.TaskStage startStage,
                                            TaskState.TaskStage patchStage) throws Throwable {
 
-      CreateLogicalSwitchTask createdState = createLogicalSwitchTaskService(startStage,
+      CreateLogicalSwitchTask createdState = createLogicalSwitchTaskService(
+          host,
+          createLogicalSwitchTaskService,
+          startStage,
           ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED);
 
       CreateLogicalSwitchTask patchState = buildPatchState(patchStage);
@@ -228,7 +235,10 @@ public class CreateLogicalSwitchTaskServiceTest {
     @Test(dataProvider = "immutableFields")
     public void testChangeImmutableFields(String fieldName, String expectedErrorMessage) throws Throwable {
 
-      CreateLogicalSwitchTask createdState = createLogicalSwitchTaskService(TaskState.TaskStage.CREATED,
+      CreateLogicalSwitchTask createdState = createLogicalSwitchTaskService(
+          host,
+          createLogicalSwitchTaskService,
+          TaskState.TaskStage.CREATED,
           ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED);
 
       CreateLogicalSwitchTask patchState = buildPatchState(TaskState.TaskStage.FINISHED);
@@ -250,7 +260,10 @@ public class CreateLogicalSwitchTaskServiceTest {
 
     @Test(dataProvider = "writeOnceFields")
     public void testChangeWriteOnceFields(String fieldName, String expectedErrorMessage) throws Throwable {
-      CreateLogicalSwitchTask createdState = createLogicalSwitchTaskService(TaskState.TaskStage.CREATED,
+      CreateLogicalSwitchTask createdState = createLogicalSwitchTaskService(
+          host,
+          createLogicalSwitchTaskService,
+          TaskState.TaskStage.CREATED,
           ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED);
 
       CreateLogicalSwitchTask patchState = buildPatchState(TaskState.TaskStage.FINISHED);
@@ -327,148 +340,81 @@ public class CreateLogicalSwitchTaskServiceTest {
    */
   public class EndToEndTest {
 
-    @BeforeClass
-    public void setupClass() throws Throwable {
-      host = TestHost.create();
-    }
-
-    @AfterClass
-    public void tearDownClass() throws Throwable {
-      TestHost.destroy(host);
-    }
+    TestEnvironment testEnvironment;
+    NsxClientFactory nsxClientFactory;
 
     @BeforeMethod
-    public void setupTest() {
-      createLogicalSwitchTaskService = spy(new CreateLogicalSwitchTaskService());
-      host.setDefaultServiceUri(UUID.randomUUID().toString());
+    public void setupTest() throws Throwable {
+      nsxClientFactory = mock(NsxClientFactory.class);
+      testEnvironment = new TestEnvironment.Builder()
+          .hostCount(1)
+          .nsxClientFactory(nsxClientFactory)
+          .build();
     }
 
     @AfterMethod
     public void tearDownTest() throws Throwable {
-      host.deleteServiceSynchronously();
+      if (testEnvironment != null) {
+        testEnvironment.stop();
+        testEnvironment = null;
+      }
     }
 
     @Test
     public void testFailedToCreateLogicalSwitchTask() throws Throwable {
-      LogicalSwitchApi logicalSwitchApi = mock(LogicalSwitchApi.class);
-      doReturn(logicalSwitchApi)
-          .when(createLogicalSwitchTaskService)
-          .getLogicalSwitchApi(any(CreateLogicalSwitchTask.class));
+      NsxClientMock nsxClientMock = new NsxClientMock.Builder()
+          .createLogicalSwitch(false, "logicalSwitchId")
+          .build();
+      doReturn(nsxClientMock).when(nsxClientFactory).create(any(String.class), any(String.class), any(String.class));
 
-      doAnswer(invocation -> {
-        if (invocation.getArguments()[1] != null) {
-          ((FutureCallback<LogicalSwitch>) invocation.getArguments()[1])
-              .onFailure(new Exception("service does not exist"));
-        }
-        return null;
-      }).when(logicalSwitchApi)
-          .createLogicalSwitch(any(LogicalSwitchCreateSpec.class), any(FutureCallback.class));
-
-      CreateLogicalSwitchTask createdState = createLogicalSwitchTaskService(TaskState.TaskStage.CREATED, 0);
-      host.waitForState(createdState.documentSelfLink,
-          CreateLogicalSwitchTask.class,
-          (state) -> TaskState.TaskStage.FAILED == state.taskState.stage);
-
-      CreateLogicalSwitchTask savedState = host.getServiceState(CreateLogicalSwitchTask.class,
-          createdState.documentSelfLink);
+      CreateLogicalSwitchTask savedState = startService();
       assertThat(savedState.taskState.stage, is(TaskState.TaskStage.FAILED));
     }
 
     @Test
     public void testFailedToGetLogicalSwitchState() throws Throwable {
-      LogicalSwitchApi logicalSwitchApi = mock(LogicalSwitchApi.class);
-      doReturn(logicalSwitchApi)
-          .when(createLogicalSwitchTaskService)
-          .getLogicalSwitchApi(any(CreateLogicalSwitchTask.class));
+      NsxClientMock nsxClientMock = new NsxClientMock.Builder()
+          .createLogicalSwitch(true, "logicalSwitchId")
+          .getLogicalSwitchState(false, "logicalSwitchId")
+          .build();
+      doReturn(nsxClientMock).when(nsxClientFactory).create(any(String.class), any(String.class), any(String.class));
 
-      String logicalSwitchId = UUID.randomUUID().toString();
-      LogicalSwitch logicalSwitch = new LogicalSwitch();
-      logicalSwitch.setId(logicalSwitchId);
-
-      doAnswer(invocation -> {
-        if (invocation.getArguments()[1] != null) {
-          ((FutureCallback<LogicalSwitch>) invocation.getArguments()[1])
-              .onSuccess(logicalSwitch);
-        }
-        return null;
-      }).when(logicalSwitchApi)
-          .createLogicalSwitch(any(LogicalSwitchCreateSpec.class), any(FutureCallback.class));
-
-      doAnswer(invocation -> {
-        if (invocation.getArguments()[1] != null) {
-          ((FutureCallback<LogicalSwitchState>) invocation.getArguments()[1])
-              .onFailure(new Exception("Service is not available"));
-        }
-        return null;
-      }).when(logicalSwitchApi)
-          .getLogicalSwitchState(eq(logicalSwitchId), any(FutureCallback.class));
-
-      CreateLogicalSwitchTask createdState = createLogicalSwitchTaskService(TaskState.TaskStage.CREATED, 0);
-      host.waitForState(createdState.documentSelfLink,
-          CreateLogicalSwitchTask.class,
-          (state) -> TaskState.TaskStage.FAILED == state.taskState.stage);
-
-      CreateLogicalSwitchTask savedState = host.getServiceState(CreateLogicalSwitchTask.class,
-          createdState.documentSelfLink);
+      CreateLogicalSwitchTask savedState = startService();
       assertThat(savedState.taskState.stage, is(TaskState.TaskStage.FAILED));
     }
 
     @Test
     public void testSuccessfulCreate() throws Throwable {
-      LogicalSwitchApi logicalSwitchApi = mock(LogicalSwitchApi.class);
-      doReturn(logicalSwitchApi)
-          .when(createLogicalSwitchTaskService)
-          .getLogicalSwitchApi(any(CreateLogicalSwitchTask.class));
+      NsxClientMock nsxClientMock = new NsxClientMock.Builder()
+          .createLogicalSwitch(true, "logicalSwitchId")
+          .getLogicalSwitchState(true, "logicalSwitchId")
+          .build();
+      doReturn(nsxClientMock).when(nsxClientFactory).create(any(String.class), any(String.class), any(String.class));
 
-      String logicalSwitchId = UUID.randomUUID().toString();
-      LogicalSwitch logicalSwitch = new LogicalSwitch();
-      logicalSwitch.setId(logicalSwitchId);
-
-      doAnswer(invocation -> {
-        if (invocation.getArguments()[1] != null) {
-          ((FutureCallback<LogicalSwitch>) invocation.getArguments()[1])
-              .onSuccess(logicalSwitch);
-        }
-        return null;
-      }).when(logicalSwitchApi)
-          .createLogicalSwitch(any(LogicalSwitchCreateSpec.class), any(FutureCallback.class));
-
-      LogicalSwitchState inProgressState = new LogicalSwitchState();
-      inProgressState.setState(NsxSwitch.State.IN_PROGRESS);
-
-      LogicalSwitchState successState = new LogicalSwitchState();
-      successState.setState(NsxSwitch.State.SUCCESS);
-      successState.setId(logicalSwitchId);
-
-      doAnswer(invocation -> {
-        if (invocation.getArguments()[1] != null) {
-          ((FutureCallback<LogicalSwitchState>) invocation.getArguments()[1])
-              .onSuccess(inProgressState);
-        }
-        return null;
-      }).doAnswer(invocation -> {
-        if (invocation.getArguments()[1] != null) {
-          ((FutureCallback<LogicalSwitchState>) invocation.getArguments()[1])
-              .onSuccess(successState);
-        }
-        return null;
-      }).when(logicalSwitchApi)
-          .getLogicalSwitchState(eq(logicalSwitchId), any(FutureCallback.class));
-
-      CreateLogicalSwitchTask createdState = createLogicalSwitchTaskService(TaskState.TaskStage.CREATED, 0);
-      host.waitForState(createdState.documentSelfLink,
-          CreateLogicalSwitchTask.class,
-          (state) -> TaskState.TaskStage.FINISHED == state.taskState.stage);
-
-      CreateLogicalSwitchTask savedState = host.getServiceState(CreateLogicalSwitchTask.class,
-          createdState.documentSelfLink);
+      CreateLogicalSwitchTask savedState = startService();
       assertThat(savedState.taskState.stage, is(TaskState.TaskStage.FINISHED));
-      assertThat(savedState.id, is(logicalSwitchId));
+      assertThat(savedState.id, is("logicalSwitchId"));
+    }
+
+    private CreateLogicalSwitchTask startService() throws Throwable {
+      return testEnvironment.callServiceAndWaitForState(
+          CreateLogicalSwitchTaskService.FACTORY_LINK,
+          buildStartState(TaskState.TaskStage.CREATED, 0),
+          CreateLogicalSwitchTask.class,
+          (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
     }
   }
 
-  private static CreateLogicalSwitchTask createLogicalSwitchTaskService(TaskState.TaskStage startStage,
+  private static CreateLogicalSwitchTask createLogicalSwitchTaskService(TestHost testHost,
+                                                                        CreateLogicalSwitchTaskService service,
+                                                                        TaskState.TaskStage startStage,
                                                                         int controlFlags) throws Throwable {
+    Operation result = testHost.startServiceSynchronously(service, buildStartState(startStage, controlFlags));
+    return result.getBody(CreateLogicalSwitchTask.class);
+  }
+
+  private static CreateLogicalSwitchTask buildStartState(TaskState.TaskStage startStage,
+                                                         int controlFlags) {
     CreateLogicalSwitchTask startState = new CreateLogicalSwitchTask();
     startState.taskState = new TaskState();
     startState.taskState.stage = startStage;
@@ -480,8 +426,7 @@ public class CreateLogicalSwitchTaskServiceTest {
     startState.transportZoneId = UUID.randomUUID().toString();
     startState.executionDelay = 100;
 
-    Operation result = host.startServiceSynchronously(createLogicalSwitchTaskService, startState);
-    return result.getBody(CreateLogicalSwitchTask.class);
+    return startState;
   }
 
   private static CreateLogicalSwitchTask buildPatchState(TaskState.TaskStage patchStage) {

@@ -15,9 +15,14 @@ package com.vmware.photon.controller.common.tests.nsx;
 
 import com.vmware.photon.controller.nsxclient.NsxClient;
 import com.vmware.photon.controller.nsxclient.apis.FabricApi;
+import com.vmware.photon.controller.nsxclient.apis.LogicalSwitchApi;
+import com.vmware.photon.controller.nsxclient.datatypes.NsxSwitch;
 import com.vmware.photon.controller.nsxclient.models.FabricNode;
 import com.vmware.photon.controller.nsxclient.models.FabricNodeCreateSpec;
 import com.vmware.photon.controller.nsxclient.models.FabricNodeState;
+import com.vmware.photon.controller.nsxclient.models.LogicalSwitch;
+import com.vmware.photon.controller.nsxclient.models.LogicalSwitchCreateSpec;
+import com.vmware.photon.controller.nsxclient.models.LogicalSwitchState;
 import com.vmware.photon.controller.nsxclient.models.TransportNode;
 import com.vmware.photon.controller.nsxclient.models.TransportNodeCreateSpec;
 import com.vmware.photon.controller.nsxclient.models.TransportNodeState;
@@ -33,15 +38,23 @@ import org.mockito.Mockito;
  */
 public class NsxClientMock extends NsxClient {
   private FabricApi mockFabricApi;
+  private LogicalSwitchApi mockLogicalSwitchApi;
 
-  private NsxClientMock(FabricApi mockFabricApi) {
+  private NsxClientMock(FabricApi mockFabricApi,
+                        LogicalSwitchApi mockLogicalSwitchApi) {
     super("1.2.3.4", "username", "password");
     this.mockFabricApi = mockFabricApi;
+    this.mockLogicalSwitchApi = mockLogicalSwitchApi;
   }
 
   @Override
   public FabricApi getFabricApi() {
     return mockFabricApi;
+  }
+
+  @Override
+  public LogicalSwitchApi getLogicalSwitchApi() {
+    return mockLogicalSwitchApi;
   }
 
   @Override
@@ -54,9 +67,11 @@ public class NsxClientMock extends NsxClient {
    */
   public static class Builder {
     private FabricApi mockFabricApi;
+    private LogicalSwitchApi mockLogicalSwitchApi;
 
     public Builder() {
       mockFabricApi = Mockito.mock(FabricApi.class);
+      mockLogicalSwitchApi = Mockito.mock(LogicalSwitchApi.class);
     }
 
     public Builder registerFabricNode(boolean isSuccess,
@@ -204,8 +219,66 @@ public class NsxClientMock extends NsxClient {
       return this;
     }
 
+    public Builder createLogicalSwitch(boolean isSuccess,
+                                       String logicalSwitchId) throws Throwable {
+      if (isSuccess) {
+        LogicalSwitch response = new LogicalSwitch();
+        response.setId(logicalSwitchId);
+        Mockito.doAnswer(invocation -> {
+          ((FutureCallback<LogicalSwitch>) invocation.getArguments()[1])
+              .onSuccess(response);
+          return null;
+        }).when(mockLogicalSwitchApi).createLogicalSwitch(Matchers.any(LogicalSwitchCreateSpec.class),
+            Matchers.any(FutureCallback.class));
+      } else {
+        RuntimeException error = new RuntimeException("createLogicalSwitch failed");
+        Mockito.doAnswer(invocation -> {
+          ((FutureCallback<LogicalSwitch>) invocation.getArguments()[1])
+              .onFailure(error);
+          return null;
+        }).when(mockLogicalSwitchApi).createLogicalSwitch(Matchers.any(LogicalSwitchCreateSpec.class),
+            Matchers.any(FutureCallback.class));
+      }
+
+      return this;
+    }
+
+    public Builder getLogicalSwitchState(boolean isSuccess,
+                                         String logicalSwitchId) throws Throwable {
+      if (isSuccess) {
+        LogicalSwitchState inProgressState = new LogicalSwitchState();
+        inProgressState.setState(NsxSwitch.State.IN_PROGRESS);
+        inProgressState.setId(logicalSwitchId);
+
+        LogicalSwitchState successState = new LogicalSwitchState();
+        successState.setState(NsxSwitch.State.SUCCESS);
+        successState.setId(logicalSwitchId);
+
+        Mockito.doAnswer(invocation -> {
+          ((FutureCallback<LogicalSwitchState>) invocation.getArguments()[1])
+              .onSuccess(inProgressState);
+          return null;
+        }).doAnswer(invocation -> {
+          ((FutureCallback<LogicalSwitchState>) invocation.getArguments()[1])
+              .onSuccess(successState);
+          return null;
+        }).when(mockLogicalSwitchApi).getLogicalSwitchState(Matchers.any(String.class),
+            Matchers.any(FutureCallback.class));
+      } else {
+        RuntimeException error = new RuntimeException("getLogicalSwitchState failed");
+        Mockito.doAnswer(invocation -> {
+          ((FutureCallback<LogicalSwitchState>) invocation.getArguments()[1])
+              .onFailure(error);
+          return null;
+        }).when(mockLogicalSwitchApi).getLogicalSwitchState(Matchers.any(String.class),
+            Matchers.any(FutureCallback.class));
+      }
+
+      return this;
+    }
+
     public NsxClientMock build() {
-      return new NsxClientMock(mockFabricApi);
+      return new NsxClientMock(mockFabricApi, mockLogicalSwitchApi);
     }
   }
 }

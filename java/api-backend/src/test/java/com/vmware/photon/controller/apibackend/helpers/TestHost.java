@@ -16,6 +16,8 @@ import com.vmware.photon.controller.apibackend.ApiBackendFactory;
 import com.vmware.photon.controller.cloudstore.dcp.CloudStoreXenonHost;
 import com.vmware.photon.controller.common.xenon.BasicServiceHost;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
+import com.vmware.photon.controller.nsxclient.NsxClientFactory;
+import com.vmware.photon.controller.nsxclient.NsxClientFactoryProvider;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceHost;
 
@@ -24,17 +26,14 @@ import java.util.logging.LogManager;
 /**
  * This class implements helper routines used to test service hosts in isolation.
  */
-public class TestHost extends BasicServiceHost {
+public class TestHost extends BasicServiceHost implements NsxClientFactoryProvider {
 
-  public TestHost() throws Throwable {
+  private NsxClientFactory nsxClientFactory;
+
+  private TestHost(NsxClientFactory nsxClientFactory) throws Throwable {
     super();
     this.initialize();
-  }
-
-  public static TestHost create() throws Throwable {
-    TestHost host = new TestHost();
-    host.start();
-    return host;
+    this.nsxClientFactory = nsxClientFactory;
   }
 
   @Override
@@ -69,5 +68,35 @@ public class TestHost extends BasicServiceHost {
       operation.setStatusCode(200);
     }
     return operation;
+  }
+
+  @Override
+  public NsxClientFactory getNsxClientFactory() {
+    return this.nsxClientFactory;
+  }
+
+  /**
+   * This class implements a builder for {@link TestHost} objects.
+   */
+  public static class Builder {
+    private NsxClientFactory nsxClientFactory;
+
+    public Builder nsxClientFactory(NsxClientFactory nsxClientFactory) {
+      this.nsxClientFactory = nsxClientFactory;
+      return this;
+    }
+
+    public TestHost build() throws Throwable {
+      return build(true);
+    }
+
+    public TestHost build(boolean autoStart) throws Throwable {
+      TestHost host = new TestHost(nsxClientFactory);
+      if (autoStart) {
+        host.start();
+      }
+
+      return host;
+    }
   }
 }
