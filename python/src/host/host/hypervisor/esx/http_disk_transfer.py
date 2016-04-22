@@ -62,8 +62,7 @@ class HttpTransferException(TransferException):
         self.status_code = status_code
 
     def __str__(self):
-        return "HTTP Status Code: %d : Reason : %s" % (self.status_code,
-                                                       self.error)
+        return "HTTP Status Code: %d : Reason : %s" % (self.status_code, self.error)
 
 
 class NfcLeaseInitiatizationTimeout(Exception):
@@ -78,14 +77,12 @@ class NfcLeaseInitiatizationError(Exception):
 
 class ReceiveImageException(Exception):
     def __init__(self, error_code, error):
-        super(ReceiveImageException, self).__init__(
-            "Fail to receive image at destination host:")
+        super(ReceiveImageException, self).__init__("Fail to receive image at destination host:")
         self.error_code = error_code
         self.error = error
 
     def __str__(self):
-        return "Failed to receive image: Code: %d : Reason : %s" % (
-            self.error_code, self.error)
+        return "Failed to receive image: Code: %d : Reason : %s" % (self.error_code, self.error)
 
 
 class HttpTransferer(object):
@@ -161,8 +158,7 @@ class HttpTransferer(object):
 
         resp = conn.getresponse()
         if resp.status != 200 and resp.status != 201:
-            self._logger.info("Upload failed, status: %d, reason: %s." % (
-                resp.status, resp.reason))
+            self._logger.info("Upload failed, status: %d, reason: %s." % (resp.status, resp.reason))
             raise HttpTransferException(resp.status, resp.reason)
 
         self._logger.debug("Upload of %s completed." % selector)
@@ -174,8 +170,7 @@ class HttpTransferer(object):
 
     def get_download_stream(self, url, ticket):
         protocol, host, selector = self._split_url(url)
-        self._logger.debug("Download from: http[s]://%s%s, ticket: %s" %
-                           (host, selector, ticket))
+        self._logger.debug("Download from: http[s]://%s%s, ticket: %s" % (host, selector, ticket))
 
         conn = self._open_connection(host, protocol)
 
@@ -245,8 +240,7 @@ class HttpNfcTransferer(HttpTransferer):
             self._logger.debug("Nfc lease initialization timed out")
             raise NfcLeaseInitiatizationTimeout()
         if state == vim.HttpNfcLease.State.error:
-            self._logger.debug("Fail to initialize nfc lease: %s" %
-                               str(lease.error))
+            self._logger.debug("Fail to initialize nfc lease: %s" % str(lease.error))
             raise NfcLeaseInitiatizationError()
 
     def _ensure_host_in_url(self, url, actual_host):
@@ -283,9 +277,8 @@ class HttpNfcTransferer(HttpTransferer):
         accessible from this host.
         """
         shadow_vm_id = SHADOW_VM_NAME_PREFIX + str(uuid.uuid4())
-        spec = self._vm_config.create_spec(
-            vm_id=shadow_vm_id, datastore=self._get_shadow_vm_datastore(),
-            memory=32, cpus=1)
+        spec = self._vm_config.create_spec(vm_id=shadow_vm_id, datastore=self._get_shadow_vm_datastore(),
+                                           memory=32, cpus=1)
         try:
             self._vm_manager.create_vm(shadow_vm_id, spec)
         except Exception:
@@ -305,8 +298,7 @@ class HttpNfcTransferer(HttpTransferer):
             # delete the vm
             self._vm_manager.delete_vm(shadow_vm_id, force=True)
         except Exception:
-            self._logger.exception("Error deleting vm with id %s" %
-                                   shadow_vm_id)
+            self._logger.exception("Error deleting vm with id %s" % shadow_vm_id)
 
     def _configure_shadow_vm_with_disk(self, image_id, image_datastore,
                                        shadow_vm_id):
@@ -314,16 +306,14 @@ class HttpNfcTransferer(HttpTransferer):
         try:
             spec = self._vm_manager.update_vm_spec()
             info = self._vm_manager.get_vm_config(shadow_vm_id)
-            self._vm_manager.add_disk(spec, image_datastore, image_id, info,
-                                      disk_is_image=True)
+            self._vm_manager.add_disk(spec, image_datastore, image_id, info, disk_is_image=True)
             self._vm_manager.update_vm(shadow_vm_id, spec)
         except Exception:
             self._logger.exception(
                 "Error configuring shadow vm with image %s" % image_id)
             raise
 
-    def _get_image_stream_from_shadow_vm(self, image_id, image_datastore,
-                                         shadow_vm_id):
+    def _get_image_stream_from_shadow_vm(self, image_id, image_datastore, shadow_vm_id):
         """ Obtain a handle to the streamOptimized disk from shadow vm.
 
         The stream-optimized disk is obtained via configuring a shadow
@@ -331,11 +321,9 @@ class HttpNfcTransferer(HttpTransferer):
         reconfigured shadow VM.
 
         """
-        self._configure_shadow_vm_with_disk(image_id, image_datastore,
-                                            shadow_vm_id)
+        self._configure_shadow_vm_with_disk(image_id, image_datastore, shadow_vm_id)
         lease, disk_url = self._export_shadow_vm(shadow_vm_id)
-        disk_url = self._ensure_host_in_url(disk_url,
-                                            self._lease_url_host_name)
+        disk_url = self._ensure_host_in_url(disk_url, self._lease_url_host_name)
         return lease, disk_url
 
     def _prepare_receive_image(self, agent_client, image_id, datastore):

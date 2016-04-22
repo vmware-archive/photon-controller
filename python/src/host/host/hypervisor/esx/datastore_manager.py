@@ -115,8 +115,7 @@ class EsxDatastoreManager(DatastoreManager, UpdateListener):
         return [ds.id for ds in self._image_datastores]
 
     def datastore_nfc_ticket(self, datastore_name):
-        ticket = self._hypervisor.vim_client.get_nfc_ticket_by_ds_name(
-            datastore_name)
+        ticket = self._hypervisor.vim_client.get_nfc_ticket_by_ds_name(datastore_name)
 
         return HostServiceTicket(host=ticket.host, port=ticket.port,
                                  ssl_thumbprint=ticket.sslThumbprint,
@@ -130,8 +129,7 @@ class EsxDatastoreManager(DatastoreManager, UpdateListener):
 
     @locked
     def datastore_info(self, datastore_id):
-        return self._hypervisor.system.datastore_info(
-            self._datastore_id_to_name_map[datastore_id])
+        return self._hypervisor.system.datastore_info(self._datastore_id_to_name_map[datastore_id])
 
     def _to_thrift_datastore(self, ds):
         """ From vim.Datastore to gen.resource.ttypes.Datastore
