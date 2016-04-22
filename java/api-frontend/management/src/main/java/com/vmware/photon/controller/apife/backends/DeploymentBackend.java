@@ -18,6 +18,7 @@ import com.vmware.photon.controller.api.ClusterConfigurationSpec;
 import com.vmware.photon.controller.api.ClusterType;
 import com.vmware.photon.controller.api.Deployment;
 import com.vmware.photon.controller.api.DeploymentCreateSpec;
+import com.vmware.photon.controller.api.DeploymentDeployOperation;
 import com.vmware.photon.controller.api.DeploymentState;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.entities.DeploymentEntity;
@@ -33,7 +34,7 @@ public interface DeploymentBackend {
 
   TaskEntity prepareCreateDeployment(DeploymentCreateSpec spec) throws ExternalException;
 
-  TaskEntity prepareDeploy(String deploymentId) throws ExternalException;
+  TaskEntity prepareDeploy(String deploymentId, DeploymentDeployOperation config) throws ExternalException;
 
   TaskEntity prepareDeleteDeployment(String id) throws ExternalException;
 

@@ -111,7 +111,7 @@ public class DeploymentFeClient {
 
   public Task perform(String deploymentId, DeploymentDeployOperation config)
       throws InternalException, ExternalException {
-    TaskEntity taskEntity = deploymentBackend.prepareDeploy(deploymentId);
+    TaskEntity taskEntity = deploymentBackend.prepareDeploy(deploymentId, config);
     Task task = taskBackend.getApiRepresentation(taskEntity);
 
     TaskCommand command = commandFactory.create(taskEntity);
