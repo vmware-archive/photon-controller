@@ -19,6 +19,7 @@ import com.vmware.photon.controller.api.ClusterConfigurationSpec;
 import com.vmware.photon.controller.api.ClusterType;
 import com.vmware.photon.controller.api.Deployment;
 import com.vmware.photon.controller.api.DeploymentCreateSpec;
+import com.vmware.photon.controller.api.DeploymentDeployOperation;
 import com.vmware.photon.controller.api.DeploymentState;
 import com.vmware.photon.controller.api.NetworkConfiguration;
 import com.vmware.photon.controller.api.Operation;
@@ -271,10 +272,13 @@ public class DeploymentDcpBackendTest {
     @Inject
     private TaskBackend taskBackend;
 
+    private DeploymentDeployOperation config;
+
     @BeforeMethod
     public void setUp() throws Throwable {
       commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
       commonDataSetup();
+      config = new DeploymentDeployOperation();
 
       TaskEntity task = deploymentBackend.prepareCreateDeployment(deploymentCreateSpec);
       entity = deploymentBackend.findById(task.getEntityId());
@@ -293,7 +297,7 @@ public class DeploymentDcpBackendTest {
     @Test(dataProvider = "DeploySuccess")
     public void testPrepareDeploySuccess(DeploymentState state) throws Throwable {
       deploymentBackend.updateState(entity, state);
-      TaskEntity taskEntity = deploymentBackend.prepareDeploy(entity.getId());
+      TaskEntity taskEntity = deploymentBackend.prepareDeploy(entity.getId(), config);
 
       assertThat(taskEntity, is(notNullValue()));
       assertThat(taskEntity.getId(), is(notNullValue()));
@@ -328,7 +332,7 @@ public class DeploymentDcpBackendTest {
         expectedExceptionsMessageRegExp = "Invalid operation PERFORM_DEPLOYMENT for deployment.*")
     public void testPrepareDeployFailure(DeploymentState state) throws Throwable {
       deploymentBackend.updateState(entity, state);
-      deploymentBackend.prepareDeploy(entity.getId());
+      deploymentBackend.prepareDeploy(entity.getId(), config);
     }
 
     @DataProvider(name = "DeployFailure")

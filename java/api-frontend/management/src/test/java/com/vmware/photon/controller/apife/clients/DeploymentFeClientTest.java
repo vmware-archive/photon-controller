@@ -53,6 +53,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -140,7 +141,8 @@ public class DeploymentFeClientTest {
     public void testTaskIsCreated() throws Throwable {
       String deploymentId = "deployment-id";
       TaskEntity taskEntity = new TaskEntity();
-      doReturn(taskEntity).when(deploymentBackend).prepareDeploy(deploymentId);
+      doReturn(taskEntity).when(deploymentBackend).prepareDeploy(eq(deploymentId),
+          any(DeploymentDeployOperation.class));
 
       Task task = new Task();
       doReturn(task).when(taskBackend).getApiRepresentation(taskEntity);

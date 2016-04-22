@@ -603,10 +603,12 @@ public class DeployerClient implements StatusProvider {
    * @throws RpcException
    */
   @RpcMethod
-  public void deploy(Deployment deployment, AsyncMethodCallback<Deployer.AsyncClient.deploy_call> handler)
+  public void deploy(Deployment deployment, String desiredState, AsyncMethodCallback<Deployer.AsyncClient.deploy_call>
+      handler)
       throws InterruptedException, RpcException {
     try {
       DeployRequest deployRequest = new DeployRequest(deployment);
+      deployRequest.setDesired_state(desiredState);
       logger.info("deploy request {}", deployRequest);
 
       Deployer.AsyncClient client = proxy.get();
@@ -628,10 +630,10 @@ public class DeployerClient implements StatusProvider {
    * @throws RpcException
    */
   @RpcMethod
-  public DeployResponse deploy(Deployment deployment)
+  public DeployResponse deploy(Deployment deployment, String desiredState)
       throws InterruptedException, RpcException {
     SyncHandler<DeployResponse, Deployer.AsyncClient.deploy_call> handler = new SyncHandler<>();
-    deploy(deployment, handler);
+    deploy(deployment, desiredState, handler);
     handler.await();
     return ResponseValidator.checkDeployResponse(handler.getResponse());
   }
