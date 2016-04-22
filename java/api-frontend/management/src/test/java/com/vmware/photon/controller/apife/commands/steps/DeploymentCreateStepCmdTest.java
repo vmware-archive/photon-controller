@@ -37,6 +37,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
@@ -48,6 +49,7 @@ import static org.mockito.Mockito.when;
  * Tests {@link DeploymentCreateStepCmd}.
  */
 public class DeploymentCreateStepCmdTest extends PowerMockTestCase {
+  private static String desiredState = "PAUSED";
 
   DeploymentCreateStepCmd command;
 
@@ -69,6 +71,7 @@ public class DeploymentCreateStepCmdTest extends PowerMockTestCase {
     StepEntity step = new StepEntity();
     step.setId("id");
     step.addResource(deploymentEntity);
+    step.createOrUpdateTransientResource(DeploymentCreateStepCmd.DEPLOYMENT_DESIRED_STATE_RESOURCE_KEY, desiredState);
 
     command = spy(new DeploymentCreateStepCmd(taskCommand, stepBackend, step, deploymentBackend));
     when(taskCommand.getDeployerClient()).thenReturn(deployerClient);
@@ -95,12 +98,12 @@ public class DeploymentCreateStepCmdTest extends PowerMockTestCase {
     public void testSuccessfulDeploy() throws Exception {
       DeployResponse response = new DeployResponse(new DeployResult(DeployResultCode.OK));
       response.setOperation_id("operation-id");
-      when(deployerClient.deploy(any(Deployment.class))).thenReturn(response);
+      when(deployerClient.deploy(any(Deployment.class), any(String.class))).thenReturn(response);
 
       command.execute();
       assertThat(deploymentEntity.getOperationId(), is(response.getOperation_id()));
 
-      verify(deployerClient).deploy(deploymentArgumentCaptor.capture());
+      verify(deployerClient).deploy(deploymentArgumentCaptor.capture(), eq(desiredState));
       Deployment deployment = deploymentArgumentCaptor.getValue();
       assertThat(deployment.getId(), is(deploymentEntity.getId()));
       if (deploymentEntity.getImageDatastores() != null) {
@@ -118,7 +121,7 @@ public class DeploymentCreateStepCmdTest extends PowerMockTestCase {
 
     @Test
     public void testFailedDeploy() throws Exception {
-      when(deployerClient.deploy(any(Deployment.class))).thenThrow(new RpcException());
+      when(deployerClient.deploy(any(Deployment.class), any(String.class))).thenThrow(new RpcException());
 
       try {
         command.execute();
@@ -129,7 +132,7 @@ public class DeploymentCreateStepCmdTest extends PowerMockTestCase {
 
     @Test
     public void testFailedDeployOnManagementHostNotCreated() throws Exception {
-      when(deployerClient.deploy(any(Deployment.class)))
+      when(deployerClient.deploy(any(Deployment.class), any(String.class)))
           .thenThrow(new com.vmware.photon.controller.common.clients.exceptions.NoManagementHostException("error"));
 
       try {
@@ -141,7 +144,7 @@ public class DeploymentCreateStepCmdTest extends PowerMockTestCase {
 
     @Test
     public void testFailedDeployOnInvalidAuthConfig() throws Exception {
-      when(deployerClient.deploy(any(Deployment.class)))
+      when(deployerClient.deploy(any(Deployment.class), any(String.class)))
           .thenThrow(new com.vmware.photon.controller.common.clients.exceptions.InvalidAuthConfigException("error"));
 
       try {
