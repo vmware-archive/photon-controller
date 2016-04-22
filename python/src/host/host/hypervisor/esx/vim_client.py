@@ -77,8 +77,7 @@ def hostd_error_handler(func):
             return func(self, *args, **kwargs)
         except (vim.fault.NotAuthenticated, vim.fault.HostConnectFault,
                 vim.fault.InvalidLogin, AcquireCredentialsException):
-            self._logger.warning("Lost connection to hostd. Commit suicide.",
-                                 exc_info=True)
+            self._logger.warning("Lost connection to hostd. Commit suicide.", exc_info=True)
             if self.errback:
                 self.errback()
             else:
@@ -122,8 +121,7 @@ class VimClient(object):
             self._si = self.connect_ticket(host, ticket)
         else:
             if not user or not pwd:
-                (self.username, self.password) = \
-                    VimClient.acquire_credentials()
+                (self.username, self.password) = VimClient.acquire_credentials()
             else:
                 (self.username, self.password) = (user, pwd)
             self._si = self.connect_userpwd(host, self.username, self.password)
@@ -232,20 +230,15 @@ class VimClient(object):
                 si.RetrieveContent().sessionManager.CloneSession(ticket)
                 return si
             except httplib.HTTPException as http_exception:
-                self._logger.info("Failed to login hostd with ticket: %s"
-                                  % http_exception)
+                self._logger.info("Failed to login hostd with ticket: %s" % http_exception)
                 raise AcquireCredentialsException(http_exception)
 
     def connect_userpwd(self, host, user, pwd):
         try:
-            si = connect.Connect(host=host,
-                                 user=user,
-                                 pwd=pwd,
-                                 version=VIM_VERSION)
+            si = connect.Connect(host=host, user=user, pwd=pwd, version=VIM_VERSION)
             return si
         except vim.fault.HostConnectFault as connection_exception:
-            self._logger.info(
-                "Failed to connect to hostd: %s" % connection_exception)
+            self._logger.info("Failed to connect to hostd: %s" % connection_exception)
             raise HostdConnectionFailure(connection_exception)
 
     def disconnect(self, wait=False):
@@ -257,8 +250,7 @@ class VimClient(object):
         try:
             connect.Disconnect(self._si)
         except:
-            self._logger.warning("Failed to disconnect vim_client: %s" %
-                                 sys.exc_info()[1])
+            self._logger.warning("Failed to disconnect vim_client: %s" % sys.exc_info()[1])
 
     @property
     @hostd_error_handler
@@ -608,13 +600,10 @@ class VimClient(object):
         :param timeout: timeout in seconds
         """
         if not self.filter:
-            self.filter = self.property_collector.CreateFilter(
-                self.filter_spec(), partialUpdates=False)
+            self.filter = self.property_collector.CreateFilter(self.filter_spec(), partialUpdates=False)
         wait_options = vmodl.query.PropertyCollector.WaitOptions()
         wait_options.maxWaitSeconds = timeout
-        update = self.property_collector.WaitForUpdatesEx(
-            self.current_version,
-            wait_options)
+        update = self.property_collector.WaitForUpdatesEx(self.current_version, wait_options)
         self._update_cache(update)
         if update:
             self.current_version = update.version
@@ -704,15 +693,11 @@ class VimClient(object):
                            format(str(vim_task), self._task_counter_read()))
 
         try:
-            task_cache = self._task_cache.wait_until(
-                str(vim_task),
-                VimClient._verify_task_done,
-                timeout=timeout)
+            task_cache = self._task_cache.wait_until(str(vim_task), VimClient._verify_task_done, timeout=timeout)
         finally:
             self._task_counter_sub()
 
-        self._logger.debug("task(%s) finished with: %s" % (str(vim_task),
-                                                           str(task_cache)))
+        self._logger.debug("task(%s) finished with: %s" % (str(vim_task), str(task_cache)))
         if task_cache.state == TaskState.error:
             if not task_cache.error:
                 task_cache.error = "No message"
@@ -727,9 +712,8 @@ class VimClient(object):
         loop.
         """
         self._task_counter_add()
-        self._logger.debug(
-            "spin_wait_for_task: {0} Number of current tasks: {1}".
-            format(str(vim_task), self._task_counter_read()))
+        self._logger.debug("spin_wait_for_task: {0} Number of current tasks: {1}".
+                           format(str(vim_task), self._task_counter_read()))
         try:
             task.WaitForTask(vim_task, si=self._si)
         finally:
@@ -740,8 +724,7 @@ class VimClient(object):
         """Wait for vm to be created in cache
         :raise TimeoutError when timeout
         """
-        self._vm_name_to_ref.wait_until(vm_id, lambda x: x is not None,
-                                        timeout)
+        self._vm_name_to_ref.wait_until(vm_id, lambda x: x is not None, timeout)
 
     @log_duration_with(log_level="debug")
     def wait_for_vm_delete(self, vm_id, timeout=10):
