@@ -18,7 +18,7 @@
       "vm_name": "bmp-vm-vb",
       "vboxmanage": [
         [ "modifyvm", "{{.Name}}", "--memory", "4096" ],
-        [ "modifyvm", "{{.Name}}", "--cpus", "2" ],
+        [ "modifyvm", "{{.Name}}", "--cpus", "4" ],
         [ "storageattach", "{{.Name}}", "--storagectl", "IDE Controller", "--port", "0", "--device", "0", "--type",
           "dvddrive", "--medium", "{{ user `photon_cached_iso` }}" ]
       ]
@@ -102,7 +102,7 @@
     {
       "type": "file",
       "source": "./bmp/httpd.conf",
-      "destination": "/etc/httpd/conf/httpd.conf"
+      "destination": "/etc/httpd/httpd.conf"
     },
     {
       "type": "shell",
