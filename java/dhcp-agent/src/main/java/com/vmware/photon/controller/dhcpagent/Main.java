@@ -38,7 +38,7 @@ public class Main {
 
     ArgumentParser parser = ArgumentParsers.newArgumentParser("DHCPAgent")
         .defaultHelp(true)
-        .description("Photon Controller DHCPAgent");
+        .description("Photon Controller DHCP Agent");
     parser.addArgument("file").help("configuration file");
 
     Namespace namespace = parser.parseArgsOrFail(args);

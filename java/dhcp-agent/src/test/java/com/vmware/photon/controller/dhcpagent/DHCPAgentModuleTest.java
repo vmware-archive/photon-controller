@@ -30,7 +30,7 @@ public class DHCPAgentModuleTest {
   /**
    * Dummy test case to make Intellij recognize this as a test class.
    */
-  @Test
+  @Test(enabled = false)
   private void dummy() {
   }
 
@@ -50,7 +50,7 @@ public class DHCPAgentModuleTest {
       TestHelper.TestInjectedConfig test = injector.getInstance(TestHelper.TestInjectedConfig.class);
       assertThat(test.getBind(), is("0.0.0.0"));
       assertThat(test.getRegistrationAddress(), is("127.0.0.1"));
-      assertThat(test.getPort(), is(19000));
+      assertThat(test.getPort(), is(17000));
       assertThat(test.getPath(), is("/tmp/dcp/dhcp-agent/"));
     }
   }
