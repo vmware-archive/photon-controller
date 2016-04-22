@@ -180,6 +180,11 @@ task :stop_agent, [:dc_yml, :usage_tags] do |t, args|
   EsxCloud::UptimeHelper.stop_agent(args[:dc_yml], args[:usage_tags])
 end
 
+desc 'Start agent'
+task :start_agent, [:dc_yml, :usage_tags] do |t, args|
+  EsxCloud::UptimeHelper.start_agent(args[:dc_yml], args[:usage_tags])
+end
+
 desc 'Run integration test to check deployment'
 RSpec::Core::RakeTask.new(:check_deployment) do |task|
   task.pattern = FileList['spec/api/check_deployment/*_spec.rb']
