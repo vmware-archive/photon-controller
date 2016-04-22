@@ -3,6 +3,6 @@
 :retry_dhcp
 dhcp || goto retry_dhcp
 
-kernel -n mboot.c32 http://HOST_IP/webroot/installer-pxe-modules/mboot.c32
-imgargs mboot.c32 -c http://HOST_IP/webroot/boot.cfg
+kernel -n mboot.c32 http://HOST_IP/installer-pxe-modules/mboot.c32
+imgargs mboot.c32 -c http://HOST_IP/boot.cfg
 boot mboot.c32
