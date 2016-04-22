@@ -185,10 +185,75 @@ describe "migrate finalize", upgrade: true do
         client.find_all_projects(tenant.id).items.each do |project|
           client.find_all_vms(project.id).items.each do |vm|
             ignoring_all_errors { vm.stop! }
+            #verifying vm power ops operations
             vm.start!
             vm.stop!
+
+            #verifying image creation from vm
+            replication_type = "ON_DEMAND"
+            image_name = "image-" + vm.id
+            image_create_spec = EsxCloud::ImageCreateSpec.new(image_name, replication_type)
+
+            image = EsxCloud::Image.create_from_vm(vm.id, image_create_spec)
+            expect(image.name).to eq image_create_spec.name
+            expect(image.state).to eq "READY"
+            expect(image.replication).to eq replication_type
+
+            verify_image_cloned_from_vm(project, image.id)
+
+            image_list = EsxCloud::Image.find_all.items.select { |i| i.name == image_name }
+            image_list.each { |i| ignoring_all_errors { i.delete } }
+
+            stop_vm(vm)
+
+            #verifying disk detaching, then iso detaching and vm deletion
+            vm.disks.each do |disk|
+              detach_disk(vm, disk)
+            end
+            detach_iso vm
+            vm.delete
+
+            vm = client.find_all_vms(project.id).items.find {|v| v.id = vm.id}
+            expect(vm).to be_nil
           end
         end
+      end
+    end
+
+    private
+
+    def verify_image_cloned_from_vm(project, image_id)
+      new_vm = create_vm(project, image_id)
+      expect(new_vm.state).to eq "STOPPED"
+      new_vm.start!
+      expect(new_vm.state).to eq "STARTED"
+      new_vm.stop!
+      expect(new_vm.state).to eq "STOPPED"
+    ensure
+      return unless new_vm
+      ignoring_all_errors do
+        new_vm.stop! if new_vm.state == "STARTED"
+        new_vm.delete
+      end
+    end
+
+    def detach_disk(vm, disk)
+      if ["persistent-disk", "persistent"].include? disk.kind
+        vm.detach_disk disk.id
+      end
+    end
+
+    def detach_iso(vm)
+      begin
+        vm.detach_iso
+      rescue
+      end
+    end
+
+    def stop_vm(vm)
+      begin
+        vm.stop!
+      rescue
       end
     end
   end
