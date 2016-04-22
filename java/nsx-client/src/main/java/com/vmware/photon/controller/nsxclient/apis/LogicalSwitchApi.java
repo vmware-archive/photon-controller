@@ -14,6 +14,8 @@
 package com.vmware.photon.controller.nsxclient.apis;
 
 import com.vmware.photon.controller.nsxclient.RestClient;
+import com.vmware.photon.controller.nsxclient.models.LogicalPort;
+import com.vmware.photon.controller.nsxclient.models.LogicalPortCreateSpec;
 import com.vmware.photon.controller.nsxclient.models.LogicalSwitch;
 import com.vmware.photon.controller.nsxclient.models.LogicalSwitchCreateSpec;
 import com.vmware.photon.controller.nsxclient.models.LogicalSwitchState;
@@ -29,6 +31,7 @@ import java.io.IOException;
  */
 public class LogicalSwitchApi extends NsxClientApi {
   public final String logicalSwitchBasePath = basePath + "/logical-switches";
+  public final String logicalPortBasePath = basePath + "/logical-ports";
 
   public LogicalSwitchApi(RestClient restClient) {
     super(restClient);
@@ -63,6 +66,26 @@ public class LogicalSwitchApi extends NsxClientApi {
                                   FutureCallback<Void> responseCallback) throws Exception {
 
     deleteAsync(logicalSwitchBasePath + "/" + id,
+        HttpStatus.SC_OK,
+        responseCallback);
+  }
+
+  public void createLogicalPort(LogicalPortCreateSpec spec,
+                                FutureCallback<LogicalPort> responseCallback)
+    throws IOException {
+
+    postAsync(logicalPortBasePath,
+        serializeObjectAsJson(spec),
+        HttpStatus.SC_CREATED,
+        new TypeReference<LogicalPort>() {
+        },
+        responseCallback
+    );
+  }
+
+  public void deleteLogicalPort(String id, FutureCallback<Void> responseCallback) throws Exception {
+
+    deleteAsync(logicalPortBasePath + "/" + id,
         HttpStatus.SC_OK,
         responseCallback);
   }

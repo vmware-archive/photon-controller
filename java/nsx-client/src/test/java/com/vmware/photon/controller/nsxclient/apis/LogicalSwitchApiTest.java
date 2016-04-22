@@ -16,6 +16,8 @@ package com.vmware.photon.controller.nsxclient.apis;
 import com.vmware.photon.controller.nsxclient.RestClient;
 import com.vmware.photon.controller.nsxclient.builders.LogicalSwitchCreateSpecBuilder;
 import com.vmware.photon.controller.nsxclient.datatypes.NsxSwitch;
+import com.vmware.photon.controller.nsxclient.models.LogicalPort;
+import com.vmware.photon.controller.nsxclient.models.LogicalPortCreateSpec;
 import com.vmware.photon.controller.nsxclient.models.LogicalSwitch;
 import com.vmware.photon.controller.nsxclient.models.LogicalSwitchCreateSpec;
 import com.vmware.photon.controller.nsxclient.models.LogicalSwitchState;
@@ -310,6 +312,175 @@ public class LogicalSwitchApiTest {
           }
       );
       latch.await();
+    }
+  }
+
+  /**
+   * Tests for creating logical ports.
+   */
+  public static class LogicalPortCreateTest {
+    private static final int CALLBACK_ARG_INDEX = 4;
+
+    private LogicalSwitchApi logicalSwitchApi;
+    private CountDownLatch latch;
+
+    @BeforeMethod
+    public void setup() {
+      logicalSwitchApi = spy(new LogicalSwitchApi(mock(RestClient.class)));
+      latch = new CountDownLatch(1);
+    }
+
+    @Test
+    public void testSuccessfullyCreated() throws Exception {
+      LogicalPortCreateSpec spec = new LogicalPortCreateSpec();
+      LogicalPort logicalPort = new LogicalPort();
+
+      doAnswer(invocation -> {
+        if (invocation.getArguments()[CALLBACK_ARG_INDEX] != null)  {
+          ((FutureCallback<LogicalPort>) invocation.getArguments()[CALLBACK_ARG_INDEX]).onSuccess(logicalPort);
+        }
+        return null;
+      }).when(logicalSwitchApi)
+          .postAsync(eq(logicalSwitchApi.logicalPortBasePath),
+              any(HttpEntity.class),
+              eq(HttpStatus.SC_CREATED),
+              any(TypeReference.class),
+              any(FutureCallback.class));
+
+      logicalSwitchApi.createLogicalPort(spec,
+          new FutureCallback<LogicalPort>() {
+            @Override
+            public void onSuccess(LogicalPort result) {
+              assertThat(result, is(logicalPort));
+              latch.countDown();
+            }
+
+            @Override
+            public void onFailure(Throwable t) {
+              fail("Should not have failed");
+              latch.countDown();
+            }
+          }
+      );
+      latch.await();
+    }
+
+    @Test
+    public void testFailedToCreate() throws Exception {
+      final String errorMsg = "Service is not available";
+      LogicalPortCreateSpec spec = new LogicalPortCreateSpec();
+
+      doAnswer(invocation -> {
+        if (invocation.getArguments()[CALLBACK_ARG_INDEX] != null)  {
+          ((FutureCallback<LogicalPort>) invocation.getArguments()[CALLBACK_ARG_INDEX])
+              .onFailure(new RuntimeException(errorMsg));
+        }
+        return null;
+      }).when(logicalSwitchApi)
+          .postAsync(eq(logicalSwitchApi.logicalPortBasePath),
+              any(HttpEntity.class),
+              eq(HttpStatus.SC_CREATED),
+              any(TypeReference.class),
+              any(FutureCallback.class));
+
+      logicalSwitchApi.createLogicalPort(spec,
+          new FutureCallback<LogicalPort>() {
+            @Override
+            public void onSuccess(LogicalPort result) {
+              fail("Should not have succeeded");
+              latch.countDown();
+            }
+
+            @Override
+            public void onFailure(Throwable t) {
+              assertThat(t.getMessage(), is(errorMsg));
+              latch.countDown();
+            }
+          }
+      );
+      latch.await();
+    }
+
+    /**
+     * Tests for deleting logical ports.
+     */
+    public static class LogicalPortDeleteTest {
+      private static final int CALLBACK_ARG_INDEX = 2;
+
+      private LogicalSwitchApi logicalSwitchApi;
+      private CountDownLatch latch;
+
+      @BeforeMethod
+      public void setup() {
+        logicalSwitchApi = spy(new LogicalSwitchApi(mock(RestClient.class)));
+        latch = new CountDownLatch(1);
+      }
+
+      @Test
+      public void testSuccessfullyDeleted() throws Exception {
+        final String logicalPortId = UUID.randomUUID().toString();
+
+        doAnswer(invocation -> {
+          if (invocation.getArguments()[CALLBACK_ARG_INDEX] != null) {
+            ((FutureCallback<Void>) invocation.getArguments()[CALLBACK_ARG_INDEX])
+                .onSuccess(null);
+          }
+          return null;
+        }).when(logicalSwitchApi)
+            .deleteAsync(eq(logicalSwitchApi.logicalPortBasePath + "/" + logicalPortId),
+                eq(HttpStatus.SC_OK),
+                any(FutureCallback.class));
+
+        logicalSwitchApi.deleteLogicalPort(logicalPortId,
+            new FutureCallback<Void>() {
+              @Override
+              public void onSuccess(Void result) {
+                latch.countDown();
+              }
+
+              @Override
+              public void onFailure(Throwable t) {
+                fail("Should not have failed");
+                latch.countDown();
+              }
+            }
+        );
+        latch.await();
+      }
+
+      @Test
+      public void testFailedToDelete() throws Exception {
+        final String errorMsg = "Service is not available";
+        final String logicalPortId = UUID.randomUUID().toString();
+
+        doAnswer(invocation -> {
+          if (invocation.getArguments()[CALLBACK_ARG_INDEX] != null) {
+            ((FutureCallback<Void>) invocation.getArguments()[CALLBACK_ARG_INDEX])
+                .onFailure(new RuntimeException(errorMsg));
+          }
+          return null;
+        }).when(logicalSwitchApi)
+            .deleteAsync(eq(logicalSwitchApi.logicalPortBasePath + "/" + logicalPortId),
+                eq(HttpStatus.SC_OK),
+                any(FutureCallback.class));
+
+        logicalSwitchApi.deleteLogicalPort(logicalPortId,
+            new FutureCallback<Void>() {
+              @Override
+              public void onSuccess(Void result) {
+                fail("Should not have succeeded");
+                latch.countDown();
+              }
+
+              @Override
+              public void onFailure(Throwable t) {
+                assertThat(t.getMessage(), is(errorMsg));
+                latch.countDown();
+              }
+            }
+        );
+        latch.await();
+      }
     }
   }
 }
