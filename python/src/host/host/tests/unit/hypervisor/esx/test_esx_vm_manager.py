@@ -12,7 +12,6 @@
 import unittest
 
 import os
-import shutil
 import uuid
 
 from mock import MagicMock
@@ -315,16 +314,16 @@ class TestEsxVmManager(unittest.TestCase):
     ])
     @patch.object(os.path, "isdir", return_value=True)
     @patch.object(os.path, "islink", return_value=False)
-    @patch.object(shutil, "rmtree")
     def test_ensure_directory_cleanup(
-            self, stray_file, expected, rmtree, islink, isdir):
+            self, stray_file, expected, islink, isdir):
         """Test cleanup of stray vm directory"""
 
         self.vm_manager._logger = MagicMock()
+        self.vm_manager.vim_client.delete_file = MagicMock()
 
         with patch.object(os, "listdir", return_value=[stray_file]):
             self.vm_manager._ensure_directory_cleanup("/vmfs/volumes/fake/vm_vm_foo")
-            rmtree.assert_called_once_with("/vmfs/volumes/fake/vm_vm_foo")
+            self.vm_manager.vim_client.delete_file.assert_called_once_with("/vmfs/volumes/fake/vm_vm_foo")
             self.vm_manager._logger.info.assert_called_once_with(expected)
             self.vm_manager._logger.warning.assert_called_once_with(
                 "Force delete vm directory /vmfs/volumes/fake/vm_vm_foo")
