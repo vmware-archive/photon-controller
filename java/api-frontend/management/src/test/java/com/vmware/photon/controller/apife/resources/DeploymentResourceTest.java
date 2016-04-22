@@ -31,6 +31,7 @@ import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
 
 import org.hamcrest.Matchers;
 import org.mockito.Mock;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -98,8 +99,8 @@ public class DeploymentResourceTest extends ResourceTest {
     assertThat(deploymentRetrieved.getSelfLink().endsWith(deploymentRoutePath), is(true));
   }
 
-  @Test
-  public void testPerformDeployment() throws Exception {
+  @Test(dataProvider = "validDesiredState")
+  public void testPerformDeployment(String key, String value) throws Exception {
     Task task = new Task();
     task.setId(taskId);
     when(feClient.perform(eq(deploymentId), any(DeploymentDeployOperation.class))).thenReturn(task);
@@ -113,13 +114,57 @@ public class DeploymentResourceTest extends ResourceTest {
     Response response = client()
         .target(uri)
         .request()
-        .post(Entity.entity("{\"desiredState\":\"PAUSED\"}", MediaType.APPLICATION_JSON_TYPE));
+        .post(Entity.entity(buildConfig(key, value), MediaType.APPLICATION_JSON_TYPE));
 
     assertThat(response.getStatus(), is(201));
     Task responseTask = response.readEntity(Task.class);
     assertThat(responseTask, Matchers.is(task));
     assertThat(new URI(responseTask.getSelfLink()).isAbsolute(), is(true));
     assertThat(responseTask.getSelfLink().endsWith(taskRoutePath), is(true));
+  }
+
+  @DataProvider(name = "validDesiredState")
+  private Object[][] getValideDesireState() {
+    return new Object[][]{
+        {null, null},
+        {"", ""},
+        {"desiredState", "PAUSED"},
+        {"desiredState", "BACKGROUND_PAUSED"},
+        {"desiredState", "READY"},
+    };
+  }
+
+  @Test(dataProvider = "invalidDesiredState")
+  public void testPerformDeploymentInvalidDesiredState(String key, String value) throws Exception {
+    Task task = new Task();
+    task.setId(taskId);
+    when(feClient.perform(eq(deploymentId), any(DeploymentDeployOperation.class))).thenReturn(task);
+
+    String uri = UriBuilder
+        .fromPath(DeploymentResourceRoutes.DEPLOYMENT_PATH +
+            DeploymentResourceRoutes.PERFORM_DEPLOYMENT_ACTION)
+        .build(deploymentId)
+        .toString();
+
+    Response response = client()
+        .target(uri)
+        .request()
+        .post(Entity.entity(buildConfig(key, value), MediaType.APPLICATION_JSON_TYPE));
+    assertThat(response.getStatus(), is(500));
+
+  }
+
+  @DataProvider(name = "invalidDesiredState")
+  private Object[][] getInvalideDesireState() {
+    return new Object[][]{
+        {"desiredState", ""},
+        {"desiredState", "INVALID_STATE"},
+        {"desiredState", "CERATING"},
+        {"desiredState", "ERROR"},
+        {"desiredState", "CERATING"},
+        {"desiredState", "NOT_DEPLOYED"},
+        {"desiredState", "DELETED"},
+    };
   }
 
   @Test
@@ -357,5 +402,20 @@ public class DeploymentResourceTest extends ResourceTest {
     assertThat(responseTask, is(task));
     assertThat(new URI(responseTask.getSelfLink()).isAbsolute(), is(true));
     assertThat(responseTask.getSelfLink().endsWith(taskRoutePath), is(true));
+  }
+
+  private String buildConfig(String key, String value) {
+    StringBuilder builder = new StringBuilder();
+    if (key == null) {
+      return builder.toString();
+    }
+
+    if (!key.isEmpty()) {
+      builder.append("{\"" + key + "\":\"" + value + "\"}");
+    } else {
+      builder.append("{}");
+    }
+
+    return builder.toString();
   }
 }
