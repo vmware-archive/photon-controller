@@ -17,7 +17,6 @@ import com.vmware.photon.controller.common.logging.LoggingConfiguration;
 import com.vmware.photon.controller.common.thrift.ThriftConfig;
 import com.vmware.photon.controller.common.xenon.host.XenonConfig;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperConfig;
-import com.vmware.photon.controller.scheduler.gen.PlaceParams;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.hibernate.validator.constraints.Range;
@@ -61,8 +60,6 @@ public class Config {
   @NotNull
   private SchedulerConfig root = new SchedulerConfig();
 
-  private PlaceParams rootPlaceParams;
-
   public String getMode() {
     return mode;
   }
@@ -93,16 +90,5 @@ public class Config {
 
   public SchedulerConfig getRoot() {
     return root;
-  }
-
-  public void initRootPlaceParams() {
-    rootPlaceParams = new PlaceParams();
-    rootPlaceParams.setTimeout(root.getPlaceTimeoutMs());
-    rootPlaceParams.setMinFanoutCount(root.getMinFanoutCount());
-    rootPlaceParams.setMaxFanoutCount(root.getMaxFanoutCount());
-  }
-
-  public PlaceParams getRootPlaceParams() {
-    return rootPlaceParams;
   }
 }

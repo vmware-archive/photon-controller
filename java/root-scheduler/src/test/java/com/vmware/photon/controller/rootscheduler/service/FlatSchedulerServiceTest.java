@@ -22,7 +22,6 @@ import com.vmware.photon.controller.rootscheduler.Config;
 import com.vmware.photon.controller.rootscheduler.SchedulerConfig;
 import com.vmware.photon.controller.rootscheduler.xenon.SchedulerXenonHost;
 import com.vmware.photon.controller.rootscheduler.xenon.task.PlacementTask;
-import com.vmware.photon.controller.scheduler.gen.PlaceParams;
 import com.vmware.photon.controller.scheduler.gen.PlaceRequest;
 import com.vmware.photon.controller.scheduler.gen.PlaceResponse;
 import com.vmware.photon.controller.scheduler.gen.PlaceResultCode;
@@ -65,14 +64,11 @@ public class FlatSchedulerServiceTest {
   @BeforeTest
   public void setUp() throws Exception {
     MockitoAnnotations.initMocks(this);
-    PlaceParams rootPlaceParams = new PlaceParams();
-    rootPlaceParams.setMaxFanoutCount(4);
-    rootPlaceParams.setTimeout(20000);
     SchedulerConfig schedulerConfig = new SchedulerConfig();
+    schedulerConfig.setMaxFanoutCount(4);
+    schedulerConfig.setPlaceTimeoutMs(20000);
     schedulerConfig.setUtilizationTransferRatio(0.5);
-    config.initRootPlaceParams();
     doReturn(schedulerConfig).when(config).getRoot();
-    doReturn(rootPlaceParams).when(config).getRootPlaceParams();
     when(hostClientFactory.create()).thenReturn(client);
     schedulerXenonHost = mock(SchedulerXenonHost.class);
     when(schedulerXenonHost.getUri()).thenReturn(UriUtils.buildUri("http://localhost:0/mock"));

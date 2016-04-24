@@ -51,7 +51,6 @@ public class ConfigTest {
 
     SchedulerConfig root = config.getRoot();
     assertThat(root.getPlaceTimeoutMs(), is(10000L));
-    assertThat(root.getMinFanoutCount(), is(2));
     assertThat(root.getMaxFanoutCount(), is(4));
 
     ZookeeperConfig zkConfig = config.getZookeeper();

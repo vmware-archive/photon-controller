@@ -62,8 +62,6 @@ public class RootSchedulerModule extends AbstractModule {
     bind(ThriftConfig.class).toInstance(config.getThriftConfig());
     bind(XenonConfig.class).toInstance(config.getXenonConfig());
 
-    config.initRootPlaceParams();
-
     bind(ScheduledExecutorService.class)
         .toInstance(Executors.newScheduledThreadPool(4));
 
