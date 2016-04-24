@@ -32,11 +32,6 @@ public class SchedulerConfig {
   @JsonProperty("max_fan_out_count")
   private int maxFanoutCount = 4;
 
-  @Min(1)
-  @Max(32)
-  @JsonProperty("min_fan_out_count")
-  private int minFanoutCount = 2;
-
   @Min(0)
   @JsonProperty("utilization_transfer_ratio")
   private double utilizationTransferRatio = 9.0;
@@ -55,14 +50,6 @@ public class SchedulerConfig {
 
   public void setMaxFanoutCount(int maxFanoutCount) {
     this.maxFanoutCount = maxFanoutCount;
-  }
-
-  public int getMinFanoutCount() {
-    return minFanoutCount;
-  }
-
-  public void setMinFanoutCount(int minFanoutCount) {
-    this.minFanoutCount = minFanoutCount;
   }
 
   public double getUtilizationTransferRatio() {
