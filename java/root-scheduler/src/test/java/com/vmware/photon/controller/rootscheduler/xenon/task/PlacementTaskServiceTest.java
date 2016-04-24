@@ -37,7 +37,6 @@ import com.vmware.photon.controller.rootscheduler.helpers.xenon.SchedulerTestEnv
 import com.vmware.photon.controller.rootscheduler.helpers.xenon.TestHost;
 import com.vmware.photon.controller.rootscheduler.service.ConstraintChecker;
 import com.vmware.photon.controller.rootscheduler.xenon.SchedulerXenonHost;
-import com.vmware.photon.controller.scheduler.gen.PlaceParams;
 import com.vmware.photon.controller.scheduler.gen.PlaceResponse;
 import com.vmware.photon.controller.scheduler.gen.PlaceResultCode;
 import com.vmware.photon.controller.scheduler.gen.Score;
@@ -301,14 +300,11 @@ public class PlacementTaskServiceTest {
     @BeforeMethod
     public void setUpTest() throws Throwable {
       MockitoAnnotations.initMocks(this);
-      PlaceParams rootPlaceParams = new PlaceParams();
-      rootPlaceParams.setMaxFanoutCount(4);
-      rootPlaceParams.setTimeout(20000);
       SchedulerConfig schedulerConfig = new SchedulerConfig();
+      schedulerConfig.setMaxFanoutCount(4);
+      schedulerConfig.setPlaceTimeoutMs(20000);
       schedulerConfig.setUtilizationTransferRatio(0.5);
-      config.initRootPlaceParams();
       doReturn(schedulerConfig).when(config).getRoot();
-      doReturn(rootPlaceParams).when(config).getRootPlaceParams();
       when(hostClientFactory.create()).thenReturn(client);
       schedulerTestEnvironment = SchedulerTestEnvironment.create(
           hostClientFactory, config, checker, xenonRestClient, 1);
@@ -335,8 +331,8 @@ public class PlacementTaskServiceTest {
 
       PlacementTask placementTask = new PlacementTask();
       placementTask.resource = resource;
-      placementTask.sampleHostCount = config.getRootPlaceParams().getMaxFanoutCount();
-      placementTask.timeoutMs = config.getRootPlaceParams().getTimeout();
+      placementTask.sampleHostCount = config.getRoot().getMaxFanoutCount();
+      placementTask.timeoutMs = config.getRoot().getPlaceTimeoutMs();
       placementTask.taskState = new TaskState();
       placementTask.taskState.stage = TaskState.TaskStage.CREATED;
       placementTask.taskState.isDirect = true;
@@ -371,8 +367,8 @@ public class PlacementTaskServiceTest {
 
       PlacementTask placementTask = new PlacementTask();
       placementTask.resource = resource;
-      placementTask.sampleHostCount = config.getRootPlaceParams().getMaxFanoutCount();
-      placementTask.timeoutMs = config.getRootPlaceParams().getTimeout();
+      placementTask.sampleHostCount = config.getRoot().getMaxFanoutCount();
+      placementTask.timeoutMs = config.getRoot().getPlaceTimeoutMs();
       placementTask.taskState = new TaskState();
       placementTask.taskState.stage = TaskState.TaskStage.CREATED;
       placementTask.taskState.isDirect = true;
@@ -415,8 +411,8 @@ public class PlacementTaskServiceTest {
 
       PlacementTask placementTask = new PlacementTask();
       placementTask.resource = resource;
-      placementTask.sampleHostCount = config.getRootPlaceParams().getMaxFanoutCount();
-      placementTask.timeoutMs = config.getRootPlaceParams().getTimeout();
+      placementTask.sampleHostCount = config.getRoot().getMaxFanoutCount();
+      placementTask.timeoutMs = config.getRoot().getPlaceTimeoutMs();
       placementTask.taskState = new TaskState();
       placementTask.taskState.stage = TaskState.TaskStage.CREATED;
       placementTask.taskState.isDirect = false;
@@ -470,8 +466,8 @@ public class PlacementTaskServiceTest {
 
       PlacementTask placementTask = new PlacementTask();
       placementTask.resource = resource;
-      placementTask.sampleHostCount = config.getRootPlaceParams().getMaxFanoutCount();
-      placementTask.timeoutMs = config.getRootPlaceParams().getTimeout();
+      placementTask.sampleHostCount = config.getRoot().getMaxFanoutCount();
+      placementTask.timeoutMs = config.getRoot().getPlaceTimeoutMs();
       placementTask.taskState = new TaskState();
       placementTask.taskState.stage = TaskState.TaskStage.CREATED;
       placementTask.taskState.isDirect = true;
@@ -520,8 +516,8 @@ public class PlacementTaskServiceTest {
 
       PlacementTask placementTask = new PlacementTask();
       placementTask.resource = resource;
-      placementTask.sampleHostCount = config.getRootPlaceParams().getMaxFanoutCount();
-      placementTask.timeoutMs = config.getRootPlaceParams().getTimeout();
+      placementTask.sampleHostCount = config.getRoot().getMaxFanoutCount();
+      placementTask.timeoutMs = config.getRoot().getPlaceTimeoutMs();
       placementTask.taskState = new TaskState();
       placementTask.taskState.stage = TaskState.TaskStage.CREATED;
       placementTask.taskState.isDirect = false;
