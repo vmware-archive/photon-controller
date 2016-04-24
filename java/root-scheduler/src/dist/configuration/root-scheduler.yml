@@ -45,4 +45,3 @@ logging:
 root:
   place_timeout_ms: 20000
   max_fan_out_count: 4
-  min_fan_out_count: 2

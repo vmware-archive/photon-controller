@@ -98,7 +98,6 @@ public class Config {
   public void initRootPlaceParams() {
     rootPlaceParams = new PlaceParams();
     rootPlaceParams.setTimeout(root.getPlaceTimeoutMs());
-    rootPlaceParams.setMinFanoutCount(root.getMinFanoutCount());
     rootPlaceParams.setMaxFanoutCount(root.getMaxFanoutCount());
   }
 

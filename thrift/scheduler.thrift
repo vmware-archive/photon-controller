@@ -18,27 +18,10 @@ include 'resource.thrift'
 include 'server_address.thrift'
 include 'tracing.thrift'
 
-// Place parameters
-// send the scheduler parameters along with the request
-// this allows changing the scheduler behavior without
-// messing around with config files on root-schedulers
-// and agents
-struct PlaceParams {
-  1: required double fanoutRatio
-  2: required i32 maxFanoutCount
-  3: required i32 minFanoutCount
-  4: required i64 timeout
-  5: required double fastPlaceResponseTimeoutRatio
-  6: required double fastPlaceResponseRatio
-  7: required i32 fastPlaceResponseMinCount
-}
 
 // Place a resource
 struct PlaceRequest {
   1: required resource.Resource resource
-  2: optional string scheduler_id
-  3: optional PlaceParams rootSchedulerParams
-  4: optional PlaceParams leafSchedulerParams
   99: optional tracing.TracingInfo tracing_info
 }
 
