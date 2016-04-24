@@ -75,8 +75,8 @@ public class FlatSchedulerService implements RootScheduler.Iface, ServiceNodeEve
     logger.info("place request: {}", request);
     PlacementTask placementTask = new PlacementTask();
     placementTask.resource = request.getResource();
-    placementTask.sampleHostCount = config.getRootPlaceParams().getMaxFanoutCount();
-    placementTask.timeoutMs = config.getRootPlaceParams().getTimeout();
+    placementTask.sampleHostCount = config.getRoot().getMaxFanoutCount();
+    placementTask.timeoutMs = config.getRoot().getPlaceTimeoutMs();
     placementTask.taskState = new TaskState();
     placementTask.taskState.isDirect = true;
 
