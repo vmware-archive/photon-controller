@@ -15,16 +15,10 @@
 import logging
 import os
 
-from pyVmomi import vim
-
 from common.kind import Flavor
 from host.hypervisor.disk_manager import DiskManager
-from host.hypervisor.disk_manager import DiskFileException
-from host.hypervisor.disk_manager import DiskPathException
 from host.hypervisor.esx.vm_config import IMAGE_FOLDER_NAME_PREFIX
-from host.hypervisor.esx.vm_config import DEFAULT_DISK_ADAPTER_TYPE
 from host.hypervisor.esx.vm_config import os_vmdk_path
-from host.hypervisor.esx.vm_config import uuid_to_vmdk_uuid
 from host.hypervisor.esx.vm_config import vmdk_path
 from host.hypervisor.vm_manager import DiskNotFoundException
 from host.hypervisor.resources import Disk
@@ -48,30 +42,22 @@ class EsxDiskManager(DiskManager):
         self._vim_client = vim_client
         self._ds_manager = ds_manager
 
-    @property
-    def _manager(self):
-        """Get the virtual disk manager for the host
-        rtype:vim.VirtualDiskManager
-        """
-        return self._vim_client.virtual_disk_manager
-
     def create_disk(self, datastore, disk_id, size):
-        spec = self._create_spec(size)
         name = vmdk_path(datastore, disk_id)
         self._vmdk_mkdir(datastore, disk_id)
-        self._manage_disk(vim.VirtualDiskManager.CreateVirtualDisk_Task, name=name, spec=spec)
-        self._manage_disk(vim.VirtualDiskManager.SetVirtualDiskUuid, name=name, uuid=uuid_to_vmdk_uuid(disk_id))
+        self._vim_client.create_disk(name, size)
+        self._vim_client.set_disk_uuid(name, disk_id)
 
     def delete_disk(self, datastore, disk_id):
         name = vmdk_path(datastore, disk_id)
-        self._manage_disk(vim.VirtualDiskManager.DeleteVirtualDisk_Task, name=name)
+        self._vim_client.delete_disk(name)
         self._vmdk_rmdir(datastore, disk_id)
 
     def move_disk(self, source_datastore, source_id, dest_datastore, dest_id):
         source = vmdk_path(source_datastore, source_id)
         dest = vmdk_path(dest_datastore, dest_id)
         self._vmdk_mkdir(dest_datastore, dest_id)
-        self._manage_disk(vim.VirtualDiskManager.MoveVirtualDisk_Task, sourceName=source, destName=dest)
+        self._vim_client.move_disk(source, dest)
         self._vmdk_rmdir(source_datastore, source_id)
 
     def copy_disk(self, source_datastore, source_id, dest_datastore, dest_id):
@@ -87,8 +73,8 @@ class EsxDiskManager(DiskManager):
         source = vmdk_path(source_datastore, source_id, IMAGE_FOLDER_NAME_PREFIX)
         dest = vmdk_path(dest_datastore, dest_id)
         self._vmdk_mkdir(dest_datastore, dest_id)
-        self._manage_disk(vim.VirtualDiskManager.CopyVirtualDisk_Task, sourceName=source, destName=dest)
-        self._manage_disk(vim.VirtualDiskManager.SetVirtualDiskUuid, name=dest, uuid=uuid_to_vmdk_uuid(dest_id))
+        self._vim_client.copy_disk(source, dest)
+        self._vim_client.set_disk_uuid(dest, dest_id)
 
     def get_datastore(self, disk_id):
         for datastore in self._ds_manager.get_datastore_ids():
@@ -110,27 +96,9 @@ class EsxDiskManager(DiskManager):
         resource.datastore = datastore
         return resource
 
-    def _manage_disk(self, op, **kwargs):
-        try:
-            self._logger.debug("Invoking %s(%s)" % (op.info.name, kwargs))
-            task = op(self._manager, **kwargs)
-            if task:
-                self._vim_client.wait_for_task(task)
-        except vim.fault.FileFault, e:
-            raise DiskFileException(e.msg)
-        except vim.fault.InvalidDatastore, e:
-            raise DiskPathException(e.msg)
-
-    def _create_spec(self, size):
-        spec = vim.VirtualDiskManager.FileBackedVirtualDiskSpec()
-        spec.capacityKb = size * (1024 ** 2)
-        spec.diskType = vim.VirtualDiskManager.VirtualDiskType.thin
-        spec.adapterType = DEFAULT_DISK_ADAPTER_TYPE
-        return spec
-
     def _query_uuid(self, datastore, disk_id):
         name = vmdk_path(datastore, disk_id)
-        return self._manager.QueryVirtualDiskUuid(name=name)
+        return self._vim_client.query_disk_uuid(name)
 
     def _vmdk_mkdir(self, datastore, disk_id):
         path = os.path.dirname(os_vmdk_path(datastore, disk_id))

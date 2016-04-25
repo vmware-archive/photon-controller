@@ -30,7 +30,11 @@ from common.cache import cached
 from common.lock import lock_with
 from common.log import log_duration_with
 from gen.agent.ttypes import TaskCache
+from host.hypervisor.disk_manager import DiskAlreadyExistException, DiskPathException
+from host.hypervisor.disk_manager import DiskFileException
 from host.hypervisor.esx.vm_config import os_to_datastore_path
+from host.hypervisor.esx.vm_config import uuid_to_vmdk_uuid
+from host.hypervisor.esx.vm_config import DEFAULT_DISK_ADAPTER_TYPE
 from pysdk import connect
 from pysdk import host
 from pysdk import invt
@@ -642,6 +646,82 @@ class VimClient(object):
         :return: vim.host.VirtualNicManager.NetConfig[]
         """
         return self.vnic_manager.info.netConfig
+
+    @hostd_error_handler
+    def create_disk(self, path, size):
+        spec = vim.VirtualDiskManager.FileBackedVirtualDiskSpec()
+        spec.capacityKb = size * (1024 ** 2)
+        spec.diskType = vim.VirtualDiskManager.VirtualDiskType.thin
+        spec.adapterType = DEFAULT_DISK_ADAPTER_TYPE
+
+        try:
+            vim_task = self.virtual_disk_manager.CreateVirtualDisk(name=os_to_datastore_path(path), spec=spec)
+            self.wait_for_task(vim_task)
+        except vim.fault.FileAlreadyExists, e:
+            raise DiskAlreadyExistException(e.msg)
+        except vim.fault.FileFault, e:
+            raise DiskFileException(e.msg)
+        except vim.fault.InvalidDatastore, e:
+            raise DiskPathException(e.msg)
+
+    @hostd_error_handler
+    def copy_disk(self, src, dst):
+        vd_spec = vim.VirtualDiskManager.VirtualDiskSpec()
+        vd_spec.diskType = str(vim.VirtualDiskManager.VirtualDiskType.thin)
+        vd_spec.adapterType = str(vim.VirtualDiskManager.VirtualDiskAdapterType.lsiLogic)
+
+        try:
+            vim_task = self.virtual_disk_manager.CopyVirtualDisk(sourceName=os_to_datastore_path(src),
+                                                                 destName=os_to_datastore_path(dst), destSpec=vd_spec)
+            self.wait_for_task(vim_task)
+        except vim.fault.FileAlreadyExists, e:
+            raise DiskAlreadyExistException(e.msg)
+        except vim.fault.FileFault, e:
+            raise DiskFileException(e.msg)
+        except vim.fault.InvalidDatastore, e:
+            raise DiskPathException(e.msg)
+
+    @hostd_error_handler
+    def move_disk(self, src, dst):
+        try:
+            vim_task = self.virtual_disk_manager.MoveVirtualDisk(sourceName=os_to_datastore_path(src),
+                                                                 destName=os_to_datastore_path(dst))
+            self.wait_for_task(vim_task)
+        except vim.fault.FileAlreadyExists, e:
+            raise DiskAlreadyExistException(e.msg)
+        except vim.fault.FileFault, e:
+            raise DiskFileException(e.msg)
+        except vim.fault.InvalidDatastore, e:
+            raise DiskPathException(e.msg)
+
+    @hostd_error_handler
+    def delete_disk(self, path):
+        try:
+            vim_task = self.virtual_disk_manager.DeleteVirtualDisk(name=os_to_datastore_path(path))
+            self.wait_for_task(vim_task)
+        except vim.fault.FileFault, e:
+            raise DiskFileException(e.msg)
+        except vim.fault.InvalidDatastore, e:
+            raise DiskPathException(e.msg)
+
+    @hostd_error_handler
+    def set_disk_uuid(self, path, uuid):
+        try:
+            self.virtual_disk_manager.SetVirtualDiskUuid(name=os_to_datastore_path(path),
+                                                         uuid=uuid_to_vmdk_uuid(uuid))
+        except vim.fault.FileFault, e:
+            raise DiskFileException(e.msg)
+        except vim.fault.InvalidDatastore, e:
+            raise DiskPathException(e.msg)
+
+    @hostd_error_handler
+    def query_disk_uuid(self, path):
+        try:
+            return self.virtual_disk_manager.QueryVirtualDiskUuid(name=os_to_datastore_path(path))
+        except vim.fault.FileFault, e:
+            raise DiskFileException(e.msg)
+        except vim.fault.InvalidDatastore, e:
+            raise DiskPathException(e.msg)
 
     @hostd_error_handler
     def make_directory(self, path):
