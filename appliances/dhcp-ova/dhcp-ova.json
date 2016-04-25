@@ -16,7 +16,7 @@
   "provisioners": [
     {
       "type": "shell",
-      "inline": "wget -nv {{ user `dnsmasq_url` }} -O /usr/local/bin/dnsmasq && chmod +x /usr/local/bin/dnsmasq"
+      "inline": "mkdir -p /usr/local/sbin && wget -nv {{ user `dnsmasq_url` }} -O /usr/local/sbin/dnsmasq && chmod +x /usr/local/sbin/dnsmasq"
     },
     {
       "type": "shell",
@@ -24,19 +24,11 @@
     },
     {
       "type": "shell",
-      "inline": "sed -i 's/*/enp0s3/' /etc/systemd/network/10-dhcp-en.network"
+      "inline": "rm /etc/systemd/network/*"
     },
     {
       "type": "shell",
-      "inline": "sed -i 's/#UseDNS.*/UseDNS no/g' /etc/ssh/sshd_config"
-    },
-    {
-      "type": "shell",
-      "inline": "systemctl restart systemd-networkd && systemctl restart sshd"
-    },
-    {
-      "type": "shell",
-      "inline": "rm -rf /tmp/* && rm -rf /root/*"
+      "inline": "systemctl restart systemd-networkd"
     },
     {
       "type": "shell",
@@ -46,6 +38,10 @@
       "type": "shell",
       "script": "../scripts/sshd-config.sh",
       "environment_vars": [ "SSHD_ENABLE_ROOT_LOGIN={{ user `sshd_enable_root_login` }}" ]
+    },
+    {
+      "type": "shell",
+      "inline": "systemctl restart sshd"
     }
   ]
 }
