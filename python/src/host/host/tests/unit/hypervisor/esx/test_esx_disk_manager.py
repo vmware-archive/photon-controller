@@ -11,15 +11,13 @@
 # under the License.
 import unittest
 from host.hypervisor.esx.disk_manager import EsxDiskManager
-from host.hypervisor.esx.disk_manager import DiskFileException
-from host.hypervisor.esx.disk_manager import DiskPathException
+from host.hypervisor.disk_manager import DiskFileException
+from host.hypervisor.disk_manager import DiskPathException
 from host.hypervisor.esx.vim_client import VimClient
-from host.hypervisor.esx.vm_config import DEFAULT_DISK_ADAPTER_TYPE
 
 from mock import patch
 from mock import MagicMock
 
-from hamcrest import assert_that, equal_to
 from pyVmomi import vim
 
 
@@ -39,34 +37,20 @@ class TestEsxDiskManager(unittest.TestCase):
     def tearDown(self):
         self.vim_client.disconnect(wait=True)
 
-    def test_create_spec(self):
-        """Test that we create a valid disk spec."""
-
-        capacity = 2
-        spec = self.disk_manager._create_spec(capacity)
-        assert_that(spec.capacityKb, equal_to(capacity * (1024 ** 2)))
-        assert_that(spec.adapterType, equal_to(DEFAULT_DISK_ADAPTER_TYPE))
-
     def test_invalid_datastore_path(self):
         """Test that we propagate InvalidDatastorePath."""
 
-        self.vim_client.wait_for_task.side_effect = \
-            vim.fault.InvalidDatastorePath
-        self.assertRaises(DiskPathException,
-                          self.disk_manager.create_disk, "ds1", "foo", 101)
+        self.vim_client.wait_for_task.side_effect = vim.fault.InvalidDatastorePath
+        self.assertRaises(DiskPathException, self.disk_manager.create_disk, "ds1", "foo", 101)
 
     def test_disk_not_found(self):
         """Test that we propagate FileNotFound."""
 
         self.vim_client.wait_for_task.side_effect = vim.fault.FileNotFound
-        self.assertRaises(DiskFileException,
-                          self.disk_manager.delete_disk, "ds1", "bar")
+        self.assertRaises(DiskFileException, self.disk_manager.delete_disk, "ds1", "bar")
 
     def test_general_fault(self):
         """Test general Exception propagation."""
 
         self.vim_client.wait_for_task.side_effect = vim.fault.TaskInProgress
-
-        self.assertRaises(vim.fault.TaskInProgress,
-                          self.disk_manager.move_disk,
-                          "ds1", "biz", "ds1", "baz")
+        self.assertRaises(vim.fault.TaskInProgress, self.disk_manager.move_disk, "ds1", "biz", "ds1", "baz")
