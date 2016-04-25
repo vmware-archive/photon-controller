@@ -23,7 +23,6 @@ import shutil
 import uuid
 
 from gen.resource.ttypes import DatastoreType
-from pyVmomi import vim
 
 from common.file_lock import AcquireLockFailure
 from common.file_lock import FileBackedLock
@@ -52,8 +51,6 @@ from host.hypervisor.image_manager import DirectoryNotFound
 from host.hypervisor.image_manager import ImageManager
 from host.hypervisor.image_manager import ImageNotFoundException
 from host.hypervisor.disk_manager import DiskAlreadyExistException
-from host.hypervisor.disk_manager import DiskFileException
-from host.hypervisor.disk_manager import DiskPathException
 from host.hypervisor.placement_manager import NoSuchResourceException
 from host.hypervisor.placement_manager import ResourceType
 
@@ -180,17 +177,6 @@ class EsxImageManager(ImageManager):
         datastores = self._ds_manager.get_datastores()
         return [ds.type for ds in datastores if ds.id == datastore_id][0]
 
-    def _prepare_virtual_disk_spec(self, disk_type, adapter_type):
-        """
-        :param disk_type [vim.VirtualDiskManager.VirtualDiskType]:
-        :param adapter_type [vim.VirtualDiskManager.VirtualDiskAdapterType]:
-        """
-        _vd_spec = vim.VirtualDiskManager.VirtualDiskSpec()
-        _vd_spec.diskType = str(disk_type)
-        _vd_spec.adapterType = str(adapter_type)
-
-        return _vd_spec
-
     def _copy_to_tmp_image(self, source_datastore, source_id, dest_datastore, dest_id):
         """ Copy an image into a temp location.
             1. Lock a tmp image destination file with an exclusive lock. This
@@ -229,14 +215,8 @@ class EsxImageManager(ImageManager):
         # Create the timestamp file
         self._create_image_timestamp_file(tmp_image_dir)
 
-        _vd_spec = self._prepare_virtual_disk_spec(
-            vim.VirtualDiskManager.VirtualDiskType.thin,
-            vim.VirtualDiskManager.VirtualDiskAdapterType.lsiLogic)
-
-        self._manage_disk(vim.VirtualDiskManager.CopyVirtualDisk_Task,
-                          sourceName=vmdk_path(source_datastore, source_id, IMAGE_FOLDER_NAME_PREFIX),
-                          destName=os_to_datastore_path(os.path.join(tmp_image_dir, "%s.vmdk" % dest_id)),
-                          destSpec=_vd_spec)
+        self._vim_client.copy_disk(vmdk_path(source_datastore, source_id, IMAGE_FOLDER_NAME_PREFIX),
+                                   os.path.join(tmp_image_dir, "%s.vmdk" % dest_id))
         return tmp_image_dir
 
     def _move_image(self, image_id, datastore, tmp_dir):
@@ -415,28 +395,6 @@ class EsxImageManager(ImageManager):
 
         return image_ids
 
-    def _copy_disk(self, src, dst):
-        self._manage_disk(vim.VirtualDiskManager.CopyVirtualDisk_Task, sourceName=src, destName=dst)
-
-    def _manage_disk(self, op, **kwargs):
-        try:
-            self._logger.debug("Invoking %s(%s)" % (op.info.name, kwargs))
-            task = op(self._manager, **kwargs)
-            self._vim_client.wait_for_task(task)
-        except vim.Fault.FileAlreadyExists, e:
-            raise DiskAlreadyExistException(e.msg)
-        except vim.Fault.FileFault, e:
-            raise DiskFileException(e.msg)
-        except vim.Fault.InvalidDatastore, e:
-            raise DiskPathException(e.msg)
-
-    @property
-    def _manager(self):
-        """Get the virtual disk manager for the host
-        rtype:vim.VirtualDiskManager
-        """
-        return self._vim_client.virtual_disk_manager
-
     def get_datastore_id_from_path(self, image_path):
         """Extract datastore id from the absolute path of an image.
 
@@ -501,25 +459,15 @@ class EsxImageManager(ImageManager):
         # Create parent directory as required by CopyVirtualDisk_Task
         dst_vmdk_path = os.path.join(datastore_to_os_path(tmp_dir), "%s.vmdk" % image_id)
         if os.path.exists(dst_vmdk_path):
-            self._logger.warning(
-                "Unexpected disk %s present, overwriting" % dst_vmdk_path)
-        dst_vmdk_ds_path = os_to_datastore_path(dst_vmdk_path)
+            self._logger.warning("Unexpected disk %s present, overwriting" % dst_vmdk_path)
 
-        _vd_spec = self._prepare_virtual_disk_spec(
-            vim.VirtualDiskManager.VirtualDiskType.thin,
-            vim.VirtualDiskManager.VirtualDiskAdapterType.lsiLogic)
-
-        self._manage_disk(vim.VirtualDiskManager.CopyVirtualDisk_Task,
-                          sourceName=os_to_datastore_path(vm_disk_os_path),
-                          destName=dst_vmdk_ds_path,
-                          destSpec=_vd_spec)
+        self._vim_client.copy_disk(vm_disk_os_path, dst_vmdk_path)
 
         try:
             self.finalize_image(datastore_id, tmp_dir, image_id)
         except:
-            self._logger.warning("Delete copied disk %s" % dst_vmdk_ds_path)
-            self._manage_disk(vim.VirtualDiskManager.DeleteVirtualDisk_Task,
-                              name=dst_vmdk_ds_path)
+            self._logger.warning("Delete copied disk %s" % dst_vmdk_path)
+            self._vim_client.delete_disk(dst_vmdk_path)
             raise
 
     def prepare_receive_image(self, image_id, datastore_id):
