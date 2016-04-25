@@ -23,15 +23,15 @@ describe "Image Cleaner", housekeeper: true do
       imageDeleteWatermarkTime: Time.now.to_i
     }
 
-    task = get_existing_task
-    task = run_task payload if task.nil?
+    wait_for_existing_task
+    task = run_task payload
     expect(task["taskInfo"]["stage"]).to eq "FINISHED"
     expect(task["dataStoreCount"]).to be >= 1
     expect(task["finishedDeletes"]).to eq task["dataStoreCount"]
     expect(task["failedOrCanceledDeletes"]).to eq 0
   end
 
-  def get_existing_task
+  def wait_for_existing_task
     tasks = client.get service_link + "?expand"
     running_task_count = 0
     running_task = nil
