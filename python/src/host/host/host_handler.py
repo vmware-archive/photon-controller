@@ -155,8 +155,7 @@ class HostHandler(Host.Iface):
 
         agent_config = common.services.get(ServiceName.AGENT_CONFIG)
         self._agent_id = agent_config.host_id
-        self._address = ServerAddress(host=agent_config.hostname,
-                                      port=agent_config.host_port)
+        self._address = ServerAddress(host=agent_config.hostname, port=agent_config.host_port)
 
         self._hypervisor = hypervisor
         self._generation = 0
@@ -207,14 +206,13 @@ class HostHandler(Host.Iface):
         config.agent_id = agent_config.host_id
         config.deployment_id = agent_config.deployment_id
         config.management_only = agent_config.management_only
-        config.address = ServerAddress(host=agent_config.hostname,
-                                       port=agent_config.host_port)
+        config.address = ServerAddress(host=agent_config.hostname, port=agent_config.host_port)
+
         if not self._hypervisor:
             raise HypervisorNotConfigured()
         networks = self._hypervisor.network_manager.get_networks()
         vm_network_names = self._hypervisor.network_manager.get_vm_networks()
-        config.networks = [network for network in networks
-                           if network.id in vm_network_names]
+        config.networks = [network for network in networks if network.id in vm_network_names]
         dm = self._hypervisor.datastore_manager
         config.datastores = dm.get_datastores()
         config.image_datastore_ids = dm.image_datastores()
@@ -239,8 +237,7 @@ class HostHandler(Host.Iface):
         """
         mode = common.services.get(ServiceName.MODE).get_mode()
         agent_mode = HostMode._NAMES_TO_VALUES[mode.name]
-        return GetHostModeResponse(GetHostModeResultCode.OK,
-                                   mode=agent_mode)
+        return GetHostModeResponse(GetHostModeResultCode.OK, mode=agent_mode)
 
     @log_request
     @error_handler(SetHostModeResponse, SetHostModeResultCode)
@@ -265,25 +262,20 @@ class HostHandler(Host.Iface):
         mode = common.services.get(ServiceName.MODE).get_mode()
 
         if mode == MODE.ENTERING_MAINTENANCE or mode == MODE.MAINTENANCE:
-            return self._error_response(
-                ReserveResultCode.OPERATION_NOT_ALLOWED,
-                "reserve not allowed in {0} mode".format(mode.name),
-                ReserveResponse())
+            return self._error_response(ReserveResultCode.OPERATION_NOT_ALLOWED,
+                                        "reserve not allowed in {0} mode".format(mode.name), ReserveResponse())
 
         if self._generation - request.generation > HostHandler.GENERATION_GAP:
-            return ReserveResponse(ReserveResultCode.STALE_GENERATION,
-                                   "stale generation")
+            return ReserveResponse(ReserveResultCode.STALE_GENERATION, "stale generation")
 
         try:
             disks, vm = self._parse_resource_request(request.resource)
         except UnknownFlavor:
-            return ReserveResponse(ReserveResultCode.SYSTEM_ERROR,
-                                   "unknown flavor")
+            return ReserveResponse(ReserveResultCode.SYSTEM_ERROR, "unknown flavor")
 
         reservation = self._hypervisor.placement_manager.reserve(vm, disks)
         self._generation += 1
-        return ReserveResponse(ReserveResultCode.OK,
-                               reservation=reservation)
+        return ReserveResponse(ReserveResultCode.OK, reservation=reservation)
 
     def try_delete_vm(self, vm_id):
         """Try and delete VMs that might be stale.
@@ -296,28 +288,23 @@ class HostHandler(Host.Iface):
             self._logger.warning("Failed to delete stale vm %s" % vm_id)
 
     def _datastore_freespace(self, datastore):
-        datastore_info = self.hypervisor.datastore_manager.datastore_info(
-            datastore)
+        datastore_info = self.hypervisor.datastore_manager.datastore_info(datastore)
         return datastore_info.total - datastore_info.used
 
     def _datastores_for_image(self, vm):
-        image_id = self.hypervisor.image_manager.get_image_id_from_disks(
-            vm.disks)
+        image_id = self.hypervisor.image_manager.get_image_id_from_disks(vm.disks)
         return self.hypervisor.image_manager.datastores_with_image(
             image_id, self.hypervisor.datastore_manager.vm_datastores())
 
     """
-    Datastore selection is now performed during the
-    placement phase. The placement descriptor is
-    returned during the placement phase and forwarded
-    by the FE. For now we assume all ephemeral disks reside
-    on the same datastore.
+    Datastore selection is now performed during the placement phase. The placement descriptor is
+    returned during the placement phase and forwarded by the FE. For now we assume all ephemeral
+    disks reside on the same datastore.
     """
     def _select_datastore_for_vm_create(self, vm):
         if not vm.placement:
             """
-            Return an error if the placement descriptor
-            is missing. The FE should re-try placement
+            Return an error if the placement descriptor is missing. The FE should re-try placement
             """
             raise MissingPlacementDescriptorException()
 
@@ -326,11 +313,10 @@ class HostHandler(Host.Iface):
     def _get_create_vm_metadata(self, vm):
         # The image, if used, may contain addition metadata describing further
         # customization of the VM being created.
-        image_id = self.hypervisor.image_manager.get_image_id_from_disks(
-            vm.disks)
+        image_id = self.hypervisor.image_manager.get_image_id_from_disks(vm.disks)
         if image_id is not None:
-            return self.hypervisor.image_manager.image_metadata(
-                image_id, self.hypervisor.datastore_manager.vm_datastores())
+            return self.hypervisor.image_manager.image_metadata(image_id,
+                                                                self.hypervisor.datastore_manager.vm_datastores())
 
     @log_request
     @error_handler(CreateVmResponse, CreateVmResultCode)
@@ -343,18 +329,15 @@ class HostHandler(Host.Iface):
         mode = common.services.get(ServiceName.MODE).get_mode()
 
         if mode == MODE.ENTERING_MAINTENANCE or mode == MODE.MAINTENANCE:
-            return self._error_response(
-                CreateVmResultCode.OPERATION_NOT_ALLOWED,
-                "create_vm not allowed in {0} mode".format(mode.name),
-                CreateVmResponse())
+            return self._error_response(CreateVmResultCode.OPERATION_NOT_ALLOWED,
+                                        "create_vm not allowed in {0} mode".format(mode.name), CreateVmResponse())
 
         pm = self.hypervisor.placement_manager
 
         try:
             vm = pm.consume_vm_reservation(request.reservation)
         except InvalidReservationException:
-            return CreateVmResponse(CreateVmResultCode.INVALID_RESERVATION,
-                                    "Invalid VM reservation")
+            return CreateVmResponse(CreateVmResultCode.INVALID_RESERVATION, "Invalid VM reservation")
 
         try:
             return self._do_create_vm(request, vm)
@@ -366,28 +349,21 @@ class HostHandler(Host.Iface):
         try:
             datastore_id = self._select_datastore_for_vm_create(vm)
         except MissingPlacementDescriptorException, e:
-            self._logger.error("Cannot create VM as reservation is "
-                               "missing placement information, %s" % vm.id)
+            self._logger.error("Cannot create VM as reservation is missing placement information, %s" % vm.id)
             return CreateVmResponse(
                 CreateVmResultCode.PLACEMENT_NOT_FOUND, type(e).__name__)
 
-        self._logger.info("Creating VM %s in datastore %s" % (vm.id,
-                                                              datastore_id))
+        self._logger.info("Creating VM %s in datastore %s" % (vm.id, datastore_id))
 
         # Step 0: Lazy copy image to datastore
         image_id = self.hypervisor.image_manager.get_image_id_from_disks(
             vm.disks)
 
-        if image_id and not self.hypervisor.image_manager.\
-                check_and_validate_image(image_id, datastore_id):
-            self._logger.info("Lazy copying image %s to %s" % (image_id,
-                                                               datastore_id))
+        if image_id and not self.hypervisor.image_manager.check_and_validate_image(image_id, datastore_id):
+            self._logger.info("Lazy copying image %s to %s" % (image_id, datastore_id))
             try:
                 image_datastore = self._find_datastore_by_image(image_id)
-                self.hypervisor.image_manager.copy_image(image_datastore,
-                                                         image_id,
-                                                         datastore_id,
-                                                         image_id)
+                self.hypervisor.image_manager.copy_image(image_datastore, image_id, datastore_id, image_id)
             except DiskAlreadyExistException:
                 self._logger.info("Image already exists. Use existing image.")
 
@@ -395,9 +371,8 @@ class HostHandler(Host.Iface):
         # Doesn't throw
         vm_meta = self._get_create_vm_metadata(vm)
         # Create CreateVm spec. image_id is only useful in fake agent.
-        spec = self.hypervisor.vm_manager.create_vm_spec(
-            vm.id, datastore_id, vm.flavor, vm_meta, request.environment,
-            image_id=image_id)
+        spec = self.hypervisor.vm_manager.create_vm_spec(vm.id, datastore_id, vm.flavor, vm_meta, request.environment,
+                                                         image_id=image_id)
 
         # Step 1b: Perform non-device-related customizations as specified by
         # the metadata
@@ -413,8 +388,7 @@ class HostHandler(Host.Iface):
         self._logger.debug("Setting vminfo: %s" % vminfo)
         self.hypervisor.vm_manager.set_vminfo(spec, vminfo)
 
-        self._logger.debug(
-            "VM create, done creating vm spec, vm-id: %s" % vm.id)
+        self._logger.debug("VM create, done creating vm spec, vm-id: %s" % vm.id)
 
         # Step 2: Add the nics to the create spec of the VM.
         networks = self._hypervisor.network_manager.get_vm_networks()
@@ -423,13 +397,9 @@ class HostHandler(Host.Iface):
         if request.network_connection_spec:
             for nic_spec in request.network_connection_spec.nic_spec:
                 # Check if this esx has that network.
-                if (nic_spec.network_name and
-                        nic_spec.network_name not in networks):
-                    self._logger.info("Unknown a non provisioned network %s"
-                                      % nic_spec.network_name)
-                self.hypervisor.vm_manager.add_nic(
-                    spec,
-                    nic_spec.network_name)
+                if (nic_spec.network_name and nic_spec.network_name not in networks):
+                    self._logger.info("Unknown a non provisioned network %s" % nic_spec.network_name)
+                self.hypervisor.vm_manager.add_nic(spec, nic_spec.network_name)
         elif len(vm.networks) != 0 and networks:
             placement_networks = set(vm.networks)
             host_networks = set(networks)
@@ -438,38 +408,28 @@ class HostHandler(Host.Iface):
                 intersected_networks = placement_networks & host_networks
                 missing_networks = placement_networks - intersected_networks
 
-                return CreateVmResponse(
-                    CreateVmResultCode.NETWORK_NOT_FOUND,
-                    "Unknown non provisioned networks: {0}".format(
-                        missing_networks))
+                return CreateVmResponse(CreateVmResultCode.NETWORK_NOT_FOUND,
+                                        "Unknown non provisioned networks: {0}".format(missing_networks))
             else:
-                self._logger.debug("Using the placement networks: {0}".format(
-                    placement_networks))
+                self._logger.debug("Using the placement networks: {0}".format(placement_networks))
                 for network_name in placement_networks:
-                    self.hypervisor.vm_manager.add_nic(
-                        spec,
-                        network_name)
+                    self.hypervisor.vm_manager.add_nic(spec, network_name)
         elif networks:
             # Pick a default network.
-            self._logger.debug("Using the default network: %s" %
-                               networks[0])
+            self._logger.debug("Using the default network: %s" % networks[0])
             self.hypervisor.vm_manager.add_nic(spec, networks[0])
         else:
             self._logger.warning("VM %s created without a NIC" % vm.id)
 
-        self._logger.debug(
-            "VM create, done creating nics, vm-id: %s" % vm.id)
+        self._logger.debug("VM create, done creating nics, vm-id: %s" % vm.id)
 
         # Step 4: Add created_disk to create spec of the VM.
         try:
             self._create_disks(spec, datastore_id, vm.disks)
         except ImageNotFoundException, e:
-            return CreateVmResponse(CreateVmResultCode.IMAGE_NOT_FOUND,
-                                    "Invalid image id %s"
-                                    % e.args[:1])
+            return CreateVmResponse(CreateVmResultCode.IMAGE_NOT_FOUND, "Invalid image id %s" % e.args[:1])
         except Exception:
-            return CreateVmResponse(CreateVmResultCode.SYSTEM_ERROR,
-                                    "Failed to create disk spec")
+            return CreateVmResponse(CreateVmResultCode.SYSTEM_ERROR, "Failed to create disk spec")
 
         self._logger.debug("VM create, done creating disks, vm-id: %s" % vm.id)
 
@@ -478,12 +438,10 @@ class HostHandler(Host.Iface):
             self.hypervisor.vm_manager.create_vm(vm.id, spec)
         except VmAlreadyExistException:
             self._logger.error("vm with id %s already exists" % vm.id)
-            return CreateVmResponse(CreateVmResultCode.VM_ALREADY_EXIST,
-                                    "Failed to create VM")
+            return CreateVmResponse(CreateVmResultCode.VM_ALREADY_EXIST, "Failed to create VM")
         except Exception:
             self._logger.exception("error creating vm with id %s" % vm.id)
-            return CreateVmResponse(CreateVmResultCode.SYSTEM_ERROR,
-                                    "Failed to create VM")
+            return CreateVmResponse(CreateVmResultCode.SYSTEM_ERROR, "Failed to create VM")
 
         self._logger.debug("VM create, done creating vm, vm-id: %s" % vm.id)
 
@@ -495,39 +453,30 @@ class HostHandler(Host.Iface):
             try:
                 spec = self.hypervisor.vm_manager.update_vm_spec()
                 info = self.hypervisor.vm_manager.get_vm_config(vm.id)
-                if self.hypervisor.vm_manager.set_guestinfo_ip(
-                        spec, info, request.network_connection_spec):
+                if self.hypervisor.vm_manager.set_guestinfo_ip(spec, info, request.network_connection_spec):
                     self.hypervisor.vm_manager.update_vm(vm.id, spec)
             except Exception:
-                self._logger.exception(
-                    "error to set the ip/mac address of vm with id %s" % vm.id)
+                self._logger.exception("error to set the ip/mac address of vm with id %s" % vm.id)
                 self.try_delete_vm(vm.id)
-                return CreateVmResponse(
-                    CreateVmResultCode.SYSTEM_ERROR,
-                    "Failed to set the ip/mac address of the VM %s"
-                    % sys.exc_info()[1])
+                return CreateVmResponse(CreateVmResultCode.SYSTEM_ERROR,
+                                        "Failed to set the ip/mac address of the VM %s" % sys.exc_info()[1])
 
-        self._logger.debug(
-            "VM create, done updating network spec vm, vm-id: %s" % vm.id)
+        self._logger.debug("VM create, done updating network spec vm, vm-id: %s" % vm.id)
 
         # Step 6: touch the timestamp file for the image
         if image_id is not None:
             try:
-                response = self._touch_image_timestamp(uuid.UUID(vm.id),
-                                                       datastore_id, image_id)
+                response = self._touch_image_timestamp(uuid.UUID(vm.id), datastore_id, image_id)
                 if response.result != CreateVmResultCode.OK:
                     self.try_delete_vm(vm.id)
                     return response
             except ValueError as e:
-                return CreateVmResponse(CreateVmResultCode.SYSTEM_ERROR,
-                                        str(e))
+                return CreateVmResponse(CreateVmResultCode.SYSTEM_ERROR, str(e))
 
-        self._logger.debug(
-            "VM create, done touching timestamp file, vm-id: %s" % vm.id)
+        self._logger.debug("VM create, done touching timestamp file, vm-id: %s" % vm.id)
 
         vm.datastore = datastore_id
-        vm.datastore_name = \
-            self.hypervisor.datastore_manager.datastore_name(datastore_id)
+        vm.datastore_name = self.hypervisor.datastore_manager.datastore_name(datastore_id)
         response = CreateVmResponse()
         response.result = CreateVmResultCode.OK
         response.vm = vm.to_thrift()
@@ -540,19 +489,16 @@ class HostHandler(Host.Iface):
             return None
 
         for image_ds in image_datastores:
-            if self.hypervisor.image_manager.check_and_validate_image(
-                    image_id, image_ds):
+            if self.hypervisor.image_manager.check_and_validate_image(image_id, image_ds):
                 return image_ds
 
-        self._logger.warning("Failed to find image %s in all datastores %s." %
-                             (image_id, image_datastores))
+        self._logger.warning("Failed to find image %s in all datastores %s." % (image_id, image_datastores))
         return list(image_datastores)[0]
 
     @log_duration
     def _touch_image_timestamp(self, vm_id, ds_id, image_id):
         """
-        This methods calls into the ImageManager to update
-        the mod time on an existing image timestamp file
+        This methods calls into the ImageManager to update the mod time on an existing image timestamp file
         :param vm_id: id of the vm being created,
         :param ds_id: id of the target datastore,
         :param image_id: id of the target image
@@ -571,8 +517,7 @@ class HostHandler(Host.Iface):
             im.touch_image_timestamp(ds_id, image_id)
             return CreateVmResponse(rc.OK)
         except Exception as e:
-            self._logger.exception("Failed to touch image timestamp %s, vm %s"
-                                   % (e, vm_id))
+            self._logger.exception("Failed to touch image timestamp %s, vm %s" % (e, vm_id))
             return CreateVmResponse(rc.IMAGE_NOT_FOUND, str(e))
 
     @log_request
@@ -588,25 +533,17 @@ class HostHandler(Host.Iface):
         response = DeleteVmResponse(rc.OK)
 
         try:
-            self.hypervisor.vm_manager.delete_vm(request.vm_id,
-                                                 force=request.force)
+            self.hypervisor.vm_manager.delete_vm(request.vm_id, force=request.force)
             return DeleteVmResponse(rc.OK)
         except ValueError:
-            return self._error_response(
-                rc.SYSTEM_ERROR, "Invalid VM ID: %s" % request.vm_id, response)
+            return self._error_response(rc.SYSTEM_ERROR, "Invalid VM ID: %s" % request.vm_id, response)
         except VmNotFoundException:
-            return self._error_response(
-                rc.VM_NOT_FOUND, "VM %s not found" % request.vm_id, response)
+            return self._error_response(rc.VM_NOT_FOUND, "VM %s not found" % request.vm_id, response)
         except OperationNotAllowedException as e:
-            return self._error_response(
-                rc.OPERATION_NOT_ALLOWED,
-                "VM %s cannot be deleted, %s" % (request.vm_id, str(e)),
-                response)
+            return self._error_response(rc.OPERATION_NOT_ALLOWED,
+                                        "VM %s cannot be deleted, %s" % (request.vm_id, str(e)), response)
         except VmPowerStateException:
-            return self._error_response(
-                rc.VM_NOT_POWERED_OFF,
-                "VM %s not powered off" % request.vm_id,
-                response)
+            return self._error_response(rc.VM_NOT_POWERED_OFF, "VM %s not powered off" % request.vm_id, response)
 
     @log_request
     @error_handler(GetResourcesResponse, GetResourcesResultCode)
@@ -622,14 +559,12 @@ class HostHandler(Host.Iface):
             for locator in request.locators:
                 if locator.vm:
                     try:
-                        resource = self.hypervisor.get_vm_resource(
-                            locator.vm.id)
+                        resource = self.hypervisor.get_vm_resource(locator.vm.id)
                     except VmNotFoundException:
                         continue
                 elif locator.disk:
                     try:
-                        resource = self.hypervisor.disk_manager.get_resource(
-                            locator.disk.id)
+                        resource = self.hypervisor.disk_manager.get_resource(locator.disk.id)
                     except DiskNotFoundException:
                         continue
 
@@ -638,8 +573,7 @@ class HostHandler(Host.Iface):
             for resource in self.hypervisor.get_resources():
                 resources.append(resource.to_thrift())
 
-        return GetResourcesResponse(GetResourcesResultCode.OK,
-                                    resources=resources)
+        return GetResourcesResponse(GetResourcesResultCode.OK, resources=resources)
 
     @log_request
     @error_handler(PowerVmOpResponse, PowerVmOpResultCode)
@@ -655,10 +589,8 @@ class HostHandler(Host.Iface):
         mode = common.services.get(ServiceName.MODE).get_mode()
 
         if mode == MODE.ENTERING_MAINTENANCE or mode == MODE.MAINTENANCE:
-            return self._error_response(
-                PowerVmOpResultCode.OPERATION_NOT_ALLOWED,
-                "power_vm_op not allowed in {0} mode".format(mode.name),
-                response)
+            return self._error_response(PowerVmOpResultCode.OPERATION_NOT_ALLOWED,
+                                        "power_vm_op not allowed in {0} mode".format(mode.name), response)
 
         try:
             if request.op is PowerVmOp.ON:
@@ -677,15 +609,9 @@ class HostHandler(Host.Iface):
             response.result = PowerVmOpResultCode.OK
             return response
         except VmNotFoundException:
-            return self._error_response(
-                PowerVmOpResultCode.VM_NOT_FOUND,
-                "VM %s not found" % request.vm_id,
-                response)
+            return self._error_response(PowerVmOpResultCode.VM_NOT_FOUND, "VM %s not found" % request.vm_id, response)
         except VmPowerStateException, e:
-            return self._error_response(
-                PowerVmOpResultCode.INVALID_VM_POWER_STATE,
-                str(e),
-                response)
+            return self._error_response(PowerVmOpResultCode.INVALID_VM_POWER_STATE, str(e), response)
 
     @log_request
     @error_handler(CreateDisksResponse, CreateDisksResultCode)
@@ -702,9 +628,7 @@ class HostHandler(Host.Iface):
         try:
             disks = pm.consume_disk_reservation(request.reservation)
         except InvalidReservationException:
-            return CreateDisksResponse(
-                CreateDisksResultCode.INVALID_RESERVATION,
-                "Invalid VM reservation")
+            return CreateDisksResponse(CreateDisksResultCode.INVALID_RESERVATION, "Invalid VM reservation")
 
         for disk in disks:
             thrift_disk = disk.to_thrift()
@@ -735,23 +659,17 @@ class HostHandler(Host.Iface):
                         continue
                     else:
                         # Full clone
-                        dm.copy_disk(datastore, disk.image.id, datastore,
-                                     disk.id)
-                datastore_name = \
-                    self.hypervisor.datastore_manager.datastore_name(datastore)
-                thrift_disk.datastore = Datastore(id=datastore,
-                                                  name=datastore_name)
+                        dm.copy_disk(datastore, disk.image.id, datastore, disk.id)
+                datastore_name = self.hypervisor.datastore_manager.datastore_name(datastore)
+                thrift_disk.datastore = Datastore(id=datastore, name=datastore_name)
                 disk_error.result = CreateDiskResultCode.OK
             except MissingPlacementDescriptorException, e:
-                self._logger.error("Cannot create Disk as reservation is "
-                                   "missing placement information, %s" %
-                                   disk.id)
+                self._logger.error("Cannot create Disk as reservation is missing placement information, %s" % disk.id)
                 disk_error.result = CreateDiskResultCode.PLACEMENT_NOT_FOUND
                 disk_error.error = type(e).__name__
                 continue
             except Exception, e:
-                self._logger.error("Unexpected exception %s, %s" %
-                                   (disk.id, e), exc_info=True)
+                self._logger.error("Unexpected exception %s, %s" % (disk.id, e), exc_info=True)
                 disk_error.result = CreateDiskResultCode.SYSTEM_ERROR
                 disk_error.error = type(e).__name__
                 continue
@@ -765,8 +683,7 @@ class HostHandler(Host.Iface):
         """Attach or Detach disks.
 
         :type spec: vim.Vm.ConfigSpec
-        :type info: vim.Vm.ConfigInfo, none for new VMs otherwise the VMs
-                    current config
+        :type info: vim.Vm.ConfigInfo, none for new VMs otherwise the VMs current config
         :type disks list of AttachedDisk
         :type method: function
         """
@@ -797,22 +714,18 @@ class HostHandler(Host.Iface):
                 cow = disk.image.clone_type == CloneType.COPY_ON_WRITE
 
                 if disk.image.id is None:
-                    self._logger.warning("Image id not found %s" %
-                                         disk.image.id)
+                    self._logger.warning("Image id not found %s" % disk.image.id)
                     raise ImageNotFoundException(disk.image.id)
 
             try:
                 if disk.image is None:
-                    vm_manager.create_empty_disk(spec, datastore, disk.id,
-                                                 disk.capacity_gb * 1024)
+                    vm_manager.create_empty_disk(spec, datastore, disk.id, disk.capacity_gb * 1024)
                 else:
                     if cow:
-                        vm_manager.create_child_disk(spec, datastore, disk.id,
-                                                     disk.image.id)
-                    # else full clone: ignore.
+                        vm_manager.create_child_disk(spec, datastore, disk.id, disk.image.id)
+                        # else full clone: ignore.
             except Exception, e:
-                self._logger.warning("Unexpected exception %s" % (e),
-                                     exc_info=True)
+                self._logger.warning("Unexpected exception %s" % e, exc_info=True)
                 raise e
 
     @log_request
@@ -852,9 +765,8 @@ class HostHandler(Host.Iface):
     def attach_disks(self, request):
         response = VmDisksOpResponse(disks=[], disk_errors={})
         response.result = VmDiskOpResultCode.OK
-        self._update_disks_with_response(
-            request.vm_id, request.disk_ids,
-            response, self.hypervisor.vm_manager.add_disk)
+        self._update_disks_with_response(request.vm_id, request.disk_ids,
+                                         response, self.hypervisor.vm_manager.add_disk)
         return response
 
     @log_request
@@ -863,9 +775,8 @@ class HostHandler(Host.Iface):
     def detach_disks(self, request):
         response = VmDisksOpResponse(disks=[], disk_errors={})
         response.result = VmDiskOpResultCode.OK
-        self._update_disks_with_response(
-            request.vm_id, request.disk_ids,
-            response, self.hypervisor.vm_manager.remove_disk)
+        self._update_disks_with_response(request.vm_id, request.disk_ids,
+                                         response, self.hypervisor.vm_manager.remove_disk)
         return response
 
     def _update_disks_with_response(self, vm_id, disks, response, method):
@@ -901,8 +812,7 @@ class HostHandler(Host.Iface):
                 disk_error = CreateDiskError()
                 response.disk_errors[disk_id] = disk_error
                 # get resource
-                disk_resource = \
-                    self.hypervisor.disk_manager.get_resource(disk_id)
+                disk_resource = self.hypervisor.disk_manager.get_resource(disk_id)
                 thrift_disk = disk_resource.to_thrift()
                 response.disks.append(thrift_disk)
                 datastore = disk_resource.datastore
@@ -913,19 +823,15 @@ class HostHandler(Host.Iface):
                 self.hypervisor.vm_manager.update_vm(vm_id, spec)
                 disk_error.result = VmDiskOpResultCode.OK
             except DiskNotFoundException, e:
-                self._logger.warning(
-                    "_update_disks_with_response %s" % (e),
-                    exc_info=True)
+                self._logger.warning("_update_disks_with_response %s" % e, exc_info=True)
                 response.result = VmDiskOpResultCode.DISK_NOT_FOUND
                 disk_error.result = VmDiskOpResultCode.DISK_NOT_FOUND
                 disk_error.error = str(e)
                 continue
             except ValueError, e:
-                self._logger.warning(
-                    "_update_disks_with_response %s" % (e),
-                    exc_info=True)
+                self._logger.warning("_update_disks_with_response %s" % e, exc_info=True)
                 remove_method = self.hypervisor.vm_manager.remove_disk
-                if (method == remove_method and str(e) == 'ENOENT'):
+                if method == remove_method and str(e) == 'ENOENT':
                     response.result = VmDiskOpResultCode.DISK_DETACHED
                     disk_error.result = VmDiskOpResultCode.DISK_DETACHED
                     disk_error.error = "Disk not attached"
@@ -935,9 +841,7 @@ class HostHandler(Host.Iface):
                     disk_error.error = str(e)
                 continue
             except Exception, e:
-                self._logger.warning(
-                    "_update_disks_with_response %s" % (e),
-                    exc_info=True)
+                self._logger.warning("_update_disks_with_response %s" % e, exc_info=True)
                 response.result = VmDiskOpResultCode.SYSTEM_ERROR
                 disk_error.result = VmDiskOpResultCode.SYSTEM_ERROR
                 disk_error.error = str(e)
@@ -959,40 +863,29 @@ class HostHandler(Host.Iface):
         try:
             src_ds_id = dm.normalize(src_image.datastore.id)
         except DatastoreNotFoundException as e:
-            self._logger.exception("Datastore %s not found" %
-                                   src_image.datastore.id)
+            self._logger.exception("Datastore %s not found" % src_image.datastore.id)
             return DeleteVmResponse(CopyImageResultCode.SYSTEM_ERROR, str(e))
         try:
             dst_ds_id = dm.normalize(dst_image.datastore.id)
         except DatastoreNotFoundException as e:
-            self._logger.exception("Datastore %s not found" %
-                                   dst_image.datastore.id)
+            self._logger.exception("Datastore %s not found" % dst_image.datastore.id)
             return DeleteVmResponse(CopyImageResultCode.SYSTEM_ERROR, str(e))
 
         if src_ds_id == dst_ds_id and src_image.id == dst_image.id:
             return CopyImageResponse(result=CopyImageResultCode.OK)
 
         if not im.check_image(src_image.id, src_ds_id):
-            return CopyImageResponse(
-                result=CopyImageResultCode.IMAGE_NOT_FOUND)
+            return CopyImageResponse(result=CopyImageResultCode.IMAGE_NOT_FOUND)
 
         try:
-            im.copy_image(
-                src_ds_id,
-                src_image.id,
-                dst_ds_id,
-                dst_image.id
-            )
+            im.copy_image(src_ds_id, src_image.id, dst_ds_id, dst_image.id)
         except DiskAlreadyExistException as e:
-            return CopyImageResponse(
-                result=CopyImageResultCode.DESTINATION_ALREADY_EXIST)
+            return CopyImageResponse(result=CopyImageResultCode.DESTINATION_ALREADY_EXIST)
         except Exception as e:
             self._logger.exception("Unexpected exception %s" % (e))
-            return self._error_response(
-                CopyImageResultCode.SYSTEM_ERROR,
-                "Copy image %s->%s error: %s" % (src_image.id, dst_image.id,
-                                                 e),
-                CopyImageResponse())
+            return self._error_response(CopyImageResultCode.SYSTEM_ERROR,
+                                        "Copy image %s->%s error: %s" % (src_image.id, dst_image.id, e),
+                                        CopyImageResponse())
 
         return CopyImageResponse(result=CopyImageResultCode.OK)
 
@@ -1005,13 +898,10 @@ class HostHandler(Host.Iface):
         :return: GetImagesResponse
         """
         try:
-            image_ids = self.hypervisor.image_manager.get_images(
-                request.datastore_id)
+            image_ids = self.hypervisor.image_manager.get_images(request.datastore_id)
         except DatastoreNotFoundException:
-            return self._error_response(
-                GetImagesResultCode.DATASTORE_NOT_FOUND,
-                "Datastore not found",
-                GetImagesResponse())
+            return self._error_response(GetImagesResultCode.DATASTORE_NOT_FOUND,
+                                        "Datastore not found", GetImagesResponse())
 
         return GetImagesResponse(GetImagesResultCode.OK, image_ids=image_ids)
 
@@ -1024,23 +914,15 @@ class HostHandler(Host.Iface):
         :return: StartImageScanResponse
         """
         try:
-            self._logger.info("Starting image scan on: %s" %
-                              request.datastore_id)
-            image_scanner = self._hypervisor.image_monitor.\
-                get_image_scanner(request.datastore_id)
-            image_scanner.start(request.timeout,
-                                request.scan_rate,
-                                request.scan_rate)
+            self._logger.info("Starting image scan on: %s" % request.datastore_id)
+            image_scanner = self._hypervisor.image_monitor.get_image_scanner(request.datastore_id)
+            image_scanner.start(request.timeout, request.scan_rate, request.scan_rate)
         except DatastoreNotFoundException:
-            return self._error_response(
-                StartImageOperationResultCode.DATASTORE_NOT_FOUND,
-                "Datastore not found",
-                StartImageScanResponse())
+            return self._error_response(StartImageOperationResultCode.DATASTORE_NOT_FOUND,
+                                        "Datastore not found", StartImageScanResponse())
         except TaskAlreadyRunning:
-            return self._error_response(
-                StartImageOperationResultCode.SCAN_IN_PROGRESS,
-                "Scan in Progress",
-                StartImageScanResponse())
+            return self._error_response(StartImageOperationResultCode.SCAN_IN_PROGRESS,
+                                        "Scan in Progress", StartImageScanResponse())
 
         return StartImageScanResponse(StartImageOperationResultCode.OK)
 
@@ -1053,17 +935,13 @@ class HostHandler(Host.Iface):
         :return: StopImageOperationResponse
         """
         try:
-            self._logger.info("Stopping image scanner on: %s" %
-                              request.datastore_id)
-            image_sweeper = self.hypervisor.image_monitor.\
-                get_image_scanner(request.datastore_id)
+            self._logger.info("Stopping image scanner on: %s" % request.datastore_id)
+            image_sweeper = self.hypervisor.image_monitor.get_image_scanner(request.datastore_id)
 
             image_sweeper.stop()
         except DatastoreNotFoundException:
-            return self._error_response(
-                StopImageOperationResultCode.DATASTORE_NOT_FOUND,
-                "Datastore not found",
-                StopImageOperationResponse())
+            return self._error_response(StopImageOperationResultCode.DATASTORE_NOT_FOUND,
+                                        "Datastore not found", StopImageOperationResponse())
 
         return StopImageOperationResponse(StopImageOperationResultCode.OK)
 
@@ -1076,28 +954,19 @@ class HostHandler(Host.Iface):
         :return: StartImageSweepResponse
         """
         try:
-            self._logger.info("Starting image sweeper on: %s" %
-                              request.datastore_id)
-            image_sweeper = self.hypervisor.image_monitor.\
-                get_image_sweeper(request.datastore_id)
+            self._logger.info("Starting image sweeper on: %s" % request.datastore_id)
+            image_sweeper = self.hypervisor.image_monitor.get_image_sweeper(request.datastore_id)
             # Copy image list from the request
             image_list = list()
             for image_desc in request.image_descs:
                 image_list.append(image_desc.image_id)
-            image_sweeper.start(image_list,
-                                request.timeout,
-                                request.sweep_rate,
-                                request.grace_period)
+            image_sweeper.start(image_list, request.timeout, request.sweep_rate, request.grace_period)
         except DatastoreNotFoundException:
-            return self._error_response(
-                StartImageOperationResultCode.DATASTORE_NOT_FOUND,
-                "Datastore not found",
-                StartImageSweepResponse())
+            return self._error_response(StartImageOperationResultCode.DATASTORE_NOT_FOUND,
+                                        "Datastore not found", StartImageSweepResponse())
         except TaskAlreadyRunning:
-            return self._error_response(
-                StartImageOperationResultCode.SWEEP_IN_PROGRESS,
-                "Scan in Progress",
-                StartImageSweepResponse())
+            return self._error_response(StartImageOperationResultCode.SWEEP_IN_PROGRESS,
+                                        "Scan in Progress", StartImageSweepResponse())
 
         return StartImageSweepResponse(StartImageOperationResultCode.OK)
 
@@ -1110,17 +979,13 @@ class HostHandler(Host.Iface):
         :return: StopImageOperationResponse
         """
         try:
-            self._logger.info("Stopping image sweeper on: %s" %
-                              request.datastore_id)
-            image_sweeper = self.hypervisor.image_monitor.\
-                get_image_sweeper(request.datastore_id)
+            self._logger.info("Stopping image sweeper on: %s" % request.datastore_id)
+            image_sweeper = self.hypervisor.image_monitor.get_image_sweeper(request.datastore_id)
 
             image_sweeper.stop()
         except DatastoreNotFoundException:
-            return self._error_response(
-                StopImageOperationResultCode.DATASTORE_NOT_FOUND,
-                "Datastore not found",
-                StopImageOperationResponse())
+            return self._error_response(StopImageOperationResultCode.DATASTORE_NOT_FOUND,
+                                        "Datastore not found", StopImageOperationResponse())
 
         return StopImageOperationResponse(StopImageOperationResultCode.OK)
 
@@ -1133,13 +998,10 @@ class HostHandler(Host.Iface):
         """
         self._logger.info("Call to get_inactive_images")
         try:
-            image_scanner = self._hypervisor.image_monitor.\
-                get_image_scanner(request.datastore_id)
+            image_scanner = self._hypervisor.image_monitor.get_image_scanner(request.datastore_id)
             response = GetInactiveImagesResponse()
 
-            datastore_info = self._hypervisor.\
-                datastore_manager.\
-                datastore_info(request.datastore_id)
+            datastore_info = self._hypervisor.datastore_manager.datastore_info(request.datastore_id)
 
             response.totalMB = long(datastore_info.total)
             response.usedMB = long(datastore_info.used)
@@ -1151,30 +1013,22 @@ class HostHandler(Host.Iface):
             state = image_scanner.get_state()
 
             if state is not DatastoreImageScanner.State.IDLE:
-                response.result = \
-                    GetMonitoredImagesResultCode.OPERATION_IN_PROGRESS
+                response.result = GetMonitoredImagesResultCode.OPERATION_IN_PROGRESS
                 return response
             else:
-                response.result = \
-                    GetMonitoredImagesResultCode.OK
+                response.result = GetMonitoredImagesResultCode.OK
 
             # Get the list of images
-            unused_images, end_time = \
-                image_scanner.get_unused_images()
+            unused_images, end_time = image_scanner.get_unused_images()
 
-            self._create_unused_image_descriptors(
-                response,
-                unused_images)
+            self._create_unused_image_descriptors(response, unused_images)
 
-            self._logger.info("Found %d inactive images" %
-                              len(response.image_descs))
+            self._logger.info("Found %d inactive images" % len(response.image_descs))
             return response
 
         except DatastoreNotFoundException:
-            return self._error_response(
-                GetMonitoredImagesResultCode.DATASTORE_NOT_FOUND,
-                "Datastore not found",
-                GetInactiveImagesResponse())
+            return self._error_response(GetMonitoredImagesResultCode.DATASTORE_NOT_FOUND,
+                                        "Datastore not found", GetInactiveImagesResponse())
 
     def _create_unused_image_descriptors(self, response, images):
         # Get the list of ids
@@ -1187,14 +1041,11 @@ class HostHandler(Host.Iface):
             image_descriptor = InactiveImageDescriptor()
             image_descriptor.image_id = image_id
             try:
-                _, mod_time = self.hypervisor.image_manager.\
-                    get_timestamp_mod_time_from_dir(images[image_id])
+                _, mod_time = self.hypervisor.image_manager.get_timestamp_mod_time_from_dir(images[image_id])
                 image_descriptor.timestamp = long(mod_time)
             except Exception as ex:
                 image_descriptor.timestamp = 0
-                self._logger.exception(
-                    "Unable to get mod time for %s, ex: %s" %
-                    (images[image_id], ex))
+                self._logger.exception("Unable to get mod time for %s, ex: %s" % (images[image_id], ex))
             response.image_descs.append(image_descriptor)
 
     @log_request
@@ -1207,14 +1058,11 @@ class HostHandler(Host.Iface):
         """
         self._logger.info("Call to get_deleted_images")
         try:
-            image_sweeper = self.hypervisor.image_monitor.\
-                get_image_sweeper(request.datastore_id)
+            image_sweeper = self.hypervisor.image_monitor.get_image_sweeper(request.datastore_id)
             response = GetDeletedImagesResponse()
 
-            if image_sweeper.get_state() is not \
-                    DatastoreImageSweeper.State.IDLE:
-                response.result = \
-                    GetMonitoredImagesResultCode.OPERATION_IN_PROGRESS
+            if image_sweeper.get_state() is not DatastoreImageSweeper.State.IDLE:
+                response.result = GetMonitoredImagesResultCode.OPERATION_IN_PROGRESS
             else:
                 response.result = GetMonitoredImagesResultCode.OK
 
@@ -1228,14 +1076,11 @@ class HostHandler(Host.Iface):
                 image_descriptor.timestamp = 0
                 response.image_descs.append(image_descriptor)
 
-            self._logger.info("Found %d deleted images" %
-                              len(response.image_descs))
+            self._logger.info("Found %d deleted images" % len(response.image_descs))
             return response
         except DatastoreNotFoundException:
-            return self._error_response(
-                GetMonitoredImagesResultCode.DATASTORE_NOT_FOUND,
-                "Datastore not found",
-                GetDeletedImagesResponse())
+            return self._error_response(GetMonitoredImagesResultCode.DATASTORE_NOT_FOUND,
+                                        "Datastore not found", GetDeletedImagesResponse())
 
     @log_request
     @error_handler(PlaceResponse, PlaceResultCode)
@@ -1247,18 +1092,14 @@ class HostHandler(Host.Iface):
         """
         mode = common.services.get(ServiceName.MODE).get_mode()
         if mode != MODE.NORMAL:
-            self._logger.info("return INVALID_STATE when agent in %s" %
-                              mode)
-            return PlaceResponse(PlaceResultCode.INVALID_STATE,
-                                 error="Host in %s mode" % mode)
+            self._logger.info("return INVALID_STATE when agent in %s" % mode)
+            return PlaceResponse(PlaceResultCode.INVALID_STATE, error="Host in %s mode" % mode)
 
         try:
             disks, vm = self._parse_resource_request(request.resource)
-            score, placement_list = \
-                self.hypervisor.placement_manager.place(vm, disks)
+            score, placement_list = self.hypervisor.placement_manager.place(vm, disks)
             thrift_score = Score(score.utilization, score.transfer)
-            placement_list = \
-                AgentResourcePlacementList(placement_list)
+            placement_list = AgentResourcePlacementList(placement_list)
             thrift_placement_list = placement_list.to_thrift()
 
             return PlaceResponse(PlaceResultCode.OK,
@@ -1268,33 +1109,23 @@ class HostHandler(Host.Iface):
                                  placementList=thrift_placement_list,
                                  address=self._address)
         except NoSuchResourceException as e:
-            self._logger.warning(
-                "NoSuchResourceException during place(). {0}".format(e))
-            return PlaceResponse(PlaceResultCode.NO_SUCH_RESOURCE,
-                                 agent_id=self._agent_id)
+            self._logger.warning("NoSuchResourceException during place(). {0}".format(e))
+            return PlaceResponse(PlaceResultCode.NO_SUCH_RESOURCE, agent_id=self._agent_id)
 
         except NotEnoughMemoryResourceException:
-            self._logger.warning(
-                "NotEnoughMemoryResourceException during place()")
-            return PlaceResponse(PlaceResultCode.NOT_ENOUGH_MEMORY_RESOURCE,
-                                 agent_id=self._agent_id)
+            self._logger.warning("NotEnoughMemoryResourceException during place()")
+            return PlaceResponse(PlaceResultCode.NOT_ENOUGH_MEMORY_RESOURCE, agent_id=self._agent_id)
 
         except NotEnoughCpuResourceException:
-            self._logger.warning(
-                "NotEnoughCpuResourceException during place()")
-            return PlaceResponse(PlaceResultCode.NOT_ENOUGH_CPU_RESOURCE,
-                                 agent_id=self._agent_id)
+            self._logger.warning("NotEnoughCpuResourceException during place()")
+            return PlaceResponse(PlaceResultCode.NOT_ENOUGH_CPU_RESOURCE, agent_id=self._agent_id)
 
         except NotEnoughDatastoreCapacityException:
-            self._logger.warning(
-                "NotEnoughDatastoreCapacityException during place()")
-            return PlaceResponse(PlaceResultCode.NOT_ENOUGH_DATASTORE_CAPACITY,
-                                 agent_id=self._agent_id)
+            self._logger.warning("NotEnoughDatastoreCapacityException during place()")
+            return PlaceResponse(PlaceResultCode.NOT_ENOUGH_DATASTORE_CAPACITY, agent_id=self._agent_id)
         except UnknownFlavor:
             self._logger.warning("UnknownFlavor exception during place()")
-            return PlaceResponse(PlaceResultCode.NO_SUCH_RESOURCE,
-                                 error="Unknown flavor",
-                                 agent_id=self._agent_id)
+            return PlaceResponse(PlaceResultCode.NO_SUCH_RESOURCE, error="Unknown flavor", agent_id=self._agent_id)
 
     def _error_response(self, code, error, response):
         """Attach error information to response.
@@ -1317,17 +1148,12 @@ class HostHandler(Host.Iface):
         return self.hypervisor.disk_manager.get_datastore(disk_id)
 
     """
-    Datastore selection is now performed during the
-    placement phase. The placement descriptor is
-    returned during the placement phase and forwarded
-    by the FE.
+    Datastore selection is now performed during the placement phase. The placement descriptor is
+    returned during the placement phase and forwarded by the FE.
     """
     def _select_datastore_for_disk_create(self, disk):
         if not disk.placement:
-            """
-            If placement information is missing return
-            an error. The FE should retry placement.
-            """
+            # If placement information is missing return an error. The FE should retry placement.
             raise MissingPlacementDescriptorException()
 
         return disk.placement.container_id
@@ -1336,16 +1162,14 @@ class HostHandler(Host.Iface):
         vm = None
         disks = []
         if hasattr(resource, 'placement_list'):
-            placement_list = AgentResourcePlacementList.\
-                from_thrift(resource.placement_list)
+            placement_list = AgentResourcePlacementList.from_thrift(resource.placement_list)
             self._logger.info(placement_list)
         else:
             placement_list = None
 
         if resource.vm:
             vm = Vm.from_thrift(resource.vm)
-            AgentResourcePlacementList.\
-                unpack_placement_list_vm(placement_list, vm)
+            AgentResourcePlacementList.unpack_placement_list_vm(placement_list, vm)
 
         if resource.disks:
             for thrift_disk in resource.disks:
@@ -1353,8 +1177,7 @@ class HostHandler(Host.Iface):
                 if disk.constraints:
                     self._logger.info(disk.constraints)
                 disks.append(disk)
-            AgentResourcePlacementList.\
-                unpack_placement_list_disks(placement_list, disks)
+            AgentResourcePlacementList.unpack_placement_list_disks(placement_list, disks)
 
         return disks, vm
 
@@ -1369,18 +1192,15 @@ class HostHandler(Host.Iface):
 
         response = GetVmNetworkResponse()
         try:
-            response.network_info = \
-                self.hypervisor.vm_manager.get_vm_network(request.vm_id)
+            response.network_info = self.hypervisor.vm_manager.get_vm_network(request.vm_id)
             response.result = GetVmNetworkResultCode.OK
             return response
         except VmNotFoundException:
             return self._error_response(GetVmNetworkResultCode.VM_NOT_FOUND,
-                                        "Vm %s not found" % request.vm_id,
-                                        response)
+                                        "Vm %s not found" % request.vm_id, response)
         except:
             return self._error_response(GetVmNetworkResultCode.SYSTEM_ERROR,
-                                        str(sys.exc_info()[1]),
-                                        response)
+                                        str(sys.exc_info()[1]), response)
 
     @log_request
     @error_handler(AttachISOResponse, AttachISOResultCode)
@@ -1404,9 +1224,7 @@ class HostHandler(Host.Iface):
                 request.vm_id)
 
             if result:
-                self.hypervisor.vm_manager.update_vm(
-                    request.vm_id,
-                    spec)
+                self.hypervisor.vm_manager.update_vm(request.vm_id, spec)
                 response.result = AttachISOResultCode.OK
             else:
                 response.result = AttachISOResultCode.ISO_ATTACHED_ERROR
@@ -1444,25 +1262,17 @@ class HostHandler(Host.Iface):
 
         try:
             spec = self.hypervisor.vm_manager.update_vm_spec()
-            iso_path = self.hypervisor.vm_manager.disconnect_cdrom(
-                spec, request.vm_id)
+            iso_path = self.hypervisor.vm_manager.disconnect_cdrom(spec, request.vm_id)
             self.hypervisor.vm_manager.update_vm(request.vm_id, spec)
         except VmNotFoundException:
-            return self._error_response(
-                DetachISOResultCode.VM_NOT_FOUND,
-                "VM %s not found" % request.vm_id,
-                response)
+            return self._error_response(DetachISOResultCode.VM_NOT_FOUND,
+                                        "VM %s not found" % request.vm_id, response)
         except IsoNotAttachedException:
-            return self._error_response(
-                DetachISOResultCode.ISO_NOT_ATTACHED,
-                "No ISO is attached to VM %s" % request.vm_id,
-                response)
+            return self._error_response(DetachISOResultCode.ISO_NOT_ATTACHED,
+                                        "No ISO is attached to VM %s" % request.vm_id, response)
         except Exception:
             self._logger.info(sys.exc_info()[1])
-            return self._error_response(
-                DetachISOResultCode.SYSTEM_ERROR,
-                str(sys.exc_info()[1]),
-                response)
+            return self._error_response(DetachISOResultCode.SYSTEM_ERROR, str(sys.exc_info()[1]), response)
 
         try:
             if request.delete_file:
@@ -1489,28 +1299,22 @@ class HostHandler(Host.Iface):
         """
         if request.service_type == ServiceType.NFC:
             if not request.datastore_name:
-                return ServiceTicketResponse(
-                    ServiceTicketResultCode.BAD_REQUEST,
-                    "Missing datastore_name in request")
+                return ServiceTicketResponse(ServiceTicketResultCode.BAD_REQUEST,
+                                             "Missing datastore_name in request")
 
             try:
                 dm = self.hypervisor.datastore_manager
                 datastore_name = dm.normalize_to_name(request.datastore_name)
                 ticket = dm.datastore_nfc_ticket(datastore_name)
-                return ServiceTicketResponse(ServiceTicketResultCode.OK,
-                                             ticket=ticket)
+                return ServiceTicketResponse(ServiceTicketResultCode.OK, ticket=ticket)
             except DatastoreNotFoundException:
-                return ServiceTicketResponse(
-                    ServiceTicketResultCode.NOT_FOUND,
-                    "Datastore %s not found" % request.datastore_name)
+                return ServiceTicketResponse(ServiceTicketResultCode.NOT_FOUND,
+                                             "Datastore %s not found" % request.datastore_name)
         elif request.service_type == ServiceType.VIM:
             ticket = self.hypervisor.acquire_vim_ticket()
-            return ServiceTicketResponse(ServiceTicketResultCode.OK,
-                                         vim_ticket=ticket)
+            return ServiceTicketResponse(ServiceTicketResultCode.OK, vim_ticket=ticket)
         else:
-            return ServiceTicketResponse(
-                ServiceTicketResultCode.BAD_REQUEST,
-                "Operation not supported")
+            return ServiceTicketResponse(ServiceTicketResultCode.BAD_REQUEST, "Operation not supported")
 
     @log_request
     @error_handler(MksTicketResponse, MksTicketResultCode)
@@ -1522,31 +1326,18 @@ class HostHandler(Host.Iface):
         """
         try:
             ticket = self.hypervisor.vm_manager.get_mks_ticket(request.vm_id)
-            return MksTicketResponse(result=MksTicketResultCode.OK,
-                                     ticket=ticket)
+            return MksTicketResponse(result=MksTicketResultCode.OK, ticket=ticket)
         except VmNotFoundException as e:
-            return MksTicketResponse(result=MksTicketResultCode.VM_NOT_FOUND,
-                                     error=str(e))
+            return MksTicketResponse(result=MksTicketResultCode.VM_NOT_FOUND, error=str(e))
         except OperationNotAllowedException as e:
-            return MksTicketResponse(
-                result=MksTicketResultCode.INVALID_VM_POWER_STATE,
-                error=str(e))
-
-    def get_placement(self, placement_list, resource_id):
-        """
-        :param resource_placement_list:
-        :param resource_id:
-        :return: one entry in the placement_list
-        """
-        return None
+            return MksTicketResponse(result=MksTicketResultCode.INVALID_VM_POWER_STATE, error=str(e))
 
     @log_request
     @error_handler(GetDatastoresResponse, GetDatastoresResultCode)
     def get_datastores(self, request):
         response = GetDatastoresResponse()
         response.result = GetDatastoresResultCode.OK
-        response.datastores = \
-            self._hypervisor.datastore_manager.get_datastores()
+        response.datastores = self._hypervisor.datastore_manager.get_datastores()
         return response
 
     @log_request
@@ -1560,24 +1351,18 @@ class HostHandler(Host.Iface):
     @log_request
     @error_handler(CreateImageResponse, CreateImageResultCode)
     def create_image(self, request):
-        """
-        """
         try:
             datastore_id = self.hypervisor.datastore_manager.normalize(request.datastore)
         except DatastoreNotFoundException:
-            return self._error_response(
-                CreateImageResultCode.DATASTORE_NOT_FOUND,
-                "Datastore not found",
-                CreateImageResponse())
+            return self._error_response(CreateImageResultCode.DATASTORE_NOT_FOUND,
+                                        "Datastore not found", CreateImageResponse())
 
         try:
             tmp_image_path = self.hypervisor.image_manager.create_image(request.image_id, datastore_id)
             return CreateImageResponse(CreateImageResultCode.OK, tmp_image_path)
         except:
-            return self._error_response(
-                CreateImageResultCode.SYSTEM_ERROR,
-                str(sys.exc_info()[1]),
-                CreateImageResponse())
+            return self._error_response(CreateImageResultCode.SYSTEM_ERROR,
+                                        str(sys.exc_info()[1]), CreateImageResponse())
 
     @log_request
     @error_handler(FinalizeImageResponse, FinalizeImageResultCode)
@@ -1586,33 +1371,22 @@ class HostHandler(Host.Iface):
             to the specified image_id location.
         """
         try:
-            datastore_id = \
-                self.hypervisor.datastore_manager.normalize(request.datastore)
+            datastore_id = self.hypervisor.datastore_manager.normalize(request.datastore)
         except DatastoreNotFoundException:
-            return self._error_response(
-                FinalizeImageResultCode.DATASTORE_NOT_FOUND,
-                "Datastore not found",
-                FinalizeImageResponse())
+            return self._error_response(FinalizeImageResultCode.DATASTORE_NOT_FOUND,
+                                        "Datastore not found", FinalizeImageResponse())
 
         try:
-            self.hypervisor.image_manager.finalize_image(datastore_id,
-                                                         request.tmp_image_path,
-                                                         request.image_id)
+            self.hypervisor.image_manager.finalize_image(datastore_id, request.tmp_image_path, request.image_id)
         except ImageNotFoundException:
-            return self._error_response(
-                FinalizeImageResultCode.IMAGE_NOT_FOUND,
-                "Temp image dir not found",
-                FinalizeImageResponse())
+            return self._error_response(FinalizeImageResultCode.IMAGE_NOT_FOUND,
+                                        "Temp image dir not found", FinalizeImageResponse())
         except DiskAlreadyExistException:
-            return self._error_response(
-                FinalizeImageResultCode.DESTINATION_ALREADY_EXIST,
-                "Image disk already exists",
-                FinalizeImageResponse())
+            return self._error_response(FinalizeImageResultCode.DESTINATION_ALREADY_EXIST,
+                                        "Image disk already exists", FinalizeImageResponse())
         except:
-            return self._error_response(
-                FinalizeImageResultCode.SYSTEM_ERROR,
-                str(sys.exc_info()[1]),
-                FinalizeImageResponse())
+            return self._error_response(FinalizeImageResultCode.SYSTEM_ERROR,
+                                        str(sys.exc_info()[1]), FinalizeImageResponse())
 
         return FinalizeImageResponse(FinalizeImageResultCode.OK)
 
@@ -1621,29 +1395,19 @@ class HostHandler(Host.Iface):
     def transfer_image(self, request):
         """ Transfer an image to another host via host-to-host transfer. """
         try:
-            self.hypervisor.transfer_image(
-                request.source_image_id,
-                request.source_datastore_id,
-                request.destination_image_id,
-                request.destination_datastore_id,
-                request.destination_host.host,
-                request.destination_host.port)
+            self.hypervisor.transfer_image(request.source_image_id, request.source_datastore_id,
+                                           request.destination_image_id, request.destination_datastore_id,
+                                           request.destination_host.host, request.destination_host.port)
         except AlreadyLocked:
-            return self._error_response(
-                TransferImageResultCode.TRANSFER_IN_PROGRESS,
-                "Only one image transfer is allowed at any time",
-                TransferImageResponse())
+            return self._error_response(TransferImageResultCode.TRANSFER_IN_PROGRESS,
+                                        "Only one image transfer is allowed at any time", TransferImageResponse())
         except DiskAlreadyExistException:
-            return self._error_response(
-                TransferImageResultCode.DESTINATION_ALREADY_EXIST,
-                "Image disk already exists",
-                TransferImageResponse())
+            return self._error_response(TransferImageResultCode.DESTINATION_ALREADY_EXIST,
+                                        "Image disk already exists", TransferImageResponse())
         except Exception as e:
             self._logger.exception(str(e))
-            return self._error_response(
-                TransferImageResultCode.SYSTEM_ERROR,
-                str(sys.exc_info()[1]),
-                TransferImageResponse())
+            return self._error_response(TransferImageResultCode.SYSTEM_ERROR,
+                                        str(sys.exc_info()[1]), TransferImageResponse())
 
         return TransferImageResponse(TransferImageResultCode.OK)
 
@@ -1656,15 +1420,11 @@ class HostHandler(Host.Iface):
             datastore_id = self.hypervisor.datastore_manager.normalize(request.datastore)
             import_vm_path, import_vm_id = self.hypervisor.prepare_receive_image(request.image_id, datastore_id)
         except DatastoreNotFoundException:
-            return self._error_response(
-                PrepareReceiveImageResultCode.DATASTORE_NOT_FOUND,
-                "Datastore not found",
-                PrepareReceiveImageResponse())
+            return self._error_response(PrepareReceiveImageResultCode.DATASTORE_NOT_FOUND,
+                                        "Datastore not found", PrepareReceiveImageResponse())
         except:
-            return self._error_response(
-                PrepareReceiveImageResultCode.SYSTEM_ERROR,
-                str(sys.exc_info()[1]),
-                PrepareReceiveImageResponse())
+            return self._error_response(PrepareReceiveImageResultCode.SYSTEM_ERROR,
+                                        str(sys.exc_info()[1]), PrepareReceiveImageResponse())
 
         return PrepareReceiveImageResponse(PrepareReceiveImageResultCode.OK, import_vm_path, import_vm_id)
 
@@ -1675,22 +1435,15 @@ class HostHandler(Host.Iface):
             to the specified image_id location.
         """
         try:
-            datastore_id = self.hypervisor.datastore_manager.normalize(
-                request.datastore_id)
-            self.hypervisor.receive_image(request.image_id,
-                                          datastore_id,
-                                          request.transferred_image_id,
-                                          request.metadata)
+            datastore_id = self.hypervisor.datastore_manager.normalize(request.datastore_id)
+            self.hypervisor.receive_image(request.image_id, datastore_id,
+                                          request.transferred_image_id, request.metadata)
         except DiskAlreadyExistException:
-            return self._error_response(
-                ReceiveImageResultCode.DESTINATION_ALREADY_EXIST,
-                "Image disk already exists",
-                ReceiveImageResponse())
+            return self._error_response(ReceiveImageResultCode.DESTINATION_ALREADY_EXIST,
+                                        "Image disk already exists", ReceiveImageResponse())
         except:
-            return self._error_response(
-                ReceiveImageResultCode.SYSTEM_ERROR,
-                str(sys.exc_info()[1]),
-                ReceiveImageResponse())
+            return self._error_response(ReceiveImageResultCode.SYSTEM_ERROR,
+                                        str(sys.exc_info()[1]), ReceiveImageResponse())
 
         return ReceiveImageResponse(ReceiveImageResultCode.OK)
 
@@ -1703,16 +1456,12 @@ class HostHandler(Host.Iface):
         vm_mgr = self.hypervisor.vm_manager
 
         if not vm_mgr.has_vm(request.vm_id):
-            return self._error_response(
-                CreateImageFromVmResultCode.VM_NOT_FOUND,
-                "VM %s not found on host" % request.vm_id,
-                CreateImageFromVmResponse())
+            return self._error_response(CreateImageFromVmResultCode.VM_NOT_FOUND,
+                                        "VM %s not found on host" % request.vm_id, CreateImageFromVmResponse())
 
         if vm_mgr.get_power_state(request.vm_id) != State.STOPPED:
-            return self._error_response(
-                CreateImageFromVmResultCode.INVALID_VM_POWER_STATE,
-                "VM %s not powered off" % request.vm_id,
-                CreateImageFromVmResponse())
+            return self._error_response(CreateImageFromVmResultCode.INVALID_VM_POWER_STATE,
+                                        "VM %s not powered off" % request.vm_id, CreateImageFromVmResponse())
 
         linked_clone_os_path = vm_mgr.get_linked_clone_path(request.vm_id)
         if not linked_clone_os_path:
@@ -1723,25 +1472,18 @@ class HostHandler(Host.Iface):
         try:
             datastore_id = self.hypervisor.datastore_manager.normalize(request.datastore)
         except DatastoreNotFoundException:
-            return self._error_response(
-                CreateImageFromVmResultCode.SYSTEM_ERROR,
-                "Invalid datastore %s" % request.datastore,
-                CreateImageFromVmResponse())
+            return self._error_response(CreateImageFromVmResultCode.SYSTEM_ERROR,
+                                        "Invalid datastore %s" % request.datastore, CreateImageFromVmResponse())
 
         try:
-            self.hypervisor.image_manager.create_image_with_vm_disk(
-                datastore_id, request.tmp_image_path, request.image_id,
-                linked_clone_os_path)
+            self.hypervisor.image_manager.create_image_with_vm_disk(datastore_id, request.tmp_image_path,
+                                                                    request.image_id, linked_clone_os_path)
         except DiskAlreadyExistException:
-            return self._error_response(
-                CreateImageFromVmResultCode.IMAGE_ALREADY_EXIST,
-                "Image disk already exists",
-                CreateImageFromVmResponse())
+            return self._error_response(CreateImageFromVmResultCode.IMAGE_ALREADY_EXIST,
+                                        "Image disk already exists", CreateImageFromVmResponse())
         except:
-            return self._error_response(
-                CreateImageFromVmResultCode.SYSTEM_ERROR,
-                str(sys.exc_info()[1]),
-                CreateImageFromVmResponse())
+            return self._error_response(CreateImageFromVmResultCode.SYSTEM_ERROR,
+                                        str(sys.exc_info()[1]), CreateImageFromVmResponse())
 
         return CreateImageFromVmResponse(CreateImageFromVmResultCode.OK)
 
@@ -1749,27 +1491,20 @@ class HostHandler(Host.Iface):
     @error_handler(DeleteDirectoryResponse, DeleteDirectoryResultCode)
     def delete_directory(self, request):
         try:
-            datastore_id = \
-                self.hypervisor.datastore_manager.normalize(request.datastore)
+            datastore_id = self.hypervisor.datastore_manager.normalize(request.datastore)
         except DatastoreNotFoundException:
-            return self._error_response(
-                DeleteDirectoryResultCode.DATASTORE_NOT_FOUND,
-                "Datastore %s not found" % request.datastore,
-                DeleteDirectoryResponse())
+            return self._error_response(DeleteDirectoryResultCode.DATASTORE_NOT_FOUND,
+                                        "Datastore %s not found" % request.datastore, DeleteDirectoryResponse())
 
         try:
-            self.hypervisor.image_manager.delete_tmp_dir(
-                datastore_id, request.directory_path)
+            self.hypervisor.image_manager.delete_tmp_dir(datastore_id, request.directory_path)
         except DirectoryNotFound:
             return self._error_response(
-                DeleteDirectoryResultCode.DIRECTORY_NOT_FOUND,
-                "Directory %s on datastore %s not found" %
-                (request.directory_path, request.datastore),
-                DeleteDirectoryResponse())
+                    DeleteDirectoryResultCode.DIRECTORY_NOT_FOUND,
+                    "Directory %s on datastore %s not found" % (request.directory_path, request.datastore),
+                    DeleteDirectoryResponse())
         except:
-            return self._error_response(
-                DeleteDirectoryResultCode.SYSTEM_ERROR,
-                str(sys.exc_info()[1]),
-                DeleteDirectoryResponse())
+            return self._error_response(DeleteDirectoryResultCode.SYSTEM_ERROR,
+                                        str(sys.exc_info()[1]), DeleteDirectoryResponse())
 
         return DeleteDirectoryResponse(DeleteDirectoryResultCode.OK)
