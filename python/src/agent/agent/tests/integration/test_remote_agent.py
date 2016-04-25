@@ -1059,8 +1059,7 @@ class TestRemoteAgent(unittest.TestCase, AgentCommonTests):
                  capacity_gb=2, flavor_info=self.DEFAULT_DISK_FLAVOR)
         ]
         vm_wrapper = VmWrapper(self.host_client)
-        reservation = \
-            vm_wrapper.place_and_reserve(vm_disks=disks).reservation
+        reservation = vm_wrapper.place_and_reserve(vm_disks=disks).reservation
         request = vm_wrapper.create_request(res_id=reservation)
         vm_wrapper.create(request=request)
         logger.info("Image scan, Vm id: %s" % vm_wrapper.id)
@@ -1070,32 +1069,21 @@ class TestRemoteAgent(unittest.TestCase, AgentCommonTests):
         start_scan_request.datastore_id = datastore.id
         start_scan_request.scan_rate = 600
         start_scan_request.timeout = 30
-        start_scan_response = \
-            self.host_client.start_image_scan(start_scan_request)
-        self.assertEqual(
-            start_scan_response.result, StartImageOperationResultCode.OK)
+        start_scan_response = self.host_client.start_image_scan(start_scan_request)
+        self.assertEqual(start_scan_response.result, StartImageOperationResultCode.OK)
         self._get_and_check_inactive_images(datastore.id, image_id_1, True)
-        get_inactive_images_response = \
-            self._get_and_check_inactive_images(datastore.id,
-                                                image_id_2,
-                                                False)
+        get_inactive_images_response = self._get_and_check_inactive_images(datastore.id, image_id_2, False)
 
         # Start image sweeper
         start_sweep_request = StartImageSweepRequest()
         start_sweep_request.datastore_id = datastore.id
-        start_sweep_request.image_descs = \
-            get_inactive_images_response.image_descs
+        start_sweep_request.image_descs = get_inactive_images_response.image_descs
         start_sweep_request.sweep_rate = 600
         start_sweep_request.timeout = 30
-        start_sweep_request.grace_period = 0
-        start_sweep_response = \
-            self.host_client.start_image_sweep(start_sweep_request)
-        self.assertEqual(
-            start_sweep_response.result, StartImageOperationResultCode.OK)
+        start_sweep_response = self.host_client.start_image_sweep(start_sweep_request)
+        self.assertEqual(start_sweep_response.result, StartImageOperationResultCode.OK)
 
-        self._get_and_check_deleted_images(datastore.id,
-                                           image_id_1,
-                                           True)
+        self._get_and_check_deleted_images(datastore.id, image_id_1, True)
         # cleanup
         vm_wrapper.delete()
         self._delete_image(dst_image_1, DeleteDirectoryResultCode.DIRECTORY_NOT_FOUND)
@@ -1106,15 +1094,11 @@ class TestRemoteAgent(unittest.TestCase, AgentCommonTests):
         get_inactive_images_request.datastore_id = datastore_id
         for counter in range(1, 30):
             time.sleep(1)
-            get_inactive_images_response = \
-                self.host_client.get_inactive_images(
-                    get_inactive_images_request)
-            if get_inactive_images_response.result is \
-                    GetMonitoredImagesResultCode.OK:
+            get_inactive_images_response = self.host_client.get_inactive_images(get_inactive_images_request)
+            if get_inactive_images_response.result is GetMonitoredImagesResultCode.OK:
                 break
 
-        self.assertEqual(get_inactive_images_response.result,
-                         GetMonitoredImagesResultCode.OK)
+        self.assertEqual(get_inactive_images_response.result, GetMonitoredImagesResultCode.OK)
         image_descriptors = get_inactive_images_response.image_descs
         image_found = False
         logger.info("Image Descriptors: %s" % image_descriptors)
@@ -1131,15 +1115,11 @@ class TestRemoteAgent(unittest.TestCase, AgentCommonTests):
         get_deleted_images_request.datastore_id = datastore_id
         for counter in range(1, 30):
             time.sleep(1)
-            get_inactive_deleted_response = \
-                self.host_client.get_deleted_images(
-                    get_deleted_images_request)
-            if get_inactive_deleted_response.result is \
-                    GetMonitoredImagesResultCode.OK:
+            get_inactive_deleted_response = self.host_client.get_deleted_images(get_deleted_images_request)
+            if get_inactive_deleted_response.result is GetMonitoredImagesResultCode.OK:
                 break
 
-        self.assertEqual(get_inactive_deleted_response.result,
-                         GetMonitoredImagesResultCode.OK)
+        self.assertEqual(get_inactive_deleted_response.result, GetMonitoredImagesResultCode.OK)
         image_descriptors = get_inactive_deleted_response.image_descs
         image_found = False
         logger.info("Image Descriptors: %s" % image_descriptors)
