@@ -153,6 +153,10 @@ enum ImageType {
   CLOUD = 1
 }
 
+// There are two kinds of image replication
+// EAGER will copy images to all image and local datastore
+// ON_DEMAND will copy images to all image datastores, and the copies
+// the local datastores will happen when VMs are created (that is, on demand)
 enum ImageReplication {
   EAGER = 0
   ON_DEMAND = 1
