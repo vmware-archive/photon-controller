@@ -28,8 +28,7 @@ from host.hypervisor.vm_utils import parse_vmdk
 
 
 class InvalidStateTransition(Exception):
-    """ Exception raised when there is
-        and invalid state transition"""
+    """ Exception raised when there is and invalid state transition"""
     pass
 
 
@@ -38,13 +37,11 @@ def waste_time(seconds):
     if seconds > 0.0001:
         time.sleep(seconds)
 
-"""
-Execute the task of running an image scan/mark
-on a datastore.
-"""
-
 
 class DatastoreImageScannerTaskRunner(TaskRunner):
+    """
+    Execute the task of running an image scan/mark on a datastore.
+    """
     def __init__(self, name, ds_image_scanner):
         super(DatastoreImageScannerTaskRunner, self).__init__(name)
         self._logger = logging.getLogger(__name__)
@@ -71,16 +68,10 @@ class DatastoreImageScannerTaskRunner(TaskRunner):
             self._ds_image_scanner.set_unused_images(unused_images)
 
         except Exception as e:
-            self._logger.exception("Exception caught by image "
-                                   "scanner thread, %s, ds_id : %s, state: %s, "
-                                   "active images: %d, unused images: %d"
-                                   % (e,
-                                      self._ds_image_scanner.datastore_id,
-                                      self._ds_image_scanner.get_state(),
-                                      len(self._ds_image_scanner.get_active_images()),
-                                      len(self._ds_image_scanner.get_unused_images())))
-            # Re-raise exception so it can be saved in
-            # the task_runner
+            self._logger.exception(
+                "Exception in image scanner thread, %s, ds_id : %s, state: %s, active images: %d, unused images: %d" %
+                (e, self._ds_image_scanner.datastore_id, self._ds_image_scanner.get_state(),
+                 len(self._ds_image_scanner.get_active_images()), len(self._ds_image_scanner.get_unused_images())))
             raise e
         finally:
             self._ds_image_scanner.set_state(DatastoreImageScanner.State.IDLE)
@@ -135,10 +126,8 @@ class DatastoreImageScannerTaskRunner(TaskRunner):
         return image_id, file_name_hint
 
     """
-    This method scans the image tree for the current
-    datastore starting from the directory "root"
-    (e.g.: /vmfs/volumes/<ds-id>/images). It looks for
-    unused images and creates a marker file in the
+    This method scans the image tree for the current datastore starting from the directory "root"
+    (e.g.: /vmfs/volumes/<ds-id>/images). It looks for unused images and creates a marker file in the
     directory containing the image.
     """
     def _scan_for_unused_images(self, image_scanner, datastore):
@@ -176,7 +165,7 @@ class DatastoreImageScannerTaskRunner(TaskRunner):
             return
 
         # If there is not already a marker file, create the file
-        marker_pathname = os.path.join(image_dir, self._image_manager.IMAGE_MARKER_FILE_NAME)
+        marker_pathname = os.path.join(image_dir, self._image_manager.UNUSED_IMAGE_MARKER_FILE_NAME)
         if not os.path.isfile(marker_pathname):
             # Write the content of _start_time to the marker file, any change occurred to
             # the image after _start_time, invalidates the image as a candidate for removal
@@ -214,33 +203,23 @@ class DatastoreImageScannerTaskRunner(TaskRunner):
             marker_file.write(content)
 
 
-"""
-An object of this class should be instantiated
-for each datastore to scan for unused images.
-The main object represents the Scanner. The Scanner
-can be IDLE when no scanning activity is running.
-When the scanner is activated, it creates a TaskRunner
-which executes the following two steps.
-
-Scanning requires two phases:
- (1) scan all the vms to see which images are currently
-     being used. This is achieved by reading a field
-     in the vmdk descriptor
- (2) scan all the images and check them against the
-     list of active images (from step 1), if an image
-     is not found in the list of currently used,
-     mark it with the current timestamp (a marker file
-     is created in the directory containing the image)
-
-The list of candidate images is also saved inside
-this object and can be retrieved when needed.
-The actual scan is executed by the TaskRunner.
-Two parameters can be specified to control the
-speed at which the task is executed.
-"""
-
-
 class DatastoreImageScanner:
+    """
+    An object of this class should be instantiated for each datastore to scan for unused images.
+    The main object represents the Scanner. The Scanner can be IDLE when no scanning activity is running.
+    When the scanner is activated, it creates a TaskRunner which executes the following two steps.
+
+    Scanning requires two phases:
+     (1) scan all the vms to see which images are currently being used. This is achieved by reading a field
+         in the vmdk descriptor
+     (2) scan all the images and check them against the list of active images (from step 1), if an image
+         is not found in the list of currently used, mark it with the current timestamp (a marker file
+         is created in the directory containing the image)
+
+    The list of candidate images is also saved inside this object and can be retrieved when needed.
+    The actual scan is executed by the TaskRunner. Two parameters can be specified to control the
+    speed at which the task is executed.
+    """
     DEFAULT_VM_SCAN_RATE = 10
     DEFAULT_IMAGE_MARK_RATE = 10
     DEFAULT_TIMEOUT = 7 * 24 * 60 * 60
@@ -249,10 +228,8 @@ class DatastoreImageScanner:
     FILE_NAME_HINT = "parentFileNameHint"
 
     """
-    The following class represents the state of
-    this image scanner:
-    IDLE, no active thread running
-    INIT, thread has been created but not running yet
+    The following class represents the state of this image scanner:
+    IDLE, no active thread running INIT, thread has been created but not running yet
     VM_SCAN, thread is running a VM scan (step 1)
     IMAGE_MARK, thread is running and IM mark (step 2)
     """
