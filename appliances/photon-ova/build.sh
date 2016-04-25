@@ -1,7 +1,7 @@
 #!/bin/bash -xe
 
-PHOTON_ISO_URL=${ISO_URL:="http://artifactory.ec.eng.vmware.com/artifactory/esxcloud-archives/userContent/bmp/photon-1.0-0185afd.iso"}
-PHOTON_ISO_SHA1=${ISO_SHA1:="6cc1c646677ff8b8b48570b75286e496c85790f8"}
+PHOTON_ISO_URL=${ISO_URL:="https://bintray.com/artifact/download/vmware/photon/photon-1.0-a6f0f63.iso"}
+PHOTON_ISO_SHA1=${ISO_SHA1:="aff58f10855db6f9f5fae62641816044dd459ffa"}
 
 packer build -force \
 	-var "photon_iso_url=$PHOTON_ISO_URL" \
