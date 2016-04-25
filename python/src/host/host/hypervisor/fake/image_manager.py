@@ -108,7 +108,7 @@ class FakeImageManager(ImageManager):
     def touch_image_timestamp(self, dsid, image_id):
         return
 
-    def get_timestamp_mod_time_from_dir(self, dirname, renamed=False):
+    def get_timestamp_mod_time_from_dir(self, dirname):
         return True, 0
 
     def create_image(self, image_id, datastore_id):
@@ -120,6 +120,8 @@ class FakeImageManager(ImageManager):
     def delete_tmp_dir(self, datastore_id, tmp_dir):
         return
 
-    def create_image_with_vm_disk(self, datastore_id, tmp_dir, image_id,
-                                  vm_disk_os_path):
+    def create_image_with_vm_disk(self, datastore_id, tmp_dir, image_id, vm_disk_os_path):
         return
+
+    def delete_image(self, datastore_id, image_id):
+        return True
