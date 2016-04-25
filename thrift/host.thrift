@@ -724,8 +724,6 @@ struct StartImageSweepRequest {
   3: optional i64 sweep_rate
   // Global time out, the scan operation is terminated if the timeout is exceeded, in seconds
   4: optional i64 timeout
-  // Grace period in seconds, used to adjust time comparison to compensate for clock drift among hosts
-  5: optional i64 grace_period
 
   99: optional tracing.TracingInfo tracing_info
 }

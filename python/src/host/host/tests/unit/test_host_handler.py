@@ -1065,14 +1065,12 @@ class HostHandlerTestCase(unittest.TestCase):
         assert_that(result.result is
                     StartImageOperationResultCode.DATASTORE_NOT_FOUND)
 
-    def _local_image_sweeper_start(self, image_list, timeout,
-                                   sweep_rate, grace_period):
+    def _local_image_sweeper_start(self, image_list, timeout, sweep_rate):
         assert_that(len(image_list) is 2)
         assert_that(image_list[0] is "image_id_1")
         assert_that(image_list[1] is "image_id_2")
         assert_that(timeout is 10)
         assert_that(sweep_rate is 100)
-        assert_that(grace_period is None)
 
     def test_stop_image_sweep(self):
         """Test start_image_scan against mock"""
