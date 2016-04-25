@@ -113,6 +113,16 @@ describe "migrate finalize", upgrade: true do
   end
 
   describe "#old plane state" do
+    def self.get_service_map(uri)
+      source_cloud_store =  EsxCloud::Dcp::CloudStore::CloudStoreClient.connect_to_endpoint(uri.host, nil)
+      json = source_cloud_store.get "/"
+      result = {}
+      json["documentLinks"].map do |item|
+        result[item] = item
+      end
+      result
+    end
+
     def self.get_upgrade_cloudstore_map
       uri = URI.parse(EsxCloud::TestHelpers.get_upgrade_source_address)
       map = self.get_service_map uri
