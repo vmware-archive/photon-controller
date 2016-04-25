@@ -16,27 +16,11 @@
   "provisioners": [
     {
       "type": "shell",
-      "inline": "wget -nv {{ user `dnsmasq_url` }} -O /usr/local/bin/dnsmasq && chmod +x /usr/local/bin/dnsmasq"
+      "inline": "mkdir -p /usr/local/sbin && wget -nv {{ user `dnsmasq_url` }} -O /usr/local/sbin/dnsmasq && chmod +x /usr/local/sbin/dnsmasq"
     },
     {
       "type": "shell",
       "inline": "wget -nv {{ user `dnsmasq_dhcp_release_url` }} -O /usr/local/bin/dhcp_release && chmod +x /usr/local/bin/dhcp_release"
-    },
-    {
-      "type": "shell",
-      "inline": "sed -i 's/*/enp0s3/' /etc/systemd/network/10-dhcp-en.network"
-    },
-    {
-      "type": "shell",
-      "inline": "sed -i 's/#UseDNS.*/UseDNS no/g' /etc/ssh/sshd_config"
-    },
-    {
-      "type": "shell",
-      "inline": "systemctl restart systemd-networkd && systemctl restart sshd"
-    },
-    {
-      "type": "shell",
-      "inline": "rm -rf /tmp/* && rm -rf /root/*"
     },
     {
       "type": "shell",
