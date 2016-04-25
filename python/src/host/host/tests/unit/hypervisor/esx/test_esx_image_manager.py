@@ -222,12 +222,10 @@ class TestEsxImageManager(unittest.TestCase):
     @patch.object(EsxImageManager, "_get_datastore_type",
                   return_value=DatastoreType.EXT3)
     @patch.object(EsxImageManager, "_create_image_timestamp_file")
-    @patch.object(EsxImageManager, "_delete_renamed_image_timestamp_file")
     @patch("host.hypervisor.esx.image_manager.FileBackedLock")
     def test_validate_existing_image(self,
                                      create,
                                      _flock,
-                                     _delete_renamed_timestamp_file,
                                      _create_timestamp_file,
                                      _get_ds_type,
                                      _path_exists):
@@ -238,10 +236,8 @@ class TestEsxImageManager(unittest.TestCase):
 
         if create:
             _create_timestamp_file.assert_called_once_with(_disk_folder)
-            _delete_renamed_timestamp_file.assert_called_once()
         else:
             assert not _create_timestamp_file.called
-            assert not _delete_renamed_timestamp_file.called
 
     def _local_os_path_exists(self, pathname):
         if not self._create_image_timestamp_file:
@@ -273,7 +269,7 @@ class TestEsxImageManager(unittest.TestCase):
         self.assertTrue(tmp_image_path.startswith(prefix))
 
     @patch.object(EsxImageManager, "_move_image")
-    @patch.object(EsxImageManager, "_create_image_timestamp_file_from_ids")
+    @patch.object(EsxImageManager, "_create_image_timestamp_file")
     @patch("os.path.exists")
     def test_finalize_image(self, _exists, _create_timestamp, move_image):
 
@@ -281,7 +277,7 @@ class TestEsxImageManager(unittest.TestCase):
         _exists.side_effect = ([True])
         self.image_manager.finalize_image("ds1", "[] /vmfs/volumes/ds1/foo", "img_1")
         move_image.assert_called_once_with('img_1', 'ds1', '/vmfs/volumes/ds1/foo')
-        _create_timestamp.assert_called_once_with("ds1", "img_1")
+        _create_timestamp.assert_called_once_with("/vmfs/volumes/ds1/image_img_1")
 
     @patch.object(EsxImageManager, "finalize_image")
     @patch.object(VimClient, "copy_disk")

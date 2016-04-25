@@ -157,7 +157,7 @@ class ImageManager(object):
         pass
 
     @abc.abstractmethod
-    def get_timestamp_mod_time_from_dir(self, dirname, renamed=False):
+    def get_timestamp_mod_time_from_dir(self, dirname):
         """
         :param dirname:
         :return: a boolean and the mod time of timestamp file
@@ -205,6 +205,12 @@ class ImageManager(object):
                                   vm_disk_os_path):
         """ Fills a temp image directory with a disk from a VM,
             then installs directory in the shared image folder.
+        """
+        pass
+
+    @abc.abstractmethod
+    def delete_image(self, datastore_id, image_id, grace_period):
+        """Delete image
         """
         pass
 
