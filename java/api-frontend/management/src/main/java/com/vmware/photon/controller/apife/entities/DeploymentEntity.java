@@ -58,14 +58,6 @@ public class DeploymentEntity extends BaseEntity {
 
   private List<String> oauthSecurityGroups;
 
-  private boolean virtualNetworkEnabled;
-
-  private String networkManagerAddress;
-
-  private String networkManagerUsername;
-
-  private String networkManagerPassword;
-
   private String ntpEndpoint;
 
   private Set<String> imageDatastores;
@@ -210,38 +202,6 @@ public class DeploymentEntity extends BaseEntity {
     this.oauthSecurityGroups = oauthSecurityGroups;
   }
 
-  public boolean getVirtualNetworkEnabled() {
-    return virtualNetworkEnabled;
-  }
-
-  public void setVirtualNetworkEnabled(boolean virtualNetworkEnabled) {
-    this.virtualNetworkEnabled = virtualNetworkEnabled;
-  }
-
-  public String getNetworkManagerAddress() {
-    return networkManagerAddress;
-  }
-
-  public void setNetworkManagerAddress(String networkManagerAddress) {
-    this.networkManagerAddress = networkManagerAddress;
-  }
-
-  public String getNetworkManagerUsername() {
-    return networkManagerUsername;
-  }
-
-  public void setNetworkManagerUsername(String networkManagerUsername) {
-    this.networkManagerUsername = networkManagerUsername;
-  }
-
-  public String getNetworkManagerPassword() {
-    return networkManagerPassword;
-  }
-
-  public void setNetworkManagerPassword(String networkManagerPassword) {
-    this.networkManagerPassword = networkManagerPassword;
-  }
-
   public String getNtpEndpoint() {
     return this.ntpEndpoint;
   }
@@ -322,10 +282,6 @@ public class DeploymentEntity extends BaseEntity {
         && Objects.equals(this.getOauthUsername(), other.getOauthUsername())
         && Objects.equals(this.getOauthPassword(), other.getOauthPassword())
         && ListUtils.isEqualList(this.getOauthSecurityGroups(), other.getOauthSecurityGroups())
-        && Objects.equals(this.getVirtualNetworkEnabled(), other.getVirtualNetworkEnabled())
-        && Objects.equals(this.getNetworkManagerAddress(), other.getNetworkManagerAddress())
-        && Objects.equals(this.getNetworkManagerUsername(), other.getNetworkManagerUsername())
-        && Objects.equals(this.getNetworkManagerPassword(), other.getNetworkManagerPassword())
         && Objects.equals(this.getNtpEndpoint(), other.getNtpEndpoint())
         && Objects.equals(this.getImageDatastores(), other.getImageDatastores())
         && Objects.equals(this.getUseImageDatastoreForVms(), other.getUseImageDatastoreForVms())
@@ -352,10 +308,6 @@ public class DeploymentEntity extends BaseEntity {
         .add("oauthUsername", this.getOauthUsername())
         .add("oauthPassword", this.getOauthPassword())
         .add("oauthSecurityGroups", StringUtils.join(this.getOauthSecurityGroups(), ','))
-        .add("virtualNetworkEnabled", this.getVirtualNetworkEnabled())
-        .add("networkManagerAddress", this.getNetworkManagerAddress())
-        .add("networkManagerUsername", this.getNetworkManagerUsername())
-        .add("networkManagerPassword", this.getNetworkManagerPassword())
         .add("ntpEndpoint", this.getNtpEndpoint())
         .add("imageDatastores", StringUtils.join(this.getImageDatastores(), ','))
         .add("useImageDatastoreForVms", this.getUseImageDatastoreForVms())

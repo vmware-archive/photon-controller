@@ -62,9 +62,6 @@ public class DeploymentEntityTest {
       entity.setOauthUsername("username");
       entity.setOauthPassword("password");
       entity.setOauthSecurityGroups(Arrays.asList(new String[]{"authGroup1, authGroup2"}));
-      entity.setNetworkManagerAddress("1.2.3.4");
-      entity.setNetworkManagerUsername("networkManagerUsername");
-      entity.setNetworkManagerPassword("networkManagerPassword");
       entity.setNtpEndpoint("http://ntp");
       entity.setImageDatastores(Collections.singleton("datastore1"));
       entity.setUseImageDatastoreForVms(true);
@@ -81,9 +78,6 @@ public class DeploymentEntityTest {
       assertThat(entity.getOauthUsername(), is("username"));
       assertThat(entity.getOauthPassword(), is("password"));
       assertThat(entity.getOauthSecurityGroups(), is(Arrays.asList(new String[]{"authGroup1, authGroup2"})));
-      assertThat(entity.getNetworkManagerAddress(), is("1.2.3.4"));
-      assertThat(entity.getNetworkManagerUsername(), is("networkManagerUsername"));
-      assertThat(entity.getNetworkManagerPassword(), is("networkManagerPassword"));
       assertThat(entity.getNtpEndpoint(), is("http://ntp"));
       Assert.assertTrue(entity.getImageDatastores().contains("datastore1"));
       assertThat(entity.getUseImageDatastoreForVms(), is(true));
@@ -111,9 +105,6 @@ public class DeploymentEntityTest {
       entity.setOauthUsername("u");
       entity.setOauthPassword("p");
       entity.setOauthSecurityGroups(Arrays.asList(new String[]{"adminGroup1", "adminGroup2"}));
-      entity.setNetworkManagerAddress("1.2.3.4");
-      entity.setNetworkManagerUsername("networkManagerUsername");
-      entity.setNetworkManagerPassword("networkManagerPassword");
       entity.setNtpEndpoint("http://ntp");
       entity.setImageDatastores(Collections.singleton("datastore1"));
       entity.setUseImageDatastoreForVms(true);

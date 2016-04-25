@@ -14,7 +14,6 @@
 package com.vmware.photon.controller.api;
 
 import com.vmware.photon.controller.api.builders.AuthConfigurationSpecBuilder;
-import com.vmware.photon.controller.api.builders.NetworkConfigurationCreateSpecBuilder;
 import com.vmware.photon.controller.api.builders.StatsInfoBuilder;
 import com.vmware.photon.controller.api.helpers.JsonHelpers;
 import com.vmware.photon.controller.api.helpers.Validator;
@@ -48,13 +47,6 @@ public class DeploymentCreateSpecTest {
 
   private AuthConfigurationSpec disabledAuthInfo = new AuthConfigurationSpecBuilder()
       .enabled(false)
-      .build();
-
-  private NetworkConfigurationCreateSpec networkConfiguration = new NetworkConfigurationCreateSpecBuilder()
-      .virtualNetworkEnabled(true)
-      .networkManagerAddress("1.2.3.4")
-      .networkManagerUsername("networkManagerUsername")
-      .networkManagerPassword("networkManagerPassword")
       .build();
 
   private StatsInfo enabledStatsInfo = new StatsInfoBuilder()
@@ -112,7 +104,6 @@ public class DeploymentCreateSpecTest {
     spec.setNtpEndpoint(ntpEndpoint);
     spec.setStats(stats);
     spec.setAuth(authInfo);
-    spec.setNetworkConfiguration(networkConfiguration);
 
     return spec;
   }
