@@ -22,7 +22,6 @@ from mock import patch
 from mock import call
 from nose_parameterized import parameterized
 from nose.tools import raises
-from pyVmomi import vim
 
 from common import file_util
 from common import services
@@ -122,14 +121,14 @@ class TestEsxImageManager(unittest.TestCase):
     @patch("os.path.exists")
     @patch("shutil.copy")
     @patch.object(VimClient, "move_file")
-    @patch.object(EsxImageManager, "_manage_disk")
+    @patch.object(VimClient, "copy_disk")
     @patch.object(EsxImageManager, "_get_datastore_type", return_value=DatastoreType.EXT3)
     @patch.object(EsxImageManager, "_check_image_repair", return_value=False)
     @patch.object(EsxImageManager, "check_and_validate_image", return_value=False)
     @patch.object(EsxImageManager, "_create_image_timestamp_file")
     @patch("host.hypervisor.esx.image_manager.FileBackedLock")
     def test_copy_image(self, _flock, _create_image_timestamp, check_image, _check_image_repair,
-                        _get_ds_type, _manage_disk, _mv_dir, _copy, _exists, _uuid, _wait_for_task):
+                        _get_ds_type, _copy_disk, _mv_dir, _copy, _exists, _uuid, _wait_for_task):
         _exists.side_effect = (True,  # tmp_dir exists
                                True,  # dest image vmdk missing
                                True)  # source meta file present
@@ -138,80 +137,53 @@ class TestEsxImageManager(unittest.TestCase):
 
         os_path_prefix1 = '/vmfs/volumes/ds1'
         os_path_prefix2 = '/vmfs/volumes/ds2'
-        ds_tmp_path_prefix = '[] /vmfs/volumes/ds2'
 
         assert_that(_copy.call_count, equal_to(1))
         _copy.assert_has_calls([
             call('%s/image_foo/foo.%s' % (os_path_prefix1, METADATA_FILE_EXT),
-                 '/vmfs/volumes/ds2/tmp_image_fake_id/bar.%s' %
-                 METADATA_FILE_EXT),
-        ])
+                 '/vmfs/volumes/ds2/tmp_image_fake_id/bar.%s' % METADATA_FILE_EXT), ])
 
         ds_path_prefix1 = '[] ' + os_path_prefix1
 
-        expected_tmp_disk_ds_path = '%s/tmp_image_fake_id/bar.vmdk' % (ds_tmp_path_prefix)
+        expected_tmp_disk_ds_path = '%s/tmp_image_fake_id/bar.vmdk' % (os_path_prefix2)
+        _copy_disk.assert_called_once_with('%s/image_foo/foo.vmdk' % ds_path_prefix1, expected_tmp_disk_ds_path)
+        _mv_dir.assert_called_once_with('/vmfs/volumes/ds2/tmp_image_fake_id', '%s/image_bar' % os_path_prefix2)
 
-        _vd_spec = _manage_disk.call_args_list[0][1]['destSpec']
-
-        self.assertEqual("thin", _vd_spec.diskType)
-        self.assertEqual("lsiLogic", _vd_spec.adapterType)
-
-        copy_call = call(vim.VirtualDiskManager.CopyVirtualDisk_Task,
-                         sourceName='%s/image_foo/foo.vmdk' % ds_path_prefix1,
-                         destName=expected_tmp_disk_ds_path,
-                         destSpec=_vd_spec)
-        expected_vim_calls = [copy_call]
-        self.assertEqual(expected_vim_calls, _manage_disk.call_args_list)
-
-        _mv_dir.assert_called_once_with('/vmfs/volumes/ds2/tmp_image_fake_id',
-                                        '%s/image_bar' % os_path_prefix2)
-
-        _create_image_timestamp.assert_called_once_with(
-            "/vmfs/volumes/ds2/tmp_image_fake_id")
+        _create_image_timestamp.assert_called_once_with("/vmfs/volumes/ds2/tmp_image_fake_id")
 
     @patch("pysdk.task.WaitForTask")
     @patch("uuid.uuid4", return_value="fake_id")
     @patch("os.path.exists")
     @patch("os.makedirs")
     @patch("shutil.copy")
-    @patch.object(EsxImageManager, "_manage_disk")
+    @patch.object(VimClient, "copy_disk")
     @patch.object(EsxImageManager, "_get_datastore_type",
                   return_value=DatastoreType.EXT3)
     @patch.object(EsxImageManager, "check_image", return_value=False)
     @patch.object(EsxImageManager, "_create_image_timestamp_file")
     def test_create_tmp_image(self, _create_image_timestamp, check_image, _get_ds_type,
-                              _manage_disk, _copy, _makedirs, _exists, _uuid, _wait_for_task):
+                              _copy_disk, _copy, _makedirs, _exists, _uuid, _wait_for_task):
 
         # Common case is the same as the one covered by test_copy_image.
 
         # Check that things work when the src metadata file doesn't exist.
         _exists.side_effect = (False, False, True)
         ds_path_prefix1 = '[] /vmfs/volumes/ds1'
-        expected_tmp_disk_ds_path = \
-            "[] /vmfs/volumes/ds2/tmp_image_fake_id/bar.vmdk"
+        expected_tmp_disk_ds_path = "/vmfs/volumes/ds2/tmp_image_fake_id/bar.vmdk"
         self.image_manager._copy_to_tmp_image("ds1", "foo", "ds2", "bar")
         # Verify that we don't copy the metadata file.
         self.assertFalse(_copy.called)
 
         # Verify that we copy the disk correctly
-        _vd_spec = _manage_disk.call_args_list[0][1]['destSpec']
-
-        self.assertEqual("thin", _vd_spec.diskType)
-        self.assertEqual("lsiLogic", _vd_spec.adapterType)
-        copy_call = call(vim.VirtualDiskManager.CopyVirtualDisk_Task,
-                         sourceName='%s/image_foo/foo.vmdk' % ds_path_prefix1,
-                         destName=expected_tmp_disk_ds_path,
-                         destSpec=_vd_spec)
-        expected_vim_calls = [copy_call]
-        self.assertEqual(expected_vim_calls, _manage_disk.call_args_list)
+        _copy_disk.assert_called_once_with('%s/image_foo/foo.vmdk' % ds_path_prefix1, expected_tmp_disk_ds_path)
 
         # check that we return an IO error if the copy of metadata fails.
         _copy.side_effect = IOError
         _exists.side_effect = (True, True)
-        _manage_disk.reset_mock()
+        _copy_disk.reset_mock()
         self.assertRaises(IOError, self.image_manager._copy_to_tmp_image,
                           "ds1", "foo", "ds2", "bar")
-        self.assertFalse(_manage_disk.called)
+        self.assertFalse(_copy_disk.called)
         _create_image_timestamp.assert_called_once_with(
             "/vmfs/volumes/ds2/tmp_image_fake_id")
 
@@ -312,27 +284,16 @@ class TestEsxImageManager(unittest.TestCase):
         _create_timestamp.assert_called_once_with("ds1", "img_1")
 
     @patch.object(EsxImageManager, "finalize_image")
-    @patch.object(EsxImageManager, "_manage_disk")
+    @patch.object(VimClient, "copy_disk")
     @patch("os.path.exists", return_value=True)
-    def test_create_image_with_vm_disk(self, _exists, _manage_disk,
-                                       _create_image):
+    def test_create_image_with_vm_disk(self, _exists, _copy_disk, _create_image):
         vm_disk_path = "/vmfs/volumes/dsname/vms/ab/cd.vmdk"
         self.image_manager.create_image_with_vm_disk(
             "ds1", "[] /vmfs/volumes/ds1/foo", "img_1", vm_disk_path)
 
         # Verify that we copy the disk correctly
-        expected_tmp_disk_ds_path = \
-            "[] /vmfs/volumes/ds1/foo/img_1.vmdk"
-        _vd_spec = _manage_disk.call_args_list[0][1]['destSpec']
-        self.assertEqual("thin", _vd_spec.diskType)
-        self.assertEqual("lsiLogic", _vd_spec.adapterType)
-        copy_call = call(vim.VirtualDiskManager.CopyVirtualDisk_Task,
-                         sourceName='[] %s' % vm_disk_path,
-                         destName=expected_tmp_disk_ds_path,
-                         destSpec=_vd_spec)
-        expected_vim_calls = [copy_call]
-        self.assertEqual(expected_vim_calls, _manage_disk.call_args_list)
-
+        expected_tmp_disk_ds_path = "/vmfs/volumes/ds1/foo/img_1.vmdk"
+        _copy_disk.assert_called_once_with(vm_disk_path, expected_tmp_disk_ds_path)
         _create_image.assert_called_once_with("ds1", "[] /vmfs/volumes/ds1/foo", "img_1")
 
     @patch("shutil.rmtree")
