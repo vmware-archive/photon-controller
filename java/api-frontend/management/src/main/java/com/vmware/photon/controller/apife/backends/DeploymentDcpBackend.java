@@ -21,7 +21,6 @@ import com.vmware.photon.controller.api.Deployment;
 import com.vmware.photon.controller.api.DeploymentCreateSpec;
 import com.vmware.photon.controller.api.DeploymentState;
 import com.vmware.photon.controller.api.MigrationStatus;
-import com.vmware.photon.controller.api.NetworkConfiguration;
 import com.vmware.photon.controller.api.Operation;
 import com.vmware.photon.controller.api.StatsInfo;
 import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
@@ -262,13 +261,6 @@ public class DeploymentDcpBackend implements DeploymentBackend {
     authInfo.setSecurityGroups(deploymentEntity.getOauthSecurityGroups());
     deployment.setAuth(authInfo);
 
-    NetworkConfiguration networkConfiguration = new NetworkConfiguration();
-    networkConfiguration.setVirtualNetworkEnabled(deploymentEntity.getVirtualNetworkEnabled());
-    networkConfiguration.setNetworkManagerAddress(deploymentEntity.getNetworkManagerAddress());
-    networkConfiguration.setNetworkManagerUsername(deploymentEntity.getNetworkManagerUsername());
-    networkConfiguration.setNetworkManagerPassword(deploymentEntity.getNetworkManagerPassword());
-    deployment.setNetworkConfiguration(networkConfiguration);
-
     deployment.setLoadBalancerEnabled(deploymentEntity.getLoadBalancerEnabled());
     deployment.setLoadBalancerAddress(deploymentEntity.getLoadBalancerAddress());
     deployment.setMigrationStatus(generateMigrationStatus(deploymentEntity));
@@ -459,13 +451,6 @@ public class DeploymentDcpBackend implements DeploymentBackend {
         }
       }
     }
-
-    if (spec.getNetworkConfiguration() != null) {
-      deployment.virtualNetworkEnabled = spec.getNetworkConfiguration().getVirtualNetworkEnabled();
-      deployment.networkManagerAddress = spec.getNetworkConfiguration().getNetworkManagerAddress();
-      deployment.networkManagerUsername = spec.getNetworkConfiguration().getNetworkManagerUsername();
-      deployment.networkManagerPassword = spec.getNetworkConfiguration().getNetworkManagerPassword();
-    }
     deployment.loadBalancerEnabled = spec.getLoadBalancerEnabled();
 
     com.vmware.xenon.common.Operation operation =
@@ -496,10 +481,6 @@ public class DeploymentDcpBackend implements DeploymentBackend {
     entity.setOauthUsername(deployment.oAuthUserName);
     entity.setOauthPassword(deployment.oAuthPassword);
     entity.setOauthSecurityGroups(deployment.oAuthSecurityGroups);
-    entity.setVirtualNetworkEnabled(deployment.virtualNetworkEnabled);
-    entity.setNetworkManagerAddress(deployment.networkManagerAddress);
-    entity.setNetworkManagerUsername(deployment.networkManagerUsername);
-    entity.setNetworkManagerPassword(deployment.networkManagerPassword);
     entity.setLoadBalancerEnabled(deployment.loadBalancerEnabled);
     entity.setLoadBalancerAddress(deployment.loadBalancerAddress);
     entity.setMigrationProgress(deployment.dataMigrationProgress);

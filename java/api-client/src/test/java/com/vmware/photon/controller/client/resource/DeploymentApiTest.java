@@ -15,7 +15,6 @@ package com.vmware.photon.controller.client.resource;
 
 import com.vmware.photon.controller.api.AuthInfo;
 import com.vmware.photon.controller.api.Deployment;
-import com.vmware.photon.controller.api.NetworkConfiguration;
 import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.Vm;
@@ -242,7 +241,6 @@ public class DeploymentApiTest extends ApiTestBase {
     Deployment deployment = new Deployment();
     deployment.setId("deployment1");
     deployment.setAuth(new AuthInfo());
-    deployment.setNetworkConfiguration(new NetworkConfiguration());
     return deployment;
   }
 
