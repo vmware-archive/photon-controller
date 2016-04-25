@@ -70,7 +70,10 @@ public class ImageReplicator {
       ReplicateImageResponse response = new ReplicateImageResponse(
           new ReplicateImageResult(ReplicateImageResultCode.OK));
 
+      // First, trigger the seeding of the image to all image datastores
       String operationId = triggerImageSeedingProcess(request, request.getDatastore());
+
+      // Next, trigger the seeding of the image to all local datastores if appropriate
       switch (request.getReplicationType()) {
         case ON_DEMAND:
           break;
