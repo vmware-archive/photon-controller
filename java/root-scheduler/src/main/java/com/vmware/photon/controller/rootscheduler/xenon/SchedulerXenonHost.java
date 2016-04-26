@@ -61,6 +61,7 @@ public class SchedulerXenonHost
 
   public static final Class[] FACTORY_SERVICES = {
       RootNamespaceService.class,
+      StatusService.class
   };
 
   @Inject
