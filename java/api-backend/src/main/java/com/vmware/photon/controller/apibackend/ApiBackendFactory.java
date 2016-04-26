@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.apibackend;
 
+import com.vmware.photon.controller.apibackend.tasks.ConfigureRoutingTaskService;
 import com.vmware.photon.controller.apibackend.tasks.CreateLogicalRouterTaskService;
 import com.vmware.photon.controller.apibackend.tasks.CreateLogicalSwitchTaskService;
 import com.vmware.photon.controller.apibackend.workflows.CreateVirtualNetworkWorkflowService;
@@ -36,6 +37,7 @@ public class ApiBackendFactory {
       // tasks
       CreateLogicalRouterTaskService.class, CreateLogicalRouterTaskService::createFactory,
       CreateLogicalSwitchTaskService.class, CreateLogicalSwitchTaskService::createFactory,
+      ConfigureRoutingTaskService.class, ConfigureRoutingTaskService::createFactory,
 
       // workflows
       CreateVirtualNetworkWorkflowService.class, CreateVirtualNetworkWorkflowService::createFactory
