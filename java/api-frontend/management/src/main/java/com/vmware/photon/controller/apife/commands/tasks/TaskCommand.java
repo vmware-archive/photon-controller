@@ -19,6 +19,7 @@ import com.vmware.photon.controller.api.common.exceptions.external.TaskNotFoundE
 import com.vmware.photon.controller.apife.backends.EntityLockBackend;
 import com.vmware.photon.controller.apife.backends.TaskBackend;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
+import com.vmware.photon.controller.apife.backends.clients.SchedulerXenonRestClient;
 import com.vmware.photon.controller.apife.commands.BaseCommand;
 import com.vmware.photon.controller.apife.commands.steps.StepCommand;
 import com.vmware.photon.controller.apife.commands.steps.StepCommandFactory;
@@ -34,7 +35,6 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
 import com.vmware.photon.controller.common.clients.DeployerClient;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HousekeeperClient;
-import com.vmware.photon.controller.common.clients.RootSchedulerClient;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
@@ -69,7 +69,7 @@ public class TaskCommand extends BaseCommand {
   private Resource resource;
   private String reservation;
   private ApiFeXenonRestClient dcpClient;
-  private RootSchedulerClient rootSchedulerClient;
+  private SchedulerXenonRestClient schedulerXenonRestClient;
   private HostClient hostClient;
   private HousekeeperClient housekeeperClient;
   private DeployerClient deployerClient;
@@ -77,7 +77,7 @@ public class TaskCommand extends BaseCommand {
 
   @Inject
   public TaskCommand(ApiFeXenonRestClient dcpClient,
-                     RootSchedulerClient rootSchedulerClient,
+                     SchedulerXenonRestClient schedulerXenonRestClient,
                      HostClient hostClient,
                      HousekeeperClient housekeeperClient,
                      DeployerClient deployerClient,
@@ -86,7 +86,7 @@ public class TaskCommand extends BaseCommand {
     super(task.getId());
     this.task = checkNotNull(task);
     this.dcpClient = dcpClient;
-    this.rootSchedulerClient = checkNotNull(rootSchedulerClient);
+    this.schedulerXenonRestClient = schedulerXenonRestClient;
     this.hostClient = checkNotNull(hostClient);
     this.housekeeperClient = checkNotNull(housekeeperClient);
     this.deployerClient = deployerClient;
@@ -190,8 +190,8 @@ public class TaskCommand extends BaseCommand {
     return checkNotNull(hostClient);
   }
 
-  public RootSchedulerClient getRootSchedulerClient() {
-    return checkNotNull(rootSchedulerClient);
+  public SchedulerXenonRestClient getSchedulerXenonRestClient() {
+    return schedulerXenonRestClient;
   }
 
   public HousekeeperClient getHousekeeperClient() {

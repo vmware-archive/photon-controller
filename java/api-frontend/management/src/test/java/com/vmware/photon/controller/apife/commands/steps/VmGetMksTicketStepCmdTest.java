@@ -17,6 +17,7 @@ import com.vmware.photon.controller.apife.backends.EntityLockBackend;
 import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.backends.TaskBackend;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
+import com.vmware.photon.controller.apife.backends.clients.SchedulerXenonRestClient;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
@@ -26,7 +27,6 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
 import com.vmware.photon.controller.common.clients.DeployerClient;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HousekeeperClient;
-import com.vmware.photon.controller.common.clients.RootSchedulerClient;
 import com.vmware.photon.controller.common.clients.exceptions.SystemErrorException;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
 import com.vmware.photon.controller.host.gen.MksTicketResponse;
@@ -64,7 +64,7 @@ public class VmGetMksTicketStepCmdTest extends PowerMockTestCase {
   private ApiFeXenonRestClient dcpClient;
 
   @Mock
-  private RootSchedulerClient rootSchedulerClient;
+  private SchedulerXenonRestClient schedulerXenonRestClient;
 
   @Mock
   private TaskEntity task;
@@ -108,10 +108,10 @@ public class VmGetMksTicketStepCmdTest extends PowerMockTestCase {
     Datastore datastore = new Datastore();
     datastore.setId("datastore-id");
 
-    taskCommand = spy(new TaskCommand(dcpClient,
-        rootSchedulerClient, hostClient, housekeeperClient, deployerClient, entityLockBackend, task));
+    taskCommand = spy(new TaskCommand(dcpClient, schedulerXenonRestClient, hostClient,
+        housekeeperClient, deployerClient, entityLockBackend, task));
     when(taskCommand.getHostClient()).thenReturn(hostClient);
-    when(taskCommand.getRootSchedulerClient()).thenReturn(rootSchedulerClient);
+    when(taskCommand.getSchedulerXenonRestClient()).thenReturn(schedulerXenonRestClient);
     HostService.State hostServiceState = new HostService.State();
     hostServiceState.hostAddress = "host-ip";
     when(hostServiceOp.getBody(Matchers.any())).thenReturn(hostServiceState);
