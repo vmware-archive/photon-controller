@@ -64,6 +64,7 @@ public class SchedulerXenonHost
   @SuppressWarnings("rawtypes")
   public static final Class[] FACTORY_SERVICES = {
       RootNamespaceService.class,
+      StatusService.class
   };
 
   @Inject

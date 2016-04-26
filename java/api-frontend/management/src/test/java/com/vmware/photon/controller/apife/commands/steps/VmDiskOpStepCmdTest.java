@@ -25,6 +25,7 @@ import com.vmware.photon.controller.apife.backends.EntityLockBackend;
 import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.backends.VmBackend;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
+import com.vmware.photon.controller.apife.backends.clients.SchedulerXenonRestClient;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.AttachedDiskEntity;
 import com.vmware.photon.controller.apife.entities.FlavorEntity;
@@ -37,7 +38,6 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
 import com.vmware.photon.controller.common.clients.DeployerClient;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HousekeeperClient;
-import com.vmware.photon.controller.common.clients.RootSchedulerClient;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
 import com.vmware.photon.controller.common.clients.exceptions.VmNotFoundException;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
@@ -136,7 +136,7 @@ public class VmDiskOpStepCmdTest extends PowerMockTestCase {
   @Mock
   ApiFeXenonRestClient dcpClient;
   @Mock
-  private RootSchedulerClient rootSchedulerClient;
+  private SchedulerXenonRestClient schedulerXenonRestClient;
   @Mock
   private HostClient hostClient;
   @Mock
@@ -235,10 +235,10 @@ public class VmDiskOpStepCmdTest extends PowerMockTestCase {
     when(diskBackend.find(PersistentDisk.KIND, diskId1)).thenReturn(disk1);
     when(diskBackend.find(PersistentDisk.KIND, diskId2)).thenReturn(disk2);
 
-    taskCommand = spy(new TaskCommand(dcpClient,
-        rootSchedulerClient, hostClient, housekeeperClient, deployerClient, entityLockBackend, task));
+    taskCommand = spy(new TaskCommand(dcpClient, schedulerXenonRestClient, hostClient,
+        housekeeperClient, deployerClient, entityLockBackend, task));
     when(taskCommand.getHostClient()).thenReturn(hostClient);
-    when(taskCommand.getRootSchedulerClient()).thenReturn(rootSchedulerClient);
+    when(taskCommand.getSchedulerXenonRestClient()).thenReturn(schedulerXenonRestClient);
     when(vmBackend.findById(vmId)).thenReturn(vm);
     when(diskBackend.find(PersistentDisk.KIND, diskId1)).thenReturn(disk1);
     when(diskBackend.find(PersistentDisk.KIND, diskId2)).thenReturn(disk2);
