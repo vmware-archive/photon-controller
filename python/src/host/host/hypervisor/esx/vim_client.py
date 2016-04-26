@@ -22,9 +22,6 @@ import threading
 import time
 import weakref
 
-from datetime import datetime
-from datetime import timedelta
-
 from common.blocking_dict import BlockingDict
 from common.cache import cached
 from common.lock import lock_with
@@ -97,13 +94,12 @@ class VimClient(object):
 
     def __init__(self, host="localhost", user=None, pwd=None,
                  wait_timeout=10, min_interval=1, auto_sync=True,
-                 ticket=None, stats_interval=600, errback=None):
+                 ticket=None, errback=None):
         self._logger = logging.getLogger(__name__)
         self.host = host
         self.current_version = None
         self._vm_cache = {}
         self._vm_name_to_ref = BlockingDict()
-        self._host_stats = {}
         self._ds_name_properties = {}
         self._vm_cache_lock = threading.RLock()
         self._host_cache_lock = threading.Lock()
@@ -114,7 +110,6 @@ class VimClient(object):
         self.min_interval = min_interval
         self.sync_thread = None
         self.wait_timeout = wait_timeout
-        self.stats_interval = stats_interval
         self.username = None
         self.password = None
         self.auto_sync = auto_sync
@@ -133,9 +128,6 @@ class VimClient(object):
         self._content = self._si.RetrieveContent()
 
         if auto_sync:
-            # Initialize host stat counters.
-            self.initialize_host_counters()
-
             # Initialize vm cache
             self.update_cache()
 
@@ -154,77 +146,6 @@ class VimClient(object):
     @lock_with("_vm_cache_lock")
     def remove_update_listener(self, listener):
         self.update_listeners.discard(listener)
-
-    def initialize_host_counters(self):
-        """ Initializes the the list of host perf counters that we are
-            interested in. The perf counters are specified in the form of
-            strings - <group>.<metric>. The ids for the counters are not well
-            defined values and the only way to get them is to read all the
-            counters and get the ids for the ones we are interested in.
-        """
-        # TODO(badhri): Should this be a config option?
-        host_counters = {
-            "mem.consumed": None,
-            "rescpu.actav1": None
-        }
-
-        self.id_to_counter_map = {}
-
-        # Initialize the perf counter ids.
-        for c in self.perf_manager.perfCounter:
-            counter = "%s.%s" % (c.groupInfo.key, c.nameInfo.key)
-            if counter in host_counters:
-                host_counters[counter] = c
-                self.id_to_counter_map[c.key] = counter
-
-        self.host_counters = [
-            vim.PerfMetricId(
-                counterId=_counter.key,
-                instance=""
-            )
-            for _counter in host_counters.values() if _counter
-        ]
-
-        # Samples are 20 seconds apart
-        self.stats_sample_interval = 20
-
-    def get_perf_manager_stats(self, time_delta=3600):
-        """ Returns the host statistics by querying the perf manager on the
-            host for the configured performance counters.
-
-        :param time_delta [int]: in seconds
-        """
-        # Get an time_delta worth of stats and summarize. These are
-        # stats are sampled by the performance manager every 20
-        # seconds. Hostd keeps 180 samples at the rate of 1 sample
-        # per 20 seconds, which results in samples that span an hour.
-        end_time = datetime.now()
-        start_time = end_time - timedelta(seconds=time_delta)
-        query_spec = [
-            vim.PerfQuerySpec(
-                entity=self.host_system,
-                intervalId=self.stats_sample_interval,
-                format='csv',
-                metricId=self.host_counters,
-                startTime=start_time,
-                endTime=end_time
-            )]
-        results = {}
-        stats = self.perf_manager.QueryPerf(query_spec)
-        if not stats:
-            return results
-
-        # Average the received stats. For now this implementation is only
-        # for consumed memory. If other stats are considered in future, the
-        # implementation might be per stat dependent.
-        for stat in stats:
-            values = stat.value
-            for value in values:
-                counter_id = value.id.counterId
-                counter_values = [int(i) for i in value.value.split(',')]
-                average = sum(counter_values) / len(counter_values)
-                results[self.id_to_counter_map[counter_id]] = average
-        return results
 
     def connect_ticket(self, host, ticket):
         if ticket:
@@ -911,10 +832,7 @@ class VimClient(object):
 
     def _start_syncing_cache(self):
         self._logger.info("Start vim client sync vm cache thread")
-        self.sync_thread = SyncVmCacheThread(self, self.wait_timeout,
-                                             self.min_interval,
-                                             self.stats_interval,
-                                             errback=self.errback)
+        self.sync_thread = SyncVmCacheThread(self, self.wait_timeout, self.min_interval, self.errback)
         self.sync_thread.start()
 
     def _stop_syncing_cache(self, wait=False):
@@ -935,19 +853,6 @@ class VimClient(object):
     def _task_counter_read(self):
         return self._task_counter
 
-    @hostd_error_handler
-    def update_hosts_stats(self):
-        stats = self.get_perf_manager_stats()
-        self._update_host_cache(stats)
-
-    @lock_with("_host_cache_lock")
-    def _update_host_cache(self, stats):
-        self._host_stats = copy.copy(stats)
-
-    @lock_with("_host_cache_lock")
-    def get_host_stats(self):
-        return copy.copy(self._host_stats)
-
     def set_large_page_support(self, disable=False):
         """Disables large page support on the ESX hypervisor
            This is done when the host memory is overcommitted.
@@ -967,8 +872,7 @@ class VimClient(object):
 class SyncVmCacheThread(threading.Thread):
     """ Periodically sync vm cache with remote esx server
     """
-    def __init__(self, vim_client, wait_timeout=10, min_interval=1,
-                 stats_interval=600, errback=None):
+    def __init__(self, vim_client, wait_timeout=10, min_interval=1, errback=None):
         super(SyncVmCacheThread, self).__init__()
         self._logger = logging.getLogger(__name__)
         self.setDaemon(True)
@@ -976,11 +880,9 @@ class SyncVmCacheThread(threading.Thread):
         self.vim_client = weakref.ref(vim_client)
         self.wait_timeout = wait_timeout
         self.min_interval = min_interval
-        self.stats_interval = stats_interval
         self.active = True
         self.fail_count = 0
         self.last_updated = time.time()
-        self.last_host_stat_updated = 0
 
     def run(self):
         while True:
@@ -995,9 +897,6 @@ class SyncVmCacheThread(threading.Thread):
 
             try:
                 client.update_cache(timeout=self.wait_timeout)
-                if self._host_stats_update():
-                    client.update_hosts_stats()
-                    self.last_host_stat_updated = time.time()
                 self._success_update()
                 self._wait_between_updates()
 
@@ -1035,11 +934,6 @@ class SyncVmCacheThread(threading.Thread):
         self._logger.info("Wait %d second(s) to retry update cache" %
                           wait_seconds)
         time.sleep(wait_seconds)
-
-    def _host_stats_update(self):
-        if time.time() - self.last_host_stat_updated > self.stats_interval:
-            return True
-        return False
 
 
 class AsyncWaitForTask(threading.Thread):

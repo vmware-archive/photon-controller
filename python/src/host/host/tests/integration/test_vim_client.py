@@ -266,23 +266,6 @@ class TestVimClient(unittest.TestCase):
         vim_client2 = VimClient(host=self.host, ticket=ticket)
         vim_client2.host_system
 
-    def test_host_stats(self):
-        """ Skip host stats test.
-        This test does not agree with the contract exposed from
-        the implementation.
-        Until the vim_client code be refactor/cleanup, disable this test for
-        now.
-        """
-        raise SkipTest()
-
-        self.vim_client.initialize_host_counters()
-        self.vim_client.update_hosts_stats()
-        stats = self.vim_client.get_host_stats()
-        assert_that(has_key('mem.consumed'))
-        assert_that(stats['mem.consumed'], greater_than(0))
-        assert_that(has_key('rescpu.actav1'))
-        assert_that(stats['rescpu.actav1'], greater_than(0))
-
     def _wait_vm_has_disk(self, vm_id, disk_num):
         """Wait until the vm has disk number of the vm becomes disk_num
         """
