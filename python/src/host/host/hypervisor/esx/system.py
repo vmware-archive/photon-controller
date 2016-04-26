@@ -108,6 +108,10 @@ class EsxSystem(System):
         host_stats = self._vim_client.get_host_stats()
         if 'mem.consumed' in host_stats:
             # Hostd has values in KB.
+            self._logger.debug("host_memory_usage: quick: %s, stats: %s, total: %s" %
+                               (self._vim_client.memory_usage_mb,
+                                host_stats['mem.consumed'] / 1024,
+                                self._vim_client.total_vmusable_memory_mb))
             return host_stats['mem.consumed'] / 1024
         return None
 
