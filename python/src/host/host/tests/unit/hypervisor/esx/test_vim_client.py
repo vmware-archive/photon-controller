@@ -71,13 +71,10 @@ class TestVimClient(unittest.TestCase):
         client.disconnect(wait=True)
         assert_that(update_mock.call_count, less_than(5))  # no crazy loop
 
-    @patch.object(VimClient, "update_hosts_stats")
     @patch.object(VimClient, "update_cache")
     @patch("pysdk.connect.Connect")
     @patch("time.sleep")
-    def test_update_fail_will_suicide(self, sleep_mock,
-                                      connect_mock,
-                                      update_mock, update_hosts_mock):
+    def test_update_fail_will_suicide(self, sleep_mock, connect_mock, update_mock):
         killed = threading.Event()
 
         def suicide():
@@ -223,14 +220,11 @@ class TestVimClient(unittest.TestCase):
         assert_that(vim_client.current_version, is_("3"))
         assert_that(len(vms), is_(0))
 
-    @patch.object(VimClient, "update_hosts_stats")
     @patch.object(VimClient, "update_cache")
     @patch.object(VimClient, "filter_spec")
     @patch("pysdk.connect.Connect")
     @patch("pysdk.connect.Disconnect")
-    def test_update_cache_in_thread(self, disconnect_mock, connect_mock,
-                                    spec_mock, update_mock,
-                                    update_host_mock):
+    def test_update_cache_in_thread(self, disconnect_mock, connect_mock, spec_mock, update_mock):
         vim_client = VimClient("esx.local", "root", "password",
                                min_interval=0, auto_sync=True)
         vim_client._property_collector.WaitForUpdatesEx.return_value = {}
@@ -240,8 +234,7 @@ class TestVimClient(unittest.TestCase):
         while update_mock.call_count < 5 and retry < 10:
             time.sleep(0.2)
             retry += 1
-        assert_that(retry, is_not(10), "VimClient.update_cache is not "
-                                       "called repeatedly")
+        assert_that(retry, is_not(10), "VimClient.update_cache is not called repeatedly")
         vim_client.disconnect(wait=True)
         assert_that(disconnect_mock.called, is_(True))
 
@@ -338,69 +331,39 @@ class TestVimClient(unittest.TestCase):
                           VimClient.acquire_credentials)
 
     @patch('host.hypervisor.esx.vim_client.VimClient._property_collector', new_callable=PropertyMock)
-    @patch('host.hypervisor.esx.vim_client.VimClient.perf_manager', new_callable=PropertyMock)
-    @patch("pyVmomi.vim.PerfQuerySpec")
-    @patch.object(VimClient, "_update_host_cache")
     @patch.object(VimClient, "update_cache")
     @patch.object(VimClient, "vm_filter_spec")
     @patch("pysdk.connect.Connect")
     @patch("pysdk.connect.Disconnect")
-    def test_update_host_cache_in_thread(self, disconnect_mock, connect_mock,
-                                         spec_mock, update_mock,
-                                         update_host_mock, query_spec_mock,
-                                         perf_manager_mock,
-                                         prop_collector_mock):
-
-        # Test Values.
-        counter = MagicMock()
-        counter.groupInfo.key = "mem"
-        counter.nameInfo.key = "consumed"
-        counter.key = 65613
-
-        n = 5
-        statValues = ','.join([str(x) for x in range(1, n+1)])
-        statAverage = sum(range(1, n+1)) / len(range(1, n+1))
-        stat = MagicMock()
-        stat.value = [MagicMock()]
-        stat.value[0].id.counterId = 65613
-        stat.value[0].value = statValues
+    def test_update_cache_in_thread(self, disconnect_mock, connect_mock, spec_mock,
+                                    update_mock, prop_collector_mock):
+        vm = vim.VirtualMachine("moid", None)
+        vm.kind = "enter"
+        vm.changeSet = {}
+        update = MagicMock()
+        update.filterSet = [MagicMock()]
+        update.filterSet[0].objectSet = [MagicMock()]
+        update.filterSet[0].objectSet[0] = vm
 
         # Mock the Vim APIs.
-        pc_return_mock = MagicMock({'WaitForUpdatesEx.return_value': {}})
-        summarize_stats = {'QueryPerf.return_value': [stat]}
-        pm_return_mock = MagicMock(perfCounter=[counter], **summarize_stats)
-
-        # Tie the mocked APIs with VimClient.
-        prop_collector_mock.return_value = pc_return_mock
-        perf_manager_mock.return_value = pm_return_mock
+        prop_collector_mock.WaitForUpdatesEx = MagicMock()
+        prop_collector_mock.WaitForUpdatesEx.return_value = update
 
         # Create VimClient.
-        vim_client = VimClient("esx.local", "root", "password",
-                               min_interval=0.1, auto_sync=True,
-                               stats_interval=0.2)
+        vim_client = VimClient("esx.local", "root", "password", min_interval=0.1, auto_sync=True)
 
         # Verify that the update mock is called a few times.
         retry = 0
         while update_mock.call_count < 5 and retry < 10:
             time.sleep(0.2)
             retry += 1
-        assert_that(retry, is_not(10), "VimClient.update_mock is not "
-                                       "called repeatedly")
+        assert_that(retry, is_not(10), "VimClient.update_mock is not called repeatedly")
 
         # Disconnect the client and stop the thread.
         vim_client.disconnect(wait=True)
         assert_that(disconnect_mock.called, is_(True))
 
-        # Verify that update_host_mock is called atleast once and is called
-        # less number of times than update_mock.
-        assert_that(update_host_mock.call_count, is_not(0),
-                    "VimClient.update_host_mock is not called repeatedly")
-        assert_that(update_host_mock.call_count,
-                    less_than(update_mock.call_count))
-
-        host_stats = update_host_mock.call_args_list
-        for host in host_stats:
-            assert_that(host[0][0]['mem.consumed'], equal_to(statAverage))
+        assert_that(update_mock.call_count, is_not(0), "VimClient.update_mock is not called")
 
 if __name__ == '__main__':
     unittest.main()
