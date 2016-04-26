@@ -263,59 +263,13 @@ class VimClient(object):
 
     @property
     @hostd_error_handler
-    def file_manager(self):
-        return self._content.fileManager
-
-    @property
-    @hostd_error_handler
-    def virtual_disk_manager(self):
-        return self._content.virtualDiskManager
-
-    @property
-    @hostd_error_handler
-    def task_manager(self):
-        return self._content.taskManager
-
-    @property
-    @hostd_error_handler
-    def vmotion_manager(self):
-        return host.GetVmotionManager(self._si)
-
-    @property
-    @hostd_error_handler
-    def vnic_manager(self):
-        return host.GetHostVirtualNicManager(self._si)
-
-    @property
-    @hostd_error_handler
-    def session_manager(self):
-        return self._content.sessionManager
-
-    @property
-    @hostd_error_handler
-    def property_collector(self):
+    def _property_collector(self):
         return self._content.propertyCollector
-
-    @property
-    @hostd_error_handler
-    def vmotion_ip(self):
-        return host.GetVMotionIP(self._si)
-
-    @property
-    @hostd_error_handler
-    def host_uuid(self):
-        return host.GetHostUuid(self._si)
-
-    @property
-    @hostd_error_handler
-    def nfc_service(self):
-        return vim.NfcService('ha-nfc-service', self._si._stub)
 
     @property
     @hostd_error_handler
     def root_resource_pool(self):
         """Get the root resource pool for this host.
-
         :rtype: vim.ResourcePool
         """
         return host.GetRootResourcePool(self._si)
@@ -325,7 +279,6 @@ class VimClient(object):
     @hostd_error_handler
     def vm_folder(self):
         """Get the default vm folder for this host.
-
         :rtype: vim.Folder
         """
         return invt.GetVmFolder(si=self._si)
@@ -342,21 +295,6 @@ class VimClient(object):
 
     @property
     @hostd_error_handler
-    def search_index(self):
-        """
-        Reference to the inventory search index.
-
-        :rtype: vim.SearchIndex
-        """
-        return self._content.searchIndex
-
-    @property
-    @hostd_error_handler
-    def physical_nics(self):
-        return self.host_system.config.network.pnic
-
-    @property
-    @hostd_error_handler
     def memory_usage_mb(self):
         return self.host_system.summary.quickStats.overallMemoryUsage
 
@@ -367,29 +305,13 @@ class VimClient(object):
 
     @property
     @hostd_error_handler
-    def mac_addresses(self):
-        pnics = self.physical_nics
-        return [pnic.mac for pnic in pnics if pnic.mac != ""]
-
-    @property
-    @hostd_error_handler
     def num_physical_cpus(self):
         """
         Returns the number of pCPUs on the host. 1 pCPU is one hyper
         thread, if HT is enabled.
-        :return: number of pCPUs
+        :rtype: number of pCPUs
         """
         return self.host_system.summary.hardware.numCpuThreads
-
-    @property
-    @hostd_error_handler
-    def first_vmk_ip_address(self):
-        vnics = self.host_system.config.network.vnic
-        first_vmk = next(vnic for vnic in vnics if vnic.device == "vmk0")
-        if first_vmk:
-            return first_vmk.spec.ip.ipAddress
-        else:
-            return None
 
     @property
     @hostd_error_handler
@@ -408,7 +330,8 @@ class VimClient(object):
         ds = self.get_datastore(datastore)
         if not ds:
             raise DatastoreNotFound('Datastore %s not found' % datastore)
-        return self.nfc_service.FileManagement(ds)
+        nfc_service = vim.NfcService('ha-nfc-service', self._si._stub)
+        return nfc_service.FileManagement(ds)
 
     @hostd_error_handler
     def acquire_clone_ticket(self):
@@ -417,22 +340,10 @@ class VimClient(object):
         current user.
         :return: str, ticket
         """
-        return self.session_manager.AcquireCloneTicket()
+        return self._content.sessionManager.AcquireCloneTicket()
 
     @hostd_error_handler
-    def inventory_path(self, *path):
-        """
-        Convert a tuple of strings to a path for use with
-        `find_by_inventory_path`.
-
-        :param path: Inventory path
-        :rtype: str
-        """
-        dc = (HA_DATACENTER_ID,)
-        return "/".join(p.replace("/", "%2f") for p in dc + path if p)
-
-    @hostd_error_handler
-    def find_by_inventory_path(self, *path):
+    def _find_by_inventory_path(self, *path):
         """
         Finds a managed entity based on its location in the inventory.
 
@@ -440,110 +351,38 @@ class VimClient(object):
         :type path: tuple
         :rtype: vim.ManagedEntity
         """
-        p = self.inventory_path(*path)
-        return self.search_index.FindByInventoryPath(p)
-
-    def get_vm_path_info(self, vm):
-        """Get the datastore and relative vmx paths for a vm.
-
-        Args:
-           vm: The vim vm reference to get the path info for.
-
-        Return:
-            The datastore and relative vmx paths for a vm.
-
-        """
-        # This is "[datastore1 (3)] dummy_vm/dummy_vm.vmx"
-        vm_path = vm.config.files.vmPathName
-
-        # This is "datastore1 (3)"
-        datastore_name = vm_path[vm_path.index("[") + 1:vm_path.rindex("]")]
-
-        # This is "dummy_vm/dummy_vm.vmx"
-        vm_rel_path = vm_path[vm_path.rindex("]") + 1:].strip()
-        datastore_path = self.datastore_name_to_path(datastore_name)
-        return datastore_path, vm_rel_path
-
-    @hostd_error_handler
-    def datastore_name_to_path(self, name):
-        """Get the absolute datastore path for a datastore name.
-
-        A name is something like 'datastore1' or 'storage'.
-
-        Args:
-            name: The name of the datastore.
-
-        Return:
-            A string with the host specific identifier of the datastore.
-
-        """
-        host_cfg = self.host_system.config
-        host_mounts = host_cfg.fileSystemVolume.mountInfo
-        for mount in host_mounts:
-            if mount.volume.name == name:
-                return mount.mountInfo.path
-        return None
-
-    @hostd_error_handler
-    def get_vm_power_state(self, vm):
-        """Get the power state for a vm.
-
-        Args:
-            vm: The vim vm reference to get the power state for.
-
-        Return:
-            The power state: 'poweredOff', 'poweredOn' or 'suspended'
-
-        """
-
-        return vm.runtime.powerState
+        dc = (HA_DATACENTER_ID,)
+        # Convert a tuple of strings to a path for use with `find_by_inventory_path`.
+        p = "/".join(p.replace("/", "%2f") for p in dc + path if p)
+        return self._content.searchIndex.FindByInventoryPath(p)
 
     @hostd_error_handler
     def get_vm(self, vm_id):
         """Get the vm reference on a host.
-
-        Args:
-            vm_id: The name of the vm.
-
-        Returns:
-            A vim vm reference.
-
+        :param vm_id: The name of the vm.
+        :rtype A vim vm reference.
         """
-        vm = self.find_by_inventory_path(VM_FOLDER_NAME, vm_id)
+        vm = self._find_by_inventory_path(VM_FOLDER_NAME, vm_id)
         if not vm:
             raise VmNotFoundException("VM '%s' not found on host." % vm_id)
 
         return vm
 
-    @cached()
     @hostd_error_handler
-    def get_datastore_folder(self):
-        """Get the datastore folder for this host.
-
-        :rtype: vim.Folder
-        """
-        return self.find_by_inventory_path(DATASTORE_FOLDER_NAME)
-
-    @hostd_error_handler
-    def get_datastore(self, name=None):
+    def get_datastore(self, name):
         """Get a datastore network for this host.
-
-        :param name: Optional datastore name
+        :param name: datastore name
         :type name: str
         :rtype: vim.Datastore
         """
-        if name is None:
-            return self.get_all_datastores()[0]
-
-        return self.find_by_inventory_path(DATASTORE_FOLDER_NAME, name)
+        return self._find_by_inventory_path(DATASTORE_FOLDER_NAME, name)
 
     @hostd_error_handler
     def get_all_datastores(self):
         """Get all datastores for this host.
-
         :rtype: list of vim.Datastore
         """
-        return self.get_datastore_folder().childEntity
+        return self._find_by_inventory_path(DATASTORE_FOLDER_NAME).childEntity
 
     @hostd_error_handler
     def get_vms(self):
@@ -553,7 +392,7 @@ class VimClient(object):
         :return: list of vim.VirtualMachine
         """
         filter_spec = self.vm_filter_spec()
-        objects = self.property_collector.RetrieveContents([filter_spec])
+        objects = self._property_collector.RetrieveContents([filter_spec])
         return [object.obj for object in objects]
 
     @lock_with("_vm_cache_lock")
@@ -604,48 +443,26 @@ class VimClient(object):
         :param timeout: timeout in seconds
         """
         if not self.filter:
-            self.filter = self.property_collector.CreateFilter(self.filter_spec(), partialUpdates=False)
+            self.filter = self._property_collector.CreateFilter(self.filter_spec(), partialUpdates=False)
         wait_options = vmodl.query.PropertyCollector.WaitOptions()
         wait_options.maxWaitSeconds = timeout
-        update = self.property_collector.WaitForUpdatesEx(self.current_version, wait_options)
+        update = self._property_collector.WaitForUpdatesEx(self.current_version, wait_options)
         self._update_cache(update)
         if update:
             self.current_version = update.version
         return update
 
-    @cached()
-    @hostd_error_handler
-    def get_network_folder(self):
-        """Get the network folder for this host.
-
-        :rtype: vim.Folder
-        """
-        return self.find_by_inventory_path(NETWORK_FOLDER_NAME)
-
-    @hostd_error_handler
-    def get_network(self, name=None):
-        """Get a VM network for this host.
-
-        :param name: Optional network name
-        :type name: str
-        :rtype: vim.Network
-        """
-        if not name:
-            return self.get_network_folder().childEntity[0]
-
-        return self.find_by_inventory_path(NETWORK_FOLDER_NAME, name)
-
     @hostd_error_handler
     def get_networks(self):
         return [network.name for network in
-                self.get_network_folder().childEntity]
+                self._find_by_inventory_path(NETWORK_FOLDER_NAME).childEntity]
 
     @hostd_error_handler
     def get_network_configs(self):
         """Get NetConfig list
         :return: vim.host.VirtualNicManager.NetConfig[]
         """
-        return self.vnic_manager.info.netConfig
+        return host.GetHostVirtualNicManager(self._si).info.netConfig
 
     @hostd_error_handler
     def create_disk(self, path, size):
@@ -655,7 +472,8 @@ class VimClient(object):
         spec.adapterType = DEFAULT_DISK_ADAPTER_TYPE
 
         try:
-            vim_task = self.virtual_disk_manager.CreateVirtualDisk(name=os_to_datastore_path(path), spec=spec)
+            disk_mgr = self._content.virtualDiskManager
+            vim_task = disk_mgr.CreateVirtualDisk(name=os_to_datastore_path(path), spec=spec)
             self.wait_for_task(vim_task)
         except vim.fault.FileAlreadyExists, e:
             raise DiskAlreadyExistException(e.msg)
@@ -671,8 +489,9 @@ class VimClient(object):
         vd_spec.adapterType = str(vim.VirtualDiskManager.VirtualDiskAdapterType.lsiLogic)
 
         try:
-            vim_task = self.virtual_disk_manager.CopyVirtualDisk(sourceName=os_to_datastore_path(src),
-                                                                 destName=os_to_datastore_path(dst), destSpec=vd_spec)
+            disk_mgr = self._content.virtualDiskManager
+            vim_task = disk_mgr.CopyVirtualDisk(sourceName=os_to_datastore_path(src),
+                                                destName=os_to_datastore_path(dst), destSpec=vd_spec)
             self.wait_for_task(vim_task)
         except vim.fault.FileAlreadyExists, e:
             raise DiskAlreadyExistException(e.msg)
@@ -684,8 +503,9 @@ class VimClient(object):
     @hostd_error_handler
     def move_disk(self, src, dst):
         try:
-            vim_task = self.virtual_disk_manager.MoveVirtualDisk(sourceName=os_to_datastore_path(src),
-                                                                 destName=os_to_datastore_path(dst))
+            disk_mgr = self._content.virtualDiskManager
+            vim_task = disk_mgr.MoveVirtualDisk(sourceName=os_to_datastore_path(src),
+                                                destName=os_to_datastore_path(dst))
             self.wait_for_task(vim_task)
         except vim.fault.FileAlreadyExists, e:
             raise DiskAlreadyExistException(e.msg)
@@ -697,7 +517,8 @@ class VimClient(object):
     @hostd_error_handler
     def delete_disk(self, path):
         try:
-            vim_task = self.virtual_disk_manager.DeleteVirtualDisk(name=os_to_datastore_path(path))
+            disk_mgr = self._content.virtualDiskManager
+            vim_task = disk_mgr.DeleteVirtualDisk(name=os_to_datastore_path(path))
             self.wait_for_task(vim_task)
         except vim.fault.FileFault, e:
             raise DiskFileException(e.msg)
@@ -707,8 +528,8 @@ class VimClient(object):
     @hostd_error_handler
     def set_disk_uuid(self, path, uuid):
         try:
-            self.virtual_disk_manager.SetVirtualDiskUuid(name=os_to_datastore_path(path),
-                                                         uuid=uuid_to_vmdk_uuid(uuid))
+            disk_mgr = self._content.virtualDiskManager
+            disk_mgr.SetVirtualDiskUuid(name=os_to_datastore_path(path), uuid=uuid_to_vmdk_uuid(uuid))
         except vim.fault.FileFault, e:
             raise DiskFileException(e.msg)
         except vim.fault.InvalidDatastore, e:
@@ -717,7 +538,8 @@ class VimClient(object):
     @hostd_error_handler
     def query_disk_uuid(self, path):
         try:
-            return self.virtual_disk_manager.QueryVirtualDiskUuid(name=os_to_datastore_path(path))
+            disk_mgr = self._content.virtualDiskManager
+            return disk_mgr.QueryVirtualDiskUuid(name=os_to_datastore_path(path))
         except vim.fault.FileFault, e:
             raise DiskFileException(e.msg)
         except vim.fault.InvalidDatastore, e:
@@ -728,7 +550,8 @@ class VimClient(object):
         """Make directory using vim.fileManager.MakeDirectory
         """
         try:
-            self.file_manager.MakeDirectory(os_to_datastore_path(path), createParentDirectories=True)
+            file_mgr = self._content.fileManager
+            file_mgr.MakeDirectory(os_to_datastore_path(path), createParentDirectories=True)
         except vim.fault.FileAlreadyExists:
             pass
 
@@ -737,7 +560,8 @@ class VimClient(object):
         """Delete directory or file using vim.fileManager.DeleteFile
         """
         try:
-            vim_task = self.file_manager.DeleteFile(os_to_datastore_path(path))
+            file_mgr = self._content.fileManager
+            vim_task = file_mgr.DeleteFile(os_to_datastore_path(path))
             self.wait_for_task(vim_task)
         except vim.fault.FileNotFound:
             pass
@@ -746,8 +570,8 @@ class VimClient(object):
     def move_file(self, src, dest):
         """Move directory or file using vim.fileManager.MoveFile
         """
-        vim_task = self.file_manager.MoveFile(sourceName=os_to_datastore_path(src),
-                                              destinationName=os_to_datastore_path(dest))
+        file_mgr = self._content.fileManager
+        vim_task = file_mgr.MoveFile(sourceName=os_to_datastore_path(src), destinationName=os_to_datastore_path(dest))
         self.wait_for_task(vim_task)
 
     @staticmethod
@@ -785,20 +609,6 @@ class VimClient(object):
         else:
             return task_cache
 
-    @hostd_error_handler
-    @log_duration_with(log_level="debug")
-    def spin_wait_for_task(self, vim_task):
-        """Use pysdk's WaitForTask, which basically polling task status in a
-        loop.
-        """
-        self._task_counter_add()
-        self._logger.debug("spin_wait_for_task: {0} Number of current tasks: {1}".
-                           format(str(vim_task), self._task_counter_read()))
-        try:
-            task.WaitForTask(vim_task, si=self._si)
-        finally:
-            self._task_counter_sub()
-
     @log_duration_with(log_level="debug")
     def wait_for_vm_create(self, vm_id, timeout=10):
         """Wait for vm to be created in cache
@@ -817,12 +627,6 @@ class VimClient(object):
     def acquire_credentials():
         credentials = Credentials()
         return credentials.username, credentials.password
-
-    @staticmethod
-    def get_hostd_ssl_thumbprint():
-        digest = VimClient._hostd_certbytes_digest()
-        thumbprint = ":".join(digest[i:i+2] for i in xrange(0, len(digest), 2))
-        return thumbprint
 
     @staticmethod
     def _hostd_certbytes_digest():
@@ -845,7 +649,7 @@ class VimClient(object):
             pathSet=["name"]
         )
         object_spec = PC.ObjectSpec(
-            obj=self.get_datastore_folder(),
+            obj=self._find_by_inventory_path(DATASTORE_FOLDER_NAME),
             selectSet=[traversal_spec]
         )
         return PC.FilterSpec(
@@ -865,7 +669,7 @@ class VimClient(object):
             pathSet=["name"]
         )
         object_spec = PC.ObjectSpec(
-            obj=self.get_network_folder(),
+            obj=self._find_by_inventory_path(NETWORK_FOLDER_NAME),
             selectSet=[traversal_spec]
         )
         return PC.FilterSpec(
@@ -906,7 +710,7 @@ class VimClient(object):
             skip=False
         )
         task_object_spec = PC.ObjectSpec(
-            obj=self.task_manager,
+            obj=self._content.taskManager,
             selectSet=[task_traversal_spec]
         )
         return PC.FilterSpec(
