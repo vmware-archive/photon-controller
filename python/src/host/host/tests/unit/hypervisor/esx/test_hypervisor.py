@@ -56,25 +56,14 @@ class TestUnitEsxHypervisor(unittest.TestCase):
     @patch.object(VimClient, "initialize_host_counters")
     @patch("host.hypervisor.esx.image_manager.EsxImageManager."
            "monitor_for_cleanup")
-    @patch.object(VimClient, "first_vmk_ip_address", new_callable=PropertyMock)
     @patch.object(VimClient, "acquire_credentials")
-    @patch.object(VimClient, "get_hostd_ssl_thumbprint")
     @patch.object(VimClient, "update_cache")
     @patch("pysdk.connect.Connect")
-    @patch.object(VimClient, "host_uuid")
-    def test_config(
-            self, bios_uuid, connect_mock, update_mock,
-            thumbprint_mock, creds_mock, first_ip_mock,
-            monitor_mock, init_host_mock, get_env_mock):
-
+    def test_config(self, connect_mock, update_mock, creds_mock, monitor_mock, init_host_mock, get_env_mock):
         si_mock = MagicMock(name="si_mock")
         si_mock.RetrieveContent = self._retrieve_content
         connect_mock.return_value = si_mock
 
-        bios_uuid.return_value = "0" * 36
-
-        first_ip_mock.return_value = "11.11.11.11"
-        thumbprint_mock.return_value = "aabb"
         creds_mock.return_value = ["user", "pass"]
 
         # Simulate exception thrown during construction of the
@@ -92,18 +81,11 @@ class TestUnitEsxHypervisor(unittest.TestCase):
 
     @patch("host.hypervisor.esx.vm_config.GetEnv")
     @patch.object(VimClient, "initialize_host_counters")
-    @patch("host.hypervisor.esx.image_manager.EsxImageManager."
-           "monitor_for_cleanup")
-    @patch.object(VimClient, "first_vmk_ip_address", new_callable=PropertyMock)
+    @patch("host.hypervisor.esx.image_manager.EsxImageManager.monitor_for_cleanup")
     @patch.object(VimClient, "acquire_credentials")
-    @patch.object(VimClient, "get_hostd_ssl_thumbprint")
     @patch.object(VimClient, "update_cache")
     @patch("pysdk.connect.Connect")
-    @patch.object(VimClient, "host_uuid")
-    def test_listener(
-            self, bios_uuid, connect_mock, update_mock,
-            thumbprint_mock, creds_mock, first_ip_mock,
-            monitor_mock, init_host_mock, get_env_mock):
+    def test_listener(self, connect_mock, update_mock, creds_mock, monitor_mock, init_host_mock, get_env_mock):
         """Test update listeners"""
         class MyUpdateListener(UpdateListener):
             def __init__(self):

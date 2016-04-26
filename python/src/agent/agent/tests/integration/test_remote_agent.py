@@ -974,7 +974,7 @@ class TestRemoteAgent(unittest.TestCase, AgentCommonTests):
         self.assertTrue(len(res.networks) > 0)
 
     def _manage_disk(self, op, **kwargs):
-        task = op(self.vim_client.virtual_disk_manager, **kwargs)
+        task = op(self.vim_client._content.virtualDiskManager, **kwargs)
         self.vim_client.wait_for_task(task)
 
     def _gen_vd_spec(self):
