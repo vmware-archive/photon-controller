@@ -193,7 +193,7 @@ describe "migrate finalize", upgrade: true do
             detach_iso vm
             vm.delete
 
-            vm = client.find_all_vms(project.id).items.find {|v| v.id = vm.id}
+            vm = client.find_all_vms(project.id).items.find {|v| v.id == vm.id}
             expect(vm).to be_nil
           end
         end
