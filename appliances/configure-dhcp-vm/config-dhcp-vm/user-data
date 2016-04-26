@@ -24,7 +24,7 @@ write_files:
         Name=$en_name
 
         [Network]
-        Address=192.168.0.0/16
+        DHCP=yes
     owner: root:root
     path: /tmp/init-network.sh
 
@@ -39,15 +39,26 @@ write_files:
         After=network.target
 
         [Service]
-        ExecStart=/usr/sbin/dnsmasq --keep-in-foreground --conf-file=/etc/dnsmasq.conf
+        ExecStart=/usr/local/sbin/dnsmasq --keep-in-foreground --conf-file=/etc/dnsmasq.conf
         ExecReload=/bin/kill -HUP $MAINPID
         Restart=on-failure
-        RestartSec=1
+        RestartSec=5
 
         [Install]
         WantedBy=multi-user.target
     owner: root:root
     path: /etc/systemd/system/dnsmasq.service
+
+  - content: |
+        HOME=/home/photon
+        mkdir $HOME
+        groupadd photon
+        useradd -G users,photon,sudo photon -d $HOME
+        echo photon:changeme | chpasswd
+        echo "photon ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+        chown -R photon:photon $HOME
+    owner: root:root
+    path: /tmp/init-user.sh
 
 
 runcmd:
@@ -56,3 +67,6 @@ runcmd:
   - systemctl restart systemd-networkd
   - systemctl enable dnsmasq.service
   - systemctl start dnsmasq.service
+  - sh /tmp/init-user.sh
+  - if [ ! -z "$(cat /etc/ssh/sshd_config | grep PermitRootLogin)" ] ; then sed -i 's/.*PermitRootLogin.*/PermitRootLogin no/g' /etc/ssh/sshd_config ; else echo "PermitRootLogin no" >> /etc/ssh/sshd_config ; fi
+  - systemctl restart systemd-sshd

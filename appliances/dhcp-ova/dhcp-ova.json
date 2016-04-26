@@ -6,7 +6,7 @@
       "source_path": "{{ user `photon_ova_url` }}",
       "vm_name": "dhcp-ova-virtualbox",
       "ssh_username": "root",
-      "ssh_password": "vmware",
+      "ssh_password": "changeme",
       "guest_additions_mode": "disable",
       "shutdown_command": "shutdown -P now",
       "headless": true,
@@ -29,19 +29,6 @@
     {
       "type": "shell",
       "inline": "systemctl restart systemd-networkd"
-    },
-    {
-      "type": "shell",
-      "script": "./configure-user.sh"
-    },
-    {
-      "type": "shell",
-      "script": "../scripts/sshd-config.sh",
-      "environment_vars": [ "SSHD_ENABLE_ROOT_LOGIN={{ user `sshd_enable_root_login` }}" ]
-    },
-    {
-      "type": "shell",
-      "inline": "systemctl restart sshd"
     }
   ]
 }

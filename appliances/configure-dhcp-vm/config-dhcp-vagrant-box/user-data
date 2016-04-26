@@ -32,70 +32,46 @@ write_files:
         Name=enp0s8
 
         [Network]
-        Address=172.31.253.37/24
+        Address=192.168.0.0/16
     owner: root:root
     path: /etc/systemd/network/10-dhcp-enp0s8.network
+
+  - content: |
+        dhcp-range=192.168.0.1,192.168.0.1,24h
+    owner: root:root
+    path: /etc/dnsmasq.conf
+
   - content: |
         [Unit]
-        Description=VirtualBox Kernel Modules and Guest Additions
+        Description=DHCP server
+        After=network.target
 
         [Service]
-        Type=oneshot
-        ExecStart=/usr/lib/systemd/scripts/vbox start
-        ExecStop=/usr/lib/systemd/scripts/vbox stop
-        RemainAfterExit=yes
+        ExecStart=/usr/local/sbin/dnsmasq --keep-in-foreground --conf-file=/etc/dnsmasq.conf
+        ExecReload=/bin/kill -HUP $MAINPID
+        Restart=on-failure
+        RestartSec=5
 
         [Install]
         WantedBy=multi-user.target
     owner: root:root
-    path: /lib/systemd/system/vboxadd.service
+    path: /etc/systemd/system/dnsmasq.service
+
   - content: |
-        #!/bin/bash -e
-
-        start() {
-          /etc/init.d/vboxadd start && /usr/sbin/VBoxService
-        }
-
-        stop() {
-          killall VBoxService
-          sleep 5
-          /etc/init.d/vboxadd stop
-        }
-
-        case $1 in
-          start|stop) "$1" ;;
-        esac
+        HOME=/home/photon
+        mkdir $HOME
+        groupadd photon
+        useradd -G users,photon,sudo photon -d $HOME
+        echo photon:changeme | chpasswd
+        echo "photon ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+        chown -R photon:photon $HOME
     owner: root:root
-    path: /usr/lib/systemd/scripts/vbox
-    permissions: '0744'
+    path: /tmp/init-user.sh
 
 runcmd:
-  - rm -f /etc/systemd/network/10-dhcp-en.network
-  - ip addr flush label "enp0s8"
   - systemctl restart systemd-networkd
-  - sleep 30
-  - tdnf install -y wget
-  - tdnf install -y gawk
-  - tdnf install -y tar
-  - tdnf install -y make
-  - tdnf install -y binutils
-  - tdnf install -y gcc
-  - tdnf install -y sudo
-  - tdnf install -y linux-dev
-  - tdnf install -y unzip
-  - mkdir -p /etc/init.d
+  - systemctl enable dnsmasq.service
+  - systemctl start dnsmasq.service
+  - sh /tmp/init-user.sh
   - if [ ! -z "$(cat /etc/ssh/sshd_config | grep PermitRootLogin)" ] ; then sed -i 's/.*PermitRootLogin.*/PermitRootLogin yes/g' /etc/ssh/sshd_config ; else echo "PermitRootLogin yes" >> /etc/ssh/sshd_config ; fi
-  - if [ ! -z "$(cat /etc/ssh/sshd_config | grep UseDNS)" ] ; then sed -i 's/.*UseDNS.*/UseDNS no/g' /etc/ssh/sshd_config ; else echo "UseDNS no" >> /etc/ssh/sshd_config ; fi
   - systemctl restart sshd
-  - sed -i 's/ExecStart.*/ExecStart=\/bin\/docker -d -s overlay --restart=true -H tcp:\/\/0.0.0.0:2375 -H unix:\/\/\/var\/run\/docker.sock/g' /lib/systemd/system/docker.service
-  - systemctl daemon-reload
-  - systemctl enable docker
-  - systemctl start docker
-  - [ wget, "http://download.virtualbox.org/virtualbox/4.3.30/VBoxGuestAdditions_4.3.30.iso", "-O", "/root/VBoxGuestAdditions_4.3.30.iso" ]
-  - mkdir -p /media/vboxiso
-  - mount /root/VBoxGuestAdditions_4.3.30.iso /media/vboxiso
-  - /media/vboxiso/VBoxLinuxAdditions.run
-  - umount -f /media/vboxiso
-  - rm -f /root/VBoxGuestAdditions_4.3.30.iso
-  - systemctl enable vboxadd
-  - touch /root/DONE
