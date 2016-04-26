@@ -20,7 +20,6 @@ import common
 
 from common.log import log_duration
 from host.hypervisor.system import DatastoreInfo
-from host.hypervisor.system import MemoryInfo
 from host.hypervisor.system import System
 
 DATASTORE_INFO_CACHE_TTL = 60
@@ -42,20 +41,13 @@ class EsxSystem(System):
 
     def total_vmusable_memory_mb(self):
         if self._total_vmusable_memory_mb is None:
-            self._total_vmusable_memory_mb = \
-                self._vim_client.total_vmusable_memory_mb
+            self._total_vmusable_memory_mb = self._vim_client.total_vmusable_memory_mb
         return self._total_vmusable_memory_mb
 
     def num_physical_cpus(self):
         if self._num_physical_cpus is None:
             self._num_physical_cpus = self._vim_client.num_physical_cpus
         return self._num_physical_cpus
-
-    @log_duration
-    def memory_info(self):
-        total_mem = self._vim_client.total_vmusable_memory_mb
-        used_mem = self._vim_client.memory_usage_mb
-        return MemoryInfo(total_mem, used_mem)
 
     @log_duration
     def datastore_info(self, datastore_id):
@@ -105,11 +97,7 @@ class EsxSystem(System):
         return result
 
     def host_consumed_memory_mb(self):
-        host_stats = self._vim_client.get_host_stats()
-        if 'mem.consumed' in host_stats:
-            # Hostd has values in KB.
-            return host_stats['mem.consumed'] / 1024
-        return None
+        return self._vim_client.memory_usage_mb
 
     def host_version(self):
         if self._host_version is None:

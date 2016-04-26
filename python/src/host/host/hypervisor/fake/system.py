@@ -14,7 +14,6 @@
 
 import logging
 from host.hypervisor.system import DatastoreInfo
-from host.hypervisor.system import MemoryInfo
 from host.hypervisor.system import System
 
 
@@ -40,13 +39,6 @@ class FakeSystem(System):
 
     def num_physical_cpus(self):
         return self.total_cpus
-
-    def memory_info(self):
-        fake_vms = self._vm_manager._resources
-        used_memory = sum(fake_vm.fake_vm_spec.memory
-                          for fake_vm
-                          in fake_vms.values())
-        return MemoryInfo(self.vm_usable_memory, used_memory)
 
     def datastore_info(self, datastore_id):
 
