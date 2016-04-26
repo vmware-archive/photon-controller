@@ -104,10 +104,6 @@ class Hypervisor(object):
             raise TypeError("Not a subclass of UpdateListener")
         self.hypervisor.remove_update_listener(listener)
 
-    @property
-    def uuid(self):
-        return self.hypervisor.uuid
-
     def check_image(self, image_id, datastore_id):
         return self.hypervisor.check_image(image_id, datastore_id)
 
