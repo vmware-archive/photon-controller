@@ -32,7 +32,6 @@ import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
 import com.vmware.photon.controller.common.CloudStoreServerSet;
 import com.vmware.photon.controller.common.clients.DeployerClient;
 import com.vmware.photon.controller.common.clients.HousekeeperClient;
-import com.vmware.photon.controller.common.clients.RootSchedulerClient;
 import com.vmware.photon.controller.common.clients.StatusProvider;
 import com.vmware.photon.controller.common.thrift.ClientPoolFactory;
 import com.vmware.photon.controller.common.thrift.ClientProxyFactory;
@@ -107,9 +106,8 @@ public class StatusFeClient {
     statusProviderFactories = Maps.newEnumMap(Component.class);
     statusProviderFactories.put(Component.HOUSEKEEPER, new ThriftClientFactory(
         housekeeperServerSet, houseKeeperPoolFactory, houseKeeperProxyFactory, HousekeeperClient.class, "Housekeeper"));
-    statusProviderFactories.put(Component.ROOT_SCHEDULER, new ThriftClientFactory(
-        rootSchedulerServerSet, rootSchedulerPoolFactory, rootSchedulerProxyFactory, RootSchedulerClient.class,
-        "RootScheduler"));
+    statusProviderFactories.put(Component.ROOT_SCHEDULER,
+        new DcpStatusProviderFactory(rootSchedulerServerSet, this.executor));
     statusProviderFactories.put(Component.DEPLOYER, new ThriftClientFactory(
         deployerServerSet, deployerPoolFactory, deployerProxyFactory, DeployerClient.class, "Deployer"));
     statusProviderFactories.put(Component.CLOUD_STORE,

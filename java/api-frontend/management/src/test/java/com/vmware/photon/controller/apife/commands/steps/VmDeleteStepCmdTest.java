@@ -21,6 +21,7 @@ import com.vmware.photon.controller.apife.backends.EntityLockBackend;
 import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.backends.VmBackend;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
+import com.vmware.photon.controller.apife.backends.clients.SchedulerXenonRestClient;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.AttachedDiskEntity;
 import com.vmware.photon.controller.apife.entities.EphemeralDiskEntity;
@@ -35,7 +36,6 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
 import com.vmware.photon.controller.common.clients.DeployerClient;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HousekeeperClient;
-import com.vmware.photon.controller.common.clients.RootSchedulerClient;
 import com.vmware.photon.controller.common.clients.exceptions.VmNotFoundException;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
 import com.vmware.photon.controller.resource.gen.Datastore;
@@ -66,9 +66,6 @@ public class VmDeleteStepCmdTest extends PowerMockTestCase {
   private ApiFeXenonRestClient dcpClient;
 
   @Mock
-  private RootSchedulerClient rootSchedulerClient;
-
-  @Mock
   private HostClient hostClient;
 
   @Mock
@@ -92,6 +89,9 @@ public class VmDeleteStepCmdTest extends PowerMockTestCase {
   @Mock
   private com.vmware.xenon.common.Operation hostServiceOp;
 
+  @Mock
+  private SchedulerXenonRestClient schedulerXenonRestClient;
+
   private TaskCommand taskCommand;
   private String stepId = "step-1";
   private TaskEntity task;
@@ -111,10 +111,10 @@ public class VmDeleteStepCmdTest extends PowerMockTestCase {
     Datastore datastore = new Datastore();
     datastore.setId("datastore-id");
 
-    taskCommand = spy(new TaskCommand(dcpClient,
-        rootSchedulerClient, hostClient, housekeeperClient, deployerClient, entityLockBackend, task));
+    taskCommand = spy(new TaskCommand(dcpClient, schedulerXenonRestClient, hostClient,
+        housekeeperClient, deployerClient, entityLockBackend, task));
     when(taskCommand.getHostClient()).thenReturn(hostClient);
-    when(taskCommand.getRootSchedulerClient()).thenReturn(rootSchedulerClient);
+    when(taskCommand.getSchedulerXenonRestClient()).thenReturn(schedulerXenonRestClient);
     HostService.State hostServiceState = new HostService.State();
     hostServiceState.hostAddress = "host-ip";
     when(hostServiceOp.getBody(Matchers.any())).thenReturn(hostServiceState);
@@ -129,14 +129,14 @@ public class VmDeleteStepCmdTest extends PowerMockTestCase {
 
     cmd.execute();
 
-    InOrder inOrder = inOrder(rootSchedulerClient, hostClient, vmBackend);
+    InOrder inOrder = inOrder(schedulerXenonRestClient, hostClient, vmBackend);
     inOrder.verify(hostClient).setHostIp("0.0.0.0");
     inOrder.verify(hostClient).deleteVm("vm-1", null);
     inOrder.verify(vmBackend).updateState(vm, VmState.DELETED);
     inOrder.verify(vmBackend).isosAttached(vm);
     inOrder.verify(vmBackend).tombstone(vm);
 
-    verifyNoMoreInteractions(rootSchedulerClient, hostClient, vmBackend);
+    verifyNoMoreInteractions(schedulerXenonRestClient, hostClient, vmBackend);
   }
 
   @Test
@@ -150,7 +150,7 @@ public class VmDeleteStepCmdTest extends PowerMockTestCase {
     }
     cmd.execute();
 
-    InOrder inOrder = inOrder(rootSchedulerClient, hostClient, vmBackend, diskBackend);
+    InOrder inOrder = inOrder(schedulerXenonRestClient, hostClient, vmBackend, diskBackend);
     inOrder.verify(hostClient).setHostIp("0.0.0.0");
     inOrder.verify(hostClient).deleteVm("vm-1", null);
     inOrder.verify(vmBackend).updateState(vm, VmState.DELETED);
@@ -159,7 +159,7 @@ public class VmDeleteStepCmdTest extends PowerMockTestCase {
     inOrder.verify(diskBackend).tombstone(eDisk1.getKind(), eDisk1.getId());
     inOrder.verify(diskBackend).tombstone(eDisk2.getKind(), eDisk2.getId());
 
-    verifyNoMoreInteractions(rootSchedulerClient, hostClient, vmBackend, diskBackend);
+    verifyNoMoreInteractions(schedulerXenonRestClient, hostClient, vmBackend, diskBackend);
   }
 
   @Test
@@ -179,7 +179,7 @@ public class VmDeleteStepCmdTest extends PowerMockTestCase {
     vm.addIso(iso);
     cmd.execute();
 
-    InOrder inOrder = inOrder(rootSchedulerClient, hostClient, vmBackend, diskBackend);
+    InOrder inOrder = inOrder(schedulerXenonRestClient, hostClient, vmBackend, diskBackend);
     inOrder.verify(hostClient).setHostIp("0.0.0.0");
     inOrder.verify(hostClient).deleteVm("vm-1", null);
     inOrder.verify(vmBackend).updateState(vm, VmState.DELETED);
@@ -189,7 +189,7 @@ public class VmDeleteStepCmdTest extends PowerMockTestCase {
     inOrder.verify(diskBackend).tombstone(eDisk1.getKind(), eDisk1.getId());
     inOrder.verify(diskBackend).tombstone(eDisk2.getKind(), eDisk2.getId());
 
-    verifyNoMoreInteractions(rootSchedulerClient, hostClient, vmBackend, diskBackend);
+    verifyNoMoreInteractions(schedulerXenonRestClient, hostClient, vmBackend, diskBackend);
   }
 
   @Test
@@ -200,14 +200,14 @@ public class VmDeleteStepCmdTest extends PowerMockTestCase {
 
     cmd.execute();
 
-    InOrder inOrder = inOrder(rootSchedulerClient, hostClient, vmBackend);
+    InOrder inOrder = inOrder(schedulerXenonRestClient, hostClient, vmBackend);
     inOrder.verify(hostClient).setHostIp("host-ip");
     inOrder.verify(hostClient).deleteVm("vm-1", null);
     inOrder.verify(vmBackend).updateState(vm, VmState.DELETED);
     inOrder.verify(vmBackend).isosAttached(vm);
     inOrder.verify(vmBackend).tombstone(vm);
 
-    verifyNoMoreInteractions(rootSchedulerClient, hostClient, vmBackend);
+    verifyNoMoreInteractions(schedulerXenonRestClient, hostClient, vmBackend);
   }
 
   @Test
@@ -220,13 +220,13 @@ public class VmDeleteStepCmdTest extends PowerMockTestCase {
 
     cmd.execute();
 
-    InOrder inOrder = inOrder(rootSchedulerClient, hostClient, vmBackend);
+    InOrder inOrder = inOrder(schedulerXenonRestClient, hostClient, vmBackend);
     inOrder.verify(hostClient).setHostIp("host-ip");
     inOrder.verify(hostClient).deleteVm(vm.getId(), null);
     inOrder.verify(vmBackend).isosAttached(vm);
     inOrder.verify(vmBackend).tombstone(vm);
 
-    verifyNoMoreInteractions(rootSchedulerClient, hostClient, vmBackend);
+    verifyNoMoreInteractions(schedulerXenonRestClient, hostClient, vmBackend);
   }
 
   @Test
@@ -249,7 +249,7 @@ public class VmDeleteStepCmdTest extends PowerMockTestCase {
 
     verify(vmBackend).isosAttached(vm);
     verify(vmBackend).tombstone(vm);
-    verifyNoMoreInteractions(rootSchedulerClient, hostClient, vmBackend);
+    verifyNoMoreInteractions(schedulerXenonRestClient, hostClient, vmBackend);
   }
 
   @Test
@@ -267,7 +267,7 @@ public class VmDeleteStepCmdTest extends PowerMockTestCase {
 
     cmd.execute();
 
-    InOrder inOrder = inOrder(rootSchedulerClient, hostClient, vmBackend, diskBackend);
+    InOrder inOrder = inOrder(schedulerXenonRestClient, hostClient, vmBackend, diskBackend);
     inOrder.verify(hostClient).setHostIp("host-ip");
     inOrder.verify(hostClient).deleteVm(vm.getId(), null);
     inOrder.verify(vmBackend).isosAttached(vm);
@@ -275,7 +275,7 @@ public class VmDeleteStepCmdTest extends PowerMockTestCase {
     inOrder.verify(diskBackend).tombstone(eDisk1.getKind(), eDisk1.getId());
     inOrder.verify(diskBackend).tombstone(eDisk2.getKind(), eDisk2.getId());
 
-    verifyNoMoreInteractions(rootSchedulerClient, hostClient, vmBackend);
+    verifyNoMoreInteractions(schedulerXenonRestClient, hostClient, vmBackend);
   }
 
   @Test
@@ -293,7 +293,7 @@ public class VmDeleteStepCmdTest extends PowerMockTestCase {
 
     cmd.execute();
 
-    InOrder inOrder = inOrder(rootSchedulerClient, hostClient, vmBackend, diskBackend);
+    InOrder inOrder = inOrder(schedulerXenonRestClient, hostClient, vmBackend, diskBackend);
     inOrder.verify(hostClient).setHostIp("host-ip");
     inOrder.verify(hostClient).deleteVm(vm.getId(), null);
     inOrder.verify(vmBackend).isosAttached(vm);
@@ -301,7 +301,7 @@ public class VmDeleteStepCmdTest extends PowerMockTestCase {
     inOrder.verify(diskBackend).tombstone(eDisk1.getKind(), eDisk1.getId());
     inOrder.verify(diskBackend).tombstone(eDisk2.getKind(), eDisk2.getId());
 
-    verifyNoMoreInteractions(rootSchedulerClient, hostClient, vmBackend);
+    verifyNoMoreInteractions(schedulerXenonRestClient, hostClient, vmBackend);
   }
 
   @Test

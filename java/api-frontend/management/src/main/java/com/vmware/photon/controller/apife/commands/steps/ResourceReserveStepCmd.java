@@ -28,6 +28,7 @@ import com.vmware.photon.controller.apife.backends.FlavorBackend;
 import com.vmware.photon.controller.apife.backends.NetworkBackend;
 import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.backends.VmBackend;
+import com.vmware.photon.controller.apife.backends.clients.SchedulerXenonRestClient;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.AttachedDiskEntity;
 import com.vmware.photon.controller.apife.entities.BaseDiskEntity;
@@ -44,14 +45,17 @@ import com.vmware.photon.controller.apife.exceptions.external.InvalidLocalitySpe
 import com.vmware.photon.controller.apife.exceptions.external.NetworkNotFoundException;
 import com.vmware.photon.controller.apife.exceptions.external.UnfulfillableAffinitiesException;
 import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
+import com.vmware.photon.controller.common.clients.exceptions.InvalidAgentStateException;
 import com.vmware.photon.controller.common.clients.exceptions.InvalidSchedulerException;
 import com.vmware.photon.controller.common.clients.exceptions.NoSuchResourceException;
 import com.vmware.photon.controller.common.clients.exceptions.NotEnoughCpuResourceException;
 import com.vmware.photon.controller.common.clients.exceptions.NotEnoughDatastoreCapacityException;
 import com.vmware.photon.controller.common.clients.exceptions.NotEnoughMemoryResourceException;
+import com.vmware.photon.controller.common.clients.exceptions.NotLeaderException;
 import com.vmware.photon.controller.common.clients.exceptions.ResourceConstraintException;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
 import com.vmware.photon.controller.common.clients.exceptions.StaleGenerationException;
+import com.vmware.photon.controller.common.clients.exceptions.SystemErrorException;
 import com.vmware.photon.controller.common.zookeeper.gen.ServerAddress;
 import com.vmware.photon.controller.flavors.gen.Flavor;
 import com.vmware.photon.controller.flavors.gen.QuotaLineItem;
@@ -64,11 +68,14 @@ import com.vmware.photon.controller.resource.gen.Resource;
 import com.vmware.photon.controller.resource.gen.ResourceConstraint;
 import com.vmware.photon.controller.resource.gen.ResourceConstraintType;
 import com.vmware.photon.controller.resource.gen.resourceConstants;
+import com.vmware.photon.controller.rootscheduler.xenon.task.PlacementTask;
+import com.vmware.photon.controller.rootscheduler.xenon.task.PlacementTaskService;
 import com.vmware.photon.controller.scheduler.gen.PlaceResponse;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.TaskState;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -251,22 +258,27 @@ public class ResourceReserveStepCmd extends StepCommand {
   private ResourceConstraint createVmResourceConstraint(LocalityEntity localityEntity)
       throws DiskNotFoundException, InvalidLocalitySpecException {
     ResourceConstraint resourceConstraint = new ResourceConstraint();
+    // An ArrayList is used instead of ImmutableList or Arrays.asList in order for the PlacementTask to successfully
+    // copy the ResourceConstraints values to send to a Xenon service (using Kryo).
+    ArrayList<String> constraintValues = new ArrayList<String>();
 
     switch (localityEntity.getKind()) {
       case DISK_KIND:
         resourceConstraint.setType(ResourceConstraintType.DATASTORE);
-        resourceConstraint.setValues(
-            ImmutableList.of(diskBackend.find(PersistentDisk.KIND, localityEntity.getResourceId()).getDatastore()));
+        constraintValues.add(diskBackend.find(PersistentDisk.KIND, localityEntity.getResourceId()).getDatastore());
+        resourceConstraint.setValues(constraintValues);
         break;
 
       case DATASTORE_KIND:
         resourceConstraint.setType(ResourceConstraintType.DATASTORE);
-        resourceConstraint.setValues(ImmutableList.of(localityEntity.getResourceId()));
+        constraintValues.add(localityEntity.getResourceId());
+        resourceConstraint.setValues(constraintValues);
         break;
 
       case AVAILABILITY_ZONE_KIND:
         resourceConstraint.setType(ResourceConstraintType.AVAILABILITY_ZONE);
-        resourceConstraint.setValues(ImmutableList.of(localityEntity.getResourceId()));
+        constraintValues.add(localityEntity.getResourceId());
+        resourceConstraint.setValues(constraintValues);
         break;
 
       case HOST_KIND:
@@ -311,7 +323,9 @@ public class ResourceReserveStepCmd extends StepCommand {
       for (String vmId : persistDisk.getAffinities(VM_KIND)) {
         ResourceConstraint resourceConstraint = new ResourceConstraint();
         resourceConstraint.setType(ResourceConstraintType.DATASTORE);
-        resourceConstraint.setValues(ImmutableList.of(vmBackend.findDatastoreByVmId(vmId)));
+        ArrayList<String> constraintValues = new ArrayList<String>();
+        constraintValues.add(vmBackend.findDatastoreByVmId(vmId));
+        resourceConstraint.setValues(constraintValues);
         resourceConstraints.add(resourceConstraint);
         logger.info("Create Disk Using resource constraints with datastore id {}, and datastore type {}",
             resourceConstraint.getValues(), resourceConstraint.getType());
@@ -347,7 +361,9 @@ public class ResourceReserveStepCmd extends StepCommand {
               key.equalsIgnoreCase(STORAGE_PREFIX + resourceConstants.NFS_TAG)) {
             ResourceConstraint resourceConstraint = new ResourceConstraint();
             resourceConstraint.setType(ResourceConstraintType.DATASTORE_TAG);
-            resourceConstraint.setValues(ImmutableList.of(key.substring(STORAGE_PREFIX.length())));
+            ArrayList<String> constraintValues = new ArrayList<String>();
+            constraintValues.add(key.substring(STORAGE_PREFIX.length()));
+            resourceConstraint.setValues(constraintValues);
             resourceConstraints.add(resourceConstraint);
             logger.info("Adding Datastore_Tag resource constraints with value {}", resourceConstraint.getValues());
           } else {
@@ -376,23 +392,29 @@ public class ResourceReserveStepCmd extends StepCommand {
 
     while (true) {
       try {
-        PlaceResponse placeResponse;
         ReserveResponse reserveResponse;
+        int generation;
+
+        // If the host ip is unknown a Xenon PlacementTask is created to send to the scheduler
+        // to find a suitable host with the given resource requested.
+        // If the host ip is known a Thrift PlaceRequest call is sent directly to the agent.
         if (targetHostIp == null) {
-          placeResponse = taskCommand.getRootSchedulerClient().place(resource);
-          ServerAddress serverAddress = placeResponse.getAddress();
+          PlacementTask placementResponse = sendPlaceRequest(resource);
+          ServerAddress serverAddress = placementResponse.serverAddress;
           String hostIp = serverAddress.getHost();
           int port = serverAddress.getPort();
+          generation = placementResponse.generation;
+          resource.setPlacement_list(placementResponse.resource.getPlacement_list());
           logger.info("placed resource, agent host ip: {}, port: {}", hostIp, port);
           taskCommand.getHostClient().setIpAndPort(hostIp, port);
         } else {
           taskCommand.getHostClient().setHostIp(targetHostIp);
-          placeResponse = taskCommand.getHostClient().place(resource);
+          PlaceResponse placeResponse = taskCommand.getHostClient().place(resource);
+          generation = placeResponse.getGeneration();
+          resource.setPlacement_list(placeResponse.getPlacementList());
           logger.info("placed resource, host: {}", targetHostIp);
         }
 
-        int generation = placeResponse.getGeneration();
-        resource.setPlacement_list(placeResponse.getPlacementList());
         reserveResponse = taskCommand.getHostClient().reserve(resource, generation);
         String reservation = checkNotNull(reserveResponse.getReservation());
         logger.info("reserved resource, generation: {}, reservation: {}", generation, reservation);
@@ -410,8 +432,11 @@ public class ResourceReserveStepCmd extends StepCommand {
         logger.error("reserve resource failed: {}, {}", ErrorCode.NOT_ENOUGH_DATASTORE_CAPACITY, e.getMessage());
         throw new com.vmware.photon.controller.apife.exceptions.external.NotEnoughDatastoreCapacityException();
       } catch (ResourceConstraintException e) {
-        logger.error("reserve resource failed: {}", e);
+        logger.error("reserve resource failed: {}", e.getMessage());
         throw new UnfulfillableAffinitiesException();
+      } catch (InvalidAgentStateException e) {
+        logger.error("reserve resource failed: {}", e.getMessage());
+        throw e;
       } catch (StaleGenerationException e) {
         if (++retries >= MAX_PLACEMENT_RETRIES) {
           throw e;
@@ -427,8 +452,56 @@ public class ResourceReserveStepCmd extends StepCommand {
         Thread.sleep(PLACEMENT_RETRY_INTERVAL);
         logger.info("retrying: {}", e.getClass().toString());
       }
-
     }
+  }
+
+  /**
+   * Searches for a host that have the specified resources.
+   *
+   * @param resource the resources requested
+   * @return the result of finding a host: either an OK response with the host address or an
+   *             error of the failure.
+   * @throws RpcException
+   */
+  private PlacementTask sendPlaceRequest(Resource resource) throws RpcException {
+    SchedulerXenonRestClient schedulerXenonRestClient = taskCommand.getSchedulerXenonRestClient();
+    logger.info("place request resource: {}", resource);
+    PlacementTask placementTask = new PlacementTask();
+    placementTask.resource = resource;
+    placementTask.taskState = new TaskState();
+    placementTask.taskState.isDirect = true;
+
+    // Wait for the response of the PlacementTask
+    Operation placementResponse = schedulerXenonRestClient.post(PlacementTaskService.FACTORY_LINK, placementTask);
+    PlacementTask taskResponse = placementResponse.getBody(PlacementTask.class);
+
+    switch (taskResponse.resultCode) {
+      case OK:
+        break;
+      case NO_SUCH_RESOURCE:
+        throw new NoSuchResourceException(taskResponse.error);
+      case NOT_ENOUGH_CPU_RESOURCE:
+        throw new NotEnoughCpuResourceException(taskResponse.error);
+      case NOT_ENOUGH_MEMORY_RESOURCE:
+        throw new NotEnoughMemoryResourceException(taskResponse.error);
+      case NOT_ENOUGH_DATASTORE_CAPACITY:
+        throw new NotEnoughDatastoreCapacityException(taskResponse.error);
+      case RESOURCE_CONSTRAINT:
+        throw new ResourceConstraintException(taskResponse.error);
+      case INVALID_SCHEDULER:
+        throw new InvalidSchedulerException(taskResponse.error);
+      case SYSTEM_ERROR:
+        throw new SystemErrorException(taskResponse.error);
+      case NOT_LEADER:
+        throw new NotLeaderException();
+      case INVALID_STATE:
+        throw new InvalidAgentStateException(taskResponse.error);
+      default:
+        throw new RpcException(String.format("Unknown result: %s : %s", taskResponse.resultCode,
+            taskResponse.error));
+    }
+
+    return taskResponse;
   }
 
   private Flavor getFlavor(InfrastructureEntity infrastructureEntity) throws ExternalException {
@@ -501,7 +574,9 @@ public class ResourceReserveStepCmd extends StepCommand {
         if (localityEntity.getKind().equals(DATASTORE_KIND)) {
           ResourceConstraint resourceConstraint = new ResourceConstraint();
           resourceConstraint.setType(ResourceConstraintType.DATASTORE);
-          resourceConstraint.setValues(ImmutableList.of(localityEntity.getResourceId()));
+          ArrayList<String> constraintValues = new ArrayList<String>();
+          constraintValues.add(localityEntity.getResourceId());
+          resourceConstraint.setValues(constraintValues);
           logger.info("Found datastore resource constraint for vm {}, with id {}, and type {}",
               vmEntity.getId(), resourceConstraint.getValues(), resourceConstraint.getType());
           resourceConstraints.add(resourceConstraint);
