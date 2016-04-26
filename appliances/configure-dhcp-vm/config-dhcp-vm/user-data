@@ -18,32 +18,41 @@ users:
 
 write_files:
   - content: |
+        en_name=$(ip addr show label "e*" | head -n 1 | sed 's/^[0-9]*: \(e.*\): .*/\1/')
+        cat > "/etc/systemd/network/10-dhcp-${en_name}.network" << EOF
         [Match]
-        Name=enp0s3
+        Name=$en_name
 
         [Network]
-        DHCP=yes
+        Address=192.168.0.0/16
     owner: root:root
-    path: /etc/systemd/network/10-dhcp-enp0s3.network
+    path: /tmp/init-network.sh
+
   - content: |
-        [Match]
-        Name=enp0s8
-
-        [Network]
-        Address=172.31.253.37/24
+        dhcp-range=192.168.0.1,192.168.0.1,24h
     owner: root:root
-    path: /etc/systemd/network/10-dhcp-enp0s8.network
+    path: /etc/dnsmasq.conf
+
+  - content: |
+        [Unit]
+        Description=DHCP server
+        After=network.target
+
+        [Service]
+        ExecStart=/usr/sbin/dnsmasq --keep-in-foreground --conf-file=/etc/dnsmasq.conf
+        ExecReload=/bin/kill -HUP $MAINPID
+        Restart=on-failure
+        RestartSec=1
+
+        [Install]
+        WantedBy=multi-user.target
+    owner: root:root
+    path: /etc/systemd/system/dnsmasq.service
 
 
 runcmd:
-  - rm -f /etc/systemd/network/10-dhcp-en.network
-  - ip addr flush label "enp0s8"
+  - rm -f /etc/systemd/network/*.network
+  - sh /tmp/init-network.sh
   - systemctl restart systemd-networkd
-  - sleep 30
-  - if [ ! -z "$(cat /etc/ssh/sshd_config | grep PermitRootLogin)" ] ; then sed -i 's/.*PermitRootLogin.*/PermitRootLogin yes/g' /etc/ssh/sshd_config ; else echo "PermitRootLogin yes" >> /etc/ssh/sshd_config ; fi
-  - if [ ! -z "$(cat /etc/ssh/sshd_config | grep UseDNS)" ] ; then sed -i 's/.*UseDNS.*/UseDNS no/g' /etc/ssh/sshd_config ; else echo "UseDNS no" >> /etc/ssh/sshd_config ; fi
-  - systemctl restart sshd
-  - sed -i 's/ExecStart.*/ExecStart=\/bin\/docker -d -s overlay -H tcp:\/\/0.0.0.0:2375 -H unix:\/\/\/var\/run\/docker.sock/g' /lib/systemd/system/docker.service
-  - systemctl daemon-reload
-  - systemctl enable docker
-  - systemctl start docker
+  - systemctl enable dnsmasq.service
+  - systemctl start dnsmasq.service
