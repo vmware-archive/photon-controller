@@ -71,13 +71,10 @@ class TestVimClient(unittest.TestCase):
         client.disconnect(wait=True)
         assert_that(update_mock.call_count, less_than(5))  # no crazy loop
 
-    @patch.object(VimClient, "update_hosts_stats")
     @patch.object(VimClient, "update_cache")
     @patch("pysdk.connect.Connect")
     @patch("time.sleep")
-    def test_update_fail_will_suicide(self, sleep_mock,
-                                      connect_mock,
-                                      update_mock, update_hosts_mock):
+    def test_update_fail_will_suicide(self, sleep_mock, connect_mock, update_mock):
         killed = threading.Event()
 
         def suicide():
@@ -223,14 +220,11 @@ class TestVimClient(unittest.TestCase):
         assert_that(vim_client.current_version, is_("3"))
         assert_that(len(vms), is_(0))
 
-    @patch.object(VimClient, "update_hosts_stats")
     @patch.object(VimClient, "update_cache")
     @patch.object(VimClient, "filter_spec")
     @patch("pysdk.connect.Connect")
     @patch("pysdk.connect.Disconnect")
-    def test_update_cache_in_thread(self, disconnect_mock, connect_mock,
-                                    spec_mock, update_mock,
-                                    update_host_mock):
+    def test_update_cache_in_thread(self, disconnect_mock, connect_mock, spec_mock, update_mock):
         vim_client = VimClient("esx.local", "root", "password",
                                min_interval=0, auto_sync=True)
         vim_client._property_collector.WaitForUpdatesEx.return_value = {}
@@ -240,8 +234,7 @@ class TestVimClient(unittest.TestCase):
         while update_mock.call_count < 5 and retry < 10:
             time.sleep(0.2)
             retry += 1
-        assert_that(retry, is_not(10), "VimClient.update_cache is not "
-                                       "called repeatedly")
+        assert_that(retry, is_not(10), "VimClient.update_cache is not called repeatedly")
         vim_client.disconnect(wait=True)
         assert_that(disconnect_mock.called, is_(True))
 
