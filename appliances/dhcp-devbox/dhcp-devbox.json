@@ -1,0 +1,26 @@
+{
+  "builders": [
+    {
+      "type": "virtualbox-ovf",
+      "format": "ova",
+      "source_path": "{{ user `dhcp_ova_url` }}",
+      "ssh_username": "root",
+      "ssh_password": "changeme",
+      "guest_additions_mode": "disable",
+      "shutdown_command": "shutdown -P now",
+      "headless": true,
+      "output_directory": "build/",
+      "vboxmanage": [
+        [ "modifyvm", "{{.Name}}", "--nic2", "hostonly", "--nictype2", "82540EM", "--hostonlyadapter2", "{{ user `hostonly_adapter_name` }}" ],
+        [ "storageattach", "{{.Name}}", "--storagectl", "IDE Controller", "--port", "0", "--device", "0", "--type", "dvddrive", "--medium", "../configure-dhcp-vm/seed-dhcp-vagrant-box.iso" ]
+      ]
+    }
+  ],
+  "post-processors": [
+    {
+      "type": "vagrant",
+      "output": "photon-dhcp.box",
+      "keep_input_artifact": true
+    }
+  ]
+}
