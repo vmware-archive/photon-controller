@@ -12,7 +12,6 @@
 
 """ Contains the implementation code for ESX VM operations."""
 import logging
-from operator import itemgetter
 
 from host.hypervisor.esx.vm_config import SHADOW_VM_NAME_PREFIX
 
@@ -20,8 +19,6 @@ import os
 import socket
 import struct
 import threading
-
-from pyVmomi import vim
 
 from common.exclusive_set import DuplicatedValue
 from common.exclusive_set import ExclusiveSet
@@ -120,14 +117,6 @@ class EsxVmManager(VmManager):
         self._datastore_cache = {}
 
     @staticmethod
-    def _vim_power_state_to_resource_state(power_state):
-        return {
-            vim.VirtualMachine.PowerState.poweredOn: State.STARTED,
-            vim.VirtualMachine.PowerState.poweredOff: State.STOPPED,
-            vim.VirtualMachine.PowerState.suspended: State.SUSPENDED
-        }[power_state]
-
-    @staticmethod
     def _power_state_to_resource_state(power_state):
         return {
             PowerState.poweredOn: State.STARTED,
@@ -135,52 +124,20 @@ class EsxVmManager(VmManager):
             PowerState.suspended: State.SUSPENDED
         }[power_state]
 
-    def _power_vm(self, vm_id, op):
-        vm = self.vim_client.get_vm(vm_id)
-        self._invoke_vm(vm, op)
-
-    def _vm_op_to_requested_state(self, op):
-        """ Return the string of a requested state from a VM op.
-
-            For example if the operation is PowerOn the requested state is
-            poweredOn.
-        """
-        if op == "PowerOn":
-            return "poweredOn"
-        elif op == "PowerOff":
-            return "poweredOff"
-        elif op == "Suspend":
-            return "suspended"
-        else:
-            return "unknown"
-
-    def _invoke_vm(self, vm, op, *args):
-        try:
-            self._logger.debug("Invoking '%s' for VM '%s'" % (op, vm.name))
-            task = getattr(vm, op)(*args)
-            self.vim_client.wait_for_task(task)
-        except vim.fault.InvalidPowerState, e:
-            if e.existingState == self._vm_op_to_requested_state(op):
-                self._logger.info("VM %s already in %s state, %s successful." %
-                                  (vm.name, e.existingState, op))
-                pass
-            else:
-                raise VmPowerStateException(e.msg)
-
     def power_on_vm(self, vm_id):
-        self._power_vm(vm_id, "PowerOn")
+        self.vim_client.power_on_vm(vm_id)
 
     def power_off_vm(self, vm_id):
-        self._power_vm(vm_id, "PowerOff")
+        self.vim_client.power_off_vm(vm_id)
 
     def reset_vm(self, vm_id):
-        self._power_vm(vm_id, "Reset")
+        self.vim_client.reset_vm(vm_id)
 
     def suspend_vm(self, vm_id):
-        self._power_vm(vm_id, "Suspend")
+        self.vim_client.suspend_vm(vm_id)
 
     def resume_vm(self, vm_id):
-        self._power_vm(vm_id, "PowerOn")
+        self.vim_client.resume_vm(vm_id)
 
     def _get_extra_config_map(self, metadata):
         # this can be simplified if the metadata dictionary follows some
@@ -250,11 +207,7 @@ class EsxVmManager(VmManager):
         # has to be created has not been well exercised and is known to be
         # racy and not informative on failures. So be defensive and proactively
         # create the intermediate directory ("/vmfs/volumes/<dsid>/vm_xy").
-        try:
-            self.vim_client.make_directory(create_spec.files.vmPathName)
-        except vim.fault.FileAlreadyExists:
-            self._logger.debug("Parent directory %s exists" % create_spec.files.vmPathName)
-
+        self.vim_client.make_directory(create_spec.files.vmPathName)
         task = folder.CreateVm(create_spec, resource_pool, None)
         self.vim_client.wait_for_task(task)
         self.vim_client.wait_for_vm_create(vm_id)
@@ -313,7 +266,7 @@ class EsxVmManager(VmManager):
             self._verify_disks(vm)
 
         self._logger.info("Destroy VM at %s" % vm_path)
-        self._invoke_vm(vm, "Destroy")
+        self.vim_client.destroy_vm(vm)
 
         self._ensure_directory_cleanup(vm_path)
 
@@ -339,12 +292,11 @@ class EsxVmManager(VmManager):
         :param disk_id: Disk id
         :type disk_id: str
         """
-        if not info:
-            # New VM just generate a base config.
-            info = vim.vm.ConfigInfo(hardware=vim.vm.VirtualHardware())
 
-        self.vm_config.add_scsi_disk(info, cspec, datastore, disk_id,
-                                     disk_is_image=disk_is_image)
+        info = self.vim_client.add_disk(cspec, datastore, disk_id, info, disk_is_image=False)
+        if not info:
+            self.vm_config.add_scsi_disk(info, cspec, datastore, disk_id,
+                                         disk_is_image=disk_is_image)
         return cspec
 
     @log_duration
@@ -371,8 +323,7 @@ class EsxVmManager(VmManager):
         """
         matcher = self.vm_config.disk_matcher(datastore, disk_id)
         devices = self.vm_config.get_devices_from_config(info)
-        device = self.vm_config.get_device(devices, vim.vm.device.VirtualDisk,
-                                           matcher=matcher)
+        device = self.vm_config.get_virtual_disk_device(devices, matcher=matcher)
         self.vm_config.remove_device(spec, device)
         return spec
 
@@ -538,7 +489,7 @@ class EsxVmManager(VmManager):
         return cpu_count
 
     def _reconfig_vm(self, vm, spec):
-        self._invoke_vm(vm, "ReconfigVM_Task", spec)
+        self.vim_client.reconfigure_vm(vm, spec)
 
     def _get_datastore_name_from_ds_path(self, vm_path):
         try:
@@ -675,32 +626,6 @@ class EsxVmManager(VmManager):
             # The iso may not exist, so just catch and move on.
             pass
 
-    def _get_network_config_int(self, config):
-        """ Internal method that returns the device id, the network name and
-        the mac address of the device.
-        """
-        # Throws when VM is not found.
-        network_info = []
-
-        if (config is None):
-            self._logger.info("VM, has no hardware specification")
-            return network_info
-
-        if (config.hardware.device):
-            idx = 0
-            for device in config.hardware.device:
-                if (isinstance(device, vim.vm.device.VirtualEthernetCard) and
-                    isinstance(device.backing,
-                               vim.vm.device.VirtualEthernetCard.
-                               NetworkBackingInfo)):
-                    # idx is used for mac address generation
-                    network_info.append((idx,
-                                         device.macAddress,
-                                         device.backing.deviceName,
-                                         device.key))
-                    idx += 1
-        return sorted(network_info, key=itemgetter(2))
-
     @log_duration
     def get_network_config(self, vm_id):
         """ Get the network backing of a VM by reading its configuration.
@@ -715,7 +640,7 @@ class EsxVmManager(VmManager):
 
         network_info = []
         vm = self.vim_client.get_vm(vm_id)
-        networks = self._get_network_config_int(vm.config)
+        networks = self.vm_config.get_network_config_int(vm.config)
 
         for idx, mac, network, _ in networks:
             # We don't set MAC address when VM gets created, so MAC address
@@ -766,7 +691,7 @@ class EsxVmManager(VmManager):
             guest_info[prefix + "default_gateway"] = \
                 net_spec.default_gateway
         # Read the networks from the created VM.
-        networks = self._get_network_config_int(info)
+        networks = self.vm_config.get_network_config_int(info)
         for index, (_, _, network, _) in enumerate(networks):
             ip, netmask, net_spec = self._find_ip(net_spec, network)
             if ip and netmask:
@@ -850,17 +775,7 @@ class EsxVmManager(VmManager):
         :param spec: vim.vm.ConfigSpec, the virtual machine config spec
         :param port: int, the vnc port assigned to the vm
         """
-        if spec.extraConfig is None:
-            spec.extraConfig = []
-
-        spec.extraConfig.append(vim.OptionValue(
-            key=self.EXTRA_CONFIG_VNC_ENABLED,
-            value="True"))
-        spec.extraConfig.append(vim.OptionValue(
-            key=self.EXTRA_CONFIG_VNC_PORT,
-            value=port))
-
-        return spec
+        self.vm_config.set_vnc_port(spec, port)
 
     @log_duration
     def get_vnc_port(self, vm_id):
@@ -868,16 +783,7 @@ class EsxVmManager(VmManager):
         :param vm_id: the id of the vm
         :return: port number assigned to vm or None
         """
-        vm = self.vim_client.get_vm(vm_id)
-        if not vm.config.extraConfig:
-            return None
-
-        options = [o for o in vm.config.extraConfig
-                   if o.key == self.EXTRA_CONFIG_VNC_PORT]
-        if not options:
-            return None
-
-        return int(options[0].value)
+        return self.vm_config.get_vnc_port(vm_id)
 
     @log_duration
     def get_occupied_vnc_ports(self):
