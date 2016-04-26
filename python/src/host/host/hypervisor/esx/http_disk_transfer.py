@@ -426,7 +426,7 @@ class HttpNfcTransferer(HttpTransferer):
             finally:
                 read_lease.Complete()
 
-            agent_client = DirectClient("Host", Host.Client, host, port)
+            agent_client = DirectClient("Host", Host.Client, host, port, 60)
             agent_client.connect()
 
             vm_path, vm_id = self._prepare_receive_image(agent_client, destination_image_id, destination_datastore)
