@@ -108,6 +108,12 @@ function set_dhcp_conf(){
   fi
 
   sed -i "s/# dhcp-range=192.168.0.50,192.168.0.150,24h/dhcp-range=${dhcp_conf}/g" /etc/bmp/dnsmasq.conf
+
+  if [ ! -z "$pxe_image_files" ]
+  then
+    sed -i "s/prefix=http*/prefix=${pxe_image_files}/g" /etc/bmp/boot.cfg
+  fi
+
 }
 
 function set_esxboot_file_path(){
@@ -131,6 +137,7 @@ function parse_ovf_env(){
   syslog_endpoint=$(xmllint $XML_FILE --xpath "string(//*/@*[local-name()='key' and .='syslog_endpoint']/../@*[local-name()='value'])")
   dhcp_range=$(xmllint $XML_FILE --xpath "string(//*/@*[local-name()='key' and .='dhcp_range']/../@*[local-name()='value'])")
   dhcp_lease_expiry=$(xmllint $XML_FILE --xpath "string(//*/@*[local-name()='key' and .='dhcp_lease_expiry']/../@*[local-name()='value'])")
+  pxe_image_files=$(xmllint $XML_FILE --xpath "string(//*/@*[local-name()='key' and .='pxe_image_files']/../@*[local-name()='value'])")
 
   echo "ip0" "$ip0"
   echo "gateway" "$gateway"
@@ -142,6 +149,7 @@ function parse_ovf_env(){
   echo "syslog_endpoint" "$syslog_endpoint"
   echo "dhcp_range" "$dhcp_range"
   echo "dhcp_lease_expiry" "$dhcp_lease_expiry"
+  echo "pxe_image_files" "$pxe_image_files"
 }
 
 set +e

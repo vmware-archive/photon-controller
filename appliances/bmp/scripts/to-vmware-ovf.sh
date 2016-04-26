@@ -58,6 +58,10 @@ sed -i.bak $'s@<VirtualHardwareSection@ <ProductSection ovf:required="false"> \
         <Label>DHCP Lease Expiry</Label> \
         <Description></Description> \
       </Property> \
+      <Property ovf:key="pxe_image_files" ovf:userConfigurable="true" ovf:type="string"> \
+        <Label>ESX image to install</Label> \
+        <Description>An http or tftp link to the ESX image to install. Default is on "//etc//bmp//installer-pxe-modules"</Description> \
+      </Property> \
     </ProductSection> \
     <VirtualHardwareSection@' ${outputVM}.ovf
 
