@@ -56,6 +56,7 @@ import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.entities.VmEntity;
 import com.vmware.photon.controller.apife.exceptions.external.DiskNotFoundException;
+import com.vmware.photon.controller.apife.exceptions.external.InvalidAttachDisksException;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidFlavorStateException;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidImageStateException;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidVmDisksSpecException;
@@ -435,6 +436,7 @@ public class VmDcpBackend implements VmBackend {
   public TaskEntity prepareVmDiskOperation(String vmId, List<String> diskIds, Operation operation)
       throws ExternalException {
     VmEntity vm = findById(vmId);
+    String projectId = vm.getProjectId();
     if (!VmDiskOperation.VALID_OPERATIONS.contains(operation)) {
       throw new NotImplementedException();
     }
@@ -448,8 +450,15 @@ public class VmDcpBackend implements VmBackend {
     // Add disk entities
     for (String diskId : diskIds) {
       BaseDiskEntity disk = diskBackend.find(PersistentDisk.KIND, diskId);
+
       // Check if disk is a valid state for the operation
       DiskStateChecks.checkOperationState(disk, operation);
+
+      // Check if disk and vm is in the same project
+      if (!projectId.equals(disk.getProjectId())) {
+        throw new InvalidAttachDisksException(String.format("Disk %s and Vm %s are not in the same project, " +
+            "can not attach.", disk.getId(), vm.getId()));
+      }
       entityList.add(disk);
     }
 
