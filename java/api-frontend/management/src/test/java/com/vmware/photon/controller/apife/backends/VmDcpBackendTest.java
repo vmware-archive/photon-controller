@@ -53,6 +53,7 @@ import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.entities.TombstoneEntity;
 import com.vmware.photon.controller.apife.entities.VmEntity;
+import com.vmware.photon.controller.apife.exceptions.external.InvalidAttachDisksException;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidImageStateException;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidVmStateException;
 import com.vmware.photon.controller.apife.exceptions.external.ProjectNotFoundException;
@@ -763,13 +764,42 @@ public class VmDcpBackendTest {
       try {
         vmDcpBackend.prepareVmDiskOperation(
             vmId, disks, com.vmware.photon.controller.api.Operation.MOCK_OP);
-        fail("vmDcpBackend.prepareVmOperation with invalid operation should have failed");
+        fail("vmDcpBackend.prepareVmDiskOperation with invalid operation should have failed");
       } catch (NotImplementedException e) {
         // do nothing
       }
     }
 
-    @Test (expectedExceptions = InvalidImageStateException.class)
+    @Test
+    public void testPrepareVmDiskOperationInvalidDisk() throws Throwable {
+      com.vmware.photon.controller.api.Operation operation = com.vmware.photon.controller.api.Operation.DETACH_DISK;
+
+      DiskService.State diskState = new DiskService.State();
+      diskState.name = "test-vm-disk-1";
+      diskState.projectId = "invalid-project";
+      diskState.flavorId = flavorDcpBackend.getEntityByNameAndKind("core-100", PersistentDisk.KIND).getId();
+      diskState.capacityGb = 64;
+      diskState.diskType = DiskType.PERSISTENT;
+      diskState.state = DiskState.DETACHED;
+
+      Operation result = dcpClient.post(DiskServiceFactory.SELF_LINK, diskState);
+      DiskService.State createdDiskState = result.getBody(DiskService.State.class);
+      String diskId = ServiceUtils.getIDFromDocumentSelfLink(createdDiskState.documentSelfLink);
+
+      List<String> disks = new ArrayList<>();
+      disks.add(diskId);
+
+      try {
+        vmDcpBackend.prepareVmDiskOperation(
+            vmId, disks, com.vmware.photon.controller.api.Operation.ATTACH_DISK);
+        fail("vmDcpBackend.prepareVmDiskOperation with invalid disk should have failed InvalidAttachDisksException");
+      } catch (InvalidAttachDisksException e) {
+        assertThat(e.getMessage(), is("Disk " + diskId + " and Vm " + vmId +
+            " are not in the same project, can not attach."));
+      }
+    }
+
+    @Test(expectedExceptions = InvalidImageStateException.class)
     public void testNullImageSizeThrowsInvalidImageStateException() throws Throwable {
       AttachedDiskCreateSpec disk = new AttachedDiskCreateSpec();
       disk.setBootDisk(true);
@@ -901,7 +931,7 @@ public class VmDcpBackendTest {
 
     @DataProvider(name = "vmCreateImageReplicationType")
     public Object[][] getVmCreateImageReplicationType() {
-      return new Object[][] {
+      return new Object[][]{
           {ImageReplicationType.EAGER},
           {ImageReplicationType.ON_DEMAND}
       };
