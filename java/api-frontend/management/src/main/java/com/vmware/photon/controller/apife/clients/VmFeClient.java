@@ -104,6 +104,7 @@ public class VmFeClient {
   }
 
   public Task operateDisks(String vmId, List<String> diskIds, Operation operation) throws ExternalException {
+
     TaskEntity taskEntity = vmBackend.prepareVmDiskOperation(vmId, diskIds, operation);
     Task task = taskBackend.getApiRepresentation(taskEntity);
 
