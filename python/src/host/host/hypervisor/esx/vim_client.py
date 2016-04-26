@@ -25,6 +25,7 @@ import weakref
 from common.blocking_dict import BlockingDict
 from common.cache import cached
 from common.lock import lock_with
+from common.log import log_duration
 from common.log import log_duration_with
 from gen.agent.ttypes import TaskCache
 from host.hypervisor.disk_manager import DiskAlreadyExistException, DiskPathException
@@ -32,6 +33,7 @@ from host.hypervisor.disk_manager import DiskFileException
 from host.hypervisor.esx.vm_config import os_to_datastore_path
 from host.hypervisor.esx.vm_config import uuid_to_vmdk_uuid
 from host.hypervisor.esx.vm_config import DEFAULT_DISK_ADAPTER_TYPE
+from host.hypervisor.vm_manager import VmPowerStateException
 from pysdk import connect
 from pysdk import host
 from pysdk import invt
@@ -474,7 +476,7 @@ class VimClient(object):
             file_mgr = self._content.fileManager
             file_mgr.MakeDirectory(os_to_datastore_path(path), createParentDirectories=True)
         except vim.fault.FileAlreadyExists:
-            pass
+            self._logger.debug("Parent directory %s exists" % path)
 
     @hostd_error_handler
     def delete_file(self, path):
@@ -494,6 +496,24 @@ class VimClient(object):
         file_mgr = self._content.fileManager
         vim_task = file_mgr.MoveFile(sourceName=os_to_datastore_path(src), destinationName=os_to_datastore_path(dest))
         self.wait_for_task(vim_task)
+
+    @log_duration
+    def add_disk(self, cspec, datastore, disk_id, info, disk_is_image=False):
+        """Add an existing disk to a VM
+        :param cspec: config spec
+        :type cspec: ConfigSpec
+        :param vm_id: VM id
+        :type vm_id: str
+        :param datastore: Name of the VM's datastore
+        :type datastore: str
+        :param disk_id: Disk id
+        :type disk_id: str
+        """
+        if not info:
+            # New VM just generate a base config.
+            info = vim.vm.ConfigInfo(hardware=vim.vm.VirtualHardware())
+
+        return info
 
     @staticmethod
     def _verify_task_done(task_cache):
@@ -779,6 +799,60 @@ class VimClient(object):
             object.obj), vm))
         if str(object.obj) not in self._vm_cache:
             self._vm_cache[str(object.obj)] = vm
+
+    def _power_vm(self, vm_id, op):
+        vm = self.get_vm(vm_id)
+        self._invoke_vm(vm, op)
+
+    def _vm_op_to_requested_state(self, op):
+        """ Return the string of a requested state from a VM op.
+
+            For example if the operation is PowerOn the requested state is
+            poweredOn.
+        """
+        if op == "PowerOn":
+            return "poweredOn"
+        elif op == "PowerOff":
+            return "poweredOff"
+        elif op == "Suspend":
+            return "suspended"
+        else:
+            return "unknown"
+
+    def _invoke_vm(self, vm, op, *args):
+        try:
+            self._logger.debug("Invoking '%s' for VM '%s'" % (op, vm.name))
+            task = getattr(vm, op)(*args)
+            self.wait_for_task(task)
+        except vim.fault.InvalidPowerState, e:
+            if e.existingState == self._vm_op_to_requested_state(op):
+                self._logger.info("VM %s already in %s state, %s successful." %
+                                  (vm.name, e.existingState, op))
+                pass
+            else:
+                self._logger.info("Exception: %s" % e.msg)
+                raise VmPowerStateException(e.msg)
+
+    def power_on_vm(self, vm_id):
+        self._power_vm(vm_id, "PowerOn")
+
+    def power_off_vm(self, vm_id):
+        self._power_vm(vm_id, "PowerOff")
+
+    def reset_vm(self, vm_id):
+        self._power_vm(vm_id, "Reset")
+
+    def suspend_vm(self, vm_id):
+        self._power_vm(vm_id, "Suspend")
+
+    def resume_vm(self, vm_id):
+        self._power_vm(vm_id, "PowerOn")
+
+    def destroy_vm(self, vm):
+        self._invoke_vm(vm, "Destroy")
+
+    def reconfigure_vm(self, vm, spec):
+        self._invoke_vm(vm, "ReconfigVM_Task", spec)
 
     def _remove_vm_cache(self, object):
         ref_id = str(object.obj)

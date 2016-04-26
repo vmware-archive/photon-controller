@@ -75,11 +75,9 @@ class TestEsxVmManager(unittest.TestCase):
 
         vm_mock = MagicMock(name="vm_mock")
         self.vm_manager.vim_client.get_vm = vm_mock
-        self.vim_client.wait_for_task.side_effect = \
-            vim.fault.InvalidPowerState()
+        self.vim_client.wait_for_task.side_effect = vim.fault.InvalidPowerState()
 
-        self.assertRaises(VmPowerStateException,
-                          self.vm_manager.power_on_vm, "foo")
+        self.assertRaises(VmPowerStateException, self.vm_manager.power_on_vm, "foo")
 
     def test_power_vm_error(self):
         """Test general Exception propagation."""
@@ -173,14 +171,11 @@ class TestEsxVmManager(unittest.TestCase):
             QuotaLineItem("vm.cpu", "1", Unit.COUNT),
         ])
 
-        create_spec_mock = MagicMock(
-            wraps=self.vm_manager.vm_config.create_spec)
+        create_spec_mock = MagicMock(wraps=self.vm_manager.vm_config.create_spec)
         self.vm_manager.vm_config.create_spec = create_spec_mock
 
-        spec = self.vm_manager.create_vm_spec(
-            "vm_id", "ds1", flavor, metadata, env)
-        create_spec_mock.assert_called_once_with(
-            "vm_id", "ds1", 256, 1, metadata, env)
+        spec = self.vm_manager.create_vm_spec("vm_id", "ds1", flavor, metadata, env)
+        create_spec_mock.assert_called_once_with("vm_id", "ds1", 256, 1, metadata, env)
 
         return spec
 
