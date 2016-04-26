@@ -109,9 +109,14 @@ function set_dhcp_conf(){
 
   sed -i "s/# dhcp-range=192.168.0.50,192.168.0.150,24h/dhcp-range=${dhcp_conf}/g" /etc/bmp/dnsmasq.conf
 
+  #override the gateway, otherwise it will be the DHCP vm itself
+  if [ ! -z "$gateway" ]
+  then
+    sed -i "s/#dhcp-option=3,1.2.3.4/dhcp-option=3,${gateway}/g" /etc/bmp/dnsmasq.conf
+  fi
   if [ ! -z "$pxe_image_files" ]
   then
-    sed -i "s/prefix=http*/prefix=${pxe_image_files}/g" /etc/bmp/boot.cfg
+    sed -i "s@prefix=http.*@prefix=${pxe_image_files}@g" /etc/bmp/boot.cfg
   fi
 
 }
@@ -172,6 +177,8 @@ set_admin_password
 
 set_dhcp_conf
 set_esxboot_file_path
+
+systemctl restart dnsmasq
 
 #remove itself from startup
 systemctl disable configure-guest
