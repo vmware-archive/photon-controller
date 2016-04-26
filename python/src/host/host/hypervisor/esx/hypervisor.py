@@ -39,8 +39,6 @@ class EsxHypervisor(object):
                                     errback=lambda: suicide())
         atexit.register(lambda client: client.disconnect(), self.vim_client)
 
-        self._uuid = self.vim_client.host_uuid
-
         self.datastore_manager = EsxDatastoreManager(
             self, agent_config.datastores, agent_config.image_datastores)
         # datastore manager needs to update the cache when there is a change.
@@ -58,10 +56,6 @@ class EsxHypervisor(object):
                 self.vim_client,
                 self.datastore_manager.image_datastores())
         atexit.register(self.image_manager.cleanup)
-
-    @property
-    def uuid(self):
-        return self._uuid
 
     def check_image(self, image_id, datastore_id):
         return self.image_manager.check_image(

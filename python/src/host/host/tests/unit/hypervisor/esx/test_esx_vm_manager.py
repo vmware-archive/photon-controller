@@ -66,7 +66,7 @@ class TestEsxVmManager(unittest.TestCase):
     def test_power_vm_not_found(self):
         """Test that we propagate VmNotFound."""
 
-        self.vim_client.find_by_inventory_path = MagicMock(return_value=None)
+        self.vim_client._find_by_inventory_path = MagicMock(return_value=None)
         self.assertRaises(VmNotFoundException,
                           self.vm_manager.power_on_vm, "ENOENT")
 
@@ -291,16 +291,11 @@ class TestEsxVmManager(unittest.TestCase):
         ("e1000", vim.vm.device.VirtualE1000),
         ("e1000e", vim.vm.device.VirtualE1000e),
     ])
-    @patch.object(VimClient, "get_network")
-    def test_customize_nic_adapter_type(self, ctlr_type_value,
-                                        expected_ctlr_type, mock_get_network):
+    def test_customize_nic_adapter_type(self, ctlr_type_value, expected_ctlr_type):
         metadata = {
             "configuration": {"ethernet0.virtualDev": ctlr_type_value}
         }
         spec = self._create_vm_spec(metadata, {})
-        fake_network = MagicMock()
-        fake_network.name = "fake_network_name"
-        mock_get_network.return_value = fake_network
 
         self.vm_manager.add_nic(spec, "fake_network_id")
 
