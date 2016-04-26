@@ -18,6 +18,8 @@ import com.vmware.photon.controller.nsxclient.models.LogicalRouter;
 import com.vmware.photon.controller.nsxclient.models.LogicalRouterCreateSpec;
 import com.vmware.photon.controller.nsxclient.models.LogicalRouterDownLinkPort;
 import com.vmware.photon.controller.nsxclient.models.LogicalRouterDownLinkPortCreateSpec;
+import com.vmware.photon.controller.nsxclient.models.LogicalRouterLinkPortOnTier0;
+import com.vmware.photon.controller.nsxclient.models.LogicalRouterLinkPortOnTier0CreateSpec;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.util.concurrent.FutureCallback;
@@ -77,7 +79,7 @@ public class LogicalRouterApi extends NsxClientApi {
   }
 
   /**
-   * Create a downlink port on logical router.
+   * Create a downlink port on tier-1 router to switch.
    * @param spec
    * @param responseCallback
    */
@@ -89,6 +91,26 @@ public class LogicalRouterApi extends NsxClientApi {
         serializeObjectAsJson(spec),
         HttpStatus.SC_CREATED,
         new TypeReference<LogicalRouterDownLinkPort>() {
+        },
+        responseCallback
+    );
+  }
+
+  /**
+   * Create a port on tier0 router that connects to tier1 router.
+   *
+   * @param spec
+   * @param responseCallback
+   * @throws IOException
+   */
+  public void createLogicalRouterLinkPortTier0(LogicalRouterLinkPortOnTier0CreateSpec spec,
+                                               FutureCallback<LogicalRouterLinkPortOnTier0> responseCallback)
+      throws IOException {
+
+    postAsync(logicalRouterPortBasePath,
+        serializeObjectAsJson(spec),
+        HttpStatus.SC_CREATED,
+        new TypeReference<LogicalRouterLinkPortOnTier0>() {
         },
         responseCallback
     );

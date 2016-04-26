@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.nsxclient.apis;
 
 import com.vmware.photon.controller.nsxclient.RestClient;
+import com.vmware.photon.controller.nsxclient.builders.LogicalRouterLinkPortOnTier0CreateSpecBuilder;
 import com.vmware.photon.controller.nsxclient.datatypes.NsxRouter;
 import com.vmware.photon.controller.nsxclient.models.IPv4CIDRBlock;
 import com.vmware.photon.controller.nsxclient.models.LogicalRouter;
@@ -21,6 +22,8 @@ import com.vmware.photon.controller.nsxclient.models.LogicalRouterConfig;
 import com.vmware.photon.controller.nsxclient.models.LogicalRouterCreateSpec;
 import com.vmware.photon.controller.nsxclient.models.LogicalRouterDownLinkPort;
 import com.vmware.photon.controller.nsxclient.models.LogicalRouterDownLinkPortCreateSpec;
+import com.vmware.photon.controller.nsxclient.models.LogicalRouterLinkPortOnTier0;
+import com.vmware.photon.controller.nsxclient.models.LogicalRouterLinkPortOnTier0CreateSpec;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.util.concurrent.FutureCallback;
@@ -139,7 +142,7 @@ public class LogicalRouterApiTest extends NsxClientApiTest {
     }
 
     @Test
-    public void testSuccessfullyCreated() throws Exception {
+    public void testSuccessfullyCreatedDownLinkPortToSwitch() throws Exception {
       LogicalRouterDownLinkPortCreateSpec spec = new LogicalRouterDownLinkPortCreateSpec();
       LogicalRouterDownLinkPort logicalRouterDownLinkPort = new LogicalRouterDownLinkPort();
 
@@ -175,7 +178,7 @@ public class LogicalRouterApiTest extends NsxClientApiTest {
     }
 
     @Test
-    public void testFailedToCreate() throws Exception {
+    public void testFailedToCreateDownLinkPortToSwitch() throws Exception {
       final String errorMsg = "Service is not available";
       LogicalRouterDownLinkPortCreateSpec spec = new LogicalRouterDownLinkPortCreateSpec();
 
@@ -196,6 +199,84 @@ public class LogicalRouterApiTest extends NsxClientApiTest {
           new FutureCallback<LogicalRouterDownLinkPort>() {
             @Override
             public void onSuccess(LogicalRouterDownLinkPort result) {
+              fail("Should not have succeeded");
+              latch.countDown();
+            }
+
+            @Override
+            public void onFailure(Throwable t) {
+              assertThat(t.getMessage(), is(errorMsg));
+              latch.countDown();
+            }
+          }
+      );
+      latch.await();
+    }
+
+    @Test
+    public void testSuccessfullyCreatedLinkPortOnTier0() throws Exception {
+      LogicalRouterLinkPortOnTier0CreateSpec spec = new LogicalRouterLinkPortOnTier0CreateSpecBuilder()
+          .resourceType(NsxRouter.PortType.LINK_PORT_ON_TIER0)
+          .logicalRouterId("logical-router-id")
+          .build();
+
+      LogicalRouterLinkPortOnTier0 logicalRouterLinkPortOnTier0 = new LogicalRouterLinkPortOnTier0();
+      logicalRouterLinkPortOnTier0.setResourceType(NsxRouter.PortType.LINK_PORT_ON_TIER0);
+      logicalRouterLinkPortOnTier0.setLogicalRouterId("logical-router-id");
+      logicalRouterLinkPortOnTier0.setId("port-id");
+
+      doAnswer(invocation -> {
+        ((FutureCallback<LogicalRouterLinkPortOnTier0>) invocation.getArguments()[4])
+            .onSuccess(logicalRouterLinkPortOnTier0);
+        return null;
+      }).when(logicalRouterApi)
+          .postAsync(eq(logicalRouterApi.logicalRouterPortBasePath),
+              any(HttpEntity.class),
+              eq(HttpStatus.SC_CREATED),
+              any(TypeReference.class),
+              any(FutureCallback.class));
+
+      logicalRouterApi.createLogicalRouterLinkPortTier0(spec,
+          new FutureCallback<LogicalRouterLinkPortOnTier0>() {
+            @Override
+            public void onSuccess(LogicalRouterLinkPortOnTier0 result) {
+              assertThat(result, is(logicalRouterLinkPortOnTier0));
+              latch.countDown();
+            }
+
+            @Override
+            public void onFailure(Throwable t) {
+              fail("Should not have failed");
+              latch.countDown();
+            }
+          }
+      );
+      latch.await();
+    }
+
+    @Test
+    public void testFailedToCreatLinkPortOnTier0() throws Exception {
+      final String errorMsg = "Service is not available";
+      LogicalRouterLinkPortOnTier0CreateSpec spec = new LogicalRouterLinkPortOnTier0CreateSpecBuilder()
+          .resourceType(NsxRouter.PortType.LINK_PORT_ON_TIER0)
+          .logicalRouterId("logical-router-id")
+          .build();
+
+      doAnswer(invocation -> {
+        ((FutureCallback<LogicalRouterLinkPortOnTier0>) invocation.getArguments()[4])
+            .onFailure(new RuntimeException(errorMsg));
+        return null;
+      }).when(logicalRouterApi)
+          .postAsync(eq(logicalRouterApi.logicalRouterPortBasePath),
+              any(HttpEntity.class),
+              eq(HttpStatus.SC_CREATED),
+              any(TypeReference.class),
+              any(FutureCallback.class));
+
+      logicalRouterApi.createLogicalRouterLinkPortTier0(spec,
+          new FutureCallback<LogicalRouterLinkPortOnTier0>() {
+            @Override
+            public void onSuccess(LogicalRouterLinkPortOnTier0 result) {
               fail("Should not have succeeded");
               latch.countDown();
             }
