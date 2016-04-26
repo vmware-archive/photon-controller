@@ -27,6 +27,7 @@ import com.vmware.photon.controller.apife.backends.FlavorBackend;
 import com.vmware.photon.controller.apife.backends.NetworkBackend;
 import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.backends.VmBackend;
+import com.vmware.photon.controller.apife.backends.clients.SchedulerXenonRestClient;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.AttachedDiskEntity;
 import com.vmware.photon.controller.apife.entities.BaseDiskEntity;
@@ -40,13 +41,10 @@ import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.entities.VmEntity;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidLocalitySpecException;
-import com.vmware.photon.controller.apife.exceptions.external.UnfulfillableAffinitiesException;
 import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
 import com.vmware.photon.controller.common.clients.HostClient;
-import com.vmware.photon.controller.common.clients.RootSchedulerClient;
-import com.vmware.photon.controller.common.clients.exceptions.InvalidSchedulerException;
-import com.vmware.photon.controller.common.clients.exceptions.ResourceConstraintException;
 import com.vmware.photon.controller.common.clients.exceptions.StaleGenerationException;
+import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.common.zookeeper.gen.ServerAddress;
 import com.vmware.photon.controller.flavors.gen.Flavor;
 import com.vmware.photon.controller.flavors.gen.QuotaLineItem;
@@ -64,8 +62,10 @@ import com.vmware.photon.controller.resource.gen.ResourceConstraintType;
 import com.vmware.photon.controller.resource.gen.ResourcePlacement;
 import com.vmware.photon.controller.resource.gen.ResourcePlacementList;
 import com.vmware.photon.controller.resource.gen.ResourcePlacementType;
-import com.vmware.photon.controller.scheduler.gen.PlaceResponse;
+import com.vmware.photon.controller.rootscheduler.xenon.task.PlacementTask;
 import com.vmware.photon.controller.scheduler.gen.PlaceResultCode;
+import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.TaskState;
 
 import com.google.common.collect.ImmutableList;
 import org.mockito.ArgumentCaptor;
@@ -85,7 +85,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.powermock.api.mockito.PowerMockito.spy;
-import static org.testng.AssertJUnit.fail;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -98,9 +97,11 @@ import java.util.UUID;
 public class ResourceReserveStepCmdTest extends PowerMockTestCase {
   private static final CreateDisksResponse SUCCESSFUL_CREATE_DISKS_RESPONSE;
 
-  private static final PlaceResponse SUCCESSFUL_PLACE_RESPONSE;
+  private static final PlacementTask SUCCESSFUL_PLACEMENT_TASK;
 
   private static final ReserveResponse SUCCESSFUL_RESERVE_RESPONSE;
+
+  private static final int SUCCESSFUL_GENERATION = 42;
 
   static {
     SUCCESSFUL_CREATE_DISKS_RESPONSE = new CreateDisksResponse(CreateDisksResultCode.OK);
@@ -109,19 +110,23 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
     SUCCESSFUL_CREATE_DISKS_RESPONSE.addToDisks(disk);
     SUCCESSFUL_CREATE_DISKS_RESPONSE.putToDisk_errors("disk-id", new CreateDiskError(CreateDiskResultCode.OK));
 
-    SUCCESSFUL_PLACE_RESPONSE = new PlaceResponse(PlaceResultCode.OK);
     ServerAddress serverAddress = new ServerAddress();
     serverAddress.setHost("0.0.0.0");
     serverAddress.setPort(0);
-    SUCCESSFUL_PLACE_RESPONSE.setAddress(serverAddress);
-    SUCCESSFUL_PLACE_RESPONSE.setGeneration(42);
 
     SUCCESSFUL_RESERVE_RESPONSE = new ReserveResponse(ReserveResultCode.OK);
     SUCCESSFUL_RESERVE_RESPONSE.setReservation("r-100");
+
+    SUCCESSFUL_PLACEMENT_TASK = new PlacementTask();
+    SUCCESSFUL_PLACEMENT_TASK.resultCode = PlaceResultCode.OK;
+    SUCCESSFUL_PLACEMENT_TASK.serverAddress = serverAddress;
+    SUCCESSFUL_PLACEMENT_TASK.generation = SUCCESSFUL_GENERATION;
+    SUCCESSFUL_PLACEMENT_TASK.taskState = new TaskState();
+    SUCCESSFUL_PLACEMENT_TASK.taskState.stage = TaskState.TaskStage.FINISHED;
   }
 
   @Mock
-  private RootSchedulerClient rootSchedulerClient;
+  private SchedulerXenonRestClient schedulerXenonRestClient;
 
   @Mock
   private HostClient hostClient;
@@ -146,6 +151,9 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
 
   @Captor
   private ArgumentCaptor<Resource> resourceCaptor;
+
+  @Captor
+  private ArgumentCaptor<PlacementTask> placementTaskCaptor;
 
   private ProjectEntity project;
 
@@ -187,7 +195,7 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
     disk.setCost(quotaLineItemEntitiesForDisk);
 
     when(taskCommand.getHostClient()).thenReturn(hostClient);
-    when(taskCommand.getRootSchedulerClient()).thenReturn(rootSchedulerClient);
+    when(taskCommand.getSchedulerXenonRestClient()).thenReturn(schedulerXenonRestClient);
     when(flavorBackend.getEntityById(vmFlavorEntity.getId())).thenReturn(vmFlavorEntity);
     when(flavorBackend.getEntityById(diskFlavorEntity.getId())).thenReturn(diskFlavorEntity);
   }
@@ -201,17 +209,19 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
     expectedFlavor.setName("vm-100");
     expectedFlavor.setCost(quotaLineItems);
 
-    PlaceResponse placeResponse = generateResourcePlacementList();
-    placeResponse.getPlacementList().addToPlacements(generateResourcePlacement(ResourcePlacementType.VM, "vm-id"));
+    PlacementTask placementTask = generateResourcePlacementList();
+    placementTask.resource.getPlacement_list().addToPlacements(
+        generateResourcePlacement(ResourcePlacementType.VM, "vm-id"));
+    Operation placementOperation = new Operation().setBody(placementTask);
 
-    when(rootSchedulerClient.place(any(Resource.class))).thenReturn(placeResponse);
-    when(hostClient.reserve(any(Resource.class), eq(42))).thenReturn(SUCCESSFUL_RESERVE_RESPONSE);
+    when(schedulerXenonRestClient.post(any(), any())).thenReturn(placementOperation);
+    when(hostClient.reserve(any(Resource.class), eq(SUCCESSFUL_GENERATION))).thenReturn(SUCCESSFUL_RESERVE_RESPONSE);
 
     ResourceReserveStepCmd command = getVmReservationCommand();
     command.execute();
 
-    verify(rootSchedulerClient).place(resourceCaptor.capture());
-    Resource resource = resourceCaptor.getValue();
+    verify(schedulerXenonRestClient).post(any(), placementTaskCaptor.capture());
+    Resource resource = placementTaskCaptor.getValue().resource;
     assertThat(resource.getVm().getId(), is("foo"));
     assertThat(resource.getVm().getFlavor(), is("vm-100"));
     assertThat(resource.getVm().getFlavor_info(), is(expectedFlavor));
@@ -223,8 +233,9 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
     assertThat(resource.getPlacement_list().getPlacements().get(0).getType(), is(ResourcePlacementType.VM));
     assertThat(resource.getPlacement_list().getPlacements().get(0).getResource_id(), is("vm-id"));
 
-    verify(rootSchedulerClient).place(resourceCaptor.capture());
-    verify(hostClient).reserve(resourceCaptor.capture(), eq(42));
+    verify(schedulerXenonRestClient).post(any(), placementTaskCaptor.capture());
+    verify(hostClient).reserve(resourceCaptor.capture(), eq(SUCCESSFUL_GENERATION));
+    assertThat(placementTaskCaptor.getValue().resource, is(resource));
     assertThat(resourceCaptor.getValue(), is(resource));
   }
 
@@ -257,17 +268,19 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
     affinities.add(localityEntity2);
     vm.setAffinities(affinities);
 
-    PlaceResponse placeResponse = generateResourcePlacementList();
-    placeResponse.getPlacementList().addToPlacements(generateResourcePlacement(ResourcePlacementType.VM, "vm-id"));
+    PlacementTask placementTask = generateResourcePlacementList();
+    placementTask.resource.getPlacement_list().addToPlacements(
+        generateResourcePlacement(ResourcePlacementType.VM, "vm-id"));
+    Operation placementOperation = new Operation().setBody(placementTask);
 
-    when(rootSchedulerClient.place(any(Resource.class))).thenReturn(placeResponse);
-    when(hostClient.reserve(any(Resource.class), eq(42))).thenReturn(SUCCESSFUL_RESERVE_RESPONSE);
+    when(schedulerXenonRestClient.post(any(), any())).thenReturn(placementOperation);
+    when(hostClient.reserve(any(Resource.class), eq(SUCCESSFUL_GENERATION))).thenReturn(SUCCESSFUL_RESERVE_RESPONSE);
 
     ResourceReserveStepCmd command = getVmReservationCommand();
     command.execute();
 
-    verify(rootSchedulerClient).place(resourceCaptor.capture());
-    Resource resource = resourceCaptor.getValue();
+    verify(schedulerXenonRestClient).post(any(), placementTaskCaptor.capture());
+    Resource resource = placementTaskCaptor.getValue().resource;
     assertThat(resource.getVm().getResource_constraints().size(), is(vm.getAffinities().size()));
     assertThat(resource.getVm().getResource_constraints().get(0).getType(), is(ResourceConstraintType.DATASTORE));
     assertThat(resource.getVm().getResource_constraints().get(0).getValues().equals(ImmutableList.of("datastore-1")),
@@ -276,8 +289,9 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
     assertThat(resource.getVm().getResource_constraints().get(1).getValues().equals(ImmutableList.of("datastore-1")),
         is(true));
 
-    verify(rootSchedulerClient).place(resourceCaptor.capture());
-    verify(hostClient).reserve(resourceCaptor.capture(), eq(42));
+    verify(schedulerXenonRestClient).post(any(), placementTaskCaptor.capture());
+    verify(hostClient).reserve(resourceCaptor.capture(), eq(SUCCESSFUL_GENERATION));
+    assertThat(placementTaskCaptor.getValue().resource, is(resource));
     assertThat(resourceCaptor.getValue(), is(resource));
   }
 
@@ -291,17 +305,19 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
     affinities.add(localityEntity);
     vm.setAffinities(affinities);
 
-    PlaceResponse placeResponse = generateResourcePlacementList();
-    placeResponse.getPlacementList().addToPlacements(generateResourcePlacement(ResourcePlacementType.VM, "vm-id"));
+    PlacementTask placementTask = generateResourcePlacementList();
+    placementTask.resource.getPlacement_list().addToPlacements(
+        generateResourcePlacement(ResourcePlacementType.VM, "vm-id"));
+    Operation placementOperation = new Operation().setBody(placementTask);
 
-    when(rootSchedulerClient.place(any(Resource.class))).thenReturn(placeResponse);
+    when(schedulerXenonRestClient.post(any(), any())).thenReturn(placementOperation);
     when(hostClient.reserve(any(Resource.class), eq(42))).thenReturn(SUCCESSFUL_RESERVE_RESPONSE);
 
     ResourceReserveStepCmd command = getVmReservationCommand();
     command.execute();
 
-    verify(rootSchedulerClient).place(resourceCaptor.capture());
-    Resource resource = resourceCaptor.getValue();
+    verify(schedulerXenonRestClient).post(any(), placementTaskCaptor.capture());
+    Resource resource = placementTaskCaptor.getValue().resource;
     assertThat(resource.getVm().getResource_constraints().size(), is(vm.getAffinities().size()));
     assertThat(resource.getVm().getResource_constraints().get(0).getType(),
         is(ResourceConstraintType.AVAILABILITY_ZONE));
@@ -309,8 +325,9 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
             .equals(ImmutableList.of("availabilityZone-1")),
         is(true));
 
-    verify(rootSchedulerClient).place(resourceCaptor.capture());
-    verify(hostClient).reserve(resourceCaptor.capture(), eq(42));
+    verify(schedulerXenonRestClient).post(any(), placementTaskCaptor.capture());
+    verify(hostClient).reserve(resourceCaptor.capture(), eq(SUCCESSFUL_GENERATION));
+    assertThat(placementTaskCaptor.getValue().resource, is(resource));
     assertThat(resourceCaptor.getValue(), is(resource));
   }
 
@@ -331,17 +348,20 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
     attachEphemeralDisk(vm);
     ResourceReserveStepCmd command = getVmReservationCommand();
 
-    PlaceResponse placeResponse = generateResourcePlacementList();
-    placeResponse.getPlacementList().addToPlacements(generateResourcePlacement(ResourcePlacementType.VM, "vm-id"));
-    placeResponse.getPlacementList().addToPlacements(generateResourcePlacement(ResourcePlacementType.DISK, "disk-id"));
-    when(rootSchedulerClient.place(any(Resource.class))).thenReturn(placeResponse);
-    when(hostClient.reserve(any(Resource.class), eq(42))).thenReturn(SUCCESSFUL_RESERVE_RESPONSE);
+    PlacementTask placementTask = generateResourcePlacementList();
+    placementTask.resource.getPlacement_list().addToPlacements(
+        generateResourcePlacement(ResourcePlacementType.VM, "vm-id"));
+    placementTask.resource.getPlacement_list().addToPlacements(
+        generateResourcePlacement(ResourcePlacementType.DISK, "disk-id"));
+    Operation placementOperation = new Operation().setBody(placementTask);
+
+    when(schedulerXenonRestClient.post(any(), any())).thenReturn(placementOperation);
+    when(hostClient.reserve(any(Resource.class), eq(SUCCESSFUL_GENERATION))).thenReturn(SUCCESSFUL_RESERVE_RESPONSE);
 
     command.execute();
 
-    verify(rootSchedulerClient).place(resourceCaptor.capture());
-    Resource resource = resourceCaptor.getValue();
-
+    verify(schedulerXenonRestClient).post(any(), placementTaskCaptor.capture());
+    Resource resource = placementTaskCaptor.getValue().resource;
     assertThat(resource.getVm().isSetResource_constraints(), is(false));
     assertThat(resource.getVm().getDisks().size(), is(vm.getAttachedDisks().size()));
     assertThat(resource.getVm().getDisks().get(0).getId(), is("disk1"));
@@ -382,17 +402,20 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
     attachEphemeralDisk(vm);
     ResourceReserveStepCmd command = getVmReservationCommand();
 
-    PlaceResponse placeResponse = generateResourcePlacementList();
-    placeResponse.getPlacementList().addToPlacements(generateResourcePlacement(ResourcePlacementType.VM, "vm-id"));
-    placeResponse.getPlacementList().addToPlacements(generateResourcePlacement(ResourcePlacementType.DISK, "disk-id"));
-    when(rootSchedulerClient.place(any(Resource.class))).thenReturn(placeResponse);
-    when(hostClient.reserve(any(Resource.class), eq(42))).thenReturn(SUCCESSFUL_RESERVE_RESPONSE);
+    PlacementTask placementTask = generateResourcePlacementList();
+    placementTask.resource.getPlacement_list().addToPlacements(
+        generateResourcePlacement(ResourcePlacementType.VM, "vm-id"));
+    placementTask.resource.getPlacement_list().addToPlacements(
+        generateResourcePlacement(ResourcePlacementType.DISK, "disk-id"));
+    Operation placementOperation = new Operation().setBody(placementTask);
+
+    when(schedulerXenonRestClient.post(any(), any())).thenReturn(placementOperation);
+    when(hostClient.reserve(any(Resource.class), eq(SUCCESSFUL_GENERATION))).thenReturn(SUCCESSFUL_RESERVE_RESPONSE);
 
     command.execute();
 
-    verify(rootSchedulerClient).place(resourceCaptor.capture());
-    Resource resource = resourceCaptor.getValue();
-
+    verify(schedulerXenonRestClient).post(any(), placementTaskCaptor.capture());
+    Resource resource = placementTaskCaptor.getValue().resource;
     assertThat(resource.getVm().isSetResource_constraints(), is(true));
     assertThat(resource.getVm().getDisks().size(), is(vm.getAttachedDisks().size()));
     assertThat(resource.getVm().getDisks().get(0).getId(), is("disk1"));
@@ -413,14 +436,14 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
   }
 
   @Test(expectedExceptions = InternalException.class,
-        expectedExceptionsMessageRegExp = "Project entity not found in the step.")
+      expectedExceptionsMessageRegExp = "Project entity not found in the step.")
   public void testFailedVmExecutionNoProject() throws Throwable {
     ResourceReserveStepCmd command = getVmReservationCommand(false);
     command.execute();
   }
 
   @Test(expectedExceptions = InternalException.class,
-        expectedExceptionsMessageRegExp = "Project entity in transient resource list did not match VMs project.")
+      expectedExceptionsMessageRegExp = "Project entity in transient resource list did not match VMs project.")
   public void testFailedVmExecutionProjectEntityIdDoesNotMatchVmProjectId() throws Throwable {
     vm.setProjectId("some-other-id");
     ResourceReserveStepCmd command = getVmReservationCommand();
@@ -444,17 +467,20 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
 
     ResourceReserveStepCmd command = getDiskReservationCommand();
 
-    PlaceResponse placeResponse = generateResourcePlacementList();
-    placeResponse.getPlacementList().addToPlacements(generateResourcePlacement(ResourcePlacementType.DISK, "disk-id"));
-    when(rootSchedulerClient.place(any(Resource.class))).thenReturn(placeResponse);
-    when(hostClient.reserve(any(Resource.class), eq(42))).thenReturn(SUCCESSFUL_RESERVE_RESPONSE);
+    PlacementTask placementTask = generateResourcePlacementList();
+    placementTask.resource.getPlacement_list().addToPlacements(
+        generateResourcePlacement(ResourcePlacementType.DISK, "disk-id"));
+    Operation placementOperation = new Operation().setBody(placementTask);
+
+    when(schedulerXenonRestClient.post(any(), any())).thenReturn(placementOperation);
+    when(hostClient.reserve(any(Resource.class), eq(SUCCESSFUL_GENERATION))).thenReturn(SUCCESSFUL_RESERVE_RESPONSE);
     when(vmBackend.findDatastoreByVmId("vm-1")).thenReturn("datastore-2");
     when(vmBackend.findDatastoreByVmId("vm-2")).thenReturn("datastore-2");
 
     command.execute();
 
-    verify(rootSchedulerClient).place(resourceCaptor.capture());
-    Resource resource = resourceCaptor.getValue();
+    verify(schedulerXenonRestClient).post(any(), placementTaskCaptor.capture());
+    Resource resource = placementTaskCaptor.getValue().resource;
     assertThat(resource.getDisks().get(0).getId(), is("disk-1"));
     assertThat(resource.getDisks().get(0).getResource_constraints().get(0).getType(),
         is(ResourceConstraintType.DATASTORE));
@@ -473,63 +499,45 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
     assertThat(resource.getPlacement_list().getPlacements().get(0).getType(), is(ResourcePlacementType.DISK));
     assertThat(resource.getPlacement_list().getPlacements().get(0).getResource_id(), is("disk-id"));
 
-    verify(rootSchedulerClient).place(resourceCaptor.capture());
-    verify(hostClient).reserve(resourceCaptor.capture(), eq(42));
+    verify(schedulerXenonRestClient).post(any(), placementTaskCaptor.capture());
+    verify(hostClient).reserve(resourceCaptor.capture(), eq(SUCCESSFUL_GENERATION));
+    assertThat(placementTaskCaptor.getValue().resource, is(resource));
     assertThat(resourceCaptor.getValue(), is(resource));
   }
 
-  @Test
+  @Test(expectedExceptions = StaleGenerationException.class)
   public void testFailedReservation() throws Throwable {
     ResourceReserveStepCmd command = getVmReservationCommand();
-    when(rootSchedulerClient.place(any(Resource.class))).thenReturn(SUCCESSFUL_PLACE_RESPONSE);
-    when(hostClient.reserve(any(Resource.class), eq(42))).thenThrow(new StaleGenerationException("Error"));
+    Operation placementOperation = new Operation().setBody(generateResourcePlacementList());
+    when(schedulerXenonRestClient.post(any(), any())).thenReturn(placementOperation);
+    when(hostClient.reserve(any(Resource.class), eq(SUCCESSFUL_GENERATION)))
+        .thenThrow(new StaleGenerationException("Error"));
 
-    try {
-      command.execute();
-      fail("should have failed due to stale generation exception");
-    } catch (StaleGenerationException e) {
-    }
+    command.execute();
+  }
+
+  @Test(expectedExceptions = XenonRuntimeException.class)
+  public void testFailedPlacement() throws Throwable {
+    ResourceReserveStepCmd command = getVmReservationCommand();
+    when(schedulerXenonRestClient.post(any(), any())).thenThrow(new XenonRuntimeException("Error"));
+
+    command.execute();
   }
 
   @Test
   public void testReservationFailedOnFirstTry() throws Throwable {
     ResourceReserveStepCmd command = getVmReservationCommand();
 
-    when(rootSchedulerClient.place(any(Resource.class))).thenReturn(SUCCESSFUL_PLACE_RESPONSE);
-    when(hostClient.reserve(any(Resource.class), eq(42))).thenThrow(new StaleGenerationException("Error"))
+    Operation placementOperation = new Operation().setBody(generateResourcePlacementList());
+    when(schedulerXenonRestClient.post(any(), any())).thenReturn(placementOperation);
+    when(hostClient.reserve(any(Resource.class), eq(SUCCESSFUL_GENERATION)))
+        .thenThrow(new StaleGenerationException("Error"))
         .thenReturn(SUCCESSFUL_RESERVE_RESPONSE);
 
     command.execute();
 
-    verify(rootSchedulerClient, times(2)).place(any(Resource.class));
-    verify(hostClient, times(2)).reserve(any(Resource.class), eq(42));
-  }
-
-  @Test
-  public void testFailedPlacement() throws Throwable {
-    ResourceReserveStepCmd command = getVmReservationCommand();
-
-    when(rootSchedulerClient.place(any(Resource.class))).thenThrow(new ResourceConstraintException("Error"));
-
-    try {
-      command.execute();
-      fail("should have failed due ito resource constraints exception");
-    } catch (UnfulfillableAffinitiesException e) {
-    }
-  }
-
-  @Test
-  public void testPlaceFailedFirstTryWithInvalidScheduler() throws Throwable {
-    ResourceReserveStepCmd command = getVmReservationCommand();
-
-    when(rootSchedulerClient.place(any(Resource.class))).thenThrow(new InvalidSchedulerException("Error"))
-        .thenReturn(SUCCESSFUL_PLACE_RESPONSE);
-    when(hostClient.reserve(any(Resource.class), eq(42))).thenReturn(SUCCESSFUL_RESERVE_RESPONSE);
-
-    command.execute();
-
-    verify(rootSchedulerClient, times(2)).place(any(Resource.class));
-    verify(hostClient).reserve(any(Resource.class), eq(42));
+    verify(schedulerXenonRestClient, times(2)).post(any(), any());
+    verify(hostClient, times(2)).reserve(any(Resource.class), eq(SUCCESSFUL_GENERATION));
   }
 
   @Test
@@ -558,10 +566,13 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
 
   @Test
   public void testSuccessfulVmReservationWithImageSpecifiedForBootDisk() throws Throwable {
-    PlaceResponse placeResponse = generateResourcePlacementList();
-    placeResponse.getPlacementList().addToPlacements(generateResourcePlacement(ResourcePlacementType.DISK, "disk-id"));
-    when(rootSchedulerClient.place(any(Resource.class))).thenReturn(placeResponse);
-    when(hostClient.reserve(any(Resource.class), eq(42))).thenReturn(SUCCESSFUL_RESERVE_RESPONSE);
+    PlacementTask placementTask = generateResourcePlacementList();
+    placementTask.resource.getPlacement_list().addToPlacements(
+        generateResourcePlacement(ResourcePlacementType.DISK, "disk-id"));
+    Operation placementOperation = new Operation().setBody(placementTask);
+
+    when(schedulerXenonRestClient.post(any(), any())).thenReturn(placementOperation);
+    when(hostClient.reserve(any(Resource.class), eq(SUCCESSFUL_GENERATION))).thenReturn(SUCCESSFUL_RESERVE_RESPONSE);
 
     attachBootDisk(vm);
     vm.setImageId("");
@@ -583,18 +594,20 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
 
     vm.setNetworks(ImmutableList.of(networkId));
 
-    ArgumentCaptor<Resource> resource = ArgumentCaptor.forClass(Resource.class);
-    PlaceResponse placeResponse = generateResourcePlacementList();
-    placeResponse.getPlacementList().addToPlacements(
+    PlacementTask placementTask = generateResourcePlacementList();
+    placementTask.resource.getPlacement_list().addToPlacements(
         generateResourcePlacement(ResourcePlacementType.NETWORK, networkId));
-    when(rootSchedulerClient.place(resource.capture())).thenReturn(placeResponse);
-    when(hostClient.reserve(any(Resource.class), eq(42))).thenReturn(SUCCESSFUL_RESERVE_RESPONSE);
+    Operation placementOperation = new Operation().setBody(placementTask);
+
+    when(schedulerXenonRestClient.post(any(), placementTaskCaptor.capture())).thenReturn(placementOperation);
+    when(hostClient.reserve(any(Resource.class), eq(SUCCESSFUL_GENERATION))).thenReturn(SUCCESSFUL_RESERVE_RESPONSE);
 
     ResourceReserveStepCmd command = getVmReservationCommand();
     command.setInfrastructureEntity(vm);
     command.execute();
 
-    List<ResourceConstraint> resourceConstraints = resource.getValue().getVm().getResource_constraints();
+    List<ResourceConstraint> resourceConstraints = placementTaskCaptor.getValue().resource.getVm()
+        .getResource_constraints();
     assertThat(resourceConstraints.size(), is(1));
     ResourceConstraint resourceConstraint = resourceConstraints.get(0);
     assertThat(resourceConstraint.getType(), is(ResourceConstraintType.NETWORK));
@@ -605,10 +618,14 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
 
   @Test(expectedExceptions = NullPointerException.class)
   public void testFailedVmReservationWithMissingImageForBootDisk() throws Throwable {
-    PlaceResponse placeResponse = generateResourcePlacementList();
-    placeResponse.getPlacementList().addToPlacements(generateResourcePlacement(ResourcePlacementType.DISK, "disk-id"));
-    when(rootSchedulerClient.place(any(Resource.class))).thenReturn(placeResponse);
-    when(hostClient.reserve(any(Resource.class), eq(42))).thenReturn(SUCCESSFUL_RESERVE_RESPONSE);
+    PlacementTask placementTask = generateResourcePlacementList();
+    placementTask.resource.getPlacement_list().addToPlacements(
+        generateResourcePlacement(ResourcePlacementType.DISK, "disk-id"));
+    Operation placementOperation = new Operation().setBody(placementTask);
+
+    when(schedulerXenonRestClient.post(any(), any())).thenReturn(placementOperation);
+    when(hostClient.reserve(any(Resource.class), eq(SUCCESSFUL_GENERATION))).thenReturn(SUCCESSFUL_RESERVE_RESPONSE);
+
     attachBootDisk(vm);
     ResourceReserveStepCmd command = getVmReservationCommand();
     command.setInfrastructureEntity(vm);
@@ -625,10 +642,13 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
     vm.setAffinities(Arrays.asList(localityEntity));
     vm.setImageId("");
 
-    PlaceResponse placeResponse = generateResourcePlacementList();
-    placeResponse.getPlacementList().addToPlacements(generateResourcePlacement(ResourcePlacementType.DISK, "disk-id"));
-    when(rootSchedulerClient.place(any(Resource.class))).thenReturn(placeResponse);
-    when(hostClient.reserve(any(Resource.class), eq(42))).thenReturn(SUCCESSFUL_RESERVE_RESPONSE);
+    PlacementTask placementTask = generateResourcePlacementList();
+    placementTask.resource.getPlacement_list().addToPlacements(
+        generateResourcePlacement(ResourcePlacementType.DISK, "disk-id"));
+    Operation placementOperation = new Operation().setBody(placementTask);
+
+    when(schedulerXenonRestClient.post(any(), any())).thenReturn(placementOperation);
+    when(hostClient.reserve(any(Resource.class), eq(SUCCESSFUL_GENERATION))).thenReturn(SUCCESSFUL_RESERVE_RESPONSE);
 
     attachBootDisk(vm);
     vm.setImageId("");
@@ -647,10 +667,13 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
 
     vm.setAffinities(Arrays.asList(localityEntity));
 
-    PlaceResponse placeResponse = generateResourcePlacementList();
-    placeResponse.getPlacementList().addToPlacements(generateResourcePlacement(ResourcePlacementType.DISK, "disk-id"));
-    when(rootSchedulerClient.place(any(Resource.class))).thenReturn(placeResponse);
-    when(hostClient.reserve(any(Resource.class), eq(42))).thenReturn(SUCCESSFUL_RESERVE_RESPONSE);
+    PlacementTask placementTask = generateResourcePlacementList();
+    placementTask.resource.getPlacement_list().addToPlacements(
+        generateResourcePlacement(ResourcePlacementType.DISK, "disk-id"));
+    Operation placementOperation = new Operation().setBody(placementTask);
+
+    when(schedulerXenonRestClient.post(any(), any())).thenReturn(placementOperation);
+    when(hostClient.reserve(any(Resource.class), eq(SUCCESSFUL_GENERATION))).thenReturn(SUCCESSFUL_RESERVE_RESPONSE);
 
     attachBootDisk(vm);
     vm.setImageId("");
@@ -738,14 +761,19 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
     when(diskBackend.find(disk1.getKind(), disk1.getUnderlyingDiskId())).thenReturn(disk);
   }
 
-  private PlaceResponse generateResourcePlacementList() {
-    PlaceResponse placeResponse = new PlaceResponse(SUCCESSFUL_PLACE_RESPONSE);
-    if (placeResponse.getPlacementList() == null) {
+  private PlacementTask generateResourcePlacementList() {
+    PlacementTask placementTask = new PlacementTask();
+    placementTask.resultCode = SUCCESSFUL_PLACEMENT_TASK.resultCode;
+    placementTask.serverAddress = SUCCESSFUL_PLACEMENT_TASK.serverAddress;
+    placementTask.generation = SUCCESSFUL_PLACEMENT_TASK.generation;
+    placementTask.taskState = SUCCESSFUL_PLACEMENT_TASK.taskState;
+    if (placementTask.resource == null) {
+      placementTask.resource = new Resource();
       ResourcePlacementList resourcePlacementList = new ResourcePlacementList();
       resourcePlacementList.setPlacements(new ArrayList<ResourcePlacement>());
-      placeResponse.setPlacementList(resourcePlacementList);
+      placementTask.resource.setPlacement_list(resourcePlacementList);
     }
-    return placeResponse;
+    return placementTask;
   }
 
   private ResourcePlacement generateResourcePlacement(ResourcePlacementType type, String id) {
