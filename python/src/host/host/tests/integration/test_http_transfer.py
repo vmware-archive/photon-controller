@@ -52,18 +52,10 @@ class TestHttpTransfer(unittest.TestCase):
 
         self.remote_files_to_delete = []
 
-    def _cleanup_remote_files(self):
-        file_manager = self.vim_client._content.fileManager
-        for ds_path in self.remote_files_to_delete:
-            try:
-                delete_task = file_manager.DeleteFile(ds_path, None)
-                task.WaitForTask(delete_task)
-            except:
-                pass
-
     def tearDown(self):
         os.unlink(self.random_file)
-        self._cleanup_remote_files()
+        for ds_path in self.remote_files_to_delete:
+            self.vim_client.delete_file(ds_path)
         self.vim_client.disconnect(wait=True)
 
     def _remote_ds_path(self, ds, relpath):

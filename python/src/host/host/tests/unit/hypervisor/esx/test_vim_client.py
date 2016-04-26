@@ -39,6 +39,7 @@ class TestVimClient(unittest.TestCase):
     def setUp(self, connect, update, creds):
         creds.return_value = ["username", "password"]
         self.vim_client = VimClient(auto_sync=False)
+        self.vim_client._content = MagicMock()
 
     def test_import_pyvmomi(self):
         from pyVmomi import VmomiSupport
@@ -54,21 +55,17 @@ class TestVimClient(unittest.TestCase):
     @patch.object(VimClient, "update_cache")
     @patch("pysdk.connect.Connect")
     def test_vim_client_with_param(self, connect_mock, update_mock):
-        vim_client = VimClient("esx.local", "root", "password",
-                               auto_sync=False)
+        vim_client = VimClient("esx.local", "root", "password", auto_sync=False)
         assert_that(vim_client.host, is_("esx.local"))
         assert_that(vim_client.username, is_("root"))
         assert_that(vim_client.password, is_("password"))
-        connect_mock.assert_called_once_with(host="esx.local",
-                                             user="root",
-                                             pwd="password",
+        connect_mock.assert_called_once_with(host="esx.local", user="root", pwd="password",
                                              version="vim.version.version9")
 
     @patch.object(VimClient, "update_cache")
     @patch("pysdk.connect.Connect")
     def test_update_fail_without_looping(self, connect_mock, update_mock):
-        client = VimClient("esx.local", "root", "password", auto_sync=True,
-                           min_interval=1)
+        client = VimClient("esx.local", "root", "password", auto_sync=True, min_interval=1)
         update_mock.side_effect = vim.fault.HostConnectFault
         time.sleep(0.5)
         client.disconnect(wait=True)
@@ -108,7 +105,7 @@ class TestVimClient(unittest.TestCase):
     def test_update_cache(self, connect_mock, spec_mock):
         vim_client = VimClient("esx.local", "root", "password",
                                auto_sync=False)
-        vim_client.property_collector.WaitForUpdatesEx.return_value = {}
+        vim_client._property_collector.WaitForUpdatesEx.return_value = {}
 
         # Test enter
         update = vmodl.query.PropertyCollector.UpdateSet(version="1")
@@ -153,10 +150,10 @@ class TestVimClient(unittest.TestCase):
             val=disk_list
         ))
 
-        vim_client.property_collector.WaitForUpdatesEx.return_value = update
+        vim_client._property_collector.WaitForUpdatesEx.return_value = update
         assert_that(len(vim_client.get_vms_in_cache()), is_(0))
         vim_client.update_cache()
-        vim_client.property_collector.WaitForUpdatesEx.assert_called()
+        vim_client._property_collector.WaitForUpdatesEx.assert_called()
 
         vms = vim_client.get_vms_in_cache()
         assert_that(vim_client.current_version, is_("1"))
@@ -236,7 +233,7 @@ class TestVimClient(unittest.TestCase):
                                     update_host_mock):
         vim_client = VimClient("esx.local", "root", "password",
                                min_interval=0, auto_sync=True)
-        vim_client.property_collector.WaitForUpdatesEx.return_value = {}
+        vim_client._property_collector.WaitForUpdatesEx.return_value = {}
 
         assert_that(update_mock.called, is_(True))
         retry = 0
@@ -270,50 +267,19 @@ class TestVimClient(unittest.TestCase):
         vim_client.host_system
         assert_that(callback.call_count, is_(4))
 
-    @patch("pysdk.host.GetHostSystem")
-    def test_datastore_name_to_path(self, host_system):
-        """Test that we get the correct path for the name we use."""
-        expected_path = "datastore1path"
-        mount_name_mock = MagicMock(name="mount_name_mock")
-        mount_name_mock.volume.name = "datastore1"
-        mount_name_mock.mountInfo.path = expected_path
-        mount = MagicMock(name="mount")
-        mount.config.fileSystemVolume.mountInfo = [mount_name_mock]
-        host_system.return_value = mount
-
-        path = self.vim_client.datastore_name_to_path("datastore1")
-        assert_that(path, equal_to(expected_path))
-
-    @patch("pysdk.host.GetHostSystem")
-    def test_datastore_name_to_path_not_exist(self, host_system):
-        """Test that we get None if the datastore name we're looking for does
-            not exist."""
-        expected_path = "datastore1path"
-        mount_name_mock = MagicMock(name="mount_name_mock")
-        mount_name_mock.GetVolume().GetName.return_value = "datastore1"
-        mount_name_mock.GetMountInfo().GetPath.return_value = expected_path
-        mount = MagicMock(name="mount")
-        mount.GetConfig().GetFileSystemVolume().GetMountInfo.return_value = (
-            [mount_name_mock])
-        host_system.return_value = mount
-
-        path = self.vim_client.datastore_name_to_path("datastore_doesnt_exist")
-        assert_that(path, none())
-
     def test_get_nfc_ticket(self):
         self.vim_client.get_datastore = MagicMock(return_value=None)
-        self.assertRaises(DatastoreNotFound,
-                          self.vim_client.get_nfc_ticket_by_ds_name,
-                          "no_exist")
+        self.assertRaises(DatastoreNotFound, self.vim_client.get_nfc_ticket_by_ds_name, "no_exist")
 
         ds_mock = MagicMock()
         self.vim_client.get_datastore = MagicMock(return_value=ds_mock)
-        type(self.vim_client).nfc_service = MagicMock()
+        nfc_service = MagicMock()
+        type(vim).NfcService = MagicMock()
+        type(vim).NfcService.return_value = nfc_service
 
         self.vim_client.get_nfc_ticket_by_ds_name("existing_ds")
 
-        self.vim_client.nfc_service.FileManagement.assert_called_once_with(
-            ds_mock)
+        nfc_service.FileManagement.assert_called_once_with(ds_mock)
 
     def test_inventory_path(self):
         """Check that convert to inventory path correctly."""
@@ -324,20 +290,14 @@ class TestVimClient(unittest.TestCase):
             {"path": ("vm", "Cent/OS"), "val": "ha-datacenter/vm/Cent%2fOS"},
         ]
         for test in tests:
-            result = self.vim_client.inventory_path(*test["path"])
-            assert_that(result, equal_to(test["val"]))
-
-    def test_get_vm_power_state(self):
-        """Check that we return the expected power state."""
-        vm_mock = MagicMock(name="vm_mock")
-        vm_mock.runtime.powerState = "poweredoff"
-        assert_that(self.vim_client.get_vm_power_state(vm_mock),
-                    equal_to("poweredoff"))
+            self.vim_client._find_by_inventory_path(*test["path"])
+            self.vim_client._content.searchIndex.FindByInventoryPath.assert_called_once_with(test["val"])
+            self.vim_client._content.searchIndex.FindByInventoryPath.reset_mock()
 
     def test_get_vm_not_found(self):
         """Test that if the vm isn't found we throw an exception."""
 
-        self.vim_client.find_by_inventory_path = MagicMock(return_value=None)
+        self.vim_client._find_by_inventory_path = MagicMock(return_value=None)
         # assertRaisesRegexp is only supported in 2.7
         self.assertRaises(Exception, self.vim_client.get_vm, "vm_id")
 
@@ -377,16 +337,8 @@ class TestVimClient(unittest.TestCase):
         self.assertRaises(AcquireCredentialsException,
                           VimClient.acquire_credentials)
 
-    @patch.object(VimClient, "_hostd_certbytes_digest")
-    def test_hostd_ssl_thumbprint(self, digest_mock):
-        digest_mock.return_value = "aabbccddeeff"
-        thumbprint = VimClient.get_hostd_ssl_thumbprint()
-        assert_that(thumbprint, equal_to("aa:bb:cc:dd:ee:ff"))
-
-    @patch('host.hypervisor.esx.vim_client.VimClient.property_collector',
-           new_callable=PropertyMock)
-    @patch('host.hypervisor.esx.vim_client.VimClient.perf_manager',
-           new_callable=PropertyMock)
+    @patch('host.hypervisor.esx.vim_client.VimClient._property_collector', new_callable=PropertyMock)
+    @patch('host.hypervisor.esx.vim_client.VimClient.perf_manager', new_callable=PropertyMock)
     @patch("pyVmomi.vim.PerfQuerySpec")
     @patch.object(VimClient, "_update_host_cache")
     @patch.object(VimClient, "update_cache")

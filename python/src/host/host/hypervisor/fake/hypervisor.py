@@ -14,7 +14,6 @@
 
 import logging
 import os
-import socket
 import uuid
 from host.hypervisor.fake.datastore_manager import FakeDatastoreManager
 
@@ -32,9 +31,6 @@ class FakeHypervisor(object):
 
     def __init__(self, agent_config):
         self.logger = logging.getLogger(__name__)
-        prefix = socket.gethostname()
-        suffix = str(agent_config.host_port)
-        self._uuid = str(uuid.uuid5(uuid.NAMESPACE_DNS, prefix + suffix))
 
         tempdir = mkdtemp(prefix='disk', delete=True)
         self.disk_manager = FakeDiskManager(self,
@@ -55,10 +51,6 @@ class FakeHypervisor(object):
         self.image_manager.copy_to_datastores(
             "ttylinux",
             self.datastore_manager.get_datastore_ids())
-
-    @property
-    def uuid(self):
-        return self._uuid
 
     def check_image(self, image_id, datastore_id):
         return self.image_manager.\

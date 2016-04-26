@@ -66,7 +66,7 @@ class TestVimClient(unittest.TestCase):
             str(random.randint(100000, 1000000)),
             suffix)
 
-        datastore = self.vim_client.get_datastore().name
+        datastore = self.vim_client.get_all_datastores()[0].name
         disk_path = "[%s] %s/disk.vmdk" % (datastore, vm_id)
         create_spec = self.get_create_spec(datastore, vm_id, disk_path)
         folder = self.vim_client.vm_folder

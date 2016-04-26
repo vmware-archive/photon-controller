@@ -52,7 +52,7 @@ class TestVmManager(unittest.TestCase):
         port = self._test_port()
         flavor = Flavor("vm", [QuotaLineItem("vm.cpu", 1, Unit.COUNT),
                                QuotaLineItem("vm.memory", 8, Unit.MB)])
-        datastore = self.vim_client.get_datastore().name
+        datastore = self.vim_client.get_all_datastores()[0].name
         spec = self.vm_manager.create_vm_spec(vm_id, datastore, flavor)
         self.vm_manager.set_vnc_port(spec, port)
         try:
@@ -70,7 +70,7 @@ class TestVmManager(unittest.TestCase):
         vm_id = self._vm_id()
         flavor = Flavor("vm", [QuotaLineItem("vm.cpu", 1, Unit.COUNT),
                                QuotaLineItem("vm.memory", 8, Unit.MB)])
-        datastore = self.vim_client.get_datastore().name
+        datastore = self.vim_client.get_all_datastores()[0].name
         spec = self.vm_manager.create_vm_spec(vm_id, datastore, flavor)
         try:
             self.vm_manager.create_vm(vm_id, spec)
@@ -93,7 +93,7 @@ class TestVmManager(unittest.TestCase):
         vm_id = self._vm_id()
         flavor = Flavor("vm", [QuotaLineItem("vm.cpu", 1, Unit.COUNT),
                                QuotaLineItem("vm.memory", 8, Unit.MB)])
-        datastore = self.vim_client.get_datastore().name
+        datastore = self.vim_client.get_all_datastores()[0].name
         spec = self.vm_manager.create_vm_spec(vm_id, datastore, flavor)
         self.vm_manager.set_vminfo(spec, vminfo)
         try:
