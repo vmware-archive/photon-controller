@@ -53,7 +53,6 @@ class TestUnitEsxHypervisor(unittest.TestCase):
         return content_mock
 
     @patch("host.hypervisor.esx.vm_config.GetEnv")
-    @patch.object(VimClient, "initialize_host_counters")
     @patch("host.hypervisor.esx.image_manager.EsxImageManager."
            "monitor_for_cleanup")
     @patch.object(VimClient, "first_vmk_ip_address", new_callable=PropertyMock)
@@ -62,10 +61,8 @@ class TestUnitEsxHypervisor(unittest.TestCase):
     @patch.object(VimClient, "update_cache")
     @patch("pysdk.connect.Connect")
     @patch.object(VimClient, "host_uuid")
-    def test_config(
-            self, bios_uuid, connect_mock, update_mock,
-            thumbprint_mock, creds_mock, first_ip_mock,
-            monitor_mock, init_host_mock, get_env_mock):
+    def test_config(self, bios_uuid, connect_mock, update_mock, thumbprint_mock,
+                    creds_mock, first_ip_mock, monitor_mock, get_env_mock):
 
         si_mock = MagicMock(name="si_mock")
         si_mock.RetrieveContent = self._retrieve_content
@@ -91,7 +88,6 @@ class TestUnitEsxHypervisor(unittest.TestCase):
         assert_that(update_mock.called, is_(True))
 
     @patch("host.hypervisor.esx.vm_config.GetEnv")
-    @patch.object(VimClient, "initialize_host_counters")
     @patch("host.hypervisor.esx.image_manager.EsxImageManager."
            "monitor_for_cleanup")
     @patch.object(VimClient, "first_vmk_ip_address", new_callable=PropertyMock)
@@ -100,10 +96,8 @@ class TestUnitEsxHypervisor(unittest.TestCase):
     @patch.object(VimClient, "update_cache")
     @patch("pysdk.connect.Connect")
     @patch.object(VimClient, "host_uuid")
-    def test_listener(
-            self, bios_uuid, connect_mock, update_mock,
-            thumbprint_mock, creds_mock, first_ip_mock,
-            monitor_mock, init_host_mock, get_env_mock):
+    def test_listener(self, bios_uuid, connect_mock, update_mock, thumbprint_mock,
+                      creds_mock, first_ip_mock, monitor_mock, get_env_mock):
         """Test update listeners"""
         class MyUpdateListener(UpdateListener):
             def __init__(self):
