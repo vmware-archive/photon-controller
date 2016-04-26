@@ -42,10 +42,10 @@ describe "migrate finalize", upgrade: true do
     get_upgrade_cloudstore_map
   end
 
-  describe "#data_check" do
-    let(:uri) { URI.parse(EsxCloud::TestHelpers.get_upgrade_source_address) }
-    let(:source_cloud_store) { EsxCloud::Dcp::CloudStore::CloudStoreClient.connect_to_endpoint(uri.host, nil) }
+  let(:uri) { URI.parse(EsxCloud::TestHelpers.get_upgrade_source_address) }
+  let(:source_cloud_store) { EsxCloud::Dcp::CloudStore::CloudStoreClient.connect_to_endpoint(uri.host, nil) }
 
+  describe "#data_check" do
     let(:destination_uri) { URI.parse(ApiClientHelper.endpoint(nil, nil, nil)) }
     let(:destination_cloud_store) { EsxCloud::Dcp::CloudStore::CloudStoreClient.connect_to_endpoint(
         destination_uri.host, nil) }
@@ -113,6 +113,7 @@ describe "migrate finalize", upgrade: true do
   end
 
   describe "#old plane state" do
+
     def self.get_service_map(uri)
       source_cloud_store =  EsxCloud::Dcp::CloudStore::CloudStoreClient.connect_to_endpoint(uri.host, nil)
       json = source_cloud_store.get "/"
@@ -223,7 +224,7 @@ describe "migrate finalize", upgrade: true do
             detach_iso vm
             vm.delete
 
-            vm = client.find_all_vms(project.id).items.find {|v| v.id = vm.id}
+            vm = client.find_all_vms(project.id).items.find {|v| v.id == vm.id}
             expect(vm).to be_nil
           end
         end
