@@ -11,18 +11,18 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package com.vmware.photon.controller.apife.backends;
+    package com.vmware.photon.controller.apife.backends;
 
 import com.vmware.photon.controller.api.common.exceptions.ApiFeException;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.common.exceptions.external.OutOfThreadPoolWorkerException;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
+import com.vmware.photon.controller.apife.backends.clients.SchedulerXenonRestClient;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.common.clients.DeployerClient;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HousekeeperClient;
-import com.vmware.photon.controller.common.clients.RootSchedulerClient;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
@@ -44,11 +44,11 @@ import java.util.concurrent.TimeUnit;
 public class TaskCommandExecutorServiceTest {
   private static final Logger logger = LoggerFactory.getLogger(TaskCommandExecutorServiceTest.class);
   private ApiFeXenonRestClient dcpClient = mock(ApiFeXenonRestClient.class);
-  private RootSchedulerClient rootSchedulerClient = mock(RootSchedulerClient.class);
   private HousekeeperClient housekeeperClient = mock(HousekeeperClient.class);
   private DeployerClient deployerClient = mock(DeployerClient.class);
   private HostClient hostClient = mock(HostClient.class);
   private EntityLockBackend entityLockBackend = mock(EntityLockBackend.class);
+  private SchedulerXenonRestClient schedulerXenonRestClient = mock(SchedulerXenonRestClient.class);
 
   @DataProvider(name = "getSubmitParams")
   public Object[][] getSubmitParams() {
@@ -116,7 +116,7 @@ public class TaskCommandExecutorServiceTest {
     for (int i = 0; i < count; i++) {
       TaskEntity task = new TaskEntity();
       task.setId("t" + i);
-      commands[i] = new TestTaskCommand(dcpClient, rootSchedulerClient, hostClient,
+      commands[i] = new TestTaskCommand(dcpClient, schedulerXenonRestClient, hostClient,
           housekeeperClient, deployerClient, task, countDownLatch);
       try {
         service.submit(commands[i]);
@@ -137,13 +137,14 @@ public class TaskCommandExecutorServiceTest {
 
     @Inject
     public TestTaskCommand(ApiFeXenonRestClient dcpClient,
-                           RootSchedulerClient rootSchedulerClient,
+                           SchedulerXenonRestClient schedulerXenonRestClient,
                            HostClient hostClient,
                            HousekeeperClient housekeeperClient,
                            DeployerClient deployerClient,
                            TaskEntity task,
                            CountDownLatch countDownLatch) {
-      super(dcpClient, rootSchedulerClient, hostClient, housekeeperClient, deployerClient, entityLockBackend, task);
+      super(dcpClient, schedulerXenonRestClient, hostClient, housekeeperClient, deployerClient,
+          entityLockBackend, task);
       this.countDownLatch = countDownLatch;
     }
 

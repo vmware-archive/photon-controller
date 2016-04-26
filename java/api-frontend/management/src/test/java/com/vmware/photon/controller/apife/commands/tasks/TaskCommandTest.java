@@ -33,6 +33,7 @@ import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.backends.TaskBackend;
 import com.vmware.photon.controller.apife.backends.TenantDcpBackend;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
+import com.vmware.photon.controller.apife.backends.clients.SchedulerXenonRestClient;
 import com.vmware.photon.controller.apife.commands.CommandTestModule;
 import com.vmware.photon.controller.apife.commands.steps.StepCommand;
 import com.vmware.photon.controller.apife.commands.steps.StepCommandFactory;
@@ -51,7 +52,6 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.VmServiceFactory;
 import com.vmware.photon.controller.common.clients.DeployerClient;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HousekeeperClient;
-import com.vmware.photon.controller.common.clients.RootSchedulerClient;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
 import com.vmware.photon.controller.common.xenon.BasicServiceHost;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
@@ -142,7 +142,7 @@ public class TaskCommandTest {
 
   public TestTaskCommand testTaskCommand;
 
-  RootSchedulerClient rootSchedulerClient;
+  SchedulerXenonRestClient schedulerXenonRestClient;
 
   HousekeeperClient housekeeperClient;
 
@@ -187,7 +187,7 @@ public class TaskCommandTest {
 
   @BeforeMethod
   public void setUp() throws Exception {
-    rootSchedulerClient = mock(RootSchedulerClient.class);
+    schedulerXenonRestClient = mock(SchedulerXenonRestClient.class);
     housekeeperClient = mock(HousekeeperClient.class);
     deployerClient = mock(DeployerClient.class);
     stepCommandFactory = mock(StepCommandFactory.class);
@@ -230,7 +230,7 @@ public class TaskCommandTest {
     VmEntity vm = new VmEntity();
     task = taskBackend.createQueuedTask(vm, Operation.CREATE_VM);
     task.setSteps(new ArrayList<StepEntity>());
-    testTaskCommand = new TestTaskCommand(dcpClient, rootSchedulerClient, hostClient, housekeeperClient,
+    testTaskCommand = new TestTaskCommand(dcpClient, schedulerXenonRestClient, hostClient, housekeeperClient,
         taskBackend, stepCommandFactory, task, deployerClient);
 
     Datastore datastore = new Datastore();
@@ -281,7 +281,7 @@ public class TaskCommandTest {
 
       command1 = spy(new TaskCommand(
           mock(ApiFeXenonRestClient.class),
-          mock(RootSchedulerClient.class),
+          mock(SchedulerXenonRestClient.class),
           mock(HostClient.class),
           mock(HousekeeperClient.class),
           mock(DeployerClient.class),
@@ -291,7 +291,7 @@ public class TaskCommandTest {
 
       command2 = spy(new TaskCommand(
           mock(ApiFeXenonRestClient.class),
-          mock(RootSchedulerClient.class),
+          mock(SchedulerXenonRestClient.class),
           mock(HostClient.class),
           mock(HousekeeperClient.class),
           mock(DeployerClient.class),
@@ -359,7 +359,7 @@ public class TaskCommandTest {
 
   @Test
   public void testMarkAsStarted() throws Exception {
-    TestTaskCommand command = new TestTaskCommand(apiFeXenonRestClient, rootSchedulerClient, hostClient,
+    TestTaskCommand command = new TestTaskCommand(apiFeXenonRestClient, schedulerXenonRestClient, hostClient,
         housekeeperClient, taskBackend, stepCommandFactory, task, deployerClient);
 
     command.markAsStarted();
@@ -399,7 +399,7 @@ public class TaskCommandTest {
 
   @Test(dataProvider = "steps")
   public void testMarkAsDone(StepEntity[] steps, TaskEntity.State state) throws Exception {
-    TestTaskCommand command = new TestTaskCommand(apiFeXenonRestClient, rootSchedulerClient, hostClient,
+    TestTaskCommand command = new TestTaskCommand(apiFeXenonRestClient, schedulerXenonRestClient, hostClient,
         housekeeperClient, taskBackend, stepCommandFactory, task, deployerClient);
     for (StepEntity step : steps) {
       task.addStep(step);
@@ -416,7 +416,7 @@ public class TaskCommandTest {
 
   @Test
   public void testMarkAsFailed() throws Exception {
-    TestTaskCommand command = new TestTaskCommand(apiFeXenonRestClient, rootSchedulerClient, hostClient,
+    TestTaskCommand command = new TestTaskCommand(apiFeXenonRestClient, schedulerXenonRestClient, hostClient,
         housekeeperClient, taskBackend, stepCommandFactory, task, deployerClient);
 
     command.markAsFailed(new ApiFeException("Something happened"));
@@ -435,7 +435,7 @@ public class TaskCommandTest {
         createStep("step-3", StepEntity.State.QUEUED)
     };
     TestStepCommand[] stepCommands = new TestStepCommand[steps.length];
-    TestTaskCommand command = new TestTaskCommand(apiFeXenonRestClient, rootSchedulerClient, hostClient,
+    TestTaskCommand command = new TestTaskCommand(apiFeXenonRestClient, schedulerXenonRestClient, hostClient,
         housekeeperClient, taskBackend, stepCommandFactory, task, deployerClient);
 
     for (int i = 0; i < steps.length; i++) {
@@ -455,7 +455,7 @@ public class TaskCommandTest {
 
   @Test
   public void testCleanup() {
-    TestTaskCommand command = new TestTaskCommand(apiFeXenonRestClient, rootSchedulerClient, hostClient,
+    TestTaskCommand command = new TestTaskCommand(apiFeXenonRestClient, schedulerXenonRestClient, hostClient,
         housekeeperClient, taskBackend, stepCommandFactory, task, deployerClient);
 
     command.cleanup();
@@ -464,7 +464,7 @@ public class TaskCommandTest {
 
   @Test
   public void testFindVmHostWithVmNotFoundException() throws Exception {
-    TestTaskCommand command = new TestTaskCommand(apiFeXenonRestClient, rootSchedulerClient, hostClient,
+    TestTaskCommand command = new TestTaskCommand(apiFeXenonRestClient, schedulerXenonRestClient, hostClient,
         housekeeperClient, taskBackend, stepCommandFactory, task, deployerClient);
 
     VmEntity vm = new VmEntity();
@@ -477,12 +477,12 @@ public class TaskCommandTest {
     }
 
     assertThat(vm.getAgent(), is(nullValue()));
-    verifyNoMoreInteractions(rootSchedulerClient, hostClient);
+    verifyNoMoreInteractions(schedulerXenonRestClient, hostClient);
   }
 
   @Test
   public void testFindVmHostWithAgentId() throws Exception {
-    TestTaskCommand command = new TestTaskCommand(apiFeXenonRestClient, rootSchedulerClient, hostClient,
+    TestTaskCommand command = new TestTaskCommand(apiFeXenonRestClient, schedulerXenonRestClient, hostClient,
         housekeeperClient, taskBackend, stepCommandFactory, task, deployerClient);
 
     VmEntity vm = new VmEntity();
@@ -490,14 +490,14 @@ public class TaskCommandTest {
     vm.setAgent(agentId);
     command.getHostClient(vm);
 
-    InOrder inOrder = inOrder(rootSchedulerClient, hostClient);
+    InOrder inOrder = inOrder(schedulerXenonRestClient, hostClient);
     inOrder.verify(hostClient).setHostIp("host-ip");
-    verifyNoMoreInteractions(rootSchedulerClient, hostClient);
+    verifyNoMoreInteractions(schedulerXenonRestClient, hostClient);
   }
 
   @Test
   public void testVmGetHostclientWithVmNotFoundException() throws Exception {
-    TestTaskCommand command = new TestTaskCommand(apiFeXenonRestClient, rootSchedulerClient, hostClient,
+    TestTaskCommand command = new TestTaskCommand(apiFeXenonRestClient, schedulerXenonRestClient, hostClient,
         housekeeperClient, taskBackend, stepCommandFactory, task, deployerClient);
 
     VmEntity vm = new VmEntity();
@@ -510,12 +510,12 @@ public class TaskCommandTest {
     }
 
     assertThat(vm.getAgent(), is(nullValue()));
-    verifyNoMoreInteractions(rootSchedulerClient, hostClient);
+    verifyNoMoreInteractions(schedulerXenonRestClient, hostClient);
   }
 
   @Test
   public void testVmGetHostclientWithAgentId() throws Exception {
-    TestTaskCommand command = new TestTaskCommand(apiFeXenonRestClient, rootSchedulerClient, hostClient,
+    TestTaskCommand command = new TestTaskCommand(apiFeXenonRestClient, schedulerXenonRestClient, hostClient,
         housekeeperClient, taskBackend, stepCommandFactory, task, deployerClient);
 
     VmEntity vm = new VmEntity();
@@ -523,14 +523,14 @@ public class TaskCommandTest {
     vm.setAgent(agentId);
     command.getHostClient(vm);
 
-    InOrder inOrder = inOrder(rootSchedulerClient, hostClient);
+    InOrder inOrder = inOrder(schedulerXenonRestClient, hostClient);
     inOrder.verify(hostClient).setHostIp("host-ip");
-    verifyNoMoreInteractions(rootSchedulerClient, hostClient);
+    verifyNoMoreInteractions(schedulerXenonRestClient, hostClient);
   }
 
   @Test
   public void testVmGetHostclientWithHostIp() throws Exception {
-    TestTaskCommand command = new TestTaskCommand(apiFeXenonRestClient, rootSchedulerClient, hostClient,
+    TestTaskCommand command = new TestTaskCommand(apiFeXenonRestClient, schedulerXenonRestClient, hostClient,
         housekeeperClient, taskBackend, stepCommandFactory, task, deployerClient);
 
     VmEntity vm = new VmEntity();
@@ -539,14 +539,14 @@ public class TaskCommandTest {
     command.getHostClient(vm);
 
     assertThat(vm.getAgent(), is(nullValue()));
-    InOrder inOrder = inOrder(rootSchedulerClient, hostClient);
+    InOrder inOrder = inOrder(schedulerXenonRestClient, hostClient);
     inOrder.verify(hostClient).setHostIp("1.1.1.1");
-    verifyNoMoreInteractions(rootSchedulerClient, hostClient);
+    verifyNoMoreInteractions(schedulerXenonRestClient, hostClient);
   }
 
   @Test
   public void testVmGetHostClientWithAgentIdAndHostIp() throws Exception {
-    TestTaskCommand command = new TestTaskCommand(apiFeXenonRestClient, rootSchedulerClient, hostClient,
+    TestTaskCommand command = new TestTaskCommand(apiFeXenonRestClient, schedulerXenonRestClient, hostClient,
         housekeeperClient, taskBackend, stepCommandFactory, task, deployerClient);
 
     VmEntity vm = new VmEntity();
@@ -555,9 +555,9 @@ public class TaskCommandTest {
     vm.setHost("1.1.1.1");
     command.getHostClient(vm);
 
-    InOrder inOrder = inOrder(rootSchedulerClient, hostClient);
+    InOrder inOrder = inOrder(schedulerXenonRestClient, hostClient);
     inOrder.verify(hostClient).setHostIp("1.1.1.1");
-    verifyNoMoreInteractions(rootSchedulerClient, hostClient);
+    verifyNoMoreInteractions(schedulerXenonRestClient, hostClient);
   }
 
   @DataProvider(name = "getDiskEntitiesParam")
@@ -569,7 +569,7 @@ public class TaskCommandTest {
 
   @Test(dataProvider = "getDiskEntitiesParam")
   public void testFindDiskHostWithDiskNotFoundException(BaseDiskEntity disk) throws Exception {
-    TestTaskCommand command = new TestTaskCommand(apiFeXenonRestClient, rootSchedulerClient, hostClient,
+    TestTaskCommand command = new TestTaskCommand(apiFeXenonRestClient, schedulerXenonRestClient, hostClient,
         housekeeperClient, taskBackend, stepCommandFactory, task, deployerClient);
     disk.setId("disk-1");
 
@@ -584,20 +584,20 @@ public class TaskCommandTest {
 
   @Test(dataProvider = "getDiskEntitiesParam")
   public void testFindDiskHostWithAgentId(BaseDiskEntity disk) throws Exception {
-    TestTaskCommand command = new TestTaskCommand(apiFeXenonRestClient, rootSchedulerClient, hostClient,
+    TestTaskCommand command = new TestTaskCommand(apiFeXenonRestClient, schedulerXenonRestClient, hostClient,
         housekeeperClient, taskBackend, stepCommandFactory, task, deployerClient);
 
     disk.setId("disk-1");
     disk.setAgent(agentId);
     command.findHost(disk);
-    InOrder inOrder = inOrder(rootSchedulerClient, hostClient);
+    InOrder inOrder = inOrder(schedulerXenonRestClient, hostClient);
     inOrder.verify(hostClient).setHostIp("host-ip");
-    verifyNoMoreInteractions(rootSchedulerClient, hostClient);
+    verifyNoMoreInteractions(schedulerXenonRestClient, hostClient);
   }
 
   @Test
   public void testLookupAgentIdSuccess() {
-    TestTaskCommand command = new TestTaskCommand(apiFeXenonRestClient, rootSchedulerClient, hostClient,
+    TestTaskCommand command = new TestTaskCommand(apiFeXenonRestClient, schedulerXenonRestClient, hostClient,
         housekeeperClient, taskBackend, stepCommandFactory, task, deployerClient);
     String agentId = command.lookupAgentId("host-ip");
     assertEquals(this.agentId, agentId);
@@ -605,7 +605,7 @@ public class TaskCommandTest {
 
   @Test
   public void testLookupAgentIdNotFound() {
-    TestTaskCommand command = new TestTaskCommand(apiFeXenonRestClient, rootSchedulerClient, hostClient,
+    TestTaskCommand command = new TestTaskCommand(apiFeXenonRestClient, schedulerXenonRestClient, hostClient,
         housekeeperClient, taskBackend, stepCommandFactory, task, deployerClient);
     try {
       command.lookupAgentId("unknown-ip");
@@ -637,10 +637,11 @@ public class TaskCommandTest {
     public boolean cleanedUp = false;
 
     @Inject
-    public TestTaskCommand(ApiFeXenonRestClient apiFeXenonRestClient, RootSchedulerClient rootSchedulerClient,
+    public TestTaskCommand(ApiFeXenonRestClient apiFeXenonRestClient,
+                           SchedulerXenonRestClient schedulerXenonRestClient,
                            HostClient hostClient, HousekeeperClient housekeeperClient, TaskBackend taskBackend,
                            StepCommandFactory stepCommandFactory, TaskEntity task, DeployerClient deployerClient) {
-      super(apiFeXenonRestClient, rootSchedulerClient, hostClient, housekeeperClient,
+      super(apiFeXenonRestClient, schedulerXenonRestClient, hostClient, housekeeperClient,
           deployerClient, entityLockBackend, task);
       setReservation("reservation-id");
       setTaskBackend(taskBackend);
