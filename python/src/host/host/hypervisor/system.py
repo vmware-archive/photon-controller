@@ -17,12 +17,6 @@ class DatastoreInaccessibleException(Exception):
     pass
 
 
-class MemoryInfo(object):
-    def __init__(self, total, used):
-        self.total = total
-        self.used = used
-
-
 class DatastoreInfo(object):
     def __init__(self, total, used):
         self.total = total
@@ -32,15 +26,6 @@ class DatastoreInfo(object):
 class System(object):
     """Hypervisor host system interface."""
     __metaclass__ = abc.ABCMeta
-
-    @abc.abstractmethod
-    def memory_info(self):
-        """Host system memory info. For esx implementation, it's fetched
-        from hostd.
-
-        :rtype: MemoryInfo
-        """
-        pass
 
     @abc.abstractmethod
     def datastore_info(self, datastore_id):
