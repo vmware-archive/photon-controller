@@ -17,6 +17,7 @@ import com.vmware.photon.controller.api.NetworkState;
 import com.vmware.photon.controller.api.RoutingType;
 import com.vmware.photon.controller.apibackend.builders.TaskStateBuilder;
 import com.vmware.photon.controller.apibackend.servicedocuments.CreateVirtualNetworkWorkflowDocument;
+import com.vmware.photon.controller.apibackend.utils.ServiceHostUtils;
 import com.vmware.photon.controller.cloudstore.dcp.entity.TaskService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.TaskServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.VirtualNetworkService;
@@ -29,7 +30,6 @@ import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.TaskState;
-import com.vmware.xenon.common.UriUtils;
 
 /**
  * This class implements a Xenon service representing a workflow to create a virtual network.
@@ -87,7 +87,7 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService {
       if (ControlFlags.isOperationProcessingDisabled(currentState.controlFlags)) {
         ServiceUtils.logInfo(this, "Skipping patch operation processing (disabled)");
       } else if (TaskState.TaskStage.STARTED == currentState.taskState.stage) {
-        processPatch(currentState);
+        getTask(currentState);
       }
     } catch (Throwable t) {
       if (!OperationUtils.isCompleted(patchOperation)) {
@@ -97,8 +97,78 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService {
     }
   }
 
-  private void processPatch(CreateVirtualNetworkWorkflowDocument state) throws Throwable {
+  private void getTask(CreateVirtualNetworkWorkflowDocument currentState) throws Throwable {
+    ServiceHostUtils.getCloudStoreHelper(getHost())
+        .createGet(currentState.virtualNetworkTaskServiceState.documentSelfLink)
+        .setCompletion((op, ex) -> {
+          if (ex != null) {
+            failTask(ex);
+            return;
+          }
+
+          try {
+            TaskService.State taskState = op.getBody(TaskService.State.class);
+            processTask(currentState, taskState);
+          } catch (Throwable t) {
+            failTask(t);
+          }
+        })
+        .sendWith(this);
+  }
+
+  private void processTask(CreateVirtualNetworkWorkflowDocument currentState,
+                           TaskService.State taskState) throws Throwable {
+    TaskService.State.Step currentStep = null;
+    for (TaskService.State.Step step : taskState.steps) {
+      if (step.state.equals(TaskService.State.StepState.QUEUED)) {
+        currentStep = step;
+        break;
+      }
+    }
+
+    if (currentStep == null) {
+      ServiceUtils.logInfo(this, "All CreateVirtualNetworkWorkflow steps have been executed.");
+      TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FINISHED, null));
+      return;
+    }
+
+    switch (currentStep.operation) {
+      case GET_NSX_CONFIGURATION:
+        getNsxConfiguration(currentState, taskState);
+        break;
+      case CREATE_LOGICAL_SWITCH:
+        createLogicalSwitch(currentState, taskState);
+        break;
+      case CREATE_LOGICAL_ROUTER:
+        createLogicalRouter(currentState, taskState);
+        break;
+      case SET_UP_LOGICAL_ROUTER:
+        setUpLogicalRouter(currentState, taskState);
+        break;
+    }
+
+    // TODO(ysheng): fill in the individual step implementation
     TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FINISHED, null));
+  }
+
+  private void getNsxConfiguration(CreateVirtualNetworkWorkflowDocument currentState,
+                                   TaskService.State taskState) throws Throwable {
+
+  }
+
+  private void createLogicalSwitch(CreateVirtualNetworkWorkflowDocument currentState,
+                                   TaskService.State taskState) throws Throwable {
+
+  }
+
+  private void createLogicalRouter(CreateVirtualNetworkWorkflowDocument currentState,
+                                   TaskService.State taskState) throws Throwable {
+
+  }
+
+  private void setUpLogicalRouter(CreateVirtualNetworkWorkflowDocument currentState,
+                                  TaskService.State taskState) throws Throwable {
+
   }
 
   /**
@@ -107,34 +177,34 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService {
    * @param createState
    * @param createOperation
    */
-  private void createVirtualNetwork(final CreateVirtualNetworkWorkflowDocument createState, Operation createOperation) {
-
-    Operation.CompletionHandler handler = new Operation.CompletionHandler() {
-      @Override
-      public void handle(Operation op, Throwable failure) {
-        if (failure != null) {
-          RuntimeException e = new RuntimeException(String.format("Failed to create VirtualNetworkEntity %s", failure));
-          createOperation.fail(e);
-          failTask(e);
-          return;
-        }
-        VirtualNetworkService.State rsp = op.getBody(VirtualNetworkService.State.class);
-        createState.virtualNetworkServiceState = rsp;
-        createTask(createState, createOperation);
-      }
-    };
-
+  private void createVirtualNetwork(final CreateVirtualNetworkWorkflowDocument createState,
+                                    Operation createOperation) throws Throwable {
     VirtualNetworkService.State postState = new VirtualNetworkService.State();
     postState.name = createState.name;
     postState.description = createState.description;
     postState.state = NetworkState.CREATING;
     postState.routingType = RoutingType.ROUTED;
 
-    Operation op = Operation
-        .createPost(UriUtils.buildUri(getHost(), VirtualNetworkService.FACTORY_LINK))
+    ServiceHostUtils.getCloudStoreHelper(getHost())
+        .createPost(VirtualNetworkService.FACTORY_LINK)
         .setBody(postState)
-        .setCompletion(handler);
-    this.sendRequest(op);
+        .setCompletion((op, ex) -> {
+          if (ex != null) {
+            RuntimeException e = new RuntimeException(String.format("Failed to create VirtualNetworkEntity %s", ex));
+            createOperation.fail(e);
+            failTask(e);
+            return;
+          }
+
+          try {
+            VirtualNetworkService.State rsp = op.getBody(VirtualNetworkService.State.class);
+            createState.virtualNetworkServiceState = rsp;
+            createTask(createState, createOperation);
+          } catch (Throwable t) {
+            failTask(t);
+          }
+        })
+        .sendWith(this);
   }
 
   /**
@@ -143,28 +213,26 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService {
    * @param createState
    * @param createOperation
    */
-  private void createTask(CreateVirtualNetworkWorkflowDocument createState, Operation createOperation) {
-    Operation.CompletionHandler handler = new Operation.CompletionHandler() {
-      @Override
-      public void handle(Operation op, Throwable failure) {
-        if (failure != null) {
-          RuntimeException e = new RuntimeException(String.format("Failed to create TaskEntity %s", failure));
-          createOperation.fail(e);
-          failTask(e);
-          return;
-        }
-        TaskService.State rsp = op.getBody(TaskService.State.class);
-        createState.virtualNetworkTaskServiceState = rsp;
-        createOperation.complete();
-      }
-    };
+  private void createTask(CreateVirtualNetworkWorkflowDocument createState,
+                          Operation createOperation) throws Throwable {
 
     String id = ServiceUtils.getIDFromDocumentSelfLink(createState.virtualNetworkServiceState.documentSelfLink);
-    Operation op  = Operation
-        .createPost(UriUtils.buildUri(getHost(), TaskServiceFactory.SELF_LINK))
+    ServiceHostUtils.getCloudStoreHelper(getHost())
+        .createPost(TaskServiceFactory.SELF_LINK)
         .setBody(buildTask(id))
-        .setCompletion(handler);
-    this.sendRequest(op);
+        .setCompletion((op, ex) -> {
+          if (ex != null) {
+            RuntimeException e = new RuntimeException(String.format("Failed to create TaskEntity %s", ex));
+            createOperation.fail(e);
+            failTask(e);
+            return;
+          }
+
+          TaskService.State rsp = op.getBody(TaskService.State.class);
+          createState.virtualNetworkTaskServiceState = rsp;
+          createOperation.complete();
+        })
+        .sendWith(this);
   }
 
   private TaskService.State buildTask(String entityId) {

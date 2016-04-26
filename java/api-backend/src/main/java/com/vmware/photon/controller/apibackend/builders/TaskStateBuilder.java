@@ -15,8 +15,12 @@ package com.vmware.photon.controller.apibackend.builders;
 
 import com.vmware.photon.controller.cloudstore.dcp.entity.TaskService;
 
+import org.joda.time.DateTime;
+
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+
 
 /**
  * This implements a builder for {@link com.vmware.photon.controller.cloudstore.dcp.entity.TaskService.State} object.
@@ -65,12 +69,24 @@ public class TaskStateBuilder {
   }
 
   public TaskService.State build() {
+    Date currentTime = DateTime.now().toDate();
+
+
     TaskService.State state = new TaskService.State();
     state.entityId = this.entityId;
     state.entityKind = this.entityKind;
     state.operation = this.operation;
     state.state = this.taskState != null ? this.taskState : TaskService.State.TaskState.QUEUED;
     state.steps = this.stepEntities;
+    state.queuedTime = currentTime;
+    int stepSequence = 0;
+    for (TaskService.State.Step step : state.steps) {
+      step.state = this.taskState == TaskService.State.TaskState.QUEUED ?
+          TaskService.State.StepState.QUEUED : TaskService.State.StepState.COMPLETED;
+      step.queuedTime = currentTime;
+      step.sequence = stepSequence++;
+    }
+
     return state;
   }
 }

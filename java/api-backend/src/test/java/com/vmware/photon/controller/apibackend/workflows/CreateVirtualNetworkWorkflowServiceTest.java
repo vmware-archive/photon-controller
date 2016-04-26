@@ -20,6 +20,7 @@ import com.vmware.photon.controller.apibackend.helpers.TestHost;
 import com.vmware.photon.controller.apibackend.servicedocuments.CreateVirtualNetworkWorkflowDocument;
 import com.vmware.photon.controller.cloudstore.dcp.entity.TaskService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.VirtualNetworkService;
+import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
@@ -143,9 +144,12 @@ public class CreateVirtualNetworkWorkflowServiceTest {
 
     private CreateVirtualNetworkWorkflowDocument startState;
     private TestEnvironment testEnvironment;
+    private CloudStoreHelper cloudStoreHelper;
 
     @BeforeMethod
     public void setUpTest() throws Throwable {
+      cloudStoreHelper = new CloudStoreHelper();
+
       startState = buildValidStartState();
     }
 
@@ -161,7 +165,10 @@ public class CreateVirtualNetworkWorkflowServiceTest {
 
     @Test
     public void testHandleCreateSuccessfullyCreateDocuments() throws Throwable {
-      testEnvironment = new TestEnvironment.Builder().hostCount(COUNT_ONE).build();
+      testEnvironment = new TestEnvironment.Builder()
+          .hostCount(COUNT_ONE)
+          .cloudStoreHelper(cloudStoreHelper)
+          .build();
       startState.controlFlags = 0;
 
       CreateVirtualNetworkWorkflowDocument finalState =
@@ -199,7 +206,10 @@ public class CreateVirtualNetworkWorkflowServiceTest {
 
     @Test
     public void testHandleCreateWithMinimumState() throws Throwable {
-      testEnvironment = new TestEnvironment.Builder().hostCount(COUNT_ONE).build();
+      testEnvironment = new TestEnvironment.Builder()
+          .hostCount(COUNT_ONE)
+          .cloudStoreHelper(cloudStoreHelper)
+          .build();
       startState = new CreateVirtualNetworkWorkflowDocument();
       startState.name = "network";
 
@@ -218,7 +228,10 @@ public class CreateVirtualNetworkWorkflowServiceTest {
 
     @Test
     public void testHandleCreateWithMissingName() throws Throwable {
-      testEnvironment = new TestEnvironment.Builder().hostCount(COUNT_ONE).build();
+      testEnvironment = new TestEnvironment.Builder()
+          .hostCount(COUNT_ONE)
+          .cloudStoreHelper(cloudStoreHelper)
+          .build();
       startState.name = null;
 
       try {
@@ -588,9 +601,12 @@ public class CreateVirtualNetworkWorkflowServiceTest {
 
     private CreateVirtualNetworkWorkflowDocument startState;
     private TestEnvironment testEnvironment;
+    private CloudStoreHelper cloudStoreHelper;
 
     @BeforeMethod
     public void setUpTest() throws Throwable {
+      cloudStoreHelper = new CloudStoreHelper();
+
       startState = buildValidStartState();
       startState.controlFlags = 0;
     }
@@ -607,7 +623,10 @@ public class CreateVirtualNetworkWorkflowServiceTest {
 
     @Test(dataProvider = "testSuccessParams")
     public void testSuccess(int hostCount) throws Throwable {
-      testEnvironment = new TestEnvironment.Builder().hostCount(hostCount).build();
+      testEnvironment = new TestEnvironment.Builder()
+          .hostCount(hostCount)
+          .cloudStoreHelper(cloudStoreHelper)
+          .build();
 
       CreateVirtualNetworkWorkflowDocument finalState =
           testEnvironment.callServiceAndWaitForState(

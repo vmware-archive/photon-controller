@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.apibackend.helpers;
 
+import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.MultiHostEnvironment;
 import com.vmware.photon.controller.nsxclient.NsxClientFactory;
 
@@ -24,13 +25,16 @@ import static org.testng.Assert.assertTrue;
 public class TestEnvironment extends MultiHostEnvironment<TestHost> {
 
   private TestEnvironment(int hostCount,
-                          NsxClientFactory nsxClientFactory) throws Throwable {
+                          NsxClientFactory nsxClientFactory,
+                          CloudStoreHelper cloudStoreHelper) throws Throwable {
+
     assertTrue(hostCount > 0);
     hosts = new TestHost[hostCount];
     for (int i = 0; i < hosts.length; i++) {
       hosts[i] = new TestHost.Builder()
         .nsxClientFactory(nsxClientFactory)
-        .build(false);
+          .cloudStoreHelper(cloudStoreHelper)
+          .build(false);
     }
   }
 
@@ -41,6 +45,7 @@ public class TestEnvironment extends MultiHostEnvironment<TestHost> {
 
     private int hostCount;
     private NsxClientFactory nsxClientFactory;
+    private CloudStoreHelper cloudStoreHelper;
 
     public Builder hostCount(int hostCount) {
       this.hostCount = hostCount;
@@ -52,11 +57,16 @@ public class TestEnvironment extends MultiHostEnvironment<TestHost> {
       return this;
     }
 
+    public Builder cloudStoreHelper(CloudStoreHelper cloudStoreHelper) {
+      this.cloudStoreHelper = cloudStoreHelper;
+      return this;
+    }
+
     public TestEnvironment build() throws Throwable {
       TestEnvironment environment = new TestEnvironment(
           hostCount,
-          nsxClientFactory);
-
+          nsxClientFactory,
+          cloudStoreHelper);
 
       environment.start();
       return environment;
