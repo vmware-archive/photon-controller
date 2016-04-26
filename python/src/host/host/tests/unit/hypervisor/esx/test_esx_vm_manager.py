@@ -78,7 +78,7 @@ class TestEsxVmManager(unittest.TestCase):
         self.vim_client.wait_for_task.side_effect = \
             vim.fault.InvalidPowerState()
 
-        self.assertRaises(VmPowerStateException,
+        self.assertRaises (vim.fault.InvalidPowerState,
                           self.vm_manager.power_on_vm, "foo")
 
     def test_power_vm_error(self):
