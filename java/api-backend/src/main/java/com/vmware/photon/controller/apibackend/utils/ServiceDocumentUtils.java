@@ -14,8 +14,10 @@
 package com.vmware.photon.controller.apibackend.utils;
 
 import com.vmware.photon.controller.apibackend.annotations.ControlFlagsField;
+import com.vmware.photon.controller.apibackend.annotations.TaskServiceStateField;
 import com.vmware.photon.controller.apibackend.annotations.TaskStateField;
 import com.vmware.photon.controller.apibackend.annotations.TaskStateSubStageField;
+import com.vmware.photon.controller.cloudstore.dcp.entity.TaskService;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.TaskState;
 
@@ -89,13 +91,29 @@ public class ServiceDocumentUtils {
     return subStageType.getEnumConstants();
   }
 
+  /**
+   * Gets the field that is annotated with TaskServiceStateField annotation in the given document.
+   */
+  public static <S extends ServiceDocument> TaskService.State getTaskServiceState(S document) throws Throwable {
+    return (TaskService.State) getAnnotatedField(document, TaskServiceStateField.class).get(document);
+  }
+
+  /**
+   * Sets the field that is annotated with TaskServiceStateField annotation in the given document.
+   */
+  public static <S extends ServiceDocument> void setTaskServiceState(S document, TaskService.State taskServiceState)
+    throws Throwable {
+    getAnnotatedField(document, TaskServiceStateField.class).set(document, taskServiceState);
+  }
+
   private static Field getAnnotatedField(Object target,
-                                          Class annotationType) throws Throwable {
+                                         Class annotationType) {
     Field[] declaredFields = target.getClass().getDeclaredFields();
     for (Field field : declaredFields) {
       Annotation[] declaredAnnotation = field.getDeclaredAnnotations();
       for (Annotation annotation : declaredAnnotation) {
         if (annotation.annotationType() == annotationType) {
+          field.setAccessible(true);
           return field;
         }
       }

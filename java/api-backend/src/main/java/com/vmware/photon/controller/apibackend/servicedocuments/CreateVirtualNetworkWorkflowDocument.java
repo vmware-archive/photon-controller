@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.apibackend.servicedocuments;
 
 import com.vmware.photon.controller.apibackend.annotations.ControlFlagsField;
+import com.vmware.photon.controller.apibackend.annotations.TaskServiceStateField;
 import com.vmware.photon.controller.apibackend.annotations.TaskStateField;
 import com.vmware.photon.controller.apibackend.annotations.TaskStateSubStageField;
 import com.vmware.photon.controller.cloudstore.dcp.entity.TaskService;
@@ -66,7 +67,8 @@ public class CreateVirtualNetworkWorkflowDocument extends ServiceDocument{
   /**
    * The TaskService.State object.
    */
-  public TaskService.State virtualNetworkTaskServiceState;
+  @TaskServiceStateField
+  public TaskService.State taskServiceState;
 
   /**
    * This class defines the state of a CreateVirtualNetworkWorkflowService instance.
