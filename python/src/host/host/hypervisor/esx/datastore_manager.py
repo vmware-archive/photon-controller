@@ -39,7 +39,7 @@ class EsxDatastoreManager(DatastoreManager, UpdateListener):
 
         # host_datastores is the list of datastores reported by hostd
         host_datastores = set()
-        for ds in self._hypervisor.vim_client.get_all_datastores():
+        for ds in self._hypervisor.host_client.get_all_datastores():
             datastore = self._to_thrift_datastore(ds)
             if datastore:
                 host_datastores.add(datastore)
@@ -115,7 +115,7 @@ class EsxDatastoreManager(DatastoreManager, UpdateListener):
         return [ds.id for ds in self._image_datastores]
 
     def datastore_nfc_ticket(self, datastore_name):
-        ticket = self._hypervisor.vim_client.get_nfc_ticket_by_ds_name(datastore_name)
+        ticket = self._hypervisor.host_client.get_nfc_ticket_by_ds_name(datastore_name)
 
         return HostServiceTicket(host=ticket.host, port=ticket.port,
                                  ssl_thumbprint=ticket.sslThumbprint,

@@ -40,8 +40,8 @@ class TestUnitEsxHypervisor(unittest.TestCase):
             # runs beyond its own context, other test case could mocks some
             # function the thread relies on, and it could lead to bad
             # behaviors.
-            self.hv.vim_client.sync_thread.stop()
-            self.hv.vim_client.sync_thread.join()
+            self.hv.host_client.sync_thread.stop()
+            self.hv.host_client.sync_thread.join()
         self.services_helper.teardown()
 
     def _retrieve_content(self):
@@ -123,4 +123,4 @@ class TestUnitEsxHypervisor(unittest.TestCase):
         for listener in listeners:
             self.hv.remove_update_listener(listener)
         # 1 for datastore manager
-        assert_that(len(self.hv.vim_client.update_listeners), is_(1))
+        assert_that(len(self.hv.host_client.update_listeners), is_(1))
