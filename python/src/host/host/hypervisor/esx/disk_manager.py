@@ -32,32 +32,32 @@ class EsxDiskManager(DiskManager):
     operations.
     """
 
-    def __init__(self, vim_client, ds_manager):
+    def __init__(self, host_client, ds_manager):
         """Create ESX Disk Manager.
 
-        :type vim_client: VimClient
+        :type host_client: VimClient
         :type ds_manager: DatastoreManager
         """
         self._logger = logging.getLogger(__name__)
-        self._vim_client = vim_client
+        self._host_client = host_client
         self._ds_manager = ds_manager
 
     def create_disk(self, datastore, disk_id, size):
         name = vmdk_path(datastore, disk_id)
         self._vmdk_mkdir(datastore, disk_id)
-        self._vim_client.create_disk(name, size)
-        self._vim_client.set_disk_uuid(name, disk_id)
+        self._host_client.create_disk(name, size)
+        self._host_client.set_disk_uuid(name, disk_id)
 
     def delete_disk(self, datastore, disk_id):
         name = vmdk_path(datastore, disk_id)
-        self._vim_client.delete_disk(name)
+        self._host_client.delete_disk(name)
         self._vmdk_rmdir(datastore, disk_id)
 
     def move_disk(self, source_datastore, source_id, dest_datastore, dest_id):
         source = vmdk_path(source_datastore, source_id)
         dest = vmdk_path(dest_datastore, dest_id)
         self._vmdk_mkdir(dest_datastore, dest_id)
-        self._vim_client.move_disk(source, dest)
+        self._host_client.move_disk(source, dest)
         self._vmdk_rmdir(source_datastore, source_id)
 
     def copy_disk(self, source_datastore, source_id, dest_datastore, dest_id):
@@ -73,8 +73,8 @@ class EsxDiskManager(DiskManager):
         source = vmdk_path(source_datastore, source_id, IMAGE_FOLDER_NAME_PREFIX)
         dest = vmdk_path(dest_datastore, dest_id)
         self._vmdk_mkdir(dest_datastore, dest_id)
-        self._vim_client.copy_disk(source, dest)
-        self._vim_client.set_disk_uuid(dest, dest_id)
+        self._host_client.copy_disk(source, dest)
+        self._host_client.set_disk_uuid(dest, dest_id)
 
     def get_datastore(self, disk_id):
         for datastore in self._ds_manager.get_datastore_ids():
@@ -98,12 +98,12 @@ class EsxDiskManager(DiskManager):
 
     def _query_uuid(self, datastore, disk_id):
         name = vmdk_path(datastore, disk_id)
-        return self._vim_client.query_disk_uuid(name)
+        return self._host_client.query_disk_uuid(name)
 
     def _vmdk_mkdir(self, datastore, disk_id):
         path = os.path.dirname(os_vmdk_path(datastore, disk_id))
-        self._vim_client.make_directory(path)
+        self._host_client.make_directory(path)
 
     def _vmdk_rmdir(self, datastore, disk_id):
         path = os.path.dirname(os_vmdk_path(datastore, disk_id))
-        self._vim_client.delete_file(path)
+        self._host_client.delete_file(path)
