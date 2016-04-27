@@ -27,7 +27,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 
 /**
- * Helper class to interact with a random cloud-store DCP host.
+ * Helper class to interact with a Cloudstore host.
  */
 public class CloudStoreHelper {
 
@@ -63,6 +63,21 @@ public class CloudStoreHelper {
   public URI getCloudStoreURI(String path) {
     try {
       return ServiceUtils.createUriFromServerSet(cloudStoreServerSet, path);
+    } catch (URISyntaxException uriSyntaxException) {
+      throw new RuntimeException(uriSyntaxException);
+    }
+  }
+
+  /**
+   * This selects the local cloud store, if it's currently in the server set.
+   * If it's not, it selects a random cloud store host.
+   *
+   * Note that this is different from getLocalHostUri(): that will always return
+   * a local URI, but it may not be available if the local cloudstore isn't running.
+   */
+  public URI selectLocalCloudStoreIfAvailable(String path) {
+    try {
+      return ServiceUtils.selectLocalServer(cloudStoreServerSet, path);
     } catch (URISyntaxException uriSyntaxException) {
       throw new RuntimeException(uriSyntaxException);
     }

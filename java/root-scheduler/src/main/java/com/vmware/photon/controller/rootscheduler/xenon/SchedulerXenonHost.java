@@ -16,6 +16,7 @@ package com.vmware.photon.controller.rootscheduler.xenon;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.clients.HostClientProvider;
+import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.XenonHostInfoProvider;
 import com.vmware.photon.controller.common.xenon.XenonRestClient;
@@ -57,8 +58,10 @@ public class SchedulerXenonHost
   private final HostClientFactory hostClientFactory;
   private final ScoreCalculator scoreCalculator;
   private final XenonRestClient cloudStoreClient;
+  private final CloudStoreHelper cloudstoreHelper;
   private ConstraintChecker checker;
 
+  @SuppressWarnings("rawtypes")
   public static final Class[] FACTORY_SERVICES = {
       RootNamespaceService.class,
   };
@@ -68,11 +71,13 @@ public class SchedulerXenonHost
                             HostClientFactory hostClientFactory,
                             Config config,
                             ConstraintChecker checker,
-                            XenonRestClient xenonRestClient) throws Throwable {
+                            XenonRestClient xenonRestClient,
+                            CloudStoreHelper cloudstoreHelper) throws Throwable {
     super(xenonConfig);
     this.hostClientFactory = hostClientFactory;
     this.scoreCalculator = new ScoreCalculator(config);
     this.cloudStoreClient = xenonRestClient;
+    this.cloudstoreHelper = cloudstoreHelper;
     this.checker = checker;
 
     if (this.checker instanceof InMemoryConstraintChecker) {
@@ -106,6 +111,10 @@ public class SchedulerXenonHost
   @Override
   public XenonRestClient getCloudStoreClient() {
     return cloudStoreClient;
+  }
+
+  public CloudStoreHelper getCloudStoreHelper() {
+    return this.cloudstoreHelper;
   }
 
   /**
@@ -143,6 +152,7 @@ public class SchedulerXenonHost
     }
   }
 
+  @SuppressWarnings("rawtypes")
   @Override
   public Class[] getFactoryServices() {
     return FACTORY_SERVICES;
