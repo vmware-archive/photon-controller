@@ -36,6 +36,7 @@ import java.net.URISyntaxException;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -54,6 +55,8 @@ public class ServiceUtils {
   // and also to allow time for debugging deleted documents for live site incidents.
   public static final long DEFAULT_ON_DELETE_DOC_EXPIRATION_TIME_MICROS = TimeUnit.DAYS.toMicros(30);
   private static Random randomGenerator = new Random(System.currentTimeMillis());
+
+  private static List<String> localHostIpAddresses = OperationUtils.getLocalHostIpAddresses();
 
   /**
    * Set the task info error fields.
@@ -241,6 +244,35 @@ public class ServiceUtils {
 
     URI uri = new URI("http", null, address, port, path, null, null);
     return uri;
+  }
+
+  /**
+   * From a serverSet, return the URI of the localhost if available, otherwise a random host.
+   * @param serverSet the set of servers
+   * @param path the path of the desired URI
+   * @return the URI
+   * @throws URISyntaxException
+   */
+  public static URI selectLocalServer(ServerSet serverSet, String path) throws
+      URISyntaxException {
+    Set<InetSocketAddress> serverInetSet = serverSet.getServers();
+    java.util.Optional<InetSocketAddress> localInetSocketAddress =
+        serverInetSet.stream().filter(
+            (InetSocketAddress i) -> localHostIpAddresses.contains(i.getAddress().getHostAddress()))
+            .findFirst();
+
+    InetSocketAddress selectedInetSocket;
+    if (!localInetSocketAddress.isPresent()) {
+      // The local server isn't available--choose a random server
+      return createUriFromServerSet(serverInetSet, path);
+    }
+
+    // The local server is available, use it
+    selectedInetSocket = localInetSocketAddress.get();
+    String address = selectedInetSocket.getAddress().getHostAddress();
+    int port = selectedInetSocket.getPort();
+
+    return new URI("http", null, address, port, path, null, null);
   }
 
   public static void failOperationAsBadRequest(Service service, Operation operation, Throwable e) {
