@@ -27,6 +27,10 @@ import com.vmware.photon.controller.nsxclient.models.LogicalRouter;
 import com.vmware.photon.controller.nsxclient.models.LogicalRouterCreateSpec;
 import com.vmware.photon.controller.nsxclient.models.LogicalRouterDownLinkPort;
 import com.vmware.photon.controller.nsxclient.models.LogicalRouterDownLinkPortCreateSpec;
+import com.vmware.photon.controller.nsxclient.models.LogicalRouterLinkPortOnTier0;
+import com.vmware.photon.controller.nsxclient.models.LogicalRouterLinkPortOnTier0CreateSpec;
+import com.vmware.photon.controller.nsxclient.models.LogicalRouterLinkPortOnTier1;
+import com.vmware.photon.controller.nsxclient.models.LogicalRouterLinkPortOnTier1CreateSpec;
 import com.vmware.photon.controller.nsxclient.models.LogicalSwitch;
 import com.vmware.photon.controller.nsxclient.models.LogicalSwitchCreateSpec;
 import com.vmware.photon.controller.nsxclient.models.LogicalSwitchState;
@@ -362,6 +366,58 @@ public class NsxClientMock extends NsxClient {
           return null;
         }).when(mockLogicalRouterApi).createLogicalRouterDownLinkPort(any(LogicalRouterDownLinkPortCreateSpec.class),
             any(FutureCallback.class));
+      }
+
+      return this;
+    }
+
+    public Builder createLogicalLinkPortOnTier0Router(boolean isSuccess,
+                                                      String logicalRouterPortId) throws Throwable {
+
+      if (isSuccess) {
+        LogicalRouterLinkPortOnTier0 logicalRouterLinkPortOnTier0 = new LogicalRouterLinkPortOnTier0();
+        logicalRouterLinkPortOnTier0.setId(logicalRouterPortId);
+
+        doAnswer(invocation -> {
+          ((FutureCallback<LogicalRouterLinkPortOnTier0>) invocation.getArguments()[1])
+              .onSuccess(logicalRouterLinkPortOnTier0);
+          return null;
+        }).when(mockLogicalRouterApi).createLogicalRouterLinkPortTier0(
+            any(LogicalRouterLinkPortOnTier0CreateSpec.class), any(FutureCallback.class));
+      } else {
+        RuntimeException error = new RuntimeException("createLogicalLinkPortOnTier0Router failed");
+        doAnswer(invocation -> {
+          ((FutureCallback<LogicalRouterLinkPortOnTier0>) invocation.getArguments()[1])
+              .onFailure(error);
+          return null;
+        }).when(mockLogicalRouterApi).createLogicalRouterLinkPortTier0(
+            any(LogicalRouterLinkPortOnTier0CreateSpec.class), any(FutureCallback.class));
+      }
+
+      return this;
+    }
+
+    public Builder createLogicalLinkPortOnTier1Router(boolean isSuccess,
+                                                      String logicalRouterPortId) throws Throwable {
+
+      if (isSuccess) {
+        LogicalRouterLinkPortOnTier1 logicalRouterLinkPortOnTier1 = new LogicalRouterLinkPortOnTier1();
+        logicalRouterLinkPortOnTier1.setId(logicalRouterPortId);
+
+        doAnswer(invocation -> {
+          ((FutureCallback<LogicalRouterLinkPortOnTier1>) invocation.getArguments()[1])
+              .onSuccess(logicalRouterLinkPortOnTier1);
+          return null;
+        }).when(mockLogicalRouterApi).createLogicalRouterLinkPortTier1(
+            any(LogicalRouterLinkPortOnTier1CreateSpec.class), any(FutureCallback.class));
+      } else {
+        RuntimeException error = new RuntimeException("createLogicalLinkPortOnTier1Router failed");
+        doAnswer(invocation -> {
+          ((FutureCallback<LogicalRouterLinkPortOnTier1>) invocation.getArguments()[1])
+              .onFailure(error);
+          return null;
+        }).when(mockLogicalRouterApi).createLogicalRouterLinkPortTier1(
+            any(LogicalRouterLinkPortOnTier1CreateSpec.class), any(FutureCallback.class));
       }
 
       return this;

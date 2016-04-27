@@ -34,10 +34,22 @@ public class ConfigureRoutingTask extends ServiceDocument {
   public String logicalSwitchPortId;
 
   /**
-   * Id of the logical router port.
+   * Id of the logical port on tier1 router to switch.
    */
   @WriteOnce
-  public String logicalRouterPortId;
+  public String logicalTier1RouterDownLinkPort;
+
+  /**
+   * Id of the logical port on tier1 router to tier0 router.
+   */
+  @WriteOnce
+  public String logicalLinkPortOnTier1Router;
+
+  /**
+   * Id of the logical port on tier0 router to tier1 router.
+   */
+  @WriteOnce
+  public String logicalLinkPortOnTier0Router;
 
   /**
    * Whether this network is isolated or connected to outside.
@@ -83,32 +95,53 @@ public class ConfigureRoutingTask extends ServiceDocument {
   public String logicalSwitchId;
 
   /**
-   * Display name of the logical router port.
+   * Display name of the logical tier1 router port to switch.
    */
   @NotBlank
   @Immutable
-  public String logicalRouterPortDisplayName;
+  public String logicalTier1RouterDownLinkPortDisplayName;
 
   /**
-   * ID of the logical router.
+   * ID of the logical tier1 router.
    */
   @NotBlank
   @Immutable
-  public String logicalRouterId;
+  public String logicalTier1RouterId;
 
   /**
-   * IP of the logical router port.
+   * IP of the logical tier1 router port.
    */
   @NotBlank
   @Immutable
-  public String logicalRouterPortIp;
+  public String logicalTier1RouterDownLinkPortIp;
 
   /**
-   * Length of the logical router port ip.
+   * Length of the logical tier1 router port ip.
    */
   @NotNull
   @Immutable
-  public Integer logicalRouterPortIpPrefixLen;
+  public Integer logicalTier1RouterDownLinkPortIpPrefixLen;
+
+  /**
+   * Display name of the logical port on tier0 router to connect tier1 router.
+   */
+  @NotBlank
+  @Immutable
+  public String logicalLinkPortOnTier0RouterDisplayName;
+
+  /**
+   * ID of the logical tier0 router.
+   */
+  @NotBlank
+  @Immutable
+  public String logicalTier0RouterId;
+
+  /**
+   * Display name of the logical port on tier1 router to connect tier0 router.
+   */
+  @NotBlank
+  @Immutable
+  public String logicalLinkPortOnTier1RouterDisplayName;
 
   /**
    * State of the task.
