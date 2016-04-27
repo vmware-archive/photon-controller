@@ -54,8 +54,8 @@ class TestUnitEsxHypervisor(unittest.TestCase):
 
     @patch("host.hypervisor.esx.vm_config.GetEnv")
     @patch("host.hypervisor.esx.image_manager.EsxImageManager.monitor_for_cleanup")
-    @patch.object(VimClient, "acquire_credentials")
-    @patch.object(VimClient, "update_cache")
+    @patch.object(VimClient, "_acquire_local_credentials")
+    @patch.object(VimClient, "_poll_updates")
     @patch("pysdk.connect.Connect")
     def test_config(self, connect_mock, update_mock, creds_mock, monitor_mock, get_env_mock):
 
@@ -80,8 +80,8 @@ class TestUnitEsxHypervisor(unittest.TestCase):
 
     @patch("host.hypervisor.esx.vm_config.GetEnv")
     @patch("host.hypervisor.esx.image_manager.EsxImageManager.monitor_for_cleanup")
-    @patch.object(VimClient, "acquire_credentials")
-    @patch.object(VimClient, "update_cache")
+    @patch.object(VimClient, "_acquire_local_credentials")
+    @patch.object(VimClient, "_poll_updates")
     @patch("pysdk.connect.Connect")
     def test_listener(self, connect_mock, update_mock, creds_mock, monitor_mock, get_env_mock):
         """Test update listeners"""

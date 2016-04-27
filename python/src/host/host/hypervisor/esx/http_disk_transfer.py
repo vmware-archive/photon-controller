@@ -218,7 +218,8 @@ class HttpNfcTransferer(HttpTransferer):
         if response.result != ServiceTicketResultCode.OK:
             self._logger.info("Get service ticket failed. Response = %s" % str(response))
             raise ValueError("No ticket")
-        vim_client = VimClient(host=host, ticket=response.vim_ticket, auto_sync=False)
+        vim_client = VimClient(auto_sync=False)
+        vim_client.connect_ticket(host, response.vim_ticket)
         return vim_client
 
     def _get_disk_url_from_lease(self, lease):
@@ -344,13 +345,13 @@ class HttpNfcTransferer(HttpTransferer):
         import_spec = vim.vm.VmImportSpec(configSpec=spec)
         return import_spec
 
-    def _get_url_from_import_vm(self, dst_vim_client, import_spec):
+    def _get_url_from_import_vm(self, dst_vim_client, dst_host, import_spec):
         vm_folder = dst_vim_client.vm_folder
         root_rp = dst_vim_client.root_resource_pool
         lease = root_rp.ImportVApp(import_spec, vm_folder)
         self._wait_for_lease(lease)
         disk_url = self._get_disk_url_from_lease(lease)
-        disk_url = self._ensure_host_in_url(disk_url, dst_vim_client.host)
+        disk_url = self._ensure_host_in_url(disk_url, dst_host)
         return lease, disk_url
 
     def _register_imported_image_at_host(self, agent_client,
@@ -391,7 +392,7 @@ class HttpNfcTransferer(HttpTransferer):
     def _send_image(self, agent_client, host, tmp_path, spec):
         vim_client = self._create_remote_vim_client(agent_client, host)
         try:
-            write_lease, disk_url = self._get_url_from_import_vm(vim_client, spec)
+            write_lease, disk_url = self._get_url_from_import_vm(vim_client, host, spec)
             try:
                 self.upload_file(tmp_path, disk_url, write_lease)
             finally:

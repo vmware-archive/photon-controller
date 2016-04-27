@@ -234,8 +234,8 @@ class TestRemoteAgent(unittest.TestCase, AgentCommonTests):
 
         # Connect to server and configure vim_client
         self.client_connections()
-        self.vim_client = VimClient(host=self.server,
-                                    ticket=self._get_vim_ticket())
+        self.vim_client = VimClient()
+        self.vim_client.connect_ticket(self.server, self._get_vim_ticket())
         connect.SetSi(self.vim_client._si)
 
         # Set host mode to normal
@@ -264,8 +264,8 @@ class TestRemoteAgent(unittest.TestCase, AgentCommonTests):
     def vim_delete_vm(self, vm_id):
         """ Delete a VM using the vim client """
         try:
-            vim_client = VimClient(
-                host=self.server, ticket=self._get_vim_ticket())
+            vim_client = VimClient()
+            vim_client.connect_ticket(self.server, self._get_vim_ticket())
             vim_vm = vim_client.get_vm(vm_id)
             if vim_vm.runtime.powerState != 'poweredOff':
                 try:
