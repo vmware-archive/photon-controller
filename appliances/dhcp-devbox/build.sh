@@ -1,5 +1,10 @@
 #!/bin/bash -xe
 
+rm -f photon-dhcp.box
+rm -rf build
+rm  -rf ~/.vagrant.d/boxes/*
+rm -rf ~/VirtualBox\ VMs/dhcp-devbox*
+
 DHCP_OVA_URL=${DHCP_OVA_URL:="../dhcp-ova/build/dhcp-ova-virtualbox.ova"}
 
 function getHostOnlyInterfaceName() {
