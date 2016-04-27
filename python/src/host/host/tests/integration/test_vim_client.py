@@ -69,8 +69,8 @@ class TestVimClient(unittest.TestCase):
         datastore = self.vim_client.get_all_datastores()[0].name
         disk_path = "[%s] %s/disk.vmdk" % (datastore, vm_id)
         create_spec = self.get_create_spec(datastore, vm_id, disk_path)
-        folder = self.vim_client.vm_folder
-        resource_pool = self.vim_client.root_resource_pool
+        folder = self.vim_client.vm_folder()
+        resource_pool = self.vim_client.root_resource_pool()
         task = folder.CreateVm(create_spec, resource_pool, None)
         self.vim_client.wait_for_task(task)
         vm = self.vim_client.get_vm(vm_id)

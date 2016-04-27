@@ -24,7 +24,6 @@ import weakref
 
 from calendar import timegm
 from common.blocking_dict import BlockingDict
-from common.cache import cached
 from common.lock import lock_with
 from common.log import log_duration
 from common.log import log_duration_with
@@ -39,6 +38,7 @@ from host.hypervisor.esx.path_util import os_to_datastore_path
 from host.hypervisor.esx.vm_config import uuid_to_vmdk_uuid
 from host.hypervisor.esx.vm_config import DEFAULT_DISK_ADAPTER_TYPE
 from host.hypervisor.vm_manager import VmPowerStateException
+from host.hypervisor.vm_manager import VmAlreadyExistException
 from pysdk import connect
 from pysdk import host
 from pysdk import invt
@@ -256,7 +256,6 @@ class VimClient(HostClient):
     def _property_collector(self):
         return self._content.propertyCollector
 
-    @property
     @hostd_error_handler
     def root_resource_pool(self):
         """Get the root resource pool for this host.
@@ -264,8 +263,6 @@ class VimClient(HostClient):
         """
         return host.GetRootResourcePool(self._si)
 
-    @property
-    @cached()
     @hostd_error_handler
     def vm_folder(self):
         """Get the default vm folder for this host.
@@ -427,6 +424,47 @@ class VimClient(HostClient):
         return vim.VirtualMachine(moid, self._si._stub)
 
     @hostd_error_handler
+    def get_vm_resource_ids(self):
+        ids = []
+        vm_folder = self.vm_folder()
+        for vm in vm_folder.GetChildEntity():
+            ids.append(vm.name)
+        return ids
+
+    @log_duration
+    @hostd_error_handler
+    def create_vm(self, vm_id, create_spec):
+        """Create a new Virtual Maching given a VM create spec.
+
+        :param vm_id: The Vm id
+        :type vm_id: string
+        :param create_spec: The VM spec builder
+        :type ConfigSpec
+        :raise: VmAlreadyExistException
+        """
+        # sanity check since VIM does not prevent this
+        try:
+            if self.get_vm_in_cache(vm_id):
+                raise VmAlreadyExistException("VM already exists")
+        except VmNotFoundException:
+            pass
+
+        folder = self.vm_folder()
+        resource_pool = self.root_resource_pool()
+        # The scenario of the vm creation at ESX where intermediate directory
+        # has to be created has not been well exercised and is known to be
+        # racy and not informative on failures. So be defensive and proactively
+        # create the intermediate directory ("/vmfs/volumes/<dsid>/vm_xy").
+        try:
+            self.make_directory(create_spec.files.vmPathName)
+        except vim.fault.FileAlreadyExists:
+            self._logger.debug("VM directory %s exists, will create VM using it" % create_spec.files.vmPathName)
+
+        task = folder.CreateVm(create_spec, resource_pool, None)
+        self.wait_for_task(task)
+        self.wait_for_vm_create(vm_id)
+
+    @hostd_error_handler
     def get_networks(self):
         return [network.name for network in
                 self._find_by_inventory_path(NETWORK_FOLDER_NAME).childEntity]
@@ -586,7 +624,7 @@ class VimClient(HostClient):
         :rtype: upload lease, url
         """
         import_spec = vim.vm.VmImportSpec(configSpec=spec)
-        lease = self.root_resource_pool.ImportVApp(import_spec, self.vm_folder)
+        lease = self.root_resource_pool().ImportVApp(import_spec, self.vm_folder)
         self._wait_for_lease(lease)
         dev_url = lease.info.deviceUrl[0]
         self._logger.debug("%s -> %s" % (dev_url.key, dev_url.url))
@@ -701,7 +739,7 @@ class VimClient(HostClient):
         traversal_spec = PC.TraversalSpec(name="folderTraversalSpec", type=vim.Folder, path="childEntity", skip=False)
         property_spec = PC.PropertySpec(type=vim.VirtualMachine,
                                         pathSet=["name", "runtime.powerState", "layout.disk", "config"])
-        object_spec = PC.ObjectSpec(obj=self.vm_folder, selectSet=[traversal_spec])
+        object_spec = PC.ObjectSpec(obj=self.vm_folder(), selectSet=[traversal_spec])
         return PC.FilterSpec(propSet=[property_spec], objectSet=[object_spec])
 
     def _task_filter_spec(self):

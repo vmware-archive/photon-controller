@@ -15,8 +15,8 @@ import os
 import uuid
 
 from mock import MagicMock
-from mock import PropertyMock
 from mock import patch
+
 from nose_parameterized import parameterized
 from hamcrest import *  # noqa
 from pyVmomi import vim
@@ -109,9 +109,9 @@ class TestEsxVmManager(unittest.TestCase):
     def test_create_vm_already_exist(self):
         """Test VM creation fails if VM is found"""
 
-        vim_mock = MagicMock()
-        self.vm_manager.vim_client = vim_mock
-        vim_mock.find_vm = MagicMock(return_value="existing_vm")
+        self.vm_manager.vim_client.find_vm = MagicMock(return_value="existing_vm")
+        self.vm_manager.vim_client.get_vm_in_cache = MagicMock(return_value="existing_vm")
+
         mock_spec = MagicMock()
         self.assertRaises(VmAlreadyExistException,
                           self.vm_manager.create_vm,
@@ -120,27 +120,26 @@ class TestEsxVmManager(unittest.TestCase):
 
     def test_create_vm(self):
         """Test VM creation"""
+        mock_vm_folder = MagicMock()
+        mock_vm_folder.CreateVm.return_value = "fake-task"
 
-        vim_mock = MagicMock()
-        self.vm_manager.vim_client = vim_mock
+        self.vm_manager.vim_client.vm_folder = MagicMock(return_value=mock_vm_folder)
+        self.vm_manager.vim_client.root_resource_pool = MagicMock(return_value="fake_rp")
 
-        vm_folder_mock = MagicMock()
-        vim_mock.vm_folder = vm_folder_mock
-
-        root_res_pool_mock = PropertyMock(return_value="fake_rp")
-        type(vim_mock).root_resource_pool = root_res_pool_mock
-
-        vim_mock.get_vm_in_cache = MagicMock(return_value=None)
-        vm_folder_mock.CreateVm.return_value = "fake-task"
+        self.vm_manager.vim_client.get_vm_in_cache = MagicMock(return_value=None)
+        self.vm_manager.vim_client.wait_for_task = MagicMock()
+        self.vm_manager.vim_client.wait_for_vm_create = MagicMock()
+        self.vm_manager.vim_client.make_directory = MagicMock()
 
         mock_spec = MagicMock()
         mock_spec.files.vmPathName = "[] /vmfs/volumes/ds/vms"
         self.vm_manager.create_vm("fake_vm_id", mock_spec)
 
-        vim_mock.get_vm_in_cache.assert_called_once_with("fake_vm_id")
-        vm_folder_mock.CreateVm.assert_called_once_with(
-            mock_spec, 'fake_rp', None)
-        vim_mock.wait_for_task.assert_called_once_with("fake-task")
+        self.vm_manager.vim_client.get_vm_in_cache.assert_called_once_with("fake_vm_id")
+        self.vm_manager.vim_client.vm_folder.assert_called_once_with()
+        self.vm_manager.vim_client.make_directory.assert_called_once_with(mock_spec.files.vmPathName)
+        mock_vm_folder.CreateVm.assert_called_once_with(mock_spec, "fake_rp", None)
+        self.vm_manager.vim_client.wait_for_task.assert_called_once_with("fake-task")
 
     @staticmethod
     def _validate_spec_extra_config(spec, config, expected):
