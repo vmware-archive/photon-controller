@@ -13,6 +13,9 @@
 
 package com.vmware.photon.controller.apibackend.workflows;
 
+import com.vmware.photon.controller.apibackend.annotations.ControlFlagsField;
+import com.vmware.photon.controller.apibackend.annotations.TaskStateField;
+import com.vmware.photon.controller.apibackend.annotations.TaskStateSubStageField;
 import com.vmware.photon.controller.apibackend.helpers.TestHost;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
@@ -210,12 +213,14 @@ public class BaseWorkflowServiceTest {
       /**
        * Service execution state.
        */
+      @TaskStateField
       public TaskState taskState;
 
       /**
        * Flag indicating if the service should be "self-driving".
        * (i.e. automatically progress through it's stages)
        */
+      @ControlFlagsField
       public Integer controlFlags;
     }
 
@@ -227,6 +232,7 @@ public class BaseWorkflowServiceTest {
       /**
        * This value represents the current sub-stage for the task.
        */
+      @TaskStateSubStageField
       public SubStage subStage;
 
       /**

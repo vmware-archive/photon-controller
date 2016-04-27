@@ -34,7 +34,8 @@ import com.vmware.xenon.common.UriUtils;
 /**
  * This class implements a Xenon service representing a workflow to create a virtual network.
  */
-public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService {
+public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<CreateVirtualNetworkWorkflowDocument,
+    CreateVirtualNetworkWorkflowDocument.TaskState, CreateVirtualNetworkWorkflowDocument.TaskState.SubStage> {
 
   public static final String FACTORY_LINK = ServiceUriPaths.APIBACKEND_ROOT + "/create-virtual-network";
   public static final String VIRTUAL_NETWORK_ENTITY_KIND = "virtual-network";

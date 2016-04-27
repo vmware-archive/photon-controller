@@ -13,6 +13,9 @@
 
 package com.vmware.photon.controller.apibackend.servicedocuments;
 
+import com.vmware.photon.controller.apibackend.annotations.ControlFlagsField;
+import com.vmware.photon.controller.apibackend.annotations.TaskStateField;
+import com.vmware.photon.controller.apibackend.annotations.TaskStateSubStageField;
 import com.vmware.photon.controller.cloudstore.dcp.entity.TaskService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.VirtualNetworkService;
 import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
@@ -31,12 +34,14 @@ public class CreateVirtualNetworkWorkflowDocument extends ServiceDocument{
   /**
    * The state of the current workflow.
    */
+  @TaskStateField
   @DefaultTaskState(value = TaskState.TaskStage.CREATED)
   public TaskState taskState;
 
   /**
    * This value represents control flags influencing the behavior of the workflow.
    */
+  @ControlFlagsField
   @DefaultInteger(0)
   @Immutable
   public Integer controlFlags;
@@ -70,6 +75,7 @@ public class CreateVirtualNetworkWorkflowDocument extends ServiceDocument{
     /**
      * The current sub-stage of the task.
      */
+    @TaskStateSubStageField
     public SubStage subStage;
 
     /**
