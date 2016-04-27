@@ -33,9 +33,9 @@ class TestEsxDatastoreManager(unittest.TestCase):
         datastores are populated.
         """
         hypervisor = MagicMock()
-        vim_client = MagicMock()
+        host_client = MagicMock()
 
-        vim_client.get_all_datastores.return_value = self.get_datastore_mock([
+        host_client.get_all_datastores.return_value = self.get_datastore_mock([
             # name, url, type, local
             ["datastore1", "/vmfs/volumes/id-1", "VMFS", True],
             ["datastore2", "/vmfs/volumes/id-2", "VMFS", False],
@@ -45,7 +45,7 @@ class TestEsxDatastoreManager(unittest.TestCase):
             ["datastore6", "/vmfs/volumes/id-6", "VFFS", None],
         ])
 
-        hypervisor.vim_client = vim_client
+        hypervisor.host_client = host_client
 
         ds_list = ["datastore1", "datastore2", "datastore3",
                    "datastore4", "datastore5", "datastore6"]
@@ -95,13 +95,13 @@ class TestEsxDatastoreManager(unittest.TestCase):
     def test_single_datastore(self, mkdir_mock):
         """Test that datastore manager works with a single datastore."""
         hypervisor = MagicMock()
-        vim_client = MagicMock()
+        host_client = MagicMock()
 
-        vim_client.get_all_datastores.return_value = self.get_datastore_mock([
+        host_client.get_all_datastores.return_value = self.get_datastore_mock([
             # name, url, type, local
             ["datastore1", "/vmfs/volumes/id-1", "VMFS", True],
         ])
-        hypervisor.vim_client = vim_client
+        hypervisor.host_client = host_client
 
         # No valid datastore. One image datastore for cloud VMs.
         ds_list = []
@@ -121,14 +121,14 @@ class TestEsxDatastoreManager(unittest.TestCase):
     @patch("os.mkdir")
     def test_multiple_image_datastores(self, mkdir_mock):
         """Test that datastore manager works with multiple image datastores."""
-        vim_client = MagicMock()
-        vim_client.get_all_datastores.return_value = self.get_datastore_mock([
+        host_client = MagicMock()
+        host_client.get_all_datastores.return_value = self.get_datastore_mock([
             ["datastore1", "/vmfs/volumes/id-1", "VMFS", True],
             ["datastore2", "/vmfs/volumes/id-2", "VMFS", True],
             ["datastore3", "/vmfs/volumes/id-3", "VMFS", True],
         ])
         hypervisor = MagicMock()
-        hypervisor.vim_client = vim_client
+        hypervisor.host_client = host_client
 
         ds_list = ["datastore1"]
         image_ds = [
@@ -146,14 +146,14 @@ class TestEsxDatastoreManager(unittest.TestCase):
     @patch("os.mkdir")
     def test_nonexistent_datastores(self, mkdir_mock):
         """Test that non-existent datastore get filtered out."""
-        vim_client = MagicMock()
-        vim_client.get_all_datastores.return_value = self.get_datastore_mock([
+        host_client = MagicMock()
+        host_client.get_all_datastores.return_value = self.get_datastore_mock([
             ["datastore1", "/vmfs/volumes/id-1", "VMFS", True],
             ["datastore2", "/vmfs/volumes/id-2", "VMFS", True],
             ["datastore3", "/vmfs/volumes/id-3", "VMFS", True],
         ])
         hypervisor = MagicMock()
-        hypervisor.vim_client = vim_client
+        hypervisor.host_client = host_client
 
         ds_list = ["datastore1", "bad-datastore1"]
         image_ds = [
@@ -172,14 +172,14 @@ class TestEsxDatastoreManager(unittest.TestCase):
     @patch("os.mkdir")
     def test_empty_url_datastores(self, mkdir_mock):
         """Test that datastores with empty url get filtered out."""
-        vim_client = MagicMock()
-        vim_client.get_all_datastores.return_value = self.get_datastore_mock([
+        host_client = MagicMock()
+        host_client.get_all_datastores.return_value = self.get_datastore_mock([
             ["datastore1", "", "VMFS", True],
             ["datastore2", None, "VMFS", True],
             ["datastore3", "/vmfs/volumes/id-3", "VMFS", True],
             ])
         hypervisor = MagicMock()
-        hypervisor.vim_client = vim_client
+        hypervisor.host_client = host_client
 
         ds_list = ["datastore1", "datastore2", "datastore3"]
         image_ds = [{"name": "datastore3", "used_for_vms": True}]

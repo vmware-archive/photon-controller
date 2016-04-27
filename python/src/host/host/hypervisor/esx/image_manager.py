@@ -10,8 +10,6 @@
 # License for then specific language governing permissions and limitations
 # under the License.
 
-"""Temporary hack to deploy demo image from vib to datastore"""
-
 import errno
 import json
 import logging
@@ -67,10 +65,10 @@ class EsxImageManager(ImageManager):
     UNUSED_IMAGE_MARKER_FILE_NAME = "unused_image_marker.txt"
     IMAGE_TIMESTAMP_FILE_NAME = "image_timestamp.txt"
 
-    def __init__(self, vim_client, ds_manager):
+    def __init__(self, host_client, ds_manager):
         super(EsxImageManager, self).__init__()
         self._logger = logging.getLogger(__name__)
-        self._vim_client = vim_client
+        self._host_client = host_client
         self._ds_manager = ds_manager
         self._image_reaper = None
 
@@ -200,7 +198,7 @@ class EsxImageManager(ImageManager):
                                               compond_path_join(TMP_IMAGE_FOLDER_NAME_PREFIX, str(uuid.uuid4())))
 
         # Create the temp directory
-        self._vim_client.make_directory(tmp_image_dir)
+        self._host_client.make_directory(tmp_image_dir)
 
         # Copy the metadata file if it exists.
         source_meta = os_metadata_path(source_datastore, source_id, IMAGE_FOLDER_NAME_PREFIX)
@@ -215,8 +213,8 @@ class EsxImageManager(ImageManager):
         # Create the timestamp file
         self._create_image_timestamp_file(tmp_image_dir)
 
-        self._vim_client.copy_disk(vmdk_path(source_datastore, source_id, IMAGE_FOLDER_NAME_PREFIX),
-                                   os.path.join(tmp_image_dir, "%s.vmdk" % dest_id))
+        self._host_client.copy_disk(vmdk_path(source_datastore, source_id, IMAGE_FOLDER_NAME_PREFIX),
+                                    os.path.join(tmp_image_dir, "%s.vmdk" % dest_id))
         return tmp_image_dir
 
     def _move_image(self, image_id, datastore, tmp_dir):
@@ -262,10 +260,10 @@ class EsxImageManager(ImageManager):
                         shutil.move(os.path.join(tmp_dir, entry), os.path.join(image_path, entry))
                 else:
                     # on VMFS/NFS/etc, rename [datastore]/tmp_image_[uuid] to [datastore]/tmp_image_[image_id]
-                    self._vim_client.move_file(tmp_dir, image_path)
+                    self._host_client.move_file(tmp_dir, image_path)
         except:
             self._logger.exception("Move image %s to %s failed" % (image_id, image_path))
-            self._vim_client.delete_file(tmp_dir)
+            self._host_client.delete_file(tmp_dir)
             raise
 
     """
@@ -429,7 +427,7 @@ class EsxImageManager(ImageManager):
             tmp_dir = os_datastore_path(datastore_id,
                                         compond_path_join(TMP_IMAGE_FOLDER_NAME_PREFIX, str(uuid.uuid4())))
 
-        self._vim_client.make_directory(tmp_dir)
+        self._host_client.make_directory(tmp_dir)
         # return datastore path, so that it can be passed to nfc client
         return os_to_datastore_path(tmp_dir)
 
@@ -449,13 +447,13 @@ class EsxImageManager(ImageManager):
         if os.path.exists(dst_vmdk_path):
             self._logger.warning("Unexpected disk %s present, overwriting" % dst_vmdk_path)
 
-        self._vim_client.copy_disk(vm_disk_os_path, dst_vmdk_path)
+        self._host_client.copy_disk(vm_disk_os_path, dst_vmdk_path)
 
         try:
             self.finalize_image(datastore_id, tmp_dir, image_id)
         except:
             self._logger.warning("Delete copied disk %s" % dst_vmdk_path)
-            self._vim_client.delete_disk(dst_vmdk_path)
+            self._host_client.delete_disk(dst_vmdk_path)
             raise
 
     def prepare_receive_image(self, image_id, datastore_id):
@@ -464,7 +462,7 @@ class EsxImageManager(ImageManager):
             # on VSAN datastore, vm is imported to [vsanDatastore] image_[image_id]/[random_uuid].vmdk,
             # then the file is renamed to [vsanDatastore] image_[image_id]/[image_id].vmdk during receive_image.
             import_vm_path = datastore_path(datastore_id, compond_path_join(IMAGE_FOLDER_NAME_PREFIX, image_id))
-            self._vim_client.make_directory(import_vm_path)
+            self._host_client.make_directory(import_vm_path)
             import_vm_id = str(uuid.uuid4())
         else:
             # on other types of datastore, vm is imported to [datastore] tmp_image_[random_uuid]/[image_id].vmdk,
@@ -481,8 +479,8 @@ class EsxImageManager(ImageManager):
         image transfer.
         """
 
-        self._vim_client.wait_for_vm_create(imported_vm_name)
-        vm = self._vim_client.get_vm_obj_in_cache(imported_vm_name)
+        self._host_client.wait_for_vm_create(imported_vm_name)
+        vm = self._host_client.get_vm_obj_in_cache(imported_vm_name)
         self._logger.warning("receive_image found vm %s, %s" % (imported_vm_name, vm))
         vm_dir = os.path.dirname(datastore_to_os_path(vm.config.files.vmPathName))
 
@@ -497,11 +495,11 @@ class EsxImageManager(ImageManager):
                     if self._check_image_repair(image_id, datastore_id):
                         raise DiskAlreadyExistException("Image already exists")
 
-                self._vim_client.move_file(os.path.join(vm_dir, vmdk_add_suffix(imported_vm_name)),
-                                           os.path.join(vm_dir, vmdk_add_suffix(image_id)))
+                self._host_client.move_file(os.path.join(vm_dir, vmdk_add_suffix(imported_vm_name)),
+                                            os.path.join(vm_dir, vmdk_add_suffix(image_id)))
             except:
                 self._logger.exception("Move image %s to %s failed" % (image_id, vm_dir))
-                self._vim_client.delete_file(vm_dir)
+                self._host_client.delete_file(vm_dir)
                 raise
         else:
             self._move_image(image_id, datastore_id, vm_dir)
@@ -579,7 +577,7 @@ class EsxImageManager(ImageManager):
 
                 # Delete image directory
                 self._logger.info("delete_image: removing image directory: %s" % image_dir)
-                self._vim_client.delete_file(image_dir)
+                self._host_client.delete_file(image_dir)
 
             return True
         except Exception:

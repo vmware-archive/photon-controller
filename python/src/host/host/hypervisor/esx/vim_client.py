@@ -29,6 +29,7 @@ from common.log import log_duration_with
 from gen.agent.ttypes import TaskCache
 from host.hypervisor.disk_manager import DiskAlreadyExistException, DiskPathException
 from host.hypervisor.disk_manager import DiskFileException
+from host.hypervisor.esx.host_client import HostClient
 from host.hypervisor.esx.vm_config import os_to_datastore_path
 from host.hypervisor.esx.vm_config import uuid_to_vmdk_uuid
 from host.hypervisor.esx.vm_config import DEFAULT_DISK_ADAPTER_TYPE
@@ -90,7 +91,7 @@ def hostd_error_handler(func):
     return nested
 
 
-class VimClient(object):
+class VimClient(HostClient):
     """Wrapper class around VIM API calls using Service Instance connection"""
 
     ALLOC_LARGE_PAGES = "Mem.AllocGuestLargePage"

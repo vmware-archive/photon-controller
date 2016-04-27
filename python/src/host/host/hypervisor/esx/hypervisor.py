@@ -18,9 +18,9 @@ import logging
 from common.util import suicide
 from host.hypervisor.esx.datastore_manager import EsxDatastoreManager
 from host.hypervisor.esx.disk_manager import EsxDiskManager
+from host.hypervisor.esx.host_client_factory import create_host_client
 from host.hypervisor.esx.http_disk_transfer import HttpNfcTransferer
 from host.hypervisor.esx.network_manager import EsxNetworkManager
-from host.hypervisor.esx.vim_client import VimClient
 from host.hypervisor.esx.vm_manager import EsxVmManager
 from host.hypervisor.esx.image_manager import EsxImageManager
 from host.hypervisor.esx.system import EsxSystem
@@ -35,25 +35,22 @@ class EsxHypervisor(object):
         # If VimClient's housekeeping thread failed to update its own cache,
         # call errback to commit suicide. Watchdog will bring up the agent
         # again.
-        self.vim_client = VimClient(wait_timeout=agent_config.wait_timeout, errback=lambda: suicide())
-        self.vim_client.connect_local()
-        atexit.register(lambda client: client.disconnect(), self.vim_client)
+        self.host_client = create_host_client(errback=lambda: suicide())
+        self.host_client.connect_local()
+        atexit.register(lambda client: client.disconnect(), self.host_client)
 
         self.datastore_manager = EsxDatastoreManager(
             self, agent_config.datastores, agent_config.image_datastores)
         # datastore manager needs to update the cache when there is a change.
-        self.vim_client.add_update_listener(self.datastore_manager)
-        self.vm_manager = EsxVmManager(self.vim_client, self.datastore_manager)
-        self.disk_manager = EsxDiskManager(self.vim_client,
-                                           self.datastore_manager)
-        self.image_manager = EsxImageManager(self.vim_client,
-                                             self.datastore_manager)
-        self.network_manager = EsxNetworkManager(self.vim_client,
-                                                 agent_config.networks)
-        self.system = EsxSystem(self.vim_client)
+        self.host_client.add_update_listener(self.datastore_manager)
+        self.vm_manager = EsxVmManager(self.host_client, self.datastore_manager)
+        self.disk_manager = EsxDiskManager(self.host_client, self.datastore_manager)
+        self.image_manager = EsxImageManager(self.host_client, self.datastore_manager)
+        self.network_manager = EsxNetworkManager(self.host_client, agent_config.networks)
+        self.system = EsxSystem(self.host_client)
         self.image_manager.monitor_for_cleanup()
         self.image_transferer = HttpNfcTransferer(
-                self.vim_client,
+                self.host_client,
                 self.datastore_manager.image_datastores())
         atexit.register(self.image_manager.cleanup)
 
@@ -63,13 +60,13 @@ class EsxHypervisor(object):
         )
 
     def acquire_vim_ticket(self):
-        return self.vim_client.acquire_clone_ticket()
+        return self.host_client.acquire_clone_ticket()
 
     def add_update_listener(self, listener):
-        self.vim_client.add_update_listener(listener)
+        self.host_client.add_update_listener(listener)
 
     def remove_update_listener(self, listener):
-        self.vim_client.remove_update_listener(listener)
+        self.host_client.remove_update_listener(listener)
 
     def transfer_image(self, source_image_id, source_datastore,
                        destination_image_id, destination_datastore,
@@ -89,4 +86,4 @@ class EsxHypervisor(object):
         # from the deployment, large page support will need to be
         # explicitly updated by the user.
         disable_large_pages = memory_overcommit > 1.0
-        self.vim_client.set_large_page_support(disable=disable_large_pages)
+        self.host_client.set_large_page_support(disable=disable_large_pages)
