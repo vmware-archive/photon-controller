@@ -45,11 +45,63 @@ class HostClient(object):
     """ Vm operations
     """
     @abc.abstractmethod
+    def create_vm(self, vm_id, create_spec):
+        pass
+
+    @abc.abstractmethod
     def export_vm(self, vm_id):
         pass
 
     @abc.abstractmethod
     def import_vm(self, spec):
+        pass
+
+    @abc.abstractmethod
+    def get_vms(self):
+        pass
+
+    @abc.abstractmethod
+    def get_vms_in_cache(self):
+        pass
+
+    @abc.abstractmethod
+    def get_vm_in_cache(self, vm_id):
+        pass
+
+    @abc.abstractmethod
+    def get_vm_obj_in_cache(self, vm_id):
+        pass
+
+    @abc.abstractmethod
+    def get_vm_resource_ids(self):
+        pass
+
+    @abc.abstractmethod
+    def power_on_vm(self, vm_id):
+        pass
+
+    @abc.abstractmethod
+    def power_off_vm(self, vm_id):
+        pass
+
+    @abc.abstractmethod
+    def reset_vm(self, vm_id):
+        pass
+
+    @abc.abstractmethod
+    def suspend_vm(self, vm_id):
+        pass
+
+    @abc.abstractmethod
+    def resume_vm(self, vm_id):
+        pass
+
+    @abc.abstractmethod
+    def destroy_vm(self, vm):
+        pass
+
+    @abc.abstractmethod
+    def reconfigure_vm(self, vm, spec):
         pass
 
     """ Disk and file operations
@@ -144,6 +196,137 @@ class HostClient(object):
     """
     @abc.abstractmethod
     def query_stats(self, entity, metric_names, sampling_interval, start_time, end_time=None):
+        pass
+
+
+class VmConfig(object):
+
+    @abc.abstractmethod
+    def create_spec(self, vm_id, datastore, memory, cpus, metadata=None, env=None):
+        pass
+
+    @abc.abstractmethod
+    def update_spec(self):
+        pass
+
+    @abc.abstractmethod
+    def add_scsi_disk(self, cfg_info, cfg_spec, datastore, disk_id, disk_is_image=False):
+        pass
+
+    @abc.abstractmethod
+    def create_empty_disk(self, cfg_spec, datastore, disk_id, size_mb):
+        pass
+
+    @abc.abstractmethod
+    def create_child_disk(self, cfg_spec, datastore, disk_id, parent_id):
+        pass
+
+    @abc.abstractmethod
+    def add_nic(self, spec, network):
+        pass
+
+    @abc.abstractmethod
+    def add_iso_cdrom(self, cspec, iso_file, cfg_info):
+        pass
+
+    @abc.abstractmethod
+    def disconnect_iso_cdrom(self, spec, cfg_info):
+        pass
+
+    @abc.abstractmethod
+    def remove_iso_cdrom(self, spec, cfg_info):
+        pass
+
+    @abc.abstractmethod
+    def remove_all_disks(self, spec, cfg_info):
+        pass
+
+    @abc.abstractmethod
+    def customize_serial_ports(self, spec):
+        pass
+
+    @abc.abstractmethod
+    def create_device_spec(self, device):
+        pass
+
+    @abc.abstractmethod
+    def add_device_spec(self, device):
+        pass
+
+    @abc.abstractmethod
+    def edit_device_spec(self, device):
+        pass
+
+    @abc.abstractmethod
+    def remove_device_spec(self, device):
+        pass
+
+    @abc.abstractmethod
+    def create_device(self, spec, device):
+        pass
+
+    @abc.abstractmethod
+    def add_device(self, spec, device):
+        pass
+
+    @abc.abstractmethod
+    def update_device(self, spec, device):
+        pass
+
+    @abc.abstractmethod
+    def remove_device(self, spec, device):
+        pass
+
+    @abc.abstractmethod
+    def get_devices(self, vm):
+        pass
+
+    @abc.abstractmethod
+    def get_devices_from_config(self, cfg_info):
+        pass
+
+    @abc.abstractmethod
+    def find_device(self, devices, device_type, matcher=None):
+        pass
+
+    @abc.abstractmethod
+    def find_devices(self, devices, device_type, matcher=None):
+        pass
+
+    @abc.abstractmethod
+    def disk_matcher(self, datastore, disk_id):
+        pass
+
+    @abc.abstractmethod
+    def get_device(self, devices, device_type, **kwargs):
+        pass
+
+    @abc.abstractmethod
+    def get_virtual_disk_device(self, devices, **kwargs):
+        pass
+
+    @abc.abstractmethod
+    def set_vnc_port(self, spec, port):
+        pass
+
+    @abc.abstractmethod
+    def get_vnc_port(self, vm_id):
+        pass
+
+    @abc.abstractmethod
+    def get_network_config_int(self, config):
+        pass
+
+    @abc.abstractmethod
+    def set_extra_config(self, cfg_spec, options):
+        pass
+
+    @abc.abstractmethod
+    def set_annotation(self, spec, annotation):
+        pass
+
+    @abc.abstractmethod
+    def set_diskuuid_enabled(self, spec, enable):
         pass
 
 
