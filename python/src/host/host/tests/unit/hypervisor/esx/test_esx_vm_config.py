@@ -13,6 +13,7 @@ import unittest
 import uuid
 
 from mock import patch
+from mock import MagicMock
 from nose_parameterized import parameterized
 from hamcrest import assert_that, equal_to
 from pyVmomi import vim
@@ -37,17 +38,11 @@ def FakeConfigInfo():
 
 
 class TestEsxVmConfig(unittest.TestCase):
-    @patch.object(VimClient, "acquire_credentials")
-    @patch.object(VimClient, "update_cache")
-    @patch("pysdk.connect.Connect")
-    def setUp(self, connect, update, creds):
-        creds.return_value = ["username", "password"]
+    def setUp(self):
         self.vim_client = VimClient(auto_sync=False)
+        self.vim_client._content = MagicMock()
         with patch("host.hypervisor.esx.vm_config.GetEnv"):
             self.vm_config = EsxVmConfig(self.vim_client)
-
-    def tearDown(self):
-        self.vim_client.disconnect(wait=True)
 
     def dummy_devices(self):
         return [
