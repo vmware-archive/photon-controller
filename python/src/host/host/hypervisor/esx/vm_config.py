@@ -23,6 +23,7 @@ from host.hypervisor.esx.path_util import DISK_FOLDER_NAME_PREFIX
 from host.hypervisor.esx.path_util import VM_FOLDER_NAME_PREFIX
 from host.hypervisor.esx.path_util import IMAGE_FOLDER_NAME_PREFIX
 from host.hypervisor.esx.path_util import datastore_to_os_path
+from host.hypervisor.esx.host_client import VmConfig
 from host.hypervisor.esx.path_util import COMPOND_PATH_SEPARATOR
 from host.hypervisor.esx.path_util import vmdk_path
 from host.hypervisor.esx.path_util import compond_path_join
@@ -211,7 +212,7 @@ class EsxVmConfigSpec(vim.vm.ConfigSpec):
             return super(EsxVmConfigSpec, self).__getattr__(k)
 
 
-class EsxVmConfig(object):
+class EsxVmConfig(VmConfig):
 
     EXTRA_CONFIG_VNC_ENABLED = "RemoteDisplay.vnc.enabled"
     EXTRA_CONFIG_VNC_PORT = "RemoteDisplay.vnc.port"
