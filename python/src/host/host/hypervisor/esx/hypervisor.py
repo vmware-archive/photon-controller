@@ -50,6 +50,7 @@ class EsxHypervisor(object):
         self.system = EsxSystem(self.host_client)
         self.image_manager.monitor_for_cleanup()
         self.image_transferer = HttpNfcTransferer(
+                self,
                 self.host_client,
                 self.datastore_manager.image_datastores())
         atexit.register(self.image_manager.cleanup)

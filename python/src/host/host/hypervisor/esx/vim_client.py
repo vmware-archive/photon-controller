@@ -30,6 +30,8 @@ from gen.agent.ttypes import TaskCache
 from host.hypervisor.disk_manager import DiskAlreadyExistException, DiskPathException
 from host.hypervisor.disk_manager import DiskFileException
 from host.hypervisor.esx.host_client import HostClient
+from host.hypervisor.esx.host_client import NfcLeaseInitiatizationTimeout
+from host.hypervisor.esx.host_client import NfcLeaseInitiatizationError
 from host.hypervisor.esx.vm_config import os_to_datastore_path
 from host.hypervisor.esx.vm_config import uuid_to_vmdk_uuid
 from host.hypervisor.esx.vm_config import DEFAULT_DISK_ADAPTER_TYPE
@@ -488,6 +490,49 @@ class VimClient(HostClient):
         file_mgr = self._content.fileManager
         vim_task = file_mgr.MoveFile(sourceName=os_to_datastore_path(src), destinationName=os_to_datastore_path(dest))
         self.wait_for_task(vim_task)
+
+    @hostd_error_handler
+    def export_vm(self, vm_id):
+        """Export vm.
+        :param vm_id:
+        :return: download lease, url
+        """
+        vm = self.get_vm_obj_in_cache(vm_id)
+        lease = vm.ExportVm()
+        self._wait_for_lease(lease)
+        dev_url = lease.info.deviceUrl[0]
+        self._logger.debug("%s -> %s" % (dev_url.key, dev_url.url))
+        return lease, dev_url.url
+
+    @hostd_error_handler
+    def import_vm(self, spec):
+        """Import vm.
+        :param spec: EsxVmConfigSpec
+        :rtype: upload lease, url
+        """
+        import_spec = vim.vm.VmImportSpec(configSpec=spec)
+        lease = self.root_resource_pool.ImportVApp(import_spec, self.vm_folder)
+        self._wait_for_lease(lease)
+        dev_url = lease.info.deviceUrl[0]
+        self._logger.debug("%s -> %s" % (dev_url.key, dev_url.url))
+        return lease, dev_url.url
+
+    def _wait_for_lease(self, lease):
+        retries = 10
+        state = None
+        while retries > 0:
+            state = lease.state
+            if state != vim.HttpNfcLease.State.initializing:
+                break
+            retries -= 1
+            time.sleep(1)
+
+        if retries == 0:
+            self._logger.debug("Nfc lease initialization timed out")
+            raise NfcLeaseInitiatizationTimeout()
+        if state == vim.HttpNfcLease.State.error:
+            self._logger.debug("Fail to initialize nfc lease: %s" % str(lease.error))
+            raise NfcLeaseInitiatizationError()
 
     @staticmethod
     def _verify_task_done(task_cache):

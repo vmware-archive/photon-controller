@@ -42,6 +42,16 @@ class HostClient(object):
     def remove_update_listener(self, listener):
         pass
 
+    """ Vm operations
+    """
+    @abc.abstractmethod
+    def export_vm(self, vm_id):
+        pass
+
+    @abc.abstractmethod
+    def import_vm(self, spec):
+        pass
+
     """ Disk and file operations
     """
     @abc.abstractmethod
@@ -129,3 +139,13 @@ class HostClient(object):
     @abc.abstractmethod
     def get_network_configs(self):
         pass
+
+
+class NfcLeaseInitiatizationTimeout(Exception):
+    """ Timed out waiting for the HTTP NFC lease to initialize. """
+    pass
+
+
+class NfcLeaseInitiatizationError(Exception):
+    """ Error waiting for the HTTP NFC lease to initialize. """
+    pass
