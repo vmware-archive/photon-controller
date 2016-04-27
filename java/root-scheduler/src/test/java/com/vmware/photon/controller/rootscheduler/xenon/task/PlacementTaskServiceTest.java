@@ -19,6 +19,7 @@ import com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.clients.exceptions.SystemErrorException;
+import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.XenonRestClient;
@@ -36,7 +37,6 @@ import com.vmware.photon.controller.rootscheduler.exceptions.NoSuchResourceExcep
 import com.vmware.photon.controller.rootscheduler.helpers.xenon.SchedulerTestEnvironment;
 import com.vmware.photon.controller.rootscheduler.helpers.xenon.TestHost;
 import com.vmware.photon.controller.rootscheduler.service.ConstraintChecker;
-import com.vmware.photon.controller.rootscheduler.xenon.SchedulerXenonHost;
 import com.vmware.photon.controller.scheduler.gen.PlaceResponse;
 import com.vmware.photon.controller.scheduler.gen.PlaceResultCode;
 import com.vmware.photon.controller.scheduler.gen.Score;
@@ -72,11 +72,14 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
+import static org.testng.Assert.assertTrue;
 
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 
 /**
@@ -208,7 +211,7 @@ public class PlacementTaskServiceTest {
 
       Operation patchOperation = Operation
           .createPatch(UriUtils.buildUri(testHost, TestHost.SERVICE_URI))
-          .setBody(taskService.buildPatch(patchStage, false, null));
+          .setBody(PlacementTaskService.buildPatch(patchStage, false, null));
 
       op = testHost.sendRequestAndWait(patchOperation);
       assertThat(op.getStatusCode(), is(200));
@@ -242,7 +245,7 @@ public class PlacementTaskServiceTest {
 
       Operation patchOperation = Operation
           .createPatch(UriUtils.buildUri(testHost, TestHost.SERVICE_URI))
-          .setBody(taskService.buildPatch(patchStage, false, null));
+          .setBody(PlacementTaskService.buildPatch(patchStage, false, null));
 
       testHost.sendRequestAndWait(patchOperation);
     }
@@ -293,6 +296,9 @@ public class PlacementTaskServiceTest {
     private XenonRestClient xenonRestClient;
 
     @Mock
+    private CloudStoreHelper cloudStoreHelper;
+
+    @Mock
     private HostClientFactory hostClientFactory;
 
     private SchedulerTestEnvironment schedulerTestEnvironment;
@@ -307,7 +313,8 @@ public class PlacementTaskServiceTest {
       doReturn(schedulerConfig).when(config).getRoot();
       when(hostClientFactory.create()).thenReturn(client);
       schedulerTestEnvironment = SchedulerTestEnvironment.create(
-          hostClientFactory, config, checker, xenonRestClient, 1);
+          hostClientFactory, config, checker, xenonRestClient,
+          cloudStoreHelper, 1);
     }
 
     @AfterMethod
@@ -375,6 +382,7 @@ public class PlacementTaskServiceTest {
 
       doAnswer((InvocationOnMock invocation) -> {
         Object[] arguments = invocation.getArguments();
+        @SuppressWarnings("unchecked")
         AsyncMethodCallback<Host.AsyncClient.place_call> call =
             (AsyncMethodCallback<Host.AsyncClient.place_call>) arguments[1];
         call.onError(new Exception());
@@ -421,6 +429,7 @@ public class PlacementTaskServiceTest {
       Set<PlaceResponse> responses = new HashSet<>();
       doAnswer((InvocationOnMock invocation) -> {
         Object[] arguments = invocation.getArguments();
+        @SuppressWarnings("unchecked")
         AsyncMethodCallback<Host.AsyncClient.place_call> call =
             (AsyncMethodCallback<Host.AsyncClient.place_call>) arguments[1];
         if (responses.size() < numResponses) {
@@ -446,6 +455,65 @@ public class PlacementTaskServiceTest {
       assertThat(finalState.resultCode, is(PlaceResultCode.OK));
       assertThat(finalState.error, isEmptyOrNullString());
       verify(client, times(4)).place(any(), any());
+    }
+
+    /**
+     * Test that when we have failures querying datastore (looking for image) the error is properly propagated.
+     */
+    @Test
+    public void testFailureNoImage() throws Throwable {
+      DiskImage badImage = new DiskImage();
+      badImage.setId("invalid-image-id");
+
+      Disk diskWithoutImage = new Disk();
+      diskWithoutImage.setImage(badImage);
+
+      Vm vmWithoutImage = new Vm();
+      vmWithoutImage.addToDisks(diskWithoutImage);
+
+      Resource resource = new Resource();
+      resource.setVm(vmWithoutImage);
+
+      ImmutableMap<String, ServerAddress> matches = ImmutableMap.of(
+          "h1", new ServerAddress("h1", 1234),
+          "h2", new ServerAddress("h2", 1234),
+          "h3", new ServerAddress("h3", 1234),
+          "h4", new ServerAddress("h4", 1234));
+
+      doReturn(matches).when(checker)
+          .getCandidates(anyListOf(ResourceConstraint.class), anyInt());
+
+      PlacementTask placementTask = new PlacementTask();
+      placementTask.resource = resource;
+      placementTask.sampleHostCount = config.getRoot().getMaxFanoutCount();
+      placementTask.timeoutMs = config.getRoot().getPlaceTimeoutMs();
+      placementTask.taskState = new TaskState();
+      placementTask.taskState.stage = TaskState.TaskStage.CREATED;
+      placementTask.taskState.isDirect = true;
+
+      Set<PlaceResponse> responses = new HashSet<>();
+      doAnswer((InvocationOnMock invocation) -> {
+        Object[] arguments = invocation.getArguments();
+        @SuppressWarnings("unchecked")
+        AsyncMethodCallback<Host.AsyncClient.place_call> call =
+            (AsyncMethodCallback<Host.AsyncClient.place_call>) arguments[1];
+        PlaceResponse response = new PlaceResponse(PlaceResultCode.OK);
+        response.setScore(new Score(random.nextInt(), random.nextInt()));
+        responses.add(response);
+        Host.AsyncClient.place_call placeResponse = mock(Host.AsyncClient.place_call.class);
+        doReturn(response).when(placeResponse).getResult();
+        call.onComplete(placeResponse);
+        return null;
+      }).when(client).place(any(), any());
+
+      Operation operation = schedulerTestEnvironment.sendPostAndWait(
+          PlacementTaskService.FACTORY_LINK,
+          placementTask);
+
+      PlacementTask finalState = operation.getBody(PlacementTask.class);
+
+      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
+      assertThat(finalState.resultCode, is(PlaceResultCode.SYSTEM_ERROR));
     }
 
     /**
@@ -475,6 +543,7 @@ public class PlacementTaskServiceTest {
       Set<PlaceResponse> responses = new HashSet<>();
       doAnswer((InvocationOnMock invocation) -> {
         Object[] arguments = invocation.getArguments();
+        @SuppressWarnings("unchecked")
         AsyncMethodCallback<Host.AsyncClient.place_call> call =
             (AsyncMethodCallback<Host.AsyncClient.place_call>) arguments[1];
         PlaceResponse response = new PlaceResponse(PlaceResultCode.OK);
@@ -525,6 +594,7 @@ public class PlacementTaskServiceTest {
       Set<PlaceResponse> responses = new HashSet<>();
       doAnswer((InvocationOnMock invocation) -> {
         Object[] arguments = invocation.getArguments();
+        @SuppressWarnings("unchecked")
         AsyncMethodCallback<Host.AsyncClient.place_call> call =
             (AsyncMethodCallback<Host.AsyncClient.place_call>) arguments[1];
         PlaceResponse response = new PlaceResponse(PlaceResultCode.OK);
@@ -553,24 +623,49 @@ public class PlacementTaskServiceTest {
    * Image seeding tests.
    */
   public class ImageSeedingTest {
-    final String imageId = "test-image-id";
-    final String imageDatastoreId = "test-image-datastoreId";
+    @Mock
+    private Config config;
 
     @Mock
-    private SchedulerXenonHost schedulerXenonHost;
+    private HostClient client;
+
+    @Mock
+    private ConstraintChecker checker;
+
+    private XenonRestClient cloudStoreClient;
+
+    private CloudStoreHelper cloudStoreHelper;
+
+    @Mock
+    private HostClientFactory hostClientFactory;
+
+    private SchedulerTestEnvironment schedulerTestEnvironment;
 
     TestEnvironment cloudStoreMachine;
 
     private PlacementTaskService taskService;
 
-    @BeforeClass
-    public void testSetup() throws Throwable {
-      MockitoAnnotations.initMocks(this);
+    final String imageId = "test-image-id";
+    final String imageDatastoreId = "test-image-datastoreId";
 
-      cloudStoreMachine = TestEnvironment.create(1);
-      XenonRestClient cloudStoreClient = new XenonRestClient(
-          cloudStoreMachine.getServerSet(), Executors.newFixedThreadPool(1));
+    @BeforeMethod
+    public void setUpTest() throws Throwable {
+      MockitoAnnotations.initMocks(this);
+      SchedulerConfig schedulerConfig = new SchedulerConfig();
+      schedulerConfig.setMaxFanoutCount(4);
+      schedulerConfig.setPlaceTimeoutMs(20000);
+      schedulerConfig.setUtilizationTransferRatio(0.5);
+      doReturn(schedulerConfig).when(config).getRoot();
+      when(hostClientFactory.create()).thenReturn(client);
+
+      this.cloudStoreMachine = TestEnvironment.create(1);
+      this.cloudStoreClient = new XenonRestClient(cloudStoreMachine.getServerSet(), Executors.newFixedThreadPool(1));
       cloudStoreClient.start();
+      this.cloudStoreHelper = new CloudStoreHelper(cloudStoreMachine.getServerSet());
+
+      schedulerTestEnvironment = SchedulerTestEnvironment.create(
+          hostClientFactory, config, checker, this.cloudStoreClient,
+          this.cloudStoreHelper, 1);
 
       ImageToImageDatastoreMappingService.State state = new ImageToImageDatastoreMappingService.State();
       state.imageId = imageId;
@@ -579,34 +674,84 @@ public class PlacementTaskServiceTest {
       cloudStoreMachine.sendPostAndWait(ImageToImageDatastoreMappingServiceFactory.SELF_LINK, state);
 
       taskService = new PlacementTaskService();
-      taskService.setHost(schedulerXenonHost);
-      doReturn(cloudStoreClient).when(schedulerXenonHost)
-          .getCloudStoreClient();
+      taskService.setHost(schedulerTestEnvironment.getHosts()[0]);
     }
 
-    @AfterClass
-    public void testCleanup() throws Throwable {
+    @AfterMethod
+    public void tearDownTest() throws Throwable {
+      if (schedulerTestEnvironment != null) {
+        schedulerTestEnvironment.stop();
+        schedulerTestEnvironment = null;
+      }
       cloudStoreMachine.stop();
+      reset(client);
+    }
+
+    /**
+     * Test no hosts return placements.
+     */
+    @Test
+    public void testSuccess() throws Throwable {
+      CountDownLatch latch = new CountDownLatch(1);
+      ResourceConstraint constraint[] = new ResourceConstraint[1];
+
+      taskService.createImageSeedingConstraint(
+          createVmResource(imageId),
+          (newConstraint, ex) -> {
+            constraint[0] = newConstraint;
+            latch.countDown();
+          });
+
+      latch.await();
+      assertNotNull(constraint[0]);
+      assertThat(constraint[0].getValues().contains(imageDatastoreId), is(true));
     }
 
     @Test
-    public void testSuccess() throws Throwable {
-      ResourceConstraint constraint = taskService.createImageSeedingConstraint(createVmResource(imageId));
-      assertNotNull(constraint);
-      assertThat(constraint.getValues().contains(imageDatastoreId), is(true));
-    }
-
-    @Test(expectedExceptions = NoSuchResourceException.class)
     public void testWithZeroDatastores() throws Throwable {
-      taskService.createImageSeedingConstraint(createVmResource("new-test-image-id"));
+      CountDownLatch latch = new CountDownLatch(1);
+
+      ResourceConstraint constraint[] = new ResourceConstraint[1];
+      Exception exception[] = new Exception[1];
+
+      taskService.createImageSeedingConstraint(
+          createVmResource("new-test-image-id"),
+          (newConstraint, ex) -> {
+            constraint[0] = newConstraint;
+            exception[0] = ex;
+            latch.countDown();
+          });
+
+      latch.await();
+      assertNull(constraint[0]);
+      assertNotNull(exception[0]);
+      assertTrue(exception[0] instanceof NoSuchResourceException);
+
     }
 
-    @Test(expectedExceptions = SystemErrorException.class)
+    @Test
     public void testWithNoDiskImages() throws Throwable {
-      taskService.createImageSeedingConstraint(createVmResource(null));
+      CountDownLatch latch = new CountDownLatch(1);
+
+      ResourceConstraint constraint[] = new ResourceConstraint[1];
+      Exception exception[] = new Exception[1];
+
+      taskService.createImageSeedingConstraint(
+          createVmResource(null),
+          (newConstraint, ex) -> {
+            constraint[0] = newConstraint;
+            exception[0] = ex;
+            latch.countDown();
+          });
+
+      latch.await();
+      assertNull(constraint[0]);
+      assertNotNull(exception[0]);
+      assertTrue(exception[0] instanceof SystemErrorException);
+
     }
 
-    private Vm createVmResource(String imageId) {
+    private Resource createVmResource(String imageId) {
       Disk disk = new Disk();
 
       if (imageId != null) {
@@ -617,7 +762,10 @@ public class PlacementTaskServiceTest {
 
       Vm vm = new Vm();
       vm.setDisks(Arrays.asList(disk));
-      return vm;
+
+      Resource resource = new Resource();
+      resource.setVm(vm);
+      return resource;
     }
   }
 
@@ -632,4 +780,5 @@ public class PlacementTaskServiceTest {
 
     return startState;
   }
+
 }

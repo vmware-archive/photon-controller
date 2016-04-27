@@ -21,6 +21,7 @@ import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.common.thrift.StaticServerSetFactory;
 import com.vmware.photon.controller.common.thrift.ThriftConfig;
+import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.XenonRestClient;
 import com.vmware.photon.controller.common.xenon.host.XenonConfig;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperServerSetFactory;
@@ -108,11 +109,20 @@ public class RootSchedulerModule extends AbstractModule {
 
   @Provides
   @Singleton
+  public CloudStoreHelper getCloudStoreHelper(ZookeeperServerSetFactory serverSetFactory) {
+    ServerSet serverSet = serverSetFactory.createServiceServerSet("cloudstore", true);
+    CloudStoreHelper client = new CloudStoreHelper(serverSet);
+    return client;
+  }
+
+  @Provides
+  @Singleton
   public SchedulerXenonHost getSchedulerXenonHost(XenonConfig xenonConfig,
                                                 HostClientFactory hostClientFactory,
                                                 Config config,
                                                 ConstraintChecker checker,
-                                                XenonRestClient xenonRestClient) throws Throwable {
-    return new SchedulerXenonHost(xenonConfig, hostClientFactory, config, checker, xenonRestClient);
+                                                XenonRestClient xenonRestClient,
+                                                CloudStoreHelper cloudStoreHelper) throws Throwable {
+    return new SchedulerXenonHost(xenonConfig, hostClientFactory, config, checker, xenonRestClient, cloudStoreHelper);
   }
 }

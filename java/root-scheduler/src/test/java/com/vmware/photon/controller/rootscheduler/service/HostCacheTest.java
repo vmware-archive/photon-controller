@@ -109,7 +109,7 @@ public class HostCacheTest {
     // Guice in the scheduler,
     // so we're not adding extra usages of it until necessary.
     Config config = ConfigBuilder.build(Config.class, ConfigTest.class.getResource(configFilePath).getPath());
-    this.schedulerHost = new SchedulerXenonHost(config.getXenonConfig(), () -> null, config, null, null);
+    this.schedulerHost = new SchedulerXenonHost(config.getXenonConfig(), () -> null, config, null, null, null);
     this.schedulerHost.start();
     while (!this.schedulerHost.isReady()) {
       Thread.sleep(100);
