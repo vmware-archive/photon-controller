@@ -17,6 +17,10 @@ if [ -d ovftool ]; then
   export PATH=$(pwd)/ovftool:$PATH
 fi
 
+cd ../../java/dhcp-agent
+../gradlew disttar
+cd ../../appliances/dhcp-ova
+
 SSHD_ENABLE_ROOT_LOGIN=${SSHD_ENABLE_ROOT_LOGIN:-"false"}
 PHOTON_OVA_URL=${PHOTON_OVA_URL:="../photon-ova/build/photon-ova-virtualbox.ova"}
 DNSMASQ_URL=${DNSMASQ_URL:="http://artifactory.ec.eng.vmware.com/artifactory/esxcloud-archives/external/dnsmasq-v2-75/dnsmasq"}

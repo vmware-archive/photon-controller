@@ -29,6 +29,19 @@
     {
       "type": "shell",
       "inline": "systemctl restart systemd-networkd"
+    },
+    {
+      "type": "shell",
+      "inline": "mkdir -p /usr/local/dhcp-agent"
+    },
+    {
+      "type": "file",
+      "source": "../../java/dhcp-agent/build/distributions/dhcp-agent-0.1.0-SNAPSHOT.tar",
+      "destination": "/usr/local/dhcp-agent/dhcp-agent-0.1.0-SNAPSHOT.tar"
+    },
+    {
+      "type": "shell",
+      "inline": "tar xf /usr/local/dhcp-agent/dhcp-agent-0.1.0-SNAPSHOT.tar --strip-components=1 -C /usr/local/dhcp-agent && rm /usr/local/dhcp-agent/dhcp-agent-0.1.0-SNAPSHOT.tar"
     }
   ]
 }
