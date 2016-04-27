@@ -195,7 +195,7 @@ class TestHttpTransfer(unittest.TestCase):
         url_mock = MagicMock()
         import_spec = MagicMock()
         rp_mock = MagicMock()
-        folder_mock = MagicMock()
+        mock_vm_folder = MagicMock()
         vim_client_mock = MagicMock()
         vim_client_mock.host = host
 
@@ -204,12 +204,12 @@ class TestHttpTransfer(unittest.TestCase):
         xferer._get_disk_url_from_lease = MagicMock(return_value=url_mock)
         xferer._ensure_host_in_url = MagicMock(return_value=url_mock)
         vim_client_mock.root_resource_pool = rp_mock
-        vim_client_mock.vm_folder = folder_mock
+        vim_client_mock.vm_folder = MagicMock(return_value=mock_vm_folder)
         rp_mock.ImportVApp.return_value = lease_mock
 
         lease, url = xferer._get_url_from_import_vm(vim_client_mock, host, import_spec)
 
-        rp_mock.ImportVApp.assert_called_once_with(import_spec, folder_mock)
+        rp_mock.ImportVApp.assert_called_once_with(import_spec, mock_vm_folder)
         xferer._wait_for_lease.assert_called_once_with(lease_mock)
         xferer._get_disk_url_from_lease.assert_called_once_with(lease_mock)
         xferer._ensure_host_in_url.assert_called_once_with(url_mock, host)

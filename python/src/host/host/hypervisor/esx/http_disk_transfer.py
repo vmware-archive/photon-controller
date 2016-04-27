@@ -346,7 +346,7 @@ class HttpNfcTransferer(HttpTransferer):
         return import_spec
 
     def _get_url_from_import_vm(self, dst_vim_client, dst_host, import_spec):
-        vm_folder = dst_vim_client.vm_folder
+        vm_folder = dst_vim_client.vm_folder()
         root_rp = dst_vim_client.root_resource_pool
         lease = root_rp.ImportVApp(import_spec, vm_folder)
         self._wait_for_lease(lease)

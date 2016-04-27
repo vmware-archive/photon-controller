@@ -36,7 +36,6 @@ from host.hypervisor.resources import Vm
 from host.hypervisor.vm_manager import OperationNotAllowedException
 from host.hypervisor.vm_manager import VmManager
 from host.hypervisor.vm_manager import IsoNotAttachedException
-from host.hypervisor.vm_manager import VmAlreadyExistException
 from host.hypervisor.vm_manager import VmNotFoundException
 from host.hypervisor.vm_manager import VmPowerStateException
 from host.hypervisor.esx.vm_config import compond_path_join
@@ -193,24 +192,7 @@ class EsxVmManager(VmManager):
         :type ConfigSpec
         :raise: VmAlreadyExistException
         """
-        folder = self.vim_client.vm_folder
-        resource_pool = self.vim_client.root_resource_pool
-
-        # sanity check since VIM does not prevent this
-        try:
-            if self.vim_client.get_vm_in_cache(vm_id):
-                raise VmAlreadyExistException("VM already exists")
-        except VmNotFoundException:
-            pass
-
-        # The scenario of the vm creation at ESX where intermediate directory
-        # has to be created has not been well exercised and is known to be
-        # racy and not informative on failures. So be defensive and proactively
-        # create the intermediate directory ("/vmfs/volumes/<dsid>/vm_xy").
-        self.vim_client.make_directory(create_spec.files.vmPathName)
-        task = folder.CreateVm(create_spec, resource_pool, None)
-        self.vim_client.wait_for_task(task)
-        self.vim_client.wait_for_vm_create(vm_id)
+        self.vim_client.create_vm(vm_id, create_spec)
 
     @log_duration
     def update_vm(self, vm_id, spec):
@@ -436,11 +418,7 @@ class EsxVmManager(VmManager):
         return vm_resource
 
     def get_resource_ids(self):
-        ids = []
-        vm_folder = self.vim_client.vm_folder
-        for vm in vm_folder.GetChildEntity():
-            ids.append(vm.name)
-        return ids
+        return self.vim_client.get_vm_resource_ids()
 
     def get_used_memory_mb(self):
         vms = self.vim_client.get_vms_in_cache()
