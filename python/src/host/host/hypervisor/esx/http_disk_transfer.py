@@ -17,7 +17,6 @@ import os
 import re
 import socket
 import threading
-import time
 import uuid
 
 from common.file_util import rm_rf
@@ -32,7 +31,6 @@ from gen.host.ttypes import ServiceTicketRequest
 from gen.host.ttypes import ServiceTicketResultCode
 from gen.host.ttypes import ServiceType
 from host.hypervisor.disk_manager import DiskAlreadyExistException
-from host.hypervisor.esx.vim_client import VimClient
 from host.hypervisor.esx.vm_config import IMAGE_FOLDER_NAME_PREFIX
 from host.hypervisor.esx.vm_config import EsxVmConfigSpec
 from host.hypervisor.esx.vm_config import os_datastore_path
@@ -41,7 +39,6 @@ from host.hypervisor.esx.vm_config import VM_FOLDER_NAME_PREFIX
 from host.hypervisor.esx.vm_config import EsxVmConfig, SHADOW_VM_NAME_PREFIX
 from host.hypervisor.esx.vm_config import os_metadata_path
 from host.hypervisor.esx.vm_manager import EsxVmManager
-from pyVmomi import vim
 
 
 CHUNK_SIZE = 65536
@@ -65,16 +62,6 @@ class HttpTransferException(TransferException):
         return "HTTP Status Code: %d : Reason : %s" % (self.status_code, self.error)
 
 
-class NfcLeaseInitiatizationTimeout(Exception):
-    """ Timed out waiting for the HTTP NFC lease to initialize. """
-    pass
-
-
-class NfcLeaseInitiatizationError(Exception):
-    """ Error waiting for the HTTP NFC lease to initialize. """
-    pass
-
-
 class ReceiveImageException(Exception):
     def __init__(self, error_code, error):
         super(ReceiveImageException, self).__init__("Fail to receive image at destination host:")
@@ -88,9 +75,9 @@ class ReceiveImageException(Exception):
 class HttpTransferer(object):
     """ Class for handling HTTP-based data transfers between ESX hosts. """
 
-    def __init__(self, vim_client):
+    def __init__(self, host_client):
         self._logger = logging.getLogger(__name__)
-        self._vim_client = vim_client
+        self._host_client = host_client
 
     def _open_connection(self, host, protocol):
         if protocol == "http":
@@ -204,21 +191,22 @@ class HttpNfcTransferer(HttpTransferer):
 
     LEASE_INITIALIZATION_WAIT_SECS = 10
 
-    def __init__(self, vim_client, image_datastores, host_name="localhost"):
+    def __init__(self, hypervisor, vim_client, image_datastores, host_name="localhost"):
         super(HttpNfcTransferer, self).__init__(vim_client)
         self.lock = threading.Lock()
+        self._hypervisor = hypervisor
         self._lease_url_host_name = host_name
         self._image_datastores = image_datastores
-        self._vm_config = EsxVmConfig(self._vim_client)
-        self._vm_manager = EsxVmManager(self._vim_client, None)
+        self._vm_config = EsxVmConfig(self._host_client)
+        self._vm_manager = EsxVmManager(self._host_client, None)
 
-    def _create_remote_vim_client(self, agent_client, host):
+    def _create_remote_host_client(self, agent_client, host):
         request = ServiceTicketRequest(service_type=ServiceType.VIM)
         response = agent_client.get_service_ticket(request)
         if response.result != ServiceTicketResultCode.OK:
             self._logger.info("Get service ticket failed. Response = %s" % str(response))
             raise ValueError("No ticket")
-        vim_client = VimClient(auto_sync=False)
+        vim_client = self._hypervisor.create_host_client(auto_sync=False)
         vim_client.connect_ticket(host, response.vim_ticket)
         return vim_client
 
@@ -226,23 +214,6 @@ class HttpNfcTransferer(HttpTransferer):
         for dev_url in lease.info.deviceUrl:
             self._logger.debug("%s -> %s" % (dev_url.key, dev_url.url))
             return dev_url.url
-
-    def _wait_for_lease(self, lease):
-        retries = HttpNfcTransferer.LEASE_INITIALIZATION_WAIT_SECS
-        state = None
-        while retries > 0:
-            state = lease.state
-            if state != vim.HttpNfcLease.State.initializing:
-                break
-            retries -= 1
-            time.sleep(1)
-
-        if retries == 0:
-            self._logger.debug("Nfc lease initialization timed out")
-            raise NfcLeaseInitiatizationTimeout()
-        if state == vim.HttpNfcLease.State.error:
-            self._logger.debug("Fail to initialize nfc lease: %s" % str(lease.error))
-            raise NfcLeaseInitiatizationError()
 
     def _ensure_host_in_url(self, url, actual_host):
 
@@ -253,18 +224,6 @@ class HttpNfcTransferer(HttpTransferer):
         if host.find("*") != -1:
             host = host.replace("*", actual_host)
         return "%s://%s%s" % (protocol, host, selector)
-
-    def _export_shadow_vm(self, shadow_vm_id):
-        """ Initiates the Export VM operation.
-
-        The lease created as part of ExportVM contains, among other things,
-        the url to the stream-optimized disk of the image currently associated
-        with the VM being exported.
-        """
-        vm = self._vim_client.get_vm_obj_in_cache(shadow_vm_id)
-        lease = vm.ExportVm()
-        self._wait_for_lease(lease)
-        return lease, self._get_disk_url_from_lease(lease)
 
     def _get_shadow_vm_datastore(self):
         # The datastore in which the shadow VM will be created.
@@ -323,7 +282,7 @@ class HttpNfcTransferer(HttpTransferer):
 
         """
         self._configure_shadow_vm_with_disk(image_id, image_datastore, shadow_vm_id)
-        lease, disk_url = self._export_shadow_vm(shadow_vm_id)
+        lease, disk_url = self._host_client.export_vm(shadow_vm_id)
         disk_url = self._ensure_host_in_url(disk_url, self._lease_url_host_name)
         return lease, disk_url
 
@@ -341,16 +300,10 @@ class HttpNfcTransferer(HttpTransferer):
         # Just specify a tiny capacity in the spec for now; the eventual vm
         # disk will be based on what is uploaded via the http nfc url.
         spec = self._vm_manager.create_empty_disk(spec, datastore, None, size_mb=1)
+        return spec
 
-        import_spec = vim.vm.VmImportSpec(configSpec=spec)
-        return import_spec
-
-    def _get_url_from_import_vm(self, dst_vim_client, dst_host, import_spec):
-        vm_folder = dst_vim_client.vm_folder
-        root_rp = dst_vim_client.root_resource_pool
-        lease = root_rp.ImportVApp(import_spec, vm_folder)
-        self._wait_for_lease(lease)
-        disk_url = self._get_disk_url_from_lease(lease)
+    def _get_url_from_import_vm(self, dst_host_client, dst_host, import_spec):
+        lease, disk_url = dst_host_client.import_vm(import_spec)
         disk_url = self._ensure_host_in_url(disk_url, dst_host)
         return lease, disk_url
 
@@ -390,7 +343,7 @@ class HttpNfcTransferer(HttpTransferer):
             raise
 
     def _send_image(self, agent_client, host, tmp_path, spec):
-        vim_client = self._create_remote_vim_client(agent_client, host)
+        vim_client = self._create_remote_host_client(agent_client, host)
         try:
             write_lease, disk_url = self._get_url_from_import_vm(vim_client, host, spec)
             try:
