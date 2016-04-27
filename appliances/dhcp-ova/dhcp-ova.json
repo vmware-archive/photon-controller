@@ -16,6 +16,10 @@
   "provisioners": [
     {
       "type": "shell",
+      "script": "../scripts/install-java.sh"
+    },
+    {
+      "type": "shell",
       "inline": "mkdir -p /usr/local/sbin && wget -nv {{ user `dnsmasq_url` }} -O /usr/local/sbin/dnsmasq && chmod +x /usr/local/sbin/dnsmasq"
     },
     {
