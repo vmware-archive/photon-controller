@@ -17,6 +17,7 @@ import com.vmware.photon.controller.api.RoutingType;
 import com.vmware.photon.controller.apibackend.exceptions.ConfigureRoutingException;
 import com.vmware.photon.controller.apibackend.servicedocuments.ConfigureRoutingTask;
 import com.vmware.photon.controller.apibackend.servicedocuments.ConfigureRoutingTask.TaskState;
+import com.vmware.photon.controller.apibackend.utils.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.OperationUtils;
@@ -25,12 +26,11 @@ import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
-import com.vmware.photon.controller.nsxclient.NsxClient;
-import com.vmware.photon.controller.nsxclient.NsxClientFactory;
-import com.vmware.photon.controller.nsxclient.NsxClientFactoryProvider;
 import com.vmware.photon.controller.nsxclient.apis.LogicalRouterApi;
 import com.vmware.photon.controller.nsxclient.apis.LogicalSwitchApi;
 import com.vmware.photon.controller.nsxclient.builders.LogicalRouterDownLinkPortCreateSpecBuilder;
+import com.vmware.photon.controller.nsxclient.builders.LogicalRouterLinkPortOnTier0CreateSpecBuilder;
+import com.vmware.photon.controller.nsxclient.builders.LogicalRouterLinkPortOnTier1CreateSpecBuilder;
 import com.vmware.photon.controller.nsxclient.datatypes.NsxRouter;
 import com.vmware.photon.controller.nsxclient.models.IPSubnet;
 import com.vmware.photon.controller.nsxclient.models.LogicalPort;
@@ -38,6 +38,10 @@ import com.vmware.photon.controller.nsxclient.models.LogicalPortCreateSpec;
 import com.vmware.photon.controller.nsxclient.models.LogicalPortCreateSpecBuilder;
 import com.vmware.photon.controller.nsxclient.models.LogicalRouterDownLinkPort;
 import com.vmware.photon.controller.nsxclient.models.LogicalRouterDownLinkPortCreateSpec;
+import com.vmware.photon.controller.nsxclient.models.LogicalRouterLinkPortOnTier0;
+import com.vmware.photon.controller.nsxclient.models.LogicalRouterLinkPortOnTier0CreateSpec;
+import com.vmware.photon.controller.nsxclient.models.LogicalRouterLinkPortOnTier1;
+import com.vmware.photon.controller.nsxclient.models.LogicalRouterLinkPortOnTier1CreateSpec;
 import com.vmware.photon.controller.nsxclient.models.ResourceReference;
 import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Operation;
@@ -51,8 +55,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
 import javax.annotation.Nullable;
-
-import java.io.IOException;
 
 /**
  * Implements an Xenon service that represents a task to configure the routing on a logical network.
@@ -155,12 +157,11 @@ public class ConfigureRoutingTaskService extends StatefulService {
     }
   }
 
-  private void createLogicalSwitchPort(ConfigureRoutingTask currentState) throws IOException {
+  private void createLogicalSwitchPort(ConfigureRoutingTask currentState) throws Throwable {
     ServiceUtils.logInfo(this, "Creating port on logical switch %s", currentState.logicalSwitchId);
 
-    NsxClientFactory factory = ((NsxClientFactoryProvider) getHost()).getNsxClientFactory();
-    NsxClient nsxClient = factory.create(currentState.nsxManagerEndpoint, currentState.username, currentState.password);
-    LogicalSwitchApi logicalSwitchApi = nsxClient.getLogicalSwitchApi();
+    LogicalSwitchApi logicalSwitchApi = ServiceHostUtils.getNsxClient(getHost(), currentState.nsxManagerEndpoint,
+        currentState.username, currentState.password).getLogicalSwitchApi();
 
     LogicalPortCreateSpec spec = new LogicalPortCreateSpecBuilder()
         .logicalSwitchId(currentState.logicalSwitchId)
@@ -186,24 +187,23 @@ public class ConfigureRoutingTaskService extends StatefulService {
     );
   }
 
-  private void connectTier1RouterToSwitch(ConfigureRoutingTask currentState) throws IOException {
-    ServiceUtils.logInfo(this, "Connecting router %s to switch %s", currentState.logicalRouterId,
+  private void connectTier1RouterToSwitch(ConfigureRoutingTask currentState) throws Throwable {
+    ServiceUtils.logInfo(this, "Connecting router %s to switch %s", currentState.logicalTier1RouterId,
         currentState.logicalSwitchId);
 
-    NsxClientFactory factory = ((NsxClientFactoryProvider) getHost()).getNsxClientFactory();
-    NsxClient nsxClient = factory.create(currentState.nsxManagerEndpoint, currentState.username, currentState.password);
-    LogicalRouterApi logicalRouterApi = nsxClient.getLogicalRouterApi();
+    LogicalRouterApi logicalRouterApi = ServiceHostUtils.getNsxClient(getHost(), currentState.nsxManagerEndpoint,
+        currentState.username, currentState.password).getLogicalRouterApi();
 
     IPSubnet ipSubnet = new IPSubnet();
-    ipSubnet.setIpAddresses(ImmutableList.of(currentState.logicalRouterPortIp));
-    ipSubnet.setPrefixLength(currentState.logicalRouterPortIpPrefixLen);
+    ipSubnet.setIpAddresses(ImmutableList.of(currentState.logicalTier1RouterDownLinkPortIp));
+    ipSubnet.setPrefixLength(currentState.logicalTier1RouterDownLinkPortIpPrefixLen);
 
     ResourceReference resourceReference = new ResourceReference();
     resourceReference.setTargetId(currentState.logicalSwitchPortId);
 
     LogicalRouterDownLinkPortCreateSpec spec = new LogicalRouterDownLinkPortCreateSpecBuilder()
-        .displayName(currentState.logicalRouterPortDisplayName)
-        .logicalRouterId(currentState.logicalRouterId)
+        .displayName(currentState.logicalTier1RouterDownLinkPortDisplayName)
+        .logicalRouterId(currentState.logicalTier1RouterId)
         .resourceType(NsxRouter.PortType.DOWN_LINK_PORT)
         .subnets(ImmutableList.of(ipSubnet))
         .linkedLogicalSwitchPortId(resourceReference)
@@ -220,7 +220,7 @@ public class ConfigureRoutingTaskService extends StatefulService {
               patch = buildPatch(TaskState.TaskStage.FINISHED);
             }
 
-            patch.logicalRouterPortId = result.getId();
+            patch.logicalTier1RouterDownLinkPort = result.getId();
 
             TaskUtils.sendSelfPatch(ConfigureRoutingTaskService.this, patch);
           }
@@ -233,15 +233,70 @@ public class ConfigureRoutingTaskService extends StatefulService {
     );
   }
 
-  private void createTier0RouterPort(ConfigureRoutingTask currentState) {
-    // To be implemented.
-    TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.STARTED,
-        TaskState.SubStage.CONNECT_TIER1_ROUTER_TO_TIER0_ROUTER));
+  private void createTier0RouterPort(ConfigureRoutingTask currentState) throws Throwable {
+    ServiceUtils.logInfo(this, "Creating port on tier-0 router %s", currentState.logicalTier0RouterId);
+
+    LogicalRouterApi logicalRouterApi = ServiceHostUtils.getNsxClient(getHost(), currentState.nsxManagerEndpoint,
+        currentState.username, currentState.password).getLogicalRouterApi();
+
+    LogicalRouterLinkPortOnTier0CreateSpec spec = new LogicalRouterLinkPortOnTier0CreateSpecBuilder()
+        .displayName(currentState.logicalLinkPortOnTier0RouterDisplayName)
+        .logicalRouterId(currentState.logicalTier0RouterId)
+        .resourceType(NsxRouter.PortType.LINK_PORT_ON_TIER0)
+        .build();
+
+    logicalRouterApi.createLogicalRouterLinkPortTier0(spec,
+        new FutureCallback<LogicalRouterLinkPortOnTier0>() {
+          @Override
+          public void onSuccess(@Nullable LogicalRouterLinkPortOnTier0 result) {
+            ConfigureRoutingTask patch = buildPatch(TaskState.TaskStage.STARTED,
+                TaskState.SubStage.CONNECT_TIER1_ROUTER_TO_TIER0_ROUTER, null);
+            patch.logicalLinkPortOnTier0Router = result.getId();
+
+            TaskUtils.sendSelfPatch(ConfigureRoutingTaskService.this, patch);
+          }
+
+          @Override
+          public void onFailure(Throwable t) {
+            failTask(t);
+          }
+        }
+    );
   }
 
-  private void connectTier1RouterToTier0Router(ConfigureRoutingTask currentState) {
-    // To be implemented.
-    TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FINISHED));
+  private void connectTier1RouterToTier0Router(ConfigureRoutingTask currentState) throws Throwable {
+    ServiceUtils.logInfo(this, "Connecting tier-1 router %s to tier-0 router %s", currentState.logicalTier1RouterId,
+        currentState.logicalTier0RouterId);
+
+    LogicalRouterApi logicalRouterApi = ServiceHostUtils.getNsxClient(getHost(), currentState.nsxManagerEndpoint,
+        currentState.username, currentState.password).getLogicalRouterApi();
+
+    ResourceReference resourceReference = new ResourceReference();
+    resourceReference.setTargetId(currentState.logicalLinkPortOnTier0Router);
+
+    LogicalRouterLinkPortOnTier1CreateSpec spec = new LogicalRouterLinkPortOnTier1CreateSpecBuilder()
+        .displayName(currentState.logicalLinkPortOnTier1RouterDisplayName)
+        .logicalRouterId(currentState.logicalTier1RouterId)
+        .resourceType(NsxRouter.PortType.LINK_PORT_ON_TIER1)
+        .linkedLogicalRouterPortId(resourceReference)
+        .build();
+
+    logicalRouterApi.createLogicalRouterLinkPortTier1(spec,
+        new FutureCallback<LogicalRouterLinkPortOnTier1>() {
+          @Override
+          public void onSuccess(@Nullable LogicalRouterLinkPortOnTier1 result) {
+            ConfigureRoutingTask patch = buildPatch(TaskState.TaskStage.FINISHED);
+            patch.logicalLinkPortOnTier1Router = result.getId();
+
+            TaskUtils.sendSelfPatch(ConfigureRoutingTaskService.this, patch);
+          }
+
+          @Override
+          public void onFailure(Throwable t) {
+            failTask(t);
+          }
+        }
+    );
   }
 
   private void validateState(ConfigureRoutingTask state) {

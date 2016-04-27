@@ -162,10 +162,13 @@ public class ConfigRoutingTaskServiceTest {
           {"password", "password cannot be null"},
           {"logicalSwitchPortDisplayName", "logicalSwitchPortDisplayName cannot be null"},
           {"logicalSwitchId", "logicalSwitchId cannot be null"},
-          {"logicalRouterPortDisplayName", "logicalRouterPortDisplayName cannot be null"},
-          {"logicalRouterId", "logicalRouterId cannot be null"},
-          {"logicalRouterPortIp", "logicalRouterPortIp cannot be null"},
-          {"logicalRouterPortIpPrefixLen", "logicalRouterPortIpPrefixLen cannot be null"}
+          {"logicalTier1RouterDownLinkPortDisplayName", "logicalTier1RouterDownLinkPortDisplayName cannot be null"},
+          {"logicalTier1RouterId", "logicalTier1RouterId cannot be null"},
+          {"logicalTier1RouterDownLinkPortIp", "logicalTier1RouterDownLinkPortIp cannot be null"},
+          {"logicalTier1RouterDownLinkPortIpPrefixLen", "logicalTier1RouterDownLinkPortIpPrefixLen cannot be null"},
+          {"logicalLinkPortOnTier0RouterDisplayName", "logicalLinkPortOnTier0RouterDisplayName cannot be null"},
+          {"logicalTier0RouterId", "logicalTier0RouterId cannot be null"},
+          {"logicalLinkPortOnTier1RouterDisplayName", "logicalLinkPortOnTier1RouterDisplayName cannot be null"}
       };
     }
   }
@@ -385,10 +388,13 @@ public class ConfigRoutingTaskServiceTest {
           {"password"},
           {"logicalSwitchPortDisplayName"},
           {"logicalSwitchId"},
-          {"logicalRouterPortDisplayName"},
-          {"logicalRouterId"},
-          {"logicalRouterPortIp"},
-          {"logicalRouterPortIpPrefixLen"}
+          {"logicalTier1RouterDownLinkPortDisplayName"},
+          {"logicalTier1RouterId"},
+          {"logicalTier1RouterDownLinkPortIp"},
+          {"logicalTier1RouterDownLinkPortIpPrefixLen"},
+          {"logicalLinkPortOnTier0RouterDisplayName"},
+          {"logicalTier0RouterId"},
+          {"logicalLinkPortOnTier1RouterDisplayName"}
       };
     }
 
@@ -396,7 +402,9 @@ public class ConfigRoutingTaskServiceTest {
     public Object[][] getWriteOnceFields() {
       return new Object[][] {
           {"logicalSwitchPortId"},
-          {"logicalRouterPortId"}
+          {"logicalTier1RouterDownLinkPort"},
+          {"logicalLinkPortOnTier1Router"},
+          {"logicalLinkPortOnTier0Router"}
       };
     }
 
@@ -463,24 +471,51 @@ public class ConfigRoutingTaskServiceTest {
           .build();
       doReturn(nsxClientMock).when(nsxClientFactory).create(any(String.class), any(String.class), any(String.class));
 
-      ConfigureRoutingTask savedState = startService();
+      ConfigureRoutingTask savedState = startService(RoutingType.ISOLATED);
       assertThat(savedState.taskState.stage, is(TaskState.TaskStage.FAILED));
     }
 
     @Test
-    public void testFailedToCreateRouterPort() throws Throwable {
+    public void testFailedToConnectRouterToSwitch() throws Throwable {
       NsxClientMock nsxClientMock = new NsxClientMock.Builder()
           .createLogicalPort(true, "logicalPortId")
           .createLogicalRouterDownLinkPort(false, "logicalRouterPortId")
           .build();
       doReturn(nsxClientMock).when(nsxClientFactory).create(any(String.class), any(String.class), any(String.class));
 
-      ConfigureRoutingTask savedState = startService();
+      ConfigureRoutingTask savedState = startService(RoutingType.ISOLATED);
       assertThat(savedState.taskState.stage, is(TaskState.TaskStage.FAILED));
     }
 
     @Test
-    public void testSuccessfullyLinkSwitchAndRouter() throws Throwable {
+    public void testFailedtoCreateTier0RouterPort() throws Throwable {
+      NsxClientMock nsxClientMock = new NsxClientMock.Builder()
+          .createLogicalPort(true, "logicalPortId")
+          .createLogicalRouterDownLinkPort(true, "logicalRouterDownLinkPortId")
+          .createLogicalLinkPortOnTier0Router(false, "logicalLinkPortIdOnTier0Router")
+          .build();
+      doReturn(nsxClientMock).when(nsxClientFactory).create(any(String.class), any(String.class), any(String.class));
+
+      ConfigureRoutingTask savedState = startService(RoutingType.ROUTED);
+      assertThat(savedState.taskState.stage, is(TaskState.TaskStage.FAILED));
+    }
+
+    @Test
+    public void testFailedtoConnectTier0Tier1Routers() throws Throwable {
+      NsxClientMock nsxClientMock = new NsxClientMock.Builder()
+          .createLogicalPort(true, "logicalPortId")
+          .createLogicalRouterDownLinkPort(true, "logicalRouterDownLinkPortId")
+          .createLogicalLinkPortOnTier0Router(true, "logicalLinkPortIdOnTier0Router")
+          .createLogicalLinkPortOnTier1Router(false, "logicalLinkPortIdOnTier0Router")
+          .build();
+      doReturn(nsxClientMock).when(nsxClientFactory).create(any(String.class), any(String.class), any(String.class));
+
+      ConfigureRoutingTask savedState = startService(RoutingType.ROUTED);
+      assertThat(savedState.taskState.stage, is(TaskState.TaskStage.FAILED));
+    }
+
+    @Test
+    public void testSuccessfulConfigureInProvateNetwork() throws Throwable {
       String logicalPortId = UUID.randomUUID().toString();
       String logicalRouterDownLinkPortId = UUID.randomUUID().toString();
 
@@ -490,16 +525,39 @@ public class ConfigRoutingTaskServiceTest {
           .build();
       doReturn(nsxClientMock).when(nsxClientFactory).create(any(String.class), any(String.class), any(String.class));
 
-      ConfigureRoutingTask savedState = startService();
+      ConfigureRoutingTask savedState = startService(RoutingType.ISOLATED);
       assertThat(savedState.taskState.stage, is(TaskState.TaskStage.FINISHED));
       assertThat(savedState.logicalSwitchPortId, is(logicalPortId));
-      assertThat(savedState.logicalRouterPortId, is(logicalRouterDownLinkPortId));
+      assertThat(savedState.logicalTier1RouterDownLinkPort, is(logicalRouterDownLinkPortId));
     }
 
-    private ConfigureRoutingTask startService() throws Throwable {
+    @Test
+    public void testSuccessfulConfigureInPublicNetwork() throws Throwable {
+      String logicalPortId = UUID.randomUUID().toString();
+      String logicalRouterDownLinkPortId = UUID.randomUUID().toString();
+      String logicalRouterPortOnTier1Id = UUID.randomUUID().toString();
+      String logicalRouterPortOnTier0Id = UUID.randomUUID().toString();
+
+      NsxClientMock nsxClientMock = new NsxClientMock.Builder()
+          .createLogicalPort(true, logicalPortId)
+          .createLogicalRouterDownLinkPort(true, logicalRouterDownLinkPortId)
+          .createLogicalLinkPortOnTier0Router(true, logicalRouterPortOnTier0Id)
+          .createLogicalLinkPortOnTier1Router(true, logicalRouterPortOnTier1Id)
+          .build();
+      doReturn(nsxClientMock).when(nsxClientFactory).create(any(String.class), any(String.class), any(String.class));
+
+      ConfigureRoutingTask savedState = startService(RoutingType.ROUTED);
+      assertThat(savedState.taskState.stage, is(TaskState.TaskStage.FINISHED));
+      assertThat(savedState.logicalSwitchPortId, is(logicalPortId));
+      assertThat(savedState.logicalTier1RouterDownLinkPort, is(logicalRouterDownLinkPortId));
+      assertThat(savedState.logicalLinkPortOnTier0Router, is(logicalRouterPortOnTier0Id));
+      assertThat(savedState.logicalLinkPortOnTier1Router, is(logicalRouterPortOnTier1Id));
+    }
+
+    private ConfigureRoutingTask startService(RoutingType routingType) throws Throwable {
       return testEnvironment.callServiceAndWaitForState(
           ConfigureRoutingTaskService.FACTORY_LINK,
-          buildStartState(TaskState.TaskStage.CREATED, null, RoutingType.ISOLATED, 0),
+          buildStartState(TaskState.TaskStage.CREATED, null, routingType, 0),
           ConfigureRoutingTask.class,
           (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
     }
@@ -535,10 +593,14 @@ public class ConfigRoutingTaskServiceTest {
     startState.password = "password";
     startState.logicalSwitchPortDisplayName = "port-to-router";
     startState.logicalSwitchId = UUID.randomUUID().toString();
-    startState.logicalRouterPortDisplayName = "port-to-switch";
-    startState.logicalRouterId = UUID.randomUUID().toString();
-    startState.logicalRouterPortIp = "192.168.2.254";
-    startState.logicalRouterPortIpPrefixLen = 24;
+    startState.logicalTier1RouterDownLinkPortDisplayName = "port-to-switch";
+    startState.logicalTier1RouterId = UUID.randomUUID().toString();
+    startState.logicalTier1RouterDownLinkPortIp = "192.168.2.254";
+    startState.logicalTier1RouterDownLinkPortIpPrefixLen = 24;
+    startState.logicalLinkPortOnTier0RouterDisplayName = "port-to-tier1-router";
+    startState.logicalTier0RouterId = UUID.randomUUID().toString();
+    startState.logicalLinkPortOnTier1RouterDisplayName = "port-to-tier0-router";
+    startState.logicalTier1RouterId = UUID.randomUUID().toString();
     startState.controlFlags = controlFlag;
 
     return startState;
