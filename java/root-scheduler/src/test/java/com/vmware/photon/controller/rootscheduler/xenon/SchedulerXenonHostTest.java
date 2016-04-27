@@ -269,7 +269,7 @@ public class SchedulerXenonHostTest {
       xenonConfig.setPort(18000);
       xenonConfig.setStoragePath(storageDir.getAbsolutePath());
       CloudStoreConstraintChecker checker = new CloudStoreConstraintChecker(null);
-      host = new SchedulerXenonHost(xenonConfig, () -> null, null, checker, null);
+      host = new SchedulerXenonHost(xenonConfig, () -> null, null, checker, null, null);
       host.setMaintenanceIntervalMicros(maintenanceInterval);
       host.start();
       waitForServicesStartup(host);
@@ -279,7 +279,7 @@ public class SchedulerXenonHostTest {
       xenonConfig2.setPort(18002);
       xenonConfig2.setStoragePath(storageDir2.getAbsolutePath());
 
-      host2 = new SchedulerXenonHost(xenonConfig2, () -> null, null, checker, null);
+      host2 = new SchedulerXenonHost(xenonConfig2, () -> null, null, checker, null, null);
       host2.setMaintenanceIntervalMicros(maintenanceInterval);
       host2.start();
       waitForServicesStartup(host2);
