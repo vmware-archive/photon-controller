@@ -110,7 +110,7 @@ class PerfManagerCollector(Collector):
 
     @staticmethod
     def get_vim_client():
-        return common.services.get(ServiceName.VIM_CLIENT)
+        return common.services.get(ServiceName.HOST_CLIENT)
 
     def get_perf_manager(self):
         return self.get_vim_client().perf_manager
