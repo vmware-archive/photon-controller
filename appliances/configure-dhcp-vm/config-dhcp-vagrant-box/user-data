@@ -63,6 +63,7 @@ write_files:
         After=dnsmasq.service
 
         [Service]
+        Environment="JAVA_HOME=/usr/java/default"
         ExecStart=/usr/local/dhcp-agent/bin/dhcp-agent /usr/local/dhcp-agent/configuration/dhcp-agent-dev.yml
         Restart=on-failure
         RestartSec=5
@@ -92,3 +93,4 @@ runcmd:
   - sh /tmp/init-user.sh
   - if [ ! -z "$(cat /etc/ssh/sshd_config | grep PermitRootLogin)" ] ; then sed -i 's/.*PermitRootLogin.*/PermitRootLogin yes/g' /etc/ssh/sshd_config ; else echo "PermitRootLogin yes" >> /etc/ssh/sshd_config ; fi
   - systemctl restart sshd
+  - reboot
