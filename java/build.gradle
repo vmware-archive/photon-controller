@@ -36,7 +36,7 @@ buildscript {
     maven { url 'http://dl.bintray.com/vermeulen-mp/gradle-plugins' }
   }
   dependencies {
-    classpath 'com.bmuschko:gradle-docker-plugin:2.6.8'
+    classpath 'com.bmuschko:gradle-docker-plugin:2.6.7'
     classpath 'com.wiredforcode:gradle-spawn-plugin:0.6.0'
     classpath 'com.bmuschko:gradle-vagrant-plugin:2.0'
   }
