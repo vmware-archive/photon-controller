@@ -39,8 +39,8 @@ class TestVimClient(unittest.TestCase):
         if self.host is None or self.pwd is None:
             raise SkipTest()
 
-        self.vim_client = VimClient(self.host, "root", self.pwd,
-                                    auto_sync=True)
+        self.vim_client = VimClient(auto_sync=True)
+        self.vim_client.connect_userpwd(self.host, "root", self.pwd)
         self.vm_config = EsxVmConfig(self.vim_client)
         self._logger = logging.getLogger(__name__)
 
@@ -263,7 +263,8 @@ class TestVimClient(unittest.TestCase):
 
     def test_clone_ticket(self):
         ticket = self.vim_client.acquire_clone_ticket()
-        vim_client2 = VimClient(host=self.host, ticket=ticket)
+        vim_client2 = VimClient()
+        vim_client2.connect_ticket(self.host, ticket)
         vim_client2.host_system
 
     def _wait_vm_has_disk(self, vm_id, disk_num):
