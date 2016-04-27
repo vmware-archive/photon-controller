@@ -20,6 +20,8 @@ import com.vmware.photon.controller.nsxclient.models.LogicalRouterDownLinkPort;
 import com.vmware.photon.controller.nsxclient.models.LogicalRouterDownLinkPortCreateSpec;
 import com.vmware.photon.controller.nsxclient.models.LogicalRouterLinkPortOnTier0;
 import com.vmware.photon.controller.nsxclient.models.LogicalRouterLinkPortOnTier0CreateSpec;
+import com.vmware.photon.controller.nsxclient.models.LogicalRouterLinkPortOnTier1;
+import com.vmware.photon.controller.nsxclient.models.LogicalRouterLinkPortOnTier1CreateSpec;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.util.concurrent.FutureCallback;
@@ -111,6 +113,26 @@ public class LogicalRouterApi extends NsxClientApi {
         serializeObjectAsJson(spec),
         HttpStatus.SC_CREATED,
         new TypeReference<LogicalRouterLinkPortOnTier0>() {
+        },
+        responseCallback
+    );
+  }
+
+  /**
+   * Create a port on tier1 router that connects to tier0 router.
+   *
+   * @param spec
+   * @param responseCallback
+   * @throws IOException
+   */
+  public void createLogicalRouterLinkPortTier1(LogicalRouterLinkPortOnTier1CreateSpec spec,
+                                               FutureCallback<LogicalRouterLinkPortOnTier1> responseCallback)
+    throws IOException {
+
+    postAsync(logicalRouterPortBasePath,
+        serializeObjectAsJson(spec),
+        HttpStatus.SC_CREATED,
+        new TypeReference<LogicalRouterLinkPortOnTier1>() {
         },
         responseCallback
     );
