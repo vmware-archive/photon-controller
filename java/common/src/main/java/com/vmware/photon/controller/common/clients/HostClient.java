@@ -146,7 +146,7 @@ public class HostClient {
   private static final long CREATE_DISKS_TIMEOUT_MS = 3600000;
   private static final long CREATE_VM_TIMEOUT_MS = 7200000; // two hours
   private static final long DELETE_DISK_TIMEOUT_MS = 1800000;
-  private static final long CREATE_IMAGE_TIMEOUT_MS = 60000;
+  private static final long CREATE_IMAGE_TIMEOUT_MS = 7200000;
   private static final long FINALIZE_IMAGE_TIMEOUT_MS = 60000;
   private static final long START_IMAGE_SCAN_TIMEOUT_MS = 60000;
   private static final long START_IMAGE_SWEEP_TIMEOUT_MS = 60000;
