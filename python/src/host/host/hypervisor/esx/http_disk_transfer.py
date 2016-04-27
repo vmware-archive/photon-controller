@@ -218,7 +218,8 @@ class HttpNfcTransferer(HttpTransferer):
         if response.result != ServiceTicketResultCode.OK:
             self._logger.info("Get service ticket failed. Response = %s" % str(response))
             raise ValueError("No ticket")
-        vim_client = VimClient(host=host, ticket=response.vim_ticket, auto_sync=False)
+        vim_client = VimClient(auto_sync=False)
+        vim_client.connect_ticket(host, response.vim_ticket)
         return vim_client
 
     def _get_disk_url_from_lease(self, lease):

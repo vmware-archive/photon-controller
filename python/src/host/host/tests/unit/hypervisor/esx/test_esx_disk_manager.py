@@ -15,7 +15,6 @@ from host.hypervisor.disk_manager import DiskFileException
 from host.hypervisor.disk_manager import DiskPathException
 from host.hypervisor.esx.vim_client import VimClient
 
-from mock import patch
 from mock import MagicMock
 
 from pyVmomi import vim
@@ -23,19 +22,13 @@ from pyVmomi import vim
 
 class TestEsxDiskManager(unittest.TestCase):
 
-    @patch.object(VimClient, "acquire_credentials")
-    @patch.object(VimClient, "update_cache")
-    @patch("pysdk.connect.Connect")
-    def setUp(self, connect, update, creds):
-        creds.return_value = ["username", "password"]
+    def setUp(self):
         self.vim_client = VimClient(auto_sync=False)
+        self.vim_client._content = MagicMock()
         self.vim_client.wait_for_task = MagicMock()
         self.disk_manager = EsxDiskManager(self.vim_client, [])
         self.disk_manager._vmdk_mkdir = MagicMock()
         self.disk_manager._vmdk_rmdir = MagicMock()
-
-    def tearDown(self):
-        self.vim_client.disconnect(wait=True)
 
     def test_invalid_datastore_path(self):
         """Test that we propagate InvalidDatastorePath."""

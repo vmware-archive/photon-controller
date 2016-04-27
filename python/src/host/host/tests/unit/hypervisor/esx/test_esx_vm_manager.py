@@ -48,12 +48,9 @@ def FakeConfigInfo():
 
 
 class TestEsxVmManager(unittest.TestCase):
-    @patch.object(VimClient, "acquire_credentials")
-    @patch.object(VimClient, "update_cache")
-    @patch("pysdk.connect.Connect")
-    def setUp(self, connect, update, creds):
-        creds.return_value = ["username", "password"]
+    def setUp(self):
         self.vim_client = VimClient(auto_sync=False)
+        self.vim_client._content = MagicMock()
         self.vim_client.wait_for_task = MagicMock()
         self.patcher = patch("host.hypervisor.esx.vm_config.GetEnv")
         self.patcher.start()
@@ -61,7 +58,6 @@ class TestEsxVmManager(unittest.TestCase):
 
     def tearDown(self):
         self.patcher.stop()
-        self.vim_client.disconnect(wait=True)
 
     def test_power_vm_not_found(self):
         """Test that we propagate VmNotFound."""

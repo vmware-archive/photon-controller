@@ -33,21 +33,17 @@ from host.hypervisor.esx.vm_config import SHADOW_VM_NAME_PREFIX
 class TestHttpTransfer(unittest.TestCase):
     """Http Transferer tests."""
 
-    @patch.object(VimClient, "acquire_credentials")
-    @patch("pysdk.connect.Connect")
-    def setUp(self, connect, creds):
+    def setUp(self):
         self.shadow_vm_id = SHADOW_VM_NAME_PREFIX + str(uuid.uuid4())
         self.image_datastores = ["image_ds", "alt_image_ds"]
-        creds.return_value = ["username", "password"]
         self.vim_client = VimClient(auto_sync=False)
+        self.vim_client._content = MagicMock()
         self.patcher = patch("host.hypervisor.esx.vm_config.GetEnv")
         self.patcher.start()
         services.register(ServiceName.AGENT_CONFIG, MagicMock())
-        self.http_transferer = HttpNfcTransferer(self.vim_client,
-                                                 self.image_datastores)
+        self.http_transferer = HttpNfcTransferer(self.vim_client, self.image_datastores)
 
     def tearDown(self):
-        self.vim_client.disconnect(wait=True)
         self.patcher.stop()
 
     @parameterized.expand([
@@ -69,10 +65,8 @@ class TestHttpTransfer(unittest.TestCase):
             request = ServiceTicketRequest(service_type=ServiceType.VIM)
             agent_client.get_service_ticket.assert_called_once_with(request)
 
-            _vim_client_cls.assert_called_once_with(
-                host=host, ticket=get_service_ticket_mock.vim_ticket,
-                auto_sync=False)
-
+            _vim_client_cls.assert_called_once_with(auto_sync=False)
+            vim_conn.connect_ticket.assert_called_once_with(host, get_service_ticket_mock.vim_ticket)
             self.assertEqual(vim_conn, _vim_client_cls.return_value)
         else:
             self.assertRaises(ValueError, self.http_transferer._create_remote_vim_client, agent_client, host)
@@ -100,10 +94,8 @@ class TestHttpTransfer(unittest.TestCase):
 
         mock_get_vm.assert_called_once_with(self.shadow_vm_id)
         mock_get_vm.return_value.ExportVm.assert_called_once_with()
-        self.http_transferer._wait_for_lease.assert_called_once_with(
-            mock_lease)
-        self.http_transferer._get_disk_url_from_lease.assert_called_once_with(
-            mock_lease)
+        self.http_transferer._wait_for_lease.assert_called_once_with(mock_lease)
+        self.http_transferer._get_disk_url_from_lease.assert_called_once_with(mock_lease)
 
     def test_create_shadow_vm(self):
         self.http_transferer._vm_manager.create_vm = MagicMock()
