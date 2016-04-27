@@ -35,6 +35,7 @@ from host.hypervisor.esx.vm_config import os_to_datastore_path
 from host.hypervisor.esx.vm_config import uuid_to_vmdk_uuid
 from host.hypervisor.esx.vm_config import DEFAULT_DISK_ADAPTER_TYPE
 from host.hypervisor.vm_manager import VmPowerStateException
+from host.hypervisor.vm_manager import VmAlreadyExistException
 from pysdk import connect
 from pysdk import host
 from pysdk import invt
@@ -368,6 +369,64 @@ class VimClient(HostClient):
 
         moid = self._vm_name_to_ref[vm_id].split(":")[-1][:-1]
         return vim.VirtualMachine(moid, self._si._stub)
+
+    @hostd_error_handler
+    def get_vm_resource_ids(self):
+        ids = []
+        vm_folder = self.vm_folder
+        for vm in vm_folder.GetChildEntity():
+            ids.append(vm.name)
+        return ids
+
+    @log_duration
+    @hostd_error_handler
+    def create_vm(self, vm_id, create_spec):
+        """Create a new Virtual Maching given a VM create spec.
+
+        :param vm_id: The Vm id
+        :type vm_id: string
+        :param create_spec: The VM spec builder
+        :type ConfigSpec
+        :raise: VmAlreadyExistException
+        """
+        # sanity check since VIM does not prevent this
+        try:
+            if self.get_vm_in_cache(vm_id):
+                raise VmAlreadyExistException("VM already exists")
+        except VmNotFoundException:
+            pass
+
+        folder = self.vm_folder
+        resource_pool = self.root_resource_pool
+
+        # The scenario of the vm creation at ESX where intermediate directory
+        # has to be created has not been well exercised and is known to be
+        # racy and not informative on failures. So be defensive and proactively
+        # create the intermediate directory ("/vmfs/volumes/<dsid>/vm_xy").
+        try:
+            self.make_directory(create_spec.files.vmPathName)
+        except vim.fault.FileAlreadyExists:
+            self._logger.debug("Parent directory %s exists" % create_spec.files.vmPathName)
+
+        task = folder.CreateVm(create_spec, resource_pool, None)
+        self.wait_for_task(task)
+        self.wait_for_vm_create(vm_id)
+
+    @hostd_error_handler
+    def update_cache(self, timeout=10):
+        """Polling on VM updates on host. This call will block caller until
+        update of VM is available or timeout.
+        :param timeout: timeout in seconds
+        """
+        if not self.filter:
+            self.filter = self._property_collector.CreateFilter(self.filter_spec(), partialUpdates=False)
+        wait_options = vmodl.query.PropertyCollector.WaitOptions()
+        wait_options.maxWaitSeconds = timeout
+        update = self._property_collector.WaitForUpdatesEx(self.current_version, wait_options)
+        self._update_cache(update)
+        if update:
+            self.current_version = update.version
+        return update
 
     @hostd_error_handler
     def get_networks(self):
