@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.apibackend.workflows;
 
+import com.vmware.photon.controller.apibackend.utils.ServiceDocumentUtils;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.OperationUtils;
@@ -27,28 +28,19 @@ import com.vmware.xenon.common.Utils;
 
 import static com.google.common.base.Preconditions.checkState;
 
-import java.lang.reflect.Field;
 import java.util.Arrays;
 
 /**
  * This class implements base service for api-backend workflow services.
- *
- * @param <S>
- * @param <T>
- * @param <E>
  */
 public class BaseWorkflowService <S extends ServiceDocument, T extends TaskState, E extends Enum>
     extends StatefulService {
-
-  public static final String FIELD_NAME_TASK_STATE = "taskState";
-  public static final String FIELD_NAME_TASK_STATE_SUB_STAGE = "subStage";
-  public static final String FIELD_NAME_CONTROL_FLAGS = "controlFlags";
 
   protected final Class<T> taskStateType;
   protected final Class<E> taskSubStageType;
 
 
-  public BaseWorkflowService(Class<S> stateType, Class<T> taskStateType, Class<E> taskSubStage) {
+  public BaseWorkflowService(Class<S> stateType, Class<T> taskStateType, Class<E> taskSubStageType) {
     super(stateType);
     super.toggleOption(ServiceOption.PERSISTENCE, true);
     super.toggleOption(ServiceOption.REPLICATION, true);
@@ -56,7 +48,7 @@ public class BaseWorkflowService <S extends ServiceDocument, T extends TaskState
     super.toggleOption(ServiceOption.INSTRUMENTATION, true);
 
     this.taskStateType = taskStateType;
-    this.taskSubStageType = taskSubStage;
+    this.taskSubStageType = taskSubStageType;
   }
 
   @Override
@@ -70,14 +62,16 @@ public class BaseWorkflowService <S extends ServiceDocument, T extends TaskState
 
       startOperation.setBody(startState).complete();
 
-      if (ControlFlags.isOperationProcessingDisabled(getControlFlags(startState))) {
+      if (ControlFlags.isOperationProcessingDisabled(ServiceDocumentUtils.getControlFlags(startState))) {
         ServiceUtils.logInfo(this, "Skipping start operation processing (disabled)");
         return;
       }
 
       ServiceUtils.logInfo(this, "Sending stage progress patch %s:%s. ", TaskState.TaskStage.STARTED,
-          getTaskStateSubStageFirstEntry());
-      TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.STARTED, getTaskStateSubStageFirstEntry()));
+          ServiceDocumentUtils.getTaskStateSubStageEntries(taskSubStageType)[0]);
+      TaskUtils.sendSelfPatch(this,
+          buildPatch(TaskState.TaskStage.STARTED,
+              ServiceDocumentUtils.getTaskStateSubStageEntries(taskSubStageType)[0]));
     } catch (Throwable t) {
       if (!OperationUtils.isCompleted(startOperation)) {
         startOperation.fail(t);
@@ -88,8 +82,6 @@ public class BaseWorkflowService <S extends ServiceDocument, T extends TaskState
 
   /**
    * Initialize state with defaults.
-   *
-   * @param current
    */
   private void initializeState(S current) {
     InitializationUtils.initialize(current);
@@ -102,10 +94,6 @@ public class BaseWorkflowService <S extends ServiceDocument, T extends TaskState
 
   /**
    * Build a state object that can be used to submit a stage progress self patch.
-   *
-   * @param stage
-   * @return
-   * @throws Throwable
    */
   protected S buildPatch(TaskState.TaskStage stage, E subStage) throws Throwable {
     return buildPatch(stage, subStage, null);
@@ -113,12 +101,6 @@ public class BaseWorkflowService <S extends ServiceDocument, T extends TaskState
 
   /**
    * Build a state object that can be used to submit a stage progress self patch.
-   *
-   * @param stage
-   * @param taskStateSubStage
-   * @param t
-   * @return
-   * @throws Throwable
    */
   protected S buildPatch(TaskState.TaskStage stage, E taskStateSubStage, Throwable t)
       throws Throwable {
@@ -127,30 +109,26 @@ public class BaseWorkflowService <S extends ServiceDocument, T extends TaskState
     taskState.stage = stage;
 
     if (taskStateSubStage != null) {
-      setTaskStateSubStage(taskState, taskStateSubStage);
+      ServiceDocumentUtils.setTaskStateSubStage(taskState, taskStateSubStage);
     }
 
     if (t != null) {
       taskState.failure = Utils.toServiceErrorResponse(t);
     }
 
-    setTaskState(patchState, taskState);
+    ServiceDocumentUtils.setTaskState(patchState, taskState);
     return patchState;
   }
 
   /**
    * This method applies a patch to a state object.
-   *
-   * @param currentState
-   * @param patchState
-   * @throws Throwable
    */
   protected void applyPatch(S currentState, S patchState) throws Throwable {
-    T currentTaskState = getTaskState(currentState);
-    E currentSubstage = getTaskStateSubStage(currentTaskState);
+    T currentTaskState = ServiceDocumentUtils.getTaskState(currentState);
+    E currentSubstage = ServiceDocumentUtils.getTaskStateSubStage(currentTaskState);
 
-    T patchTaskState = getTaskState(patchState);
-    E patchSubstage = getTaskStateSubStage(patchTaskState);
+    T patchTaskState = ServiceDocumentUtils.getTaskState(patchState);
+    E patchSubstage = ServiceDocumentUtils.getTaskStateSubStage(patchTaskState);
 
     if (currentTaskState.stage != patchTaskState.stage || currentSubstage != patchSubstage) {
 
@@ -165,16 +143,13 @@ public class BaseWorkflowService <S extends ServiceDocument, T extends TaskState
       }
 
       ServiceUtils.logInfo(this, "Moving from %s to stage %s", currentStage, patchStage);
-      setTaskState(currentState, patchTaskState);
+      ServiceDocumentUtils.setTaskState(currentState, patchTaskState);
     }
   }
 
   /**
    * Moves the service into the FAILED state.
-   *
-   * @param t
    */
-
   protected void failTask(Throwable t) {
     ServiceUtils.logSevere(this, t);
 
@@ -188,33 +163,28 @@ public class BaseWorkflowService <S extends ServiceDocument, T extends TaskState
 
   /**
    * Validate service start state.
-   *
-   * @param state
-   * @throws Throwable
    */
   protected void validateStartState(S state) throws Throwable {
     validateState(state);
 
-    T taskState = getTaskState(state);
+    T taskState = ServiceDocumentUtils.getTaskState(state);
     checkState(taskState.stage == TaskState.TaskStage.CREATED,
         "Expected state is CREATED. Cannot proceed in " + taskState.stage + " state. ");
   }
+
   /**
    * Validate service state coherence.
-   *
-   * @param state
-   * @throws Throwable
    */
   protected void validateState(S state) throws Throwable {
     ValidationUtils.validateState(state);
-    T taskState = getTaskState(state);
+    T taskState = ServiceDocumentUtils.getTaskState(state);
     ValidationUtils.validateTaskStage(taskState);
 
     switch (taskState.stage) {
       case STARTED:
-        E subStage = getTaskStateSubStage(taskState);
+        E subStage = ServiceDocumentUtils.getTaskStateSubStage(taskState);
         checkState(subStage != null, "Invalid stage update. SubStage cannot be null");
-        E[] validSubStages = getTaskStateSubStageAllEntries();
+        E[] validSubStages = ServiceDocumentUtils.getTaskStateSubStageEntries(taskSubStageType);
         if (!Arrays.asList(validSubStages).contains(subStage)) {
           checkState(false, "unsupported subStage: " + taskState.stage.toString());
         }
@@ -223,7 +193,8 @@ public class BaseWorkflowService <S extends ServiceDocument, T extends TaskState
       case FAILED:
       case FINISHED:
       case CANCELLED:
-        checkState(getTaskStateSubStage(taskState) == null, "Invalid stage update. SubStage must be null");
+        checkState(ServiceDocumentUtils.getTaskStateSubStage(taskState) == null,
+            "Invalid stage update. SubStage must be null");
         break;
       default:
         checkState(false, "cannot process patches in state: " + taskState.stage.toString());
@@ -232,114 +203,19 @@ public class BaseWorkflowService <S extends ServiceDocument, T extends TaskState
 
   /**
    * This method checks a patch object for validity against a document state object.
-   *
-   * @param currentState
-   * @param patchState
-   * @throws Throwable
    */
   protected void validatePatchState(S currentState, S patchState) throws Throwable {
     ValidationUtils.validatePatch(currentState, patchState);
-    ValidationUtils.validateTaskStage(getTaskState(patchState));
-    ValidationUtils.validateTaskStageProgression(getTaskState(currentState), getTaskState(patchState));
+    ValidationUtils.validateTaskStage(ServiceDocumentUtils.getTaskState(patchState));
+    ValidationUtils.validateTaskStageProgression(
+        ServiceDocumentUtils.getTaskState(currentState),
+        ServiceDocumentUtils.getTaskState(patchState));
 
-    E currentSubStage = getTaskStateSubStage(currentState);
-    E patchSubStage = getTaskStateSubStage(patchState);
+    E currentSubStage = ServiceDocumentUtils.getTaskStateSubStage(currentState);
+    E patchSubStage = ServiceDocumentUtils.getTaskStateSubStage(patchState);
     if (currentSubStage != null && patchSubStage != null) {
       checkState(patchSubStage.ordinal() >= currentSubStage.ordinal(),
           "Sub-stage cannot set from " + currentSubStage + " to " + patchSubStage);
     }
-  }
-
-  /**
-   * This method returns controlFlags value from document state object.
-   *
-   * @param state
-   * @return
-   * @throws Throwable
-   */
-  private Integer getControlFlags(S state) throws Throwable {
-    Field controlFlags = getStateType().getField(FIELD_NAME_CONTROL_FLAGS);
-    return (Integer) controlFlags.get(state);
-  }
-
-  /**
-   * This method returns taskState object from document state object.
-   *
-   * @param state
-   * @return
-   * @throws Throwable
-   */
-  private T getTaskState(S state) throws Throwable {
-    Field taskStateField = getStateType().getField(FIELD_NAME_TASK_STATE);
-    return (T) taskStateField.get(state);
-  }
-
-  /**
-   * This method returns subStage object from document state object.
-   *
-   * @param state
-   * @return
-   * @throws Throwable
-   */
-  private E getTaskStateSubStage(S state) throws Throwable {
-    T taskState = getTaskState(state);
-    Field taskStateSubStageField = taskStateType.getField(FIELD_NAME_TASK_STATE_SUB_STAGE);
-    return (E) taskStateSubStageField.get(taskState);
-  }
-
-  /**
-   * This method returns subStage object from TaskState object.
-   *
-   * @param taskState
-   * @return
-   * @throws Throwable
-   */
-  private E getTaskStateSubStage(T taskState) throws Throwable {
-    Field taskStateSubStageField = taskStateType.getField(FIELD_NAME_TASK_STATE_SUB_STAGE);
-    return (E) taskStateSubStageField.get(taskState);
-  }
-
-  /**
-   * This method returns enum SubStage's first entry.
-   *
-   * @return
-   * @throws Throwable
-   */
-  private E getTaskStateSubStageFirstEntry() throws Throwable {
-    return getTaskStateSubStageAllEntries()[0];
-  }
-
-  /**
-   * This method returns enum SubStage's all entries.
-   *
-   * @return
-   * @throws Throwable
-   */
-  private E[] getTaskStateSubStageAllEntries() throws Throwable {
-    return taskSubStageType.getEnumConstants();
-  }
-
-  /**
-   * This method sets subStage value in TaskState object.
-   *
-   * @param taskState
-   * @param taskStateSubStage
-   * @throws Throwable
-   */
-  private void setTaskStateSubStage(T taskState, E taskStateSubStage) throws Throwable {
-    Field taskStateSubStageField = taskStateType.getField(FIELD_NAME_TASK_STATE_SUB_STAGE);
-    taskStateSubStageField.set(taskState, taskStateSubStage);
-  }
-
-  /**
-   * This method sets TaskState object in document state object.
-   *
-   * @param state
-   * @param taskState
-   * @throws Throwable
-   */
-  private void setTaskState(S state, T taskState) throws Throwable {
-    Field taskStateField = getStateType().getField(FIELD_NAME_TASK_STATE);
-    taskStateField.set(state, taskState);
   }
 }
