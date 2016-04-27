@@ -40,7 +40,8 @@ class TestHttpTransfer(unittest.TestCase):
             "image_datastore", "datastore1")
 
         self._logger = logging.getLogger(__name__)
-        self.vim_client = VimClient(self.host, "root", self.pwd)
+        self.vim_client = VimClient()
+        self.vim_client.connect_userpwd(self.host, "root", self.pwd)
         self.http_transferer = HttpNfcTransferer(self.vim_client,
                                                  [self.image_datastore],
                                                  self.host)

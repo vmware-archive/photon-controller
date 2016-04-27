@@ -42,13 +42,10 @@ class ImageScannerVmTestCase(unittest.TestCase):
     DATASTORE_ID = "DS01"
     BASE_TEMP_DIR = "image_scanner"
 
-    @patch.object(VimClient, "acquire_credentials")
-    @patch.object(VimClient, "update_cache")
-    @patch("pysdk.connect.Connect")
-    def setUp(self, connect, update, creds):
+    def setUp(self):
         # Create VM manager
-        creds.return_value = ["username", "password"]
         self.vim_client = VimClient(auto_sync=False)
+        self.vim_client._content = MagicMock()
         self.vim_client.wait_for_task = MagicMock()
         self.patcher = patch("host.hypervisor.esx.vm_config.GetEnv")
         self.patcher.start()
@@ -64,7 +61,6 @@ class ImageScannerVmTestCase(unittest.TestCase):
 
     def tearDown(self):
         self.patcher.stop()
-        self.vim_client.disconnect(wait=True)
 
     @patch("host.hypervisor.image_scanner.DatastoreImageScannerTaskRunner._list_top_level_directory")
     @patch("host.hypervisor.image_scanner.DatastoreImageScanner.is_stopped", return_value=False)

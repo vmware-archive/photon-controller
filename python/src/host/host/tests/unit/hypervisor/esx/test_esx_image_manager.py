@@ -42,21 +42,14 @@ class TestEsxImageManager(unittest.TestCase):
 
     # We can use even more unit test coverage of the image manager here
 
-    @patch.object(VimClient, "acquire_credentials")
-    @patch.object(VimClient, "update_cache")
-    @patch("pysdk.connect.Connect")
-    def setUp(self, connect, update, creds):
-        creds.return_value = ["username", "password"]
+    def setUp(self):
         self.vim_client = VimClient(auto_sync=False)
+        self.vim_client._content = MagicMock()
         self.ds_manager = MagicMock()
         services.register(ServiceName.AGENT_CONFIG, MagicMock())
         self.image_manager = EsxImageManager(self.vim_client, self.ds_manager)
 
-    def tearDown(self):
-        self.vim_client.disconnect(wait=True)
-
-    @patch(
-        "host.hypervisor.esx.image_manager.EsxImageManager.reap_tmp_images")
+    @patch("host.hypervisor.esx.image_manager.EsxImageManager.reap_tmp_images")
     def test_periodic_reaper(self, mock_reap):
         """ Test that the we invoke the image reaper periodically """
         image_manager = EsxImageManager(self.vim_client, self.ds_manager)

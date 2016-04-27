@@ -9,7 +9,8 @@
 # warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
 # License for then specific language governing permissions and limitations
 # under the License.
-
+import os
+import tempfile
 import threading
 import time
 import unittest
@@ -26,18 +27,13 @@ from pyVmomi import vmodl
 from gen.agent.ttypes import PowerState
 from host.hypervisor.esx.vim_client import VimClient
 from host.hypervisor.esx.vim_client import DatastoreNotFound
-from host.hypervisor.esx.vim_client import Credentials
 from host.hypervisor.esx.vim_client import HostdConnectionFailure
 from host.hypervisor.esx.vim_client import AcquireCredentialsException
 
 
 class TestVimClient(unittest.TestCase):
 
-    @patch.object(VimClient, "acquire_credentials")
-    @patch.object(VimClient, "update_cache")
-    @patch("pysdk.connect.Connect")
-    def setUp(self, connect, update, creds):
-        creds.return_value = ["username", "password"]
+    def setUp(self):
         self.vim_client = VimClient(auto_sync=False)
         self.vim_client._content = MagicMock()
 
@@ -45,33 +41,30 @@ class TestVimClient(unittest.TestCase):
         from pyVmomi import VmomiSupport
         assert_that(getattr(VmomiSupport, "BASE_VERSION", None), not_none())
 
-    @patch.object(VimClient, "acquire_credentials")
     @patch("pysdk.connect.Connect")
-    def test_hostd_connect_failure(self, connect_mock, creds):
-        creds.return_value = ["username", "password"]
+    def test_hostd_connect_failure(self, connect_mock):
         connect_mock.side_effect = vim.fault.HostConnectFault
-        self.assertRaises(HostdConnectionFailure, VimClient)
+        vim_client = VimClient(auto_sync=False)
+        self.assertRaises(HostdConnectionFailure, vim_client.connect_userpwd, "localhost", "username", "password")
 
-    @patch.object(VimClient, "update_cache")
     @patch("pysdk.connect.Connect")
-    def test_vim_client_with_param(self, connect_mock, update_mock):
-        vim_client = VimClient("esx.local", "root", "password", auto_sync=False)
-        assert_that(vim_client.host, is_("esx.local"))
-        assert_that(vim_client.username, is_("root"))
-        assert_that(vim_client.password, is_("password"))
+    def test_vim_client_with_param(self, connect_mock):
+        vim_client = VimClient(auto_sync=False)
+        vim_client.connect_userpwd("esx.local", "root", "password")
         connect_mock.assert_called_once_with(host="esx.local", user="root", pwd="password",
                                              version="vim.version.version9")
 
-    @patch.object(VimClient, "update_cache")
+    @patch.object(VimClient, "_poll_updates")
     @patch("pysdk.connect.Connect")
     def test_update_fail_without_looping(self, connect_mock, update_mock):
-        client = VimClient("esx.local", "root", "password", auto_sync=True, min_interval=1)
+        client = VimClient(auto_sync=True, min_interval=1)
+        client.connect_userpwd("esx.local", "root", "password")
         update_mock.side_effect = vim.fault.HostConnectFault
         time.sleep(0.5)
         client.disconnect(wait=True)
         assert_that(update_mock.call_count, less_than(5))  # no crazy loop
 
-    @patch.object(VimClient, "update_cache")
+    @patch.object(VimClient, "_poll_updates")
     @patch("pysdk.connect.Connect")
     @patch("time.sleep")
     def test_update_fail_will_suicide(self, sleep_mock, connect_mock, update_mock):
@@ -81,27 +74,25 @@ class TestVimClient(unittest.TestCase):
             killed.set()
             threading.current_thread().stop()
 
-        update_cache = MagicMock()
-        update_cache.side_effect = vim.fault.HostConnectFault
+        poll_updates = MagicMock()
+        poll_updates.side_effect = vim.fault.HostConnectFault
 
-        client = VimClient("esx.local", "root", "password",
-                           auto_sync=True,
-                           min_interval=1,
-                           errback=lambda: suicide())
-        client.update_cache = update_cache
+        client = VimClient(auto_sync=True, min_interval=1, errback=lambda: suicide())
+        client.connect_userpwd("esx.local", "root", "password")
+        client._poll_updates = poll_updates
 
         killed.wait(1)
         client.disconnect(wait=True)
 
-        # update_cache will be called 5 times before it kill itself
-        assert_that(update_cache.call_count, is_(5))
+        # poll_updates will be called 5 times before it kill itself
+        assert_that(poll_updates.call_count, is_(5))
         assert_that(killed.is_set(), is_(True))
 
-    @patch.object(VimClient, "filter_spec")
+    @patch.object(VimClient, "_filter_spec")
     @patch("pysdk.connect.Connect")
     def test_update_cache(self, connect_mock, spec_mock):
-        vim_client = VimClient("esx.local", "root", "password",
-                               auto_sync=False)
+        vim_client = VimClient(auto_sync=False)
+        vim_client.connect_userpwd("esx.local", "root", "password")
         vim_client._property_collector.WaitForUpdatesEx.return_value = {}
 
         # Test enter
@@ -149,7 +140,7 @@ class TestVimClient(unittest.TestCase):
 
         vim_client._property_collector.WaitForUpdatesEx.return_value = update
         assert_that(len(vim_client.get_vms_in_cache()), is_(0))
-        vim_client.update_cache()
+        vim_client._poll_updates()
         vim_client._property_collector.WaitForUpdatesEx.assert_called()
 
         vms = vim_client.get_vms_in_cache()
@@ -195,7 +186,7 @@ class TestVimClient(unittest.TestCase):
             val=disk_list
         ))
 
-        vim_client.update_cache()
+        vim_client._poll_updates()
         vms = vim_client.get_vms_in_cache()
         assert_that(vim_client.current_version, is_("2"))
         assert_that(len(vms), is_(1))
@@ -215,18 +206,18 @@ class TestVimClient(unittest.TestCase):
             obj=vim.VirtualMachine("vim.VirtualMachine:9"),
         )
         filter.objectSet[0] = object_update
-        vim_client.update_cache()
+        vim_client._poll_updates()
         vms = vim_client.get_vms_in_cache()
         assert_that(vim_client.current_version, is_("3"))
         assert_that(len(vms), is_(0))
 
-    @patch.object(VimClient, "update_cache")
-    @patch.object(VimClient, "filter_spec")
+    @patch.object(VimClient, "_poll_updates")
+    @patch.object(VimClient, "_filter_spec")
     @patch("pysdk.connect.Connect")
     @patch("pysdk.connect.Disconnect")
-    def test_update_cache_in_thread(self, disconnect_mock, connect_mock, spec_mock, update_mock):
-        vim_client = VimClient("esx.local", "root", "password",
-                               min_interval=0, auto_sync=True)
+    def test_poll_update_in_thread(self, disconnect_mock, connect_mock, spec_mock, update_mock):
+        vim_client = VimClient(min_interval=0, auto_sync=True)
+        vim_client.connect_userpwd("esx.local", "root", "password")
         vim_client._property_collector.WaitForUpdatesEx.return_value = {}
 
         assert_that(update_mock.called, is_(True))
@@ -234,7 +225,7 @@ class TestVimClient(unittest.TestCase):
         while update_mock.call_count < 5 and retry < 10:
             time.sleep(0.2)
             retry += 1
-        assert_that(retry, is_not(10), "VimClient.update_cache is not called repeatedly")
+        assert_that(retry, is_not(10), "VimClient._poll_updates is not called repeatedly")
         vim_client.disconnect(wait=True)
         assert_that(disconnect_mock.called, is_(True))
 
@@ -242,8 +233,8 @@ class TestVimClient(unittest.TestCase):
     @patch("pysdk.connect.Connect")
     def test_vim_client_errback(self, connect_mock, host_mock):
         callback = MagicMock()
-        vim_client = VimClient("esx.local", "root", "password",
-                               auto_sync=False, errback=callback)
+        vim_client = VimClient(auto_sync=False, errback=callback)
+        vim_client.connect_userpwd("esx.local", "root", "password")
         host_mock.side_effect = vim.fault.NotAuthenticated
         vim_client.host_system
         callback.assert_called_once()
@@ -260,17 +251,20 @@ class TestVimClient(unittest.TestCase):
         vim_client.host_system
         assert_that(callback.call_count, is_(4))
 
-    def test_get_nfc_ticket(self):
-        self.vim_client.get_datastore = MagicMock(return_value=None)
-        self.assertRaises(DatastoreNotFound, self.vim_client.get_nfc_ticket_by_ds_name, "no_exist")
+    @patch("pysdk.connect.Connect")
+    def test_get_nfc_ticket(self, connect_mock):
+        vim_client = VimClient(auto_sync=False)
+        vim_client.get_datastore = MagicMock(return_value=None)
+        self.assertRaises(DatastoreNotFound, vim_client.get_nfc_ticket_by_ds_name, "no_exist")
 
         ds_mock = MagicMock()
-        self.vim_client.get_datastore = MagicMock(return_value=ds_mock)
+        vim_client.get_datastore = MagicMock(return_value=ds_mock)
         nfc_service = MagicMock()
         type(vim).NfcService = MagicMock()
         type(vim).NfcService.return_value = nfc_service
 
-        self.vim_client.get_nfc_ticket_by_ds_name("existing_ds")
+        vim_client._si = MagicMock()
+        vim_client.get_nfc_ticket_by_ds_name("existing_ds")
 
         nfc_service.FileManagement.assert_called_once_with(ds_mock)
 
@@ -294,45 +288,42 @@ class TestVimClient(unittest.TestCase):
         # assertRaisesRegexp is only supported in 2.7
         self.assertRaises(Exception, self.vim_client.get_vm, "vm_id")
 
-    @patch.object(Credentials, "_service_instance")
-    @patch.object(Credentials, "password")
-    def test_acquire_credentials(self, password_mock, si_method_mock):
+    def test_acquire_credentials(self):
         """The mockery of acquiring local hostd credentials"""
         local_ticket_mock = MagicMock(name="local_ticket")
-        user_name_property = PropertyMock(return_value="local-root")
-        type(local_ticket_mock).userName = user_name_property
+        type(local_ticket_mock).userName = PropertyMock(return_value="local-root")
+        pwd_fd, pwd_path = tempfile.mkstemp()
+        os.write(pwd_fd, "local-root-password")
+        os.close(pwd_fd)
+        type(local_ticket_mock).passwordFilePath = PropertyMock(return_value=pwd_path)
 
         session_manager_mock = MagicMock(name="session-manager")
-        session_manager_mock.AcquireLocalTicket.return_value = \
-            local_ticket_mock
+        session_manager_mock.AcquireLocalTicket.return_value = local_ticket_mock
 
         si = MagicMock(name="si")
-        session_manager_property = \
-            PropertyMock(return_value=session_manager_mock)
+        session_manager_property = PropertyMock(return_value=session_manager_mock)
         type(si.content).sessionManager = session_manager_property
 
-        si_method_mock.return_value = si
+        type(vim).ServiceInstance = MagicMock(return_value=si)
 
-        (user, password) = VimClient.acquire_credentials()
+        vim_client = VimClient(auto_sync=False)
+        (user, password) = vim_client._acquire_local_credentials()
+        os.remove(pwd_path)
         assert_that(user, equal_to("local-root"))
+        assert_that(password, equal_to("local-root-password"))
 
-    @patch.object(Credentials, "_service_instance")
-    @patch.object(Credentials, "password")
-    def test_acquire_credentials_connection_failure(self,
-                                                    password_mock,
-                                                    si_method_mock):
+    def test_acquire_credentials_connection_failure(self):
         si = MagicMock(name="si")
-        session_manager_property = \
-            PropertyMock(side_effect=HTTPException("hubba"))
+        session_manager_property = PropertyMock(side_effect=HTTPException("hubba"))
         type(si.content).sessionManager = session_manager_property
-        si_method_mock.return_value = si
-
-        self.assertRaises(AcquireCredentialsException,
-                          VimClient.acquire_credentials)
+        type(vim).ServiceInstance = MagicMock()
+        type(vim).ServiceInstance.return_value = si
+        vim_client = VimClient(auto_sync=False)
+        self.assertRaises(AcquireCredentialsException, vim_client._acquire_local_credentials)
 
     @patch('host.hypervisor.esx.vim_client.VimClient._property_collector', new_callable=PropertyMock)
-    @patch.object(VimClient, "update_cache")
-    @patch.object(VimClient, "vm_filter_spec")
+    @patch.object(VimClient, "_poll_updates")
+    @patch.object(VimClient, "_vm_filter_spec")
     @patch("pysdk.connect.Connect")
     @patch("pysdk.connect.Disconnect")
     def test_update_host_cache_in_thread(self, disconnect_mock, connect_mock, spec_mock,
@@ -350,7 +341,8 @@ class TestVimClient(unittest.TestCase):
         prop_collector_mock.WaitForUpdatesEx.return_value = update
 
         # Create VimClient.
-        vim_client = VimClient("esx.local", "root", "password", min_interval=0.1, auto_sync=True)
+        vim_client = VimClient(min_interval=0.1, auto_sync=True)
+        vim_client.connect_userpwd("esx.local", "root", "password")
 
         # Verify that the update mock is called a few times.
         retry = 0
