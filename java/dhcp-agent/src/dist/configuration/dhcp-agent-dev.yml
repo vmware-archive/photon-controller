@@ -1,0 +1,16 @@
+xenon:
+  bindAddress: "0.0.0.0"
+  port: 17000
+  registrationAddress: "127.0.0.1"
+  storagePath: "/tmp/dhcp-agent/xenon/"
+  peerNodes:
+  - http://127.0.0.1:17000
+
+logging:
+  file:
+    enabled: true
+    currentLogFilename: /var/log/dhcp-agent.log
+    archivedLogFilenamePattern: /var/log/dhcp-agent-%d.log.gz
+    logFormat: "%-5p [%d{ISO8601}] %c: %m\n%ex"
+  syslog:
+    enabled: false
