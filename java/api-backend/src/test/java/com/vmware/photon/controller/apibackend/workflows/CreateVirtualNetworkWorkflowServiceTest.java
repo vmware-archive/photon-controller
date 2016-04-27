@@ -174,7 +174,7 @@ public class CreateVirtualNetworkWorkflowServiceTest {
       TestHelper.assertTaskStateFinished(finalState.taskState);
       assertThat(finalState.documentSelfLink, is(notNullValue()));
       assertThat(finalState.virtualNetworkServiceState, is(notNullValue()));
-      assertThat(finalState.virtualNetworkTaskServiceState, is(notNullValue()));
+      assertThat(finalState.taskServiceState, is(notNullValue()));
 
       QueryTask.Query kindClause = new QueryTask.Query()
           .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
@@ -213,7 +213,7 @@ public class CreateVirtualNetworkWorkflowServiceTest {
       TestHelper.assertTaskStateFinished(finalState.taskState);
       assertThat(finalState.documentSelfLink, is(notNullValue()));
       assertThat(finalState.virtualNetworkServiceState, is(notNullValue()));
-      assertThat(finalState.virtualNetworkTaskServiceState, is(notNullValue()));
+      assertThat(finalState.taskServiceState, is(notNullValue()));
     }
 
     @Test

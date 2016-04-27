@@ -155,7 +155,7 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
           return;
         }
         TaskService.State rsp = op.getBody(TaskService.State.class);
-        createState.virtualNetworkTaskServiceState = rsp;
+        createState.taskServiceState = rsp;
         createOperation.complete();
       }
     };
