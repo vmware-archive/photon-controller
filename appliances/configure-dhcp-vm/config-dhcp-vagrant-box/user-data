@@ -58,6 +58,21 @@ write_files:
     path: /etc/systemd/system/dnsmasq.service
 
   - content: |
+        [Unit]
+        Description=DHCP agent
+        After=dnsmasq.service
+
+        [Service]
+        ExecStart=/usr/local/dhcp-agent/bin/dhcp-agent /usr/local/dhcp-agent/configuration/dhcp-agent-dev.yml
+        Restart=on-failure
+        RestartSec=5
+
+        [Install]
+        WantedBy=multi-user.target
+    owner: root:root
+    path: /etc/systemd/system/dhcp-agent.service
+
+  - content: |
         HOME=/home/photon
         mkdir $HOME
         groupadd photon
@@ -72,6 +87,8 @@ runcmd:
   - systemctl restart systemd-networkd
   - systemctl enable dnsmasq.service
   - systemctl start dnsmasq.service
+  - systemctl enable dhcp-agent.service
+  - systemctl start dhcp-agent.service
   - sh /tmp/init-user.sh
   - if [ ! -z "$(cat /etc/ssh/sshd_config | grep PermitRootLogin)" ] ; then sed -i 's/.*PermitRootLogin.*/PermitRootLogin yes/g' /etc/ssh/sshd_config ; else echo "PermitRootLogin yes" >> /etc/ssh/sshd_config ; fi
   - systemctl restart sshd
