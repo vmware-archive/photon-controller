@@ -19,14 +19,15 @@ import com.vmware.photon.controller.common.clients.HostClientProvider;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
 import com.vmware.photon.controller.common.clients.exceptions.SystemErrorException;
 import com.vmware.photon.controller.common.logging.LoggingUtils;
+import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
+import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
-import com.vmware.photon.controller.common.xenon.XenonRestClient;
 import com.vmware.photon.controller.common.zookeeper.gen.ServerAddress;
 import com.vmware.photon.controller.host.gen.Host;
 import com.vmware.photon.controller.resource.gen.Disk;
@@ -37,8 +38,8 @@ import com.vmware.photon.controller.resource.gen.Vm;
 import com.vmware.photon.controller.rootscheduler.exceptions.NoSuchResourceException;
 import com.vmware.photon.controller.rootscheduler.service.ConstraintChecker;
 import com.vmware.photon.controller.rootscheduler.service.ScoreCalculator;
-import com.vmware.photon.controller.rootscheduler.xenon.CloudStoreClientProvider;
 import com.vmware.photon.controller.rootscheduler.xenon.ConstraintCheckerProvider;
+import com.vmware.photon.controller.rootscheduler.xenon.SchedulerXenonHost;
 import com.vmware.photon.controller.rootscheduler.xenon.ScoreCalculatorProvider;
 import com.vmware.photon.controller.scheduler.gen.PlaceResponse;
 import com.vmware.photon.controller.scheduler.gen.PlaceResultCode;
@@ -48,15 +49,16 @@ import com.vmware.xenon.common.ServiceDocumentQueryResult;
 import com.vmware.xenon.common.StatefulService;
 import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.QueryTask;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Optional;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 import org.apache.thrift.TException;
 import org.apache.thrift.async.AsyncMethodCallback;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -81,6 +83,17 @@ import java.util.concurrent.TimeUnit;
 public class PlacementTaskService extends StatefulService {
 
   public static final String FACTORY_LINK = ServiceUriPaths.SCHEDULER_ROOT + "/placement";
+
+  // This completion handler provides a new constraint to be added to a set of constraints
+  interface CalculateConstraintCompletion {
+    public void handle(ResourceConstraint newConstraint, Exception exception);
+  }
+
+  // This completion handler returns a set of candidate hosts
+  // It will probably move into the constraint checker interface later
+  interface GetCandidatesCompletion {
+    public void handle(Map<String, ServerAddress> candidates, Exception exception);
+  }
 
   /**
    * This class implements a Xenon micro-service that provides a factory for
@@ -177,33 +190,45 @@ public class PlacementTaskService extends StatefulService {
    */
   private void handlePlaceRequest(PlacementTask currentState, Operation postOperation) {
     initRequestId(currentState);
-    Stopwatch watch = Stopwatch.createStarted();
-    long timeoutMs = currentState.timeoutMs;
+    Stopwatch placementWatch = Stopwatch.createStarted();
 
-    Stopwatch getCandidatesStopwatch = Stopwatch.createStarted();
-    Map<String, ServerAddress> candidates;
+    // Note that getPotentialCandidates is asynchronous, so we handle the response via a completion
+    getPotentialCandidates(currentState,
+        (candidates, ex) -> {
+          if (ex != null) {
+            handleGetCandidateError(currentState, postOperation, ex);
+            return;
+          }
+          handleGetCandidateResult(currentState, postOperation, candidates, placementWatch);
+        });
+  }
 
-    try {
-      // Get all the candidates that satisfy the constraint
-      candidates = getPotentialCandidates(currentState);
-    } catch (NoSuchResourceException ex) {
-      PlacementTask patchState = buildPatch(TaskState.TaskStage.FAILED, currentState.taskState.isDirect,  ex);
+  /**
+   * Helper method to handle errors from getPotentialCandidates().
+   */
+  private void handleGetCandidateError(PlacementTask currentState, Operation postOperation, Exception ex) {
+    PlacementTask patchState = buildPatch(TaskState.TaskStage.FAILED, currentState.taskState.isDirect, ex);
+    patchState.error = ex.getMessage();
+    patchState.requestId = currentState.requestId;
+    if (ex instanceof NoSuchResourceException) {
       patchState.resultCode = PlaceResultCode.NO_SUCH_RESOURCE;
-      patchState.error = ex.getMessage();
-      patchState.requestId = currentState.requestId;
-      failTask(patchState, ex, postOperation);
-      return;
-    } catch (SystemErrorException ex) {
-      PlacementTask patchState = buildPatch(TaskState.TaskStage.FAILED, currentState.taskState.isDirect, ex);
+    } else {
       patchState.resultCode = PlaceResultCode.SYSTEM_ERROR;
-      patchState.error = ex.getMessage();
-      patchState.requestId = currentState.requestId;
-      failTask(patchState, ex, postOperation);
-      return;
     }
+    failTask(patchState, ex, postOperation);
+  }
+
+  /**
+   * Helper method to process the candidates returned by getPotentialCandidates.
+   */
+  private void handleGetCandidateResult(
+      PlacementTask currentState,
+      Operation postOperation,
+      Map<String, ServerAddress> candidates,
+      Stopwatch placementWatch) {
 
     ServiceUtils.logInfo(this, "elapsed-time flat-place-get-candidates %d milliseconds",
-        getCandidatesStopwatch.elapsed(TimeUnit.MILLISECONDS));
+        placementWatch.elapsed(TimeUnit.MILLISECONDS));
 
     if (candidates.isEmpty()) {
       String msg = String.format("Place failure, constraints cannot be satisfied for request: %s",
@@ -216,8 +241,8 @@ public class PlacementTaskService extends StatefulService {
       return;
     }
 
-    // Send place request to the candidates.
-    ServiceUtils.logInfo(this, "Sending place requests to %s with timeout %d ms", candidates, timeoutMs);
+    // Send place request to the candidates to get a score for each one
+    ServiceUtils.logInfo(this, "Sending place requests to %s with timeout %d ms", candidates, currentState.timeoutMs);
     Stopwatch scoreCandidatesStopwatch = Stopwatch.createStarted();
     final Set<PlaceResponse> okResponses = Sets.newConcurrentHashSet();
     final Set<PlaceResultCode> returnCodes = Sets.newConcurrentHashSet();
@@ -228,7 +253,7 @@ public class PlacementTaskService extends StatefulService {
         scoreCandidatesStopwatch.elapsed(TimeUnit.MILLISECONDS));
 
     // Return the best response.
-    PlacementTask patchState = selectBestResponse(okResponses, returnCodes, currentState, watch);
+    PlacementTask patchState = selectBestResponse(okResponses, returnCodes, currentState, placementWatch);
     if (postOperation == null) {
       TaskUtils.sendSelfPatch(this, patchState);
     } else {
@@ -244,16 +269,47 @@ public class PlacementTaskService extends StatefulService {
    * @throws NoSuchResourceException
    * @throws SystemErrorException
    */
-  private Map<String, ServerAddress> getPotentialCandidates(PlacementTask currentState) throws
-      NoSuchResourceException, SystemErrorException {
+  private void getPotentialCandidates(PlacementTask currentState, GetCandidatesCompletion completion) {
     // Get the list of resource constraints
     List<ResourceConstraint> constraints;
 
     constraints = getResourceConstraints(currentState.resource);
 
+    // Note: createImageSeedingConstraint is asynchronous (it queries Cloudstore), so we use a completion
+    createImageSeedingConstraint(currentState.resource,
+        (newConstraint, ex) -> {
+          if (ex != null) {
+            // createImageSeedingConstraint handled logging, we just pass on the exception
+            completion.handle(null, ex);
+            return;
+          }
+          if (newConstraint != null) {
+            constraints.add(newConstraint);
+          }
+          logConstraints(constraints);
+
+          applyConstraintChecker(currentState, constraints, completion);
+        });
+    return;
+  }
+
+  /**
+   * Used by getPotentialCandidates to query the constraint checker and return the results in the completion.
+   */
+  private void applyConstraintChecker(
+      PlacementTask currentState,
+      List<ResourceConstraint> constraints,
+      GetCandidatesCompletion completion) {
+
     ConstraintChecker checker = ((ConstraintCheckerProvider) getHost()).getConstraintChecker();
-    Map<String, ServerAddress> candidates = checker.getCandidates(constraints, currentState.sampleHostCount);
-    return candidates;
+    Map<String, ServerAddress> candidates = null;
+    try {
+      candidates = checker.getCandidates(constraints, currentState.sampleHostCount);
+      completion.handle(candidates, null);
+    } catch (Exception ex) {
+      completion.handle(null, ex);
+    }
+    return;
   }
 
   /**
@@ -421,13 +477,13 @@ public class PlacementTaskService extends StatefulService {
   }
 
   /**
-   * Extracts resource constraints from PlacementTask.
+   * Extracts resource constraints from the resource.
    *
-   * @param resource the placement task resources requested
+   * @param resource
+   *          the placement task resources requested
    * @return a list of resource constraints.
    */
-  private List<ResourceConstraint> getResourceConstraints(Resource resource)
-      throws NoSuchResourceException, SystemErrorException {
+  private List<ResourceConstraint> getResourceConstraints(Resource resource) {
     List<ResourceConstraint> constraints = new LinkedList<>();
     if (resource == null) {
       return constraints;
@@ -438,7 +494,6 @@ public class PlacementTaskService extends StatefulService {
       if (vm.isSetResource_constraints()) {
         constraints.addAll(vm.getResource_constraints());
       }
-      constraints.add(createImageSeedingConstraint(vm));
     }
 
     if (resource.isSetDisks()) {
@@ -452,14 +507,78 @@ public class PlacementTaskService extends StatefulService {
   }
 
   /**
-   * New images may not be available on all the image datastores. We look at
-   * image seeding information available in cloud-store to add placement constraints
-   * such that only hosts with the requested image are selected in the placement process.
+   * New images may not be available on all the image datastores because the replication is in progress.
+   * We look at image seeding information available in cloud-store to add placement constraints
+   * such that only hosts with the requested image on an attached image datastore are selected in the
+   * placement process.
+   *
+   * Note that this does not directly return a result, but it provides it via a completion. This is because
+   * the implementation requires making a call to Cloudstore, and we do that asynchronously.
    */
-  public ResourceConstraint createImageSeedingConstraint(Vm vm)
-      throws SystemErrorException, NoSuchResourceException {
+  public void createImageSeedingConstraint(Resource resource, CalculateConstraintCompletion completion) {
+
+    if (resource == null || !resource.isSetVm() || resource.getVm() == null) {
+      // Nothing to add, complete immediately
+      completion.handle(null, null);
+      return;
+    }
+
+    // It is necessary for a VM placement request to have an associated diskImage. If none are
+    // found, we fail placement.
+    String imageId = extractImageIdFromResource(resource);
+    if (imageId == null) {
+      String errorMsg = "VM resource does not have an associated diskImage";
+      ServiceUtils.logSevere(this, errorMsg);
+      completion.handle(null, new SystemErrorException(errorMsg));
+      return;
+    }
+
+    try {
+      // Query Cloudstore for all Image to Image Datastore mappings with the given imageId.
+      // Note that we don't need to do a broadcast query, because these mappings use symmetric
+      // replication and so are on all hosts.
+      final ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
+      termsBuilder.put("imageId", imageId);
+
+      CloudStoreHelper cloudStoreHelper = ((SchedulerXenonHost) getHost()).getCloudStoreHelper();
+      URI queryUri = cloudStoreHelper.selectLocalCloudStoreIfAvailable(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS);
+      QueryTask.QuerySpecification spec =
+          QueryTaskUtils.buildQuerySpec(ImageToImageDatastoreMappingService.State.class, termsBuilder.build());
+      spec.options.add(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
+      QueryTask queryTask = QueryTask.create(spec).setDirect(true);
+      Operation postQuery = Operation.createPost(queryUri)
+          .setBody(queryTask)
+          .setReferer(this.getHost().getPublicUri())
+          .setContextId(LoggingUtils.getRequestId())
+          .setCompletion((op, ex) -> {
+            try {
+              handleImageDatastoreResponse(op, ex, imageId, completion);
+            } catch (Throwable t) {
+              String error = "Internal error in image datastore query response handling.";
+              ServiceUtils.logSevere(this, error, t);
+              completion.handle(null, new SystemErrorException(error));
+              return;
+            }
+          });
+
+      this.sendRequest(postQuery);
+    } catch (Throwable t) {
+      String error = "Internal error in image datastore query.";
+      ServiceUtils.logSevere(this, error, t);
+      completion.handle(null, new SystemErrorException(error));
+      return;
+    }
+  }
+
+  /**
+   * Given a resource from a placement request, extract the imageID for the associated VM.
+   * If there is no imageId, return null.
+   */
+  private String extractImageIdFromResource(Resource resource) {
     String imageId = null;
-    if (vm.isSetDisks()) {
+
+    Vm vm = resource.getVm();
+    if (vm != null && vm.isSetDisks()) {
       for (Disk disk : vm.getDisks()) {
         if (disk.isSetImage()) {
           imageId = disk.getImage().getId();
@@ -467,42 +586,130 @@ public class PlacementTaskService extends StatefulService {
         }
       }
     }
-    // It is necessary for a VM placement request to have an associated diskImage. If none are
-    // found, we fail placement.
-    if (imageId == null) {
-      String errorMsg = "Vm resource does not have an associated diskImage";
-      ServiceUtils.logSevere(this, errorMsg);
-      throw new SystemErrorException(errorMsg);
+    return imageId;
+  }
+
+  /**
+   * Helper for createImageSeedingConstraint.
+   * Handles response from query task service: extracts all image datastores that
+   * contain the imageId we need, and creates a ResourceConstraint for them.
+   */
+  private void handleImageDatastoreResponse(
+      Operation response,
+      Throwable ex,
+      String imageId,
+      CalculateConstraintCompletion completion) {
+
+    // First, check for failure
+    if (ex != null) {
+      String error = String.format("Failed to call cloud-store to lookup image datastores for image %d");
+      ServiceUtils.logSevere(this, error, ex);
+      Exception cloudStoreEx = new SystemErrorException(error + ": " + ex.getMessage());
+      completion.handle(null, cloudStoreEx);
+      return;
     }
 
-    final ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
-    termsBuilder.put("imageId", imageId);
-
+    // Extract the image datastore IDs
     List<String> seededImageDatastores = new ArrayList<>();
-    try {
-      XenonRestClient cloudStoreClient = ((CloudStoreClientProvider) getHost()).getCloudStoreClient();
-      ServiceDocumentQueryResult queryResult = cloudStoreClient.queryDocuments(
-          ImageToImageDatastoreMappingService.State.class,
-          termsBuilder.build(), Optional.<Integer>absent(), true, false);
+    ServiceDocumentQueryResult queryResult = response.getBody(QueryTask.class).results;
+    queryResult.documents.values().forEach(item -> {
+      String datastoreId = Utils.fromJson(
+          item, ImageToImageDatastoreMappingService.State.class).imageDatastoreId;
+      seededImageDatastores.add(datastoreId);
+    });
 
-      queryResult.documents.values().forEach(item -> {
-        String datastoreId = Utils.fromJson(
-            item, ImageToImageDatastoreMappingService.State.class).imageDatastoreId;
-        seededImageDatastores.add(datastoreId);
-      });
-    } catch (Throwable t) {
-      ServiceUtils.logSevere(this, "Calling cloud-store failed.", t);
-      throw new SystemErrorException("Failed to call cloud-store to lookup image datastores");
-    }
-
+    // Fail if we have no image datastore IDs: the VM can't be placed unless at least one exists
     if (seededImageDatastores.isEmpty()) {
-      throw new NoSuchResourceException("No seeded image datastores found for the imageId: " + imageId);
+      String error = "No seeded image datastores found for the imageId: " + imageId;
+      ServiceUtils.logWarning(this, error);
+      completion.handle(null, new NoSuchResourceException(error));
+      return;
     }
 
+    // Construct the new Resource Constraint
     ResourceConstraint constraint = new ResourceConstraint();
     constraint.setType(ResourceConstraintType.DATASTORE);
     constraint.setValues(seededImageDatastores);
+    completion.handle(constraint, null);
+  }
 
-    return constraint;
+  /**
+   * Log the constraints. Because the ResourceConstraint class was auto-generated by thrift,
+   * it doesn't print particularly nicely, so do that here.
+   *
+   * We print a JSON string. It's all on one line (to avoid interleaving in the log file)
+   * so it's not hugely readable. But it's easy to reformat JSON to be readable.
+   *
+   * When we move this away from thrift, we can just convert the objects directly to JSON.
+   */
+  private void logConstraints(List<ResourceConstraint> constraints) {
+    StringBuilder output = new StringBuilder();
+    output.append("Resource constraints: [ ");
+    if (constraints != null) {
+      for (ResourceConstraint constraint : constraints) {
+        if (constraint != null) {
+          output.append("{ ");
+
+          // Part 1: Is it a negative constraint?
+          output.append("\"negative\": ");
+          if (constraint.isSetNegative()) {
+            output.append(String.valueOf(constraint.isNegative()));
+          } else {
+            output.append("false");
+          }
+
+          // Part 2: Type
+          output.append(", \"type\": ");
+          if (!constraint.isSetType()) {
+            output.append("\"unknown\"");
+          } else {
+            switch(constraint.getType()) {
+              case DATASTORE:
+                output.append("\"datastore\"");
+                break;
+              case HOST:
+                output.append("\"host\"");
+                break;
+              case NETWORK:
+                output.append("\"network\"");
+                break;
+              case AVAILABILITY_ZONE:
+                output.append("\"availability-zone\"");
+                break;
+              case DATASTORE_TAG:
+                output.append("\"datastore-tag\"");
+                break;
+              case MANAGEMENT_ONLY:
+                output.append("\"management-only\"");
+                break;
+              default:
+                output.append("\"unknown\"");
+                break;
+            }
+          }
+
+          // Part 3: Values
+          if (constraint.isSetValues()) {
+            List<String> values = constraint.getValues();
+            output.append(", \"values\": [ ");
+            boolean first = true;
+            for (String value : values) {
+              if (!first) {
+                output.append(", ");
+              }
+              first = false;
+              output.append('\"');
+              output.append(value);
+              output.append('\"');
+            }
+            output.append(" ]");
+          }
+
+          output.append(" }");
+        }
+      }
+    }
+    output.append(" ]");
+    ServiceUtils.logInfo(this, "%s", output.toString());
   }
 }
