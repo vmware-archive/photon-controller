@@ -140,6 +140,12 @@ class HostClient(object):
     def get_network_configs(self):
         pass
 
+    """ Stats
+    """
+    @abc.abstractmethod
+    def query_stats(self, entity, metric_names, sampling_interval, start_time, end_time=None):
+        pass
+
 
 class NfcLeaseInitiatizationTimeout(Exception):
     """ Timed out waiting for the HTTP NFC lease to initialize. """
