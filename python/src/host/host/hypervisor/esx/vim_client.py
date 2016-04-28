@@ -22,11 +22,13 @@ import threading
 import time
 import weakref
 
+from calendar import timegm
 from common.blocking_dict import BlockingDict
 from common.cache import cached
 from common.lock import lock_with
 from common.log import log_duration
 from common.log import log_duration_with
+from datetime import datetime
 from gen.agent.ttypes import TaskCache
 from host.hypervisor.disk_manager import DiskAlreadyExistException, DiskPathException
 from host.hypervisor.disk_manager import DiskFileException
@@ -117,6 +119,7 @@ class VimClient(HostClient):
         self.auto_sync = auto_sync
         self.errback = errback
         self.update_listeners = set()
+        self._initialize_stats_defaults()
 
     def connect_ticket(self, host, ticket):
         if ticket:
@@ -176,6 +179,80 @@ class VimClient(HostClient):
             connect.Disconnect(self._si)
         except:
             self._logger.warning("Failed to disconnect vim_client: %s" % sys.exc_info()[1])
+
+    def _initialize_stats_defaults(self):
+        self._stats_sampling_interval = 20
+        self._stats_counters_initialized = False
+        self._stats_metric_id_objs = []
+        self._stats_counter_to_metric_map = {}
+
+    def initialize_stats_counters(self, metric_names, sample_interval):
+        """ Initializes the the list of host perf counters that are
+            passed-in. The perf counters are specified in the form of
+            strings - <group>.<metric>. The ids for the counters are not well
+            defined values and the only way to get them is to read all the
+            counters and get the ids for the ones we are interested in.
+        """
+        if self._stats_counters_initialized:
+            return
+        for c in self.perf_manager.perfCounter:
+            metric_name = "%s.%s" % (c.groupInfo.key, c.nameInfo.key)
+            if metric_name in metric_names:
+                self._stats_counter_to_metric_map[c.key] = metric_name
+                self._stats_metric_id_objs.append(
+                    vim.PerformanceManager.MetricId(
+                        counterId=c.key,
+                        instance="*"
+                    ))
+        # Samples are 20 seconds apart
+        self._stats_sampling_interval = sample_interval
+        self._stats_counters_initialized = True
+
+    def query_stats(self, entity, start_time, end_time=None):
+        """ Returns the host statistics by querying the perf manager on the
+            host for the configured performance counters.
+
+        :param start_time [int]: seconds since epoch
+        :param end_time [int]: seconds since epoch
+        """
+        # Stats are sampled by the performance manager every 20
+        # seconds. Hostd keeps 180 samples at the rate of 1 sample
+        # per 20 seconds, which results in samples that span an hour.
+        query_spec = vim.PerformanceManager.QuerySpec(
+            entity=entity,
+            intervalId=self._stats_sampling_interval,
+            format='csv',
+            metricId=self._stats_metric_id_objs,
+            startTime=start_time,
+            endTime=end_time)
+
+        results = {}
+        stats = self.perf_manager.QueryPerf(query_spec)
+        if not stats:
+            self._logger.debug("No metrics collected")
+            return results
+
+        for stat in stats:
+            timestamps = self._get_timestamps(stat.sampleInfoCSV)
+            values = stat.value
+            for value in values:
+                id = value.id.counterId
+                counter_values = [float(i) for i in value.value.split(',')]
+                if id in self._stats_counter_to_metric_map:
+                    metric_name = self._stats_counter_to_metric_map[id]
+                    results[metric_name] = zip(timestamps, counter_values)
+        return results
+
+    def _get_timestamps(self, sample_info_csv):
+        # extract timestamps from sampleInfoCSV
+        # format is '20,2015-12-03T18:39:20Z,20,2015-12-03T18:39:40Z...'
+        # Note: timegm() returns seconds since epoch without adjusting for
+        # local timezone, which is how we want timestamp interpreted.
+        timestamps = sample_info_csv.split(',')[1::2]
+        return [
+            timegm(datetime.strptime(dt,
+                                     '%Y-%m-%dT%H:%M:%SZ').timetuple())
+            for dt in timestamps]
 
     @lock_with("_vm_cache_lock")
     def add_update_listener(self, listener):
