@@ -17,16 +17,31 @@ import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
 import com.vmware.photon.controller.common.xenon.upgrade.NoMigrationDuringUpgrade;
-import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotBlank;
+import com.vmware.photon.controller.common.xenon.validation.RenamedField;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.ServiceDocumentDescription;
 import com.vmware.xenon.common.StatefulService;
+
+import org.apache.commons.lang3.StringUtils;
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkState;
 
 /**
  * Class EntityLockService is used for data persistence of entity lock.
+ * The EntityLockService provides locks for other entities based on their unique ID.
+ * The lock has a state that indicates if it's been acquired or is available.
+ * A lock should only be deleted if the entity has been deleted.
+ * Client can use a POST to acquire a lock while PUT is used to acquire or release a lock.
+ * This service uses idempotent POSTs, which means that a POST will be converted to a PUT if the lock already exists.
+ * The recommended usage is:
+ *  POST to acquire a lock (works if lock exists or not)
+ *  PUT to release a lock
  */
 public class EntityLockService extends StatefulService {
+
+  public static final String LOCK_TAKEN_MESSAGE = "Lock already taken";
 
   public EntityLockService() {
     super(State.class);
@@ -37,28 +52,108 @@ public class EntityLockService extends StatefulService {
   }
 
   @Override
-  public void handleStart(Operation startOperation) {
-    ServiceUtils.logInfo(this, "Starting EntityLockService %s", getSelfLink());
-    try {
-      State startState = startOperation.getBody(State.class);
-      InitializationUtils.initialize(startState);
-      validateState(startState);
-      startOperation.complete();
-    } catch (IllegalStateException t) {
-      ServiceUtils.failOperationAsBadRequest(this, startOperation, t);
-    } catch (Throwable t) {
-      ServiceUtils.logSevere(this, t);
-      startOperation.fail(t);
+  public void handleCreate(Operation op) {
+    ServiceUtils.logInfo(this, "Handling START for EntityLockService %s", getSelfLink());
+    State payload = op.getBody(State.class);
+    validatePayload(payload);
+
+    InitializationUtils.initialize(payload);
+    if (payload.lockOperation != State.LockOperation.ACQUIRE) {
+      throw new IllegalArgumentException("Creating a lock with lockOperation!=ACQUIRE is not allowed");
+    }
+    payload.lockOperation = null; // no need to persist the operation type
+
+    validateState(payload);
+    setState(op, payload);
+    op.complete();
+  }
+
+  @Override
+  public void handlePut(Operation op) {
+    ServiceUtils.logInfo(this, "Handling PUT for EntityLockService %s", getSelfLink());
+
+    if (!op.hasBody()) {
+      op.fail(new IllegalArgumentException("body is required"));
+      return;
+    }
+
+    State currentState = getState(op);
+    State payload = op.getBody(State.class);
+
+    validatePayload(payload);
+
+    checkArgument(currentState.entityId.equalsIgnoreCase(payload.entityId),
+        "entityId for a lock cannot be changed");
+
+    State.LockOperation lockOperation = payload.lockOperation;
+    payload.lockOperation = null; // no need to persist the operation type
+
+    switch (lockOperation) {
+      case ACQUIRE:
+        handleAquireLockRequest(op, currentState, payload);
+        break;
+      case RELEASE:
+        handleReleaseLockRequest(op, currentState, payload);
+        break;
+      default:
+        op.fail(Operation.STATUS_CODE_BAD_REQUEST);
+        return;
+    }
+
+    validateState(payload);
+    setState(op, payload);
+    op.setBody(payload);
+    op.complete();
+  }
+
+  @Override
+  public void handlePatch(Operation op) {
+    ServiceUtils.logWarning(this, "PATCH operation is not supported for EntityLockService %s", getSelfLink());
+    op.fail(Operation.STATUS_CODE_BAD_METHOD);
+  }
+
+  private void handleAquireLockRequest(Operation op, State currentState, State payload) {
+    // if the new payload is identical to the existing state, complete operation with STATUS_CODE_NOT_MODIFIED
+    ServiceDocumentDescription documentDescription = this.getDocumentTemplate().documentDescription;
+    if (ServiceDocument.equals(documentDescription, currentState, payload)) {
+      op.setStatusCode(Operation.STATUS_CODE_NOT_MODIFIED);
+      return;
+    }
+
+    // if the lock already has an owner
+    if (StringUtils.isNotBlank(currentState.ownerTaskId)) {
+      // and the requested owner is new then return lock already taken error
+      checkArgument(currentState.ownerTaskId.equalsIgnoreCase(payload.ownerTaskId),
+          LOCK_TAKEN_MESSAGE + ". Current ownerTaskId: %s, Request ownerTaskId: %s, EntityId: %s",
+          currentState.ownerTaskId, payload.ownerTaskId, currentState.entityId);
     }
   }
 
-  /**
-   * Validate the service state for coherence.
-   *
-   * @param currentState
-   */
-  protected void validateState(State currentState) {
-    ValidationUtils.validateState(currentState);
+  private void handleReleaseLockRequest(Operation op, State currentState, State payload) {
+    if (StringUtils.isBlank(currentState.ownerTaskId)) {
+      // the lock is already available, make this a no-op
+      op.setStatusCode(Operation.STATUS_CODE_NOT_MODIFIED);
+    }
+
+    // if the release requester is not the owner of the lock then throw BadRequestException
+    checkArgument(currentState.ownerTaskId.equalsIgnoreCase(payload.ownerTaskId),
+        "Only the current owner can release a lock. Current ownerTaskId: %s, Request ownerTaskId: %s, EntityId: %s",
+        currentState.ownerTaskId, payload.ownerTaskId, currentState.entityId);
+
+    //release ownership of lock
+    payload.ownerTaskId = null;
+  }
+
+  private void validateState(State state) {
+    checkState(state.lockOperation == null, "lockOperation should always be null");
+    ValidationUtils.validateState(state);
+  }
+
+  private void validatePayload(State state) {
+    checkArgument(state != null, "state cannot be null");
+    checkArgument(state.lockOperation != null, "lockOperation cannot be null");
+    checkArgument(StringUtils.isNotBlank(state.entityId), "entityId cannot be blank");
+    checkArgument(StringUtils.isNotBlank(state.ownerTaskId), "ownerTaskId cannot be blank");
   }
 
   /**
@@ -68,11 +163,19 @@ public class EntityLockService extends StatefulService {
   public static class State extends ServiceDocument {
 
     @NotBlank
-    @Immutable
     public String entityId;
 
-    @NotBlank
-    @Immutable
-    public String taskId;
+    @RenamedField(originalName = "taskId")
+    public String ownerTaskId;
+
+    public LockOperation lockOperation;
+
+    /**
+     * Definition of substages.
+     */
+    public enum LockOperation {
+      ACQUIRE,
+      RELEASE
+    }
   }
 }
