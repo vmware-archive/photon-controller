@@ -252,6 +252,40 @@ public class EntityLockDcpBackendTest {
       entityLockDcpBackend.setTaskLock(ephemeralDiskId, taskEntity);
     }
 
+
+    @Test
+    public void testClearLockSuccessForLocksCreatedFailed() throws Throwable {
+      String vmId = UUID.randomUUID().toString();
+      String ephemeralDiskId = UUID.randomUUID().toString();
+      TaskEntity taskEntity2 = new TaskEntity();
+      taskEntity2.setId("task-id2");
+
+      entityLockDcpBackend.setTaskLock(vmId, taskEntity2);
+      entityLockDcpBackend.setTaskLock(ephemeralDiskId, taskEntity2);
+
+      try {
+        entityLockDcpBackend.setTaskLock(vmId, taskEntity);
+      } catch (Exception e) {
+        assertThat(taskEntity.getLockedEntityIds().size(), is(1));
+      }
+
+      try {
+        entityLockDcpBackend.setTaskLock(ephemeralDiskId, taskEntity);
+      } catch (Exception e) {
+        assertThat(taskEntity.getLockedEntityIds().size(), is(2));
+      }
+
+      entityLockDcpBackend.clearTaskLocks(taskEntity);
+      assertThat(taskEntity.getLockedEntityIds().size(), is(0));
+
+      entityLockDcpBackend.clearTaskLocks(taskEntity2);
+      // Now the lock has been cleared, should be able to set locks again
+
+      entityLockDcpBackend.setTaskLock(vmId, taskEntity);
+      entityLockDcpBackend.setTaskLock(ephemeralDiskId, taskEntity);
+      entityLockDcpBackend.clearTaskLocks(taskEntity);
+    }
+
     @Test
     public void testClearLockNullStep() throws Throwable {
       try {
