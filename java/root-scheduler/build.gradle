@@ -78,9 +78,7 @@ task removeContainer(type: DockerRemoveImage) {
   targetImageId { container.tag }
 }
 
-task start(type: VagrantSsh) {
+task start() {
   mustRunAfter container
-  description = "Start ${project.name} inside devbox"
-  boxDir = devboxDir
-  sshCommand = "start-${project.name} 2>&1 | tee -a start-${project.name}.log"
+  shellTask start, "start-${project.name} 2>&1 | tee -a start-${project.name}.log"
 }

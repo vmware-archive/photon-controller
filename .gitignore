@@ -47,3 +47,5 @@ ruby/common/test_files/deployment/dcmap.yml
 *.box
 .vagrant
 .bundle
+
+*.log
