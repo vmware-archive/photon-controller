@@ -58,8 +58,8 @@ public class EntityLockDcpBackend implements EntityLockBackend {
     state.documentSelfLink = entityId;
 
     try {
-      dcpClient.post(true, EntityLockServiceFactory.SELF_LINK, state);
       task.getLockedEntityIds().add(entityId);
+      dcpClient.post(true, EntityLockServiceFactory.SELF_LINK, state);
       logger.info("Entity Lock with entityId : {} and taskId: {} has been set", state.entityId, state.taskId);
     } catch (XenonRuntimeException e) {
       //re-throw any exception other than a conflict which indicated the lock already exists
@@ -99,12 +99,22 @@ public class EntityLockDcpBackend implements EntityLockBackend {
     List<String> failedToDeleteLockedEntityIds = new ArrayList<>();
     for (String lockedEntityId : task.getLockedEntityIds()) {
       String lockUrl = EntityLockServiceFactory.SELF_LINK + "/" + lockedEntityId;
+      EntityLockService.State lock = null;
       try {
-        dcpClient.delete(lockUrl, new EntityLockService.State());
-        logger.info("Entity Lock with taskId : {} and url : {} has been cleared", task.getId(), lockUrl);
-      } catch (Throwable swallowedException) {
-        failedToDeleteLockedEntityIds.add(lockedEntityId);
-        logger.error("Failed to delete entity lock with url: " + lockUrl, swallowedException);
+        lock = getByEntityId(lockedEntityId);
+      } catch (DocumentNotFoundException ex) {
+        logger.warn("Lock did not exist for entity {}", lockedEntityId, ex);
+        continue;
+      }
+
+      if (lock.taskId.equals(task.getId())) {
+        try {
+          dcpClient.delete(lockUrl, new EntityLockService.State());
+          logger.info("Entity Lock with taskId : {} and url : {} has been cleared", task.getId(), lockUrl);
+        } catch (Throwable swallowedException) {
+          failedToDeleteLockedEntityIds.add(lockedEntityId);
+          logger.error("Failed to delete entity lock with url: " + lockUrl, swallowedException);
+        }
       }
     }
     task.setLockedEntityIds(failedToDeleteLockedEntityIds);
