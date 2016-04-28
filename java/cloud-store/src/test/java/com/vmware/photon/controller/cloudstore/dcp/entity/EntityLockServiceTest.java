@@ -17,6 +17,7 @@ import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.common.xenon.BasicServiceHost;
 import com.vmware.photon.controller.common.xenon.XenonRestClient;
 import com.vmware.photon.controller.common.xenon.exceptions.BadRequestException;
+import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
 
@@ -24,8 +25,10 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.testng.Assert.fail;
 
 import java.net.InetSocketAddress;
@@ -93,7 +96,9 @@ public class EntityLockServiceTest {
 
       testState = new EntityLockService.State();
       testState.entityId = UUID.randomUUID().toString();
-      testState.taskId = UUID.randomUUID().toString();
+      testState.ownerTaskId = UUID.randomUUID().toString();
+      testState.lockOperation = EntityLockService.State.LockOperation.ACQUIRE;
+      testState.documentSelfLink = testState.entityId;
     }
 
     @AfterMethod
@@ -117,32 +122,16 @@ public class EntityLockServiceTest {
 
       Operation result = dcpRestClient.post(EntityLockServiceFactory.SELF_LINK, testState);
 
-      assertThat(result.getStatusCode(), is(200));
+      assertThat(result.getStatusCode(), is(Operation.STATUS_CODE_OK));
       EntityLockService.State createdState = result.getBody(EntityLockService.State.class);
       assertThat(createdState.entityId, is(equalTo(testState.entityId)));
-      assertThat(createdState.taskId, is(equalTo(testState.taskId)));
+      assertThat(createdState.ownerTaskId, is(equalTo(testState.ownerTaskId)));
+      assertThat(createdState.lockOperation, is(nullValue()));
       EntityLockService.State savedState =
           host.getServiceState(EntityLockService.State.class, createdState.documentSelfLink);
       assertThat(savedState.entityId, is(equalTo(testState.entityId)));
-      assertThat(savedState.taskId, is(equalTo(testState.taskId)));
-    }
-
-    /**
-     * Test service start with missing taskId in start state.
-     *
-     * @throws Throwable
-     */
-    @Test
-    public void testMissingEntityId() throws Throwable {
-      EntityLockService.State startState = new EntityLockService.State();
-      startState.entityId = "entity-id";
-
-      try {
-        host.startServiceSynchronously(service, startState);
-        fail("Service start did not fail when 'taskId' was null");
-      } catch (BadRequestException e) {
-        assertThat(e.getMessage(), is("taskId cannot be null"));
-      }
+      assertThat(savedState.ownerTaskId, is(equalTo(testState.ownerTaskId)));
+      assertThat(savedState.lockOperation, is(nullValue()));
     }
 
     /**
@@ -151,9 +140,10 @@ public class EntityLockServiceTest {
      * @throws Throwable
      */
     @Test
-    public void testMissingTaskId() throws Throwable {
+    public void testMissingEntityId() throws Throwable {
       EntityLockService.State startState = new EntityLockService.State();
-      startState.taskId = "task-id";
+      startState.ownerTaskId = "owner-id";
+      startState.lockOperation = EntityLockService.State.LockOperation.ACQUIRE;
 
       try {
         host.startServiceSynchronously(service, startState);
@@ -162,6 +152,239 @@ public class EntityLockServiceTest {
         assertThat(e.getMessage(), is("entityId cannot be null"));
       }
     }
-  }
 
+    /**
+     * Test service start with missing ownerTaskId in start state.
+     *
+     * @throws Throwable
+     */
+    @Test
+    public void testMissingOwnerTaskId() throws Throwable {
+      EntityLockService.State startState = new EntityLockService.State();
+      startState.entityId = "entity-id";
+      startState.lockOperation = EntityLockService.State.LockOperation.ACQUIRE;
+
+      try {
+        host.startServiceSynchronously(service, startState);
+        fail("Service start did not fail when 'ownerTaskId' was null");
+      } catch (BadRequestException e) {
+        assertThat(e.getMessage(), is("ownerTaskId cannot be null"));
+      }
+    }
+
+    /**
+     * Test service start with missing isAvailable in start state.
+     *
+     * @throws Throwable
+     */
+    @Test
+    public void testMissingAvailabilityFlag() throws Throwable {
+      EntityLockService.State startState = new EntityLockService.State();
+      startState.entityId = "entity-id";
+      startState.ownerTaskId = "owner-id";
+
+      try {
+        host.startServiceSynchronously(service, startState);
+        fail("Service start did not fail when 'lockOperation' was null");
+      } catch (BadRequestException e) {
+        assertThat(e.getMessage(), is("lockOperation cannot be null"));
+      }
+    }
+
+    /**
+     * Test service start with invalid availability flag in start state.
+     *
+     * @throws Throwable
+     */
+    @Test
+    public void testInvalidOperationTypeFlag() throws Throwable {
+      EntityLockService.State startState = new EntityLockService.State();
+      startState.entityId = "entity-id";
+      startState.ownerTaskId = "owner-id";
+      startState.lockOperation = EntityLockService.State.LockOperation.RELEASE;
+
+      try {
+        host.startServiceSynchronously(service, startState);
+        fail("Service start did not fail when 'lockOperation' was RELEASE");
+      } catch (BadRequestException e) {
+        assertThat(e.getMessage(), is("Creating a lock with lockOperation!=ACQUIRE is not allowed"));
+      }
+    }
+
+    /**
+     * Test releasing a lock multiple times.
+     *
+     * @throws Throwable
+     */
+    @Test
+    public void testReleaseLockSuccess() throws Throwable {
+      host.startServiceSynchronously(new EntityLockServiceFactory(), null);
+
+      Operation result = dcpRestClient.post(EntityLockServiceFactory.SELF_LINK, testState);
+      assertThat(result.getStatusCode(), is(Operation.STATUS_CODE_OK));
+      EntityLockService.State createdState = result.getBody(EntityLockService.State.class);
+
+      testState.documentSelfLink = createdState.documentSelfLink;
+      testState.lockOperation = EntityLockService.State.LockOperation.RELEASE;
+      result = dcpRestClient.patch(testState.documentSelfLink, testState);
+      assertThat(result.getStatusCode(), is(Operation.STATUS_CODE_OK));
+      createdState = result.getBody(EntityLockService.State.class);
+      assertThat(createdState.entityId, is(equalTo(testState.entityId)));
+      assertThat(createdState.ownerTaskId, is(nullValue()));
+      assertThat(createdState.lockOperation, is(nullValue()));
+      EntityLockService.State savedState = host.getServiceState(EntityLockService.State.class,
+          createdState.documentSelfLink);
+      assertThat(savedState.entityId, is(equalTo(testState.entityId)));
+      assertThat(savedState.ownerTaskId, is(nullValue()));
+      assertThat(savedState.lockOperation, is(nullValue()));
+
+      result = dcpRestClient.patch(testState.documentSelfLink, testState);
+
+      assertThat(result.getStatusCode(), is(Operation.STATUS_CODE_NOT_MODIFIED));
+      createdState = result.getBody(EntityLockService.State.class);
+      assertThat(createdState.entityId, is(equalTo(testState.entityId)));
+      assertThat(createdState.ownerTaskId, is(equalTo(testState.ownerTaskId)));
+      assertThat(createdState.lockOperation, is(EntityLockService.State.LockOperation.RELEASE));
+      savedState = host.getServiceState(EntityLockService.State.class,
+          testState.documentSelfLink);
+      assertThat(savedState.entityId, is(equalTo(testState.entityId)));
+      assertThat(savedState.ownerTaskId, is(nullValue()));
+      assertThat(savedState.lockOperation, is(nullValue()));
+    }
+
+    /**
+     * Test that only the current owner should be able to release a lock.
+     *
+     * @throws Throwable
+     */
+    @Test
+    public void testReleaseLockFailure() throws Throwable {
+      host.startServiceSynchronously(new EntityLockServiceFactory(), null);
+
+      Operation result = dcpRestClient.post(EntityLockServiceFactory.SELF_LINK, testState);
+      assertThat(result.getStatusCode(), is(Operation.STATUS_CODE_OK));
+      EntityLockService.State createdState = result.getBody(EntityLockService.State.class);
+      testState.documentSelfLink = createdState.documentSelfLink;
+      testState.lockOperation = EntityLockService.State.LockOperation.RELEASE;
+      testState.ownerTaskId = UUID.randomUUID().toString();
+
+      try {
+        dcpRestClient.patch(testState.documentSelfLink, testState);
+        fail("Only the current owner should be able to release a lock");
+      } catch (XenonRuntimeException e) {
+        assertThat(e.getMessage(), containsString("Only the current owner can release a lock"));
+      }
+    }
+
+    /**
+     * Test that the current owner should be able to re-acquire an existing lock.
+     * And then release it.
+     *
+     * @throws Throwable
+     */
+    @Test
+    public void testAcquireLockSuccessByExistingOwner() throws Throwable {
+      host.startServiceSynchronously(new EntityLockServiceFactory(), null);
+
+      Operation result = dcpRestClient.post(EntityLockServiceFactory.SELF_LINK, testState);
+      assertThat(result.getStatusCode(), is(Operation.STATUS_CODE_OK));
+      EntityLockService.State createdState = result.getBody(EntityLockService.State.class);
+      assertThat(createdState.lockOperation, is(nullValue()));
+      assertThat(createdState.ownerTaskId, is(testState.ownerTaskId));
+      testState.documentSelfLink = createdState.documentSelfLink;
+      EntityLockService.State savedState = host.getServiceState(EntityLockService.State.class,
+          createdState.documentSelfLink);
+      assertThat(savedState.lockOperation, is(nullValue()));
+      assertThat(savedState.ownerTaskId, is(testState.ownerTaskId));
+
+      result = dcpRestClient.post(EntityLockServiceFactory.SELF_LINK, testState);
+
+      assertThat(result.getStatusCode(), is(Operation.STATUS_CODE_NOT_MODIFIED));
+      createdState = result.getBody(EntityLockService.State.class);
+      assertThat(createdState.lockOperation, is(EntityLockService.State.LockOperation.ACQUIRE));
+      assertThat(createdState.ownerTaskId, is(testState.ownerTaskId));
+      savedState = host.getServiceState(EntityLockService.State.class,
+          createdState.documentSelfLink);
+      assertThat(savedState.lockOperation, is(nullValue()));
+      assertThat(savedState.ownerTaskId, is(testState.ownerTaskId));
+
+      testState.lockOperation = EntityLockService.State.LockOperation.RELEASE;
+
+      result = dcpRestClient.patch(testState.documentSelfLink, testState);
+
+      assertThat(result.getStatusCode(), is(Operation.STATUS_CODE_OK));
+      createdState = result.getBody(EntityLockService.State.class);
+      assertThat(createdState.lockOperation, is(nullValue()));
+      assertThat(createdState.ownerTaskId, is(nullValue()));
+      savedState = host.getServiceState(EntityLockService.State.class,
+          createdState.documentSelfLink);
+      assertThat(savedState.lockOperation, is(nullValue()));
+      assertThat(savedState.ownerTaskId, is(nullValue()));
+    }
+
+    /**
+     * Test that a new owner should be able to acquire an existing lock if it is available.
+     *
+     * @throws Throwable
+     */
+    @Test
+    public void testAcquireLockSuccessByNewOwner() throws Throwable {
+      host.startServiceSynchronously(new EntityLockServiceFactory(), null);
+      Operation result = dcpRestClient.post(EntityLockServiceFactory.SELF_LINK, testState);
+      assertThat(result.getStatusCode(), is(Operation.STATUS_CODE_OK));
+      EntityLockService.State createdState = result.getBody(EntityLockService.State.class);
+      testState.documentSelfLink = createdState.documentSelfLink;
+      testState.lockOperation = EntityLockService.State.LockOperation.RELEASE;
+
+      result = dcpRestClient.patch(testState.documentSelfLink, testState);
+
+      assertThat(result.getStatusCode(), is(Operation.STATUS_CODE_OK));
+      createdState = result.getBody(EntityLockService.State.class);
+      assertThat(createdState.entityId, is(equalTo(testState.entityId)));
+      assertThat(createdState.ownerTaskId, is(nullValue()));
+      assertThat(createdState.lockOperation, is(nullValue()));
+      EntityLockService.State savedState = host.getServiceState(EntityLockService.State.class,
+          createdState.documentSelfLink);
+      assertThat(savedState.entityId, is(equalTo(testState.entityId)));
+      assertThat(savedState.ownerTaskId, is(nullValue()));
+      assertThat(savedState.lockOperation, is(nullValue()));
+
+      testState.ownerTaskId = UUID.randomUUID().toString();
+      testState.lockOperation = EntityLockService.State.LockOperation.ACQUIRE;
+      result = dcpRestClient.post(EntityLockServiceFactory.SELF_LINK, testState);
+
+      assertThat(result.getStatusCode(), is(Operation.STATUS_CODE_OK));
+      createdState = result.getBody(EntityLockService.State.class);
+      assertThat(createdState.entityId, is(equalTo(testState.entityId)));
+      assertThat(createdState.ownerTaskId, is(equalTo(testState.ownerTaskId)));
+      assertThat(createdState.lockOperation, is(nullValue()));
+      savedState = host.getServiceState(EntityLockService.State.class,
+          testState.documentSelfLink);
+      assertThat(savedState.entityId, is(equalTo(testState.entityId)));
+      assertThat(savedState.ownerTaskId, is(equalTo(testState.ownerTaskId)));
+      assertThat(savedState.lockOperation, is(nullValue()));
+    }
+    /**
+     * Test that entity id cannot be changed.
+     *
+     * @throws Throwable
+     */
+    @Test
+    public void testEntityIdChangeFailure() throws Throwable {
+      host.startServiceSynchronously(new EntityLockServiceFactory(), null);
+      Operation result = dcpRestClient.post(EntityLockServiceFactory.SELF_LINK, testState);
+      assertThat(result.getStatusCode(), is(Operation.STATUS_CODE_OK));
+      EntityLockService.State createdState = result.getBody(EntityLockService.State.class);
+      testState.documentSelfLink = createdState.documentSelfLink;
+
+      testState.entityId = UUID.randomUUID().toString();
+
+      try {
+        dcpRestClient.post(EntityLockServiceFactory.SELF_LINK, testState);
+        fail("Should not be able to change entityId for a lock");
+      } catch (BadRequestException e) {
+        assertThat(e.getMessage(), containsString("entityId for a lock cannot be changed"));
+      }
+    }
+  }
 }

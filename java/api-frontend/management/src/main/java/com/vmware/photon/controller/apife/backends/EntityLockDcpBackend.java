@@ -21,13 +21,16 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.EntityLockServiceFacto
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
 import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
 import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.ServiceErrorResponse;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import java.net.HttpURLConnection;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -53,43 +56,23 @@ public class EntityLockDcpBackend implements EntityLockBackend {
     checkNotNull(task, "TaskEntity cannot be null.");
 
     EntityLockService.State state = new EntityLockService.State();
-    state.taskId = task.getId();
+    state.ownerTaskId = task.getId();
     state.entityId = entityId;
     state.documentSelfLink = entityId;
+    state.lockOperation = EntityLockService.State.LockOperation.ACQUIRE;
 
     try {
-      dcpClient.post(true, EntityLockServiceFactory.SELF_LINK, state);
+      dcpClient.post(EntityLockServiceFactory.SELF_LINK, state);
       task.getLockedEntityIds().add(entityId);
-      logger.info("Entity Lock with entityId : {} and taskId: {} has been set", state.entityId, state.taskId);
+      logger.info("Entity Lock with entityId : {} and taskId: {} has been set", state.entityId, state.ownerTaskId);
     } catch (XenonRuntimeException e) {
-      //re-throw any exception other than a conflict which indicated the lock already exists
-      if (e.getCompletedOperation().getStatusCode() != Operation.STATUS_CODE_CONFLICT) {
-        throw e;
+      if (e.getCompletedOperation().getStatusCode() == HttpURLConnection.HTTP_BAD_REQUEST) {
+        String errorMessage = e.getCompletedOperation().getBody(ServiceErrorResponse.class).message;
+        if (StringUtils.isNotBlank(errorMessage) && errorMessage.contains(EntityLockService.LOCK_TAKEN_MESSAGE)) {
+          throw new ConcurrentTaskException();
+        }
       }
-
-      //creation failed since a lock for this entity already exists
-
-      //check if the lock is being re-acquired by the same task, if yes then nothing needs to be done
-      EntityLockService.State lock = null;
-      try {
-        lock = getByEntityId(entityId);
-      } catch (DocumentNotFoundException ex) {
-        String errorMessage = String.format(
-            "Failed to create lock for entityid {%s} and taskid {%s} because an existing lock was detected but it " +
-                "disappeared thereafter, throwing ConcurrentTaskException anyways so that client can re-try",
-            entityId,
-            task.getId());
-        logger.warn(errorMessage);
-        throw new ConcurrentTaskException();
-      }
-
-      if (!lock.taskId.equals(task.getId())) {
-        logger.warn("Entity Lock with entityId: {} already acquired by taskId {}", entityId, lock.taskId);
-        throw new ConcurrentTaskException();
-      }
-
-      logger.info("Ignoring lock conflict for entityId : {} because task id : {} already owns it",
-          entityId, task.getId());
+      throw e;
     }
   }
 
@@ -98,13 +81,17 @@ public class EntityLockDcpBackend implements EntityLockBackend {
     checkNotNull(task, "TaskEntity cannot be null.");
     List<String> failedToDeleteLockedEntityIds = new ArrayList<>();
     for (String lockedEntityId : task.getLockedEntityIds()) {
-      String lockUrl = EntityLockServiceFactory.SELF_LINK + "/" + lockedEntityId;
       try {
-        dcpClient.delete(lockUrl, new EntityLockService.State());
-        logger.info("Entity Lock with taskId : {} and url : {} has been cleared", task.getId(), lockUrl);
+        EntityLockService.State state = new EntityLockService.State();
+        state.ownerTaskId = task.getId();
+        state.entityId = lockedEntityId;
+        state.documentSelfLink = lockedEntityId;
+        state.lockOperation = EntityLockService.State.LockOperation.RELEASE;
+        dcpClient.patch(EntityLockServiceFactory.SELF_LINK + "/" + lockedEntityId, state);
+        logger.info("Entity Lock with taskId : {} and entityId : {} has been cleared", task.getId(), lockedEntityId);
       } catch (Throwable swallowedException) {
         failedToDeleteLockedEntityIds.add(lockedEntityId);
-        logger.error("Failed to delete entity lock with url: " + lockUrl, swallowedException);
+        logger.error("Failed to delete entity lock with entityId: " + lockedEntityId, swallowedException);
       }
     }
     task.setLockedEntityIds(failedToDeleteLockedEntityIds);
@@ -118,8 +105,8 @@ public class EntityLockDcpBackend implements EntityLockBackend {
   @Override
   public Boolean lockExistsForEntityId(String entityId) {
     try {
-      getByEntityId(entityId);
-      return true;
+      EntityLockService.State lockState = getByEntityId(entityId);
+      return StringUtils.isNotBlank(lockState.ownerTaskId);
     } catch (DocumentNotFoundException ex) {
       return false;
     }

@@ -17,16 +17,24 @@ import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
 import com.vmware.photon.controller.common.xenon.upgrade.NoMigrationDuringUpgrade;
-import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotBlank;
+import com.vmware.photon.controller.common.xenon.validation.NotNull;
+import com.vmware.photon.controller.common.xenon.validation.RenamedField;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.ServiceDocumentDescription;
 import com.vmware.xenon.common.StatefulService;
+
+import org.apache.commons.lang3.StringUtils;
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkState;
 
 /**
  * Class EntityLockService is used for data persistence of entity lock.
  */
 public class EntityLockService extends StatefulService {
+
+  public static final String LOCK_TAKEN_MESSAGE = "Lock already taken";
 
   public EntityLockService() {
     super(State.class);
@@ -38,11 +46,15 @@ public class EntityLockService extends StatefulService {
 
   @Override
   public void handleStart(Operation startOperation) {
-    ServiceUtils.logInfo(this, "Starting EntityLockService %s", getSelfLink());
+    ServiceUtils.logInfo(this, "Handling START for EntityLockService %s", getSelfLink());
     try {
       State startState = startOperation.getBody(State.class);
       InitializationUtils.initialize(startState);
-      validateState(startState);
+      ValidationUtils.validateState(startState);
+      if (startState.lockOperation != State.LockOperation.ACQUIRE) {
+        throw new IllegalArgumentException("Creating a lock with lockOperation!=ACQUIRE is not allowed");
+      }
+      startState.lockOperation = null; // no need to persist the operation type
       startOperation.complete();
     } catch (IllegalStateException t) {
       ServiceUtils.failOperationAsBadRequest(this, startOperation, t);
@@ -52,13 +64,91 @@ public class EntityLockService extends StatefulService {
     }
   }
 
-  /**
-   * Validate the service state for coherence.
-   *
-   * @param currentState
-   */
-  protected void validateState(State currentState) {
-    ValidationUtils.validateState(currentState);
+  @Override
+  public void handlePut(Operation op) {
+    ServiceUtils.logInfo(this, "Handling PUT for EntityLockService %s", getSelfLink());
+
+    if (!op.hasBody()) {
+      op.fail(new IllegalArgumentException("body is required"));
+      return;
+    }
+
+    State currentState = getState(op);
+    State newState = op.getBody(State.class);
+
+    checkArgument(newState.lockOperation == State.LockOperation.ACQUIRE,
+        "Creating a lock with lockOperation!=ACQUIRE is not allowed");
+
+    // validate the payload.
+    try {
+      ValidationUtils.validateState(newState);
+    } catch (IllegalStateException e) {
+      ServiceUtils.failOperationAsBadRequest(this, op, e);
+      return;
+    }
+
+    newState.lockOperation = null; // no need to persist the operation type
+
+    // if the new payload is identical to the existing state, complete operation with STATUS_CODE_NOT_MODIFIED
+    ServiceDocumentDescription documentDescription = this.getDocumentTemplate().documentDescription;
+    if (ServiceDocument.equals(documentDescription, currentState, newState)) {
+      op.setStatusCode(Operation.STATUS_CODE_NOT_MODIFIED);
+      op.complete();
+      return;
+    }
+
+    checkArgument(currentState.entityId.equalsIgnoreCase(newState.entityId),
+        "entityId for a lock cannot be changed");
+
+    // if the lock already has an owner
+    if (StringUtils.isNotBlank(currentState.ownerTaskId)) {
+      // and the requested owner is new then return loack already taken error
+      checkArgument(currentState.ownerTaskId.equalsIgnoreCase(newState.ownerTaskId),
+          LOCK_TAKEN_MESSAGE + ". Current ownerTaskId: %s, Request ownerTaskId: %s, EntityId: %s",
+          currentState.ownerTaskId, newState.ownerTaskId, currentState.entityId);
+    }
+    setState(op, newState);
+    op.complete();
+  }
+
+  @Override
+  public void handlePatch(Operation op) {
+    ServiceUtils.logInfo(this, "Handling PATCH for EntityLockService %s", getSelfLink());
+
+    if (!op.hasBody()) {
+      op.fail(new IllegalArgumentException("body is required"));
+      return;
+    }
+
+    State currentState = getState(op);
+    State newState = op.getBody(State.class);
+
+    // validate the payload.
+    try {
+      ValidationUtils.validateState(newState);
+    } catch (IllegalStateException e) {
+      ServiceUtils.failOperationAsBadRequest(this, op, e);
+      return;
+    }
+
+    checkArgument(newState.lockOperation == State.LockOperation.RELEASE,
+        "Patching a lock with lockOperation!=RELEASE is not allowed");
+
+    if (StringUtils.isNotBlank(currentState.ownerTaskId)) {
+      // if the requester is new and the request is to release the lock then
+      checkState(currentState.ownerTaskId.equalsIgnoreCase(newState.ownerTaskId),
+          "Only the current owner can release a lock. Current ownerTaskId: %s, Request ownerTaskId: %s, EntityId: %s",
+          currentState.ownerTaskId, newState.ownerTaskId, currentState.entityId);
+
+      //release ownership of lock
+      currentState.ownerTaskId = null;
+    } else {
+      op.setStatusCode(Operation.STATUS_CODE_NOT_MODIFIED);
+    }
+
+    setState(op, currentState);
+    op.setBody(currentState);
+    op.complete();
   }
 
   /**
@@ -68,11 +158,21 @@ public class EntityLockService extends StatefulService {
   public static class State extends ServiceDocument {
 
     @NotBlank
-    @Immutable
     public String entityId;
 
+    @RenamedField(originalName = "taskId")
     @NotBlank
-    @Immutable
-    public String taskId;
+    public String ownerTaskId;
+
+    @NotNull
+    public LockOperation lockOperation;
+
+    /**
+     * Definition of substages.
+     */
+    public enum LockOperation {
+      ACQUIRE,
+      RELEASE
+    }
   }
 }
