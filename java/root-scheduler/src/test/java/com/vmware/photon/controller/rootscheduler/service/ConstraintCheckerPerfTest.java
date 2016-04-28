@@ -158,7 +158,7 @@ public class ConstraintCheckerPerfTest {
       Thread worker = new Thread(() -> {
         List<ResourceConstraint> constraints = new LinkedList<>();
         for (int j = 0; j < numRequests; j++) {
-          Map<String, ServerAddress> candidates = checker.getCandidates(constraints, 4);
+          Map<String, ServerAddress> candidates = checker.getCandidatesSync(constraints, 4);
           assertThat(candidates.size(), not(equalTo(0)));
         }
       });
@@ -187,7 +187,7 @@ public class ConstraintCheckerPerfTest {
           int datastore = random.nextInt(1000);
           String datastoreId = new UUID(0, datastore).toString();
           constraints.add(new ResourceConstraint(ResourceConstraintType.DATASTORE, Arrays.asList(datastoreId)));
-          checker.getCandidates(constraints, 4);
+          checker.getCandidatesSync(constraints, 4);
         }
       });
       worker.start();
@@ -215,7 +215,7 @@ public class ConstraintCheckerPerfTest {
           int datastore = random.nextInt(1000);
           String az = new UUID(0, datastore).toString();
           constraints.add(new ResourceConstraint(ResourceConstraintType.AVAILABILITY_ZONE, Arrays.asList(az)));
-          checker.getCandidates(constraints, 4);
+          checker.getCandidatesSync(constraints, 4);
         }
       });
       worker.start();
