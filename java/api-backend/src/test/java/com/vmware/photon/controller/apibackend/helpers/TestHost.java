@@ -14,26 +14,45 @@ package com.vmware.photon.controller.apibackend.helpers;
 
 import com.vmware.photon.controller.apibackend.ApiBackendFactory;
 import com.vmware.photon.controller.cloudstore.dcp.CloudStoreXenonHost;
+import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.common.xenon.BasicServiceHost;
+import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
+import com.vmware.photon.controller.common.xenon.CloudStoreHelperProvider;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.nsxclient.NsxClientFactory;
 import com.vmware.photon.controller.nsxclient.NsxClientFactoryProvider;
+import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceHost;
 
+import java.net.InetSocketAddress;
+import java.util.Map;
+import java.util.function.Supplier;
 import java.util.logging.LogManager;
 
 /**
  * This class implements helper routines used to test service hosts in isolation.
  */
-public class TestHost extends BasicServiceHost implements NsxClientFactoryProvider {
+public class TestHost extends BasicServiceHost
+    implements NsxClientFactoryProvider, CloudStoreHelperProvider {
 
+  private Map<Class<? extends Service>, Supplier<FactoryService>> testFactoryServiceMap;
   private NsxClientFactory nsxClientFactory;
+  private CloudStoreHelper cloudStoreHelper;
 
-  private TestHost(NsxClientFactory nsxClientFactory) throws Throwable {
+  private TestHost(Map<Class<? extends Service>, Supplier<FactoryService>> testFactoryServiceMap,
+                   NsxClientFactory nsxClientFactory,
+                   CloudStoreHelper cloudStoreHelper) throws Throwable {
     super();
     this.initialize();
+    this.testFactoryServiceMap = testFactoryServiceMap;
     this.nsxClientFactory = nsxClientFactory;
+    this.cloudStoreHelper = cloudStoreHelper;
+    if (this.cloudStoreHelper != null) {
+      this.cloudStoreHelper.setServerSet(
+          new StaticServerSet(new InetSocketAddress(getPreferredAddress(), getPort())));
+    }
   }
 
   @Override
@@ -44,6 +63,10 @@ public class TestHost extends BasicServiceHost implements NsxClientFactoryProvid
     ServiceHostUtils.startFactoryServices(this, ApiBackendFactory.FACTORY_SERVICES_MAP);
     ServiceHostUtils.startFactoryServices(this, CloudStoreXenonHost.FACTORY_SERVICES_MAP);
     ServiceHostUtils.startServices(this, CloudStoreXenonHost.FACTORY_SERVICES);
+
+    if (this.testFactoryServiceMap != null && !this.testFactoryServiceMap.isEmpty()) {
+      ServiceHostUtils.startFactoryServices(this, this.testFactoryServiceMap);
+    }
 
     return this;
   }
@@ -75,14 +98,32 @@ public class TestHost extends BasicServiceHost implements NsxClientFactoryProvid
     return this.nsxClientFactory;
   }
 
+  @Override
+  public CloudStoreHelper getCloudStoreHelper() {
+    return this.cloudStoreHelper;
+  }
+
   /**
    * This class implements a builder for {@link TestHost} objects.
    */
   public static class Builder {
+    private Map<Class<? extends Service>, Supplier<FactoryService>> testFactoryServiceMap;
     private NsxClientFactory nsxClientFactory;
+    private CloudStoreHelper cloudStoreHelper;
+
+    public Builder testFactoryServiceMap(
+        Map<Class<? extends Service>, Supplier<FactoryService>> testFactoryServiceMap) {
+      this.testFactoryServiceMap = testFactoryServiceMap;
+      return this;
+    }
 
     public Builder nsxClientFactory(NsxClientFactory nsxClientFactory) {
       this.nsxClientFactory = nsxClientFactory;
+      return this;
+    }
+
+    public Builder cloudStoreHelper(CloudStoreHelper cloudStoreHelper) {
+      this.cloudStoreHelper = cloudStoreHelper;
       return this;
     }
 
@@ -91,7 +132,10 @@ public class TestHost extends BasicServiceHost implements NsxClientFactoryProvid
     }
 
     public TestHost build(boolean autoStart) throws Throwable {
-      TestHost host = new TestHost(nsxClientFactory);
+      TestHost host = new TestHost(
+          testFactoryServiceMap,
+          nsxClientFactory,
+          cloudStoreHelper);
       if (autoStart) {
         host.start();
       }

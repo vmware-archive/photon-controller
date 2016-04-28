@@ -13,10 +13,16 @@
 
 package com.vmware.photon.controller.apibackend.helpers;
 
+import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.MultiHostEnvironment;
 import com.vmware.photon.controller.nsxclient.NsxClientFactory;
+import com.vmware.xenon.common.FactoryService;
+import com.vmware.xenon.common.Service;
 
 import static org.testng.Assert.assertTrue;
+
+import java.util.Map;
+import java.util.function.Supplier;
 
 /**
  * TestEnvironment class hosting a Xenon host.
@@ -24,13 +30,17 @@ import static org.testng.Assert.assertTrue;
 public class TestEnvironment extends MultiHostEnvironment<TestHost> {
 
   private TestEnvironment(int hostCount,
-                          NsxClientFactory nsxClientFactory) throws Throwable {
+                          Map<Class<? extends Service>, Supplier<FactoryService>> testFactoryServiceMap,
+                          NsxClientFactory nsxClientFactory,
+                          CloudStoreHelper cloudStoreHelper) throws Throwable {
     assertTrue(hostCount > 0);
     hosts = new TestHost[hostCount];
     for (int i = 0; i < hosts.length; i++) {
       hosts[i] = new TestHost.Builder()
-        .nsxClientFactory(nsxClientFactory)
-        .build(false);
+          .testFactoryServiceMap(testFactoryServiceMap)
+          .nsxClientFactory(nsxClientFactory)
+          .cloudStoreHelper(cloudStoreHelper)
+          .build(false);
     }
   }
 
@@ -40,10 +50,18 @@ public class TestEnvironment extends MultiHostEnvironment<TestHost> {
   public static class Builder {
 
     private int hostCount;
+    private Map<Class<? extends Service>, Supplier<FactoryService>> testFactoryServiceMap;
     private NsxClientFactory nsxClientFactory;
+    private CloudStoreHelper cloudStoreHelper;
 
     public Builder hostCount(int hostCount) {
       this.hostCount = hostCount;
+      return this;
+    }
+
+    public Builder testFactoryServiceMap(
+        Map<Class<? extends Service>, Supplier<FactoryService>> testFactoryServiceMap) {
+      this.testFactoryServiceMap = testFactoryServiceMap;
       return this;
     }
 
@@ -52,11 +70,17 @@ public class TestEnvironment extends MultiHostEnvironment<TestHost> {
       return this;
     }
 
+    public Builder cloudStoreHelper(CloudStoreHelper cloudStoreHelper) {
+      this.cloudStoreHelper = cloudStoreHelper;
+      return this;
+    }
+
     public TestEnvironment build() throws Throwable {
       TestEnvironment environment = new TestEnvironment(
           hostCount,
-          nsxClientFactory);
-
+          testFactoryServiceMap,
+          nsxClientFactory,
+          cloudStoreHelper);
 
       environment.start();
       return environment;
