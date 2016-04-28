@@ -28,13 +28,32 @@ public interface ConstraintChecker {
   Random RANDOM = new Random();
 
   /**
-   * Randomly pick candidates that satisfy all the resource constraints.
+   * This interface is for methods that are called when getCandidates() completes.
+   * It provides two arguments, and exactly one of them will be null
+   * The candidates argument is a map from host ID to server address, if the call succeeded
+   * An exception will be provided if the call failed
+   */
+  interface GetCandidatesCompletion {
+    public void handle(Map<String, ServerAddress> candidates, Exception exception);
+  }
+
+  /**
+   * Pick candidates that satisfy all the resource constraints. This is synchronous and should only be used
+   * by test code
    *
    * @param constraints a list of constraints to satisfy.
    * @param numCandidates the number of candidates to pick.
-   * @return A map from host ID to ServerAddress (ip, port). Note that this method might return
-   *         a less number candidates than <code>numCandidates</code> depending on how many candidates
-   *         satisfy all the constraints.
    */
-  Map<String, ServerAddress> getCandidates(List<ResourceConstraint> constraints, int numCandidates);
+  Map<String, ServerAddress> getCandidatesSync(List<ResourceConstraint> constraints, int numCandidates);
+
+  /**
+   * Pick candidates that satisfy all the resource constraints. This is asynchronous, and returns it's results
+   * via completion.
+   *
+   * @param constraints a list of constraints to satisfy.
+   * @param numCandidates the number of candidates to pick.
+   * @param completion the method to call when complete
+   */
+  void getCandidates(List<ResourceConstraint> constraints, int numCandidates, GetCandidatesCompletion completion);
+
 }
