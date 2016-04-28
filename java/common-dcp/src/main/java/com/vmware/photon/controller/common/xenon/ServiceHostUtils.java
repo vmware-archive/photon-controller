@@ -31,12 +31,15 @@ import com.vmware.xenon.services.common.QueryTask;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.lang.reflect.Field;
 import java.net.URI;
 import java.security.InvalidParameterException;
@@ -675,5 +678,37 @@ public class ServiceHostUtils {
     }
 
     return serviceUri;
+  }
+
+  /**
+   * Stop the host and cleanup its sandbox folder.
+   *
+   * @param host
+   * @throws Throwable
+   */
+  public static void destroy(ServiceHost host) throws Throwable {
+    host.stop();
+    File sandbox = new File(host.getStorageSandbox());
+    int maxAttempts = 10;
+    for (int i = 0; i < maxAttempts; i++) {
+      try {
+        if (sandbox.exists()) {
+          FileUtils.forceDelete(sandbox);
+        }
+        break;
+      } catch (FileNotFoundException ex) {
+        if (i == maxAttempts - 1) {
+          // If all previous attempts fail then we may see leak of
+          // some sandbox files in the sandbox folder. This could happen
+          // because this exception may prematurely terminate
+          // folder delete operation and leave some files unprocessed.
+          throw ex;
+        }
+
+        logger.warn("Some file disappeared from the sandbox during deletion, will retry deleting sandbox",
+            ex);
+        Thread.sleep(TimeUnit.SECONDS.toMillis(1));
+      }
+    }
   }
 }

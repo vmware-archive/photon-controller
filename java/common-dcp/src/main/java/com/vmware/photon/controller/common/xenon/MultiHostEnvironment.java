@@ -28,11 +28,9 @@ import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.NodeGroupBroadcastResponse;
 import com.vmware.xenon.services.common.QueryTask;
 
-import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.file.FileSystems;
@@ -188,10 +186,7 @@ public abstract class MultiHostEnvironment<H extends ServiceHost & XenonHostInfo
   public void stop() throws Throwable {
     this.dumpHosts();
     for (H host : hosts) {
-      host.stop();
-
-      File sandbox = new File(host.getStorageSandbox());
-      FileUtils.forceDelete(sandbox);
+      ServiceHostUtils.destroy(host);
     }
   }
 
