@@ -36,9 +36,9 @@ buildscript {
     maven { url 'http://dl.bintray.com/vermeulen-mp/gradle-plugins' }
   }
   dependencies {
-    classpath 'com.bmuschko:gradle-docker-plugin:2.6.2'
+    classpath project.gradleDockerPlugin
+    classpath project.gradleVagrantPlugin
     classpath 'com.wiredforcode:gradle-spawn-plugin:0.6.0'
-    classpath 'com.bmuschko:gradle-vagrant-plugin:2.0'
   }
 }
 
@@ -61,12 +61,13 @@ subprojects {
       jcenter()
     }
     dependencies {
-      classpath 'com.bmuschko:gradle-docker-plugin:2.6.1'
+      classpath project.gradleDockerPlugin
+      classpath project.gradleVagrantPlugin
     }
   }
 
   docker {
-    url = dockerUrl()
+    url = System.getenv("DOCKER_URL") ?: "http://localhost:2375"
   }
 
   repositories {
@@ -132,7 +133,3 @@ idea {
     languageLevel = '1.8'
   }
 }
-
-ext.gitRoot = "git rev-parse --show-toplevel".execute().text.trim()
-ext.devboxDir = file("${gitRoot}/devbox-photon")
-

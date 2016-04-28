@@ -1,4 +1,4 @@
-FROM vmware/photon
+FROM vmware/photon:tp2
 
 RUN tdnf clean all \
   && tdnf update -y tdnf \

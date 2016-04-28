@@ -1,3 +1,10 @@
 #!/bin/bash -e
 # Gradle wrapper wrapper
-(cd ../java && ./gradlew "$@")
+src="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -d "$src/../java" ]; then
+  dir="$src/../java"
+else
+  # Works from /vagrant inside devbox
+  dir="/devbox_data/java"
+fi
+(cd "$dir" && ./gradlew "$@")

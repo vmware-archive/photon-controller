@@ -94,12 +94,14 @@ Vagrant.configure("2") do |config|
       photon.vm.network :forwarded_port, guest: 443, host: 9089,
         auto_correct: true
       photon.vm.network :forwarded_port, guest: 28080, host: 9090,
-          auto_correct: true
+        auto_correct: true
 
       # Graphite web interface port
-      photon.vm.network :forwarded_port, guest: 8000, host: 8000
+      photon.vm.network :forwarded_port, guest: 8000, host: 8000,
+        auto_correct: true
       # Graphite carbon-cache pickle receiver (stats endpoint for agent)
-      photon.vm.network :forwarded_port, guest: 2004, host: 2004
+      photon.vm.network :forwarded_port, guest: 2004, host: 2004,
+        auto_correct: true
 
       # Expose Docker for the Gradle build on the host
       photon.vm.network :forwarded_port, guest: 2375, host: DOCKER_PORT
@@ -113,7 +115,7 @@ Vagrant.configure("2") do |config|
 
   config.vm.provision :shell, :privileged => false, :inline => <<-EOS
     set -xe
-    docker tag devbox/compileservices photon/compileservices
+    docker tag -f devbox/compileservices photon/compileservices
   EOS
 
   # Prepare build directory
@@ -136,6 +138,7 @@ Vagrant.configure("2") do |config|
   # Configure network
   #
   if ENV["PUBLIC_NETWORK_IP"]
+    puts "public"
     public_network_ip = ENV["PUBLIC_NETWORK_IP"]
     network_ip = public_network_ip
     bridge_network = ENV["BRIDGE_NETWORK"]
@@ -349,6 +352,7 @@ cat > $out <<-'EOM'
 sudo mkdir -p /mirror/devbox_data
 time sudo rsync -rLgotp --exclude="develop" /devbox_data/python /mirror/devbox_data
 time sudo rsync -rLgotp /devbox_data/thrift /mirror/devbox_data
+time sudo rsync -rLgotp /devbox_data/java /mirror/devbox_data
 
 
 container=$(docker run -d \
@@ -413,6 +417,7 @@ cat > $out <<-'EOM'
 agent_config_dir=/devbox_data/java/devbox/agent/configuration
 
 mkdir -p #{agent_config_build_dir}
+
 for file in $agent_config_dir/*.#{CONFIG_EXTS}
 do
   if [ -f $file ]; then

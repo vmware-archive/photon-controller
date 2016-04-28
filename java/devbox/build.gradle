@@ -1,5 +1,4 @@
 // Tasks executed against devbox
-import com.bmuschko.gradle.vagrant.tasks.VagrantSsh
 import com.bmuschko.gradle.vagrant.tasks.VagrantUp
 import com.bmuschko.gradle.vagrant.tasks.VagrantDestroy
 import com.bmuschko.gradle.vagrant.tasks.VagrantHalt
@@ -48,11 +47,9 @@ task rebuild() {
   dependsOn cleanAll, buildAll
 }
 
-task startAll(type: VagrantSsh) {
+task startAll() {
   mustRunAfter buildAll, rebuild
-  description = 'Start all containers inside devbox'
-  boxDir = devboxDir
-  sshCommand = 'start-all 2>&1 | tee -a start-all.log'
+  shellTask startAll, 'start-all 2>&1 | tee -a start-all.log'
   // Only start fake agent when REAL_AGENT is not defined
   if (!System.getenv('REAL_AGENT')?.trim()) {
     dependsOn ":devbox:agent:start"
