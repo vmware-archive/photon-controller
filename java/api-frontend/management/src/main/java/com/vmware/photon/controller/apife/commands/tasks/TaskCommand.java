@@ -121,7 +121,8 @@ public class TaskCommand extends BaseCommand {
 
   @Override
   protected void markAsDone() throws TaskNotFoundException {
-    //clear locks as first thing in this method so that some other failure does not preempt it leaving dangling lock.
+    // clear locks as first thing in this method so that some other failure does not preempt it
+    // and leave dangling lock.
     entityLockBackend.clearTaskLocks(task);
     for (StepEntity step : getTask().getSteps()) {
       if (!step.getState().equals(StepEntity.State.COMPLETED)) {
@@ -137,7 +138,8 @@ public class TaskCommand extends BaseCommand {
    */
   @Override
   protected void markAsFailed(Throwable t) throws TaskNotFoundException {
-    //clear locks as first thing in this method so that some other failure does not preempt it leaving dangling lock.
+    // clear locks as first thing in this method so that some other failure does not preempt it
+    // and leave dangling lock.
     entityLockBackend.clearTaskLocks(task);
     logger.error("Task {} failed", getActivityId(), t);
     taskBackend.markTaskAsFailed(task);
