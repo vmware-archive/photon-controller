@@ -23,22 +23,22 @@ import java.io.InputStreamReader;
 public class DnsmasqDriver implements DHCPDriver {
 
     String utilityPath = "/usr/local/bin";
-    String utility = "dhcp_release";
 
     public DnsmasqDriver(String utilityPath) {
         this.utilityPath = utilityPath;
     }
 
-    public DriverResponse releaseIP(String networkInterface, String ipAddress, String macAddress) {
-        DriverResponse response = new DriverResponse();
+    public DHCPDriverResponse releaseIP(String networkInterface, String ipAddress, String macAddress) {
+        DHCPDriverResponse response = new DHCPDriverResponse();
 
         try {
-            String command = String.format("%s/%s %s %s %s", utilityPath, utility, networkInterface,
+            String command = String.format("%s %s %s %s", utilityPath, networkInterface,
                     ipAddress, macAddress);
             Process p = Runtime.getRuntime().exec(command);
+            int exitVal = p.waitFor();
 
-           if (p.exitValue() != 0) {
-               response.exitCode = p.exitValue();
+           if (exitVal != 0) {
+               response.exitCode = exitVal;
 
                String s;
                BufferedReader stdError = new BufferedReader(new

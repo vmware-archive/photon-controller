@@ -18,12 +18,12 @@ package com.vmware.photon.controller.dhcpagent.dhcpdrivers;
  */
 public interface DHCPDriver {
 
-    DriverResponse releaseIP(String networkInterface, String ipAddress, String macAddress);
+    DHCPDriverResponse releaseIP(String networkInterface, String ipAddress, String macAddress);
 
     /**
      * Class to hold the response for Driver operations.
      */
-    class DriverResponse {
+    class DHCPDriverResponse {
         public int exitCode = 0;
         public String stdError = "";
     }
