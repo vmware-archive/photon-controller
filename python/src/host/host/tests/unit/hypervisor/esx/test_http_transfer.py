@@ -27,7 +27,7 @@ from gen.host.ttypes import ServiceTicketResultCode
 from gen.host.ttypes import ServiceType
 from host.hypervisor.esx.http_disk_transfer import HttpNfcTransferer
 from host.hypervisor.esx.vim_client import VimClient
-from host.hypervisor.esx.vm_config import SHADOW_VM_NAME_PREFIX
+from host.hypervisor.esx.path_util import SHADOW_VM_NAME_PREFIX
 
 
 class TestHttpTransfer(unittest.TestCase):

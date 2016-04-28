@@ -32,13 +32,14 @@ from gen.host.ttypes import ServiceTicketResultCode
 from gen.host.ttypes import ServiceType
 from host.hypervisor.disk_manager import DiskAlreadyExistException
 from host.hypervisor.esx.vim_client import VimClient
-from host.hypervisor.esx.vm_config import IMAGE_FOLDER_NAME_PREFIX
+from host.hypervisor.esx.path_util import IMAGE_FOLDER_NAME_PREFIX
+from host.hypervisor.esx.path_util import VM_FOLDER_NAME_PREFIX
+from host.hypervisor.esx.path_util import SHADOW_VM_NAME_PREFIX
+from host.hypervisor.esx.path_util import os_datastore_path
+from host.hypervisor.esx.path_util import compond_path_join
+from host.hypervisor.esx.path_util import os_metadata_path
+from host.hypervisor.esx.vm_config import EsxVmConfig
 from host.hypervisor.esx.vm_config import EsxVmConfigSpec
-from host.hypervisor.esx.vm_config import os_datastore_path
-from host.hypervisor.esx.vm_config import compond_path_join
-from host.hypervisor.esx.vm_config import VM_FOLDER_NAME_PREFIX
-from host.hypervisor.esx.vm_config import EsxVmConfig, SHADOW_VM_NAME_PREFIX
-from host.hypervisor.esx.vm_config import os_metadata_path
 from host.hypervisor.esx.vm_manager import EsxVmManager
 
 

@@ -65,8 +65,8 @@ from gen.scheduler.ttypes import PlaceResultCode
 from hamcrest import *  # noqa
 from hamcrest.library.text.stringmatches import matches_regexp  # hamcrest bug
 from host.host_handler import HostHandler
-from host.hypervisor.esx.vm_config import compond_path_join
-from host.hypervisor.esx.vm_config import IMAGE_FOLDER_NAME_PREFIX
+from host.hypervisor.esx.path_util import compond_path_join
+from host.hypervisor.esx.path_util import IMAGE_FOLDER_NAME_PREFIX
 from matchers import *  # noqa
 from thrift.transport import TTransport
 

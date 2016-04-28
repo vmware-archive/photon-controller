@@ -12,9 +12,6 @@
 
 """ Contains the implementation code for ESX VM operations."""
 import logging
-
-from host.hypervisor.esx.vm_config import SHADOW_VM_NAME_PREFIX
-
 import os
 import socket
 import struct
@@ -39,16 +36,17 @@ from host.hypervisor.vm_manager import IsoNotAttachedException
 from host.hypervisor.vm_manager import VmAlreadyExistException
 from host.hypervisor.vm_manager import VmNotFoundException
 from host.hypervisor.vm_manager import VmPowerStateException
-from host.hypervisor.esx.vm_config import compond_path_join
-from host.hypervisor.esx.vm_config import datastore_to_os_path
+from host.hypervisor.esx.path_util import compond_path_join
+from host.hypervisor.esx.path_util import datastore_to_os_path
+from host.hypervisor.esx.path_util import os_datastore_path
+from host.hypervisor.esx.path_util import VM_FOLDER_NAME_PREFIX
+from host.hypervisor.esx.path_util import SHADOW_VM_NAME_PREFIX
 from host.hypervisor.esx.vm_config import DeviceNotFoundException
 from host.hypervisor.esx.vm_config import EsxVmConfig
 from host.hypervisor.esx.vm_config import get_image_base_disk
 from host.hypervisor.esx.vm_config import get_root_disk
 from host.hypervisor.esx.vm_config import is_persistent_disk
-from host.hypervisor.esx.vm_config import os_datastore_path
 from host.hypervisor.esx.vm_config import vmdk_id
-from host.hypervisor.esx.vm_config import VM_FOLDER_NAME_PREFIX
 
 from common.log import log_duration
 

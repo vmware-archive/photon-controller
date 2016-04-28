@@ -19,7 +19,8 @@ from hamcrest import assert_that, equal_to
 from pyVmomi import vim
 
 from host.hypervisor.esx.vim_client import VimClient
-from host.hypervisor.esx.vm_config import datastore_to_os_path
+from host.hypervisor.esx.path_util import datastore_to_os_path
+from host.hypervisor.esx.path_util import vmdk_path
 from host.hypervisor.esx.vm_config import DEFAULT_DISK_CONTROLLER_CLASS
 from host.hypervisor.esx.vm_config import DeviceNotFoundException
 from host.hypervisor.esx.vm_config import EsxVmConfig
@@ -27,7 +28,6 @@ from host.hypervisor.esx.vm_config import is_ephemeral_disk
 from host.hypervisor.esx.vm_config import is_image
 from host.hypervisor.esx.vm_config import is_persistent_disk
 from host.hypervisor.esx.vm_config import uuid_to_vmdk_uuid
-from host.hypervisor.esx.vm_config import vmdk_path
 
 
 def FakeConfigInfo():

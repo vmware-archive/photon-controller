@@ -17,9 +17,9 @@ import os
 
 from common.kind import Flavor
 from host.hypervisor.disk_manager import DiskManager
-from host.hypervisor.esx.vm_config import IMAGE_FOLDER_NAME_PREFIX
-from host.hypervisor.esx.vm_config import os_vmdk_path
-from host.hypervisor.esx.vm_config import vmdk_path
+from host.hypervisor.esx.path_util import IMAGE_FOLDER_NAME_PREFIX
+from host.hypervisor.esx.path_util import os_vmdk_path
+from host.hypervisor.esx.path_util import vmdk_path
 from host.hypervisor.vm_manager import DiskNotFoundException
 from host.hypervisor.resources import Disk
 
