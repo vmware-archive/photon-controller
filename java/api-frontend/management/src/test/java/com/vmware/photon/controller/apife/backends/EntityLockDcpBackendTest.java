@@ -30,18 +30,23 @@ import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.entities.VmEntity;
 import com.vmware.photon.controller.common.xenon.BasicServiceHost;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
+import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
 
 import com.google.inject.Inject;
 import org.junit.AfterClass;
+import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
+import java.net.HttpURLConnection;
 import java.util.UUID;
 
 /**
@@ -223,7 +228,7 @@ public class EntityLockDcpBackendTest {
     @BeforeMethod
     public void setUp() throws Throwable {
       commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
-
+      entityLockDcpBackend = new EntityLockDcpBackend(dcpClient);
       taskEntity = new TaskEntity();
       taskEntity.setId("task-id");
     }
@@ -256,37 +261,55 @@ public class EntityLockDcpBackendTest {
     @Test
     public void testClearLockSuccessForLocksCreatedFailed() throws Throwable {
       String vmId = UUID.randomUUID().toString();
-      String ephemeralDiskId = UUID.randomUUID().toString();
       TaskEntity taskEntity2 = new TaskEntity();
       taskEntity2.setId("task-id2");
-
-      entityLockDcpBackend.setTaskLock(vmId, taskEntity2);
-      entityLockDcpBackend.setTaskLock(ephemeralDiskId, taskEntity2);
-
-      try {
-        entityLockDcpBackend.setTaskLock(vmId, taskEntity);
-      } catch (Exception e) {
-        assertThat(taskEntity.getLockedEntityIds().size(), is(1));
-      }
-
-      try {
-        entityLockDcpBackend.setTaskLock(ephemeralDiskId, taskEntity);
-      } catch (Exception e) {
-        assertThat(taskEntity.getLockedEntityIds().size(), is(2));
-      }
-
-      entityLockDcpBackend.clearTaskLocks(taskEntity);
-      assertThat(taskEntity.getLockedEntityIds().size(), is(0));
-
-      entityLockDcpBackend.clearTaskLocks(taskEntity2);
-      // Now the lock has been cleared, should be able to set locks again
+      TaskEntity taskEntity3 = new TaskEntity();
 
       entityLockDcpBackend.setTaskLock(vmId, taskEntity);
-      entityLockDcpBackend.setTaskLock(ephemeralDiskId, taskEntity);
+
+      try {
+        entityLockDcpBackend.setTaskLock(vmId, taskEntity2);
+        Assert.fail("acquiring lock for an already owned lock should have failed");
+      } catch (Exception e) {
+        assertThat(e, is(instanceOf(ConcurrentTaskException.class)));
+      }
+
+      assertThat(taskEntity.getLockedEntityIds().size(), is(1));
+      assertThat(taskEntity2.getLockedEntityIds().size(), is(0));
+      assertThat(taskEntity3.getLockedEntityIds().size(), is(0));
+
+      try {
+        entityLockDcpBackend.setTaskLock(vmId, taskEntity3);
+        Assert.fail("acquiring lock for an already owned lock should have failed");
+      } catch (ConcurrentTaskException e) {
+        Assert.fail("acquiring lock for an already owned lock should have failed");
+      } catch (XenonRuntimeException e) {
+        assertThat(e.getCompletedOperation().getStatusCode(), is(equalTo(HttpURLConnection.HTTP_BAD_REQUEST)));
+      } catch (Exception e) {
+        Assert.fail("acquiring lock for an already owned lock should have failed");
+      }
+
+      assertThat(taskEntity.getLockedEntityIds().size(), is(1));
+      assertThat(taskEntity2.getLockedEntityIds().size(), is(0));
+      assertThat(taskEntity3.getLockedEntityIds().size(), is(1));
+
+      entityLockDcpBackend.clearTaskLocks(taskEntity2);
+
+      assertThat(taskEntity.getLockedEntityIds().size(), is(1));
+      assertThat(taskEntity2.getLockedEntityIds().size(), is(0));
+      assertThat(taskEntity3.getLockedEntityIds().size(), is(1));
+
+      entityLockDcpBackend.clearTaskLocks(taskEntity3);
+
+      assertThat(taskEntity.getLockedEntityIds().size(), is(1));
+      assertThat(taskEntity2.getLockedEntityIds().size(), is(0));
+      assertThat(taskEntity3.getLockedEntityIds().size(), is(1));
+
       entityLockDcpBackend.clearTaskLocks(taskEntity);
 
-      //When another delete is issued, it should not throw Exception
-      entityLockDcpBackend.clearTaskLocks(taskEntity);
+      assertThat(taskEntity.getLockedEntityIds().size(), is(0));
+      assertThat(taskEntity2.getLockedEntityIds().size(), is(0));
+      assertThat(taskEntity3.getLockedEntityIds().size(), is(1));
     }
 
     @Test
