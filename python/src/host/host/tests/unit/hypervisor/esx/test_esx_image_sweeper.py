@@ -35,7 +35,7 @@ from host.hypervisor.esx.image_manager import EsxImageManager
 from host.hypervisor.image_scanner import DatastoreImageScanner
 from host.hypervisor.image_sweeper import DatastoreImageSweeper
 
-from host.hypervisor.esx.vm_config import os_vmdk_path
+from host.hypervisor.esx.path_util import os_vmdk_path
 
 
 class ImageScannerVmTestCase(unittest.TestCase):
