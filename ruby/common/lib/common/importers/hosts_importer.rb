@@ -16,6 +16,7 @@ module EsxCloud
       # @param [String] file
       # @return [Array<HostCreateSpec>]
       def import_file(file)
+        puts "VERBOSE: Importing file #{file}" if $VERBOSE
         fail EsxCloud::NotFound, "file #{file} does not exist." unless File.exist?(file)
 
         import_config(YAML.load_file(file))
@@ -24,6 +25,7 @@ module EsxCloud
       # @param [Hash] config
       # @return [Array<HostCreateSpec>]
       def import_config(config)
+        puts "VERBOSE: Importing config #{config}" if $VERBOSE
         fail UnexpectedFormat, "No host defined." unless config.is_a?(Hash)
 
         hosts = config['hosts']
@@ -37,6 +39,7 @@ module EsxCloud
       private
 
       def host_specs(host)
+        puts "VERBOSE: Prepare host spec for #{host}" if $VERBOSE
         unless host["metadata"].nil? || host["metadata"].empty?
           management_network_ips = IPRange.parse(host["metadata"]["MANAGEMENT_VM_IPS"])
         end
@@ -59,6 +62,7 @@ module EsxCloud
       end
 
       def host_create_spec(host, ip_address, metadata)
+        puts "VERBOSE: Create host spec for #{host}" if $VERBOSE
         EsxCloud::HostCreateSpec.new(
             host["username"],
             host["password"],
