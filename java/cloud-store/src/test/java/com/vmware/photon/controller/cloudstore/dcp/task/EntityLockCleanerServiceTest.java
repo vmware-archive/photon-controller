@@ -177,7 +177,7 @@ public class EntityLockCleanerServiceTest {
           {"taskState", state},
           {"isSelfProgressionDisabled", false},
           {"danglingEntityLocks", 0},
-          {"deletedEntityLocks", 0}
+          {"releasedEntityLocks", 0}
       };
     }
 
@@ -331,7 +331,7 @@ public class EntityLockCleanerServiceTest {
           (EntityLockCleanerService.State state) -> state.taskState.stage == TaskState.TaskStage.FINISHED);
 
       assertThat(response.danglingEntityLocks, is(0));
-      assertThat(response.deletedEntityLocks, is(0));
+      assertThat(response.releasedEntityLocks, is(0));
     }
 
     /**
@@ -355,7 +355,7 @@ public class EntityLockCleanerServiceTest {
           (EntityLockCleanerService.State state) -> state.taskState.stage == TaskState.TaskStage.FINISHED);
       assertThat(response.danglingEntityLocks,
           is(Integer.min(danglingEntityLocks, EntityLockCleanerService.DEFAULT_PAGE_LIMIT)));
-      assertThat(response.deletedEntityLocks,
+      assertThat(response.releasedEntityLocks,
           is(Integer.min(danglingEntityLocks, EntityLockCleanerService.DEFAULT_PAGE_LIMIT)));
 
       verifyLockStatusAfterCleanup(machine, totalEntityLocks, danglingEntityLocks, hostCount);
@@ -409,7 +409,8 @@ public class EntityLockCleanerServiceTest {
         // create associated entity lock
         EntityLockService.State entityLock = new EntityLockService.State();
         entityLock.entityId = "entity-id" + i;
-        entityLock.taskId = ServiceUtils.getIDFromDocumentSelfLink(createdTask.documentSelfLink);
+        entityLock.ownerId = ServiceUtils.getIDFromDocumentSelfLink(createdTask.documentSelfLink);
+        entityLock.isAvailable = false;
         entityLock.documentSelfLink = EntityLockServiceFactory.SELF_LINK + "/" + entityLock.entityId;
         Operation entityLockOperation = env.sendPostAndWait(EntityLockServiceFactory.SELF_LINK, entityLock);
         EntityLockService.State createdEntityLock = entityLockOperation.getBody(EntityLockService.State.class);
