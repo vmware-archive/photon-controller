@@ -25,6 +25,7 @@ import com.vmware.photon.controller.common.zookeeper.gen.ServerAddress;
 import com.vmware.photon.controller.resource.gen.ResourceConstraint;
 import com.vmware.photon.controller.resource.gen.ResourceConstraintType;
 import com.vmware.photon.controller.rootscheduler.exceptions.NoSuchResourceException;
+import com.vmware.photon.controller.rootscheduler.service.ConstraintChecker.GetCandidatesCompletion;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocumentDescription;
 import com.vmware.xenon.common.ServiceDocumentQueryResult;
@@ -44,6 +45,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.CountDownLatch;
 
 /**
  * This class implements a {@link ConstraintChecker} using Xenon queries against cloud store nodes.
@@ -62,6 +64,37 @@ public class CloudStoreConstraintChecker implements ConstraintChecker {
   @Inject
   public CloudStoreConstraintChecker(XenonRestClient xenonRestClient) {
     this.xenonRestClient = xenonRestClient;
+  }
+
+  /**
+   * Synchronous interface to getCandidates().
+   * This should *only* be used by tests, not production code
+   */
+  public Map<String, ServerAddress> getCandidatesSync(
+      List<ResourceConstraint> resourceConstraints,
+      int numCandidates) {
+
+    List<Map<String, ServerAddress>> candidates = new ArrayList<Map<String, ServerAddress>>();
+
+    CountDownLatch latch = new CountDownLatch(1);
+    getCandidates(resourceConstraints,
+        numCandidates,
+        (c, ex) -> {
+          candidates.add(c);
+          latch.countDown();
+        });
+
+    boolean done = false;
+
+    while (!done) {
+      try {
+        latch.await();
+        done = true;
+      } catch (InterruptedException ex) {
+        // Thread was interrupted, retry await()
+      }
+    }
+    return candidates.get(0);
   }
 
   /**
@@ -86,7 +119,24 @@ public class CloudStoreConstraintChecker implements ConstraintChecker {
    * also may mean more queries to Lucene when we don't have a lot of hosts.
    */
   @Override
-  public Map<String, ServerAddress> getCandidates(List<ResourceConstraint> resourceConstraints, int numCandidates) {
+  public void getCandidates(
+      List<ResourceConstraint> resourceConstraints,
+      int numCandidates,
+      GetCandidatesCompletion completion) {
+
+    // Note that we are not yet meaningfully asynchronous. We are slowly converting to an asynchronous pattern,
+    // and this is a step in that direction.
+    try {
+      Map<String, ServerAddress> candidates = getCandidatesHelper(resourceConstraints, numCandidates);
+      completion.handle(candidates, null);
+    } catch (Exception ex) {
+      completion.handle(null, ex);
+    }
+  }
+
+  private Map<String, ServerAddress> getCandidatesHelper(
+      List<ResourceConstraint> resourceConstraints,
+      int numCandidates) {
 
     if (numCandidates <= 0) {
       throw new IllegalArgumentException("getCandidates called with invalid numCandidates: " + numCandidates);

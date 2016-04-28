@@ -89,12 +89,6 @@ public class PlacementTaskService extends StatefulService {
     public void handle(ResourceConstraint newConstraint, Exception exception);
   }
 
-  // This completion handler returns a set of candidate hosts
-  // It will probably move into the constraint checker interface later
-  interface GetCandidatesCompletion {
-    public void handle(Map<String, ServerAddress> candidates, Exception exception);
-  }
-
   /**
    * This class implements a Xenon micro-service that provides a factory for
    * {@link PlacementTaskService} instances.
@@ -269,7 +263,9 @@ public class PlacementTaskService extends StatefulService {
    * @throws NoSuchResourceException
    * @throws SystemErrorException
    */
-  private void getPotentialCandidates(PlacementTask currentState, GetCandidatesCompletion completion) {
+  private void getPotentialCandidates(
+      PlacementTask currentState,
+      ConstraintChecker.GetCandidatesCompletion completion) {
     // Get the list of resource constraints
     List<ResourceConstraint> constraints;
 
@@ -299,13 +295,11 @@ public class PlacementTaskService extends StatefulService {
   private void applyConstraintChecker(
       PlacementTask currentState,
       List<ResourceConstraint> constraints,
-      GetCandidatesCompletion completion) {
+      ConstraintChecker.GetCandidatesCompletion completion) {
 
     ConstraintChecker checker = ((ConstraintCheckerProvider) getHost()).getConstraintChecker();
-    Map<String, ServerAddress> candidates = null;
     try {
-      candidates = checker.getCandidates(constraints, currentState.sampleHostCount);
-      completion.handle(candidates, null);
+      checker.getCandidates(constraints, currentState.sampleHostCount, completion);
     } catch (Exception ex) {
       completion.handle(null, ex);
     }
@@ -515,7 +509,9 @@ public class PlacementTaskService extends StatefulService {
    * Note that this does not directly return a result, but it provides it via a completion. This is because
    * the implementation requires making a call to Cloudstore, and we do that asynchronously.
    */
-  public void createImageSeedingConstraint(Resource resource, CalculateConstraintCompletion completion) {
+  public void createImageSeedingConstraint(
+      Resource resource,
+      CalculateConstraintCompletion completion) {
 
     if (resource == null || !resource.isSetVm() || resource.getVm() == null) {
       // Nothing to add, complete immediately

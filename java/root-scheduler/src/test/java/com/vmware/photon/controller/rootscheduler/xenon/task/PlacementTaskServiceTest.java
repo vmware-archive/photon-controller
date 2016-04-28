@@ -37,6 +37,7 @@ import com.vmware.photon.controller.rootscheduler.exceptions.NoSuchResourceExcep
 import com.vmware.photon.controller.rootscheduler.helpers.xenon.SchedulerTestEnvironment;
 import com.vmware.photon.controller.rootscheduler.helpers.xenon.TestHost;
 import com.vmware.photon.controller.rootscheduler.service.ConstraintChecker;
+import com.vmware.photon.controller.rootscheduler.service.FakeConstraintChecker;
 import com.vmware.photon.controller.scheduler.gen.PlaceResponse;
 import com.vmware.photon.controller.scheduler.gen.PlaceResultCode;
 import com.vmware.photon.controller.scheduler.gen.Score;
@@ -61,8 +62,6 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyOrNullString;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyListOf;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -289,8 +288,7 @@ public class PlacementTaskServiceTest {
     @Mock
     private HostClient client;
 
-    @Mock
-    private ConstraintChecker checker;
+    private FakeConstraintChecker checker;
 
     @Mock
     private XenonRestClient xenonRestClient;
@@ -311,6 +309,7 @@ public class PlacementTaskServiceTest {
       schedulerConfig.setPlaceTimeoutMs(20000);
       schedulerConfig.setUtilizationTransferRatio(0.5);
       doReturn(schedulerConfig).when(config).getRoot();
+      checker = new FakeConstraintChecker();
       when(hostClientFactory.create()).thenReturn(client);
       schedulerTestEnvironment = SchedulerTestEnvironment.create(
           hostClientFactory, config, checker, xenonRestClient,
@@ -333,8 +332,7 @@ public class PlacementTaskServiceTest {
     public void testEndToEndNoCandidates() throws Throwable {
       Resource resource = new Resource();
 
-      doReturn(ImmutableMap.of()).when(checker)
-          .getCandidates(anyListOf(ResourceConstraint.class), anyInt());
+      this.checker.setCandidates(ImmutableMap.of());
 
       PlacementTask placementTask = new PlacementTask();
       placementTask.resource = resource;
@@ -369,8 +367,7 @@ public class PlacementTaskServiceTest {
           "h3", new ServerAddress("h3", 1234),
           "h4", new ServerAddress("h4", 1234));
 
-      doReturn(matches).when(checker)
-          .getCandidates(anyListOf(ResourceConstraint.class), anyInt());
+      this.checker.setCandidates(matches);
 
       PlacementTask placementTask = new PlacementTask();
       placementTask.resource = resource;
@@ -414,8 +411,7 @@ public class PlacementTaskServiceTest {
           "h3", new ServerAddress("h3", 1234),
           "h4", new ServerAddress("h4", 1234));
 
-      doReturn(matches).when(checker)
-          .getCandidates(anyListOf(ResourceConstraint.class), anyInt());
+      this.checker.setCandidates(matches);
 
       PlacementTask placementTask = new PlacementTask();
       placementTask.resource = resource;
@@ -480,8 +476,7 @@ public class PlacementTaskServiceTest {
           "h3", new ServerAddress("h3", 1234),
           "h4", new ServerAddress("h4", 1234));
 
-      doReturn(matches).when(checker)
-          .getCandidates(anyListOf(ResourceConstraint.class), anyInt());
+      this.checker.setCandidates(matches);
 
       PlacementTask placementTask = new PlacementTask();
       placementTask.resource = resource;
@@ -529,8 +524,7 @@ public class PlacementTaskServiceTest {
           "h3", new ServerAddress("h3", 1234),
           "h4", new ServerAddress("h4", 1234));
 
-      doReturn(matches).when(checker)
-          .getCandidates(anyListOf(ResourceConstraint.class), anyInt());
+      this.checker.setCandidates(matches);
 
       PlacementTask placementTask = new PlacementTask();
       placementTask.resource = resource;
@@ -580,8 +574,7 @@ public class PlacementTaskServiceTest {
           "h3", new ServerAddress("h3", 1234),
           "h4", new ServerAddress("h4", 1234));
 
-      doReturn(matches).when(checker)
-          .getCandidates(anyListOf(ResourceConstraint.class), anyInt());
+      this.checker.setCandidates(matches);
 
       PlacementTask placementTask = new PlacementTask();
       placementTask.resource = resource;

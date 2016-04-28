@@ -21,6 +21,7 @@ import com.vmware.photon.controller.common.xenon.XenonRestClient;
 import com.vmware.photon.controller.common.zookeeper.gen.ServerAddress;
 import com.vmware.photon.controller.resource.gen.ResourceConstraint;
 import com.vmware.photon.controller.resource.gen.ResourceConstraintType;
+import com.vmware.photon.controller.rootscheduler.service.ConstraintChecker.GetCandidatesCompletion;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.ServiceDocumentQueryResult;
@@ -205,7 +206,32 @@ public class InMemoryConstraintChecker implements ConstraintChecker {
   }
 
   @Override
-  public Map<String, ServerAddress> getCandidates(List<ResourceConstraint> constraints, int numCandidates) {
+  public Map<String, ServerAddress> getCandidatesSync(List<ResourceConstraint> constraints, int numCandidates) {
+    // The day we make this code truly async, we'll need to do something real here, like have a completion and
+    // wait for it.
+    return getCandidatesHelper(constraints, numCandidates);
+  }
+
+  @Override
+  public void getCandidates(
+      List<ResourceConstraint> constraints,
+      int numCandidates,
+      GetCandidatesCompletion completion) {
+
+    // Note that we are not yet meaningfully asynchronous. We are slowly converting to an asynchronous pattern,
+    // and this is a step in that direction.
+    // The InMemoryConstraintChecker is not used in production, so it's possible we won't convert it soon.
+    // The CloudStoreConstraintChecker is used in production, and it has the same interface, so we need
+    // this interface, even if it's not fully asynchronous
+    try {
+      Map<String, ServerAddress> candidates = getCandidatesHelper(constraints, numCandidates);
+      completion.handle(candidates, null);
+    } catch (Exception ex) {
+      completion.handle(null, ex);
+    }
+  }
+
+  private Map<String, ServerAddress> getCandidatesHelper(List<ResourceConstraint> constraints, int numCandidates) {
     // Find all the hosts that satisfy the resource constraints.
     ImmutableSet<String> matches;
     if (constraints.isEmpty()) {

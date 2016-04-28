@@ -198,7 +198,7 @@ public class CloudStoreConstraintCheckerTest {
   private void verifyNoHosts(CloudStoreConstraintChecker checker) throws Throwable {
     Map<String, ServerAddress> selectedHosts = null;
     for (int i = 0; i < 10000; i++) {
-      selectedHosts = checker.getCandidates(null, 1);
+      selectedHosts = checker.getCandidatesSync(null, 1);
       if (selectedHosts.size() == 0) {
         break;
       }
@@ -218,7 +218,7 @@ public class CloudStoreConstraintCheckerTest {
   private void verifyHostCount(CloudStoreConstraintChecker checker, int hostCount) throws Throwable {
     Map<String, ServerAddress> selectedHosts = null;
     for (int i = 0; i < 10000; i++) {
-      selectedHosts = checker.getCandidates(null, 1);
+      selectedHosts = checker.getCandidatesSync(null, 1);
       if (selectedHosts.size() == hostCount) {
         logger.info("Selected hosts: " + selectedHosts.keySet().iterator().next());
         break;
@@ -276,7 +276,7 @@ public class CloudStoreConstraintCheckerTest {
 
     // Verify we can find just management hosts
     constraint = new ResourceConstraint(ResourceConstraintType.MANAGEMENT_ONLY, null);
-    selectedHosts = checker.getCandidates(Arrays.asList(constraint), 2);
+    selectedHosts = checker.getCandidatesSync(Arrays.asList(constraint), 2);
     assertThat(selectedHosts.size(), equalTo(2));
     for (String hostId : selectedHosts.keySet()) {
       assertThat(hostId, startsWith(MGMT_HOST_PREFIX));
@@ -285,7 +285,7 @@ public class CloudStoreConstraintCheckerTest {
     // Verify we can find just cloud hosts
     constraint = new ResourceConstraint(ResourceConstraintType.MANAGEMENT_ONLY, null);
     constraint.setNegative(true);
-    selectedHosts = checker.getCandidates(Arrays.asList(constraint), 2);
+    selectedHosts = checker.getCandidatesSync(Arrays.asList(constraint), 2);
     assertThat(selectedHosts.size(), equalTo(2));
     for (String hostId : selectedHosts.keySet()) {
       assertThat(hostId, startsWith(CLOUD_HOST_PREFIX));
@@ -333,7 +333,7 @@ public class CloudStoreConstraintCheckerTest {
     ResourceConstraint constraint = new ResourceConstraint(
         ResourceConstraintType.NETWORK,
         Arrays.asList(getHostNetwork(host0), getHostNetwork(host1)));
-    Map<String, ServerAddress> selectedHosts = checker.getCandidates(Arrays.asList(constraint), 2);
+    Map<String, ServerAddress> selectedHosts = checker.getCandidatesSync(Arrays.asList(constraint), 2);
     assertThat(selectedHosts.values(), hasItem(host0Address));
     assertThat(selectedHosts.values(), hasItem(host1Address));
     assertThat(selectedHosts.size(), equalTo(2));
@@ -343,7 +343,7 @@ public class CloudStoreConstraintCheckerTest {
         ResourceConstraintType.NETWORK,
         Arrays.asList(getHostNetwork(host0), getHostNetwork(host1)));
     constraint.setNegative(true);
-    selectedHosts = checker.getCandidates(Arrays.asList(constraint), 2);
+    selectedHosts = checker.getCandidatesSync(Arrays.asList(constraint), 2);
 
     assertThat(selectedHosts.values(), not(hasItem(host0Address)));
     assertThat(selectedHosts.values(), not(hasItem(host1Address)));
@@ -353,7 +353,7 @@ public class CloudStoreConstraintCheckerTest {
     constraint = new ResourceConstraint(
         ResourceConstraintType.NETWORK,
         Arrays.asList("non_existent_network"));
-    selectedHosts = checker.getCandidates(Arrays.asList(constraint), 2);
+    selectedHosts = checker.getCandidatesSync(Arrays.asList(constraint), 2);
     assertThat(selectedHosts.size(), equalTo(0));
 
     // Part 2a: Test multiple values for allowed availability zones
@@ -361,7 +361,7 @@ public class CloudStoreConstraintCheckerTest {
     constraint = new ResourceConstraint(
         ResourceConstraintType.AVAILABILITY_ZONE,
         Arrays.asList(host0.availabilityZoneId, host1.availabilityZoneId));
-    selectedHosts = checker.getCandidates(Arrays.asList(constraint), 2);
+    selectedHosts = checker.getCandidatesSync(Arrays.asList(constraint), 2);
     assertThat(selectedHosts.values(), hasItem(host0Address));
     assertThat(selectedHosts.values(), hasItem(host1Address));
     assertThat(selectedHosts.size(), equalTo(2));
@@ -371,7 +371,7 @@ public class CloudStoreConstraintCheckerTest {
         ResourceConstraintType.AVAILABILITY_ZONE,
         Arrays.asList(host0.availabilityZoneId, host1.availabilityZoneId));
     constraint.setNegative(true);
-    selectedHosts = checker.getCandidates(Arrays.asList(constraint), 2);
+    selectedHosts = checker.getCandidatesSync(Arrays.asList(constraint), 2);
     assertThat(selectedHosts.values(), not(hasItem(host0Address)));
     assertThat(selectedHosts.values(), not(hasItem(host1Address)));
     assertThat(selectedHosts.size(), equalTo(2));
@@ -380,7 +380,7 @@ public class CloudStoreConstraintCheckerTest {
     constraint = new ResourceConstraint(
         ResourceConstraintType.AVAILABILITY_ZONE,
         Arrays.asList("non_existent_availability_zone"));
-    selectedHosts = checker.getCandidates(Arrays.asList(constraint), 2);
+    selectedHosts = checker.getCandidatesSync(Arrays.asList(constraint), 2);
     assertThat(selectedHosts.size(), equalTo(0));
 
     // Part 3a: Test multiple values for allowed hosts
@@ -391,7 +391,7 @@ public class CloudStoreConstraintCheckerTest {
     constraint = new ResourceConstraint(
         ResourceConstraintType.HOST,
         Arrays.asList(host0.documentSelfLink, host1.documentSelfLink));
-    selectedHosts = checker.getCandidates(Arrays.asList(constraint), 2);
+    selectedHosts = checker.getCandidatesSync(Arrays.asList(constraint), 2);
     assertThat(selectedHosts.values(), hasItem(host0Address));
     assertThat(selectedHosts.values(), hasItem(host1Address));
     assertThat(selectedHosts.size(), equalTo(2));
@@ -401,7 +401,7 @@ public class CloudStoreConstraintCheckerTest {
         ResourceConstraintType.HOST,
         Arrays.asList(host0.documentSelfLink, host1.documentSelfLink));
     constraint.setNegative(true);
-    selectedHosts = checker.getCandidates(Arrays.asList(constraint), 2);
+    selectedHosts = checker.getCandidatesSync(Arrays.asList(constraint), 2);
     assertThat(selectedHosts.values(), not(hasItem(host0Address)));
     assertThat(selectedHosts.values(), not(hasItem(host1Address)));
     assertThat(selectedHosts.size(), equalTo(2));
@@ -410,7 +410,7 @@ public class CloudStoreConstraintCheckerTest {
     constraint = new ResourceConstraint(
         ResourceConstraintType.HOST,
         Arrays.asList("non_existent_host"));
-    selectedHosts = checker.getCandidates(Arrays.asList(constraint), 2);
+    selectedHosts = checker.getCandidatesSync(Arrays.asList(constraint), 2);
     assertThat(selectedHosts.size(), equalTo(0));
 
     // Part 4a: Test multiple values for allowed datastores
@@ -418,7 +418,7 @@ public class CloudStoreConstraintCheckerTest {
     constraint = new ResourceConstraint(
         ResourceConstraintType.DATASTORE,
         Arrays.asList(getHostDatastore(host0), getHostDatastore(host1)));
-    selectedHosts = checker.getCandidates(Arrays.asList(constraint), 2);
+    selectedHosts = checker.getCandidatesSync(Arrays.asList(constraint), 2);
     assertThat(selectedHosts.values(), hasItem(host0Address));
     assertThat(selectedHosts.values(), hasItem(host1Address));
     assertThat(selectedHosts.size(), equalTo(2));
@@ -428,7 +428,7 @@ public class CloudStoreConstraintCheckerTest {
         ResourceConstraintType.DATASTORE,
         Arrays.asList(getHostDatastore(host0), getHostDatastore(host1)));
     constraint.setNegative(true);
-    selectedHosts = checker.getCandidates(Arrays.asList(constraint), 2);
+    selectedHosts = checker.getCandidatesSync(Arrays.asList(constraint), 2);
     assertThat(selectedHosts.values(), not(hasItem(host0Address)));
     assertThat(selectedHosts.values(), not(hasItem(host1Address)));
     assertThat(selectedHosts.size(), equalTo(2));
@@ -437,7 +437,7 @@ public class CloudStoreConstraintCheckerTest {
     constraint = new ResourceConstraint(
         ResourceConstraintType.DATASTORE,
         Arrays.asList("non_existent_datastore"));
-    selectedHosts = checker.getCandidates(Arrays.asList(constraint), 2);
+    selectedHosts = checker.getCandidatesSync(Arrays.asList(constraint), 2);
     assertThat(selectedHosts.size(), equalTo(0));
 
     // Part 5a: Test multiple values for allowed datastore tags
@@ -445,7 +445,7 @@ public class CloudStoreConstraintCheckerTest {
     constraint = new ResourceConstraint(
         ResourceConstraintType.DATASTORE_TAG,
         Arrays.asList(getDatastoreTag(datastore0), getDatastoreTag(datastore1)));
-    selectedHosts = checker.getCandidates(Arrays.asList(constraint), 2);
+    selectedHosts = checker.getCandidatesSync(Arrays.asList(constraint), 2);
     assertThat(selectedHosts.values(), hasItem(host0Address));
     assertThat(selectedHosts.values(), hasItem(host1Address));
     assertThat(selectedHosts.size(), equalTo(2));
@@ -455,7 +455,7 @@ public class CloudStoreConstraintCheckerTest {
         ResourceConstraintType.DATASTORE_TAG,
         Arrays.asList(getDatastoreTag(datastore0), getDatastoreTag(datastore1)));
     constraint.setNegative(true);
-    selectedHosts = checker.getCandidates(Arrays.asList(constraint), 2);
+    selectedHosts = checker.getCandidatesSync(Arrays.asList(constraint), 2);
     assertThat(selectedHosts.values(), not(hasItem(host0Address)));
     assertThat(selectedHosts.values(), not(hasItem(host1Address)));
     assertThat(selectedHosts.size(), equalTo(2));
@@ -464,7 +464,7 @@ public class CloudStoreConstraintCheckerTest {
     constraint = new ResourceConstraint(
         ResourceConstraintType.DATASTORE_TAG,
         Arrays.asList("non_existent_tag"));
-    selectedHosts = checker.getCandidates(Arrays.asList(constraint), 2);
+    selectedHosts = checker.getCandidatesSync(Arrays.asList(constraint), 2);
     assertThat(selectedHosts.size(), equalTo(0));
 
     deleteDatastores(cloudStoreEnvironment, datastores);
@@ -494,7 +494,7 @@ public class CloudStoreConstraintCheckerTest {
     Arrays.fill(selectedHost, false);
 
     for (int i = 0; i < 10000; i++) {
-      Map<String, ServerAddress> candidate = checker.getCandidates(constraints, 1);
+      Map<String, ServerAddress> candidate = checker.getCandidatesSync(constraints, 1);
       assertThat(candidate.size(), is(1));
       // Extract the host index from the name, which is the string "hostN", where N is the number of the host.
       for (String hostname : candidate.keySet()) {
@@ -604,7 +604,7 @@ public class CloudStoreConstraintCheckerTest {
 
     return runPerfTest(numThreads, (iteration) -> {
       List<ResourceConstraint> constraints = new LinkedList<>();
-      Map<String, ServerAddress> candidates = checker.getCandidates(constraints, PERF_NUM_DESIRED_CANDIDATES);
+      Map<String, ServerAddress> candidates = checker.getCandidatesSync(constraints, PERF_NUM_DESIRED_CANDIDATES);
       assertThat(candidates, not(equalTo(null)));
     });
   }
@@ -629,7 +629,7 @@ public class CloudStoreConstraintCheckerTest {
       datastoreConstraint.setType(ResourceConstraintType.DATASTORE);
       datastoreConstraint.setValues(Arrays.asList(datastore));
       constraints.add(datastoreConstraint);
-      Map<String, ServerAddress> candidates = checker.getCandidates(constraints, PERF_NUM_DESIRED_CANDIDATES);
+      Map<String, ServerAddress> candidates = checker.getCandidatesSync(constraints, PERF_NUM_DESIRED_CANDIDATES);
       assertThat(candidates, not(equalTo(null)));
     });
   }
@@ -671,7 +671,7 @@ public class CloudStoreConstraintCheckerTest {
       constraints.add(hostConstraint);
       constraints.add(hostTypeConstraint);
 
-      Map<String, ServerAddress> candidates = checker.getCandidates(constraints, PERF_NUM_DESIRED_CANDIDATES);
+      Map<String, ServerAddress> candidates = checker.getCandidatesSync(constraints, PERF_NUM_DESIRED_CANDIDATES);
       assertThat(candidates, not(equalTo(null)));
     });
   }
