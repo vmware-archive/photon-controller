@@ -33,6 +33,7 @@ import com.vmware.xenon.common.Utils;
 
 import com.google.common.util.concurrent.FutureCallback;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 
 import javax.annotation.Nullable;
 
@@ -91,7 +92,7 @@ public class CreateLogicalRouterTaskService extends StatefulService {
     CreateLogicalRouterTask patchState = patch.getBody(CreateLogicalRouterTask.class);
     validatePatchState(currentState, patchState);
     PatchUtils.patchState(currentState, patchState);
-    validateStartState(currentState);
+    validateState(currentState);
     patch.complete();
 
     try {
@@ -141,8 +142,15 @@ public class CreateLogicalRouterTaskService extends StatefulService {
   }
 
   private void validateStartState(CreateLogicalRouterTask startState) {
-    ValidationUtils.validateState(startState);
-    ValidationUtils.validateTaskStage(startState.taskState);
+    validateState(startState);
+
+    // Disable restart
+    checkState(startState.taskState.stage != TaskState.TaskStage.STARTED);
+  }
+
+  private void validateState(CreateLogicalRouterTask state) {
+    ValidationUtils.validateState(state);
+    ValidationUtils.validateTaskStage(state.taskState);
   }
 
   private void validatePatchState(CreateLogicalRouterTask currentState, CreateLogicalRouterTask patchState) {

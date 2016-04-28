@@ -166,7 +166,6 @@ public class CreateLogicalRouterTaskServiceTest {
 
       return new Object[][]{
           {TaskState.TaskStage.CREATED},
-          {TaskState.TaskStage.STARTED},
           {TaskState.TaskStage.FINISHED},
           {TaskState.TaskStage.CANCELLED},
           {TaskState.TaskStage.FAILED},
@@ -309,11 +308,6 @@ public class CreateLogicalRouterTaskServiceTest {
           {TaskState.TaskStage.CREATED, TaskState.TaskStage.FINISHED},
           {TaskState.TaskStage.CREATED, TaskState.TaskStage.FAILED},
           {TaskState.TaskStage.CREATED, TaskState.TaskStage.CANCELLED},
-
-          {TaskState.TaskStage.STARTED, TaskState.TaskStage.STARTED},
-          {TaskState.TaskStage.STARTED, TaskState.TaskStage.FINISHED},
-          {TaskState.TaskStage.STARTED, TaskState.TaskStage.FAILED},
-          {TaskState.TaskStage.STARTED, TaskState.TaskStage.CANCELLED},
       };
     }
 

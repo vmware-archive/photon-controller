@@ -37,6 +37,7 @@ import com.vmware.xenon.common.Utils;
 
 import com.google.common.util.concurrent.FutureCallback;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 
 import javax.annotation.Nullable;
 
@@ -70,7 +71,7 @@ public class CreateLogicalSwitchTaskService extends StatefulService {
     InitializationUtils.initialize(startState);
 
     try {
-      validateState(startState);
+      validateStartState(startState);
     } catch (IllegalStateException e) {
       ServiceUtils.failOperationAsBadRequest(this, start, e);
       return;
@@ -154,6 +155,13 @@ public class CreateLogicalSwitchTaskService extends StatefulService {
     } catch (Throwable t) {
       failTask(t);
     }
+  }
+
+  private void validateStartState(CreateLogicalSwitchTask startState) {
+    validateState(startState);
+
+    // Disable restart
+    checkState(startState.taskState.stage != TaskState.TaskStage.STARTED);
   }
 
   private void validateState(CreateLogicalSwitchTask startState) {

@@ -82,7 +82,7 @@ public class ConfigureRoutingTaskService extends StatefulService {
       ConfigureRoutingTask startState = startOperation.getBody(ConfigureRoutingTask.class);
       InitializationUtils.initialize(startState);
 
-      validateState(startState);
+      validateStartState(startState);
 
       if (startState.taskState.stage == TaskState.TaskStage.CREATED) {
         startState.taskState.stage = TaskState.TaskStage.STARTED;
@@ -242,6 +242,13 @@ public class ConfigureRoutingTaskService extends StatefulService {
   private void connectTier1RouterToTier0Router(ConfigureRoutingTask currentState) {
     // To be implemented.
     TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FINISHED));
+  }
+
+  private void validateStartState(ConfigureRoutingTask state) {
+    validateState(state);
+
+    // Disallow restarting the service.
+    checkState(state.taskState.stage != TaskState.TaskStage.STARTED);
   }
 
   private void validateState(ConfigureRoutingTask state) {
