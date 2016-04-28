@@ -15,9 +15,9 @@ import logging
 import threading
 
 from common.lock import locked
-from host.hypervisor.esx.vm_config import IMAGE_FOLDER_NAME_PREFIX
-from host.hypervisor.esx.vm_config import compond_path_join
-from host.hypervisor.esx.vm_config import os_datastore_root
+from host.hypervisor.esx.path_util import IMAGE_FOLDER_NAME_PREFIX
+from host.hypervisor.esx.path_util import compond_path_join
+from host.hypervisor.esx.path_util import os_datastore_root
 
 from host.hypervisor.task_runner import TaskRunner, TaskAlreadyRunning
 from host.hypervisor.image_scanner import InvalidStateTransition

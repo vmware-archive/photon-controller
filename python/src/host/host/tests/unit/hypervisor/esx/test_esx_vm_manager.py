@@ -35,7 +35,7 @@ from host.hypervisor.vm_manager import VmNotFoundException
 from host.hypervisor.vm_manager import VmPowerStateException
 from host.hypervisor.esx.vim_client import VimClient
 from host.hypervisor.esx.vm_config import DEFAULT_DISK_CONTROLLER_CLASS
-from host.hypervisor.esx.vm_config import datastore_to_os_path
+from host.hypervisor.esx.path_util import datastore_to_os_path
 from host.hypervisor.esx.vm_manager import EsxVmManager
 from host.hypervisor.esx.vm_manager import NetUtil
 

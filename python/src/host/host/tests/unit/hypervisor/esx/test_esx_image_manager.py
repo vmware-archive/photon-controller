@@ -28,13 +28,13 @@ from common import services
 from common.service_name import ServiceName
 from gen.resource.ttypes import DatastoreType
 from host.hypervisor.disk_manager import DiskAlreadyExistException
-from host.hypervisor.esx.vm_config import compond_path_join
-from host.hypervisor.esx.vm_config import TMP_IMAGE_FOLDER_NAME_PREFIX
+from host.hypervisor.esx.path_util import compond_path_join
+from host.hypervisor.esx.path_util import TMP_IMAGE_FOLDER_NAME_PREFIX
+from host.hypervisor.esx.path_util import METADATA_FILE_EXT
 from host.hypervisor.image_manager import DirectoryNotFound
 
 from host.hypervisor.esx.image_manager import EsxImageManager
 from host.hypervisor.esx.vim_client import VimClient
-from host.hypervisor.esx.vm_config import METADATA_FILE_EXT
 
 
 class TestEsxImageManager(unittest.TestCase):
@@ -70,7 +70,7 @@ class TestEsxImageManager(unittest.TestCase):
         (False, )
     ])
     @patch("uuid.uuid4", return_value="fake_id")
-    @patch("host.hypervisor.esx.vm_config.os_datastore_root")
+    @patch("host.hypervisor.esx.path_util.os_datastore_root")
     def test_reap_tmp_images(self, _allow_grace_period, _os_datastore_root,
                              _uuid):
         """ Test that stray images are found and deleted by the reaper """
