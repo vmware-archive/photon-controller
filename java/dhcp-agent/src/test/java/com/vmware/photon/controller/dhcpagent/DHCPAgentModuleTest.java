@@ -14,7 +14,7 @@
 package com.vmware.photon.controller.dhcpagent;
 
 import com.vmware.photon.controller.common.config.BadConfigException;
-import com.vmware.photon.controller.dhcpagent.dcp.helpers.TestHelper;
+import com.vmware.photon.controller.dhcpagent.xenon.helpers.TestHelper;
 
 import com.google.inject.Injector;
 import org.testng.annotations.BeforeMethod;

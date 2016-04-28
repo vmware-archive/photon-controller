@@ -11,9 +11,9 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package com.vmware.photon.controller.dhcpagent.dcp;
+package com.vmware.photon.controller.dhcpagent.xenon;
 
-import com.vmware.photon.controller.dhcpagent.dcp.helpers.TestEnvironment;
+import com.vmware.photon.controller.dhcpagent.xenon.helpers.TestEnvironment;
 import com.vmware.photon.controller.status.gen.Status;
 import com.vmware.photon.controller.status.gen.StatusType;
 

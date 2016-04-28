@@ -16,7 +16,7 @@ package com.vmware.photon.controller.dhcpagent;
 import com.vmware.photon.controller.common.config.BadConfigException;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.logging.LoggingFactory;
-import com.vmware.photon.controller.dhcpagent.dcp.DHCPAgentXenonHost;
+import com.vmware.photon.controller.dhcpagent.xenon.DHCPAgentXenonHost;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;

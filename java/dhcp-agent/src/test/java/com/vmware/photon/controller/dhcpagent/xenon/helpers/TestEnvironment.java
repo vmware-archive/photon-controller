@@ -11,12 +11,12 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package com.vmware.photon.controller.dhcpagent.dcp.helpers;
+package com.vmware.photon.controller.dhcpagent.xenon.helpers;
 
 import com.vmware.photon.controller.common.manifest.BuildInfo;
 import com.vmware.photon.controller.common.xenon.MultiHostEnvironment;
 import com.vmware.photon.controller.common.xenon.host.XenonConfig;
-import com.vmware.photon.controller.dhcpagent.dcp.DHCPAgentXenonHost;
+import com.vmware.photon.controller.dhcpagent.xenon.DHCPAgentXenonHost;
 
 import org.apache.commons.io.FileUtils;
 import static org.testng.Assert.assertTrue;
@@ -24,7 +24,7 @@ import static org.testng.Assert.assertTrue;
 import java.io.File;
 
 /**
- * TestMachine class hosting a DCP host.
+ * TestMachine class hosting a Xenon host.
  */
 public class TestEnvironment extends MultiHostEnvironment<DHCPAgentXenonHost> {
   private TestEnvironment(int hostCount) throws Throwable {

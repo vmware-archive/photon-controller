@@ -11,14 +11,14 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package com.vmware.photon.controller.dhcpagent.dcp;
+package com.vmware.photon.controller.dhcpagent.xenon;
 
 import com.vmware.photon.controller.common.config.BadConfigException;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.dhcpagent.DHCPAgentConfig;
 import com.vmware.photon.controller.dhcpagent.DHCPAgentConfigTest;
-import com.vmware.photon.controller.dhcpagent.dcp.helpers.TestHelper;
+import com.vmware.photon.controller.dhcpagent.xenon.helpers.TestHelper;
 import com.vmware.xenon.services.common.LuceneDocumentIndexService;
 import com.vmware.xenon.services.common.RootNamespaceService;
 import com.vmware.xenon.services.common.ServiceUriPaths;
