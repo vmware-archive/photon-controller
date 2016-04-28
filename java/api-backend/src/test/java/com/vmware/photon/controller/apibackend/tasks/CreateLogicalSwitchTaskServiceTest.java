@@ -117,6 +117,11 @@ public class CreateLogicalSwitchTaskServiceTest {
       assertThat(savedState.documentExpirationTimeMicros > 0, is(true));
     }
 
+    @Test(expectedExceptions = BadRequestException.class)
+    public void testRestartDisabled() throws Throwable {
+      createLogicalSwitchTaskService(host, createLogicalSwitchTaskService, TaskState.TaskStage.STARTED, 0);
+    }
+
     @Test(dataProvider = "notEmptyFields")
     public void testInvalidInitialState(String fieldName, String expectedErrorMessage) throws Throwable {
       CreateLogicalSwitchTask startState = new CreateLogicalSwitchTask();
@@ -139,7 +144,6 @@ public class CreateLogicalSwitchTaskServiceTest {
     private Object[][] getStates() {
       return new Object[][] {
           {TaskState.TaskStage.CREATED, TaskState.TaskStage.STARTED},
-          {TaskState.TaskStage.STARTED, TaskState.TaskStage.STARTED},
           {TaskState.TaskStage.FINISHED, TaskState.TaskStage.FINISHED},
           {TaskState.TaskStage.CANCELLED, TaskState.TaskStage.CANCELLED},
           {TaskState.TaskStage.FAILED, TaskState.TaskStage.FAILED}
@@ -295,11 +299,6 @@ public class CreateLogicalSwitchTaskServiceTest {
           {TaskState.TaskStage.CREATED, TaskState.TaskStage.FINISHED},
           {TaskState.TaskStage.CREATED, TaskState.TaskStage.FAILED},
           {TaskState.TaskStage.CREATED, TaskState.TaskStage.CANCELLED},
-
-          {TaskState.TaskStage.STARTED, TaskState.TaskStage.STARTED},
-          {TaskState.TaskStage.STARTED, TaskState.TaskStage.FINISHED},
-          {TaskState.TaskStage.STARTED, TaskState.TaskStage.FAILED},
-          {TaskState.TaskStage.STARTED, TaskState.TaskStage.CANCELLED},
       };
     }
 
@@ -307,7 +306,6 @@ public class CreateLogicalSwitchTaskServiceTest {
     public Object[][] getInvalidStageTransitions() {
       return new Object[][] {
           {TaskState.TaskStage.CREATED, TaskState.TaskStage.CREATED},
-          {TaskState.TaskStage.STARTED, TaskState.TaskStage.CREATED},
           {TaskState.TaskStage.FINISHED, TaskState.TaskStage.CREATED},
           {TaskState.TaskStage.FAILED, TaskState.TaskStage.CREATED},
           {TaskState.TaskStage.CANCELLED, TaskState.TaskStage.CREATED},

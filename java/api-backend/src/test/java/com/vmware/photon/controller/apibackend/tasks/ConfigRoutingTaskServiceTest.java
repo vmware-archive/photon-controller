@@ -117,12 +117,16 @@ public class ConfigRoutingTaskServiceTest {
       assertThat(savedState.documentExpirationTimeMicros > 0, is(true));
     }
 
+    @Test(expectedExceptions = XenonRuntimeException.class)
+    public void testRestartDisabled() throws Throwable {
+      createConfigureRoutingTaskService(host, configureRoutingTaskService, TaskState.TaskStage.STARTED,
+          TaskState.SubStage.CREATE_SWITCH_PORT, RoutingType.ISOLATED, 0);
+    }
+
     @DataProvider(name = "expectedStateTransition")
     private Object[][] getStates() {
       return new Object[][] {
           {TaskState.TaskStage.CREATED, null, TaskState.TaskStage.STARTED, TaskState.SubStage.CREATE_SWITCH_PORT},
-          {TaskState.TaskStage.STARTED, TaskState.SubStage.CONNECT_TIER1_ROUTER_TO_SWITCH,
-              TaskState.TaskStage.STARTED, TaskState.SubStage.CONNECT_TIER1_ROUTER_TO_SWITCH},
           {TaskState.TaskStage.FINISHED, null, TaskState.TaskStage.FINISHED, null},
           {TaskState.TaskStage.CANCELLED, null, TaskState.TaskStage.CANCELLED, null},
           {TaskState.TaskStage.FAILED, null, TaskState.TaskStage.FAILED, null}
