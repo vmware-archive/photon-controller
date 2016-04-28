@@ -18,11 +18,10 @@ import threading
 import time
 
 from common.lock import locked
-from host.hypervisor.esx import vm_config
-from host.hypervisor.esx.vm_config import VM_FOLDER_NAME_PREFIX
-from host.hypervisor.esx.vm_config import IMAGE_FOLDER_NAME_PREFIX
-from host.hypervisor.esx.vm_config import vmdk_add_suffix
-
+from host.hypervisor.esx.path_util import VM_FOLDER_NAME_PREFIX
+from host.hypervisor.esx.path_util import IMAGE_FOLDER_NAME_PREFIX
+from host.hypervisor.esx.path_util import vmdk_add_suffix
+from host.hypervisor.esx.path_util import list_top_level_directory
 from host.hypervisor.task_runner import TaskRunner, TaskAlreadyRunning
 from host.hypervisor.vm_utils import parse_vmdk
 
@@ -190,7 +189,7 @@ class DatastoreImageScannerTaskRunner(TaskRunner):
             return None
 
     def _list_top_level_directory(self, datastore, folder_prefix):
-        return vm_config.list_top_level_directory(datastore, folder_prefix)
+        return list_top_level_directory(datastore, folder_prefix)
 
     @staticmethod
     def _validate_image_id(image_id):
