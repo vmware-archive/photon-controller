@@ -16,10 +16,10 @@ import logging
 import os.path
 import uuid
 
-from host.hypervisor.esx.vm_config import DISK_FOLDER_NAME_PREFIX
-from host.hypervisor.esx.vm_config import IMAGE_FOLDER_NAME_PREFIX
-from host.hypervisor.esx.vm_config import VM_FOLDER_NAME_PREFIX
-from host.hypervisor.esx.vm_config import VMFS_VOLUMES
+from host.hypervisor.esx.path_util import DISK_FOLDER_NAME_PREFIX
+from host.hypervisor.esx.path_util import IMAGE_FOLDER_NAME_PREFIX
+from host.hypervisor.esx.path_util import VM_FOLDER_NAME_PREFIX
+from host.hypervisor.esx.path_util import VMFS_VOLUMES
 
 
 class SoftLinkGenerator:

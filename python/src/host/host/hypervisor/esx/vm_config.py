@@ -19,6 +19,15 @@ import re
 from operator import itemgetter
 
 from common.log import log_duration
+from host.hypervisor.esx.path_util import DISK_FOLDER_NAME_PREFIX
+from host.hypervisor.esx.path_util import VM_FOLDER_NAME_PREFIX
+from host.hypervisor.esx.path_util import IMAGE_FOLDER_NAME_PREFIX
+from host.hypervisor.esx.path_util import datastore_to_os_path
+from host.hypervisor.esx.path_util import COMPOND_PATH_SEPARATOR
+from host.hypervisor.esx.path_util import vmdk_path
+from host.hypervisor.esx.path_util import compond_path_join
+from host.hypervisor.esx.path_util import datastore_path
+from host.hypervisor.esx.path_util import vmdk_add_suffix
 
 from pyVmomi import vim
 from pysdk.vmconfig import AddIsoCdrom
@@ -36,17 +45,8 @@ class DeviceNotFoundException(Exception):
 DEFAULT_DISK_CONTROLLER_CLASS = vim.vm.device.VirtualLsiLogicController
 DEFAULT_NIC_CONTROLLER_CLASS = vim.vm.device.VirtualE1000
 
-METADATA_FILE_EXT = "ecv"
 DEFAULT_VMX_VERSION = "vmx-10"
-SHADOW_VM_NAME_PREFIX = "shadow_"
 
-COMPOND_PATH_SEPARATOR = '_'
-VMFS_VOLUMES = "/vmfs/volumes"
-
-DISK_FOLDER_NAME_PREFIX = "disk"
-IMAGE_FOLDER_NAME_PREFIX = "image"
-VM_FOLDER_NAME_PREFIX = "vm"
-TMP_IMAGE_FOLDER_NAME_PREFIX = "tmp_image"
 
 diskAdapterType = vim.VirtualDiskManager.VirtualDiskAdapterType
 
@@ -91,121 +91,6 @@ def string_to_bool(string_val):
     if not string_val or string_val.lower() == 'false':
         return False
     return True
-
-
-def os_datastore_root(datastore):
-    return os.path.join(VMFS_VOLUMES, datastore)
-
-
-def os_datastore_path(datastore, folder1, folder2=None):
-    path = os.path.join(VMFS_VOLUMES, datastore, folder1)
-    if folder2:
-        path = os.path.join(path, folder2)
-    return path
-
-
-def os_datastore_path_pattern(datastore, folder_prefix):
-    return os_datastore_path(datastore, folder_prefix) + COMPOND_PATH_SEPARATOR + "*"
-
-
-def datastore_path(datastore, folder):
-    return "[] %s" % os_datastore_path(datastore, folder)
-
-
-def os_vmx_path(datastore, vm_id):
-    return "%s/%s/%s" % (VMFS_VOLUMES, datastore, partial_vmx_path(vm_id))
-
-
-def datastore_to_os_path(datastore_path):
-    if datastore_path.startswith(VMFS_VOLUMES):
-        return datastore_path
-
-    spl = datastore_path.split('[', 1)[1].split(']', 1)
-    return os.path.join(VMFS_VOLUMES, spl[0], spl[1].strip())
-
-
-def os_to_datastore_path(os_path):
-    if os_path.startswith("["):
-        return os_path
-    return "[] %s" % os_path
-
-
-def compond_path_join(s1, s2, s3=None):
-    dir = s1 + COMPOND_PATH_SEPARATOR + s2
-    if s3:
-        dir += COMPOND_PATH_SEPARATOR + s3
-    return dir
-
-
-def os_vmdk_path(datastore, disk_id, folder=DISK_FOLDER_NAME_PREFIX):
-    return compond_path_join(os_datastore_path(datastore, folder), partial_vmdk_path(disk_id))
-
-
-def os_vmdk_flat_path(datastore, disk_id, folder=IMAGE_FOLDER_NAME_PREFIX):
-    """ Return the path for the flat vmdk file """
-    return compond_path_join(os_datastore_path(datastore, folder), partial_flat_vmdk_path(disk_id))
-
-
-def vmdk_path(datastore, disk_id, folder=DISK_FOLDER_NAME_PREFIX):
-    return compond_path_join(datastore_path(datastore, folder), partial_vmdk_path(disk_id))
-
-
-def vmdk_add_suffix(pathname):
-    return "%s.%s" % (pathname, "vmdk")
-
-
-def vmx_add_suffix(vm_id):
-    return "%s.%s" % (vm_id, "vmx")
-
-
-def os_metadata_path(datastore, disk_id, folder=DISK_FOLDER_NAME_PREFIX):
-    return compond_path_join(os_datastore_path(datastore, folder),
-                             partial_path(disk_id, disk_id, METADATA_FILE_EXT))
-
-
-def image_directory_path(datastore, image_id):
-    """Returns absolute path of the image directory. It looks something like:
-
-        /vmfs/volumes/$datastore/images/$image_id_prefix/$image_id
-
-    where $image_id_prefix is the first two characters of image_id.
-    """
-    return compond_path_join(os_datastore_path(datastore, IMAGE_FOLDER_NAME_PREFIX), image_id)
-
-
-def list_top_level_directory(datastore, folder_prefix):
-    """List datastore top level directories that has given prefix.
-
-       On VSAN, this is much faster than glob.glob, because VSAN caches folder names locally,
-       but stores folder attributes distributedly. os.listdir only accesses names, while
-       glob.glob reads attributes.
-    """
-    folder_prefix += COMPOND_PATH_SEPARATOR
-    root = os_datastore_root(datastore)
-    return [os.path.join(root, d) for d in os.listdir(root) if d.startswith(folder_prefix)]
-
-
-def partial_vmx_path(vm_id):
-    return os.path.join(compond_path_join(VM_FOLDER_NAME_PREFIX, vm_id),
-                        vmx_add_suffix(vm_id))
-
-
-def partial_path(disk_id, name_no_extension, extension):
-    return os.path.join(disk_id, "%s.%s" % (name_no_extension, extension))
-
-
-def metadata_filename(disk_id):
-    return "%s.%s" % (disk_id, METADATA_FILE_EXT)
-
-
-def partial_vmdk_path(disk_id):
-    return partial_path(disk_id, disk_id, "vmdk")
-
-
-def partial_flat_vmdk_path(disk_id):
-    """ Return the file path for the flat file"""
-    disk_name = "%s-flat" % (disk_id)
-    return partial_path(disk_id, disk_name, "vmdk")
 
 
 def vmdk_id(path):

@@ -35,7 +35,7 @@ from host.hypervisor.disk_manager import DiskFileException
 from host.hypervisor.esx.host_client import HostClient
 from host.hypervisor.esx.host_client import NfcLeaseInitiatizationTimeout
 from host.hypervisor.esx.host_client import NfcLeaseInitiatizationError
-from host.hypervisor.esx.vm_config import os_to_datastore_path
+from host.hypervisor.esx.path_util import os_to_datastore_path
 from host.hypervisor.esx.vm_config import uuid_to_vmdk_uuid
 from host.hypervisor.esx.vm_config import DEFAULT_DISK_ADAPTER_TYPE
 from host.hypervisor.vm_manager import VmPowerStateException
