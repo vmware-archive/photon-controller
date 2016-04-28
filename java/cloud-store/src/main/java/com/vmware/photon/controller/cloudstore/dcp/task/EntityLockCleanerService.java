@@ -228,7 +228,7 @@ public class EntityLockCleanerService extends StatefulService {
               return;
             }
 
-            deleteUnreleasedEntityLocks(finishPatch, entityLockList);
+            releaseUnreleasedEntityLocks(finishPatch, entityLockList);
           } else {
             finishTask(finishPatch);
             return;
@@ -261,11 +261,12 @@ public class EntityLockCleanerService extends StatefulService {
     return QueryTask.create(querySpec).setDirect(true);
   }
 
-  private void deleteUnreleasedEntityLocks(final State finishPatch, List<EntityLockService.State> entityLockList) {
+  private void releaseUnreleasedEntityLocks(final State finishPatch, List<EntityLockService.State> entityLockList) {
     Collection<Operation> getTaskOperations = getTasksAssociatedWithEntityLocks(entityLockList);
-    JoinedCompletionHandler processDeleteEntityLocksHandler = deleteEntityLocksAssociatedWithInactiveTasks(finishPatch);
+    JoinedCompletionHandler processReleaseEntityLocksHandler =
+        releaseEntityLocksAssociatedWithInactiveTasks(finishPatch);
     OperationJoin join = OperationJoin.create(getTaskOperations);
-    join.setCompletion(processDeleteEntityLocksHandler);
+    join.setCompletion(processReleaseEntityLocksHandler);
     join.sendWith(this);
   }
 
@@ -274,9 +275,9 @@ public class EntityLockCleanerService extends StatefulService {
     Collection<Operation> getTaskOperations = new LinkedList<>();
 
     for (EntityLockService.State entityLock : entityLockList) {
-      if (entityLock.taskId != null) {
+      if (entityLock.ownerTaskId != null) {
         Operation getTaskOperation = Operation
-            .createGet(UriUtils.buildUri(getHost(), TaskServiceFactory.SELF_LINK + "/" + entityLock.taskId))
+            .createGet(UriUtils.buildUri(getHost(), TaskServiceFactory.SELF_LINK + "/" + entityLock.ownerTaskId))
             .setReferer(UriUtils.buildUri(getHost(), getSelfLink()));
 
         getTaskOperations.add(getTaskOperation);
@@ -288,32 +289,32 @@ public class EntityLockCleanerService extends StatefulService {
     return getTaskOperations;
   }
 
-  private JoinedCompletionHandler deleteEntityLocksAssociatedWithInactiveTasks(final State finishPatch) {
-    JoinedCompletionHandler deletionResponseHandler = getEntityLockDeletionResponseHandler(finishPatch);
+  private JoinedCompletionHandler releaseEntityLocksAssociatedWithInactiveTasks(final State finishPatch) {
+    JoinedCompletionHandler releaseLockResponseHandler = getEntityLockReleaseResponseHandler(finishPatch);
     return (ops, failures) -> {
       if (failures != null && !failures.isEmpty()) {
         failTask(failures.values().iterator().next());
         return;
       }
 
-      Collection<Operation> deleteOperations = getDeleteOperationsForEntityLocks(ops);
+      Collection<Operation> releaseLockOperations = getReleaseLockOperationsForEntityLocks(ops);
 
-      finishPatch.danglingEntityLocks = deleteOperations.size();
-      if (deleteOperations.size() == 0) {
+      finishPatch.danglingEntityLocks = releaseLockOperations.size();
+      if (releaseLockOperations.size() == 0) {
         ServiceUtils.logInfo(this, "No unreleased entityLocks found.");
-        finishPatch.deletedEntityLocks = 0;
+        finishPatch.releasedEntityLocks = 0;
         finishTask(finishPatch);
         return;
       }
 
-      OperationJoin join = OperationJoin.create(deleteOperations);
-      join.setCompletion(deletionResponseHandler);
+      OperationJoin join = OperationJoin.create(releaseLockOperations);
+      join.setCompletion(releaseLockResponseHandler);
       join.sendWith(this);
     };
   }
 
-  private Collection<Operation> getDeleteOperationsForEntityLocks(Map<Long, Operation> ops) {
-    Collection<Operation> deleteOperations = new LinkedList<>();
+  private Collection<Operation> getReleaseLockOperationsForEntityLocks(Map<Long, Operation> ops) {
+    Collection<Operation> releaseLockOperations = new LinkedList<>();
 
     for (Operation op : ops.values()) {
       TaskService.State task = op.getBody(TaskService.State.class);
@@ -323,23 +324,30 @@ public class EntityLockCleanerService extends StatefulService {
             "TaskService. EntityLock Id: %s, TaskService documentSelfLink:  %s",
             task.entityId,
             task.documentSelfLink);
-        Operation deleteOperation = Operation
-            .createDelete(UriUtils.buildUri(getHost(), EntityLockServiceFactory.SELF_LINK + "/" + task.entityId))
-            .setReferer(UriUtils.buildUri(getHost(), getSelfLink()));
 
-        deleteOperations.add(deleteOperation);
+        EntityLockService.State state = new EntityLockService.State();
+        state.ownerTaskId = ServiceUtils.getIDFromDocumentSelfLink(task.documentSelfLink);
+        state.entityId = task.entityId;
+        state.documentSelfLink = EntityLockServiceFactory.SELF_LINK + "/" + task.entityId;
+        state.lockOperation = EntityLockService.State.LockOperation.RELEASE;
+        Operation releaseLockOperation = Operation
+            .createPut(UriUtils.buildUri(getHost(), EntityLockServiceFactory.SELF_LINK + "/" + state.entityId))
+            .setReferer(UriUtils.buildUri(getHost(), getSelfLink()))
+            .setBody(state);
+
+        releaseLockOperations.add(releaseLockOperation);
       }
     }
-    return deleteOperations;
+    return releaseLockOperations;
   }
 
-  private JoinedCompletionHandler getEntityLockDeletionResponseHandler(final State finishPatch) {
+  private JoinedCompletionHandler getEntityLockReleaseResponseHandler(final State finishPatch) {
     return (ops, failures) -> {
       if (failures != null && !failures.isEmpty()) {
         this.failTask(failures.values().iterator().next());
         return;
       }
-      finishPatch.deletedEntityLocks = ops.size();
+      finishPatch.releasedEntityLocks = ops.size();
       this.finishTask(finishPatch);
     };
   }
@@ -458,7 +466,7 @@ public class EntityLockCleanerService extends StatefulService {
      * The number of entity locks that were deleted successfully.
      */
     @DefaultInteger(value = 0)
-    public Integer deletedEntityLocks;
+    public Integer releasedEntityLocks;
 
     /**
      * Flag that controls if we should self patch to make forward progress.
