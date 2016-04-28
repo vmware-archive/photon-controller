@@ -15,6 +15,8 @@ import threading
 import time
 import unittest
 
+from datetime import datetime
+from datetime import timedelta
 from mock import patch
 from mock import MagicMock
 from mock import PropertyMock
@@ -29,6 +31,24 @@ from host.hypervisor.esx.vim_client import VimClient
 from host.hypervisor.esx.vim_client import DatastoreNotFound
 from host.hypervisor.esx.vim_client import HostdConnectionFailure
 from host.hypervisor.esx.vim_client import AcquireCredentialsException
+
+
+class FakeCounter:
+    def __init__(self, group, name):
+        # key has to be an int or vim type validation will fail
+        self.key = (ord(group) * 100) + ord(name)
+        self.groupInfo = MagicMock(key=group)
+        self.nameInfo = MagicMock(key=name)
+
+
+def create_fake_counters():
+    counters = []
+    letters = [chr(c) for c in xrange(ord('A'), ord('E')+1)]
+    for i in letters:
+        for j in letters:
+            counter = FakeCounter(i, j)
+            counters.append(counter)
+    return counters
 
 
 class TestVimClient(unittest.TestCase):
@@ -357,6 +377,36 @@ class TestVimClient(unittest.TestCase):
         assert_that(disconnect_mock.called, is_(True))
 
         assert_that(update_mock.call_count, is_not(0), "VimClient.update_mock is not called")
+
+    def test_query_stats(self):
+        metric_names = ["A.C", "B.E", "D.E"]
+        self.vim_client._content.perfManager = MagicMock()
+        self.vim_client._content.perfManager.perfCounter = create_fake_counters()
+
+        self.vim_client._content.perfManager.QueryPerf.return_value = [
+            vim.PerformanceManager.EntityMetricCSV(
+                entity=vim.HostSystem('ha-host'),
+                sampleInfoCSV='20,1970-01-01T00:00:10Z',
+                value=[
+                    vim.PerformanceManager.MetricSeriesCSV(
+                        id=vim.PerformanceManager.MetricId(counterId=6567, instance=''),
+                        value='200')]
+            ),
+            vim.PerformanceManager.EntityMetricCSV(
+                entity=vim.HostSystem('ha-host'),
+                sampleInfoCSV='20,1970-01-01T00:00:10Z',
+                value=[
+                    vim.PerformanceManager.MetricSeriesCSV(
+                        id=vim.PerformanceManager.MetricId(counterId=6669, instance=''),
+                        value='200')]
+            ),
+        ]
+
+        host = MagicMock(spec=vim.ManagedObject, key=vim.HostSystem("ha-host"))
+        since = datetime.now() - timedelta(seconds=20)
+
+        results = self.vim_client.query_stats(host, metric_names, 20, since, None)
+        assert_that(len(results), equal_to(2))
 
 if __name__ == '__main__':
     unittest.main()
