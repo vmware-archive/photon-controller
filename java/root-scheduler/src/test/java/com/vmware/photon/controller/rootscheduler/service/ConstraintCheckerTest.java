@@ -232,7 +232,7 @@ public class ConstraintCheckerTest {
   @Test(dataProvider = "default")
   public void testSingleConstraint(ConstraintChecker checker) {
     logger.info("Testing that {} can find candidates for single constraints...", checker.getClass().getSimpleName());
-    Map<String, ServerAddress> allHosts = checker.getCandidates(Collections.emptyList(), expectedHosts.size());
+    Map<String, ServerAddress> allHosts = checker.getCandidatesSync(Collections.emptyList(), expectedHosts.size());
     assertEquals(allHosts.keySet(), expectedHosts.keySet());
     for (Map.Entry<String, ServerAddress> entry: allHosts.entrySet()) {
       assertThat(entry.getKey(), is(entry.getValue().getHost()));
@@ -247,14 +247,14 @@ public class ConstraintCheckerTest {
       ResourceConstraint constraint = new ResourceConstraint(ResourceConstraintType.HOST, Arrays.asList(hostName));
       List<ResourceConstraint> constraints = new LinkedList<>();
       constraints.add(constraint);
-      Map<String, ServerAddress> candidates = checker.getCandidates(constraints, 10);
+      Map<String, ServerAddress> candidates = checker.getCandidatesSync(constraints, 10);
       assertEquals(candidates, ImmutableMap.of(hostName, address));
 
       constraint = new ResourceConstraint(ResourceConstraintType.HOST, Arrays.asList(hostName));
       constraint.setNegative(true);
       constraints = new LinkedList<>();
       constraints.add(constraint);
-      candidates = checker.getCandidates(constraints, expectedHosts.size());
+      candidates = checker.getCandidatesSync(constraints, expectedHosts.size());
       assertThat(candidates.size(), is(expectedHosts.size() - 1));
       assertEquals(candidates,
           Maps.filterKeys(candidates, Predicates.not(Predicates.equalTo(hostName))));
@@ -264,7 +264,7 @@ public class ConstraintCheckerTest {
       constraints = new LinkedList<>();
       constraint = new ResourceConstraint(ResourceConstraintType.DATASTORE, Arrays.asList(dsName));
       constraints.add(constraint);
-      candidates = checker.getCandidates(constraints, 2);
+      candidates = checker.getCandidatesSync(constraints, 2);
       assertEquals(candidates, ImmutableMap.of(hostName, address));
 
       // datastore tag
@@ -272,7 +272,7 @@ public class ConstraintCheckerTest {
       constraints = new LinkedList<>();
       constraint = new ResourceConstraint(ResourceConstraintType.DATASTORE_TAG, Arrays.asList(dsTag));
       constraints.add(constraint);
-      candidates = checker.getCandidates(constraints, 2);
+      candidates = checker.getCandidatesSync(constraints, 2);
       assertEquals(candidates, ImmutableMap.of(hostName, address));
 
       // network
@@ -280,7 +280,7 @@ public class ConstraintCheckerTest {
       constraints = new LinkedList<>();
       constraint = new ResourceConstraint(ResourceConstraintType.NETWORK, Arrays.asList(nwName));
       constraints.add(constraint);
-      candidates = checker.getCandidates(constraints, 2);
+      candidates = checker.getCandidatesSync(constraints, 2);
       assertEquals(candidates, ImmutableMap.of(hostName, address));
 
       // availability zone
@@ -288,7 +288,7 @@ public class ConstraintCheckerTest {
       constraints = new LinkedList<>();
       constraint = new ResourceConstraint(ResourceConstraintType.AVAILABILITY_ZONE, Arrays.asList(azName));
       constraints.add(constraint);
-      candidates = checker.getCandidates(constraints, 2);
+      candidates = checker.getCandidatesSync(constraints, 2);
       if (i != 9) {
         assertEquals(candidates, ImmutableMap.of(hostName, address));
       } else {
@@ -299,7 +299,7 @@ public class ConstraintCheckerTest {
       constraint = new ResourceConstraint(ResourceConstraintType.AVAILABILITY_ZONE, Arrays.asList(azName));
       constraint.setNegative(true);
       constraints.add(constraint);
-      candidates = checker.getCandidates(constraints, expectedHosts.size());
+      candidates = checker.getCandidatesSync(constraints, expectedHosts.size());
       if (i != 9) {
         assertThat(candidates.size(), is(expectedHosts.size() - 1));
         assertEquals(candidates,
@@ -315,10 +315,10 @@ public class ConstraintCheckerTest {
   public void testNoConstraint(ConstraintChecker checker) {
     // expect to get all the hosts without any constraint.
     logger.info("Testing that {} can find all candidates...", checker.getClass().getSimpleName());
-    Map<String, ServerAddress> allHosts = checker.getCandidates(Collections.emptyList(), expectedHosts.size());
+    Map<String, ServerAddress> allHosts = checker.getCandidatesSync(Collections.emptyList(), expectedHosts.size());
     logger.info("Testing that {} can find 10 candidates...", checker.getClass().getSimpleName());
     List<ResourceConstraint> constraints = new LinkedList<>();
-    Map<String, ServerAddress> candidates = checker.getCandidates(constraints, 10);
+    Map<String, ServerAddress> candidates = checker.getCandidatesSync(constraints, 10);
     assertEquals(candidates, allHosts);
 
     // verify that the candidates get picked randomly by picking a single candidate many
@@ -332,7 +332,7 @@ public class ConstraintCheckerTest {
       int numAttempts = 0;
       Arrays.fill(selectedHost,  false);
       for (int i = 0; i < 10000; i++) {
-        Map<String, ServerAddress> candidate = checker.getCandidates(constraints, 1);
+        Map<String, ServerAddress> candidate = checker.getCandidatesSync(constraints, 1);
         assertThat(candidate.size(), is(1));
         // Extract the host index from the name, which is the string "hostN", where N is the number of the host.
         for (String hostname : candidate.keySet()) {
@@ -359,53 +359,53 @@ public class ConstraintCheckerTest {
     List<ResourceConstraint> constraints = new LinkedList<>();
     ResourceConstraint constraint = new ResourceConstraint(ResourceConstraintType.DATASTORE, Arrays.asList("invalid"));
     constraints.add(constraint);
-    assertTrue(checker.getCandidates(constraints, 2).isEmpty());
+    assertTrue(checker.getCandidatesSync(constraints, 2).isEmpty());
 
     // existing datastore and network, but there is no host with both resources.
     constraints = new LinkedList<>();
     constraints.add(new ResourceConstraint(ResourceConstraintType.DATASTORE, Arrays.asList("ds1")));
     constraints.add(new ResourceConstraint(ResourceConstraintType.NETWORK, Arrays.asList("nw2")));
-    assertTrue(checker.getCandidates(constraints, 2).isEmpty());
+    assertTrue(checker.getCandidatesSync(constraints, 2).isEmpty());
   }
 
   private Set<String> getManagementHosts(ConstraintChecker checker, int numCandidates) {
     ResourceConstraint constraint = new ResourceConstraint(
         ResourceConstraintType.MANAGEMENT_ONLY, Collections.singletonList("unused"));
-    return checker.getCandidates(Collections.singletonList(constraint), numCandidates).keySet();
+    return checker.getCandidatesSync(Collections.singletonList(constraint), numCandidates).keySet();
   }
 
   private Set<String> getHosts(ConstraintChecker checker, int numCandidates) {
-    return checker.getCandidates(Collections.emptyList(), numCandidates).keySet();
+    return checker.getCandidatesSync(Collections.emptyList(), numCandidates).keySet();
   }
 
   private Set<String> getHostsWithDatastore(ConstraintChecker checker, String datastoreId, int numCandidates) {
     ResourceConstraint constraint = new ResourceConstraint(
         ResourceConstraintType.DATASTORE, Collections.singletonList(datastoreId));
-    return checker.getCandidates(Collections.singletonList(constraint), numCandidates).keySet();
+    return checker.getCandidatesSync(Collections.singletonList(constraint), numCandidates).keySet();
   }
 
   private Set<String> getHostsWithDatastoreTag(ConstraintChecker checker, String datastoreTag, int numCandidates) {
     ResourceConstraint constraint = new ResourceConstraint(
         ResourceConstraintType.DATASTORE_TAG, Collections.singletonList(datastoreTag));
-    return checker.getCandidates(Collections.singletonList(constraint), numCandidates).keySet();
+    return checker.getCandidatesSync(Collections.singletonList(constraint), numCandidates).keySet();
   }
 
   private Set<String> getHostsWithNetwork(ConstraintChecker checker, String networkId, int numCandidates) {
     ResourceConstraint constraint = new ResourceConstraint(
         ResourceConstraintType.NETWORK, Collections.singletonList(networkId));
-    return checker.getCandidates(Collections.singletonList(constraint), numCandidates).keySet();
+    return checker.getCandidatesSync(Collections.singletonList(constraint), numCandidates).keySet();
   }
 
   private Set<String> getHostsInAvailabilityZone(ConstraintChecker checker, String zoneId, int numCandidates) {
     ResourceConstraint constraint = new ResourceConstraint(
         ResourceConstraintType.AVAILABILITY_ZONE, Collections.singletonList(zoneId));
-    return checker.getCandidates(Collections.singletonList(constraint), numCandidates).keySet();
+    return checker.getCandidatesSync(Collections.singletonList(constraint), numCandidates).keySet();
   }
 
   private Set<String> getHostsNotInAvailabilityZone(ConstraintChecker checker, String zoneId, int numCandidates) {
     ResourceConstraint constraint = new ResourceConstraint(
         ResourceConstraintType.AVAILABILITY_ZONE, Collections.singletonList(zoneId));
     constraint.setNegative(true);
-    return checker.getCandidates(Collections.singletonList(constraint), numCandidates).keySet();
+    return checker.getCandidatesSync(Collections.singletonList(constraint), numCandidates).keySet();
   }
 }
