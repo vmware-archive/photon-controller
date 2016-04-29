@@ -19,7 +19,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * This annotation helps to declare a field of TaskService.State.
+ * This annotation indicates that a field is of TaskService.State type.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)

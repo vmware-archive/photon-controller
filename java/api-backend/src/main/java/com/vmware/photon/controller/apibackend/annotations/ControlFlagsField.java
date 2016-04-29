@@ -19,7 +19,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * This annotation helps to declare a field of ControlFlags.
+ * This annotation indicates that a field is used as control flags.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
