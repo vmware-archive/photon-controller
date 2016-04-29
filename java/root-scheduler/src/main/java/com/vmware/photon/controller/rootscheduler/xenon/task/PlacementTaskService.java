@@ -200,7 +200,7 @@ public class PlacementTaskService extends StatefulService {
   /**
    * Helper method to handle errors from getPotentialCandidates().
    */
-  private void handleGetCandidateError(PlacementTask currentState, Operation postOperation, Exception ex) {
+  private void handleGetCandidateError(PlacementTask currentState, Operation postOperation, Throwable ex) {
     PlacementTask patchState = buildPatch(TaskState.TaskStage.FAILED, currentState.taskState.isDirect, ex);
     patchState.error = ex.getMessage();
     patchState.requestId = currentState.requestId;
@@ -299,7 +299,7 @@ public class PlacementTaskService extends StatefulService {
 
     ConstraintChecker checker = ((ConstraintCheckerProvider) getHost()).getConstraintChecker();
     try {
-      checker.getCandidates(constraints, currentState.sampleHostCount, completion);
+      checker.getCandidates(constraints, currentState.sampleHostCount, currentState.requestId, completion);
     } catch (Exception ex) {
       completion.handle(null, ex);
     }
