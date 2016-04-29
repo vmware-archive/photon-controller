@@ -41,9 +41,15 @@ import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.entities.VmEntity;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidLocalitySpecException;
+import com.vmware.photon.controller.apife.exceptions.external.NotEnoughCpuResourceException;
+import com.vmware.photon.controller.apife.exceptions.external.NotEnoughDatastoreCapacityException;
+import com.vmware.photon.controller.apife.exceptions.external.NotEnoughMemoryResourceException;
+import com.vmware.photon.controller.apife.exceptions.external.UnfulfillableAffinitiesException;
 import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
 import com.vmware.photon.controller.common.clients.HostClient;
+import com.vmware.photon.controller.common.clients.exceptions.InvalidAgentStateException;
 import com.vmware.photon.controller.common.clients.exceptions.StaleGenerationException;
+import com.vmware.photon.controller.common.clients.exceptions.SystemErrorException;
 import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.common.zookeeper.gen.ServerAddress;
 import com.vmware.photon.controller.flavors.gen.Flavor;
@@ -74,6 +80,7 @@ import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.powermock.modules.testng.PowerMockTestCase;
 import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -85,6 +92,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.powermock.api.mockito.PowerMockito.spy;
+import static org.testng.Assert.assertTrue;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -522,6 +530,35 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
     when(schedulerXenonRestClient.post(any(), any())).thenThrow(new XenonRuntimeException("Error"));
 
     command.execute();
+  }
+
+  @Test(dataProvider = "PlaceFailureResultCodes")
+  public void testFailedPlaceResultCodes(PlaceResultCode resultCode,
+                                         Class<RuntimeException> exceptionClass) throws Throwable {
+    PlacementTask placementTask = generateResourcePlacementList();
+    placementTask.resultCode = resultCode;
+    Operation placementOperation = new Operation().setBody(placementTask);
+    ResourceReserveStepCmd command = getVmReservationCommand();
+    when(schedulerXenonRestClient.post(any(), any())).thenReturn(placementOperation);
+
+    try {
+      command.execute();
+    } catch (Exception e) {
+      assertTrue(e.getClass().equals(exceptionClass));
+
+    }
+  }
+
+  @DataProvider(name = "PlaceFailureResultCodes")
+  public Object[][] getPlaceFailureResultCodes() {
+    return new Object[][]{
+        {PlaceResultCode.RESOURCE_CONSTRAINT, UnfulfillableAffinitiesException.class},
+        {PlaceResultCode.NOT_ENOUGH_DATASTORE_CAPACITY, NotEnoughDatastoreCapacityException.class},
+        {PlaceResultCode.SYSTEM_ERROR, SystemErrorException.class},
+        {PlaceResultCode.NOT_ENOUGH_MEMORY_RESOURCE, NotEnoughMemoryResourceException.class},
+        {PlaceResultCode.NOT_ENOUGH_CPU_RESOURCE, NotEnoughCpuResourceException.class},
+        {PlaceResultCode.INVALID_STATE, InvalidAgentStateException.class}
+    };
   }
 
   @Test

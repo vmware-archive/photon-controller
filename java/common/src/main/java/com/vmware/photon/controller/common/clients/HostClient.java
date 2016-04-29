@@ -26,12 +26,7 @@ import com.vmware.photon.controller.common.clients.exceptions.InvalidReservation
 import com.vmware.photon.controller.common.clients.exceptions.InvalidVmPowerStateException;
 import com.vmware.photon.controller.common.clients.exceptions.IsoNotAttachedException;
 import com.vmware.photon.controller.common.clients.exceptions.NetworkNotFoundException;
-import com.vmware.photon.controller.common.clients.exceptions.NoSuchResourceException;
-import com.vmware.photon.controller.common.clients.exceptions.NotEnoughCpuResourceException;
-import com.vmware.photon.controller.common.clients.exceptions.NotEnoughDatastoreCapacityException;
-import com.vmware.photon.controller.common.clients.exceptions.NotEnoughMemoryResourceException;
 import com.vmware.photon.controller.common.clients.exceptions.OperationInProgressException;
-import com.vmware.photon.controller.common.clients.exceptions.ResourceConstraintException;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
 import com.vmware.photon.controller.common.clients.exceptions.ScanInProgressException;
 import com.vmware.photon.controller.common.clients.exceptions.StaleGenerationException;
@@ -1965,27 +1960,8 @@ public class HostClient {
     private static PlaceResponse checkPlaceResponse(PlaceResponse placeResponse)
         throws RpcException {
       logger.debug("Checking {}", placeResponse);
-      switch (placeResponse.getResult()) {
-        case OK:
-          break;
-        case NOT_LEADER:
-          throw new RpcException(placeResponse.getError());
-        case NO_SUCH_RESOURCE:
-          throw new NoSuchResourceException(placeResponse.getError());
-        case NOT_ENOUGH_CPU_RESOURCE:
-          throw new NotEnoughCpuResourceException(placeResponse.getError());
-        case NOT_ENOUGH_MEMORY_RESOURCE:
-          throw new NotEnoughMemoryResourceException(placeResponse.getError());
-        case NOT_ENOUGH_DATASTORE_CAPACITY:
-          throw new NotEnoughDatastoreCapacityException(placeResponse.getError());
-        case RESOURCE_CONSTRAINT:
-          throw new ResourceConstraintException(placeResponse.getError());
-        case SYSTEM_ERROR:
-          throw new SystemErrorException(placeResponse.getError());
-        default:
-          throw new RpcException(String.format("Unknown result: %s", placeResponse.getResult()));
-      }
-
+      SchedulerErrorCodeToExceptionMapper.mapErrorCodeToException(
+            placeResponse.getResult(), placeResponse.getError());
       return placeResponse;
     }
 
