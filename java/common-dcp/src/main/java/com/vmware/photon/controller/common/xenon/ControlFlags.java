@@ -18,14 +18,54 @@ package com.vmware.photon.controller.common.xenon;
  */
 public class ControlFlags {
 
-  public static final int CONTROL_FLAG_OPERATION_PROCESSING_DISABLED = 0x1;
-  public static final int CONTROL_FLAG_DISABLE_OPERATION_PROCESSING_ON_STAGE_TRANSITION = 0x2;
+  public static final int CONTROL_FLAG_OPERATION_PROCESSING_DISABLED = 1;
+  public static final int CONTROL_FLAG_DISABLE_OPERATION_PROCESSING_ON_STAGE_TRANSITION = 1 << 1;
+
+  public static final int CONTROL_FLAG_DISABLE_HANDLE_CREATE = 1 << 2;
+  public static final int CONTROL_FLAG_DISABLE_HANDLE_START = 1 << 3;
+  public static final int CONTROL_FLAG_DISABLE_HANDLE_PATCH = 1 << 4;
 
   public static boolean isOperationProcessingDisabled(int value) {
-    return (0 != (value & CONTROL_FLAG_OPERATION_PROCESSING_DISABLED));
+    return check(value, CONTROL_FLAG_OPERATION_PROCESSING_DISABLED);
   }
 
   public static boolean disableOperationProcessingOnStageTransition(int value) {
-    return (0 != (value & CONTROL_FLAG_DISABLE_OPERATION_PROCESSING_ON_STAGE_TRANSITION));
+    return check(value, CONTROL_FLAG_DISABLE_OPERATION_PROCESSING_ON_STAGE_TRANSITION);
+  }
+
+  public static boolean isHandleCreateDisabled(int value) {
+    return check(value, CONTROL_FLAG_DISABLE_HANDLE_CREATE);
+  }
+
+  public static boolean isHandleStartDisabled(int value) {
+    return check(value, CONTROL_FLAG_DISABLE_HANDLE_START);
+  }
+
+  public static boolean isHandlePatchDisabled(int value) {
+    return check(value, CONTROL_FLAG_DISABLE_HANDLE_PATCH);
+  }
+
+  private static boolean check(int value, int flag) {
+    return (0 != (value & flag));
+  }
+
+  /**
+   * Builder class to build control flags.
+   */
+  public static class Builder {
+    private int value;
+
+    public Builder() {
+      value = 0;
+    }
+
+    public Builder set(int value) {
+      this.value |= value;
+      return this;
+    }
+
+    public int build() {
+      return this.value;
+    }
   }
 }

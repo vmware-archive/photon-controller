@@ -17,19 +17,13 @@ import com.vmware.photon.controller.api.NetworkState;
 import com.vmware.photon.controller.api.RoutingType;
 import com.vmware.photon.controller.apibackend.builders.TaskStateBuilder;
 import com.vmware.photon.controller.apibackend.servicedocuments.CreateVirtualNetworkWorkflowDocument;
+import com.vmware.photon.controller.apibackend.utils.ServiceHostUtils;
 import com.vmware.photon.controller.cloudstore.dcp.entity.TaskService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.TaskServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.VirtualNetworkService;
-import com.vmware.photon.controller.common.xenon.ControlFlags;
-import com.vmware.photon.controller.common.xenon.InitializationUtils;
-import com.vmware.photon.controller.common.xenon.OperationUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
-import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Operation;
-import com.vmware.xenon.common.TaskState;
-import com.vmware.xenon.common.UriUtils;
 
 /**
  * This class implements a Xenon service representing a workflow to create a virtual network.
@@ -46,131 +40,13 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
 
   public CreateVirtualNetworkWorkflowService() {
     super(CreateVirtualNetworkWorkflowDocument.class,
-          CreateVirtualNetworkWorkflowDocument.TaskState.class,
-          CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.class);
+        CreateVirtualNetworkWorkflowDocument.TaskState.class,
+        CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.class);
   }
 
-  @Override
-  public void handleCreate(Operation createOperation) {
-    ServiceUtils.logInfo(this, "Creating service %s", getSelfLink());
-
-    try {
-      CreateVirtualNetworkWorkflowDocument state = createOperation.getBody(CreateVirtualNetworkWorkflowDocument.class);
-      InitializationUtils.initialize(state);
-      validateState(state);
-
-      if (ControlFlags.isOperationProcessingDisabled(state.controlFlags)) {
-        ServiceUtils.logInfo(this, "Skipping create operation processing (disabled)");
-        createOperation.complete();
-      } else if (TaskState.TaskStage.CREATED == state.taskState.stage) {
-        createVirtualNetwork(state, createOperation);
-      }
-    } catch (Throwable t) {
-      if (!OperationUtils.isCompleted(createOperation)) {
-        createOperation.fail(t);
-      }
-      failTask(t);
-    }
-  }
-
-  @Override
-  public void handlePatch(Operation patchOperation) {
-    ServiceUtils.logInfo(this, "Handling patch for service %s", getSelfLink());
-    try {
-      CreateVirtualNetworkWorkflowDocument currentState = getState(patchOperation);
-      CreateVirtualNetworkWorkflowDocument patchState =
-          patchOperation.getBody(CreateVirtualNetworkWorkflowDocument.class);
-      validatePatchState(currentState, patchState);
-      applyPatch(currentState, patchState);
-      validateState(currentState);
-      patchOperation.complete();
-
-      if (ControlFlags.isOperationProcessingDisabled(currentState.controlFlags)) {
-        ServiceUtils.logInfo(this, "Skipping patch operation processing (disabled)");
-      } else if (TaskState.TaskStage.STARTED == currentState.taskState.stage) {
-        processPatch(currentState);
-      }
-    } catch (Throwable t) {
-      if (!OperationUtils.isCompleted(patchOperation)) {
-        patchOperation.fail(t);
-      }
-      failTask(t);
-    }
-  }
-
-  private void processPatch(CreateVirtualNetworkWorkflowDocument state) throws Throwable {
-    TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FINISHED, null));
-  }
-
-  /**
-   * Create VirtualNetwork entity in cloud store.
-   *
-   * @param createState
-   * @param createOperation
-   */
-  private void createVirtualNetwork(final CreateVirtualNetworkWorkflowDocument createState, Operation createOperation) {
-
-    Operation.CompletionHandler handler = new Operation.CompletionHandler() {
-      @Override
-      public void handle(Operation op, Throwable failure) {
-        if (failure != null) {
-          RuntimeException e = new RuntimeException(String.format("Failed to create VirtualNetworkEntity %s", failure));
-          createOperation.fail(e);
-          failTask(e);
-          return;
-        }
-        VirtualNetworkService.State rsp = op.getBody(VirtualNetworkService.State.class);
-        createState.virtualNetworkServiceState = rsp;
-        createTask(createState, createOperation);
-      }
-    };
-
-    VirtualNetworkService.State postState = new VirtualNetworkService.State();
-    postState.name = createState.name;
-    postState.description = createState.description;
-    postState.state = NetworkState.CREATING;
-    postState.routingType = RoutingType.ROUTED;
-
-    Operation op = Operation
-        .createPost(UriUtils.buildUri(getHost(), VirtualNetworkService.FACTORY_LINK))
-        .setBody(postState)
-        .setCompletion(handler);
-    this.sendRequest(op);
-  }
-
-  /**
-   * Create TaskService entity in cloud store.
-   *
-   * @param createState
-   * @param createOperation
-   */
-  private void createTask(CreateVirtualNetworkWorkflowDocument createState, Operation createOperation) {
-    Operation.CompletionHandler handler = new Operation.CompletionHandler() {
-      @Override
-      public void handle(Operation op, Throwable failure) {
-        if (failure != null) {
-          RuntimeException e = new RuntimeException(String.format("Failed to create TaskEntity %s", failure));
-          createOperation.fail(e);
-          failTask(e);
-          return;
-        }
-        TaskService.State rsp = op.getBody(TaskService.State.class);
-        createState.taskServiceState = rsp;
-        createOperation.complete();
-      }
-    };
-
-    String id = ServiceUtils.getIDFromDocumentSelfLink(createState.virtualNetworkServiceState.documentSelfLink);
-    Operation op  = Operation
-        .createPost(UriUtils.buildUri(getHost(), TaskServiceFactory.SELF_LINK))
-        .setBody(buildTask(id))
-        .setCompletion(handler);
-    this.sendRequest(op);
-  }
-
-  private TaskService.State buildTask(String entityId) {
+  protected TaskService.State buildTaskServiceStartState(CreateVirtualNetworkWorkflowDocument document) {
     return new TaskStateBuilder()
-        .setEntityId(entityId)
+        .setEntityId(ServiceUtils.getIDFromDocumentSelfLink(document.virtualNetworkServiceState.documentSelfLink))
         .setEntityKind(VIRTUAL_NETWORK_ENTITY_KIND)
         .setOperation(com.vmware.photon.controller.api.Operation.CREATE_VIRTUAL_NETWORK)
         .addStep(com.vmware.photon.controller.api.Operation.GET_NSX_CONFIGURATION)
@@ -178,5 +54,37 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
         .addStep(com.vmware.photon.controller.api.Operation.CREATE_LOGICAL_ROUTER)
         .addStep(com.vmware.photon.controller.api.Operation.SET_UP_LOGICAL_ROUTER)
         .build();
+  }
+
+  @Override
+  protected void handleCreateHook(CreateVirtualNetworkWorkflowDocument createState,
+                                  Operation createOperation) throws Throwable {
+    VirtualNetworkService.State postState = new VirtualNetworkService.State();
+    postState.name = createState.name;
+    postState.description = createState.description;
+    postState.state = NetworkState.CREATING;
+    postState.routingType = RoutingType.ROUTED;
+
+    ServiceHostUtils.getCloudStoreHelper(getHost())
+        .createPost(VirtualNetworkService.FACTORY_LINK)
+        .setBody(postState)
+        .setCompletion((op, ex) -> {
+          if (ex != null) {
+            RuntimeException e = new RuntimeException(String.format("Failed to create VirtualNetworkEntity %s", ex));
+            createOperation.fail(e);
+            failTask(e);
+            return;
+          }
+
+          try {
+            createState.virtualNetworkServiceState = op.getBody(VirtualNetworkService.State.class);
+            super.handleCreateHook(createState, createOperation);
+          } catch (Throwable t) {
+            RuntimeException e = new RuntimeException(String.format("Failed to create VirtualNetworkEntity %s", t));
+            createOperation.fail(e);
+            failTask(e);
+          }
+        })
+        .sendWith(this);
   }
 }

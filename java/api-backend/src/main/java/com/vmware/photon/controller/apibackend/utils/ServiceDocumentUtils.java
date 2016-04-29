@@ -30,14 +30,14 @@ import java.lang.reflect.Field;
 public class ServiceDocumentUtils {
 
   /**
-   * Returns the field that is annotated with ControlFlagsField annotation in given document.
+   * Gets the field that is annotated with ControlFlagsField annotation in given document.
    */
   public static <S extends ServiceDocument> Integer getControlFlags(S document) throws Throwable {
     return (Integer) getAnnotatedField(document, ControlFlagsField.class).get(document);
   }
 
   /**
-   * Returns the field that is annotated with TaskStateField annotation in the given document.
+   * Gets the field that is annotated with TaskStateField annotation in the given document.
    */
   public static <S extends ServiceDocument, T extends TaskState> T getTaskState(S document) throws Throwable {
     return (T) getAnnotatedField(document, TaskStateField.class).get(document);
@@ -49,6 +49,15 @@ public class ServiceDocumentUtils {
   public static <S extends ServiceDocument, T extends TaskState> void setTaskState(S document, T taskState)
       throws Throwable {
     getAnnotatedField(document, TaskStateField.class).set(document, taskState);
+  }
+
+  /**
+   * Gets the stage of the field that is annotated with TaskStateField annotation in the given document.
+   */
+  public static <S extends ServiceDocument, T extends TaskState> TaskState.TaskStage getTaskStateStage(S document)
+      throws Throwable {
+    T taskState = getTaskState(document);
+    return taskState.stage;
   }
 
   /**

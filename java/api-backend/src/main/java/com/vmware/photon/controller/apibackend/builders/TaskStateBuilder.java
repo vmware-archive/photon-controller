@@ -61,6 +61,7 @@ public class TaskStateBuilder {
     TaskService.State.Step step = new TaskService.State.Step();
     step.operation = operation;
     step.state = TaskService.State.StepState.QUEUED;
+    step.sequence = stepEntities.size();
     stepEntities.add(step);
     return this;
   }

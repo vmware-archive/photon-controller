@@ -14,9 +14,12 @@
 package com.vmware.photon.controller.apibackend.workflows;
 
 import com.vmware.photon.controller.apibackend.utils.ServiceDocumentUtils;
+import com.vmware.photon.controller.apibackend.utils.TaskServiceUtils;
+import com.vmware.photon.controller.cloudstore.dcp.entity.TaskService;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.OperationUtils;
+import com.vmware.photon.controller.common.xenon.PatchUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
@@ -37,7 +40,7 @@ import java.util.Arrays;
  * @param <T> Generic type which extends TaskState class.
  * @param <E> Generic type which extends Enum class.
  */
-public class BaseWorkflowService <S extends ServiceDocument, T extends TaskState, E extends Enum>
+public abstract class BaseWorkflowService<S extends ServiceDocument, T extends TaskState, E extends Enum>
     extends StatefulService {
 
   protected final Class<T> taskStateType;
@@ -56,32 +59,193 @@ public class BaseWorkflowService <S extends ServiceDocument, T extends TaskState
   }
 
   @Override
+  public void handleCreate(Operation createOperation) {
+    ServiceUtils.logInfo(this, "Creating service %s", getSelfLink());
+
+    try {
+      S document = (S) createOperation.getBody(getStateType());
+      initializeState(document);
+      validateState(document);
+
+      Integer controlFlags = ServiceDocumentUtils.getControlFlags(document);
+      if (ControlFlags.isOperationProcessingDisabled(controlFlags) ||
+          ControlFlags.isHandleCreateDisabled(controlFlags)) {
+        ServiceUtils.logInfo(this, "Skipping create operation processing (disabled)");
+        createOperation.complete();
+      }
+
+      handleCreateHook(document, createOperation);
+    } catch (Throwable t) {
+      if (!OperationUtils.isCompleted(createOperation)) {
+        createOperation.fail(t);
+      }
+      failTask(t);
+    }
+  }
+
+  protected void handleCreateHook(S document, Operation operation) throws Throwable {
+    createTaskService(document, operation);
+  }
+
+  @Override
   public void handleStart(Operation startOperation) {
     ServiceUtils.logInfo(this, "Starting service %s", getSelfLink());
 
     try {
-      S startState = (S) startOperation.getBody(getStateType());
-      initializeState(startState);
-      validateStartState(startState);
+      S document = (S) startOperation.getBody(getStateType());
+      validateStartState(document);
+      startOperation.setBody(document).complete();
 
-      startOperation.setBody(startState).complete();
-
-      if (ControlFlags.isOperationProcessingDisabled(ServiceDocumentUtils.getControlFlags(startState))) {
+      Integer controlFlags = ServiceDocumentUtils.getControlFlags(document);
+      if (ControlFlags.isOperationProcessingDisabled(controlFlags) ||
+          ControlFlags.isHandleStartDisabled(ServiceDocumentUtils.getControlFlags(document))) {
         ServiceUtils.logInfo(this, "Skipping start operation processing (disabled)");
         return;
       }
 
-      ServiceUtils.logInfo(this, "Sending stage progress patch %s:%s. ", TaskState.TaskStage.STARTED,
-          ServiceDocumentUtils.getTaskStateSubStageEntries(taskSubStageType)[0]);
-      TaskUtils.sendSelfPatch(this,
-          buildPatch(TaskState.TaskStage.STARTED,
-              ServiceDocumentUtils.getTaskStateSubStageEntries(taskSubStageType)[0]));
+      handleStartHook(document, startOperation);
     } catch (Throwable t) {
       if (!OperationUtils.isCompleted(startOperation)) {
         startOperation.fail(t);
       }
       failTask(t);
     }
+  }
+
+  protected void handleStartHook(S document, Operation operation) throws Throwable {
+    TaskUtils.sendSelfPatch(this,
+        buildPatch(TaskState.TaskStage.STARTED,
+            ServiceDocumentUtils.getTaskStateSubStageEntries(taskSubStageType)[0]));
+  }
+
+  @Override
+  public void handlePatch(Operation patchOperation) {
+    ServiceUtils.logInfo(this, "Handling patch for service %s", getSelfLink());
+
+    try {
+      S currentDocument = getState(patchOperation);
+      S patchDocument = (S) patchOperation.getBody(getStateType());
+      validatePatchState(currentDocument, patchDocument);
+      applyPatch(currentDocument, patchDocument);
+      validateState(currentDocument);
+      patchOperation.complete();
+
+      Integer controlFlags = ServiceDocumentUtils.getControlFlags(currentDocument);
+      if (ControlFlags.isOperationProcessingDisabled(controlFlags) ||
+          ControlFlags.isHandlePatchDisabled(controlFlags) ||
+          TaskState.TaskStage.STARTED != ServiceDocumentUtils.getTaskStateStage(currentDocument)) {
+        ServiceUtils.logInfo(this, "Skipping patch operation processing (disabled)");
+      }
+
+      processPatch(currentDocument);
+    } catch (Throwable t) {
+      if (!OperationUtils.isCompleted(patchOperation)) {
+        patchOperation.fail(t);
+      }
+      failTask(t);
+    }
+  }
+
+  protected void handlePatchHook(S document) throws Throwable {
+    completeTaskService(document);
+  }
+
+  private void processPatch(S document) throws Throwable {
+    TaskService.State taskServiceState = ServiceDocumentUtils.getTaskServiceState(document);
+
+    switch (taskServiceState.state) {
+      case QUEUED:
+        startTaskService(document);
+        break;
+      case STARTED:
+        handlePatchHook(document);
+        break;
+      default:
+        break;
+    }
+  }
+
+  protected abstract TaskService.State buildTaskServiceStartState(S document);
+
+  private void createTaskService(S document, Operation createOperation) {
+    TaskServiceUtils.create(
+        this,
+        buildTaskServiceStartState(document),
+        (state) -> {
+          try {
+            ServiceDocumentUtils.setTaskServiceState(document, state);
+            createOperation.setBody(document).complete();
+          } catch (Throwable t) {
+            RuntimeException e = new RuntimeException(String.format("Failed to create TaskService.State %s", t));
+            createOperation.fail(e);
+            failTask(e);
+          }
+        },
+        (failure) -> {
+          RuntimeException e = new RuntimeException(String.format("Failed to create TaskService.State %s", failure));
+          createOperation.fail(e);
+          failTask(e);
+        }
+    );
+  }
+
+  private void startTaskService(S document) throws Throwable {
+    TaskServiceUtils.start(
+        this,
+        ServiceDocumentUtils.getTaskServiceState(document).documentSelfLink,
+        (state) -> refreshTaskAndProgress(document, state, TaskState.TaskStage.STARTED),
+        (failure) -> failTask(failure));
+  }
+
+  private void completeTaskService(S document) throws Throwable {
+    TaskServiceUtils.complete(
+        this,
+        ServiceDocumentUtils.getTaskServiceState(document).documentSelfLink,
+        (state) -> refreshTaskAndProgress(document, state, TaskState.TaskStage.FINISHED),
+        (failure) -> failTask(failure));
+  }
+
+  private void failTaskService(S document) throws Throwable {
+    TaskServiceUtils.fail(
+        this,
+        ServiceDocumentUtils.getTaskServiceState(document).documentSelfLink,
+        (state) -> refreshTaskAndProgress(document, state, TaskState.TaskStage.FAILED),
+        (failure) -> failTask(failure));
+  }
+
+  private void refreshTaskAndProgress(S document,
+                                      TaskService.State taskServiceState,
+                                      TaskState.TaskStage nextStage) {
+    refreshTaskAndProgress(document, taskServiceState, nextStage, null);
+  }
+
+  private void refreshTaskAndProgress(S document,
+                                      TaskService.State taskServiceState,
+                                      TaskState.TaskStage nextStage,
+                                      E nextSubStage) {
+    try {
+      if (nextStage == TaskState.TaskStage.STARTED && nextSubStage == null) {
+        nextSubStage = ServiceDocumentUtils.getTaskStateSubStageEntries(taskSubStageType)[0];
+      }
+
+      S patchDocument = buildPatchWithLatestTaskService(document, taskServiceState, nextStage, nextSubStage);
+      TaskUtils.sendSelfPatch(this, patchDocument);
+    } catch (Throwable t) {
+      RuntimeException e = new RuntimeException(String.format("Failed to patch TaskService.State %s", t));
+      failTask(e);
+    }
+
+  }
+
+  private S buildPatchWithLatestTaskService(S document,
+                                            TaskService.State taskServicePatchState,
+                                            TaskState.TaskStage nextStage,
+                                            E nextSubStage) throws Throwable {
+    TaskService.State taskServiceCurrentState = ServiceDocumentUtils.getTaskServiceState(document);
+    PatchUtils.patchState(taskServiceCurrentState, taskServicePatchState);
+    S patchDocument = buildPatch(nextStage, nextSubStage, null);
+    ServiceDocumentUtils.setTaskServiceState(patchDocument, taskServiceCurrentState);
+    return patchDocument;
   }
 
   /**
@@ -99,8 +263,8 @@ public class BaseWorkflowService <S extends ServiceDocument, T extends TaskState
   /**
    * Build a state object that can be used to submit a stage progress self patch.
    */
-  protected S buildPatch(TaskState.TaskStage stage, E subStage) throws Throwable {
-    return buildPatch(stage, subStage, null);
+  protected S buildPatch(TaskState.TaskStage stage, E taskStateSubStage) throws Throwable {
+    return buildPatch(stage, taskStateSubStage, null);
   }
 
   /**
@@ -109,6 +273,16 @@ public class BaseWorkflowService <S extends ServiceDocument, T extends TaskState
   protected S buildPatch(TaskState.TaskStage stage, E taskStateSubStage, Throwable t)
       throws Throwable {
     S patchState = (S) getStateType().newInstance();
+
+    ServiceDocumentUtils.setTaskState(patchState,
+        buildPatchTaskState(stage, taskStateSubStage, t));
+    return patchState;
+  }
+
+  /**
+   * Build a task state object that can be used to submit a stage progress self patch.
+   */
+  protected T buildPatchTaskState(TaskState.TaskStage stage, E taskStateSubStage, Throwable t) throws Throwable {
     T taskState = taskStateType.newInstance();
     taskState.stage = stage;
 
@@ -120,8 +294,7 @@ public class BaseWorkflowService <S extends ServiceDocument, T extends TaskState
       taskState.failure = Utils.toServiceErrorResponse(t);
     }
 
-    ServiceDocumentUtils.setTaskState(patchState, taskState);
-    return patchState;
+    return taskState;
   }
 
   /**
@@ -149,6 +322,8 @@ public class BaseWorkflowService <S extends ServiceDocument, T extends TaskState
       ServiceUtils.logInfo(this, "Moving from %s to stage %s", currentStage, patchStage);
       ServiceDocumentUtils.setTaskState(currentState, patchTaskState);
     }
+
+    PatchUtils.patchState(currentState, patchState);
   }
 
   /**
