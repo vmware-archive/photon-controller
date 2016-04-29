@@ -324,6 +324,8 @@ public class ImageSeederService extends StatefulService {
    * @param current
    */
   protected void handleTriggerCopies(final State current) {
+    ServiceUtils.logInfo(this, "Start to trigger ImageHostToHostCopyService for image: %s", current.image);
+
     Set<String> datastoreSet = new HashSet<>();
 
     Operation queryImageDatastoreSet = buildImageDatastoreSetQuery(current);
@@ -348,6 +350,7 @@ public class ImageSeederService extends StatefulService {
             return;
           }
 
+          ServiceUtils.logInfo(this, "All target image datastores: %s", Utils.toJson(datastoreSet));
           this.triggerHostToHostCopyServices(current, datastoreSet);
 
           // Patch self with the new subStage and the count of triggered ImageHostToHostCopyService instances
@@ -416,17 +419,17 @@ public class ImageSeederService extends StatefulService {
    */
   protected void triggerHostToHostCopyService(final State current, final String datastore) {
     // build completion handler
-    Operation.CompletionHandler handler = new Operation.CompletionHandler() {
-      @Override
-      public void handle(Operation acknowledgeOp, Throwable failure) {
-        if (failure != null) {
-          // we could not start an ImageHostToHostCopyService task. Something went horribly wrong. Fail
-          // the current task and stop processing.
-          RuntimeException e = new RuntimeException(
-              String.format("Failed to send host to host copy request %s", failure));
-          failTask(e);
-        }
+    Operation.CompletionHandler handler = (Operation acknowledgeOp, Throwable failure) -> {
+      if (failure != null) {
+        // we could not start an ImageHostToHostCopyService task. Something went horribly wrong. Fail
+        // the current task and stop processing.
+        RuntimeException e = new RuntimeException(
+            String.format("Failed to send host to host copy request %s", failure));
+        failTask(e);
       }
+
+      ServiceUtils.logInfo(ImageSeederService.this, "ImageHostToHostCopyService %s, is triggered for image: %s",
+          acknowledgeOp.getBody(ImageHostToHostCopyService.class).getSelfLink(), current.image);
     };
 
     // build copy service start state
@@ -464,7 +467,11 @@ public class ImageSeederService extends StatefulService {
 
         State s = buildPatch(current.taskInfo.stage, current.taskInfo.subStage, null);
         s.finishedCopies = finishedRsp.results.documentLinks.size();
+        ServiceUtils.logInfo(ImageSeederService.this, "Finished %s", Utils.toJson(finishedRsp.results.documentLinks));
+
         s.failedOrCancelledCopies = failedOrCanceledRsp.results.documentLinks.size();
+        ServiceUtils.logInfo(ImageSeederService.this, "FailedOrCanceledRsp %s",
+            Utils.toJson(failedOrCanceledRsp.results.documentLinks));
 
         sendSelfPatch(s);
       } catch (Throwable e) {
