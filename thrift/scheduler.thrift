@@ -31,30 +31,23 @@ enum PlaceResultCode {
 
   SYSTEM_ERROR = 1
 
-  // Root scheduler is not the current leader, resources are not placed
-  // Does not apply to branch schedulers
-  NOT_LEADER = 2
-
   // Host does not have such resource
-  NO_SUCH_RESOURCE = 3
+  NO_SUCH_RESOURCE = 2
 
   // Host does not have enough CPU resource
-  NOT_ENOUGH_CPU_RESOURCE = 4
+  NOT_ENOUGH_CPU_RESOURCE = 3
 
   // Host does not have enough memory resource
-  NOT_ENOUGH_MEMORY_RESOURCE = 5
+  NOT_ENOUGH_MEMORY_RESOURCE = 4
 
   // Datastore does not have enough capacity
-  NOT_ENOUGH_DATASTORE_CAPACITY = 6
-
-  // Invalid scheduler id, only applies to branch schedulers
-  INVALID_SCHEDULER = 7
+  NOT_ENOUGH_DATASTORE_CAPACITY = 5
 
   // Host in invalid state, for example, Maintenance mode. Only applies to host.
-  INVALID_STATE = 8
+  INVALID_STATE = 6
 
   // Resources are not placed due to resource constraints
-  RESOURCE_CONSTRAINT = 9
+  RESOURCE_CONSTRAINT = 7
 }
 
 struct Score {

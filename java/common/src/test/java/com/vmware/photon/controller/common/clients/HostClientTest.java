@@ -21,6 +21,7 @@ import com.vmware.photon.controller.common.clients.exceptions.DiskNotFoundExcept
 import com.vmware.photon.controller.common.clients.exceptions.ImageAlreadyExistException;
 import com.vmware.photon.controller.common.clients.exceptions.ImageNotFoundException;
 import com.vmware.photon.controller.common.clients.exceptions.ImageTransferInProgressException;
+import com.vmware.photon.controller.common.clients.exceptions.InvalidAgentStateException;
 import com.vmware.photon.controller.common.clients.exceptions.InvalidReservationException;
 import com.vmware.photon.controller.common.clients.exceptions.InvalidVmPowerStateException;
 import com.vmware.photon.controller.common.clients.exceptions.IsoNotAttachedException;
@@ -2751,7 +2752,7 @@ public class HostClientTest {
       return new Object[][]{
           {PlaceResultCode.RESOURCE_CONSTRAINT, ResourceConstraintException.class},
           {PlaceResultCode.SYSTEM_ERROR, SystemErrorException.class},
-          {PlaceResultCode.NOT_LEADER, RpcException.class}
+          {PlaceResultCode.INVALID_STATE, InvalidAgentStateException.class}
       };
     }
 

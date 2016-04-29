@@ -14,12 +14,11 @@
 package com.vmware.photon.controller.common.clients;
 
 import com.vmware.photon.controller.common.clients.exceptions.ComponentClientExceptionHandler;
-import com.vmware.photon.controller.common.clients.exceptions.InvalidSchedulerException;
+import com.vmware.photon.controller.common.clients.exceptions.InvalidAgentStateException;
 import com.vmware.photon.controller.common.clients.exceptions.NoSuchResourceException;
 import com.vmware.photon.controller.common.clients.exceptions.NotEnoughCpuResourceException;
 import com.vmware.photon.controller.common.clients.exceptions.NotEnoughDatastoreCapacityException;
 import com.vmware.photon.controller.common.clients.exceptions.NotEnoughMemoryResourceException;
-import com.vmware.photon.controller.common.clients.exceptions.NotLeaderException;
 import com.vmware.photon.controller.common.clients.exceptions.ResourceConstraintException;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
 import com.vmware.photon.controller.common.clients.exceptions.SystemErrorException;
@@ -74,8 +73,6 @@ public class RootSchedulerClient implements StatusProvider {
       switch (response.getResult()) {
         case OK:
           break;
-        case NOT_LEADER:
-          throw new NotLeaderException();
         case NO_SUCH_RESOURCE:
           throw new NoSuchResourceException(response.getError());
         case NOT_ENOUGH_CPU_RESOURCE:
@@ -86,10 +83,10 @@ public class RootSchedulerClient implements StatusProvider {
           throw new NotEnoughDatastoreCapacityException(response.getError());
         case RESOURCE_CONSTRAINT:
           throw new ResourceConstraintException(response.getError());
-        case INVALID_SCHEDULER:
-          throw new InvalidSchedulerException(response.getError());
         case SYSTEM_ERROR:
           throw new SystemErrorException(response.getError());
+        case INVALID_STATE:
+          throw new InvalidAgentStateException(response.getError());
         default:
           throw new RpcException(String.format("Unknown result: %s", response.getResult()));
       }
