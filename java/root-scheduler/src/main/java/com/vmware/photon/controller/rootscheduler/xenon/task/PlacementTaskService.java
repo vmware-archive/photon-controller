@@ -394,9 +394,9 @@ public class PlacementTaskService extends StatefulService {
       } else if (returnCodes.contains(PlaceResultCode.NO_SUCH_RESOURCE)) {
         errorCode = PlaceResultCode.NO_SUCH_RESOURCE;
         errorMsg = "No such resource";
-      } else if (returnCodes.contains(PlaceResultCode.INVALID_SCHEDULER)) {
-        errorCode = PlaceResultCode.INVALID_SCHEDULER;
-        errorMsg = "Invalid scheduler";
+      } else if (returnCodes.contains(PlaceResultCode.INVALID_STATE)) {
+        errorCode = PlaceResultCode.INVALID_STATE;
+        errorMsg = "Agent in an invalid state";
       } else {
         errorCode = PlaceResultCode.SYSTEM_ERROR;
         errorMsg = String.format("Received no response in %d ms", watch.elapsed(TimeUnit.MILLISECONDS));

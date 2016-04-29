@@ -14,26 +14,13 @@
 package com.vmware.photon.controller.common.clients;
 
 import com.vmware.photon.controller.common.clients.exceptions.ComponentClientExceptionHandler;
-import com.vmware.photon.controller.common.clients.exceptions.InvalidSchedulerException;
-import com.vmware.photon.controller.common.clients.exceptions.NoSuchResourceException;
-import com.vmware.photon.controller.common.clients.exceptions.NotEnoughCpuResourceException;
-import com.vmware.photon.controller.common.clients.exceptions.NotEnoughDatastoreCapacityException;
-import com.vmware.photon.controller.common.clients.exceptions.NotEnoughMemoryResourceException;
-import com.vmware.photon.controller.common.clients.exceptions.NotLeaderException;
-import com.vmware.photon.controller.common.clients.exceptions.ResourceConstraintException;
-import com.vmware.photon.controller.common.clients.exceptions.RpcException;
-import com.vmware.photon.controller.common.clients.exceptions.SystemErrorException;
 import com.vmware.photon.controller.common.thrift.ClientProxy;
-import com.vmware.photon.controller.resource.gen.Resource;
-import com.vmware.photon.controller.scheduler.gen.PlaceRequest;
-import com.vmware.photon.controller.scheduler.gen.PlaceResponse;
 import com.vmware.photon.controller.scheduler.root.gen.RootScheduler;
 import com.vmware.photon.controller.status.gen.GetStatusRequest;
 import com.vmware.photon.controller.status.gen.Status;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import org.apache.thrift.TException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,48 +43,6 @@ public class RootSchedulerClient implements StatusProvider {
   public RootSchedulerClient(ClientProxy<RootScheduler.AsyncClient> proxy) {
     logger.info("Calling RootSchedulerClient constructor: {}", System.identityHashCode(this));
     this.proxy = proxy;
-  }
-
-  @RpcMethod
-  public PlaceResponse place(Resource resource) throws RpcException, InterruptedException {
-    try {
-      RootScheduler.AsyncClient client = proxy.get();
-
-      SyncHandler<PlaceResponse, RootScheduler.AsyncClient.place_call> handler = new SyncHandler<>();
-      client.setTimeout(PLACE_TIMEOUT_MS);
-      PlaceRequest placeRequest = new PlaceRequest(resource);
-      client.place(placeRequest, handler);
-      handler.await();
-      logger.info("Place request: {}", placeRequest);
-
-      PlaceResponse response = handler.getResponse();
-      switch (response.getResult()) {
-        case OK:
-          break;
-        case NOT_LEADER:
-          throw new NotLeaderException();
-        case NO_SUCH_RESOURCE:
-          throw new NoSuchResourceException(response.getError());
-        case NOT_ENOUGH_CPU_RESOURCE:
-          throw new NotEnoughCpuResourceException(response.getError());
-        case NOT_ENOUGH_MEMORY_RESOURCE:
-          throw new NotEnoughMemoryResourceException(response.getError());
-        case NOT_ENOUGH_DATASTORE_CAPACITY:
-          throw new NotEnoughDatastoreCapacityException(response.getError());
-        case RESOURCE_CONSTRAINT:
-          throw new ResourceConstraintException(response.getError());
-        case INVALID_SCHEDULER:
-          throw new InvalidSchedulerException(response.getError());
-        case SYSTEM_ERROR:
-          throw new SystemErrorException(response.getError());
-        default:
-          throw new RpcException(String.format("Unknown result: %s", response.getResult()));
-      }
-
-      return response;
-    } catch (TException e) {
-      throw new RpcException(e);
-    }
   }
 
   @Override
