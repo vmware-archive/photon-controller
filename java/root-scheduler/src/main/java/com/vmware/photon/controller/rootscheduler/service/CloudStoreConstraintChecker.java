@@ -19,17 +19,20 @@ import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
+import com.vmware.photon.controller.common.logging.LoggingUtils;
+import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
+import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.XenonRestClient;
 import com.vmware.photon.controller.common.zookeeper.gen.ServerAddress;
 import com.vmware.photon.controller.resource.gen.ResourceConstraint;
 import com.vmware.photon.controller.resource.gen.ResourceConstraintType;
 import com.vmware.photon.controller.rootscheduler.exceptions.NoSuchResourceException;
-import com.vmware.photon.controller.rootscheduler.service.ConstraintChecker.GetCandidatesCompletion;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocumentDescription;
 import com.vmware.xenon.common.ServiceDocumentQueryResult;
 import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.common.http.netty.NettyHttpServiceClient;
 import com.vmware.xenon.services.common.QueryTask;
 import com.vmware.xenon.services.common.QueryTask.Query.Occurance;
 import com.vmware.xenon.services.common.QueryTask.QuerySpecification.SortOrder;
@@ -38,6 +41,7 @@ import com.google.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
@@ -46,6 +50,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
 
 /**
  * This class implements a {@link ConstraintChecker} using Xenon queries against cloud store nodes.
@@ -60,10 +65,73 @@ public class CloudStoreConstraintChecker implements ConstraintChecker {
   private final Random random = new Random();
 
   private final XenonRestClient xenonRestClient;
+  private final CloudStoreHelper cloudStoreHelper;
+  private NettyHttpServiceClient xenonClient;
+
+  private class Range {
+    int lowerBound;
+    int upperBound;
+    SortOrder sortOrder;
+  }
+
+  private enum Step {
+    VALIDATE_INPUT,
+    EXTRACT_DATASTORE_TAG_CONSTRAINTS,
+    DATASTORE_TAG_QUERY,
+    BUILD_DS_TAG_CONSTRAINT,
+    CALCULATE_RANGES,
+    BUILD_QUERY,
+    GET_CANDIDATES,
+    ANALYZE_CANDIDATES,
+    SUCCESS,
+    FAIL
+  }
+
+  private class State {
+
+    // Input parameters
+    List<ResourceConstraint> resourceConstraints;
+    int numCandidates;
+    String requestId;
+    GetCandidatesCompletion completion;
+
+    // Internal state
+    Step currentStep;
+    Range ranges[];
+    int currentRange;
+    Operation datastoreTagResponse;
+    List<ResourceConstraint> dsTagConstraints;
+    // extraDatastoreConstraints are created from datastore tag constraints
+    // We would prefer to add them to resourceConstraints, but it's imutable
+    List<ResourceConstraint> extraDatastoreConstraints;
+    QueryTask.Query query;
+    Operation queryResponse;
+
+    // Output to client
+    Map<String, ServerAddress> candidates;
+    Throwable exception;
+
+  }
 
   @Inject
-  public CloudStoreConstraintChecker(XenonRestClient xenonRestClient) {
+  public CloudStoreConstraintChecker(XenonRestClient xenonRestClient, CloudStoreHelper cloudStoreHelper) {
     this.xenonRestClient = xenonRestClient;
+    this.cloudStoreHelper = cloudStoreHelper;
+
+    try {
+      // We need a Xenon client to send requests to CloudStore. You might ask why we create one
+      // 1. We don't use XenonRestClient because it's blocking, and we want to be asynchronous
+      // 2. We don't use ServiceHost.sendRequest() because it's not present in all of our tests.
+      xenonClient = (NettyHttpServiceClient) NettyHttpServiceClient.create(
+          CloudStoreConstraintChecker.class.getCanonicalName(),
+          Executors.newFixedThreadPool(1),
+          Executors.newScheduledThreadPool(0));
+      xenonClient.start();
+    } catch (URISyntaxException uriSyntaxException) {
+      logger.error("CloudStoreConstraintChecker: URISyntaxException={}", uriSyntaxException.toString());
+      throw new RuntimeException(uriSyntaxException);
+    }
+
   }
 
   /**
@@ -79,6 +147,7 @@ public class CloudStoreConstraintChecker implements ConstraintChecker {
     CountDownLatch latch = new CountDownLatch(1);
     getCandidates(resourceConstraints,
         numCandidates,
+        "test-request",
         (c, ex) -> {
           candidates.add(c);
           latch.countDown();
@@ -122,71 +191,211 @@ public class CloudStoreConstraintChecker implements ConstraintChecker {
   public void getCandidates(
       List<ResourceConstraint> resourceConstraints,
       int numCandidates,
+      String requestId,
       GetCandidatesCompletion completion) {
 
-    // Note that we are not yet meaningfully asynchronous. We are slowly converting to an asynchronous pattern,
-    // and this is a step in that direction.
+    State state = new State();
+    state.currentStep = Step.VALIDATE_INPUT;
+    state.resourceConstraints = resourceConstraints;
+    state.extraDatastoreConstraints = new ArrayList<>();
+    state.numCandidates = numCandidates;
+    state.requestId = requestId;
+    state.completion = completion;
+    state.candidates = new HashMap<>();
+    getCandidates_HandleStep(state);
+  }
+
+  private void getCandidates_HandleStep(State state) {
     try {
-      Map<String, ServerAddress> candidates = getCandidatesHelper(resourceConstraints, numCandidates);
-      completion.handle(candidates, null);
+      LoggingUtils.setRequestId(state.requestId);
+
+      switch (state.currentStep) {
+        case VALIDATE_INPUT:
+          getCandidates_ValidateInput(state);
+          break;
+        case EXTRACT_DATASTORE_TAG_CONSTRAINTS:
+          getCandidates_ExtractDatastoreTagConstaints(state);
+          break;
+        case DATASTORE_TAG_QUERY:
+          getCandidates_DatastoreTagQuery(state);
+          break;
+        case BUILD_DS_TAG_CONSTRAINT:
+          getCandidates_BuildDsTagConstraint(state);
+          break;
+        case CALCULATE_RANGES:
+          getCandidates_CalculateRanges(state);
+          break;
+        case BUILD_QUERY:
+          getCandidates_BuildQuery(state);
+          break;
+        case GET_CANDIDATES:
+          getCandidates_GetCandidates(state);
+          break;
+        case ANALYZE_CANDIDATES:
+          getCandidates_AnalyzeCandidates(state);
+          break;
+        case SUCCESS:
+          getCandidates_Success(state);
+          break;
+        case FAIL:
+          getCandidates_Fail(state);
+          break;
+      }
     } catch (Exception ex) {
-      completion.handle(null, ex);
+      state.exception = ex;
+      getCandidates_Fail(state);
     }
   }
 
-  private Map<String, ServerAddress> getCandidatesHelper(
-      List<ResourceConstraint> resourceConstraints,
-      int numCandidates) {
-
-    if (numCandidates <= 0) {
-      throw new IllegalArgumentException("getCandidates called with invalid numCandidates: " + numCandidates);
+  private void getCandidates_ValidateInput(State state) {
+    if (state.numCandidates <= 0) {
+      state.exception = new IllegalArgumentException(
+          "getCandidates called with invalid numCandidates: " + state.numCandidates);
+      state.currentStep = Step.FAIL;
+    } else {
+      state.currentStep = Step.EXTRACT_DATASTORE_TAG_CONSTRAINTS;
     }
+    getCandidates_HandleStep(state);
+  }
 
-    Map<String, ServerAddress> result = new HashMap<>(numCandidates);
+  private void getCandidates_ExtractDatastoreTagConstaints(State state) {
+    state.dsTagConstraints = new ArrayList<>();
 
-    try {
-      // Divide the hosts into two groups, based on a random midpoint
-      int randomMidpoint = 1 + random.nextInt(HostService.MAX_SCHEDULING_CONSTANT - 1);
+    if (state.resourceConstraints != null) {
+      for (ResourceConstraint constraint : state.resourceConstraints) {
+        if (constraint.getType().equals(ResourceConstraintType.DATASTORE_TAG)) {
 
-      if (random.nextBoolean()) {
-        // Case 1: first try [randomMidpoint, 10000], then [0, randomMidpoint]
-        QueryTask.Query query =
-            buildQuery(resourceConstraints, randomMidpoint, HostService.MAX_SCHEDULING_CONSTANT);
-        getCandidates(query, numCandidates, SortOrder.ASC, result);
-
-        if (result.size() < numCandidates) {
-          updateQueryRange(query, 0, randomMidpoint);
-          getCandidates(query, numCandidates, SortOrder.DESC, result);
-        }
-      } else {
-        // Case 2: first try [0, randomMidpoint] then [randomMidpoint, 10000]
-        QueryTask.Query query =
-            buildQuery(resourceConstraints, 0, randomMidpoint);
-        getCandidates(query, numCandidates, SortOrder.DESC, result);
-
-        if (result.size() < numCandidates) {
-          updateQueryRange(query, randomMidpoint, HostService.MAX_SCHEDULING_CONSTANT);
-          getCandidates(query, numCandidates, SortOrder.ASC, result);
+          List<String> tags = constraint.getValues();
+          if (tags != null && !tags.isEmpty()) {
+            state.dsTagConstraints.add(constraint);
+          }
         }
       }
-    } catch (NoSuchResourceException e) {
-      logger.warn(e.getMessage());
     }
 
-    return result;
+    if (state.dsTagConstraints.isEmpty()) {
+      state.currentStep = Step.CALCULATE_RANGES;
+    } else {
+      state.currentStep = Step.DATASTORE_TAG_QUERY;
+    }
+    getCandidates_HandleStep(state);
+  }
+
+  private void getCandidates_DatastoreTagQuery(State state) {
+    ResourceConstraint tagConstraint = state.dsTagConstraints.get(0);
+    List<String> tags = tagConstraint.getValues();
+
+    QueryTask.Query.Builder tagBuilder = QueryTask.Query.Builder.create(QueryTask.Query.Occurance.MUST_OCCUR);
+    for (String tag : tags) {
+      tagBuilder.addCollectionItemClause(
+          DatastoreService.State.FIELD_NAME_TAGS, tag, QueryTask.Query.Occurance.SHOULD_OCCUR);
+    }
+
+    QueryTask.Builder queryTaskBuilder = QueryTask.Builder.createDirectTask()
+        .setQuery(QueryTask.Query.Builder.create()
+            .addKindFieldClause(DatastoreService.State.class)
+            .addClause(tagBuilder.build())
+            .build());
+    QueryTask queryTask = queryTaskBuilder.build();
+
+    Operation queryOperation = this.cloudStoreHelper.createPost(ServiceUriPaths.CORE_QUERY_TASKS)
+        .setBody(queryTask)
+        .setContextId(LoggingUtils.getRequestId())
+        .setCompletion((response, ex) -> {
+          if (ex != null) {
+            state.exception = ex;
+            state.currentStep = Step.FAIL;
+            getCandidates_HandleStep(state);
+            return;
+          }
+          state.datastoreTagResponse = response;
+          state.currentStep = Step.BUILD_DS_TAG_CONSTRAINT;
+          getCandidates_HandleStep(state);
+        });
+    xenonClient.send(queryOperation);
+  }
+
+  private void getCandidates_BuildDsTagConstraint(State state) {
+    ResourceConstraint tagConstraint = state.dsTagConstraints.get(0);
+    ServiceDocumentQueryResult queryResult = state.datastoreTagResponse.getBody(QueryTask.class).results;
+
+    List<String> datastoreIds = new ArrayList<>();
+    for (String documentLink : queryResult.documentLinks) {
+      datastoreIds.add(ServiceUtils.getIDFromDocumentSelfLink(documentLink));
+    }
+
+    // No datastore which match the specified constraint is available
+    if (datastoreIds.size() == 0) {
+      state.exception = new NoSuchResourceException("Cannot satisfy constraint for datastore tag(s) '" +
+              tagConstraint.getValues().toString() + "' found");
+      state.currentStep = Step.FAIL;
+      getCandidates_HandleStep(state);
+      return;
+    }
+
+    // Based on the datastores we got, build a new clause to select the datastores.
+    ResourceConstraint datastoreConstraint = new ResourceConstraint(ResourceConstraintType.DATASTORE, datastoreIds);
+    if (tagConstraint.isSetNegative() && tagConstraint.isNegative()) {
+      datastoreConstraint.setNegative(true);
+    }
+    state.extraDatastoreConstraints.add(datastoreConstraint);
+
+    // Remove the datastore tag constraint we just considered
+    state.dsTagConstraints.remove(0);
+    state.datastoreTagResponse = null;
+
+    // If we have more datastore tag constraints, handle them
+    if (!state.dsTagConstraints.isEmpty()) {
+      state.currentStep = Step.DATASTORE_TAG_QUERY;
+      getCandidates_HandleStep(state);
+      return;
+    }
+
+    // No more datastore tag constraints, so proceed
+    state.currentStep = Step.CALCULATE_RANGES;
+    getCandidates_HandleStep(state);
+  }
+
+  private void getCandidates_CalculateRanges(State state) {
+    state.ranges = new Range[2];
+    state.ranges[0] = new Range();
+    state.ranges[1] = new Range();
+
+    // Divide the hosts into two groups, based on a random midpoint
+    int randomMidpoint = 1 + random.nextInt(HostService.MAX_SCHEDULING_CONSTANT - 1);
+    if (random.nextBoolean()) {
+      // Case 1: first try [randomMidpoint, 10000], then [0, randomMidpoint]
+      state.ranges[0].lowerBound = randomMidpoint;
+      state.ranges[0].upperBound = HostService.MAX_SCHEDULING_CONSTANT;
+      state.ranges[0].sortOrder = SortOrder.ASC;
+      state.ranges[1].lowerBound = 0;
+      state.ranges[1].upperBound = randomMidpoint;
+      state.ranges[1].sortOrder = SortOrder.DESC;
+    } else {
+      // Case 2: first try [0, randomMidpoint] then [randomMidpoint, 10000]
+      state.ranges[0].lowerBound = 0;
+      state.ranges[0].upperBound = randomMidpoint;
+      state.ranges[0].sortOrder = SortOrder.DESC;
+      state.ranges[1].lowerBound = randomMidpoint;
+      state.ranges[1].upperBound = HostService.MAX_SCHEDULING_CONSTANT;
+      state.ranges[1].sortOrder = SortOrder.ASC;
+    }
+    state.currentRange = 0;
+    state.currentStep = Step.BUILD_QUERY;
+    getCandidates_HandleStep(state);
   }
 
   /**
-   * Build the query that we'll use to query Cloudstore. We translate each constraint to a clause in a Xenon query.
+   * Build the query that we'll use to query CloudStore. We translate each constraint to a clause in a Xenon query.
    */
-  private QueryTask.Query buildQuery(
-      List<ResourceConstraint> resourceConstraints,
-      long lowerBound,
-      long upperBound) throws NoSuchResourceException {
+  private void getCandidates_BuildQuery(State state) {
     QueryTask.Query.Builder queryBuilder = QueryTask.Query.Builder.create()
         .addKindFieldClause(HostService.State.class)
         .addRangeClause(HostService.State.FIELD_NAME_SCHEDULING_CONSTANT,
-            QueryTask.NumericRange.createLongRange(lowerBound, upperBound, true, false));
+            QueryTask.NumericRange.createLongRange(
+                (long) state.ranges[state.currentRange].lowerBound,
+                (long) state.ranges[state.currentRange].upperBound,
+                true, false));
 
     // Ensure that we only look for hosts that are ready (not, for example, suspended)
     queryBuilder.addFieldClause(HostService.State.FIELD_NAME_STATE, HostState.READY);
@@ -195,8 +404,8 @@ public class CloudStoreConstraintChecker implements ConstraintChecker {
     // to pings and are marked as active.
     queryBuilder.addFieldClause(HostService.State.FIELD_NAME_AGENT_STATE, AgentState.ACTIVE);
 
-    if (resourceConstraints != null) {
-      for (ResourceConstraint constraint : resourceConstraints) {
+    if (state.resourceConstraints != null) {
+      for (ResourceConstraint constraint : state.resourceConstraints) {
 
         if (constraint == null) {
           continue;
@@ -210,13 +419,14 @@ public class CloudStoreConstraintChecker implements ConstraintChecker {
             addCollectionItemClause(queryBuilder, HostService.State.FIELD_NAME_REPORTED_DATASTORES, constraint);
             break;
           case DATASTORE_TAG:
-            addDatastoreTagClause(queryBuilder, constraint);
+            // Nothing to do here: we handled it EXTRACT_DATASTORE_TAG_CONSTRAINTS and will add
+            // extra datastore constraints based on it below.
             break;
           case HOST:
             addFieldClause(queryBuilder, HostService.State.FIELD_NAME_SELF_LINK, HOST_SELF_LINK_PREFIX, constraint);
             break;
           case MANAGEMENT_ONLY:
-            // This constraint doesn't come in with values, but we want to reuse our code, so we set them
+            // This constraint doesn't come with values, but we want to reuse our code, so we set them
             constraint.setValues(managementTagValues);
             addCollectionItemClause(queryBuilder, HostService.State.FIELD_NAME_USAGE_TAGS, constraint);
             break;
@@ -228,8 +438,107 @@ public class CloudStoreConstraintChecker implements ConstraintChecker {
         }
       }
     }
+    if (state.extraDatastoreConstraints != null) {
+      for (ResourceConstraint constraint : state.extraDatastoreConstraints) {
+        addCollectionItemClause(queryBuilder, HostService.State.FIELD_NAME_REPORTED_DATASTORES, constraint);
+      }
+    }
 
-    return queryBuilder.build();
+    state.query = queryBuilder.build();
+    state.currentStep = Step.GET_CANDIDATES;
+    getCandidates_HandleStep(state);
+  }
+
+  /**
+   * Submit the query to CloudStore.
+   */
+  private void getCandidates_GetCandidates(State state) {
+
+    QueryTask.Builder queryTaskBuilder = QueryTask.Builder.createDirectTask()
+        .setQuery(state.query)
+        .setResultLimit(state.numCandidates)
+        .addOption(QueryTask.QuerySpecification.QueryOption.TOP_RESULTS)
+        .addOption(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
+
+    if (state.ranges[state.currentRange].sortOrder == SortOrder.ASC) {
+      queryTaskBuilder.orderAscending(HostService.State.FIELD_NAME_SCHEDULING_CONSTANT,
+          ServiceDocumentDescription.TypeName.LONG);
+    } else {
+      queryTaskBuilder.orderDescending(HostService.State.FIELD_NAME_SCHEDULING_CONSTANT,
+          ServiceDocumentDescription.TypeName.LONG);
+    }
+
+    QueryTask queryTask = queryTaskBuilder.build();
+
+    Operation queryOperation = this.cloudStoreHelper.createPost(ServiceUriPaths.CORE_QUERY_TASKS)
+        .setBody(queryTask)
+        .setContextId(LoggingUtils.getRequestId())
+        .setCompletion((response, ex) -> {
+          if (ex != null) {
+            state.exception = ex;
+            state.currentStep = Step.FAIL;
+            getCandidates_HandleStep(state);
+            return;
+          }
+          state.queryResponse = response;
+          state.currentStep = Step.ANALYZE_CANDIDATES;
+          getCandidates_HandleStep(state);
+        });
+    xenonClient.send(queryOperation);
+  }
+
+  private void getCandidates_AnalyzeCandidates(State state) {
+
+    Map<String, Object> documents = extractDocumentsFromQuery(state.queryResponse);
+    // Note that if documents == null, logging happened in extractDocumentsFromQuery.
+
+    if (documents != null) {
+      for (Object document : documents.values()) {
+        HostService.State host = Utils.fromJson(document, HostService.State.class);
+        if (host == null) {
+          logger.warn("Query result had invalid host document, ignoring");
+          continue;
+        }
+        state.candidates.put(ServiceUtils.getIDFromDocumentSelfLink(host.documentSelfLink),
+            new ServerAddress(host.hostAddress, host.agentPort));
+
+        if (state.candidates.size() >= state.numCandidates) {
+          // If we're searching the second half of the search space, we need to make sure not to add too many
+          // candidates.
+          break;
+        }
+      }
+    }
+
+    // If we've either searched all the ranges or we've found enough candidates,
+    // we're done and we can return what we've found
+    if (state.currentRange >= state.ranges.length - 1
+        || state.candidates.size() >= state.numCandidates) {
+      state.currentStep = Step.SUCCESS;
+      getCandidates_HandleStep(state);
+      return;
+    }
+
+    // We didn't find enough queries, check the next range
+    state.currentRange++;
+    updateQueryRange(state.query,
+        state.ranges[state.currentRange].lowerBound,
+        state.ranges[state.currentRange].upperBound);
+    state.currentStep = Step.GET_CANDIDATES;
+    getCandidates_HandleStep(state);
+    return;
+  }
+
+  private void getCandidates_Success(State state) {
+    state.completion.handle(state.candidates, null);
+    return;
+  }
+
+  private void getCandidates_Fail(State state) {
+    logger.warn("getCandidates() failed: " + state.exception);
+    state.candidates.clear();
+    state.completion.handle(state.candidates, state.exception);
+    return;
   }
 
   /**
@@ -315,71 +624,6 @@ public class CloudStoreConstraintChecker implements ConstraintChecker {
           queryTerm.term.range = QueryTask.NumericRange.createLongRange(lowerBound, upperBound, true, false);
           break;
         }
-      }
-    }
-  }
-
-  /**
-   * Submit the query to CloudStore.
-   */
-  private void getCandidates(
-      QueryTask.Query query,
-      int numCandidates,
-      SortOrder sortOrder,
-      Map<String, ServerAddress> result) {
-
-    QueryTask.Builder queryTaskBuilder = QueryTask.Builder.createDirectTask()
-        .setQuery(query)
-        .setResultLimit(numCandidates)
-        .addOption(QueryTask.QuerySpecification.QueryOption.TOP_RESULTS)
-        .addOption(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
-
-    if (sortOrder == SortOrder.ASC) {
-      queryTaskBuilder.orderAscending(HostService.State.FIELD_NAME_SCHEDULING_CONSTANT,
-          ServiceDocumentDescription.TypeName.LONG);
-    } else {
-      queryTaskBuilder.orderDescending(HostService.State.FIELD_NAME_SCHEDULING_CONSTANT,
-          ServiceDocumentDescription.TypeName.LONG);
-    }
-
-    QueryTask queryTask = queryTaskBuilder.build();
-
-    try {
-      queryHosts(queryTask, numCandidates, result);
-    } catch (Throwable t) {
-      logger.warn("Failed to query Cloudstore for hosts matching {}, exception: {}",
-          Utils.toJsonHtml(query), Utils.toString(t));
-    }
-  }
-
-  /**
-   * Do a simple query to one CloudStore host.
-   *
-   * Unlike other Cloudstore entities, hosts are fully replicated so we don't need to do a broadcast query.
-   */
-  private void queryHosts(QueryTask queryTask, int numCandidates, Map<String, ServerAddress> result)
-      throws Throwable {
-    Operation completedOp = xenonRestClient.query(queryTask);
-    Map<String, Object> documents = extractDocumentsFromQuery(completedOp);
-
-    if (documents == null) {
-      // Logging happened in extractDocumentsFromQuery
-      return;
-    }
-
-    for (Object document : documents.values()) {
-      HostService.State host = Utils.fromJson(document, HostService.State.class);
-      if (host == null) {
-        logger.warn("Host query had invalid host, ignoring");
-        continue;
-      }
-      result.put(ServiceUtils.getIDFromDocumentSelfLink(host.documentSelfLink),
-          new ServerAddress(host.hostAddress, host.agentPort));
-
-      if (result.size() >= numCandidates) {
-        // If we're searching the second half of the search space, we need to make sure not to add too many
-        // candidates.
-        break;
       }
     }
   }
