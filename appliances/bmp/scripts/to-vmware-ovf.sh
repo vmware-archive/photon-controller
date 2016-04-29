@@ -62,6 +62,10 @@ sed -i.bak $'s@<VirtualHardwareSection@ <ProductSection ovf:required="false"> \
         <Label>ESX image to install</Label> \
         <Description>An http or tftp link to the ESX image to install. Default is on "//etc//bmp//installer-pxe-modules"</Description> \
       </Property> \
+      <Property ovf:key="vlan_on_hosts" ovf:userConfigurable="true" ovf:type="string"> \
+        <Label>Optional VLAN to set on the Management Network on the PXE booted ESX hosts</Label> \
+        <Description>Optional VLAN to set on the provisioned hosts</Description> \
+      </Property> \
     </ProductSection> \
     <VirtualHardwareSection@' ${outputVM}.ovf
 

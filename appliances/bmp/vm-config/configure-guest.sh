@@ -116,9 +116,13 @@ function set_dhcp_conf(){
   fi
   if [ ! -z "$pxe_image_files" ]
   then
-    sed -i "s@prefix=http.*@prefix=${pxe_image_files}@g" /etc/bmp/boot.cfg
+    sed -i "s@#esxli network vswitch standard portgroup set -p \"Management Network\" --vlan-id 100@esxli network vswitch standard portgroup set -p \"Management Network\" --vlan-id ${vlan_on_hosts}@g" /etc/bmp/ks.cfg
   fi
 
+  if [ ! -z "$vlan_on_hosts" ]
+  then
+    sed -i "s@prefix=http.*@prefix=${pxe_image_files}@g" /etc/bmp/boot.cfg
+  fi
 }
 
 function set_esxboot_file_path(){
@@ -143,6 +147,7 @@ function parse_ovf_env(){
   dhcp_range=$(xmllint $XML_FILE --xpath "string(//*/@*[local-name()='key' and .='dhcp_range']/../@*[local-name()='value'])")
   dhcp_lease_expiry=$(xmllint $XML_FILE --xpath "string(//*/@*[local-name()='key' and .='dhcp_lease_expiry']/../@*[local-name()='value'])")
   pxe_image_files=$(xmllint $XML_FILE --xpath "string(//*/@*[local-name()='key' and .='pxe_image_files']/../@*[local-name()='value'])")
+  vlan_on_hosts=$(xmllint $XML_FILE --xpath "string(//*/@*[local-name()='key' and .='vlan_on_hosts']/../@*[local-name()='value'])")
 
   echo "ip0" "$ip0"
   echo "gateway" "$gateway"
@@ -155,6 +160,7 @@ function parse_ovf_env(){
   echo "dhcp_range" "$dhcp_range"
   echo "dhcp_lease_expiry" "$dhcp_lease_expiry"
   echo "pxe_image_files" "$pxe_image_files"
+  echo "vlan_on_hosts" "$vlan_on_hosts"
 }
 
 set +e
