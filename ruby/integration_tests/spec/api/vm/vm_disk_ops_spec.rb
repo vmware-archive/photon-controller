@@ -62,6 +62,29 @@ describe "vm disk ops", management: true do
     end
   end
 
+  it "should fail to attach a disk to a vm not in the same project" do
+    project2 = @seeder.tenant!.create_project(
+        name: random_name("project-"),
+        resource_ticket_name: @seeder.resource_ticket!.name,
+        limits: [create_limit("vm", 10.0, "COUNT")])
+
+    persistent_disk3 = project2.create_disk(
+        name: random_name("disk-"),
+        kind: "persistent-disk",
+        flavor: @seeder.persistent_disk_flavor!.name,
+        capacity_gb: 2,
+        boot_disk: false,
+        affinities: [{id: @vm.id, kind: "vm"}])
+    begin
+      @vm.attach_disk(persistent_disk3.id)
+    rescue EsxCloud::ApiError => e
+      e.response_code.should == 400
+      e.errors.size.should == 1
+      e.errors[0].code.should == "InvalidEntity"
+    rescue EsxCloud::CliError => e
+      e.message.should match("InvalidEntity")
+  end
+
   it "should fail detach when disk is not attached" do
     begin
       @vm.detach_disk(@persistent_disk.id)
