@@ -90,15 +90,34 @@ public class CloudStoreHelper {
         .setReferer(this.localHostUri);
   }
 
+  public Operation createLocalDelete(String path) {
+    return Operation
+        .createDelete(selectLocalCloudStoreIfAvailable(path))
+        .setBody(new ServiceDocument())
+        .setReferer(this.localHostUri);
+  }
+
   public Operation createGet(String path) {
     return Operation
         .createGet(getCloudStoreURI(path))
         .setReferer(this.localHostUri);
   }
 
+  public Operation createLocalGet(String path) {
+    return Operation
+        .createGet(selectLocalCloudStoreIfAvailable(path))
+        .setReferer(this.localHostUri);
+  }
+
   public Operation createPost(String path) {
     return Operation
         .createPost(getCloudStoreURI(path))
+        .setReferer(this.localHostUri);
+  }
+
+  public Operation createLocalPost(String path) {
+    return Operation
+        .createPost(selectLocalCloudStoreIfAvailable(path))
         .setReferer(this.localHostUri);
   }
 
@@ -111,6 +130,12 @@ public class CloudStoreHelper {
   public Operation createPatch(String path) {
     return Operation
         .createPatch(getCloudStoreURI(path))
+        .setReferer(this.localHostUri);
+  }
+
+  public Operation createLocalPatch(String path) {
+    return Operation
+        .createPatch(selectLocalCloudStoreIfAvailable(path))
         .setReferer(this.localHostUri);
   }
 }

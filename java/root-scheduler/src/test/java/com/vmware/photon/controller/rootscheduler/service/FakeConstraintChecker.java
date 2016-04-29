@@ -39,6 +39,7 @@ public class FakeConstraintChecker implements ConstraintChecker {
   public void getCandidates(
       List<ResourceConstraint> constraints,
       int numCandidates,
+      String requestId,
       ConstraintChecker.GetCandidatesCompletion completion) {
     completion.handle(this.candidates, null);
   }
