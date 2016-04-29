@@ -268,7 +268,7 @@ public class SchedulerXenonHostTest {
       xenonConfig.setBindAddress("0.0.0.0");
       xenonConfig.setPort(18000);
       xenonConfig.setStoragePath(storageDir.getAbsolutePath());
-      CloudStoreConstraintChecker checker = new CloudStoreConstraintChecker(null);
+      CloudStoreConstraintChecker checker = new CloudStoreConstraintChecker(null, null);
       host = new SchedulerXenonHost(xenonConfig, () -> null, null, checker, null, null);
       host.setMaintenanceIntervalMicros(maintenanceInterval);
       host.start();

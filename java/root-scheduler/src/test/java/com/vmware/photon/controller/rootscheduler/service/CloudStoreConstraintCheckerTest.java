@@ -21,6 +21,7 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreServiceFactor
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment;
+import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.XenonRestClient;
 import com.vmware.photon.controller.common.zookeeper.gen.ServerAddress;
@@ -76,6 +77,7 @@ public class CloudStoreConstraintCheckerTest {
   private static final int SMALL_NUMBER_OF_CS_HOSTS = 1;
   private TestEnvironment cloudStoreTestEnvironmentSmall;
   private XenonRestClient cloudstoreClientSmall;
+  private CloudStoreHelper cloudstoreHelperSmall;
   private CloudStoreConstraintChecker checkerSmall;
 
   // The second Cloudstore environment has 3 Cloudstores and eventually, when we work well
@@ -83,6 +85,7 @@ public class CloudStoreConstraintCheckerTest {
   private static final int LARGE_NUMBER_OF_CS_HOSTS = 3;
   private TestEnvironment cloudStoreTestEnvironmentLarge;
   private XenonRestClient cloudstoreClientLarge;
+  private CloudStoreHelper cloudstoreHelperLarge;
   private CloudStoreConstraintChecker checkerLarge;
 
   private static final int PERF_NUM_CANDIDATE_REQUESTS = 10000;
@@ -123,14 +126,18 @@ public class CloudStoreConstraintCheckerTest {
     this.cloudStoreTestEnvironmentSmall = TestEnvironment.create(SMALL_NUMBER_OF_CS_HOSTS);
     this.cloudstoreClientSmall =
         new XenonRestClient(cloudStoreTestEnvironmentSmall.getServerSet(), Executors.newFixedThreadPool(1));
+    this.cloudstoreHelperSmall = new CloudStoreHelper(cloudStoreTestEnvironmentSmall.getServerSet());
     cloudstoreClientSmall.start();
-    this.checkerSmall = new CloudStoreConstraintChecker(cloudstoreClientSmall);
+    this.checkerSmall = new CloudStoreConstraintChecker(
+        this.cloudstoreClientSmall, this.cloudstoreHelperSmall);
 
     this.cloudStoreTestEnvironmentLarge = TestEnvironment.create(LARGE_NUMBER_OF_CS_HOSTS);
     this.cloudstoreClientLarge =
         new XenonRestClient(cloudStoreTestEnvironmentLarge.getServerSet(), Executors.newFixedThreadPool(1));
+    this.cloudstoreHelperLarge = new CloudStoreHelper(cloudStoreTestEnvironmentLarge.getServerSet());
     cloudstoreClientLarge.start();
-    this.checkerLarge = new CloudStoreConstraintChecker(cloudstoreClientLarge);
+    this.checkerLarge = new CloudStoreConstraintChecker(
+        this.cloudstoreClientLarge, this.cloudstoreHelperLarge);
   }
 
   @AfterTest
