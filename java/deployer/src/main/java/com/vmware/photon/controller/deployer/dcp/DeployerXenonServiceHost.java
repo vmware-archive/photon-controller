@@ -36,6 +36,7 @@ import com.vmware.photon.controller.deployer.configuration.ServiceConfiguratorFa
 import com.vmware.photon.controller.deployer.configuration.ServiceConfiguratorFactoryProvider;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerFactoryService;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateFactoryService;
+import com.vmware.photon.controller.deployer.dcp.entity.VibFactoryService;
 import com.vmware.photon.controller.deployer.dcp.entity.VmFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.AllocateClusterManagerResourcesTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.AllocateHostResourceTaskFactoryService;
@@ -147,6 +148,7 @@ public class DeployerXenonServiceHost
       // Entity Services
       ContainerFactoryService.class,
       ContainerTemplateFactoryService.class,
+      VibFactoryService.class,
       VmFactoryService.class,
 
       // Task Services

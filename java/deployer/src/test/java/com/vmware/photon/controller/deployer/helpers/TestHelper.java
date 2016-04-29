@@ -51,6 +51,7 @@ import com.vmware.photon.controller.deployer.dcp.entity.ContainerFactoryService;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerService;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateFactoryService;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateService;
+import com.vmware.photon.controller.deployer.dcp.entity.VibService;
 import com.vmware.photon.controller.deployer.dcp.entity.VmFactoryService;
 import com.vmware.photon.controller.deployer.dcp.entity.VmService;
 import com.vmware.photon.controller.deployer.helpers.dcp.TestEnvironment;
@@ -279,6 +280,13 @@ public class TestHelper {
       startState.metadata.put(HostService.State.METADATA_KEY_NAME_MANAGEMENT_PORTGROUP, "VM Network");
     }
 
+    return startState;
+  }
+
+  public static VibService.State getVibServiceStartState() {
+    VibService.State startState = new VibService.State();
+    startState.vibName = "VIB_NAME";
+    startState.hostServiceLink = "HOST_SERVICE_LINK";
     return startState;
   }
 
