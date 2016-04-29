@@ -45,17 +45,16 @@ import com.vmware.photon.controller.apife.exceptions.external.InvalidLocalitySpe
 import com.vmware.photon.controller.apife.exceptions.external.NetworkNotFoundException;
 import com.vmware.photon.controller.apife.exceptions.external.UnfulfillableAffinitiesException;
 import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
+import com.vmware.photon.controller.common.clients.SchedulerErrorCodeToExceptionMapper;
 import com.vmware.photon.controller.common.clients.exceptions.InvalidAgentStateException;
 import com.vmware.photon.controller.common.clients.exceptions.InvalidSchedulerException;
 import com.vmware.photon.controller.common.clients.exceptions.NoSuchResourceException;
 import com.vmware.photon.controller.common.clients.exceptions.NotEnoughCpuResourceException;
 import com.vmware.photon.controller.common.clients.exceptions.NotEnoughDatastoreCapacityException;
 import com.vmware.photon.controller.common.clients.exceptions.NotEnoughMemoryResourceException;
-import com.vmware.photon.controller.common.clients.exceptions.NotLeaderException;
 import com.vmware.photon.controller.common.clients.exceptions.ResourceConstraintException;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
 import com.vmware.photon.controller.common.clients.exceptions.StaleGenerationException;
-import com.vmware.photon.controller.common.clients.exceptions.SystemErrorException;
 import com.vmware.photon.controller.common.zookeeper.gen.ServerAddress;
 import com.vmware.photon.controller.flavors.gen.Flavor;
 import com.vmware.photon.controller.flavors.gen.QuotaLineItem;
@@ -260,7 +259,7 @@ public class ResourceReserveStepCmd extends StepCommand {
     ResourceConstraint resourceConstraint = new ResourceConstraint();
     // Note that we have to use an ArrayList here instead of an ImmutableList or an Arrays.asList.
     // When we send a POST to the PlacementTask service, if we use ImmutableLists
-    // Kyro (used by Xenon) will fail to copy the body of the POST and will throw an exception.
+    // Kryo (used by Xenon) will fail to copy the body of the POST and will throw an exception.
     ArrayList<String> constraintValues = new ArrayList<String>();
 
     switch (localityEntity.getKind()) {
@@ -476,32 +475,8 @@ public class ResourceReserveStepCmd extends StepCommand {
     Operation placementResponse = schedulerXenonRestClient.post(PlacementTaskService.FACTORY_LINK, placementTask);
     PlacementTask taskResponse = placementResponse.getBody(PlacementTask.class);
 
-    switch (taskResponse.resultCode) {
-      case OK:
-        break;
-      case NO_SUCH_RESOURCE:
-        throw new NoSuchResourceException(taskResponse.error);
-      case NOT_ENOUGH_CPU_RESOURCE:
-        throw new NotEnoughCpuResourceException(taskResponse.error);
-      case NOT_ENOUGH_MEMORY_RESOURCE:
-        throw new NotEnoughMemoryResourceException(taskResponse.error);
-      case NOT_ENOUGH_DATASTORE_CAPACITY:
-        throw new NotEnoughDatastoreCapacityException(taskResponse.error);
-      case RESOURCE_CONSTRAINT:
-        throw new ResourceConstraintException(taskResponse.error);
-      case INVALID_SCHEDULER:
-        throw new InvalidSchedulerException(taskResponse.error);
-      case SYSTEM_ERROR:
-        throw new SystemErrorException(taskResponse.error);
-      case NOT_LEADER:
-        throw new NotLeaderException();
-      case INVALID_STATE:
-        throw new InvalidAgentStateException(taskResponse.error);
-      default:
-        throw new RpcException(String.format("Unknown result: %s : %s", taskResponse.resultCode,
-            taskResponse.error));
-    }
-
+    SchedulerErrorCodeToExceptionMapper.mapErrorCodeToException(
+          taskResponse.resultCode, taskResponse.error);
     return taskResponse;
   }
 

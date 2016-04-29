@@ -2751,7 +2751,6 @@ public class HostClientTest {
       return new Object[][]{
           {PlaceResultCode.RESOURCE_CONSTRAINT, ResourceConstraintException.class},
           {PlaceResultCode.SYSTEM_ERROR, SystemErrorException.class},
-          {PlaceResultCode.NOT_LEADER, RpcException.class}
       };
     }
 
