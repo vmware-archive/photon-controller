@@ -318,6 +318,9 @@ public class ImageHostToHostCopyService extends StatefulService {
    * @param current
    */
   private void copyImageHostToHost(final State current) {
+    ServiceUtils.logInfo(this, "Start to copy image: %s from host %s to host %s", current.image, current.host,
+        current.destinationHost.getHost());
+
     if (current.sourceDatastore.equals(current.destinationDatastore)) {
       ServiceUtils.logInfo(this, "Skip copying image to source itself");
       sendStageProgressPatch(current, TaskState.TaskStage.FINISHED, null);
