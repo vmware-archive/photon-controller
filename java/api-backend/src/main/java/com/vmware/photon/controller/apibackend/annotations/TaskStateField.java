@@ -19,7 +19,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * This annotation helps to declare a field of TaskState.
+ * This annotation indicates that a field is of TaskState type or sub-type.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
