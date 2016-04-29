@@ -64,14 +64,14 @@ module EsxCloud
         end
       end
 
-      DATASTORE_DIRS_TO_DELETE = ["deleted_image", "disk", "image", "tmp_image", "vm", "tmp_upload"]
+      DATASTORE_DIRS_TO_DELETE = ["deleted_image", "disk", "image", "tmp_image", "vm", "tmp_upload", "installer"]
       def clean_datastore(ssh, datastore)
         puts "cleaning datastore #{datastore}"
 
         datastore_dir = "/vmfs/volumes/#{datastore}/"
         DATASTORE_DIRS_TO_DELETE.each do |folder|
           if datastore.start_with?('vsan')
-            rm_cmd = "for dir in `/usr/lib/vmware/osfs/bin/osfs-ls #{datastore_dir} | grep #{folder}`; do"\
+            rm_cmd = "for dir in `/usr/lib/vmware/osfs/bin/osfs-ls #{datastore_dir} | grep -i #{folder}`; do"\
                      " rm -rf #{datastore_dir}$dir/*"\
                      " && (rm -rf #{datastore_dir}$dir/.* || true)"\
                      " && /usr/lib/vmware/osfs/bin/osfs-rmdir #{datastore_dir}$dir;"\
