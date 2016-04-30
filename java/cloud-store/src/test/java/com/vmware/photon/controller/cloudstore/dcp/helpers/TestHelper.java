@@ -20,7 +20,6 @@ import com.vmware.photon.controller.cloudstore.CloudStoreConfig;
 import com.vmware.photon.controller.cloudstore.CloudStoreConfigTest;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
-import com.vmware.photon.controller.cloudstore.dcp.entity.VmService;
 import com.vmware.photon.controller.common.config.BadConfigException;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.thrift.ThriftModule;
@@ -145,7 +144,7 @@ public class TestHelper {
     result = xenonRestClient.delete(createdState.documentSelfLink, deleteState);
     assertThat(result.getStatusCode(), is(200));
 
-    VmService.State deletedState = result.getBody(VmService.State.class);
+    T deletedState = result.getBody(stateType);
     if (currentStateExpiration > 0) {
       assertThat(new BigDecimal(deletedState.documentExpirationTimeMicros),
           not(closeTo(

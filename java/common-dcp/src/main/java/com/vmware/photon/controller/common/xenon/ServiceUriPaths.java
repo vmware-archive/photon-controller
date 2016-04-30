@@ -49,7 +49,7 @@ public class ServiceUriPaths extends com.vmware.xenon.services.common.ServiceUri
       CLUSTERMANAGER_ROOT + "/swarm-cluster-create-tasks";
 
   public static final String DEFAULT_CLOUD_STORE_NODE_SELECTOR =
-      com.vmware.xenon.services.common.ServiceUriPaths.SHA1_3X_NODE_SELECTOR;
+      com.vmware.xenon.services.common.ServiceUriPaths.DEFAULT_3X_NODE_SELECTOR;
 
   public static final String NODE_SELECTOR_FOR_SYMMETRIC_REPLICATION =
       com.vmware.xenon.services.common.ServiceUriPaths.DEFAULT_NODE_SELECTOR;
