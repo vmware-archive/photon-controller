@@ -15,6 +15,7 @@
 import abc
 import logging
 
+from host.hypervisor.esx.hypervisor import EsxHypervisor
 from host.hypervisor.image_monitor import ImageMonitor
 from host.hypervisor.placement_manager import PlacementManager
 from host.hypervisor.placement_manager import PlacementOption
@@ -55,16 +56,7 @@ class Hypervisor(object):
     def __init__(self, agent_config):
         self._logger = logging.getLogger(__name__)
         self._config = agent_config
-
-        if self._config.hypervisor == "esx":
-            from esx.hypervisor import EsxHypervisor
-            # This will throw an error if it can't connect to the local vim.
-            self.hypervisor = EsxHypervisor(agent_config)
-        elif self._config.hypervisor == "fake":
-            from fake.hypervisor import FakeHypervisor
-            self.hypervisor = FakeHypervisor(agent_config)
-        else:
-            raise ValueError("Invalid hypervisor")
+        self.hypervisor = EsxHypervisor(agent_config)
 
         """
         The creation of the Hypervisors above translates datastore names
