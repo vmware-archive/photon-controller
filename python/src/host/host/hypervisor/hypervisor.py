@@ -60,9 +60,6 @@ class Hypervisor(object):
             from esx.hypervisor import EsxHypervisor
             # This will throw an error if it can't connect to the local vim.
             self.hypervisor = EsxHypervisor(agent_config)
-        elif self._config.hypervisor == "fake":
-            from fake.hypervisor import FakeHypervisor
-            self.hypervisor = FakeHypervisor(agent_config)
         else:
             raise ValueError("Invalid hypervisor")
 

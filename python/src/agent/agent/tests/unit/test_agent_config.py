@@ -28,7 +28,6 @@ from gen.common.ttypes import ServerAddress
 from gen.resource.ttypes import ImageDatastore
 from gen.stats.plugin.ttypes import StatsPluginConfig
 from hamcrest import *  # noqa
-from host.hypervisor.fake.hypervisor import FakeHypervisor
 
 
 class TestUnitAgent(unittest.TestCase):
@@ -69,10 +68,7 @@ class TestUnitAgent(unittest.TestCase):
         self.agent._parse_options(["--config-path", self.agent_conf_dir])
         self.agent._load_config()
 
-        assert_that(self.agent._options.datastores,
-                    equal_to(["datastore1"]))
-        # testing that uuid.uuid5 doesn't blowup
-        FakeHypervisor(self.agent)
+        assert_that(self.agent._options.datastores, equal_to(["datastore1"]))
 
     def test_persistence(self):
         """
