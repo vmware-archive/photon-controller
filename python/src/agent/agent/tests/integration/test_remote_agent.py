@@ -18,7 +18,6 @@ import time
 import unittest
 import uuid
 
-from agent.tests.common_helper_functions import RuntimeUtils
 from common.photon_thrift.direct_client import DirectClient
 from gen.agent import AgentControl
 from gen.agent.ttypes import AgentStatusCode
@@ -201,8 +200,6 @@ class TestRemoteAgent(unittest.TestCase, AgentCommonTests):
         if "agent_remote_test" not in config:
             raise SkipTest()
 
-        self.runtime = RuntimeUtils()
-
         # Set the default netork name and datastore name
         self._vm_network = "VM Network"
         self._datastores = None
@@ -258,7 +255,6 @@ class TestRemoteAgent(unittest.TestCase, AgentCommonTests):
         self.control_client.close()
 
     def tearDown(self):
-        self.runtime.cleanup()
         self._close_agent_connections()
         self.vim_client.disconnect()
 

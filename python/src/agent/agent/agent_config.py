@@ -320,11 +320,6 @@ class AgentConfig(object):
 
     @property
     @locked
-    def hypervisor(self):
-        return self._options.hypervisor.lower()
-
-    @property
-    @locked
     def bootstrap_poll_frequency(self):
         return self._options.bootstrap_poll_frequency
 
@@ -459,9 +454,6 @@ class AgentConfig(object):
         parser.add_option("--console-log", dest="console_log",
                           action="store_true",
                           default=False, help="Show the logs in the console.")
-        parser.add_option("--hypervisor", dest="hypervisor", type="string",
-                          default="esx",
-                          help="The hypervisor that we are running on.")
         parser.add_option("--config-path", dest="config_path", type="string",
                           default=self.DEFAULT_CONFIG_PATH)
         parser.add_option("--datastores", dest=self.DATASTORES, type="string",
