@@ -20,9 +20,6 @@ PHOTON_CONTROLLER_GROUPNAME="photon-controller-agent"
 # Optionally set additional PHOTON_CONTROLLER_AGENT_PARAMS
 . ${PHOTON_CONTROLLER_ROOT}/sh/photon_controller_params.sh
 
-PHOTON_CONTROLLER_AGENT_PARAMS="--hypervisor esx $PHOTON_CONTROLLER_AGENT_PARAMS"
-
-
 . ${PHOTON_CONTROLLER_ROOT}/sh/photon_controller_init.sh
 
 PYTHON_PATH="/bin/python"
