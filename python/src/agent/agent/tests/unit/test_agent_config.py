@@ -28,7 +28,6 @@ from gen.common.ttypes import ServerAddress
 from gen.resource.ttypes import ImageDatastore
 from gen.stats.plugin.ttypes import StatsPluginConfig
 from hamcrest import *  # noqa
-from host.hypervisor.fake.hypervisor import FakeHypervisor
 
 
 class TestUnitAgent(unittest.TestCase):
@@ -47,19 +46,17 @@ class TestUnitAgent(unittest.TestCase):
 
     def test_agent_defaults(self):
         self.agent._parse_options(["--config-path", self.agent_conf_dir])
-        assert_that(self.agent._options.hypervisor,
-                    equal_to("esx"))
+        assert_that(self.agent._options.port, equal_to(8835))
 
     def test_agent_config_overrides(self):
         conf_file = os.path.join(self.agent_conf_dir, "config.json")
         with open(conf_file, 'w') as outfile:
-            json.dump({"hypervisor": "fake"}, outfile)
+            json.dump({"port": 8836}, outfile)
 
         self.agent._parse_options(["--config-path", self.agent_conf_dir])
         self.agent._load_config()
 
-        assert_that(self.agent._options.hypervisor,
-                    equal_to("fake"))
+        assert_that(self.agent._options.port, equal_to(8836))
 
     def test_agent_config_encoding(self):
         conf_file = os.path.join(self.agent_conf_dir, "config.json")
@@ -69,10 +66,7 @@ class TestUnitAgent(unittest.TestCase):
         self.agent._parse_options(["--config-path", self.agent_conf_dir])
         self.agent._load_config()
 
-        assert_that(self.agent._options.datastores,
-                    equal_to(["datastore1"]))
-        # testing that uuid.uuid5 doesn't blowup
-        FakeHypervisor(self.agent)
+        assert_that(self.agent._options.datastores, equal_to(["datastore1"]))
 
     def test_persistence(self):
         """
