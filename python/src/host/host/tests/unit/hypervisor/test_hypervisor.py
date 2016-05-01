@@ -35,22 +35,6 @@ class TestHypervisor(unittest.TestCase):
     def tearDown(self):
         self.services_helper.teardown()
 
-    @patch("pysdk.connect.Connect")
-    @patch("pyVmomi.vim.ServiceInstance")
-    @patch.object(VimClient, "_poll_updates")
-    @patch.object(VimClient, "_acquire_local_credentials", return_value=("username", "password"))
-    def test_hypervisor(self, _credentials_mock, update_mock, si_mock, connect_mock):
-        self.agent_config = AgentConfig(["--config-path", self.agent_config_dir, "--hypervisor", "fake"])
-        Hypervisor(self.agent_config)
-
-    def test_hypervisor_setter(self):
-        self.agent_config = AgentConfig(["--config-path", self.agent_config_dir, "--hypervisor", "fake"])
-        hypervisor = Hypervisor(self.agent_config)
-        hypervisor.set_cpu_overcommit(2.0)
-        assert_that(hypervisor.cpu_overcommit, equal_to(2.0))
-        hypervisor.set_memory_overcommit(3.0)
-        assert_that(hypervisor.memory_overcommit, equal_to(3.0))
-
     def test_unknown_hypervisor(self):
         self.agent_config = AgentConfig(["--config-path", self.agent_config_dir, "--hypervisor", "dummy"])
         self.assertRaises(ValueError, Hypervisor, self.agent_config)

@@ -151,7 +151,6 @@ class RuntimeUtils(object):
             "--stats-store-endpoint": "10.1.1.20",
             "--stats-store-port": "8081",
             "--stats-host-tags": "CLOUD,MGMT",
-            "--hypervisor": "fake",
             "--logging-level": "debug",
             "--no-syslog": None,
             "--vm-network": "VM Network",
