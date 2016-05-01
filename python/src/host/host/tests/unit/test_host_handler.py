@@ -76,7 +76,6 @@ from gen.scheduler.ttypes import Score
 from host.host_handler import HostHandler
 from host.hypervisor.datastore_manager import DatastoreNotFoundException
 from host.hypervisor.disk_manager import DiskAlreadyExistException
-from host.hypervisor.hypervisor import Hypervisor
 from host.hypervisor.image_scanner import DatastoreImageScanner
 from host.hypervisor.image_sweeper import DatastoreImageSweeper
 from host.hypervisor.placement_manager import InvalidReservationException
@@ -120,7 +119,6 @@ class HostHandlerTestCase(unittest.TestCase):
         self.hostname = "localhost"
 
         self._config = MagicMock()
-        self._config.hypervisor = "fake"
         self._config.agent_id = stable_uuid("agent_id")
         self._config.hostname = "localhost"
         self._config.host_port = 1234
@@ -157,14 +155,12 @@ class HostHandlerTestCase(unittest.TestCase):
         return resource
 
     def test_get_resources(self):
-        hv = Hypervisor(self._config)
-        handler = HostHandler(hv)
+        handler = HostHandler(MagicMock())
         request = GetResourcesRequest()
 
         response = handler.get_resources(request)
 
-        assert_that(response.result,
-                    equal_to(GetResourcesResultCode.OK))
+        assert_that(response.result, equal_to(GetResourcesResultCode.OK))
 
     def test_place(self):
         handler = HostHandler(MagicMock())

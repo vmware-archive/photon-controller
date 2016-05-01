@@ -14,7 +14,6 @@ import abc
 from common.kind import Flavor
 import enum
 
-from gen.host.ttypes import HostConfig as ThriftHostConfig
 from gen.resource.ttypes import Datastore as ThriftDatastore
 from gen.resource.ttypes import Disk as ThriftDisk
 from gen.resource.ttypes import DiskImage as ThriftDiskImage
@@ -287,43 +286,6 @@ class DiskImage(BaseResource):
 
     def to_thrift(self):
         return ThriftDiskImage(self.id, self.clone_type)
-
-
-class Host(BaseResource):
-    """Hack: HostConfig"""
-
-    def __init__(self, agent_id=None, datastores=[],
-                 hypervisor=None, vm_network=None):
-        """Create host
-
-        :type agent_id: str
-        :type datastores: list of Datastore
-        :type hypervisor: binary
-        :type vm_network: str
-        """
-        self.agent_id = agent_id
-        self.datastores = datastores
-        self.hypervisor = hypervisor
-        self.vm_network = vm_network
-
-    @staticmethod
-    def from_thrift(thrift_object):
-        instance = Host(
-            thrift_object.agent_id
-        )
-        instance.datastores = [ds.id for ds in thrift_object.datastores]
-        return instance
-
-    def to_thrift(self):
-        thrift_host_config = ThriftHostConfig(self.agent_id)
-        thrift_host_config.datastores = [ThriftDatastore(ds)
-                                         for ds in self.datastores]
-        if self.hypervisor:
-            thrift_host_config.hypervisor = self.hypervisor
-        if self.vm_network:
-            thrift_host_config.vm_network = self.vm_network
-
-        return thrift_host_config
 
 
 class AgentResourcePlacement(BaseResource):

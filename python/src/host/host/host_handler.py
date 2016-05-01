@@ -191,8 +191,9 @@ class HostHandler(Host.Iface):
         except ValueError:
             pass  # observer not found
 
+    @log_request
     @error_handler(GetConfigResponse, GetConfigResultCode)
-    def get_host_config_no_logging(self, request):
+    def get_host_config(self, request):
         """Host config.
 
         :type request: GetConfigRequest
@@ -222,11 +223,6 @@ class HostHandler(Host.Iface):
         config.esx_version = self._hypervisor.system.host_version()
         response.hostConfig = config
         return response
-
-    @log_request
-    def get_host_config(self, request):
-        """get_host_config wrapper that adds request/response logging."""
-        return self.get_host_config_no_logging(request)
 
     @log_request
     @error_handler(GetHostModeResponse, GetHostModeResultCode)
