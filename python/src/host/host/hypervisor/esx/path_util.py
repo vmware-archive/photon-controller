@@ -59,20 +59,15 @@ def compond_path_join(s1, s2, s3=None):
 
 
 def os_vmdk_path(datastore, disk_id, folder=DISK_FOLDER_NAME_PREFIX):
-    vmdk_path = partial_path(disk_id, disk_id, "vmdk")
-    return compond_path_join(os_datastore_path(datastore, folder), vmdk_path)
+    return os_datastore_path(datastore, compond_path_join(folder, disk_id), vmdk_add_suffix(disk_id))
 
 
 def os_vmdk_flat_path(datastore, disk_id, folder=IMAGE_FOLDER_NAME_PREFIX):
-    """ Return the path for the flat vmdk file """
-    disk_name = "%s-flat" % disk_id
-    flat_vmdk_path = partial_path(disk_id, disk_name, "vmdk")
-    return compond_path_join(os_datastore_path(datastore, folder), flat_vmdk_path)
+    return os_datastore_path(datastore, compond_path_join(folder, disk_id), vmdk_add_suffix("%s-flat" % disk_id))
 
 
 def vmdk_path(datastore, disk_id, folder=DISK_FOLDER_NAME_PREFIX):
-    vmdk_path = partial_path(disk_id, disk_id, "vmdk")
-    return compond_path_join(datastore_path(datastore, folder), vmdk_path)
+    return os_to_datastore_path(os_vmdk_path(datastore, disk_id, folder))
 
 
 def vmdk_add_suffix(vm_id):
@@ -83,19 +78,19 @@ def vmx_add_suffix(vm_id):
     return "%s.%s" % (vm_id, "vmx")
 
 
+def metadata_filename(disk_id):
+    return "%s.%s" % (disk_id, METADATA_FILE_EXT)
+
+
 def os_metadata_path(datastore, disk_id, folder=DISK_FOLDER_NAME_PREFIX):
-    return compond_path_join(os_datastore_path(datastore, folder),
-                             partial_path(disk_id, disk_id, METADATA_FILE_EXT))
+    return os_datastore_path(datastore, compond_path_join(folder, disk_id), metadata_filename(disk_id))
 
 
 def image_directory_path(datastore, image_id):
     """Returns absolute path of the image directory. It looks something like:
-
-        /vmfs/volumes/$datastore/images/$image_id_prefix/$image_id
-
-    where $image_id_prefix is the first two characters of image_id.
+        /vmfs/volumes/$datastore/image_$image_id
     """
-    return compond_path_join(os_datastore_path(datastore, IMAGE_FOLDER_NAME_PREFIX), image_id)
+    return os_datastore_path(datastore, compond_path_join(IMAGE_FOLDER_NAME_PREFIX, image_id))
 
 
 def list_top_level_directory(datastore, folder_prefix):
@@ -108,11 +103,3 @@ def list_top_level_directory(datastore, folder_prefix):
     folder_prefix += COMPOND_PATH_SEPARATOR
     root = os_datastore_root(datastore)
     return [os.path.join(root, d) for d in os.listdir(root) if d.startswith(folder_prefix)]
-
-
-def partial_path(disk_id, name_no_extension, extension):
-    return os.path.join(disk_id, "%s.%s" % (name_no_extension, extension))
-
-
-def metadata_filename(disk_id):
-    return "%s.%s" % (disk_id, METADATA_FILE_EXT)
