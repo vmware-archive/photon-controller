@@ -18,6 +18,10 @@ import os
 from common.kind import Flavor
 from host.hypervisor.disk_manager import DiskManager
 from host.hypervisor.esx.path_util import IMAGE_FOLDER_NAME_PREFIX
+from host.hypervisor.esx.path_util import DISK_FOLDER_NAME_PREFIX
+from host.hypervisor.esx.path_util import os_datastore_root
+from host.hypervisor.esx.path_util import os_datastore_path
+from host.hypervisor.esx.path_util import compond_path_join
 from host.hypervisor.esx.path_util import os_vmdk_path
 from host.hypervisor.esx.path_util import vmdk_path
 from host.hypervisor.vm_manager import DiskNotFoundException
@@ -81,6 +85,17 @@ class EsxDiskManager(DiskManager):
             disk = os_vmdk_path(datastore, disk_id)
             if os.path.isfile(disk):
                 return datastore
+
+        # Extra logging to help debug failures where host2 cannot find disk created by host1 on a shared datastore
+        self._logger.error("get_disk_datastore failed: disk=%s, datastores=%s" %
+                           (disk_id, self._ds_manager.get_datastore_ids()))
+        for datastore in self._ds_manager.get_datastore_ids():
+            p1 = os_datastore_root(datastore)
+            p2 = os_datastore_path(datastore, compond_path_join(DISK_FOLDER_NAME_PREFIX, disk_id))
+            p3 = os_vmdk_path(datastore, disk_id)
+            self._logger.error("get_disk_datastore check_path: %s:%s, %s:%s, %s:%s" %
+                               (p1, os.path.isdir(p1), p2, os.path.isdir(p2), p3, os.path.isfile(p3)))
+
         return None
 
     def get_resource(self, disk_id):
