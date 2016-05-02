@@ -16,11 +16,7 @@ package com.vmware.photon.controller.rootscheduler;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.manifest.BuildInfo;
-import com.vmware.photon.controller.common.thrift.HeartbeatServerSet;
 import com.vmware.photon.controller.common.thrift.ServerSet;
-import com.vmware.photon.controller.common.thrift.StaticServerSet;
-import com.vmware.photon.controller.common.thrift.StaticServerSetFactory;
-import com.vmware.photon.controller.common.thrift.ThriftConfig;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.XenonRestClient;
 import com.vmware.photon.controller.common.xenon.host.XenonConfig;
@@ -29,16 +25,13 @@ import com.vmware.photon.controller.rootscheduler.interceptors.RequestId;
 import com.vmware.photon.controller.rootscheduler.interceptors.RequestIdInterceptor;
 import com.vmware.photon.controller.rootscheduler.service.CloudStoreConstraintChecker;
 import com.vmware.photon.controller.rootscheduler.service.ConstraintChecker;
-import com.vmware.photon.controller.rootscheduler.service.SchedulerService;
 import com.vmware.photon.controller.rootscheduler.xenon.SchedulerXenonHost;
-import com.vmware.photon.controller.scheduler.root.gen.RootScheduler;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.assistedinject.FactoryModuleBuilder;
 import com.google.inject.matcher.Matchers;
-import com.google.inject.name.Names;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -59,30 +52,15 @@ public class RootSchedulerModule extends AbstractModule {
     bindInterceptor(Matchers.any(), Matchers.annotatedWith(RequestId.class), new RequestIdInterceptor());
     bind(BuildInfo.class).toInstance(BuildInfo.get(this.getClass()));
     bind(Config.class).toInstance(config);
-    bind(ThriftConfig.class).toInstance(config.getThriftConfig());
     bind(XenonConfig.class).toInstance(config.getXenonConfig());
 
     bind(ScheduledExecutorService.class)
         .toInstance(Executors.newScheduledThreadPool(4));
 
-    // threadpool for HeartbeatServerSet
-    bind(Integer.class)
-        .annotatedWith(Names.named("heartbeat_pool_size"))
-        .toInstance(32);
-
-    install(new FactoryModuleBuilder()
-        .implement(ServerSet.class, HeartbeatServerSet.class)
-        .build(HeartbeatServerSetFactory.class));
-
-    install(new FactoryModuleBuilder()
-        .implement(ServerSet.class, StaticServerSet.class)
-        .build(StaticServerSetFactory.class));
-
     install(new FactoryModuleBuilder()
         .implement(HostClient.class, HostClient.class)
         .build(HostClientFactory.class));
 
-    bind(RootScheduler.Iface.class).to(SchedulerService.class);
     bind(ConstraintChecker.class).to(CloudStoreConstraintChecker.class);
   }
 
@@ -113,11 +91,11 @@ public class RootSchedulerModule extends AbstractModule {
   @Provides
   @Singleton
   public SchedulerXenonHost getSchedulerXenonHost(XenonConfig xenonConfig,
-                                                HostClientFactory hostClientFactory,
-                                                Config config,
-                                                ConstraintChecker checker,
-                                                XenonRestClient xenonRestClient,
-                                                CloudStoreHelper cloudStoreHelper) throws Throwable {
+                                                  HostClientFactory hostClientFactory,
+                                                  Config config,
+                                                  ConstraintChecker checker,
+                                                  XenonRestClient xenonRestClient,
+                                                  CloudStoreHelper cloudStoreHelper) throws Throwable {
     return new SchedulerXenonHost(xenonConfig, hostClientFactory, config, checker, xenonRestClient, cloudStoreHelper);
   }
 }
