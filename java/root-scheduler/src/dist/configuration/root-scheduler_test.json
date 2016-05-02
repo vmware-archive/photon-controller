@@ -3,6 +3,6 @@
   "ZOOKEEPER_QUORUM": "localhost:2181",
   "LOG_DIRECTORY": "/vagrant/log",
   "ROOT-SCHEDULER_INSTALL_DIRECTORY": "/usr/lib/esxcloud/root-scheduler",
-  "ROOT-SCHEDULER_DCP_STORAGE_PATH": "/etc/esxcloud/root-scheduler/sandbox_13011",
+  "ROOT-SCHEDULER_DCP_STORAGE_PATH": "/etc/esxcloud/root-scheduler/sandbox_13010",
   "JAVA_DEBUG": "-agentlib:jdwp=transport=dt_socket,server=y,address=23010,suspend=n"
 }
