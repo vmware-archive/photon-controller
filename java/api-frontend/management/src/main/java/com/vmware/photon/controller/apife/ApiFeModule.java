@@ -76,7 +76,6 @@ import com.vmware.photon.controller.apife.config.ApiFeConfiguration;
 import com.vmware.photon.controller.apife.config.AuthConfig;
 import com.vmware.photon.controller.apife.config.ImageConfig;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
-import com.vmware.photon.controller.apife.config.RootSchedulerConfig;
 import com.vmware.photon.controller.apife.config.StatusConfig;
 import com.vmware.photon.controller.common.CloudStoreServerSet;
 import com.vmware.photon.controller.common.clients.HostClient;
@@ -100,7 +99,6 @@ import com.vmware.photon.controller.common.zookeeper.ZookeeperServerSetFactory;
 import com.vmware.photon.controller.deployer.gen.Deployer;
 import com.vmware.photon.controller.host.gen.Host;
 import com.vmware.photon.controller.housekeeper.gen.Housekeeper;
-import com.vmware.photon.controller.scheduler.root.gen.RootScheduler;
 
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
@@ -219,33 +217,6 @@ public class ApiFeModule extends AbstractModule {
 
   @Provides
   @Singleton
-  public ClientPool<RootScheduler.AsyncClient> getRootSchedulerClientPool(
-      @RootSchedulerServerSet ServerSet serverSet,
-      ClientPoolFactory<RootScheduler.AsyncClient> clientPoolFactory) {
-
-    RootSchedulerConfig rootSchedulerConfig = configuration.getRootScheduler();
-    ClientPoolOptions options = new ClientPoolOptions()
-        .setMaxClients(rootSchedulerConfig.getMaxClients())
-        .setMaxWaiters(rootSchedulerConfig.getMaxWaiters())
-        .setTimeout(rootSchedulerConfig.getTimeout().toMilliseconds(), TimeUnit.MILLISECONDS)
-        .setServiceName("RootScheduler");
-
-    final ClientPool<RootScheduler.AsyncClient> pool = clientPoolFactory.create(serverSet, options);
-    DefaultMetricRegistry.REGISTRY.register(MetricRegistry.name(ClientPool.class, "root-scheduler-waiters"),
-        (Gauge<Integer>) () -> pool.getWaiters());
-    return pool;
-  }
-
-  @Provides
-  @Singleton
-  public ClientProxy<RootScheduler.AsyncClient> getRootSchedulerClientProxy(
-      ClientProxyFactory<RootScheduler.AsyncClient> factory,
-      ClientPool<RootScheduler.AsyncClient> clientPool) {
-    return factory.create(clientPool);
-  }
-
-  @Provides
-  @Singleton
   @HousekeeperServerSet
   public ServerSet getHousekeeperServerSet(ZookeeperServerSetFactory serverSetFactory) {
     return serverSetFactory.createServiceServerSet("housekeeper", true);
@@ -335,8 +306,6 @@ public class ApiFeModule extends AbstractModule {
 
     install(new ThriftModule());
     install(new ThriftServiceModule<>(new TypeLiteral<Host.AsyncClient>() {
-    }));
-    install(new ThriftServiceModule<>(new TypeLiteral<RootScheduler.AsyncClient>() {
     }));
     install(new ThriftServiceModule<>(new TypeLiteral<Housekeeper.AsyncClient>() {
     }));

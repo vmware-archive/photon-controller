@@ -40,7 +40,6 @@ dependencies {
   thrift files('../../../thrift/host.thrift',
       '../../../thrift/resource.thrift',
       '../../../thrift/scheduler.thrift',
-      '../../../thrift/root_scheduler.thrift',
       '../../../thrift/roles.thrift',
       '../../../thrift/flavors.thrift',
       '../../../thrift/housekeeper.thrift',
