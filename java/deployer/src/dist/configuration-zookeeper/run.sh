@@ -13,6 +13,9 @@
 CONFIG="/usr/lib/zookeeper/conf/zoo.cfg"
 MYIDFILE="{{{ZOOKEEPER_DATA_DIRECTORY}}}/myid"
 
+# current version of zk has a bug defining the wrong class path
+export CLASSPATH=/usr/lib/zookeeper-3.4.8.jar:/usr/lib/log4j-1.2.16.jar:/usr/lib/jline-0.9.94.jar:/usr/lib/netty-3.7.0.Final.jar:/usr/lib/slf4j-api-1.6.1.jar:/usr/lib/slf4j-log4j12-1.6.1.jar
+
 echo "zookeeper config file:"
 cat $CONFIG
 
