@@ -13,6 +13,8 @@
 
 package com.vmware.photon.controller.apibackend.utils;
 
+import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
+import com.vmware.photon.controller.common.xenon.CloudStoreHelperProvider;
 import com.vmware.photon.controller.nsxclient.NsxClient;
 import com.vmware.photon.controller.nsxclient.NsxClientFactoryProvider;
 import com.vmware.xenon.common.ServiceHost;
@@ -25,8 +27,12 @@ public class ServiceHostUtils {
   public static NsxClient getNsxClient(ServiceHost host,
                                        String endpoint,
                                        String username,
-                                       String password) throws Throwable {
+                                       String password) {
     return ((NsxClientFactoryProvider) host).getNsxClientFactory().create(
         endpoint, username, password);
+  }
+
+  public static CloudStoreHelper getCloudStoreHelper(ServiceHost host) {
+    return ((CloudStoreHelperProvider) host).getCloudStoreHelper();
   }
 }
