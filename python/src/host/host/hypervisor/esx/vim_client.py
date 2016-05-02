@@ -230,7 +230,7 @@ class VimClient(HostClient):
             endTime=end_time)
 
         results = {}
-        stats = self._perf_manager.QueryPerf(query_spec)
+        stats = self.perf_manager.QueryPerf([query_spec])
         if not stats:
             self._logger.debug("No metrics collected")
             return results
