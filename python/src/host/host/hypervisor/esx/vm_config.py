@@ -12,36 +12,30 @@
 
 """ Contains the implementation for ESX VM configuration."""
 
-import os.path
 import logging
-import re
-
 from operator import itemgetter
 
+import os.path
+
 from common.log import log_duration
-from host.hypervisor.esx.path_util import DISK_FOLDER_NAME_PREFIX
-from host.hypervisor.esx.path_util import VM_FOLDER_NAME_PREFIX
-from host.hypervisor.esx.path_util import IMAGE_FOLDER_NAME_PREFIX
-from host.hypervisor.esx.path_util import datastore_to_os_path
+from host.hypervisor.esx.host_client import DeviceNotFoundException
 from host.hypervisor.esx.host_client import VmConfig
-from host.hypervisor.esx.path_util import COMPOND_PATH_SEPARATOR
-from host.hypervisor.esx.path_util import vmdk_path
+from host.hypervisor.esx.path_util import DISK_FOLDER_NAME_PREFIX
+from host.hypervisor.esx.path_util import IMAGE_FOLDER_NAME_PREFIX
+from host.hypervisor.esx.path_util import VM_FOLDER_NAME_PREFIX
 from host.hypervisor.esx.path_util import compond_path_join
 from host.hypervisor.esx.path_util import datastore_path
+from host.hypervisor.esx.path_util import uuid_to_vmdk_uuid
 from host.hypervisor.esx.path_util import vmdk_add_suffix
+from host.hypervisor.esx.path_util import vmdk_path
 
 from pyVmomi import vim
+from pysdk.invt import GetEnv
 from pysdk.vmconfig import AddIsoCdrom
 from pysdk.vmconfig import AddURIBackedSerial
-from pysdk.vmconfig import GetFreeKey
 from pysdk.vmconfig import GetCnxInfo
 from pysdk.vmconfig import GetFreeBusNumber
-from pysdk.invt import GetEnv
-
-
-class DeviceNotFoundException(Exception):
-    pass
-
+from pysdk.vmconfig import GetFreeKey
 
 DEFAULT_DISK_CONTROLLER_CLASS = vim.vm.device.VirtualLsiLogicController
 DEFAULT_NIC_CONTROLLER_CLASS = vim.vm.device.VirtualE1000
@@ -49,29 +43,29 @@ DEFAULT_NIC_CONTROLLER_CLASS = vim.vm.device.VirtualE1000
 DEFAULT_VMX_VERSION = "vmx-10"
 
 
-diskAdapterType = vim.VirtualDiskManager.VirtualDiskAdapterType
+_diskAdapterType = vim.VirtualDiskManager.VirtualDiskAdapterType
 
-controller_to_disk_adapter_map = {
-    vim.vm.device.VirtualLsiLogicController: diskAdapterType.lsiLogic,
-    vim.vm.device.VirtualBusLogicController: diskAdapterType.busLogic,
-    vim.vm.device.VirtualIDEController:      diskAdapterType.ide,
+_controller_to_disk_adapter_map = {
+    vim.vm.device.VirtualLsiLogicController: _diskAdapterType.lsiLogic,
+    vim.vm.device.VirtualBusLogicController: _diskAdapterType.busLogic,
+    vim.vm.device.VirtualIDEController:      _diskAdapterType.ide,
 
     # Note: vdiskmanager only recognizes the above three VirtualDiskAdapterType
     # values for disk create, but beyond differentiating ide and scsi disks
     # this value is not significant, so the use of lsiLogic suffice for when
     # using the following scsi controllers.
-    vim.vm.device.ParaVirtualSCSIController: diskAdapterType.lsiLogic,
-    vim.vm.device.VirtualLsiLogicSASController: diskAdapterType.lsiLogic,
+    vim.vm.device.ParaVirtualSCSIController: _diskAdapterType.lsiLogic,
+    vim.vm.device.VirtualLsiLogicSASController: _diskAdapterType.lsiLogic,
 }
 
-scsi_virtual_dev_to_vim_adapter_map = {
+_scsi_virtual_dev_to_vim_adapter_map = {
     "lsilogic": vim.vm.device.VirtualLsiLogicController,
     "lsisas1068": vim.vm.device.VirtualLsiLogicSASController,
     "pvscsi": vim.vm.device.ParaVirtualSCSIController,
     "buslogic": vim.vm.device.VirtualBusLogicController,
 }
 
-ethernet_virtual_dev_to_vim_adapter_map = {
+_ethernet_virtual_dev_to_vim_adapter_map = {
     "vmxnet": vim.vm.device.VirtualVmxnet,
     "vmxnet2": vim.vm.device.VirtualVmxnet2,
     "vmxnet3": vim.vm.device.VirtualVmxnet3,
@@ -80,97 +74,18 @@ ethernet_virtual_dev_to_vim_adapter_map = {
     "e1000e": vim.vm.device.VirtualE1000e,
 }
 
-BOOT_SCSI_DEVICE = "scsi0"
-FIRST_NIC_DEVICE = "ethernet0"
-FIRST_SERIAL_DEVICE = "serial0"
+_BOOT_SCSI_DEVICE = "scsi0"
+_FIRST_NIC_DEVICE = "ethernet0"
+_FIRST_SERIAL_DEVICE = "serial0"
 
-DEFAULT_DISK_ADAPTER_TYPE = controller_to_disk_adapter_map.get(
+DEFAULT_DISK_ADAPTER_TYPE = _controller_to_disk_adapter_map.get(
     DEFAULT_DISK_CONTROLLER_CLASS)
 
 
-def string_to_bool(string_val):
+def _string_to_bool(string_val):
     if not string_val or string_val.lower() == 'false':
         return False
     return True
-
-
-def vmdk_id(path):
-    return os.path.splitext(os.path.basename(path))[0]
-
-
-def is_persistent_disk(disk_files):
-    return _find_root_in_disk_files(disk_files) == DISK_FOLDER_NAME_PREFIX
-
-
-def is_ephemeral_disk(disk_files):
-    return _find_root_in_disk_files(disk_files) == VM_FOLDER_NAME_PREFIX
-
-
-def is_image(disk_files):
-    return _find_root_in_disk_files(disk_files) == IMAGE_FOLDER_NAME_PREFIX
-
-
-def _find_root_in_disk_files(disk_files):
-    if not disk_files:
-        return None
-
-    if len(disk_files) == 1:
-        return _root_folder(disk_files[0])
-
-    for disk_file in disk_files:
-        root = _root_folder(disk_file)
-        if root != IMAGE_FOLDER_NAME_PREFIX:
-            return root
-
-
-def uuid_to_vmdk_uuid(uuid):
-    """Converts a uuid string to the format used for vmdk uuids."""
-
-    # vmdk UUID is expected in the format of:
-    # 'hh hh hh hh hh hh hh hh-hh hh hh hh hh hh hh hh'
-
-    uuid = uuid.translate(None, " -")
-    if len(uuid) != 32:
-        raise ValueError("unexpected format for uuid: %s" % uuid)
-    pairs = [uuid[i:i+2].lower() for i in range(0, len(uuid), 2)]
-    return " ".join(pairs[:8]) + "-" + " ".join(pairs[8:])
-
-
-def get_image_base_disk(disk_files):
-
-    """Find the image base disk from a list of disks.
-
-    :type disk_files: list of str
-    :param disk_files: list of disk files. Typically this list comes from the
-                       vm.layout.disk.diskFile field in vim client.
-    """
-    for disk_file in disk_files:
-        if _root_folder(disk_file) == IMAGE_FOLDER_NAME_PREFIX:
-            return datastore_to_os_path(disk_file)
-    return None
-
-
-def get_root_disk(disk_files):
-    """Find the COW child disk from the disk chain with an image parent.
-
-    :type disk_files: list of str
-    :param disk_files: list of files paths comprising the chain of disks making
-                       up a single VM disk. Typically this list comes from one
-                       vm.layout.disk.diskFile field in vim client.
-    """
-    # TODO(Vui): Should return path to disk full-cloned from image in non
-    #            linked-clone case.
-
-    # XXX Assumes first non image disk path is the child disk.
-    # TODO(Vui) Fix cached disk layout so this is more reliable.
-    for disk_file in disk_files:
-        if _root_folder(disk_file) != IMAGE_FOLDER_NAME_PREFIX:
-            return datastore_to_os_path(disk_file)
-    return None
-
-
-def _root_folder(path):
-    return re.sub('^\[.*\] ', '', path).split('/')[0].split(COMPOND_PATH_SEPARATOR)[0]
 
 
 class EsxVmConfigSpec(vim.vm.ConfigSpec):
@@ -306,10 +221,10 @@ class EsxVmConfig(VmConfig):
         # We assume consistency in disk controller used -- the
         # type of the boot disk's controller will be the type of
         # controller used for all disks.
-        device_key = BOOT_SCSI_DEVICE + '.virtualDev'
+        device_key = _BOOT_SCSI_DEVICE + '.virtualDev'
         if (hasattr(cfg_spec, '_metadata') and
                 device_key in cfg_spec._metadata):
-            controller_type = scsi_virtual_dev_to_vim_adapter_map.get(
+            controller_type = _scsi_virtual_dev_to_vim_adapter_map.get(
                 cfg_spec._metadata[device_key], controller_type)
 
         bus_number = GetFreeBusNumber(self._cfg_opts,
@@ -437,11 +352,11 @@ class EsxVmConfig(VmConfig):
         # We assume consistency in nic controller used -- the
         # type of the nic controller will be the type of
         # controller used for all nics.
-        device_key = FIRST_NIC_DEVICE + '.virtualDev'
+        device_key = _FIRST_NIC_DEVICE + '.virtualDev'
 
         if (hasattr(spec, '_metadata') and
                 device_key in spec._metadata):
-            controller_type = ethernet_virtual_dev_to_vim_adapter_map.get(
+            controller_type = _ethernet_virtual_dev_to_vim_adapter_map.get(
                 spec._metadata[device_key], controller_type)
 
         device = controller_type(
@@ -564,7 +479,7 @@ class EsxVmConfig(VmConfig):
         We only support configuring one URI-based virtual serial port for now.
         """
 
-        k = FIRST_SERIAL_DEVICE
+        k = _FIRST_SERIAL_DEVICE
         serial_type = spec._metadata.get(
             "%s.%s" % (k, "fileType"), "")
         if serial_type == "network":
@@ -572,7 +487,7 @@ class EsxVmConfig(VmConfig):
             proxy_uri = spec._metadata.get("%s.%s" % (k, "vspc"), None)
             direction = spec._metadata.get(
                 "%s.%s" % (k, "network.endPoint"), None)
-            yield_on_poll = string_to_bool(spec._metadata.get(
+            yield_on_poll = _string_to_bool(spec._metadata.get(
                 "%s.%s" % (k, "yieldsOnMsrRead"), "TRUE"))
             if uri is None:
                 self._logger.warning("Invalid serial port URI")
