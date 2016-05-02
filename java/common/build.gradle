@@ -31,7 +31,6 @@ dependencies {
       '../../thrift/housekeeper.thrift',
       '../../thrift/resource.thrift',
       '../../thrift/roles.thrift',
-      '../../thrift/root_scheduler.thrift',
       '../../thrift/scheduler.thrift',
       '../../thrift/server_address.thrift',
       '../../thrift/status.thrift',

@@ -18,7 +18,6 @@ dependencies {
                '../../thrift/roles.thrift',
                '../../thrift/resource.thrift',
                '../../thrift/scheduler.thrift',
-               '../../thrift/root_scheduler.thrift',
                '../../thrift/flavors.thrift',
                '../../thrift/tracing.thrift',
                '../../thrift/status.thrift')

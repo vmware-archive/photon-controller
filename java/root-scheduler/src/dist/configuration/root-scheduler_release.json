@@ -16,6 +16,6 @@
   "dynamicParameters": {
     "LOG_DIRECTORY": "/var/log/esxcloud",
     "ROOT-SCHEDULER_INSTALL_DIRECTORY": "/usr/lib/esxcloud/root-scheduler",
-    "ROOT-SCHEDULER_DCP_STORAGE_PATH": "/etc/esxcloud/root-scheduler/sandbox_13011"
+    "ROOT-SCHEDULER_DCP_STORAGE_PATH": "/etc/esxcloud/root-scheduler/sandbox_13010"
   }
 }

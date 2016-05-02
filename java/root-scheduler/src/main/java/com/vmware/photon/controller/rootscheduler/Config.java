@@ -14,7 +14,6 @@
 package com.vmware.photon.controller.rootscheduler;
 
 import com.vmware.photon.controller.common.logging.LoggingConfiguration;
-import com.vmware.photon.controller.common.thrift.ThriftConfig;
 import com.vmware.photon.controller.common.xenon.host.XenonConfig;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperConfig;
 
@@ -29,8 +28,6 @@ import javax.validation.constraints.NotNull;
  */
 @SuppressWarnings("UnusedDeclaration")
 public class Config {
-  private String mode;
-
   private String constraintChecker;
 
   // Refresh interval for in-memory constraint checker cache in seconds.
@@ -45,11 +42,6 @@ public class Config {
 
   @Valid
   @NotNull
-  @JsonProperty("thrift")
-  private ThriftConfig thriftConfig;
-
-  @Valid
-  @NotNull
   private LoggingConfiguration logging = new LoggingConfiguration();
 
   @Valid
@@ -59,10 +51,6 @@ public class Config {
   @Valid
   @NotNull
   private SchedulerConfig root = new SchedulerConfig();
-
-  public String getMode() {
-    return mode;
-  }
 
   public String getConstraintChecker() {
     return constraintChecker;
@@ -74,10 +62,6 @@ public class Config {
 
   public XenonConfig getXenonConfig() {
     return this.xenonConfig;
-  }
-
-  public ThriftConfig getThriftConfig() {
-    return this.thriftConfig;
   }
 
   public LoggingConfiguration getLogging() {

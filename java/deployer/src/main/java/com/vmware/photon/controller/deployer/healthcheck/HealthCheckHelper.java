@@ -52,7 +52,7 @@ public class HealthCheckHelper {
         break;
 
       case RootScheduler:
-        this.healthChecker = new ThriftBasedHealthChecker(containerType, ipAddress,
+        this.healthChecker = new XenonBasedHealthChecker(service, ipAddress,
             ServicePortConstants.ROOT_SCHEDULER_PORT);
         break;
 
