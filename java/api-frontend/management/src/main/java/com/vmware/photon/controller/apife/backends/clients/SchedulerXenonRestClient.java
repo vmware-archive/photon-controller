@@ -28,7 +28,6 @@ import com.google.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.InetSocketAddress;
 import java.net.URISyntaxException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeoutException;
@@ -46,14 +45,6 @@ public class SchedulerXenonRestClient extends XenonRestClient {
                                   @BackendTaskExecutor ExecutorService executor) throws URISyntaxException {
     super(serverSet, executor);
     this.start();
-  }
-
-  @Override
-  protected int getPort(InetSocketAddress inetSocketAddress) {
-    // Calculate Xenon port from Thrift port, Thrift endpoint is still used to communicate with
-    // the status checker in apife and deployer. This will be removed when the scheduler
-    // thrift endpoint is removed.
-    return inetSocketAddress.getPort() + 1;
   }
 
   @Override

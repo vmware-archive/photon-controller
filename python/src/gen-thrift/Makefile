@@ -7,7 +7,6 @@ THRIFT_PY= \
   gen/flavors/__init__.py \
   gen/host/__init__.py \
   gen/scheduler/__init__.py \
-  gen/scheduler/root/__init__.py \
   gen/test/echoer/__init__.py \
   gen/statsd/__init__.py \
   gen/stats_plugin/__init__.py \
@@ -33,9 +32,6 @@ gen/agent/__init__.py: $(THRIFT_SRC)
 
 gen/scheduler/__init__.py: $(THRIFT_SRC)
 	$(call compile_thrift,../../../thrift/scheduler.thrift)
-
-gen/scheduler/root/__init__.py: $(THRIFT_SRC)
-	$(call compile_thrift,../../../thrift/root_scheduler.thrift)
 
 gen/common/__init__.py: $(THRIFT_SRC)
 	$(call compile_thrift,../../../thrift/server_address.thrift)
