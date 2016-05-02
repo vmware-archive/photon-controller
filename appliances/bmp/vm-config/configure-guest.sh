@@ -116,7 +116,7 @@ function set_dhcp_conf(){
   fi
   if [ ! -z "$pxe_image_files" ]
   then
-    sed -i "s@#esxli network vswitch standard portgroup set -p \"Management Network\" --vlan-id 100@esxli network vswitch standard portgroup set -p \"Management Network\" --vlan-id ${vlan_on_hosts}@g" /etc/bmp/ks.cfg
+    sed -i "s@#esxcli network vswitch standard portgroup set -p \"Management Network\" --vlan-id 100@esxcli network vswitch standard portgroup set -p \"Management Network\" --vlan-id ${vlan_on_hosts}@g" /etc/bmp/ks.cfg
   fi
 
   if [ ! -z "$vlan_on_hosts" ]
