@@ -12,7 +12,6 @@
 require 'fileutils'
 require 'spec_helper'
 require 'stats_helper'
-require 'matchers/stats'
 
 describe "Agent stats plugin", stats: true do
   include StatsHelper
@@ -42,8 +41,8 @@ describe "Agent stats plugin", stats: true do
 
     # Redeploy host
     @host = EsxCloud::Host.create(@deployment.id, @host.to_spec())
-    
+
     stats = get_stats_from_graphite(@stats_endpoint, @graphite_web_port, "photon.*.CLOUD.cpu.cpuUsagePercentage")
-    # expect(stats).to have_graphite_data
+    expect(stats).to have_at_least(1).items
   end
 end
