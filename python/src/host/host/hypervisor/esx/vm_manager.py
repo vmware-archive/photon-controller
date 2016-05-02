@@ -35,17 +35,16 @@ from host.hypervisor.vm_manager import VmManager
 from host.hypervisor.vm_manager import IsoNotAttachedException
 from host.hypervisor.vm_manager import VmNotFoundException
 from host.hypervisor.vm_manager import VmPowerStateException
+from host.hypervisor.esx.host_client import DeviceNotFoundException
 from host.hypervisor.esx.path_util import compond_path_join
 from host.hypervisor.esx.path_util import datastore_to_os_path
 from host.hypervisor.esx.path_util import os_datastore_path
 from host.hypervisor.esx.path_util import VM_FOLDER_NAME_PREFIX
 from host.hypervisor.esx.path_util import SHADOW_VM_NAME_PREFIX
-from host.hypervisor.esx.vm_config import DeviceNotFoundException
+from host.hypervisor.esx.path_util import get_image_base_disk
+from host.hypervisor.esx.path_util import get_root_disk
+from host.hypervisor.esx.path_util import is_persistent_disk
 from host.hypervisor.esx.vm_config import EsxVmConfig
-from host.hypervisor.esx.vm_config import get_image_base_disk
-from host.hypervisor.esx.vm_config import get_root_disk
-from host.hypervisor.esx.vm_config import is_persistent_disk
-from host.hypervisor.esx.vm_config import vmdk_id
 
 from common.log import log_duration
 
@@ -391,6 +390,9 @@ class EsxVmManager(VmManager):
         vmcache = self.vim_client.get_vm_in_cache(vm_id)
         return self._get_resource_from_vmcache(vmcache)
 
+    def _vmdk_id(self, path):
+        return os.path.splitext(os.path.basename(path))[0]
+
     def _get_resource_from_vmcache(self, vmcache):
         """Translate to vm resource from vm cache
         """
@@ -399,7 +401,7 @@ class EsxVmManager(VmManager):
         vm_resource.disks = []
 
         for disk in vmcache.disks:
-            disk_id = vmdk_id(disk)
+            disk_id = self._vmdk_id(disk)
             datastore_name = self._get_datastore_name_from_ds_path(disk)
             datastore_uuid = self._get_datastore_uuid(datastore_name)
             if datastore_uuid:

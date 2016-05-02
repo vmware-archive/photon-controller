@@ -13,6 +13,10 @@
 import abc
 
 
+class DeviceNotFoundException(Exception):
+    pass
+
+
 class HostClient(object):
     __metaclass__ = abc.ABCMeta
 

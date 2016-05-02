@@ -10,6 +10,7 @@
 # License for then specific language governing permissions and limitations
 # under the License.
 import os
+import re
 
 COMPOND_PATH_SEPARATOR = '_'
 VMFS_VOLUMES = "/vmfs/volumes"
@@ -103,3 +104,78 @@ def list_top_level_directory(datastore, folder_prefix):
     folder_prefix += COMPOND_PATH_SEPARATOR
     root = os_datastore_root(datastore)
     return [os.path.join(root, d) for d in os.listdir(root) if d.startswith(folder_prefix)]
+
+
+def is_persistent_disk(disk_files):
+    return _find_root_in_disk_files(disk_files) == DISK_FOLDER_NAME_PREFIX
+
+
+def is_ephemeral_disk(disk_files):
+    return _find_root_in_disk_files(disk_files) == VM_FOLDER_NAME_PREFIX
+
+
+def is_image(disk_files):
+    return _find_root_in_disk_files(disk_files) == IMAGE_FOLDER_NAME_PREFIX
+
+
+def _find_root_in_disk_files(disk_files):
+    if not disk_files:
+        return None
+
+    if len(disk_files) == 1:
+        return _root_folder(disk_files[0])
+
+    for disk_file in disk_files:
+        root = _root_folder(disk_file)
+        if root != IMAGE_FOLDER_NAME_PREFIX:
+            return root
+
+
+def uuid_to_vmdk_uuid(uuid):
+    """Converts a uuid string to the format used for vmdk uuids."""
+
+    # vmdk UUID is expected in the format of:
+    # 'hh hh hh hh hh hh hh hh-hh hh hh hh hh hh hh hh'
+
+    uuid = uuid.translate(None, " -")
+    if len(uuid) != 32:
+        raise ValueError("unexpected format for uuid: %s" % uuid)
+    pairs = [uuid[i:i+2].lower() for i in range(0, len(uuid), 2)]
+    return " ".join(pairs[:8]) + "-" + " ".join(pairs[8:])
+
+
+def get_image_base_disk(disk_files):
+
+    """Find the image base disk from a list of disks.
+
+    :type disk_files: list of str
+    :param disk_files: list of disk files. Typically this list comes from the
+                       vm.layout.disk.diskFile field in vim client.
+    """
+    for disk_file in disk_files:
+        if _root_folder(disk_file) == IMAGE_FOLDER_NAME_PREFIX:
+            return datastore_to_os_path(disk_file)
+    return None
+
+
+def get_root_disk(disk_files):
+    """Find the COW child disk from the disk chain with an image parent.
+
+    :type disk_files: list of str
+    :param disk_files: list of files paths comprising the chain of disks making
+                       up a single VM disk. Typically this list comes from one
+                       vm.layout.disk.diskFile field in vim client.
+    """
+    # TODO(Vui): Should return path to disk full-cloned from image in non
+    #            linked-clone case.
+
+    # XXX Assumes first non image disk path is the child disk.
+    # TODO(Vui) Fix cached disk layout so this is more reliable.
+    for disk_file in disk_files:
+        if _root_folder(disk_file) != IMAGE_FOLDER_NAME_PREFIX:
+            return datastore_to_os_path(disk_file)
+    return None
+
+
+def _root_folder(path):
+    return re.sub('^\[.*\] ', '', path).split('/')[0].split(COMPOND_PATH_SEPARATOR)[0]
