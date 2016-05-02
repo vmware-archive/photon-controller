@@ -88,7 +88,7 @@ fi
 # Disable in promote until graphite story is figured out for promote
 # Only run when REAL_AGENT is defined
 if [ "$PROMOTE" != "true" ] && [ ! -z "$REAL_AGENT" ]; then
-  bundle exec rake agent:stats
+  bundle exec rake seed:host agent:stats
 fi
 
 # verify that no objects were left over at the end of the run
