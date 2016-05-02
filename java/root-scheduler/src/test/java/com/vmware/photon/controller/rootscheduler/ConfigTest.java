@@ -15,7 +15,6 @@ package com.vmware.photon.controller.rootscheduler;
 
 import com.vmware.photon.controller.common.config.BadConfigException;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
-import com.vmware.photon.controller.common.thrift.ThriftConfig;
 import com.vmware.photon.controller.common.xenon.host.XenonConfig;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperConfig;
 
@@ -43,11 +42,6 @@ public class ConfigTest {
     assertThat(xenonConfig.getPort(), is(15001));
     assertThat(xenonConfig.getRegistrationAddress(), is("127.0.0.1"));
     assertThat(xenonConfig.getStoragePath(), is("/tmp/dcp/scheduler/"));
-
-    ThriftConfig thriftConfig = config.getThriftConfig();
-    assertThat(thriftConfig.getBindAddress(), is("0.0.0.0"));
-    assertThat(thriftConfig.getPort(), is(15000));
-    assertThat(thriftConfig.getRegistrationAddress(), is("127.0.0.1"));
 
     SchedulerConfig root = config.getRoot();
     assertThat(root.getPlaceTimeoutMs(), is(10000L));
