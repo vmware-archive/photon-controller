@@ -49,14 +49,6 @@ public class SchedulerXenonRestClient extends XenonRestClient {
   }
 
   @Override
-  protected int getPort(InetSocketAddress inetSocketAddress) {
-    // Calculate Xenon port from Thrift port, Thrift endpoint is still used to communicate with
-    // the status checker in apife and deployer. This will be removed when the scheduler
-    // thrift endpoint is removed.
-    return inetSocketAddress.getPort() + 1;
-  }
-
-  @Override
   public Operation post(String serviceSelfLink, ServiceDocument body) {
 
     try {

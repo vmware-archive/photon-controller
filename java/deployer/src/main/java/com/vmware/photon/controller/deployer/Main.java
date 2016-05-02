@@ -22,7 +22,6 @@ import com.vmware.photon.controller.common.thrift.ThriftServiceModule;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperModule;
 import com.vmware.photon.controller.deployer.dcp.DeployerXenonServiceHost;
 import com.vmware.photon.controller.host.gen.Host;
-import com.vmware.photon.controller.scheduler.root.gen.RootScheduler;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -77,10 +76,6 @@ public class Main {
           ),
           new ThriftServiceModule<>(
               new TypeLiteral<Host.AsyncClient>() {
-              }
-          ),
-          new ThriftServiceModule<>(
-              new TypeLiteral<RootScheduler.AsyncClient>() {
               }
           ));
 
