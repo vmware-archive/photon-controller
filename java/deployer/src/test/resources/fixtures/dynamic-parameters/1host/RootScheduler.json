@@ -1,7 +1,7 @@
 {
   "ENABLE_SYSLOG": "true",
   "SHARED_SECRET": "shared-secret",
-  "ROOT-SCHEDULER_DCP_STORAGE_PATH": "/etc/esxcloud/root-scheduler/sandbox_13011",
+  "ROOT-SCHEDULER_DCP_STORAGE_PATH": "/etc/esxcloud/root-scheduler/sandbox_13010",
   "ENABLE_AUTH": "false",
   "SYSLOG_ENDPOINT": "SYSLOG_ENDPOINT",
   "ZOOKEEPER_QUORUM": "0.0.0.0:2181",
