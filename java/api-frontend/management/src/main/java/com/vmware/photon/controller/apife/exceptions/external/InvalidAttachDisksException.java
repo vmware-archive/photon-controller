@@ -24,7 +24,7 @@ public class InvalidAttachDisksException extends ExternalException {
   private final String message;
 
   public InvalidAttachDisksException(String message) {
-    super(ErrorCode.INVALID_ENTITY);
+    super(ErrorCode.INVALID_OPERATION);
 
     this.message = message;
   }
