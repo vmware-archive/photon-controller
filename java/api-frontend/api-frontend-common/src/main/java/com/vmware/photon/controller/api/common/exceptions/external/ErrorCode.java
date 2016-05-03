@@ -54,6 +54,7 @@ public enum ErrorCode {
   INVALID_HOST_STATE("InvalidHostState", Response.Status.BAD_REQUEST),
   INVALID_OVA("InvalidOva", Response.Status.BAD_REQUEST),
   INVALID_VMDK_FORMAT("InvalidVmdkFormat", Response.Status.BAD_REQUEST),
+  INVALID_OPERATION("InvalidOperation", Response.Status.BAD_REQUEST),
   IMAGE_UPLOAD_ERROR("ImageUploadError", Response.Status.BAD_REQUEST),
   ISO_UPLOAD_ERROR("IsoUploadError", Response.Status.BAD_REQUEST),
   UNSUPPORTED_IMAGE_FILE_TYPE("UnsupportedImageFileType", Response.Status.BAD_REQUEST),
