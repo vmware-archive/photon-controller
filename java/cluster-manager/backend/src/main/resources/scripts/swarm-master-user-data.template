@@ -41,7 +41,7 @@ write_files:
         sed -i "s:^ExecStart.*:ExecStart=/bin/docker -d -H tcp\://0.0.0.0\:2375:g" ${unitFile}
         systemctl daemon-reload
         systemctl start docker
-        sleep 5
+        source /tmp/check-docker.sh
 
         echo "Starting swarm master"
         docker -H tcp://0.0.0.0:2375 run -d --restart=always ${swarmImage} join --addr=${ipAddress}:2375 etcd://$ETCD_QUORUM/swarm
@@ -51,6 +51,27 @@ write_files:
     owner: root:root
     permissions: 0644
     path: /tmp/start-swarm-master.sh
+  - content: |
+        retry_max="60"
+        retry="0"
+        while [ "$retry" -lt "$retry_max" ]
+        do
+          docker version
+          if [ "$?" == "0" ]; then
+            echo "Docker daemon is up and running!"
+            break
+          fi
+          sleep 1
+          retry=`expr $retry + 1`
+        done
+
+        if [ "$retry" -eq "$retry_max" ]
+        then
+          echo "Docker daemon is not up yet!"
+        fi
+    owner: root:root
+    permissions: 0644
+    path: /tmp/check-docker.sh
 
 runcmd:
   - sh /tmp/init-network.sh

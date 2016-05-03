@@ -60,8 +60,31 @@ write_files:
     permissions: 0644
     path: /tmp/start-etcd.sh
 
+  - content: |
+        retry_max="60"
+        retry="0"
+        while [ "$retry" -lt "$retry_max" ]
+        do
+          docker version
+          if [ "$?" == "0" ]; then
+            echo "Docker daemon is up and running!"
+            break
+          fi
+          sleep 1
+          retry=`expr $retry + 1`
+        done
+
+        if [ "$retry" -eq "$retry_max" ]
+        then
+          echo "Docker daemon is not up yet!"
+        fi
+    owner: root:root
+    permissions: 0644
+    path: /tmp/check-docker.sh
+
 runcmd:
   - sh /tmp/init-network.sh
   - systemctl enable docker
   - systemctl start docker
+  - sh /tmp/check-docker.sh
   - sh /tmp/start-etcd.sh > /var/log/etcd.log
