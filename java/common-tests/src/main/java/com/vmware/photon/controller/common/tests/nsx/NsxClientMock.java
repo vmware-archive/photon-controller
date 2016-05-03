@@ -262,6 +262,25 @@ public class NsxClientMock extends NsxClient {
       return this;
     }
 
+    public Builder deleteLogicalRouter(boolean isSuccess) throws Throwable {
+      if (isSuccess) {
+        doAnswer(invocation -> {
+          ((FutureCallback<Void>) invocation.getArguments()[1])
+              .onSuccess(null);
+          return null;
+        }).when(mockLogicalRouterApi).deleteLogicalRouter(any(String.class), any(FutureCallback.class));
+      } else {
+        RuntimeException error = new RuntimeException("deleteLogicalRouter failed");
+        doAnswer(invocation -> {
+          ((FutureCallback<Void>) invocation.getArguments()[1])
+              .onFailure(error);
+          return null;
+        }).when(mockLogicalRouterApi).deleteLogicalRouter(any(String.class), any(FutureCallback.class));
+      }
+
+      return this;
+    }
+
     public Builder createLogicalSwitch(boolean isSuccess,
                                        String logicalSwitchId) throws Throwable {
       if (isSuccess) {

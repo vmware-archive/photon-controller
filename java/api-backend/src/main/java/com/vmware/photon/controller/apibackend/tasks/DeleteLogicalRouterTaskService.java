@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.apibackend.tasks;
 
-import com.vmware.photon.controller.apibackend.servicedocuments.DeleteLogicalSwitchTask;
+import com.vmware.photon.controller.apibackend.servicedocuments.DeleteLogicalRouterTask;
 import com.vmware.photon.controller.apibackend.utils.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
@@ -35,18 +35,18 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
 /**
- * Implements an Xenon service that represents a task to delete a logical switch.
+ * Implements an Xenon service that represents a task to delete a logical router.
  */
-public class DeleteLogicalSwitchTaskService extends StatefulService {
+public class DeleteLogicalRouterTaskService extends StatefulService {
 
-  public static final String FACTORY_LINK = ServiceUriPaths.APIBACKEND_ROOT + "/delete-logical-switch-tasks";
+  public static final String FACTORY_LINK = ServiceUriPaths.APIBACKEND_ROOT + "/delete-logical-router-tasks";
 
   public static FactoryService createFactory() {
-    return FactoryService.create(DeleteLogicalSwitchTaskService.class, DeleteLogicalSwitchTask.class);
+    return FactoryService.create(DeleteLogicalRouterTaskService.class, DeleteLogicalRouterTask.class);
   }
 
-  public DeleteLogicalSwitchTaskService() {
-    super(DeleteLogicalSwitchTask.class);
+  public DeleteLogicalRouterTaskService() {
+    super(DeleteLogicalRouterTask.class);
 
     super.toggleOption(ServiceOption.PERSISTENCE, true);
     super.toggleOption(ServiceOption.REPLICATION, true);
@@ -59,7 +59,7 @@ public class DeleteLogicalSwitchTaskService extends StatefulService {
     ServiceUtils.logInfo(this, "Starting service %s", getSelfLink());
 
     try {
-      DeleteLogicalSwitchTask startState = startOperation.getBody(DeleteLogicalSwitchTask.class);
+      DeleteLogicalRouterTask startState = startOperation.getBody(DeleteLogicalRouterTask.class);
       InitializationUtils.initialize(startState);
       validateStartState(startState);
 
@@ -91,10 +91,10 @@ public class DeleteLogicalSwitchTaskService extends StatefulService {
   public void handlePatch(Operation patchOperation) {
     ServiceUtils.logInfo(this, "Handling patch for service %s", getSelfLink());
 
-    try {
-      DeleteLogicalSwitchTask currentState = getState(patchOperation);
-      DeleteLogicalSwitchTask patchState = patchOperation.getBody(DeleteLogicalSwitchTask.class);
+    DeleteLogicalRouterTask currentState = getState(patchOperation);
+    DeleteLogicalRouterTask patchState = patchOperation.getBody(DeleteLogicalRouterTask.class);
 
+    try {
       validatePatchState(currentState, patchState);
       PatchUtils.patchState(currentState, patchState);
       validateState(currentState);
@@ -104,7 +104,7 @@ public class DeleteLogicalSwitchTaskService extends StatefulService {
       if (ControlFlags.isOperationProcessingDisabled(currentState.controlFlags)) {
         ServiceUtils.logInfo(this, "Skipping patch handling (disabled)");
       } else if (TaskState.TaskStage.STARTED == currentState.taskState.stage) {
-        deleteLogicalSwitch(currentState);
+        deleteLogicalRouter(currentState);
       }
     } catch (Throwable t) {
       if (!OperationUtils.isCompleted(patchOperation)) {
@@ -114,16 +114,16 @@ public class DeleteLogicalSwitchTaskService extends StatefulService {
     }
   }
 
-  private void deleteLogicalSwitch(DeleteLogicalSwitchTask currentState) {
-    ServiceUtils.logInfo(this, "Deleting logical switch");
+  private void deleteLogicalRouter(DeleteLogicalRouterTask currentState) {
+    ServiceUtils.logInfo(this, "Deleting logical router");
 
     try {
       ServiceHostUtils.getNsxClient(getHost(), currentState.nsxManagerEndpoint, currentState.username,
-          currentState.password).getLogicalSwitchApi().deleteLogicalSwitch(currentState.logicalSwitchId,
+          currentState.password).getLogicalRouterApi().deleteLogicalRouter(currentState.logicalRouterId,
           new FutureCallback<Void>() {
             @Override
             public void onSuccess(Void v) {
-              TaskUtils.sendSelfPatch(DeleteLogicalSwitchTaskService.this, buildPatch(TaskState.TaskStage.FINISHED));
+              TaskUtils.sendSelfPatch(DeleteLogicalRouterTaskService.this, buildPatch(TaskState.TaskStage.FINISHED));
             }
 
             @Override
@@ -137,7 +137,7 @@ public class DeleteLogicalSwitchTaskService extends StatefulService {
     }
   }
 
-  private void validateStartState(DeleteLogicalSwitchTask startState) {
+  private void validateStartState(DeleteLogicalRouterTask startState) {
     validateState(startState);
 
     // Disable restart
@@ -145,28 +145,28 @@ public class DeleteLogicalSwitchTaskService extends StatefulService {
         "Service state is invalid (START). Restart is disabled.");
   }
 
-  private void validateState(DeleteLogicalSwitchTask startState) {
+  private void validateState(DeleteLogicalRouterTask startState) {
     ValidationUtils.validateState(startState);
     ValidationUtils.validateTaskStage(startState.taskState);
   }
 
-  private void validatePatchState(DeleteLogicalSwitchTask currentState, DeleteLogicalSwitchTask patchState) {
+  private void validatePatchState(DeleteLogicalRouterTask currentState, DeleteLogicalRouterTask patchState) {
     checkNotNull(patchState, "patch cannot be null");
     ValidationUtils.validatePatch(currentState, patchState);
     ValidationUtils.validateTaskStage(patchState.taskState);
     ValidationUtils.validateTaskStageProgression(currentState.taskState, patchState.taskState);
   }
 
-  private DeleteLogicalSwitchTask buildPatch(TaskState.TaskStage stage) {
+  private DeleteLogicalRouterTask buildPatch(TaskState.TaskStage stage) {
     return buildPatch(stage, (Throwable) null);
   }
 
-  private DeleteLogicalSwitchTask buildPatch(TaskState.TaskStage stage, Throwable t) {
+  private DeleteLogicalRouterTask buildPatch(TaskState.TaskStage stage, Throwable t) {
     return buildPatch(stage, t == null ? null : Utils.toServiceErrorResponse(t));
   }
 
-  private DeleteLogicalSwitchTask buildPatch(TaskState.TaskStage stage, ServiceErrorResponse errorResponse) {
-    DeleteLogicalSwitchTask state = new DeleteLogicalSwitchTask();
+  private DeleteLogicalRouterTask buildPatch(TaskState.TaskStage stage, ServiceErrorResponse errorResponse) {
+    DeleteLogicalRouterTask state = new DeleteLogicalRouterTask();
     state.taskState = new TaskState();
     state.taskState.stage = stage;
     state.taskState.failure = errorResponse;
