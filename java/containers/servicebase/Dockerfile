@@ -20,9 +20,11 @@ RUN  tdnf update -y tdnf && \
                     gawk \
                     sed \
                     less \
+                    iputils \
                     net-tools \
                     iproute2 \
                     wget \
+                    cdrkit \
                     gzip \
                     tar \
                     openssh \
