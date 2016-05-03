@@ -94,8 +94,8 @@ public class BaseWorkflowServiceTest {
       TestBaseWorkflowService.State initialState = new TestBaseWorkflowService.StateBuilder()
           .taskStage(TaskState.TaskStage.CREATED)
           .controlFlags(new ControlFlags.Builder()
-              .disableHandleStart()
-              .disableHandlePatch()
+              .disableOperationProcessingOnHandleStart()
+              .disableOperationProcessingOnHandlePatch()
               .build())
           .build();
 
@@ -145,8 +145,8 @@ public class BaseWorkflowServiceTest {
       TestBaseWorkflowService.State initialState = new TestBaseWorkflowService.StateBuilder()
           .taskStage(TaskState.TaskStage.CREATED)
           .controlFlags(new ControlFlags.Builder()
-              .disableHandleStart()
-              .disableHandlePatch()
+              .disableOperationProcessingOnHandleStart()
+              .disableOperationProcessingOnHandlePatch()
               .build())
           .failCreateTaskService()
           .build();
@@ -207,7 +207,7 @@ public class BaseWorkflowServiceTest {
       TestBaseWorkflowService.State initialState = new TestBaseWorkflowService.StateBuilder()
           .taskStage(TaskState.TaskStage.CREATED)
           .controlFlags(new ControlFlags.Builder()
-              .disableHandlePatch()
+              .disableOperationProcessingOnHandlePatch()
               .build())
           .build();
 
@@ -257,15 +257,14 @@ public class BaseWorkflowServiceTest {
      * - Workflow document has exact same copy of the TaskService entity in cloud-store.
      * - TaskService is in ERROR state.
      * - TaskService has end time set.
-     * - All steps are in ERROR state.
-     * - All steps have end time set.
+     * - All steps are in QUEUED state.
      */
     @Test
     public void failsToStartTaskService() throws Throwable {
       TestBaseWorkflowService.State initialState = new TestBaseWorkflowService.StateBuilder()
           .taskStage(TaskState.TaskStage.CREATED)
           .controlFlags(new ControlFlags.Builder()
-              .disableHandlePatch()
+              .disableOperationProcessingOnHandlePatch()
               .build())
           .failStartTaskService()
           .build();
@@ -295,10 +294,8 @@ public class BaseWorkflowServiceTest {
         TaskService.State.Step expectedStep = expectedStepIterator.next();
         TaskService.State.Step actualStep = actualStepIterator.next();
 
-        assertThat(actualStep.state, is(TaskService.State.StepState.ERROR));
+        assertThat(actualStep.state, is(TaskService.State.StepState.QUEUED));
         assertEquals(actualStep.state, expectedStep.state);
-        assertThat(actualStep.endTime, notNullValue());
-        assertEquals(actualStep.endTime.toString(), expectedStep.endTime.toString());
       }
     }
   }
@@ -406,8 +403,7 @@ public class BaseWorkflowServiceTest {
      * - First step has both started/end time set.
      * - Second step is in ERROR state.
      * - Second step has both started/end time set.
-     * - Third step is in ERROR state.
-     * - Third step has only started time set.
+     * - Third step is in QUEUED state.
      */
     @Test
     public void failsToProgressTaskService() throws Throwable {
@@ -454,7 +450,7 @@ public class BaseWorkflowServiceTest {
           assertThat(actualStep.endTime, notNullValue());
           assertEquals(actualStep.endTime.toString(), expectedStep.endTime.toString());
         } else {
-          assertThat(actualStep.state, is(TaskService.State.StepState.ERROR));
+          assertThat(actualStep.state, is(TaskService.State.StepState.QUEUED));
         }
 
         assertEquals(actualStep.state, expectedStep.state);

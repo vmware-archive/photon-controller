@@ -20,6 +20,7 @@ import com.vmware.xenon.common.Service;
 
 import org.joda.time.DateTime;
 
+import java.util.ArrayList;
 import java.util.Date;
 
 /**
@@ -133,6 +134,7 @@ public class TaskServiceUtils {
   public static void fail(
       Service service,
       TaskService.State taskServiceState,
+      Throwable t,
       Operation.CompletionHandler handler) {
 
     if (taskServiceState == null) {
@@ -146,10 +148,12 @@ public class TaskServiceUtils {
     taskServiceState.endTime = now;
     taskServiceState.steps.forEach(
         step -> {
-          if (step.state == TaskService.State.StepState.QUEUED ||
-              step.state == TaskService.State.StepState.STARTED) {
+          if (step.state == TaskService.State.StepState.STARTED) {
             step.state = TaskService.State.StepState.ERROR;
             step.endTime = now;
+            step.errors = new ArrayList<>();
+            TaskService.State.StepError error = new TaskService.State.StepError();
+            error.message = t.toString();
           }
         });
 
