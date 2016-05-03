@@ -16,6 +16,7 @@ package com.vmware.photon.controller.apibackend;
 import com.vmware.photon.controller.apibackend.tasks.ConfigureRoutingTaskService;
 import com.vmware.photon.controller.apibackend.tasks.CreateLogicalRouterTaskService;
 import com.vmware.photon.controller.apibackend.tasks.CreateLogicalSwitchTaskService;
+import com.vmware.photon.controller.apibackend.tasks.DeleteLogicalRouterTaskService;
 import com.vmware.photon.controller.apibackend.tasks.DeleteLogicalSwitchTaskService;
 import com.vmware.photon.controller.apibackend.workflows.CreateVirtualNetworkWorkflowService;
 import com.vmware.xenon.common.FactoryService;
@@ -34,14 +35,16 @@ public class ApiBackendFactory {
   /**
    * All Xenon Factory Services in api-backend.
    */
-  public static final Map<Class<? extends Service>, Supplier<FactoryService>> FACTORY_SERVICES_MAP = ImmutableMap.of(
+  public static final Map<Class<? extends Service>, Supplier<FactoryService>> FACTORY_SERVICES_MAP =
+      ImmutableMap.<Class<? extends Service>, Supplier<FactoryService>>builder()
       // tasks
-      CreateLogicalRouterTaskService.class, CreateLogicalRouterTaskService::createFactory,
-      CreateLogicalSwitchTaskService.class, CreateLogicalSwitchTaskService::createFactory,
-      ConfigureRoutingTaskService.class, ConfigureRoutingTaskService::createFactory,
-      DeleteLogicalSwitchTaskService.class, DeleteLogicalSwitchTaskService::createFactory,
+      .put(CreateLogicalRouterTaskService.class, CreateLogicalRouterTaskService::createFactory)
+      .put(CreateLogicalSwitchTaskService.class, CreateLogicalSwitchTaskService::createFactory)
+      .put(ConfigureRoutingTaskService.class, ConfigureRoutingTaskService::createFactory)
+      .put(DeleteLogicalSwitchTaskService.class, DeleteLogicalSwitchTaskService::createFactory)
+      .put(DeleteLogicalRouterTaskService.class, DeleteLogicalRouterTaskService::createFactory)
 
       // workflows
-      CreateVirtualNetworkWorkflowService.class, CreateVirtualNetworkWorkflowService::createFactory
-  );
+      .put(CreateVirtualNetworkWorkflowService.class, CreateVirtualNetworkWorkflowService::createFactory)
+      .build();
 }
