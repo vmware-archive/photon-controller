@@ -33,7 +33,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
-import static org.mockito.Mockito.spy;
 import static org.testng.Assert.fail;
 
 import java.util.EnumSet;
@@ -97,7 +96,7 @@ public class TaskSchedulerServiceTest {
   public class HandleStartTest {
     @BeforeMethod
     public void setUp() throws Throwable {
-      service = spy(new TaskSchedulerService());
+      service = new TaskSchedulerService();
       host = BasicServiceHost.create();
     }
 
@@ -131,7 +130,7 @@ public class TaskSchedulerServiceTest {
   public class HandlePatchTest {
     @BeforeMethod
     public void setUp() throws Throwable {
-      service = spy(new TaskSchedulerService());
+      service = new TaskSchedulerService();
 
       host = BasicServiceHost.create();
     }
@@ -154,9 +153,9 @@ public class TaskSchedulerServiceTest {
     public void testInvalidPatch() throws Throwable {
       host.startServiceSynchronously(service, buildValidStartupState(), selfLink);
 
-      Operation op = spy(Operation
+      Operation op = Operation
           .createPatch(UriUtils.buildUri(host, selfLink, null))
-          .setBody("invalid body"));
+          .setBody("invalid body");
 
       try {
         host.sendRequestAndWait(op);
@@ -288,8 +287,11 @@ public class TaskSchedulerServiceTest {
       environment = new BasicHostEnvironment.Builder().hostList(hosts).build();
       environment.startFactoryServiceSynchronously(TestServiceWithStageFactory.class,
           TestServiceWithStageFactory.SELF_LINK);
+      for (int i = 0; i < hosts.length; i++) {
+        environment.waitForReplicatedFactoryServices(hosts[i]);
+      }
       for (BasicServiceHost host : hosts) {
-        service = spy(new TaskSchedulerService());
+        service = new TaskSchedulerService();
         service.setMaintenanceIntervalMicros(testInterval);
         host.startServiceSynchronously(service, buildValidStartupState(), selfLink, false);
       }
