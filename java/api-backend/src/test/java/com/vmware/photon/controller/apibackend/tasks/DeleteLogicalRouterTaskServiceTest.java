@@ -16,7 +16,7 @@ package com.vmware.photon.controller.apibackend.tasks;
 import com.vmware.photon.controller.apibackend.helpers.ReflectionUtils;
 import com.vmware.photon.controller.apibackend.helpers.TestEnvironment;
 import com.vmware.photon.controller.apibackend.helpers.TestHost;
-import com.vmware.photon.controller.apibackend.servicedocuments.DeleteLogicalSwitchTask;
+import com.vmware.photon.controller.apibackend.servicedocuments.DeleteLogicalRouterTask;
 import com.vmware.photon.controller.common.tests.nsx.NsxClientMock;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
@@ -47,9 +47,9 @@ import java.util.EnumSet;
 import java.util.UUID;
 
 /**
- * Tests for {@link DeleteLogicalSwitchTaskService}.
+ * Tests for {@link com.vmware.photon.controller.apibackend.tasks.DeleteLogicalRouterTaskService}.
  */
-public class DeleteLogicalSwitchTaskServiceTest {
+public class DeleteLogicalRouterTaskServiceTest {
 
   @Test(enabled = false)
   private void dummy() {
@@ -68,7 +68,7 @@ public class DeleteLogicalSwitchTaskServiceTest {
           Service.ServiceOption.REPLICATION,
           Service.ServiceOption.INSTRUMENTATION);
 
-      DeleteLogicalSwitchTaskService service = new DeleteLogicalSwitchTaskService();
+      DeleteLogicalRouterTaskService service = new DeleteLogicalRouterTaskService();
       assertThat(service.getOptions(), is(expected));
     }
   }
@@ -78,7 +78,7 @@ public class DeleteLogicalSwitchTaskServiceTest {
    */
   public static class HandleStartTest {
     private static TestHost host;
-    private static DeleteLogicalSwitchTaskService deleteLogicalSwitchTaskService;
+    private static DeleteLogicalRouterTaskService deleteLogicalRouterTaskService;
 
     @BeforeClass
     public void setupClass() throws Throwable {
@@ -93,7 +93,7 @@ public class DeleteLogicalSwitchTaskServiceTest {
 
     @BeforeMethod
     public void setupTest() {
-      deleteLogicalSwitchTaskService = new DeleteLogicalSwitchTaskService();
+      deleteLogicalRouterTaskService = new DeleteLogicalRouterTaskService();
       host.setDefaultServiceUri(UUID.randomUUID().toString());
     }
 
@@ -106,13 +106,13 @@ public class DeleteLogicalSwitchTaskServiceTest {
     public void testStateTransition(TaskState.TaskStage startStage,
                                     TaskState.TaskStage expectedStage) throws Throwable {
 
-      DeleteLogicalSwitchTask createdState = createDeleteLogicalSwitchTaskService(
+      DeleteLogicalRouterTask createdState = createDeleteLogicalRouterTaskService(
           host,
-          deleteLogicalSwitchTaskService,
+          deleteLogicalRouterTaskService,
           startStage,
           ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED);
 
-      DeleteLogicalSwitchTask savedState = host.getServiceState(DeleteLogicalSwitchTask.class,
+      DeleteLogicalRouterTask savedState = host.getServiceState(DeleteLogicalRouterTask.class,
           createdState.documentSelfLink);
       assertThat(savedState.taskState.stage, is(expectedStage));
       assertThat(savedState.documentExpirationTimeMicros > 0, is(true));
@@ -131,7 +131,7 @@ public class DeleteLogicalSwitchTaskServiceTest {
     @Test
     public void testRestartDisabled() throws Throwable {
       try {
-        createDeleteLogicalSwitchTaskService(host, deleteLogicalSwitchTaskService, TaskState.TaskStage.STARTED, 0);
+        createDeleteLogicalRouterTaskService(host, deleteLogicalRouterTaskService, TaskState.TaskStage.STARTED, 0);
         fail("should have failed due to invalid START state");
       } catch (XenonRuntimeException ex) {
         assertThat(ex.getMessage(), is("Service state is invalid (START). Restart is disabled."));
@@ -140,7 +140,7 @@ public class DeleteLogicalSwitchTaskServiceTest {
 
     @Test(dataProvider = "notBlankFields")
     public void testInvalidInitialState(String fieldName, String expectedErrorMessage) throws Throwable {
-      DeleteLogicalSwitchTask startState = new DeleteLogicalSwitchTask();
+      DeleteLogicalRouterTask startState = new DeleteLogicalRouterTask();
       Field[] fields = startState.getClass().getDeclaredFields();
       for (Field field : fields) {
         if (field.getName() != fieldName) {
@@ -149,7 +149,7 @@ public class DeleteLogicalSwitchTaskServiceTest {
       }
 
       try {
-        host.startServiceSynchronously(deleteLogicalSwitchTaskService, startState);
+        host.startServiceSynchronously(deleteLogicalRouterTaskService, startState);
         fail("should have failed due to violation of not blank restraint");
       } catch (XenonRuntimeException e) {
         assertThat(e.getMessage(), is(expectedErrorMessage));
@@ -159,7 +159,7 @@ public class DeleteLogicalSwitchTaskServiceTest {
     @DataProvider(name = "notBlankFields")
     private Object[][] getNotEmptyFields() {
       return new Object[][] {
-          {"logicalSwitchId", "logicalSwitchId cannot be null"},
+          {"logicalRouterId", "logicalRouterId cannot be null"},
           {"nsxManagerEndpoint", "nsxManagerEndpoint cannot be null"},
           {"username", "username cannot be null"},
           {"password", "password cannot be null"}
@@ -172,7 +172,7 @@ public class DeleteLogicalSwitchTaskServiceTest {
    */
   public static class HandlePatchTest {
     private static TestHost host;
-    private static DeleteLogicalSwitchTaskService deleteLogicalSwitchTaskService;
+    private static DeleteLogicalRouterTaskService deleteLogicalRouterTaskService;
 
     @BeforeClass
     public void setupClass() throws Throwable {
@@ -186,7 +186,7 @@ public class DeleteLogicalSwitchTaskServiceTest {
 
     @BeforeMethod
     public void setupTest() {
-      deleteLogicalSwitchTaskService = new DeleteLogicalSwitchTaskService();
+      deleteLogicalRouterTaskService = new DeleteLogicalRouterTaskService();
       host.setDefaultServiceUri(UUID.randomUUID().toString());
     }
 
@@ -199,13 +199,13 @@ public class DeleteLogicalSwitchTaskServiceTest {
     public void testValidStageTransition(TaskState.TaskStage startStage,
                                          TaskState.TaskStage patchStage) throws Throwable {
 
-      DeleteLogicalSwitchTask createdState = createDeleteLogicalSwitchTaskService(
+      DeleteLogicalRouterTask createdState = createDeleteLogicalRouterTaskService(
           host,
-          deleteLogicalSwitchTaskService,
+          deleteLogicalRouterTaskService,
           startStage,
           ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED);
 
-      DeleteLogicalSwitchTask patchState = buildPatchState(patchStage);
+      DeleteLogicalRouterTask patchState = buildPatchState(patchStage);
       Operation patch = Operation
           .createPatch(UriUtils.buildUri(host, createdState.documentSelfLink))
           .setBody(patchState);
@@ -213,7 +213,7 @@ public class DeleteLogicalSwitchTaskServiceTest {
       Operation result = host.sendRequestAndWait(patch);
       assertThat(result.getStatusCode(), is(HttpStatus.SC_OK));
 
-      DeleteLogicalSwitchTask savedState = host.getServiceState(DeleteLogicalSwitchTask.class,
+      DeleteLogicalRouterTask savedState = host.getServiceState(DeleteLogicalRouterTask.class,
           createdState.documentSelfLink);
       assertThat(savedState.taskState.stage, is(patchStage));
     }
@@ -232,13 +232,13 @@ public class DeleteLogicalSwitchTaskServiceTest {
     public void testInvalidStageTransition(TaskState.TaskStage startStage,
                                            TaskState.TaskStage patchStage) throws Throwable {
 
-      DeleteLogicalSwitchTask createdState = createDeleteLogicalSwitchTaskService(
+      DeleteLogicalRouterTask createdState = createDeleteLogicalRouterTaskService(
           host,
-          deleteLogicalSwitchTaskService,
+          deleteLogicalRouterTaskService,
           startStage,
           ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED);
 
-      DeleteLogicalSwitchTask patchState = buildPatchState(patchStage);
+      DeleteLogicalRouterTask patchState = buildPatchState(patchStage);
       Operation patch = Operation
           .createPatch(UriUtils.buildUri(host, createdState.documentSelfLink))
           .setBody(patchState);
@@ -260,13 +260,13 @@ public class DeleteLogicalSwitchTaskServiceTest {
     @Test(dataProvider = "immutableFields")
     public void testChangeImmutableFields(String fieldName, String expectedErrorMessage) throws Throwable {
 
-      DeleteLogicalSwitchTask createdState = createDeleteLogicalSwitchTaskService(
+      DeleteLogicalRouterTask createdState = createDeleteLogicalRouterTaskService(
           host,
-          deleteLogicalSwitchTaskService,
+          deleteLogicalRouterTaskService,
           TaskState.TaskStage.CREATED,
           ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED);
 
-      DeleteLogicalSwitchTask patchState = buildPatchState(TaskState.TaskStage.FINISHED);
+      DeleteLogicalRouterTask patchState = buildPatchState(TaskState.TaskStage.FINISHED);
 
       Field field = patchState.getClass().getDeclaredField(fieldName);
       field.set(patchState, ReflectionUtils.getDefaultAttributeValue(field));
@@ -290,7 +290,7 @@ public class DeleteLogicalSwitchTaskServiceTest {
           {"nsxManagerEndpoint", "nsxManagerEndpoint is immutable"},
           {"username", "username is immutable"},
           {"password", "password is immutable"},
-          {"logicalSwitchId", "logicalSwitchId is immutable"},
+          {"logicalRouterId", "logicalRouterId is immutable"},
       };
     }
   }
@@ -321,60 +321,60 @@ public class DeleteLogicalSwitchTaskServiceTest {
     }
 
     @Test
-    public void testSuccessfulDeleteLogicalSwitchTask() throws Throwable {
+    public void testSuccessfulDeleteLogicalRouterTask() throws Throwable {
       NsxClientMock nsxClientMock = new NsxClientMock.Builder()
-          .deleteLogicalSwitch(true)
+          .deleteLogicalRouter(true)
           .build();
       doReturn(nsxClientMock).when(nsxClientFactory).create(any(String.class), any(String.class), any(String.class));
 
-      DeleteLogicalSwitchTask savedState = startService();
+      DeleteLogicalRouterTask savedState = startService();
       assertThat(savedState.taskState.stage, is(TaskState.TaskStage.FINISHED));
     }
 
     @Test
-    public void testFailedToDeleteLogicalSwitchTask() throws Throwable {
+    public void testFailedToDeleteLogicalRouterTask() throws Throwable {
       NsxClientMock nsxClientMock = new NsxClientMock.Builder()
-          .deleteLogicalSwitch(false)
+          .deleteLogicalRouter(false)
           .build();
       doReturn(nsxClientMock).when(nsxClientFactory).create(any(String.class), any(String.class), any(String.class));
 
-      DeleteLogicalSwitchTask savedState = startService();
+      DeleteLogicalRouterTask savedState = startService();
       assertThat(savedState.taskState.stage, is(TaskState.TaskStage.FAILED));
-      assertThat(savedState.taskState.failure.message, containsString("deleteLogicalSwitch failed"));
+      assertThat(savedState.taskState.failure.message, containsString("deleteLogicalRouter failed"));
     }
 
-    private DeleteLogicalSwitchTask startService() throws Throwable {
+    private DeleteLogicalRouterTask startService() throws Throwable {
       return testEnvironment.callServiceAndWaitForState(
-          DeleteLogicalSwitchTaskService.FACTORY_LINK,
+          DeleteLogicalRouterTaskService.FACTORY_LINK,
           buildStartState(TaskState.TaskStage.CREATED, 0),
-          DeleteLogicalSwitchTask.class,
+          DeleteLogicalRouterTask.class,
           (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
     }
   }
 
-  private static DeleteLogicalSwitchTask createDeleteLogicalSwitchTaskService(TestHost testHost,
-                                                                              DeleteLogicalSwitchTaskService service,
+  private static DeleteLogicalRouterTask createDeleteLogicalRouterTaskService(TestHost testHost,
+                                                                              DeleteLogicalRouterTaskService service,
                                                                               TaskState.TaskStage startStage,
                                                                               int controlFlags) throws Throwable {
     Operation result = testHost.startServiceSynchronously(service, buildStartState(startStage, controlFlags));
-    return result.getBody(DeleteLogicalSwitchTask.class);
+    return result.getBody(DeleteLogicalRouterTask.class);
   }
 
-  private static DeleteLogicalSwitchTask buildStartState(TaskState.TaskStage startStage, int controlFlags) {
-    DeleteLogicalSwitchTask startState = new DeleteLogicalSwitchTask();
+  private static DeleteLogicalRouterTask buildStartState(TaskState.TaskStage startStage, int controlFlags) {
+    DeleteLogicalRouterTask startState = new DeleteLogicalRouterTask();
     startState.taskState = new TaskState();
     startState.taskState.stage = startStage;
     startState.controlFlags = controlFlags;
     startState.nsxManagerEndpoint = "https://192.168.1.1";
     startState.username = "username";
     startState.password = "password";
-    startState.logicalSwitchId = "logicalSwitchId";
+    startState.logicalRouterId = "logicalRouterId";
 
     return startState;
   }
 
-  private static DeleteLogicalSwitchTask buildPatchState(TaskState.TaskStage patchStage) {
-    DeleteLogicalSwitchTask patchState = new DeleteLogicalSwitchTask();
+  private static DeleteLogicalRouterTask buildPatchState(TaskState.TaskStage patchStage) {
+    DeleteLogicalRouterTask patchState = new DeleteLogicalRouterTask();
     patchState.taskState = new TaskState();
     patchState.taskState.stage = patchStage;
 
