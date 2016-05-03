@@ -32,7 +32,7 @@ TaskService:
   state: com.vmware.esxcloud.cloudstore.dcp.entity.TaskService.State.TaskState
   endTime: java.util.Date
   projectId: java.lang.String
-  operation: com.vmware.esxcloud.api.Operation
+  operation: java.lang.String
   steps: java.util.List
 DatastoreService:
   name: java.lang.String
