@@ -205,10 +205,10 @@ public class CreateVirtualNetworkWorkflowServiceTest {
               CreateVirtualNetworkWorkflowDocument.class,
               (state) -> TaskState.TaskStage.CREATED == state.taskState.stage);
 
-      assertThat(finalState.virtualNetworkServiceState, notNullValue());
-      VirtualNetworkService.State expectedVirtualNetworkServiceState = finalState.virtualNetworkServiceState;
+      assertThat(finalState.taskServiceEntity, notNullValue());
+      VirtualNetworkService.State expectedVirtualNetworkServiceState = finalState.taskServiceEntity;
       VirtualNetworkService.State actualVirtualNetworkServiceState = testEnvironment.getServiceState(
-          finalState.virtualNetworkServiceState.documentSelfLink,
+          finalState.taskServiceEntity.documentSelfLink,
           VirtualNetworkService.State.class);
 
       assertThat(actualVirtualNetworkServiceState, notNullValue());
@@ -593,10 +593,10 @@ public class CreateVirtualNetworkWorkflowServiceTest {
               CreateVirtualNetworkWorkflowDocument.class,
               (state) -> TaskState.TaskStage.FINISHED == state.taskState.stage);
 
-      assertThat(finalState.virtualNetworkServiceState, notNullValue());
-      VirtualNetworkService.State expectedVirtualNetworkServiceState = finalState.virtualNetworkServiceState;
+      assertThat(finalState.taskServiceEntity, notNullValue());
+      VirtualNetworkService.State expectedVirtualNetworkServiceState = finalState.taskServiceEntity;
       VirtualNetworkService.State actualVirtualNetworkServiceState = testEnvironment.getServiceState(
-          finalState.virtualNetworkServiceState.documentSelfLink,
+          finalState.taskServiceEntity.documentSelfLink,
           VirtualNetworkService.State.class);
 
       assertThat(actualVirtualNetworkServiceState, notNullValue());

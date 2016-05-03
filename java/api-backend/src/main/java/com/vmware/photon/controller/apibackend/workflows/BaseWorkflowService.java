@@ -30,6 +30,7 @@ import com.vmware.xenon.common.Utils;
 
 import static com.google.common.base.Preconditions.checkState;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 
 /**
@@ -57,31 +58,58 @@ public abstract class BaseWorkflowService <S extends ServiceDocument, T extends 
     this.taskSubStageType = taskSubStageType;
   }
 
-  protected abstract TaskService.State buildTaskServiceStartState(S state);
+  protected TaskService.State buildTaskServiceStartState(S state) throws Throwable {
+    TaskService.State taskServiceStartState = new TaskService.State();
+
+    ServiceDocument taskServiceEntity = ServiceDocumentUtils.getTaskServiceEntity(state);
+    if (taskServiceEntity != null) {
+      taskServiceStartState.entityId = taskServiceEntity.documentSelfLink;
+      taskServiceStartState.entityKind = taskServiceEntity.getClass().getName();
+    }
+
+    taskServiceStartState.operation = this.getClass().getName();
+    taskServiceStartState.state = TaskService.State.TaskState.QUEUED;
+
+    taskServiceStartState.steps = new ArrayList<>();
+    for (E subStage : ServiceDocumentUtils.getTaskStateSubStageEntries(taskSubStageType)) {
+      TaskService.State.Step taskStep = new TaskService.State.Step();
+      taskStep.sequence = taskServiceStartState.steps.size();
+      taskStep.operation = subStage.name();
+      taskStep.state = TaskService.State.StepState.QUEUED;
+      taskServiceStartState.steps.add(taskStep);
+    }
+
+    return taskServiceStartState;
+  }
 
   /**
    * Creates a {@link TaskService.State} entity when the workflow is created.
    */
   protected void create(S state, Operation operation) {
-    TaskService.State taskServiceState = buildTaskServiceStartState(state);
-    TaskServiceUtils.create(
-        this,
-        taskServiceState,
-        (op, ex) -> {
-          if (ex != null) {
-            operation.fail(ex);
-            fail(state, ex);
-            return;
-          }
+    try {
+      TaskService.State taskServiceState = buildTaskServiceStartState(state);
+      TaskServiceUtils.create(
+          this,
+          taskServiceState,
+          (op, ex) -> {
+            if (ex != null) {
+              operation.fail(ex);
+              fail(state, ex);
+              return;
+            }
 
-          try {
-            ServiceDocumentUtils.setTaskServiceState(state, op.getBody(TaskService.State.class));
-            operation.setBody(state).complete();
-          } catch (Throwable t) {
-            operation.fail(t);
-            fail(state, t);
-          }
-        });
+            try {
+              ServiceDocumentUtils.setTaskServiceState(state, op.getBody(TaskService.State.class));
+              operation.setBody(state).complete();
+            } catch (Throwable t) {
+              operation.fail(t);
+              fail(state, t);
+            }
+          });
+    } catch (Throwable t) {
+      operation.fail(t);
+      fail(state, t);
+    }
   }
 
   /**

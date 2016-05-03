@@ -15,10 +15,8 @@ package com.vmware.photon.controller.apibackend.workflows;
 
 import com.vmware.photon.controller.api.NetworkState;
 import com.vmware.photon.controller.api.RoutingType;
-import com.vmware.photon.controller.apibackend.builders.TaskStateBuilder;
 import com.vmware.photon.controller.apibackend.servicedocuments.CreateVirtualNetworkWorkflowDocument;
 import com.vmware.photon.controller.apibackend.utils.ServiceHostUtils;
-import com.vmware.photon.controller.cloudstore.dcp.entity.TaskService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.VirtualNetworkService;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.OperationUtils;
@@ -145,18 +143,6 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
     }
   }
 
-  protected TaskService.State buildTaskServiceStartState(CreateVirtualNetworkWorkflowDocument state) {
-    return new TaskStateBuilder()
-        .setEntityId(state.virtualNetworkServiceState.documentSelfLink)
-        .setEntityKind(VirtualNetworkService.State.class.getName())
-        .setOperation(com.vmware.photon.controller.api.Operation.CREATE_VIRTUAL_NETWORK)
-        .addStep(com.vmware.photon.controller.api.Operation.GET_NSX_CONFIGURATION)
-        .addStep(com.vmware.photon.controller.api.Operation.CREATE_LOGICAL_SWITCH)
-        .addStep(com.vmware.photon.controller.api.Operation.CREATE_LOGICAL_ROUTER)
-        .addStep(com.vmware.photon.controller.api.Operation.SET_UP_LOGICAL_ROUTER)
-        .build();
-  }
-
   /**
    * Create VirtualNetwork entity in cloud store.
    */
@@ -180,7 +166,7 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
             return;
           }
 
-          state.virtualNetworkServiceState = op.getBody(VirtualNetworkService.State.class);
+          state.taskServiceEntity = op.getBody(VirtualNetworkService.State.class);
           create(state, operation);
         })
         .sendWith(this);
