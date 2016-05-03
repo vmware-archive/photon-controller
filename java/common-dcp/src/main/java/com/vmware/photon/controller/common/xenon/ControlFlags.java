@@ -60,13 +60,33 @@ public class ControlFlags {
       value = 0;
     }
 
-    public Builder set(int value) {
-      this.value |= value;
-      return this;
+    public Builder disableOperationProcessing() {
+      return set(CONTROL_FLAG_OPERATION_PROCESSING_DISABLED);
+    }
+
+    public Builder disableOperationProcessingOnStageTransition() {
+      return set(CONTROL_FLAG_DISABLE_OPERATION_PROCESSING_ON_STAGE_TRANSITION);
+    }
+
+    public Builder disableHandleCreate() {
+      return set(CONTROL_FLAG_DISABLE_HANDLE_CREATE);
+    }
+
+    public Builder disableHandleStart() {
+      return set(CONTROL_FLAG_DISABLE_HANDLE_START);
+    }
+
+    public Builder disableHandlePatch() {
+      return set(CONTROL_FLAG_DISABLE_HANDLE_PATCH);
     }
 
     public int build() {
       return this.value;
+    }
+
+    private Builder set(int value) {
+      this.value |= value;
+      return this;
     }
   }
 }

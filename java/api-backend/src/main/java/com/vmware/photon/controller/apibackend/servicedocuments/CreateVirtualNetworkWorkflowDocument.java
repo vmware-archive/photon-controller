@@ -87,7 +87,7 @@ public class CreateVirtualNetworkWorkflowDocument extends ServiceDocument{
       GET_NSX_CONFIGURATION,
       CREATE_LOGICAL_SWITCH,
       CREATE_LOGICAL_ROUTER,
-      SETUP_LOGICAL_ROUTER
+      SET_UP_LOGICAL_ROUTER
     }
   }
 }

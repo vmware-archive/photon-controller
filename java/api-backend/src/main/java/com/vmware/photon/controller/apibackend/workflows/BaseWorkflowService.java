@@ -14,9 +14,11 @@
 package com.vmware.photon.controller.apibackend.workflows;
 
 import com.vmware.photon.controller.apibackend.utils.ServiceDocumentUtils;
+import com.vmware.photon.controller.apibackend.utils.TaskServiceUtils;
+import com.vmware.photon.controller.cloudstore.dcp.entity.TaskService;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
-import com.vmware.photon.controller.common.xenon.OperationUtils;
+import com.vmware.photon.controller.common.xenon.PatchUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
@@ -37,7 +39,7 @@ import java.util.Arrays;
  * @param <T> Generic type which extends TaskState class.
  * @param <E> Generic type which extends Enum class.
  */
-public class BaseWorkflowService <S extends ServiceDocument, T extends TaskState, E extends Enum>
+public abstract class BaseWorkflowService <S extends ServiceDocument, T extends TaskState, E extends Enum>
     extends StatefulService {
 
   protected final Class<T> taskStateType;
@@ -55,44 +57,151 @@ public class BaseWorkflowService <S extends ServiceDocument, T extends TaskState
     this.taskSubStageType = taskSubStageType;
   }
 
-  @Override
-  public void handleStart(Operation startOperation) {
-    ServiceUtils.logInfo(this, "Starting service %s", getSelfLink());
+  protected abstract TaskService.State buildTaskServiceStartState(S state);
 
+  /**
+   * Creates a {@link TaskService.State} entity when the workflow is created.
+   */
+  protected void create(S state, Operation operation) {
+    TaskService.State taskServiceState = buildTaskServiceStartState(state);
+    TaskServiceUtils.create(
+        this,
+        taskServiceState,
+        (op, ex) -> {
+          if (ex != null) {
+            operation.fail(ex);
+            fail(state, ex);
+            return;
+          }
+
+          try {
+            ServiceDocumentUtils.setTaskServiceState(state, op.getBody(TaskService.State.class));
+            operation.setBody(state).complete();
+          } catch (Throwable t) {
+            operation.fail(t);
+            fail(state, t);
+          }
+        });
+  }
+
+  /**
+   * Moves the service to the first sub-stage of the STARTED state.
+   */
+  protected void start(S state) {
     try {
-      S startState = (S) startOperation.getBody(getStateType());
-      initializeState(startState);
-      validateStartState(startState);
+      TaskServiceUtils.start(
+          this,
+          ServiceDocumentUtils.getTaskServiceState(state),
+          (op, ex) -> {
+            if (ex != null) {
+              fail(state, ex);
+              return;
+            }
 
-      startOperation.setBody(startState).complete();
-
-      if (ControlFlags.isOperationProcessingDisabled(ServiceDocumentUtils.getControlFlags(startState))) {
-        ServiceUtils.logInfo(this, "Skipping start operation processing (disabled)");
-        return;
-      }
-
-      ServiceUtils.logInfo(this, "Sending stage progress patch %s:%s. ", TaskState.TaskStage.STARTED,
-          ServiceDocumentUtils.getTaskStateSubStageEntries(taskSubStageType)[0]);
-      TaskUtils.sendSelfPatch(this,
-          buildPatch(TaskState.TaskStage.STARTED,
-              ServiceDocumentUtils.getTaskStateSubStageEntries(taskSubStageType)[0]));
+            try {
+              S patchState = buildPatch(TaskState.TaskStage.STARTED,
+                  ServiceDocumentUtils.getTaskStateSubStageEntries(taskSubStageType)[0]);
+              ServiceDocumentUtils.setTaskServiceState(patchState, op.getBody(TaskService.State.class));
+              TaskUtils.sendSelfPatch(this, patchState);
+            } catch (Throwable t) {
+              fail(state, t);
+            }
+          });
     } catch (Throwable t) {
-      if (!OperationUtils.isCompleted(startOperation)) {
-        startOperation.fail(t);
-      }
-      failTask(t);
+      fail(state, t);
     }
   }
 
   /**
-   * Initialize state with defaults.
+   * Moves the service to the next sub-stage of the STARTED state.
    */
-  private void initializeState(S current) {
-    InitializationUtils.initialize(current);
+  protected void progress(S state, E nextSubStage) {
+    try {
+      TaskServiceUtils.progress(
+          this,
+          ServiceDocumentUtils.getTaskServiceState(state),
+          nextSubStage.ordinal(),
+          (op, ex) -> {
+            if (ex != null) {
+              fail(state, ex);
+              return;
+            }
 
-    if (current.documentExpirationTimeMicros <= 0) {
-      current.documentExpirationTimeMicros =
-          ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME_MICROS);
+            try {
+              if (ControlFlags.disableOperationProcessingOnStageTransition(
+                  ServiceDocumentUtils.getControlFlags(state))) {
+                ServiceUtils.logInfo(this, "Operation processing on stage transition disabled");
+                return;
+              }
+
+              S patchState = buildPatch(TaskState.TaskStage.STARTED, nextSubStage);
+              ServiceDocumentUtils.setTaskServiceState(patchState, op.getBody(TaskService.State.class));
+              TaskUtils.sendSelfPatch(this, patchState);
+            } catch (Throwable t) {
+              fail(state, t);
+            }
+          });
+    } catch (Throwable t) {
+      fail(state, t);
+    }
+  }
+
+  /**
+   * Moves the service to the FINISHED state.
+   */
+  protected void finish(S state) {
+    try {
+      TaskServiceUtils.complete(
+          this,
+          ServiceDocumentUtils.getTaskServiceState(state),
+          (op, ex) -> {
+            if (ex != null) {
+              fail(state, ex);
+              return;
+            }
+
+            try {
+              S patchState = buildPatch(TaskState.TaskStage.FINISHED, null);
+              ServiceDocumentUtils.setTaskServiceState(patchState, op.getBody(TaskService.State.class));
+              TaskUtils.sendSelfPatch(this, patchState);
+            } catch (Throwable t) {
+              fail(state, t);
+            }
+          });
+    } catch (Throwable t) {
+      fail(state, t);
+    }
+  }
+
+  /**
+   * Moves the service to the FAILED state.
+   */
+  protected void fail(S state, Throwable t) {
+    ServiceUtils.logSevere(this, t);
+
+    try {
+      TaskServiceUtils.fail(
+          this,
+          ServiceDocumentUtils.getTaskServiceState(state),
+          (op, ex) -> {
+            if (ex != null) {
+              ServiceUtils.logSevere(this, "Failed to fail task service: %s", ex.toString());
+              return;
+            }
+
+            try {
+              S patchState = buildPatch(TaskState.TaskStage.FAILED, null, t);
+              if (op != null) {
+                ServiceDocumentUtils.setTaskServiceState(patchState, op.getBody(TaskService.State.class));
+              }
+              TaskUtils.sendSelfPatch(this, patchState);
+            } catch (Throwable tt) {
+              ServiceUtils.logSevere(this, "Failed to fail workflow: %s", tt.toString());
+            }
+
+          });
+    } catch (Throwable throwable) {
+      ServiceUtils.logSevere(this, "Failed to fail workflow: %s", throwable.toString());
     }
   }
 
@@ -149,19 +258,19 @@ public class BaseWorkflowService <S extends ServiceDocument, T extends TaskState
       ServiceUtils.logInfo(this, "Moving from %s to stage %s", currentStage, patchStage);
       ServiceDocumentUtils.setTaskState(currentState, patchTaskState);
     }
+
+    PatchUtils.patchState(currentState, patchState);
   }
 
   /**
-   * Moves the service into the FAILED state.
+   * Initialize state with defaults.
    */
-  protected void failTask(Throwable t) {
-    ServiceUtils.logSevere(this, t);
+  protected void initializeState(S current) {
+    InitializationUtils.initialize(current);
 
-    try {
-      S patchState = buildPatch(TaskState.TaskStage.FAILED, null, t);
-      TaskUtils.sendSelfPatch(this, patchState);
-    } catch (Throwable throwable) {
-      ServiceUtils.logSevere(this, "Failed to send self-patch: " + throwable.toString());
+    if (current.documentExpirationTimeMicros <= 0) {
+      current.documentExpirationTimeMicros =
+          ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME_MICROS);
     }
   }
 

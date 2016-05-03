@@ -16,50 +16,36 @@ package com.vmware.photon.controller.apibackend.workflows;
 import com.vmware.photon.controller.apibackend.helpers.ReflectionUtils;
 import com.vmware.photon.controller.apibackend.helpers.TestEnvironment;
 import com.vmware.photon.controller.apibackend.helpers.TestHelper;
-import com.vmware.photon.controller.apibackend.helpers.TestHost;
 import com.vmware.photon.controller.apibackend.servicedocuments.CreateVirtualNetworkWorkflowDocument;
-import com.vmware.photon.controller.cloudstore.dcp.entity.TaskService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.VirtualNetworkService;
+import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
-import com.vmware.xenon.common.Operation;
+import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceDocument;
-import com.vmware.xenon.common.ServiceHost;
 import com.vmware.xenon.common.TaskState;
-import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.NodeGroupBroadcastResponse;
 import com.vmware.xenon.services.common.QueryTask;
 
-import com.google.common.collect.ImmutableList;
-import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.startsWith;
-import static org.testng.Assert.fail;
+import static org.testng.Assert.assertEquals;
 
 import java.lang.reflect.Field;
 import java.util.EnumSet;
-import java.util.UUID;
 
 /**
  * This class implements tests for the {@link CreateVirtualNetworkWorkflowService} class.
  */
 public class CreateVirtualNetworkWorkflowServiceTest {
-
-  public static final Integer COUNT_ONE = 1;
-
-  private CreateVirtualNetworkWorkflowService createVirtualNetworkWorkflowService;
-  private TestHost testHost;
 
   /**
    * This method is a dummy test case which forces IntelliJ to recognize the
@@ -72,21 +58,15 @@ public class CreateVirtualNetworkWorkflowServiceTest {
   /**
    * This method creates a new State object to create a new CreateVirtualNetworkTaskService instance.
    */
-  private CreateVirtualNetworkWorkflowDocument buildValidStartState() {
-    return buildValidStartState(TaskState.TaskStage.CREATED, null);
-  }
-
-  /**
-   * This method creates a new State object to create a new CreateVirtualNetworkTaskService instance.
-   */
   private CreateVirtualNetworkWorkflowDocument buildValidStartState(
       TaskState.TaskStage stage,
-      CreateVirtualNetworkWorkflowDocument.TaskState.SubStage subStage) {
+      CreateVirtualNetworkWorkflowDocument.TaskState.SubStage subStage,
+      int controlFlags) {
     CreateVirtualNetworkWorkflowDocument startState = new CreateVirtualNetworkWorkflowDocument();
     startState.taskState = new CreateVirtualNetworkWorkflowDocument.TaskState();
     startState.taskState.stage = stage;
     startState.taskState.subStage = subStage;
-    startState.controlFlags = ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED;
+    startState.controlFlags = controlFlags;
     startState.name = "name";
     startState.description = "desc";
 
@@ -111,6 +91,8 @@ public class CreateVirtualNetworkWorkflowServiceTest {
    * This class implements tests for the initial service state.
    */
   public class InitializationTest {
+
+    private CreateVirtualNetworkWorkflowService createVirtualNetworkWorkflowService;
 
     @BeforeMethod
     public void setUpTest() {
@@ -137,7 +119,8 @@ public class CreateVirtualNetworkWorkflowServiceTest {
   }
 
   /**
-   * handleCreate tests.
+   * Tests that when {@link CreateVirtualNetworkWorkflowService#handleCreate} is called, the workflow will
+   * validate the state object and behave correctly.
    */
   public class HandleCreateTest {
 
@@ -146,7 +129,19 @@ public class CreateVirtualNetworkWorkflowServiceTest {
 
     @BeforeMethod
     public void setUpTest() throws Throwable {
-      startState = buildValidStartState();
+      testEnvironment = new TestEnvironment.Builder()
+          .hostCount(1)
+          .cloudStoreHelper(new CloudStoreHelper())
+          .build();
+
+      startState = buildValidStartState(
+          TaskState.TaskStage.CREATED,
+          null,
+          new ControlFlags.Builder()
+              .disableHandleCreate()
+              .disableHandleStart()
+              .disableHandlePatch()
+              .build());
     }
 
     @AfterMethod
@@ -159,186 +154,144 @@ public class CreateVirtualNetworkWorkflowServiceTest {
       startState = null;
     }
 
+    /**
+     * Verifies that when a field of the initial state has null value and is annotated with
+     * default value, the workflow will initialize the state with the default value and succeed.
+     */
     @Test
-    public void testHandleCreateSuccessfullyCreateDocuments() throws Throwable {
-      testEnvironment = new TestEnvironment.Builder().hostCount(COUNT_ONE).build();
-      startState.controlFlags = 0;
+    public void succeedsWithNullDefaultFields() throws Throwable {
 
+      startState.taskState = null;
       CreateVirtualNetworkWorkflowDocument finalState =
           testEnvironment.callServiceAndWaitForState(
               CreateVirtualNetworkWorkflowService.FACTORY_LINK,
               startState,
               CreateVirtualNetworkWorkflowDocument.class,
-              (state) -> TaskState.TaskStage.STARTED.ordinal() < state.taskState.stage.ordinal());
+              (state) -> TaskState.TaskStage.CREATED == state.taskState.stage);
 
-      TestHelper.assertTaskStateFinished(finalState.taskState);
-      assertThat(finalState.documentSelfLink, is(notNullValue()));
-      assertThat(finalState.virtualNetworkServiceState, is(notNullValue()));
-      assertThat(finalState.taskServiceState, is(notNullValue()));
-
-      QueryTask.Query kindClause = new QueryTask.Query()
-          .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
-          .setTermMatchValue(Utils.buildKind(VirtualNetworkService.State.class));
-
-      QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
-      querySpecification.query.addBooleanClause(kindClause);
-      QueryTask queryTask = QueryTask.create(querySpecification).setDirect(true);
-      NodeGroupBroadcastResponse queryResponse = testEnvironment.sendBroadcastQueryAndWait(queryTask);
-      assertThat(QueryTaskUtils.getBroadcastQueryDocumentLinks(queryResponse).size(), is(COUNT_ONE));
-
-      kindClause = new QueryTask.Query()
-          .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
-          .setTermMatchValue(Utils.buildKind(TaskService.State.class));
-
-      querySpecification = new QueryTask.QuerySpecification();
-      querySpecification.query.addBooleanClause(kindClause);
-      queryTask = QueryTask.create(querySpecification).setDirect(true);
-      queryResponse = testEnvironment.sendBroadcastQueryAndWait(queryTask);
-      assertThat(QueryTaskUtils.getBroadcastQueryDocumentLinks(queryResponse).size(), is(COUNT_ONE));
+      assertThat(finalState.taskState, notNullValue());
     }
 
-    @Test
-    public void testHandleCreateWithMinimumState() throws Throwable {
-      testEnvironment = new TestEnvironment.Builder().hostCount(COUNT_ONE).build();
-      startState = new CreateVirtualNetworkWorkflowDocument();
-      startState.name = "network";
+    /**
+     * Verifies that when a field of the initial state has null value but is annotated as mandatory,
+     * the workflow will validate the state and fail.
+     * @throws Throwable
+     */
+    @Test(expectedExceptions = XenonRuntimeException.class)
+    public void failsWithNullMandatoryFields() throws Throwable {
 
-      CreateVirtualNetworkWorkflowDocument finalState =
-          testEnvironment.callServiceAndWaitForState(
-              CreateVirtualNetworkWorkflowService.FACTORY_LINK,
-              startState,
-              CreateVirtualNetworkWorkflowDocument.class,
-              (state) -> TaskState.TaskStage.STARTED.ordinal() < state.taskState.stage.ordinal());
-
-      TestHelper.assertTaskStateFinished(finalState.taskState);
-      assertThat(finalState.documentSelfLink, is(notNullValue()));
-      assertThat(finalState.virtualNetworkServiceState, is(notNullValue()));
-      assertThat(finalState.taskServiceState, is(notNullValue()));
-    }
-
-    @Test
-    public void testHandleCreateWithMissingName() throws Throwable {
-      testEnvironment = new TestEnvironment.Builder().hostCount(COUNT_ONE).build();
       startState.name = null;
+      testEnvironment.callServiceAndWaitForState(
+          CreateVirtualNetworkWorkflowService.FACTORY_LINK,
+          startState,
+          CreateVirtualNetworkWorkflowDocument.class,
+          (state) -> TaskState.TaskStage.CREATED == state.taskState.stage);
+    }
 
-      try {
-        testEnvironment.callServiceAndWaitForState(
-            CreateVirtualNetworkWorkflowService.FACTORY_LINK,
-            startState,
-            CreateVirtualNetworkWorkflowDocument.class,
-            (state) -> TaskState.TaskStage.STARTED.ordinal() < state.taskState.stage.ordinal());
-        fail("service create did not fail when 'name' was null");
-      } catch (XenonRuntimeException ex) {
-        assertThat(ex.getMessage(), containsString("name cannot be null"));
-      }
+    /**
+     * Verifies that the workflow will create a {@link VirtualNetworkService.State} entity in cloud-store.
+     */
+    @Test
+    public void succeedsToCreateVirtualNetworkServiceState() throws Throwable {
+
+      startState.controlFlags = new ControlFlags.Builder()
+          .disableHandleStart()
+          .disableHandlePatch()
+          .build();
+      CreateVirtualNetworkWorkflowDocument finalState =
+          testEnvironment.callServiceAndWaitForState(
+              CreateVirtualNetworkWorkflowService.FACTORY_LINK,
+              startState,
+              CreateVirtualNetworkWorkflowDocument.class,
+              (state) -> TaskState.TaskStage.CREATED == state.taskState.stage);
+
+      assertThat(finalState.virtualNetworkServiceState, notNullValue());
+      VirtualNetworkService.State expectedVirtualNetworkServiceState = finalState.virtualNetworkServiceState;
+      VirtualNetworkService.State actualVirtualNetworkServiceState = testEnvironment.getServiceState(
+          finalState.virtualNetworkServiceState.documentSelfLink,
+          VirtualNetworkService.State.class);
+
+      assertThat(actualVirtualNetworkServiceState, notNullValue());
+      assertEquals(actualVirtualNetworkServiceState.name, expectedVirtualNetworkServiceState.name);
+      assertEquals(actualVirtualNetworkServiceState.description, expectedVirtualNetworkServiceState.description);
+      assertEquals(actualVirtualNetworkServiceState.state, expectedVirtualNetworkServiceState.state);
+      assertEquals(actualVirtualNetworkServiceState.routingType, expectedVirtualNetworkServiceState.routingType);
     }
   }
 
   /**
-   * Tests for handleStart.
+   * Test that when {@link CreateVirtualNetworkWorkflowService#handleStart} is called, the workflow will
+   * validate the state object and behave correctly.
    */
   public class HandleStartTest {
 
-    @BeforeClass
-    public void setUpClass() throws Throwable {
-      testHost = new TestHost.Builder().build();
-    }
-
-    @AfterClass
-    public void tearDownClass() throws Throwable {
-      TestHost.destroy(testHost);
-    }
+    private CreateVirtualNetworkWorkflowDocument startState;
+    private TestEnvironment testEnvironment;
 
     @BeforeMethod
     public void setUpTest() throws Throwable {
-      createVirtualNetworkWorkflowService = new CreateVirtualNetworkWorkflowService();
+      testEnvironment = new TestEnvironment.Builder()
+          .hostCount(1)
+          .cloudStoreHelper(new CloudStoreHelper())
+          .build();
+
+      startState = buildValidStartState(
+          TaskState.TaskStage.CREATED,
+          null,
+          new ControlFlags.Builder()
+              .disableHandleStart()
+              .disableHandlePatch()
+              .build());
     }
 
     @AfterMethod
     public void tearDownTest() throws Throwable {
-      createVirtualNetworkWorkflowService = null;
-      try {
-        testHost.deleteServiceSynchronously();
-      } catch (ServiceHost.ServiceNotFoundException e) {
-        // Exceptions are expected in the case where a service instance was not successfully created.
+      if (null != testEnvironment) {
+        testEnvironment.stop();
+        testEnvironment = null;
       }
+
+      startState = null;
     }
 
+    /**
+     * Verifies that when a valid start state is given, the workflow will validate the state and succeed.
+     */
     @Test
-    public void testHandleStartValidState() throws Throwable {
-      CreateVirtualNetworkWorkflowDocument startState = buildValidStartState(
-          CreateVirtualNetworkWorkflowDocument.TaskState.TaskStage.CREATED, null);
+    public void succeedsWithValidStartState() throws Throwable {
 
-      Operation startOp = testHost.startServiceSynchronously(createVirtualNetworkWorkflowService, startState);
-      assertThat(startOp.getStatusCode(), is(200));
+      CreateVirtualNetworkWorkflowDocument finalState =
+          testEnvironment.callServiceAndWaitForState(
+              CreateVirtualNetworkWorkflowService.FACTORY_LINK,
+              startState,
+              CreateVirtualNetworkWorkflowDocument.class,
+              (state) -> TaskState.TaskStage.CREATED == state.taskState.stage);
 
-      CreateVirtualNetworkWorkflowDocument  savedState = testHost.getServiceState(
-          CreateVirtualNetworkWorkflowDocument.class);
-      assertThat(savedState.taskState, notNullValue());
+      assertThat(finalState.taskState, notNullValue());
     }
 
-    @Test
-    public void testHandleStartValidMinimumState() throws Throwable {
-      CreateVirtualNetworkWorkflowDocument startState = new CreateVirtualNetworkWorkflowDocument();
-      startState.name = "network";
-
-      Operation startOp = testHost.startServiceSynchronously(createVirtualNetworkWorkflowService, startState);
-      assertThat(startOp.getStatusCode(), is(200));
-
-      CreateVirtualNetworkWorkflowDocument  savedState = testHost.getServiceState(
-          CreateVirtualNetworkWorkflowDocument.class);
-      assertThat(savedState.taskState, notNullValue());
-    }
-
-    @Test(dataProvider = "InValidStartStage")
-    public void testHandleStartInValidStartStage(final CreateVirtualNetworkWorkflowDocument.TaskState.TaskStage stage,
-                                                 final CreateVirtualNetworkWorkflowDocument.TaskState.SubStage subStage)
+    /**
+     * Verifies that when an invalid start state is given, the workflow will validate the state and fail.
+     */
+    @Test(dataProvider = "InvalidStartState", expectedExceptions = XenonRuntimeException.class)
+    public void failsWithInvalidStartState(TaskState.TaskStage stage,
+                                           CreateVirtualNetworkWorkflowDocument.TaskState.SubStage subStage)
         throws Throwable {
-      CreateVirtualNetworkWorkflowDocument startState = buildValidStartState(stage, subStage);
 
-      try {
-        testHost.startServiceSynchronously(createVirtualNetworkWorkflowService, startState);
-        fail("service start did not fail when 'stage' was invalid");
-      } catch (XenonRuntimeException ex) {
-        assertThat(ex.getMessage(), startsWith("Expected state is CREATED. Cannot proceed in"));
-      }
+      startState = buildValidStartState(stage, subStage, new ControlFlags.Builder()
+          .disableHandleStart()
+          .disableHandlePatch()
+          .build());
+
+      testEnvironment.callServiceAndWaitForState(
+          CreateVirtualNetworkWorkflowService.FACTORY_LINK,
+          startState,
+          CreateVirtualNetworkWorkflowDocument.class,
+          (state) -> TaskState.TaskStage.CREATED == state.taskState.stage);
     }
 
-    @DataProvider(name = "InValidStartStage")
-    public Object[][] getInValidStartStageTestData() {
-      return new Object[][]{
-          {CreateVirtualNetworkWorkflowDocument.TaskState.TaskStage.STARTED,
-              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.GET_NSX_CONFIGURATION},
-          {CreateVirtualNetworkWorkflowDocument.TaskState.TaskStage.STARTED,
-              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.CREATE_LOGICAL_SWITCH},
-          {CreateVirtualNetworkWorkflowDocument.TaskState.TaskStage.STARTED,
-              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.CREATE_LOGICAL_ROUTER},
-          {CreateVirtualNetworkWorkflowDocument.TaskState.TaskStage.STARTED,
-              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.SETUP_LOGICAL_ROUTER},
-
-          {CreateVirtualNetworkWorkflowDocument.TaskState.TaskStage.FINISHED, null},
-          {CreateVirtualNetworkWorkflowDocument.TaskState.TaskStage.FAILED, null},
-          {CreateVirtualNetworkWorkflowDocument.TaskState.TaskStage.CANCELLED, null}
-      };
-    }
-
-    @Test(dataProvider = "InValidStartSubStage")
-    public void testHandleStartInValidStartSubStage(
-          final CreateVirtualNetworkWorkflowDocument.TaskState.TaskStage stage,
-          final CreateVirtualNetworkWorkflowDocument.TaskState.SubStage subStage)
-        throws Throwable {
-      CreateVirtualNetworkWorkflowDocument startState = buildValidStartState(stage, subStage);
-
-      try {
-        testHost.startServiceSynchronously(createVirtualNetworkWorkflowService, startState);
-        fail("service start did not fail when 'SubStage' was invalid");
-      } catch (XenonRuntimeException ex) {
-        assertThat(ex.getMessage(), startsWith("Invalid stage update."));
-      }
-    }
-
-    @DataProvider(name = "InValidStartSubStage")
-    public Object[][] getInValidStartSubStageTestData() {
+    @DataProvider(name = "InvalidStartState")
+    public Object[][] getInvalidStartStateTestData() {
       return new Object[][]{
           {CreateVirtualNetworkWorkflowDocument.TaskState.TaskStage.CREATED,
               CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.GET_NSX_CONFIGURATION},
@@ -347,10 +300,19 @@ public class CreateVirtualNetworkWorkflowServiceTest {
           {CreateVirtualNetworkWorkflowDocument.TaskState.TaskStage.CREATED,
               CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.CREATE_LOGICAL_ROUTER},
           {CreateVirtualNetworkWorkflowDocument.TaskState.TaskStage.CREATED,
-              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.SETUP_LOGICAL_ROUTER},
+              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.SET_UP_LOGICAL_ROUTER},
 
           {CreateVirtualNetworkWorkflowDocument.TaskState.TaskStage.STARTED, null},
+          {CreateVirtualNetworkWorkflowDocument.TaskState.TaskStage.STARTED,
+              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.GET_NSX_CONFIGURATION},
+          {CreateVirtualNetworkWorkflowDocument.TaskState.TaskStage.STARTED,
+              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.CREATE_LOGICAL_SWITCH},
+          {CreateVirtualNetworkWorkflowDocument.TaskState.TaskStage.STARTED,
+              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.CREATE_LOGICAL_ROUTER},
+          {CreateVirtualNetworkWorkflowDocument.TaskState.TaskStage.STARTED,
+              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.SET_UP_LOGICAL_ROUTER},
 
+          {CreateVirtualNetworkWorkflowDocument.TaskState.TaskStage.FINISHED, null},
           {CreateVirtualNetworkWorkflowDocument.TaskState.TaskStage.FINISHED,
               CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.GET_NSX_CONFIGURATION},
           {CreateVirtualNetworkWorkflowDocument.TaskState.TaskStage.FINISHED,
@@ -358,8 +320,9 @@ public class CreateVirtualNetworkWorkflowServiceTest {
           {CreateVirtualNetworkWorkflowDocument.TaskState.TaskStage.FINISHED,
               CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.CREATE_LOGICAL_ROUTER},
           {CreateVirtualNetworkWorkflowDocument.TaskState.TaskStage.FINISHED,
-              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.SETUP_LOGICAL_ROUTER},
+              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.SET_UP_LOGICAL_ROUTER},
 
+          {CreateVirtualNetworkWorkflowDocument.TaskState.TaskStage.FAILED, null},
           {CreateVirtualNetworkWorkflowDocument.TaskState.TaskStage.FAILED,
               CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.GET_NSX_CONFIGURATION},
           {CreateVirtualNetworkWorkflowDocument.TaskState.TaskStage.FAILED,
@@ -367,8 +330,9 @@ public class CreateVirtualNetworkWorkflowServiceTest {
           {CreateVirtualNetworkWorkflowDocument.TaskState.TaskStage.FAILED,
               CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.CREATE_LOGICAL_ROUTER},
           {CreateVirtualNetworkWorkflowDocument.TaskState.TaskStage.FAILED,
-              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.SETUP_LOGICAL_ROUTER},
+              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.SET_UP_LOGICAL_ROUTER},
 
+          {CreateVirtualNetworkWorkflowDocument.TaskState.TaskStage.CANCELLED, null},
           {CreateVirtualNetworkWorkflowDocument.TaskState.TaskStage.CANCELLED,
               CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.GET_NSX_CONFIGURATION},
           {CreateVirtualNetworkWorkflowDocument.TaskState.TaskStage.CANCELLED,
@@ -376,213 +340,216 @@ public class CreateVirtualNetworkWorkflowServiceTest {
           {CreateVirtualNetworkWorkflowDocument.TaskState.TaskStage.CANCELLED,
               CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.CREATE_LOGICAL_ROUTER},
           {CreateVirtualNetworkWorkflowDocument.TaskState.TaskStage.CANCELLED,
-              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.SETUP_LOGICAL_ROUTER}
+              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.SET_UP_LOGICAL_ROUTER}
       };
-    }
-
-    @Test
-    public void testHandleStartWithMissingName() throws Throwable {
-      CreateVirtualNetworkWorkflowDocument startState = buildValidStartState();
-      startState.name = null;
-
-      try {
-        testHost.startServiceSynchronously(createVirtualNetworkWorkflowService, startState);
-        fail("service start did not fail when 'name' was null");
-      } catch (XenonRuntimeException ex) {
-        assertThat(ex.getMessage(), containsString("name cannot be null"));
-      }
     }
   }
 
-
   /**
-   * This class implements tests for the handlePatch method.
+   * Tests that when {@link CreateVirtualNetworkWorkflowService#handlePatch} is called, the workflow will
+   * validate the state object and behave correctly.
    */
   public class HandlePatchTest {
 
-    @BeforeClass
-    public void setUpClass() throws Throwable {
-      testHost = new TestHost.Builder().build();
-    }
-
-    @AfterClass
-    public void tearDownClass() throws Throwable {
-      TestHost.destroy(testHost);
-    }
+    private CreateVirtualNetworkWorkflowDocument startState;
+    private TestEnvironment testEnvironment;
 
     @BeforeMethod
-    public void setUpTest() {
-      createVirtualNetworkWorkflowService = new CreateVirtualNetworkWorkflowService();
-      testHost.setDefaultServiceUri(UUID.randomUUID().toString());
+    public void setUpTest() throws Throwable {
+      testEnvironment = new TestEnvironment.Builder()
+          .hostCount(1)
+          .cloudStoreHelper(new CloudStoreHelper())
+          .build();
+
+      startState = buildValidStartState(
+          TaskState.TaskStage.CREATED,
+          null,
+          new ControlFlags.Builder()
+              .disableHandlePatch()
+              .disableOperationProcessingOnStageTransition()
+              .build());
     }
 
     @AfterMethod
     public void tearDownTest() throws Throwable {
-      testHost.deleteServiceSynchronously();
+      if (null != testEnvironment) {
+        testEnvironment.stop();
+        testEnvironment = null;
+      }
+
+      startState = null;
     }
 
-    @Test(dataProvider = "ValidStageUpdates")
-    public void testValidStageUpdates(
-        TaskState.TaskStage startStage,
-        CreateVirtualNetworkWorkflowDocument.TaskState.SubStage startSubStage,
+    /**
+     * Verifies that when a valid stage/sub-stage patch state is given, the workflow will validate
+     * the state and succeed.
+     */
+    @Test(dataProvider = "ValidStageAndSubStagePatch")
+    public void succeedsWithValidStageAndSubStagePatch(
         TaskState.TaskStage patchStage,
         CreateVirtualNetworkWorkflowDocument.TaskState.SubStage patchSubStage
         ) throws Throwable {
 
-      // start service in desired state
-      CreateVirtualNetworkWorkflowDocument startState = buildValidStartState(startStage, startSubStage);
-      Operation startOperation = testHost.startServiceSynchronously(createVirtualNetworkWorkflowService, startState);
-      assertThat(startOperation.getStatusCode(), is(200));
+      CreateVirtualNetworkWorkflowDocument finalState =
+          testEnvironment.callServiceAndWaitForState(
+              CreateVirtualNetworkWorkflowService.FACTORY_LINK,
+              startState,
+              CreateVirtualNetworkWorkflowDocument.class,
+              (state) -> TaskState.TaskStage.STARTED == state.taskState.stage &&
+                CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.GET_NSX_CONFIGURATION
+                    == state.taskState.subStage);
 
-      // send patch
       CreateVirtualNetworkWorkflowDocument patchState = buildPatch(patchStage, patchSubStage);
-      Operation patchOperation = Operation
-          .createPatch(UriUtils.buildUri(testHost,
-              startOperation.getBody(CreateVirtualNetworkWorkflowDocument.class).documentSelfLink,
-              null))
-          .setBody(patchState);
+      finalState = testEnvironment.sendPatchAndWait(finalState.documentSelfLink, patchState)
+          .getBody(CreateVirtualNetworkWorkflowDocument.class);
 
-      Operation patchResult = testHost.sendRequestAndWait(patchOperation);
-      assertThat(patchResult.getStatusCode(), is(200));
-
-      // check results
-      CreateVirtualNetworkWorkflowDocument savedState =
-          testHost.getServiceState(CreateVirtualNetworkWorkflowDocument.class);
-      assertThat(savedState.taskState.stage, is(patchStage));
+      assertThat(finalState.taskState.stage, is(patchStage));
+      assertThat(finalState.taskState.subStage, is(patchSubStage));
     }
 
-    @DataProvider(name = "ValidStageUpdates")
-    public Object[][] getValidStageUpdates() {
+    @DataProvider(name = "ValidStageAndSubStagePatch")
+    public Object[][] getValidStageAndSubStagePatch() {
       return new Object[][]{
-          {TaskState.TaskStage.CREATED, null,
-              TaskState.TaskStage.STARTED,
-              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.GET_NSX_CONFIGURATION},
-          {TaskState.TaskStage.CREATED, null, TaskState.TaskStage.FINISHED, null},
-          {TaskState.TaskStage.CREATED, null, TaskState.TaskStage.FAILED, null},
-          {TaskState.TaskStage.CREATED, null, TaskState.TaskStage.CANCELLED, null},
-      };
-    }
+          {TaskState.TaskStage.STARTED,
+              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.CREATE_LOGICAL_SWITCH},
+          {TaskState.TaskStage.STARTED,
+              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.CREATE_LOGICAL_ROUTER},
+          {TaskState.TaskStage.STARTED,
+              CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.SET_UP_LOGICAL_ROUTER},
 
-    @Test(dataProvider = "ValidSubStageUpdates")
-    public void testValidSubStageUpdates(
-        TaskState.TaskStage secondPatchStage,
-        CreateVirtualNetworkWorkflowDocument.TaskState.SubStage secondPatchSubStage
-    ) throws Throwable {
-
-      // start service in CREATED state
-      CreateVirtualNetworkWorkflowDocument startState = buildValidStartState();
-      Operation startOperation = testHost.startServiceSynchronously(createVirtualNetworkWorkflowService, startState);
-      assertThat(startOperation.getStatusCode(), is(200));
-
-      String documentUri = startOperation.getBody(CreateVirtualNetworkWorkflowDocument.class).documentSelfLink;
-
-      // Send patch to move the stage from CREATED to STARTED
-      // Simulate the action in handleStart() to sendSelfPatch to move the stage of itself
-      CreateVirtualNetworkWorkflowDocument patchState = buildPatch(TaskState.TaskStage.STARTED,
-          CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.GET_NSX_CONFIGURATION);
-      Operation patchOperation = Operation
-          .createPatch(UriUtils.buildUri(testHost, documentUri, null))
-          .setBody(patchState);
-
-      Operation patchResult = testHost.sendRequestAndWait(patchOperation);
-      assertThat(patchResult.getStatusCode(), is(200));
-
-      patchState = buildPatch(secondPatchStage, secondPatchSubStage);
-      patchOperation = Operation
-          .createPatch(UriUtils.buildUri(testHost, documentUri, null))
-          .setBody(patchState);
-
-      patchResult = testHost.sendRequestAndWait(patchOperation);
-      assertThat(patchResult.getStatusCode(), is(200));
-
-      // Evaluate results
-      CreateVirtualNetworkWorkflowDocument savedState = testHost.getServiceState(
-          CreateVirtualNetworkWorkflowDocument.class);
-      assertThat(savedState.taskState.stage, is(secondPatchStage));
-      assertThat(savedState.taskState.subStage, is(secondPatchSubStage));
-    }
-
-    @DataProvider(name = "ValidSubStageUpdates")
-    public Object[][] getValidSubStageUpdates() {
-      return new Object[][]{
-          {TaskState.TaskStage.STARTED, CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.GET_NSX_CONFIGURATION},
-          {TaskState.TaskStage.STARTED, CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.CREATE_LOGICAL_SWITCH},
-          {TaskState.TaskStage.STARTED, CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.CREATE_LOGICAL_ROUTER},
-          {TaskState.TaskStage.STARTED, CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.SETUP_LOGICAL_ROUTER},
           {TaskState.TaskStage.FINISHED, null},
           {TaskState.TaskStage.FAILED, null},
           {TaskState.TaskStage.CANCELLED, null},
       };
     }
 
-    @Test(expectedExceptions = XenonRuntimeException.class, dataProvider = "invalidSubStageUpdates")
-    public void testInvalidStageUpdates(
+    /**
+     * Verifies that when an invalid stage/sub-stage patch state is given, the workflow will validate
+     * the state and fail.
+     */
+    @Test(expectedExceptions = XenonRuntimeException.class, dataProvider = "InvalidStageAndSubStagePatch")
+    public void failsWithInvalidStageAndSubStagePatch(
+        TaskState.TaskStage firstPatchStage,
+        CreateVirtualNetworkWorkflowDocument.TaskState.SubStage firstPatchSubStage,
         TaskState.TaskStage secondPatchStage,
         CreateVirtualNetworkWorkflowDocument.TaskState.SubStage secondPatchSubStage)
         throws Throwable {
 
-      // start service in CREATED state
-      CreateVirtualNetworkWorkflowDocument startState = buildValidStartState();
-      Operation startOperation = testHost.startServiceSynchronously(createVirtualNetworkWorkflowService, startState);
-      assertThat(startOperation.getStatusCode(), is(200));
+      CreateVirtualNetworkWorkflowDocument finalState =
+          testEnvironment.callServiceAndWaitForState(
+              CreateVirtualNetworkWorkflowService.FACTORY_LINK,
+              startState,
+              CreateVirtualNetworkWorkflowDocument.class,
+              (state) -> TaskState.TaskStage.STARTED == state.taskState.stage &&
+                  CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.GET_NSX_CONFIGURATION
+                      == state.taskState.subStage);
 
-      String documentUri = startOperation.getBody(CreateVirtualNetworkWorkflowDocument.class).documentSelfLink;
+      CreateVirtualNetworkWorkflowDocument patchState = buildPatch(firstPatchStage, firstPatchSubStage);
+      if (firstPatchStage != TaskState.TaskStage.STARTED ||
+          firstPatchSubStage != CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.GET_NSX_CONFIGURATION) {
+        finalState = testEnvironment.sendPatchAndWait(finalState.documentSelfLink, patchState)
+            .getBody(CreateVirtualNetworkWorkflowDocument.class);
+      }
 
-      // Move the stage from CREATED to STARTED
-      // Simulate the process in handleStart()
-      CreateVirtualNetworkWorkflowDocument patchState = buildPatch(TaskState.TaskStage.STARTED,
-          CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.GET_NSX_CONFIGURATION);
-      Operation patchOperation = Operation
-          .createPatch(UriUtils.buildUri(testHost, documentUri, null))
-          .setBody(patchState);
-      testHost.sendRequestAndWait(patchOperation);
-
-      // send invalid patch
       patchState = buildPatch(secondPatchStage, secondPatchSubStage);
-      patchOperation = Operation
-          .createPatch(UriUtils.buildUri(testHost, documentUri, null))
-          .setBody(patchState);
-      testHost.sendRequestAndWait(patchOperation);
+      testEnvironment.sendPatchAndWait(finalState.documentSelfLink, patchState)
+          .getBody(CreateVirtualNetworkWorkflowDocument.class);
     }
 
-    @DataProvider(name = "invalidSubStageUpdates")
-    public Object[][] getInvalidSubStageUpdates()
+    @DataProvider(name = "InvalidStageAndSubStagePatch")
+    public Object[][] getInvalidStageAndSubStagePatch()
         throws Throwable {
 
       return new Object[][]{
-          {TaskState.TaskStage.CREATED, null},
+          {TaskState.TaskStage.STARTED, CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.GET_NSX_CONFIGURATION,
+           TaskState.TaskStage.CREATED, null},
+
+          {TaskState.TaskStage.STARTED, CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.CREATE_LOGICAL_SWITCH,
+           TaskState.TaskStage.CREATED, null},
+          {TaskState.TaskStage.STARTED, CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.CREATE_LOGICAL_SWITCH,
+           TaskState.TaskStage.STARTED, CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.GET_NSX_CONFIGURATION},
+
+          {TaskState.TaskStage.STARTED, CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.CREATE_LOGICAL_ROUTER,
+           TaskState.TaskStage.CREATED, null},
+          {TaskState.TaskStage.STARTED, CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.CREATE_LOGICAL_ROUTER,
+           TaskState.TaskStage.STARTED, CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.GET_NSX_CONFIGURATION},
+          {TaskState.TaskStage.STARTED, CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.CREATE_LOGICAL_ROUTER,
+           TaskState.TaskStage.STARTED, CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.CREATE_LOGICAL_SWITCH},
+
+          {TaskState.TaskStage.STARTED, CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.SET_UP_LOGICAL_ROUTER,
+           TaskState.TaskStage.CREATED, null},
+          {TaskState.TaskStage.STARTED, CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.SET_UP_LOGICAL_ROUTER,
+           TaskState.TaskStage.STARTED, CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.GET_NSX_CONFIGURATION},
+          {TaskState.TaskStage.STARTED, CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.SET_UP_LOGICAL_ROUTER,
+           TaskState.TaskStage.STARTED, CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.CREATE_LOGICAL_SWITCH},
+          {TaskState.TaskStage.STARTED, CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.SET_UP_LOGICAL_ROUTER,
+           TaskState.TaskStage.STARTED, CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.CREATE_LOGICAL_ROUTER},
+
+          {TaskState.TaskStage.FINISHED, null,
+           TaskState.TaskStage.CREATED, null},
+          {TaskState.TaskStage.FINISHED, null,
+           TaskState.TaskStage.STARTED, CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.GET_NSX_CONFIGURATION},
+          {TaskState.TaskStage.FINISHED, null,
+           TaskState.TaskStage.STARTED, CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.CREATE_LOGICAL_SWITCH},
+          {TaskState.TaskStage.FINISHED, null,
+           TaskState.TaskStage.STARTED, CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.CREATE_LOGICAL_ROUTER},
+
+          {TaskState.TaskStage.CANCELLED, null,
+           TaskState.TaskStage.CREATED, null},
+          {TaskState.TaskStage.CANCELLED, null,
+           TaskState.TaskStage.STARTED, CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.GET_NSX_CONFIGURATION},
+          {TaskState.TaskStage.CANCELLED, null,
+           TaskState.TaskStage.STARTED, CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.CREATE_LOGICAL_SWITCH},
+          {TaskState.TaskStage.CANCELLED, null,
+           TaskState.TaskStage.STARTED, CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.CREATE_LOGICAL_ROUTER},
+
+          {TaskState.TaskStage.FAILED, null,
+           TaskState.TaskStage.CREATED, null},
+          {TaskState.TaskStage.FAILED, null,
+           TaskState.TaskStage.STARTED, CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.GET_NSX_CONFIGURATION},
+          {TaskState.TaskStage.FAILED, null,
+           TaskState.TaskStage.STARTED, CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.CREATE_LOGICAL_SWITCH},
+          {TaskState.TaskStage.FAILED, null,
+           TaskState.TaskStage.STARTED, CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.CREATE_LOGICAL_ROUTER},
+
       };
     }
 
-    @Test(expectedExceptions = XenonRuntimeException.class, dataProvider = "immutableFieldNames")
-    public void testInvalidPatchImmutableFieldChanged(String fieldName) throws Throwable {
-      CreateVirtualNetworkWorkflowDocument startState = buildValidStartState();
-      Operation startOperation = testHost.startServiceSynchronously(createVirtualNetworkWorkflowService, startState);
-      assertThat(startOperation.getStatusCode(), is(200));
+    /**
+     * Verifies that when a immutable field is set to non-null value in the patch state, the workflow will
+     * validate the state and fail.
+     */
+    @Test(expectedExceptions = XenonRuntimeException.class, dataProvider = "ImmutableFields")
+    public void failsWithNonNullImmutableFieldPatch(String fieldName) throws Throwable {
+
+      CreateVirtualNetworkWorkflowDocument finalState =
+          testEnvironment.callServiceAndWaitForState(
+              CreateVirtualNetworkWorkflowService.FACTORY_LINK,
+              startState,
+              CreateVirtualNetworkWorkflowDocument.class,
+              (state) -> TaskState.TaskStage.STARTED == state.taskState.stage &&
+                  CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.GET_NSX_CONFIGURATION
+                      == state.taskState.subStage);
 
       CreateVirtualNetworkWorkflowDocument patchState = buildPatch(TaskState.TaskStage.STARTED,
-          CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.GET_NSX_CONFIGURATION);
-
+          CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.CREATE_LOGICAL_SWITCH);
       Field declaredField = patchState.getClass().getDeclaredField(fieldName);
       declaredField.set(patchState, ReflectionUtils.getDefaultAttributeValue(declaredField));
 
-      Operation patchOperation = Operation
-          .createPatch(UriUtils.buildUri(testHost,
-              startOperation.getBody(CreateVirtualNetworkWorkflowDocument.class).documentSelfLink))
-          .setBody(patchState);
-
-      testHost.sendRequestAndWait(patchOperation);
+      testEnvironment.sendPatchAndWait(finalState.documentSelfLink, patchState)
+          .getBody(CreateVirtualNetworkWorkflowDocument.class);
     }
 
-    @DataProvider(name = "immutableFieldNames")
-    public Object[][] getImmutableFieldNames() {
+    @DataProvider(name = "ImmutableFields")
+    public Object[][] getImmutableFields() {
       return TestHelper.toDataProvidersList(
-          ImmutableList.of("controlFlags"));
+          ReflectionUtils.getAttributeNamesWithAnnotation(
+              CreateVirtualNetworkWorkflowDocument.class, Immutable.class));
     }
   }
 
   /**
-   * End-to-end tests.
+   * Tests end-to-end scenarios of the {@link CreateVirtualNetworkWorkflowService}.
    */
   public class EndToEndTest {
 
@@ -591,8 +558,12 @@ public class CreateVirtualNetworkWorkflowServiceTest {
 
     @BeforeMethod
     public void setUpTest() throws Throwable {
-      startState = buildValidStartState();
-      startState.controlFlags = 0;
+
+      startState = buildValidStartState(
+          TaskState.TaskStage.CREATED,
+          null,
+          new ControlFlags.Builder()
+              .build());
     }
 
     @AfterMethod
@@ -605,18 +576,34 @@ public class CreateVirtualNetworkWorkflowServiceTest {
       startState = null;
     }
 
-    @Test(dataProvider = "testSuccessParams")
-    public void testSuccess(int hostCount) throws Throwable {
-      testEnvironment = new TestEnvironment.Builder().hostCount(hostCount).build();
+    /**
+     * Verifies that the workflow succeeds to create one and only one virtual network entity in cloud-store.
+     */
+    @Test(dataProvider = "hostCount")
+    public void succeedsToCreateVirtualNetwork(int hostCount) throws Throwable {
+      testEnvironment = new TestEnvironment.Builder()
+          .hostCount(hostCount)
+          .cloudStoreHelper(new CloudStoreHelper())
+          .build();
 
       CreateVirtualNetworkWorkflowDocument finalState =
           testEnvironment.callServiceAndWaitForState(
               CreateVirtualNetworkWorkflowService.FACTORY_LINK,
               startState,
               CreateVirtualNetworkWorkflowDocument.class,
-              (state) -> TaskState.TaskStage.STARTED.ordinal() < state.taskState.stage.ordinal());
+              (state) -> TaskState.TaskStage.FINISHED == state.taskState.stage);
 
-      TestHelper.assertTaskStateFinished(finalState.taskState);
+      assertThat(finalState.virtualNetworkServiceState, notNullValue());
+      VirtualNetworkService.State expectedVirtualNetworkServiceState = finalState.virtualNetworkServiceState;
+      VirtualNetworkService.State actualVirtualNetworkServiceState = testEnvironment.getServiceState(
+          finalState.virtualNetworkServiceState.documentSelfLink,
+          VirtualNetworkService.State.class);
+
+      assertThat(actualVirtualNetworkServiceState, notNullValue());
+      assertEquals(actualVirtualNetworkServiceState.name, expectedVirtualNetworkServiceState.name);
+      assertEquals(actualVirtualNetworkServiceState.description, expectedVirtualNetworkServiceState.description);
+      assertEquals(actualVirtualNetworkServiceState.state, expectedVirtualNetworkServiceState.state);
+      assertEquals(actualVirtualNetworkServiceState.routingType, expectedVirtualNetworkServiceState.routingType);
 
       QueryTask.Query kindClause = new QueryTask.Query()
           .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
@@ -626,23 +613,13 @@ public class CreateVirtualNetworkWorkflowServiceTest {
       querySpecification.query.addBooleanClause(kindClause);
       QueryTask queryTask = QueryTask.create(querySpecification).setDirect(true);
       NodeGroupBroadcastResponse queryResponse = testEnvironment.sendBroadcastQueryAndWait(queryTask);
-      assertThat(QueryTaskUtils.getBroadcastQueryDocumentLinks(queryResponse).size(), is(COUNT_ONE));
-
-      kindClause = new QueryTask.Query()
-          .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
-          .setTermMatchValue(Utils.buildKind(TaskService.State.class));
-
-      querySpecification = new QueryTask.QuerySpecification();
-      querySpecification.query.addBooleanClause(kindClause);
-      queryTask = QueryTask.create(querySpecification).setDirect(true);
-      queryResponse = testEnvironment.sendBroadcastQueryAndWait(queryTask);
-      assertThat(QueryTaskUtils.getBroadcastQueryDocumentLinks(queryResponse).size(), is(COUNT_ONE));
+      assertThat(QueryTaskUtils.getBroadcastQueryDocumentLinks(queryResponse).size(), is(1));
     }
 
-    @DataProvider(name = "testSuccessParams")
-    public Object[][] getTestSuccessParams() {
+    @DataProvider(name = "hostCount")
+    public Object[][] getHostCount() {
       return new Object[][]{
-          {COUNT_ONE},
+          {1},
           {TestEnvironment.DEFAULT_MULTI_HOST_COUNT}
       };
     }
