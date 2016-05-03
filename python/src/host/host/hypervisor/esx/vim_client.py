@@ -221,13 +221,13 @@ class VimClient(HostClient):
         # Stats are sampled by the performance manager every 20
         # seconds. Hostd keeps 180 samples at the rate of 1 sample
         # per 20 seconds, which results in samples that span an hour.
-        query_spec = vim.PerformanceManager.QuerySpec(
+        query_spec = [vim.PerformanceManager.QuerySpec(
             entity=entity,
             intervalId=sampling_interval,
             format='csv',
             metricId=metric_id_objs,
             startTime=start_time,
-            endTime=end_time)
+            endTime=end_time)]
 
         results = {}
         stats = self._perf_manager.QueryPerf(query_spec)
