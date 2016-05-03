@@ -60,7 +60,7 @@ public class TaskStateBuilder {
   public TaskStateBuilder addStep(com.vmware.photon.controller.api.Operation operation) {
     TaskService.State.Step step = new TaskService.State.Step();
     step.sequence = stepEntities.size();
-    step.operation = operation;
+    step.operation = operation.getOperation();
     step.state = TaskService.State.StepState.QUEUED;
     stepEntities.add(step);
     return this;
@@ -70,7 +70,7 @@ public class TaskStateBuilder {
     TaskService.State state = new TaskService.State();
     state.entityId = this.entityId;
     state.entityKind = this.entityKind;
-    state.operation = this.operation;
+    state.operation = this.operation.getOperation();
     state.state = this.taskState != null ? this.taskState : TaskService.State.TaskState.QUEUED;
     state.steps = this.stepEntities;
     return state;

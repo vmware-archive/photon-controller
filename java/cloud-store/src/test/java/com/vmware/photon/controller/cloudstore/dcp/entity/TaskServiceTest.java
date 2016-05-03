@@ -144,7 +144,7 @@ public class TaskServiceTest {
       testState.state = TaskService.State.TaskState.STARTED;
       testState.steps = new ArrayList<>();
       TaskService.State.Step step = new TaskService.State.Step();
-      step.operation = com.vmware.photon.controller.api.Operation.CREATE_VM;
+      step.operation = com.vmware.photon.controller.api.Operation.CREATE_VM.getOperation();
       step.state = TaskService.State.StepState.QUEUED;
       step.warnings = new ArrayList<>();
       TaskService.State.StepError stepError = new TaskService.State.StepError();
