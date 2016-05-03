@@ -183,6 +183,7 @@ public abstract class BaseWorkflowService <S extends ServiceDocument, T extends 
       TaskServiceUtils.fail(
           this,
           ServiceDocumentUtils.getTaskServiceState(state),
+          t,
           (op, ex) -> {
             if (ex != null) {
               ServiceUtils.logSevere(this, "Failed to fail task service: %s", ex.toString());
