@@ -268,7 +268,7 @@ public class CloudStoreConstraintChecker implements ConstraintChecker {
           getCandidates_ValidateInput(state);
           break;
         case EXTRACT_DATASTORE_TAG_CONSTRAINTS:
-          getCandidates_ExtractDatastoreTagConstaints(state);
+          getCandidates_ExtractDatastoreTagConstraints(state);
           break;
         case DATASTORE_TAG_QUERY:
           getCandidates_DatastoreTagQuery(state);
@@ -321,7 +321,7 @@ public class CloudStoreConstraintChecker implements ConstraintChecker {
    * Because we cannot directly query for datastore tag, we'll convert these in the next steps to
    * datastore constraints.
    */
-  private void getCandidates_ExtractDatastoreTagConstaints(State state) {
+  private void getCandidates_ExtractDatastoreTagConstraints(State state) {
     state.dsTagConstraints = new ArrayList<>();
 
     if (state.resourceConstraints != null) {

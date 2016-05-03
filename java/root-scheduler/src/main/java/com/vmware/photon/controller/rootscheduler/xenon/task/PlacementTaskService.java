@@ -60,13 +60,15 @@ import org.apache.thrift.async.AsyncMethodCallback;
 
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 /**
  * The main responsibility of this class it to pick hosts for VM/disk placements. The
@@ -87,6 +89,24 @@ public class PlacementTaskService extends StatefulService {
   // This completion handler provides a new constraint to be added to a set of constraints
   interface CalculateConstraintCompletion {
     public void handle(ResourceConstraint newConstraint, Exception exception);
+  }
+
+  // This completion handler is called when all hosts have scored a resource request
+  interface ScoreResultsCompletion {
+    public void handle(Set<PlaceResponse> okResponses, Set<PlaceResponse> allResponses);
+  }
+
+  /**
+   * Used to generate detailed error logging messages in JSON when placement fails.
+   */
+  private class PlaceSummary {
+    public String address;
+    public PlaceResultCode result;
+
+    PlaceSummary(String address, PlaceResultCode result) {
+      this.address = address;
+      this.result = result;
+    }
   }
 
   /**
@@ -238,21 +258,20 @@ public class PlacementTaskService extends StatefulService {
     // Send place request to the candidates to get a score for each one
     ServiceUtils.logInfo(this, "Sending place requests to %s with timeout %d ms", candidates, currentState.timeoutMs);
     Stopwatch scoreCandidatesStopwatch = Stopwatch.createStarted();
-    final Set<PlaceResponse> okResponses = Sets.newConcurrentHashSet();
-    final Set<PlaceResultCode> returnCodes = Sets.newConcurrentHashSet();
 
-    sendPlaceRequests(currentState, candidates, okResponses, returnCodes);
+    queryHostsForScores(currentState.resource, candidates,
+        (okResponses, allResponses) -> {
+          ServiceUtils.logInfo(this, "elapsed-time flat-place-score-candidates %d milliseconds",
+              scoreCandidatesStopwatch.elapsed(TimeUnit.MILLISECONDS));
 
-    ServiceUtils.logInfo(this, "elapsed-time flat-place-score-candidates %d milliseconds",
-        scoreCandidatesStopwatch.elapsed(TimeUnit.MILLISECONDS));
-
-    // Return the best response.
-    PlacementTask patchState = selectBestResponse(okResponses, returnCodes, currentState, placementWatch);
-    if (postOperation == null) {
-      TaskUtils.sendSelfPatch(this, patchState);
-    } else {
-      postOperation.setBody(patchState).complete();
-    }
+          // Return the best response.
+          PlacementTask patchState = selectBestResponse(okResponses, allResponses, currentState, placementWatch);
+          if (postOperation == null) {
+            TaskUtils.sendSelfPatch(this, patchState);
+          } else {
+            postOperation.setBody(patchState).complete();
+          }
+        });
   }
 
   /**
@@ -307,23 +326,37 @@ public class PlacementTaskService extends StatefulService {
   }
 
   /**
-   * Sends the placement requests to the potential hosts and adds successful responses into okResponses
-   * and all the response of the hosts into returnCodes.
+   * Asks the host candidates to score the resource request by sending a "place" request via thrift.
    *
-   * @param currentState
+   * This is asynchronous: the response is returned via an a completion routine. That response will
+   * provide two things:
+   * - The set of "okResponses", from hosts that could accept the resource. This will include the score.
+   * - All responses. These are used when there's an error, to summarize what went wrong
+   *
+   * @param currentState Contains the
    * @param candidates   the hosts to send place requests
-   * @param okResponses  set of the successful responses
-   * @param returnCodes  set of the responses
+   * @param completion   the completion that will be called when the scoring completes
    */
-  private void sendPlaceRequests(PlacementTask currentState, Map<String, ServerAddress> candidates,
-                                 Set<PlaceResponse> okResponses, Set<PlaceResultCode> returnCodes) {
-    final CountDownLatch done = new CountDownLatch(candidates.size());
+  private void queryHostsForScores(
+      Resource resource,
+      Map<String, ServerAddress> candidates,
+      ScoreResultsCompletion completion) {
+
+    final int numCandidates = candidates.size();
+    final Set<PlaceResponse> okResponses = Sets.newConcurrentHashSet();
+    final Set<PlaceResponse> allResponses = Sets.newConcurrentHashSet();
+    final AtomicInteger resultCount = new AtomicInteger(0);
+
     for (Map.Entry<String, ServerAddress> entry : candidates.entrySet()) {
       ServerAddress address = entry.getValue();
       try {
+        // The thrift "place" request is a request to get a score from the host indicating how good
+        // of a match the host is for the resource request.
+        // Note that the place() call has an embedded timeout (currently 60 seconds): we'll get a
+        // timeout exception when it fails.
         HostClient hostClient = ((HostClientProvider) getHost()).getHostClient();
         hostClient.setIpAndPort(address.getHost(), address.getPort());
-        hostClient.place(currentState.resource, new AsyncMethodCallback<Host.AsyncClient.place_call>() {
+        hostClient.place(resource, new AsyncMethodCallback<Host.AsyncClient.place_call>() {
           @Override
           public void onComplete(Host.AsyncClient.place_call call) {
             PlaceResponse response;
@@ -334,31 +367,48 @@ public class PlacementTaskService extends StatefulService {
               return;
             }
             ServiceUtils.logInfo(PlacementTaskService.this, "Received a place response from %s: %s", entry, response);
-            returnCodes.add(response.getResult());
+            if (response.getAddress() == null) {
+              response.setAddress(address);
+            }
+            allResponses.add(response);
             if (response.getResult() == PlaceResultCode.OK) {
               okResponses.add(response);
             }
-            done.countDown();
+            if (resultCount.addAndGet(1) == numCandidates) {
+              completion.handle(okResponses, allResponses);
+            }
           }
 
           @Override
           public void onError(Exception ex) {
             ServiceUtils.logWarning(PlacementTaskService.this, "Failed to get a placement response from %s: %s",
                 entry, ex);
-            done.countDown();
+            PlaceResponse errorResponse = new PlaceResponse();
+            errorResponse.setResult(PlaceResultCode.SYSTEM_ERROR);
+            errorResponse.setError(String.format("Failed to get a placement response from %s: %s",
+                entry, ex.getMessage()));
+            if (errorResponse.getAddress() == null) {
+              errorResponse.setAddress(address);
+            }
+            allResponses.add(errorResponse);
+            if (resultCount.addAndGet(1) == numCandidates) {
+              completion.handle(okResponses, allResponses);
+            }
           }
         });
       } catch (RpcException ex) {
-        ServiceUtils.logWarning(this, "Failed to get a placement response from %s: %s", entry, ex);
-        done.countDown();
+        ServiceUtils.logWarning(PlacementTaskService.this, "Failed to send placement request to %s: %s",
+            entry, ex);
+        PlaceResponse errorResponse = new PlaceResponse();
+        errorResponse.setAddress(entry.getValue());
+        errorResponse.setResult(PlaceResultCode.SYSTEM_ERROR);
+        errorResponse.setError(String.format("Failed to send placement request to %s: %s",
+            entry, ex.getMessage()));
+        allResponses.add(errorResponse);
+        if (resultCount.addAndGet(1) == numCandidates) {
+          completion.handle(okResponses, allResponses);
+        }
       }
-    }
-
-    // Wait for responses to come back.
-    try {
-      done.await(currentState.timeoutMs, TimeUnit.MILLISECONDS);
-    } catch (InterruptedException ex) {
-      ServiceUtils.logTrace(this, "Got interrupted waiting for place responses: %s", ex);
     }
   }
 
@@ -371,17 +421,27 @@ public class PlacementTaskService extends StatefulService {
    * @param watch
    * @return
    */
-  private PlacementTask selectBestResponse(Set<PlaceResponse> okResponses, Set<PlaceResultCode> returnCodes,
-                                           PlacementTask currentState, Stopwatch watch) {
+  private PlacementTask selectBestResponse(
+      Set<PlaceResponse> okResponses,
+      Set<PlaceResponse> allResponses,
+      PlacementTask currentState,
+      Stopwatch watch) {
     ScoreCalculator scoreCalculator = ((ScoreCalculatorProvider) getHost()).getScoreCalculator();
     PlaceResponse response = scoreCalculator.pickBestResponse(okResponses);
     watch.stop();
 
     PlacementTask patchState;
     if (response == null) {
-      patchState = buildPatch(TaskState.TaskStage.FAILED, currentState.taskState.isDirect, null);
       PlaceResultCode errorCode;
       String errorMsg;
+      Set<PlaceResultCode> returnCodes = new HashSet<>();
+
+      returnCodes = allResponses.stream()
+          .map(r -> {
+            return r.getResult();
+          })
+          .collect(Collectors.toSet());
+
       if (returnCodes.contains(PlaceResultCode.NOT_ENOUGH_CPU_RESOURCE)) {
         errorCode = PlaceResultCode.NOT_ENOUGH_CPU_RESOURCE;
         errorMsg = "Not enough cpu resources available";
@@ -401,10 +461,11 @@ public class PlacementTaskService extends StatefulService {
         errorCode = PlaceResultCode.SYSTEM_ERROR;
         errorMsg = String.format("Received no response in %d ms", watch.elapsed(TimeUnit.MILLISECONDS));
       }
-      ServiceUtils.logSevere(this, errorMsg);
+      patchState = buildPatch(TaskState.TaskStage.FAILED, currentState.taskState.isDirect, null);
       patchState.resultCode = errorCode;
       patchState.error = errorMsg;
       patchState.requestId = currentState.requestId;
+      ServiceUtils.logWarning(this, "Placement failure reasons: %s", genJsonErrorSummary(allResponses));
     } else {
       patchState = buildPatch(TaskState.TaskStage.FINISHED, currentState.taskState.isDirect, null);
       ServiceUtils.logInfo(this, "Returning bestResponse: %s in %d ms", response, watch.elapsed(TimeUnit.MILLISECONDS));
@@ -416,6 +477,22 @@ public class PlacementTaskService extends StatefulService {
       patchState.requestId = currentState.requestId;
     }
     return patchState;
+  }
+
+  /**
+   * We generate a JSON summary of all the placement errors that occurred. Yes, we logged the individual
+   * errors above, but this simplifies the process of combing through the logs by collating the errors.
+   *
+   * This summary is a compact (one-line) JSON string. It's fairly readable as-is, but can be reformatted
+   * with your favorite JSON reformatter to make it more readable.
+   */
+  private String genJsonErrorSummary(Set<PlaceResponse> allResponses) {
+    List<PlaceSummary> summary = allResponses.stream()
+        .map(r -> {
+          return new PlaceSummary(r.getAddress().getHost(), r.getResult());
+        })
+        .collect(Collectors.toList());
+    return Utils.toJson(summary);
   }
 
   /**
