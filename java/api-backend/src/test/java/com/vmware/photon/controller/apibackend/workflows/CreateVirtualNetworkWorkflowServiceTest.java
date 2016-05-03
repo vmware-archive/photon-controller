@@ -138,9 +138,9 @@ public class CreateVirtualNetworkWorkflowServiceTest {
           TaskState.TaskStage.CREATED,
           null,
           new ControlFlags.Builder()
-              .disableHandleCreate()
-              .disableHandleStart()
-              .disableHandlePatch()
+              .disableOperationProcessingOnHandleCreate()
+              .disableOperationProcessingOnHandleStart()
+              .disableOperationProcessingOnHandlePatch()
               .build());
     }
 
@@ -195,8 +195,8 @@ public class CreateVirtualNetworkWorkflowServiceTest {
     public void succeedsToCreateVirtualNetworkServiceState() throws Throwable {
 
       startState.controlFlags = new ControlFlags.Builder()
-          .disableHandleStart()
-          .disableHandlePatch()
+          .disableOperationProcessingOnHandleStart()
+          .disableOperationProcessingOnHandlePatch()
           .build();
       CreateVirtualNetworkWorkflowDocument finalState =
           testEnvironment.callServiceAndWaitForState(
@@ -239,8 +239,8 @@ public class CreateVirtualNetworkWorkflowServiceTest {
           TaskState.TaskStage.CREATED,
           null,
           new ControlFlags.Builder()
-              .disableHandleStart()
-              .disableHandlePatch()
+              .disableOperationProcessingOnHandleStart()
+              .disableOperationProcessingOnHandlePatch()
               .build());
     }
 
@@ -279,8 +279,8 @@ public class CreateVirtualNetworkWorkflowServiceTest {
         throws Throwable {
 
       startState = buildValidStartState(stage, subStage, new ControlFlags.Builder()
-          .disableHandleStart()
-          .disableHandlePatch()
+          .disableOperationProcessingOnHandleStart()
+          .disableOperationProcessingOnHandlePatch()
           .build());
 
       testEnvironment.callServiceAndWaitForState(
@@ -365,7 +365,7 @@ public class CreateVirtualNetworkWorkflowServiceTest {
           TaskState.TaskStage.CREATED,
           null,
           new ControlFlags.Builder()
-              .disableHandlePatch()
+              .disableOperationProcessingOnHandlePatch()
               .disableOperationProcessingOnStageTransition()
               .build());
     }

@@ -21,9 +21,9 @@ public class ControlFlags {
   public static final int CONTROL_FLAG_OPERATION_PROCESSING_DISABLED = 1;
   public static final int CONTROL_FLAG_DISABLE_OPERATION_PROCESSING_ON_STAGE_TRANSITION = 1 << 1;
 
-  public static final int CONTROL_FLAG_DISABLE_HANDLE_CREATE = 1 << 2;
-  public static final int CONTROL_FLAG_DISABLE_HANDLE_START = 1 << 3;
-  public static final int CONTROL_FLAG_DISABLE_HANDLE_PATCH = 1 << 4;
+  public static final int CONTROL_FLAG_DISABLE_OPERATION_PROCESSING_ON_HANDLE_CREATE = 1 << 2;
+  public static final int CONTROL_FLAG_DISABLE_OPERATION_PROCESSING_ON_HANDLE_START = 1 << 3;
+  public static final int CONTROL_FLAG_DISABLE_OPERATION_PROCESSING_ON_HANDLE_PATCH = 1 << 4;
 
 
   public static boolean isOperationProcessingDisabled(int value) {
@@ -35,15 +35,15 @@ public class ControlFlags {
   }
 
   public static boolean isHandleCreateDisabled(int value) {
-    return check(value, CONTROL_FLAG_DISABLE_HANDLE_CREATE);
+    return check(value, CONTROL_FLAG_DISABLE_OPERATION_PROCESSING_ON_HANDLE_CREATE);
   }
 
   public static boolean isHandleStartDisabled(int value) {
-    return check(value, CONTROL_FLAG_DISABLE_HANDLE_START);
+    return check(value, CONTROL_FLAG_DISABLE_OPERATION_PROCESSING_ON_HANDLE_START);
   }
 
   public static boolean isHandlePatchDisabled(int value) {
-    return check(value, CONTROL_FLAG_DISABLE_HANDLE_PATCH);
+    return check(value, CONTROL_FLAG_DISABLE_OPERATION_PROCESSING_ON_HANDLE_PATCH);
   }
 
   private static boolean check(int value, int flag) {
@@ -68,16 +68,16 @@ public class ControlFlags {
       return set(CONTROL_FLAG_DISABLE_OPERATION_PROCESSING_ON_STAGE_TRANSITION);
     }
 
-    public Builder disableHandleCreate() {
-      return set(CONTROL_FLAG_DISABLE_HANDLE_CREATE);
+    public Builder disableOperationProcessingOnHandleCreate() {
+      return set(CONTROL_FLAG_DISABLE_OPERATION_PROCESSING_ON_HANDLE_CREATE);
     }
 
-    public Builder disableHandleStart() {
-      return set(CONTROL_FLAG_DISABLE_HANDLE_START);
+    public Builder disableOperationProcessingOnHandleStart() {
+      return set(CONTROL_FLAG_DISABLE_OPERATION_PROCESSING_ON_HANDLE_START);
     }
 
-    public Builder disableHandlePatch() {
-      return set(CONTROL_FLAG_DISABLE_HANDLE_PATCH);
+    public Builder disableOperationProcessingOnHandlePatch() {
+      return set(CONTROL_FLAG_DISABLE_OPERATION_PROCESSING_ON_HANDLE_PATCH);
     }
 
     public int build() {

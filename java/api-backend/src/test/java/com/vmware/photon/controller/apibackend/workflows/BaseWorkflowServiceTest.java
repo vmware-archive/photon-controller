@@ -94,8 +94,8 @@ public class BaseWorkflowServiceTest {
       TestBaseWorkflowService.State initialState = new TestBaseWorkflowService.StateBuilder()
           .taskStage(TaskState.TaskStage.CREATED)
           .controlFlags(new ControlFlags.Builder()
-              .disableHandleStart()
-              .disableHandlePatch()
+              .disableOperationProcessingOnHandleStart()
+              .disableOperationProcessingOnHandlePatch()
               .build())
           .build();
 
@@ -145,8 +145,8 @@ public class BaseWorkflowServiceTest {
       TestBaseWorkflowService.State initialState = new TestBaseWorkflowService.StateBuilder()
           .taskStage(TaskState.TaskStage.CREATED)
           .controlFlags(new ControlFlags.Builder()
-              .disableHandleStart()
-              .disableHandlePatch()
+              .disableOperationProcessingOnHandleStart()
+              .disableOperationProcessingOnHandlePatch()
               .build())
           .failCreateTaskService()
           .build();
@@ -207,7 +207,7 @@ public class BaseWorkflowServiceTest {
       TestBaseWorkflowService.State initialState = new TestBaseWorkflowService.StateBuilder()
           .taskStage(TaskState.TaskStage.CREATED)
           .controlFlags(new ControlFlags.Builder()
-              .disableHandlePatch()
+              .disableOperationProcessingOnHandlePatch()
               .build())
           .build();
 
@@ -257,15 +257,14 @@ public class BaseWorkflowServiceTest {
      * - Workflow document has exact same copy of the TaskService entity in cloud-store.
      * - TaskService is in ERROR state.
      * - TaskService has end time set.
-     * - All steps are in ERROR state.
-     * - All steps have end time set.
+     * - All steps are in QUEUED state.
      */
     @Test
     public void failsToStartTaskService() throws Throwable {
       TestBaseWorkflowService.State initialState = new TestBaseWorkflowService.StateBuilder()
           .taskStage(TaskState.TaskStage.CREATED)
           .controlFlags(new ControlFlags.Builder()
-              .disableHandlePatch()
+              .disableOperationProcessingOnHandlePatch()
               .build())
           .failStartTaskService()
           .build();
@@ -295,10 +294,8 @@ public class BaseWorkflowServiceTest {
         TaskService.State.Step expectedStep = expectedStepIterator.next();
         TaskService.State.Step actualStep = actualStepIterator.next();
 
-        assertThat(actualStep.state, is(TaskService.State.StepState.ERROR));
+        assertThat(actualStep.state, is(TaskService.State.StepState.QUEUED));
         assertEquals(actualStep.state, expectedStep.state);
-        assertThat(actualStep.endTime, notNullValue());
-        assertEquals(actualStep.endTime.toString(), expectedStep.endTime.toString());
       }
     }
   }
@@ -406,8 +403,8 @@ public class BaseWorkflowServiceTest {
      * - First step has both started/end time set.
      * - Second step is in ERROR state.
      * - Second step has both started/end time set.
-     * - Third step is in ERROR state.
-     * - Third step has only started time set.
+     * - Second step has error recorded.
+     * - Third step is in QUEUED state.
      */
     @Test
     public void failsToProgressTaskService() throws Throwable {
@@ -453,8 +450,12 @@ public class BaseWorkflowServiceTest {
           assertEquals(actualStep.startedTime.toString(), expectedStep.startedTime.toString());
           assertThat(actualStep.endTime, notNullValue());
           assertEquals(actualStep.endTime.toString(), expectedStep.endTime.toString());
+          assertThat(actualStep.errors, notNullValue());
+          assertThat(actualStep.errors.size(), is(1));
+          assertEquals(actualStep.errors.size(), expectedStep.errors.size());
+          assertEquals(actualStep.errors.get(0).message, expectedStep.errors.get(0).message);
         } else {
-          assertThat(actualStep.state, is(TaskService.State.StepState.ERROR));
+          assertThat(actualStep.state, is(TaskService.State.StepState.QUEUED));
         }
 
         assertEquals(actualStep.state, expectedStep.state);
@@ -537,6 +538,7 @@ public class BaseWorkflowServiceTest {
      * - TaskService is in ERROR state.
      * - TaskService has both start/end time set.
      * - Third step is in ERROR state.
+     * - Third step has error recorded.
      * - The remaining step are in COMPLETED state.
      * - All steps have both started/end time set.
      */
@@ -578,7 +580,12 @@ public class BaseWorkflowServiceTest {
           assertThat(actualStep.state, is(TaskService.State.StepState.COMPLETED));
         } else {
           assertThat(actualStep.state, is(TaskService.State.StepState.ERROR));
+          assertThat(actualStep.errors, notNullValue());
+          assertThat(actualStep.errors.size(), is(1));
+          assertEquals(actualStep.errors.size(), expectedStep.errors.size());
+          assertEquals(actualStep.errors.get(0).message, expectedStep.errors.get(0).message);
         }
+
         assertEquals(actualStep.state, expectedStep.state);
         assertThat(actualStep.startedTime, notNullValue());
         assertEquals(actualStep.startedTime.toString(), expectedStep.startedTime.toString());
