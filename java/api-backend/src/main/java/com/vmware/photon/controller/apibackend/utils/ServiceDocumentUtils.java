@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.apibackend.utils;
 
 import com.vmware.photon.controller.apibackend.annotations.ControlFlagsField;
+import com.vmware.photon.controller.apibackend.annotations.TaskServiceEntityField;
 import com.vmware.photon.controller.apibackend.annotations.TaskServiceStateField;
 import com.vmware.photon.controller.apibackend.annotations.TaskStateField;
 import com.vmware.photon.controller.apibackend.annotations.TaskStateSubStageField;
@@ -104,6 +105,13 @@ public class ServiceDocumentUtils {
   public static <S extends ServiceDocument> void setTaskServiceState(S document, TaskService.State taskServiceState)
     throws Throwable {
     getAnnotatedField(document, TaskServiceStateField.class).set(document, taskServiceState);
+  }
+
+  /**
+   * Gets the field that is annotated with TaskServiceEntityField annotation in the given document.
+   */
+  public static <S extends ServiceDocument> ServiceDocument getTaskServiceEntity(S document) throws Throwable {
+    return (ServiceDocument) getAnnotatedField(document, TaskServiceEntityField.class).get(document);
   }
 
   private static Field getAnnotatedField(Object target,

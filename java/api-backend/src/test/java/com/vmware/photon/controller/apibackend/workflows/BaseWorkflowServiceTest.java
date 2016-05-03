@@ -14,11 +14,12 @@
 package com.vmware.photon.controller.apibackend.workflows;
 
 import com.vmware.photon.controller.apibackend.annotations.ControlFlagsField;
+import com.vmware.photon.controller.apibackend.annotations.TaskServiceEntityField;
 import com.vmware.photon.controller.apibackend.annotations.TaskServiceStateField;
 import com.vmware.photon.controller.apibackend.annotations.TaskStateField;
 import com.vmware.photon.controller.apibackend.annotations.TaskStateSubStageField;
-import com.vmware.photon.controller.apibackend.builders.TaskStateBuilder;
 import com.vmware.photon.controller.apibackend.helpers.TestEnvironment;
+import com.vmware.photon.controller.apibackend.utils.ServiceHostUtils;
 import com.vmware.photon.controller.cloudstore.dcp.entity.TaskService;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
@@ -30,6 +31,7 @@ import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
 import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.StatefulService;
 import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.NodeGroupBroadcastResponse;
@@ -70,7 +72,9 @@ public class BaseWorkflowServiceTest {
     public void setUpTest() throws Throwable {
       testEnvironment = new TestEnvironment.Builder()
           .hostCount(1)
-          .testFactoryServiceMap(ImmutableMap.of(TestBaseWorkflowService.class, TestBaseWorkflowService::createFactory))
+          .testFactoryServiceMap(ImmutableMap.of(
+              TestBaseWorkflowService.class, TestBaseWorkflowService::createFactory,
+              TestTaskServiceEntityService.class, TestTaskServiceEntityService::createFactory))
           .cloudStoreHelper(new CloudStoreHelper())
           .build();
     }
@@ -85,12 +89,13 @@ public class BaseWorkflowServiceTest {
      * - Workflow document has exact same copy of the TaskService entity in cloud-store.
      * - TaskService is in QUEUED state.
      * - TaskService has queued time set.
+     * - TaskService has no entityId/entityKind set.
      * - All steps are in QUEUED state.
      * - All steps have queued time set.
      * - All steps have no started/end time set.
      */
     @Test
-    public void succeedsToCreatesTaskService() throws Throwable {
+    public void succeedsToCreatesTaskServiceWithoutTaskEntity() throws Throwable {
       TestBaseWorkflowService.State initialState = new TestBaseWorkflowService.StateBuilder()
           .taskStage(TaskState.TaskStage.CREATED)
           .controlFlags(new ControlFlags.Builder()
@@ -116,6 +121,71 @@ public class BaseWorkflowServiceTest {
       assertEquals(actualTaskServiceState.state, expectedTaskServiceState.state);
       assertThat(actualTaskServiceState.queuedTime, notNullValue());
       assertEquals(actualTaskServiceState.queuedTime.toString(), expectedTaskServiceState.queuedTime.toString());
+      assertThat(actualTaskServiceState.entityId, nullValue());
+      assertEquals(actualTaskServiceState.entityId, expectedTaskServiceState.entityId);
+      assertThat(actualTaskServiceState.entityKind, nullValue());
+      assertEquals(actualTaskServiceState.entityKind, expectedTaskServiceState.entityKind);
+
+      assertEquals(actualTaskServiceState.steps.size(), expectedTaskServiceState.steps.size());
+      Iterator<TaskService.State.Step> expectedStepIterator = expectedTaskServiceState.steps.iterator();
+      Iterator<TaskService.State.Step> actualStepIterator = actualTaskServiceState.steps.iterator();
+      while (actualStepIterator.hasNext()) {
+        TaskService.State.Step expectedStep = expectedStepIterator.next();
+        TaskService.State.Step actualStep = actualStepIterator.next();
+
+        assertThat(actualStep.state, is(TaskService.State.StepState.QUEUED));
+        assertEquals(actualStep.state, expectedStep.state);
+        assertThat(actualStep.queuedTime, notNullValue());
+        assertEquals(actualStep.queuedTime.toString(), expectedStep.queuedTime.toString());
+        assertThat(actualStep.startedTime, nullValue());
+        assertEquals(actualStep.startedTime, expectedStep.startedTime);
+        assertThat(actualStep.endTime, nullValue());
+        assertEquals(actualStep.endTime, expectedStep.endTime);
+      }
+    }
+
+    /**
+     * Verifies that when the workflow succeeds to create a task service:
+     * - Workflow document has exact same copy of the TaskService entity in cloud-store.
+     * - TaskService is in QUEUED state.
+     * - TaskService has queued time set.
+     * - TaskService has entityId/entityKind set.
+     * - All steps are in QUEUED state.
+     * - All steps have queued time set.
+     * - All steps have no started/end time set.
+     */
+    @Test
+    public void succeedsToCreatesTaskServiceWithTaskEntity() throws Throwable {
+      TestBaseWorkflowService.State initialState = new TestBaseWorkflowService.StateBuilder()
+          .taskStage(TaskState.TaskStage.CREATED)
+          .controlFlags(new ControlFlags.Builder()
+              .disableOperationProcessingOnHandleStart()
+              .disableOperationProcessingOnHandlePatch()
+              .build())
+          .createTaskEntity()
+          .build();
+
+      TestBaseWorkflowService.State finalState = testEnvironment.callServiceAndWaitForState(
+          TestBaseWorkflowService.FACTORY_LINK,
+          initialState,
+          TestBaseWorkflowService.State.class,
+          (state) -> state.taskState.stage == TaskState.TaskStage.CREATED);
+
+      assertThat(finalState.taskServiceState, notNullValue());
+
+      TaskService.State expectedTaskServiceState = finalState.taskServiceState;
+      TaskService.State actualTaskServiceState = testEnvironment.getServiceState(
+          finalState.taskServiceState.documentSelfLink,
+          TaskService.State.class);
+
+      assertThat(actualTaskServiceState.state, is(TaskService.State.TaskState.QUEUED));
+      assertEquals(actualTaskServiceState.state, expectedTaskServiceState.state);
+      assertThat(actualTaskServiceState.queuedTime, notNullValue());
+      assertEquals(actualTaskServiceState.queuedTime.toString(), expectedTaskServiceState.queuedTime.toString());
+      assertThat(actualTaskServiceState.entityId, notNullValue());
+      assertEquals(actualTaskServiceState.entityId, expectedTaskServiceState.entityId);
+      assertThat(actualTaskServiceState.entityKind, notNullValue());
+      assertEquals(actualTaskServiceState.entityKind, expectedTaskServiceState.entityKind);
 
       assertEquals(actualTaskServiceState.steps.size(), expectedTaskServiceState.steps.size());
       Iterator<TaskService.State.Step> expectedStepIterator = expectedTaskServiceState.steps.iterator();
@@ -182,7 +252,9 @@ public class BaseWorkflowServiceTest {
     public void setUpTest() throws Throwable {
       testEnvironment = new TestEnvironment.Builder()
           .hostCount(1)
-          .testFactoryServiceMap(ImmutableMap.of(TestBaseWorkflowService.class, TestBaseWorkflowService::createFactory))
+          .testFactoryServiceMap(ImmutableMap.of(
+              TestBaseWorkflowService.class, TestBaseWorkflowService::createFactory,
+              TestTaskServiceEntityService.class, TestTaskServiceEntityService::createFactory))
           .cloudStoreHelper(new CloudStoreHelper())
           .build();
     }
@@ -311,7 +383,9 @@ public class BaseWorkflowServiceTest {
     public void setUpTest() throws Throwable {
       testEnvironment = new TestEnvironment.Builder()
           .hostCount(1)
-          .testFactoryServiceMap(ImmutableMap.of(TestBaseWorkflowService.class, TestBaseWorkflowService::createFactory))
+          .testFactoryServiceMap(ImmutableMap.of(
+              TestBaseWorkflowService.class, TestBaseWorkflowService::createFactory,
+              TestTaskServiceEntityService.class, TestTaskServiceEntityService::createFactory))
           .cloudStoreHelper(new CloudStoreHelper())
           .build();
     }
@@ -474,7 +548,9 @@ public class BaseWorkflowServiceTest {
     public void setUpTest() throws Throwable {
       testEnvironment = new TestEnvironment.Builder()
           .hostCount(1)
-          .testFactoryServiceMap(ImmutableMap.of(TestBaseWorkflowService.class, TestBaseWorkflowService::createFactory))
+          .testFactoryServiceMap(ImmutableMap.of(
+              TestBaseWorkflowService.class, TestBaseWorkflowService::createFactory,
+              TestTaskServiceEntityService.class, TestTaskServiceEntityService::createFactory))
           .cloudStoreHelper(new CloudStoreHelper())
           .build();
     }
@@ -597,6 +673,33 @@ public class BaseWorkflowServiceTest {
   }
 
   /**
+   * A test class which simulates a service that serves as a task service entity.
+   */
+  public static class TestTaskServiceEntityService extends StatefulService {
+
+    public static final String FACTORY_LINK = ServiceUriPaths.APIBACKEND_ROOT + "/test-task-service-entity";
+
+    public static FactoryService createFactory() {
+      return FactoryService.create(TestTaskServiceEntityService.class, State.class);
+    }
+
+    public TestTaskServiceEntityService() {
+      super(State.class);
+      super.toggleOption(ServiceOption.PERSISTENCE, true);
+      super.toggleOption(ServiceOption.REPLICATION, true);
+      super.toggleOption(ServiceOption.OWNER_SELECTION, true);
+      super.toggleOption(ServiceOption.INSTRUMENTATION, true);
+    }
+
+    /**
+     * Class defines the state of the TestTaskServiceEntityService.
+     */
+    public static class State extends ServiceDocument {
+      public Integer value;
+    }
+  }
+
+  /**
    * A test class which simulates a normal api-backend workflow.
    */
   @SuppressWarnings("unchecked")
@@ -608,26 +711,13 @@ public class BaseWorkflowServiceTest {
     public static final String FACTORY_LINK = ServiceUriPaths.APIBACKEND_ROOT + "/test-base-workflow";
 
     public static FactoryService createFactory() {
-      return FactoryService.create(
-          TestBaseWorkflowService.class,
-          TestBaseWorkflowService.State.class);
+      return FactoryService.create(TestBaseWorkflowService.class, State.class);
     }
 
     public TestBaseWorkflowService() {
       super(TestBaseWorkflowService.State.class,
           TestBaseWorkflowService.TaskState.class,
           TestBaseWorkflowService.TaskState.SubStage.class);
-    }
-
-    protected TaskService.State buildTaskServiceStartState(State state) {
-      return new TaskStateBuilder()
-          .setEntityId("entityId")
-          .setEntityKind("entityKind")
-          .setOperation(com.vmware.photon.controller.api.Operation.CREATE_VIRTUAL_NETWORK)
-          .addStep(com.vmware.photon.controller.api.Operation.GET_NSX_CONFIGURATION)
-          .addStep(com.vmware.photon.controller.api.Operation.CREATE_LOGICAL_SWITCH)
-          .addStep(com.vmware.photon.controller.api.Operation.CREATE_LOGICAL_ROUTER)
-          .build();
     }
 
     @Override
@@ -645,7 +735,18 @@ public class BaseWorkflowServiceTest {
         }
 
         if (state.testConfiguration.isCreateTaskServiceSuccess) {
-          create(state, operation);
+          if (state.testConfiguration.doesCreateTaskEntity) {
+            ServiceHostUtils.getCloudStoreHelper(getHost())
+                .createPost(TestTaskServiceEntityService.FACTORY_LINK)
+                .setBody(new TestTaskServiceEntityService.State())
+                .setCompletion((op, ex) -> {
+                  state.taskServiceEntity = op.getBody(TestTaskServiceEntityService.State.class);
+                  create(state, operation);
+                })
+                .sendWith(this);
+          } else {
+            create(state, operation);
+          }
         } else {
           operation.complete();
           fail(state, new RuntimeException("Failed to create task service"));
@@ -750,6 +851,9 @@ public class BaseWorkflowServiceTest {
       @TaskServiceStateField
       public TaskService.State taskServiceState;
 
+      @TaskServiceEntityField
+      public TestTaskServiceEntityService.State taskServiceEntity;
+
       public TestConfiguration testConfiguration;
     }
 
@@ -775,6 +879,7 @@ public class BaseWorkflowServiceTest {
      * This class defines test configuration for the test workflow.
      */
     public static class TestConfiguration {
+      public boolean doesCreateTaskEntity;
       public boolean isCreateTaskServiceSuccess;
       public boolean isStartTaskServiceSuccess;
       public boolean doesPauseOnTaskProgress;
@@ -792,6 +897,7 @@ public class BaseWorkflowServiceTest {
         state = new State();
         state.controlFlags = 0;
         state.testConfiguration = new TestConfiguration();
+        state.testConfiguration.doesCreateTaskEntity = false;
         state.testConfiguration.isCreateTaskServiceSuccess = true;
         state.testConfiguration.isStartTaskServiceSuccess = true;
         state.testConfiguration.doesPauseOnTaskProgress = false;
@@ -817,6 +923,11 @@ public class BaseWorkflowServiceTest {
 
       public StateBuilder controlFlags(int controlFlags) {
         state.controlFlags = controlFlags;
+        return this;
+      }
+
+      public StateBuilder createTaskEntity() {
+        state.testConfiguration.doesCreateTaskEntity = true;
         return this;
       }
 
