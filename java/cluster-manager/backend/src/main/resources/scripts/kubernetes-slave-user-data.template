@@ -88,7 +88,7 @@ write_files:
         docker -H unix:///var/run/docker-bootstrap.sock run --privileged --net=host ${etcdImage} brctl delbr docker0
         systemctl daemon-reload
         systemctl start docker
-        sleep 5
+        source /tmp/check-docker-daemon.sh
 
         echo "${ipAddress}         $LOCAL_HOSTNAME" >> /etc/hosts
         docker run -d --net=host -v /var/run/docker.sock:/var/run/docker.sock ${kubernetesImage} /hyperkube kubelet --api_servers=http://${masterIp}:$KUBERNETES_PORT --v=2 --address=0.0.0.0 --enable_server
@@ -97,6 +97,27 @@ write_files:
     owner: root:root
     permissions: 0644
     path: /etc/esxcloud/setup-kubernetes-slave.sh
+  - content: |
+         retry_max="60"
+         retry="0"
+         while [ "$retry" -lt "$retry_max" ]
+         do
+            docker version
+            if [ "$?" == "0" ]; then
+                echo "Docker daemon is up and running!"
+                break
+            fi
+            sleep 1
+            retry=`expr $retry + 1`
+         done
+
+         if [ "$retry" -eq "$retry_max" ]
+         then
+            echo "Docker daemon is not up yet!"
+         fi
+      owner: root:root
+      permissions: 0644
+      path: /tmp/check-docker-daemon.sh
 
 runcmd:
   - sh /tmp/init-network.sh
