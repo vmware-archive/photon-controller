@@ -293,7 +293,8 @@ public class ApiFeService extends Application<ApiFeStaticConfiguration> {
         .setConfigClass(ApiFeStaticConfiguration.class)
         .addModule(apiModule)
         .addModule(zookeeperModule)
-        .enableAutoConfig(getClass().getPackage().getName())
+//        .enableAutoConfig(getClass().getPackage().getName())
+        .enableAutoConfig("com.vmware.photon.controller.apife.resources")
         .build();
   }
 }
