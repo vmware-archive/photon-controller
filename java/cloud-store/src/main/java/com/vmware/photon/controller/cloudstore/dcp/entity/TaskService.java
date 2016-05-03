@@ -209,7 +209,7 @@ public class TaskService extends StatefulService {
 
     public TaskState state;
 
-    public com.vmware.photon.controller.api.Operation operation;
+    public String operation;
 
     public Date startedTime;
     public Date queuedTime;
@@ -245,7 +245,7 @@ public class TaskService extends StatefulService {
     public static class Step {
       public int sequence;
       public StepState state;
-      public com.vmware.photon.controller.api.Operation operation;
+      public String operation;
       public String options;
       public Date startedTime;
       public Date queuedTime;

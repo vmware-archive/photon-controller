@@ -138,7 +138,7 @@ public class TaskDcpBackend implements TaskBackend, StepBackend {
     }
 
     taskServiceState.state = TaskService.State.TaskState.QUEUED;
-    taskServiceState.operation = operation;
+    taskServiceState.operation = operation.getOperation();
     taskServiceState.queuedTime = DateTime.now().toDate();
 
     com.vmware.xenon.common.Operation result = dcpClient.post(TaskServiceFactory.SELF_LINK, taskServiceState);
@@ -164,7 +164,7 @@ public class TaskDcpBackend implements TaskBackend, StepBackend {
     }
 
     taskServiceState.state = TaskService.State.TaskState.COMPLETED;
-    taskServiceState.operation = operation;
+    taskServiceState.operation = operation.getOperation();
     taskServiceState.startedTime = DateTime.now().toDate();
     taskServiceState.endTime = taskServiceState.startedTime;
     taskServiceState.queuedTime = taskServiceState.startedTime;
@@ -209,7 +209,7 @@ public class TaskDcpBackend implements TaskBackend, StepBackend {
       taskServiceState.queuedTime = currentTime;
     }
 
-    taskServiceState.operation = operation;
+    taskServiceState.operation = operation.getOperation();
 
     if (stepEntities != null) {
       taskServiceState.steps = new ArrayList<>();
@@ -568,7 +568,7 @@ public class TaskDcpBackend implements TaskBackend, StepBackend {
     taskEntity.setStartedTime(taskState.startedTime);
     taskEntity.setEndTime(taskState.endTime);
     taskEntity.setProjectId(taskState.projectId);
-    taskEntity.setOperation(taskState.operation);
+    taskEntity.setOperation(Operation.parseOperation(taskState.operation));
     taskEntity.setResourceProperties(taskState.resourceProperties);
 
     switch (taskState.state) {
@@ -608,7 +608,7 @@ public class TaskDcpBackend implements TaskBackend, StepBackend {
     StepEntity stepEntity = new StepEntity();
     stepEntity.setTask(taskEntity);
     stepEntity.setSequence(step.sequence);
-    stepEntity.setOperation(step.operation);
+    stepEntity.setOperation(Operation.parseOperation(step.operation));
 
     switch (step.state) {
       case QUEUED:
@@ -685,7 +685,7 @@ public class TaskDcpBackend implements TaskBackend, StepBackend {
     taskState.startedTime = taskEntity.getStartedTime();
     taskState.endTime = taskEntity.getEndTime();
     taskState.projectId = taskEntity.getProjectId();
-    taskState.operation = taskEntity.getOperation();
+    taskState.operation = taskEntity.getOperation().getOperation();
 
     switch (taskEntity.getState()) {
       case COMPLETED:
@@ -724,7 +724,7 @@ public class TaskDcpBackend implements TaskBackend, StepBackend {
   }
 
   private void fillStep(TaskService.State.Step step, StepEntity stepEntity) {
-    step.operation = stepEntity.getOperation();
+    step.operation = stepEntity.getOperation().getOperation();
     step.sequence = stepEntity.getSequence();
     switch (stepEntity.getState()) {
       case QUEUED:
@@ -904,7 +904,7 @@ public class TaskDcpBackend implements TaskBackend, StepBackend {
         throw new IllegalArgumentException(errorMessage);
     }
 
-    step.operation = operation;
+    step.operation = operation.getOperation();
     Date currentTime = DateTime.now().toDate();
     step.queuedTime = currentTime;
     step.options = convertStepOptionsToString(stepOptions, taskEntity);
