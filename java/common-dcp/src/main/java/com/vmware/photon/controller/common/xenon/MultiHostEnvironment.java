@@ -454,7 +454,12 @@ public abstract class MultiHostEnvironment<H extends ServiceHost & XenonHostInfo
     ServiceHostUtils.waitForState(() -> host, (h) -> h.isReady(), getEnvironmentCleanup(), timeoutMessage);
   }
 
-  private void waitForReplicatedFactoryServices(H host) throws Throwable {
+  /**
+   * Waits for replicated service factories to become available for the host.
+   * @param host
+   * @throws Throwable
+   */
+  public void waitForReplicatedFactoryServices(H host) throws Throwable {
     String timeoutMessage = String.format("Timeout waiting for factory services [host %s]", host.getUri());
     ServiceHostUtils.waitForState(() -> host,
         (H h) -> Stream.of(h.getFactoryServices()).allMatch((c) -> checkFactoryServiceAvailable(h, c)),
