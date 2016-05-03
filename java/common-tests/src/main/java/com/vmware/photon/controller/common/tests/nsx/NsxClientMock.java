@@ -320,6 +320,25 @@ public class NsxClientMock extends NsxClient {
       return this;
     }
 
+    public Builder deleteLogicalSwitch(boolean isSuccess) throws Throwable {
+      if (isSuccess) {
+        doAnswer(invocation -> {
+          ((FutureCallback<Void>) invocation.getArguments()[1])
+              .onSuccess(null);
+          return null;
+        }).when(mockLogicalSwitchApi).deleteLogicalSwitch(any(String.class), any(FutureCallback.class));
+      } else {
+        RuntimeException error = new RuntimeException("deleteLogicalSwitch failed");
+        doAnswer(invocation -> {
+          ((FutureCallback<Void>) invocation.getArguments()[1])
+              .onFailure(error);
+          return null;
+        }).when(mockLogicalSwitchApi).deleteLogicalSwitch(any(String.class), any(FutureCallback.class));
+      }
+
+      return this;
+    }
+
     public Builder createLogicalPort(boolean isSuccess,
                                      String logicalPortId) throws Throwable {
       if (isSuccess) {
