@@ -14,7 +14,7 @@ require "spec_helper"
 describe "vm disk ops", management: true do
 
   before(:all) do
-    @seeder = EsxCloud::SystemSeeder.new([create_limit("vm.memory", 15000.0, "GB")])
+    @seeder = EsxCloud::SystemSeeder.new([create_limit("vm.memory", 15000.0, "GB")], [90])
     @cleaner = EsxCloud::SystemCleaner.new(client)
     @vm = @seeder.vm!
     @persistent_disk = @seeder.persistent_disk!
@@ -52,13 +52,41 @@ describe "vm disk ops", management: true do
   it "should fail when a disk doesn't exist" do
     begin
       @vm.attach_disk("invalid-disk-id")
-      fail "detach non-existing disks should have failed"
+      fail "attach non-existing disks should have failed"
     rescue EsxCloud::ApiError => e
       e.response_code.should == 404
       e.errors.size.should == 1
       e.errors[0].code.should == "DiskNotFound"
     rescue EsxCloud::CliError => e
       e.message.should match("DiskNotFound")
+    end
+  end
+
+  it "should fail to attach a disk to a vm not in the same project" do
+    project2 = @seeder.tenant!.create_project(
+        name: random_name("project-"),
+        resource_ticket_name: @seeder.resource_ticket!.name,
+        limits: [create_limit("vm.memory", 150.0, "GB")])
+
+    persistent_disk3 = project2.create_disk(
+        name: random_name("disk-"),
+        kind: "persistent-disk",
+        flavor: @seeder.persistent_disk_flavor!.name,
+        capacity_gb: 2,
+        boot_disk: false,
+        affinities: [{id: @vm.id, kind: "vm"}])
+    begin
+      @vm.attach_disk(persistent_disk3.id)
+      fail "attach disk in different project should have failed"
+    rescue EsxCloud::ApiError => e
+      e.response_code.should == 400
+      e.errors.size.should == 1
+      e.errors[0].code.should == "InvalidEntity"
+    rescue EsxCloud::CliError => e
+      e.message.should match("InvalidEntity")
+    ensure
+      persistent_disk3.delete
+      project2.delete
     end
   end
 
