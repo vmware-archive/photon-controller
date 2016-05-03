@@ -145,7 +145,7 @@ write_files:
         docker -H unix:///var/run/docker-bootstrap.sock run --privileged --net=host ${etcdImage} brctl delbr docker0
         systemctl daemon-reload
         systemctl start docker
-        sleep 5
+        source /tmp/check-docker.sh
 
         echo "${ipAddress}         $LOCAL_HOSTNAME" >> /etc/hosts
         docker run -d --net=host --restart=always -v /var/run/docker.sock:/var/run/docker.sock -v /etc/kubernetes/esxcloud:/etc/kubernetes/esxcloud ${kubernetesImage} \
@@ -155,6 +155,27 @@ write_files:
     owner: root:root
     permissions: 0644
     path: /etc/esxcloud/setup-kubernetes-master.sh
+  - content: |
+        retry_max="60"
+        retry="0"
+        while [ "$retry" -lt "$retry_max" ]
+        do
+          docker version
+          if [ "$?" == "0" ]; then
+            echo "Docker daemon is up and running!"
+            break
+          fi
+          sleep 1
+          retry=`expr $retry + 1`
+        done
+
+        if [ "$retry" -eq "$retry_max" ]
+        then
+          echo "Docker daemon is not up yet!"
+        fi
+    owner: root:root
+    permissions: 0644
+    path: /tmp/check-docker.sh
 
 runcmd:
   - systemctl enable /lib/systemd/system/docker-bootstrap.service
