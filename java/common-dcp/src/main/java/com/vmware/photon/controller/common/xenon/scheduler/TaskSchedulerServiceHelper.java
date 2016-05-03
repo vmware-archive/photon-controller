@@ -28,7 +28,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class TaskSchedulerServiceHelper {
 
-  public static final long OWNER_SELECTION_TIMEOUT = TimeUnit.SECONDS.toMillis(5);
+  public static final long OWNER_SELECTION_TIMEOUT = TimeUnit.SECONDS.toMicros(5);
 
   /**
    * Send a patch to the owner of the TaskSchedulerService.
