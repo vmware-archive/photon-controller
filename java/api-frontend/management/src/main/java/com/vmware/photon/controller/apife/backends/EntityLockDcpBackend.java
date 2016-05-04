@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.apife.backends;
 
+import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
 import com.vmware.photon.controller.api.common.exceptions.external.ConcurrentTaskException;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
@@ -51,18 +52,19 @@ public class EntityLockDcpBackend implements EntityLockBackend {
   }
 
   @Override
-  public void setTaskLock(String entityId, TaskEntity task) throws ConcurrentTaskException {
-    checkNotNull(entityId, "Entity cannot be null.");
+  public void setTaskLock(BaseEntity entity, TaskEntity task) throws ConcurrentTaskException {
+    checkNotNull(entity, "Entity cannot be null.");
     checkNotNull(task, "TaskEntity cannot be null.");
 
     EntityLockService.State state = new EntityLockService.State();
     state.ownerTaskId = task.getId();
-    state.entityId = entityId;
-    state.documentSelfLink = entityId;
+    state.entityId = entity.getId();
+    state.entityKind = entity.getKind();
+    state.documentSelfLink = entity.getId();
     state.lockOperation = EntityLockService.State.LockOperation.ACQUIRE;
 
     try {
-      task.getLockedEntityIds().add(entityId);
+      task.getLockedEntityIds().add(entity);
       // POST to the entity lock service will be converted to a PUT if the lock already exists
       dcpClient.post(EntityLockServiceFactory.SELF_LINK, state);
       logger.info("Entity Lock with entityId : {} and taskId: {} has been set", state.entityId, state.ownerTaskId);
@@ -70,7 +72,7 @@ public class EntityLockDcpBackend implements EntityLockBackend {
       if (e.getCompletedOperation().getStatusCode() == HttpURLConnection.HTTP_BAD_REQUEST) {
         String errorMessage = e.getCompletedOperation().getBody(ServiceErrorResponse.class).message;
         if (StringUtils.isNotBlank(errorMessage) && errorMessage.contains(EntityLockService.LOCK_TAKEN_MESSAGE)) {
-          task.getLockedEntityIds().remove(entityId);
+          task.getLockedEntityIds().remove(entity);
           throw new ConcurrentTaskException();
         }
       }
@@ -81,19 +83,21 @@ public class EntityLockDcpBackend implements EntityLockBackend {
   @Override
   public void clearTaskLocks(TaskEntity task) {
     checkNotNull(task, "TaskEntity cannot be null.");
-    List<String> failedToDeleteLockedEntityIds = new ArrayList<>();
-    for (String lockedEntityId : task.getLockedEntityIds()) {
+    List<BaseEntity> failedToDeleteLockedEntityIds = new ArrayList<>();
+    for (BaseEntity lockedEntity : task.getLockedEntityIds()) {
       try {
+        String lockedEntityId = lockedEntity.getId();
         EntityLockService.State state = new EntityLockService.State();
         state.ownerTaskId = task.getId();
         state.entityId = lockedEntityId;
+        state.entityKind = lockedEntity.getKind();
         state.documentSelfLink = lockedEntityId;
         state.lockOperation = EntityLockService.State.LockOperation.RELEASE;
         dcpClient.put(EntityLockServiceFactory.SELF_LINK + "/" + lockedEntityId, state);
         logger.info("Entity Lock with taskId : {} and entityId : {} has been cleared", task.getId(), lockedEntityId);
       } catch (Throwable swallowedException) {
-        failedToDeleteLockedEntityIds.add(lockedEntityId);
-        logger.error("Failed to delete entity lock with entityId: " + lockedEntityId, swallowedException);
+        failedToDeleteLockedEntityIds.add(lockedEntity);
+        logger.error("Failed to delete entity lock with entityId: " + lockedEntity.getId(), swallowedException);
       }
     }
     task.setLockedEntityIds(failedToDeleteLockedEntityIds);

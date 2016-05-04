@@ -33,9 +33,9 @@ public class TaskEntity extends BaseEntity {
 
   public static final String KIND = "task";
   //Transient
-  private List<String> toBeLockedEntityIds = new ArrayList<>();
+  private List<BaseEntity> toBeLockedEntities = new ArrayList<>();
   //Transient
-  private List<String> lockedEntityIds = new ArrayList<>();
+  private List<BaseEntity> lockedEntities = new ArrayList<>();
   //Transient
   AtomicInteger nextStepSequence = new AtomicInteger();
   private String entityId;
@@ -54,16 +54,16 @@ public class TaskEntity extends BaseEntity {
 
   private Map<String, Object> transientResources = new HashMap<>();
 
-  public List<String> getToBeLockedEntityIds() {
-    return this.toBeLockedEntityIds;
+  public List<BaseEntity> getToBeLockedEntities() {
+    return this.toBeLockedEntities;
   }
 
-  public List<String> getLockedEntityIds() {
-    return this.lockedEntityIds;
+  public List<BaseEntity> getLockedEntityIds() {
+    return this.lockedEntities;
   }
 
-  public void setLockedEntityIds(List<String> lockedEntityIds) {
-    this.lockedEntityIds = lockedEntityIds;
+  public void setLockedEntityIds(List<BaseEntity> lockedEntities) {
+    this.lockedEntities = lockedEntities;
   }
 
   @Override

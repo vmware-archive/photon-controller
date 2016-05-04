@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.apife.commands.tasks;
 
+import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
 import com.vmware.photon.controller.api.common.exceptions.ApiFeException;
 import com.vmware.photon.controller.api.common.exceptions.external.ConcurrentTaskException;
 import com.vmware.photon.controller.api.common.exceptions.external.TaskNotFoundException;
@@ -114,8 +115,8 @@ public class TaskCommand extends BaseCommand {
   @Override
   protected void markAsStarted() throws TaskNotFoundException, ConcurrentTaskException {
     taskBackend.markTaskAsStarted(task);
-    for (String toBeLockedEntityId : task.getToBeLockedEntityIds()) {
-      entityLockBackend.setTaskLock(toBeLockedEntityId, task);
+    for (BaseEntity toBeLockedEntity : task.getToBeLockedEntities()) {
+      entityLockBackend.setTaskLock(toBeLockedEntity, task);
     }
   }
 
