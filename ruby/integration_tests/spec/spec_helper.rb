@@ -30,6 +30,7 @@ require_relative "support/system_cleaner"
 require_relative "support/system_seeder"
 require_relative "support/cluster_helper"
 require_relative "support/log_helper"
+require_relative "support/housekeeper_helper"
 
 EsxCloud::Config.init
 EsxCloud::Config.client = ApiClientHelper.management
@@ -131,7 +132,10 @@ RSpec.configure do |config|
   config.filter_run_excluding go_cli: true unless ENV["DRIVER"] == "gocli"
 
   config.before(:suite) do
-    get_system_status(ENV["MANAGEMENT_VM_COUNT"]) if ENV["UPTIME"]
+    if ENV["UPTIME"]
+      get_system_status(ENV["MANAGEMENT_VM_COUNT"])
+      HousekeeperHelper.clean_unreachable_datastores
+    end
   end
 
   config.after(:suite) do

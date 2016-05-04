@@ -22,6 +22,7 @@ end
 require_relative "../../lib/integration"
 require_relative "../../lib/dcp/houskeeper_client"
 require_relative "../support/log_helper"
+require_relative "../support/housekeeper_helper"
 
 EsxCloud::Config.init
 
@@ -29,4 +30,5 @@ RSpec.configure do |config|
   config.color = true
   config.formatter = :documentation
   install_logging_hooks(config)
+  HousekeeperHelper.clean_unreachable_datastores if ENV["UPTIME"]
 end
