@@ -25,12 +25,14 @@ import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
 import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
+import com.vmware.photon.controller.deployer.dcp.entity.VibService;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
 import com.vmware.photon.controller.deployer.deployengine.HttpFileServiceClient;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
 import com.vmware.xenon.common.TaskState;
+import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -42,8 +44,6 @@ import javax.annotation.Nullable;
 import javax.net.ssl.HttpsURLConnection;
 
 import java.io.File;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * This class implements a DCP micro-service which performs the task of uploading one or more VIB images to a host.
@@ -70,42 +70,64 @@ public class UploadVibTaskService extends StatefulService {
     public Integer controlFlags;
 
     /**
-     * This value represents the document link of the DeploymentService in whose context the task is being performed.
+     * This value represents the optional document self-link of the parent task service to be
+     * notified on completion.
+     */
+    @Immutable
+    public String parentTaskServiceLink;
+
+    /**
+     * This value represents the optional patch body to be sent to the parent task service on
+     * successful completion.
+     */
+    @Immutable
+    public String parentPatchBody;
+
+    /**
+     * This value represents the document link of the {@link VibService} representing the VIB file
+     * to upload and install on the host.
      */
     @NotNull
     @Immutable
-    public String deploymentServiceLink;
-
-    /**
-     * This value represents the document link of the {@link HostService} on which to upload the VIB.
-     */
-    @NotNull
-    @Immutable
-    public String hostServiceLink;
-
-    /**
-     * This value represents the set of VIBs which have been uploaded.
-     */
-    public Map<String, String> vibPaths;
+    public String vibServiceLink;
   }
 
   public UploadVibTaskService() {
     super(State.class);
+
+    /**
+     * These attributes are required because the {@link UploadVibTaskService} task is scheduled by
+     * the task scheduler. If and when this is not the case -- either these attributes are no
+     * longer required, or this task is not scheduled by the task scheduler -- then they should be
+     * removed, along with the same attributes in higher-level task services which create instances
+     * of this task.
+     */
     super.toggleOption(ServiceOption.OWNER_SELECTION, true);
     super.toggleOption(ServiceOption.PERSISTENCE, true);
     super.toggleOption(ServiceOption.REPLICATION, true);
   }
 
   @Override
-  public void handleStart(Operation operation) {
+  public void handleStart(Operation startOp) {
     ServiceUtils.logTrace(this, "Handling start operation");
-    State startState = operation.getBody(State.class);
+    if (!startOp.hasBody()) {
+      ServiceUtils.failOperationAsBadRequest(this, startOp, new IllegalArgumentException("Body is required"));
+      return;
+    }
+
+    State startState = startOp.getBody(State.class);
     InitializationUtils.initialize(startState);
-    validateState(startState);
+
+    try {
+      validateState(startState);
+    } catch (Throwable t) {
+      ServiceUtils.failOperationAsBadRequest(this, startOp, t);
+      return;
+    }
 
     //
-    // Do not automatically transition to STARTED state. The task scheduler service will transition tasks to the
-    // STARTED state as executor slots become available.
+    // N.B. Do not automatically transition to STARTED state. The task scheduler service will
+    // patch tasks to the STARTED state as executor slots become available.
     //
 
     if (startState.documentExpirationTimeMicros <= 0) {
@@ -113,7 +135,7 @@ public class UploadVibTaskService extends StatefulService {
           ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME_MICROS);
     }
 
-    operation.setBody(startState).complete();
+    startOp.setBody(startState).complete();
 
     try {
       if (ControlFlags.isOperationProcessingDisabled(startState.controlFlags)) {
@@ -127,20 +149,35 @@ public class UploadVibTaskService extends StatefulService {
   }
 
   @Override
-  public void handlePatch(Operation operation) {
+  public void handlePatch(Operation patchOp) {
     ServiceUtils.logTrace(this, "Handling patch operation");
-    State currentState = this.getState(operation);
-    State patchState = operation.getBody(State.class);
-    validatePatchState(currentState, patchState);
-    PatchUtils.patchState(currentState, patchState);
-    validateState(currentState);
-    operation.complete();
+    if (!patchOp.hasBody()) {
+      patchOp.fail(new IllegalArgumentException("Body is required"));
+      return;
+    }
+
+    State currentState = getState(patchOp);
+    State patchState = patchOp.getBody(State.class);
+
+    try {
+      validatePatchState(currentState, patchState);
+      PatchUtils.patchState(currentState, patchState);
+      validateState(currentState);
+    } catch (Throwable t) {
+      ServiceUtils.failOperationAsBadRequest(this, patchOp, t);
+      return;
+    }
+
+    patchOp.complete();
 
     try {
       if (ControlFlags.isOperationProcessingDisabled(currentState.controlFlags)) {
         ServiceUtils.logInfo(this, "Skipping patch operation processing (disabled)");
       } else if (currentState.taskState.stage == TaskState.TaskStage.STARTED) {
         processStartedStage(currentState);
+      } else {
+        TaskUtils.notifyParentTask(this, currentState.taskState, currentState.parentTaskServiceLink,
+            currentState.parentPatchBody);
       }
     } catch (Throwable t) {
       failTask(t);
@@ -160,88 +197,106 @@ public class UploadVibTaskService extends StatefulService {
 
   private void processStartedStage(State currentState) {
 
-    HostUtils.getCloudStoreHelper(this)
-        .createGet(currentState.hostServiceLink)
-        .setCompletion((op, ex) -> {
-          if (ex != null) {
-            failTask(ex);
-            return;
-          }
+    sendRequest(Operation
+        .createGet(this, currentState.vibServiceLink)
+        .setCompletion(
+            (o, e) -> {
+              if (e != null) {
+                failTask(e);
+                return;
+              }
 
-          try {
-            processUploadVib(currentState, op.getBody(HostService.State.class));
-          } catch (Throwable t) {
-            failTask(t);
-          }
-        })
-        .sendWith(this);
+              try {
+                processStartedStage(currentState, o.getBody(VibService.State.class));
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            }));
   }
 
-  private void processUploadVib(State currentState, HostService.State hostState) {
+  private void processStartedStage(State currentState, VibService.State vibState) {
+
+    sendRequest(HostUtils
+        .getCloudStoreHelper(this)
+        .createGet(vibState.hostServiceLink)
+        .setCompletion(
+            (o, e) -> {
+              if (e != null) {
+                failTask(e);
+                return;
+              }
+
+              try {
+                processStartedStage(currentState, vibState, o.getBody(HostService.State.class));
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            }));
+  }
+
+  private void processStartedStage(State currentState,
+                                   VibService.State vibState,
+                                   HostService.State hostState) {
+
     File sourceDirectory = new File(HostUtils.getDeployerContext(this).getVibDirectory());
-    if (!sourceDirectory.exists()) {
-      throw new IllegalStateException("VIB directory " + sourceDirectory.getAbsolutePath() + " does not exist");
-    } else if (!sourceDirectory.isDirectory()) {
-      throw new IllegalStateException("VIB directory " + sourceDirectory.getAbsolutePath() + " is not a directory");
+    if (!sourceDirectory.exists() || !sourceDirectory.isDirectory()) {
+      throw new IllegalStateException("Invalid VIB source directory " + sourceDirectory);
     }
 
-    File[] sourceFiles = sourceDirectory.listFiles((file) -> file.getName().toUpperCase().endsWith(".VIB"));
-    if (sourceFiles.length == 0) {
-      throw new IllegalStateException("No VIB files were found in " + sourceDirectory.getAbsolutePath());
+    File sourceFile = new File(sourceDirectory, vibState.vibName);
+    if (!sourceFile.exists() || !sourceFile.isFile()) {
+      throw new IllegalStateException("Invalid VIB source file " + sourceFile);
     }
 
-    for (File sourceFile : sourceFiles) {
+    HttpFileServiceClient httpFileServiceClient = HostUtils.getHttpFileServiceClientFactory(this)
+        .create(hostState.hostAddress, hostState.userName, hostState.password);
+    String uploadPath = UriUtils.buildUriPath("tmp", "photon-controller-vibs",
+        ServiceUtils.getIDFromDocumentSelfLink(vibState.documentSelfLink), sourceFile.getName());
+    ListenableFutureTask<Integer> futureTask = ListenableFutureTask.create(
+        httpFileServiceClient.uploadFile(sourceFile.getAbsolutePath(), uploadPath, false));
+    HostUtils.getListeningExecutorService(this).submit(futureTask);
 
-      //
-      // If this file has already been uploaded, then skip to the next file.
-      //
-
-      if (currentState.vibPaths != null &&
-          currentState.vibPaths.containsKey(sourceFile.getName())) {
-        continue;
+    Futures.addCallback(futureTask, new FutureCallback<Integer>() {
+      @Override
+      public void onSuccess(@javax.validation.constraints.NotNull Integer result) {
+        try {
+          switch (result) {
+            case HttpsURLConnection.HTTP_OK:
+            case HttpsURLConnection.HTTP_CREATED:
+              setUploadPath(currentState, uploadPath);
+              break;
+            default:
+              throw new IllegalStateException("Unexpected HTTP result " + result + " when uploading VIB file " +
+                  vibState.vibName + " to host " + hostState.hostAddress);
+          }
+        } catch (Throwable t) {
+          failTask(t);
+        }
       }
 
-      HttpFileServiceClient httpFileServiceClient = HostUtils.getHttpFileServiceClientFactory(this)
-          .create(hostState.hostAddress, hostState.userName, hostState.password);
-      String uploadPath = "/tmp/photon-controller-vibs/" +
-          ServiceUtils.getIDFromDocumentSelfLink(currentState.deploymentServiceLink) + "/" + sourceFile.getName();
-      ListenableFutureTask<Integer> task = ListenableFutureTask.create(
-          httpFileServiceClient.uploadFile(sourceFile.getAbsolutePath(), uploadPath, false));
-      HostUtils.getListeningExecutorService(this).submit(task);
-      Futures.addCallback(task, new FutureCallback<Integer>() {
-        @Override
-        public void onSuccess(@Nullable Integer result) {
-          try {
-            if (result != HttpsURLConnection.HTTP_OK && result != HttpsURLConnection.HTTP_CREATED) {
-              throw new IllegalStateException("Unexpected HTTP result " + result + " when uploading " +
-                  sourceFile.getAbsolutePath());
-            }
+      @Override
+      public void onFailure(Throwable throwable) {
+        failTask(throwable);
+      }
+    });
+  }
 
-            Map<String, String> vibPaths = new HashMap<>(sourceFiles.length);
-            if (currentState.vibPaths != null) {
-              vibPaths.putAll(currentState.vibPaths);
-            }
+  private void setUploadPath(State currentState, String uploadPath) {
 
-            vibPaths.put(sourceFile.getName(), uploadPath);
+    VibService.State patchState = new VibService.State();
+    patchState.uploadPath = uploadPath;
 
-            State patchState = buildPatch(currentState.taskState.stage, null);
-            patchState.vibPaths = vibPaths;
-            TaskUtils.sendSelfPatch(UploadVibTaskService.this, patchState);
-          } catch (Throwable t) {
-            failTask(t);
-          }
-        }
-
-        @Override
-        public void onFailure(Throwable throwable) {
-          failTask(throwable);
-        }
-      });
-
-      return;
-    }
-
-    sendStageProgressPatch(TaskState.TaskStage.FINISHED);
+    sendRequest(Operation
+        .createPatch(this, currentState.vibServiceLink)
+        .setBody(patchState)
+        .setCompletion(
+            (o, e) -> {
+              if (e != null) {
+                failTask(e);
+              } else {
+                sendStageProgressPatch(TaskState.TaskStage.FINISHED);
+              }
+            }));
   }
 
   private void sendStageProgressPatch(TaskState.TaskStage taskStage) {

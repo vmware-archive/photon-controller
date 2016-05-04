@@ -584,8 +584,6 @@ public class FinalizeDeploymentMigrationWorkflowService extends StatefulService 
         };
 
     BulkProvisionHostsWorkflowService.State startState = new BulkProvisionHostsWorkflowService.State();
-    startState.taskState = new TaskState();
-    startState.taskState.stage = TaskState.TaskStage.STARTED;
     startState.deploymentServiceLink = deploymentState.documentSelfLink;
     startState.usageTag = UsageTag.CLOUD.name();
     startState.querySpecification = MiscUtils.generateHostQuerySpecification(null, UsageTag.CLOUD.name());

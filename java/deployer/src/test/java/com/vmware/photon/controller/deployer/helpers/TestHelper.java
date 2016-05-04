@@ -51,6 +51,7 @@ import com.vmware.photon.controller.deployer.dcp.entity.ContainerFactoryService;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerService;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateFactoryService;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateService;
+import com.vmware.photon.controller.deployer.dcp.entity.VibFactoryService;
 import com.vmware.photon.controller.deployer.dcp.entity.VibService;
 import com.vmware.photon.controller.deployer.dcp.entity.VmFactoryService;
 import com.vmware.photon.controller.deployer.dcp.entity.VmService;
@@ -290,6 +291,13 @@ public class TestHelper {
     return startState;
   }
 
+  public static VibService.State getVibServiceStartState(HostService.State hostState, File sourceFile) {
+    VibService.State startState = new VibService.State();
+    startState.vibName = sourceFile.getName();
+    startState.hostServiceLink = hostState.documentSelfLink;
+    return startState;
+  }
+
   public static VmService.State getVmServiceStartState() {
     VmService.State startState = new VmService.State();
     startState.name = "NAME";
@@ -421,6 +429,19 @@ public class TestHelper {
         HostServiceFactory.SELF_LINK,
         startState,
         HostService.State.class);
+  }
+
+  public static VibService.State createVibService(
+      TestEnvironment testEnvironment, HostService.State hostState, File sourceFile) throws Throwable {
+    return createVibService(testEnvironment, getVibServiceStartState(hostState, sourceFile));
+  }
+
+  public static VibService.State createVibService(
+      TestEnvironment testEnvironment, VibService.State startState) throws Throwable {
+    return testEnvironment.callServiceSynchronously(
+        VibFactoryService.SELF_LINK,
+        startState,
+        VibService.State.class);
   }
 
   public static VmService.State createVmService(
@@ -792,23 +813,23 @@ public class TestHelper {
       //
 
       return new Object[][]{
-          {TaskState.TaskStage.CREATED, null, TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.STARTED, null, TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.FINISHED, null, TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.FINISHED, null, TaskState.TaskStage.STARTED, null},
-          {TaskState.TaskStage.FINISHED, null, TaskState.TaskStage.FINISHED, null},
-          {TaskState.TaskStage.FINISHED, null, TaskState.TaskStage.FAILED, null},
-          {TaskState.TaskStage.FINISHED, null, TaskState.TaskStage.CANCELLED, null},
-          {TaskState.TaskStage.FAILED, null, TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.FAILED, null, TaskState.TaskStage.STARTED, null},
-          {TaskState.TaskStage.FAILED, null, TaskState.TaskStage.FINISHED, null},
-          {TaskState.TaskStage.FAILED, null, TaskState.TaskStage.FAILED, null},
-          {TaskState.TaskStage.FAILED, null, TaskState.TaskStage.CANCELLED, null},
-          {TaskState.TaskStage.CANCELLED, null, TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.CANCELLED, null, TaskState.TaskStage.STARTED, null},
-          {TaskState.TaskStage.CANCELLED, null, TaskState.TaskStage.FINISHED, null},
-          {TaskState.TaskStage.CANCELLED, null, TaskState.TaskStage.FAILED, null},
-          {TaskState.TaskStage.CANCELLED, null, TaskState.TaskStage.CANCELLED, null},
+          {TaskState.TaskStage.CREATED, TaskState.TaskStage.CREATED},
+          {TaskState.TaskStage.STARTED, TaskState.TaskStage.CREATED},
+          {TaskState.TaskStage.FINISHED, TaskState.TaskStage.CREATED},
+          {TaskState.TaskStage.FINISHED, TaskState.TaskStage.STARTED},
+          {TaskState.TaskStage.FINISHED, TaskState.TaskStage.FINISHED},
+          {TaskState.TaskStage.FINISHED, TaskState.TaskStage.FAILED},
+          {TaskState.TaskStage.FINISHED, TaskState.TaskStage.CANCELLED},
+          {TaskState.TaskStage.FAILED, TaskState.TaskStage.CREATED},
+          {TaskState.TaskStage.FAILED, TaskState.TaskStage.STARTED},
+          {TaskState.TaskStage.FAILED, TaskState.TaskStage.FINISHED},
+          {TaskState.TaskStage.FAILED, TaskState.TaskStage.FAILED},
+          {TaskState.TaskStage.FAILED, TaskState.TaskStage.CANCELLED},
+          {TaskState.TaskStage.CANCELLED, TaskState.TaskStage.CREATED},
+          {TaskState.TaskStage.CANCELLED, TaskState.TaskStage.STARTED},
+          {TaskState.TaskStage.CANCELLED, TaskState.TaskStage.FINISHED},
+          {TaskState.TaskStage.CANCELLED, TaskState.TaskStage.FAILED},
+          {TaskState.TaskStage.CANCELLED, TaskState.TaskStage.CANCELLED},
       };
     }
 
