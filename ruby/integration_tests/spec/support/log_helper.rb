@@ -25,24 +25,25 @@ class TestCounter
 end
 
 def install_logging_hooks(rspec_config)
+  iteration = ENV["PHOTON_TEST_ITERATION"] || 1
   counter = TestCounter.new
   log_dir = File.expand_path(File.join(File.dirname(__FILE__), "..", "..", "reports", "log", ENV["DRIVER"]))
 
   FileUtils.mkdir_p(log_dir)
 
   rspec_config.before :all do |example_group|
-    reset_logger(log_dir, counter, "before_#{example_group.class.description}")
+    reset_logger(log_dir, iteration, counter, "before_#{example_group.class.description}")
   end
 
   # N.B. For now 'after all' hook for each example group will get appended to the last test in the group
   rspec_config.before :each do |example_group|
     full_example_name = "%s %s" % [example_group.class.description, example_group.example.description]
-    reset_logger(log_dir, counter, full_example_name)
+    reset_logger(log_dir, iteration, counter, full_example_name)
   end
 end
 
-def reset_logger(log_dir, counter, name)
-  path = "%03d_%s.log" % [counter.next, name.gsub(/[^a-z0-9\s_-]/i, "").gsub(/\s+/, "_") ]
+def reset_logger(log_dir, iteration, counter, name)
+  path = "%03d_%03d_%s.log" % [iteration, counter.next, name.gsub(/[^a-z0-9\s_-]/i, "").gsub(/\s+/, "_") ]
   log_file_name = File.join(log_dir, path)
 
   logger = Logger.new(log_file_name)
