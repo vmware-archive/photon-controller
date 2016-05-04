@@ -24,7 +24,6 @@ import com.vmware.photon.controller.common.xenon.host.AbstractServiceHost;
 import com.vmware.photon.controller.common.xenon.host.XenonConfig;
 import com.vmware.photon.controller.rootscheduler.Config;
 import com.vmware.photon.controller.rootscheduler.service.ConstraintChecker;
-import com.vmware.photon.controller.rootscheduler.service.InMemoryConstraintChecker;
 import com.vmware.photon.controller.rootscheduler.service.ScoreCalculator;
 import com.vmware.photon.controller.rootscheduler.xenon.task.PlacementTaskService;
 import com.vmware.xenon.common.ServiceHost;
@@ -34,10 +33,6 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 /**
  * This class implements the Xenon service host object
@@ -81,16 +76,6 @@ public class SchedulerXenonHost
     this.cloudStoreHelper = cloudStoreHelper;
     this.checker = checker;
 
-    if (this.checker instanceof InMemoryConstraintChecker) {
-      final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-      scheduler.scheduleAtFixedRate(() -> {
-        try {
-          this.checker = new InMemoryConstraintChecker(xenonRestClient);
-        } catch (Throwable ex) {
-          logger.warn("Failed to initialize in-memory constraint checker", ex);
-        }
-      }, 0, config.getRefreshIntervalSec(), TimeUnit.SECONDS);
-    }
     logger.info("Initialized scheduler service with {}", this.checker.getClass());
   }
 

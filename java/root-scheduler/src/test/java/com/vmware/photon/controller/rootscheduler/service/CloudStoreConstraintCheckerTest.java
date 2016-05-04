@@ -62,9 +62,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Tests the CloudStoreConstraintChecker.
  *
- * These tests aren't part of ConstraintChekterTest because that is a "lowest-common denominator" test that tests both
- * the CloudStoreConstraintChecker and the InMemoryConstraintChecker. The CloudStoreConstraintChecker has more
- * functionality, so this does tests specific to it.
+ * These tests are specific to CloudStoreConstraintChecker functionality.
  */
 public class CloudStoreConstraintCheckerTest {
 
