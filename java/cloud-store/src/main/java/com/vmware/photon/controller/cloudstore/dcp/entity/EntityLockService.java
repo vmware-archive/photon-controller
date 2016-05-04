@@ -13,12 +13,19 @@
 
 package com.vmware.photon.controller.cloudstore.dcp.entity;
 
+import com.vmware.photon.controller.api.Deployment;
+import com.vmware.photon.controller.api.EphemeralDisk;
+import com.vmware.photon.controller.api.Host;
+import com.vmware.photon.controller.api.Image;
+import com.vmware.photon.controller.api.Iso;
+import com.vmware.photon.controller.api.PersistentDisk;
+import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
+import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
 import com.vmware.photon.controller.common.xenon.upgrade.NoMigrationDuringUpgrade;
 import com.vmware.photon.controller.common.xenon.validation.NotBlank;
-import com.vmware.photon.controller.common.xenon.validation.RenamedField;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.ServiceDocumentDescription;
@@ -28,6 +35,9 @@ import org.apache.commons.lang3.StringUtils;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * Class EntityLockService is used for data persistence of entity lock.
  * The EntityLockService provides locks for other entities based on their unique ID.
@@ -36,12 +46,23 @@ import static com.google.common.base.Preconditions.checkState;
  * Client can use a POST to acquire a lock while PUT is used to acquire or release a lock.
  * This service uses idempotent POSTs, which means that a POST will be converted to a PUT if the lock already exists.
  * The recommended usage is:
- *  POST to acquire a lock (works if lock exists or not)
- *  PUT to release a lock
+ * POST to acquire a lock (works if lock exists or not)
+ * PUT to release a lock
  */
 public class EntityLockService extends StatefulService {
 
   public static final String LOCK_TAKEN_MESSAGE = "Lock already taken";
+
+  private static Map<String, String> map = new HashMap<>();
+  static {
+    map.put(Vm.KIND, VmServiceFactory.SELF_LINK);
+    map.put(Deployment.KIND, DeploymentServiceFactory.SELF_LINK);
+    map.put(PersistentDisk.KIND, DiskServiceFactory.SELF_LINK);
+    map.put(EphemeralDisk.KIND, DiskServiceFactory.SELF_LINK);
+    map.put(Host.KIND, HostServiceFactory.SELF_LINK);
+    map.put(Image.KIND, ImageServiceFactory.SELF_LINK);
+    map.put(Iso.KIND, VmServiceFactory.SELF_LINK);
+  }
 
   public EntityLockService() {
     super(State.class);
@@ -53,7 +74,7 @@ public class EntityLockService extends StatefulService {
 
   @Override
   public void handleCreate(Operation op) {
-    ServiceUtils.logInfo(this, "Handling START for EntityLockService %s", getSelfLink());
+    ServiceUtils.logInfo(this, "Handling CREATE for EntityLockService %s", getSelfLink());
     State payload = op.getBody(State.class);
     validatePayload(payload);
 
@@ -63,6 +84,18 @@ public class EntityLockService extends StatefulService {
     }
     payload.lockOperation = null; // no need to persist the operation type
 
+    validateState(payload);
+    setState(op, payload);
+    op.complete();
+  }
+
+  @Override
+  public void handleStart(Operation op) {
+    ServiceUtils.logInfo(this, "Handling START for EntityLockService %s", getSelfLink());
+    State payload = op.getBody(State.class);
+    validateStartPayload(payload);
+
+    payload.entitySelfLink = generateSelfLink(payload.entityId, payload.entityKind);
     validateState(payload);
     setState(op, payload);
     op.complete();
@@ -85,12 +118,20 @@ public class EntityLockService extends StatefulService {
     checkArgument(currentState.entityId.equalsIgnoreCase(payload.entityId),
         "entityId for a lock cannot be changed");
 
+    checkArgument(currentState.entityKind.equalsIgnoreCase(payload.entityKind),
+        "entityKind for a lock cannot be changed");
+
     State.LockOperation lockOperation = payload.lockOperation;
     payload.lockOperation = null; // no need to persist the operation type
 
+    //Populate entitySelfLink from enityId and entityKind for verifying document remains the same
+    if (payload.entitySelfLink == null) {
+      payload.entitySelfLink = generateSelfLink(payload.entityId, payload.entityKind);
+    }
+
     switch (lockOperation) {
       case ACQUIRE:
-        handleAquireLockRequest(op, currentState, payload);
+        handleAcquireLockRequest(op, currentState, payload);
         break;
       case RELEASE:
         handleReleaseLockRequest(op, currentState, payload);
@@ -112,7 +153,7 @@ public class EntityLockService extends StatefulService {
     op.fail(Operation.STATUS_CODE_BAD_METHOD);
   }
 
-  private void handleAquireLockRequest(Operation op, State currentState, State payload) {
+  private void handleAcquireLockRequest(Operation op, State currentState, State payload) {
     // if the new payload is identical to the existing state, complete operation with STATUS_CODE_NOT_MODIFIED
     ServiceDocumentDescription documentDescription = this.getDocumentTemplate().documentDescription;
     if (ServiceDocument.equals(documentDescription, currentState, payload)) {
@@ -125,7 +166,7 @@ public class EntityLockService extends StatefulService {
       // and the requested owner is new then return lock already taken error
       checkArgument(currentState.ownerTaskId.equalsIgnoreCase(payload.ownerTaskId),
           LOCK_TAKEN_MESSAGE + ". Current ownerTaskId: %s, Request ownerTaskId: %s, EntityId: %s",
-          currentState.ownerTaskId, payload.ownerTaskId, currentState.entityId);
+          currentState.ownerTaskId, payload.ownerTaskId, currentState.entitySelfLink);
     }
   }
 
@@ -139,7 +180,7 @@ public class EntityLockService extends StatefulService {
     // if the release requester is not the owner of the lock then throw BadRequestException
     checkArgument(currentState.ownerTaskId.equalsIgnoreCase(payload.ownerTaskId),
         "Only the current owner can release a lock. Current ownerTaskId: %s, Request ownerTaskId: %s, EntityId: %s",
-        currentState.ownerTaskId, payload.ownerTaskId, currentState.entityId);
+        currentState.ownerTaskId, payload.ownerTaskId, currentState.entitySelfLink);
 
     //release ownership of lock
     payload.ownerTaskId = null;
@@ -157,6 +198,34 @@ public class EntityLockService extends StatefulService {
     checkArgument(StringUtils.isNotBlank(state.ownerTaskId), "ownerTaskId cannot be blank");
   }
 
+  private void validateStartPayload(State state) {
+    checkArgument(state != null, "state cannot be null");
+    checkArgument(state.lockOperation == null, "lockOperation should be null");
+    checkArgument(StringUtils.isNotBlank(state.entityId), "entityId cannot be blank");
+    checkArgument(StringUtils.isNotBlank(state.ownerTaskId), "ownerTaskId cannot be blank");
+  }
+
+  /**
+   * Generate document self link from entity id and entity kind.
+   *
+   * @param entityId
+   * @param entityKind
+   * @return
+   */
+  private String generateSelfLink(String entityId, String entityKind) {
+    String factoryLink = map.get(entityKind);
+    if (factoryLink == null) {
+      throw new IllegalArgumentException("Cannot generate selflink for entityKind: " + entityKind);
+    }
+
+    StringBuilder builder = new StringBuilder();
+    builder.append(ServiceUriPaths.CLOUDSTORE_ROOT)
+        .append(factoryLink)
+        .append("/")
+        .append(entityId);
+    return builder.toString();
+  }
+
   /**
    * Durable service state data. Class encapsulating the data for EntityLock.
    */
@@ -166,7 +235,11 @@ public class EntityLockService extends StatefulService {
     @NotBlank
     public String entityId;
 
-    @RenamedField(originalName = "taskId")
+    @NotBlank
+    public String entityKind;
+
+    public String entitySelfLink;
+
     public String ownerTaskId;
 
     public LockOperation lockOperation;

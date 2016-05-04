@@ -272,12 +272,14 @@ public class TaskCommandTest {
       TaskBackend taskBackend = mock(TaskBackend.class);
       TaskEntity task1 = new TaskEntity();
       task1.setId(UUID.randomUUID().toString());
-      String lockId = UUID.randomUUID().toString();
-      task1.getToBeLockedEntityIds().add(lockId);
+
+      VmEntity vmEntity = new VmEntity();
+      vmEntity.setId(UUID.randomUUID().toString());
+      task1.getToBeLockedEntities().add(vmEntity);
 
       TaskEntity task2 = new TaskEntity();
       task2.setId(UUID.randomUUID().toString());
-      task2.getToBeLockedEntityIds().add(lockId);
+      task2.getToBeLockedEntities().add(vmEntity);
 
       command1 = spy(new TaskCommand(
           mock(ApiFeXenonRestClient.class),
