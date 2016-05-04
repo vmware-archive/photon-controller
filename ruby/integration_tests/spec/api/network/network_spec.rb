@@ -12,16 +12,21 @@
 require "spec_helper"
 
 describe "network", management: true do
+  let(:networks_to_delete) { [] }
 
   let(:network_name) { random_name("network-") }
   let(:portgroup) { random_name("port-group-") }
   let(:spec) { EsxCloud::NetworkCreateSpec.new(network_name, "VLAN", [portgroup]) }
 
-  describe "#create" do
+  after(:each) do
+    networks_to_delete.each do |network|
+      ignoring_all_errors { network.delete } unless network.nil?
+    end
+  end
 
+  describe "#create" do
     it "should create one network successfully" do
-      network = client.create_network(spec.to_hash)
-      network_id = network.id
+      network = create_network(spec)
       expect(network.name).to eq network_name
       expect(network.description).to eq "VLAN"
       expect(network.state).to eq "READY"
@@ -29,7 +34,7 @@ describe "network", management: true do
 
       networks = client.find_networks_by_name(network_name).items
       expect(networks.size).to eq 1
-      network_found = client.find_network_by_id(network_id)
+      network_found = client.find_network_by_id(network.id)
       expect(network_found).to eq network
     end
 
@@ -37,7 +42,7 @@ describe "network", management: true do
       it "should fail to create network" do
         spec.name = nil
         begin
-          client.create_network(spec.to_hash)
+          create_network(spec)
           fail("create network should fail when name is not specified")
         rescue EsxCloud::ApiError => e
           expect(e.response_code).to eq 400
@@ -59,7 +64,7 @@ describe "network", management: true do
 
         spec.name = "1foo"
         begin
-          client.create_network(spec.to_hash)
+          create_network(spec)
           fail("create network should fail when name is invalid")
         rescue EsxCloud::ApiError => e
           expect(e.response_code).to eq 400
@@ -77,7 +82,7 @@ describe "network", management: true do
 
         spec.portgroups = []
         begin
-          client.create_network(spec.to_hash)
+          create_network(spec)
           fail("create network should fail when port groups are empty")
         rescue EsxCloud::ApiError => e
           expect(e.response_code).to eq 400
@@ -95,12 +100,12 @@ describe "network", management: true do
 
     context "network with the same name already exists", disable_for_cli_test: true do
       before(:each) do
-        client.create_network(spec.to_hash)
+        create_network(spec)
       end
 
       it "should create network successfully" do
         spec.portgroups = [random_name("port-group-")]
-        network = client.create_network(spec.to_hash)
+        network = create_network(spec)
         expect(network.name).to eq network_name
 
         networks = client.find_all_networks.items.select { |i| i.name == network_name }
@@ -111,15 +116,11 @@ describe "network", management: true do
   end
 
   describe "#delete" do
-
     context "when network is in READY", dcp: true do
-
       let(:network_id) do
-        client.create_network(spec.to_hash)
-        networks = client.find_all_networks.items.select { |i| i.name == network_name }
-        expect(networks.size).to eq 1
-        expect(networks.first.state).to eq "READY"
-        networks.first.id
+        network = EsxCloud::Network.create(spec)
+        expect(network.state).to eq "READY"
+        network.id
       end
 
       it "should delete network successfully" do
@@ -128,13 +129,10 @@ describe "network", management: true do
     end
 
     context "when network is in PENDING_DELETE", dcp: true do
-
       let(:network_id) do
-        client.create_network(spec.to_hash)
-        networks = client.find_all_networks.items.select { |i| i.name == network_name }
-        expect(networks.size).to eq 1
-        expect(networks.first.state).to eq "READY"
-        network_id = networks.first.id
+        network = EsxCloud::Network.create(spec)
+        expect(network.state).to eq "READY"
+        network_id = network.id
 
         expect(client.delete_network(network_id)).to be_true
         networks = client.find_all_networks.items.select { |i| i.name == network_name }
@@ -156,15 +154,12 @@ describe "network", management: true do
           expect(e.message).to match("1")
         end
       end
-
     end
-
   end
 
   describe "#set_portgroups", dcp: true do
-
     it "sets portgroups successfully" do
-      network = client.create_network(spec.to_hash)
+      network = create_network(spec)
       network_id = network.id
       expect(network.portgroups).to eq ["P1", "P2"]
 
@@ -188,4 +183,16 @@ describe "network", management: true do
     end
   end
 
+  private
+
+  def create_network(spec)
+    begin
+      network = EsxCloud::Network.create(spec)
+      networks_to_delete << network
+      network
+    rescue
+      EsxCloud::Network.find_by_name(spec.name).items.each {|i| networks_to_delete << i}
+      raise
+    end
+  end
 end

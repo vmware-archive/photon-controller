@@ -15,6 +15,7 @@ describe EsxCloud::Network do
 
   let(:client) { double(EsxCloud::ApiClient) }
   let(:network) { EsxCloud::Network.new "id", "name", "description", "READY", ["P1"] }
+  let(:network_list) { EsxCloud::NetworkList.new [network] }
 
   let(:create_spec) { EsxCloud::NetworkCreateSpec.new("network1", "VLAN", ["P1", "P2"]) }
 
@@ -37,7 +38,17 @@ describe EsxCloud::Network do
     expect(EsxCloud::Network.find_network_by_id("id")).to eq network
   end
 
-  it "can be deleted" do
+  it "delegates find_all to client" do
+    expect(client).to receive(:find_all_networks).and_return(network_list)
+    expect(EsxCloud::Network.find_all).to eq network_list
+  end
+
+  it "delegates find_by_name to client" do
+    expect(client).to receive(:find_networks_by_name).with("name").and_return(network_list)
+    expect(EsxCloud::Network.find_by_name("name")).to eq network_list
+  end
+
+  it "delegates deleted to client" do
     expect(client).to receive(:delete_network).with("id")
     network.delete
   end
