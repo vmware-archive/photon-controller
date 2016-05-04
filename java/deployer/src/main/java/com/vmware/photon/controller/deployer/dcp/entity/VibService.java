@@ -13,12 +13,12 @@
 
 package com.vmware.photon.controller.deployer.dcp.entity;
 
+import com.vmware.photon.controller.common.xenon.PatchUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
 import com.vmware.photon.controller.common.xenon.upgrade.NoMigrationDuringUpgrade;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
-
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
@@ -35,6 +35,11 @@ public class VibService extends StatefulService {
   public static class State extends ServiceDocument {
 
     /**
+     * This field name string is used when constructing queries.
+     */
+    public static final String FIELD_NAME_HOST_SERVICE_LINK = "hostServiceLink";
+
+    /**
      * This value represents the name of the VIB file.
      */
     @NotNull
@@ -48,6 +53,11 @@ public class VibService extends StatefulService {
     @NotNull
     @Immutable
     public String hostServiceLink;
+
+    /**
+     * This value represents the path on the remote host to which the VIB file has been uploaded.
+     */
+    public String uploadPath;
   }
 
   public VibService() {
@@ -75,5 +85,28 @@ public class VibService extends StatefulService {
     }
 
     startOp.setBody(startState).complete();
+  }
+
+  @Override
+  public void handlePatch(Operation patchOp) {
+    ServiceUtils.logTrace(this, "Handling patch operation");
+    if (!patchOp.hasBody()) {
+      patchOp.fail(new IllegalArgumentException("Body is required"));
+      return;
+    }
+
+    State currentState = getState(patchOp);
+    State patchState = patchOp.getBody(State.class);
+
+    try {
+      ValidationUtils.validatePatch(currentState, patchState);
+      PatchUtils.patchState(currentState, patchState);
+      ValidationUtils.validateState(currentState);
+    } catch (Throwable t) {
+      ServiceUtils.failOperationAsBadRequest(this, patchOp, t);
+      return;
+    }
+
+    patchOp.complete();
   }
 }

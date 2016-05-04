@@ -18,6 +18,7 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
+import com.vmware.photon.controller.common.xenon.PatchUtils;
 import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
@@ -27,6 +28,10 @@ import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
 import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
+import com.vmware.photon.controller.deployer.dcp.entity.VibFactoryService;
+import com.vmware.photon.controller.deployer.dcp.entity.VibService;
+import com.vmware.photon.controller.deployer.dcp.task.ChildTaskAggregatorFactoryService;
+import com.vmware.photon.controller.deployer.dcp.task.ChildTaskAggregatorService;
 import com.vmware.photon.controller.deployer.dcp.task.ProvisionHostTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.ProvisionHostTaskService;
 import com.vmware.photon.controller.deployer.dcp.task.UploadVibTaskFactoryService;
@@ -38,12 +43,10 @@ import com.vmware.photon.controller.nsxclient.models.TransportZone;
 import com.vmware.photon.controller.nsxclient.models.TransportZoneCreateSpec;
 import com.vmware.photon.controller.nsxclient.utils.NameUtils;
 import com.vmware.xenon.common.Operation;
-import com.vmware.xenon.common.Service;
+import com.vmware.xenon.common.OperationJoin;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
-import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.Utils;
-import com.vmware.xenon.services.common.NodeGroupBroadcastResponse;
 import com.vmware.xenon.services.common.QueryTask;
 import com.vmware.xenon.services.common.ServiceUriPaths;
 
@@ -53,8 +56,13 @@ import static com.google.common.base.Preconditions.checkState;
 
 import javax.annotation.Nullable;
 
+import java.io.File;
+import java.util.Collection;
+import java.util.EnumSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 
 /**
  * This class implements a DCP microservice which performs the task of provisioning a set of ESX hosts.
@@ -62,10 +70,44 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class BulkProvisionHostsWorkflowService extends StatefulService {
 
   /**
+   * This class defines the state of a {@link BulkProvisionHostsWorkflowService} task.
+   */
+  public static class TaskState extends com.vmware.xenon.common.TaskState {
+
+    /**
+     * This type defines the possible sub-stages of a {@link BulkProvisionHostsWorkflowService}
+     * task.
+     */
+    public enum SubStage {
+      PROVISION_NETWORK,
+      UPLOAD_VIBS,
+      PROVISION_HOSTS,
+    }
+
+    /**
+     * This value represents the sub-stage of the current task.
+     */
+    public SubStage subStage;
+  }
+
+  /**
    * This class represents the document state associated with a {@link BulkProvisionHostsWorkflowService} instance.
    */
   @NoMigrationDuringUpgrade
   public static class State extends ServiceDocument {
+
+    /**
+     * This value represents the state of the current task.
+     */
+    @DefaultTaskState(value = TaskState.TaskStage.CREATED)
+    public TaskState taskState;
+
+    /**
+     * This value represents the control flags for the current task.
+     */
+    @DefaultInteger(value = 0)
+    @Immutable
+    public Integer controlFlags;
 
     /**
      * This value represents the document link of the deployment in whose context the task operation is
@@ -89,19 +131,6 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
     public QueryTask.QuerySpecification querySpecification;
 
     /**
-     * This value represents the state of the current task.
-     */
-    @DefaultTaskState(value = TaskState.TaskStage.CREATED)
-    public TaskState taskState;
-
-    /**
-     * This value represents the control flags for the current task.
-     */
-    @DefaultInteger(value = 0)
-    @Immutable
-    public Integer controlFlags;
-
-    /**
      * This value represents the interval, in milliseconds, to wait when polling the state of a child task.
      */
     @Immutable
@@ -110,29 +139,43 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
 
   public BulkProvisionHostsWorkflowService() {
     super(State.class);
+
+    /**
+     * These attributes are required because the {@link UploadVibTaskService} task is scheduled by
+     * the task scheduler. If and when this is not the case -- either these attributes are no
+     * longer required, or this task is not scheduled by the task scheduler -- then they should be
+     * removed, along with the same attributes in higher-level task services which create instances
+     * of this task.
+     */
     super.toggleOption(ServiceOption.OWNER_SELECTION, true);
     super.toggleOption(ServiceOption.PERSISTENCE, true);
     super.toggleOption(ServiceOption.REPLICATION, true);
   }
 
   @Override
-  public void handleStart(Operation startOperation) {
-    ServiceUtils.logInfo(this, "Handling start for service %s", getSelfLink());
-    State startState = startOperation.getBody(State.class);
+  public void handleStart(Operation startOp) {
+    ServiceUtils.logTrace(this, "Handling start operation");
+    if (!startOp.hasBody()) {
+      startOp.fail(new IllegalArgumentException("Body is required"));
+      return;
+    }
+
+    State startState = startOp.getBody(State.class);
     InitializationUtils.initialize(startState);
 
-    if (null == startState.taskPollDelay) {
+    try {
+      validateState(startState);
+    } catch (Throwable t) {
+      ServiceUtils.failOperationAsBadRequest(this, startOp, t);
+      return;
+    }
+
+    if (startState.taskPollDelay == null) {
       startState.taskPollDelay = HostUtils.getDeployerContext(this).getTaskPollDelay();
     }
 
-    validateState(startState);
-
-    if (null == startState.querySpecification) {
+    if (startState.querySpecification == null) {
       startState.querySpecification = buildQuerySpecification(startState.usageTag);
-    }
-
-    if (TaskState.TaskStage.CREATED == startState.taskState.stage) {
-      startState.taskState.stage = TaskState.TaskStage.STARTED;
     }
 
     if (startState.documentExpirationTimeMicros <= 0) {
@@ -140,13 +183,15 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
           ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME_MICROS);
     }
 
-    startOperation.setBody(startState).complete();
+    startOp.setBody(startState).complete();
 
     try {
       if (ControlFlags.isOperationProcessingDisabled(startState.controlFlags)) {
         ServiceUtils.logInfo(this, "Skipping start operation processing (disabled)");
-      } else if (TaskState.TaskStage.STARTED == startState.taskState.stage) {
-        sendStageProgressPatch(startState.taskState.stage);
+      } else if (startState.taskState.stage == TaskState.TaskStage.CREATED) {
+        sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.PROVISION_NETWORK);
+      } else {
+        throw new IllegalStateException("Task is not restartable");
       }
     } catch (Throwable t) {
       failTask(t);
@@ -193,20 +238,32 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
   }
 
   @Override
-  public void handlePatch(Operation patchOperation) {
-    ServiceUtils.logInfo(this, "Handling patch for service %s", getSelfLink());
-    State startState = getState(patchOperation);
-    State patchState = patchOperation.getBody(State.class);
-    validatePatchState(startState, patchState);
-    State currentState = applyPatch(startState, patchState);
-    validateState(currentState);
-    patchOperation.complete();
+  public void handlePatch(Operation patchOp) {
+    ServiceUtils.logTrace(this, "Handling patch operation");
+    if (!patchOp.hasBody()) {
+      patchOp.fail(new IllegalArgumentException("Body is required"));
+      return;
+    }
+
+    State currentState = getState(patchOp);
+    State patchState = patchOp.getBody(State.class);
+
+    try {
+      validatePatch(currentState, patchState);
+      PatchUtils.patchState(currentState, patchState);
+      validateState(currentState);
+    } catch (Throwable t) {
+      ServiceUtils.failOperationAsBadRequest(this, patchOp, t);
+      return;
+    }
+
+    patchOp.complete();
 
     try {
       if (ControlFlags.isOperationProcessingDisabled(currentState.controlFlags)) {
         ServiceUtils.logInfo(this, "Skipping patch operation processing (disabled)");
-      } else if (TaskState.TaskStage.STARTED == currentState.taskState.stage) {
-        getDeploymentState(currentState);
+      } else if (currentState.taskState.stage == TaskState.TaskStage.STARTED) {
+        processStartedStage(currentState);
       }
     } catch (Throwable t) {
       failTask(t);
@@ -215,254 +272,411 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
 
   private void validateState(State state) {
     ValidationUtils.validateState(state);
-    ValidationUtils.validateTaskStage(state.taskState);
+    validateTaskStage(state.taskState);
   }
 
-  private void validatePatchState(State startState, State patchState) {
-    ValidationUtils.validatePatch(startState, patchState);
-    ValidationUtils.validateTaskStage(patchState.taskState);
-    ValidationUtils.validateTaskStageProgression(startState.taskState, patchState.taskState);
+  private void validatePatch(State currentState, State patchState) {
+    ValidationUtils.validatePatch(currentState, patchState);
+    validateTaskStage(patchState.taskState);
+    validateTaskStageProgression(currentState.taskState, patchState.taskState);
   }
 
-  private State applyPatch(State startState, State patchState) {
-    if (patchState.taskState.stage != startState.taskState.stage) {
-      ServiceUtils.logInfo(this, "Moving to stage %s", patchState.taskState.stage);
-      startState.taskState = patchState.taskState;
+  private void validateTaskStage(TaskState taskState) {
+    ValidationUtils.validateTaskStage(taskState);
+    switch (taskState.stage) {
+      case CREATED:
+      case FINISHED:
+      case FAILED:
+      case CANCELLED:
+        checkState(taskState.subStage == null);
+        break;
+      case STARTED:
+        checkState(taskState.subStage != null);
+        switch (taskState.subStage) {
+          case PROVISION_NETWORK:
+          case UPLOAD_VIBS:
+          case PROVISION_HOSTS:
+            break;
+          default:
+            throw new IllegalStateException("Unknown task sub-stage " + taskState.subStage);
+        }
     }
-
-    return startState;
   }
 
-  private void getDeploymentState(State currentState) {
+  private void validateTaskStageProgression(TaskState curentState, TaskState patchState) {
+    ValidationUtils.validateTaskStageProgression(curentState, patchState);
+    if (curentState.subStage != null && patchState.subStage != null) {
+      checkState(patchState.subStage.ordinal() >= curentState.subStage.ordinal());
+    }
+  }
 
-    HostUtils.getCloudStoreHelper(this)
+  private void processStartedStage(State currentState) {
+    switch (currentState.taskState.subStage) {
+      case PROVISION_NETWORK:
+        processProvisionNetworkSubStage(currentState);
+        break;
+      case UPLOAD_VIBS:
+        processUploadVibsSubStage(currentState);
+        break;
+      case PROVISION_HOSTS:
+        processProvisionHostsSubStage(currentState);
+        break;
+    }
+  }
+
+  //
+  // PROVISION_NETWORK sub-stage routines
+  //
+
+  private void processProvisionNetworkSubStage(State currentState) {
+
+    sendRequest(HostUtils
+        .getCloudStoreHelper(this)
         .createGet(currentState.deploymentServiceLink)
-        .setCompletion((op, ex) -> {
-          if (ex != null) {
-            failTask(ex);
-            return;
-          }
+        .setCompletion(
+            (o, e) -> {
+              if (e != null) {
+                failTask(e);
+                return;
+              }
 
-          try {
-            provisionNetwork(currentState, op.getBody(DeploymentService.State.class));
-          } catch (Throwable t) {
-            failTask(t);
-          }
-        })
-        .sendWith(this);
+              try {
+                processProvisionNetworkSubStage(o.getBody(DeploymentService.State.class));
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            }));
   }
 
-  private void provisionNetwork(State currentState, DeploymentService.State deploymentState) {
+  private void processProvisionNetworkSubStage(DeploymentService.State deploymentState) throws Throwable {
 
-    if (!deploymentState.virtualNetworkEnabled || deploymentState.networkZoneId != null) {
-      ServiceUtils.logInfo(this, "Skip setting up virtual network");
-      processBulkProvisionHosts(currentState);
+    if (!deploymentState.virtualNetworkEnabled) {
+      ServiceUtils.logInfo(this, "Skipping virtual network setup (disabled)");
+      sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.UPLOAD_VIBS);
       return;
     }
 
-    try {
-      NsxClient nsxClient = HostUtils.getNsxClientFactory(this).create(
-          deploymentState.networkManagerAddress,
-          deploymentState.networkManagerUsername,
-          deploymentState.networkManagerPassword);
+    if (deploymentState.networkZoneId != null) {
+      ServiceUtils.logInfo(this, "Transport zone " + deploymentState.networkZoneId + " already configured");
+      sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.UPLOAD_VIBS);
+      return;
+    }
 
-      String deploymentId = ServiceUtils.getIDFromDocumentSelfLink(deploymentState.documentSelfLink);
-      TransportZoneCreateSpec request = new TransportZoneCreateSpec();
-      request.setDisplayName(NameUtils.getTransportZoneName(deploymentId));
-      request.setDescription(NameUtils.getTransportZoneDescription(deploymentId));
-      request.setHostSwitchName(NameUtils.HOST_SWITCH_NAME);
-      request.setTransportType(TransportType.OVERLAY);
+    NsxClient nsxClient = HostUtils.getNsxClientFactory(this).create(
+        deploymentState.networkManagerAddress,
+        deploymentState.networkManagerUsername,
+        deploymentState.networkManagerPassword);
 
-      nsxClient.getFabricApi().createTransportZone(request,
-          new FutureCallback<TransportZone>() {
-            @Override
-            public void onSuccess(@Nullable TransportZone transportZone) {
+    String deploymentId = ServiceUtils.getIDFromDocumentSelfLink(deploymentState.documentSelfLink);
+    TransportZoneCreateSpec request = new TransportZoneCreateSpec();
+    request.setDisplayName(NameUtils.getTransportZoneName(deploymentId));
+    request.setDescription(NameUtils.getTransportZoneDescription(deploymentId));
+    request.setHostSwitchName(NameUtils.HOST_SWITCH_NAME);
+    request.setTransportType(TransportType.OVERLAY);
+
+    nsxClient.getFabricApi().createTransportZone(request,
+        new FutureCallback<TransportZone>() {
+          @Override
+          public void onSuccess(@javax.validation.constraints.NotNull TransportZone transportZone) {
+            try {
               // TODO(ysheng): it seems like transport zone does not have a state - we guess that
               // the creation of the zone completes immediately after the API call. We need to
               // verify this with a real NSX deployment.
-              DeploymentService.State patchState = new DeploymentService.State();
-              patchState.networkZoneId = transportZone.getId();
-              patchDeployment(currentState, patchState);
+              setTransportZoneId(deploymentState.documentSelfLink, transportZone.getId());
+            } catch (Throwable t) {
+              failTask(t);
             }
+          }
 
-            @Override
-            public void onFailure(Throwable throwable) {
-              failTask(throwable);
-            }
-          });
-    } catch (Throwable t) {
-      failTask(t);
-    }
+          @Override
+          public void onFailure(Throwable throwable) {
+            failTask(throwable);
+          }
+        });
   }
 
-  private void patchDeployment(State currentState, DeploymentService.State patchState) {
+  private void setTransportZoneId(String deploymentServiceLink, String transportZoneId) {
 
-    HostUtils.getCloudStoreHelper(this)
-        .createPatch(currentState.deploymentServiceLink)
+    DeploymentService.State patchState = new DeploymentService.State();
+    patchState.networkZoneId = transportZoneId;
+
+    sendRequest(HostUtils
+        .getCloudStoreHelper(this)
+        .createPatch(deploymentServiceLink)
         .setBody(patchState)
-        .setCompletion((op, ex) -> {
-          if (ex != null) {
-            failTask(ex);
-            return;
-          }
-          processBulkProvisionHosts(currentState);
-        })
+        .setCompletion(
+            (o, e) -> {
+              if (e != null) {
+                failTask(e);
+              } else {
+                sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.UPLOAD_VIBS);
+              }
+            }));
+  }
+
+  //
+  // UPLOAD_VIB sub-stage routines
+  //
+
+  private void processUploadVibsSubStage(State currentState) {
+
+    sendRequest(HostUtils
+        .getCloudStoreHelper(this)
+        .createBroadcastPost(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS, ServiceUriPaths.DEFAULT_NODE_SELECTOR)
+        .setBody(QueryTask.create(currentState.querySpecification).setDirect(true))
+        .setCompletion(
+            (o, e) -> {
+              if (e != null) {
+                failTask(e);
+                return;
+              }
+
+              try {
+                processUploadVibsSubStage(currentState, QueryTaskUtils.getBroadcastQueryDocumentLinks(o));
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            }));
+  }
+
+  private void processUploadVibsSubStage(State currentState, Set<String> hostServiceLinks) {
+
+    if (hostServiceLinks.isEmpty() && currentState.usageTag.equals(UsageTag.CLOUD.name())) {
+      ServiceUtils.logInfo(this, "No dedicated cloud hosts were found");
+      sendStageProgressPatch(TaskState.TaskStage.FINISHED, null);
+      return;
+    }
+
+    checkState(hostServiceLinks.size() > 0);
+
+    File sourceDirectory = new File(HostUtils.getDeployerContext(this).getVibDirectory());
+    if (!sourceDirectory.exists() || !sourceDirectory.isDirectory()) {
+      throw new IllegalStateException("Invalid VIB source directory " + sourceDirectory);
+    }
+
+    File[] vibFiles = sourceDirectory.listFiles((file) -> file.getName().toUpperCase().endsWith(".VIB"));
+    if (vibFiles.length == 0) {
+      throw new IllegalStateException("No VIB files were found in source directory " + sourceDirectory);
+    }
+
+    Stream<Operation> vibStartOps = Stream.of(vibFiles).flatMap((vibFile) ->
+        hostServiceLinks.stream().map((hostServiceLink) -> {
+          VibService.State startState = new VibService.State();
+          startState.vibName = vibFile.getName();
+          startState.hostServiceLink = hostServiceLink;
+          return Operation.createPost(this, VibFactoryService.SELF_LINK).setBody(startState);
+        }));
+
+    OperationJoin
+        .create(vibStartOps)
+        .setCompletion(
+            (ops, exs) -> {
+              if (exs != null && !exs.isEmpty()) {
+                failTask(exs.values());
+                return;
+              }
+
+              try {
+                createUploadVibTasks(ops.values());
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            })
         .sendWith(this);
   }
 
-  private void processBulkProvisionHosts(final State currentState) {
+  private void createUploadVibTasks(Collection<Operation> vibStartOps) {
 
-    sendRequest(
-        HostUtils.getCloudStoreHelper(this)
-            .createBroadcastPost(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS, ServiceUriPaths.DEFAULT_NODE_SELECTOR)
-            .setBody(QueryTask.create(currentState.querySpecification).setDirect(true))
-            .setCompletion(
-                (completedOp, failure) -> {
-                  if (null != failure) {
-                    failTask(failure);
-                    return;
+    ChildTaskAggregatorService.State startState = new ChildTaskAggregatorService.State();
+    startState.parentTaskLink = getSelfLink();
+    startState.parentPatchBody = Utils.toJson(buildPatch(TaskState.TaskStage.STARTED,
+        TaskState.SubStage.PROVISION_HOSTS, null));
+    startState.pendingCompletionCount = vibStartOps.size();
+    startState.errorThreshold = 0.0;
+
+    sendRequest(Operation
+        .createPost(this, ChildTaskAggregatorFactoryService.SELF_LINK)
+        .setBody(startState)
+        .setCompletion(
+            (o, e) -> {
+              if (e != null) {
+                failTask(e);
+                return;
+              }
+
+              try {
+                createUploadVibTasks(vibStartOps, o.getBody(ServiceDocument.class).documentSelfLink);
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            }));
+  }
+
+  private void createUploadVibTasks(Collection<Operation> vibStartOps, String aggregatorServiceLink) {
+
+    Stream<Operation> taskStartOps = vibStartOps.stream().map((vibStartOp) -> {
+      UploadVibTaskService.State startState = new UploadVibTaskService.State();
+      startState.parentTaskServiceLink = aggregatorServiceLink;
+      startState.vibServiceLink = vibStartOp.getBody(ServiceDocument.class).documentSelfLink;
+      return Operation.createPost(this, UploadVibTaskFactoryService.SELF_LINK).setBody(startState);
+    });
+
+    OperationJoin
+        .create(taskStartOps)
+        .setCompletion(
+            (ops, exs) -> {
+              if (exs != null && !exs.isEmpty()) {
+                failTask(exs.values());
+              }
+            })
+        .sendWith(this);
+  }
+
+  //
+  // PROVISION_HOSTS sub-stage routines
+  //
+
+  private void processProvisionHostsSubStage(State currentState) {
+
+    sendRequest(HostUtils
+        .getCloudStoreHelper(this)
+        .createBroadcastPost(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS, ServiceUriPaths.DEFAULT_NODE_SELECTOR)
+        .setBody(QueryTask.create(currentState.querySpecification).setDirect(true))
+        .setCompletion(
+            (o, e) -> {
+              if (e != null) {
+                failTask(e);
+                return;
+              }
+
+              try {
+                processProvisionHostsSubStage(currentState, QueryTaskUtils.getBroadcastQueryDocumentLinks(o));
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            }));
+  }
+
+  private void processProvisionHostsSubStage(State currentState, Set<String> hostServiceLinks) {
+
+    AtomicInteger atomicInteger = new AtomicInteger(hostServiceLinks.size());
+
+    FutureCallback<ProvisionHostTaskService.State> futureCallback =
+        new FutureCallback<ProvisionHostTaskService.State>() {
+          @Override
+          public void onSuccess(@javax.validation.constraints.NotNull ProvisionHostTaskService.State state) {
+            try {
+              switch (state.taskState.stage) {
+                case FINISHED:
+                  if (atomicInteger.decrementAndGet() == 0) {
+                    sendStageProgressPatch(TaskState.TaskStage.FINISHED, null);
                   }
+                  break;
+                case FAILED:
+                  State patchState = buildPatch(TaskState.TaskStage.FAILED, null, null);
+                  patchState.taskState.failure = state.taskState.failure;
+                  TaskUtils.sendSelfPatch(BulkProvisionHostsWorkflowService.this, patchState);
+                  break;
+                case CANCELLED:
+                  sendStageProgressPatch(TaskState.TaskStage.CANCELLED, null);
+                  break;
+              }
+            } catch (Throwable t) {
+              failTask(t);
+            }
+          }
 
-                  try {
-                    NodeGroupBroadcastResponse queryResponse = completedOp.getBody(NodeGroupBroadcastResponse.class);
-                    Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(queryResponse);
-                    if (UsageTag.CLOUD.name().equals(currentState.usageTag)) {
-                      if (documentLinks.isEmpty()) {
-                        TaskUtils.sendSelfPatch(BulkProvisionHostsWorkflowService.this,
-                            buildPatch(TaskState.TaskStage.FINISHED, null));
-                        return;
-                      }
-                    } else {
-                      checkState(documentLinks.size() > 0);
-                    }
+          @Override
+          public void onFailure(Throwable throwable) {
+            failTask(throwable);
+          }
+        };
 
-                    final AtomicInteger pendingChildren = new AtomicInteger(documentLinks.size());
+    for (String hostServiceLink : hostServiceLinks) {
 
-                    for (String documentLink : documentLinks) {
-                      uploadVib(currentState, documentLink,
-                          new FutureCallback<ProvisionHostTaskService.State>() {
-                            @Override
-                            public void onSuccess(@Nullable ProvisionHostTaskService.State state) {
-                              switch (state.taskState.stage) {
-                                case FINISHED:
-                                  if (pendingChildren.decrementAndGet() == 0) {
-                                    sendStageProgressPatch(TaskState.TaskStage.FINISHED);
-                                  }
-                                  break;
-                                case FAILED:
-                                  State patchState = buildPatch(TaskState.TaskStage.FAILED, null);
-                                  patchState.taskState.failure = state.taskState.failure;
-                                  TaskUtils.sendSelfPatch(BulkProvisionHostsWorkflowService.this, patchState);
-                                  break;
-                                case CANCELLED:
-                                  sendStageProgressPatch(TaskState.TaskStage.CANCELLED);
-                                  break;
-                              }
-                            }
+      QueryTask queryTask = QueryTask.Builder.createDirectTask()
+          .setQuery(QueryTask.Query.Builder.create()
+              .addKindFieldClause(VibService.State.class)
+              .addFieldClause(VibService.State.FIELD_NAME_HOST_SERVICE_LINK, hostServiceLink)
+              .build())
+          .addOptions(EnumSet.of(
+              QueryTask.QuerySpecification.QueryOption.BROADCAST,
+              QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT))
+          .build();
 
-                            @Override
-                            public void onFailure(Throwable throwable) {
-                              failTask(throwable);
-                            }
-                          });
-                    }
-                  } catch (Throwable t) {
-                    failTask(t);
-                  }
+      sendRequest(Operation
+          .createPost(this, ServiceUriPaths.CORE_QUERY_TASKS)
+          .setBody(queryTask)
+          .setCompletion(
+              (o, e) -> {
+                if (e != null) {
+                  failTask(e);
+                  return;
                 }
-            ));
+
+                try {
+                  Map<String, Object> vibDocuments = o.getBody(QueryTask.class).results.documents;
+                  checkState(vibDocuments.size() == 1);
+                  createProvisionHostTask(currentState, hostServiceLink,
+                      Utils.fromJson(vibDocuments.values().iterator().next(), VibService.State.class),
+                      futureCallback);
+                } catch (Throwable t) {
+                  failTask(t);
+                }
+              }));
+    }
   }
 
-  private void uploadVib(State currentState, String hostServiceLink,
-                         FutureCallback<ProvisionHostTaskService.State> provisionHostFutureCallback) {
-    final Service service = this;
-
-    FutureCallback<UploadVibTaskService.State> futureCallback = new FutureCallback<UploadVibTaskService.State>() {
-      @Override
-      public void onSuccess(@Nullable UploadVibTaskService.State result) {
-        switch (result.taskState.stage) {
-          case FINISHED: {
-            provisionHost(currentState, hostServiceLink, result.vibPaths.values().iterator().next(),
-                provisionHostFutureCallback);
-            break;
-          }
-          case FAILED: {
-            State patchState = buildPatch(TaskState.TaskStage.FAILED, null);
-            patchState.taskState.failure = result.taskState.failure;
-            TaskUtils.sendSelfPatch(service, patchState);
-            break;
-          }
-          case CANCELLED:
-            sendStageProgressPatch(TaskState.TaskStage.CANCELLED);
-            break;
-        }
-      }
-
-      @Override
-      public void onFailure(Throwable t) {
-        failTask(t);
-      }
-    };
-
-    UploadVibTaskService.State startState = createUploadVibTaskState(currentState, hostServiceLink);
-
-    TaskUtils.startTaskAsync(
-        this,
-        UploadVibTaskFactoryService.SELF_LINK,
-        startState,
-        (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage),
-        UploadVibTaskService.State.class,
-        currentState.taskPollDelay,
-        futureCallback);
-  }
-
-  private UploadVibTaskService.State createUploadVibTaskState(
-      final State currentState,
-      String hostServiceLink) {
-    UploadVibTaskService.State startState = new UploadVibTaskService.State();
-    startState.deploymentServiceLink = currentState.deploymentServiceLink;
-    startState.hostServiceLink = hostServiceLink;
-    return startState;
-  }
-
-  private void provisionHost(State currentState,
-                             String hostServiceLink,
-                             String vibPath,
-                             FutureCallback<ProvisionHostTaskService.State> provisionHostFutureCallback) {
+  private void createProvisionHostTask(State currentState,
+                                       String hostServiceLink,
+                                       VibService.State vibState,
+                                       FutureCallback<ProvisionHostTaskService.State> futureCallback) {
 
     ProvisionHostTaskService.State startState = new ProvisionHostTaskService.State();
     startState.deploymentServiceLink = currentState.deploymentServiceLink;
     startState.hostServiceLink = hostServiceLink;
-    startState.vibPath = vibPath;
+    startState.vibPath = vibState.uploadPath;
 
-    TaskUtils.startTaskAsync(
-        this,
+    TaskUtils.startTaskAsync(this,
         ProvisionHostTaskFactoryService.SELF_LINK,
         startState,
         (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage),
         ProvisionHostTaskService.State.class,
         currentState.taskPollDelay,
-        provisionHostFutureCallback);
+        futureCallback);
   }
 
-  private void sendStageProgressPatch(TaskState.TaskStage stage) {
+  //
+  // Utility routines
+  //
+
+  private void sendStageProgressPatch(TaskState.TaskStage stage, TaskState.SubStage subStage) {
     ServiceUtils.logInfo(this, "Sending self-patch to stage %s", stage);
-    TaskUtils.sendSelfPatch(this, buildPatch(stage, null));
+    TaskUtils.sendSelfPatch(this, buildPatch(stage, subStage, null));
   }
 
-  private void failTask(Throwable t) {
-    ServiceUtils.logSevere(this, t);
-    TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, t));
+  private void failTask(Throwable failure) {
+    ServiceUtils.logSevere(this, failure);
+    TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, null, failure));
+  }
+
+  private void failTask(Collection<Throwable> failures) {
+    ServiceUtils.logSevere(this, failures);
+    TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, null, failures.iterator().next()));
   }
 
   @VisibleForTesting
-  protected static State buildPatch(TaskState.TaskStage stage, Throwable t) {
+  protected static State buildPatch(TaskState.TaskStage stage,
+                                    TaskState.SubStage subStage,
+                                    @Nullable Throwable failure) {
+
     State patchState = new State();
     patchState.taskState = new TaskState();
     patchState.taskState.stage = stage;
+    patchState.taskState.subStage = subStage;
 
-    if (null != t) {
-      patchState.taskState.failure = Utils.toServiceErrorResponse(t);
+    if (null != failure) {
+      patchState.taskState.failure = Utils.toServiceErrorResponse(failure);
     }
 
     return patchState;
