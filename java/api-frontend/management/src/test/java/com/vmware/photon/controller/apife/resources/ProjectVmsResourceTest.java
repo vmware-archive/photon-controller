@@ -30,6 +30,7 @@ import com.vmware.photon.controller.apife.exceptions.external.FlavorNotFoundExce
 import com.vmware.photon.controller.apife.resources.routes.ProjectResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.VmResourceRoutes;
+import com.vmware.photon.controller.apife.resources.vm.ProjectVmsResource;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
@@ -61,7 +62,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Tests {@link ProjectVmsResource}.
+ * Tests {@link com.vmware.photon.controller.apife.resources.vm.ProjectVmsResource}.
  */
 public class ProjectVmsResourceTest extends ResourceTest {
 

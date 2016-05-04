@@ -19,6 +19,7 @@ import com.vmware.photon.controller.api.VmDiskOperation;
 import com.vmware.photon.controller.apife.clients.VmFeClient;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.VmResourceRoutes;
+import com.vmware.photon.controller.apife.resources.vm.VmDiskAttachResource;
 import com.vmware.photon.controller.resource.gen.Disk;
 
 import org.mockito.Mock;
@@ -37,7 +38,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Tests {@link VmDiskAttachResource}.
+ * Tests {@link com.vmware.photon.controller.apife.resources.vm.VmDiskAttachResource}.
  */
 public class VmDiskAttachResourceTest extends ResourceTest {
 

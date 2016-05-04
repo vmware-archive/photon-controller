@@ -21,6 +21,7 @@ import com.vmware.photon.controller.api.common.exceptions.external.ExternalExcep
 import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
 import com.vmware.photon.controller.apife.clients.AvailabilityZoneFeClient;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
+import com.vmware.photon.controller.apife.resources.availabilityzone.AvailabilityZonesResource;
 import com.vmware.photon.controller.apife.resources.routes.AvailabilityZonesResourceRoutes;
 
 import com.google.common.base.Optional;
@@ -46,7 +47,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Tests {@link AvailabilityZonesResource}.
+ * Tests {@link com.vmware.photon.controller.apife.resources.availabilityzone.AvailabilityZonesResource}.
  */
 public class AvailabilityZonesResourceTest extends ResourceTest {
   @Mock

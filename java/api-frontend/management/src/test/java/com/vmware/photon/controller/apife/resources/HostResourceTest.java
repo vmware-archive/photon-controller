@@ -21,6 +21,7 @@ import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.clients.HostFeClient;
 import com.vmware.photon.controller.apife.exceptions.external.HostNotFoundException;
+import com.vmware.photon.controller.apife.resources.host.HostResource;
 import com.vmware.photon.controller.apife.resources.routes.HostResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
 
@@ -47,7 +48,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Tests {@link HostResource}.
+ * Tests {@link com.vmware.photon.controller.apife.resources.host.HostResource}.
  */
 public class HostResourceTest extends ResourceTest {
   private static final Logger logger = LoggerFactory.getLogger(HostResourceTest.class);

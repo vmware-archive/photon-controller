@@ -15,6 +15,7 @@ package com.vmware.photon.controller.apife.resources;
 
 import com.vmware.photon.controller.api.Available;
 import com.vmware.photon.controller.apife.resources.routes.AvailableRoutes;
+import com.vmware.photon.controller.apife.resources.status.AvailableResource;
 
 import org.testng.annotations.Test;
 import static org.hamcrest.CoreMatchers.notNullValue;
@@ -23,7 +24,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import javax.ws.rs.core.UriBuilder;
 
 /**
- * Tests {@link AuthResource}.
+ * Tests {@link com.vmware.photon.controller.apife.resources.auth.AuthResource}.
  */
 public class AvailableResourceTest extends ResourceTest {
 

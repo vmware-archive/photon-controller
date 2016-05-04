@@ -18,6 +18,7 @@ import com.vmware.photon.controller.api.Flavor;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.apife.clients.FlavorFeClient;
 import com.vmware.photon.controller.apife.exceptions.external.FlavorNotFoundException;
+import com.vmware.photon.controller.apife.resources.flavor.FlavorResource;
 import com.vmware.photon.controller.apife.resources.routes.FlavorsResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
 
@@ -36,7 +37,7 @@ import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
 
 /**
- * Tests {@link FlavorResource}.
+ * Tests {@link com.vmware.photon.controller.apife.resources.flavor.FlavorResource}.
  */
 public class FlavorResourceTest extends ResourceTest {
 

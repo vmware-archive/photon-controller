@@ -15,6 +15,7 @@ package com.vmware.photon.controller.apife.resources;
 
 import com.vmware.photon.controller.api.Auth;
 import com.vmware.photon.controller.apife.clients.DeploymentFeClient;
+import com.vmware.photon.controller.apife.resources.auth.AuthResource;
 import com.vmware.photon.controller.apife.resources.routes.AuthRoutes;
 
 import org.mockito.Mock;
@@ -26,7 +27,7 @@ import static org.mockito.Mockito.when;
 import javax.ws.rs.core.UriBuilder;
 
 /**
- * Tests {@link AuthResource}.
+ * Tests {@link com.vmware.photon.controller.apife.resources.auth.AuthResource}.
  */
 public class AuthResourceTest extends ResourceTest {
 

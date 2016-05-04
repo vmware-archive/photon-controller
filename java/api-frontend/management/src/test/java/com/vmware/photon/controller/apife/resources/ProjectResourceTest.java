@@ -16,6 +16,7 @@ package com.vmware.photon.controller.apife.resources;
 import com.vmware.photon.controller.api.Project;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.apife.clients.ProjectFeClient;
+import com.vmware.photon.controller.apife.resources.project.ProjectResource;
 import com.vmware.photon.controller.apife.resources.routes.ProjectResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
 
@@ -32,7 +33,7 @@ import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
 
 /**
- * Tests {@link ProjectResource}.
+ * Tests {@link com.vmware.photon.controller.apife.resources.project.ProjectResource}.
  */
 public class ProjectResourceTest extends ResourceTest {
 

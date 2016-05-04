@@ -21,6 +21,7 @@ import com.vmware.photon.controller.apife.commands.tasks.TaskCommandFactory;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.VmResourceRoutes;
+import com.vmware.photon.controller.apife.resources.tasks.VmTasksResource;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
@@ -43,7 +44,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Tests {@link VmTasksResource}.
+ * Tests {@link com.vmware.photon.controller.apife.resources.tasks.VmTasksResource}.
  */
 public class VmTasksResourceTest extends ResourceTest {
 

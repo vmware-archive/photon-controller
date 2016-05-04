@@ -18,6 +18,7 @@ import com.vmware.photon.controller.api.Network;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.apife.clients.NetworkFeClient;
 import com.vmware.photon.controller.apife.exceptions.external.NetworkNotFoundException;
+import com.vmware.photon.controller.apife.resources.physicalnetwork.NetworkResource;
 import com.vmware.photon.controller.apife.resources.routes.NetworkResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
 
@@ -37,7 +38,7 @@ import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
 
 /**
- * Tests {@link NetworkResource}.
+ * Tests {@link com.vmware.photon.controller.apife.resources.physicalnetwork.NetworkResource}.
  */
 public class NetworkResourceTest extends ResourceTest {
 

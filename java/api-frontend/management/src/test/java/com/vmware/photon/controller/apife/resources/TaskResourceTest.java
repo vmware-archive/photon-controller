@@ -16,6 +16,7 @@ package com.vmware.photon.controller.apife.resources;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.apife.clients.TaskFeClient;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
+import com.vmware.photon.controller.apife.resources.tasks.TaskResource;
 
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.Matchers;
@@ -31,7 +32,7 @@ import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
 
 /**
- * Tests {@link TaskResource}.
+ * Tests {@link com.vmware.photon.controller.apife.resources.tasks.TaskResource}.
  */
 public class TaskResourceTest extends ResourceTest {
 

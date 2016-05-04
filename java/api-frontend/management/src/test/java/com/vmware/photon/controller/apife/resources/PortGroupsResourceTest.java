@@ -21,6 +21,7 @@ import com.vmware.photon.controller.api.common.exceptions.external.ErrorCode;
 import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
 import com.vmware.photon.controller.apife.clients.PortGroupFeClient;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
+import com.vmware.photon.controller.apife.resources.portgroup.PortGroupsResource;
 import com.vmware.photon.controller.apife.resources.routes.PortGroupResourceRoutes;
 
 import com.google.common.base.Optional;
@@ -52,7 +53,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Tests {@link PortGroupsResource}.
+ * Tests {@link com.vmware.photon.controller.apife.resources.portgroup.PortGroupsResource}.
  */
 public class PortGroupsResourceTest extends ResourceTest {
   private static final Logger logger = LoggerFactory.getLogger(PortGroupsResourceTest.class);
