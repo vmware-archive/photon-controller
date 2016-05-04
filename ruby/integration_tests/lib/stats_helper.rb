@@ -14,6 +14,7 @@ require 'net/http'
 require 'json'
 require 'fileutils'
 require 'dcp/cloud_store/cloud_store_client'
+require 'pp'
 
 # Helper module for stats integration tests
 module StatsHelper
@@ -25,26 +26,23 @@ module StatsHelper
   # or returns an empty result if no data available.
   def get_stats_from_graphite(endpoint, port, pattern)
     uri = URI.parse("http://#{endpoint}:#{port}/render?target=#{pattern}&format=json")
-    maxSeconds = 180
+    max_seconds = 60
     start = Time.now
+    # Wait for stats server to start sending data
     sleep(5)
     begin
       res = Net::HTTP.get(uri)
       json = JSON.parse(res)
       sleep(5)
-    end until json.length > 0 || (Time.now - start) > maxSeconds
-    return [] if json.nil? || json.first.nil? || json.first["datapoints"].nil?
-    # Filter nil elements, makes test output nicer when printing the result
+    end until json.length > 0 || (Time.now - start) > max_seconds
 
     len = json.first["datapoints"].length
     start_time = json.first["datapoints"][0].last
     end_time = json.first["datapoints"][len-1].last
     start_time_utc = Time.at(start_time).utc.to_datetime
     end_time_utc = Time.at(end_time).utc.to_datetime
-    puts "Graphite server collection Start time: #{start_time_utc}, End time: #{end_time_utc}"
-    data_items = json.first["datapoints"].select { |x| x.first != nil }
-    puts "Data items: #{data_items}"
-    return json.first["datapoints"].select { |x| x.first != nil }
+    pp "Graphite server collection Start time: #{start_time_utc}, End time: #{end_time_utc}"
+    json.first["datapoints"].select { |x| x.first != nil }
   end
 
 

@@ -14,10 +14,10 @@ require 'rspec/expectations'
 RSpec::Matchers.define :have_graphite_data do
   match do |stats|
     # Filter non-null data
-    if (stats.nil? || stats.first.nil? || stats.first["datapoints"].nil?)
+    if (stats.nil? || stats.first.nil?)
       false
     else
-      stats.first["datapoints"].select { |x| x.first != nil }.length > 0
+      stats.select { |x| x.first != nil }.length > 0
     end
   end
 end

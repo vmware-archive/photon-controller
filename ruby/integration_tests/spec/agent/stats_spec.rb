@@ -13,6 +13,7 @@ require 'fileutils'
 require 'spec_helper'
 require 'stats_helper'
 require 'matchers/stats'
+require 'pp'
 
 describe "Agent stats plugin", stats: true do
   include StatsHelper
@@ -38,12 +39,12 @@ describe "Agent stats plugin", stats: true do
     delete_host(@host.id)
 
     # Patch deployment and enable stats
-    set_stats_state(@deployment.id, true, @stats_endpoint, @stats_port)
+    # set_stats_state(@deployment.id, true, @stats_endpoint, @stats_port)
 
     # Redeploy host
     @host = EsxCloud::Host.create(@deployment.id, @host.to_spec())
-    
+
     stats = get_stats_from_graphite(@stats_endpoint, @graphite_web_port, "photon.*.CLOUD.cpu.cpuUsagePercentage")
-    # expect(stats).to have_graphite_data
+    expect(stats).to have_graphite_data
   end
 end
