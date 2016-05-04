@@ -42,4 +42,6 @@ public interface ApiFeConfiguration {
   public boolean useDcpBackend();
 
   public PaginationConfig getPaginationConfig();
+
+  public boolean useVirtualNetwork();
 }
