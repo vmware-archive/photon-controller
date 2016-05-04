@@ -14,18 +14,21 @@
 package com.vmware.photon.controller.deployer.dcp.task;
 
 import com.vmware.photon.controller.api.UsageTag;
+import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
+import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
-import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
+import com.vmware.photon.controller.common.xenon.exceptions.BadRequestException;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.dcp.DeployerContext;
+import com.vmware.photon.controller.deployer.dcp.entity.VibService;
+import com.vmware.photon.controller.deployer.deployengine.HttpFileServiceClient;
 import com.vmware.photon.controller.deployer.deployengine.HttpFileServiceClientFactory;
 import com.vmware.photon.controller.deployer.helpers.ReflectionUtils;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
-import com.vmware.photon.controller.deployer.helpers.dcp.MockHelper;
 import com.vmware.photon.controller.deployer.helpers.dcp.TestEnvironment;
 import com.vmware.photon.controller.deployer.helpers.dcp.TestHost;
 import com.vmware.xenon.common.Operation;
@@ -37,6 +40,7 @@ import com.vmware.xenon.common.UriUtils;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import org.apache.commons.io.FileUtils;
+import org.mockito.Mockito;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
@@ -44,19 +48,21 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
+import static org.mockito.Matchers.anyBoolean;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.testng.Assert.assertTrue;
 
+import javax.net.ssl.HttpsURLConnection;
+
 import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.Field;
-import java.util.Collections;
 import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 
 /**
@@ -136,8 +142,7 @@ public class UploadVibTaskServiceTest {
 
       UploadVibTaskService.State serviceState = testHost.getServiceState(UploadVibTaskService.State.class);
       assertThat(serviceState.controlFlags, is(ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED));
-      assertThat(serviceState.deploymentServiceLink, is("DEPLOYMENT_SERVICE_LINK"));
-      assertThat(serviceState.hostServiceLink, is("HOST_SERVICE_LINK"));
+      assertThat(serviceState.vibServiceLink, is("VIB_SERVICE_LINK"));
     }
 
     @DataProvider(name = "ValidStartStages")
@@ -173,29 +178,7 @@ public class UploadVibTaskServiceTest {
       };
     }
 
-    @Test(dataProvider = "OptionalFieldNames")
-    public void testOptionalFieldValuePersisted(String fieldName, Object defaultValue) throws Throwable {
-      UploadVibTaskService.State startState = buildValidStartState(null);
-      Field declaredField = startState.getClass().getDeclaredField(fieldName);
-      declaredField.set(startState, getDefaultAttributeFieldValue(declaredField, defaultValue));
-      Operation op = testHost.startServiceSynchronously(uploadVibTaskService, startState);
-      assertThat(op.getStatusCode(), is(200));
-
-      UploadVibTaskService.State serviceState = testHost.getServiceState(UploadVibTaskService.State.class);
-      assertThat(declaredField.get(serviceState), is(getDefaultAttributeFieldValue(declaredField, defaultValue)));
-    }
-
-    @DataProvider(name = "OptionalFieldNames")
-    public Object[][] getOptionalFieldNames() {
-      Map<String, String> vibPaths = new HashMap<>();
-      vibPaths.put("VIB_NAME", "VIB_PATH");
-      return new Object[][]{
-          {"vibPaths", new HashMap<>()},
-          {"vibPaths", vibPaths},
-      };
-    }
-
-    @Test(dataProvider = "RequiredFieldNames", expectedExceptions = XenonRuntimeException.class)
+    @Test(dataProvider = "RequiredFieldNames", expectedExceptions = BadRequestException.class)
     public void testInvalidStartStateRequiredFieldMissing(String fieldName) throws Throwable {
       UploadVibTaskService.State startState = buildValidStartState(null);
       Field declaredField = startState.getClass().getDeclaredField(fieldName);
@@ -263,20 +246,10 @@ public class UploadVibTaskServiceTest {
 
     @DataProvider(name = "ValidStageTransitions")
     public Object[][] getValidStageTransitions() {
-      return new Object[][]{
-          {TaskState.TaskStage.CREATED, TaskState.TaskStage.STARTED},
-          {TaskState.TaskStage.CREATED, TaskState.TaskStage.FINISHED},
-          {TaskState.TaskStage.CREATED, TaskState.TaskStage.FAILED},
-          {TaskState.TaskStage.CREATED, TaskState.TaskStage.CANCELLED},
-
-          {TaskState.TaskStage.STARTED, TaskState.TaskStage.STARTED},
-          {TaskState.TaskStage.STARTED, TaskState.TaskStage.FINISHED},
-          {TaskState.TaskStage.STARTED, TaskState.TaskStage.FAILED},
-          {TaskState.TaskStage.STARTED, TaskState.TaskStage.CANCELLED},
-      };
+      return TestHelper.getValidStageTransitions(null);
     }
 
-    @Test(dataProvider = "InvalidStageTransitions", expectedExceptions = XenonRuntimeException.class)
+    @Test(dataProvider = "InvalidStageTransitions", expectedExceptions = BadRequestException.class)
     public void testInvalidStageTransition(TaskState.TaskStage startStage, TaskState.TaskStage patchStage)
         throws Throwable {
       UploadVibTaskService.State startState = buildValidStartState(startStage);
@@ -292,32 +265,10 @@ public class UploadVibTaskServiceTest {
 
     @DataProvider(name = "InvalidStageTransitions")
     public Object[][] getInvalidStageTransitions() {
-      return new Object[][]{
-          {TaskState.TaskStage.CREATED, TaskState.TaskStage.CREATED},
-
-          {TaskState.TaskStage.STARTED, TaskState.TaskStage.CREATED},
-
-          {TaskState.TaskStage.FINISHED, TaskState.TaskStage.CREATED},
-          {TaskState.TaskStage.FINISHED, TaskState.TaskStage.STARTED},
-          {TaskState.TaskStage.FINISHED, TaskState.TaskStage.FINISHED},
-          {TaskState.TaskStage.FINISHED, TaskState.TaskStage.FAILED},
-          {TaskState.TaskStage.FINISHED, TaskState.TaskStage.CANCELLED},
-
-          {TaskState.TaskStage.FAILED, TaskState.TaskStage.CREATED},
-          {TaskState.TaskStage.FAILED, TaskState.TaskStage.STARTED},
-          {TaskState.TaskStage.FAILED, TaskState.TaskStage.FINISHED},
-          {TaskState.TaskStage.FAILED, TaskState.TaskStage.FAILED},
-          {TaskState.TaskStage.FAILED, TaskState.TaskStage.CANCELLED},
-
-          {TaskState.TaskStage.CANCELLED, TaskState.TaskStage.CREATED},
-          {TaskState.TaskStage.CANCELLED, TaskState.TaskStage.STARTED},
-          {TaskState.TaskStage.CANCELLED, TaskState.TaskStage.FINISHED},
-          {TaskState.TaskStage.CANCELLED, TaskState.TaskStage.FAILED},
-          {TaskState.TaskStage.CANCELLED, TaskState.TaskStage.CANCELLED},
-      };
+      return TestHelper.getInvalidStageTransitions(null);
     }
 
-    @Test(dataProvider = "ImmutableFieldNames", expectedExceptions = XenonRuntimeException.class)
+    @Test(dataProvider = "ImmutableFieldNames", expectedExceptions = BadRequestException.class)
     public void testInvalidPatchImmutableFieldSet(String fieldName) throws Throwable {
       UploadVibTaskService.State startState = buildValidStartState(null);
       Operation op = testHost.startServiceSynchronously(uploadVibTaskService, startState);
@@ -347,25 +298,24 @@ public class UploadVibTaskServiceTest {
    */
   public class EndToEndTest {
 
-    private static final String configFilePath = "/config.yml";
-
-    private final File destinationDirectory = new File("/tmp/deployAgent/output");
-    private final File storageDirectory = new File("/tmp/deployAgent");
-    private final File vibDirectory = new File("/tmp/deployAgent/vibs");
+    private final File sourceDirectory = new File("/tmp/deployAgent/vibs");
 
     private com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment cloudStoreEnvironment;
     private DeployerContext deployerContext;
+    private HostService.State hostStartState;
+    private HttpFileServiceClient httpFileServiceClient;
     private HttpFileServiceClientFactory httpFileServiceClientFactory;
     private ListeningExecutorService listeningExecutorService;
+    private File sourceFile;
     private UploadVibTaskService.State startState;
     private TestEnvironment testEnvironment;
+    private VibService.State vibStartState;
 
     @BeforeClass
     public void setUpClass() throws Throwable {
-      FileUtils.deleteDirectory(storageDirectory);
       cloudStoreEnvironment = com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.create(1);
       deployerContext = ConfigBuilder.build(DeployerConfig.class,
-          this.getClass().getResource(configFilePath).getPath()).getDeployerContext();
+          this.getClass().getResource("/config.yml").getPath()).getDeployerContext();
       httpFileServiceClientFactory = mock(HttpFileServiceClientFactory.class);
       listeningExecutorService = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(1));
 
@@ -376,51 +326,54 @@ public class UploadVibTaskServiceTest {
           .httpFileServiceClientFactory(httpFileServiceClientFactory)
           .listeningExecutorService(listeningExecutorService)
           .build();
-
-      startState = buildValidStartState(null);
-      startState.controlFlags = null;
-      startState.deploymentServiceLink = TestHelper.createDeploymentService(cloudStoreEnvironment).documentSelfLink;
-      startState.hostServiceLink = TestHelper.createHostService(cloudStoreEnvironment,
-          Collections.singleton(UsageTag.MGMT.name())).documentSelfLink;
     }
 
     @BeforeMethod
     public void setUpTest() throws Throwable {
-      assertTrue(destinationDirectory.mkdirs());
-      assertTrue(vibDirectory.mkdirs());
+      FileUtils.deleteDirectory(sourceDirectory);
+      assertTrue(sourceDirectory.mkdirs());
+      sourceFile = TestHelper.createSourceFile("source.vib", sourceDirectory);
+
+      httpFileServiceClient = mock(HttpFileServiceClient.class);
+      doReturn(httpFileServiceClient).when(httpFileServiceClientFactory).create(anyString(), anyString(), anyString());
+
+      doReturn(
+          new Callable<Integer>() {
+            @Override
+            public Integer call() {
+              return HttpsURLConnection.HTTP_OK;
+            }
+          })
+          .when(httpFileServiceClient)
+          .uploadFile(anyString(), anyString(), anyBoolean());
+
+      TestHelper.assertNoServicesOfType(cloudStoreEnvironment, HostService.State.class);
+      TestHelper.assertNoServicesOfType(testEnvironment, VibService.State.class);
+
+      hostStartState = TestHelper.createHostService(cloudStoreEnvironment, UsageTag.MGMT);
+      vibStartState = TestHelper.createVibService(testEnvironment, hostStartState, sourceFile);
+
+      startState = buildValidStartState(null);
+      startState.controlFlags = null;
+      startState.vibServiceLink = vibStartState.documentSelfLink;
     }
 
     @AfterMethod
     public void tearDownTest() throws Throwable {
-      FileUtils.deleteDirectory(destinationDirectory);
-      FileUtils.deleteDirectory(vibDirectory);
+      TestHelper.deleteServicesOfType(cloudStoreEnvironment, HostService.State.class);
+      TestHelper.deleteServicesOfType(testEnvironment, VibService.State.class);
     }
 
     @AfterClass
     public void tearDownClass() throws Throwable {
-      if (testEnvironment != null) {
-        testEnvironment.stop();
-        testEnvironment = null;
-      }
-
-      if (cloudStoreEnvironment != null) {
-        cloudStoreEnvironment.stop();
-        cloudStoreEnvironment = null;
-      }
-
+      testEnvironment.stop();
+      cloudStoreEnvironment.stop();
       listeningExecutorService.shutdown();
-      FileUtils.deleteDirectory(storageDirectory);
+      FileUtils.deleteDirectory(sourceDirectory);
     }
 
-    @Test(dataProvider = "VibCounts")
-    public void testEndToEndSuccess(int vibCount) throws Throwable {
-      Set<String> vibFiles = new HashSet<>(vibCount);
-      for (int i = 0; i < vibCount; i++) {
-        File sourceFile = TestHelper.createSourceFile("vib" + i + ".vib", vibDirectory);
-        vibFiles.add(sourceFile.getName());
-      }
-
-      MockHelper.mockHttpFileServiceClient(httpFileServiceClientFactory, true);
+    @Test
+    public void testSuccess() throws Throwable {
 
       UploadVibTaskService.State finalState =
           testEnvironment.callServiceAndWaitForState(
@@ -430,15 +383,135 @@ public class UploadVibTaskServiceTest {
               (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
 
       TestHelper.assertTaskStateFinished(finalState.taskState);
-      assertThat(finalState.vibPaths.keySet(), containsInAnyOrder(vibFiles.toArray()));
+
+      Mockito.verify(httpFileServiceClient).uploadFile(
+          eq(sourceFile.getAbsolutePath()),
+          eq("/tmp/photon-controller-vibs/" + ServiceUtils.getIDFromDocumentSelfLink(vibStartState.documentSelfLink) +
+              "/source.vib"),
+          eq(false));
+
+      Mockito.verifyNoMoreInteractions(httpFileServiceClient);
+
+      VibService.State vibState = testEnvironment.getServiceState(vibStartState.documentSelfLink,
+          VibService.State.class);
+      assertThat(vibState.uploadPath, is("/tmp/photon-controller-vibs/" +
+          ServiceUtils.getIDFromDocumentSelfLink(vibStartState.documentSelfLink) + "/source.vib"));
     }
 
-    @DataProvider(name = "VibCounts")
-    public Object[][] getVibCounts() {
-      return new Object[][]{
-          {new Integer(1)},
-          {new Integer(3)},
-      };
+    @Test
+    public void testSuccessWithMultipleVibs() throws Throwable {
+
+      TestHelper.createSourceFile("vib1.vib", sourceDirectory);
+      TestHelper.createSourceFile("vib2.vib", sourceDirectory);
+      TestHelper.createSourceFile("vib3.vib", sourceDirectory);
+
+      UploadVibTaskService.State finalState =
+          testEnvironment.callServiceAndWaitForState(
+              UploadVibTaskFactoryService.SELF_LINK,
+              startState,
+              UploadVibTaskService.State.class,
+              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
+
+      TestHelper.assertTaskStateFinished(finalState.taskState);
+
+      Mockito.verify(httpFileServiceClient).uploadFile(
+          eq(sourceFile.getAbsolutePath()),
+          eq("/tmp/photon-controller-vibs/" + ServiceUtils.getIDFromDocumentSelfLink(vibStartState.documentSelfLink) +
+              "/source.vib"),
+          eq(false));
+
+      Mockito.verifyNoMoreInteractions(httpFileServiceClient);
+
+      VibService.State vibState = testEnvironment.getServiceState(vibStartState.documentSelfLink,
+          VibService.State.class);
+      assertThat(vibState.uploadPath, is("/tmp/photon-controller-vibs/" +
+          ServiceUtils.getIDFromDocumentSelfLink(vibStartState.documentSelfLink) + "/source.vib"));
+    }
+
+    @Test
+    public void testFailureMissingSourceDirectory() throws Throwable {
+
+      FileUtils.deleteDirectory(sourceDirectory);
+
+      UploadVibTaskService.State finalState =
+          testEnvironment.callServiceAndWaitForState(
+              UploadVibTaskFactoryService.SELF_LINK,
+              startState,
+              UploadVibTaskService.State.class,
+              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
+
+      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
+      assertThat(finalState.taskState.failure.statusCode, is(400));
+      assertThat(finalState.taskState.failure.message, is("Invalid VIB source directory " + sourceDirectory));
+    }
+
+    @Test
+    public void testFailureMissingSourceVib() throws Throwable {
+
+      FileUtils.deleteDirectory(sourceDirectory);
+      assertTrue(sourceDirectory.mkdirs());
+
+      UploadVibTaskService.State finalState =
+          testEnvironment.callServiceAndWaitForState(
+              UploadVibTaskFactoryService.SELF_LINK,
+              startState,
+              UploadVibTaskService.State.class,
+              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
+
+      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
+      assertThat(finalState.taskState.failure.statusCode, is(400));
+      assertThat(finalState.taskState.failure.message, is("Invalid VIB source file " + sourceFile));
+    }
+
+    @Test
+    public void testFailureHttpReturnCode() throws Throwable {
+
+      doReturn(
+          new Callable<Integer>() {
+            @Override
+            public Integer call() {
+              return HttpsURLConnection.HTTP_BAD_REQUEST;
+            }
+          })
+          .when(httpFileServiceClient)
+          .uploadFile(anyString(), anyString(), anyBoolean());
+
+      UploadVibTaskService.State finalState =
+          testEnvironment.callServiceAndWaitForState(
+              UploadVibTaskFactoryService.SELF_LINK,
+              startState,
+              UploadVibTaskService.State.class,
+              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
+
+      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
+      assertThat(finalState.taskState.failure.statusCode, is(400));
+      assertThat(finalState.taskState.failure.message,
+          is("Unexpected HTTP result 400 when uploading VIB file source.vib to host hostAddress"));
+    }
+
+    @Test
+    public void testFailureIOExceptionDuringUpload() throws Throwable {
+
+      doReturn(
+          new Callable<Integer>() {
+            @Override
+            public Integer call() throws Exception {
+              throw new IOException("I/O exception during upload");
+            }
+          })
+          .when(httpFileServiceClient)
+          .uploadFile(anyString(), anyString(), anyBoolean());
+
+      UploadVibTaskService.State finalState =
+          testEnvironment.callServiceAndWaitForState(
+              UploadVibTaskFactoryService.SELF_LINK,
+              startState,
+              UploadVibTaskService.State.class,
+              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
+
+      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
+      assertThat(finalState.taskState.failure.statusCode, is(400));
+      assertThat(finalState.taskState.failure.message, is("I/O exception during upload"));
     }
   }
 
@@ -449,8 +522,7 @@ public class UploadVibTaskServiceTest {
   private UploadVibTaskService.State buildValidStartState(TaskState.TaskStage taskStage) {
     UploadVibTaskService.State startState = new UploadVibTaskService.State();
     startState.controlFlags = ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED;
-    startState.deploymentServiceLink = "DEPLOYMENT_SERVICE_LINK";
-    startState.hostServiceLink = "HOST_SERVICE_LINK";
+    startState.vibServiceLink = "VIB_SERVICE_LINK";
 
     if (taskStage != null) {
       startState.taskState = new TaskState();

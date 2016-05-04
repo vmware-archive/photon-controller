@@ -14,13 +14,13 @@
 package com.vmware.photon.controller.deployer.dcp.entity;
 
 import com.vmware.photon.controller.common.xenon.exceptions.BadRequestException;
+import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.deployer.helpers.ReflectionUtils;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
 import com.vmware.photon.controller.deployer.helpers.dcp.TestHost;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
-import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.ServiceHost;
 import com.vmware.xenon.common.UriUtils;
 
@@ -161,15 +161,45 @@ public class VibServiceTest {
       TestHost.destroy(testHost);
     }
 
-    @Test(expectedExceptions = BadRequestException.class)
-    public void testPatch() throws Throwable {
+    @Test
+    public void testValidPatch() throws Throwable {
       VibService.State startState = TestHelper.getVibServiceStartState();
       Operation startOp = testHost.startServiceSynchronously(vibService, startState);
       assertThat(startOp.getStatusCode(), is(200));
 
+      VibService.State patchState = new VibService.State();
+      patchState.uploadPath = "UPLOAD_PATH";
+
+      Operation patchOp = testHost.sendRequestAndWait(Operation
+          .createPatch(UriUtils.buildUri(testHost, TestHost.SERVICE_URI))
+          .setBody(patchState));
+
+      assertThat(patchOp.getStatusCode(), is(200));
+
+      VibService.State serviceState = testHost.getServiceState(VibService.State.class);
+      assertThat(serviceState.uploadPath, is("UPLOAD_PATH"));
+    }
+
+    @Test(dataProvider = "ImmutableFieldNames", expectedExceptions = BadRequestException.class)
+    public void testPatch(String fieldName) throws Throwable {
+      VibService.State startState = TestHelper.getVibServiceStartState();
+      Operation startOp = testHost.startServiceSynchronously(vibService, startState);
+      assertThat(startOp.getStatusCode(), is(200));
+
+      VibService.State patchState = new VibService.State();
+      Field declaredField = patchState.getClass().getDeclaredField(fieldName);
+      declaredField.set(patchState, ReflectionUtils.getDefaultAttributeValue(declaredField));
+
       testHost.sendRequestAndWait(Operation
           .createPatch(UriUtils.buildUri(testHost, TestHost.SERVICE_URI))
-          .setBody(new ServiceDocument()));
+          .setBody(patchState));
+    }
+
+    @DataProvider(name = "ImmutableFieldNames")
+    public Object[][] getImmutableFieldNames() {
+      return TestHelper.toDataProvidersList(
+          ReflectionUtils.getAttributeNamesWithAnnotation(
+              VibService.State.class, Immutable.class));
     }
   }
 }
