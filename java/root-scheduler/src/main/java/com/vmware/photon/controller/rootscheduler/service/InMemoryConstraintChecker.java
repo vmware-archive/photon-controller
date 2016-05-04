@@ -216,7 +216,6 @@ public class InMemoryConstraintChecker implements ConstraintChecker {
   public void getCandidates(
       List<ResourceConstraint> constraints,
       int numCandidates,
-      String requestId,
       GetCandidatesCompletion completion) {
 
     // Note that we are not yet meaningfully asynchronous. We are slowly converting to an asynchronous pattern,
