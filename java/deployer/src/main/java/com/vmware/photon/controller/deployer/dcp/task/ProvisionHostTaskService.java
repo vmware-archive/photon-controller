@@ -470,7 +470,7 @@ public class ProvisionHostTaskService extends StatefulService {
             failTask(t);
           }
         },
-        currentState.pollInterval,
+        HostUtils.getDeployerContext(this).getNsxPollDelay(),
         TimeUnit.MILLISECONDS);
   }
 
@@ -568,7 +568,7 @@ public class ProvisionHostTaskService extends StatefulService {
             failTask(t);
           }
         },
-        currentState.pollInterval,
+        HostUtils.getDeployerContext(this).getNsxPollDelay(),
         TimeUnit.MILLISECONDS);
   }
 

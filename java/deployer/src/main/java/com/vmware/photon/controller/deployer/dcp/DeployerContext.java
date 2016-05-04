@@ -93,6 +93,9 @@ public class DeployerContext {
   @Range(min = 1)
   private int taskPollDelay = DeployerDefaults.DEFAULT_TASK_POLL_DELAY;
 
+  @Range(min = 1)
+  private int nsxPollDelay = DeployerDefaults.DEFAULT_NSX_POLL_DELAY;
+
   @NotBlank
   private final String tenantName;
 
@@ -134,6 +137,7 @@ public class DeployerContext {
     scriptTimeoutSec = DeployerDefaults.SCRIPT_TIMEOUT_IN_SECONDS;
     syslogEndpoint = null;
     taskPollDelay = DeployerDefaults.DEFAULT_TASK_POLL_DELAY;
+    nsxPollDelay = DeployerDefaults.DEFAULT_NSX_POLL_DELAY;
     tenantName = null;
     vibDirectory = null;
     waitForServiceMaxRetryCount = DeployerDefaults.DEFAULT_WAIT_FOR_SERVICE_MAX_RETRY_COUNT;
@@ -207,6 +211,10 @@ public class DeployerContext {
 
   public int getTaskPollDelay() {
     return taskPollDelay;
+  }
+
+  public int getNsxPollDelay() {
+    return nsxPollDelay;
   }
 
   public String getTenantName() {

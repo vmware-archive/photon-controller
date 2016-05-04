@@ -18,6 +18,7 @@ deployer:
   scriptTimeoutSec: 17
   syslogEndpoint: "syslog endpoint"
   taskPollDelay: 50
+  nsxPollDelay: 10
   tenantName: "mgmt-tenant"
   vibDirectory: "/tmp/deployAgent/vibs"
   waitForServiceMaxRetryCount: 17
