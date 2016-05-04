@@ -85,6 +85,13 @@ import java.util.concurrent.Executors;
  * getCandidatesSync(): This is meant for tests. It exists because originally all of the code was synchronous
  * and all the tests assumed the results were returned synchronously. When we updated the code to be asynchronous,
  * we made a synchronous interface to keep the tests straightforward.
+ *
+ * A note on logging and tracing the request IDs:
+ * - This code is used from within a Xenon service, so we should use the ServiceUtils functions for logging.
+ *   We don't, because it's also tested from code that doesn't use a Xenon service.
+ * - In order to get the request ID in the logging and preserve the request ID for the PlacementTask (which will
+ *   call thrift, which passes the request ID to the host in the tracing_info), the code sets the request ID
+ *   in the MDC (via LoggigUtils.setRequestId) in our Xenon callbacks.
  */
 public class CloudStoreConstraintChecker implements ConstraintChecker {
 
@@ -126,8 +133,6 @@ public class CloudStoreConstraintChecker implements ConstraintChecker {
     List<ResourceConstraint> resourceConstraints;
     // Input from client: desired number of candidates to be found
     int numCandidates;
-    // Input from client: incoming user request id, used for logging
-    String requestId;
     // Input from client: completion to call when we're all done
     GetCandidatesCompletion completion;
 
@@ -196,7 +201,6 @@ public class CloudStoreConstraintChecker implements ConstraintChecker {
     CountDownLatch latch = new CountDownLatch(1);
     getCandidates(resourceConstraints,
         numCandidates,
-        "test-request",
         (c, ex) -> {
           candidates.add(c);
           latch.countDown();
@@ -227,7 +231,6 @@ public class CloudStoreConstraintChecker implements ConstraintChecker {
   public void getCandidates(
       List<ResourceConstraint> resourceConstraints,
       int numCandidates,
-      String requestId,
       GetCandidatesCompletion completion) {
 
     State state = new State();
@@ -235,7 +238,6 @@ public class CloudStoreConstraintChecker implements ConstraintChecker {
     state.resourceConstraints = resourceConstraints;
     state.extraDatastoreConstraints = new ArrayList<>();
     state.numCandidates = numCandidates;
-    state.requestId = requestId;
     state.completion = completion;
     state.candidates = new HashMap<>();
     getCandidates_HandleStep(state);
@@ -261,8 +263,6 @@ public class CloudStoreConstraintChecker implements ConstraintChecker {
    */
   private void getCandidates_HandleStep(State state) {
     try {
-      LoggingUtils.setRequestId(state.requestId);
-
       switch (state.currentStep) {
         case VALIDATE_INPUT:
           getCandidates_ValidateInput(state);
@@ -370,6 +370,8 @@ public class CloudStoreConstraintChecker implements ConstraintChecker {
         .setBody(queryTask)
         .setContextId(LoggingUtils.getRequestId())
         .setCompletion((response, ex) -> {
+          // See note on logging, above
+          LoggingUtils.setRequestId(response.getContextId());
           if (ex != null) {
             state.exception = ex;
             state.currentStep = Step.FAIL;
@@ -414,6 +416,8 @@ public class CloudStoreConstraintChecker implements ConstraintChecker {
       datastoreConstraint.setNegative(true);
     }
     state.extraDatastoreConstraints.add(datastoreConstraint);
+    logger.info("Adding datastore constraint to fulfill datastore tag constraint: {}",
+        Utils.toJson(datastoreConstraint));
 
     // Remove the datastore tag constraint we just considered
     state.dsTagConstraints.remove(0);
@@ -563,6 +567,8 @@ public class CloudStoreConstraintChecker implements ConstraintChecker {
         .setBody(queryTask)
         .setContextId(LoggingUtils.getRequestId())
         .setCompletion((response, ex) -> {
+          // See note on logging, above
+          LoggingUtils.setRequestId(response.getContextId());
           if (ex != null) {
             state.exception = ex;
             state.currentStep = Step.FAIL;
@@ -627,6 +633,7 @@ public class CloudStoreConstraintChecker implements ConstraintChecker {
    * be zero candidates.
    */
   private void getCandidates_Success(State state) {
+    logger.info("Found {} candidate(s): {}", state.candidates.size(), Utils.toJson(state.candidates.values()));
     state.completion.handle(state.candidates, null);
     return;
   }
