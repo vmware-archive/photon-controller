@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.cloudstore.dcp.entity;
 
+import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.common.xenon.BasicServiceHost;
 import com.vmware.photon.controller.common.xenon.XenonRestClient;
@@ -27,6 +28,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.testng.Assert.fail;
 
@@ -95,6 +97,7 @@ public class EntityLockServiceTest {
 
       testState = new EntityLockService.State();
       testState.entityId = UUID.randomUUID().toString();
+      testState.entityKind = Vm.KIND;
       testState.ownerTaskId = UUID.randomUUID().toString();
       testState.lockOperation = EntityLockService.State.LockOperation.ACQUIRE;
       testState.documentSelfLink = testState.entityId;
@@ -293,11 +296,14 @@ public class EntityLockServiceTest {
       EntityLockService.State createdState = result.getBody(EntityLockService.State.class);
       assertThat(createdState.lockOperation, is(nullValue()));
       assertThat(createdState.ownerTaskId, is(testState.ownerTaskId));
+      assertThat(createdState.entitySelfLink, is(notNullValue()));
       testState.documentSelfLink = createdState.documentSelfLink;
       EntityLockService.State savedState = host.getServiceState(EntityLockService.State.class,
           createdState.documentSelfLink);
       assertThat(savedState.lockOperation, is(nullValue()));
+      assertThat(savedState.documentSelfLink, is(notNullValue()));
       assertThat(savedState.ownerTaskId, is(testState.ownerTaskId));
+      assertThat(savedState.entitySelfLink, is(createdState.entitySelfLink));
 
       result = dcpRestClient.post(EntityLockServiceFactory.SELF_LINK, testState);
 
@@ -309,6 +315,7 @@ public class EntityLockServiceTest {
           createdState.documentSelfLink);
       assertThat(savedState.lockOperation, is(nullValue()));
       assertThat(savedState.ownerTaskId, is(testState.ownerTaskId));
+      assertThat(savedState.entitySelfLink, is(notNullValue()));
 
       testState.lockOperation = EntityLockService.State.LockOperation.RELEASE;
 
@@ -322,6 +329,7 @@ public class EntityLockServiceTest {
           createdState.documentSelfLink);
       assertThat(savedState.lockOperation, is(nullValue()));
       assertThat(savedState.ownerTaskId, is(nullValue()));
+      assertThat(savedState.entitySelfLink, is(createdState.entitySelfLink));
     }
 
     /**
@@ -349,6 +357,7 @@ public class EntityLockServiceTest {
       assertThat(savedState.entityId, is(equalTo(testState.entityId)));
       assertThat(savedState.ownerTaskId, is(nullValue()));
       assertThat(savedState.lockOperation, is(nullValue()));
+      assertThat(savedState.entitySelfLink, is(createdState.entitySelfLink));
 
       testState.ownerTaskId = UUID.randomUUID().toString();
       testState.lockOperation = EntityLockService.State.LockOperation.ACQUIRE;
@@ -364,7 +373,9 @@ public class EntityLockServiceTest {
       assertThat(savedState.entityId, is(equalTo(testState.entityId)));
       assertThat(savedState.ownerTaskId, is(equalTo(testState.ownerTaskId)));
       assertThat(savedState.lockOperation, is(nullValue()));
+      assertThat(savedState.entitySelfLink, is(createdState.entitySelfLink));
     }
+
     /**
      * Test that entity id cannot be changed.
      *
@@ -384,6 +395,28 @@ public class EntityLockServiceTest {
         fail("Should not be able to change entityId for a lock");
       } catch (BadRequestException e) {
         assertThat(e.getMessage(), containsString("entityId for a lock cannot be changed"));
+      }
+    }
+
+    /**
+     * Test that entity kind cannot be changed.
+     *
+     * @throws Throwable
+     */
+    @Test
+    public void testEntityKindChangeFailure() throws Throwable {
+      Operation result = dcpRestClient.post(EntityLockServiceFactory.SELF_LINK, testState);
+      assertThat(result.getStatusCode(), is(Operation.STATUS_CODE_OK));
+      EntityLockService.State createdState = result.getBody(EntityLockService.State.class);
+      testState.documentSelfLink = createdState.documentSelfLink;
+
+      testState.entityKind = "new-entity-kind";
+
+      try {
+        dcpRestClient.post(EntityLockServiceFactory.SELF_LINK, testState);
+        fail("Should not be able to change entityId for a lock");
+      } catch (BadRequestException e) {
+        assertThat(e.getMessage(), containsString("entityKind for a lock cannot be changed"));
       }
     }
   }

@@ -328,6 +328,7 @@ public class EntityLockCleanerService extends StatefulService {
         EntityLockService.State state = new EntityLockService.State();
         state.ownerTaskId = ServiceUtils.getIDFromDocumentSelfLink(task.documentSelfLink);
         state.entityId = task.entityId;
+        state.entityKind = task.entityKind;
         state.documentSelfLink = EntityLockServiceFactory.SELF_LINK + "/" + task.entityId;
         state.lockOperation = EntityLockService.State.LockOperation.RELEASE;
         Operation releaseLockOperation = Operation

@@ -600,8 +600,9 @@ public class VmDcpBackendTest {
           is(projectId));
       assertThat(createdVmTaskEntity.getSteps().get(1).getOperation(),
           is(com.vmware.photon.controller.api.Operation.CREATE_VM));
-      assertThat(createdVmTaskEntity.getToBeLockedEntityIds().size(), is(1));
-      assertThat(createdVmTaskEntity.getToBeLockedEntityIds().get(0), is(vmId));
+      assertThat(createdVmTaskEntity.getToBeLockedEntities().size(), is(1));
+      assertThat(createdVmTaskEntity.getToBeLockedEntities().get(0).getId(), is(vmId));
+      assertThat(createdVmTaskEntity.getToBeLockedEntities().get(0).getKind(), is(Vm.KIND));
 
       VmEntity vm = vmDcpBackend.findById(vmId);
       assertThat(vm, is(notNullValue()));
@@ -713,8 +714,9 @@ public class VmDcpBackendTest {
       assertThat(task.getState(), is(TaskEntity.State.QUEUED));
       assertThat(task.getSteps().size(), is(1));
       assertThat(task.getSteps().get(0).getOperation(), is(com.vmware.photon.controller.api.Operation.DELETE_VM));
-      assertThat(task.getToBeLockedEntityIds().size(), is(1));
-      assertThat(task.getToBeLockedEntityIds().get(0), is(vmId));
+      assertThat(task.getToBeLockedEntities().size(), is(1));
+      assertThat(task.getToBeLockedEntities().get(0).getId(), is(vmId));
+      assertThat(task.getToBeLockedEntities().get(0).getKind(), is(Vm.KIND));
     }
 
     @Test
@@ -829,9 +831,11 @@ public class VmDcpBackendTest {
       IsoEntity iso = (IsoEntity) task.getSteps().get(0).getTransientResourceEntities().get(1);
       assertThat(iso.getName(), is(isoName));
 
-      assertThat(task.getToBeLockedEntityIds().size(), is(2));
-      assertThat(task.getToBeLockedEntityIds().get(0), is(iso.getId()));
-      assertThat(task.getToBeLockedEntityIds().get(1), is(vmId));
+      assertThat(task.getToBeLockedEntities().size(), is(2));
+      assertThat(task.getToBeLockedEntities().get(0).getId(), is(iso.getId()));
+      assertThat(task.getToBeLockedEntities().get(0).getKind(), is(Iso.KIND));
+      assertThat(task.getToBeLockedEntities().get(1).getId(), is(vmId));
+      assertThat(task.getToBeLockedEntities().get(1).getKind(), is(Vm.KIND));
     }
 
     @Test

@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.cloudstore.dcp.task;
 
+import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.cloudstore.dcp.entity.EntityLockService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.EntityLockServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.TaskService;
@@ -390,6 +391,7 @@ public class EntityLockCleanerServiceTest {
         // create task
         TaskService.State newTask = new TaskService.State();
         newTask.entityId = "entity-id" + i;
+        newTask.entityKind = Vm.KIND;
         newTask.state = (i % 2 == 0) ? STARTED : QUEUED;
 
         if (i < danglingEntityLocks) {
@@ -404,6 +406,7 @@ public class EntityLockCleanerServiceTest {
         EntityLockService.State entityLock = new EntityLockService.State();
         entityLock.entityId = "entity-id" + i;
         entityLock.ownerTaskId = ServiceUtils.getIDFromDocumentSelfLink(createdTask.documentSelfLink);
+        entityLock.entityKind = Vm.KIND;
         entityLock.lockOperation = EntityLockService.State.LockOperation.ACQUIRE;
         entityLock.documentSelfLink = EntityLockServiceFactory.SELF_LINK + "/" + entityLock.entityId;
         Operation entityLockOperation = env.sendPostAndWait(EntityLockServiceFactory.SELF_LINK, entityLock);
