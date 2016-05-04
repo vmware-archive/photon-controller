@@ -285,11 +285,17 @@ public class TaskSchedulerServiceTest {
       }
 
       environment = new BasicHostEnvironment.Builder().hostList(hosts).build();
+      // Sleeping to allow all hosts to come up and synchronize before starting factories.
+      Thread.sleep(3000);
+
       environment.startFactoryServiceSynchronously(TestServiceWithStageFactory.class,
           TestServiceWithStageFactory.SELF_LINK);
       for (int i = 0; i < hosts.length; i++) {
         environment.waitForReplicatedFactoryServices(hosts[i]);
       }
+      // Sleeping to allow factories to become available before running tests.
+      Thread.sleep(3000);
+
       for (BasicServiceHost host : hosts) {
         service = new TaskSchedulerService();
         service.setMaintenanceIntervalMicros(testInterval);
