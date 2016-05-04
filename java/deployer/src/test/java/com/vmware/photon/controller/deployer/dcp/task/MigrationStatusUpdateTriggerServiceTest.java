@@ -271,8 +271,7 @@ public class MigrationStatusUpdateTriggerServiceTest {
       startState.taskState = new TaskState();
       startState.taskState.stage = stage;
       startState.controlFlags = ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED;
-      startState.deploymentServiceLink = "link";
-      startState.hostServiceLink = "link";
+      startState.vibServiceLink = "link";
       return startState;
     }
   }
