@@ -32,6 +32,16 @@ module EsxCloud
       Config.client.find_network_by_id(network_id)
     end
 
+    # @return [ImageList]
+    def self.find_all
+      Config.client.find_all_networks
+    end
+
+    # @return [ImageList]
+    def self.find_by_name(name)
+      Config.client.find_networks_by_name(name)
+    end
+
     # @param [String] json
     # @return [Network]
     def self.create_from_json(json)
