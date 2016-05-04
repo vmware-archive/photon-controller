@@ -29,7 +29,6 @@ import com.vmware.photon.controller.rootscheduler.interceptors.RequestId;
 import com.vmware.photon.controller.rootscheduler.interceptors.RequestIdInterceptor;
 import com.vmware.photon.controller.rootscheduler.service.CloudStoreConstraintChecker;
 import com.vmware.photon.controller.rootscheduler.service.ConstraintChecker;
-import com.vmware.photon.controller.rootscheduler.service.InMemoryConstraintChecker;
 import com.vmware.photon.controller.rootscheduler.service.SchedulerService;
 import com.vmware.photon.controller.rootscheduler.xenon.SchedulerXenonHost;
 import com.vmware.photon.controller.scheduler.root.gen.RootScheduler;
@@ -84,11 +83,7 @@ public class RootSchedulerModule extends AbstractModule {
         .build(HostClientFactory.class));
 
     bind(RootScheduler.Iface.class).to(SchedulerService.class);
-    if (config.getConstraintChecker().equals("dcp")) {
-      bind(ConstraintChecker.class).to(CloudStoreConstraintChecker.class);
-    } else {
-      bind(ConstraintChecker.class).to(InMemoryConstraintChecker.class);
-    }
+    bind(ConstraintChecker.class).to(CloudStoreConstraintChecker.class);
   }
 
   @Provides
