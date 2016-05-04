@@ -60,6 +60,24 @@ public class CreateVirtualNetworkWorkflowDocument extends ServiceDocument{
   public String description;
 
   /**
+   * Endpoint to the nsx manager.
+   */
+  @WriteOnce
+  public String nsxManagerEndpoint;
+
+  /**
+   * Username to access nsx manager.
+   */
+  @WriteOnce
+  public String username;
+
+  /**
+   * Password to access nsx manager.
+   */
+  @WriteOnce
+  public String password;
+
+  /**
    * The VirtualNetworkService.State object.
    */
   public VirtualNetworkService.State virtualNetworkServiceState;
