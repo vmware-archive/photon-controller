@@ -60,12 +60,10 @@ import org.apache.thrift.async.AsyncMethodCallback;
 
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -203,7 +201,6 @@ public class PlacementTaskService extends StatefulService {
    * @param currentState
    */
   private void handlePlaceRequest(PlacementTask currentState, Operation postOperation) {
-    initRequestId(currentState);
     Stopwatch placementWatch = Stopwatch.createStarted();
 
     // Note that getPotentialCandidates is asynchronous, so we handle the response via a completion
@@ -223,7 +220,6 @@ public class PlacementTaskService extends StatefulService {
   private void handleGetCandidateError(PlacementTask currentState, Operation postOperation, Throwable ex) {
     PlacementTask patchState = buildPatch(TaskState.TaskStage.FAILED, currentState.taskState.isDirect, ex);
     patchState.error = ex.getMessage();
-    patchState.requestId = currentState.requestId;
     if (ex instanceof NoSuchResourceException) {
       patchState.resultCode = PlaceResultCode.NO_SUCH_RESOURCE;
     } else {
@@ -250,7 +246,6 @@ public class PlacementTaskService extends StatefulService {
       PlacementTask patchState = buildPatch(TaskState.TaskStage.FAILED, currentState.taskState.isDirect, null);
       patchState.resultCode = PlaceResultCode.NO_SUCH_RESOURCE;
       patchState.error = msg;
-      patchState.requestId = currentState.requestId;
       failTask(patchState, new Throwable(msg), postOperation);
       return;
     }
@@ -318,7 +313,7 @@ public class PlacementTaskService extends StatefulService {
 
     ConstraintChecker checker = ((ConstraintCheckerProvider) getHost()).getConstraintChecker();
     try {
-      checker.getCandidates(constraints, currentState.sampleHostCount, currentState.requestId, completion);
+      checker.getCandidates(constraints, currentState.sampleHostCount, completion);
     } catch (Exception ex) {
       completion.handle(null, ex);
     }
@@ -434,7 +429,7 @@ public class PlacementTaskService extends StatefulService {
     if (response == null) {
       PlaceResultCode errorCode;
       String errorMsg;
-      Set<PlaceResultCode> returnCodes = new HashSet<>();
+      Set<PlaceResultCode> returnCodes;
 
       returnCodes = allResponses.stream()
           .map(r -> {
@@ -464,7 +459,6 @@ public class PlacementTaskService extends StatefulService {
       patchState = buildPatch(TaskState.TaskStage.FAILED, currentState.taskState.isDirect, null);
       patchState.resultCode = errorCode;
       patchState.error = errorMsg;
-      patchState.requestId = currentState.requestId;
       ServiceUtils.logWarning(this, "Placement failure reasons: %s", genJsonErrorSummary(allResponses));
     } else {
       patchState = buildPatch(TaskState.TaskStage.FINISHED, currentState.taskState.isDirect, null);
@@ -474,7 +468,6 @@ public class PlacementTaskService extends StatefulService {
       patchState.serverAddress = response.getAddress();
       patchState.resource = new Resource();
       patchState.resource.setPlacement_list(response.getPlacementList());
-      patchState.requestId = currentState.requestId;
     }
     return patchState;
   }
@@ -510,18 +503,6 @@ public class PlacementTaskService extends StatefulService {
     } else {
       postOperation.setBody(patchState).complete();
     }
-  }
-
-  /**
-   * Sets a unique request id for the PlacementTask if it has not been set. This logs the
-   * request id as it completes its operation.
-   * @param currentState the PlacementTask
-   */
-  private static void initRequestId(PlacementTask currentState) {
-    if (currentState.requestId == null) {
-      currentState.requestId = UUID.randomUUID().toString();
-    }
-    LoggingUtils.setRequestId(currentState.requestId);
   }
 
   /**

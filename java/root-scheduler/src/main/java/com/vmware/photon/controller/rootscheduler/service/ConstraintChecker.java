@@ -52,13 +52,11 @@ public interface ConstraintChecker {
    *
    * @param constraints a list of constraints to satisfy.
    * @param numCandidates the number of candidates to pick.
-   * @param requestId the ID of the current request to the scheduler, for logging/tracking
    * @param completion the method to call when complete
    */
   void getCandidates(
       List<ResourceConstraint> constraints,
       int numCandidates,
-      String requestId,
       GetCandidatesCompletion completion);
 
 }
