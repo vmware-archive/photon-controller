@@ -32,6 +32,7 @@ import com.vmware.photon.controller.apife.entities.PersistentDiskEntity;
 import com.vmware.photon.controller.apife.entities.ProjectEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.exceptions.external.FlavorNotFoundException;
+import com.vmware.photon.controller.apife.resources.disk.ProjectDisksResource;
 import com.vmware.photon.controller.apife.resources.routes.DiskResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.ProjectResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
@@ -64,7 +65,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Tests {@link ProjectVmsResource}.
+ * Tests {@link com.vmware.photon.controller.apife.resources.vm.ProjectVmsResource}.
  */
 public class ProjectDisksResourceTest extends ResourceTest {
 

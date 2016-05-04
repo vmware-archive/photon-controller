@@ -18,6 +18,7 @@ import com.vmware.photon.controller.api.Datastore;
 import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.apife.clients.DatastoreFeClient;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
+import com.vmware.photon.controller.apife.resources.datastore.DatastoresResource;
 import com.vmware.photon.controller.apife.resources.routes.DatastoreResourceRoutes;
 
 import com.google.common.base.Optional;
@@ -46,7 +47,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Tests {@link DatastoresResource}.
+ * Tests {@link com.vmware.photon.controller.apife.resources.datastore.DatastoresResource}.
  */
 public class DatastoresResourceTest extends ResourceTest {
   private static final Logger logger = LoggerFactory.getLogger(DatastoresResourceTest.class);

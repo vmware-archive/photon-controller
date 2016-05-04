@@ -18,6 +18,7 @@ import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.clients.ProjectFeClient;
+import com.vmware.photon.controller.apife.resources.auth.ProjectSecurityGroupsResource;
 import com.vmware.photon.controller.apife.resources.routes.ProjectResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
 
@@ -38,7 +39,7 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * Tests {@link ProjectSecurityGroupsResource}.
+ * Tests {@link com.vmware.photon.controller.apife.resources.auth.ProjectSecurityGroupsResource}.
  */
 public class ProjectSecurityGroupsResourceTest extends ResourceTest {
 

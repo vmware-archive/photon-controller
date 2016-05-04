@@ -23,6 +23,7 @@ import com.vmware.photon.controller.apife.clients.HostFeClient;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.resources.routes.HostResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.VmResourceRoutes;
+import com.vmware.photon.controller.apife.resources.vm.HostVmsResource;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
@@ -51,7 +52,7 @@ import java.util.UUID;
 
 
 /**
- * Tests {@link HostVmsResource}.
+ * Tests {@link com.vmware.photon.controller.apife.resources.vm.HostVmsResource}.
  */
 public class HostVmsResourceTest extends ResourceTest {
   private static final Logger logger = LoggerFactory.getLogger(HostVmsResource.class);

@@ -19,6 +19,7 @@ import com.vmware.photon.controller.apife.clients.TenantFeClient;
 import com.vmware.photon.controller.apife.entities.TenantEntity;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TenantResourceRoutes;
+import com.vmware.photon.controller.apife.resources.tenant.TenantResource;
 
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.Matchers;
@@ -34,7 +35,7 @@ import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
 
 /**
- * Tests {@link TenantResource}.
+ * Tests {@link com.vmware.photon.controller.apife.resources.tenant.TenantResource}.
  */
 public class TenantResourceTest extends ResourceTest {
 

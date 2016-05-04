@@ -23,6 +23,7 @@ import com.vmware.photon.controller.api.common.exceptions.external.ExternalExcep
 import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
 import com.vmware.photon.controller.apife.clients.NetworkFeClient;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
+import com.vmware.photon.controller.apife.resources.physicalnetwork.NetworksResource;
 import com.vmware.photon.controller.apife.resources.routes.NetworkResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
 
@@ -50,7 +51,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Tests {@link NetworksResource}.
+ * Tests {@link com.vmware.photon.controller.apife.resources.physicalnetwork.NetworksResource}.
  */
 public class NetworksResourceTest extends ResourceTest {
 

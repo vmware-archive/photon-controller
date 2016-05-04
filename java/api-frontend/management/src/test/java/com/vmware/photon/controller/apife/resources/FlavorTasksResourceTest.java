@@ -21,6 +21,7 @@ import com.vmware.photon.controller.apife.clients.TaskFeClient;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.resources.routes.FlavorsResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
+import com.vmware.photon.controller.apife.tasks.FlavorTasksResource;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
@@ -43,7 +44,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Test {@link FlavorTasksResource}.
+ * Test {@link com.vmware.photon.controller.apife.tasks.FlavorTasksResource}.
  */
 public class FlavorTasksResourceTest extends ResourceTest {
 

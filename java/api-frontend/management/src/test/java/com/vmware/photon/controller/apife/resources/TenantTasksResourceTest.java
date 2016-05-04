@@ -21,6 +21,7 @@ import com.vmware.photon.controller.apife.commands.tasks.TaskCommandFactory;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TenantResourceRoutes;
+import com.vmware.photon.controller.apife.tasks.TenantTasksResource;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
@@ -44,7 +45,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Tests {@link TenantTasksResource}.
+ * Tests {@link com.vmware.photon.controller.apife.tasks.TenantTasksResource}.
  */
 public class TenantTasksResourceTest extends ResourceTest {
 

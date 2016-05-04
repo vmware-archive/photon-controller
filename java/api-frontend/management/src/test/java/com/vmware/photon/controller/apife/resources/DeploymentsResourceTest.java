@@ -22,6 +22,7 @@ import com.vmware.photon.controller.api.builders.AuthConfigurationSpecBuilder;
 import com.vmware.photon.controller.api.builders.AuthInfoBuilder;
 import com.vmware.photon.controller.api.builders.StatsInfoBuilder;
 import com.vmware.photon.controller.apife.clients.DeploymentFeClient;
+import com.vmware.photon.controller.apife.resources.deployment.DeploymentsResource;
 import com.vmware.photon.controller.apife.resources.routes.DeploymentResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
 
@@ -46,7 +47,7 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Tests {@link DeploymentsResource}.
+ * Tests {@link com.vmware.photon.controller.apife.resources.deployment.DeploymentsResource}.
  */
 public class DeploymentsResourceTest extends ResourceTest {
 

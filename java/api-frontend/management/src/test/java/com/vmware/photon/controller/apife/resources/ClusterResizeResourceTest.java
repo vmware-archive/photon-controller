@@ -16,6 +16,7 @@ package com.vmware.photon.controller.apife.resources;
 import com.vmware.photon.controller.api.ClusterResizeOperation;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.apife.clients.ClusterFeClient;
+import com.vmware.photon.controller.apife.resources.cluster.ClusterResizeResource;
 import com.vmware.photon.controller.apife.resources.routes.ClusterResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
 
@@ -33,7 +34,7 @@ import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
 
 /**
- * Tests {@link ClusterResizeResource}.
+ * Tests {@link com.vmware.photon.controller.apife.resources.cluster.ClusterResizeResource}.
  */
 public class ClusterResizeResourceTest extends ResourceTest {
 

@@ -17,6 +17,7 @@ import com.vmware.photon.controller.api.Datastore;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.clients.DatastoreFeClient;
 import com.vmware.photon.controller.apife.exceptions.external.DatastoreNotFoundException;
+import com.vmware.photon.controller.apife.resources.datastore.DatastoreResource;
 import com.vmware.photon.controller.apife.resources.routes.DatastoreResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
 
@@ -36,7 +37,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 
 /**
- * Tests {@link DatastoreResource}.
+ * Tests {@link com.vmware.photon.controller.apife.resources.datastore.DatastoreResource}.
  */
 public class DatastoreResourceTest extends ResourceTest {
   private static final Logger logger = LoggerFactory.getLogger(DatastoreResourceTest.class);

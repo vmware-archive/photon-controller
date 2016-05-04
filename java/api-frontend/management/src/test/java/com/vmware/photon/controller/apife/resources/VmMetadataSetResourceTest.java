@@ -18,6 +18,7 @@ import com.vmware.photon.controller.api.VmMetadata;
 import com.vmware.photon.controller.apife.clients.VmFeClient;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.VmResourceRoutes;
+import com.vmware.photon.controller.apife.resources.vm.VmMetadataSetResource;
 
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -37,7 +38,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Tests {@link VmMetadataSetResource}.
+ * Tests {@link com.vmware.photon.controller.apife.resources.vm.VmMetadataSetResource}.
  */
 public class VmMetadataSetResourceTest extends ResourceTest {
 

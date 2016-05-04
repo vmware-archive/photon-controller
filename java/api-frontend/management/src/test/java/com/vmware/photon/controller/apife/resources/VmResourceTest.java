@@ -21,6 +21,10 @@ import com.vmware.photon.controller.api.VmOperation;
 import com.vmware.photon.controller.apife.clients.VmFeClient;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.VmResourceRoutes;
+import com.vmware.photon.controller.apife.resources.vm.VmMksTicketResource;
+import com.vmware.photon.controller.apife.resources.vm.VmNetworksResource;
+import com.vmware.photon.controller.apife.resources.vm.VmResource;
+import com.vmware.photon.controller.apife.resources.vm.VmTagsResource;
 
 import org.hamcrest.Matchers;
 import org.mockito.Mock;
@@ -37,10 +41,10 @@ import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
 
 /**
- * Tests {@link VmResource}.
- * Tests {@link VmMksTicketResource}.
- * Tests {@link VmNetworksResource}.
- * Tests {@link VmTagsResource}.
+ * Tests {@link com.vmware.photon.controller.apife.resources.vm.VmResource}.
+ * Tests {@link com.vmware.photon.controller.apife.resources.vm.VmMksTicketResource}.
+ * Tests {@link com.vmware.photon.controller.apife.resources.vm.VmNetworksResource}.
+ * Tests {@link com.vmware.photon.controller.apife.resources.vm.VmTagsResource}.
  */
 public class VmResourceTest extends ResourceTest {
 

@@ -23,6 +23,7 @@ import com.vmware.photon.controller.apife.clients.ClusterFeClient;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.resources.routes.ClusterResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.VmResourceRoutes;
+import com.vmware.photon.controller.apife.resources.vm.ClusterVmsResource;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
@@ -48,7 +49,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Tests {@link ClusterVmsResource}.
+ * Tests {@link com.vmware.photon.controller.apife.resources.vm.ClusterVmsResource}.
  */
 public class ClusterVmsResourceTest extends ResourceTest {
 

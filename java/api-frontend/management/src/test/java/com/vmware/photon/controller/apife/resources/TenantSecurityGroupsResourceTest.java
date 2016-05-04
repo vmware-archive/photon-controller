@@ -18,6 +18,7 @@ import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.clients.TenantFeClient;
+import com.vmware.photon.controller.apife.resources.auth.TenantSecurityGroupsResource;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TenantResourceRoutes;
 
@@ -38,7 +39,7 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * Tests {@link TenantSecurityGroupsResource}.
+ * Tests {@link com.vmware.photon.controller.apife.resources.auth.TenantSecurityGroupsResource}.
  */
 public class TenantSecurityGroupsResourceTest extends ResourceTest {
 
