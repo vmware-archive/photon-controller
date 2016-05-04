@@ -175,6 +175,42 @@ public abstract class BaseWorkflowService <S extends ServiceDocument, T extends 
   }
 
   /**
+   * Moves the service to the next sub-stage of the STARTED state and updates the service
+   * document with the given patch.
+   */
+  protected void progress(S state, S patchState) {
+    try {
+      E nextSubStage = ServiceDocumentUtils.getTaskStateSubStage(patchState);
+
+      TaskServiceUtils.progress(
+          this,
+          ServiceDocumentUtils.getTaskServiceState(state),
+          nextSubStage.ordinal(),
+          (op, ex) -> {
+            if (ex != null) {
+              fail(state, ex);
+              return;
+            }
+
+            try {
+              if (ControlFlags.disableOperationProcessingOnStageTransition(
+                  ServiceDocumentUtils.getControlFlags(state))) {
+                ServiceUtils.logInfo(this, "Operation processing on stage transition disabled");
+                return;
+              }
+
+              ServiceDocumentUtils.setTaskServiceState(patchState, op.getBody(TaskService.State.class));
+              TaskUtils.sendSelfPatch(this, patchState);
+            } catch (Throwable t) {
+              fail(state, t);
+            }
+          });
+    } catch (Throwable t) {
+      fail(state, t);
+    }
+  }
+
+  /**
    * Moves the service to the FINISHED state.
    */
   protected void finish(S state) {

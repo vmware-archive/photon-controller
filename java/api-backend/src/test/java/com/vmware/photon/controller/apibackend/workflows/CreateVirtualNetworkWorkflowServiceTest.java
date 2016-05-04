@@ -17,6 +17,8 @@ import com.vmware.photon.controller.apibackend.helpers.ReflectionUtils;
 import com.vmware.photon.controller.apibackend.helpers.TestEnvironment;
 import com.vmware.photon.controller.apibackend.helpers.TestHelper;
 import com.vmware.photon.controller.apibackend.servicedocuments.CreateVirtualNetworkWorkflowDocument;
+import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.VirtualNetworkService;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
@@ -37,6 +39,7 @@ import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
 import static org.testng.Assert.assertEquals;
 
 import java.lang.reflect.Field;
@@ -553,7 +556,13 @@ public class CreateVirtualNetworkWorkflowServiceTest {
    */
   public class EndToEndTest {
 
+    private static final String NETWORK_MANAGER_ADDRESS = "networkManagerAddress";
+    private static final String NETWORK_MANAGER_USERNAME = "networkManagerUsername";
+    private static final String NETWORK_MANAGER_PASSWORD = "networkManagerPassword";
+    private static final String NETWORK_ZONE_ID = "networkZoneId";
+
     private CreateVirtualNetworkWorkflowDocument startState;
+    private DeploymentService.State deploymentStartState;
     private TestEnvironment testEnvironment;
 
     @BeforeMethod
@@ -564,6 +573,13 @@ public class CreateVirtualNetworkWorkflowServiceTest {
           null,
           new ControlFlags.Builder()
               .build());
+
+      deploymentStartState = ReflectionUtils.buildValidStartState(DeploymentService.State.class);
+      deploymentStartState.virtualNetworkEnabled = true;
+      deploymentStartState.networkManagerAddress = NETWORK_MANAGER_ADDRESS;
+      deploymentStartState.networkManagerUsername = NETWORK_MANAGER_USERNAME;
+      deploymentStartState.networkManagerPassword = NETWORK_MANAGER_PASSWORD;
+      deploymentStartState.networkZoneId = NETWORK_ZONE_ID;
     }
 
     @AfterMethod
@@ -572,8 +588,6 @@ public class CreateVirtualNetworkWorkflowServiceTest {
         testEnvironment.stop();
         testEnvironment = null;
       }
-
-      startState = null;
     }
 
     /**
@@ -586,6 +600,12 @@ public class CreateVirtualNetworkWorkflowServiceTest {
           .cloudStoreHelper(new CloudStoreHelper())
           .build();
 
+      testEnvironment.callServiceAndWaitForState(
+          DeploymentServiceFactory.SELF_LINK,
+          deploymentStartState,
+          DeploymentService.State.class,
+          (state) -> true);
+
       CreateVirtualNetworkWorkflowDocument finalState =
           testEnvironment.callServiceAndWaitForState(
               CreateVirtualNetworkWorkflowService.FACTORY_LINK,
@@ -593,6 +613,7 @@ public class CreateVirtualNetworkWorkflowServiceTest {
               CreateVirtualNetworkWorkflowDocument.class,
               (state) -> TaskState.TaskStage.FINISHED == state.taskState.stage);
 
+      // Verifies that one and only one virtual network entity is created in cloud-store.
       assertThat(finalState.taskServiceEntity, notNullValue());
       VirtualNetworkService.State expectedVirtualNetworkServiceState = finalState.taskServiceEntity;
       VirtualNetworkService.State actualVirtualNetworkServiceState = testEnvironment.getServiceState(
@@ -614,6 +635,38 @@ public class CreateVirtualNetworkWorkflowServiceTest {
       QueryTask queryTask = QueryTask.create(querySpecification).setDirect(true);
       NodeGroupBroadcastResponse queryResponse = testEnvironment.sendBroadcastQueryAndWait(queryTask);
       assertThat(QueryTaskUtils.getBroadcastQueryDocumentLinks(queryResponse).size(), is(1));
+
+      // Verifies that NSX configuration is cached in the service document.
+      assertThat(finalState.nsxManagerEndpoint, is(NETWORK_MANAGER_ADDRESS));
+      assertThat(finalState.username, is(NETWORK_MANAGER_USERNAME));
+      assertThat(finalState.password, is(NETWORK_MANAGER_PASSWORD));
+      assertThat(finalState.transportZoneId, is(NETWORK_ZONE_ID));
+    }
+
+    /**
+     * Verifies that when GET_NSX_CONFIGURATION sub-stage fails, the workflow will progress to FAILED state,
+     * and no NSX configuration is cached in the service document. We simulate the failure by not creating
+     * a deployment service entity in cloud-store.
+     */
+    @Test(dataProvider = "hostCount")
+    public void failsToGetNsxConfiguration(int hostCount) throws Throwable {
+      testEnvironment = new TestEnvironment.Builder()
+          .hostCount(hostCount)
+          .cloudStoreHelper(new CloudStoreHelper())
+          .build();
+
+      CreateVirtualNetworkWorkflowDocument finalState =
+          testEnvironment.callServiceAndWaitForState(
+              CreateVirtualNetworkWorkflowService.FACTORY_LINK,
+              startState,
+              CreateVirtualNetworkWorkflowDocument.class,
+              (state) -> TaskState.TaskStage.FAILED == state.taskState.stage);
+
+      // Verifies that NSX configuration is empty in the service document.
+      assertThat(finalState.nsxManagerEndpoint, nullValue());
+      assertThat(finalState.username, nullValue());
+      assertThat(finalState.password, nullValue());
+      assertThat(finalState.transportZoneId, nullValue());
     }
 
     @DataProvider(name = "hostCount")
