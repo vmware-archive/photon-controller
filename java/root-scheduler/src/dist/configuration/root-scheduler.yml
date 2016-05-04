@@ -1,7 +1,5 @@
 # flat is the only supported mode for now
 mode: flat
-# memory or dcp. default to dcp
-constraintChecker: dcp
 # Refresh interval for in-memory constraint checker cache in seconds.
 refreshIntervalSec: 30
 
