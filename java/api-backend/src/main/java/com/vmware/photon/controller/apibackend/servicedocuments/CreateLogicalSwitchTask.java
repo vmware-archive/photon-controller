@@ -83,7 +83,7 @@ public class CreateLogicalSwitchTask extends ServiceDocument {
   public Integer controlFlags;
 
   /**
-   * Exeuction delay time to verify the state of logical switch.
+   * Execution delay time to verify the state of logical switch.
    */
   @NotNull
   @Immutable

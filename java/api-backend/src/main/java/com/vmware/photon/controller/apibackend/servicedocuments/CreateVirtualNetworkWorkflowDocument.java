@@ -24,6 +24,7 @@ import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
 import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotBlank;
+import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.common.xenon.validation.WriteOnce;
 import com.vmware.xenon.common.ServiceDocument;
 
@@ -47,6 +48,13 @@ public class CreateVirtualNetworkWorkflowDocument extends ServiceDocument{
   @DefaultInteger(0)
   @Immutable
   public Integer controlFlags;
+
+  /**
+   * This value represents the poll interval for the sub-task in milliseconds.
+   */
+  @DefaultInteger(5000)
+  @Immutable
+  public Integer subTaskPollIntervalInMilliseconds;
 
   /**
    * The name of the logical network.
@@ -85,6 +93,12 @@ public class CreateVirtualNetworkWorkflowDocument extends ServiceDocument{
   public String transportZoneId;
 
   /**
+   * ID of the nsx logical switch.
+   */
+  @WriteOnce
+  public String logicalSwitchId;
+
+  /**
    * The VirtualNetworkService.State object.
    */
   @TaskServiceEntityField
@@ -95,6 +109,14 @@ public class CreateVirtualNetworkWorkflowDocument extends ServiceDocument{
    */
   @TaskServiceStateField
   public TaskService.State taskServiceState;
+
+  /**
+   * Execution delay time for NSX API calls.
+   */
+  @NotNull
+  @Immutable
+  @DefaultInteger(5000)
+  public Integer executionDelay;
 
   /**
    * This class defines the state of a CreateVirtualNetworkWorkflowService instance.

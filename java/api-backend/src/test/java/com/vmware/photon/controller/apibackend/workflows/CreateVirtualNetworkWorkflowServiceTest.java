@@ -20,11 +20,13 @@ import com.vmware.photon.controller.apibackend.servicedocuments.CreateVirtualNet
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.VirtualNetworkService;
+import com.vmware.photon.controller.common.tests.nsx.NsxClientMock;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
+import com.vmware.photon.controller.nsxclient.NsxClientFactory;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.TaskState;
@@ -40,6 +42,9 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
 import static org.testng.Assert.assertEquals;
 
 import java.lang.reflect.Field;
@@ -72,6 +77,7 @@ public class CreateVirtualNetworkWorkflowServiceTest {
     startState.controlFlags = controlFlags;
     startState.name = "name";
     startState.description = "desc";
+    startState.executionDelay = 10;
 
     return startState;
   }
@@ -560,9 +566,12 @@ public class CreateVirtualNetworkWorkflowServiceTest {
     private static final String NETWORK_MANAGER_USERNAME = "networkManagerUsername";
     private static final String NETWORK_MANAGER_PASSWORD = "networkManagerPassword";
     private static final String NETWORK_ZONE_ID = "networkZoneId";
+    private static final String LOGICAL_SWITCH_ID = "logicalSwitchId";
 
     private CreateVirtualNetworkWorkflowDocument startState;
     private DeploymentService.State deploymentStartState;
+    private NsxClientFactory nsxClientFactory;
+    private NsxClientMock nsxClientMock;
     private TestEnvironment testEnvironment;
 
     @BeforeMethod
@@ -580,6 +589,8 @@ public class CreateVirtualNetworkWorkflowServiceTest {
       deploymentStartState.networkManagerUsername = NETWORK_MANAGER_USERNAME;
       deploymentStartState.networkManagerPassword = NETWORK_MANAGER_PASSWORD;
       deploymentStartState.networkZoneId = NETWORK_ZONE_ID;
+
+      nsxClientFactory = mock(NsxClientFactory.class);
     }
 
     @AfterMethod
@@ -595,9 +606,16 @@ public class CreateVirtualNetworkWorkflowServiceTest {
      */
     @Test(dataProvider = "hostCount")
     public void succeedsToCreateVirtualNetwork(int hostCount) throws Throwable {
+      nsxClientMock = new NsxClientMock.Builder()
+          .createLogicalSwitch(true, LOGICAL_SWITCH_ID)
+          .getLogicalSwitchState(true, LOGICAL_SWITCH_ID)
+          .build();
+      doReturn(nsxClientMock).when(nsxClientFactory).create(any(String.class), any(String.class), any(String.class));
+
       testEnvironment = new TestEnvironment.Builder()
           .hostCount(hostCount)
           .cloudStoreHelper(new CloudStoreHelper())
+          .nsxClientFactory(nsxClientFactory)
           .build();
 
       testEnvironment.callServiceAndWaitForState(
@@ -641,6 +659,9 @@ public class CreateVirtualNetworkWorkflowServiceTest {
       assertThat(finalState.username, is(NETWORK_MANAGER_USERNAME));
       assertThat(finalState.password, is(NETWORK_MANAGER_PASSWORD));
       assertThat(finalState.transportZoneId, is(NETWORK_ZONE_ID));
+
+      // Verifies that logical switch ID is cached in the service document.
+      assertThat(finalState.logicalSwitchId, is(LOGICAL_SWITCH_ID));
     }
 
     /**
@@ -667,6 +688,42 @@ public class CreateVirtualNetworkWorkflowServiceTest {
       assertThat(finalState.username, nullValue());
       assertThat(finalState.password, nullValue());
       assertThat(finalState.transportZoneId, nullValue());
+    }
+
+    /**
+     * Verifies that when CREATE_LOGICAL_SWITCH sub-stage fails, the workflow will progress to FAILED state,
+     * and no logical switch ID is cached in the service document. We simulate the failure by failing the
+     * NSX API call in the NsxClientMock.
+     */
+    @Test(dataProvider = "hostCount")
+    public void failsToCreateLogicalSwitch(int hostCount) throws Throwable {
+      nsxClientMock = new NsxClientMock.Builder()
+          .createLogicalSwitch(false, LOGICAL_SWITCH_ID)
+          .getLogicalSwitchState(false, LOGICAL_SWITCH_ID)
+          .build();
+      doReturn(nsxClientMock).when(nsxClientFactory).create(any(String.class), any(String.class), any(String.class));
+
+      testEnvironment = new TestEnvironment.Builder()
+          .hostCount(hostCount)
+          .cloudStoreHelper(new CloudStoreHelper())
+          .nsxClientFactory(nsxClientFactory)
+          .build();
+
+      testEnvironment.callServiceAndWaitForState(
+          DeploymentServiceFactory.SELF_LINK,
+          deploymentStartState,
+          DeploymentService.State.class,
+          (state) -> true);
+
+      CreateVirtualNetworkWorkflowDocument finalState =
+          testEnvironment.callServiceAndWaitForState(
+              CreateVirtualNetworkWorkflowService.FACTORY_LINK,
+              startState,
+              CreateVirtualNetworkWorkflowDocument.class,
+              (state) -> TaskState.TaskStage.FAILED == state.taskState.stage);
+
+      // Verifies that logical switch ID is empty in the service document.
+      assertThat(finalState.logicalSwitchId, nullValue());
     }
 
     @DataProvider(name = "hostCount")

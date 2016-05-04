@@ -15,7 +15,9 @@ package com.vmware.photon.controller.apibackend.workflows;
 
 import com.vmware.photon.controller.api.NetworkState;
 import com.vmware.photon.controller.api.RoutingType;
+import com.vmware.photon.controller.apibackend.servicedocuments.CreateLogicalSwitchTask;
 import com.vmware.photon.controller.apibackend.servicedocuments.CreateVirtualNetworkWorkflowDocument;
+import com.vmware.photon.controller.apibackend.tasks.CreateLogicalSwitchTaskService;
 import com.vmware.photon.controller.apibackend.utils.ServiceHostUtils;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.VirtualNetworkService;
@@ -24,6 +26,8 @@ import com.vmware.photon.controller.common.xenon.OperationUtils;
 import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
+import com.vmware.photon.controller.common.xenon.TaskUtils;
+import com.vmware.photon.controller.nsxclient.utils.NameUtils;
 import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
@@ -31,6 +35,8 @@ import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.NodeGroupBroadcastResponse;
 import com.vmware.xenon.services.common.QueryTask;
+
+import com.google.common.util.concurrent.FutureCallback;
 
 import java.util.Set;
 
@@ -143,7 +149,7 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
         getNsxConfiguration(state);
         break;
       case CREATE_LOGICAL_SWITCH:
-        progress(state, CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.CREATE_LOGICAL_ROUTER);
+        createLogicalSwitch(state);
         break;
       case CREATE_LOGICAL_ROUTER:
         progress(state, CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.SET_UP_LOGICAL_ROUTER);
@@ -216,6 +222,58 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
           }
         })
         .sendWith(this);
+  }
+
+  /**
+   * Creates a NSX logical switch, and save the ID of the logical switch in the document of
+   * the workflow service.
+   */
+  private void createLogicalSwitch(CreateVirtualNetworkWorkflowDocument state) {
+    CreateLogicalSwitchTask createLogicalSwitchTask = new CreateLogicalSwitchTask();
+    createLogicalSwitchTask.nsxManagerEndpoint = state.nsxManagerEndpoint;
+    createLogicalSwitchTask.username = state.username;
+    createLogicalSwitchTask.password = state.password;
+    createLogicalSwitchTask.transportZoneId = state.transportZoneId;
+    createLogicalSwitchTask.displayName = NameUtils.getLogicalSwitchName(
+        ServiceUtils.getIDFromDocumentSelfLink(state.taskServiceEntity.documentSelfLink));
+    createLogicalSwitchTask.executionDelay = state.executionDelay;
+
+    TaskUtils.startTaskAsync(
+        this,
+        CreateLogicalSwitchTaskService.FACTORY_LINK,
+        createLogicalSwitchTask,
+        (st) -> TaskUtils.finalTaskStages.contains(st.taskState.stage),
+        CreateLogicalSwitchTask.class,
+        state.subTaskPollIntervalInMilliseconds,
+        new FutureCallback<CreateLogicalSwitchTask>() {
+          @Override
+          public void onSuccess(CreateLogicalSwitchTask result) {
+            switch (result.taskState.stage) {
+              case FINISHED:
+                try {
+                  CreateVirtualNetworkWorkflowDocument patchState = buildPatch(
+                      TaskState.TaskStage.STARTED,
+                      CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.CREATE_LOGICAL_ROUTER);
+                  patchState.logicalSwitchId = result.id;
+                  progress(state, patchState);
+                } catch (Throwable t) {
+                  fail(state, t);
+                }
+                break;
+              case FAILED:
+              case CANCELLED:
+                fail(state, new IllegalStateException(
+                    String.format("Failed to create logical switch: %s", result.taskState.failure.toString())));
+                break;
+            }
+          }
+
+          @Override
+          public void onFailure(Throwable t) {
+            fail(state, t);
+          }
+        }
+    );
   }
 
   /**
