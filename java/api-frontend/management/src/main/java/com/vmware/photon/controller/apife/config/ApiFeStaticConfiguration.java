@@ -70,6 +70,9 @@ public class ApiFeStaticConfiguration extends Configuration implements ApiFeConf
   @JsonProperty("pagination")
   private PaginationConfig paginationConfig = new PaginationConfig();
 
+  @JsonProperty
+  private boolean useVirtualNetwork = false;
+
   @Override
   public AuthConfig getAuth() {
     return this.auth;
@@ -125,5 +128,10 @@ public class ApiFeStaticConfiguration extends Configuration implements ApiFeConf
   @Override
   public PaginationConfig getPaginationConfig() {
     return paginationConfig;
+  }
+
+  @Override
+  public boolean useVirtualNetwork() {
+    return useVirtualNetwork;
   }
 }

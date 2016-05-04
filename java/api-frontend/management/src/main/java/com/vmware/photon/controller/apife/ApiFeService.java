@@ -102,6 +102,11 @@ import io.dropwizard.jetty.HttpConnectorFactory;
 import io.dropwizard.server.DefaultServerFactory;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
+import org.reflections.Reflections;
+import org.reflections.scanners.SubTypesScanner;
+import org.reflections.util.ClasspathHelper;
+import org.reflections.util.ConfigurationBuilder;
+import org.reflections.util.FilterBuilder;
 
 import javax.servlet.DispatcherType;
 import javax.validation.ConstraintValidator;
@@ -113,7 +118,9 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -249,9 +256,6 @@ public class ApiFeService extends Application<ApiFeStaticConfiguration> {
     resources.add(HostResource.class);
     resources.add(HostTasksResource.class);
     resources.add(HostVmsResource.class);
-    resources.add(NetworkPortGroupsSetResource.class);
-    resources.add(NetworkResource.class);
-    resources.add(NetworksResource.class);
     resources.add(ImageResource.class);
     resources.add(ImagesResource.class);
     resources.add(ImageTasksResource.class);
@@ -285,15 +289,59 @@ public class ApiFeService extends Application<ApiFeStaticConfiguration> {
     resources.add(VmTagsResource.class);
     resources.add(VmTasksResource.class);
 
+    if (!apiFeConfiguration.useVirtualNetwork()) {
+      resources.add(NetworkPortGroupsSetResource.class);
+      resources.add(NetworkResource.class);
+      resources.add(NetworksResource.class);
+    }
+
     environment.jersey().register(new SwaggerJsonListing(resources, SWAGGER_VERSION, "v1"));
   }
 
   private GuiceBundle<ApiFeStaticConfiguration> getGuiceBundle() {
+    String[] packages = getResourcePackagesToStart();
+
     return GuiceBundle.<ApiFeStaticConfiguration>newBuilder()
         .setConfigClass(ApiFeStaticConfiguration.class)
         .addModule(apiModule)
         .addModule(zookeeperModule)
-        .enableAutoConfig(getClass().getPackage().getName())
+        .enableAutoConfig(packages)
         .build();
+  }
+
+  /**
+   * Based on api-fe configuration, the list of resources is to be returned.
+   *
+   * @return
+   */
+  private String[] getResourcePackagesToStart() {
+    String currPackageName = getClass().getPackage().getName();
+    String resourcesPrefix = currPackageName + ".resources";
+
+    Set<String> packagesToExclude = new HashSet<>();
+    if (apiFeConfiguration.useVirtualNetwork()) {
+      packagesToExclude.add(resourcesPrefix + ".physicalnetwork");
+    } else {
+      packagesToExclude.add(resourcesPrefix + ".virtualnetwork");
+    }
+
+    Reflections reflections = new Reflections(
+        new ConfigurationBuilder()
+            .setUrls(ClasspathHelper.forPackage(currPackageName))
+            .setScanners(new SubTypesScanner(false))
+            .filterInputsBy(new FilterBuilder().include(FilterBuilder.prefix(resourcesPrefix)))
+    );
+
+    Set<Class<? extends Object>> classes = reflections.getSubTypesOf(Object.class);
+
+    Set<String> packages = new HashSet<>();
+    for (Class classInstance : classes) {
+      String packageName = classInstance.getPackage().getName();
+      if (!packagesToExclude.contains(packageName)) {
+        packages.add(classInstance.getPackage().getName());
+      }
+    }
+
+    return packages.toArray(new String[0]);
   }
 }
