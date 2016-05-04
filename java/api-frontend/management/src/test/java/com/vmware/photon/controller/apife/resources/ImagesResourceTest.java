@@ -21,6 +21,7 @@ import com.vmware.photon.controller.api.common.exceptions.external.ExternalExcep
 import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
 import com.vmware.photon.controller.apife.clients.ImageFeClient;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
+import com.vmware.photon.controller.apife.resources.image.ImagesResource;
 import com.vmware.photon.controller.apife.resources.routes.ImageResourceRoutes;
 
 import com.google.common.base.Optional;
@@ -47,7 +48,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Tests {@link ImagesResource}.
+ * Tests {@link com.vmware.photon.controller.apife.resources.image.ImagesResource}.
  */
 public class ImagesResourceTest extends ResourceTest {
 

@@ -24,6 +24,7 @@ import com.vmware.photon.controller.api.common.exceptions.external.ExternalExcep
 import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
 import com.vmware.photon.controller.apife.clients.ClusterFeClient;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
+import com.vmware.photon.controller.apife.resources.cluster.ProjectClustersResource;
 import com.vmware.photon.controller.apife.resources.routes.ClusterResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
 import com.vmware.photon.controller.clustermanager.servicedocuments.ClusterManagerConstants;
@@ -53,7 +54,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Tests {@link ProjectClustersResource}.
+ * Tests {@link com.vmware.photon.controller.apife.resources.cluster.ProjectClustersResource}.
  */
 public class ProjectClustersResourceTest extends ResourceTest {
   private static final String clusterId = "clusterId1";

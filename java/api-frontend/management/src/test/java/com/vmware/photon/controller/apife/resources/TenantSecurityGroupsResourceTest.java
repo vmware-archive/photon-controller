@@ -20,6 +20,7 @@ import com.vmware.photon.controller.api.common.exceptions.external.ExternalExcep
 import com.vmware.photon.controller.apife.clients.TenantFeClient;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TenantResourceRoutes;
+import com.vmware.photon.controller.apife.resources.tenant.TenantSecurityGroupsResource;
 
 import org.mockito.Mock;
 import org.testng.annotations.Test;
@@ -38,7 +39,7 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * Tests {@link TenantSecurityGroupsResource}.
+ * Tests {@link com.vmware.photon.controller.apife.resources.tenant.TenantSecurityGroupsResource}.
  */
 public class TenantSecurityGroupsResourceTest extends ResourceTest {
 

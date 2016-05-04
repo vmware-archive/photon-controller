@@ -18,6 +18,7 @@ import com.vmware.photon.controller.api.AvailabilityZone;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.apife.clients.AvailabilityZoneFeClient;
 import com.vmware.photon.controller.apife.exceptions.external.AvailabilityZoneNotFoundException;
+import com.vmware.photon.controller.apife.resources.availabilityzone.AvailabilityZoneResource;
 import com.vmware.photon.controller.apife.resources.routes.AvailabilityZonesResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
 
@@ -35,7 +36,7 @@ import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
 
 /**
- * Tests {@link com.vmware.photon.controller.apife.resources.AvailabilityZoneResource}.
+ * Tests {@link com.vmware.photon.controller.apife.resources.availabilityzone.AvailabilityZoneResource}.
  */
 public class AvailabilityZoneResourceTest extends ResourceTest {
 

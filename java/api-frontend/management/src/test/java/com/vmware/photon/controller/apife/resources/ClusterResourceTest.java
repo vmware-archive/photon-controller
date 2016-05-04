@@ -19,6 +19,7 @@ import com.vmware.photon.controller.api.ClusterType;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.clients.ClusterFeClient;
+import com.vmware.photon.controller.apife.resources.cluster.ClusterResource;
 import com.vmware.photon.controller.apife.resources.routes.ClusterResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
 import com.vmware.photon.controller.clustermanager.servicedocuments.ClusterManagerConstants;
@@ -36,7 +37,7 @@ import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
 
 /**
- * Tests {@link ClusterResource}.
+ * Tests {@link com.vmware.photon.controller.apife.resources.cluster.ClusterResource}.
  */
 public class ClusterResourceTest extends ResourceTest {
 

@@ -26,6 +26,7 @@ import com.vmware.photon.controller.api.builders.StatsInfoBuilder;
 import com.vmware.photon.controller.apife.backends.DeploymentBackend;
 import com.vmware.photon.controller.apife.clients.DeploymentFeClient;
 import com.vmware.photon.controller.apife.exceptions.external.DeploymentNotFoundException;
+import com.vmware.photon.controller.apife.resources.deployment.DeploymentResource;
 import com.vmware.photon.controller.apife.resources.routes.DeploymentResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
 
@@ -53,7 +54,7 @@ import java.util.Arrays;
 import java.util.Collections;
 
 /**
- * Tests {@link DeploymentResource}.
+ * Tests {@link com.vmware.photon.controller.apife.resources.deployment.DeploymentResource}.
  */
 public class DeploymentResourceTest extends ResourceTest {
   private String deploymentId = "id";

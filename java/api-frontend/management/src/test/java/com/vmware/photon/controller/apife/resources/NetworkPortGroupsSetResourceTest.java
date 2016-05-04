@@ -16,6 +16,7 @@ package com.vmware.photon.controller.apife.resources;
 import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.apife.clients.NetworkFeClient;
+import com.vmware.photon.controller.apife.resources.physicalnetwork.NetworkPortGroupsSetResource;
 import com.vmware.photon.controller.apife.resources.routes.NetworkResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
 
@@ -37,7 +38,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Tests {@link NetworkPortGroupsSetResource}.
+ * Tests {@link com.vmware.photon.controller.apife.resources.physicalnetwork.NetworkPortGroupsSetResource}.
  */
 public class NetworkPortGroupsSetResourceTest extends ResourceTest {
 

@@ -15,6 +15,7 @@ package com.vmware.photon.controller.apife.resources;
 
 import com.vmware.photon.controller.api.ResourceTicket;
 import com.vmware.photon.controller.apife.clients.ResourceTicketFeClient;
+import com.vmware.photon.controller.apife.resources.resourceticket.ResourceTicketResource;
 import com.vmware.photon.controller.apife.resources.routes.ResourceTicketResourceRoutes;
 
 import org.hamcrest.CoreMatchers;
@@ -30,7 +31,7 @@ import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
 
 /**
- * Tests {@link ResourceTicketResource}.
+ * Tests {@link com.vmware.photon.controller.apife.resources.resourceticket.ResourceTicketResource}.
  */
 public class ResourceTicketResourceTest extends ResourceTest {
 

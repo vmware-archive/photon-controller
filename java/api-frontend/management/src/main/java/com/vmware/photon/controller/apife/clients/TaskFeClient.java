@@ -41,8 +41,8 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 
 /**
- * Frontend client for task used by {@link com.vmware.photon.controller.apife.resources.TasksResource}
- * and {@link com.vmware.photon.controller.apife.resources.TaskResource}.
+ * Frontend client for task used by {@link com.vmware.photon.controller.apife.resources.tasks.TasksResource}
+ * and {@link com.vmware.photon.controller.apife.resources.tasks.TaskResource}.
  */
 @Singleton
 public class TaskFeClient {

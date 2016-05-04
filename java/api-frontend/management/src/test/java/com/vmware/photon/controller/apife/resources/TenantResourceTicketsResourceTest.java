@@ -25,6 +25,7 @@ import com.vmware.photon.controller.api.common.exceptions.external.ExternalExcep
 import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
 import com.vmware.photon.controller.apife.clients.ResourceTicketFeClient;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
+import com.vmware.photon.controller.apife.resources.resourceticket.TenantResourceTicketsResource;
 import com.vmware.photon.controller.apife.resources.routes.ResourceTicketResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TenantResourceRoutes;
@@ -55,7 +56,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Tests {@link TenantResourceTicketsResource}.
+ * Tests {@link com.vmware.photon.controller.apife.resources.resourceticket.TenantResourceTicketsResource}.
  */
 public class TenantResourceTicketsResourceTest extends ResourceTest {
 

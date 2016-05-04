@@ -20,6 +20,7 @@ import com.vmware.photon.controller.api.common.exceptions.external.ExternalExcep
 import com.vmware.photon.controller.apife.clients.ImageFeClient;
 import com.vmware.photon.controller.apife.exceptions.external.ImageNotFoundException;
 import com.vmware.photon.controller.apife.exceptions.external.ImageNotFoundException.Type;
+import com.vmware.photon.controller.apife.resources.image.ImageResource;
 import com.vmware.photon.controller.apife.resources.routes.ImageResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
 
@@ -41,7 +42,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Tests {@link ImageResource}.
+ * Tests {@link com.vmware.photon.controller.apife.resources.image.ImageResource}.
  */
 public class ImageResourceTest extends ResourceTest {
 

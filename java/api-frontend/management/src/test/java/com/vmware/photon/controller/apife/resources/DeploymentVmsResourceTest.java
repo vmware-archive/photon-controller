@@ -24,6 +24,7 @@ import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.exceptions.external.DeploymentNotFoundException;
 import com.vmware.photon.controller.apife.resources.routes.DeploymentResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.VmResourceRoutes;
+import com.vmware.photon.controller.apife.resources.vm.DeploymentVmsResource;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
@@ -47,7 +48,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Tests {@link DeploymentVmsResource}.
+ * Tests {@link com.vmware.photon.controller.apife.resources.vm.DeploymentVmsResource}.
  */
 
 public class DeploymentVmsResourceTest extends ResourceTest {

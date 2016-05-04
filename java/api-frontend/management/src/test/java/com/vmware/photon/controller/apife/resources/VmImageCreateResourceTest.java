@@ -19,6 +19,7 @@ import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.apife.clients.VmFeClient;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.VmResourceRoutes;
+import com.vmware.photon.controller.apife.resources.vm.VmImageCreateResource;
 
 import org.mockito.Mock;
 import org.testng.annotations.Test;
@@ -34,7 +35,7 @@ import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
 
 /**
- * Tests {@link VmImageCreateResource}.
+ * Tests {@link com.vmware.photon.controller.apife.resources.vm.VmImageCreateResource}.
  */
 public class VmImageCreateResourceTest extends ResourceTest {
 

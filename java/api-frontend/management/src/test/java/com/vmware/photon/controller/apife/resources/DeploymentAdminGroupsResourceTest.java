@@ -18,6 +18,7 @@ import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.apife.clients.DeploymentFeClient;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidAuthConfigException;
+import com.vmware.photon.controller.apife.resources.deployment.DeploymentAdminGroupsResource;
 import com.vmware.photon.controller.apife.resources.routes.DeploymentResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
 
@@ -39,7 +40,7 @@ import java.net.URI;
 import java.util.Arrays;
 
 /**
- * Tests {@link DeploymentAdminGroupsResource}.
+ * Tests {@link com.vmware.photon.controller.apife.resources.deployment.DeploymentAdminGroupsResource}.
  */
 public class DeploymentAdminGroupsResourceTest extends ResourceTest {
 

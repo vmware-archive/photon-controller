@@ -19,6 +19,7 @@ import com.vmware.photon.controller.apife.backends.DiskBackend;
 import com.vmware.photon.controller.apife.clients.DiskFeClient;
 import com.vmware.photon.controller.apife.entities.PersistentDiskEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
+import com.vmware.photon.controller.apife.resources.disk.DiskResource;
 import com.vmware.photon.controller.apife.resources.routes.DiskResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
 
@@ -36,7 +37,7 @@ import java.net.URI;
 import java.util.concurrent.ExecutorService;
 
 /**
- * Tests {@link DiskResource}.
+ * Tests {@link com.vmware.photon.controller.apife.resources.disk.DiskResource}.
  */
 public class DiskResourceTest extends ResourceTest {
 
