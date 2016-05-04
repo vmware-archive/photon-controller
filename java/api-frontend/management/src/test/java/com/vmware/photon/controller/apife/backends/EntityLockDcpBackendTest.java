@@ -174,15 +174,15 @@ public class EntityLockDcpBackendTest {
           break;
       }
 
-      entityLockDcpBackend.setTaskLock(entity.getId(), taskEntity);
+      entityLockDcpBackend.setTaskLock(entity, taskEntity);
       //acquiring lock on the same task should be no-op
-      entityLockDcpBackend.setTaskLock(entity.getId(), taskEntity);
+      entityLockDcpBackend.setTaskLock(entity, taskEntity);
 
       try {
         TaskEntity taskEntityOther = new TaskEntity();
         taskEntityOther.setId("task-id-other");
 
-        entityLockDcpBackend.setTaskLock(entity.getId(), taskEntityOther);
+        entityLockDcpBackend.setTaskLock(entity, taskEntityOther);
         fail("should have failed with ConcurrentTaskException");
       } catch (ConcurrentTaskException ignored) {
       }
@@ -201,7 +201,8 @@ public class EntityLockDcpBackendTest {
     @Test
     public void testSetLockNullTask() throws Throwable {
       try {
-        entityLockDcpBackend.setTaskLock("dummy-id", null);
+        VmEntity entity = new VmEntity();
+        entityLockDcpBackend.setTaskLock(entity, null);
         fail("should have failed with NullPointerException");
       } catch (NullPointerException e) {
         assertThat(e.getMessage(), is("TaskEntity cannot be null."));
@@ -245,30 +246,33 @@ public class EntityLockDcpBackendTest {
 
     @Test
     public void testClearLockSuccess() throws Throwable {
-      String vmId = UUID.randomUUID().toString();
-      String ephemeralDiskId = UUID.randomUUID().toString();
-      entityLockDcpBackend.setTaskLock(vmId, taskEntity);
-      entityLockDcpBackend.setTaskLock(ephemeralDiskId, taskEntity);
+      VmEntity vmEntity = new VmEntity();
+      vmEntity.setId(UUID.randomUUID().toString());
+      EphemeralDiskEntity diskEntity = new EphemeralDiskEntity();
+      diskEntity.setId(UUID.randomUUID().toString());
+      entityLockDcpBackend.setTaskLock(vmEntity, taskEntity);
+      entityLockDcpBackend.setTaskLock(diskEntity, taskEntity);
 
       entityLockDcpBackend.clearTaskLocks(taskEntity);
       // Now the lock has been cleared, should be able to set locks again
 
-      entityLockDcpBackend.setTaskLock(vmId, taskEntity);
-      entityLockDcpBackend.setTaskLock(ephemeralDiskId, taskEntity);
+      entityLockDcpBackend.setTaskLock(vmEntity, taskEntity);
+      entityLockDcpBackend.setTaskLock(diskEntity, taskEntity);
     }
 
 
     @Test
     public void testClearLockSuccessForLocksCreatedFailed() throws Throwable {
-      String vmId = UUID.randomUUID().toString();
+      VmEntity vmEntity = new VmEntity();
+      vmEntity.setId(UUID.randomUUID().toString());
       TaskEntity taskEntity2 = new TaskEntity();
       taskEntity2.setId("task-id2");
       TaskEntity taskEntity3 = new TaskEntity();
 
-      entityLockDcpBackend.setTaskLock(vmId, taskEntity);
+      entityLockDcpBackend.setTaskLock(vmEntity, taskEntity);
 
       try {
-        entityLockDcpBackend.setTaskLock(vmId, taskEntity2);
+        entityLockDcpBackend.setTaskLock(vmEntity, taskEntity2);
         Assert.fail("acquiring lock for an already owned lock should have failed");
       } catch (Exception e) {
         assertThat(e, is(instanceOf(ConcurrentTaskException.class)));
@@ -279,7 +283,7 @@ public class EntityLockDcpBackendTest {
       assertThat(taskEntity3.getLockedEntityIds().size(), is(0));
 
       try {
-        entityLockDcpBackend.setTaskLock(vmId, taskEntity3);
+        entityLockDcpBackend.setTaskLock(vmEntity, taskEntity3);
         Assert.fail("acquiring lock for an already owned lock should have failed");
       } catch (ConcurrentTaskException e) {
         Assert.fail("acquiring lock an invalid lock request that is missing ownerTaskId should not fail with " +

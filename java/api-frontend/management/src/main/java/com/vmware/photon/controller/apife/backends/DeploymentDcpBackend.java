@@ -127,7 +127,7 @@ public class DeploymentDcpBackend implements DeploymentBackend {
 
     logger.info("Initialize migrate  {}", deploymentEntity);
     TaskEntity taskEntity = createInitializeMigrateDeploymentTask(sourceLoadbalancerAddress, deploymentEntity);
-    taskEntity.getToBeLockedEntityIds().add(deploymentEntity.getId());
+    taskEntity.getToBeLockedEntities().add(deploymentEntity);
     return taskEntity;
   }
 
@@ -140,7 +140,7 @@ public class DeploymentDcpBackend implements DeploymentBackend {
 
     logger.info("Finalize migrate  {}", deploymentEntity);
     TaskEntity taskEntity = createFinalizeMigrateDeploymentTask(sourceLoadbalancerAddress, deploymentEntity);
-    taskEntity.getToBeLockedEntityIds().add(deploymentEntity.getId());
+    taskEntity.getToBeLockedEntities().add(deploymentEntity);
     return taskEntity;
   }
 
@@ -541,7 +541,7 @@ public class DeploymentDcpBackend implements DeploymentBackend {
     this.taskBackend.getStepBackend().createQueuedStep(
         taskEntity, deploymentEntity, Operation.MIGRATE_DEPLOYMENT_DATA);
 
-    taskEntity.getToBeLockedEntityIds().add(deploymentEntity.getId());
+    taskEntity.getToBeLockedEntities().add(deploymentEntity);
     return taskEntity;
   }
 
@@ -584,7 +584,7 @@ public class DeploymentDcpBackend implements DeploymentBackend {
     this.taskBackend.getStepBackend().createQueuedStep(
         taskEntity, deploymentEntity, Operation.PERFORM_DELETE_DEPLOYMENT);
 
-    taskEntity.getToBeLockedEntityIds().add(deploymentEntity.getId());
+    taskEntity.getToBeLockedEntities().add(deploymentEntity);
     return taskEntity;
   }
 
