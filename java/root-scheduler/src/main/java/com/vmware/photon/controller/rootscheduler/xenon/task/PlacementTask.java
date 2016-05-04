@@ -64,11 +64,6 @@ public class PlacementTask extends ServiceDocument {
   public Long timeoutMs;
 
   /**
-   * The unique id of the request.
-   */
-  public String requestId;
-
-  /**
    * The result of the placement from the queried hosts. It can be success or a type of error.
    */
   public PlaceResultCode resultCode;
