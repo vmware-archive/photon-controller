@@ -23,7 +23,6 @@ import com.vmware.photon.controller.common.xenon.host.XenonConfig;
 import com.vmware.photon.controller.rootscheduler.Config;
 import com.vmware.photon.controller.rootscheduler.service.CloudStoreConstraintChecker;
 import com.vmware.photon.controller.rootscheduler.service.ConstraintChecker;
-import com.vmware.photon.controller.rootscheduler.service.InMemoryConstraintChecker;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
@@ -56,12 +55,7 @@ public class TestRootSchedulerModule extends AbstractModule {
     install(new FactoryModuleBuilder()
         .implement(HostClient.class, HostClient.class)
         .build(HostClientFactory.class));
-
-    if (config.getConstraintChecker().equals("dcp")) {
-      bind(ConstraintChecker.class).to(CloudStoreConstraintChecker.class);
-    } else {
-      bind(ConstraintChecker.class).to(InMemoryConstraintChecker.class);
-    }
+    bind(ConstraintChecker.class).to(CloudStoreConstraintChecker.class);
   }
 
   @Provides

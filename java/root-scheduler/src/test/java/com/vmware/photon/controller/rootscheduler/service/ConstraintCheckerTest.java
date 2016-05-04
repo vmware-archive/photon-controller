@@ -191,7 +191,6 @@ public class ConstraintCheckerTest {
     // This tests does tens of thousands of operation. We only log failures, so we can see what's happening.
     xenonRestClient.start();
     return new Object[][]{
-        {new InMemoryConstraintChecker(xenonRestClient)},
         { new CloudStoreConstraintChecker(cloudStoreHelper) },
     };
   }

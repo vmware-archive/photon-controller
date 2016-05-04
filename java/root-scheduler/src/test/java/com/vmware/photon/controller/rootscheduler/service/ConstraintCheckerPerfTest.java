@@ -21,6 +21,7 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreServiceFactor
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment;
+import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.XenonRestClient;
 import com.vmware.photon.controller.common.zookeeper.gen.ServerAddress;
 import com.vmware.photon.controller.resource.gen.ResourceConstraint;
@@ -132,15 +133,17 @@ public class ConstraintCheckerPerfTest {
 
   @DataProvider(name = "default")
   public Object[][] createDefault() throws Throwable {
-    XenonRestClient dcpRestClient = new XenonRestClient(
-        cloudStoreTestEnvironment.getServerSet(), Executors.newFixedThreadPool(1));
-    dcpRestClient.start();
+    XenonRestClient xenonRestClient = new XenonRestClient(
+            cloudStoreTestEnvironment.getServerSet(), Executors.newFixedThreadPool(1));
+    CloudStoreHelper cloudStoreHelper = new CloudStoreHelper(cloudStoreTestEnvironment.getServerSet());
+    // This tests does tens of thousands of operation. We only log failures, so we can see what's happening.
+    xenonRestClient.start();
+    ConstraintChecker cloudStore = new CloudStoreConstraintChecker(cloudStoreHelper);
 
-    ConstraintChecker inMemory = new InMemoryConstraintChecker(dcpRestClient);
     return new Object[][] {
-      { inMemory, 1 },
-      { inMemory, 4 },
-      { inMemory, 8 },
+      { cloudStore, 1 },
+      { cloudStore, 4 },
+      { cloudStore, 8 },
     };
   }
 

@@ -31,8 +31,6 @@ import javax.validation.constraints.NotNull;
 public class Config {
   private String mode;
 
-  private String constraintChecker;
-
   // Refresh interval for in-memory constraint checker cache in seconds.
   @NotNull
   @Range(min = 1, max = 600)
@@ -62,10 +60,6 @@ public class Config {
 
   public String getMode() {
     return mode;
-  }
-
-  public String getConstraintChecker() {
-    return constraintChecker;
   }
 
   public Integer getRefreshIntervalSec() {
