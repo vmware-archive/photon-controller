@@ -341,6 +341,11 @@ public class DeploymentService extends StatefulService {
     public String networkManagerPassword;
 
     /**
+     * This value represents the ID of the router for accessing the outside network (i.e. Internet).
+     */
+    public String networkTopRouterId;
+
+    /**
      * This value represents the network zone ID.
      */
     @WriteOnce

@@ -53,6 +53,10 @@ public class NetworkConfiguration {
   @NotNull
   private String networkManagerPassword;
 
+  @JsonProperty
+  @ApiModelProperty(value = "The ID of the router for accessing outside network (i.e. Internet)", required = false)
+  private String networkTopRouterId;
+
   public boolean getVirtualNetworkEnabled() {
     return virtualNetworkEnabled;
   }
@@ -85,6 +89,14 @@ public class NetworkConfiguration {
     this.networkManagerPassword = networkManagerPassword;
   }
 
+  public String getNetworkTopRouterId() {
+    return networkTopRouterId;
+  }
+
+  public void setNetworkTopRouterId(String networkTopRouterId) {
+    this.networkTopRouterId = networkTopRouterId;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -99,7 +111,8 @@ public class NetworkConfiguration {
     return Objects.equals(this.getVirtualNetworkEnabled(), other.getVirtualNetworkEnabled())
         && Objects.equals(this.getNetworkManagerAddress(), other.getNetworkManagerAddress())
         && Objects.equals(this.getNetworkManagerUsername(), other.getNetworkManagerUsername())
-        && Objects.equals(this.getNetworkManagerPassword(), other.getNetworkManagerPassword());
+        && Objects.equals(this.getNetworkManagerPassword(), other.getNetworkManagerPassword())
+        && Objects.equals(this.getNetworkTopRouterId(), other.getNetworkTopRouterId());
   }
 
   @Override
@@ -117,7 +130,8 @@ public class NetworkConfiguration {
         .add("virtualNetworkEnabled", this.getVirtualNetworkEnabled())
         .add("networkManagerAddress", this.getNetworkManagerAddress())
         .add("networkManagerUsername", this.getNetworkManagerUsername())
-        .add("networkManagerPassword", this.getNetworkManagerPassword());
+        .add("networkManagerPassword", this.getNetworkManagerPassword())
+        .add("networkTopRouterId", this.getNetworkTopRouterId());
   }
 
   @Override

@@ -42,6 +42,7 @@ public class NetworkConfigurationCreateSpecTest {
           .networkManagerAddress("1.2.3.4")
           .networkManagerUsername("networkManagerUsername")
           .networkManagerPassword("networkManagerPassword")
+          .networkTopRouterId("networkTopRouterId")
           .build();
 
   @Test(enabled = false)
@@ -91,7 +92,8 @@ public class NetworkConfigurationCreateSpecTest {
       String expectedString =
           "NetworkConfigurationCreateSpec{virtualNetworkEnabled=true, networkManagerAddress=1.2.3.4, " +
           "networkManagerUsername=networkManagerUsername, " +
-          "networkManagerPassword=networkManagerPassword}";
+          "networkManagerPassword=networkManagerPassword, " +
+          "networkTopRouterId=networkTopRouterId}";
       assertThat(sampleNetworkConfigurationCreateSpec.toString(), is(expectedString));
     }
   }
