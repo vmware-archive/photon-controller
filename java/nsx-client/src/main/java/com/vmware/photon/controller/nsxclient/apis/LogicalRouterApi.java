@@ -22,6 +22,7 @@ import com.vmware.photon.controller.nsxclient.models.LogicalRouterLinkPortOnTier
 import com.vmware.photon.controller.nsxclient.models.LogicalRouterLinkPortOnTier0CreateSpec;
 import com.vmware.photon.controller.nsxclient.models.LogicalRouterLinkPortOnTier1;
 import com.vmware.photon.controller.nsxclient.models.LogicalRouterLinkPortOnTier1CreateSpec;
+import com.vmware.photon.controller.nsxclient.models.LogicalRouterPortListResult;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.util.concurrent.FutureCallback;
@@ -134,6 +135,20 @@ public class LogicalRouterApi extends NsxClientApi {
         HttpStatus.SC_CREATED,
         new TypeReference<LogicalRouterLinkPortOnTier1>() {
         },
+        responseCallback
+    );
+  }
+
+  /**
+   * Get list of ports associated with router.
+   * @param id
+   * @param responseCallback
+   */
+  public void listLogicalRouterPorts(String id, FutureCallback<LogicalRouterPortListResult> responseCallback)
+      throws IOException {
+    getAsync(logicalRouterPortBasePath + "?logical_router_id=" + id,
+        HttpStatus.SC_OK,
+        new TypeReference<LogicalRouterPortListResult>() {},
         responseCallback
     );
   }

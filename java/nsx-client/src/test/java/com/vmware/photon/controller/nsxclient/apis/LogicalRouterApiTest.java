@@ -27,6 +27,8 @@ import com.vmware.photon.controller.nsxclient.models.LogicalRouterLinkPortOnTier
 import com.vmware.photon.controller.nsxclient.models.LogicalRouterLinkPortOnTier0CreateSpec;
 import com.vmware.photon.controller.nsxclient.models.LogicalRouterLinkPortOnTier1;
 import com.vmware.photon.controller.nsxclient.models.LogicalRouterLinkPortOnTier1CreateSpec;
+import com.vmware.photon.controller.nsxclient.models.LogicalRouterPort;
+import com.vmware.photon.controller.nsxclient.models.LogicalRouterPortListResult;
 import com.vmware.photon.controller.nsxclient.models.ResourceReference;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -376,6 +378,79 @@ public class LogicalRouterApiTest extends NsxClientApiTest {
           new FutureCallback<LogicalRouterLinkPortOnTier0>() {
             @Override
             public void onSuccess(LogicalRouterLinkPortOnTier0 result) {
+              fail("Should not have succeeded");
+              latch.countDown();
+            }
+
+            @Override
+            public void onFailure(Throwable t) {
+              assertThat(t.getMessage(), is(errorMsg));
+              latch.countDown();
+            }
+          }
+      );
+      latch.await();
+    }
+
+    @Test
+    public void testSuccessfullyListLogicalRouterPorts() throws Exception {
+      List<LogicalRouterPort> logicalRouterPorts = new ArrayList<>();
+      LogicalRouterPort logicalRouterPort = new LogicalRouterPort();
+      logicalRouterPort.setLogicalRouterId(UUID.randomUUID().toString());
+      logicalRouterPort.setId(UUID.randomUUID().toString());
+      logicalRouterPort.setResourceType(NsxRouter.PortType.LINK_PORT_ON_TIER1);
+      logicalRouterPorts.add(logicalRouterPort);
+
+      LogicalRouterPortListResult logicalRouterPortListResult = new LogicalRouterPortListResult();
+      logicalRouterPortListResult.setResultCount(1);
+      logicalRouterPortListResult.setLogicalRouterPorts(logicalRouterPorts);
+
+      doAnswer(invocation -> {
+        ((FutureCallback<LogicalRouterPortListResult>) invocation.getArguments()[3])
+            .onSuccess(logicalRouterPortListResult);
+        return null;
+      }).when(logicalRouterApi)
+          .getAsync(eq(logicalRouterApi.logicalRouterPortBasePath + "?logical_router_id=id"),
+              eq(HttpStatus.SC_OK),
+              any(TypeReference.class),
+              any(FutureCallback.class));
+
+      logicalRouterApi.listLogicalRouterPorts("id",
+          new FutureCallback<LogicalRouterPortListResult>() {
+            @Override
+            public void onSuccess(LogicalRouterPortListResult result) {
+              assertThat(result, is(logicalRouterPortListResult));
+              latch.countDown();
+            }
+
+            @Override
+            public void onFailure(Throwable t) {
+              fail("Should not have failed");
+              latch.countDown();
+            }
+          }
+      );
+      latch.await();
+    }
+
+    @Test
+    public void testFailedToListLogicalRouterPorts() throws Exception {
+      final String errorMsg = "Service is not available";
+
+      doAnswer(invocation -> {
+        ((FutureCallback<LogicalRouterPortListResult>) invocation.getArguments()[3])
+            .onFailure(new RuntimeException(errorMsg));
+        return null;
+      }).when(logicalRouterApi)
+          .getAsync(eq(logicalRouterApi.logicalRouterPortBasePath + "?logical_router_id=id"),
+              eq(HttpStatus.SC_OK),
+              any(TypeReference.class),
+              any(FutureCallback.class));
+
+      logicalRouterApi.listLogicalRouterPorts("id",
+          new FutureCallback<LogicalRouterPortListResult>() {
+            @Override
+            public void onSuccess(LogicalRouterPortListResult result) {
               fail("Should not have succeeded");
               latch.countDown();
             }
