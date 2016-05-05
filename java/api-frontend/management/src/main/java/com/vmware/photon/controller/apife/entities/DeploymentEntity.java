@@ -66,6 +66,8 @@ public class DeploymentEntity extends BaseEntity {
 
   private String networkManagerPassword;
 
+  private String networkTopRouterId;
+
   private String ntpEndpoint;
 
   private Set<String> imageDatastores;
@@ -242,6 +244,14 @@ public class DeploymentEntity extends BaseEntity {
     this.networkManagerPassword = networkManagerPassword;
   }
 
+  public String getNetworkTopRouterId() {
+    return networkTopRouterId;
+  }
+
+  public void setNetworkTopRouterId(String networkTopRouterId) {
+    this.networkTopRouterId = networkTopRouterId;
+  }
+
   public String getNtpEndpoint() {
     return this.ntpEndpoint;
   }
@@ -326,6 +336,7 @@ public class DeploymentEntity extends BaseEntity {
         && Objects.equals(this.getNetworkManagerAddress(), other.getNetworkManagerAddress())
         && Objects.equals(this.getNetworkManagerUsername(), other.getNetworkManagerUsername())
         && Objects.equals(this.getNetworkManagerPassword(), other.getNetworkManagerPassword())
+        && Objects.equals(this.getNetworkTopRouterId(), other.getNetworkTopRouterId())
         && Objects.equals(this.getNtpEndpoint(), other.getNtpEndpoint())
         && Objects.equals(this.getImageDatastores(), other.getImageDatastores())
         && Objects.equals(this.getUseImageDatastoreForVms(), other.getUseImageDatastoreForVms())
@@ -356,6 +367,7 @@ public class DeploymentEntity extends BaseEntity {
         .add("networkManagerAddress", this.getNetworkManagerAddress())
         .add("networkManagerUsername", this.getNetworkManagerUsername())
         .add("networkManagerPassword", this.getNetworkManagerPassword())
+        .add("networkTopRouterId", this.getNetworkTopRouterId())
         .add("ntpEndpoint", this.getNtpEndpoint())
         .add("imageDatastores", StringUtils.join(this.getImageDatastores(), ','))
         .add("useImageDatastoreForVms", this.getUseImageDatastoreForVms())

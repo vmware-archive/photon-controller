@@ -20,41 +20,38 @@ import com.vmware.photon.controller.api.NetworkConfigurationCreateSpec;
  */
 public class NetworkConfigurationCreateSpecBuilder {
 
-  private boolean virtualNetworkEnabled;
+  private NetworkConfigurationCreateSpec networkConfigurationCreateSpec;
 
-  private String networkManagerAddress;
-
-  private String networkManagerUsername;
-
-  private String networkManagerPassword;
+  public NetworkConfigurationCreateSpecBuilder() {
+    networkConfigurationCreateSpec = new NetworkConfigurationCreateSpec();
+  }
 
   public NetworkConfigurationCreateSpecBuilder virtualNetworkEnabled(boolean virtualNetworkEnabled) {
-    this.virtualNetworkEnabled = virtualNetworkEnabled;
+    this.networkConfigurationCreateSpec.setVirtualNetworkEnabled(virtualNetworkEnabled);
     return this;
   }
 
   public NetworkConfigurationCreateSpecBuilder networkManagerAddress(String networkManagerAddress) {
-    this.networkManagerAddress = networkManagerAddress;
+    this.networkConfigurationCreateSpec.setNetworkManagerAddress(networkManagerAddress);
     return this;
   }
 
   public NetworkConfigurationCreateSpecBuilder networkManagerUsername(String networkManagerUsername) {
-    this.networkManagerUsername = networkManagerUsername;
+    this.networkConfigurationCreateSpec.setNetworkManagerUsername(networkManagerUsername);
     return this;
   }
 
   public NetworkConfigurationCreateSpecBuilder networkManagerPassword(String networkManagerPassword) {
-    this.networkManagerPassword = networkManagerPassword;
+    this.networkConfigurationCreateSpec.setNetworkManagerPassword(networkManagerPassword);
+    return this;
+  }
+
+  public NetworkConfigurationCreateSpecBuilder networkTopRouterId(String networkTopRouterId) {
+    this.networkConfigurationCreateSpec.setNetworkTopRouterId(networkTopRouterId);
     return this;
   }
 
   public NetworkConfigurationCreateSpec build() {
-    NetworkConfigurationCreateSpec networkConfigurationCreateSpec = new NetworkConfigurationCreateSpec();
-    networkConfigurationCreateSpec.setVirtualNetworkEnabled(this.virtualNetworkEnabled);
-    networkConfigurationCreateSpec.setNetworkManagerAddress(this.networkManagerAddress);
-    networkConfigurationCreateSpec.setNetworkManagerUsername(this.networkManagerUsername);
-    networkConfigurationCreateSpec.setNetworkManagerPassword(this.networkManagerPassword);
-
     return networkConfigurationCreateSpec;
   }
 }

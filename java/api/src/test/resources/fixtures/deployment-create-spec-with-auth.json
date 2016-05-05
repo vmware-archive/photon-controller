@@ -21,7 +21,8 @@
       "virtualNetworkEnabled": true,
       "networkManagerAddress": "1.2.3.4",
       "networkManagerUsername": "networkManagerUsername",
-      "networkManagerPassword": "networkManagerPassword"
+      "networkManagerPassword": "networkManagerPassword",
+      "networkTopRouterId": "networkTopRouterId"
     },
     "loadBalancerEnabled": true
 }

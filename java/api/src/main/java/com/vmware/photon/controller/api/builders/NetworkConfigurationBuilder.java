@@ -20,41 +20,38 @@ import com.vmware.photon.controller.api.NetworkConfiguration;
  */
 public class NetworkConfigurationBuilder {
 
-  private boolean virtualNetworkEnabled;
+  private NetworkConfiguration networkConfiguration;
 
-  private String networkManagerAddress;
-
-  private String networkManagerUsername;
-
-  private String networkManagerPassword;
+  public NetworkConfigurationBuilder() {
+    networkConfiguration = new NetworkConfiguration();
+  }
 
   public NetworkConfigurationBuilder virtualNetworkEnabled(boolean virtualNetworkEnabled) {
-    this.virtualNetworkEnabled = virtualNetworkEnabled;
+    this.networkConfiguration.setVirtualNetworkEnabled(virtualNetworkEnabled);
     return this;
   }
 
   public NetworkConfigurationBuilder networkManagerAddress(String networkManagerAddress) {
-    this.networkManagerAddress = networkManagerAddress;
+    this.networkConfiguration.setNetworkManagerAddress(networkManagerAddress);
     return this;
   }
 
   public NetworkConfigurationBuilder networkManagerUsername(String networkManagerUsername) {
-    this.networkManagerUsername = networkManagerUsername;
+    this.networkConfiguration.setNetworkManagerUsername(networkManagerUsername);
     return this;
   }
 
   public NetworkConfigurationBuilder networkManagerPassword(String networkManagerPassword) {
-    this.networkManagerPassword = networkManagerPassword;
+    this.networkConfiguration.setNetworkManagerPassword(networkManagerPassword);
+    return this;
+  }
+
+  public NetworkConfigurationBuilder networkTopRouterId(String networkTopRouterId) {
+    this.networkConfiguration.setNetworkTopRouterId(networkTopRouterId);
     return this;
   }
 
   public NetworkConfiguration build() {
-    NetworkConfiguration networkConfiguration = new NetworkConfiguration();
-    networkConfiguration.setVirtualNetworkEnabled(this.virtualNetworkEnabled);
-    networkConfiguration.setNetworkManagerAddress(this.networkManagerAddress);
-    networkConfiguration.setNetworkManagerUsername(this.networkManagerUsername);
-    networkConfiguration.setNetworkManagerPassword(this.networkManagerPassword);
-
     return networkConfiguration;
   }
 }

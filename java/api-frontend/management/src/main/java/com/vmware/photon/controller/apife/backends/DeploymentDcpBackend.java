@@ -269,6 +269,7 @@ public class DeploymentDcpBackend implements DeploymentBackend {
     networkConfiguration.setNetworkManagerAddress(deploymentEntity.getNetworkManagerAddress());
     networkConfiguration.setNetworkManagerUsername(deploymentEntity.getNetworkManagerUsername());
     networkConfiguration.setNetworkManagerPassword(deploymentEntity.getNetworkManagerPassword());
+    networkConfiguration.setNetworkTopRouterId(deploymentEntity.getNetworkTopRouterId());
     deployment.setNetworkConfiguration(networkConfiguration);
 
     deployment.setLoadBalancerEnabled(deploymentEntity.getLoadBalancerEnabled());
@@ -467,6 +468,7 @@ public class DeploymentDcpBackend implements DeploymentBackend {
       deployment.networkManagerAddress = spec.getNetworkConfiguration().getNetworkManagerAddress();
       deployment.networkManagerUsername = spec.getNetworkConfiguration().getNetworkManagerUsername();
       deployment.networkManagerPassword = spec.getNetworkConfiguration().getNetworkManagerPassword();
+      deployment.networkTopRouterId = spec.getNetworkConfiguration().getNetworkTopRouterId();
     }
     deployment.loadBalancerEnabled = spec.getLoadBalancerEnabled();
 
@@ -502,6 +504,7 @@ public class DeploymentDcpBackend implements DeploymentBackend {
     entity.setNetworkManagerAddress(deployment.networkManagerAddress);
     entity.setNetworkManagerUsername(deployment.networkManagerUsername);
     entity.setNetworkManagerPassword(deployment.networkManagerPassword);
+    entity.setNetworkTopRouterId(deployment.networkTopRouterId);
     entity.setLoadBalancerEnabled(deployment.loadBalancerEnabled);
     entity.setLoadBalancerAddress(deployment.loadBalancerAddress);
     entity.setMigrationProgress(deployment.dataMigrationProgress);
