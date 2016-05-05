@@ -19,7 +19,6 @@ import com.vmware.photon.controller.common.clients.HostClientProvider;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.XenonHostInfoProvider;
-import com.vmware.photon.controller.common.xenon.XenonRestClient;
 import com.vmware.photon.controller.common.xenon.host.AbstractServiceHost;
 import com.vmware.photon.controller.common.xenon.host.XenonConfig;
 import com.vmware.photon.controller.rootscheduler.Config;
@@ -29,14 +28,13 @@ import com.vmware.photon.controller.rootscheduler.xenon.task.PlacementTaskServic
 import com.vmware.xenon.common.ServiceHost;
 import com.vmware.xenon.services.common.RootNamespaceService;
 
-import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * This class implements the Xenon service host object
- * for the Root-Scheduler service.
+ * for the Scheduler service.
  */
 @Singleton
 public class SchedulerXenonHost
@@ -44,15 +42,13 @@ public class SchedulerXenonHost
     implements XenonHostInfoProvider,
     HostClientProvider,
     ScoreCalculatorProvider,
-    ConstraintCheckerProvider,
-    CloudStoreClientProvider {
+    ConstraintCheckerProvider {
 
   private static final Logger logger = LoggerFactory.getLogger(SchedulerXenonHost.class);
   public static final String FACTORY_SERVICE_FIELD_NAME_SELF_LINK = "SELF_LINK";
 
   private final HostClientFactory hostClientFactory;
   private final ScoreCalculator scoreCalculator;
-  private final XenonRestClient cloudStoreClient;
   private final CloudStoreHelper cloudStoreHelper;
   private ConstraintChecker checker;
 
@@ -62,17 +58,14 @@ public class SchedulerXenonHost
       StatusService.class
   };
 
-  @Inject
   public SchedulerXenonHost(XenonConfig xenonConfig,
                             HostClientFactory hostClientFactory,
                             Config config,
                             ConstraintChecker checker,
-                            XenonRestClient xenonRestClient,
                             CloudStoreHelper cloudStoreHelper) throws Throwable {
     super(xenonConfig);
     this.hostClientFactory = hostClientFactory;
     this.scoreCalculator = new ScoreCalculator(config);
-    this.cloudStoreClient = xenonRestClient;
     this.cloudStoreHelper = cloudStoreHelper;
     this.checker = checker;
 
@@ -92,11 +85,6 @@ public class SchedulerXenonHost
   @Override
   public ConstraintChecker getConstraintChecker() {
     return checker;
-  }
-
-  @Override
-  public XenonRestClient getCloudStoreClient() {
-    return cloudStoreClient;
   }
 
   public CloudStoreHelper getCloudStoreHelper() {

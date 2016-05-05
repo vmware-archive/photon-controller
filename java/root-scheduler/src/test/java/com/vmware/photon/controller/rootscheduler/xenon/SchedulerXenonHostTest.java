@@ -13,8 +13,11 @@
 
 package com.vmware.photon.controller.rootscheduler.xenon;
 
+import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.config.BadConfigException;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
+import com.vmware.photon.controller.common.thrift.ServerSet;
+import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.MultiHostEnvironment;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.host.XenonConfig;
@@ -22,12 +25,14 @@ import com.vmware.photon.controller.rootscheduler.Config;
 import com.vmware.photon.controller.rootscheduler.ConfigTest;
 import com.vmware.photon.controller.rootscheduler.helpers.TestHelper;
 import com.vmware.photon.controller.rootscheduler.service.CloudStoreConstraintChecker;
+import com.vmware.photon.controller.rootscheduler.service.ConstraintChecker;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.services.common.LuceneDocumentIndexService;
 import com.vmware.xenon.services.common.ServiceUriPaths;
 
 import com.google.inject.Injector;
 import org.apache.commons.io.FileUtils;
+import org.mockito.MockitoAnnotations;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
@@ -37,6 +42,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 
 import java.io.File;
@@ -60,6 +66,11 @@ public class SchedulerXenonHostTest {
   private Injector injector;
   private SchedulerXenonHost host;
   private Collection<String> serviceSelfLinks;
+  private Config config;
+  private ConstraintChecker checker;
+  private CloudStoreHelper cloudStoreHelper;
+  private ServerSet cloudStoreServerSet;
+  private HostClientFactory hostClientFactory;
 
   private void waitForServicesStartup(SchedulerXenonHost host)
       throws TimeoutException, InterruptedException, NoSuchFieldException, IllegalAccessException {
@@ -91,19 +102,28 @@ public class SchedulerXenonHostTest {
    * Tests for the constructors.
    */
   public class InitializationTest {
+    private SchedulerXenonHost host;
 
     @BeforeClass
     public void setUpClass() throws IOException, BadConfigException {
-      Config config = ConfigBuilder.build(Config.class,
+      config = ConfigBuilder.build(Config.class,
           ConfigTest.class.getResource(configFilePath).getPath());
+
+      MockitoAnnotations.initMocks(this);
+      cloudStoreServerSet = mock(ServerSet.class);
+      cloudStoreHelper = new CloudStoreHelper(cloudStoreServerSet);
+      checker = new CloudStoreConstraintChecker(cloudStoreHelper);
 
       storageDir = new File(config.getXenonConfig().getStoragePath());
       FileUtils.deleteDirectory(storageDir);
     }
 
     @BeforeMethod
-    public void setUp() throws Exception {
-      injector = TestHelper.createInjector(configFilePath);
+    public void setUp() throws Throwable {
+      injector = TestHelper.createInjector();
+      hostClientFactory = injector.getInstance(HostClientFactory.class);
+      host = new SchedulerXenonHost(config.getXenonConfig(),
+          hostClientFactory, config, checker, cloudStoreHelper);
     }
 
     @AfterMethod
@@ -112,28 +132,27 @@ public class SchedulerXenonHostTest {
     }
 
     @Test
-    public void testStoragePathExists() throws IOException {
-      // make sure folder exists
-      storageDir.mkdirs();
-
-      SchedulerXenonHost host = injector.getInstance(SchedulerXenonHost.class);
+    public void testStoragePathExists() throws Throwable {
       assertThat(storageDir.exists(), is(true));
       assertThat(host, is(notNullValue()));
     }
 
     @Test
-    public void testStoragePathDoesNotExist() throws Exception {
+    public void testStoragePathDoesNotExist() throws Throwable {
       // make sure folder does not exist
       FileUtils.deleteDirectory(storageDir);
+      assertThat(storageDir.exists(), is(false));
 
-      SchedulerXenonHost host = injector.getInstance(SchedulerXenonHost.class);
+      // Check that the host will create the storage directory.
+      host = new SchedulerXenonHost(config.getXenonConfig(),
+          hostClientFactory, config, checker, cloudStoreHelper);
+
       assertThat(storageDir.exists(), is(true));
       assertThat(host, is(notNullValue()));
     }
 
     @Test
-    public void testParams() {
-      SchedulerXenonHost host = injector.getInstance(SchedulerXenonHost.class);
+    public void testParams() throws Throwable {
       assertThat(host.getPort(), is(15001));
       Path storagePath = Paths.get(storageDir.getPath()).resolve(Integer.toString(15001));
       assertThat(host.getStorageSandbox().getPath(), is(storagePath.toString()));
@@ -147,8 +166,13 @@ public class SchedulerXenonHostTest {
 
     @BeforeClass
     private void setUpClass() throws IOException, BadConfigException {
-      Config config = ConfigBuilder.build(Config.class,
+      config = ConfigBuilder.build(Config.class,
           ConfigTest.class.getResource(configFilePath).getPath());
+
+      MockitoAnnotations.initMocks(this);
+      cloudStoreServerSet = mock(ServerSet.class);
+      cloudStoreHelper = new CloudStoreHelper(cloudStoreServerSet);
+      checker = new CloudStoreConstraintChecker(cloudStoreHelper);
 
       storageDir = new File(config.getXenonConfig().getStoragePath());
       FileUtils.deleteDirectory(storageDir);
@@ -156,8 +180,10 @@ public class SchedulerXenonHostTest {
 
     @BeforeMethod
     private void setUp() throws Throwable {
-      injector = TestHelper.createInjector(configFilePath);
-      host = injector.getInstance(SchedulerXenonHost.class);
+      injector = TestHelper.createInjector();
+      hostClientFactory = injector.getInstance(HostClientFactory.class);
+      host = new SchedulerXenonHost(config.getXenonConfig(),
+          hostClientFactory, config, checker, cloudStoreHelper);
     }
 
     @AfterMethod
@@ -199,8 +225,13 @@ public class SchedulerXenonHostTest {
 
     @BeforeClass
     private void setUpClass() throws IOException, BadConfigException {
-      Config config = ConfigBuilder.build(Config.class,
+      config = ConfigBuilder.build(Config.class,
           ConfigTest.class.getResource(configFilePath).getPath());
+
+      MockitoAnnotations.initMocks(this);
+      cloudStoreServerSet = mock(ServerSet.class);
+      cloudStoreHelper = new CloudStoreHelper(cloudStoreServerSet);
+      checker = new CloudStoreConstraintChecker(cloudStoreHelper);
 
       storageDir = new File(config.getXenonConfig().getStoragePath());
       FileUtils.deleteDirectory(storageDir);
@@ -208,9 +239,10 @@ public class SchedulerXenonHostTest {
 
     @BeforeMethod
     private void setUp() throws Throwable {
-      injector = TestHelper.createInjector(configFilePath);
-
-      host = injector.getInstance(SchedulerXenonHost.class);
+      injector = TestHelper.createInjector();
+      hostClientFactory = injector.getInstance(HostClientFactory.class);
+      host = new SchedulerXenonHost(config.getXenonConfig(),
+          hostClientFactory, config, checker, cloudStoreHelper);
     }
 
     @AfterMethod
@@ -262,14 +294,14 @@ public class SchedulerXenonHostTest {
 
     @BeforeMethod
     private void setUp() throws Throwable {
-      injector = TestHelper.createInjector(configFilePath);
+      injector = TestHelper.createInjector();
 
       XenonConfig xenonConfig = new XenonConfig();
       xenonConfig.setBindAddress("0.0.0.0");
       xenonConfig.setPort(18000);
       xenonConfig.setStoragePath(storageDir.getAbsolutePath());
       CloudStoreConstraintChecker checker = new CloudStoreConstraintChecker(null);
-      host = new SchedulerXenonHost(xenonConfig, () -> null, null, checker, null, null);
+      host = new SchedulerXenonHost(xenonConfig, () -> null, null, checker, null);
       host.setMaintenanceIntervalMicros(maintenanceInterval);
       host.start();
       waitForServicesStartup(host);
@@ -279,7 +311,7 @@ public class SchedulerXenonHostTest {
       xenonConfig2.setPort(18002);
       xenonConfig2.setStoragePath(storageDir2.getAbsolutePath());
 
-      host2 = new SchedulerXenonHost(xenonConfig2, () -> null, null, checker, null, null);
+      host2 = new SchedulerXenonHost(xenonConfig2, () -> null, null, checker, null);
       host2.setMaintenanceIntervalMicros(maintenanceInterval);
       host2.start();
       waitForServicesStartup(host2);
