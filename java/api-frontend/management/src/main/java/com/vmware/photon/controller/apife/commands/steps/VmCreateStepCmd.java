@@ -24,13 +24,11 @@ import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.backends.VmBackend;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.EphemeralDiskEntity;
-import com.vmware.photon.controller.apife.entities.NetworkConnectionEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.VmEntity;
 import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
 import com.vmware.photon.controller.host.gen.CreateVmResponse;
-import com.vmware.photon.controller.host.gen.Ipv4Address;
 import com.vmware.photon.controller.host.gen.NetworkConnectionSpec;
 import com.vmware.photon.controller.host.gen.NicConnectionSpec;
 
@@ -39,7 +37,6 @@ import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.List;
 
@@ -112,24 +109,12 @@ public class VmCreateStepCmd extends StepCommand {
 
   @VisibleForTesting
   protected NetworkConnectionSpec createNetworkConnectionSpec(VmEntity vm) {
-    List<NetworkConnectionEntity> networkEntityList = step.getTransientResourceEntities(NetworkConnectionEntity.KIND);
     List<String> portGroups = vm.getAffinities(PORT_GROUP_KIND);
-    if (networkEntityList.isEmpty() && portGroups.isEmpty()) {
+    if (portGroups.isEmpty()) {
       return null;
     }
 
     NetworkConnectionSpec spec = new NetworkConnectionSpec();
-
-    for (NetworkConnectionEntity networkConnectionEntity : networkEntityList) {
-      checkNotNull(networkConnectionEntity.getNetwork());
-      NicConnectionSpec nicConnectionSpec = new NicConnectionSpec(networkConnectionEntity.getNetwork());
-      if (StringUtils.isNotBlank(networkConnectionEntity.getIpAddress()) &&
-          StringUtils.isNotBlank(networkConnectionEntity.getNetmask())) {
-        Ipv4Address ip = new Ipv4Address(networkConnectionEntity.getIpAddress(), networkConnectionEntity.getNetmask());
-        nicConnectionSpec.setIp_address(ip);
-      }
-      spec.addToNic_spec(nicConnectionSpec);
-    }
 
     for (String portGroup : portGroups) {
       spec.addToNic_spec(new NicConnectionSpec(portGroup));
