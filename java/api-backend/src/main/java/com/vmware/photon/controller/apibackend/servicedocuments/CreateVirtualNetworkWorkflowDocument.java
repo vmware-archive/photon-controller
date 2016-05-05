@@ -99,6 +99,12 @@ public class CreateVirtualNetworkWorkflowDocument extends ServiceDocument{
   public String logicalSwitchId;
 
   /**
+   * ID of the nsx logical router.
+   */
+  @WriteOnce
+  public String logicalRouterId;
+
+  /**
    * The VirtualNetworkService.State object.
    */
   @TaskServiceEntityField

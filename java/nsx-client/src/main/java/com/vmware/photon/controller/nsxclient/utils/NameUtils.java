@@ -26,6 +26,8 @@ public class NameUtils {
   public static final String TRANSPORT_ZONE_DESCRIPTION_PREFIX = "Photon Controller Transport Zone ";
   public static final String HOST_SWITCH_NAME = "PhotonControllerHostSwitch";
   public static final String LOGICAL_SWITCH_NAME_PREFIX = "PC-LogicalSwitch-";
+  public static final String LOGICAL_ROUTER_NAME_PREFIX = "PC-LogicalRouter-";
+  public static final String LOGICAL_ROUTER_DESCRIPTION_PREFIX = "Photon Controller Logical Router ";
 
   public static String getFabricNodeName(String id) {
     return FABRIC_NODE_NAME_PREFIX + id;
@@ -53,5 +55,13 @@ public class NameUtils {
 
   public static String getLogicalSwitchName(String id) {
     return LOGICAL_SWITCH_NAME_PREFIX + id;
+  }
+
+  public static String getLogicalRouterName(String id) {
+    return LOGICAL_ROUTER_NAME_PREFIX + id;
+  }
+
+  public static String getLogicalRouterDescription(String id) {
+    return LOGICAL_ROUTER_DESCRIPTION_PREFIX + id;
   }
 }
