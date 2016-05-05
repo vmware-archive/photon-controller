@@ -17,11 +17,6 @@ import com.vmware.photon.controller.common.CloudStoreServerSet;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.thrift.ServerSet;
-import com.vmware.photon.controller.common.xenon.XenonRestClient;
-import com.vmware.photon.controller.common.xenon.host.XenonConfig;
-import com.vmware.photon.controller.rootscheduler.Config;
-import com.vmware.photon.controller.rootscheduler.service.CloudStoreConstraintChecker;
-import com.vmware.photon.controller.rootscheduler.service.ConstraintChecker;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
@@ -33,35 +28,17 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.Executors;
 
 /**
  * Provides common test dependencies.
  */
 public class TestRootSchedulerModule extends AbstractModule {
 
-  private final Config config;
-
-  public TestRootSchedulerModule(Config config) {
-    this.config = config;
-  }
-
   @Override
   protected void configure() {
-    bind(XenonConfig.class).toInstance(config.getXenonConfig());
-
     install(new FactoryModuleBuilder()
         .implement(HostClient.class, HostClient.class)
         .build(HostClientFactory.class));
-    bind(ConstraintChecker.class).to(CloudStoreConstraintChecker.class);
-  }
-
-  @Provides
-  @Singleton
-  public XenonRestClient getDcpRestClient(@CloudStoreServerSet ServerSet serverSet) {
-    XenonRestClient client = new XenonRestClient(serverSet, Executors.newFixedThreadPool(4));
-    client.start();
-    return client;
   }
 
   @Provides

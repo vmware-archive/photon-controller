@@ -72,7 +72,7 @@ public class StatusServiceTest {
     public void setUp() throws Throwable {
       MockitoAnnotations.initMocks(this);
       testEnvironment = SchedulerTestEnvironment.create(
-          hostClientFactory, config, checker, xenonRestClient, cloudStoreHelper, 1);
+          hostClientFactory, config, checker, cloudStoreHelper, 1);
     }
 
     @AfterMethod
