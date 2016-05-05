@@ -138,8 +138,9 @@ struct NicConnectionSpec {
 }
 
 struct NetworkConnectionSpec {
-  1: required list<NicConnectionSpec> nic_spec
-  2: optional string default_gateway
+  1: required bool isVirtualNetwork
+  2: required list<NicConnectionSpec> nic_spec
+  3: optional string default_gateway
 }
 
 // Create VM
