@@ -22,7 +22,6 @@ import com.vmware.photon.controller.common.clients.exceptions.SystemErrorExcepti
 import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
-import com.vmware.photon.controller.common.xenon.XenonRestClient;
 import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.common.zookeeper.gen.ServerAddress;
 import com.vmware.photon.controller.host.gen.Host;
@@ -79,7 +78,6 @@ import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executors;
 
 /**
  * This class implements tests for {@link PlacementTaskService}.
@@ -291,9 +289,6 @@ public class PlacementTaskServiceTest {
     private FakeConstraintChecker checker;
 
     @Mock
-    private XenonRestClient xenonRestClient;
-
-    @Mock
     private CloudStoreHelper cloudStoreHelper;
 
     @Mock
@@ -312,7 +307,7 @@ public class PlacementTaskServiceTest {
       checker = new FakeConstraintChecker();
       when(hostClientFactory.create()).thenReturn(client);
       schedulerTestEnvironment = SchedulerTestEnvironment.create(
-          hostClientFactory, config, checker, xenonRestClient,
+          hostClientFactory, config, checker,
           cloudStoreHelper, 1);
     }
 
@@ -625,8 +620,6 @@ public class PlacementTaskServiceTest {
     @Mock
     private ConstraintChecker checker;
 
-    private XenonRestClient cloudStoreClient;
-
     private CloudStoreHelper cloudStoreHelper;
 
     @Mock
@@ -652,12 +645,10 @@ public class PlacementTaskServiceTest {
       when(hostClientFactory.create()).thenReturn(client);
 
       this.cloudStoreMachine = TestEnvironment.create(1);
-      this.cloudStoreClient = new XenonRestClient(cloudStoreMachine.getServerSet(), Executors.newFixedThreadPool(1));
-      cloudStoreClient.start();
       this.cloudStoreHelper = new CloudStoreHelper(cloudStoreMachine.getServerSet());
 
       schedulerTestEnvironment = SchedulerTestEnvironment.create(
-          hostClientFactory, config, checker, this.cloudStoreClient,
+          hostClientFactory, config, checker,
           this.cloudStoreHelper, 1);
 
       ImageToImageDatastoreMappingService.State state = new ImageToImageDatastoreMappingService.State();
