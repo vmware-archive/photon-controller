@@ -567,6 +567,7 @@ public class CreateVirtualNetworkWorkflowServiceTest {
     private static final String NETWORK_MANAGER_PASSWORD = "networkManagerPassword";
     private static final String NETWORK_ZONE_ID = "networkZoneId";
     private static final String LOGICAL_SWITCH_ID = "logicalSwitchId";
+    private static final String LOGICAL_ROUTER_ID = "logicalRouterId";
 
     private CreateVirtualNetworkWorkflowDocument startState;
     private DeploymentService.State deploymentStartState;
@@ -609,6 +610,7 @@ public class CreateVirtualNetworkWorkflowServiceTest {
       nsxClientMock = new NsxClientMock.Builder()
           .createLogicalSwitch(true, LOGICAL_SWITCH_ID)
           .getLogicalSwitchState(true, LOGICAL_SWITCH_ID)
+          .createLogicalRouter(true, LOGICAL_ROUTER_ID)
           .build();
       doReturn(nsxClientMock).when(nsxClientFactory).create(any(String.class), any(String.class), any(String.class));
 
@@ -662,6 +664,9 @@ public class CreateVirtualNetworkWorkflowServiceTest {
 
       // Verifies that logical switch ID is cached in the service document.
       assertThat(finalState.logicalSwitchId, is(LOGICAL_SWITCH_ID));
+
+      // Verifies that logical router ID is cached in the service document.
+      assertThat(finalState.logicalRouterId, is(LOGICAL_ROUTER_ID));
     }
 
     /**
@@ -724,6 +729,38 @@ public class CreateVirtualNetworkWorkflowServiceTest {
 
       // Verifies that logical switch ID is empty in the service document.
       assertThat(finalState.logicalSwitchId, nullValue());
+    }
+
+    @Test(dataProvider = "hostCount")
+    public void failsToCreateLogicalRouter(int hostCount) throws Throwable {
+      nsxClientMock = new NsxClientMock.Builder()
+          .createLogicalSwitch(true, LOGICAL_SWITCH_ID)
+          .getLogicalSwitchState(true, LOGICAL_SWITCH_ID)
+          .createLogicalRouter(false, LOGICAL_ROUTER_ID)
+          .build();
+      doReturn(nsxClientMock).when(nsxClientFactory).create(any(String.class), any(String.class), any(String.class));
+
+      testEnvironment = new TestEnvironment.Builder()
+          .hostCount(hostCount)
+          .cloudStoreHelper(new CloudStoreHelper())
+          .nsxClientFactory(nsxClientFactory)
+          .build();
+
+      testEnvironment.callServiceAndWaitForState(
+          DeploymentServiceFactory.SELF_LINK,
+          deploymentStartState,
+          DeploymentService.State.class,
+          (state) -> true);
+
+      CreateVirtualNetworkWorkflowDocument finalState =
+          testEnvironment.callServiceAndWaitForState(
+              CreateVirtualNetworkWorkflowService.FACTORY_LINK,
+              startState,
+              CreateVirtualNetworkWorkflowDocument.class,
+              (state) -> TaskState.TaskStage.FAILED == state.taskState.stage);
+
+      // Verifies that logical router ID is empty in the service document.
+      assertThat(finalState.logicalRouterId, nullValue());
     }
 
     @DataProvider(name = "hostCount")

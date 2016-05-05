@@ -15,8 +15,10 @@ package com.vmware.photon.controller.apibackend.workflows;
 
 import com.vmware.photon.controller.api.NetworkState;
 import com.vmware.photon.controller.api.RoutingType;
+import com.vmware.photon.controller.apibackend.servicedocuments.CreateLogicalRouterTask;
 import com.vmware.photon.controller.apibackend.servicedocuments.CreateLogicalSwitchTask;
 import com.vmware.photon.controller.apibackend.servicedocuments.CreateVirtualNetworkWorkflowDocument;
+import com.vmware.photon.controller.apibackend.tasks.CreateLogicalRouterTaskService;
 import com.vmware.photon.controller.apibackend.tasks.CreateLogicalSwitchTaskService;
 import com.vmware.photon.controller.apibackend.utils.ServiceHostUtils;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
@@ -152,7 +154,7 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
         createLogicalSwitch(state);
         break;
       case CREATE_LOGICAL_ROUTER:
-        progress(state, CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.SET_UP_LOGICAL_ROUTER);
+        createLogicalRouter(state);
         break;
       case SET_UP_LOGICAL_ROUTER:
         finish(state);
@@ -194,7 +196,7 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
   }
 
   /**
-   * Gets NSX configuration from {@link DeploymentService.State} entity in cloud-store, and save
+   * Gets NSX configuration from {@link DeploymentService.State} entity in cloud-store, and saves
    * the configuration in the document of the workflow service.
    */
   private void getNsxConfiguration(CreateVirtualNetworkWorkflowDocument state,
@@ -225,7 +227,7 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
   }
 
   /**
-   * Creates a NSX logical switch, and save the ID of the logical switch in the document of
+   * Creates a NSX logical switch, and saves the ID of the logical switch in the document of
    * the workflow service.
    */
   private void createLogicalSwitch(CreateVirtualNetworkWorkflowDocument state) {
@@ -277,7 +279,59 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
   }
 
   /**
-   * Create VirtualNetwork entity in cloud store.
+   * Creates a NSX logical router, and saves the ID of the logical router in the document of
+   * the workflow service.
+   */
+  private void createLogicalRouter(CreateVirtualNetworkWorkflowDocument state) {
+    CreateLogicalRouterTask createLogicalRouterTask = new CreateLogicalRouterTask();
+    createLogicalRouterTask.nsxManagerEndpoint = state.nsxManagerEndpoint;
+    createLogicalRouterTask.username = state.username;
+    createLogicalRouterTask.password = state.password;
+    createLogicalRouterTask.displayName = NameUtils.getLogicalRouterName(
+        ServiceUtils.getIDFromDocumentSelfLink(state.taskServiceEntity.documentSelfLink));
+    createLogicalRouterTask.description = NameUtils.getLogicalRouterDescription(
+        ServiceUtils.getIDFromDocumentSelfLink(state.taskServiceEntity.documentSelfLink));
+
+    TaskUtils.startTaskAsync(
+        this,
+        CreateLogicalRouterTaskService.FACTORY_LINK,
+        createLogicalRouterTask,
+        (st) -> TaskUtils.finalTaskStages.contains(st.taskState.stage),
+        CreateLogicalRouterTask.class,
+        state.subTaskPollIntervalInMilliseconds,
+        new FutureCallback<CreateLogicalRouterTask>() {
+          @Override
+          public void onSuccess(CreateLogicalRouterTask result) {
+            switch (result.taskState.stage) {
+              case FINISHED:
+                try {
+                  CreateVirtualNetworkWorkflowDocument patchState = buildPatch(
+                      TaskState.TaskStage.STARTED,
+                      CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.SET_UP_LOGICAL_ROUTER);
+                  patchState.logicalRouterId = result.id;
+                  progress(state, patchState);
+                } catch (Throwable t) {
+                  fail(state, t);
+                }
+                break;
+              case FAILED:
+              case CANCELLED:
+                fail(state, new IllegalStateException(
+                    String.format("Failed to create logical switch: %s", result.taskState.failure.toString())));
+                break;
+            }
+          }
+
+          @Override
+          public void onFailure(Throwable t) {
+            fail(state, t);
+          }
+        }
+    );
+  }
+
+  /**
+   * Creates a VirtualNetwork entity in cloud-store.
    */
   private void createVirtualNetwork(
       CreateVirtualNetworkWorkflowDocument state,
