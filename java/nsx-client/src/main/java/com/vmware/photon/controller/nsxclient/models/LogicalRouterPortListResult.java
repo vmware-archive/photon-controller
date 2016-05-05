@@ -13,40 +13,37 @@
 
 package com.vmware.photon.controller.nsxclient.models;
 
-import com.vmware.photon.controller.nsxclient.datatypes.NsxSwitch;
 import com.vmware.photon.controller.nsxclient.utils.ToStringHelper;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.util.List;
 import java.util.Objects;
 
 /**
- * Attachement on a logical port.
+ * Represents ports on a logical router.
  */
-@JsonIgnoreProperties(ignoreUnknown = true)
-public class LogicalPortAttachment {
+public class LogicalRouterPortListResult {
+  @JsonProperty(value = "result_count", required = true)
+  private Integer resultCount;
 
-  @JsonProperty(value = "attachment_type", defaultValue = "VIF", required = true)
-  private NsxSwitch.AttachmentType attachmentType;
+  @JsonProperty(value = "results", required = true)
+  private List<LogicalRouterPort> logicalRouterPorts;
 
-  @JsonProperty(value = "id", required = true)
-  private String id;
-
-  public NsxSwitch.AttachmentType getAttachmentType() {
-    return attachmentType;
+  public Integer getResultCount() {
+    return resultCount;
   }
 
-  public void setAttachmentType(NsxSwitch.AttachmentType attachmentType) {
-    this.attachmentType = attachmentType;
+  public void setResultCount(Integer resultCount) {
+    this.resultCount = resultCount;
   }
 
-  public String getId() {
-    return id;
+  public List<LogicalRouterPort> getLogicalRouterPorts() {
+    return logicalRouterPorts;
   }
 
-  public void setId(String id) {
-    this.id = id;
+  public void setLogicalRouterPorts(List<LogicalRouterPort> logicalRouterPorts) {
+    this.logicalRouterPorts = logicalRouterPorts;
   }
 
   @Override
@@ -59,14 +56,14 @@ public class LogicalPortAttachment {
       return false;
     }
 
-    LogicalPortAttachment other = (LogicalPortAttachment) o;
-    return Objects.equals(this.attachmentType, other.attachmentType)
-        && Objects.equals(this.id, other.id);
+    LogicalRouterPortListResult other = (LogicalRouterPortListResult) o;
+    return Objects.equals(this.resultCount, other.resultCount)
+        && Objects.equals(this.logicalRouterPorts, other.logicalRouterPorts);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode(), attachmentType, id);
+    return Objects.hash(super.hashCode(), resultCount, logicalRouterPorts);
   }
 
   @Override

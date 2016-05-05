@@ -18,6 +18,7 @@ import com.vmware.photon.controller.nsxclient.builders.LogicalSwitchCreateSpecBu
 import com.vmware.photon.controller.nsxclient.datatypes.NsxSwitch;
 import com.vmware.photon.controller.nsxclient.models.LogicalPort;
 import com.vmware.photon.controller.nsxclient.models.LogicalPortCreateSpec;
+import com.vmware.photon.controller.nsxclient.models.LogicalPortListResult;
 import com.vmware.photon.controller.nsxclient.models.LogicalSwitch;
 import com.vmware.photon.controller.nsxclient.models.LogicalSwitchCreateSpec;
 import com.vmware.photon.controller.nsxclient.models.LogicalSwitchState;
@@ -37,6 +38,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.testng.Assert.fail;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 
@@ -318,87 +321,93 @@ public class LogicalSwitchApiTest {
   /**
    * Tests for creating logical ports.
    */
-  public static class LogicalPortCreateTest {
-    private static final int CALLBACK_ARG_INDEX = 4;
+  public static class LogicalPortTest {
 
-    private LogicalSwitchApi logicalSwitchApi;
-    private CountDownLatch latch;
+    /**
+     * Tests for creating logical ports.
+     */
+    public static class LogicalPortCreateTest {
+      private static final int CALLBACK_ARG_INDEX = 4;
 
-    @BeforeMethod
-    public void setup() {
-      logicalSwitchApi = spy(new LogicalSwitchApi(mock(RestClient.class)));
-      latch = new CountDownLatch(1);
-    }
+      private LogicalSwitchApi logicalSwitchApi;
+      private CountDownLatch latch;
 
-    @Test
-    public void testSuccessfullyCreated() throws Exception {
-      LogicalPortCreateSpec spec = new LogicalPortCreateSpec();
-      LogicalPort logicalPort = new LogicalPort();
+      @BeforeMethod
+      public void setup() {
+        logicalSwitchApi = spy(new LogicalSwitchApi(mock(RestClient.class)));
+        latch = new CountDownLatch(1);
+      }
 
-      doAnswer(invocation -> {
-        if (invocation.getArguments()[CALLBACK_ARG_INDEX] != null)  {
-          ((FutureCallback<LogicalPort>) invocation.getArguments()[CALLBACK_ARG_INDEX]).onSuccess(logicalPort);
-        }
-        return null;
-      }).when(logicalSwitchApi)
-          .postAsync(eq(logicalSwitchApi.logicalPortBasePath),
-              any(HttpEntity.class),
-              eq(HttpStatus.SC_CREATED),
-              any(TypeReference.class),
-              any(FutureCallback.class));
+      @Test
+      public void testSuccessfullyCreated() throws Exception {
+        LogicalPortCreateSpec spec = new LogicalPortCreateSpec();
+        LogicalPort logicalPort = new LogicalPort();
 
-      logicalSwitchApi.createLogicalPort(spec,
-          new FutureCallback<LogicalPort>() {
-            @Override
-            public void onSuccess(LogicalPort result) {
-              assertThat(result, is(logicalPort));
-              latch.countDown();
-            }
-
-            @Override
-            public void onFailure(Throwable t) {
-              fail("Should not have failed");
-              latch.countDown();
-            }
+        doAnswer(invocation -> {
+          if (invocation.getArguments()[CALLBACK_ARG_INDEX] != null)  {
+            ((FutureCallback<LogicalPort>) invocation.getArguments()[CALLBACK_ARG_INDEX]).onSuccess(logicalPort);
           }
-      );
-      latch.await();
-    }
+          return null;
+        }).when(logicalSwitchApi)
+            .postAsync(eq(logicalSwitchApi.logicalPortBasePath),
+                any(HttpEntity.class),
+                eq(HttpStatus.SC_CREATED),
+                any(TypeReference.class),
+                any(FutureCallback.class));
 
-    @Test
-    public void testFailedToCreate() throws Exception {
-      final String errorMsg = "Service is not available";
-      LogicalPortCreateSpec spec = new LogicalPortCreateSpec();
+        logicalSwitchApi.createLogicalPort(spec,
+            new FutureCallback<LogicalPort>() {
+              @Override
+              public void onSuccess(LogicalPort result) {
+                assertThat(result, is(logicalPort));
+                latch.countDown();
+              }
 
-      doAnswer(invocation -> {
-        if (invocation.getArguments()[CALLBACK_ARG_INDEX] != null)  {
-          ((FutureCallback<LogicalPort>) invocation.getArguments()[CALLBACK_ARG_INDEX])
-              .onFailure(new RuntimeException(errorMsg));
-        }
-        return null;
-      }).when(logicalSwitchApi)
-          .postAsync(eq(logicalSwitchApi.logicalPortBasePath),
-              any(HttpEntity.class),
-              eq(HttpStatus.SC_CREATED),
-              any(TypeReference.class),
-              any(FutureCallback.class));
-
-      logicalSwitchApi.createLogicalPort(spec,
-          new FutureCallback<LogicalPort>() {
-            @Override
-            public void onSuccess(LogicalPort result) {
-              fail("Should not have succeeded");
-              latch.countDown();
+              @Override
+              public void onFailure(Throwable t) {
+                fail("Should not have failed");
+                latch.countDown();
+              }
             }
+        );
+        latch.await();
+      }
 
-            @Override
-            public void onFailure(Throwable t) {
-              assertThat(t.getMessage(), is(errorMsg));
-              latch.countDown();
-            }
+      @Test
+      public void testFailedToCreate() throws Exception {
+        final String errorMsg = "Service is not available";
+        LogicalPortCreateSpec spec = new LogicalPortCreateSpec();
+
+        doAnswer(invocation -> {
+          if (invocation.getArguments()[CALLBACK_ARG_INDEX] != null)  {
+            ((FutureCallback<LogicalPort>) invocation.getArguments()[CALLBACK_ARG_INDEX])
+                .onFailure(new RuntimeException(errorMsg));
           }
-      );
-      latch.await();
+          return null;
+        }).when(logicalSwitchApi)
+            .postAsync(eq(logicalSwitchApi.logicalPortBasePath),
+                any(HttpEntity.class),
+                eq(HttpStatus.SC_CREATED),
+                any(TypeReference.class),
+                any(FutureCallback.class));
+
+        logicalSwitchApi.createLogicalPort(spec,
+            new FutureCallback<LogicalPort>() {
+              @Override
+              public void onSuccess(LogicalPort result) {
+                fail("Should not have succeeded");
+                latch.countDown();
+              }
+
+              @Override
+              public void onFailure(Throwable t) {
+                assertThat(t.getMessage(), is(errorMsg));
+                latch.countDown();
+              }
+            }
+        );
+        latch.await();
+      }
     }
 
     /**
@@ -468,6 +477,98 @@ public class LogicalSwitchApiTest {
             new FutureCallback<Void>() {
               @Override
               public void onSuccess(Void result) {
+                fail("Should not have succeeded");
+                latch.countDown();
+              }
+
+              @Override
+              public void onFailure(Throwable t) {
+                assertThat(t.getMessage(), is(errorMsg));
+                latch.countDown();
+              }
+            }
+        );
+        latch.await();
+      }
+    }
+
+    /**
+     * Tests for getting logical ports.
+     */
+    public static class LogicalPortGetListTest {
+      private static final int CALLBACK_ARG_INDEX = 3;
+
+      private LogicalSwitchApi logicalSwitchApi;
+      private CountDownLatch latch;
+
+      @BeforeMethod
+      public void setup() {
+        logicalSwitchApi = spy(new LogicalSwitchApi(mock(RestClient.class)));
+        latch = new CountDownLatch(1);
+      }
+
+      @Test
+      public void testSuccessfullyListPorts() throws Exception {
+        List<LogicalPort> logicalPorts = new ArrayList<>();
+        LogicalPort logicalPort = new LogicalPort();
+        logicalPort.setId(UUID.randomUUID().toString());
+        logicalPort.setLogicalSwitchId(UUID.randomUUID().toString());
+        logicalPorts.add(logicalPort);
+
+        LogicalPortListResult logicalPortListResult = new LogicalPortListResult();
+        logicalPortListResult.setResultCount(1);
+        logicalPortListResult.setLogicalPorts(logicalPorts);
+
+        doAnswer(invocation -> {
+          if (invocation.getArguments()[CALLBACK_ARG_INDEX] != null) {
+            ((FutureCallback<LogicalPortListResult>) invocation.getArguments()[CALLBACK_ARG_INDEX])
+                .onSuccess(logicalPortListResult);
+          }
+          return null;
+        }).when(logicalSwitchApi)
+            .getAsync(eq(logicalSwitchApi.logicalPortBasePath),
+                eq(HttpStatus.SC_OK),
+                any(TypeReference.class),
+                any(FutureCallback.class));
+
+        logicalSwitchApi.listLogicalSwitchPorts(
+            new FutureCallback<LogicalPortListResult>() {
+              @Override
+              public void onSuccess(LogicalPortListResult result) {
+                assertThat(result, is(logicalPortListResult));
+                latch.countDown();
+              }
+
+              @Override
+              public void onFailure(Throwable t) {
+                fail("Should not have failed");
+                latch.countDown();
+              }
+            }
+        );
+        latch.await();
+      }
+
+      @Test
+      public void testFailedToListPorts() throws Exception {
+        final String errorMsg = "Service is not available";
+
+        doAnswer(invocation -> {
+          if (invocation.getArguments()[CALLBACK_ARG_INDEX] != null) {
+            ((FutureCallback<Void>) invocation.getArguments()[CALLBACK_ARG_INDEX])
+                .onFailure(new RuntimeException(errorMsg));
+          }
+          return null;
+        }).when(logicalSwitchApi)
+            .getAsync(eq(logicalSwitchApi.logicalPortBasePath),
+                eq(HttpStatus.SC_OK),
+                any(TypeReference.class),
+                any(FutureCallback.class));
+
+        logicalSwitchApi.listLogicalSwitchPorts(
+            new FutureCallback<LogicalPortListResult>() {
+              @Override
+              public void onSuccess(LogicalPortListResult result) {
                 fail("Should not have succeeded");
                 latch.countDown();
               }

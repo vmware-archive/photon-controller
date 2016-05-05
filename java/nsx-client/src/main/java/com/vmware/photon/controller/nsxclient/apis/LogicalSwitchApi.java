@@ -16,6 +16,7 @@ package com.vmware.photon.controller.nsxclient.apis;
 import com.vmware.photon.controller.nsxclient.RestClient;
 import com.vmware.photon.controller.nsxclient.models.LogicalPort;
 import com.vmware.photon.controller.nsxclient.models.LogicalPortCreateSpec;
+import com.vmware.photon.controller.nsxclient.models.LogicalPortListResult;
 import com.vmware.photon.controller.nsxclient.models.LogicalSwitch;
 import com.vmware.photon.controller.nsxclient.models.LogicalSwitchCreateSpec;
 import com.vmware.photon.controller.nsxclient.models.LogicalSwitchState;
@@ -58,6 +59,19 @@ public class LogicalSwitchApi extends NsxClientApi {
         HttpStatus.SC_OK,
         new TypeReference<LogicalSwitchState>() {
         },
+        responseCallback
+    );
+  }
+
+  /**
+   * Get list of ports.
+   * @param responseCallback
+   */
+  public void listLogicalSwitchPorts(FutureCallback<LogicalPortListResult> responseCallback)
+      throws IOException {
+    getAsync(logicalPortBasePath,
+        HttpStatus.SC_OK,
+        new TypeReference<LogicalPortListResult>() {},
         responseCallback
     );
   }
