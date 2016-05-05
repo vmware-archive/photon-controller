@@ -1,0 +1,13 @@
+---
+clone:
+  tags: true
+  path: github.com/vmware/photon-controller
+
+build:
+  compile:
+    image: vmware/photon-controller-builder:latest
+    pull: true
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    commands:
+      - cd java; ./gradlew build
