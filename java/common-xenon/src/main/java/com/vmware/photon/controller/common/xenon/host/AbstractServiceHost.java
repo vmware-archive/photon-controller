@@ -16,12 +16,17 @@ package com.vmware.photon.controller.common.xenon.host;
 import com.vmware.xenon.common.ServiceHost;
 import com.vmware.xenon.common.UriUtils;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.nio.file.Paths;
 
 /**
  * This class implements a base class for {@link ServiceHost} classes in Photon Controller.
  */
 public abstract class AbstractServiceHost extends ServiceHost {
+
+  private static final Logger logger = LoggerFactory.getLogger(AbstractServiceHost.class);
 
   public AbstractServiceHost(XenonConfig xenonConfig) throws Throwable {
 
@@ -37,5 +42,15 @@ public abstract class AbstractServiceHost extends ServiceHost {
     }
 
     this.initialize(arguments);
+  }
+
+  @Override
+  public boolean checkServiceAvailable(String servicePath) {
+    if (super.checkServiceAvailable(servicePath)) {
+      return true;
+    } else {
+      logger.info("Service {} is not available yet. It is in {} stage", servicePath, getServiceStage(servicePath));
+      return false;
+    }
   }
 }
