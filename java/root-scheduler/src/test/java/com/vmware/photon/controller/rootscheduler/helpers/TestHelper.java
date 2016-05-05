@@ -14,13 +14,10 @@
 package com.vmware.photon.controller.rootscheduler.helpers;
 
 import com.vmware.photon.controller.common.config.BadConfigException;
-import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.thrift.ThriftModule;
 import com.vmware.photon.controller.common.thrift.ThriftServiceModule;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperModule;
 import com.vmware.photon.controller.host.gen.Host;
-import com.vmware.photon.controller.rootscheduler.Config;
-import com.vmware.photon.controller.rootscheduler.ConfigTest;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -30,10 +27,8 @@ import com.google.inject.TypeLiteral;
  * This class implements helper routines for tests.
  */
 public class TestHelper {
-  public static Injector createInjector(String configFileResourcePath)
+  public static Injector createInjector()
       throws BadConfigException {
-    Config config = ConfigBuilder.build(Config.class,
-        ConfigTest.class.getResource(configFileResourcePath).getPath());
     return Guice.createInjector(
         new ZookeeperModule(),
         new ThriftModule(),
@@ -41,6 +36,6 @@ public class TestHelper {
             new TypeLiteral<Host.AsyncClient>() {
             }
         ),
-        new TestRootSchedulerModule(config));
+        new TestRootSchedulerModule());
   }
 }
