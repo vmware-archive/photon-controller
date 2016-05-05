@@ -13,22 +13,26 @@
 
 package com.vmware.photon.controller.rootscheduler;
 
+import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.config.BadConfigException;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.logging.LoggingFactory;
 import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.photon.controller.common.thrift.ThriftModule;
 import com.vmware.photon.controller.common.thrift.ThriftServiceModule;
+import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.zookeeper.ServiceNode;
 import com.vmware.photon.controller.common.zookeeper.ServiceNodeFactory;
 import com.vmware.photon.controller.common.zookeeper.ServiceNodeUtils;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperModule;
+import com.vmware.photon.controller.common.zookeeper.ZookeeperServerSetFactory;
 import com.vmware.photon.controller.host.gen.Host;
+import com.vmware.photon.controller.rootscheduler.service.CloudStoreConstraintChecker;
+import com.vmware.photon.controller.rootscheduler.service.ConstraintChecker;
 import com.vmware.photon.controller.rootscheduler.xenon.SchedulerXenonHost;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
@@ -62,13 +66,22 @@ public class Main {
     new LoggingFactory(config.getLogging(), "rootscheduler").configure();
 
     Injector injector = Guice.createInjector(
-        new RootSchedulerModule(config),
+        new RootSchedulerModule(),
         new ZookeeperModule(config.getZookeeper()),
         new ThriftModule(),
         new ThriftServiceModule<>(new TypeLiteral<Host.AsyncClient>() {
         }));
 
-    final SchedulerXenonHost host = injector.getInstance(SchedulerXenonHost.class);
+    ZookeeperServerSetFactory serverSetFactory = injector.getInstance(ZookeeperServerSetFactory.class);
+    HostClientFactory hostClientFactory = injector.getInstance(HostClientFactory.class);
+    ServerSet cloudStoreServerSet = serverSetFactory.createServiceServerSet("cloudstore", true);
+
+    final CloudStoreHelper cloudStoreHelper = new CloudStoreHelper(cloudStoreServerSet);
+    final ConstraintChecker checker = new CloudStoreConstraintChecker(cloudStoreHelper);
+
+    final SchedulerXenonHost host = new SchedulerXenonHost(config.getXenonConfig(), hostClientFactory,
+        config, checker, cloudStoreHelper);
+
     final ServiceNodeFactory serviceNodeFactory = injector.getInstance(ServiceNodeFactory.class);
 
     Runtime.getRuntime().addShutdownHook(new Thread() {
@@ -85,7 +98,7 @@ public class Main {
     host.start();
 
     // Initialize the Zookeeper ServerSet.
-    ServerSet schedulerServerSet = injector.getInstance(Key.get(ServerSet.class, RootSchedulerServerSet.class));
+    ServerSet schedulerServerSet = serverSetFactory.createServiceServerSet("root-scheduler", true);
     logger.info("RootSchedulerServerSet {}", schedulerServerSet.getServers());
 
     // Register the local Scheduler Node with Zookeeper.

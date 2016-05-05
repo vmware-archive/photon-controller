@@ -312,7 +312,7 @@ public class PlacementTaskServiceTest {
       checker = new FakeConstraintChecker();
       when(hostClientFactory.create()).thenReturn(client);
       schedulerTestEnvironment = SchedulerTestEnvironment.create(
-          hostClientFactory, config, checker, xenonRestClient,
+          hostClientFactory, config, checker,
           cloudStoreHelper, 1);
     }
 
@@ -657,7 +657,7 @@ public class PlacementTaskServiceTest {
       this.cloudStoreHelper = new CloudStoreHelper(cloudStoreMachine.getServerSet());
 
       schedulerTestEnvironment = SchedulerTestEnvironment.create(
-          hostClientFactory, config, checker, this.cloudStoreClient,
+          hostClientFactory, config, checker,
           this.cloudStoreHelper, 1);
 
       ImageToImageDatastoreMappingService.State state = new ImageToImageDatastoreMappingService.State();
