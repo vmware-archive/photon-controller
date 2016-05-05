@@ -119,6 +119,7 @@ public class VmCreateStepCmd extends StepCommand {
     }
 
     NetworkConnectionSpec spec = new NetworkConnectionSpec();
+    spec.setIsVirtualNetwork(false);
 
     for (NetworkConnectionEntity networkConnectionEntity : networkEntityList) {
       checkNotNull(networkConnectionEntity.getNetwork());
