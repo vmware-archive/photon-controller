@@ -15,9 +15,11 @@ package com.vmware.photon.controller.apibackend.workflows;
 
 import com.vmware.photon.controller.api.NetworkState;
 import com.vmware.photon.controller.api.RoutingType;
+import com.vmware.photon.controller.apibackend.servicedocuments.ConfigureRoutingTask;
 import com.vmware.photon.controller.apibackend.servicedocuments.CreateLogicalRouterTask;
 import com.vmware.photon.controller.apibackend.servicedocuments.CreateLogicalSwitchTask;
 import com.vmware.photon.controller.apibackend.servicedocuments.CreateVirtualNetworkWorkflowDocument;
+import com.vmware.photon.controller.apibackend.tasks.ConfigureRoutingTaskService;
 import com.vmware.photon.controller.apibackend.tasks.CreateLogicalRouterTaskService;
 import com.vmware.photon.controller.apibackend.tasks.CreateLogicalSwitchTaskService;
 import com.vmware.photon.controller.apibackend.utils.ServiceHostUtils;
@@ -49,6 +51,9 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
     CreateVirtualNetworkWorkflowDocument.TaskState, CreateVirtualNetworkWorkflowDocument.TaskState.SubStage> {
 
   public static final String FACTORY_LINK = ServiceUriPaths.APIBACKEND_ROOT + "/create-virtual-network";
+
+  public static final String DEFAULT_TIER1_ROUTER_DOWNLINK_PORT_IP = "192.168.0.1";
+  public static final int DEFAULT_TIER1_ROUTER_DOWNLINK_PORT_IP_PREFIX_LEN = 16;
 
   public static FactoryService createFactory() {
     return FactoryService.create(CreateVirtualNetworkWorkflowService.class, CreateVirtualNetworkWorkflowDocument.class);
@@ -157,7 +162,7 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
         createLogicalRouter(state);
         break;
       case SET_UP_LOGICAL_ROUTER:
-        finish(state);
+        setUpLogicalRouter(state);
         break;
     }
   }
@@ -218,6 +223,7 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
             patchState.username = deploymentState.networkManagerUsername;
             patchState.password = deploymentState.networkManagerPassword;
             patchState.transportZoneId = deploymentState.networkZoneId;
+            patchState.tier0RouterId = deploymentState.networkTopRouterId;
             progress(state, patchState);
           } catch (Throwable t) {
             fail(state, t);
@@ -236,8 +242,7 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
     createLogicalSwitchTask.username = state.username;
     createLogicalSwitchTask.password = state.password;
     createLogicalSwitchTask.transportZoneId = state.transportZoneId;
-    createLogicalSwitchTask.displayName = NameUtils.getLogicalSwitchName(
-        ServiceUtils.getIDFromDocumentSelfLink(state.taskServiceEntity.documentSelfLink));
+    createLogicalSwitchTask.displayName = NameUtils.getLogicalSwitchName(getVirtualNetworkId(state));
     createLogicalSwitchTask.executionDelay = state.executionDelay;
 
     TaskUtils.startTaskAsync(
@@ -256,7 +261,8 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
                   CreateVirtualNetworkWorkflowDocument patchState = buildPatch(
                       TaskState.TaskStage.STARTED,
                       CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.CREATE_LOGICAL_ROUTER);
-                  patchState.logicalSwitchId = result.id;
+                  patchState.taskServiceEntity = state.taskServiceEntity;
+                  patchState.taskServiceEntity.logicalSwitchId = result.id;
                   progress(state, patchState);
                 } catch (Throwable t) {
                   fail(state, t);
@@ -283,14 +289,14 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
    * the workflow service.
    */
   private void createLogicalRouter(CreateVirtualNetworkWorkflowDocument state) {
+    String virtualNetworkId = getVirtualNetworkId(state);
+
     CreateLogicalRouterTask createLogicalRouterTask = new CreateLogicalRouterTask();
     createLogicalRouterTask.nsxManagerEndpoint = state.nsxManagerEndpoint;
     createLogicalRouterTask.username = state.username;
     createLogicalRouterTask.password = state.password;
-    createLogicalRouterTask.displayName = NameUtils.getLogicalRouterName(
-        ServiceUtils.getIDFromDocumentSelfLink(state.taskServiceEntity.documentSelfLink));
-    createLogicalRouterTask.description = NameUtils.getLogicalRouterDescription(
-        ServiceUtils.getIDFromDocumentSelfLink(state.taskServiceEntity.documentSelfLink));
+    createLogicalRouterTask.displayName = NameUtils.getLogicalRouterName(virtualNetworkId);
+    createLogicalRouterTask.description = NameUtils.getLogicalRouterDescription(virtualNetworkId);
 
     TaskUtils.startTaskAsync(
         this,
@@ -308,7 +314,8 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
                   CreateVirtualNetworkWorkflowDocument patchState = buildPatch(
                       TaskState.TaskStage.STARTED,
                       CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.SET_UP_LOGICAL_ROUTER);
-                  patchState.logicalRouterId = result.id;
+                  patchState.taskServiceEntity = state.taskServiceEntity;
+                  patchState.taskServiceEntity.logicalRouterId = result.id;
                   progress(state, patchState);
                 } catch (Throwable t) {
                   fail(state, t);
@@ -328,6 +335,107 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
           }
         }
     );
+  }
+
+  /**
+   * Configures the NSX logical router.
+   */
+  private void setUpLogicalRouter(CreateVirtualNetworkWorkflowDocument state) {
+    String virtualNetworkId = getVirtualNetworkId(state);
+
+    ConfigureRoutingTask configureRoutingTask = new ConfigureRoutingTask();
+    configureRoutingTask.routingType = state.routingType;
+    configureRoutingTask.nsxManagerEndpoint = state.nsxManagerEndpoint;
+    configureRoutingTask.username = state.username;
+    configureRoutingTask.password = state.password;
+    configureRoutingTask.logicalSwitchPortDisplayName =
+        NameUtils.getLogicalSwitchUplinkPortName(virtualNetworkId);
+    configureRoutingTask.logicalSwitchId = state.taskServiceEntity.logicalSwitchId;
+    configureRoutingTask.logicalTier1RouterDownLinkPortDisplayName =
+        NameUtils.getLogicalRouterDownlinkPortName(getVirtualNetworkId(state));
+    configureRoutingTask.logicalTier1RouterId = state.taskServiceEntity.logicalRouterId;
+    configureRoutingTask.logicalTier1RouterDownLinkPortIp = DEFAULT_TIER1_ROUTER_DOWNLINK_PORT_IP;
+    configureRoutingTask.logicalTier1RouterDownLinkPortIpPrefixLen = DEFAULT_TIER1_ROUTER_DOWNLINK_PORT_IP_PREFIX_LEN;
+    configureRoutingTask.logicalLinkPortOnTier0RouterDisplayName =
+        NameUtils.getTier0RouterDownlinkPortName(virtualNetworkId);
+    configureRoutingTask.logicalTier0RouterId = state.tier0RouterId;
+    configureRoutingTask.logicalLinkPortOnTier1RouterDisplayName =
+        NameUtils.getLogicalRouterUplinkPortName(virtualNetworkId);
+
+    TaskUtils.startTaskAsync(
+        this,
+        ConfigureRoutingTaskService.FACTORY_LINK,
+        configureRoutingTask,
+        (st) -> TaskUtils.finalTaskStages.contains(st.taskState.stage),
+        ConfigureRoutingTask.class,
+        state.subTaskPollIntervalInMilliseconds,
+        new FutureCallback<ConfigureRoutingTask>() {
+          @Override
+          public void onSuccess(ConfigureRoutingTask result) {
+            switch (result.taskState.stage) {
+              case FINISHED:
+                try {
+                  state.taskServiceEntity.logicalSwitchUplinkPortId = result.logicalSwitchPortId;
+                  state.taskServiceEntity.logicalRouterDownlinkPortId = result.logicalTier1RouterDownLinkPort;
+                  state.taskServiceEntity.logicalRouterUplinkPortId = result.logicalLinkPortOnTier1Router;
+                  state.taskServiceEntity.tier0RouterDownlinkPortId = result.logicalLinkPortOnTier0Router;
+
+                  updateVirtualNetwork(state);
+                } catch (Throwable t) {
+                  fail(state, t);
+                }
+                break;
+              case FAILED:
+              case CANCELLED:
+                fail(state, new IllegalStateException(
+                    String.format("Failed to configure routing: %s", result.taskState.failure.toString())));
+                break;
+            }
+          }
+
+          @Override
+          public void onFailure(Throwable t) {
+            fail(state, t);
+          }
+        }
+    );
+  }
+
+  /**
+   * Updates the VirtualNetwork entity in cloud-store.
+   */
+  private void updateVirtualNetwork(CreateVirtualNetworkWorkflowDocument state) {
+    VirtualNetworkService.State virtualNetworkPatchState = new VirtualNetworkService.State();
+    virtualNetworkPatchState.state = NetworkState.READY;
+    virtualNetworkPatchState.logicalSwitchId = state.taskServiceEntity.logicalSwitchId;
+    virtualNetworkPatchState.logicalRouterId = state.taskServiceEntity.logicalRouterId;
+    virtualNetworkPatchState.logicalSwitchUplinkPortId = state.taskServiceEntity.logicalSwitchUplinkPortId;
+    virtualNetworkPatchState.logicalRouterDownlinkPortId = state.taskServiceEntity.logicalRouterDownlinkPortId;
+    virtualNetworkPatchState.logicalRouterUplinkPortId = state.taskServiceEntity.logicalRouterUplinkPortId;
+    virtualNetworkPatchState.tier0RouterDownlinkPortId = state.taskServiceEntity.tier0RouterDownlinkPortId;
+
+    ServiceHostUtils.getCloudStoreHelper(getHost())
+        .createPatch(state.taskServiceEntity.documentSelfLink)
+        .setBody(virtualNetworkPatchState)
+        .setCompletion((op, ex) -> {
+          if (ex != null) {
+            fail(state, ex);
+            return;
+          }
+
+          try {
+            CreateVirtualNetworkWorkflowDocument patchState = buildPatch(
+                TaskState.TaskStage.FINISHED,
+                null);
+            patchState.taskServiceEntity = state.taskServiceEntity;
+            patchState.taskServiceEntity.state = NetworkState.READY;
+            finish(state, patchState);
+          } catch (Throwable t) {
+            fail(state, t);
+          }
+          finish(state);
+        })
+        .sendWith(this);
   }
 
   /**
@@ -357,5 +465,12 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
           create(state, operation);
         })
         .sendWith(this);
+  }
+
+  /**
+   * Gets the ID of the virtual network.
+   */
+  private String getVirtualNetworkId(CreateVirtualNetworkWorkflowDocument state) {
+    return ServiceUtils.getIDFromDocumentSelfLink(state.taskServiceEntity.documentSelfLink);
   }
 }

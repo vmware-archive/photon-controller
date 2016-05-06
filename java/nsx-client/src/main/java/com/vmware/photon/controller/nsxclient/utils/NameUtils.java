@@ -28,6 +28,10 @@ public class NameUtils {
   public static final String LOGICAL_SWITCH_NAME_PREFIX = "PC-LogicalSwitch-";
   public static final String LOGICAL_ROUTER_NAME_PREFIX = "PC-LogicalRouter-";
   public static final String LOGICAL_ROUTER_DESCRIPTION_PREFIX = "Photon Controller Logical Router ";
+  public static final String LOGICAL_SWITCH_UPLINK_PORT_NAME_PREFIX = "PC-LogicalSwitch-Uplink-Port-";
+  public static final String LOGICAL_ROUTER_DOWNLINK_PORT_NAME_PREFIX = "PC-LogicalRouter-Downlink-Port-";
+  public static final String LOGICAL_ROUTER_UPLINK_PORT_NAME_PREFIX = "PC-LogicalRouter-Uplink-Port-";
+  public static final String TIER0_ROUTER_DOWNLINK_PORT_NAME_PREFIX = "PC-Tier0Router-Downlink-Port-";
 
   public static String getFabricNodeName(String id) {
     return FABRIC_NODE_NAME_PREFIX + id;
@@ -63,5 +67,21 @@ public class NameUtils {
 
   public static String getLogicalRouterDescription(String id) {
     return LOGICAL_ROUTER_DESCRIPTION_PREFIX + id;
+  }
+
+  public static String getLogicalSwitchUplinkPortName(String id) {
+    return LOGICAL_SWITCH_UPLINK_PORT_NAME_PREFIX + id;
+  }
+
+  public static String getLogicalRouterDownlinkPortName(String id) {
+    return LOGICAL_ROUTER_DOWNLINK_PORT_NAME_PREFIX + id;
+  }
+
+  public static String getLogicalRouterUplinkPortName(String id) {
+    return LOGICAL_ROUTER_UPLINK_PORT_NAME_PREFIX + id;
+  }
+
+  public static String getTier0RouterDownlinkPortName(String id) {
+    return TIER0_ROUTER_DOWNLINK_PORT_NAME_PREFIX + id;
   }
 }

@@ -238,6 +238,32 @@ public abstract class BaseWorkflowService <S extends ServiceDocument, T extends 
   }
 
   /**
+   * Moves the service to the FINISHED state.
+   */
+  protected void finish(S state, S patchState) {
+    try {
+      TaskServiceUtils.complete(
+          this,
+          ServiceDocumentUtils.getTaskServiceState(state),
+          (op, ex) -> {
+            if (ex != null) {
+              fail(state, ex);
+              return;
+            }
+
+            try {
+              ServiceDocumentUtils.setTaskServiceState(patchState, op.getBody(TaskService.State.class));
+              TaskUtils.sendSelfPatch(this, patchState);
+            } catch (Throwable t) {
+              fail(state, t);
+            }
+          });
+    } catch (Throwable t) {
+      fail(state, t);
+    }
+  }
+
+  /**
    * Moves the service to the FAILED state.
    */
   protected void fail(S state, Throwable t) {

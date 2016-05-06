@@ -519,7 +519,7 @@ public class ConfigRoutingTaskServiceTest {
     }
 
     @Test
-    public void testSuccessfulConfigureInProvateNetwork() throws Throwable {
+    public void testSuccessfulConfigureInPrivateNetwork() throws Throwable {
       String logicalPortId = UUID.randomUUID().toString();
       String logicalRouterDownLinkPortId = UUID.randomUUID().toString();
 

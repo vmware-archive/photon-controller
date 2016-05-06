@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.apibackend.servicedocuments;
 
+import com.vmware.photon.controller.api.RoutingType;
 import com.vmware.photon.controller.apibackend.annotations.ControlFlagsField;
 import com.vmware.photon.controller.apibackend.annotations.TaskServiceEntityField;
 import com.vmware.photon.controller.apibackend.annotations.TaskServiceStateField;
@@ -69,6 +70,13 @@ public class CreateVirtualNetworkWorkflowDocument extends ServiceDocument{
   public String description;
 
   /**
+   * Whether this network is isolated or connected to outside.
+   */
+  @NotNull
+  @Immutable
+  public RoutingType routingType;
+
+  /**
    * Endpoint to the nsx manager.
    */
   @WriteOnce
@@ -93,16 +101,10 @@ public class CreateVirtualNetworkWorkflowDocument extends ServiceDocument{
   public String transportZoneId;
 
   /**
-   * ID of the nsx logical switch.
+   * ID of the nsx tier0 router.
    */
   @WriteOnce
-  public String logicalSwitchId;
-
-  /**
-   * ID of the nsx logical router.
-   */
-  @WriteOnce
-  public String logicalRouterId;
+  public String tier0RouterId;
 
   /**
    * The VirtualNetworkService.State object.

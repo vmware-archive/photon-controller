@@ -116,9 +116,47 @@ public class VirtualNetworkService extends StatefulService {
     @NotNull
     public NetworkState state;
 
+    /**
+     * Whether this network is isolated or connected to outside.
+     */
     @NotNull
     @WriteOnce
     public RoutingType routingType;
+
+    /**
+     * ID of the nsx logical switch.
+     */
+    @WriteOnce
+    public String logicalSwitchId;
+
+    /**
+     * ID of the nsx tier1 logical router.
+     */
+    @WriteOnce
+    public String logicalRouterId;
+
+    /**
+     * ID of the port on the logical switch that connects to the tier1 logical router.
+     */
+    @WriteOnce
+    public String logicalSwitchUplinkPortId;
+
+    /**
+     * ID of the port on the tier1 logical router that connects to the logical switch.
+     */
+    @WriteOnce
+    public String logicalRouterDownlinkPortId;
+
+    /**
+     * ID of the port on the tier1 logical router that connects to the tier0 logical router.
+     */
+    @WriteOnce
+    public String logicalRouterUplinkPortId;
+
+    /**
+     * ID of the port on the tier0 logical router that connects to the tier1 logical router.
+     */
+    public String tier0RouterDownlinkPortId;
 
     public Long deleteRequestTime;
   }

@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.apibackend.workflows;
 
+import com.vmware.photon.controller.api.RoutingType;
 import com.vmware.photon.controller.apibackend.helpers.ReflectionUtils;
 import com.vmware.photon.controller.apibackend.helpers.TestEnvironment;
 import com.vmware.photon.controller.apibackend.helpers.TestHelper;
@@ -78,6 +79,7 @@ public class CreateVirtualNetworkWorkflowServiceTest {
     startState.name = "name";
     startState.description = "desc";
     startState.executionDelay = 10;
+    startState.routingType = RoutingType.ROUTED;
 
     return startState;
   }
@@ -566,8 +568,13 @@ public class CreateVirtualNetworkWorkflowServiceTest {
     private static final String NETWORK_MANAGER_USERNAME = "networkManagerUsername";
     private static final String NETWORK_MANAGER_PASSWORD = "networkManagerPassword";
     private static final String NETWORK_ZONE_ID = "networkZoneId";
+    private static final String NETWORK_TOP_ROUTER_ID = "networkTopRouterId";
     private static final String LOGICAL_SWITCH_ID = "logicalSwitchId";
     private static final String LOGICAL_ROUTER_ID = "logicalRouterId";
+    private static final String LOGICAL_SWITCH_UPLINK_PORT_ID = "logicalSwitchUplinkPortId";
+    private static final String LOGICAL_ROUTER_DONWLINK_PORT_ID = "logicalRouterDownlinkPortId";
+    private static final String LOGICAL_ROUTER_UPLINK_PORT_ID = "logicalRouterUplinkPortId";
+    private static final String TIER0_ROUTER_DOWNLINK_PORT_ID = "tier0RouterDownlinkPortId";
 
     private CreateVirtualNetworkWorkflowDocument startState;
     private DeploymentService.State deploymentStartState;
@@ -590,6 +597,7 @@ public class CreateVirtualNetworkWorkflowServiceTest {
       deploymentStartState.networkManagerUsername = NETWORK_MANAGER_USERNAME;
       deploymentStartState.networkManagerPassword = NETWORK_MANAGER_PASSWORD;
       deploymentStartState.networkZoneId = NETWORK_ZONE_ID;
+      deploymentStartState.networkTopRouterId = NETWORK_TOP_ROUTER_ID;
 
       nsxClientFactory = mock(NsxClientFactory.class);
     }
@@ -603,14 +611,18 @@ public class CreateVirtualNetworkWorkflowServiceTest {
     }
 
     /**
-     * Verifies that the workflow succeeds to create one and only one virtual network entity in cloud-store.
+     * Verifies that the workflow succeeds to create a public virtual network.
      */
     @Test(dataProvider = "hostCount")
-    public void succeedsToCreateVirtualNetwork(int hostCount) throws Throwable {
+    public void succeedsToCreatePublicVirtualNetwork(int hostCount) throws Throwable {
       nsxClientMock = new NsxClientMock.Builder()
           .createLogicalSwitch(true, LOGICAL_SWITCH_ID)
           .getLogicalSwitchState(true, LOGICAL_SWITCH_ID)
           .createLogicalRouter(true, LOGICAL_ROUTER_ID)
+          .createLogicalPort(true, LOGICAL_SWITCH_UPLINK_PORT_ID)
+          .createLogicalRouterDownLinkPort(true, LOGICAL_ROUTER_DONWLINK_PORT_ID)
+          .createLogicalLinkPortOnTier0Router(true, TIER0_ROUTER_DOWNLINK_PORT_ID)
+          .createLogicalLinkPortOnTier1Router(true, LOGICAL_ROUTER_UPLINK_PORT_ID)
           .build();
       doReturn(nsxClientMock).when(nsxClientFactory).create(any(String.class), any(String.class), any(String.class));
 
@@ -661,12 +673,128 @@ public class CreateVirtualNetworkWorkflowServiceTest {
       assertThat(finalState.username, is(NETWORK_MANAGER_USERNAME));
       assertThat(finalState.password, is(NETWORK_MANAGER_PASSWORD));
       assertThat(finalState.transportZoneId, is(NETWORK_ZONE_ID));
+      assertThat(finalState.tier0RouterId, is(NETWORK_TOP_ROUTER_ID));
 
-      // Verifies that logical switch ID is cached in the service document.
-      assertThat(finalState.logicalSwitchId, is(LOGICAL_SWITCH_ID));
+      // Verifies that logical switch ID is cached in the service document, and persisted in the
+      // virtual network entity.
+      assertThat(expectedVirtualNetworkServiceState.logicalSwitchId, is(LOGICAL_SWITCH_ID));
+      assertEquals(actualVirtualNetworkServiceState.logicalSwitchId,
+          expectedVirtualNetworkServiceState.logicalSwitchId);
 
-      // Verifies that logical router ID is cached in the service document.
-      assertThat(finalState.logicalRouterId, is(LOGICAL_ROUTER_ID));
+      // Verifies that logical router ID is cached in the service document, and persisted in the
+      // virtual network entity.
+      assertThat(finalState.taskServiceEntity.logicalRouterId, is(LOGICAL_ROUTER_ID));
+      assertEquals(actualVirtualNetworkServiceState.logicalRouterId,
+          expectedVirtualNetworkServiceState.logicalRouterId);
+
+      // Verifies that logical port IDs are cached in the service document, and persisted in the
+      // virtual network entity.
+      assertThat(expectedVirtualNetworkServiceState.logicalSwitchUplinkPortId, is(LOGICAL_SWITCH_UPLINK_PORT_ID));
+      assertThat(expectedVirtualNetworkServiceState.logicalRouterDownlinkPortId, is(LOGICAL_ROUTER_DONWLINK_PORT_ID));
+      assertThat(finalState.taskServiceEntity.logicalRouterUplinkPortId, is(LOGICAL_ROUTER_UPLINK_PORT_ID));
+      assertThat(finalState.taskServiceEntity.tier0RouterDownlinkPortId, is(TIER0_ROUTER_DOWNLINK_PORT_ID));
+      assertEquals(actualVirtualNetworkServiceState.logicalSwitchUplinkPortId,
+          expectedVirtualNetworkServiceState.logicalSwitchUplinkPortId);
+      assertEquals(actualVirtualNetworkServiceState.logicalRouterDownlinkPortId,
+          expectedVirtualNetworkServiceState.logicalRouterDownlinkPortId);
+      assertEquals(actualVirtualNetworkServiceState.logicalRouterUplinkPortId,
+          expectedVirtualNetworkServiceState.logicalRouterUplinkPortId);
+      assertEquals(actualVirtualNetworkServiceState.tier0RouterDownlinkPortId,
+          expectedVirtualNetworkServiceState.tier0RouterDownlinkPortId);
+    }
+
+    /**
+     * Verifies that the workflow succeeds to create a private virtual network.
+     */
+    @Test
+    public void succeedsToCreatePrivateVirtualNetwork() throws Throwable {
+      nsxClientMock = new NsxClientMock.Builder()
+          .createLogicalSwitch(true, LOGICAL_SWITCH_ID)
+          .getLogicalSwitchState(true, LOGICAL_SWITCH_ID)
+          .createLogicalRouter(true, LOGICAL_ROUTER_ID)
+          .createLogicalPort(true, LOGICAL_SWITCH_UPLINK_PORT_ID)
+          .createLogicalRouterDownLinkPort(true, LOGICAL_ROUTER_DONWLINK_PORT_ID)
+          .createLogicalLinkPortOnTier0Router(true, TIER0_ROUTER_DOWNLINK_PORT_ID)
+          .createLogicalLinkPortOnTier1Router(true, LOGICAL_ROUTER_UPLINK_PORT_ID)
+          .build();
+      doReturn(nsxClientMock).when(nsxClientFactory).create(any(String.class), any(String.class), any(String.class));
+
+      testEnvironment = new TestEnvironment.Builder()
+          .hostCount(1)
+          .cloudStoreHelper(new CloudStoreHelper())
+          .nsxClientFactory(nsxClientFactory)
+          .build();
+
+      testEnvironment.callServiceAndWaitForState(
+          DeploymentServiceFactory.SELF_LINK,
+          deploymentStartState,
+          DeploymentService.State.class,
+          (state) -> true);
+
+      startState.routingType = RoutingType.ISOLATED;
+      CreateVirtualNetworkWorkflowDocument finalState =
+          testEnvironment.callServiceAndWaitForState(
+              CreateVirtualNetworkWorkflowService.FACTORY_LINK,
+              startState,
+              CreateVirtualNetworkWorkflowDocument.class,
+              (state) -> TaskState.TaskStage.FINISHED == state.taskState.stage);
+
+      // Verifies that one and only one virtual network entity is created in cloud-store.
+      assertThat(finalState.taskServiceEntity, notNullValue());
+      VirtualNetworkService.State expectedVirtualNetworkServiceState = finalState.taskServiceEntity;
+      VirtualNetworkService.State actualVirtualNetworkServiceState = testEnvironment.getServiceState(
+          finalState.taskServiceEntity.documentSelfLink,
+          VirtualNetworkService.State.class);
+
+      assertThat(actualVirtualNetworkServiceState, notNullValue());
+      assertEquals(actualVirtualNetworkServiceState.name, expectedVirtualNetworkServiceState.name);
+      assertEquals(actualVirtualNetworkServiceState.description, expectedVirtualNetworkServiceState.description);
+      assertEquals(actualVirtualNetworkServiceState.state, expectedVirtualNetworkServiceState.state);
+      assertEquals(actualVirtualNetworkServiceState.routingType, expectedVirtualNetworkServiceState.routingType);
+
+      QueryTask.Query kindClause = new QueryTask.Query()
+          .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
+          .setTermMatchValue(Utils.buildKind(VirtualNetworkService.State.class));
+
+      QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
+      querySpecification.query.addBooleanClause(kindClause);
+      QueryTask queryTask = QueryTask.create(querySpecification).setDirect(true);
+      NodeGroupBroadcastResponse queryResponse = testEnvironment.sendBroadcastQueryAndWait(queryTask);
+      assertThat(QueryTaskUtils.getBroadcastQueryDocumentLinks(queryResponse).size(), is(1));
+
+      // Verifies that NSX configuration is cached in the service document.
+      assertThat(finalState.nsxManagerEndpoint, is(NETWORK_MANAGER_ADDRESS));
+      assertThat(finalState.username, is(NETWORK_MANAGER_USERNAME));
+      assertThat(finalState.password, is(NETWORK_MANAGER_PASSWORD));
+      assertThat(finalState.transportZoneId, is(NETWORK_ZONE_ID));
+      assertThat(finalState.tier0RouterId, is(NETWORK_TOP_ROUTER_ID));
+
+      // Verifies that logical switch ID is cached in the service document, and persisted in the
+      // virtual network entity.
+      assertThat(expectedVirtualNetworkServiceState.logicalSwitchId, is(LOGICAL_SWITCH_ID));
+      assertEquals(actualVirtualNetworkServiceState.logicalSwitchId,
+          expectedVirtualNetworkServiceState.logicalSwitchId);
+
+      // Verifies that logical router ID is cached in the service document, and persisted in the
+      // virtual network entity.
+      assertThat(finalState.taskServiceEntity.logicalRouterId, is(LOGICAL_ROUTER_ID));
+      assertEquals(actualVirtualNetworkServiceState.logicalRouterId,
+          expectedVirtualNetworkServiceState.logicalRouterId);
+
+      // Verifies that logical port IDs are cached in the service document, and persisted in the
+      // virtual network entity.
+      assertThat(expectedVirtualNetworkServiceState.logicalSwitchUplinkPortId, is(LOGICAL_SWITCH_UPLINK_PORT_ID));
+      assertThat(expectedVirtualNetworkServiceState.logicalRouterDownlinkPortId, is(LOGICAL_ROUTER_DONWLINK_PORT_ID));
+      assertThat(expectedVirtualNetworkServiceState.logicalRouterUplinkPortId, nullValue());
+      assertThat(expectedVirtualNetworkServiceState.tier0RouterDownlinkPortId, nullValue());
+      assertEquals(actualVirtualNetworkServiceState.logicalSwitchUplinkPortId,
+          expectedVirtualNetworkServiceState.logicalSwitchUplinkPortId);
+      assertEquals(actualVirtualNetworkServiceState.logicalRouterDownlinkPortId,
+          expectedVirtualNetworkServiceState.logicalRouterDownlinkPortId);
+      assertEquals(actualVirtualNetworkServiceState.logicalRouterUplinkPortId,
+          expectedVirtualNetworkServiceState.logicalRouterUplinkPortId);
+      assertEquals(actualVirtualNetworkServiceState.tier0RouterDownlinkPortId,
+          expectedVirtualNetworkServiceState.tier0RouterDownlinkPortId);
     }
 
     /**
@@ -693,6 +821,7 @@ public class CreateVirtualNetworkWorkflowServiceTest {
       assertThat(finalState.username, nullValue());
       assertThat(finalState.password, nullValue());
       assertThat(finalState.transportZoneId, nullValue());
+      assertThat(finalState.tier0RouterId, nullValue());
     }
 
     /**
@@ -728,9 +857,14 @@ public class CreateVirtualNetworkWorkflowServiceTest {
               (state) -> TaskState.TaskStage.FAILED == state.taskState.stage);
 
       // Verifies that logical switch ID is empty in the service document.
-      assertThat(finalState.logicalSwitchId, nullValue());
+      assertThat(finalState.taskServiceEntity.logicalSwitchId, nullValue());
     }
 
+    /**
+     * Verifies that when CREATE_LOGICAL_ROUTER sub-stage fails, the workflow will progress to FAILED state,
+     * and no logical router ID is cached in the service document. We simulate the failure by failing the
+     * NSX API call in the NsxClientMock.
+     */
     @Test(dataProvider = "hostCount")
     public void failsToCreateLogicalRouter(int hostCount) throws Throwable {
       nsxClientMock = new NsxClientMock.Builder()
@@ -760,7 +894,51 @@ public class CreateVirtualNetworkWorkflowServiceTest {
               (state) -> TaskState.TaskStage.FAILED == state.taskState.stage);
 
       // Verifies that logical router ID is empty in the service document.
-      assertThat(finalState.logicalRouterId, nullValue());
+      assertThat(finalState.taskServiceEntity.logicalRouterId, nullValue());
+    }
+
+    /**
+     * Verifies that when SET_UP_LOGICAL_ROUTER sub-stage fails, the workflow will progress to FAILED state,
+     * and no logical port IDs are cached in the service document. We simulate the failure by failing the
+     * NSX API call in the NsxClientMock.
+     */
+    @Test(dataProvider = "hostCount")
+    public void failsToSetUpLogicalRouter(int hostCount) throws Throwable {
+      nsxClientMock = new NsxClientMock.Builder()
+          .createLogicalSwitch(true, LOGICAL_SWITCH_ID)
+          .getLogicalSwitchState(true, LOGICAL_SWITCH_ID)
+          .createLogicalRouter(true, LOGICAL_ROUTER_ID)
+          .createLogicalPort(false, LOGICAL_SWITCH_UPLINK_PORT_ID)
+          .createLogicalRouterDownLinkPort(false, LOGICAL_ROUTER_DONWLINK_PORT_ID)
+          .createLogicalLinkPortOnTier0Router(false, TIER0_ROUTER_DOWNLINK_PORT_ID)
+          .createLogicalLinkPortOnTier1Router(false, LOGICAL_ROUTER_UPLINK_PORT_ID)
+          .build();
+      doReturn(nsxClientMock).when(nsxClientFactory).create(any(String.class), any(String.class), any(String.class));
+
+      testEnvironment = new TestEnvironment.Builder()
+          .hostCount(hostCount)
+          .cloudStoreHelper(new CloudStoreHelper())
+          .nsxClientFactory(nsxClientFactory)
+          .build();
+
+      testEnvironment.callServiceAndWaitForState(
+          DeploymentServiceFactory.SELF_LINK,
+          deploymentStartState,
+          DeploymentService.State.class,
+          (state) -> true);
+
+      CreateVirtualNetworkWorkflowDocument finalState =
+          testEnvironment.callServiceAndWaitForState(
+              CreateVirtualNetworkWorkflowService.FACTORY_LINK,
+              startState,
+              CreateVirtualNetworkWorkflowDocument.class,
+              (state) -> TaskState.TaskStage.FAILED == state.taskState.stage);
+
+      // Verifies that logical port IDs are cached in the service document.
+      assertThat(finalState.taskServiceEntity.logicalSwitchUplinkPortId, nullValue());
+      assertThat(finalState.taskServiceEntity.logicalRouterDownlinkPortId, nullValue());
+      assertThat(finalState.taskServiceEntity.logicalRouterUplinkPortId, nullValue());
+      assertThat(finalState.taskServiceEntity.tier0RouterDownlinkPortId, nullValue());
     }
 
     @DataProvider(name = "hostCount")
