@@ -20,6 +20,7 @@ import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundExce
 import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.OperationJoin;
+import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.ServiceDocumentQueryResult;
 import com.vmware.xenon.common.ServiceErrorResponse;
@@ -511,6 +512,11 @@ public class XenonRestClient implements XenonClient {
         break;
       case Operation.STATUS_CODE_BAD_REQUEST:
         throw new BadRequestException(requestedOperation, completedOperation);
+      case Operation.STATUS_CODE_CONFLICT:
+        if (completedOperation.getAction() == Service.Action.DELETE) {
+          return;
+        }
+        // fall through
       default:
         handleUnknownError(requestedOperation, completedOperation);
     }
