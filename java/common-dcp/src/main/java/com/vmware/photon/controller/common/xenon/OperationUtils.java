@@ -17,6 +17,7 @@ import com.vmware.photon.controller.common.xenon.exceptions.BadRequestException;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
 import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
 import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceErrorResponse;
 import com.vmware.xenon.common.Utils;
 
@@ -110,6 +111,11 @@ public class OperationUtils {
         throw new TimeoutException(completedOperation.getBody(ServiceErrorResponse.class).message);
       case Operation.STATUS_CODE_BAD_REQUEST:
         throw new BadRequestException(requestedOperation, completedOperation);
+      case Operation.STATUS_CODE_CONFLICT:
+        if (completedOperation.getAction() == Service.Action.DELETE) {
+          return completedOperation;
+        }
+        // fall-through
       default:
         throw new XenonRuntimeException(requestedOperation, completedOperation);
     }
