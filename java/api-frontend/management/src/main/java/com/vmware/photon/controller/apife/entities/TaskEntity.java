@@ -42,6 +42,7 @@ public class TaskEntity extends BaseEntity {
   private String entityKind;
   private State state;
   private Operation operation;
+  private String operationString;
   private Date startedTime;
   private Date queuedTime;
   private Date endTime;
@@ -99,6 +100,14 @@ public class TaskEntity extends BaseEntity {
 
   public void setOperation(Operation operation) {
     this.operation = operation;
+  }
+
+  public String getOperationString() {
+    return operationString;
+  }
+
+  public void setOperationString(String operationString) {
+    this.operationString = operationString;
   }
 
   public Date getStartedTime() {
@@ -202,7 +211,7 @@ public class TaskEntity extends BaseEntity {
         .add("entityId", entityId)
         .add("entityKind", entityKind)
         .add("state", state)
-        .add("operation", operation)
+        .add("operation", operation != null ? operation : operationString)
         .add("startedTime", startedTime)
         .add("queuedTime", queuedTime)
         .add("endTime", endTime);
