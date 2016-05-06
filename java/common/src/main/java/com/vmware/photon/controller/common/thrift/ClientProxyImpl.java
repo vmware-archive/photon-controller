@@ -142,6 +142,11 @@ public class ClientProxyImpl<C extends TAsyncClient> implements ClientProxy<C> {
     };
   }
 
+  /**
+   * Extract the current request ID from the Logging MDC, and convert it to
+   * a TracingInfo. This will be passed through Thrift so that we can preserve
+   * the request ID for logging purposes.
+   */
   private TracingInfo getRequestTracingInfo() {
     TracingInfo tracingInfo = new TracingInfo();
     String requestId = LoggingUtils.getRequestId();
