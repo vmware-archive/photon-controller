@@ -99,6 +99,13 @@ public class ServiceUtils {
     LoggerFactory.getLogger(service.getClass()).warn(getFmtMsg(service, fmt, args));
   }
 
+  /**
+   * Format a string for logging
+   *
+   * Note that this includes the requestID (if available) in the log message.
+   * For Xenon services, the requestID was passed in the context ID header.
+   * Xenon kindly stashed that in thread-local storage, and we extract it.
+   */
   @VisibleForTesting
   protected static String getFmtMsg(Service service, String fmt, Object... args) {
     String requestId = UtilsHelper.getThreadContextId();
