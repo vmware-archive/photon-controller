@@ -41,8 +41,6 @@ from gen.host.ttypes import HostMode
 from gen.host.ttypes import Ipv4Address
 from gen.host.ttypes import MksTicketRequest
 from gen.host.ttypes import MksTicketResultCode
-from gen.host.ttypes import NetworkConnectionSpec
-from gen.host.ttypes import NicConnectionSpec
 from gen.host.ttypes import ServiceTicketRequest
 from gen.host.ttypes import ServiceTicketResultCode
 from gen.host.ttypes import ServiceType
@@ -139,10 +137,9 @@ class VmWrapper(object):
                   project_id="p1")
 
     @staticmethod
-    def create_request(res_id, env=None, network=None):
+    def create_request(res_id, env=None):
         return Host.CreateVmRequest(reservation=res_id,
-                                    environment=env,
-                                    network_connection_spec=network)
+                                    environment=env)
 
     def delete_request(self, disk_ids=None, force=False):
         return Host.DeleteVmRequest(vm_id=self.id,
@@ -821,65 +818,6 @@ class AgentCommonTests(object):
         assert_that(len(result.network_info), is_(1))
         assert_that(result.network_info[0].network == "VM Network" or
                     result.network_info[0].network == "Network-0000")
-
-        # delete the disk and the vm
-        vm_wrapper.delete(request=vm_wrapper.delete_request())
-
-    def test_network(self):
-        vm_wrapper = VmWrapper(self.host_client)
-        image = DiskImage("ttylinux", CloneType.FULL_COPY)
-        disks = [
-            Disk(new_id(), self.DEFAULT_DISK_FLAVOR.name, False, True,
-                 image=image, capacity_gb=1,
-                 flavor_info=self.DEFAULT_DISK_FLAVOR),
-        ]
-
-        # create disk
-        reservation = \
-            vm_wrapper.place_and_reserve(vm_disks=disks).reservation
-
-        # create vm with network info specified
-        ip = Ipv4Address("10.146.30.120", "255.255.255.0")
-        ip2 = Ipv4Address("10.146.30.121", "255.255.255.0")
-
-        # In a host simulator environment the vm network portgroup is
-        # named differently.
-        nic = [NicConnectionSpec("VM Network", ip),
-               NicConnectionSpec("VM Network", ip2)]
-        network = NetworkConnectionSpec(nic, "10.146.30.1")
-        request = vm_wrapper.create_request(res_id=reservation,
-                                            network=network)
-        vm_id = vm_wrapper.create(request=request).vm.id
-        response = vm_wrapper.get_network(vm_id=vm_id)
-        self.assertEqual(len(response.network_info), 2)
-
-        # delete the disk and the vm
-        vm_wrapper.delete(request=vm_wrapper.delete_request())
-
-    def test_port_group(self):
-        # create vm with network_name (port_group) but without ip
-        vm_wrapper = VmWrapper(self.host_client)
-        image = DiskImage("ttylinux", CloneType.FULL_COPY)
-        disks = [
-            Disk(new_id(), self.DEFAULT_DISK_FLAVOR.name, False, True,
-                 image=image, capacity_gb=1,
-                 flavor_info=self.DEFAULT_DISK_FLAVOR),
-        ]
-
-        # create disk
-        reservation = \
-            vm_wrapper.place_and_reserve(vm_disks=disks).reservation
-
-        # In a host simulator environment the vm network portgroup is
-        # named differently.
-        nic = [NicConnectionSpec("VM Network"),
-               NicConnectionSpec("VM Network")]
-        network = NetworkConnectionSpec(nic, "10.146.30.1")
-        request = vm_wrapper.create_request(res_id=reservation,
-                                            network=network)
-        vm_id = vm_wrapper.create(request=request).vm.id
-        response = vm_wrapper.get_network(vm_id=vm_id)
-        self.assertEqual(len(response.network_info), 2)
 
         # delete the disk and the vm
         vm_wrapper.delete(request=vm_wrapper.delete_request())
