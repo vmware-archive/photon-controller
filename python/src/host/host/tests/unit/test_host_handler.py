@@ -596,11 +596,9 @@ class HostHandlerTestCase(unittest.TestCase):
 
         mock_env = MagicMock()
         mock_reservation = MagicMock()
-        mock_net_spec = MagicMock()
 
         req = CreateVmRequest(reservation=mock_reservation,
-                              environment=mock_env,
-                              network_connection_spec=mock_net_spec)
+                              environment=mock_env)
         image_id = stable_uuid('image_id')
         handler = HostHandler(MagicMock())
         pm = handler.hypervisor.placement_manager

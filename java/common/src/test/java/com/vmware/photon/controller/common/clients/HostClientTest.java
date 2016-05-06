@@ -73,12 +73,9 @@ import com.vmware.photon.controller.host.gen.GetVmNetworkResponse;
 import com.vmware.photon.controller.host.gen.GetVmNetworkResultCode;
 import com.vmware.photon.controller.host.gen.Host;
 import com.vmware.photon.controller.host.gen.HostMode;
-import com.vmware.photon.controller.host.gen.Ipv4Address;
 import com.vmware.photon.controller.host.gen.MksTicketRequest;
 import com.vmware.photon.controller.host.gen.MksTicketResponse;
 import com.vmware.photon.controller.host.gen.MksTicketResultCode;
-import com.vmware.photon.controller.host.gen.NetworkConnectionSpec;
-import com.vmware.photon.controller.host.gen.NicConnectionSpec;
 import com.vmware.photon.controller.host.gen.PowerVmOp;
 import com.vmware.photon.controller.host.gen.PowerVmOpRequest;
 import com.vmware.photon.controller.host.gen.PowerVmOpResponse;
@@ -107,7 +104,6 @@ import com.vmware.photon.controller.scheduler.gen.PlaceResponse;
 import com.vmware.photon.controller.scheduler.gen.PlaceResultCode;
 
 import com.example.echo.Echoer;
-import com.google.common.collect.ImmutableMap;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.TypeLiteral;
@@ -139,7 +135,6 @@ import static org.testng.Assert.fail;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -945,12 +940,10 @@ public class HostClientTest {
   public class CreateVmTest {
 
     private String reservation = "reservation";
-    private NetworkConnectionSpec networkConnectionSpec;
 
     @BeforeMethod
     private void setUp() {
       HostClientTest.this.setUp();
-      networkConnectionSpec = createSpec(ImmutableMap.of("key", "value"), "networkName");
     }
 
     @AfterMethod
@@ -980,14 +973,14 @@ public class HostClientTest {
           .when(clientProxy).create_vm(any(CreateVmRequest.class), any(AsyncMethodCallback.class));
 
       hostClient.setClientProxy(clientProxy);
-      assertThat(hostClient.createVm(reservation, networkConnectionSpec, null),
+      assertThat(hostClient.createVm(reservation, null),
           is(createVmResponse));
     }
 
     @Test
     public void testFailureNullHostIp() throws Exception {
       try {
-        hostClient.createVm(reservation, networkConnectionSpec, null);
+        hostClient.createVm(reservation, null);
         fail("Synchronous createVm call should throw with null async clientProxy");
       } catch (IllegalArgumentException e) {
         assertThat(e.toString(), is("java.lang.IllegalArgumentException: hostname can't be null"));
@@ -1002,7 +995,7 @@ public class HostClientTest {
       hostClient.setClientProxy(clientProxy);
 
       try {
-        hostClient.createVm(reservation, networkConnectionSpec, null);
+        hostClient.createVm(reservation, null);
         fail("Synchronous createVm call should convert TException on call to RpcException");
       } catch (RpcException e) {
         assertThat(e.getMessage(), is("Thrift exception"));
@@ -1019,7 +1012,7 @@ public class HostClientTest {
       hostClient.setClientProxy(clientProxy);
 
       try {
-        hostClient.createVm(reservation, networkConnectionSpec, null);
+        hostClient.createVm(reservation, null);
         fail("Synchronous createVm call should convert TException on getResult to RpcException");
       } catch (RpcException e) {
         assertThat(e.getMessage(), is("Thrift exception"));
@@ -1041,7 +1034,7 @@ public class HostClientTest {
       hostClient.setClientProxy(clientProxy);
 
       try {
-        hostClient.createVm(reservation, networkConnectionSpec, null);
+        hostClient.createVm(reservation, null);
         fail("Synchronous createVm call should throw on failure result: " + resultCode.toString());
       } catch (Exception e) {
         assertTrue(e.getClass() == exceptionClass);
@@ -1062,17 +1055,6 @@ public class HostClientTest {
 
     @Test(enabled = false)
     public void testFailureUnknownResult() {
-    }
-
-    private NetworkConnectionSpec createSpec(Map<String, String> networkSettings, String networkName) {
-      NetworkConnectionSpec spec = new NetworkConnectionSpec();
-
-      Ipv4Address ip = new Ipv4Address(networkSettings.get("vm_network_ip"), networkSettings.get("vm_network_netmask"));
-      NicConnectionSpec nicConnectionSpec = new NicConnectionSpec(networkName);
-      nicConnectionSpec.setIp_address(ip);
-      spec.addToNic_spec(nicConnectionSpec);
-      spec.setDefault_gateway(networkSettings.get("vm_network_gateway"));
-      return spec;
     }
   }
 
