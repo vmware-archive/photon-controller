@@ -45,4 +45,6 @@ public class ServicePortConstants {
   public static final int MANAGEMENT_UI_HTTPS_PORT = 20001;
 
   public static final int ESXI_PORT = 443;
+
+  public static final int DHCP_AGENT_PORT = 17000;
 }

@@ -46,6 +46,8 @@ import com.vmware.photon.controller.deployer.deployengine.ZookeeperClientFactory
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperNameSpace;
 import com.vmware.photon.controller.deployer.healthcheck.HealthCheckHelper;
 import com.vmware.photon.controller.deployer.healthcheck.HealthCheckHelperFactory;
+import com.vmware.photon.controller.deployer.healthcheck.HealthChecker;
+import com.vmware.photon.controller.deployer.healthcheck.XenonBasedHealthChecker;
 import com.vmware.photon.controller.deployer.service.client.AddHostWorkflowServiceClientFactory;
 import com.vmware.photon.controller.deployer.service.client.ChangeHostModeTaskServiceClientFactory;
 import com.vmware.photon.controller.deployer.service.client.DeploymentWorkflowServiceClientFactory;
@@ -156,6 +158,7 @@ public class DeployerModule extends AbstractModule {
 
     install(new FactoryModuleBuilder()
         .implement(HealthCheckHelper.class, HealthCheckHelper.class)
+        .implement(HealthChecker.class, XenonBasedHealthChecker.class)
         .build(HealthCheckHelperFactory.class));
 
     install(new FactoryModuleBuilder()

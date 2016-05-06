@@ -42,6 +42,7 @@ import com.vmware.photon.controller.deployer.configuration.ServiceConfigurator;
 import com.vmware.photon.controller.deployer.configuration.ZookeeperServer;
 import com.vmware.photon.controller.deployer.dcp.ContainersConfig;
 import com.vmware.photon.controller.deployer.dcp.DeployerContext;
+import com.vmware.photon.controller.deployer.dcp.constant.ServicePortConstants;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerService;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateService;
 import com.vmware.photon.controller.deployer.dcp.entity.VmService;
@@ -50,6 +51,7 @@ import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
 import com.vmware.photon.controller.deployer.dcp.util.MiscUtils;
 import com.vmware.photon.controller.deployer.dcp.workflow.BuildContainersConfigurationWorkflowService;
 import com.vmware.photon.controller.deployer.deployengine.ScriptRunner;
+import com.vmware.photon.controller.deployer.healthcheck.HealthChecker;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.OperationJoin;
 import com.vmware.xenon.common.OperationSequence;
@@ -127,7 +129,7 @@ public class CreateDhcpVmTaskService extends StatefulService {
       WAIT_FOR_ATTACH_ISO,
       START_VM,
       WAIT_FOR_VM_START,
-      WAIT_FOR_DOCKER,
+      WAIT_FOR_DHCP_AGENT,
     }
 
     /**
@@ -302,26 +304,26 @@ public class CreateDhcpVmTaskService extends StatefulService {
     public Integer startVmPollCount;
 
     /**
-     * This value represents the IP address of the Docker endpoint on the remote VM.
+     * This value represents the IP address of the DHCP Agent endpoint on the remote VM.
      */
     @WriteOnce
-    public String dockerEndpointAddress;
+    public String dhcpAgentEndpointAddress;
 
     /**
      * This value represents the maximum number of polling iterations to perform while waiting for
-     * the Docker daemon to come up on the remote machine.
+     * the DHCP Agent to report READY state.
      */
     @DefaultInteger(value = 600)
     @Positive
     @Immutable
-    public Integer maxDockerPollIterations;
+    public Integer maxDhcpAgentPollIterations;
 
     /**
      * This value represents the number of polling iterations which have been performed by the
-     * current task while waiting for the Docker daemon to come up on the remote machine.
+     * current task while waiting for the DHCP Agent to come up on the remote machine.
      */
     @DefaultInteger(value = 0)
-    public Integer dockerPollIterations;
+    public Integer dhcpAgentPollIterations;
   }
 
   public CreateDhcpVmTaskService() {
@@ -387,6 +389,8 @@ public class CreateDhcpVmTaskService extends StatefulService {
     }
   }
 
+  private HealthChecker healthChecker;
+
   private void validateState(State currentState) {
     ValidationUtils.validateState(currentState);
     validateTaskState(currentState.taskState);
@@ -422,7 +426,7 @@ public class CreateDhcpVmTaskService extends StatefulService {
           case WAIT_FOR_ATTACH_ISO:
           case START_VM:
           case WAIT_FOR_VM_START:
-          case WAIT_FOR_DOCKER:
+          case WAIT_FOR_DHCP_AGENT:
             break;
           default:
             throw new IllegalStateException("Unknown task sub-stage: " + taskState.subStage);
@@ -475,8 +479,8 @@ public class CreateDhcpVmTaskService extends StatefulService {
       case WAIT_FOR_VM_START:
         processWaitForVmStartSubStage(currentState);
         break;
-      case WAIT_FOR_DOCKER:
-        processWaitForDockerSubStage(currentState);
+      case WAIT_FOR_DHCP_AGENT:
+        processWaitForDhcpAgentSubStage(currentState);
         break;
     }
   }
@@ -1570,8 +1574,8 @@ public class CreateDhcpVmTaskService extends StatefulService {
             currentState.taskPollDelay, TimeUnit.MILLISECONDS);
         break;
       case "COMPLETED":
-        State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_FOR_DOCKER, null);
-        patchState.dockerPollIterations = 1;
+        State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_FOR_DHCP_AGENT, null);
+        patchState.dhcpAgentPollIterations = 1;
         sendStageProgressPatch(patchState);
         break;
       case "ERROR":
@@ -1620,8 +1624,8 @@ public class CreateDhcpVmTaskService extends StatefulService {
             currentState.taskPollDelay, TimeUnit.MILLISECONDS);
         break;
       case "COMPLETED":
-        State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_FOR_DOCKER, null);
-        patchState.dockerPollIterations = 1;
+        State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_FOR_DHCP_AGENT, null);
+        patchState.dhcpAgentPollIterations = 1;
         sendStageProgressPatch(patchState);
         break;
       case "ERROR":
@@ -1632,12 +1636,12 @@ public class CreateDhcpVmTaskService extends StatefulService {
   }
 
   //
-  // WAIT_FOR_DOCKER sub-stage routines
+  // WAIT_FOR_DHCP_AGENT sub-stage routines
   //
 
-  private void processWaitForDockerSubStage(State currentState) {
+  private void processWaitForDhcpAgentSubStage(State currentState) {
 
-    if (currentState.dockerEndpointAddress == null) {
+    if (currentState.dhcpAgentEndpointAddress == null) {
 
       sendRequest(Operation
           .createGet(this, currentState.vmServiceLink)
@@ -1649,8 +1653,11 @@ public class CreateDhcpVmTaskService extends StatefulService {
                 }
 
                 try {
-                  State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_FOR_DOCKER, null);
-                  patchState.dockerEndpointAddress = o.getBody(VmService.State.class).ipAddress;
+                  State patchState = buildPatch(
+                      TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_FOR_DHCP_AGENT, null);
+                  patchState.dhcpAgentEndpointAddress = o.getBody(VmService.State.class).ipAddress;
+                  healthChecker = HostUtils.getHealthCheckHelperFactory(this)
+                      .create(this, ServicePortConstants.DHCP_AGENT_PORT, patchState.dhcpAgentEndpointAddress);
                   TaskUtils.sendSelfPatch(this, patchState);
                 } catch (Throwable t) {
                   failTask(t);
@@ -1660,38 +1667,24 @@ public class CreateDhcpVmTaskService extends StatefulService {
       return;
     }
 
-    //
-    // N.B. The Docker API call is performed on a separate thread because it is blocking. This
-    // behavior can be removed if and when an asynchronous version of this call is added to the
-    // client library.
-    //
-
-    HostUtils.getListeningExecutorService(this).submit(
-        () -> {
-          try {
-            String dockerInfo = HostUtils.getDockerProvisionerFactory(this)
-                .create(currentState.dockerEndpointAddress)
-                .getInfo();
-
-            ServiceUtils.logInfo(this, "Received Docker status response: " + dockerInfo);
-            sendStageProgressPatch(TaskState.TaskStage.FINISHED, null);
-          } catch (Throwable t) {
-            processFailedDockerPollingInterval(currentState, t);
-          }
-        });
+    if (healthChecker.isReady()) {
+      ServiceUtils.logInfo(this,
+          "Received READY status response, dhcpAgentEndpointAddress: " + currentState.dhcpAgentEndpointAddress);
+      sendStageProgressPatch(TaskState.TaskStage.FINISHED, null);
+    } else {
+      processFailedDhcpAgentPollingInterval(currentState);
+    }
   }
 
-  private void processFailedDockerPollingInterval(State currentState, Throwable failure) {
-    if (currentState.dockerPollIterations >= currentState.maxDockerPollIterations) {
-      ServiceUtils.logSevere(this, failure);
-      failTask(new IllegalStateException("The docker endpoint on VM " + currentState.dockerEndpointAddress +
-          " failed to become ready after " + currentState.dockerPollIterations + " polling iterations"));
+  private void processFailedDhcpAgentPollingInterval(State currentState) {
+    if (currentState.dhcpAgentPollIterations >= currentState.maxDhcpAgentPollIterations) {
+      failTask(new IllegalStateException("The DHCP Agent endpoint on VM " + currentState.dhcpAgentEndpointAddress +
+          " failed to become ready after " + currentState.dhcpAgentPollIterations + " polling iterations"));
     } else {
-      ServiceUtils.logTrace(this, failure);
       getHost().schedule(
           () -> {
-            State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_FOR_DOCKER, null);
-            patchState.dockerPollIterations = currentState.dockerPollIterations + 1;
+            State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_FOR_DHCP_AGENT, null);
+            patchState.dhcpAgentPollIterations = currentState.dhcpAgentPollIterations + 1;
             TaskUtils.sendSelfPatch(this, patchState);
           },
           currentState.taskPollDelay, TimeUnit.MILLISECONDS);
