@@ -52,9 +52,10 @@ public class XenonBasedHealthChecker implements HealthChecker {
           .forceRemote();
       Operation completedOperation = ServiceUtils.doServiceOperation(service, getOperation);
       Status status = completedOperation.getBody(Status.class);
+      logger.info("Xenon service returned status [{}:{}]: {}", address, port, status.getType());
       return status.getType() == StatusType.READY;
     } catch (Throwable e) {
-      logger.error("GET to Xenon service failed [{}:{}]: {}", address, port, e);
+      logger.warn("GET to Xenon status service failed [{}:{}]: {}", address, port, e);
       return false;
     }
   }
