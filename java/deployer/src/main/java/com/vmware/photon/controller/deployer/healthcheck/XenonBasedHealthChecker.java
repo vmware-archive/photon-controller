@@ -21,6 +21,8 @@ import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.UriUtils;
 
+import com.google.inject.Inject;
+import com.google.inject.assistedinject.Assisted;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,7 +38,8 @@ public class XenonBasedHealthChecker implements HealthChecker {
   private final String address;
   private final int port;
 
-  public XenonBasedHealthChecker(Service service, String address, int port) {
+  @Inject
+  public XenonBasedHealthChecker(@Assisted Service service, @Assisted String address, @Assisted int port) {
     this.service = service;
     this.address = address;
     this.port = port;
@@ -52,9 +55,10 @@ public class XenonBasedHealthChecker implements HealthChecker {
           .forceRemote();
       Operation completedOperation = ServiceUtils.doServiceOperation(service, getOperation);
       Status status = completedOperation.getBody(Status.class);
+      logger.info("Xenon service returned status [{}:{}]: {}", address, port, status.getType());
       return status.getType() == StatusType.READY;
     } catch (Throwable e) {
-      logger.error("GET to Xenon service failed [{}:{}]: {}", address, port, e);
+      logger.warn("GET to Xenon status service failed [{}:{}]: {}", address, port, e);
       return false;
     }
   }
