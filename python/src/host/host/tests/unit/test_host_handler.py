@@ -641,11 +641,9 @@ class HostHandlerTestCase(unittest.TestCase):
 
         mock_env = MagicMock()
         mock_reservation = MagicMock()
-        mock_net_spec = MagicMock()
 
         req = CreateVmRequest(reservation=mock_reservation,
-                              environment=mock_env,
-                              network_connection_spec=mock_net_spec)
+                              environment=mock_env)
         image_id = stable_uuid('image_id')
         handler = HostHandler(MagicMock())
         pm = handler.hypervisor.placement_manager
@@ -674,6 +672,9 @@ class HostHandlerTestCase(unittest.TestCase):
         vm.placement = AgentResourcePlacement(AgentResourcePlacement.VM,
                                               "vm_ids",
                                               "ds2")
+        handler.hypervisor.network_manager.get_vm_networks.return_value = \
+            ["net_2", "net_1"]
+
         response = handler.create_vm(req)
         spec = handler.hypervisor.vm_manager.create_vm_spec.return_value
         metadata = handler.hypervisor.image_manager.image_metadata.return_value
