@@ -28,7 +28,6 @@ import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.exceptions.InvalidReservationException;
 import com.vmware.photon.controller.host.gen.CreateVmResponse;
-import com.vmware.photon.controller.host.gen.NetworkConnectionSpec;
 import com.vmware.photon.controller.resource.gen.Datastore;
 import com.vmware.photon.controller.resource.gen.Vm;
 
@@ -38,7 +37,6 @@ import org.mockito.Mock;
 import org.powermock.modules.testng.PowerMockTestCase;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyMap;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.inOrder;
@@ -96,7 +94,7 @@ public class VmCreateStepCmdTest extends PowerMockTestCase {
     command.createVm();
 
     InOrder inOrder = inOrder(hostClient, vmBackend);
-    inOrder.verify(hostClient).createVm(reservationId, null, new HashMap<>());
+    inOrder.verify(hostClient).createVm(reservationId, new HashMap<>());
     inOrder.verify(vmBackend).updateState(vm, VmState.STOPPED, agentId, agentIp, "datastore-1", "datastore-name");
 
     verifyNoMoreInteractions(vmBackend);
@@ -111,14 +109,12 @@ public class VmCreateStepCmdTest extends PowerMockTestCase {
     locality.setResourceId("VM VLAN");
     vm.setAffinities(ImmutableList.of(locality));
 
-    NetworkConnectionSpec networkConnectionSpec = command.createNetworkConnectionSpec(vm);
-    when(hostClient.createVm(reservationId, networkConnectionSpec, new HashMap<>()))
-        .thenReturn(createVmResponse);
+    when(hostClient.createVm(reservationId, new HashMap<>())).thenReturn(createVmResponse);
 
     command.createVm();
 
     InOrder inOrder = inOrder(hostClient, vmBackend);
-    inOrder.verify(hostClient).createVm(reservationId, networkConnectionSpec, new HashMap<String, String>());
+    inOrder.verify(hostClient).createVm(reservationId, new HashMap<String, String>());
     inOrder.verify(vmBackend).updateState(vm, VmState.STOPPED, agentId, agentIp, "datastore-1", "datastore-name");
 
     verifyNoMoreInteractions(vmBackend);
@@ -128,7 +124,7 @@ public class VmCreateStepCmdTest extends PowerMockTestCase {
   public void testFailedVmCreate() throws Throwable {
     VmCreateStepCmd command = getVmCreateStepCmd();
 
-    when(hostClient.createVm(reservationId, null, new HashMap<String, String>()))
+    when(hostClient.createVm(reservationId, new HashMap<String, String>()))
         .thenThrow(new InvalidReservationException(null));
 
     try {
@@ -175,8 +171,7 @@ public class VmCreateStepCmdTest extends PowerMockTestCase {
   }
 
   private VmCreateStepCmd getVmCreateStepCmd() throws Throwable {
-    when(hostClient.createVm(anyString(), any(NetworkConnectionSpec.class), anyMap()))
-        .thenReturn(createVmResponse);
+    when(hostClient.createVm(anyString(), anyMap())).thenReturn(createVmResponse);
 
     step = new StepEntity();
     step.setId(stepId);
