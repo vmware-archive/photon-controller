@@ -136,6 +136,12 @@ public class VirtualNetworkService extends StatefulService {
     public String logicalRouterId;
 
     /**
+     * ID of the nsx tier0 logical router.
+     */
+    @WriteOnce
+    public String tier0RouterId;
+
+    /**
      * ID of the port on the logical switch that connects to the tier1 logical router.
      */
     @WriteOnce

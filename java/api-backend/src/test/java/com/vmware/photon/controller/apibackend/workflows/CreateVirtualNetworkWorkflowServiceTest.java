@@ -691,8 +691,9 @@ public class CreateVirtualNetworkWorkflowServiceTest {
       // virtual network entity.
       assertThat(expectedVirtualNetworkServiceState.logicalSwitchUplinkPortId, is(LOGICAL_SWITCH_UPLINK_PORT_ID));
       assertThat(expectedVirtualNetworkServiceState.logicalRouterDownlinkPortId, is(LOGICAL_ROUTER_DONWLINK_PORT_ID));
-      assertThat(finalState.taskServiceEntity.logicalRouterUplinkPortId, is(LOGICAL_ROUTER_UPLINK_PORT_ID));
-      assertThat(finalState.taskServiceEntity.tier0RouterDownlinkPortId, is(TIER0_ROUTER_DOWNLINK_PORT_ID));
+      assertThat(expectedVirtualNetworkServiceState.logicalRouterUplinkPortId, is(LOGICAL_ROUTER_UPLINK_PORT_ID));
+      assertThat(expectedVirtualNetworkServiceState.tier0RouterDownlinkPortId, is(TIER0_ROUTER_DOWNLINK_PORT_ID));
+      assertThat(expectedVirtualNetworkServiceState.tier0RouterId, is(NETWORK_TOP_ROUTER_ID));
       assertEquals(actualVirtualNetworkServiceState.logicalSwitchUplinkPortId,
           expectedVirtualNetworkServiceState.logicalSwitchUplinkPortId);
       assertEquals(actualVirtualNetworkServiceState.logicalRouterDownlinkPortId,
@@ -701,6 +702,8 @@ public class CreateVirtualNetworkWorkflowServiceTest {
           expectedVirtualNetworkServiceState.logicalRouterUplinkPortId);
       assertEquals(actualVirtualNetworkServiceState.tier0RouterDownlinkPortId,
           expectedVirtualNetworkServiceState.tier0RouterDownlinkPortId);
+      assertEquals(actualVirtualNetworkServiceState.tier0RouterId,
+          expectedVirtualNetworkServiceState.tier0RouterId);
     }
 
     /**
@@ -787,6 +790,7 @@ public class CreateVirtualNetworkWorkflowServiceTest {
       assertThat(expectedVirtualNetworkServiceState.logicalRouterDownlinkPortId, is(LOGICAL_ROUTER_DONWLINK_PORT_ID));
       assertThat(expectedVirtualNetworkServiceState.logicalRouterUplinkPortId, nullValue());
       assertThat(expectedVirtualNetworkServiceState.tier0RouterDownlinkPortId, nullValue());
+      assertThat(expectedVirtualNetworkServiceState.tier0RouterId, is(NETWORK_TOP_ROUTER_ID));
       assertEquals(actualVirtualNetworkServiceState.logicalSwitchUplinkPortId,
           expectedVirtualNetworkServiceState.logicalSwitchUplinkPortId);
       assertEquals(actualVirtualNetworkServiceState.logicalRouterDownlinkPortId,
@@ -795,6 +799,8 @@ public class CreateVirtualNetworkWorkflowServiceTest {
           expectedVirtualNetworkServiceState.logicalRouterUplinkPortId);
       assertEquals(actualVirtualNetworkServiceState.tier0RouterDownlinkPortId,
           expectedVirtualNetworkServiceState.tier0RouterDownlinkPortId);
+      assertEquals(actualVirtualNetworkServiceState.tier0RouterId,
+          expectedVirtualNetworkServiceState.tier0RouterId);
     }
 
     /**

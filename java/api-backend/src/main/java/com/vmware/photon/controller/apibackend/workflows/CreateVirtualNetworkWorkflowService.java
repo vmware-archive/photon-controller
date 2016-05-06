@@ -379,6 +379,7 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
                   state.taskServiceEntity.logicalRouterDownlinkPortId = result.logicalTier1RouterDownLinkPort;
                   state.taskServiceEntity.logicalRouterUplinkPortId = result.logicalLinkPortOnTier1Router;
                   state.taskServiceEntity.tier0RouterDownlinkPortId = result.logicalLinkPortOnTier0Router;
+                  state.taskServiceEntity.tier0RouterId = state.tier0RouterId;
 
                   updateVirtualNetwork(state);
                 } catch (Throwable t) {
@@ -413,6 +414,7 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
     virtualNetworkPatchState.logicalRouterDownlinkPortId = state.taskServiceEntity.logicalRouterDownlinkPortId;
     virtualNetworkPatchState.logicalRouterUplinkPortId = state.taskServiceEntity.logicalRouterUplinkPortId;
     virtualNetworkPatchState.tier0RouterDownlinkPortId = state.taskServiceEntity.tier0RouterDownlinkPortId;
+    virtualNetworkPatchState.tier0RouterId = state.taskServiceEntity.tier0RouterId;
 
     ServiceHostUtils.getCloudStoreHelper(getHost())
         .createPatch(state.taskServiceEntity.documentSelfLink)
