@@ -34,6 +34,9 @@ public class LogicalRouterPort {
   @JsonProperty(value = "resource_type", required = true)
   private NsxRouter.PortType resourceType;
 
+  @JsonProperty(value = "linked_logical_router_port_id", required = false)
+  private ResourceReference linked_logical_router_port_id;
+
   @JsonProperty(value = "service_bindings", required = false)
   private List<ServiceBinding> serviceBindings;
 
@@ -59,6 +62,14 @@ public class LogicalRouterPort {
 
   public void setResourceType(NsxRouter.PortType resourceType) {
     this.resourceType = resourceType;
+  }
+
+  public ResourceReference getLinkedLogicalRouterPortId() {
+    return linked_logical_router_port_id;
+  }
+
+  public void setLinkedLogicalRouterPortId(ResourceReference linked_logical_router_port_id) {
+    this.linked_logical_router_port_id = linked_logical_router_port_id;
   }
 
   public List<ServiceBinding> getServiceBindings() {
