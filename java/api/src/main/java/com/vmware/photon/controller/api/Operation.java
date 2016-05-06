@@ -178,7 +178,8 @@ public enum Operation {
 
   public static Operation parseOperation(String text) {
     for (Operation o : Operation.values()) {
-      if (o.getOperation().equalsIgnoreCase(text)) {
+      if (o.getOperation().equalsIgnoreCase(text) ||
+          o.toString().equalsIgnoreCase(text)) {
         return o;
       }
     }
