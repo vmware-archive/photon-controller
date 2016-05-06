@@ -42,6 +42,7 @@ public class ContainersConfig {
     ManagementUi,
     RootScheduler,
     Zookeeper,
+    DhcpServer,
   }
 
   /**

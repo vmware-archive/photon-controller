@@ -1,0 +1,21 @@
+{
+  "serviceName": "DhcpServer",
+  "cpuCount": 4,
+  "memoryMb": 4096,
+  "diskGb": 8,
+  "isReplicated": true,
+  "isPrivileged": false,
+  "useHostNetwork": true,
+  "containerImage": "photon-controller/dhcp-server",
+  "portBindings": {
+    "17000": 17000
+  },
+  "volumeBindings": {
+    "/var/log": "/var/log"
+  },
+  "dynamicParameters": {
+    "DHCP-SERVER_DCP_STORAGE_PATH": "/etc/photon-controller/dhcp-server/sandbox_17000",
+    "LOG_DIRECTORY": "/var/log/photon-controller",
+    "DHCP-SERVER_INSTALL_DIRECTORY": "/usr/lib/photon-controller/dhcp-server"
+  }
+}

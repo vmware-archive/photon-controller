@@ -51,16 +51,16 @@ public class TestEnvironment extends MultiHostEnvironment<DeployerXenonServiceHo
   /**
    * Constructs a test environment object for various tests.
    *
-   * @param deployerContext          Supplies the deployer context object.
-   * @param containersConfig         Supplies the containers config object.
+   * @param deployerContext           Supplies the deployer context object.
+   * @param containersConfig          Supplies the containers config object.
    * @param agentControlClientFactory Supplies the AgentControlClient factory object.
-   * @param hostClientFactory        Supplies the HostClient factory object.
-   * @param listeningExecutorService Supplies the listening executor service object.
-   * @param apiClientFactory         Supplies the API factory object.
-   * @param dockerProvisionerFactory Supplies the docker provisioner factory object.
-   * @param authHelperFactory        Supplies the AuthHelper factory object.
-   * @param hostCount                Supplies the host count.
-   * @param operationTimeoutMicros   Supplies the operation timeout value in microseconds.
+   * @param hostClientFactory         Supplies the HostClient factory object.
+   * @param listeningExecutorService  Supplies the listening executor service object.
+   * @param apiClientFactory          Supplies the API factory object.
+   * @param dockerProvisionerFactory  Supplies the docker provisioner factory object.
+   * @param authHelperFactory         Supplies the AuthHelper factory object.
+   * @param hostCount                 Supplies the host count.
+   * @param operationTimeoutMicros    Supplies the operation timeout value in microseconds.
    * @param hostNumber
    * @throws Throwable Throws an exception if any error is encountered.
    */
@@ -235,7 +235,7 @@ public class TestEnvironment extends MultiHostEnvironment<DeployerXenonServiceHo
       return this;
     }
 
-    public Builder nsxClientFactory(NsxClientFactory  nsxClientFactory) {
+    public Builder nsxClientFactory(NsxClientFactory nsxClientFactory) {
       this.nsxClientFactory = nsxClientFactory;
       return this;
     }

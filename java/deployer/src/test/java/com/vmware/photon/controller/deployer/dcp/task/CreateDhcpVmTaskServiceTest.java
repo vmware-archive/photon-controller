@@ -47,8 +47,9 @@ import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateService
 import com.vmware.photon.controller.deployer.dcp.entity.VmService;
 import com.vmware.photon.controller.deployer.dcp.util.ApiUtils;
 import com.vmware.photon.controller.deployer.deployengine.ApiClientFactory;
-import com.vmware.photon.controller.deployer.deployengine.DockerProvisioner;
-import com.vmware.photon.controller.deployer.deployengine.DockerProvisionerFactory;
+import com.vmware.photon.controller.deployer.healthcheck.HealthCheckHelper;
+import com.vmware.photon.controller.deployer.healthcheck.HealthCheckHelperFactory;
+import com.vmware.photon.controller.deployer.healthcheck.HealthChecker;
 import com.vmware.photon.controller.deployer.helpers.ReflectionUtils;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
 import com.vmware.photon.controller.deployer.helpers.dcp.MockHelper;
@@ -426,8 +427,6 @@ public class CreateDhcpVmTaskServiceTest {
     private ApiClientFactory apiClientFactory;
     private com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment cloudStoreEnvironment;
     private DeployerConfig deployerConfig;
-    private DockerProvisioner dockerProvisioner;
-    private DockerProvisionerFactory dockerProvisionerFactory;
     private FlavorApi flavorApi;
     private ListeningExecutorService listeningExecutorService;
     private ProjectApi projectApi;
@@ -437,25 +436,32 @@ public class CreateDhcpVmTaskServiceTest {
     private TestEnvironment testEnvironment;
     private VmApi vmApi;
     private String vmId;
+    private HealthCheckHelperFactory healthCheckHelperFactory;
+    private HealthCheckHelper healthCheckHelper;
 
     @BeforeClass
     public void setUpClass() throws Throwable {
       apiClientFactory = mock(ApiClientFactory.class);
       cloudStoreEnvironment = com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.create(1);
       deployerConfig = ConfigBuilder.build(DeployerConfig.class, this.getClass().getResource("/config.yml").getPath());
-      dockerProvisionerFactory = mock(DockerProvisionerFactory.class);
       TestHelper.setContainersConfig(deployerConfig);
       listeningExecutorService = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(1));
       serviceConfiguratorFactory = mock(ServiceConfiguratorFactory.class);
+      healthCheckHelperFactory = mock(HealthCheckHelperFactory.class);
+      healthCheckHelper = mock(HealthCheckHelper.class);
+
+      doReturn(healthCheckHelper).when(healthCheckHelperFactory)
+          .create(any(Service.class), any(ContainersConfig.ContainerType.class), anyString());
 
       testEnvironment = new TestEnvironment.Builder()
           .apiClientFactory(apiClientFactory)
           .cloudServerSet(cloudStoreEnvironment.getServerSet())
           .deployerContext(deployerConfig.getDeployerContext())
-          .dockerProvisionerFactory(dockerProvisionerFactory)
+          .dockerProvisionerFactory(null)
           .hostCount(1)
           .listeningExecutorService(listeningExecutorService)
           .serviceConfiguratorFactory(serviceConfiguratorFactory)
+          .healthCheckerFactory(healthCheckHelperFactory)
           .build();
 
       FileUtils.copyDirectory(Paths.get(this.getClass().getResource("/configurations/").getPath()).toFile(),
@@ -539,15 +545,6 @@ public class CreateDhcpVmTaskServiceTest {
 
       doReturn(new ServiceConfigurator()).when(serviceConfiguratorFactory).create();
 
-      dockerProvisioner = mock(DockerProvisioner.class);
-      doReturn(dockerProvisioner).when(dockerProvisionerFactory).create(anyString());
-
-      doThrow(new RuntimeException("Runtime exception during first DockerProvisioner.getInfo call"))
-          .doThrow(new RuntimeException("Runtime exception during the second DockerProvisioner.getInfo call"))
-          .doReturn("DOCKER_STATUS")
-          .when(dockerProvisioner)
-          .getInfo();
-
       TestHelper.assertNoServicesOfType(cloudStoreEnvironment, FlavorService.State.class);
       TestHelper.assertNoServicesOfType(cloudStoreEnvironment, HostService.State.class);
       TestHelper.assertNoServicesOfType(testEnvironment, ContainerService.State.class);
@@ -581,7 +578,7 @@ public class CreateDhcpVmTaskServiceTest {
       startState.vmServiceLink = vmState.documentSelfLink;
       startState.controlFlags = null;
       startState.taskPollDelay = 10;
-      startState.maxDockerPollIterations = 3;
+      startState.maxDhcpAgentPollIterations = 3;
 
       FileUtils.copyDirectory(Paths.get(this.getClass().getResource("/scripts/").getPath()).toFile(),
           Paths.get(deployerConfig.getDeployerContext().getScriptDirectory()).toFile());
@@ -615,6 +612,9 @@ public class CreateDhcpVmTaskServiceTest {
                             Long expectedMemoryMb)
         throws Throwable {
 
+      HealthChecker successfulHealthChecker = () -> true;
+      doReturn(successfulHealthChecker).when(healthCheckHelper).getHealthChecker();
+
       //
       // N.B. Ignore the host service document which was created during test setup. It will be
       // deleted along with this document during cleanup, and should not impact the test.
@@ -646,7 +646,7 @@ public class CreateDhcpVmTaskServiceTest {
 
       CreateDhcpVmTaskService.State finalState =
           testEnvironment.callServiceAndWaitForState(
-              CreateManagementVmTaskFactoryService.SELF_LINK,
+              CreateDhcpVmTaskFactoryService.SELF_LINK,
               startState,
               CreateDhcpVmTaskService.State.class,
               (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
@@ -670,7 +670,7 @@ public class CreateDhcpVmTaskServiceTest {
       assertThat(finalState.attachIsoPollCount, is(3));
       assertThat(finalState.startVmTaskId, is("START_VM_TASK_ID"));
       assertThat(finalState.startVmPollCount, is(3));
-      assertThat(finalState.dockerPollIterations, is(3));
+      assertThat(finalState.dhcpAgentPollIterations, is(1));
 
       verify(flavorApi).createAsync(
           eq(getExpectedVmFlavorCreateSpec(expectedCpuCount, expectedMemoryMb)),
@@ -767,13 +767,9 @@ public class CreateDhcpVmTaskServiceTest {
           .when(vmApi)
           .performStartOperationAsync(anyString(), Matchers.<FutureCallback<Task>>any());
 
-      doReturn("DOCKER_STATUS")
-          .when(dockerProvisioner)
-          .getInfo();
-
       CreateDhcpVmTaskService.State finalState =
           testEnvironment.callServiceAndWaitForState(
-              CreateManagementVmTaskFactoryService.SELF_LINK,
+              CreateDhcpVmTaskFactoryService.SELF_LINK,
               startState,
               CreateDhcpVmTaskService.State.class,
               (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
@@ -795,7 +791,7 @@ public class CreateDhcpVmTaskServiceTest {
       assertThat(finalState.vmConfigDirectory, notNullValue());
       assertThat(finalState.startVmTaskId, nullValue());
       assertThat(finalState.startVmPollCount, is(0));
-      assertThat(finalState.dockerPollIterations, is(1));
+      assertThat(finalState.dhcpAgentPollIterations, is(1));
 
       verify(flavorApi).createAsync(
           eq(getExpectedVmFlavorCreateSpec(1, 1636L)),
@@ -951,7 +947,7 @@ public class CreateDhcpVmTaskServiceTest {
 
       CreateDhcpVmTaskService.State finalState =
           testEnvironment.callServiceAndWaitForState(
-              CreateManagementVmTaskFactoryService.SELF_LINK,
+              CreateDhcpVmTaskFactoryService.SELF_LINK,
               startState,
               CreateDhcpVmTaskService.State.class,
               (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
@@ -974,7 +970,7 @@ public class CreateDhcpVmTaskServiceTest {
 
       CreateDhcpVmTaskService.State finalState =
           testEnvironment.callServiceAndWaitForState(
-              CreateManagementVmTaskFactoryService.SELF_LINK,
+              CreateDhcpVmTaskFactoryService.SELF_LINK,
               startState,
               CreateDhcpVmTaskService.State.class,
               (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
@@ -997,7 +993,7 @@ public class CreateDhcpVmTaskServiceTest {
 
       CreateDhcpVmTaskService.State finalState =
           testEnvironment.callServiceAndWaitForState(
-              CreateManagementVmTaskFactoryService.SELF_LINK,
+              CreateDhcpVmTaskFactoryService.SELF_LINK,
               startState,
               CreateDhcpVmTaskService.State.class,
               (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
@@ -1020,7 +1016,7 @@ public class CreateDhcpVmTaskServiceTest {
 
       CreateDhcpVmTaskService.State finalState =
           testEnvironment.callServiceAndWaitForState(
-              CreateManagementVmTaskFactoryService.SELF_LINK,
+              CreateDhcpVmTaskFactoryService.SELF_LINK,
               startState,
               CreateDhcpVmTaskService.State.class,
               (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
@@ -1044,7 +1040,7 @@ public class CreateDhcpVmTaskServiceTest {
 
       CreateDhcpVmTaskService.State finalState =
           testEnvironment.callServiceAndWaitForState(
-              CreateManagementVmTaskFactoryService.SELF_LINK,
+              CreateDhcpVmTaskFactoryService.SELF_LINK,
               startState,
               CreateDhcpVmTaskService.State.class,
               (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
@@ -1069,7 +1065,7 @@ public class CreateDhcpVmTaskServiceTest {
 
       CreateDhcpVmTaskService.State finalState =
           testEnvironment.callServiceAndWaitForState(
-              CreateManagementVmTaskFactoryService.SELF_LINK,
+              CreateDhcpVmTaskFactoryService.SELF_LINK,
               startState,
               CreateDhcpVmTaskService.State.class,
               (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
@@ -1095,7 +1091,7 @@ public class CreateDhcpVmTaskServiceTest {
 
       CreateDhcpVmTaskService.State finalState =
           testEnvironment.callServiceAndWaitForState(
-              CreateManagementVmTaskFactoryService.SELF_LINK,
+              CreateDhcpVmTaskFactoryService.SELF_LINK,
               startState,
               CreateDhcpVmTaskService.State.class,
               (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
@@ -1121,7 +1117,7 @@ public class CreateDhcpVmTaskServiceTest {
 
       CreateDhcpVmTaskService.State finalState =
           testEnvironment.callServiceAndWaitForState(
-              CreateManagementVmTaskFactoryService.SELF_LINK,
+              CreateDhcpVmTaskFactoryService.SELF_LINK,
               startState,
               CreateDhcpVmTaskService.State.class,
               (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
@@ -1148,7 +1144,7 @@ public class CreateDhcpVmTaskServiceTest {
 
       CreateDhcpVmTaskService.State finalState =
           testEnvironment.callServiceAndWaitForState(
-              CreateManagementVmTaskFactoryService.SELF_LINK,
+              CreateDhcpVmTaskFactoryService.SELF_LINK,
               startState,
               CreateDhcpVmTaskService.State.class,
               (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
@@ -1176,7 +1172,7 @@ public class CreateDhcpVmTaskServiceTest {
 
       CreateDhcpVmTaskService.State finalState =
           testEnvironment.callServiceAndWaitForState(
-              CreateManagementVmTaskFactoryService.SELF_LINK,
+              CreateDhcpVmTaskFactoryService.SELF_LINK,
               startState,
               CreateDhcpVmTaskService.State.class,
               (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
@@ -1204,7 +1200,7 @@ public class CreateDhcpVmTaskServiceTest {
 
       CreateDhcpVmTaskService.State finalState =
           testEnvironment.callServiceAndWaitForState(
-              CreateManagementVmTaskFactoryService.SELF_LINK,
+              CreateDhcpVmTaskFactoryService.SELF_LINK,
               startState,
               CreateDhcpVmTaskService.State.class,
               (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
@@ -1232,7 +1228,7 @@ public class CreateDhcpVmTaskServiceTest {
 
       CreateDhcpVmTaskService.State finalState =
           testEnvironment.callServiceAndWaitForState(
-              CreateManagementVmTaskFactoryService.SELF_LINK,
+              CreateDhcpVmTaskFactoryService.SELF_LINK,
               startState,
               CreateDhcpVmTaskService.State.class,
               (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
@@ -1260,7 +1256,7 @@ public class CreateDhcpVmTaskServiceTest {
 
       CreateDhcpVmTaskService.State finalState =
           testEnvironment.callServiceAndWaitForState(
-              CreateManagementVmTaskFactoryService.SELF_LINK,
+              CreateDhcpVmTaskFactoryService.SELF_LINK,
               startState,
               CreateDhcpVmTaskService.State.class,
               (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
@@ -1290,7 +1286,7 @@ public class CreateDhcpVmTaskServiceTest {
 
       CreateDhcpVmTaskService.State finalState =
           testEnvironment.callServiceAndWaitForState(
-              CreateManagementVmTaskFactoryService.SELF_LINK,
+              CreateDhcpVmTaskFactoryService.SELF_LINK,
               startState,
               CreateDhcpVmTaskService.State.class,
               (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
@@ -1321,7 +1317,7 @@ public class CreateDhcpVmTaskServiceTest {
 
       CreateDhcpVmTaskService.State finalState =
           testEnvironment.callServiceAndWaitForState(
-              CreateManagementVmTaskFactoryService.SELF_LINK,
+              CreateDhcpVmTaskFactoryService.SELF_LINK,
               startState,
               CreateDhcpVmTaskService.State.class,
               (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
@@ -1352,7 +1348,7 @@ public class CreateDhcpVmTaskServiceTest {
 
       CreateDhcpVmTaskService.State finalState =
           testEnvironment.callServiceAndWaitForState(
-              CreateManagementVmTaskFactoryService.SELF_LINK,
+              CreateDhcpVmTaskFactoryService.SELF_LINK,
               startState,
               CreateDhcpVmTaskService.State.class,
               (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
@@ -1383,7 +1379,7 @@ public class CreateDhcpVmTaskServiceTest {
 
       CreateDhcpVmTaskService.State finalState =
           testEnvironment.callServiceAndWaitForState(
-              CreateManagementVmTaskFactoryService.SELF_LINK,
+              CreateDhcpVmTaskFactoryService.SELF_LINK,
               startState,
               CreateDhcpVmTaskService.State.class,
               (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
@@ -1417,7 +1413,7 @@ public class CreateDhcpVmTaskServiceTest {
 
       CreateDhcpVmTaskService.State finalState =
           testEnvironment.callServiceAndWaitForState(
-              CreateManagementVmTaskFactoryService.SELF_LINK,
+              CreateDhcpVmTaskFactoryService.SELF_LINK,
               startState,
               CreateDhcpVmTaskService.State.class,
               (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
@@ -1447,7 +1443,7 @@ public class CreateDhcpVmTaskServiceTest {
 
       CreateDhcpVmTaskService.State finalState =
           testEnvironment.callServiceAndWaitForState(
-              CreateManagementVmTaskFactoryService.SELF_LINK,
+              CreateDhcpVmTaskFactoryService.SELF_LINK,
               startState,
               CreateDhcpVmTaskService.State.class,
               (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
@@ -1482,7 +1478,7 @@ public class CreateDhcpVmTaskServiceTest {
 
       CreateDhcpVmTaskService.State finalState =
           testEnvironment.callServiceAndWaitForState(
-              CreateManagementVmTaskFactoryService.SELF_LINK,
+              CreateDhcpVmTaskFactoryService.SELF_LINK,
               startState,
               CreateDhcpVmTaskService.State.class,
               (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
@@ -1517,7 +1513,7 @@ public class CreateDhcpVmTaskServiceTest {
 
       CreateDhcpVmTaskService.State finalState =
           testEnvironment.callServiceAndWaitForState(
-              CreateManagementVmTaskFactoryService.SELF_LINK,
+              CreateDhcpVmTaskFactoryService.SELF_LINK,
               startState,
               CreateDhcpVmTaskService.State.class,
               (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
@@ -1552,7 +1548,7 @@ public class CreateDhcpVmTaskServiceTest {
 
       CreateDhcpVmTaskService.State finalState =
           testEnvironment.callServiceAndWaitForState(
-              CreateManagementVmTaskFactoryService.SELF_LINK,
+              CreateDhcpVmTaskFactoryService.SELF_LINK,
               startState,
               CreateDhcpVmTaskService.State.class,
               (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
@@ -1587,7 +1583,7 @@ public class CreateDhcpVmTaskServiceTest {
 
       CreateDhcpVmTaskService.State finalState =
           testEnvironment.callServiceAndWaitForState(
-              CreateManagementVmTaskFactoryService.SELF_LINK,
+              CreateDhcpVmTaskFactoryService.SELF_LINK,
               startState,
               CreateDhcpVmTaskService.State.class,
               (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
@@ -1622,7 +1618,7 @@ public class CreateDhcpVmTaskServiceTest {
 
       CreateDhcpVmTaskService.State finalState =
           testEnvironment.callServiceAndWaitForState(
-              CreateManagementVmTaskFactoryService.SELF_LINK,
+              CreateDhcpVmTaskFactoryService.SELF_LINK,
               startState,
               CreateDhcpVmTaskService.State.class,
               (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
@@ -1658,7 +1654,7 @@ public class CreateDhcpVmTaskServiceTest {
 
       CreateDhcpVmTaskService.State finalState =
           testEnvironment.callServiceAndWaitForState(
-              CreateManagementVmTaskFactoryService.SELF_LINK,
+              CreateDhcpVmTaskFactoryService.SELF_LINK,
               startState,
               CreateDhcpVmTaskService.State.class,
               (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
@@ -1685,15 +1681,14 @@ public class CreateDhcpVmTaskServiceTest {
     }
 
     @Test
-    public void testWaitForDockerFailure() throws Throwable {
+    public void testWaitForDhcpAgentFailure() throws Throwable {
 
-      doThrow(new RuntimeException("Runtime exception during DockerProvisioner getInfo call"))
-          .when(dockerProvisioner)
-          .getInfo();
+      HealthChecker failureHealthChecker = () -> false;
+      doReturn(failureHealthChecker).when(healthCheckHelper).getHealthChecker();
 
       CreateDhcpVmTaskService.State finalState =
           testEnvironment.callServiceAndWaitForState(
-              CreateManagementVmTaskFactoryService.SELF_LINK,
+              CreateDhcpVmTaskFactoryService.SELF_LINK,
               startState,
               CreateDhcpVmTaskService.State.class,
               (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
@@ -1702,7 +1697,7 @@ public class CreateDhcpVmTaskServiceTest {
       assertThat(finalState.taskState.subStage, nullValue());
       assertThat(finalState.taskState.failure.statusCode, is(400));
       assertThat(finalState.taskState.failure.message,
-          containsString("The docker endpoint on VM ipAddress failed to become ready after 3 polling iterations"));
+          containsString("The DHCP Agent endpoint on VM ipAddress failed to become ready after 3 polling iterations"));
       assertThat(finalState.createVmFlavorTaskId, is("CREATE_VM_FLAVOR_TASK_ID"));
       assertThat(finalState.createVmFlavorPollCount, is(3));
       assertThat(finalState.vmFlavorId, is("VM_FLAVOR_ID"));
@@ -1718,7 +1713,7 @@ public class CreateDhcpVmTaskServiceTest {
       assertThat(finalState.vmConfigDirectory, notNullValue());
       assertThat(finalState.startVmTaskId, is("START_VM_TASK_ID"));
       assertThat(finalState.startVmPollCount, is(3));
-      assertThat(finalState.dockerPollIterations, is(3));
+      assertThat(finalState.dhcpAgentPollIterations, is(3));
     }
   }
 

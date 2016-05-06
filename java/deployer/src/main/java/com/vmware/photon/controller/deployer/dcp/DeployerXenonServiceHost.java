@@ -52,6 +52,7 @@ import com.vmware.photon.controller.deployer.dcp.task.CopyStateTriggerTaskFactor
 import com.vmware.photon.controller.deployer.dcp.task.CreateContainerSpecLayoutTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.CreateContainerSpecTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.CreateContainerTaskFactoryService;
+import com.vmware.photon.controller.deployer.dcp.task.CreateDhcpVmTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.CreateManagementVmTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.CreateVmSpecLayoutTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.CreateVmSpecTaskFactoryService;
@@ -166,6 +167,7 @@ public class DeployerXenonServiceHost
       CreateContainerSpecTaskFactoryService.class,
       CreateContainerTaskFactoryService.class,
       CreateManagementVmTaskFactoryService.class,
+      CreateDhcpVmTaskFactoryService.class,
       CreateVmSpecLayoutTaskFactoryService.class,
       CreateVmSpecTaskFactoryService.class,
       DeleteAgentTaskFactoryService.class,

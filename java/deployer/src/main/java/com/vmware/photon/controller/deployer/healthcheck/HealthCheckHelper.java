@@ -72,6 +72,10 @@ public class HealthCheckHelper {
         this.healthChecker = new LightwaveHealthChecker(ipAddress, ServicePortConstants.LIGHTWAVE_PORT);
         break;
 
+      case DhcpServer:
+        this.healthChecker = new XenonBasedHealthChecker(service, ipAddress, ServicePortConstants.DHCP_AGENT_PORT);
+        break;
+
       default:
         this.healthChecker = () -> {
           ServiceUtils.logInfo(service, "Default HealthChecker for %s - will always return true", containerType);
