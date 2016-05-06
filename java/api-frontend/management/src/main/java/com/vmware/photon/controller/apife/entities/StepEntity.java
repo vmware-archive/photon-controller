@@ -36,6 +36,7 @@ public class StepEntity extends BaseEntity {
 
   private State state;
   private Operation operation;
+  private String operationString;
   private String options;
   private Date startedTime;
   private Date queuedTime;
@@ -68,6 +69,14 @@ public class StepEntity extends BaseEntity {
 
   public void setOperation(Operation operation) {
     this.operation = operation;
+  }
+
+  public String getOperationString() {
+    return operationString;
+  }
+
+  public void setOperationString(String operationString) {
+    this.operationString = operationString;
   }
 
   public String getOptions() {
@@ -218,7 +227,7 @@ public class StepEntity extends BaseEntity {
   protected Objects.ToStringHelper toStringHelper() {
     Objects.ToStringHelper result = super.toStringHelper()
         .add("state", state)
-        .add("operation", operation)
+        .add("operation", operation != null ? operation : operationString)
         .add("startedTime", startedTime)
         .add("queuedTime", queuedTime)
         .add("endTime", endTime)

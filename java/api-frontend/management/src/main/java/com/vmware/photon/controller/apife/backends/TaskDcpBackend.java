@@ -401,7 +401,10 @@ public class TaskDcpBackend implements TaskBackend, StepBackend {
     step.setQueuedTime(stepEntity.getQueuedTime());
     step.setStartedTime(stepEntity.getStartedTime());
     step.setEndTime(stepEntity.getEndTime());
-    step.setOperation(stepEntity.getOperation().toString());
+    // Because the api-backend sets operation value that is not defined in
+    // Operation enum, we need this workaround to store the operation value.
+    step.setOperation(stepEntity.getOperation() != null ?
+        stepEntity.getOperation().getOperation() : stepEntity.getOperationString());
     step.setState(stepEntity.getState().toString());
 
     if (StringUtils.isNotBlank(stepEntity.getOptions())) {
@@ -568,7 +571,16 @@ public class TaskDcpBackend implements TaskBackend, StepBackend {
     taskEntity.setStartedTime(taskState.startedTime);
     taskEntity.setEndTime(taskState.endTime);
     taskEntity.setProjectId(taskState.projectId);
-    taskEntity.setOperation(Operation.parseOperation(taskState.operation));
+
+    // Because the api-backend sets operation value that is not defined in
+    // Operation enum, we need this workaround to store the operation value.
+    Operation taskOperation = Operation.parseOperation(taskState.operation);
+    if (taskOperation != null) {
+      taskEntity.setOperation(taskOperation);
+    } else {
+      taskEntity.setOperationString(taskState.operation);
+    }
+
     taskEntity.setResourceProperties(taskState.resourceProperties);
 
     switch (taskState.state) {
@@ -608,7 +620,15 @@ public class TaskDcpBackend implements TaskBackend, StepBackend {
     StepEntity stepEntity = new StepEntity();
     stepEntity.setTask(taskEntity);
     stepEntity.setSequence(step.sequence);
-    stepEntity.setOperation(Operation.parseOperation(step.operation));
+
+    // Because the api-backend sets operation value that is not defined in
+    // Operation enum, we need this workaround to store the operation value.
+    Operation stepOperation = Operation.parseOperation(step.operation);
+    if (stepOperation != null) {
+      stepEntity.setOperation(stepOperation);
+    } else {
+      stepEntity.setOperationString(step.operation);
+    }
 
     switch (step.state) {
       case QUEUED:
@@ -685,8 +705,10 @@ public class TaskDcpBackend implements TaskBackend, StepBackend {
     taskState.startedTime = taskEntity.getStartedTime();
     taskState.endTime = taskEntity.getEndTime();
     taskState.projectId = taskEntity.getProjectId();
+    // Because the api-backend sets operation value that is not defined in
+    // Operation enum, we need this workaround to store the operation value.
     taskState.operation = taskEntity.getOperation() != null ?
-      taskEntity.getOperation().getOperation() : null;
+      taskEntity.getOperation().getOperation() : taskEntity.getOperationString();
 
     switch (taskEntity.getState()) {
       case COMPLETED:
@@ -725,7 +747,10 @@ public class TaskDcpBackend implements TaskBackend, StepBackend {
   }
 
   private void fillStep(TaskService.State.Step step, StepEntity stepEntity) {
-    step.operation = stepEntity.getOperation().getOperation();
+    // Because the api-backend sets operation value that is not defined in
+    // Operation enum, we need this workaround to store the operation value.
+    step.operation = stepEntity.getOperation() != null ?
+      stepEntity.getOperation().getOperation() : stepEntity.getOperationString();
     step.sequence = stepEntity.getSequence();
     switch (stepEntity.getState()) {
       case QUEUED:
@@ -810,7 +835,10 @@ public class TaskDcpBackend implements TaskBackend, StepBackend {
     task.setQueuedTime(taskEntity.getQueuedTime());
     task.setStartedTime(taskEntity.getStartedTime());
     task.setEndTime(taskEntity.getEndTime());
-    task.setOperation(taskEntity.getOperation().toString());
+    // Because the api-backend sets operation value that is not defined in
+    // Operation enum, we need this workaround to store the operation value.
+    task.setOperation(taskEntity.getOperation() != null ?
+        taskEntity.getOperation().getOperation() : taskEntity.getOperationString());
     task.setState(taskEntity.getState().toString());
 
     Task.Entity entity = new Task.Entity();
