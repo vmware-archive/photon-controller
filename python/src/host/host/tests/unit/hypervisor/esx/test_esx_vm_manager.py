@@ -34,7 +34,6 @@ from host.hypervisor.vm_manager import VmAlreadyExistException
 from host.hypervisor.vm_manager import VmNotFoundException
 from host.hypervisor.vm_manager import VmPowerStateException
 from host.hypervisor.esx.vim_client import VimClient
-from host.hypervisor.esx.vm_config import DEFAULT_DISK_CONTROLLER_CLASS
 from host.hypervisor.esx.path_util import datastore_to_os_path
 from host.hypervisor.esx.vm_manager import EsxVmManager
 from host.hypervisor.esx.vm_manager import NetUtil
@@ -97,7 +96,7 @@ class TestEsxVmManager(unittest.TestCase):
             f = MagicMock("get_device_foo")
             f.key = 1
             return f
-        self.vm_manager.vm_config.get_device = _get_device
+        self.vm_manager.vm_config._find_device = _get_device
 
         spec = self.vm_manager.vm_config.update_spec()
         # Caller passes none
@@ -320,8 +319,6 @@ class TestEsxVmManager(unittest.TestCase):
         vm = MagicMock()
         vm.runtime = runtime
         self.vm_manager.vim_client.get_vm = MagicMock(return_value=vm)
-        self.vm_manager.vm_config.get_devices = MagicMock(return_value=[])
-
         self.vm_manager.get_vm_path = MagicMock()
         self.vm_manager.get_vm_path.return_value = "[fake] vm_foo/xxyy.vmx"
         self.vm_manager.get_vm_datastore = MagicMock()
@@ -349,10 +346,6 @@ class TestEsxVmManager(unittest.TestCase):
         """Test adding VM disk"""
 
         self.vm_manager.vim_client.get_vm = MagicMock()
-        self.vm_manager.vm_config.get_devices = MagicMock(return_value=[
-            DEFAULT_DISK_CONTROLLER_CLASS(key=1000)
-        ])
-
         info = FakeConfigInfo()
         spec = self.vm_manager.vm_config.update_spec()
         self.vm_manager.add_disk(spec, "ds1", "vm_foo", info)
@@ -366,33 +359,6 @@ class TestEsxVmManager(unittest.TestCase):
 
         memory = self.vm_manager.get_used_memory_mb()
         self.assertEqual(memory, 2048 + 1024)
-
-    def atest_remove_vm_disk(self):
-        """Test removing VM disk"""
-
-        datastore = "ds1"
-        disk_id = "foo"
-
-        self.vm_manager.vim_client.get_vm = MagicMock()
-        self.vm_manager.vm_config.get_devices = MagicMock(return_value=[
-            vim.vm.device.VirtualLsiLogicController(key=1000),
-            self.vm_manager.vm_config.create_disk_spec(datastore, disk_id)
-        ])
-
-        info = FakeConfigInfo()
-        self.vm_manager.remove_disk("vm_foo", datastore, disk_id, info)
-
-    def btest_remove_vm_disk_enoent(self):
-        """Test removing VM disk that isn't attached"""
-
-        self.vm_manager.vim_client.get_vm = MagicMock()
-        self.vm_manager.vm_config.get_devices = MagicMock(return_value=[
-            self.vm_manager.vm_config.create_disk_spec("ds1", "foo")
-        ])
-
-        self.assertRaises(vim.fault.DeviceNotFound,
-                          self.vm_manager.remove_disk,
-                          "vm_foo", "ds1", "bar")
 
     def test_check_ip_v4(self):
         """Test to check ipv4 validation"""

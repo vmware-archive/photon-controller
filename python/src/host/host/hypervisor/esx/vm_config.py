@@ -145,8 +145,7 @@ class EsxVmConfig(VmConfig):
         env_browser = GetEnv()
 
         self._cfg_target = env_browser.QueryConfigTarget(None)
-        self._cfg_opts = env_browser.QueryConfigOption(DEFAULT_VMX_VERSION,
-                                                       None)
+        self._cfg_opts = env_browser.QueryConfigOption(DEFAULT_VMX_VERSION, None)
         self._logger = logging.getLogger(__name__)
 
     def _add_disk(self, cfg_spec, datastore, disk_id, controller_key,
@@ -206,9 +205,9 @@ class EsxVmConfig(VmConfig):
                 # (child disk picks up its uuid from its parent).
                 if disk_id:
                     disk.backing.uuid = uuid_to_vmdk_uuid(disk_id)
-            self.create_device(cfg_spec, disk)
+            self._create_device(cfg_spec, disk)
         else:
-            self.add_device(cfg_spec, disk)
+            self._add_device(cfg_spec, disk)
 
     @log_duration
     def _add_scsi_controller(self, cfg_spec, cfg_info):
@@ -222,10 +221,9 @@ class EsxVmConfig(VmConfig):
         # type of the boot disk's controller will be the type of
         # controller used for all disks.
         device_key = _BOOT_SCSI_DEVICE + '.virtualDev'
-        if (hasattr(cfg_spec, '_metadata') and
-                device_key in cfg_spec._metadata):
+        if hasattr(cfg_spec, '_metadata') and device_key in cfg_spec._metadata:
             controller_type = _scsi_virtual_dev_to_vim_adapter_map.get(
-                cfg_spec._metadata[device_key], controller_type)
+                    cfg_spec._metadata[device_key], controller_type)
 
         bus_number = GetFreeBusNumber(self._cfg_opts,
                                       vim.vm.device.VirtualSCSIController,
@@ -236,7 +234,7 @@ class EsxVmConfig(VmConfig):
             sharedBus=vim.vm.device.VirtualSCSIController.Sharing.noSharing,
             busNumber=bus_number,
             unitNumber=-1)
-        self.add_device(cfg_spec, controller)
+        self._add_device(cfg_spec, controller)
         return controller
 
     @log_duration
@@ -249,19 +247,15 @@ class EsxVmConfig(VmConfig):
         :param cfg_info: The VMs cfg info object to search
         :type cfg_info: vim.vm.ConfigInfo
         """
-        controller = None
+        controller = self._find_device(self._get_devices_from_config(cfg_info),
+                                       vim.vm.device.VirtualSCSIController)
 
-        try:
-            controller = \
-                self.get_device(self.get_devices_from_config(cfg_info),
-                                vim.vm.device.VirtualSCSIController)
-        except DeviceNotFoundException:
+        if controller is None:
             if cfg_spec is None or cfg_spec.deviceChange is None:
                 return None
 
             for change_item in cfg_spec.deviceChange:
-                if isinstance(change_item.device,
-                              vim.vm.device.VirtualSCSIController):
+                if isinstance(change_item.device, vim.vm.device.VirtualSCSIController):
                     controller = change_item.device
                     break
 
@@ -288,12 +282,10 @@ class EsxVmConfig(VmConfig):
         :param disk_id: vmdk id
         :type disk_id: str
         """
-        controller = self._find_or_add_scsi_controller(
-            cfg_spec, cfg_info)
+        controller = self._find_or_add_scsi_controller(cfg_spec, cfg_info)
         folder = IMAGE_FOLDER_NAME_PREFIX if disk_is_image else DISK_FOLDER_NAME_PREFIX
 
-        self._add_disk(cfg_spec, datastore, disk_id, controller.key,
-                       disk_root_folder=folder)
+        self._add_disk(cfg_spec, datastore, disk_id, controller.key, disk_root_folder=folder)
 
     def create_empty_disk(self, cfg_spec, datastore, disk_id, size_mb):
         """Add a create empty scsi disk spec to the config spec. The method
@@ -354,8 +346,7 @@ class EsxVmConfig(VmConfig):
         # controller used for all nics.
         device_key = _FIRST_NIC_DEVICE + '.virtualDev'
 
-        if (hasattr(spec, '_metadata') and
-                device_key in spec._metadata):
+        if hasattr(spec, '_metadata') and device_key in spec._metadata:
             controller_type = _ethernet_virtual_dev_to_vim_adapter_map.get(
                 spec._metadata[device_key], controller_type)
 
@@ -364,7 +355,7 @@ class EsxVmConfig(VmConfig):
             backing=backing
         )
 
-        self.add_device(spec, device)
+        self._add_device(spec, device)
 
         return spec
 
@@ -372,13 +363,13 @@ class EsxVmConfig(VmConfig):
         """Create a cdrom spec to add a CD-ROM device with an iso
 
         :param cspec: vim.vm.ConfigSpec object to append the cd-rom spec to.
-            cspec will be modified by AddIsoCdrom or self.update_device
+            cspec will be modified by AddIsoCdrom or self._update_device
         :param iso_file: The iso file path, string
         :param cfg_info: The VM's ConfigInfo object
         :rtype: bool. True if success, False if failure
         """
-        devices = self.get_devices_from_config(cfg_info)
-        cd_devs = self.find_devices(devices, vim.vm.device.VirtualCdrom)
+        devices = self._get_devices_from_config(cfg_info)
+        cd_devs = self._find_devices(devices, vim.vm.device.VirtualCdrom)
 
         conInfo = vim.vm.device.VirtualDevice.ConnectInfo()
         conInfo.allowGuestControl = True
@@ -388,9 +379,7 @@ class EsxVmConfig(VmConfig):
         # if no virtual device, add new one and mount the iso
         if not cd_devs:
             # callee will modify cspec.
-            AddIsoCdrom(cspec, iso_file,
-                        self._cfg_opts,
-                        conInfo)
+            AddIsoCdrom(cspec, iso_file, self._cfg_opts, conInfo)
             return True
 
         # having virtual devices
@@ -398,15 +387,12 @@ class EsxVmConfig(VmConfig):
             # only check the first device
             dev = cd_devs[0]
 
-            if not isinstance(
-                    dev.backing, vim.vm.device.VirtualCdrom.IsoBackingInfo):
+            if not isinstance(dev.backing, vim.vm.device.VirtualCdrom.IsoBackingInfo):
                 raise TypeError("device is not ISO-backed")
 
             # if mounted, return False
             if dev.connectable.connected:
-                self._logger.warning(
-                    "Existing virtual CD devices found and connected, "
-                    "abort adding new one.")
+                self._logger.warning("Existing virtual CD devices found and connected, abort adding new one.")
                 return False
 
             # if not mounted, use this device to mount the iso
@@ -416,7 +402,7 @@ class EsxVmConfig(VmConfig):
                 dev.connectable = conInfo
                 dev.backing = devBacking
 
-                self.update_device(cspec, dev)
+                self._update_device(cspec, dev)
                 return True
 
     def disconnect_iso_cdrom(self, spec, cfg_info):
@@ -425,24 +411,22 @@ class EsxVmConfig(VmConfig):
         :param cfg_info: The VM's ConfigInfo object
         :rtype: the datastore path of the iso
         """
-        devices = self.get_devices_from_config(cfg_info)
-        cd_devs = self.find_devices(devices, vim.vm.device.VirtualCdrom)
+        devices = self._get_devices_from_config(cfg_info)
+        cd_devs = self._find_devices(devices, vim.vm.device.VirtualCdrom)
         # assumes only working on one virtual cdrom
         if len(cd_devs) > 1:
-            self._logger.warning(
-                "More than one virtual CD devices found, selecting first")
+            self._logger.warning("More than one virtual CD devices found, selecting first")
 
         if not cd_devs:
             raise DeviceNotFoundException("vm has no cdrom devices")
 
         dev = cd_devs[0]
-        if not isinstance(
-                dev.backing, vim.vm.device.VirtualCdrom.IsoBackingInfo):
+        if not isinstance(dev.backing, vim.vm.device.VirtualCdrom.IsoBackingInfo):
             raise TypeError("device is not ISO-backed")
 
         # disconnect device
         dev.connectable = GetCnxInfo(None)
-        self.update_device(spec, dev)
+        self._update_device(spec, dev)
         return dev.backing.fileName
 
     def remove_iso_cdrom(self, spec, cfg_info):
@@ -451,13 +435,18 @@ class EsxVmConfig(VmConfig):
         :param cfg_info: The VM's ConfigInfo object
         :rtype: the updated config spec
         """
-        devices = self.get_devices_from_config(cfg_info)
-        cd_devs = self.find_devices(devices, vim.vm.device.VirtualCdrom)
+        devices = self._get_devices_from_config(cfg_info)
+        cd_devs = self._find_devices(devices, vim.vm.device.VirtualCdrom)
         dev = cd_devs[0]
-        if not isinstance(
-                dev.backing, vim.vm.device.VirtualCdrom.IsoBackingInfo):
+        if not isinstance(dev.backing, vim.vm.device.VirtualCdrom.IsoBackingInfo):
             raise TypeError("device is not ISO-backed")
-        self.remove_device(spec, dev)
+        self._remove_device(spec, dev)
+
+    def remove_disk(self, spec, cfg_info, disk_id):
+        matcher = self._disk_matcher(disk_id)
+        devices = self._get_devices_from_config(cfg_info)
+        device = self._get_virtual_disk_device(devices, matcher=matcher)
+        self._remove_device(spec, device)
 
     def remove_all_disks(self, spec, cfg_info):
         """Updates the config spec to remove all virtual disks from a VM.
@@ -465,10 +454,10 @@ class EsxVmConfig(VmConfig):
         :param cfg_info: The VM's ConfigInfo object
         :rtype: the updated config spec
         """
-        devices = self.get_devices_from_config(cfg_info)
-        disk_devs = self.find_devices(devices, vim.vm.device.VirtualDisk)
+        devices = self._get_devices_from_config(cfg_info)
+        disk_devs = self._find_devices(devices, vim.vm.device.VirtualDisk)
         for dev in disk_devs:
-            self.remove_device(spec, dev)
+            self._remove_device(spec, dev)
 
     def customize_serial_ports(self, spec):
         """Add virtual serial ports to this create spec if necessary.
@@ -480,8 +469,7 @@ class EsxVmConfig(VmConfig):
         """
 
         k = _FIRST_SERIAL_DEVICE
-        serial_type = spec._metadata.get(
-            "%s.%s" % (k, "fileType"), "")
+        serial_type = spec._metadata.get("%s.%s" % (k, "fileType"), "")
         if serial_type == "network":
             uri = spec._metadata.get("%s.%s" % (k, "fileName"), None)
             proxy_uri = spec._metadata.get("%s.%s" % (k, "vspc"), None)
@@ -498,26 +486,26 @@ class EsxVmConfig(VmConfig):
                                    proxyURI=proxy_uri,
                                    yieldPoll=yield_on_poll)
 
-    def create_device_spec(self, device):
+    def _create_device_spec(self, device):
         return vim.vm.device.VirtualDeviceSpec(
             device=device,
             fileOperation=vim.vm.device.VirtualDeviceSpec.FileOperation.create,
             operation=vim.vm.device.VirtualDeviceSpec.Operation.add
         )
 
-    def add_device_spec(self, device):
+    def _add_device_spec(self, device):
         return vim.vm.device.VirtualDeviceSpec(
             device=device,
             operation=vim.vm.device.VirtualDeviceSpec.Operation.add
         )
 
-    def edit_device_spec(self, device):
+    def _edit_device_spec(self, device):
         return vim.vm.device.VirtualDeviceSpec(
             device=device,
             operation=vim.vm.device.VirtualDeviceSpec.Operation.edit
         )
 
-    def remove_device_spec(self, device):
+    def _remove_device_spec(self, device):
         return vim.vm.device.VirtualDeviceSpec(
             device=device,
             operation=vim.vm.device.VirtualDeviceSpec.Operation.remove
@@ -571,7 +559,7 @@ class EsxVmConfig(VmConfig):
         """
         return vim.vm.ConfigSpec(deviceChange=[])
 
-    def create_device(self, spec, device):
+    def _create_device(self, spec, device):
         """Create a device to a ConfigSpec
 
         :param spec: The VM config spec
@@ -579,10 +567,10 @@ class EsxVmConfig(VmConfig):
         :param device: Device to add
         :type device: vim.Device
         """
-        device_spec = self.create_device_spec(device)
+        device_spec = self._create_device_spec(device)
         spec.deviceChange.append(device_spec)
 
-    def add_device(self, spec, device):
+    def _add_device(self, spec, device):
         """Add a device to a ConfigSpec
 
         :param spec: The VM config spec
@@ -590,10 +578,10 @@ class EsxVmConfig(VmConfig):
         :param device: Device to add
         :type device: vim.Device
         """
-        device_spec = self.add_device_spec(device)
+        device_spec = self._add_device_spec(device)
         spec.deviceChange.append(device_spec)
 
-    def update_device(self, spec, device):
+    def _update_device(self, spec, device):
         """ Add a device edit to the ConfigSpec
 
         :param spec: The VM config spec
@@ -601,10 +589,10 @@ class EsxVmConfig(VmConfig):
         :param device: Device to add
         :type device: vim.Device
         """
-        device_spec = self.edit_device_spec(device)
+        device_spec = self._edit_device_spec(device)
         spec.deviceChange.append(device_spec)
 
-    def remove_device(self, spec, device):
+    def _remove_device(self, spec, device):
         """ConfigSpec to remove a device from a VM.
 
         :param spec: The VM config spec
@@ -612,30 +600,21 @@ class EsxVmConfig(VmConfig):
         :param device: Device to remove
         :type device: vim.Device
         """
-        device_spec = self.remove_device_spec(device)
+        device_spec = self._remove_device_spec(device)
         spec.deviceChange.append(device_spec)
 
-    def get_devices(self, vm):
-        """Get the set of virtual devices belonging to a VM.
-
-        :param vm: The VM
-        :type vm: vim.VirtualMachine
-        :rtype: vim.vm.device.VirtualDevice[]
-        """
-        return self.get_devices_from_config(vm.config)
-
-    def get_devices_from_config(self, cfg_info):
+    def _get_devices_from_config(self, cfg_info):
         """Get the set of virtual devices belonging to a VM given
            its config.
         :param cfg_info: The VMs cfg info object
         :type cfg_info: vim.vm.ConfigInfo
         :rtype: vim.vm.device.VirtualDevice[]
         """
-        if (cfg_info.hardware is not None):
+        if cfg_info.hardware is not None:
             return cfg_info.hardware.device
         return []
 
-    def find_device(self, devices, device_type, matcher=None):
+    def _find_device(self, devices, device_type, matcher=None):
         """Find a virtual device in a list of VM devices.
 
         If matcher is None, returns the first instance of device_type.
@@ -655,7 +634,7 @@ class EsxVmConfig(VmConfig):
                 if matcher is None or matcher(device):
                     return device
 
-    def find_devices(self, devices, device_type, matcher=None):
+    def _find_devices(self, devices, device_type, matcher=None):
         """Find a list of virtual devices in a list of VM devices.
 
         If matcher is None returns all instances of device_type
@@ -677,7 +656,7 @@ class EsxVmConfig(VmConfig):
                     filtered_devices.append(device)
         return filtered_devices
 
-    def disk_matcher(self, datastore, disk_id):
+    def _disk_matcher(self, disk_id):
         # On VMFS, device.backing.fileName is in the form of: '[ds_name] disk_[disk_id]/[disk_id].vmdk'
         # On VSAN, top-level folder is symlink to its internal object id, so the fileName field becomes
         # '[ds_name] [vsan object id]/[disk_id].vmdk'.
@@ -685,24 +664,13 @@ class EsxVmConfig(VmConfig):
         path = vmdk_add_suffix(disk_id)
         return lambda device: device.backing.fileName.endswith(path)
 
-    def get_device(self, devices, device_type, **kwargs):
+    def _get_virtual_disk_device(self, devices, **kwargs):
         """Get a virtual device in a list of VM devices.
 
-        Args pass through to find_device().
+        Args pass through to _find_device().
         If no device is found, DeviceNotFoundException is raised.
         """
-        device = self.find_device(devices, device_type, **kwargs)
-        if device is None:
-            raise DeviceNotFoundException()
-        return device
-
-    def get_virtual_disk_device(self, devices, **kwargs):
-        """Get a virtual device in a list of VM devices.
-
-        Args pass through to find_device().
-        If no device is found, DeviceNotFoundException is raised.
-        """
-        device = self.find_device(devices, vim.vm.device.VirtualDisk, **kwargs)
+        device = self._find_device(devices, vim.vm.device.VirtualDisk, **kwargs)
         if device is None:
             raise DeviceNotFoundException()
         return device
@@ -757,8 +725,7 @@ class EsxVmConfig(VmConfig):
             idx = 0
             for device in config.hardware.device:
                 if (isinstance(device, vim.vm.device.VirtualEthernetCard) and
-                        isinstance(device.backing,
-                                   vim.vm.device.VirtualEthernetCard.NetworkBackingInfo)):
+                        isinstance(device.backing, vim.vm.device.VirtualEthernetCard.NetworkBackingInfo)):
                     # idx is used for mac address generation
                     network_info.append((idx,
                                          device.macAddress,
