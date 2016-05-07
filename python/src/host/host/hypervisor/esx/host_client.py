@@ -242,71 +242,15 @@ class VmConfig(object):
         pass
 
     @abc.abstractmethod
+    def remove_disk(self, spec, cfg_info, disk_id):
+        pass
+
+    @abc.abstractmethod
     def remove_all_disks(self, spec, cfg_info):
         pass
 
     @abc.abstractmethod
     def customize_serial_ports(self, spec):
-        pass
-
-    @abc.abstractmethod
-    def create_device_spec(self, device):
-        pass
-
-    @abc.abstractmethod
-    def add_device_spec(self, device):
-        pass
-
-    @abc.abstractmethod
-    def edit_device_spec(self, device):
-        pass
-
-    @abc.abstractmethod
-    def remove_device_spec(self, device):
-        pass
-
-    @abc.abstractmethod
-    def create_device(self, spec, device):
-        pass
-
-    @abc.abstractmethod
-    def add_device(self, spec, device):
-        pass
-
-    @abc.abstractmethod
-    def update_device(self, spec, device):
-        pass
-
-    @abc.abstractmethod
-    def remove_device(self, spec, device):
-        pass
-
-    @abc.abstractmethod
-    def get_devices(self, vm):
-        pass
-
-    @abc.abstractmethod
-    def get_devices_from_config(self, cfg_info):
-        pass
-
-    @abc.abstractmethod
-    def find_device(self, devices, device_type, matcher=None):
-        pass
-
-    @abc.abstractmethod
-    def find_devices(self, devices, device_type, matcher=None):
-        pass
-
-    @abc.abstractmethod
-    def disk_matcher(self, datastore, disk_id):
-        pass
-
-    @abc.abstractmethod
-    def get_device(self, devices, device_type, **kwargs):
-        pass
-
-    @abc.abstractmethod
-    def get_virtual_disk_device(self, devices, **kwargs):
         pass
 
     @abc.abstractmethod

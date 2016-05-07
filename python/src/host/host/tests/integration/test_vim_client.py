@@ -213,7 +213,7 @@ class TestVimClient(unittest.TestCase):
             sharedBus=vim.vm.device.VirtualSCSIController.Sharing.noSharing,
             busNumber=2,
             unitNumber=-1)
-        self.vm_config.add_device(create_spec, controller)
+        self.vm_config._add_device(create_spec, controller)
         backing = vim.vm.device.VirtualDisk.FlatVer2BackingInfo(
             fileName=disk_path,
             diskMode=vim.vm.device.VirtualDiskOption.DiskMode.persistent
@@ -225,7 +225,7 @@ class TestVimClient(unittest.TestCase):
             backing=backing,
             capacityInKB=1024,
         )
-        self.vm_config.create_device(create_spec, disk)
+        self.vm_config._create_device(create_spec, disk)
         return create_spec
 
     def get_update_spec(self, vm_info, disk_path):
@@ -244,18 +244,18 @@ class TestVimClient(unittest.TestCase):
             backing=backing,
             capacityInKB=1024,
         )
-        self.vm_config.create_device(update_spec, disk)
+        self.vm_config._create_device(update_spec, disk)
         return update_spec
 
     def get_remove_spec(self, vm_info, disk_path):
         remove_spec = vim.vm.ConfigSpec()
-        devices = self.vm_config.get_devices_from_config(vm_info.config)
+        devices = self.vm_config._get_devices_from_config(vm_info.config)
         found_device = None
         for device in devices:
             if isinstance(device, vim.vm.device.VirtualDisk) and \
                     device.backing.fileName.endswith(disk_path):
                 found_device = device
-        self.vm_config.remove_device(remove_spec, found_device)
+        self.vm_config._remove_device(remove_spec, found_device)
         return remove_spec
 
     def test_clone_ticket(self):

@@ -85,13 +85,13 @@ class TestEsxVmConfig(unittest.TestCase):
     def test_find_disk_controller(self):
         devices = self.dummy_devices()
         device_type = DEFAULT_DISK_CONTROLLER_CLASS
-        disk_controller = self.vm_config.find_device(devices, device_type)
+        disk_controller = self.vm_config._find_device(devices, device_type)
         assert_that(disk_controller.key, equal_to(1000))
 
     def test_find_nic_controller(self):
         devices = self.dummy_devices()
         device_type = vim.vm.device.VirtualPCIController
-        disk_controller = self.vm_config.find_device(devices, device_type)
+        disk_controller = self.vm_config._find_device(devices, device_type)
         assert_that(disk_controller.key, equal_to(100))
 
     def test_find_virtual_disk(self):
@@ -99,21 +99,21 @@ class TestEsxVmConfig(unittest.TestCase):
         vm_config = self.vm_config
         devices = self.dummy_devices()
         for device in devices:
-            vm_config.add_device(spec, device)
+            vm_config._add_device(spec, device)
         cfg_info = FakeConfigInfo()
         device_type = vim.vm.device.VirtualDisk
         datastore = "ds1"
         filename = "folder/foo"
         path = vmdk_path(datastore, filename)
 
-        find_disk = vm_config.disk_matcher(datastore, filename)
-        disk = vm_config.find_device(devices, device_type, matcher=find_disk)
+        find_disk = vm_config._disk_matcher(filename)
+        disk = vm_config._find_device(devices, device_type, matcher=find_disk)
         assert_that(disk, equal_to(None))
 
         vm_config.add_scsi_disk(cfg_info, spec, datastore, "nope")
 
-        self.assertRaises(DeviceNotFoundException, vm_config.get_device,
-                          devices, device_type, matcher=find_disk)
+        device = vm_config._find_device(devices, device_type, matcher=find_disk)
+        assert_that(device, equal_to(None))
 
         vm_config.add_scsi_disk(cfg_info, spec, datastore,
                                 filename)
@@ -122,15 +122,15 @@ class TestEsxVmConfig(unittest.TestCase):
         for device_change in device_changes:
             device_list.append(device_change.device)
 
-        disk = vm_config.find_device(device_list, device_type,
-                                     matcher=find_disk)
+        disk = vm_config._find_device(device_list, device_type,
+                                      matcher=find_disk)
         assert_that(disk.backing.fileName, equal_to(path))
 
     def _create_spec_for_disk_test(self, datastore, vm_id):
         spec = vim.vm.ConfigSpec()
         devices = self.dummy_devices()
         for device in devices:
-            self.vm_config.add_device(spec, device)
+            self.vm_config._add_device(spec, device)
         vm_path_name = '[%s] %s/%s' % (datastore, vm_id[0:2], vm_id)
         spec.files = vim.vm.FileInfo(vmPathName=vm_path_name)
         spec.name = vm_id
@@ -147,7 +147,7 @@ class TestEsxVmConfig(unittest.TestCase):
 
         devs = [change.device for change in spec.deviceChange]
         device_type = vim.vm.device.VirtualDisk
-        disks = self.vm_config.find_devices(devs, device_type)
+        disks = self.vm_config._find_devices(devs, device_type)
         assert_that(len(disks), equal_to(1))
         # verify that uuid to be set on disk to be added matches the
         # of the disk (modulo some formatting differences)
@@ -165,7 +165,7 @@ class TestEsxVmConfig(unittest.TestCase):
 
         devs = [change.device for change in spec.deviceChange]
         device_type = vim.vm.device.VirtualDisk
-        disks = self.vm_config.find_devices(devs, device_type)
+        disks = self.vm_config._find_devices(devs, device_type)
         assert_that(len(disks), equal_to(1))
         # verify that disk to be added does not request a specifc uuid
         assert_that(disks[0].backing.uuid, equal_to(None))

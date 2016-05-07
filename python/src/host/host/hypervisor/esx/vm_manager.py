@@ -299,10 +299,7 @@ class EsxVmManager(VmManager):
         :param disk_id: Disk id
         :type disk_id: str
         """
-        matcher = self.vm_config.disk_matcher(datastore, disk_id)
-        devices = self.vm_config.get_devices_from_config(info)
-        device = self.vm_config.get_virtual_disk_device(devices, matcher=matcher)
-        self.vm_config.remove_device(spec, device)
+        self.vm_config.remove_disk(spec, info, disk_id)
         return spec
 
     @log_duration
