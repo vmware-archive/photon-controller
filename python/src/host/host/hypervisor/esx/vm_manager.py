@@ -663,21 +663,6 @@ class EsxVmManager(VmManager):
 
         return False
 
-    def set_vminfo(self, spec, vminfo):
-        prefixed_vminfo = {}
-        for k, v in vminfo.iteritems():
-            prefixed_vminfo[self.VMINFO_PREFIX + k] = v
-        self.vm_config.set_extra_config(spec, prefixed_vminfo)
-
-    def get_vminfo(self, vm_id):
-        extras = self.get_vm_config(vm_id).extraConfig
-        vminfo = {}
-        for config in extras:
-            if config.key.startswith(self.VMINFO_PREFIX):
-                key = config.key[(len(self.VMINFO_PREFIX)):]
-                vminfo[key] = config.value
-        return vminfo
-
     def get_vm_config(self, vm_id):
         """ Get the config info of a VM. """
         vm = self.vim_client.get_vm(vm_id)

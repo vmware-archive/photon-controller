@@ -75,7 +75,6 @@ from host.hypervisor.esx.vim_client import VimClient
 from host.hypervisor.esx.path_util import IMAGE_FOLDER_NAME_PREFIX
 from host.hypervisor.esx.path_util import datastore_path
 from host.hypervisor.esx.path_util import vmdk_path
-from host.hypervisor.esx.vm_manager import EsxVmManager
 from nose.plugins.skip import SkipTest
 from pyVmomi import SoapStubAdapter, vim
 from pysdk import connect
@@ -725,22 +724,6 @@ class TestRemoteAgent(unittest.TestCase, AgentCommonTests):
         vm_wrapper.delete(request=vm_wrapper.delete_request(force=True))
         for disk_id in disk_ids:
             vm_wrapper.get_disk(disk_id, expect_found=False)
-
-    def test_vminfo(self):
-        vm_wrapper = VmWrapper(self.host_client)
-        vm_id = vm_wrapper.create().vm.id
-        vm_manager = EsxVmManager(self.vim_client, None)
-        vminfo = vm_manager.get_vminfo(vm_id)
-        # p1/t1 is the default project/tenant
-        assert_that(vminfo, equal_to({"project": "p1", "tenant": "t1"}))
-
-        # Test vm with empty project and tenant
-        vm_wrapper = VmWrapper(self.host_client)
-        vm_wrapper.vm.project_id = None
-        vm_wrapper.vm.tenant_id = None
-        vm_id = vm_wrapper.create().vm.id
-        vminfo = vm_manager.get_vminfo(vm_id)
-        assert_that(vminfo, equal_to({}))
 
     def test_disk_uuids(self):
         # Create a vm without a root disk and blank disk then attach another
