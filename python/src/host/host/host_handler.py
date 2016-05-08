@@ -142,9 +142,6 @@ class HostHandler(Host.Iface):
 
     GENERATION_GAP = 10
 
-    VMINFO_TENANT_KEY = "tenant"
-    VMINFO_PROJECT_KEY = "project"
-
     def __init__(self, hypervisor):
         """Constructor for the host handler
 
@@ -373,16 +370,6 @@ class HostHandler(Host.Iface):
         # Step 1b: Perform non-device-related customizations as specified by
         # the metadata
         self.hypervisor.vm_manager.customize_vm(spec)
-
-        # Step 1c: Set extra vminfo
-        vminfo = {}
-        if vm.tenant_id:
-            vminfo[self.VMINFO_TENANT_KEY] = vm.tenant_id
-        if vm.project_id:
-            vminfo[self.VMINFO_PROJECT_KEY] = vm.project_id
-
-        self._logger.debug("Setting vminfo: %s" % vminfo)
-        self.hypervisor.vm_manager.set_vminfo(spec, vminfo)
 
         self._logger.debug("VM create, done creating vm spec, vm-id: %s" % vm.id)
 
