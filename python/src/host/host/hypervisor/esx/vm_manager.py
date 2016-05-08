@@ -17,8 +17,6 @@ import socket
 import struct
 import threading
 
-from common.exclusive_set import DuplicatedValue
-from common.exclusive_set import ExclusiveSet
 from common.kind import Flavor
 from common.kind import Unit
 from gen.agent.ttypes import PowerState
@@ -97,8 +95,6 @@ class EsxVmManager(VmManager):
 
     GUESTINFO_PREFIX = "guestinfo.esxcloud."
     VMINFO_PREFIX = "photon_controller.vminfo."
-    EXTRA_CONFIG_VNC_ENABLED = "RemoteDisplay.vnc.enabled"
-    EXTRA_CONFIG_VNC_PORT = "RemoteDisplay.vnc.port"
     METADATA_EXTRA_CONFIG_KEYS = (
         'bios.bootOrder', 'monitor.suspend_on_triplefault'
         # More TBA ...
@@ -742,43 +738,6 @@ class EsxVmManager(VmManager):
             self._logger.debug("Image disk not found for %s: %s" % (vm_id, vm))
             return None
         return get_image_base_disk(vm.disks)
-
-    @log_duration
-    def set_vnc_port(self, spec, port):
-        """
-        :param spec: vim.vm.ConfigSpec, the virtual machine config spec
-        :param port: int, the vnc port assigned to the vm
-        """
-        return self.vm_config.set_vnc_port(spec, port)
-
-    @log_duration
-    def get_vnc_port(self, vm_id):
-        """Get vnc port from a vm
-        :param vm_id: the id of the vm
-        :return: port number assigned to vm or None
-        """
-        return self.vm_config.get_vnc_port(vm_id)
-
-    @log_duration
-    def get_occupied_vnc_ports(self):
-        vms = self.vim_client.get_vms()
-
-        ports = ExclusiveSet()
-        for vm in vms:
-            if vm.config and vm.config.extraConfig:
-                enabled = False
-                port = None
-                for option in vm.config.extraConfig:
-                    if option.key == self.EXTRA_CONFIG_VNC_ENABLED:
-                        enabled = option.value.upper() == 'TRUE'
-                    elif option.key == self.EXTRA_CONFIG_VNC_PORT:
-                        port = int(option.value)
-                if enabled:
-                    try:
-                        ports.add(port)
-                    except DuplicatedValue:
-                        self._logger.warning("port %d already occupied" % port)
-        return ports
 
     def get_mks_ticket(self, vm_id):
         vm = self.vim_client.get_vm(vm_id)

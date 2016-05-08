@@ -254,14 +254,6 @@ class VmConfig(object):
         pass
 
     @abc.abstractmethod
-    def set_vnc_port(self, spec, port):
-        pass
-
-    @abc.abstractmethod
-    def get_vnc_port(self, vm_id):
-        pass
-
-    @abc.abstractmethod
     def get_network_config_int(self, config):
         pass
 

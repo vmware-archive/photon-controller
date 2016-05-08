@@ -129,9 +129,6 @@ class EsxVmConfigSpec(vim.vm.ConfigSpec):
 
 class EsxVmConfig(VmConfig):
 
-    EXTRA_CONFIG_VNC_ENABLED = "RemoteDisplay.vnc.enabled"
-    EXTRA_CONFIG_VNC_PORT = "RemoteDisplay.vnc.port"
-
     """ESX VM configuration.
 
     Attributes:
@@ -674,41 +671,6 @@ class EsxVmConfig(VmConfig):
         if device is None:
             raise DeviceNotFoundException()
         return device
-
-    @log_duration
-    def set_vnc_port(self, spec, port):
-        """
-        :param spec: vim.vm.ConfigSpec, the virtual machine config spec
-        :param port: int, the vnc port assigned to the vm
-        """
-        if spec.extraConfig is None:
-            spec.extraConfig = []
-
-        spec.extraConfig.append(vim.OptionValue(
-            key=self.EXTRA_CONFIG_VNC_ENABLED,
-            value="True"))
-        spec.extraConfig.append(vim.OptionValue(
-            key=self.EXTRA_CONFIG_VNC_PORT,
-            value=port))
-
-        return spec
-
-    @log_duration
-    def get_vnc_port(self, vm_id):
-        """Get vnc port from a vm
-        :param vm_id: the id of the vm
-        :return: port number assigned to vm or None
-        """
-        vm = self.vim_client.get_vm(vm_id)
-        if not vm.config.extraConfig:
-            return None
-
-        options = [o for o in vm.config.extraConfig
-                   if o.key == self.EXTRA_CONFIG_VNC_PORT]
-        if not options:
-            return None
-
-        return int(options[0].value)
 
     def get_network_config_int(self, config):
         """ Internal method that returns the device id, the network name and

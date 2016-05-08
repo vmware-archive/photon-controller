@@ -573,33 +573,6 @@ class TestEsxVmManager(unittest.TestCase):
         self.vm_manager.vim_client.get_vm_in_cache = vm
         assert_that(image_path("vm1"), is_(datastore_to_os_path(image)))
 
-    def test_set_vnc_port(self):
-        flavor = Flavor("default", [
-            QuotaLineItem("vm.memory", "256", Unit.MB),
-            QuotaLineItem("vm.cpu", "1", Unit.COUNT),
-        ])
-        spec = self.vm_manager.create_vm_spec(
-            "vm_id", "ds1", flavor)
-        self.vm_manager.set_vnc_port(spec, 5901)
-
-        options = [o for o in spec.extraConfig
-                   if o.key == 'RemoteDisplay.vnc.enabled']
-        assert_that(options[0].value, equal_to('True'))
-        options = [o for o in spec.extraConfig
-                   if o.key == 'RemoteDisplay.vnc.port']
-        assert_that(options[0].value, equal_to(5901))
-
-    @patch.object(VimClient, "get_vm")
-    def test_get_vnc_port(self, get_vm):
-        vm_mock = MagicMock()
-        vm_mock.config.extraConfig = [
-            vim.OptionValue(key="RemoteDisplay.vnc.port", value="5901")
-        ]
-        get_vm.return_value = vm_mock
-
-        port = self.vm_manager.get_vnc_port("id")
-        assert_that(port, equal_to(5901))
-
     def test_get_resources(self):
         """
         Test that get_resources excludes VMs/disks if it can't find their
@@ -631,13 +604,6 @@ class TestEsxVmManager(unittest.TestCase):
         assert_that(len(resources), equal_to(2))
         assert_that(len(resources[0].disks), equal_to(2))
         assert_that(len(resources[1].disks), equal_to(3))
-
-    @patch.object(VimClient, "get_vms")
-    def test_get_occupied_vnc_ports(self, get_vms):
-        get_vms.return_value = [self._create_vm_mock(5900),
-                                self._create_vm_mock(5901)]
-        ports = self.vm_manager.get_occupied_vnc_ports()
-        assert_that(ports, contains_inanyorder(5900, 5901))
 
     def _create_vm_mock(self, vnc_port):
         vm = MagicMock()
