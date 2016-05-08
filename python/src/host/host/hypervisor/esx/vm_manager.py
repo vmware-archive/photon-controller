@@ -578,17 +578,6 @@ class EsxVmManager(VmManager):
 
         return iso_path
 
-    def detach_cdrom(self, spec, vm_id):
-        """ Remove cdrom device from VM
-
-        :param spec: The VM config spec to update with the cdrom change
-        :type spec: vim.vm.ConfigSpec
-        :param vm_id: The id of VM to detach iso from
-        :type vm_id: str
-        """
-        vm = self.vim_client.get_vm(vm_id)
-        self.vm_config.remove_iso_cdrom(spec, vm.config)
-
     def remove_iso(self, iso_ds_path):
         try:
             os.remove(datastore_to_os_path(iso_ds_path))

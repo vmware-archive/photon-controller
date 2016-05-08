@@ -316,20 +316,6 @@ class TestEsxVmConfig(unittest.TestCase):
         assert_that(dev.connectable.connected, equal_to(False))
         assert_that(dev.connectable.startConnected, equal_to(False))
 
-    def test_remove_iso_cdrom_device(self):
-        fake_iso_ds_path = '[ds] vm_fake/fake.iso'
-        cspec = self.vm_config.update_spec()
-        cfg_info = self._get_config_info_with_iso(fake_iso_ds_path)
-        self.vm_config.remove_iso_cdrom(cspec, cfg_info)
-
-        assert_that(len(cspec.deviceChange), equal_to(1))
-        assert_that(cspec.deviceChange[0].operation, equal_to('remove'))
-        dev = cspec.deviceChange[0].device
-        assert_that(dev.backing.__class__,
-                    equal_to(vim.vm.device.VirtualCdrom.IsoBackingInfo))
-        assert_that(dev.backing.fileName,
-                    equal_to(fake_iso_ds_path))
-
     def test_update_spec(self):
         cfg_info = FakeConfigInfo()
         spec = self.vm_config.update_spec()

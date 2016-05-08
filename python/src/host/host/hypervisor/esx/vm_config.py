@@ -38,25 +38,11 @@ from pysdk.vmconfig import GetFreeBusNumber
 from pysdk.vmconfig import GetFreeKey
 
 DEFAULT_DISK_CONTROLLER_CLASS = vim.vm.device.VirtualLsiLogicController
+DEFAULT_DISK_ADAPTER_TYPE = vim.VirtualDiskManager.VirtualDiskAdapterType.lsiLogic
 DEFAULT_NIC_CONTROLLER_CLASS = vim.vm.device.VirtualE1000
 
 DEFAULT_VMX_VERSION = "vmx-10"
 
-
-_diskAdapterType = vim.VirtualDiskManager.VirtualDiskAdapterType
-
-_controller_to_disk_adapter_map = {
-    vim.vm.device.VirtualLsiLogicController: _diskAdapterType.lsiLogic,
-    vim.vm.device.VirtualBusLogicController: _diskAdapterType.busLogic,
-    vim.vm.device.VirtualIDEController:      _diskAdapterType.ide,
-
-    # Note: vdiskmanager only recognizes the above three VirtualDiskAdapterType
-    # values for disk create, but beyond differentiating ide and scsi disks
-    # this value is not significant, so the use of lsiLogic suffice for when
-    # using the following scsi controllers.
-    vim.vm.device.ParaVirtualSCSIController: _diskAdapterType.lsiLogic,
-    vim.vm.device.VirtualLsiLogicSASController: _diskAdapterType.lsiLogic,
-}
 
 _scsi_virtual_dev_to_vim_adapter_map = {
     "lsilogic": vim.vm.device.VirtualLsiLogicController,
@@ -77,9 +63,6 @@ _ethernet_virtual_dev_to_vim_adapter_map = {
 _BOOT_SCSI_DEVICE = "scsi0"
 _FIRST_NIC_DEVICE = "ethernet0"
 _FIRST_SERIAL_DEVICE = "serial0"
-
-DEFAULT_DISK_ADAPTER_TYPE = _controller_to_disk_adapter_map.get(
-    DEFAULT_DISK_CONTROLLER_CLASS)
 
 
 def _string_to_bool(string_val):
@@ -425,19 +408,6 @@ class EsxVmConfig(VmConfig):
         dev.connectable = GetCnxInfo(None)
         self._update_device(spec, dev)
         return dev.backing.fileName
-
-    def remove_iso_cdrom(self, spec, cfg_info):
-        """Updates the config spec to detach an iso from the VM.
-        :param spec: vim.vm.ConfigSpec object to append the cdrom device change
-        :param cfg_info: The VM's ConfigInfo object
-        :rtype: the updated config spec
-        """
-        devices = self._get_devices_from_config(cfg_info)
-        cd_devs = self._find_devices(devices, vim.vm.device.VirtualCdrom)
-        dev = cd_devs[0]
-        if not isinstance(dev.backing, vim.vm.device.VirtualCdrom.IsoBackingInfo):
-            raise TypeError("device is not ISO-backed")
-        self._remove_device(spec, dev)
 
     def remove_disk(self, spec, cfg_info, disk_id):
         matcher = self._disk_matcher(disk_id)
