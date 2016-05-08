@@ -64,27 +64,6 @@ class TestVmManager(unittest.TestCase):
             self.vm_manager.power_off_vm(vm_id)
             self.vm_manager.delete_vm(vm_id)
 
-    @patch('os.path.exists', return_value=True)
-    def test_vminfo(self, _exists):
-        self._test_vminfo({})
-        self._test_vminfo({"project": "p1"})
-        self._test_vminfo({"tenant": "t1"})
-        self._test_vminfo({"project": "p1", "tenant": "t1"})
-
-    def _test_vminfo(self, vminfo):
-        vm_id = self._vm_id()
-        flavor = Flavor("vm", [QuotaLineItem("vm.cpu", 1, Unit.COUNT),
-                               QuotaLineItem("vm.memory", 8, Unit.MB)])
-        datastore = self.vim_client.get_all_datastores()[0].name
-        spec = self.vm_manager.create_vm_spec(vm_id, datastore, flavor)
-        self.vm_manager.set_vminfo(spec, vminfo)
-        try:
-            self.vm_manager.create_vm(vm_id, spec)
-            got_metadata = self.vm_manager.get_vminfo(vm_id)
-            assert_that(got_metadata, equal_to(vminfo))
-        finally:
-            self.vm_manager.delete_vm(vm_id)
-
     def _vm_id(self):
         vm_id = strftime("%Y-%m-%d-%H%M%S-", localtime())
         vm_id += str(random.randint(1, 10000))

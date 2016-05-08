@@ -300,25 +300,6 @@ class VmManager(object):
         pass
 
     @abc.abstractmethod
-    def set_vminfo(self, spec, vminfo):
-        """ Set extra VM information in the create VM spec. The information
-        will be saved with the VM and can be fetched through get_vminfo.
-
-        :param spec: opaque config object associated with VM
-        :param vminfo: dict, key-value pairs.
-        """
-        pass
-
-    @abc.abstractmethod
-    def get_vminfo(self, vm_id):
-        """ Get the extra VM information.
-
-        :param vm_id: the id of VM
-        :return: dict, key-value pairs saved in the vm by set_vminfo
-        """
-        pass
-
-    @abc.abstractmethod
     def get_vm_config(self, vm_id):
         """ Get the current VMs current configuration.
 

@@ -681,10 +681,6 @@ class HostHandlerTestCase(unittest.TestCase):
             vm.id, "ds2", vm.flavor, metadata, mock_env, image_id=image_id)
         handler.hypervisor.vm_manager.create_vm.assert_called_once_with(
             vm.id, spec)
-        handler.hypervisor.vm_manager.set_vminfo.assert_called_once_with(
-            spec, {handler.VMINFO_PROJECT_KEY: 'p1',
-                   handler.VMINFO_TENANT_KEY: 't1'}
-        )
         pm.remove_vm_reservation.assert_called_once_with(mock_reservation)
         assert_that(response.result, equal_to(CreateVmResultCode.OK))
 
