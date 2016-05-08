@@ -238,10 +238,6 @@ class VmConfig(object):
         pass
 
     @abc.abstractmethod
-    def remove_iso_cdrom(self, spec, cfg_info):
-        pass
-
-    @abc.abstractmethod
     def remove_disk(self, spec, cfg_info, disk_id):
         pass
 

@@ -283,17 +283,6 @@ class VmManager(object):
         pass
 
     @abc.abstractmethod
-    def detach_cdrom(self, spec, vm_id):
-        """ Remove cdrom device from VM
-
-        :param spec: the vm update spec
-        :type spec: opaque config spec
-        :param vm_id: id of vm to detach the iso from
-        :type vm_id: str
-        """
-        pass
-
-    @abc.abstractmethod
     def remove_iso(self, iso_ds_path):
         """ Remove an iso file
         :param iso_ds_path: the path to the iso file to remove
