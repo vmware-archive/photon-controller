@@ -48,25 +48,6 @@ class TestVmManager(unittest.TestCase):
         self.vim_client.disconnect(wait=True)
 
     @patch('os.path.exists', return_value=True)
-    def test_vnc_ports(self, _exists):
-        vm_id = self._vm_id()
-        port = self._test_port()
-        flavor = Flavor("vm", [QuotaLineItem("vm.cpu", 1, Unit.COUNT),
-                               QuotaLineItem("vm.memory", 8, Unit.MB)])
-        datastore = self.vim_client.get_all_datastores()[0].name
-        spec = self.vm_manager.create_vm_spec(vm_id, datastore, flavor)
-        self.vm_manager.set_vnc_port(spec, port)
-        try:
-            self.vm_manager.create_vm(vm_id, spec)
-            expected = self.vm_manager.get_vnc_port(vm_id)
-            assert_that(expected, equal_to(port))
-
-            ports = self.vm_manager.get_occupied_vnc_ports()
-            assert_that(ports, contains(port))
-        finally:
-            self.vm_manager.delete_vm(vm_id)
-
-    @patch('os.path.exists', return_value=True)
     def test_mks_ticket(self, _exists):
         vm_id = self._vm_id()
         flavor = Flavor("vm", [QuotaLineItem("vm.cpu", 1, Unit.COUNT),

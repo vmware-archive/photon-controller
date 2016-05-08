@@ -398,29 +398,6 @@ class VmManager(object):
         pass
 
     @abc.abstractmethod
-    def set_vnc_port(self, spec, port):
-        """Set vnc port to vm's config spec
-        :param spec: vim.Vm.ConfigSpec, the virtual machine config spec
-        :param port: int, the vnc port assigned to the vm
-        """
-        pass
-
-    @abc.abstractmethod
-    def get_vnc_port(self, vm_id):
-        """Get vnc port from a vm
-        :param vm_id: the id of the vm
-        :return: port number assigned to vm or None
-        """
-        pass
-
-    @abc.abstractmethod
-    def get_occupied_vnc_ports(self):
-        """Get all vnc ports that are occupied on the host
-        :return: a set of ports. set of int.
-        """
-        pass
-
-    @abc.abstractmethod
     def get_mks_ticket(self, vm_id):
         """Get mks ticket for a vm
         :param vm_id: id of the vm for the mks ticket
