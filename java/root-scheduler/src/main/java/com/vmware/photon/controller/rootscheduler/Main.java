@@ -21,11 +21,12 @@ import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.photon.controller.common.thrift.ThriftModule;
 import com.vmware.photon.controller.common.thrift.ThriftServiceModule;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
-import com.vmware.photon.controller.common.zookeeper.ServiceNode;
-import com.vmware.photon.controller.common.zookeeper.ServiceNodeFactory;
+import com.vmware.photon.controller.common.zookeeper.PathChildrenCacheFactory;
 import com.vmware.photon.controller.common.zookeeper.ServiceNodeUtils;
+import com.vmware.photon.controller.common.zookeeper.SimpleServiceNode;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperModule;
-import com.vmware.photon.controller.common.zookeeper.ZookeeperServerSetFactory;
+import com.vmware.photon.controller.common.zookeeper.ZookeeperServerReader;
+import com.vmware.photon.controller.common.zookeeper.ZookeeperServerSet;
 import com.vmware.photon.controller.host.gen.Host;
 import com.vmware.photon.controller.rootscheduler.service.CloudStoreConstraintChecker;
 import com.vmware.photon.controller.rootscheduler.service.ConstraintChecker;
@@ -37,6 +38,8 @@ import com.google.inject.TypeLiteral;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.Namespace;
+import org.apache.curator.RetryPolicy;
+import org.apache.curator.framework.CuratorFramework;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,6 +50,9 @@ import java.util.concurrent.TimeUnit;
  * Root scheduler entry point.
  */
 public class Main {
+
+  public static final String CLOUDSTORE_SERVICE_NAME = "cloudstore";
+  public static final String SCHEDULER_SERVICE_NAME = "root-scheduler";
 
   private static final Logger logger = LoggerFactory.getLogger(Main.class);
   private static final long retryIntervalMilliSeconds = TimeUnit.SECONDS.toMillis(30);
@@ -67,22 +73,23 @@ public class Main {
 
     Injector injector = Guice.createInjector(
         new RootSchedulerModule(),
-        new ZookeeperModule(config.getZookeeper()),
         new ThriftModule(),
         new ThriftServiceModule<>(new TypeLiteral<Host.AsyncClient>() {
         }));
 
-    ZookeeperServerSetFactory serverSetFactory = injector.getInstance(ZookeeperServerSetFactory.class);
+    ZookeeperModule zkModule = new ZookeeperModule(config.getZookeeper());
+    RetryPolicy retryPolicy = zkModule.getRetryPolicy();
+    final CuratorFramework zkClient = zkModule.getCuratorFramework(retryPolicy);
+
+    ServerSet cloudStoreServerSet = getZookeeperServerSet(zkModule, zkClient, CLOUDSTORE_SERVICE_NAME, true);
+
     HostClientFactory hostClientFactory = injector.getInstance(HostClientFactory.class);
-    ServerSet cloudStoreServerSet = serverSetFactory.createServiceServerSet("cloudstore", true);
 
     final CloudStoreHelper cloudStoreHelper = new CloudStoreHelper(cloudStoreServerSet);
     final ConstraintChecker checker = new CloudStoreConstraintChecker(cloudStoreHelper);
 
     final SchedulerXenonHost host = new SchedulerXenonHost(config.getXenonConfig(), hostClientFactory,
         config, checker, cloudStoreHelper);
-
-    final ServiceNodeFactory serviceNodeFactory = injector.getInstance(ServiceNodeFactory.class);
 
     Runtime.getRuntime().addShutdownHook(new Thread() {
       @Override
@@ -98,9 +105,18 @@ public class Main {
     host.start();
 
     // Register the local Scheduler Node with Zookeeper.
-    registerWithZookeeper(serviceNodeFactory,
+    registerWithZookeeper(zkClient,
         config.getXenonConfig().getRegistrationAddress(),
         config.getXenonConfig().getPort());
+  }
+
+  private static ServerSet getZookeeperServerSet(ZookeeperModule zkModule, CuratorFramework zkClient,
+                                                 String serviceName, boolean subscribeToUpdates) throws Exception {
+    final ZookeeperServerReader zookeeperServerReader = zkModule.getServiceServerReader();
+    final PathChildrenCacheFactory pathChildrenCacheFactory = zkModule.getServicePathCacheFactory(zkClient,
+        zookeeperServerReader);
+    return new ZookeeperServerSet(pathChildrenCacheFactory, zkClient, zookeeperServerReader, serviceName,
+        subscribeToUpdates);
   }
 
   private static Config getConfig(Namespace namespace) {
@@ -114,11 +130,11 @@ public class Main {
     return config;
   }
 
-  private static void registerWithZookeeper(ServiceNodeFactory serviceNodeFactory,
+  private static void registerWithZookeeper(CuratorFramework zkClient,
                                             String registrationIpAddress,
                                             int port) {
     InetSocketAddress registrationSocketAddress = new InetSocketAddress(registrationIpAddress, port);
-    ServiceNode serviceNode = serviceNodeFactory.createSimple("root-scheduler", registrationSocketAddress);
+    SimpleServiceNode serviceNode = new SimpleServiceNode(zkClient, SCHEDULER_SERVICE_NAME, registrationSocketAddress);
     ServiceNodeUtils.joinService(serviceNode, retryIntervalMilliSeconds);
   }
 }

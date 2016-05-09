@@ -23,9 +23,6 @@ import com.google.inject.AbstractModule;
 import com.google.inject.assistedinject.FactoryModuleBuilder;
 import com.google.inject.matcher.Matchers;
 
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-
 /**
  * Root scheduler Guice module.
  */
@@ -35,9 +32,6 @@ public class RootSchedulerModule extends AbstractModule {
   protected void configure() {
     bindInterceptor(Matchers.any(), Matchers.annotatedWith(RequestId.class), new RequestIdInterceptor());
     bind(BuildInfo.class).toInstance(BuildInfo.get(this.getClass()));
-
-    bind(ScheduledExecutorService.class)
-        .toInstance(Executors.newScheduledThreadPool(4));
 
     install(new FactoryModuleBuilder()
         .implement(HostClient.class, HostClient.class)
