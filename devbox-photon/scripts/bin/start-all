@@ -2,8 +2,7 @@
 # Run all start service scripts
 start-zookeeper
 start-haproxy
-start-cloud-store
-start-root-scheduler
+start-photon-controller-core
 start-housekeeper
 start-deployer
 start-management-api

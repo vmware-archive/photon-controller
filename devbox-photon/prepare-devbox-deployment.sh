@@ -20,9 +20,8 @@ export NO_RESTART_ALWAYS=1
 vagrant ssh -c "docker tag photon/zookeeper esxcloud/zookeeper"
 vagrant ssh -c "docker tag photon/haproxy esxcloud/haproxy"
 vagrant ssh -c "docker tag photon/deployer esxcloud/deployer"
-vagrant ssh -c "docker tag photon/cloud-store esxcloud/cloud-store"
+vagrant ssh -c "docker tag photon/photon-controller-core esxcloud/photon-controller-core"
 vagrant ssh -c "docker tag photon/management-api esxcloud/management-api"
-vagrant ssh -c "docker tag photon/root-scheduler esxcloud/root-scheduler"
 vagrant ssh -c "docker tag photon/housekeeper esxcloud/housekeeper"
 
 mgmt_ui_container_url="https://ci.ec.eng.vmware.com/view/UI/job/ec-ui-mgmt-publish-docker-image-develop/lastSuccessfulBuild/artifact/ci/docker-image/esxcloud-management-ui.tar"
