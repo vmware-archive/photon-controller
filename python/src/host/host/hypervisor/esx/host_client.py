@@ -214,7 +214,7 @@ class VmConfig(object):
         pass
 
     @abc.abstractmethod
-    def add_scsi_disk(self, cfg_info, cfg_spec, datastore, disk_id, disk_is_image=False):
+    def attach_disk(self, cfg_spec, cfg_info, vmdk_file):
         pass
 
     @abc.abstractmethod
@@ -238,11 +238,7 @@ class VmConfig(object):
         pass
 
     @abc.abstractmethod
-    def remove_disk(self, spec, cfg_info, disk_id):
-        pass
-
-    @abc.abstractmethod
-    def remove_all_disks(self, spec, cfg_info):
+    def detach_disk(self, cfg_spec, cfg_info, disk_id):
         pass
 
     @abc.abstractmethod

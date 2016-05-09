@@ -586,24 +586,6 @@ class VimClient(HostClient):
         vim_task = file_mgr.MoveFile(sourceName=os_to_datastore_path(src), destinationName=os_to_datastore_path(dest))
         self.wait_for_task(vim_task)
 
-    @log_duration
-    def add_disk(self, cspec, datastore, disk_id, info, disk_is_image=False):
-        """Add an existing disk to a VM
-        :param cspec: config spec
-        :type cspec: ConfigSpec
-        :param vm_id: VM id
-        :type vm_id: str
-        :param datastore: Name of the VM's datastore
-        :type datastore: str
-        :param disk_id: Disk id
-        :type disk_id: str
-        """
-        if not info:
-            # New VM just generate a base config.
-            info = vim.vm.ConfigInfo(hardware=vim.vm.VirtualHardware())
-
-        return info
-
     @hostd_error_handler
     def export_vm(self, vm_id):
         """Export vm.

@@ -104,6 +104,7 @@ from gen.scheduler.ttypes import PlaceResponse
 from gen.scheduler.ttypes import PlaceResultCode
 from gen.scheduler.ttypes import Score
 from host.hypervisor.datastore_manager import DatastoreNotFoundException
+from host.hypervisor.esx.path_util import vmdk_path
 from host.hypervisor.image_manager import DirectoryNotFound
 from host.hypervisor.image_manager import ImageNotFoundException
 from host.hypervisor.image_scanner import DatastoreImageScanner
@@ -744,8 +745,7 @@ class HostHandler(Host.Iface):
     def attach_disks(self, request):
         response = VmDisksOpResponse(disks=[], disk_errors={})
         response.result = VmDiskOpResultCode.OK
-        self._update_disks_with_response(request.vm_id, request.disk_ids,
-                                         response, self.hypervisor.vm_manager.add_disk)
+        self._update_disks_with_response(request.vm_id, request.disk_ids, response, True)
         return response
 
     @log_request
@@ -754,11 +754,10 @@ class HostHandler(Host.Iface):
     def detach_disks(self, request):
         response = VmDisksOpResponse(disks=[], disk_errors={})
         response.result = VmDiskOpResultCode.OK
-        self._update_disks_with_response(request.vm_id, request.disk_ids,
-                                         response, self.hypervisor.vm_manager.remove_disk)
+        self._update_disks_with_response(request.vm_id, request.disk_ids, response, False)
         return response
 
-    def _update_disks_with_response(self, vm_id, disks, response, method):
+    def _update_disks_with_response(self, vm_id, disks, response, is_attach):
         """Attach or Detach disks and report per disk error
 
         :type vm_id: str
@@ -794,12 +793,13 @@ class HostHandler(Host.Iface):
                 disk_resource = self.hypervisor.disk_manager.get_resource(disk_id)
                 thrift_disk = disk_resource.to_thrift()
                 response.disks.append(thrift_disk)
-                datastore = disk_resource.datastore
 
-                info = self.hypervisor.vm_manager.get_vm_config(vm_id)
-                spec = self.hypervisor.vm_manager.update_vm_spec()
-                method(spec, datastore, disk_id, info)
-                self.hypervisor.vm_manager.update_vm(vm_id, spec)
+                if is_attach:
+                    vmdk_file = vmdk_path(disk_resource.datastore, disk_id)
+                    self.hypervisor.vm_manager.attach_disk(vm_id, vmdk_file)
+                else:
+                    self.hypervisor.vm_manager.detach_disk(vm_id, disk_id)
+
                 disk_error.result = VmDiskOpResultCode.OK
             except DiskNotFoundException, e:
                 self._logger.warning("_update_disks_with_response %s" % e, exc_info=True)
@@ -809,8 +809,7 @@ class HostHandler(Host.Iface):
                 continue
             except ValueError, e:
                 self._logger.warning("_update_disks_with_response %s" % e, exc_info=True)
-                remove_method = self.hypervisor.vm_manager.remove_disk
-                if method == remove_method and str(e) == 'ENOENT':
+                if not is_attach and str(e) == 'ENOENT':
                     response.result = VmDiskOpResultCode.DISK_DETACHED
                     disk_error.result = VmDiskOpResultCode.DISK_DETACHED
                     disk_error.error = "Disk not attached"
