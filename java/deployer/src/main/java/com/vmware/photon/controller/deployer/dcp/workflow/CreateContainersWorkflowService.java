@@ -84,7 +84,7 @@ public class CreateContainersWorkflowService extends StatefulService {
      * This class defines the possible sub-stages for a task.
      */
     public enum SubStage {
-      CREATE_ZOOKEEPER_AND_DB_CONTAINERS,
+      CREATE_ZOOKEEPER_AND_CORE_CONTAINERS,
       PREEMPTIVE_PAUSE_BACKGROUND_TASKS,
       CREATE_LIGHTWAVE_CONTAINER,
       REGISTER_AUTH_CLIENT_FOR_SWAGGER_UI,
@@ -173,7 +173,7 @@ public class CreateContainersWorkflowService extends StatefulService {
 
     if (startState.taskState.stage == TaskState.TaskStage.CREATED) {
       startState.taskState.stage = TaskState.TaskStage.STARTED;
-      startState.taskState.subStage = TaskState.SubStage.CREATE_ZOOKEEPER_AND_DB_CONTAINERS;
+      startState.taskState.subStage = TaskState.SubStage.CREATE_ZOOKEEPER_AND_CORE_CONTAINERS;
     }
 
     if (startState.documentExpirationTimeMicros <= 0) {
@@ -238,7 +238,7 @@ public class CreateContainersWorkflowService extends StatefulService {
       case STARTED:
         checkState(taskState.subStage != null);
         switch (taskState.subStage) {
-          case CREATE_ZOOKEEPER_AND_DB_CONTAINERS:
+          case CREATE_ZOOKEEPER_AND_CORE_CONTAINERS:
           case PREEMPTIVE_PAUSE_BACKGROUND_TASKS:
           case CREATE_LIGHTWAVE_CONTAINER:
           case REGISTER_AUTH_CLIENT_FOR_SWAGGER_UI:
@@ -261,9 +261,10 @@ public class CreateContainersWorkflowService extends StatefulService {
 
   private void processStartedStage(State currentState) {
     switch (currentState.taskState.subStage) {
-      case CREATE_ZOOKEEPER_AND_DB_CONTAINERS:
+      case CREATE_ZOOKEEPER_AND_CORE_CONTAINERS:
         createContainers(currentState,
-            Arrays.asList(ContainersConfig.ContainerType.Zookeeper, ContainersConfig.ContainerType.CloudStore),
+            Arrays.asList(ContainersConfig.ContainerType.Zookeeper,
+                          ContainersConfig.ContainerType.PhotonControllerCore),
             TaskState.TaskStage.STARTED,
             TaskState.SubStage.PREEMPTIVE_PAUSE_BACKGROUND_TASKS);
         break;
@@ -286,7 +287,6 @@ public class CreateContainersWorkflowService extends StatefulService {
             Arrays.asList(ContainersConfig.ContainerType.Deployer,
                 ContainersConfig.ContainerType.Housekeeper,
                 ContainersConfig.ContainerType.ManagementApi,
-                ContainersConfig.ContainerType.RootScheduler,
                 ContainersConfig.ContainerType.ManagementUi),
             TaskState.TaskStage.STARTED,
             TaskState.SubStage.CREATE_LOAD_BALANCER_CONTAINER);

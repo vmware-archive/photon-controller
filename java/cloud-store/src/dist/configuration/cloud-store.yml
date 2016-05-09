@@ -4,12 +4,12 @@ xenon:
   registrationAddress: "{{{REGISTRATION_ADDRESS}}}"
   storagePath: "{{{CLOUD-STORE_DCP_STORAGE_PATH}}}"
   peerNodes:
-{{#PEER_NODES}}
+{{#CLOUDSTORE_PEER_NODES}}
   - http://{{peerAddress}}:{{peerPort}}
-{{/PEER_NODES}}
-{{^PEER_NODES}}
+{{/CLOUDSTORE_PEER_NODES}}
+{{^CLOUDSTORE_PEER_NODES}}
   - http://{{{REGISTRATION_ADDRESS}}}:19000
-{{/PEER_NODES}}
+{{/CLOUDSTORE_PEER_NODES}}
 
 zookeeper:
   quorum: "{{{ZOOKEEPER_QUORUM}}}"
@@ -17,13 +17,13 @@ zookeeper:
 logging:
   file:
     enabled: true
-    currentLogFilename: {{{LOG_DIRECTORY}}}/cloud-store.log
-    archivedLogFilenamePattern: {{{LOG_DIRECTORY}}}/cloud-store-%d.log.gz
+    currentLogFilename: {{{LOG_DIRECTORY}}}/photon-controller-core.log
+    archivedLogFilenamePattern: {{{LOG_DIRECTORY}}}/photon-controller-core-%d.log.gz
     logFormat: "%-5p [%d{ISO8601}] %c: %m\n%ex"
   syslog:
     enabled: {{{ENABLE_SYSLOG}}}
 {{#ENABLE_SYSLOG}}
     host: "{{{SYSLOG_ENDPOINT}}}"
-    logFormat: "%-5p [%d{ISO8601}] [cloud-store] [%property{instance}]%X{request}%X{task} %c: %m\n%ex"
+    logFormat: "%-5p [%d{ISO8601}] [core] [%property{instance}]%X{request}%X{task} %c: %m\n%ex"
     facility: LOCAL0
 {{/ENABLE_SYSLOG}}

@@ -1,1 +1,38 @@
-../../../../root-scheduler/src/dist/configuration/root-scheduler.yml
+# Refresh interval for in-memory constraint checker cache in seconds.
+refreshIntervalSec: 30
+
+xenon:
+  bindAddress: "0.0.0.0"
+  port: 13010
+  registrationAddress: "{{{REGISTRATION_ADDRESS}}}"
+  storagePath: "{{{ROOT-SCHEDULER_DCP_STORAGE_PATH}}}"
+  peerNodes:
+{{#SCHEDULER_PEER_NODES}}
+  - http://{{peerAddress}}:{{peerPort}}
+{{/SCHEDULER_PEER_NODES}}
+{{^SCHEDULER_PEER_NODES}}
+  - http://{{{REGISTRATION_ADDRESS}}}:13010
+{{/SCHEDULER_PEER_NODES}}
+
+zookeeper:
+  quorum: "{{{ZOOKEEPER_QUORUM}}}"
+
+logging:
+  console:
+    enabled: false
+  file:
+    enabled: true
+    currentLogFilename: {{{LOG_DIRECTORY}}}/root-scheduler.log
+    archivedLogFilenamePattern: {{{LOG_DIRECTORY}}}/root-scheduler-%d.log.gz
+    logFormat: "%-5p [%d{ISO8601}][%property{instance}]%X{request} %c: %m\n%ex"
+  syslog:
+    enabled: {{{ENABLE_SYSLOG}}}
+{{#ENABLE_SYSLOG}}
+    host: "{{{SYSLOG_ENDPOINT}}}"
+    logFormat: "%-5p [%d{ISO8601}] [root-scheduler] [%property{instance}]%X{request}%X{task} %c: %m\n%ex"
+    facility: LOCAL0
+{{/ENABLE_SYSLOG}}
+
+root:
+  place_timeout_ms: 20000
+  max_fan_out_count: 4
