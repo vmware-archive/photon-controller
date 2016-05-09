@@ -93,9 +93,8 @@ public class VirtualNetworkServiceTest {
 
     @Test
     public void testMissingVirtualNetworkName() throws Throwable {
-      VirtualNetworkService.State startState = new VirtualNetworkService.State();
-      startState.state = NetworkState.CREATING;
-      startState.routingType = RoutingType.ROUTED;
+      VirtualNetworkService.State startState = createInitialState();
+      startState.name = null;
 
       try {
         xenonClient.post(VirtualNetworkService.FACTORY_LINK, startState);
@@ -107,9 +106,8 @@ public class VirtualNetworkServiceTest {
 
     @Test
     public void testMissingRoutingType() throws Throwable {
-      VirtualNetworkService.State startState = new VirtualNetworkService.State();
-      startState.name = "vn1";
-      startState.state = NetworkState.CREATING;
+      VirtualNetworkService.State startState = createInitialState();
+      startState.routingType = null;
 
       try {
         xenonClient.post(VirtualNetworkService.FACTORY_LINK, startState);
@@ -121,15 +119,40 @@ public class VirtualNetworkServiceTest {
 
     @Test
     public void testMissingNetworkState() throws Throwable {
-      VirtualNetworkService.State startState = new VirtualNetworkService.State();
-      startState.name = "vn1";
-      startState.routingType = RoutingType.ROUTED;
+      VirtualNetworkService.State startState = createInitialState();
+      startState.state = null;
 
       try {
         xenonClient.post(VirtualNetworkService.FACTORY_LINK, startState);
         fail("Should have failed due to illegal state");
       } catch (Exception e) {
         assertThat(e.getMessage(), is("state cannot be null"));
+      }
+    }
+
+    @Test
+    public void testMissingParentId() throws Throwable {
+      VirtualNetworkService.State startState = createInitialState();
+      startState.parentId = null;
+
+      try {
+        xenonClient.post(VirtualNetworkService.FACTORY_LINK, startState);
+        fail("Should have failed due to illegal state");
+      } catch (Exception e) {
+        assertThat(e.getMessage(), is("parentId cannot be null"));
+      }
+    }
+
+    @Test
+    public void testMissingParentKind() throws Throwable {
+      VirtualNetworkService.State startState = createInitialState();
+      startState.parentKind = null;
+
+      try {
+        xenonClient.post(VirtualNetworkService.FACTORY_LINK, startState);
+        fail("Should have failed due to illegal state");
+      } catch (Exception e) {
+        assertThat(e.getMessage(), is("parentKind cannot be null"));
       }
     }
   }
@@ -202,6 +225,40 @@ public class VirtualNetworkServiceTest {
         fail("Should have failed due to illegal state");
       } catch (Exception e) {
         assertThat(e.getMessage(), is("routingType cannot be set or changed in a patch"));
+      }
+    }
+
+    @Test
+    public void testFailedToChangePrentId() throws Throwable {
+      VirtualNetworkService.State patchState = new VirtualNetworkService.State();
+      patchState.parentId = "parentId2";
+
+      Operation patch = Operation
+          .createPatch(UriUtils.buildUri(host, createdState.documentSelfLink))
+          .setBody(patchState);
+
+      try {
+        host.sendRequestAndWait(patch);
+        fail("Should have failed due to illegal state");
+      } catch (Exception e) {
+        assertThat(e.getMessage(), is("parentId cannot be set or changed in a patch"));
+      }
+    }
+
+    @Test
+    public void testFailedToChangeParentKind() throws Throwable {
+      VirtualNetworkService.State patchState = new VirtualNetworkService.State();
+      patchState.parentKind = "parentKind2";
+
+      Operation patch = Operation
+          .createPatch(UriUtils.buildUri(host, createdState.documentSelfLink))
+          .setBody(patchState);
+
+      try {
+        host.sendRequestAndWait(patch);
+        fail("Should have failed due to illegal state");
+      } catch (Exception e) {
+        assertThat(e.getMessage(), is("parentKind cannot be set or changed in a patch"));
       }
     }
   }
@@ -277,6 +334,8 @@ public class VirtualNetworkServiceTest {
     startState.name = "vn1";
     startState.state = NetworkState.CREATING;
     startState.routingType = RoutingType.ROUTED;
+    startState.parentId = "parentId";
+    startState.parentKind = "parentKind";
 
     return startState;
   }

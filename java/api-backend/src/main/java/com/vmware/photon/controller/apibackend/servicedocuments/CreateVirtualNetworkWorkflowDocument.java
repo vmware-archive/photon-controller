@@ -58,6 +58,20 @@ public class CreateVirtualNetworkWorkflowDocument extends ServiceDocument{
   public Integer subTaskPollIntervalInMilliseconds;
 
   /**
+   * ID of the parent object this virtual network belongs to.
+   */
+  @NotBlank
+  @WriteOnce
+  public String parentId;
+
+  /**
+   * Type of the parent object this virtual network belongs to.
+   */
+  @NotBlank
+  @WriteOnce
+  public String parentKind;
+
+  /**
    * The name of the logical network.
    */
   @NotBlank

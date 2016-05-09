@@ -117,6 +117,20 @@ public class VirtualNetworkService extends StatefulService {
     public NetworkState state;
 
     /**
+     * ID of the parent object this virtual network belongs to.
+     */
+    @NotBlank
+    @WriteOnce
+    public String parentId;
+
+    /**
+     * Type of the parent object this virtual network belongs to.
+     */
+    @NotBlank
+    @WriteOnce
+    public String parentKind;
+
+    /**
      * Whether this network is isolated or connected to outside.
      */
     @NotNull
