@@ -38,6 +38,7 @@ from host.hypervisor.esx.path_util import SHADOW_VM_NAME_PREFIX
 from host.hypervisor.esx.path_util import os_datastore_path
 from host.hypervisor.esx.path_util import compond_path_join
 from host.hypervisor.esx.path_util import os_metadata_path
+from host.hypervisor.esx.path_util import vmdk_path
 from host.hypervisor.esx.vm_config import EsxVmConfig
 from host.hypervisor.esx.vm_config import EsxVmConfigSpec
 from host.hypervisor.esx.vm_manager import EsxVmManager
@@ -248,13 +249,10 @@ class HttpNfcTransferer(HttpTransferer):
             raise
         return shadow_vm_id
 
-    def _delete_shadow_vm(self, shadow_vm_id):
+    def _delete_shadow_vm(self, shadow_vm_id, image_id):
         try:
             # detach disk so it is not deleted along with vm
-            spec = self._vm_manager.update_vm_spec()
-            info = self._vm_manager.get_vm_config(shadow_vm_id)
-            self._vm_manager.remove_all_disks(spec, info)
-            self._vm_manager.update_vm(shadow_vm_id, spec)
+            self._vm_manager.detach_disk(shadow_vm_id, image_id)
 
             # delete the vm
             self._vm_manager.delete_vm(shadow_vm_id, force=True)
@@ -265,10 +263,8 @@ class HttpNfcTransferer(HttpTransferer):
                                        shadow_vm_id):
         """ Reconfigures the shadow vm to contain only one image disk. """
         try:
-            spec = self._vm_manager.update_vm_spec()
-            info = self._vm_manager.get_vm_config(shadow_vm_id)
-            self._vm_manager.add_disk(spec, image_datastore, image_id, info, disk_is_image=True)
-            self._vm_manager.update_vm(shadow_vm_id, spec)
+            vmdk_file = vmdk_path(image_datastore, image_id, IMAGE_FOLDER_NAME_PREFIX)
+            self._vm_manager.attach_disk(shadow_vm_id, vmdk_file)
         except Exception:
             self._logger.exception(
                 "Error configuring shadow vm with image %s" % image_id)
@@ -397,7 +393,7 @@ class HttpNfcTransferer(HttpTransferer):
                 os.unlink(transfer_vmdk_path)
             except OSError:
                 pass
-            self._delete_shadow_vm(shadow_vm_id)
+            self._delete_shadow_vm(shadow_vm_id, image_id)
             rm_rf(shadow_vm_path)
             if agent_client:
                 agent_client.close()

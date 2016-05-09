@@ -110,13 +110,12 @@ class TestEsxVmConfig(unittest.TestCase):
         disk = vm_config._find_device(devices, device_type, matcher=find_disk)
         assert_that(disk, equal_to(None))
 
-        vm_config.add_scsi_disk(cfg_info, spec, datastore, "nope")
+        vm_config.attach_disk(spec, cfg_info, vmdk_path(datastore, filename))
 
         device = vm_config._find_device(devices, device_type, matcher=find_disk)
         assert_that(device, equal_to(None))
 
-        vm_config.add_scsi_disk(cfg_info, spec, datastore,
-                                filename)
+        vm_config.attach_disk(spec, cfg_info, path)
         device_changes = spec.deviceChange
         device_list = []
         for device_change in device_changes:
@@ -323,7 +322,7 @@ class TestEsxVmConfig(unittest.TestCase):
         net_name = "VM_Network"
         self.vm_config.add_nic(spec, net_name)
         assert_that(len(spec.deviceChange), equal_to(1))
-        self.vm_config.add_scsi_disk(cfg_info, spec, "ds1", "foo")
+        self.vm_config.attach_disk(spec, cfg_info, "ds1.vmdk")
         # One for the controller and one for the disk itself.
         assert_that(len(spec.deviceChange), equal_to(3))
 

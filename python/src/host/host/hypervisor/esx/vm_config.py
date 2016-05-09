@@ -245,8 +245,7 @@ class EsxVmConfig(VmConfig):
             controller = self._add_scsi_controller(cfg_spec, cfg_info)
         return controller
 
-    def add_scsi_disk(self, cfg_info, cfg_spec, datastore, disk_id,
-                      disk_is_image=False):
+    def attach_disk(self, cfg_spec, cfg_info, vmdk_file):
         """Add a scsi disk spec to the config spec given the current vm
            info. The method adds a scsi controller if there is one that
            is not already present.
@@ -261,9 +260,19 @@ class EsxVmConfig(VmConfig):
         :type disk_id: str
         """
         controller = self._find_or_add_scsi_controller(cfg_spec, cfg_info)
-        folder = IMAGE_FOLDER_NAME_PREFIX if disk_is_image else DISK_FOLDER_NAME_PREFIX
-
-        self._add_disk(cfg_spec, datastore, disk_id, controller.key, disk_root_folder=folder)
+        backing = vim.vm.device.VirtualDisk.FlatVer2BackingInfo(
+            fileName=vmdk_file,
+            diskMode=vim.vm.device.VirtualDiskOption.DiskMode.persistent,
+            thinProvisioned=True
+        )
+        disk = vim.vm.device.VirtualDisk(
+            controllerKey=controller.key,
+            key=-1,
+            unitNumber=-1,
+            backing=backing
+        )
+        self._add_device(cfg_spec, disk)
+        return cfg_spec
 
     def create_empty_disk(self, cfg_spec, datastore, disk_id, size_mb):
         """Add a create empty scsi disk spec to the config spec. The method
@@ -407,22 +416,12 @@ class EsxVmConfig(VmConfig):
         self._update_device(spec, dev)
         return dev.backing.fileName
 
-    def remove_disk(self, spec, cfg_info, disk_id):
+    def detach_disk(self, cfg_spec, cfg_info, disk_id):
         matcher = self._disk_matcher(disk_id)
         devices = self._get_devices_from_config(cfg_info)
         device = self._get_virtual_disk_device(devices, matcher=matcher)
-        self._remove_device(spec, device)
-
-    def remove_all_disks(self, spec, cfg_info):
-        """Updates the config spec to remove all virtual disks from a VM.
-        :param spec: vim.vm.ConfigSpec object to append the disk device change
-        :param cfg_info: The VM's ConfigInfo object
-        :rtype: the updated config spec
-        """
-        devices = self._get_devices_from_config(cfg_info)
-        disk_devs = self._find_devices(devices, vim.vm.device.VirtualDisk)
-        for dev in disk_devs:
-            self._remove_device(spec, dev)
+        self._remove_device(cfg_spec, device)
+        return cfg_spec
 
     def _create_device_spec(self, device):
         return vim.vm.device.VirtualDeviceSpec(

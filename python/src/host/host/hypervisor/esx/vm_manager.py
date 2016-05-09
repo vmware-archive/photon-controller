@@ -256,47 +256,29 @@ class EsxVmManager(VmManager):
             return False
 
     @log_duration
-    def add_disk(self, cspec, datastore, disk_id, info, disk_is_image=False):
+    def attach_disk(self, vm_id, vmdk_file):
         """Add an existing disk to a VM
-        :param cspec: config spec
-        :type cspec: ConfigSpec
         :param vm_id: VM id
         :type vm_id: str
-        :param datastore: Name of the VM's datastore
-        :type datastore: str
-        :param disk_id: Disk id
-        :type disk_id: str
+        :param vmdk_file: vmdk disk path
+        :type vmdk_file: str
         """
+        cfg_spec = self.vm_config.update_spec()
+        cfg_info = self.get_vm_config(vm_id)
+        cfg_spec = self.vm_config.attach_disk(cfg_spec, cfg_info, vmdk_file)
+        self.update_vm(vm_id, cfg_spec)
 
-        info = self.vim_client.add_disk(cspec, datastore, disk_id, info, disk_is_image=False)
-        self.vm_config.add_scsi_disk(info, cspec, datastore, disk_id,
-                                     disk_is_image=disk_is_image)
-        return cspec
-
-    @log_duration
-    def remove_all_disks(self, cspec, info):
-        """Removes all disks from the vm's config
-        :param cspec: config spec
-        :type cspec: ConfigSpec
-        :param info: VM's config info
-        :type info: ConfigInfo
-        """
-        self.vm_config.remove_all_disks(cspec, info)
-        return cspec
-
-    def remove_disk(self, spec, datastore, disk_id, info):
+    def detach_disk(self, vm_id, disk_id):
         """Remove an existing disk from a VM
-        :param spec: config spec
-        :type spec: ConfigSpec
         :param vm_id: Vm id
         :type vm_id: str
-        :param datastore: Name of the VM's datastore
-        :type datastore: str
         :param disk_id: Disk id
         :type disk_id: str
         """
-        self.vm_config.remove_disk(spec, info, disk_id)
-        return spec
+        cfg_spec = self.vm_config.update_spec()
+        cfg_info = self.get_vm_config(vm_id)
+        cfg_spec = self.vm_config.detach_disk(cfg_spec, cfg_info, disk_id)
+        self.update_vm(vm_id, cfg_spec)
 
     @log_duration
     def create_empty_disk(self, cfg_spec, datastore, disk_id, size_mb):
