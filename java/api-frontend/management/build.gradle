@@ -15,6 +15,7 @@ dependencies {
   compile(project(':common-dcp'))
   compile(project(':cloud-store'))
   compile(project(':api-frontend:api-frontend-common'))
+  compile(project(':api-backend'))
   compile(project(':swagger-ui'))
   compile(project(':swagger-jersey'))
   compile(project(':nfc-client'))

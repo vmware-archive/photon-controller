@@ -107,6 +107,8 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
     virtualNetwork.name = "virtual_network_name";
     virtualNetwork.state = NetworkState.CREATING;
     virtualNetwork.routingType = RoutingType.ROUTED;
+    virtualNetwork.parentId = "parentId";
+    virtualNetwork.parentKind = "parentKind";
     virtualNetwork.tier0RouterId = "logical_tier0_router_id";
     virtualNetwork.logicalRouterId = "logical_tier1_router_id";
     virtualNetwork.logicalSwitchId = "logical_switch_id";
