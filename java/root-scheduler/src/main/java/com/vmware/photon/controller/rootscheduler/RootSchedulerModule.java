@@ -15,7 +15,7 @@ package com.vmware.photon.controller.rootscheduler;
 
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
-import com.vmware.photon.controller.common.manifest.BuildInfo;
+//import com.vmware.photon.controller.common.manifest.BuildInfo;
 import com.vmware.photon.controller.rootscheduler.interceptors.RequestId;
 import com.vmware.photon.controller.rootscheduler.interceptors.RequestIdInterceptor;
 
@@ -31,7 +31,6 @@ public class RootSchedulerModule extends AbstractModule {
   @Override
   protected void configure() {
     bindInterceptor(Matchers.any(), Matchers.annotatedWith(RequestId.class), new RequestIdInterceptor());
-    bind(BuildInfo.class).toInstance(BuildInfo.get(this.getClass()));
 
     install(new FactoryModuleBuilder()
         .implement(HostClient.class, HostClient.class)

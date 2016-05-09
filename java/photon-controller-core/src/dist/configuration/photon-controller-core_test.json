@@ -1,0 +1,32 @@
+{
+  "serviceName": "PhotonControllerCore",
+  "cpuCount": 4,
+  "memoryMb": 5120,
+  "diskGb": 10,
+  "isReplicated": true,
+  "isPrivileged": false,
+  "containerImage": "photon/photon-controller-core",
+  "containerName": "photon-controller-core",
+  "portBindings": {
+    "13010": 13010,
+    "19000": 19000,
+    "19001": 19001
+  },
+  "volumeBindings": {
+    "/devbox_data/tmp": "/devbox_data/tmp",
+    "/vagrant/log": "/vagrant/log",
+    "/var/esxcloud": "/var/esxcloud",
+    "/var/log": "/var/log"
+  },
+  "dynamicParameters": {
+    "CLOUD-STORE_BIND_ADDRESS": "0.0.0.0",
+    "CLOUD-STORE_DCP_STORAGE_PATH": "/etc/esxcloud/cloud-store/sandbox_19000",
+    "CLOUD-STORE_INSTALL_DIRECTORY": "/usr/lib/esxcloud/cloud-store",
+    "CLOUD-STORE_PORT": 19000,
+    "JAVA_DEBUG": "-agentlib:jdwp=transport=dt_socket,server=y,address=29000,suspend=n",
+    "LOG_DIRECTORY": "/vagrant/log",
+    "PHOTON-CONTROLLER-CORE_INSTALL_DIRECTORY": "/usr/lib/esxcloud/photon-controller-core",
+    "ROOT-SCHEDULER_DCP_STORAGE_PATH": "/etc/esxcloud/root-scheduler/sandbox_13010",
+    "ROOT-SCHEDULER_INSTALL_DIRECTORY": "/usr/lib/esxcloud/root-scheduler"
+  }
+}

@@ -21,8 +21,8 @@ import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.MultiHostEnvironment;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.host.XenonConfig;
-import com.vmware.photon.controller.rootscheduler.Config;
 import com.vmware.photon.controller.rootscheduler.ConfigTest;
+import com.vmware.photon.controller.rootscheduler.RootSchedulerConfig;
 import com.vmware.photon.controller.rootscheduler.helpers.TestHelper;
 import com.vmware.photon.controller.rootscheduler.service.CloudStoreConstraintChecker;
 import com.vmware.photon.controller.rootscheduler.service.ConstraintChecker;
@@ -66,7 +66,7 @@ public class SchedulerXenonHostTest {
   private Injector injector;
   private SchedulerXenonHost host;
   private Collection<String> serviceSelfLinks;
-  private Config config;
+  private RootSchedulerConfig config;
   private ConstraintChecker checker;
   private CloudStoreHelper cloudStoreHelper;
   private ServerSet cloudStoreServerSet;
@@ -106,7 +106,7 @@ public class SchedulerXenonHostTest {
 
     @BeforeClass
     public void setUpClass() throws IOException, BadConfigException {
-      config = ConfigBuilder.build(Config.class,
+      config = ConfigBuilder.build(RootSchedulerConfig.class,
           ConfigTest.class.getResource(configFilePath).getPath());
 
       MockitoAnnotations.initMocks(this);
@@ -166,7 +166,7 @@ public class SchedulerXenonHostTest {
 
     @BeforeClass
     private void setUpClass() throws IOException, BadConfigException {
-      config = ConfigBuilder.build(Config.class,
+      config = ConfigBuilder.build(RootSchedulerConfig.class,
           ConfigTest.class.getResource(configFilePath).getPath());
 
       MockitoAnnotations.initMocks(this);
@@ -225,7 +225,7 @@ public class SchedulerXenonHostTest {
 
     @BeforeClass
     private void setUpClass() throws IOException, BadConfigException {
-      config = ConfigBuilder.build(Config.class,
+      config = ConfigBuilder.build(RootSchedulerConfig.class,
           ConfigTest.class.getResource(configFilePath).getPath());
 
       MockitoAnnotations.initMocks(this);

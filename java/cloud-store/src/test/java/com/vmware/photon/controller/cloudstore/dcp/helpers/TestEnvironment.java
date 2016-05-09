@@ -17,7 +17,6 @@ import com.vmware.photon.controller.cloudstore.dcp.CloudStoreXenonHost;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.common.clients.AgentControlClientFactory;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
-import com.vmware.photon.controller.common.manifest.BuildInfo;
 import com.vmware.photon.controller.common.xenon.MultiHostEnvironment;
 import com.vmware.photon.controller.common.xenon.host.XenonConfig;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
@@ -48,10 +47,8 @@ public class TestEnvironment extends MultiHostEnvironment<CloudStoreXenonHost> {
       xenonConfig.setPort(0);
       xenonConfig.setStoragePath(sandbox);
 
-      BuildInfo buildInfo = BuildInfo.get(this.getClass());
-
       hosts[i] = new CloudStoreXenonHost(xenonConfig, hostClientFactory,
-          agentControlClientFactory, serviceConfigFactory, buildInfo);
+          agentControlClientFactory, serviceConfigFactory);
     }
     // Disable host ping: we have fake hosts and don't want them to be marked as missing
     HostService.setInUnitTests(true);
