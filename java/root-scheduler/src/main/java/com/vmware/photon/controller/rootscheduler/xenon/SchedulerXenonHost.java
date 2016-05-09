@@ -22,7 +22,7 @@ import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.XenonHostInfoProvider;
 import com.vmware.photon.controller.common.xenon.host.AbstractServiceHost;
 import com.vmware.photon.controller.common.xenon.host.XenonConfig;
-import com.vmware.photon.controller.rootscheduler.Config;
+import com.vmware.photon.controller.rootscheduler.RootSchedulerConfig;
 import com.vmware.photon.controller.rootscheduler.service.ConstraintChecker;
 import com.vmware.photon.controller.rootscheduler.service.ScoreCalculator;
 import com.vmware.photon.controller.rootscheduler.xenon.task.PlacementTaskService;
@@ -62,7 +62,7 @@ public class SchedulerXenonHost
 
   public SchedulerXenonHost(XenonConfig xenonConfig,
                             HostClientFactory hostClientFactory,
-                            Config config,
+                            RootSchedulerConfig config,
                             ConstraintChecker checker,
                             CloudStoreHelper cloudStoreHelper) throws Throwable {
     super(xenonConfig);

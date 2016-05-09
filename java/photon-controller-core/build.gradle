@@ -1,0 +1,58 @@
+apply plugin: 'application'
+apply plugin: 'com.bmuschko.docker-remote-api'
+
+import com.bmuschko.gradle.docker.tasks.image.Dockerfile
+import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage
+import com.bmuschko.gradle.docker.tasks.image.DockerRemoveImage
+import com.bmuschko.gradle.vagrant.tasks.VagrantSsh
+
+mainClassName = 'com.vmware.photon.controller.core.Main'
+
+dependencies {
+  compile project(':common')
+  compile project(':common-dcp')
+  compile project(':api')
+  compile project(':root-scheduler')
+  compile project(':cloud-store')
+
+  compile "org.apache.commons:commons-lang3:${versions.commons_lang3}"
+  compile 'net.sourceforge.argparse4j:argparse4j:0.4.0'
+}
+
+jar {
+  manifest {
+    attributes 'Specification-Title': 'Photon Controller Core',
+        'Specification-Version': version,
+        'Built-By': System.getProperty('user.name'),
+        'Built-Date': new Date(),
+        'Built-JDK': System.getProperty('java.version'),
+        'Built-Gradle': gradle.gradleVersion,
+        'Git-Commit': "git rev-parse --short HEAD".execute().text.trim()
+  }
+}
+
+distTar << extractRelease(this, 'photon-controller-core')
+
+task dockerfile(type: Dockerfile) {
+  dependsOn distTar
+  destFile = file('build/container/Dockerfile')
+  from 'photon/servicebase'
+  copyFile('release/', '/usr/lib/esxcloud/photon-controller-core/')
+}
+
+task container(type: DockerBuildImage) {
+  dependsOn dockerfile, ':containers:servicebase'
+  inputDir = dockerfile.destFile.parentFile
+  tag = 'photon/photon-controller-core'
+}
+
+task removeContainer(type: DockerRemoveImage) {
+  targetImageId { container.tag }
+}
+
+task start(type: VagrantSsh) {
+  mustRunAfter container
+  description = "Start ${project.name} inside devbox"
+  boxDir = devboxDir
+  sshCommand = "start-${project.name} 2>&1 | tee -a start-${project.name}.log"
+}
