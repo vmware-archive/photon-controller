@@ -58,6 +58,13 @@ public class CreateVirtualNetworkWorkflowDocument extends ServiceDocument{
   public Integer subTaskPollIntervalInMilliseconds;
 
   /**
+   * ID of the project this virtual network belongs to.
+   */
+  @NotBlank
+  @Immutable
+  public String projectId;
+
+  /**
    * The name of the logical network.
    */
   @NotBlank

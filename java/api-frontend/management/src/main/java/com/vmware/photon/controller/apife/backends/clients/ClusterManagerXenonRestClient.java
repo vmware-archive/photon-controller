@@ -42,12 +42,12 @@ import java.util.concurrent.TimeoutException;
  * This class allows for injection of DeployerServerSet and executor specific to API-FE
  */
 @Singleton
-public class ClusterManagerDcpRestClient extends XenonRestClient {
-  private static final Logger logger = LoggerFactory.getLogger(ClusterManagerDcpRestClient.class);
+public class ClusterManagerXenonRestClient extends XenonRestClient {
+  private static final Logger logger = LoggerFactory.getLogger(ClusterManagerXenonRestClient.class);
 
   @Inject
-  public ClusterManagerDcpRestClient(@DeployerServerSet ServerSet serverSet,
-                                     @BackendTaskExecutor ExecutorService executor) throws URISyntaxException {
+  public ClusterManagerXenonRestClient(@DeployerServerSet ServerSet serverSet,
+                                       @BackendTaskExecutor ExecutorService executor) throws URISyntaxException {
     super(serverSet, executor);
   }
 

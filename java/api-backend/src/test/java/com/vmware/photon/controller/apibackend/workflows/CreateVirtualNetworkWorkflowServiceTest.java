@@ -80,6 +80,7 @@ public class CreateVirtualNetworkWorkflowServiceTest {
     startState.description = "desc";
     startState.executionDelay = 10;
     startState.routingType = RoutingType.ROUTED;
+    startState.projectId = "projectId";
 
     return startState;
   }
@@ -657,6 +658,7 @@ public class CreateVirtualNetworkWorkflowServiceTest {
       assertEquals(actualVirtualNetworkServiceState.description, expectedVirtualNetworkServiceState.description);
       assertEquals(actualVirtualNetworkServiceState.state, expectedVirtualNetworkServiceState.state);
       assertEquals(actualVirtualNetworkServiceState.routingType, expectedVirtualNetworkServiceState.routingType);
+      assertEquals(actualVirtualNetworkServiceState.projectId, expectedVirtualNetworkServiceState.projectId);
 
       QueryTask.Query kindClause = new QueryTask.Query()
           .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
@@ -754,6 +756,7 @@ public class CreateVirtualNetworkWorkflowServiceTest {
       assertEquals(actualVirtualNetworkServiceState.description, expectedVirtualNetworkServiceState.description);
       assertEquals(actualVirtualNetworkServiceState.state, expectedVirtualNetworkServiceState.state);
       assertEquals(actualVirtualNetworkServiceState.routingType, expectedVirtualNetworkServiceState.routingType);
+      assertEquals(actualVirtualNetworkServiceState.projectId, expectedVirtualNetworkServiceState.projectId);
 
       QueryTask.Query kindClause = new QueryTask.Query()
           .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)

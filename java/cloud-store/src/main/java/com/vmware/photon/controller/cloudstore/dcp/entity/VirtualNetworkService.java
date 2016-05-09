@@ -117,6 +117,13 @@ public class VirtualNetworkService extends StatefulService {
     public NetworkState state;
 
     /**
+     * ID of the project this virtual network belongs to.
+     */
+    @NotBlank
+    @WriteOnce
+    public String projectId;
+
+    /**
      * Whether this network is isolated or connected to outside.
      */
     @NotNull

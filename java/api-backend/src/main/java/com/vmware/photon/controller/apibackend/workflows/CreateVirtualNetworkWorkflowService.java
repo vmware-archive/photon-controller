@@ -448,6 +448,7 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
       Operation operation) {
 
     VirtualNetworkService.State postState = new VirtualNetworkService.State();
+    postState.projectId = state.projectId;
     postState.name = state.name;
     postState.description = state.description;
     postState.state = NetworkState.CREATING;
