@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 VMware, Inc. All Rights Reserved.
+ * Copyright 2016 VMware, Inc. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License.  You may obtain a copy of
@@ -14,7 +14,8 @@
 package com.vmware.photon.controller.apife.backends.clients;
 
 import com.vmware.photon.controller.apife.BackendTaskExecutor;
-import com.vmware.photon.controller.apife.DeployerServerSet;
+import com.vmware.photon.controller.apife.HousekeeperServerSet;
+import com.vmware.photon.controller.common.CloudStoreServerSet;
 import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.photon.controller.common.xenon.XenonRestClient;
 import com.vmware.photon.controller.common.xenon.exceptions.BadRequestException;
@@ -22,9 +23,11 @@ import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundExce
 import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.ServiceDocumentQueryResult;
 import com.vmware.xenon.services.common.QueryTask;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
@@ -38,23 +41,17 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeoutException;
 
 /**
- * Http rest client to talk to DCP.
- * This class allows for injection of DeployerServerSet and executor specific to API-FE
+ * Http rest client to talk to Xenon.
+ * This class allows for injection of HousekeeperServerSet and executor specific to API-FE
  */
 @Singleton
-public class ClusterManagerDcpRestClient extends XenonRestClient {
-  private static final Logger logger = LoggerFactory.getLogger(ClusterManagerDcpRestClient.class);
+public class HousekeeperXenonRestClient extends XenonRestClient {
+  private static final Logger logger = LoggerFactory.getLogger(HousekeeperXenonRestClient.class);
 
   @Inject
-  public ClusterManagerDcpRestClient(@DeployerServerSet ServerSet serverSet,
-                                     @BackendTaskExecutor ExecutorService executor) throws URISyntaxException {
+  public HousekeeperXenonRestClient(@HousekeeperServerSet ServerSet serverSet,
+                                    @BackendTaskExecutor ExecutorService executor) throws URISyntaxException {
     super(serverSet, executor);
-  }
-
-  @Override
-  protected int getPort(InetSocketAddress inetSocketAddress) {
-    // Calculate DCP port from Thrift port
-    return inetSocketAddress.getPort() + 1;
   }
 
   @Override
@@ -162,9 +159,9 @@ public class ClusterManagerDcpRestClient extends XenonRestClient {
   @VisibleForTesting
   @Override
   protected void handleTimeoutException(Operation operation, TimeoutException timeoutException) {
-    // Cluster Manager Client does not handle timeout exception currently hence converting it to RuntimeException
+    // Housekeeper Client does not handle timeout exception currently hence converting it to RuntimeException
 
-    logger.warn("ClusterManagerDcpRestClient.send: TIMEOUT Operation={}, Message={}",
+    logger.warn("HousekeeperXenonRestClient.send: TIMEOUT Operation={}, Message={}",
         operation,
         timeoutException.getMessage());
     throw new RuntimeException(timeoutException);
@@ -173,11 +170,11 @@ public class ClusterManagerDcpRestClient extends XenonRestClient {
   @VisibleForTesting
   @Override
   protected void handleInterruptedException(Operation operation, InterruptedException interruptedException) {
-    logger.warn("ClusterManagerDcpRestClient.send: INTERRUPTED Operation={}, Exception={}",
+    logger.warn("HousekeeperXenonRestClient.send: INTERRUPTED Operation={}, Exception={}",
         operation,
         interruptedException);
 
-    // Cluster Manager Client does not support task cancellation at this time
+    // Housekeeper Client does not support task cancellation at this time
     //set cancellation flag again and defer its handling to higher up the stack
     //stack above may opt-in to look at the interrupted state of the thread if it chooses to
     //see http://www.ibm.com/developerworks/java/library/j-jtp05236/index.html
