@@ -37,6 +37,9 @@ public class LogicalRouterPort {
   @JsonProperty(value = "linked_logical_router_port_id", required = false)
   private ResourceReference linkedLogicalRouterPortId;
 
+  @JsonProperty(value = "linked_logical_switch_port_id", required = false)
+  private ResourceReference linkedLogicalSwitchPortId;
+
   @JsonProperty(value = "service_bindings", required = false)
   private List<ServiceBinding> serviceBindings;
 
@@ -72,6 +75,14 @@ public class LogicalRouterPort {
     this.linkedLogicalRouterPortId = linkedLogicalRouterPortId;
   }
 
+  public ResourceReference getLinkedLogicalSwitchPortId() {
+    return linkedLogicalSwitchPortId;
+  }
+
+  public void setLinkedLogicalSwitchPortId(ResourceReference linkedLogicalSwitchPortId) {
+    this.linkedLogicalSwitchPortId = linkedLogicalSwitchPortId;
+  }
+
   public List<ServiceBinding> getServiceBindings() {
     return serviceBindings;
   }
@@ -94,12 +105,21 @@ public class LogicalRouterPort {
     return Objects.equals(this.id, other.id)
         && Objects.equals(this.logicalRouterId, other.logicalRouterId)
         && Objects.equals(this.resourceType, other.resourceType)
-        && Objects.equals(this.serviceBindings, other.serviceBindings);
+        && Objects.equals(this.serviceBindings, other.serviceBindings)
+        && Objects.equals(this.linkedLogicalRouterPortId, other.linkedLogicalRouterPortId)
+        && Objects.equals(this.linkedLogicalSwitchPortId, other.linkedLogicalSwitchPortId);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode(), id, logicalRouterId, resourceType, serviceBindings);
+    return Objects.hash(
+        super.hashCode(),
+        id,
+        logicalRouterId,
+        resourceType,
+        serviceBindings,
+        linkedLogicalRouterPortId,
+        linkedLogicalSwitchPortId);
   }
 
   @Override

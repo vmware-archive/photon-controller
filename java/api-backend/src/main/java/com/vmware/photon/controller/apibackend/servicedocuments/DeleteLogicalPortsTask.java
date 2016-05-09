@@ -68,11 +68,30 @@ public class DeleteLogicalPortsTask extends ServiceDocument {
   public String logicalTier1RouterId;
 
   /**
+   * Id of the logical port on tier1 router to tier0 router.
+   */
+  @WriteOnce
+  public String logicalLinkPortOnTier1Router;
+
+  /**
+   * Id of the logical port on tier1 router to switch.
+   */
+  @WriteOnce
+  public String logicalDownLinkPortOnTier1Router;
+
+  /**
    * ID of the logical switch.
    */
   @NotBlank
   @Immutable
   public String logicalSwitchId;
+
+  /**
+   * Id of the logical switch port.
+   */
+  @WriteOnce
+  public String logicalPortOnSwitch;
+
   /**
    * State of the task.
    */
@@ -96,6 +115,7 @@ public class DeleteLogicalPortsTask extends ServiceDocument {
      * Definition of sub-stages.
      */
     public enum SubStage {
+      GET_LINK_PORTS,
       DELETE_TIER1_ROUTER_LINK_PORT,
       DELETE_TIER0_ROUTER_LINK_PORT,
       DELETE_TIER1_ROUTER_DOWN_LINK_PORT,
