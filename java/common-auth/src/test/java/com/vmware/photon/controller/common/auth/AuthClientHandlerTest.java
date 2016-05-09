@@ -13,17 +13,17 @@
 
 package com.vmware.photon.controller.common.auth;
 
-import com.vmware.identity.openidconnect.client.AccessToken;
-import com.vmware.identity.openidconnect.client.ClientID;
-import com.vmware.identity.openidconnect.client.IDToken;
-import com.vmware.identity.openidconnect.client.Nonce;
+import com.vmware.identity.openidconnect.client.ClientIDToken;
 import com.vmware.identity.openidconnect.client.OIDCClient;
 import com.vmware.identity.openidconnect.client.OIDCClientException;
 import com.vmware.identity.openidconnect.client.OIDCTokens;
-import com.vmware.identity.openidconnect.client.ResponseMode;
-import com.vmware.identity.openidconnect.client.ResponseType;
-import com.vmware.identity.openidconnect.client.State;
 import com.vmware.identity.openidconnect.client.TokenSpec;
+import com.vmware.identity.openidconnect.common.AccessToken;
+import com.vmware.identity.openidconnect.common.ClientID;
+import com.vmware.identity.openidconnect.common.Nonce;
+import com.vmware.identity.openidconnect.common.ResponseMode;
+import com.vmware.identity.openidconnect.common.ResponseType;
+import com.vmware.identity.openidconnect.common.State;
 import com.vmware.identity.rest.idm.client.IdmClient;
 import com.vmware.identity.rest.idm.client.OidcClientResource;
 import com.vmware.identity.rest.idm.data.OIDCClientDTO;
@@ -58,7 +58,7 @@ public class AuthClientHandlerTest {
   private X509Certificate clientCertificate;
   private IdmClient idmClient;
   private AccessToken accessToken;
-  private IDToken idToken;
+  private ClientIDToken idToken;
   private AuthTokenHandler tokenHandler;
   private OIDCTokens tokens;
   private AuthOIDCClient authOidcClient;
@@ -83,14 +83,10 @@ public class AuthClientHandlerTest {
         AuthTestHelper.USER,
         AuthTestHelper.PASSWORD,
         AuthTestHelper.TENANT));
-    accessToken = mock(AccessToken.class);
 
-
-    accessToken = mock(AccessToken.class);
-    idToken = mock(IDToken.class);
     tokens = mock(OIDCTokens.class);
     doReturn(accessToken).when(tokens).getAccessToken();
-    doReturn(idToken).when(tokens).getIdToken();
+    doReturn(idToken).when(tokens).getClientIDToken();
 
     X509CertificateHelper x509CertificateHelper = new X509CertificateHelper();
     clientCertificate = x509CertificateHelper.generateX509Certificate();
@@ -206,7 +202,7 @@ public class AuthClientHandlerTest {
         .class));
 
     AuthClientHandler.ImplicitClient implicitClient = clientHandler.registerImplicitClient(loginRedirect,
-            logoutRedirect);
+        logoutRedirect);
     Assert.assertEquals(expectedLoginResponse.toString(), implicitClient.loginURI);
     Assert.assertEquals(expectedLogoutResponse.toString(), implicitClient.logoutURI);
   }
