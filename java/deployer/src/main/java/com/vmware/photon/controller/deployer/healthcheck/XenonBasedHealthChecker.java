@@ -25,6 +25,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Implements Health check for Xenon based components such as CloudStore.
@@ -34,27 +36,43 @@ public class XenonBasedHealthChecker implements HealthChecker {
 
   private final Service service;
   private final String address;
-  private final int port;
+  private final List<Integer> ports;
 
   public XenonBasedHealthChecker(Service service, String address, int port) {
     this.service = service;
     this.address = address;
-    this.port = port;
+    this.ports = new ArrayList<>();
+    this.ports.add(port);
+  }
+
+  public XenonBasedHealthChecker(Service service, String address, List<Integer> ports) {
+    this.service = service;
+    this.address = address;
+    this.ports = ports;
   }
 
   @Override
   public boolean isReady() {
     try {
-      URI uri = UriUtils.buildUri("http", address, port, ServiceUriPaths.STATUS_SERVICE, null);
-      Operation getOperation = Operation
-          .createGet(uri)
-          .setUri(uri)
-          .forceRemote();
-      Operation completedOperation = ServiceUtils.doServiceOperation(service, getOperation);
-      Status status = completedOperation.getBody(Status.class);
-      return status.getType() == StatusType.READY;
+      for (Integer port : this.ports){
+        URI uri = UriUtils.buildUri("http", address, port, ServiceUriPaths.STATUS_SERVICE, null);
+        Operation getOperation = Operation
+                .createGet(uri)
+                .setUri(uri)
+                .forceRemote();
+        Operation completedOperation = ServiceUtils.doServiceOperation(service, getOperation);
+        Status status = completedOperation.getBody(Status.class);
+
+        // As soon as we find any service not ready we might as well return and report not
+        // ready.  If all return ready we will finish the for loop and return true
+        if (status.getType() != StatusType.READY) {
+          return false;
+        }
+      }
+
+      return true;
     } catch (Throwable e) {
-      logger.error("GET to Xenon service failed [{}:{}]: {}", address, port, e);
+      logger.error("GET to Xenon service failed [{}:{}]: {}", address, ports, e);
       return false;
     }
   }

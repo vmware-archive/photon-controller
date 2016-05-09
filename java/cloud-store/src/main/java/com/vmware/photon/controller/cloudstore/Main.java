@@ -80,6 +80,8 @@ public class Main {
     final CloudStoreXenonHost cloudStoreDcpHost = injector.getInstance(CloudStoreXenonHost.class);
     final ServiceNodeFactory serviceNodeFactory = injector.getInstance(ServiceNodeFactory.class);
 
+
+
     Runtime.getRuntime().addShutdownHook(new Thread() {
       @Override
       public void run() {

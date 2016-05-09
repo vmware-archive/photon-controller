@@ -33,14 +33,13 @@ public class ContainersConfig {
    * List of known container types.
    */
   public enum ContainerType {
-    CloudStore,
     Deployer,
     Housekeeper,
     Lightwave,
     LoadBalancer,
     ManagementApi,
     ManagementUi,
-    RootScheduler,
+    PhotonControllerCore,
     Zookeeper,
   }
 

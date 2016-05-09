@@ -151,7 +151,7 @@ public class CreateContainersWorkflowServiceTest {
           {null, null},
           {TaskState.TaskStage.CREATED, null},
           {TaskState.TaskStage.STARTED,
-              CreateContainersWorkflowService.TaskState.SubStage.CREATE_ZOOKEEPER_AND_DB_CONTAINERS},
+              CreateContainersWorkflowService.TaskState.SubStage.CREATE_ZOOKEEPER_AND_CORE_CONTAINERS},
           {TaskState.TaskStage.STARTED,
               CreateContainersWorkflowService.TaskState.SubStage.CREATE_SERVICE_CONTAINERS},
           {TaskState.TaskStage.STARTED,
@@ -182,7 +182,7 @@ public class CreateContainersWorkflowServiceTest {
           {null, null},
           {TaskState.TaskStage.CREATED, null},
           {TaskState.TaskStage.STARTED,
-              CreateContainersWorkflowService.TaskState.SubStage.CREATE_ZOOKEEPER_AND_DB_CONTAINERS},
+              CreateContainersWorkflowService.TaskState.SubStage.CREATE_ZOOKEEPER_AND_CORE_CONTAINERS},
       };
     }
 
@@ -294,9 +294,9 @@ public class CreateContainersWorkflowServiceTest {
           {TaskState.TaskStage.CREATED,
               null,
               TaskState.TaskStage.STARTED,
-              CreateContainersWorkflowService.TaskState.SubStage.CREATE_ZOOKEEPER_AND_DB_CONTAINERS},
+              CreateContainersWorkflowService.TaskState.SubStage.CREATE_ZOOKEEPER_AND_CORE_CONTAINERS},
           {TaskState.TaskStage.STARTED,
-              CreateContainersWorkflowService.TaskState.SubStage.CREATE_ZOOKEEPER_AND_DB_CONTAINERS,
+              CreateContainersWorkflowService.TaskState.SubStage.CREATE_ZOOKEEPER_AND_CORE_CONTAINERS,
               TaskState.TaskStage.STARTED,
               CreateContainersWorkflowService.TaskState.SubStage.PREEMPTIVE_PAUSE_BACKGROUND_TASKS},
           {TaskState.TaskStage.STARTED,
@@ -329,13 +329,13 @@ public class CreateContainersWorkflowServiceTest {
           {TaskState.TaskStage.CREATED, null, TaskState.TaskStage.CANCELLED, null},
 
           {TaskState.TaskStage.STARTED,
-              CreateContainersWorkflowService.TaskState.SubStage.CREATE_ZOOKEEPER_AND_DB_CONTAINERS,
+              CreateContainersWorkflowService.TaskState.SubStage.CREATE_ZOOKEEPER_AND_CORE_CONTAINERS,
               TaskState.TaskStage.FINISHED, null},
           {TaskState.TaskStage.STARTED,
-              CreateContainersWorkflowService.TaskState.SubStage.CREATE_ZOOKEEPER_AND_DB_CONTAINERS,
+              CreateContainersWorkflowService.TaskState.SubStage.CREATE_ZOOKEEPER_AND_CORE_CONTAINERS,
               TaskState.TaskStage.FAILED, null},
           {TaskState.TaskStage.STARTED,
-              CreateContainersWorkflowService.TaskState.SubStage.CREATE_ZOOKEEPER_AND_DB_CONTAINERS,
+              CreateContainersWorkflowService.TaskState.SubStage.CREATE_ZOOKEEPER_AND_CORE_CONTAINERS,
               TaskState.TaskStage.CANCELLED, null},
 
           {TaskState.TaskStage.STARTED,
@@ -424,7 +424,7 @@ public class CreateContainersWorkflowServiceTest {
           {TaskState.TaskStage.CREATED, null, TaskState.TaskStage.CREATED, null},
 
           {TaskState.TaskStage.STARTED,
-              CreateContainersWorkflowService.TaskState.SubStage.CREATE_ZOOKEEPER_AND_DB_CONTAINERS,
+              CreateContainersWorkflowService.TaskState.SubStage.CREATE_ZOOKEEPER_AND_CORE_CONTAINERS,
               TaskState.TaskStage.CREATED,
               null},
 
@@ -435,7 +435,7 @@ public class CreateContainersWorkflowServiceTest {
           {TaskState.TaskStage.STARTED,
               CreateContainersWorkflowService.TaskState.SubStage.PREEMPTIVE_PAUSE_BACKGROUND_TASKS,
               TaskState.TaskStage.STARTED,
-              CreateContainersWorkflowService.TaskState.SubStage.CREATE_ZOOKEEPER_AND_DB_CONTAINERS},
+              CreateContainersWorkflowService.TaskState.SubStage.CREATE_ZOOKEEPER_AND_CORE_CONTAINERS},
 
           {TaskState.TaskStage.STARTED,
               CreateContainersWorkflowService.TaskState.SubStage.CREATE_LIGHTWAVE_CONTAINER,
@@ -448,7 +448,7 @@ public class CreateContainersWorkflowServiceTest {
           {TaskState.TaskStage.STARTED,
               CreateContainersWorkflowService.TaskState.SubStage.CREATE_LIGHTWAVE_CONTAINER,
               TaskState.TaskStage.STARTED,
-              CreateContainersWorkflowService.TaskState.SubStage.CREATE_ZOOKEEPER_AND_DB_CONTAINERS},
+              CreateContainersWorkflowService.TaskState.SubStage.CREATE_ZOOKEEPER_AND_CORE_CONTAINERS},
 
           {TaskState.TaskStage.STARTED,
               CreateContainersWorkflowService.TaskState.SubStage.REGISTER_AUTH_CLIENT_FOR_SWAGGER_UI,
@@ -457,7 +457,7 @@ public class CreateContainersWorkflowServiceTest {
           {TaskState.TaskStage.STARTED,
               CreateContainersWorkflowService.TaskState.SubStage.REGISTER_AUTH_CLIENT_FOR_SWAGGER_UI,
               TaskState.TaskStage.STARTED,
-              CreateContainersWorkflowService.TaskState.SubStage.CREATE_ZOOKEEPER_AND_DB_CONTAINERS},
+              CreateContainersWorkflowService.TaskState.SubStage.CREATE_ZOOKEEPER_AND_CORE_CONTAINERS},
           {TaskState.TaskStage.STARTED,
               CreateContainersWorkflowService.TaskState.SubStage.REGISTER_AUTH_CLIENT_FOR_SWAGGER_UI,
               TaskState.TaskStage.STARTED,
@@ -470,7 +470,7 @@ public class CreateContainersWorkflowServiceTest {
           {TaskState.TaskStage.STARTED,
               CreateContainersWorkflowService.TaskState.SubStage.REGISTER_AUTH_CLIENT_FOR_MGMT_UI,
               TaskState.TaskStage.STARTED,
-              CreateContainersWorkflowService.TaskState.SubStage.CREATE_ZOOKEEPER_AND_DB_CONTAINERS},
+              CreateContainersWorkflowService.TaskState.SubStage.CREATE_ZOOKEEPER_AND_CORE_CONTAINERS},
           {TaskState.TaskStage.STARTED,
               CreateContainersWorkflowService.TaskState.SubStage.REGISTER_AUTH_CLIENT_FOR_MGMT_UI,
               TaskState.TaskStage.STARTED,
@@ -487,7 +487,7 @@ public class CreateContainersWorkflowServiceTest {
           {TaskState.TaskStage.STARTED,
               CreateContainersWorkflowService.TaskState.SubStage.CREATE_SERVICE_CONTAINERS,
               TaskState.TaskStage.STARTED,
-              CreateContainersWorkflowService.TaskState.SubStage.CREATE_ZOOKEEPER_AND_DB_CONTAINERS},
+              CreateContainersWorkflowService.TaskState.SubStage.CREATE_ZOOKEEPER_AND_CORE_CONTAINERS},
           {TaskState.TaskStage.STARTED,
               CreateContainersWorkflowService.TaskState.SubStage.CREATE_SERVICE_CONTAINERS,
               TaskState.TaskStage.STARTED,
@@ -508,7 +508,7 @@ public class CreateContainersWorkflowServiceTest {
           {TaskState.TaskStage.STARTED,
               CreateContainersWorkflowService.TaskState.SubStage.CREATE_LOAD_BALANCER_CONTAINER,
               TaskState.TaskStage.STARTED,
-              CreateContainersWorkflowService.TaskState.SubStage.CREATE_ZOOKEEPER_AND_DB_CONTAINERS},
+              CreateContainersWorkflowService.TaskState.SubStage.CREATE_ZOOKEEPER_AND_CORE_CONTAINERS},
           {TaskState.TaskStage.STARTED,
               CreateContainersWorkflowService.TaskState.SubStage.CREATE_LOAD_BALANCER_CONTAINER,
               TaskState.TaskStage.STARTED,
@@ -533,7 +533,7 @@ public class CreateContainersWorkflowServiceTest {
           {TaskState.TaskStage.FINISHED,
               null,
               TaskState.TaskStage.STARTED,
-              CreateContainersWorkflowService.TaskState.SubStage.CREATE_ZOOKEEPER_AND_DB_CONTAINERS},
+              CreateContainersWorkflowService.TaskState.SubStage.CREATE_ZOOKEEPER_AND_CORE_CONTAINERS},
           {TaskState.TaskStage.FINISHED,
               null,
               TaskState.TaskStage.STARTED,
@@ -578,7 +578,7 @@ public class CreateContainersWorkflowServiceTest {
           {TaskState.TaskStage.FAILED,
               null,
               TaskState.TaskStage.STARTED,
-              CreateContainersWorkflowService.TaskState.SubStage.CREATE_ZOOKEEPER_AND_DB_CONTAINERS},
+              CreateContainersWorkflowService.TaskState.SubStage.CREATE_ZOOKEEPER_AND_CORE_CONTAINERS},
           {TaskState.TaskStage.FAILED,
               null,
               TaskState.TaskStage.STARTED,
@@ -623,7 +623,7 @@ public class CreateContainersWorkflowServiceTest {
           {TaskState.TaskStage.CANCELLED,
               null,
               TaskState.TaskStage.STARTED,
-              CreateContainersWorkflowService.TaskState.SubStage.CREATE_ZOOKEEPER_AND_DB_CONTAINERS},
+              CreateContainersWorkflowService.TaskState.SubStage.CREATE_ZOOKEEPER_AND_CORE_CONTAINERS},
           {TaskState.TaskStage.CANCELLED,
               null,
               TaskState.TaskStage.STARTED,
@@ -672,7 +672,7 @@ public class CreateContainersWorkflowServiceTest {
       CreateContainersWorkflowService.State patchState =
           CreateContainersWorkflowService.buildPatch(
               TaskState.TaskStage.STARTED,
-              CreateContainersWorkflowService.TaskState.SubStage.CREATE_ZOOKEEPER_AND_DB_CONTAINERS,
+              CreateContainersWorkflowService.TaskState.SubStage.CREATE_ZOOKEEPER_AND_CORE_CONTAINERS,
               null);
 
       Field declaredField = patchState.getClass().getDeclaredField(fieldName);

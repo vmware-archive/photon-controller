@@ -503,8 +503,11 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
       List<ContainerService.State> containers,
       List<ContainerTemplateService.State> templates) {
 
+    // TODO(bmace) this needs fixing, from what I can tell the container type key
+    // TODO(bmace) doesn't seem to be used in the other methods / callers so just changing this to a
+    // TODO(bmace) service name list might work
     Map<ContainerType, String> xenonServices = ImmutableMap.<ContainerType, String>builder()
-        .put(ContainerType.CloudStore, DeployerModule.CLOUDSTORE_SERVICE_NAME)
+        .put(ContainerType.PhotonControllerCore, DeployerModule.CLOUDSTORE_SERVICE_NAME)
         .put(ContainerType.Deployer, DeployerModule.DEPLOYER_SERVICE_NAME)
         .put(ContainerType.Housekeeper, DeployerModule.HOUSEKEEPER_SERVICE_NAME)
         .build();
@@ -522,7 +525,7 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
       List<Pair<String, Integer>> serverAddresses = remoteServers.stream()
           .map(s -> {
             int adjustment = 1;
-            if (entry.getKey() == ContainerType.CloudStore) {
+            if (entry.getKey() == ContainerType.PhotonControllerCore) {
               adjustment = 0;
             }
             return new Pair<String, Integer>(s.getAddress().getHostAddress(), s.getPort() + adjustment);
