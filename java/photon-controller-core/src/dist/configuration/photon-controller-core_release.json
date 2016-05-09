@@ -1,0 +1,26 @@
+{
+  "serviceName": "PhotonControllerCore",
+  "cpuCount": 4,
+  "memoryMb": 5120,
+  "diskGb": 10,
+  "isReplicated": true,
+  "isPrivileged": false,
+  "useHostNetwork": true,
+  "containerImage": "esxcloud/photon-controller-core",
+  "portBindings": {
+    "13010": 13010,
+    "19000": 19000,
+    "19001": 19001
+  },
+  "volumeBindings": {
+    "/var/log": "/var/log"
+  },
+  "dynamicParameters": {
+    "CLOUD-STORE_DCP_STORAGE_PATH": "/etc/esxcloud/cloud-store/sandbox_19000",
+    "CLOUD-STORE_INSTALL_DIRECTORY": "/usr/lib/esxcloud/cloud-store",
+    "LOG_DIRECTORY": "/var/log/esxcloud",
+    "PHOTON-CONTROLLER-CORE_INSTALL_DIRECTORY": "/usr/lib/esxcloud/photon-controller-core",
+    "ROOT-SCHEDULER_DCP_STORAGE_PATH": "/etc/esxcloud/root-scheduler/sandbox_13010",
+    "ROOT-SCHEDULER_INSTALL_DIRECTORY": "/usr/lib/esxcloud/root-scheduler"
+  }
+}

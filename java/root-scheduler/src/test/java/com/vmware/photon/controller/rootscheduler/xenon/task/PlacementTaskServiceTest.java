@@ -30,7 +30,7 @@ import com.vmware.photon.controller.resource.gen.DiskImage;
 import com.vmware.photon.controller.resource.gen.Resource;
 import com.vmware.photon.controller.resource.gen.ResourceConstraint;
 import com.vmware.photon.controller.resource.gen.Vm;
-import com.vmware.photon.controller.rootscheduler.Config;
+import com.vmware.photon.controller.rootscheduler.RootSchedulerConfig;
 import com.vmware.photon.controller.rootscheduler.SchedulerConfig;
 import com.vmware.photon.controller.rootscheduler.exceptions.NoSuchResourceException;
 import com.vmware.photon.controller.rootscheduler.helpers.xenon.SchedulerTestEnvironment;
@@ -281,7 +281,7 @@ public class PlacementTaskServiceTest {
   public class EndToEndTest {
     Random random = new Random();
     @Mock
-    private Config config;
+    private RootSchedulerConfig config;
 
     @Mock
     private HostClient client;
@@ -612,7 +612,7 @@ public class PlacementTaskServiceTest {
    */
   public class ImageSeedingTest {
     @Mock
-    private Config config;
+    private RootSchedulerConfig config;
 
     @Mock
     private HostClient client;
