@@ -32,7 +32,6 @@ from host.hypervisor.esx.path_util import vmdk_path
 from pyVmomi import vim
 from pysdk.invt import GetEnv
 from pysdk.vmconfig import AddIsoCdrom
-from pysdk.vmconfig import AddURIBackedSerial
 from pysdk.vmconfig import GetCnxInfo
 from pysdk.vmconfig import GetFreeBusNumber
 from pysdk.vmconfig import GetFreeKey
@@ -62,7 +61,6 @@ _ethernet_virtual_dev_to_vim_adapter_map = {
 
 _BOOT_SCSI_DEVICE = "scsi0"
 _FIRST_NIC_DEVICE = "ethernet0"
-_FIRST_SERIAL_DEVICE = "serial0"
 
 
 def _string_to_bool(string_val):
@@ -426,33 +424,6 @@ class EsxVmConfig(VmConfig):
         for dev in disk_devs:
             self._remove_device(spec, dev)
 
-    def customize_serial_ports(self, spec):
-        """Add virtual serial ports to this create spec if necessary.
-
-        :param spec: The Vm configuration spec to append this serial port to.
-        :type spec: The VirtualMachineConfigSpec
-
-        We only support configuring one URI-based virtual serial port for now.
-        """
-
-        k = _FIRST_SERIAL_DEVICE
-        serial_type = spec._metadata.get("%s.%s" % (k, "fileType"), "")
-        if serial_type == "network":
-            uri = spec._metadata.get("%s.%s" % (k, "fileName"), None)
-            proxy_uri = spec._metadata.get("%s.%s" % (k, "vspc"), None)
-            direction = spec._metadata.get(
-                "%s.%s" % (k, "network.endPoint"), None)
-            yield_on_poll = _string_to_bool(spec._metadata.get(
-                "%s.%s" % (k, "yieldsOnMsrRead"), "TRUE"))
-            if uri is None:
-                self._logger.warning("Invalid serial port URI")
-            elif direction is None:
-                self._logger.warning("Invalid serial port direction")
-            else:
-                AddURIBackedSerial(spec, uri, direction=direction,
-                                   proxyURI=proxy_uri,
-                                   yieldPoll=yield_on_poll)
-
     def _create_device_spec(self, device):
         return vim.vm.device.VirtualDeviceSpec(
             device=device,
@@ -677,16 +648,6 @@ class EsxVmConfig(VmConfig):
             extraConfig.append(vim.option.OptionValue(key=k, value=v))
         cfg_spec.extraConfig = extraConfig
         return cfg_spec
-
-    def set_annotation(self, spec, annotation):
-        """Sets annotation property
-
-        :param spec: The VM config spec
-        :type spec: vim.vm.ConfigSpec
-        :param annotation: vm annotation to set
-        :type annotation: str
-        """
-        spec.annotation = annotation
 
     def set_diskuuid_enabled(self, spec, enable):
         """Sets whether disk UUIDs are visible to guest OS

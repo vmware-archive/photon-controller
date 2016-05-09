@@ -347,13 +347,6 @@ class EsxVmManager(VmManager):
         """
         spec = self.vm_config.add_nic(spec, network_name)
 
-    @log_duration
-    def customize_vm(self, spec):
-        if 'annotation' in spec._metadata:
-            self.vm_config.set_annotation(spec, spec._metadata['annotation'])
-
-        self.vm_config.customize_serial_ports(spec)
-
     def _get_datastore_uuid(self, name):
         try:
             return self._ds_manager.normalize(name)

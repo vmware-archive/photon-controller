@@ -199,37 +199,6 @@ class TestEsxVmManager(unittest.TestCase):
             spec, config=non_extra_config_metadata, expected=False))
         assert_that(spec.flags.diskUuidEnabled, equal_to(True))
 
-    def test_customize_vm_with_metadata(self):
-        metadata = {
-            "configuration": {
-                "annotation": "fake_annotation",
-                "serial0.fileType": "network",
-                "serial0.yieldOnMsrRead": "TRUE",
-                "serial0.network.endPoint": "server"
-                },
-            "parameters": [
-                {"name": "serial0.fileName"},
-                {"name": "serial0.vspc"}
-            ]
-        }
-        env = {
-            "serial0.fileName": "vSPC.py",
-            "serial0.vspc": "telnet://1.2.3.4:17000",
-        }
-
-        spec = self._create_vm_spec(metadata, env)
-        self.vm_manager.customize_vm(spec)
-
-        assert_that(spec.annotation, equal_to("fake_annotation"))
-
-        backing = spec.deviceChange[0].device.backing
-        assert_that(
-            backing,
-            instance_of(vim.vm.device.VirtualSerialPort.URIBackingInfo))
-        assert_that(backing.serviceURI, equal_to('vSPC.py'))
-        assert_that(backing.proxyURI, equal_to('telnet://1.2.3.4:17000'))
-        assert_that(backing.direction, equal_to('server'))
-
     @staticmethod
     def _summarize_controllers_in_spec(cfg_spec, base_type, expected_type):
         num_scsi_adapters_matching_expected_type = 0

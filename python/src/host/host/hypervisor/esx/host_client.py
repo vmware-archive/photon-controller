@@ -246,19 +246,11 @@ class VmConfig(object):
         pass
 
     @abc.abstractmethod
-    def customize_serial_ports(self, spec):
-        pass
-
-    @abc.abstractmethod
     def get_network_config_int(self, config):
         pass
 
     @abc.abstractmethod
     def set_extra_config(self, cfg_spec, options):
-        pass
-
-    @abc.abstractmethod
-    def set_annotation(self, spec, annotation):
         pass
 
     @abc.abstractmethod
