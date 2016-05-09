@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.deployer.deployengine;
 
-import com.vmware.identity.openidconnect.client.ClientID;
+import com.vmware.identity.openidconnect.common.ClientID;
 import com.vmware.photon.controller.common.auth.AuthClientHandler;
 import com.vmware.photon.controller.common.auth.AuthException;
 import com.vmware.photon.controller.common.auth.AuthOIDCClient;
