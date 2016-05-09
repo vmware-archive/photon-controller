@@ -15,6 +15,7 @@ import os
 import uuid
 
 from mock import MagicMock
+from mock import ANY
 from mock import patch
 
 from nose_parameterized import parameterized
@@ -311,13 +312,20 @@ class TestEsxVmManager(unittest.TestCase):
         self.assertRaises(VmPowerStateException, self.vm_manager.delete_vm,
                           "vm_foo")
 
-    def test_add_vm_disk(self):
+    def test_attach_vm_disk(self):
         """Test adding VM disk"""
 
+        self.vm_manager.vm_config.update_spec = MagicMock()
         self.vm_manager.vim_client.get_vm = MagicMock()
-        info = FakeConfigInfo()
-        spec = self.vm_manager.vm_config.update_spec()
-        self.vm_manager.add_disk(spec, "ds1", "vm_foo", info)
+        self.vm_manager.vm_config.attach_disk = MagicMock()
+        self.vm_manager.vim_client.reconfigure_vm = MagicMock()
+
+        self.vm_manager.attach_disk("vm_id", "ds1.vmdk")
+
+        self.vm_manager.vim_client.get_vm.assert_called_with("vm_id")
+        self.vm_manager.vm_config.update_spec.assert_called_once_with()
+        self.vm_manager.vm_config.attach_disk.assert_called_once_with(ANY, ANY, "ds1.vmdk")
+        self.vm_manager.vim_client.reconfigure_vm.assert_called_once_with(ANY, ANY)
 
     def test_used_memory(self):
         self.vm_manager.vim_client.get_vms_in_cache = MagicMock(return_value=[

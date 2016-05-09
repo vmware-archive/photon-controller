@@ -140,23 +140,19 @@ class VmManager(object):
         pass
 
     @abc.abstractmethod
-    def add_disk(self, spec, datastore, disk_id, info=None):
+    def attach_disk(self, vm_id, vmdk_path):
         """Add an existing disk to a VM
 
-        :type spec: The VM update spec
-        :type datastore: str
-        :type disk_id: str
-        :type info: The current vm config info if the disk is being
-                    added to an existing VM.
+        :type vm_id: vm id
+        :type vmdk_path: disk vmdk path
         """
         pass
 
     @abc.abstractmethod
-    def remove_disk(self, spec, datastore, disk_id, info):
+    def detach_disk(self, vm_id, disk_id):
         """Remove an existing disk from a VM
 
-        :type spec: The vm update spec
-        :type datastore: str
+        :type vm_id: vm id
         :type disk_id: str
         """
         pass
