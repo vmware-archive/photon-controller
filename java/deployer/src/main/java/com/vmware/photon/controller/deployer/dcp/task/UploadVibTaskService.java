@@ -270,12 +270,14 @@ public class UploadVibTaskService extends StatefulService {
                   vibState.vibName + " to host " + hostState.hostAddress);
           }
         } catch (Throwable t) {
+          ServiceUtils.logSevere(UploadVibTaskService.this, "Failed to upload VIB to host: %s", hostState.hostAddress);
           failTask(t);
         }
       }
 
       @Override
       public void onFailure(Throwable throwable) {
+        ServiceUtils.logSevere(UploadVibTaskService.this, "Failed to upload VIB to host: %s", hostState.hostAddress);
         failTask(throwable);
       }
     });
