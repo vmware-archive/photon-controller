@@ -1,1 +1,29 @@
-../../../../cloud-store/src/dist/configuration/cloud-store.yml
+xenon:
+  bindAddress: "0.0.0.0"
+  port: 19000
+  registrationAddress: "{{{REGISTRATION_ADDRESS}}}"
+  storagePath: "{{{CLOUD-STORE_DCP_STORAGE_PATH}}}"
+  peerNodes:
+{{#CLOUDSTORE_PEER_NODES}}
+  - http://{{peerAddress}}:{{peerPort}}
+{{/CLOUDSTORE_PEER_NODES}}
+{{^CLOUDSTORE_PEER_NODES}}
+  - http://{{{REGISTRATION_ADDRESS}}}:19000
+{{/CLOUDSTORE_PEER_NODES}}
+
+zookeeper:
+  quorum: "{{{ZOOKEEPER_QUORUM}}}"
+
+logging:
+  file:
+    enabled: true
+    currentLogFilename: {{{LOG_DIRECTORY}}}/photon-controller-core.log
+    archivedLogFilenamePattern: {{{LOG_DIRECTORY}}}/photon-controller-core-%d.log.gz
+    logFormat: "%-5p [%d{ISO8601}] %c: %m\n%ex"
+  syslog:
+    enabled: {{{ENABLE_SYSLOG}}}
+{{#ENABLE_SYSLOG}}
+    host: "{{{SYSLOG_ENDPOINT}}}"
+    logFormat: "%-5p [%d{ISO8601}] [core] [%property{instance}]%X{request}%X{task} %c: %m\n%ex"
+    facility: LOCAL0
+{{/ENABLE_SYSLOG}}

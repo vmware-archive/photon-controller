@@ -32,10 +32,9 @@ public class ServiceFileConstants {
       .put(ContainersConfig.ContainerType.Deployer, "deployer_release.json")
       .put(ContainersConfig.ContainerType.Housekeeper, "housekeeper_release.json")
       .put(ContainersConfig.ContainerType.ManagementApi, "management-api_release.json")
-      .put(ContainersConfig.ContainerType.RootScheduler, "root-scheduler_release.json")
       .put(ContainersConfig.ContainerType.LoadBalancer, "haproxy_release.json")
       .put(ContainersConfig.ContainerType.Zookeeper, "zookeeper_release.json")
-      .put(ContainersConfig.ContainerType.CloudStore, "cloud-store_release.json")
+      .put(ContainersConfig.ContainerType.PhotonControllerCore, "photon-controller-core_release.json")
       .put(ContainersConfig.ContainerType.Lightwave, "lightwave_release.json")
       .put(ContainersConfig.ContainerType.ManagementUi, "management-ui_release.json")
       .build();
@@ -45,10 +44,9 @@ public class ServiceFileConstants {
       .put(ContainersConfig.ContainerType.Deployer, "deployer/")
       .put(ContainersConfig.ContainerType.Housekeeper, "housekeeper/")
       .put(ContainersConfig.ContainerType.ManagementApi, "management-api/")
-      .put(ContainersConfig.ContainerType.RootScheduler, "root-scheduler/")
       .put(ContainersConfig.ContainerType.LoadBalancer, "haproxy/")
       .put(ContainersConfig.ContainerType.Zookeeper, "zookeeper/")
-      .put(ContainersConfig.ContainerType.CloudStore, "cloud-store/")
+      .put(ContainersConfig.ContainerType.PhotonControllerCore, "photon-controller-core/")
       .put(ContainersConfig.ContainerType.Lightwave, "lightwave/")
       .put(ContainersConfig.ContainerType.ManagementUi, "management-ui/")
       .build();

@@ -27,38 +27,59 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.URI;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
- * Implements Health check for Xenon based components such as CloudStore.
+ * Implements Health check for Xenon based components such as CloudStore and Scheduler.
  */
 public class XenonBasedHealthChecker implements HealthChecker {
   private static final Logger logger = LoggerFactory.getLogger(XenonBasedHealthChecker.class);
 
   private final Service service;
   private final String address;
-  private final int port;
+  private final List<Integer> ports;
 
   @Inject
   public XenonBasedHealthChecker(@Assisted Service service, @Assisted String address, @Assisted int port) {
     this.service = service;
     this.address = address;
-    this.port = port;
+    this.ports = new ArrayList<>();
+    this.ports.add(port);
+  }
+
+  public XenonBasedHealthChecker(Service service, String address, List<Integer> ports) {
+    this.service = service;
+    this.address = address;
+    this.ports = ports;
   }
 
   @Override
   public boolean isReady() {
     try {
-      URI uri = UriUtils.buildUri("http", address, port, ServiceUriPaths.STATUS_SERVICE, null);
-      Operation getOperation = Operation
-          .createGet(uri)
-          .setUri(uri)
-          .forceRemote();
-      Operation completedOperation = ServiceUtils.doServiceOperation(service, getOperation);
-      Status status = completedOperation.getBody(Status.class);
-      logger.info("Xenon service returned status [{}:{}]: {}", address, port, status.getType());
-      return status.getType() == StatusType.READY;
+      // Previously there was a one to one correlation between container and service but now
+      // that it is no longer true, multiple ports may contribute to the overall health of a
+      // container, thus the introduction of a list of ports.
+      for (Integer port : this.ports){
+        URI uri = UriUtils.buildUri("http", address, port, ServiceUriPaths.STATUS_SERVICE, null);
+        Operation getOperation = Operation
+                .createGet(uri)
+                .setUri(uri)
+                .forceRemote();
+        Operation completedOperation = ServiceUtils.doServiceOperation(service, getOperation);
+        Status status = completedOperation.getBody(Status.class);
+        logger.info("Xenon service returned status [{}:{}]: {}", address, port, status.getType());
+
+        // As soon as we find any service not ready we might as well return and report not
+        // ready.  If all return ready we will finish the for loop and return true
+        if (status.getType() != StatusType.READY) {
+          return false;
+        }
+      }
+
+      return true;
     } catch (Throwable e) {
-      logger.warn("GET to Xenon status service failed [{}:{}]: {}", address, port, e);
+      logger.error("GET to Xenon service failed [{}:{}]: {}", address, ports, e);
       return false;
     }
   }

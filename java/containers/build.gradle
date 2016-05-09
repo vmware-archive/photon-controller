@@ -34,20 +34,18 @@ task all() {
   dependsOn(
     zookeeper,
     haproxy,
-    ":cloud-store:container",
     ":deployer:container",
     ":housekeeper:container",
     ":api-frontend:management:container",
-    ":root-scheduler:container",
+    ":photon-controller-core:container"
   )
 }
 
 task cleanAll() {
   dependsOn(
     ":api-frontend:management:clean",
-    ":cloud-store:clean",
     ":deployer:clean",
     ":housekeeper:clean",
-    ":root-scheduler:clean"
+    ":photon-controller-core:clean"
   )
 }
