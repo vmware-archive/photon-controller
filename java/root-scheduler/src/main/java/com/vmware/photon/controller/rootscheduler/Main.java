@@ -59,7 +59,7 @@ public class Main {
 
     Namespace namespace = parser.parseArgsOrFail(args);
 
-    Config config = getConfig(namespace);
+    RootSchedulerConfig config = getConfig(namespace);
 
     new LoggingFactory(config.getLogging(), "rootscheduler").configure();
 
@@ -101,10 +101,10 @@ public class Main {
         config.getXenonConfig().getPort(), retryIntervalMilliSeconds);
   }
 
-  private static Config getConfig(Namespace namespace) {
-    Config config = null;
+  private static RootSchedulerConfig getConfig(Namespace namespace) {
+    RootSchedulerConfig config = null;
     try {
-      config = ConfigBuilder.build(Config.class, namespace.getString("file"));
+      config = ConfigBuilder.build(RootSchedulerConfig.class, namespace.getString("file"));
     } catch (BadConfigException e) {
       logger.error(e.getMessage());
       System.exit(1);

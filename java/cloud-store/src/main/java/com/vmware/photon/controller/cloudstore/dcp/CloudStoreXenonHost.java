@@ -152,14 +152,13 @@ public class CloudStoreXenonHost
       XenonConfig xenonConfig,
       HostClientFactory hostClientFactory,
       AgentControlClientFactory agentControlClientFactory,
-      ServiceConfigFactory serviceConfigFactory,
-      BuildInfo buildInfo) throws Throwable {
+      ServiceConfigFactory serviceConfigFactory) throws Throwable {
 
     super(xenonConfig);
     this.hostClientFactory = hostClientFactory;
     this.agentControlClientFactory = agentControlClientFactory;
     this.serviceConfigFactory = serviceConfigFactory;
-    this.buildInfo = buildInfo;
+    this.buildInfo = BuildInfo.get(this.getClass());
   }
 
   /**

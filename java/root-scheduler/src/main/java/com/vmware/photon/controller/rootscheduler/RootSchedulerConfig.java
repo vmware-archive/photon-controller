@@ -27,7 +27,7 @@ import javax.validation.constraints.NotNull;
  * Root scheduler configuration.
  */
 @SuppressWarnings("UnusedDeclaration")
-public class Config {
+public class RootSchedulerConfig {
   // Refresh interval for in-memory constraint checker cache in seconds.
   @NotNull
   @Range(min = 1, max = 600)

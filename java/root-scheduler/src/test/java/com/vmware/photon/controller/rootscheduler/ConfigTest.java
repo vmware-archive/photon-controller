@@ -33,7 +33,7 @@ public class ConfigTest {
   @Test
   public void testGoodConfig() throws Exception {
 
-    Config config = ConfigBuilder.build(Config.class,
+    RootSchedulerConfig config = ConfigBuilder.build(RootSchedulerConfig.class,
         ConfigTest.class.getResource("/config.yml").getPath());
 
     XenonConfig xenonConfig = config.getXenonConfig();
@@ -57,7 +57,7 @@ public class ConfigTest {
   @Test
   public void testBadConfig() {
     try {
-      ConfigBuilder.build(Config.class,
+      ConfigBuilder.build(RootSchedulerConfig.class,
           ConfigTest.class.getResource("/bad_config.yml").getPath());
       fail("BadConfigException should be thrown");
     } catch (BadConfigException e) {

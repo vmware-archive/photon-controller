@@ -17,7 +17,7 @@ import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.MultiHostEnvironment;
 import com.vmware.photon.controller.common.xenon.host.XenonConfig;
-import com.vmware.photon.controller.rootscheduler.Config;
+import com.vmware.photon.controller.rootscheduler.RootSchedulerConfig;
 import com.vmware.photon.controller.rootscheduler.service.ConstraintChecker;
 import com.vmware.photon.controller.rootscheduler.xenon.SchedulerXenonHost;
 
@@ -35,7 +35,7 @@ public class SchedulerTestEnvironment extends MultiHostEnvironment<SchedulerXeno
    *
    * @throws Throwable Throws an exception if any error is encountered.
    */
-  private SchedulerTestEnvironment(HostClientFactory hostClientFactory, Config config,
+  private SchedulerTestEnvironment(HostClientFactory hostClientFactory, RootSchedulerConfig config,
                                    ConstraintChecker checker, CloudStoreHelper cloudStoreHelper,
                                    int hostCount) throws Throwable {
     assertTrue(hostCount > 0);
@@ -61,7 +61,7 @@ public class SchedulerTestEnvironment extends MultiHostEnvironment<SchedulerXeno
    * @return
    * @throws Throwable
    */
-  public static SchedulerTestEnvironment create(HostClientFactory hostClientFactory, Config config,
+  public static SchedulerTestEnvironment create(HostClientFactory hostClientFactory, RootSchedulerConfig config,
                                                 ConstraintChecker checker,
                                                 CloudStoreHelper cloudStoreHelper, int hostCount) throws Throwable {
     SchedulerTestEnvironment schedulerTestEnvironment = new SchedulerTestEnvironment(

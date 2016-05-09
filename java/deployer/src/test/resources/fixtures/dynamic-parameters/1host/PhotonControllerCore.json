@@ -1,0 +1,20 @@
+{
+  "APIFE_PORT": "28080",
+  "ENABLE_SYSLOG": "true",
+  "ENABLE_AUTH": "false",
+  "CLOUD-STORE_INSTALL_DIRECTORY": "/usr/lib/esxcloud/cloud-store",
+  "CLOUD-STORE_DCP_STORAGE_PATH": "/etc/esxcloud/cloud-store/sandbox_19000",
+  "LOG_DIRECTORY": "/var/log/esxcloud",
+  "CLOUDSTORE_PEER_NODES": "[{\"peerAddress\":\"0.0.0.0\",\"peerPort\":\"19000\"}]",
+  "PHOTON-CONTROLLER-CORE_INSTALL_DIRECTORY": "/usr/lib/esxcloud/photon-controller-core",
+  "REGISTRATION_ADDRESS": "0.0.0.0",
+  "ROOT-SCHEDULER_DCP_STORAGE_PATH": "/etc/esxcloud/root-scheduler/sandbox_13010",
+  "ROOT-SCHEDULER_INSTALL_DIRECTORY": "/usr/lib/esxcloud/root-scheduler",
+  "SHARED_SECRET": "shared-secret",
+  "SCHEDULER_PEER_NODES": "[{\"peerAddress\":\"0.0.0.0\",\"peerPort\":\"13010\"}]",
+  "SYSLOG_ENDPOINT": "SYSLOG_ENDPOINT",
+  "ZOOKEEPER_QUORUM": "0.0.0.0:2181",
+  "memoryMb": "5120",
+  "diskGb": "10",
+  "cpuCount": "4"
+}
