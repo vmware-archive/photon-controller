@@ -205,14 +205,6 @@ class VmManager(object):
         pass
 
     @abc.abstractmethod
-    def customize_vm(self, spec):
-        """ Customize the VM during creating according to metadata
-
-        :param spec: The VM create spec
-        """
-        pass
-
-    @abc.abstractmethod
     def has_vm(self, vm_id):
         """Return whether the VM is managed by this hypervisor
 

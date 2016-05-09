@@ -367,10 +367,6 @@ class HostHandler(Host.Iface):
         spec = self.hypervisor.vm_manager.create_vm_spec(vm.id, datastore_id, vm.flavor, vm_meta, request.environment,
                                                          image_id=image_id)
 
-        # Step 1b: Perform non-device-related customizations as specified by
-        # the metadata
-        self.hypervisor.vm_manager.customize_vm(spec)
-
         self._logger.debug("VM create, done creating vm spec, vm-id: %s" % vm.id)
 
         # Step 2: Add the nics to the create spec of the VM.
