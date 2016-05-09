@@ -22,6 +22,9 @@ import com.vmware.xenon.common.Service;
 import com.google.inject.Inject;
 import com.google.inject.assistedinject.Assisted;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Default implementation of {@link HealthCheckHelperFactory} interface.
  */
@@ -51,11 +54,6 @@ public class HealthCheckHelper {
             ServicePortConstants.HOUSEKEEPER_PORT);
         break;
 
-      case RootScheduler:
-        this.healthChecker = new XenonBasedHealthChecker(service, ipAddress,
-            ServicePortConstants.ROOT_SCHEDULER_PORT);
-        break;
-
       case ManagementApi:
         this.healthChecker = new HttpBasedHealthChecker(HostUtils.getApiClient(service));
         break;
@@ -64,8 +62,11 @@ public class HealthCheckHelper {
         this.healthChecker = new HttpBasedHealthChecker(HostUtils.getApiClient(service));
         break;
 
-      case CloudStore:
-        this.healthChecker = new XenonBasedHealthChecker(service, ipAddress, ServicePortConstants.CLOUD_STORE_PORT);
+      case PhotonControllerCore:
+        List<Integer> ports = new ArrayList<>();
+        ports.add(ServicePortConstants.CLOUD_STORE_PORT);
+        ports.add(ServicePortConstants.ROOT_SCHEDULER_PORT);
+        this.healthChecker = new XenonBasedHealthChecker(service, ipAddress, ports);
         break;
 
       case Lightwave:
