@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.rootscheduler.service;
 
-import com.vmware.photon.controller.rootscheduler.Config;
+import com.vmware.photon.controller.rootscheduler.RootSchedulerConfig;
 import com.vmware.photon.controller.rootscheduler.SchedulerConfig;
 import com.vmware.photon.controller.scheduler.gen.PlaceResponse;
 import com.vmware.photon.controller.scheduler.gen.PlaceResultCode;
@@ -38,7 +38,7 @@ import java.util.Set;
  */
 public class ScoreCalculatorTest {
   @Mock
-  Config config;
+  RootSchedulerConfig config;
 
   @BeforeTest
   public void setUp() {

@@ -18,7 +18,6 @@ import com.vmware.photon.controller.common.clients.AgentControlClient;
 import com.vmware.photon.controller.common.clients.AgentControlClientFactory;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
-import com.vmware.photon.controller.common.manifest.BuildInfo;
 import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.photon.controller.common.xenon.host.XenonConfig;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
@@ -44,7 +43,6 @@ public class CloudStoreModule extends AbstractModule {
 
   @Override
   protected void configure() {
-    bind(BuildInfo.class).toInstance(BuildInfo.get(this.getClass()));
     bind(CloudStoreConfig.class).toInstance(cloudStoreConfig);
     bind(XenonConfig.class).toInstance(cloudStoreConfig.getXenonConfig());
 
