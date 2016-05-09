@@ -14,14 +14,14 @@
 package com.vmware.photon.controller.common.auth;
 
 import com.vmware.identity.openidconnect.client.ClientConfig;
-import com.vmware.identity.openidconnect.client.ClientID;
 import com.vmware.identity.openidconnect.client.ConnectionConfig;
 import com.vmware.identity.openidconnect.client.MetadataHelper;
 import com.vmware.identity.openidconnect.client.OIDCClient;
 import com.vmware.identity.openidconnect.client.OIDCClientException;
 import com.vmware.identity.openidconnect.client.OIDCServerException;
-import com.vmware.identity.openidconnect.client.ProviderMetadata;
 import com.vmware.identity.openidconnect.client.SSLConnectionException;
+import com.vmware.identity.openidconnect.common.ClientID;
+import com.vmware.identity.openidconnect.common.ProviderMetadata;
 import com.vmware.identity.rest.afd.client.AfdClient;
 import com.vmware.identity.rest.core.client.exceptions.ClientException;
 import com.vmware.identity.rest.core.data.CertificateDTO;
@@ -85,7 +85,7 @@ public class AuthOIDCClient {
    * Get token handler class instance.
    */
   public AuthTokenHandler getTokenHandler() {
-    return new AuthTokenHandler(getOidcClient(), getProviderPublicKey(), getProviderMetadata());
+    return new AuthTokenHandler(getOidcClient(), getProviderPublicKey());
   }
 
   /**
@@ -187,12 +187,12 @@ public class AuthOIDCClient {
       IdmClient idmClient =
           new IdmClient(domainControllerFQDN, domainControllerPort, new DefaultHostnameVerifier(), sslContext);
 
-      com.vmware.identity.openidconnect.client.AccessToken accessToken = getTokenHandler()
+      com.vmware.identity.openidconnect.common.AccessToken accessToken = getTokenHandler()
           .getAdminServerAccessToken(user, password)
           .getAccessToken();
 
       com.vmware.identity.rest.core.client.AccessToken restAccessToken =
-          new com.vmware.identity.rest.core.client.AccessToken(accessToken.getValue(),
+          new com.vmware.identity.rest.core.client.AccessToken(accessToken.serialize(),
               com.vmware.identity.rest.core.client.AccessToken.Type.JWT);
       idmClient.setToken(restAccessToken);
       return idmClient;
