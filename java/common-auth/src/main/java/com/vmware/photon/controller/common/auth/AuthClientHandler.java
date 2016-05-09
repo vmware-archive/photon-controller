@@ -13,18 +13,17 @@
 
 package com.vmware.photon.controller.common.auth;
 
-import com.vmware.identity.openidconnect.client.ClientAuthenticationMethod;
-import com.vmware.identity.openidconnect.client.ClientID;
-import com.vmware.identity.openidconnect.client.IDToken;
-import com.vmware.identity.openidconnect.client.Nonce;
+import com.vmware.identity.openidconnect.client.ClientIDToken;
+import com.vmware.identity.openidconnect.client.GroupMembershipType;
 import com.vmware.identity.openidconnect.client.OIDCClientException;
 import com.vmware.identity.openidconnect.client.OIDCTokens;
-import com.vmware.identity.openidconnect.client.ResponseMode;
-import com.vmware.identity.openidconnect.client.ResponseType;
-import com.vmware.identity.openidconnect.client.ResponseValue;
-import com.vmware.identity.openidconnect.client.State;
 import com.vmware.identity.openidconnect.client.TokenSpec;
-import com.vmware.identity.openidconnect.client.TokenType;
+import com.vmware.identity.openidconnect.common.ClientAuthenticationMethod;
+import com.vmware.identity.openidconnect.common.ClientID;
+import com.vmware.identity.openidconnect.common.Nonce;
+import com.vmware.identity.openidconnect.common.ResponseMode;
+import com.vmware.identity.openidconnect.common.ResponseType;
+import com.vmware.identity.openidconnect.common.State;
 import com.vmware.identity.rest.core.client.exceptions.ClientException;
 import com.vmware.identity.rest.idm.client.IdmClient;
 import com.vmware.identity.rest.idm.data.OIDCClientDTO;
@@ -37,9 +36,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 /**
  * Class that handles oauth clients.
@@ -86,20 +83,20 @@ public class AuthClientHandler {
 
   /**
    * Register implicit client and retrieve login and logout URIs.
-   * @param clientX509Certificate
+   *
    * @param loginRedirectURI
    * @param logoutRedirectURI
    * @return
    * @throws AuthException
    */
   public ImplicitClient registerImplicitClient(URI loginRedirectURI, URI logoutRedirectURI)
-          throws AuthException {
+      throws AuthException {
     try {
       OIDCTokens tokens = tokenHandler.getAdminServerAccessToken(user, password);
       OIDCClientDTO oidcClientDTO = registerClient(loginRedirectURI, loginRedirectURI, logoutRedirectURI);
       ClientID clientID = new ClientID(oidcClientDTO.getClientId());
       URI loginURI = buildAuthenticationRequestURI(clientID, loginRedirectURI);
-      URI logoutURI = buildLogoutRequestURI(clientID, tokens.getIdToken(), logoutRedirectURI);
+      URI logoutURI = buildLogoutRequestURI(clientID, tokens.getClientIDToken(), logoutRedirectURI);
       return new ImplicitClient(oidcClientDTO.getClientId(), loginURI.toString(), logoutURI.toString());
     } catch (Exception e) {
       throw new AuthException(String.format("Failed to register implicit client with loginRedirectURI %s and " +
@@ -110,7 +107,6 @@ public class AuthClientHandler {
   /**
    * Register OAuth client.
    *
-   * @param clientX509Certificate
    * @param redirectURI
    * @return
    * @throws AuthException
@@ -124,20 +120,16 @@ public class AuthClientHandler {
    */
   public URI buildAuthenticationRequestURI(ClientID clientID, URI redirectURI) throws AuthException {
     try {
-      TokenSpec tokenSpec = new TokenSpec.Builder(TokenType.BEARER).
-          refreshToken(false).
-          idTokenGroups(false).
-          accessTokenGroups(true).
-          resouceServers(Arrays.asList(AuthOIDCClient.ResourceServer.rs_esxcloud.toString())).build();
-
-      Set<ResponseValue> responseValues = new HashSet<>();
-      responseValues.add(ResponseValue.ID_TOKEN);
-      responseValues.add(ResponseValue.TOKEN);
+      TokenSpec tokenSpec = new TokenSpec.Builder()
+          .refreshToken(false)
+          .idTokenGroups(GroupMembershipType.NONE)
+          .accessTokenGroups(GroupMembershipType.FULL)
+          .resourceServers(Arrays.asList(AuthOIDCClient.ResourceServer.rs_esxcloud.toString())).build();
 
       return oidcClient.getOidcClient(clientID)
           .buildAuthenticationRequestURI(
               redirectURI,
-              new ResponseType(responseValues),
+              ResponseType.idToken(),
               ResponseMode.FRAGMENT,
               tokenSpec,
               new State(LOGIN_STATE),
@@ -150,14 +142,14 @@ public class AuthClientHandler {
   /**
    * Build logout request URI for the given client. The client is expected to have exactly one post-logout URI.
    */
-  private URI buildLogoutRequestURI(ClientID clientID, IDToken idToken, URI postLogoutURI) throws AuthException,
+  private URI buildLogoutRequestURI(ClientID clientID, ClientIDToken idToken, URI postLogoutURI) throws AuthException,
       URISyntaxException {
-      try {
-          return replaceIdTokenWithPlaceholder(oidcClient.getOidcClient(clientID)
-                  .buildLogoutRequestURI(postLogoutURI, idToken, new State(LOGOUT_STATE)));
-      } catch (OIDCClientException e) {
-          throw new AuthException("Failed to build logout URI", e);
-      }
+    try {
+      return replaceIdTokenWithPlaceholder(oidcClient.getOidcClient(clientID)
+          .buildLogoutRequestURI(postLogoutURI, idToken, new State(LOGOUT_STATE)));
+    } catch (OIDCClientException e) {
+      throw new AuthException("Failed to build logout URI", e);
+    }
   }
 
   /**
@@ -224,14 +216,14 @@ public class AuthClientHandler {
    * Class encapsulating implicit client info.
    */
   public static class ImplicitClient {
-      public final String clientID;
-      public final String loginURI;
-      public final String logoutURI;
+    public final String clientID;
+    public final String loginURI;
+    public final String logoutURI;
 
-      public ImplicitClient(String clientID, String loginURI, String logoutURI) {
-          this.clientID = clientID;
-          this.loginURI = loginURI;
-          this.logoutURI = logoutURI;
-      }
+    public ImplicitClient(String clientID, String loginURI, String logoutURI) {
+      this.clientID = clientID;
+      this.loginURI = loginURI;
+      this.logoutURI = logoutURI;
+    }
   }
 }
