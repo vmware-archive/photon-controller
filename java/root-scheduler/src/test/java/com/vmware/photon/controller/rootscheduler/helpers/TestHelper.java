@@ -16,7 +16,6 @@ package com.vmware.photon.controller.rootscheduler.helpers;
 import com.vmware.photon.controller.common.config.BadConfigException;
 import com.vmware.photon.controller.common.thrift.ThriftModule;
 import com.vmware.photon.controller.common.thrift.ThriftServiceModule;
-import com.vmware.photon.controller.common.zookeeper.ZookeeperModule;
 import com.vmware.photon.controller.host.gen.Host;
 
 import com.google.inject.Guice;
@@ -30,7 +29,6 @@ public class TestHelper {
   public static Injector createInjector()
       throws BadConfigException {
     return Guice.createInjector(
-        new ZookeeperModule(),
         new ThriftModule(),
         new ThriftServiceModule<>(
             new TypeLiteral<Host.AsyncClient>() {

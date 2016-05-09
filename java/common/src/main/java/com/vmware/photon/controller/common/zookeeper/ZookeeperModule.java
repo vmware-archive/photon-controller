@@ -27,6 +27,7 @@ import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.BoundedExponentialBackoffRetry;
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import java.net.InetSocketAddress;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
@@ -66,6 +67,21 @@ public class ZookeeperModule extends AbstractModule {
         .builder()
         .connectString(config.getQuorum())
         .retryPolicy(retryPolicy)
+        .namespace(config.getNamespace())
+        .build();
+
+    client.start();
+    return client;
+  }
+
+  @Singleton
+  public CuratorFramework getCuratorFramework() {
+    checkNotNull(config);
+
+    CuratorFramework client = CuratorFrameworkFactory
+        .builder()
+        .connectString(config.getQuorum())
+        .retryPolicy(getRetryPolicy())
         .namespace(config.getNamespace())
         .build();
 
@@ -129,6 +145,27 @@ public class ZookeeperModule extends AbstractModule {
   public PathChildrenCacheFactory getHostServicePathCacheFactory(CuratorFramework zkClient,
                                                                  @HostReader ZookeeperServerReader reader) {
     return new PathChildrenCacheFactory(zkClient, reader);
+  }
+
+  public ServerSet getZookeeperServerSet(final CuratorFramework zkClient, String serviceName,
+                                         boolean subscribeToUpdates) throws Exception {
+    final ZookeeperServerReader zookeeperServerReader = getServiceServerReader();
+    final PathChildrenCacheFactory pathChildrenCacheFactory = getServicePathCacheFactory(zkClient,
+        zookeeperServerReader);
+    return new ZookeeperServerSet(pathChildrenCacheFactory, zkClient, zookeeperServerReader, serviceName,
+        subscribeToUpdates);
+  }
+
+  public ServiceNode getSimpleServiceNode(final CuratorFramework zkClient,
+                                                String serviceName, InetSocketAddress registrationSocketAddress) {
+    return new SimpleServiceNode(zkClient, serviceName, registrationSocketAddress);
+  }
+
+  public void registerWithZookeeper(final CuratorFramework zkClient, String serviceName,
+                                    String registrationIpAddress, int port, long retryIntervalMilliSeconds) {
+    InetSocketAddress registrationSocketAddress = new InetSocketAddress(registrationIpAddress, port);
+    final ServiceNode serviceNode = getSimpleServiceNode(zkClient, serviceName, registrationSocketAddress);
+    ServiceNodeUtils.joinService(serviceNode, retryIntervalMilliSeconds);
   }
 
   public void setConfig(ZookeeperConfig config) {
