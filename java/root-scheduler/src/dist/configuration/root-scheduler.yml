@@ -7,12 +7,12 @@ xenon:
   registrationAddress: "{{{REGISTRATION_ADDRESS}}}"
   storagePath: "{{{ROOT-SCHEDULER_DCP_STORAGE_PATH}}}"
   peerNodes:
-{{#PEER_NODES}}
+{{#SCHEDULER_PEER_NODES}}
   - http://{{peerAddress}}:{{peerPort}}
-{{/PEER_NODES}}
-{{^PEER_NODES}}
+{{/SCHEDULER_PEER_NODES}}
+{{^SCHEDULER_PEER_NODES}}
   - http://{{{REGISTRATION_ADDRESS}}}:13010
-{{/PEER_NODES}}
+{{/SCHEDULER_PEER_NODES}}
 
 zookeeper:
   quorum: "{{{ZOOKEEPER_QUORUM}}}"
