@@ -236,28 +236,28 @@ public class CopyStateTaskService extends StatefulService {
 
     OperationJoin.create(
         currentState.sourceServers.stream()
-          .map(pair -> {
-            Operation op = Operation
-                .createPost(buildQueryURI(currentState, pair))
-                .setBody(retrieveDocumentsQuery(currentState));
-            AuthenticationUtils.addSystemUserAuthcontext(op, getSystemAuthorizationContext());
-            return op;
-          })
-        ).setCompletion((os, ts) -> {
-          if (ts != null && !ts.isEmpty()) {
-            failTask(ts);
-            return;
-          }
-          Map<URI, String> nextPageLinks = os.values().stream()
-              .filter(o -> o.getBody(QueryTask.class).results.nextPageLink != null)
-              .map(o -> {
-                QueryTask qt = o.getBody(QueryTask.class);
-                URI uri = convertToBaseUri(currentState, o);
-                return new AbstractMap.SimpleEntry<>(uri, qt.results.nextPageLink);
-            }).collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
-          continueWithNextPage(nextPageLinks, currentState, lastUpdateQueryTime);
-        })
-      .sendWith(this);
+            .map(pair -> {
+              Operation op = Operation
+                  .createPost(buildQueryURI(currentState, pair))
+                  .setBody(retrieveDocumentsQuery(currentState));
+              AuthenticationUtils.addSystemUserAuthcontext(op, getSystemAuthorizationContext());
+              return op;
+            })
+    ).setCompletion((os, ts) -> {
+      if (ts != null && !ts.isEmpty()) {
+        failTask(ts);
+        return;
+      }
+      Map<URI, String> nextPageLinks = os.values().stream()
+          .filter(o -> o.getBody(QueryTask.class).results.nextPageLink != null)
+          .map(o -> {
+            QueryTask qt = o.getBody(QueryTask.class);
+            URI uri = convertToBaseUri(currentState, o);
+            return new AbstractMap.SimpleEntry<>(uri, qt.results.nextPageLink);
+          }).collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
+      continueWithNextPage(nextPageLinks, currentState, lastUpdateQueryTime);
+    })
+        .sendWith(this);
   }
 
   private void continueWithNextPage(
@@ -284,26 +284,26 @@ public class CopyStateTaskService extends StatefulService {
 
     OperationJoin.create(
         nextPageLinks.entrySet().stream()
-          .map(entry -> {
-            Operation o = Operation.createGet(UriUtils.buildUri(entry.getKey(), entry.getValue()));
-            AuthenticationUtils.addSystemUserAuthcontext(o, getSystemAuthorizationContext());
-            return o;
-          })
-        )
-      .setCompletion((os, ts) -> {
-        if (ts != null && ts.isEmpty()) {
-          failTask(ts);
-          return;
-        }
-        Map<URI, ServiceDocumentQueryResult> results = os.values().stream()
-          .map(o -> {
-            QueryTask qt =  o.getBody(QueryTask.class);
-            return new AbstractMap.SimpleEntry<>(convertToBaseUri(currentState, o), qt.results);
-          })
-          .collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
-        storeDocuments(currentState, results, lastUpdateQueryTime);
-      })
-      .sendWith(this);
+            .map(entry -> {
+              Operation o = Operation.createGet(UriUtils.buildUri(entry.getKey(), entry.getValue()));
+              AuthenticationUtils.addSystemUserAuthcontext(o, getSystemAuthorizationContext());
+              return o;
+            })
+    )
+        .setCompletion((os, ts) -> {
+          if (ts != null && ts.isEmpty()) {
+            failTask(ts);
+            return;
+          }
+          Map<URI, ServiceDocumentQueryResult> results = os.values().stream()
+              .map(o -> {
+                QueryTask qt = o.getBody(QueryTask.class);
+                return new AbstractMap.SimpleEntry<>(convertToBaseUri(currentState, o), qt.results);
+              })
+              .collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
+          storeDocuments(currentState, results, lastUpdateQueryTime);
+        })
+        .sendWith(this);
   }
 
   private void storeDocuments(
@@ -325,13 +325,13 @@ public class CopyStateTaskService extends StatefulService {
     for (ServiceDocumentQueryResult result : results.values()) {
       ownerSelectedResults.addAll(
           result.documents.values().stream()
-          .filter(doc -> {
-            ServiceDocument serviceDoc = Utils.fromJson(doc, ServiceDocument.class);
-            return serviceDoc.documentOwner == null
-                || Objects.equal(serviceDoc.documentOwner, result.documentOwner);
-          })
-          .collect(Collectors.toList())
-        );
+              .filter(doc -> {
+                ServiceDocument serviceDoc = Utils.fromJson(doc, ServiceDocument.class);
+                return serviceDoc.documentOwner == null
+                    || Objects.equal(serviceDoc.documentOwner, result.documentOwner);
+              })
+              .collect(Collectors.toList())
+      );
     }
     QueryTaskUtils.logQueryResults(this, ownerSelectedResults.stream()
         .map(doc -> {
@@ -354,10 +354,10 @@ public class CopyStateTaskService extends StatefulService {
             return new AbstractMap.SimpleEntry<>(entry.getKey(), entry.getValue().nextPageLink);
           })
           .collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
-        continueWithNextPage(
-            pageLinks,
-            currentState,
-            newLastUpdateTime);
+      continueWithNextPage(
+          pageLinks,
+          currentState,
+          newLastUpdateTime);
       return;
     }
 
@@ -383,11 +383,11 @@ public class CopyStateTaskService extends StatefulService {
                   return;
                 }
                 Map<URI, String> pageLinks = results.entrySet().stream()
-                  .filter(entry -> entry.getValue().nextPageLink != null)
-                  .map(entry -> {
-                    return new AbstractMap.SimpleEntry<>(entry.getKey(), entry.getValue().nextPageLink);
-                  })
-                  .collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
+                    .filter(entry -> entry.getValue().nextPageLink != null)
+                    .map(entry -> {
+                      return new AbstractMap.SimpleEntry<>(entry.getKey(), entry.getValue().nextPageLink);
+                    })
+                    .collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
                 continueWithNextPage(
                     pageLinks,
                     currentState,
@@ -464,7 +464,7 @@ public class CopyStateTaskService extends StatefulService {
       // Convert it back to json
 
       if (sd.getStateType() == HostService.State.class) {
-        HostService.State fromJson =  (HostService.State) convertedServiceDocument;
+        HostService.State fromJson = (HostService.State) convertedServiceDocument;
         fromJson.usageTags = new HashSet<>(Arrays.asList(UsageTag.CLOUD.name()));
       }
       result = Utils.toJson(convertedServiceDocument);
@@ -500,7 +500,6 @@ public class CopyStateTaskService extends StatefulService {
     return Operation
         .createDelete(uri)
         .setBody(new ServiceDocument())
-        .addPragmaDirective(Operation.PRAGMA_DIRECTIVE_NO_QUEUING)
         .setReferer(uri);
   }
 

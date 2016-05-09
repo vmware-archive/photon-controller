@@ -298,7 +298,6 @@ public class ImageHostToHostCopyService extends StatefulService {
         ((CloudStoreHelperProvider) getHost()).getCloudStoreHelper().createGet
             (ImageToImageDatastoreMappingServiceFactory.SELF_LINK + "/" + current.image
                 + "_" + current.destinationDatastore)
-            .addPragmaDirective(Operation.PRAGMA_DIRECTIVE_NO_QUEUING)
             .setCompletion(
                 (operation, throwable) -> {
                   if (operation.getStatusCode() != 404) {
@@ -770,8 +769,7 @@ public class ImageHostToHostCopyService extends StatefulService {
    */
   private Operation buildImageQuery(final State current) {
     return ((CloudStoreHelperProvider) getHost()).getCloudStoreHelper()
-        .createGet(ImageServiceFactory.SELF_LINK + "/" + current.image)
-        .addPragmaDirective(Operation.PRAGMA_DIRECTIVE_NO_QUEUING);
+        .createGet(ImageServiceFactory.SELF_LINK + "/" + current.image);
   }
 
   /**
