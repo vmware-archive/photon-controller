@@ -51,7 +51,6 @@ import static org.mockito.Mockito.mock;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
 /**
  * This class implements a mock {@link NsxClientMock} object for use in testing.
@@ -471,21 +470,7 @@ public class NsxClientMock extends NsxClient {
 
     public Builder listLogicalRouterPorts(boolean isSuccess) throws Throwable {
       if (isSuccess) {
-        ResourceReference linkedLogicalRouterPortId = new ResourceReference();
-        linkedLogicalRouterPortId.setTargetType(NsxRouter.PortType.LINK_PORT_ON_TIER0.getValue());
-        linkedLogicalRouterPortId.setTargetId("logical_link_port_on_tier0_router");
-
-        List<LogicalRouterPort> logicalRouterPorts = new ArrayList<>();
-        LogicalRouterPort logicalRouterPort = new LogicalRouterPort();
-        logicalRouterPort.setLogicalRouterId(UUID.randomUUID().toString());
-        logicalRouterPort.setId(UUID.randomUUID().toString());
-        logicalRouterPort.setResourceType(NsxRouter.PortType.LINK_PORT_ON_TIER1);
-        logicalRouterPort.setLinkedLogicalRouterPortId(linkedLogicalRouterPortId);
-        logicalRouterPorts.add(logicalRouterPort);
-
-        LogicalRouterPortListResult logicalRouterPortListResult = new LogicalRouterPortListResult();
-        logicalRouterPortListResult.setResultCount(1);
-        logicalRouterPortListResult.setLogicalRouterPorts(logicalRouterPorts);
+        LogicalRouterPortListResult logicalRouterPortListResult = createLogicalRouterPortListResult();
 
         doAnswer(invocation -> {
           ((FutureCallback<LogicalRouterPortListResult>) invocation.getArguments()[1])
@@ -524,8 +509,59 @@ public class NsxClientMock extends NsxClient {
       return this;
     }
 
+    public Builder deleteLogicalPort(boolean isSuccess) throws Throwable {
+
+      if (isSuccess) {
+        doAnswer(invocation -> {
+          ((FutureCallback<Void>) invocation.getArguments()[1])
+              .onSuccess(null);
+          return null;
+        }).when(mockLogicalSwitchApi).deleteLogicalPort(any(String.class), any(FutureCallback.class));
+      } else {
+        RuntimeException error = new RuntimeException("deleteLogicalPort failed");
+        doAnswer(invocation -> {
+          ((FutureCallback<Void>) invocation.getArguments()[1])
+              .onFailure(error);
+          return null;
+        }).when(mockLogicalSwitchApi).deleteLogicalPort(any(String.class), any(FutureCallback.class));
+      }
+
+      return this;
+    }
+
     public NsxClientMock build() {
       return new NsxClientMock(mockFabricApi, mockLogicalSwitchApi, mockLogicalRouterApi);
     }
+  }
+
+  public static LogicalRouterPortListResult createLogicalRouterPortListResult() {
+    ResourceReference linkedLogicalRouterPortId = new ResourceReference();
+    linkedLogicalRouterPortId.setTargetType(NsxRouter.PortType.LINK_PORT_ON_TIER0.getValue());
+    linkedLogicalRouterPortId.setTargetId("logical_link_port_on_tier0_router");
+
+    LogicalRouterPort logicalRouterToRouterPort = new LogicalRouterPort();
+    logicalRouterToRouterPort.setLogicalRouterId("tier1_router_id");
+    logicalRouterToRouterPort.setId("logical_link_port_on_tier1_router_id");
+    logicalRouterToRouterPort.setResourceType(NsxRouter.PortType.LINK_PORT_ON_TIER1);
+    logicalRouterToRouterPort.setLinkedLogicalRouterPortId(linkedLogicalRouterPortId);
+
+    ResourceReference linkedLogicalSwitchPortId = new ResourceReference();
+    linkedLogicalSwitchPortId.setTargetType("LogicalPort");
+    linkedLogicalSwitchPortId.setTargetId("logical_port_on_switch_id");
+
+    LogicalRouterPort logicalRouterToSwitchPort = new LogicalRouterPort();
+    logicalRouterToSwitchPort.setLogicalRouterId("tier1_router_id");
+    logicalRouterToSwitchPort.setId("logical_down_link_port_on_tier1_router_id");
+    logicalRouterToSwitchPort.setResourceType(NsxRouter.PortType.DOWN_LINK_PORT);
+    logicalRouterToSwitchPort.setLinkedLogicalSwitchPortId(linkedLogicalSwitchPortId);
+
+    List<LogicalRouterPort> logicalRouterPorts = new ArrayList<>();
+    logicalRouterPorts.add(logicalRouterToRouterPort);
+    logicalRouterPorts.add(logicalRouterToSwitchPort);
+
+    LogicalRouterPortListResult logicalRouterPortListResult = new LogicalRouterPortListResult();
+    logicalRouterPortListResult.setResultCount(2);
+    logicalRouterPortListResult.setLogicalRouterPorts(logicalRouterPorts);
+    return logicalRouterPortListResult;
   }
 }

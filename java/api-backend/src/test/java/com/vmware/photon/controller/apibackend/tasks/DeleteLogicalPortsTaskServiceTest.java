@@ -126,7 +126,7 @@ public class DeleteLogicalPortsTaskServiceTest {
     private Object[][] getStates() {
       return new Object[][] {
           {TaskState.TaskStage.CREATED, null,
-              TaskState.TaskStage.STARTED, TaskState.SubStage.DELETE_TIER1_ROUTER_LINK_PORT},
+              TaskState.TaskStage.STARTED, TaskState.SubStage.GET_LINK_PORTS},
           {TaskState.TaskStage.FINISHED, null, TaskState.TaskStage.FINISHED, null},
           {TaskState.TaskStage.CANCELLED, null, TaskState.TaskStage.CANCELLED, null},
           {TaskState.TaskStage.FAILED, null, TaskState.TaskStage.FAILED, null}
@@ -140,7 +140,7 @@ public class DeleteLogicalPortsTaskServiceTest {
             host,
             deleteLogicalPortsTaskService,
             TaskState.TaskStage.STARTED,
-            TaskState.SubStage.DELETE_TIER1_ROUTER_LINK_PORT,
+            TaskState.SubStage.GET_LINK_PORTS,
             ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED);
         fail("should have failed due to invalid START state");
       } catch (XenonRuntimeException ex) {
@@ -239,6 +239,8 @@ public class DeleteLogicalPortsTaskServiceTest {
     @DataProvider(name = "validStageTransitions")
     public Object[][] getValidStageTransition() {
       return new Object[][] {
+          {TaskState.TaskStage.STARTED, TaskState.SubStage.GET_LINK_PORTS,
+              TaskState.TaskStage.STARTED, TaskState.SubStage.DELETE_TIER1_ROUTER_LINK_PORT},
           {TaskState.TaskStage.STARTED, TaskState.SubStage.DELETE_TIER1_ROUTER_LINK_PORT,
               TaskState.TaskStage.STARTED, TaskState.SubStage.DELETE_TIER0_ROUTER_LINK_PORT},
           {TaskState.TaskStage.STARTED, TaskState.SubStage.DELETE_TIER0_ROUTER_LINK_PORT,
@@ -248,6 +250,8 @@ public class DeleteLogicalPortsTaskServiceTest {
           {TaskState.TaskStage.STARTED, TaskState.SubStage.DELETE_SWITCH_PORT,
               TaskState.TaskStage.FINISHED, null},
 
+          {TaskState.TaskStage.STARTED, TaskState.SubStage.GET_LINK_PORTS,
+              TaskState.TaskStage.FAILED, null},
           {TaskState.TaskStage.STARTED, TaskState.SubStage.DELETE_TIER1_ROUTER_LINK_PORT,
               TaskState.TaskStage.FAILED, null},
           {TaskState.TaskStage.STARTED, TaskState.SubStage.DELETE_TIER0_ROUTER_LINK_PORT,
@@ -257,6 +261,8 @@ public class DeleteLogicalPortsTaskServiceTest {
           {TaskState.TaskStage.STARTED, TaskState.SubStage.DELETE_SWITCH_PORT,
               TaskState.TaskStage.FAILED, null},
 
+          {TaskState.TaskStage.STARTED, TaskState.SubStage.GET_LINK_PORTS,
+              TaskState.TaskStage.CANCELLED, null},
           {TaskState.TaskStage.STARTED, TaskState.SubStage.DELETE_TIER1_ROUTER_LINK_PORT,
               TaskState.TaskStage.CANCELLED, null},
           {TaskState.TaskStage.STARTED, TaskState.SubStage.DELETE_TIER0_ROUTER_LINK_PORT,
@@ -296,7 +302,7 @@ public class DeleteLogicalPortsTaskServiceTest {
       return new Object[][] {
           {TaskState.TaskStage.CREATED, null,
               TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.STARTED, TaskState.SubStage.DELETE_TIER1_ROUTER_DOWN_LINK_PORT,
+          {TaskState.TaskStage.STARTED, TaskState.SubStage.GET_LINK_PORTS,
               TaskState.TaskStage.CREATED, null},
           {TaskState.TaskStage.FINISHED, null,
               TaskState.TaskStage.CREATED, null},
@@ -318,7 +324,7 @@ public class DeleteLogicalPortsTaskServiceTest {
           ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED);
 
       DeleteLogicalPortsTask patchState = buildPatchState(TaskState.TaskStage.STARTED,
-          TaskState.SubStage.DELETE_TIER1_ROUTER_LINK_PORT);
+          TaskState.SubStage.GET_LINK_PORTS);
 
       Field field = patchState.getClass().getDeclaredField(fieldName);
       field.set(patchState, ReflectionUtils.getDefaultAttributeValue(field));
@@ -357,7 +363,7 @@ public class DeleteLogicalPortsTaskServiceTest {
           ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED);
 
       DeleteLogicalPortsTask patchState = buildPatchState(TaskState.TaskStage.STARTED,
-          TaskState.SubStage.DELETE_TIER1_ROUTER_LINK_PORT);
+          TaskState.SubStage.GET_LINK_PORTS);
 
       Field field = patchState.getClass().getDeclaredField(fieldName);
       field.set(patchState, ReflectionUtils.getDefaultAttributeValue(field));
@@ -381,7 +387,10 @@ public class DeleteLogicalPortsTaskServiceTest {
     @DataProvider(name = "writeOnceFields")
     public Object[][] getWriteOnceFields() {
       return new Object[][] {
-          {"logicalLinkPortOnTier0Router", "logicalLinkPortOnTier0Router cannot be set or changed in a patch"}
+          {"logicalLinkPortOnTier0Router", "logicalLinkPortOnTier0Router cannot be set or changed in a patch"},
+          {"logicalLinkPortOnTier1Router", "logicalLinkPortOnTier1Router cannot be set or changed in a patch"},
+          {"logicalDownLinkPortOnTier1Router", "logicalDownLinkPortOnTier1Router cannot be set or changed in a patch"},
+          {"logicalPortOnSwitch", "logicalPortOnSwitch cannot be set or changed in a patch"},
       };
     }
 
@@ -428,10 +437,11 @@ public class DeleteLogicalPortsTaskServiceTest {
     }
 
     @Test
-    public void testSuccessfulDeleteLogicalPortsTask() throws Throwable {
+    public void testSuccessfulDeleteLogicalPorts() throws Throwable {
       NsxClientMock nsxClientMock = new NsxClientMock.Builder()
           .listLogicalRouterPorts(true)
           .deleteLogicalRouterPort(true)
+          .deleteLogicalPort(true)
           .build();
       doReturn(nsxClientMock).when(nsxClientFactory).create(any(String.class), any(String.class), any(String.class));
 
@@ -440,7 +450,7 @@ public class DeleteLogicalPortsTaskServiceTest {
     }
 
     @Test
-    public void testFailedToListLogicalPortsTask() throws Throwable {
+    public void testFailedToListLogicalPorts() throws Throwable {
       NsxClientMock nsxClientMock = new NsxClientMock.Builder()
           .listLogicalRouterPorts(false)
           .build();
@@ -452,7 +462,7 @@ public class DeleteLogicalPortsTaskServiceTest {
     }
 
     @Test
-    public void testFailedToDeleteLogicalPortsTask() throws Throwable {
+    public void testFailedToDeleteLogicalRouterPort() throws Throwable {
       NsxClientMock nsxClientMock = new NsxClientMock.Builder()
           .listLogicalRouterPorts(true)
           .deleteLogicalRouterPort(false)
@@ -462,6 +472,20 @@ public class DeleteLogicalPortsTaskServiceTest {
       DeleteLogicalPortsTask savedState = startService();
       assertThat(savedState.taskState.stage, is(TaskState.TaskStage.FAILED));
       assertThat(savedState.taskState.failure.message, containsString("deleteLogicalRouterPort failed"));
+    }
+
+    @Test
+    public void testFailedToDeleteLogicalSwitchPort() throws Throwable {
+      NsxClientMock nsxClientMock = new NsxClientMock.Builder()
+          .listLogicalRouterPorts(true)
+          .deleteLogicalRouterPort(true)
+          .deleteLogicalPort(false)
+          .build();
+      doReturn(nsxClientMock).when(nsxClientFactory).create(any(String.class), any(String.class), any(String.class));
+
+      DeleteLogicalPortsTask savedState = startService();
+      assertThat(savedState.taskState.stage, is(TaskState.TaskStage.FAILED));
+      assertThat(savedState.taskState.failure.message, containsString("deleteLogicalPort failed"));
     }
 
     private DeleteLogicalPortsTask startService() throws Throwable {

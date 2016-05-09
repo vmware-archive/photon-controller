@@ -26,6 +26,7 @@ import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
 import com.vmware.photon.controller.nsxclient.apis.LogicalRouterApi;
+import com.vmware.photon.controller.nsxclient.apis.LogicalSwitchApi;
 import com.vmware.photon.controller.nsxclient.datatypes.NsxRouter;
 import com.vmware.photon.controller.nsxclient.models.LogicalRouterPort;
 import com.vmware.photon.controller.nsxclient.models.LogicalRouterPortListResult;
@@ -44,6 +45,7 @@ import static com.google.common.base.Preconditions.checkState;
 public class DeleteLogicalPortsTaskService extends StatefulService {
 
   public static final String FACTORY_LINK = ServiceUriPaths.APIBACKEND_ROOT + "/delete-logical-ports-tasks";
+  public static final String LOGICAL_PORT = "LogicalPort";
 
   public static FactoryService createFactory() {
     return FactoryService.create(DeleteLogicalPortsTaskService.class, DeleteLogicalPortsTask.class);
@@ -70,7 +72,7 @@ public class DeleteLogicalPortsTaskService extends StatefulService {
 
       if (startState.taskState.stage == TaskState.TaskStage.CREATED) {
         startState.taskState.stage = TaskState.TaskStage.STARTED;
-        startState.taskState.subStage = TaskState.SubStage.DELETE_TIER1_ROUTER_LINK_PORT;
+        startState.taskState.subStage = TaskState.SubStage.GET_LINK_PORTS;
       }
 
       if (startState.documentExpirationTimeMicros <= 0) {
@@ -114,20 +116,24 @@ public class DeleteLogicalPortsTaskService extends StatefulService {
 
       if (TaskState.TaskStage.STARTED == currentState.taskState.stage) {
         switch (currentState.taskState.subStage) {
+          case GET_LINK_PORTS:
+            getTier1RouterPorts(currentState);
+            break;
+
           case DELETE_TIER1_ROUTER_LINK_PORT:
-            getTier1RouterLinkPort(currentState);
+            deleteTier1RouterLinkPort(currentState);
             break;
 
           case DELETE_TIER0_ROUTER_LINK_PORT:
-            progressTask(TaskState.SubStage.DELETE_TIER1_ROUTER_DOWN_LINK_PORT);
+            deleteTier0RouterLinkPort(currentState);
             break;
 
           case DELETE_TIER1_ROUTER_DOWN_LINK_PORT:
-            progressTask(TaskState.SubStage.DELETE_SWITCH_PORT);
+            deleteTier1RouterDownLinkPort(currentState);
             break;
 
           case DELETE_SWITCH_PORT:
-            finishTask();
+            deleteSwitchPort(currentState);
             break;
 
           default:
@@ -142,7 +148,7 @@ public class DeleteLogicalPortsTaskService extends StatefulService {
     }
   }
 
-  private void getTier1RouterLinkPort(DeleteLogicalPortsTask currentState) throws Throwable {
+  private void getTier1RouterPorts(DeleteLogicalPortsTask currentState) throws Throwable {
     ServiceUtils.logInfo(this, "Getting link port on tier-1 router %s", currentState.logicalTier1RouterId);
 
     LogicalRouterApi logicalRouterApi = ServiceHostUtils.getNsxClient(getHost(), currentState.nsxManagerEndpoint,
@@ -153,25 +159,19 @@ public class DeleteLogicalPortsTaskService extends StatefulService {
           @Override
           public void onSuccess(LogicalRouterPortListResult logicalRouterPortListResult) {
             if (logicalRouterPortListResult.getResultCount() == 0) {
-              progressTask(TaskState.SubStage.DELETE_TIER0_ROUTER_LINK_PORT);
+              finishTask();
               return;
             }
 
-            for (LogicalRouterPort port : logicalRouterPortListResult.getLogicalRouterPorts()) {
-              if (port.getResourceType().equals(NsxRouter.PortType.LINK_PORT_ON_TIER1)) {
-                if (port.getLinkedLogicalRouterPortId() != null &&
-                    port.getLinkedLogicalRouterPortId().getTargetType()
-                        .equals(NsxRouter.PortType.LINK_PORT_ON_TIER0.getValue())) {
-                  currentState.logicalLinkPortOnTier0Router = port.getLinkedLogicalRouterPortId().getTargetId();
-                  try {
-                    deleteTier1RouterLinkPort(port.getId(), currentState);
-                    break;
-                  } catch (Throwable t) {
-                    failTask(t);
-                  }
-                }
-              }
-            }
+            getLinkedLogicalPorts(logicalRouterPortListResult, currentState);
+
+            DeleteLogicalPortsTask patchState = buildPatch(com.vmware.xenon.common.TaskState.TaskStage.STARTED,
+                TaskState.SubStage.DELETE_TIER1_ROUTER_LINK_PORT);
+            patchState.logicalLinkPortOnTier1Router = currentState.logicalLinkPortOnTier1Router;
+            patchState.logicalLinkPortOnTier0Router = currentState.logicalLinkPortOnTier0Router;
+            patchState.logicalDownLinkPortOnTier1Router = currentState.logicalDownLinkPortOnTier1Router;
+            patchState.logicalPortOnSwitch = currentState.logicalPortOnSwitch;
+            TaskUtils.sendSelfPatch(DeleteLogicalPortsTaskService.this, patchState);
           }
 
           @Override
@@ -182,17 +182,137 @@ public class DeleteLogicalPortsTaskService extends StatefulService {
     );
   }
 
-  private void deleteTier1RouterLinkPort(String id, DeleteLogicalPortsTask currentState) throws Throwable {
-    ServiceUtils.logInfo(this, "Deleting link port %s on tier-1 router %s", id, currentState.logicalTier1RouterId);
+  private void getLinkedLogicalPorts(
+      LogicalRouterPortListResult logicalRouterPortListResult,
+      DeleteLogicalPortsTask currentState) {
+    for (LogicalRouterPort port : logicalRouterPortListResult.getLogicalRouterPorts()) {
+      switch (port.getResourceType()) {
+        case LINK_PORT_ON_TIER1:
+          if (port.getLinkedLogicalRouterPortId() != null &&
+              port.getLinkedLogicalRouterPortId().getTargetType()
+                  .equals(NsxRouter.PortType.LINK_PORT_ON_TIER0.getValue())) {
+            currentState.logicalLinkPortOnTier0Router = port.getLinkedLogicalRouterPortId().getTargetId();
+            currentState.logicalLinkPortOnTier1Router = port.getId();
+          }
+          break;
+        case DOWN_LINK_PORT:
+          if (port.getLinkedLogicalSwitchPortId() != null &&
+              port.getLinkedLogicalSwitchPortId().getTargetType().equals(LOGICAL_PORT)) {
+            currentState.logicalPortOnSwitch = port.getLinkedLogicalSwitchPortId().getTargetId();
+            currentState.logicalDownLinkPortOnTier1Router = port.getId();
+          }
+          break;
+
+        default:
+          break;
+      }
+    }
+  }
+
+  private void deleteTier1RouterLinkPort(DeleteLogicalPortsTask currentState) throws Throwable {
+    if (currentState.logicalLinkPortOnTier1Router == null) {
+      ServiceUtils.logInfo(this, "No link port found on tier-1 router %s", currentState.logicalTier1RouterId);
+      progressTask(TaskState.SubStage.DELETE_TIER0_ROUTER_LINK_PORT);
+      return;
+    }
+
+    ServiceUtils.logInfo(this, "Deleting link port %s on tier-1 router %s",
+        currentState.logicalLinkPortOnTier1Router, currentState.logicalTier1RouterId);
 
     LogicalRouterApi logicalRouterApi = ServiceHostUtils.getNsxClient(getHost(), currentState.nsxManagerEndpoint,
         currentState.username, currentState.password).getLogicalRouterApi();
 
-    logicalRouterApi.deleteLogicalRouterPort(id,
+    logicalRouterApi.deleteLogicalRouterPort(currentState.logicalLinkPortOnTier1Router,
         new FutureCallback<Void>() {
           @Override
           public void onSuccess(Void v) {
             progressTask(TaskState.SubStage.DELETE_TIER0_ROUTER_LINK_PORT);
+          }
+
+          @Override
+          public void onFailure(Throwable t) {
+            failTask(t);
+          }
+        }
+    );
+  }
+
+  private void deleteTier0RouterLinkPort(DeleteLogicalPortsTask currentState) throws Throwable {
+    if (currentState.logicalLinkPortOnTier0Router == null) {
+      ServiceUtils.logInfo(this, "No link port found on tier-0 router %s", currentState.logicalTier0RouterId);
+      progressTask(TaskState.SubStage.DELETE_TIER1_ROUTER_DOWN_LINK_PORT);
+      return;
+    }
+
+    ServiceUtils.logInfo(this, "Deleting link port %s on tier-0 router %s", currentState.logicalLinkPortOnTier0Router,
+        currentState.logicalTier0RouterId);
+
+    LogicalRouterApi logicalRouterApi = ServiceHostUtils.getNsxClient(getHost(), currentState.nsxManagerEndpoint,
+        currentState.username, currentState.password).getLogicalRouterApi();
+
+    logicalRouterApi.deleteLogicalRouterPort(currentState.logicalLinkPortOnTier0Router,
+        new FutureCallback<Void>() {
+          @Override
+          public void onSuccess(Void v) {
+            progressTask(TaskState.SubStage.DELETE_TIER1_ROUTER_DOWN_LINK_PORT);
+          }
+
+          @Override
+          public void onFailure(Throwable t) {
+            failTask(t);
+          }
+        }
+    );
+  }
+
+  private void deleteTier1RouterDownLinkPort(DeleteLogicalPortsTask currentState) throws Throwable {
+    if (currentState.logicalDownLinkPortOnTier1Router == null) {
+      ServiceUtils.logInfo(this, "No down-link port found on tier-1 router %s", currentState.logicalTier1RouterId);
+      progressTask(TaskState.SubStage.DELETE_SWITCH_PORT);
+      return;
+    }
+
+    ServiceUtils.logInfo(this, "Deleting down-link port %s on tier-1 router %s",
+        currentState.logicalDownLinkPortOnTier1Router,
+        currentState.logicalTier1RouterId);
+
+    LogicalRouterApi logicalRouterApi = ServiceHostUtils.getNsxClient(getHost(), currentState.nsxManagerEndpoint,
+        currentState.username, currentState.password).getLogicalRouterApi();
+
+    logicalRouterApi.deleteLogicalRouterPort(currentState.logicalDownLinkPortOnTier1Router,
+        new FutureCallback<Void>() {
+          @Override
+          public void onSuccess(Void v) {
+            progressTask(TaskState.SubStage.DELETE_SWITCH_PORT);
+          }
+
+          @Override
+          public void onFailure(Throwable t) {
+            failTask(t);
+          }
+        }
+    );
+  }
+
+  private void deleteSwitchPort(DeleteLogicalPortsTask currentState) throws Throwable {
+    if (currentState.logicalPortOnSwitch == null) {
+      ServiceUtils.logInfo(this, "No link port found on switch %s", currentState.logicalSwitchId);
+      finishTask();
+      return;
+    }
+
+    ServiceUtils.logInfo(this, "Deleting port %s on switch %s",
+        currentState.logicalPortOnSwitch,
+        currentState.logicalSwitchId);
+
+    LogicalSwitchApi logicalSwitchApi = ServiceHostUtils.getNsxClient(getHost(), currentState.nsxManagerEndpoint,
+        currentState.username, currentState.password).getLogicalSwitchApi();
+
+    logicalSwitchApi.deleteLogicalPort(currentState.logicalPortOnSwitch,
+        new FutureCallback<Void>() {
+          @Override
+          public void onSuccess(Void v) {
+            finishTask();
           }
 
           @Override
