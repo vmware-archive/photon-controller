@@ -425,24 +425,6 @@ class HostHandler(Host.Iface):
 
         self._logger.debug("VM create, done creating vm, vm-id: %s" % vm.id)
 
-        # Set the guest properties for ip address.
-        # We have to do this as a separate reconfigure call as we need to know
-        # the device to network mapping and the vm uuid for mac address
-        # generation.
-        if request.network_connection_spec:
-            try:
-                spec = self.hypervisor.vm_manager.update_vm_spec()
-                info = self.hypervisor.vm_manager.get_vm_config(vm.id)
-                if self.hypervisor.vm_manager.set_guestinfo_ip(spec, info, request.network_connection_spec):
-                    self.hypervisor.vm_manager.update_vm(vm.id, spec)
-            except Exception:
-                self._logger.exception("error to set the ip/mac address of vm with id %s" % vm.id)
-                self.try_delete_vm(vm.id)
-                return CreateVmResponse(CreateVmResultCode.SYSTEM_ERROR,
-                                        "Failed to set the ip/mac address of the VM %s" % sys.exc_info()[1])
-
-        self._logger.debug("VM create, done updating network spec vm, vm-id: %s" % vm.id)
-
         # Step 6: touch the timestamp file for the image
         if image_id is not None:
             try:
@@ -657,22 +639,6 @@ class HostHandler(Host.Iface):
         response.result = CreateDisksResultCode.OK
         pm.remove_disk_reservation(request.reservation)
         return response
-
-    @log_duration
-    def _update_disks(self, spec, info, disks, method):
-        """Attach or Detach disks.
-
-        :type spec: vim.Vm.ConfigSpec
-        :type info: vim.Vm.ConfigInfo, none for new VMs otherwise the VMs current config
-        :type disks list of AttachedDisk
-        :type method: function
-        """
-        if disks is None:
-            return
-        for disk in disks:
-            disk_id = disk.id if hasattr(disk, "id") else disk
-            datastore = self._datastore_for_disk(disk_id)
-            method(spec, datastore, disk_id, info)
 
     @log_duration
     def _create_disks(self, spec, datastore, disks):

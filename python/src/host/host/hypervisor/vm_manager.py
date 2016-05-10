@@ -94,8 +94,7 @@ class VmManager(object):
         pass
 
     @abc.abstractmethod
-    def create_vm_spec(self, vm_id, datastore, flavor, vm_meta=None, env={},
-                       **kwargs):
+    def create_vm_spec(self, vm_id, datastore, flavor, vm_meta=None, env={}):
         """Create a new VM create spec.
         The return value object is opaque and not to be interpreted by the
         caller. It is to be passed on to other methods of concrete
@@ -105,7 +104,6 @@ class VmManager(object):
         :type datastore: str
         :type flavor: Flavor
         :type vm_meta: vm metadata object
-        :param kwargs: Additional arguments
         :return: the VM's create spec for esx
         """
         pass
@@ -275,15 +273,6 @@ class VmManager(object):
         """ Remove an iso file
         :param iso_ds_path: the path to the iso file to remove
         :type iso_ds_path: str
-        """
-        pass
-
-    @abc.abstractmethod
-    def set_guestinfo_ip(self, spec, info, network_spec):
-        """ Set the guest info network properties of the VM
-        : type spec: The opaque VM update spec.
-        : type info: The VMs current config info
-        : type NetworkConnectionSpec: the ip address spec
         """
         pass
 
