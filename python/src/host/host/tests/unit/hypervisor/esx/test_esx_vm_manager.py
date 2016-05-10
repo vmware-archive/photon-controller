@@ -14,6 +14,7 @@ import unittest
 import os
 import uuid
 
+from host.hypervisor.esx.vm_config import EsxVmConfigSpec
 from mock import MagicMock
 from mock import ANY
 from mock import patch
@@ -52,12 +53,8 @@ class TestEsxVmManager(unittest.TestCase):
         self.vim_client = VimClient(auto_sync=False)
         self.vim_client._content = MagicMock()
         self.vim_client.wait_for_task = MagicMock()
-        self.patcher = patch("host.hypervisor.esx.vm_config.GetEnv")
-        self.patcher.start()
+        self.vim_client.query_config = MagicMock()
         self.vm_manager = EsxVmManager(self.vim_client, MagicMock())
-
-    def tearDown(self):
-        self.patcher.stop()
 
     def test_power_vm_not_found(self):
         """Test that we propagate VmNotFound."""
@@ -85,6 +82,11 @@ class TestEsxVmManager(unittest.TestCase):
         self.assertRaises(vim.fault.TaskInProgress,
                           self.vm_manager.power_on_vm, "foo")
 
+    def _update_spec(self):
+        spec = EsxVmConfigSpec(MagicMock())
+        spec.init_for_update()
+        return spec
+
     def test_add_nic(self):
         """Test add nic"""
 
@@ -97,9 +99,9 @@ class TestEsxVmManager(unittest.TestCase):
             f = MagicMock("get_device_foo")
             f.key = 1
             return f
-        self.vm_manager.vm_config._find_device = _get_device
 
-        spec = self.vm_manager.vm_config.update_spec()
+        spec = self._update_spec()
+        spec._find_device = _get_device
         # Caller passes none
         self.vm_manager.add_nic(spec, None)
 
@@ -132,13 +134,13 @@ class TestEsxVmManager(unittest.TestCase):
         self.vm_manager.vim_client.make_directory = MagicMock()
 
         mock_spec = MagicMock()
-        mock_spec.files.vmPathName = "[] /vmfs/volumes/ds/vms"
+        mock_spec.get_spec().files.vmPathName = "[] /vmfs/volumes/ds/vms"
         self.vm_manager.create_vm("fake_vm_id", mock_spec)
 
         self.vm_manager.vim_client.get_vm_in_cache.assert_called_once_with("fake_vm_id")
         self.vm_manager.vim_client._vm_folder.assert_called_once_with()
-        self.vm_manager.vim_client.make_directory.assert_called_once_with(mock_spec.files.vmPathName)
-        mock_vm_folder.CreateVm.assert_called_once_with(mock_spec, "fake_rp", None)
+        self.vm_manager.vim_client.make_directory.assert_called_once_with(mock_spec.get_spec().files.vmPathName)
+        mock_vm_folder.CreateVm.assert_called_once_with(mock_spec.get_spec(), "fake_rp", None)
         self.vm_manager.vim_client.wait_for_task.assert_called_once_with("fake-task")
 
     @staticmethod
@@ -159,18 +161,13 @@ class TestEsxVmManager(unittest.TestCase):
         return True
 
     def _create_vm_spec(self, metadata, env):
-        """Test VM spec creation"""
 
         flavor = Flavor("default", [
             QuotaLineItem("vm.memory", "256", Unit.MB),
             QuotaLineItem("vm.cpu", "1", Unit.COUNT),
         ])
 
-        create_spec_mock = MagicMock(wraps=self.vm_manager.vm_config.create_spec)
-        self.vm_manager.vm_config.create_spec = create_spec_mock
-
         spec = self.vm_manager.create_vm_spec("vm_id", "ds1", flavor, metadata, env)
-        create_spec_mock.assert_called_once_with("vm_id", "ds1", 256, 1, metadata, env)
 
         return spec
 
@@ -195,10 +192,10 @@ class TestEsxVmManager(unittest.TestCase):
         expected_extra_config["bios.bootOrder"] = "x"
 
         self.assertTrue(TestEsxVmManager._validate_spec_extra_config(
-            spec, config=expected_extra_config, expected=True))
+            spec.get_spec(), config=expected_extra_config, expected=True))
         self.assertTrue(TestEsxVmManager._validate_spec_extra_config(
-            spec, config=non_extra_config_metadata, expected=False))
-        assert_that(spec.flags.diskUuidEnabled, equal_to(True))
+            spec.get_spec(), config=non_extra_config_metadata, expected=False))
+        assert_that(spec.get_spec().flags.diskUuidEnabled, equal_to(True))
 
     @staticmethod
     def _summarize_controllers_in_spec(cfg_spec, base_type, expected_type):
@@ -239,7 +236,7 @@ class TestEsxVmManager(unittest.TestCase):
         # check that we only create one controller of desired type to attach
         # to both disks
         summary = TestEsxVmManager._summarize_controllers_in_spec(
-            spec, vim.vm.device.VirtualSCSIController, expected_ctlr_type)
+            spec.get_spec(), vim.vm.device.VirtualSCSIController, expected_ctlr_type)
         assert_that(summary, equal_to((1, 0)))
 
     @parameterized.expand([
@@ -259,7 +256,7 @@ class TestEsxVmManager(unittest.TestCase):
         self.vm_manager.add_nic(spec, "fake_network_id")
 
         summary = TestEsxVmManager._summarize_controllers_in_spec(
-            spec, vim.vm.device.VirtualEthernetCard, expected_ctlr_type)
+            spec.get_spec(), vim.vm.device.VirtualEthernetCard, expected_ctlr_type)
         assert_that(summary, equal_to((1, 0)))
 
     @parameterized.expand([
@@ -315,16 +312,12 @@ class TestEsxVmManager(unittest.TestCase):
     def test_attach_vm_disk(self):
         """Test adding VM disk"""
 
-        self.vm_manager.vm_config.update_spec = MagicMock()
         self.vm_manager.vim_client.get_vm = MagicMock()
-        self.vm_manager.vm_config.attach_disk = MagicMock()
         self.vm_manager.vim_client.reconfigure_vm = MagicMock()
 
         self.vm_manager.attach_disk("vm_id", "ds1.vmdk")
 
         self.vm_manager.vim_client.get_vm.assert_called_with("vm_id")
-        self.vm_manager.vm_config.update_spec.assert_called_once_with()
-        self.vm_manager.vm_config.attach_disk.assert_called_once_with(ANY, ANY, "ds1.vmdk")
         self.vm_manager.vim_client.reconfigure_vm.assert_called_once_with(ANY, ANY)
 
     def test_used_memory(self):

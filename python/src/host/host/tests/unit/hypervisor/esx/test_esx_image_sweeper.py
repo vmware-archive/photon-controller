@@ -47,8 +47,6 @@ class ImageScannerVmTestCase(unittest.TestCase):
         self.vim_client = VimClient(auto_sync=False)
         self.vim_client._content = MagicMock()
         self.vim_client.wait_for_task = MagicMock()
-        self.patcher = patch("host.hypervisor.esx.vm_config.GetEnv")
-        self.patcher.start()
         self.vm_manager = EsxVmManager(self.vim_client, MagicMock())
         services.register(ServiceName.AGENT_CONFIG, MagicMock())
 
@@ -58,9 +56,6 @@ class ImageScannerVmTestCase(unittest.TestCase):
         self.image_manager = EsxImageManager(MagicMock(), MagicMock())
         self.image_scanner = DatastoreImageScanner(self.image_manager, self.vm_manager, self.DATASTORE_ID)
         self.write_count = 0
-
-    def tearDown(self):
-        self.patcher.stop()
 
     @patch("host.hypervisor.image_scanner.DatastoreImageScannerTaskRunner._list_top_level_directory")
     @patch("host.hypervisor.image_scanner.DatastoreImageScanner.is_stopped", return_value=False)

@@ -22,7 +22,7 @@ from testconfig import config
 
 from gen.agent.ttypes import PowerState
 from host.hypervisor.esx.vim_client import VimClient
-from host.hypervisor.esx.vm_config import EsxVmConfig
+from host.hypervisor.esx.vm_config import EsxVmConfigSpec
 from host.hypervisor.vm_manager import VmNotFoundException
 
 from pyVmomi import vim
@@ -41,7 +41,6 @@ class TestVimClient(unittest.TestCase):
 
         self.vim_client = VimClient(auto_sync=True)
         self.vim_client.connect_userpwd(self.host, "root", self.pwd)
-        self.vm_config = EsxVmConfig(self.vim_client)
         self._logger = logging.getLogger(__name__)
 
     def tearDown(self):
@@ -200,20 +199,15 @@ class TestVimClient(unittest.TestCase):
         assert_that(listener._ds_update_count, is_(1))
 
     def get_create_spec(self, datastore, vm_id, disk_path):
-        create_spec = vim.vm.ConfigSpec(
-            name=vm_id,
-            guestId="otherGuest",
-            memoryMB=64,
-            numCPUs=2,
-            files=vim.vm.FileInfo(vmPathName="[%s] /" % datastore),
-            deviceChange=[],
-        )
+        create_spec = EsxVmConfigSpec(None)
+        create_spec.init_for_create(vm_id, datastore, 64, 2)
+        create_spec._cfg_spec.files = vim.vm.FileInfo(vmPathName="[%s] /" % datastore)
         controller = vim.vm.device.VirtualLsiLogicController(
             key=1,
             sharedBus=vim.vm.device.VirtualSCSIController.Sharing.noSharing,
             busNumber=2,
             unitNumber=-1)
-        self.vm_config._add_device(create_spec, controller)
+        create_spec._add_device(controller)
         backing = vim.vm.device.VirtualDisk.FlatVer2BackingInfo(
             fileName=disk_path,
             diskMode=vim.vm.device.VirtualDiskOption.DiskMode.persistent
@@ -225,18 +219,17 @@ class TestVimClient(unittest.TestCase):
             backing=backing,
             capacityInKB=1024,
         )
-        self.vm_config._create_device(create_spec, disk)
-        return create_spec
+        create_spec._create_device(disk)
+        return create_spec.get_spec()
 
     def get_update_spec(self, vm_info, disk_path):
-        update_spec = vim.vm.ConfigSpec()
+        update_spec = EsxVmConfigSpec(None)
+        update_spec.init_for_update()
         backing = vim.vm.device.VirtualDisk.FlatVer2BackingInfo(
             fileName=disk_path,
             diskMode=vim.vm.device.VirtualDiskOption.DiskMode.persistent
         )
-        controller = \
-            self.vm_config._find_scsi_controller(update_spec,
-                                                 vm_info.config)
+        controller = update_spec._find_scsi_controller(vm_info.config)
         disk = vim.vm.device.VirtualDisk(
             controllerKey=controller.key,
             key=-1,
@@ -244,19 +237,19 @@ class TestVimClient(unittest.TestCase):
             backing=backing,
             capacityInKB=1024,
         )
-        self.vm_config._create_device(update_spec, disk)
-        return update_spec
+        update_spec._create_device(disk)
+        return update_spec.get_spec()
 
     def get_remove_spec(self, vm_info, disk_path):
-        remove_spec = vim.vm.ConfigSpec()
-        devices = self.vm_config._get_devices_from_config(vm_info.config)
+        remove_spec = EsxVmConfigSpec(None)
+        remove_spec.init_for_update()
+        devices = remove_spec._get_devices_from_config(vm_info.config)
         found_device = None
         for device in devices:
-            if isinstance(device, vim.vm.device.VirtualDisk) and \
-                    device.backing.fileName.endswith(disk_path):
+            if isinstance(device, vim.vm.device.VirtualDisk) and device.backing.fileName.endswith(disk_path):
                 found_device = device
-        self.vm_config._remove_device(remove_spec, found_device)
-        return remove_spec
+        remove_spec._remove_device(found_device)
+        return remove_spec.get_spec()
 
     def test_clone_ticket(self):
         ticket = self.vim_client.acquire_clone_ticket()

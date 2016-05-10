@@ -51,6 +51,8 @@ from host.hypervisor.esx import logging_wrappers
 from gen.agent.ttypes import VmCache, PowerState, TaskState
 
 # constants from bora/vim/hostd/private/hostdCommon.h
+from pysdk.invt import GetEnv
+
 HA_DATACENTER_ID = "ha-datacenter"
 
 # constants from bora/vim/hostd/solo/inventory.cpp
@@ -200,6 +202,10 @@ class VimClient(HostClient):
     @lock_with("_vm_cache_lock")
     def remove_update_listener(self, listener):
         self.update_listeners.discard(listener)
+
+    def query_config(self):
+        env_browser = GetEnv(si=self._si)
+        return env_browser.QueryConfigOption("vmx-10", None)
 
     def query_stats(self, entity, metric_names, sampling_interval, start_time, end_time=None):
         """ Returns the host statistics by querying the perf manager on the

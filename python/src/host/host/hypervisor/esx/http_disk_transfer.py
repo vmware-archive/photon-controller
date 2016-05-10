@@ -39,7 +39,6 @@ from host.hypervisor.esx.path_util import os_datastore_path
 from host.hypervisor.esx.path_util import compond_path_join
 from host.hypervisor.esx.path_util import os_metadata_path
 from host.hypervisor.esx.path_util import vmdk_path
-from host.hypervisor.esx.vm_config import EsxVmConfig
 from host.hypervisor.esx.vm_config import EsxVmConfigSpec
 from host.hypervisor.esx.vm_manager import EsxVmManager
 
@@ -199,7 +198,6 @@ class HttpNfcTransferer(HttpTransferer):
         self.lock = threading.Lock()
         self._lease_url_host_name = host_name
         self._image_datastores = image_datastores
-        self._vm_config = EsxVmConfig(self._host_client)
         self._vm_manager = EsxVmManager(self._host_client, None)
 
     def _create_remote_host_client(self, agent_client, host):
@@ -239,8 +237,8 @@ class HttpNfcTransferer(HttpTransferer):
         accessible from this host.
         """
         shadow_vm_id = SHADOW_VM_NAME_PREFIX + str(uuid.uuid4())
-        spec = self._vm_config.create_spec(vm_id=shadow_vm_id, datastore=self._get_shadow_vm_datastore(),
-                                           memory=32, cpus=1)
+        spec = EsxVmConfigSpec(self._host_client.query_config())
+        spec.init_for_create(shadow_vm_id, self._get_shadow_vm_datastore(), 32, 1)
         try:
             self._vm_manager.create_vm(shadow_vm_id, spec)
         except Exception:
@@ -293,7 +291,8 @@ class HttpNfcTransferer(HttpTransferer):
         return response.import_vm_path, response.import_vm_id
 
     def _create_import_vm_spec(self, vm_id, datastore, vm_path):
-        spec = EsxVmConfigSpec(vm_id, "otherGuest", 32, 1, vm_path, None)
+        spec = EsxVmConfigSpec(None)
+        spec.init_for_import(vm_id, vm_path)
         # Just specify a tiny capacity in the spec for now; the eventual vm
         # disk will be based on what is uploaded via the http nfc url.
         spec = self._vm_manager.create_empty_disk(spec, datastore, None, size_mb=1)

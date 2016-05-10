@@ -679,7 +679,7 @@ class HostHandlerTestCase(unittest.TestCase):
         spec = handler.hypervisor.vm_manager.create_vm_spec.return_value
         metadata = handler.hypervisor.image_manager.image_metadata.return_value
         handler.hypervisor.vm_manager.create_vm_spec.assert_called_once_with(
-            vm.id, "ds2", vm.flavor, metadata, mock_env, image_id=image_id)
+            vm.id, "ds2", vm.flavor, metadata, mock_env)
         handler.hypervisor.vm_manager.create_vm.assert_called_once_with(
             vm.id, spec)
         pm.remove_vm_reservation.assert_called_once_with(mock_reservation)
