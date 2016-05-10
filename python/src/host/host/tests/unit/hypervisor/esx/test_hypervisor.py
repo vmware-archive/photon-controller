@@ -85,15 +85,7 @@ class TestUnitEsxHypervisor(unittest.TestCase):
         """Test update listeners"""
         class MyUpdateListener(UpdateListener):
             def __init__(self):
-                self.nw_updated = False
-                self.vm_updated = False
                 self.ds_updated = False
-
-            def networks_updated(self):
-                self.nw_updated = True
-
-            def virtual_machines_updated(self):
-                self.vm_updated = True
 
             def datastores_updated(self):
                 self.ds_updated = True
@@ -113,8 +105,6 @@ class TestUnitEsxHypervisor(unittest.TestCase):
         self.hv = EsxHypervisor(self.agent_config)
         for listener in listeners:
             self.hv.add_update_listener(listener)
-            assert_that(listener.nw_updated, is_(True))
-            assert_that(listener.vm_updated, is_(True))
             assert_that(listener.ds_updated, is_(True))
 
         # Remove listeners.
