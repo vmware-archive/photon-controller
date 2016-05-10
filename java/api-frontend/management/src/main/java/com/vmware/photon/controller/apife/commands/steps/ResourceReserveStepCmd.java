@@ -236,7 +236,6 @@ public class ResourceReserveStepCmd extends StepCommand {
 
     com.vmware.photon.controller.resource.gen.Vm vm = new com.vmware.photon.controller.resource.gen.Vm();
     FlavorEntity flavorEntity = flavorBackend.getEntityById(entity.getFlavorId());
-    vm.setFlavor(flavorEntity.getName());
 
     vm.setId(entity.getId());
     vm.setDisks(attachedDisks);

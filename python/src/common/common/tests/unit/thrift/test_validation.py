@@ -44,12 +44,12 @@ class TestValidation(unittest.TestCase):
         vm.disks = []
         vm.state = State()
 
+        item = QuotaLineItem("test", "test", 1)
+        vm.flavor_info = Flavor(name="flavor", cost=[item])
+
         resource = Resource()
         resource.vm = vm
 
         msg.resources = [resource]
-        self.assert_invalid(msg)
-        item = QuotaLineItem("test", "test", 1)
-        msg.resources[0].vm.flavor = Flavor(name="flavor", cost=[item])
 
         deep_validate(msg)

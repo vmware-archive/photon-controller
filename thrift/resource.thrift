@@ -191,7 +191,6 @@ struct Disk {
 // VM
 struct Vm {
   1: required string id
-  2: required string flavor
   3: required State state
   4: optional Datastore datastore
   5: optional map<string, string> environment
