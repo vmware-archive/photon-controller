@@ -9,6 +9,7 @@
 # warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
 # License for then specific language governing permissions and limitations
 # under the License.
+import csv
 import uuid
 
 import os
@@ -18,12 +19,11 @@ import threading
 import time
 
 from common.lock import locked
+from common.task_runner import TaskRunner, TaskAlreadyRunning
 from host.hypervisor.esx.path_util import VM_FOLDER_NAME_PREFIX
 from host.hypervisor.esx.path_util import IMAGE_FOLDER_NAME_PREFIX
 from host.hypervisor.esx.path_util import vmdk_add_suffix
 from host.hypervisor.esx.path_util import list_top_level_directory
-from host.hypervisor.task_runner import TaskRunner, TaskAlreadyRunning
-from host.hypervisor.vm_utils import parse_vmdk
 
 
 class InvalidStateTransition(Exception):
@@ -110,7 +110,7 @@ class DatastoreImageScannerTaskRunner(TaskRunner):
             vmdk_pathname = os.path.join(vm_dir, vm_file)
             self._logger.info("found vmdk: %s" % vmdk_pathname)
             try:
-                vmdk_dictionary = parse_vmdk(vmdk_pathname)
+                vmdk_dictionary = self._parse_vmdk(vmdk_pathname)
                 # In vmdk of linked clone, parentFileNameHint points to base image.
                 # If there is no file_name_hint, skip it
                 if image_scanner.FILE_NAME_HINT not in vmdk_dictionary:
@@ -123,6 +123,23 @@ class DatastoreImageScannerTaskRunner(TaskRunner):
             break
 
         return image_id, file_name_hint
+
+    @staticmethod
+    def _parse_vmdk(pathname):
+        """
+        :param pathname: the pathname of the vmdk file
+        :returns dictionary: a dictionary containing the key, values
+        """
+        dictionary = dict()
+        with open(pathname, "r") as csvfile:
+            reader = csv.reader(csvfile, delimiter='=',
+                                escapechar='\\',
+                                quoting=csv.QUOTE_ALL)
+            for row in reader:
+                if len(row) != 2:
+                    continue
+                dictionary[row[0]] = row[1]
+        return dictionary
 
     """
     This method scans the image tree for the current datastore starting from the directory "root"

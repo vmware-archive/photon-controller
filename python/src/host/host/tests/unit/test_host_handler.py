@@ -23,6 +23,7 @@ from common.kind import Flavor as HostFlavor
 from common.mode import MODE, Mode
 from common.service_name import ServiceName
 from common.state import State as CommonState
+from common.task_runner import TaskAlreadyRunning
 from concurrent.futures import ThreadPoolExecutor
 from gen.common.ttypes import ServerAddress
 from gen.flavors.ttypes import Flavor
@@ -84,7 +85,6 @@ from host.hypervisor.resources import AgentResourcePlacement
 from host.hypervisor.resources import Disk as HostDisk
 from host.hypervisor.resources import State as VmState
 from host.hypervisor.system import DatastoreInfo
-from host.hypervisor.task_runner import TaskAlreadyRunning
 from host.hypervisor.vm_manager import DiskNotFoundException
 from host.hypervisor.vm_manager import IsoNotAttachedException
 from host.hypervisor.vm_manager import VmAlreadyExistException

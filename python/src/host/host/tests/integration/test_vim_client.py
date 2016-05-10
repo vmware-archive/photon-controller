@@ -171,12 +171,6 @@ class TestVimClient(unittest.TestCase):
             def datastores_updated(self):
                 self._ds_update_count += 1
 
-            def networks_updated(self):
-                pass
-
-            def virtual_machines_updated(self):
-                pass
-
         listener = UpdateListener()
         self.vim_client.add_update_listener(listener)
         # listener always gets updated once on add

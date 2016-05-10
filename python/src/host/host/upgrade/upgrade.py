@@ -11,7 +11,7 @@
 # under the License.
 import logging
 
-from host.hypervisor.task_runner import TaskRunner
+from common.task_runner import TaskRunner
 from host.upgrade.softlink_generator import SoftLinkGenerator
 
 

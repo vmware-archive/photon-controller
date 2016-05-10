@@ -15,11 +15,10 @@ import logging
 import threading
 
 from common.lock import locked
+from common.task_runner import TaskRunner, TaskAlreadyRunning
 from host.hypervisor.esx.path_util import IMAGE_FOLDER_NAME_PREFIX
 from host.hypervisor.esx.path_util import compond_path_join
 from host.hypervisor.esx.path_util import os_datastore_root
-
-from host.hypervisor.task_runner import TaskRunner, TaskAlreadyRunning
 from host.hypervisor.image_scanner import InvalidStateTransition
 from host.hypervisor.image_scanner import waste_time
 

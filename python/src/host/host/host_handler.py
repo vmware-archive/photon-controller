@@ -25,6 +25,7 @@ from common.mode import MODE
 from common.photon_thrift.decorators import error_handler
 from common.photon_thrift.decorators import log_request
 from common.service_name import ServiceName
+from common.task_runner import TaskAlreadyRunning
 from gen.common.ttypes import ServerAddress
 from gen.host import Host
 from gen.host.ttypes import AttachISOResponse
@@ -119,7 +120,6 @@ from host.hypervisor.resources import AgentResourcePlacementList
 from host.hypervisor.resources import Disk
 from host.hypervisor.resources import State
 from host.hypervisor.resources import Vm
-from host.hypervisor.task_runner import TaskAlreadyRunning
 
 from hypervisor.disk_manager import DiskAlreadyExistException
 from hypervisor.vm_manager import DiskNotFoundException

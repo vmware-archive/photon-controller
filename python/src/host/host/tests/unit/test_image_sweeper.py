@@ -16,7 +16,7 @@ from matchers import *  # noqa
 from mock import MagicMock, patch
 
 from host.hypervisor.image_sweeper import DatastoreImageSweeper
-from host.tests.unit.test_task_runner import TestSynchronizer
+from common.tests.unit.test_task_runner import TestSynchronizer
 
 
 class TestException(Exception):

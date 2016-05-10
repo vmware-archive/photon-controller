@@ -31,16 +31,6 @@ class UpdateListener(object):
     __metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod
-    def networks_updated(self):
-        """Gets called when there is a change in the list of networks."""
-        pass
-
-    @abc.abstractmethod
-    def virtual_machines_updated(self):
-        """Gets called when there is a change in the list of VMs."""
-        pass
-
-    @abc.abstractmethod
     def datastores_updated(self):
         """Gets called when tehre is a change in the list of datastores."""
         pass

@@ -13,12 +13,14 @@
 import unittest
 import time
 
+import os
 from matchers import *  # noqa
 from mock import MagicMock, patch
 
-from host.hypervisor.task_runner import TaskTerminated, TaskTimeout
+from common.task_runner import TaskTerminated, TaskTimeout
 from host.hypervisor.image_scanner import DatastoreImageScanner
-from host.tests.unit.test_task_runner import TestSynchronizer
+from host.hypervisor.image_scanner import DatastoreImageScannerTaskRunner
+from common.tests.unit.test_task_runner import TestSynchronizer
 
 
 class TestException(Exception):
@@ -132,6 +134,22 @@ class ImageScannerTestCase(unittest.TestCase):
 
         scan_vms_for_active_images.assert_called_with(self.image_scanner, self.DATASTORE_ID)
         assert_that(scan_for_unused_images.called is False)
+
+    def test_parse_vmdk(self):
+        base_dir = os.path.dirname(__file__)
+        test_dir = os.path.join(base_dir, "test_files", "vm_good")
+        vmdk_pathname = os.path.join(test_dir, 'good.vmdk')
+        dictionary = DatastoreImageScannerTaskRunner._parse_vmdk(vmdk_pathname)
+        assert_that(dictionary["version"] == "1")
+        assert_that(dictionary["encoding"] == "UTF-8")
+        assert_that(dictionary["CID"] == "fffffffe")
+        assert_that(dictionary["parentCID"] == "fffffffe")
+        assert_that(dictionary["isNativeSnapshot"] == "no")
+        assert_that(dictionary["createType"] == "vmfsSparse")
+        assert_that(dictionary["parentFileNameHint"] ==
+                    "/vmfs/volumes/555ca9f8-9f24fa2c-41c1-0025b5414043/"
+                    "image_92e62599-6689-4a8f-ba2a-633914b5048e/92e"
+                    "62599-6689-4a8f-ba2a-633914b5048e.vmdk")
 
     def fake_scan_vms_for_active_images(self, image_scanner, datastore):
         assert_that(image_scanner.datastore_id is self.DATASTORE_ID)

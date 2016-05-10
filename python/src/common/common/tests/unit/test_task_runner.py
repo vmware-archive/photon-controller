@@ -13,9 +13,10 @@
 import threading
 import unittest
 import time
-from host.hypervisor.task_runner import \
-    TaskRunner, TaskTerminated, \
-    TaskTimeout, TaskAlreadyRunning
+from common.task_runner import TaskRunner
+from common.task_runner import TaskTerminated
+from common.task_runner import TaskTimeout
+from common.task_runner import TaskAlreadyRunning
 
 from matchers import *  # noqa
 

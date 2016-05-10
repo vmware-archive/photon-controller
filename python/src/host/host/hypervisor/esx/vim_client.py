@@ -13,10 +13,8 @@
 """Wrapper around VIM API and Service Instance connection"""
 
 import copy
-import hashlib
 import httplib
 import logging
-import ssl
 import sys
 import threading
 import time
@@ -192,8 +190,6 @@ class VimClient(HostClient):
     @lock_with("_vm_cache_lock")
     def add_update_listener(self, listener):
         # Notify the listener immediately since there might have already been some updates.
-        listener.networks_updated()
-        listener.virtual_machines_updated()
         listener.datastores_updated()
         self.update_listeners.add(listener)
 
@@ -703,14 +699,6 @@ class VimClient(HostClient):
         """
         self._vm_name_to_ref.wait_until(vm_id, None, timeout)
 
-    @staticmethod
-    def _hostd_certbytes_digest():
-        cert = ssl.get_server_certificate(("localhost", HOSTD_PORT))
-        certbytes = ssl.PEM_cert_to_DER_cert(cert)
-        m = hashlib.sha1()
-        m.update(certbytes)
-        return m.hexdigest().upper()
-
     @hostd_error_handler
     def _poll_updates(self, timeout=10):
         """Polling on VM updates on host. This call will block caller until
@@ -734,13 +722,6 @@ class VimClient(HostClient):
         object_spec = PC.ObjectSpec(obj=self._find_by_inventory_path(DATASTORE_FOLDER_NAME), selectSet=[traversal_spec])
         return PC.FilterSpec(propSet=[property_spec], objectSet=[object_spec])
 
-    def _network_filter_spec(self):
-        PC = vmodl.query.PropertyCollector
-        traversal_spec = PC.TraversalSpec(name="folderTraversalSpec", type=vim.Folder, path="childEntity", skip=False)
-        property_spec = PC.PropertySpec(type=vim.Network, pathSet=["name"])
-        object_spec = PC.ObjectSpec(obj=self._find_by_inventory_path(NETWORK_FOLDER_NAME), selectSet=[traversal_spec])
-        return PC.FilterSpec(propSet=[property_spec], objectSet=[object_spec])
-
     def _vm_filter_spec(self):
         PC = vmodl.query.PropertyCollector
         traversal_spec = PC.TraversalSpec(name="folderTraversalSpec", type=vim.Folder, path="childEntity", skip=False)
@@ -759,11 +740,10 @@ class VimClient(HostClient):
     def _filter_spec(self):
         PC = vmodl.query.PropertyCollector
         ds_spec = self._datastore_filter_spec()
-        nw_spec = self._network_filter_spec()
         task_spec = self._task_filter_spec()
         vm_spec = self._vm_filter_spec()
-        propSet = ds_spec.propSet + nw_spec.propSet + task_spec.propSet + vm_spec.propSet
-        objectSet = ds_spec.objectSet + nw_spec.objectSet + task_spec.objectSet + vm_spec.objectSet
+        propSet = ds_spec.propSet + task_spec.propSet + vm_spec.propSet
+        objectSet = ds_spec.objectSet + task_spec.objectSet + vm_spec.objectSet
         return PC.FilterSpec(propSet=propSet, objectSet=objectSet)
 
     def _apply_ds_update(self, obj_update):
@@ -790,23 +770,18 @@ class VimClient(HostClient):
             return
 
         ds_updated = False
-        nw_updated = False
-        vm_updated = False
         for filter in update.filterSet:
             for object in filter.objectSet:
                 # Update Vm cache
                 if isinstance(object.obj, vim.VirtualMachine):
                     if object.kind == "enter":
                         # Possible to have 2 enters for one object
-                        vm_updated = True
                         self._add_or_modify_vm_cache(object)
                     elif object.kind == "leave":
                         assert str(object.obj) in self._vm_cache, "%s not in cache for kind leave" % object.obj
-                        vm_updated = True
                         self._remove_vm_cache(object)
                     elif object.kind == "modify":
                         assert str(object.obj) in self._vm_cache, "%s not in cache for kind modify" % object.obj
-                        vm_updated = True
                         self._add_or_modify_vm_cache(object)
                 # Update task cache
                 elif isinstance(object.obj, vim.Task):
@@ -816,9 +791,6 @@ class VimClient(HostClient):
                         self._remove_task_cache(object)
                     elif object.kind == "modify":
                         self._update_task_cache(object)
-                elif isinstance(object.obj, vim.Network):
-                    self._logger.debug("Network changed: %s" % object)
-                    nw_updated = True
                 elif isinstance(object.obj, vim.Datastore):
                     self._logger.debug("Datastore update: %s" % object)
                     updated = self._apply_ds_update(object)
@@ -829,13 +801,6 @@ class VimClient(HostClient):
             if ds_updated:
                 self._logger.debug("datastores updated for listener: %s" % (listener.__class__.__name__))
                 listener.datastores_updated()
-            if nw_updated:
-                self._logger.debug("networks updated for listener: %s" % (listener.__class__.__name__))
-                listener.networks_updated()
-            if vm_updated:
-                self._logger.debug(
-                    "virtual machines updated for listener: %s" % (listener.__class__.__name__))
-                listener.virtual_machines_updated()
 
     def _add_or_modify_vm_cache(self, object):
         # Type of object.obj is vim.VirtualMachine. str(object.obj) is moref

@@ -180,11 +180,3 @@ class EsxDatastoreManager(DatastoreManager, UpdateListener):
     def datastores_updated(self):
         """vim client callback for datastore change"""
         self._initialize_datastores()
-
-    def networks_updated(self):
-        """vim client callback for network change"""
-        pass
-
-    def virtual_machines_updated(self):
-        """vim client callback for vm change"""
-        pass
