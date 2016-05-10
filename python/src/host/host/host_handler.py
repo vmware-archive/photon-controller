@@ -362,12 +362,8 @@ class HostHandler(Host.Iface):
                 self._logger.info("Image already exists. Use existing image.")
 
         # Step 1: Create the base VM create spec.
-        # Doesn't throw
         vm_meta = self._get_create_vm_metadata(vm)
-        # Create CreateVm spec. image_id is only useful in fake agent.
-        spec = self.hypervisor.vm_manager.create_vm_spec(vm.id, datastore_id, vm.flavor, vm_meta, request.environment,
-                                                         image_id=image_id)
-
+        spec = self.hypervisor.vm_manager.create_vm_spec(vm.id, datastore_id, vm.flavor, vm_meta, request.environment)
         self._logger.debug("VM create, done creating vm spec, vm-id: %s" % vm.id)
 
         # Step 2: Add the nics to the create spec of the VM.
@@ -657,22 +653,6 @@ class HostHandler(Host.Iface):
         response.result = CreateDisksResultCode.OK
         pm.remove_disk_reservation(request.reservation)
         return response
-
-    @log_duration
-    def _update_disks(self, spec, info, disks, method):
-        """Attach or Detach disks.
-
-        :type spec: vim.Vm.ConfigSpec
-        :type info: vim.Vm.ConfigInfo, none for new VMs otherwise the VMs current config
-        :type disks list of AttachedDisk
-        :type method: function
-        """
-        if disks is None:
-            return
-        for disk in disks:
-            disk_id = disk.id if hasattr(disk, "id") else disk
-            datastore = self._datastore_for_disk(disk_id)
-            method(spec, datastore, disk_id, info)
 
     @log_duration
     def _create_disks(self, spec, datastore, disks):
@@ -1189,20 +1169,16 @@ class HostHandler(Host.Iface):
         :type request: AttachISORequest
         :rtype AttachISORespose
         """
-        spec = self.hypervisor.vm_manager.update_vm_spec()
-
         try:
             response = AttachISOResponse()
 
             # callee will modify spec
             # result: True if success, or False if fail
             result = self.hypervisor.vm_manager.attach_cdrom(
-                spec,
                 request.iso_file_path,
                 request.vm_id)
 
             if result:
-                self.hypervisor.vm_manager.update_vm(request.vm_id, spec)
                 response.result = AttachISOResultCode.OK
             else:
                 response.result = AttachISOResultCode.ISO_ATTACHED_ERROR
@@ -1239,9 +1215,7 @@ class HostHandler(Host.Iface):
         response = DetachISOResponse()
 
         try:
-            spec = self.hypervisor.vm_manager.update_vm_spec()
-            iso_path = self.hypervisor.vm_manager.disconnect_cdrom(spec, request.vm_id)
-            self.hypervisor.vm_manager.update_vm(request.vm_id, spec)
+            iso_path = self.hypervisor.vm_manager.disconnect_cdrom(request.vm_id)
         except VmNotFoundException:
             return self._error_response(DetachISOResultCode.VM_NOT_FOUND,
                                         "VM %s not found" % request.vm_id, response)

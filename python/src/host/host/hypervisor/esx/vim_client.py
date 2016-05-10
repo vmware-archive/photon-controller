@@ -201,6 +201,10 @@ class VimClient(HostClient):
     def remove_update_listener(self, listener):
         self.update_listeners.discard(listener)
 
+    def query_config(self):
+        env_browser = invt.GetEnv(si=self._si)
+        return env_browser.QueryConfigOption("vmx-10", None)
+
     def query_stats(self, entity, metric_names, sampling_interval, start_time, end_time=None):
         """ Returns the host statistics by querying the perf manager on the
             host for the passed-in metric_names.
