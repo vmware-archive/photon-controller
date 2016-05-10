@@ -38,13 +38,8 @@ class TestHttpTransfer(unittest.TestCase):
         self.image_datastores = ["image_ds", "alt_image_ds"]
         self.vim_client = VimClient(auto_sync=False)
         self.vim_client._content = MagicMock()
-        self.patcher = patch("host.hypervisor.esx.vm_config.GetEnv")
-        self.patcher.start()
         services.register(ServiceName.AGENT_CONFIG, MagicMock())
         self.http_transferer = HttpNfcTransferer(self.vim_client, self.image_datastores)
-
-    def tearDown(self):
-        self.patcher.stop()
 
     @parameterized.expand([
         (True,), (False,)
@@ -97,6 +92,7 @@ class TestHttpTransfer(unittest.TestCase):
 
     def test_create_shadow_vm(self):
         self.http_transferer._vm_manager.create_vm = MagicMock()
+        self.http_transferer._host_client.query_config = MagicMock()
 
         shadow_vm_id = self.http_transferer._create_shadow_vm()
 
@@ -105,7 +101,7 @@ class TestHttpTransfer(unittest.TestCase):
         vm_id_arg, vm_spec_arg = create_vm.call_args_list[0][0]
         self.assertEqual(vm_id_arg, shadow_vm_id)
         self.assertEqual(
-            vm_spec_arg.files.vmPathName,
+            vm_spec_arg.get_spec().files.vmPathName,
             '[] /vmfs/volumes/%s/vm_%s' % (self.image_datastores[0], shadow_vm_id))
 
     def test_delete_shadow_vm(self):
@@ -147,6 +143,7 @@ class TestHttpTransfer(unittest.TestCase):
         destination_datastore = "fake_datastore"
         vm_path = "[] /vmfs/volumes/vsanDatastore/image_fake_image_id"
         create_empty_disk_mock = MagicMock()
+        self.vim_client.query_config = MagicMock()
 
         xferer = self.http_transferer
         xferer._vm_manager.create_empty_disk = create_empty_disk_mock

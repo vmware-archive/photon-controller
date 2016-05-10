@@ -46,6 +46,10 @@ class HostClient(object):
     def remove_update_listener(self, listener):
         pass
 
+    @abc.abstractmethod
+    def query_config(self):
+        pass
+
     """ Vm operations
     """
     @abc.abstractmethod
@@ -203,54 +207,64 @@ class HostClient(object):
         pass
 
 
-class VmConfig(object):
+class VmConfigSpec(object):
 
     @abc.abstractmethod
-    def create_spec(self, vm_id, datastore, memory, cpus, metadata=None, env=None):
+    def init_for_create(self, vm_id, datastore, memory, cpus, metadata=None, env=None):
         pass
 
     @abc.abstractmethod
-    def update_spec(self):
+    def init_for_update(self):
         pass
 
     @abc.abstractmethod
-    def attach_disk(self, cfg_spec, cfg_info, vmdk_file):
+    def init_for_import(self, vm_id, vm_path):
         pass
 
     @abc.abstractmethod
-    def create_empty_disk(self, cfg_spec, datastore, disk_id, size_mb):
+    def get_spec(self):
         pass
 
     @abc.abstractmethod
-    def create_child_disk(self, cfg_spec, datastore, disk_id, parent_id):
+    def attach_disk(self, cfg_info, vmdk_file):
         pass
 
     @abc.abstractmethod
-    def add_nic(self, spec, network):
+    def create_empty_disk(self, datastore, disk_id, size_mb):
         pass
 
     @abc.abstractmethod
-    def add_iso_cdrom(self, cspec, iso_file, cfg_info):
+    def create_child_disk(self, datastore, disk_id, parent_id):
         pass
 
     @abc.abstractmethod
-    def disconnect_iso_cdrom(self, spec, cfg_info):
+    def add_nic(self, network):
         pass
 
     @abc.abstractmethod
-    def detach_disk(self, cfg_spec, cfg_info, disk_id):
+    def add_iso_cdrom(self, iso_file, cfg_info):
         pass
 
     @abc.abstractmethod
-    def get_network_config_int(self, config):
+    def disconnect_iso_cdrom(self, cfg_info):
         pass
 
     @abc.abstractmethod
-    def set_extra_config(self, cfg_spec, options):
+    def detach_disk(self, cfg_info, disk_id):
         pass
 
     @abc.abstractmethod
-    def set_diskuuid_enabled(self, spec, enable):
+    def set_extra_config(self, options):
+        pass
+
+    @abc.abstractmethod
+    def set_diskuuid_enabled(self, enable):
+        pass
+
+
+class VmInfo(object):
+    @abc.abstractmethod
+    def get_networks(self):
         pass
 
 
