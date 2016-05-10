@@ -83,6 +83,7 @@ public class DHCPAgentXenonHost
     startDefaultCoreServicesSynchronously();
 
     // Start all the factories
+    super.startFactory(ReleaseIPService.class, ReleaseIPService::createFactory);
     ServiceHostUtils.startServices(this, FACTORY_SERVICES);
 
     // Start all special services

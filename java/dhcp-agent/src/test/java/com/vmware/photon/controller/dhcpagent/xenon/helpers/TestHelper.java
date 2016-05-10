@@ -29,11 +29,11 @@ import com.google.inject.Injector;
 public class TestHelper {
 
   public static Injector createInjector(String configFileResourcePath, DHCPDriver dhcpDriver)
-  throws BadConfigException {
+      throws BadConfigException {
     DHCPAgentConfig config = ConfigBuilder.build(DHCPAgentConfig.class,
         DHCPAgentConfigTest.class.getResource(configFileResourcePath).getPath());
     return Guice.createInjector(
-            new TestDHCPAgentModule(config, dhcpDriver));
+        new TestDHCPAgentModule(config, dhcpDriver));
   }
 
   /**
