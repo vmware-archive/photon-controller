@@ -150,6 +150,7 @@ public class VmServiceTest {
       assertThat(createdState.name, is(equalTo(testState.name)));
       VmService.State savedState = host.getServiceState(VmService.State.class, createdState.documentSelfLink);
       assertThat(savedState.name, is(equalTo(testState.name)));
+      assertThat(savedState.useVirtualNetwork, is(false));
     }
 
     @Test
@@ -291,6 +292,22 @@ public class VmServiceTest {
       Operation found = dcpRestClient.get(createdState.documentSelfLink);
       VmService.State patchedState = found.getBody(VmService.State.class);
       assertThat(patchedState.vmState, is(patchState.vmState));
+    }
+
+    /**
+     * Verify that updating immutable fields would fail.
+     */
+    @Test
+    public void testPatchImmutableNetworkType() throws Throwable {
+      VmService.State patchState = new VmService.State();
+      patchState.vmState = VmState.STARTED;
+      patchState.useVirtualNetwork = true;
+
+      try {
+        dcpRestClient.patch(createdState.documentSelfLink, patchState);
+      } catch (Throwable t) {
+        assertThat(t.getMessage(), is("useVirtualNetwork is immutable"));
+      }
     }
   }
 

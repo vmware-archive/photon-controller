@@ -115,6 +115,7 @@ public class VmDcpBackend implements VmBackend {
   private final HostBackend hostBackend;
   private final NetworkBackend networkBackend;
   private final TombstoneBackend tombstoneBackend;
+  private final boolean useVirtualNetwork;
 
   @Inject
   public VmDcpBackend(ApiFeXenonRestClient dcpClient, ResourceTicketBackend resourceTicketBackend,
@@ -140,6 +141,9 @@ public class VmDcpBackend implements VmBackend {
     this.hostBackend = hostBackend;
     this.networkBackend = networkBackend;
     this.tombstoneBackend = tombstoneBackend;
+
+    // Simply assume not using virtual network at this time.
+    this.useVirtualNetwork = false;
   }
 
 
@@ -393,12 +397,17 @@ public class VmDcpBackend implements VmBackend {
 
   @Override
   public TaskEntity addTag(String vmId, Tag tag) throws ExternalException {
-    VmService.State vm = getVmById(vmId);
+    VmService.State vm = new VmService.State();
+    vm.tags = getVmById(vmId).tags;
+
     if (vm.tags == null) {
       vm.tags = new HashSet<>();
     }
     vm.tags.add(tag.getValue());
+
     patchVmService(vmId, vm);
+
+    vm = getVmById(vmId);
     VmEntity vmEntity = toVmEntity(vm);
     return taskBackend.createCompletedTask(vmEntity, Operation.ADD_TAG);
   }
@@ -665,6 +674,8 @@ public class VmDcpBackend implements VmBackend {
       vmEntity.setMetadata(vm.metadata);
     }
 
+    vmEntity.setUseVirtualNetwork(vm.useVirtualNetwork);
+
     if (null != vm.networks) {
       vmEntity.setNetworks(vm.networks);
     }
@@ -739,6 +750,7 @@ public class VmDcpBackend implements VmBackend {
       }
     }
 
+    vm.useVirtualNetwork = this.useVirtualNetwork;
     vm.networks = spec.getNetworks();
 
     ImageEntity image = imageBackend.findById(spec.getSourceImageId());

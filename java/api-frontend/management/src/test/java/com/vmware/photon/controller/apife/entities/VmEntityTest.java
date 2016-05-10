@@ -67,6 +67,8 @@ public class VmEntityTest {
     vmEntity.setState(VmState.CREATING);
     vmEntity.setDatastore("datastore-1");
     vmEntity.addIso(iso);
+    vmEntity.setUseVirtualNetwork(true);
+    vmEntity.setNetworks(ImmutableList.of("network-id"));
 
     assertThat(vmEntity.getId(), is("vm-id1"));
     assertThat(vmEntity.getName(), is("vm-1"));
@@ -80,6 +82,8 @@ public class VmEntityTest {
     assertThat(vmEntity.getDefaultGateway(), is("gateway-1"));
     assertThat(vmEntity.getState(), is(VmState.CREATING));
     assertThat(vmEntity.getIsos().get(0), is(iso));
+    assertThat(vmEntity.isUseVirtualNetwork(), is(true));
+    assertThat(vmEntity.getNetworks(), is(ImmutableList.of("network-id")));
   }
 
   @Test

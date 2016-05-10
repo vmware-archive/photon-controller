@@ -386,6 +386,7 @@ public class VmDcpBackendTest {
       assertThat(foundVmEntity.getHost(), is(vm.host));
       assertThat(foundVmEntity.getDatastore(), is(vm.datastore));
       assertThat(foundVmEntity.getDatastoreName(), is(vm.datastoreName));
+      assertThat(foundVmEntity.isUseVirtualNetwork(), is(false));
     }
 
     @Test

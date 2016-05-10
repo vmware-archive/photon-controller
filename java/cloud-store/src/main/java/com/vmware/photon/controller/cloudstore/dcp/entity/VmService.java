@@ -24,6 +24,8 @@ import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
 import com.vmware.photon.controller.common.xenon.upgrade.MigrateDuringUpgrade;
 import com.vmware.photon.controller.common.xenon.upgrade.UpgradeUtils;
+import com.vmware.photon.controller.common.xenon.validation.DefaultBoolean;
+import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
@@ -133,6 +135,13 @@ public class VmService extends StatefulService {
      */
     @NotNull
     public String imageId;
+
+    /**
+     * Indicates whether this VM is created on virtual network.
+     */
+    @DefaultBoolean(false)
+    @Immutable
+    public Boolean useVirtualNetwork;
 
     /**
      * ids of networks to place vm on.

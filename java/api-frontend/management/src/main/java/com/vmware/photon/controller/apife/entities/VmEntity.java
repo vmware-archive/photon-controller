@@ -44,6 +44,8 @@ public class VmEntity extends InfrastructureEntity {
 
   private Map<String, String> metadata = new HashMap<>();
 
+  private boolean useVirtualNetwork;
+
   private List<String> networks = new ArrayList<>();
 
   private String agent;
@@ -149,6 +151,14 @@ public class VmEntity extends InfrastructureEntity {
 
   public void setMetadata(Map<String, String> metadata) {
     this.metadata = metadata;
+  }
+
+  public boolean isUseVirtualNetwork() {
+    return useVirtualNetwork;
+  }
+
+  public void setUseVirtualNetwork(boolean useVirtualNetwork) {
+    this.useVirtualNetwork = useVirtualNetwork;
   }
 
   public List<String> getNetworks() {

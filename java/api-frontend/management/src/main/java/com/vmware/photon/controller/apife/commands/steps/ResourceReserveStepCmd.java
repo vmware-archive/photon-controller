@@ -569,9 +569,13 @@ public class ResourceReserveStepCmd extends StepCommand {
     if (entity.getNetworks() != null && !entity.getNetworks().isEmpty()) {
       for (String network : entity.getNetworks()) {
         ResourceConstraint resourceConstraint = new ResourceConstraint();
-        resourceConstraint.setType(ResourceConstraintType.NETWORK);
-        for (String portGroup : networkBackend.toApiRepresentation(network).getPortGroups()) {
-          resourceConstraint.addToValues(portGroup);
+        if (!entity.isUseVirtualNetwork()) {
+          resourceConstraint.setType(ResourceConstraintType.NETWORK);
+          for (String portGroup : networkBackend.toApiRepresentation(network).getPortGroups()) {
+            resourceConstraint.addToValues(portGroup);
+          }
+        } else {
+          resourceConstraint.setType(ResourceConstraintType.VIRTUAL_NETWORK);
         }
 
         vm.addToResource_constraints(resourceConstraint);
