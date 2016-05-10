@@ -19,6 +19,7 @@ import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.dhcpagent.DHCPAgentConfig;
 import com.vmware.photon.controller.dhcpagent.DHCPAgentConfigTest;
 import com.vmware.photon.controller.dhcpagent.xenon.helpers.TestHelper;
+import com.vmware.photon.controller.dhcpagent.xenon.service.StatusService;
 import com.vmware.xenon.services.common.LuceneDocumentIndexService;
 import com.vmware.xenon.services.common.RootNamespaceService;
 import com.vmware.xenon.services.common.ServiceUriPaths;

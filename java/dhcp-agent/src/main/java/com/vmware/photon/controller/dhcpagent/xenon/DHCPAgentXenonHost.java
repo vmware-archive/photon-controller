@@ -18,10 +18,13 @@ import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.XenonHostInfoProvider;
 import com.vmware.photon.controller.common.xenon.host.AbstractServiceHost;
 import com.vmware.photon.controller.common.xenon.host.XenonConfig;
+import com.vmware.photon.controller.deployer.dcp.ListeningExecutorServiceProvider;
+import com.vmware.photon.controller.dhcpagent.xenon.service.StatusService;
 import com.vmware.xenon.common.ServiceHost;
 import com.vmware.xenon.services.common.LuceneDocumentIndexService;
 import com.vmware.xenon.services.common.RootNamespaceService;
 
+import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import org.slf4j.Logger;
@@ -33,7 +36,7 @@ import org.slf4j.LoggerFactory;
 @Singleton
 public class DHCPAgentXenonHost
     extends AbstractServiceHost
-    implements XenonHostInfoProvider{
+    implements XenonHostInfoProvider, ListeningExecutorServiceProvider {
 
   private static final Logger logger = LoggerFactory.getLogger(DHCPAgentXenonHost.class);
 
@@ -47,14 +50,17 @@ public class DHCPAgentXenonHost
   };
 
   private BuildInfo buildInfo;
+  private final ListeningExecutorService listeningExecutorService;
 
   @Inject
   public DHCPAgentXenonHost(
       XenonConfig xenonConfig,
-      BuildInfo buildInfo) throws Throwable {
+      BuildInfo buildInfo,
+      ListeningExecutorService listeningExecutorService) throws Throwable {
 
     super(xenonConfig);
     this.buildInfo = buildInfo;
+    this.listeningExecutorService = listeningExecutorService;
   }
 
   @Override
@@ -95,5 +101,15 @@ public class DHCPAgentXenonHost
 
   public BuildInfo getBuildInfo() {
     return this.buildInfo;
+  }
+
+  /**
+   * This method gets the host-wide listening executor service instance.
+   *
+   * @return
+   */
+  @Override
+  public ListeningExecutorService getListeningExecutorService() {
+    return listeningExecutorService;
   }
 }

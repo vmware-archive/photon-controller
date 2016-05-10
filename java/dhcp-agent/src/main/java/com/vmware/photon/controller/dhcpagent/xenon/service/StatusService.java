@@ -11,10 +11,11 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package com.vmware.photon.controller.dhcpagent.xenon;
+package com.vmware.photon.controller.dhcpagent.xenon.service;
 
 import com.vmware.photon.controller.common.manifest.BuildInfo;
 import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
+import com.vmware.photon.controller.dhcpagent.xenon.DHCPAgentXenonHost;
 import com.vmware.photon.controller.status.gen.Status;
 import com.vmware.photon.controller.status.gen.StatusType;
 import com.vmware.xenon.common.Operation;
