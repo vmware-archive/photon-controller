@@ -55,6 +55,6 @@ runcmd:
   - sh /tmp/init-network.sh
   - sh /tmp/update-hostname.sh
   - sh /tmp/update-ntp.sh NTP_ENDPOINT
-  - sed -i 's/ExecStart.*/ExecStart=\/bin\/docker -d -s overlay -H tcp:\/\/0.0.0.0:2375 -H unix:\/\/\/var\/run\/docker.sock/g' /lib/systemd/system/docker.service
+  - sed -i 's/ExecStart.*/ExecStart=\/bin\/docker daemon -s overlay -H tcp:\/\/0.0.0.0:2375 -H unix:\/\/\/var\/run\/docker.sock \\/g' /lib/systemd/system/docker.service
   - systemctl enable docker
   - reboot
