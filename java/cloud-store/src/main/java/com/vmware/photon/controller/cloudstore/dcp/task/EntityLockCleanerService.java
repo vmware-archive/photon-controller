@@ -32,12 +32,13 @@ import com.vmware.xenon.common.OperationSequence;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.ServiceDocumentQueryResult;
 import com.vmware.xenon.common.StatefulService;
-import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.QueryTask;
 import com.vmware.xenon.services.common.ServiceUriPaths;
 import static com.vmware.xenon.common.OperationJoin.JoinedCompletionHandler;
+
+import static com.google.common.base.Preconditions.checkState;
 
 import java.net.URI;
 import java.util.Collection;
@@ -90,12 +91,36 @@ public class EntityLockCleanerService extends StatefulService {
   }
 
   /**
+   * Processes a patch request to update the execution stage.
+   *
+   * @param current
+   */
+  protected void handleStartedStage(final State current) {
+    // Handle task sub-state.
+    switch (current.taskState.subStage) {
+      case DELETE_ENTITY_LOCKS_WITH_DELETED_ENTITIES:
+        sendStageProgressPatch(current, com.vmware.xenon.common.TaskState.TaskStage.STARTED,
+            TaskState.SubStage.RELEASE_ENTITY_LOCKS_WITH_INACTIVE_TASKS);
+        break;
+      case RELEASE_ENTITY_LOCKS_WITH_INACTIVE_TASKS:
+        processUnreleasedEntityLocks(current);
+        break;
+      default:
+        throw new IllegalStateException("Un-supported substage" + current.taskState.subStage.toString());
+    }
+  }
+
+  /**
    * Initialize state with defaults.
    *
    * @param current
    */
   private void initializeState(State current) {
     InitializationUtils.initialize(current);
+
+    if (current.taskState.stage == TaskState.TaskStage.STARTED && current.taskState.subStage == null) {
+      current.taskState.subStage = TaskState.SubStage.DELETE_ENTITY_LOCKS_WITH_DELETED_ENTITIES;
+    }
 
     if (current.documentExpirationTimeMicros <= 0) {
       current.documentExpirationTimeMicros =
@@ -110,6 +135,26 @@ public class EntityLockCleanerService extends StatefulService {
    */
   private void validateState(State current) {
     ValidationUtils.validateState(current);
+    switch (current.taskState.stage) {
+      case STARTED:
+        checkState(current.taskState.subStage != null, "subStage cannot be null");
+        switch (current.taskState.subStage) {
+          case DELETE_ENTITY_LOCKS_WITH_DELETED_ENTITIES:
+          case RELEASE_ENTITY_LOCKS_WITH_INACTIVE_TASKS:
+            break;
+          default:
+            checkState(false, "unsupported sub-state: " + current.taskState.subStage.toString());
+        }
+        break;
+      case CREATED:
+      case FAILED:
+      case FINISHED:
+      case CANCELLED:
+        checkState(current.taskState.subStage == null, "Invalid stage update. subStage must be null");
+        break;
+      default:
+        checkState(false, "cannot process patches in state: " + current.taskState.stage.toString());
+    }
   }
 
   /**
@@ -133,6 +178,14 @@ public class EntityLockCleanerService extends StatefulService {
   private void validatePatch(State current, State patch) {
     ValidationUtils.validatePatch(current, patch);
     ValidationUtils.validateTaskStageProgression(current.taskState, patch.taskState);
+
+    if (patch.taskState != null) {
+      if (patch.taskState.subStage != null && current.taskState.subStage != null) {
+        checkState(patch.taskState.subStage.ordinal() >= current.taskState.subStage.ordinal(),
+            "Invalid stage update. 'subStage' cannot move back.");
+      }
+    }
+
   }
 
   /**
@@ -143,7 +196,7 @@ public class EntityLockCleanerService extends StatefulService {
   private void processStart(final State current) {
     try {
       if (!isFinalStage(current)) {
-        sendStageProgressPatch(current, current.taskState.stage);
+        sendStageProgressPatch(current, current.taskState.stage, current.taskState.subStage);
       }
     } catch (Throwable e) {
       failTask(e);
@@ -159,8 +212,7 @@ public class EntityLockCleanerService extends StatefulService {
     try {
       switch (current.taskState.stage) {
         case STARTED:
-          final State finishPatch = new State();
-          processUnreleasedEntityLocks(finishPatch, current);
+          handleStartedStage(current);
           break;
 
         case FAILED:
@@ -179,13 +231,12 @@ public class EntityLockCleanerService extends StatefulService {
     }
   }
 
-
   /**
    * Retrieves the first page of entity locks and kicks of the subsequent processing.
    *
-   * @param finishPatch
+   * @param current
    */
-  private void processUnreleasedEntityLocks(final State finishPatch, final State current) {
+  private void processUnreleasedEntityLocks(final State current) {
     Operation queryEntityLocksPagination = Operation
         .createPost(UriUtils.buildUri(getHost(), ServiceUriPaths.CORE_LOCAL_QUERY_TASKS))
         .setBody(buildEntityLockQuery(current));
@@ -224,13 +275,12 @@ public class EntityLockCleanerService extends StatefulService {
 
             if (entityLockList.size() == 0) {
               ServiceUtils.logInfo(EntityLockCleanerService.this, "No entityLocks found.");
-              finishTask(finishPatch);
+              finishTask(current);
               return;
             }
-
-            releaseUnreleasedEntityLocks(finishPatch, entityLockList);
+            releaseEntityLocksWithInactiveTasks(current, entityLockList);
           } else {
-            finishTask(finishPatch);
+            finishTask(current);
             return;
           }
         })
@@ -261,10 +311,10 @@ public class EntityLockCleanerService extends StatefulService {
     return QueryTask.create(querySpec).setDirect(true);
   }
 
-  private void releaseUnreleasedEntityLocks(final State finishPatch, List<EntityLockService.State> entityLockList) {
+  private void releaseEntityLocksWithInactiveTasks(final State current, List<EntityLockService.State> entityLockList) {
     Collection<Operation> getTaskOperations = getTasksAssociatedWithEntityLocks(entityLockList);
     JoinedCompletionHandler processReleaseEntityLocksHandler =
-        releaseEntityLocksAssociatedWithInactiveTasks(finishPatch);
+        releaseEntityLocksAssociatedWithInactiveTasks(current);
     OperationJoin join = OperationJoin.create(getTaskOperations);
     join.setCompletion(processReleaseEntityLocksHandler);
     join.sendWith(this);
@@ -321,7 +371,7 @@ public class EntityLockCleanerService extends StatefulService {
       if (task.state != TaskService.State.TaskState.QUEUED &&
           task.state != TaskService.State.TaskState.STARTED) {
         ServiceUtils.logSevere(this, "Deleting a dangling EntityLock. Investigation needed on associated " +
-            "TaskService. EntityLock Id: %s, TaskService documentSelfLink:  %s",
+                "TaskService. EntityLock Id: %s, TaskService documentSelfLink:  %s",
             task.entityId,
             task.documentSelfLink);
 
@@ -396,7 +446,7 @@ public class EntityLockCleanerService extends StatefulService {
    */
   private void failTask(Throwable e) {
     ServiceUtils.logSevere(this, e);
-    this.sendSelfPatch(buildPatch(TaskState.TaskStage.FAILED, e));
+    this.sendSelfPatch(buildPatch(TaskState.TaskStage.FAILED, null, e));
   }
 
   /**
@@ -404,13 +454,13 @@ public class EntityLockCleanerService extends StatefulService {
    *
    * @param stage
    */
-  private void sendStageProgressPatch(final State current, TaskState.TaskStage stage) {
+  private void sendStageProgressPatch(final State current, TaskState.TaskStage stage, TaskState.SubStage subStage) {
     if (current.isSelfProgressionDisabled) {
       ServiceUtils.logInfo(this, "Skipping patch handling (disabled)");
       return;
     }
 
-    this.sendSelfPatch(buildPatch(stage, null));
+    this.sendSelfPatch(buildPatch(stage, subStage, null));
   }
 
   /**
@@ -433,16 +483,35 @@ public class EntityLockCleanerService extends StatefulService {
    * @param e
    * @return
    */
-  private State buildPatch(TaskState.TaskStage stage, Throwable e) {
+  private State buildPatch(TaskState.TaskStage stage, TaskState.SubStage subStage, Throwable e) {
     State s = new State();
     s.taskState = new TaskState();
     s.taskState.stage = stage;
+    s.taskState.subStage = subStage;
 
     if (e != null) {
       s.taskState.failure = Utils.toServiceErrorResponse(e);
     }
 
     return s;
+  }
+
+  /**
+   * Service execution stages.
+   */
+  public static class TaskState extends com.vmware.xenon.common.TaskState {
+    /**
+     * The execution substage.
+     */
+    public SubStage subStage;
+
+    /**
+     * Execution sub-stage.
+     */
+    public static enum SubStage {
+      DELETE_ENTITY_LOCKS_WITH_DELETED_ENTITIES,
+      RELEASE_ENTITY_LOCKS_WITH_INACTIVE_TASKS,
+    }
   }
 
   /**
