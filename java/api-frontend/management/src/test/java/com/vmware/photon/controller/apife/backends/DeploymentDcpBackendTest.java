@@ -172,9 +172,6 @@ public class DeploymentDcpBackendTest {
     private DeploymentBackend deploymentBackend;
 
     @Inject
-    private TaskBackend taskBackend;
-
-    @Inject
     private EntityLockBackend entityLockBackend;
 
     @BeforeMethod
@@ -200,7 +197,6 @@ public class DeploymentDcpBackendTest {
       assertThat(taskEntity.getId(), is(notNullValue()));
 
       // verify the task is created correctly
-      taskEntity = taskBackend.findById(taskEntity.getId());
       assertThat(taskEntity.getState(), is(TaskEntity.State.COMPLETED));
       assertThat(taskEntity.getEntityId(), is(notNullValue()));
       assertThat(taskEntity.getEntityKind(), is(Deployment.KIND));
@@ -269,9 +265,6 @@ public class DeploymentDcpBackendTest {
 
     private DeploymentEntity entity;
 
-    @Inject
-    private TaskBackend taskBackend;
-
     private DeploymentDeployOperation config;
 
     @BeforeMethod
@@ -305,7 +298,6 @@ public class DeploymentDcpBackendTest {
       assertThat(taskEntity.getToBeLockedEntityIds().get(0), is(taskEntity.getEntityId()));
 
       // verify the task is created correctly
-      taskEntity = taskBackend.findById(taskEntity.getId());
       assertThat(taskEntity.getState(), is(TaskEntity.State.QUEUED));
       assertThat(taskEntity.getEntityId(), is(notNullValue()));
       assertThat(taskEntity.getEntityKind(), is(Deployment.KIND));
@@ -364,9 +356,6 @@ public class DeploymentDcpBackendTest {
     private DeploymentEntity initialDeploymentEntity;
 
     @Inject
-    private TaskBackend taskBackend;
-
-    @Inject
     private TenantBackend tenantBackend;
 
     @BeforeMethod
@@ -410,7 +399,6 @@ public class DeploymentDcpBackendTest {
           updatedSecurityGroups), is(true));
 
       // Verify the task was created properly
-      taskEntity = taskBackend.findById(taskEntity.getId());
       assertThat(taskEntity.getEntityId(), notNullValue());
       assertThat(taskEntity.getState(), is(TaskEntity.State.QUEUED));
       assertThat(taskEntity.getEntityKind(), is(Deployment.KIND));
@@ -448,7 +436,6 @@ public class DeploymentDcpBackendTest {
           updatedSecurityGroups), is(true));
 
       // Verify the task was created properly
-      taskEntity = taskBackend.findById(taskEntity.getId());
       assertThat(taskEntity.getEntityId(), notNullValue());
       assertThat(taskEntity.getState(), is(TaskEntity.State.QUEUED));
       assertThat(taskEntity.getEntityKind(), is(Deployment.KIND));
@@ -833,10 +820,6 @@ public class DeploymentDcpBackendTest {
 
     private DeploymentEntity entity;
 
-    @Inject
-    private TaskBackend taskBackend;
-
-
     @BeforeMethod
     public void setUp() throws Throwable {
       commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
@@ -864,7 +847,6 @@ public class DeploymentDcpBackendTest {
       assertThat(taskEntity.getId(), is(notNullValue()));
 
       // verify the task is created correctly
-      taskEntity = taskBackend.findById(taskEntity.getId());
       assertThat(taskEntity.getState(), is(TaskEntity.State.COMPLETED));
       assertThat(taskEntity.getOperation(), is(Operation.DELETE_DEPLOYMENT));
       assertThat(taskEntity.getEntityId(), is(notNullValue()));
@@ -924,9 +906,6 @@ public class DeploymentDcpBackendTest {
 
     private DeploymentEntity entity;
 
-    @Inject
-    private TaskBackend taskBackend;
-
     @BeforeMethod
     public void setUp() throws Throwable {
       commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
@@ -956,7 +935,6 @@ public class DeploymentDcpBackendTest {
       assertThat(taskEntity.getToBeLockedEntityIds().get(0), is(taskEntity.getEntityId()));
 
       // verify the task is created correctly
-      taskEntity = taskBackend.findById(taskEntity.getId());
       assertThat(taskEntity.getState(), is(TaskEntity.State.QUEUED));
       assertThat(taskEntity.getOperation(), is(Operation.DESTROY_DEPLOYMENT));
       assertThat(taskEntity.getEntityId(), is(notNullValue()));
@@ -1012,9 +990,6 @@ public class DeploymentDcpBackendTest {
     private DeploymentEntity entity;
     private BasicServiceHost host2;
     private ApiFeXenonRestClient dcpClient2;
-
-    @Inject
-    private TaskBackend taskBackend;
 
     @BeforeMethod
     public void setUp() throws Throwable {
@@ -1092,7 +1067,6 @@ public class DeploymentDcpBackendTest {
       assertThat(taskEntity.getToBeLockedEntityIds().get(0), is(taskEntity.getEntityId()));
 
       // verify the task is created correctly
-      taskEntity = taskBackend.findById(taskEntity.getId());
       assertThat(taskEntity.getState(), is(TaskEntity.State.QUEUED));
       assertThat(taskEntity.getOperation(), is(Operation.INITIALIZE_MIGRATE_DEPLOYMENT));
       assertThat(taskEntity.getEntityId(), is(notNullValue()));
@@ -1115,7 +1089,6 @@ public class DeploymentDcpBackendTest {
       assertThat(taskEntity.getToBeLockedEntityIds().get(0), is(taskEntity.getEntityId()));
 
       // verify the task is created correctly
-      taskEntity = taskBackend.findById(taskEntity.getId());
       assertThat(taskEntity.getState(), is(TaskEntity.State.QUEUED));
       assertThat(taskEntity.getOperation(), is(Operation.FINALIZE_MIGRATE_DEPLOYMENT));
       assertThat(taskEntity.getEntityId(), is(notNullValue()));

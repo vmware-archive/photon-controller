@@ -80,12 +80,14 @@ public class TaskUtils {
       }
     }
 
-    List<Step> steps = new ArrayList<>();
-    taskState.steps
-        .stream()
-        .sorted((taskStepState1, taskStepState2) -> Integer.compare(taskStepState1.sequence, taskStepState2.sequence))
-        .forEach(taskStepState -> steps.add(StepUtils.convertBackEndToFrontEnd(taskStepState)));
-    task.setSteps(steps);
+    if (taskState.steps != null && !taskState.steps.isEmpty()) {
+      List<Step> steps = new ArrayList<>();
+      taskState.steps
+          .stream()
+          .sorted((taskStepState1, taskStepState2) -> Integer.compare(taskStepState1.sequence, taskStepState2.sequence))
+          .forEach(taskStepState -> steps.add(StepUtils.convertBackEndToFrontEnd(taskStepState)));
+      task.setSteps(steps);
+    }
 
     return task;
   }

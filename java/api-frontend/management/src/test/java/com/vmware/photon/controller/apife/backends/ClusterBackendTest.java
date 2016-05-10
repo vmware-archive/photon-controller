@@ -203,8 +203,6 @@ public class ClusterBackendTest {
       assertEquals(createSpecActual.getName(), createSpec.getName());
       assertEquals(createSpecActual.getType(), createSpec.getType());
 
-      // reload taskEntity from storage
-      taskEntity = taskBackend.findById(taskEntity.getId());
       assertEquals(taskEntity.getState(), TaskEntity.State.QUEUED);
 
       // verify that task steps are created successfully
@@ -232,8 +230,6 @@ public class ClusterBackendTest {
       assertEquals(createSpecActual.getName(), createSpec.getName());
       assertEquals(createSpecActual.getType(), createSpec.getType());
 
-      // reload taskEntity from storage
-      taskEntity = taskBackend.findById(taskEntity.getId());
       assertEquals(taskEntity.getState(), TaskEntity.State.QUEUED);
 
       // verify that task steps are created successfully
@@ -262,8 +258,6 @@ public class ClusterBackendTest {
       assertEquals(createSpecActual.getName(), createSpec.getName());
       assertEquals(createSpecActual.getType(), createSpec.getType());
 
-      // reload taskEntity from storage
-      taskEntity = taskBackend.findById(taskEntity.getId());
       assertEquals(taskEntity.getState(), TaskEntity.State.QUEUED);
 
       // verify that task steps are created successfully
@@ -331,8 +325,6 @@ public class ClusterBackendTest {
           .getTransientResource(ClusterDeleteStepCmd.CLUSTER_ID_RESOURCE_KEY);
       assertEquals(clusterIdToDelete, clusterId);
 
-      // reload taskEntity from storage
-      taskEntity = taskBackend.findById(taskEntity.getId());
       assertEquals(taskEntity.getState(), TaskEntity.State.QUEUED);
 
       // verify that task steps are created successfully
@@ -413,9 +405,6 @@ public class ClusterBackendTest {
           .getTransientResource(ClusterResizeStepCmd.RESIZE_OPERATION_RESOURCE_KEY);
       assertEquals(resizeOperationReturned, resizeOperation);
 
-
-      // reload taskEntity from storage
-      taskEntity = taskBackend.findById(taskEntity.getId());
       assertEquals(taskEntity.getState(), TaskEntity.State.QUEUED);
 
       // verify that task steps are created successfully
