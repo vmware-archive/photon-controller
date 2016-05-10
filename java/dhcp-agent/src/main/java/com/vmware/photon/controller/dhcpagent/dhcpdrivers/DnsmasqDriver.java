@@ -22,7 +22,7 @@ import java.io.InputStreamReader;
  */
 public class DnsmasqDriver implements DHCPDriver {
 
-    String utilityPath = "/usr/local/bin/dhcp_release";
+    private String utilityPath = "/usr/local/bin/dhcp_release";
 
     public DnsmasqDriver(String utilityPath) {
         this.utilityPath = utilityPath;

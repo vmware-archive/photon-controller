@@ -24,6 +24,7 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
@@ -49,6 +50,8 @@ public class StatusServiceTest {
   public class HandleGetTest {
 
     private TestEnvironment testEnvironment;
+
+    private ListeningExecutorService listeningExecutorService;
 
     @BeforeMethod
     public void setUp() throws Throwable {
