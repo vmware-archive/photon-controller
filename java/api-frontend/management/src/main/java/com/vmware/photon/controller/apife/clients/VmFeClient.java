@@ -180,32 +180,10 @@ public class VmFeClient {
   public Task createImage(String vmId, ImageCreateSpec imageCreateSpec)
       throws ExternalException {
     TaskEntity taskEntity = vmBackend.prepareVmCreateImage(vmId, imageCreateSpec);
-    boolean hasReplicateImageStep = taskEntity.containsStep(Operation.REPLICATE_IMAGE);
+    Task task = taskBackend.getApiRepresentation(taskEntity);
 
-    // Run CREATE_VM_IMAGE step synchronously
-    Task task = runCreateVmImageSyncSteps(taskEntity, hasReplicateImageStep);
-    if (!TaskEntity.State.STARTED.toString().equals(task.getState())) {
-      logger.error("Run task {} went into state {}", task.getId(), task.getState());
-      return task;
-    }
-    if (!hasReplicateImageStep) {
-      return task;
-    }
-
-    // Run REPLICATE_IMAGE step asynchronously.
-    task = FeClientHelpers.runImageReplicateAsyncSteps(commandFactory, executor, taskBackend, taskEntity);
-    return task;
-  }
-
-  private Task runCreateVmImageSyncSteps(TaskEntity taskEntity, boolean hasReplicateImageStep)
-      throws ExternalException {
-    if (hasReplicateImageStep) {
-      taskEntity.findStep(Operation.REPLICATE_IMAGE).setDisabled(true);
-    }
     TaskCommand command = commandFactory.create(taskEntity);
-    logger.info("Run synchronous task steps for task: {} {}", taskEntity.getId(), taskEntity.getOperation());
-    command.run();
-
-    return taskBackend.getApiRepresentation(taskEntity.getId());
+    executor.submit(command);
+    return task;
   }
 }
