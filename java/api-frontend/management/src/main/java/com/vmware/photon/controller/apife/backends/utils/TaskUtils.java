@@ -80,12 +80,14 @@ public class TaskUtils {
       }
     }
 
-    List<Step> steps = new ArrayList<>();
-    taskState.steps
-        .stream()
-        .sorted((taskStepState1, taskStepState2) -> Integer.compare(taskStepState1.sequence, taskStepState2.sequence))
-        .forEach(taskStepState -> steps.add(StepUtils.convertBackEndToFrontEnd(taskStepState)));
-    task.setSteps(steps);
+    if (taskState.steps != null && !taskState.steps.isEmpty()) {
+      List<Step> steps = new ArrayList<>();
+      taskState.steps
+          .stream()
+          .sorted((taskStepState1, taskStepState2) -> Integer.compare(taskStepState1.sequence, taskStepState2.sequence))
+          .forEach(taskStepState -> steps.add(StepUtils.convertBackEndToFrontEnd(taskStepState)));
+      task.setSteps(steps);
+    }
 
     return task;
   }
@@ -111,16 +113,7 @@ public class TaskUtils {
     taskEntity.setStartedTime(taskState.startedTime);
     taskEntity.setEndTime(taskState.endTime);
     taskEntity.setProjectId(taskState.projectId);
-
-    // Because the api-backend sets operation value that is not defined in
-    // Operation enum, we need this workaround to store the operation value.
-    Operation taskOperation = Operation.parseOperation(taskState.operation);
-    if (taskOperation != null) {
-      taskEntity.setOperation(taskOperation);
-    } else {
-      taskEntity.setOperationString(taskState.operation);
-    }
-
+    taskEntity.setOperation(Operation.parseOperation(taskState.operation));
     taskEntity.setResourceProperties(taskState.resourceProperties);
 
     switch (taskState.state) {
@@ -195,10 +188,7 @@ public class TaskUtils {
     task.setQueuedTime(taskEntity.getQueuedTime());
     task.setStartedTime(taskEntity.getStartedTime());
     task.setEndTime(taskEntity.getEndTime());
-    // Because the api-backend sets operation value that is not defined in
-    // Operation enum, we need this workaround to store the operation value.
-    task.setOperation(taskEntity.getOperation() != null ?
-        taskEntity.getOperation().toString() : taskEntity.getOperationString());
+    task.setOperation(taskEntity.getOperation().toString());
     task.setState(taskEntity.getState().toString());
 
     if (StringUtils.isNotBlank(taskEntity.getResourceProperties())) {
@@ -263,10 +253,8 @@ public class TaskUtils {
     taskServiceState.startedTime = taskEntity.getStartedTime();
     taskServiceState.endTime = taskEntity.getEndTime();
     taskServiceState.projectId = taskEntity.getProjectId();
-    // Because the api-backend sets operation value that is not defined in
-    // Operation enum, we need this workaround to store the operation value.
     taskServiceState.operation = taskEntity.getOperation() != null ?
-        taskEntity.getOperation().getOperation() : taskEntity.getOperationString();
+      taskEntity.getOperation().toString() : null;
 
     switch (taskEntity.getState()) {
       case COMPLETED:

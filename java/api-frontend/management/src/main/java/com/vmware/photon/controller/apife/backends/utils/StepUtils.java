@@ -114,14 +114,7 @@ public class StepUtils {
 
     stepEntity.setTask(taskEntity);
     stepEntity.setSequence(taskStepState.sequence);
-    // Because the api-backend sets operation value that is not defined in
-    // Operation enum, we need this workaround to store the operation value.
-    Operation stepOperation = Operation.parseOperation(taskStepState.operation);
-    if (stepOperation != null) {
-      stepEntity.setOperation(stepOperation);
-    } else {
-      stepEntity.setOperationString(taskStepState.operation);
-    }
+    stepEntity.setOperation(Operation.parseOperation(taskStepState.operation));
     stepEntity.setStartedTime(taskStepState.startedTime);
     stepEntity.setQueuedTime(taskStepState.queuedTime);
     stepEntity.setEndTime(taskStepState.endTime);
@@ -191,10 +184,7 @@ public class StepUtils {
 
     step.setSequence(stepEntity.getSequence());
     step.setState(stepEntity.getState().toString());
-    // Because the api-backend sets operation value that is not defined in
-    // Operation enum, we need this workaround to store the operation value.
-    step.setOperation(stepEntity.getOperation() != null ?
-        stepEntity.getOperation().toString() : stepEntity.getOperationString());
+    step.setOperation(stepEntity.getOperation().toString());
     step.setQueuedTime(stepEntity.getQueuedTime());
     step.setStartedTime(stepEntity.getStartedTime());
     step.setEndTime(stepEntity.getEndTime());
@@ -229,10 +219,7 @@ public class StepUtils {
     TaskService.State.Step taskStepState = new TaskService.State.Step();
 
     taskStepState.sequence = stepEntity.getSequence();
-    // Because the api-backend sets operation value that is not defined in
-    // Operation enum, we need this workaround to store the operation value.
-    taskStepState.operation = stepEntity.getOperation() != null ?
-        stepEntity.getOperation().getOperation() : stepEntity.getOperationString();
+    taskStepState.operation = stepEntity.getOperation().toString();
     taskStepState.queuedTime = stepEntity.getQueuedTime();
     taskStepState.startedTime = stepEntity.getStartedTime();
     taskStepState.endTime = stepEntity.getEndTime();
