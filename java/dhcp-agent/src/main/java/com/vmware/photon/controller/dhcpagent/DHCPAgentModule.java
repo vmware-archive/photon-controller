@@ -15,6 +15,7 @@ package com.vmware.photon.controller.dhcpagent;
 
 import com.vmware.photon.controller.common.manifest.BuildInfo;
 import com.vmware.photon.controller.common.xenon.host.XenonConfig;
+import com.vmware.photon.controller.dhcpagent.dhcpdrivers.DHCPDriver;
 import com.vmware.photon.controller.dhcpagent.xenon.constants.DHCPAgentDefaults;
 
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -40,9 +41,11 @@ public class DHCPAgentModule extends AbstractModule {
    */
   private final ArrayBlockingQueue<Runnable> blockingQueue = new ArrayBlockingQueue<>(DHCPAgentDefaults.CORE_POOL_SIZE);
   private final DHCPAgentConfig dhcpAgentConfig;
+  private final DHCPDriver dhcpDriver;
 
-  public DHCPAgentModule(DHCPAgentConfig dhcpAgentConfig) {
+  public DHCPAgentModule(DHCPAgentConfig dhcpAgentConfig, DHCPDriver dhcpDriver) {
     this.dhcpAgentConfig = dhcpAgentConfig;
+    this.dhcpDriver = dhcpDriver;
   }
 
   @Override
@@ -50,6 +53,7 @@ public class DHCPAgentModule extends AbstractModule {
     bind(BuildInfo.class).toInstance(BuildInfo.get(this.getClass()));
     bind(DHCPAgentConfig.class).toInstance(dhcpAgentConfig);
     bind(XenonConfig.class).toInstance(dhcpAgentConfig.getXenonConfig());
+    bind(DHCPDriver.class).toInstance(dhcpDriver);
     bind(ListeningExecutorService.class)
             .toInstance(MoreExecutors.listeningDecorator(
                     new ThreadPoolExecutor(

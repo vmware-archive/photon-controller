@@ -53,8 +53,7 @@ public class StatusServiceTest {
     @BeforeMethod
     public void setUp() throws Throwable {
       listeningExecutorService = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(1));
-      testEnvironment = TestEnvironment.create(1, listeningExecutorService);
-
+      testEnvironment = TestEnvironment.create(null, 1, listeningExecutorService);
     }
 
     @AfterMethod

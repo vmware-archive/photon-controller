@@ -16,6 +16,7 @@ package com.vmware.photon.controller.dhcpagent.xenon.helpers;
 import com.vmware.photon.controller.common.manifest.BuildInfo;
 import com.vmware.photon.controller.common.xenon.MultiHostEnvironment;
 import com.vmware.photon.controller.common.xenon.host.XenonConfig;
+import com.vmware.photon.controller.dhcpagent.dhcpdrivers.DHCPDriver;
 import com.vmware.photon.controller.dhcpagent.xenon.DHCPAgentXenonHost;
 
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -29,9 +30,8 @@ import java.io.File;
  * TestMachine class hosting a Xenon host.
  */
 public class TestEnvironment extends MultiHostEnvironment<DHCPAgentXenonHost> {
-  private TestEnvironment(int hostCount,
+  private TestEnvironment(DHCPDriver dhcpDriver, int hostCount,
                           ListeningExecutorService listeningExecutorService) throws Throwable {
-
     assertTrue(hostCount > 0);
     hosts = new DHCPAgentXenonHost[hostCount];
     for (int i = 0; i < hosts.length; i++) {
@@ -46,7 +46,7 @@ public class TestEnvironment extends MultiHostEnvironment<DHCPAgentXenonHost> {
 
       BuildInfo buildInfo = BuildInfo.get(this.getClass());
 
-      hosts[i] = new DHCPAgentXenonHost(xenonConfig, buildInfo, listeningExecutorService);
+      hosts[i] = new DHCPAgentXenonHost(xenonConfig, buildInfo, listeningExecutorService, dhcpDriver);
     }
   }
 
@@ -56,10 +56,10 @@ public class TestEnvironment extends MultiHostEnvironment<DHCPAgentXenonHost> {
    * @return
    * @throws Throwable
    */
-  public static TestEnvironment create(int hostCount,
+  public static TestEnvironment create(DHCPDriver dhcpDriver, int hostCount,
                                        ListeningExecutorService listeningExecutorService) throws Throwable {
 
-    TestEnvironment testEnvironment = new TestEnvironment(hostCount, listeningExecutorService);
+    TestEnvironment testEnvironment = new TestEnvironment(dhcpDriver, hostCount, listeningExecutorService);
     testEnvironment.start();
     return testEnvironment;
   }
