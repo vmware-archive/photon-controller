@@ -79,7 +79,7 @@ public class TaskDcpBackend implements TaskBackend, StepBackend {
 
   @Override
   public Task getApiRepresentation(String id) throws TaskNotFoundException {
-    return TaskUtils.convertMiddleEndToFrontEnd(findById(id));
+    return TaskUtils.convertBackEndToFrontEnd(getTaskStateById(id));
   }
 
   @Override
@@ -114,7 +114,6 @@ public class TaskDcpBackend implements TaskBackend, StepBackend {
 
     //currently creation of kubernetes and mesos cluster, their resize and delete pass null entity
     //putting this null check temporarily to allow the switch to dcp backend to work
-    //
     if (entity != null) {
       taskServiceState.entityId = entity.getId();
       taskServiceState.entityKind = entity.getKind();
@@ -176,7 +175,6 @@ public class TaskDcpBackend implements TaskBackend, StepBackend {
 
     //currently creation of kubernetes and mesos cluster, their resize and delete pass null entity
     //putting this null check temporarily to allow the switch to dcp backend to work
-    //
     if (entity != null) {
       taskServiceState.entityId = entity.getId();
       taskServiceState.entityKind = entity.getKind();
@@ -360,13 +358,7 @@ public class TaskDcpBackend implements TaskBackend, StepBackend {
 
   @Override
   public TaskEntity findById(String id) throws TaskNotFoundException {
-    TaskService.State taskState = getTaskStateById(id);
-
-    if (taskState == null) {
-      throw new TaskNotFoundException(id);
-    }
-
-    return TaskUtils.convertBackEndToMiddleEnd(taskState);
+    return TaskUtils.convertBackEndToMiddleEnd(getTaskStateById(id));
   }
 
   @Override
@@ -379,7 +371,7 @@ public class TaskDcpBackend implements TaskBackend, StepBackend {
   @Override
   public StepEntity createQueuedStep(TaskEntity task, Operation operation)
       throws TaskNotFoundException {
-    return createQueuedStep(task, new ArrayList<BaseEntity>(), operation, null);
+    return createQueuedStep(task, new ArrayList<>(), operation, null);
   }
 
   @Override
@@ -484,16 +476,16 @@ public class TaskDcpBackend implements TaskBackend, StepBackend {
     patchTaskService(task.getId(), taskServiceState);
   }
 
-  private TaskService.State getTaskStateById(String taskId) {
+  private TaskService.State getTaskStateById(String taskId) throws TaskNotFoundException {
     com.vmware.xenon.common.Operation result;
     try {
       result = dcpClient.get(TaskServiceFactory.SELF_LINK + "/" + taskId);
     } catch (DocumentNotFoundException documentNotFoundException) {
-      return null;
+      throw new TaskNotFoundException(taskId);
     }
 
     if (result == null) {
-      return null;
+      throw new TaskNotFoundException(taskId);
     }
 
     return result.getBody(TaskService.State.class);
@@ -574,7 +566,6 @@ public class TaskDcpBackend implements TaskBackend, StepBackend {
     taskEntity.addStep(stepEntity);
 
     //populate entity with transient values that are not persisted in dcp document.
-
     if (entities != null) {
       for (BaseEntity entity : entities) {
         stepEntity.addTransientResourceEntity(entity);
