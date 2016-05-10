@@ -94,8 +94,7 @@ class VmManager(object):
         pass
 
     @abc.abstractmethod
-    def create_vm_spec(self, vm_id, datastore, flavor, vm_meta=None, env={},
-                       **kwargs):
+    def create_vm_spec(self, vm_id, datastore, flavor, vm_meta=None, env={}):
         """Create a new VM create spec.
         The return value object is opaque and not to be interpreted by the
         caller. It is to be passed on to other methods of concrete
@@ -105,19 +104,7 @@ class VmManager(object):
         :type datastore: str
         :type flavor: Flavor
         :type vm_meta: vm metadata object
-        :param kwargs: Additional arguments
         :return: the VM's create spec for esx
-        """
-        pass
-
-    @abc.abstractmethod
-    def update_vm_spec(self):
-        """Create a default update spec object for the VM.
-        The return value object is opaque and not to be interpreted by the
-        caller. It is to be passed on to other methods of concrete
-        implementation classes, supporting chaining
-
-        :rtype The VM update spec.
         """
         pass
 
@@ -245,7 +232,7 @@ class VmManager(object):
         pass
 
     @abc.abstractmethod
-    def attach_cdrom(self, spec, iso_file, vm_id):
+    def attach_cdrom(self, iso_file, vm_id):
         """ Attach an iso file to the VM
 
         :param spec: the vm update spec
@@ -258,11 +245,9 @@ class VmManager(object):
         pass
 
     @abc.abstractmethod
-    def disconnect_cdrom(self, spec, vm_id):
+    def disconnect_cdrom(self, vm_id):
         """ Disconnect cdrom device from VM
 
-        :param spec: the vm update spec
-        :type spec: opaque config spec
         :param vm_id: id of vm to detach the iso from
         :type vm_id: str
         :returns : path to the iso detached
@@ -275,15 +260,6 @@ class VmManager(object):
         """ Remove an iso file
         :param iso_ds_path: the path to the iso file to remove
         :type iso_ds_path: str
-        """
-        pass
-
-    @abc.abstractmethod
-    def set_guestinfo_ip(self, spec, info, network_spec):
-        """ Set the guest info network properties of the VM
-        : type spec: The opaque VM update spec.
-        : type info: The VMs current config info
-        : type NetworkConnectionSpec: the ip address spec
         """
         pass
 

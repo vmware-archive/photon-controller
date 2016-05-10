@@ -47,13 +47,14 @@ def normalize_datastore(vim_client, datastore):
 
 # create import spec
 def create_import_spec(image_id, upload_folder):
-    vm_spec = EsxVmConfigSpec(image_id, "otherGuest", 32, 1, upload_folder, None)
+    vm_spec = EsxVmConfigSpec(None)
+    vm_spec.init_for_import(image_id, upload_folder)
     disk_controller = vim.vm.device.VirtualLsiLogicController(
         key=0,
         sharedBus=vim.vm.device.VirtualSCSIController.Sharing.noSharing,
         busNumber=0,
         unitNumber=-1)
-    vm_spec.deviceChange.append(vim.vm.device.VirtualDeviceSpec(
+    vm_spec.get_spec().deviceChange.append(vim.vm.device.VirtualDeviceSpec(
                 device=disk_controller,
                 operation=vim.vm.device.VirtualDeviceSpec.Operation.add))
     disk_backing = vim.vm.device.VirtualDisk.FlatVer2BackingInfo(
@@ -67,7 +68,7 @@ def create_import_spec(image_id, upload_folder):
         unitNumber=-1,
         backing=disk_backing)
     disk_spec.capacityInKB = 1024 * 1024
-    vm_spec.deviceChange.append(vim.vm.device.VirtualDeviceSpec(
+    vm_spec.get_spec().deviceChange.append(vim.vm.device.VirtualDeviceSpec(
         device=disk_spec,
         fileOperation=vim.vm.device.VirtualDeviceSpec.FileOperation.create,
         operation=vim.vm.device.VirtualDeviceSpec.Operation.add))

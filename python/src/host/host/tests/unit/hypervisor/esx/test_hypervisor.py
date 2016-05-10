@@ -52,12 +52,11 @@ class TestUnitEsxHypervisor(unittest.TestCase):
         content_mock.about = about_mock
         return content_mock
 
-    @patch("host.hypervisor.esx.vm_config.GetEnv")
     @patch("host.hypervisor.esx.image_manager.EsxImageManager.monitor_for_cleanup")
     @patch.object(VimClient, "_acquire_local_credentials")
     @patch.object(VimClient, "_poll_updates")
     @patch("pysdk.connect.Connect")
-    def test_config(self, connect_mock, update_mock, creds_mock, monitor_mock, get_env_mock):
+    def test_config(self, connect_mock, update_mock, creds_mock, monitor_mock):
 
         si_mock = MagicMock(name="si_mock")
         si_mock.RetrieveContent = self._retrieve_content
@@ -78,12 +77,11 @@ class TestUnitEsxHypervisor(unittest.TestCase):
 
         assert_that(update_mock.called, is_(True))
 
-    @patch("host.hypervisor.esx.vm_config.GetEnv")
     @patch("host.hypervisor.esx.image_manager.EsxImageManager.monitor_for_cleanup")
     @patch.object(VimClient, "_acquire_local_credentials")
     @patch.object(VimClient, "_poll_updates")
     @patch("pysdk.connect.Connect")
-    def test_listener(self, connect_mock, update_mock, creds_mock, monitor_mock, get_env_mock):
+    def test_listener(self, connect_mock, update_mock, creds_mock, monitor_mock):
         """Test update listeners"""
         class MyUpdateListener(UpdateListener):
             def __init__(self):
