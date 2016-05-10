@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.dhcpagent;
 
 import com.vmware.photon.controller.common.config.BadConfigException;
+import com.vmware.photon.controller.dhcpagent.dhcpdrivers.DnsmasqDriver;
 import com.vmware.photon.controller.dhcpagent.xenon.helpers.TestHelper;
 
 import com.google.inject.Injector;
@@ -42,7 +43,8 @@ public class DHCPAgentModuleTest {
 
     @BeforeMethod
     public void setUp() throws BadConfigException {
-      injector = TestHelper.createInjector("/config.yml");
+      injector = TestHelper.createInjector("/config.yml", new DnsmasqDriver(
+              DHCPAgentModuleTest.class.getResource("/dhcp_release.sh").getPath()));
     }
 
     @Test

@@ -18,6 +18,7 @@ import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.dhcpagent.DHCPAgentConfig;
 import com.vmware.photon.controller.dhcpagent.DHCPAgentConfigTest;
+import com.vmware.photon.controller.dhcpagent.dhcpdrivers.DnsmasqDriver;
 import com.vmware.photon.controller.dhcpagent.xenon.helpers.TestHelper;
 import com.vmware.photon.controller.dhcpagent.xenon.service.StatusService;
 import com.vmware.xenon.services.common.LuceneDocumentIndexService;
@@ -25,11 +26,13 @@ import com.vmware.xenon.services.common.RootNamespaceService;
 import com.vmware.xenon.services.common.ServiceUriPaths;
 
 import com.google.inject.Injector;
+
 import org.apache.commons.io.FileUtils;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
@@ -48,8 +51,8 @@ public class DHCPAgentXenonHostTest {
 
   private static File storageDir;
 
-
   private static final String configFilePath = "/config.yml";
+
   /**
    * Maximum time to wait for all factories to become available.
    */
@@ -66,7 +69,7 @@ public class DHCPAgentXenonHostTest {
   /**
    * Dummy test case to make Intellij recognize this as a test class.
    */
-  @Test
+  @Test(enabled = false)
   private void dummy() {
   }
 
@@ -85,7 +88,8 @@ public class DHCPAgentXenonHostTest {
 
     @BeforeMethod
     public void setUp() throws Exception {
-      injector = TestHelper.createInjector(configFilePath);
+      injector = TestHelper.createInjector(configFilePath, new DnsmasqDriver(
+              DHCPAgentXenonHostTest.class.getResource("/dhcp_release.sh").getPath()));
     }
 
     @AfterMethod
@@ -128,7 +132,8 @@ public class DHCPAgentXenonHostTest {
   public class StartTest {
     @BeforeMethod
     private void setUp() throws Throwable {
-      injector = TestHelper.createInjector(configFilePath);
+      injector = TestHelper.createInjector(configFilePath, new DnsmasqDriver(
+              DHCPAgentXenonHostTest.class.getResource("/dhcp_release.sh").getPath()));
       host = injector.getInstance(DHCPAgentXenonHost.class);
     }
 
@@ -173,8 +178,8 @@ public class DHCPAgentXenonHostTest {
 
     @BeforeMethod
     private void setUp() throws Throwable {
-      injector = TestHelper.createInjector(configFilePath);
-
+      injector = TestHelper.createInjector(configFilePath, new DnsmasqDriver(
+              DHCPAgentXenonHostTest.class.getResource("/dhcp_release.sh").getPath()));
       host = injector.getInstance(DHCPAgentXenonHost.class);
       host.start();
       ServiceHostUtils.waitForServiceAvailability(host, SERVICES_STARTUP_TIMEOUT, serviceSelfLinks.clone());

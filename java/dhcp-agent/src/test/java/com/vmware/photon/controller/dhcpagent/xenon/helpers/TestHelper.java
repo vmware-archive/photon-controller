@@ -17,6 +17,7 @@ import com.vmware.photon.controller.common.config.BadConfigException;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.dhcpagent.DHCPAgentConfig;
 import com.vmware.photon.controller.dhcpagent.DHCPAgentConfigTest;
+import com.vmware.photon.controller.dhcpagent.dhcpdrivers.DHCPDriver;
 
 import com.google.inject.Guice;
 import com.google.inject.Inject;
@@ -27,12 +28,12 @@ import com.google.inject.Injector;
  */
 public class TestHelper {
 
-  public static Injector createInjector(String configFileResourcePath)
-      throws BadConfigException {
+  public static Injector createInjector(String configFileResourcePath, DHCPDriver dhcpDriver)
+  throws BadConfigException {
     DHCPAgentConfig config = ConfigBuilder.build(DHCPAgentConfig.class,
         DHCPAgentConfigTest.class.getResource(configFileResourcePath).getPath());
     return Guice.createInjector(
-        new TestDHCPAgentModule(config));
+            new TestDHCPAgentModule(config, dhcpDriver));
   }
 
   /**

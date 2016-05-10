@@ -19,6 +19,7 @@ import com.vmware.photon.controller.common.xenon.XenonHostInfoProvider;
 import com.vmware.photon.controller.common.xenon.host.AbstractServiceHost;
 import com.vmware.photon.controller.common.xenon.host.XenonConfig;
 import com.vmware.photon.controller.deployer.dcp.ListeningExecutorServiceProvider;
+import com.vmware.photon.controller.dhcpagent.dhcpdrivers.DHCPDriver;
 import com.vmware.photon.controller.dhcpagent.xenon.service.StatusService;
 import com.vmware.xenon.common.ServiceHost;
 import com.vmware.xenon.services.common.LuceneDocumentIndexService;
@@ -51,16 +52,18 @@ public class DHCPAgentXenonHost
 
   private BuildInfo buildInfo;
   private final ListeningExecutorService listeningExecutorService;
+  private DHCPDriver dhcpDriver;
 
   @Inject
   public DHCPAgentXenonHost(
       XenonConfig xenonConfig,
       BuildInfo buildInfo,
-      ListeningExecutorService listeningExecutorService) throws Throwable {
-
+      ListeningExecutorService listeningExecutorService,
+      DHCPDriver dhcpDriver) throws Throwable {
     super(xenonConfig);
     this.buildInfo = buildInfo;
     this.listeningExecutorService = listeningExecutorService;
+    this.dhcpDriver = dhcpDriver;
   }
 
   @Override
@@ -101,6 +104,10 @@ public class DHCPAgentXenonHost
 
   public BuildInfo getBuildInfo() {
     return this.buildInfo;
+  }
+
+  public DHCPDriver getDHCPDriver() {
+    return this.dhcpDriver;
   }
 
   /**
