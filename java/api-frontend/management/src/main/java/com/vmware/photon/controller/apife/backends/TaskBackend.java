@@ -75,7 +75,5 @@ public interface TaskBackend {
 
   TaskEntity findById(String id) throws TaskNotFoundException;
 
-  TaskEntity getById(String id);
-
   void setTaskResourceProperties(TaskEntity task, String properties) throws TaskNotFoundException;
 }
