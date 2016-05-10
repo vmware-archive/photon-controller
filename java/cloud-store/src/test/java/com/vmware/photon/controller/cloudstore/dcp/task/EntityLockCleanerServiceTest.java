@@ -22,6 +22,7 @@ import com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment;
 import com.vmware.photon.controller.common.xenon.BasicServiceHost;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.BadRequestException;
+import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.TaskState;
@@ -32,6 +33,7 @@ import static com.vmware.photon.controller.cloudstore.dcp.entity.TaskService.Sta
 import static com.vmware.photon.controller.cloudstore.dcp.entity.TaskService.State.TaskState.QUEUED;
 import static com.vmware.photon.controller.cloudstore.dcp.entity.TaskService.State.TaskState.STARTED;
 
+import org.hamcrest.Matchers;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
@@ -42,6 +44,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.core.IsNull.notNullValue;
 import static org.hamcrest.core.IsNull.nullValue;
+import static org.mockito.Mockito.spy;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.fail;
 
@@ -62,6 +65,16 @@ public class EntityLockCleanerServiceTest {
 
   private EntityLockCleanerService.State buildValidStartupState() {
     EntityLockCleanerService.State state = new EntityLockCleanerService.State();
+    state.isSelfProgressionDisabled = true;
+    return state;
+  }
+
+  private EntityLockCleanerService.State buildValidStartupState(TaskState.TaskStage stage,
+                                                                EntityLockCleanerService.TaskState.SubStage subStage) {
+    EntityLockCleanerService.State state = new EntityLockCleanerService.State();
+    state.taskState = new EntityLockCleanerService.TaskState();
+    state.taskState.stage = stage;
+    state.taskState.subStage = subStage;
     state.isSelfProgressionDisabled = true;
     return state;
   }
@@ -156,7 +169,7 @@ public class EntityLockCleanerServiceTest {
       assertThat(startOp.getStatusCode(), is(200));
 
       EntityLockCleanerService.State savedState = host.getServiceState(EntityLockCleanerService.State.class);
-      if (fieldObj.getType().equals(TaskState.class)) {
+      if (fieldObj.getType().equals(EntityLockCleanerService.TaskState.class)) {
         assertThat(Utils.toJson(fieldObj.get(savedState)), is(Utils.toJson(value)));
       } else {
         assertThat(fieldObj.get(savedState), is(value));
@@ -165,15 +178,47 @@ public class EntityLockCleanerServiceTest {
 
     @DataProvider(name = "AutoInitializedFields")
     public Object[][] getAutoInitializedFieldsParams() {
-      TaskState state = new TaskState();
-      state.stage = TaskState.TaskStage.STARTED;
+      EntityLockCleanerService.TaskState taskState = new EntityLockCleanerService.TaskState();
+      taskState.stage = TaskState.TaskStage.STARTED;
+      taskState.subStage = EntityLockCleanerService.TaskState.SubStage.DELETE_ENTITY_LOCKS_WITH_DELETED_ENTITIES;
 
       return new Object[][]{
-          {"taskState", state},
+          {"taskState", taskState},
           {"isSelfProgressionDisabled", false},
           {"danglingEntityLocks", 0},
           {"releasedEntityLocks", 0}
       };
+    }
+
+    @DataProvider(name = "targetStages")
+    public Object[][] getTargetStages() {
+      return new Object[][]{
+          {TaskState.TaskStage.STARTED,
+              EntityLockCleanerService.TaskState.SubStage.DELETE_ENTITY_LOCKS_WITH_DELETED_ENTITIES},
+          {TaskState.TaskStage.STARTED,
+              EntityLockCleanerService.TaskState.SubStage.RELEASE_ENTITY_LOCKS_WITH_INACTIVE_TASKS},
+          {TaskState.TaskStage.FINISHED, null},
+          {TaskState.TaskStage.FAILED, null},
+          {TaskState.TaskStage.CANCELLED, null}
+      };
+    }
+
+    /**
+     * Test that start stage is not changed on service start up. This is expected behaviour when
+     * initial state is STARTED, FINISHED or FAILED.
+     *
+     * @throws Throwable
+     */
+    @Test(dataProvider = "targetStages")
+    public void testStartStageIsNotChanged(TaskState.TaskStage targetStage,
+                                           EntityLockCleanerService.TaskState.SubStage targetSubStage) throws
+        Throwable {
+      host.startServiceSynchronously(service, buildValidStartupState(targetStage, targetSubStage));
+
+      EntityLockCleanerService.State savedState = host.getServiceState(EntityLockCleanerService.State.class);
+      assertThat(savedState.taskState, Matchers.notNullValue());
+      assertThat(savedState.taskState.stage, is(targetStage));
+      assertThat(savedState.taskState.subStage, is(targetSubStage));
     }
 
     /**
@@ -234,7 +279,6 @@ public class EntityLockCleanerServiceTest {
 
       service = new EntityLockCleanerService();
       serviceState = buildValidStartupState();
-      host.startServiceSynchronously(service, serviceState);
     }
 
     @AfterMethod
@@ -253,6 +297,8 @@ public class EntityLockCleanerServiceTest {
      */
     @Test
     public void testInvalidPatch() throws Throwable {
+      host.startServiceSynchronously(service, serviceState);
+
       Operation op = Operation
           .createPatch(UriUtils.buildUri(host, BasicServiceHost.SERVICE_URI, null))
           .setBody("invalid body");
@@ -265,6 +311,179 @@ public class EntityLockCleanerServiceTest {
             startsWith("Unparseable JSON body: java.lang.IllegalStateException: Expected BEGIN_OBJECT"));
       }
     }
+
+    /**
+     * Test patch operation with invalid stage update.
+     *
+     * @param startStage
+     * @param startSubStage
+     * @param targetStage
+     * @param targetSubStage
+     * @throws Throwable
+     */
+    @Test(dataProvider = "invalidStageTransitions")
+    public void testInvalidStageUpdate(
+        final EntityLockCleanerService.TaskState.TaskStage startStage,
+        final EntityLockCleanerService.TaskState.SubStage startSubStage,
+        final EntityLockCleanerService.TaskState.TaskStage targetStage,
+        final EntityLockCleanerService.TaskState.SubStage targetSubStage)
+        throws Throwable {
+      host.startServiceSynchronously(service, buildValidStartupState(startStage, startSubStage));
+
+      EntityLockCleanerService.State patchState = new EntityLockCleanerService.State();
+      patchState.taskState = new EntityLockCleanerService.TaskState();
+      patchState.taskState.stage = targetStage;
+      patchState.taskState.subStage = targetSubStage;
+
+      Operation patchOp = spy(Operation
+          .createPatch(UriUtils.buildUri(host, BasicServiceHost.SERVICE_URI, null))
+          .setBody(patchState));
+
+      try {
+        host.sendRequestAndWait(patchOp);
+      } catch (XenonRuntimeException ex) {
+      }
+
+      EntityLockCleanerService.State savedState = host.getServiceState(EntityLockCleanerService.State.class);
+      assertThat(savedState.taskState.stage, is(startStage));
+      assertThat(savedState.taskState.subStage, is(startSubStage));
+    }
+
+    @DataProvider(name = "invalidStageTransitions")
+    public Object[][] getInvalidStageTransitions() throws Throwable {
+      return new Object[][]{
+          {EntityLockCleanerService.TaskState.TaskStage.STARTED,
+              EntityLockCleanerService.TaskState.SubStage.DELETE_ENTITY_LOCKS_WITH_DELETED_ENTITIES,
+              EntityLockCleanerService.TaskState.TaskStage.FINISHED,
+              EntityLockCleanerService.TaskState.SubStage.DELETE_ENTITY_LOCKS_WITH_DELETED_ENTITIES},
+          {EntityLockCleanerService.TaskState.TaskStage.STARTED,
+              EntityLockCleanerService.TaskState.SubStage.DELETE_ENTITY_LOCKS_WITH_DELETED_ENTITIES,
+              null,
+              EntityLockCleanerService.TaskState.SubStage.DELETE_ENTITY_LOCKS_WITH_DELETED_ENTITIES},
+          {EntityLockCleanerService.TaskState.TaskStage.STARTED,
+              EntityLockCleanerService.TaskState.SubStage.DELETE_ENTITY_LOCKS_WITH_DELETED_ENTITIES,
+              TaskState.TaskStage.CREATED,
+              EntityLockCleanerService.TaskState.SubStage.DELETE_ENTITY_LOCKS_WITH_DELETED_ENTITIES},
+          {EntityLockCleanerService.TaskState.TaskStage.STARTED,
+              EntityLockCleanerService.TaskState.SubStage.RELEASE_ENTITY_LOCKS_WITH_INACTIVE_TASKS,
+              null,
+              EntityLockCleanerService.TaskState.SubStage.RELEASE_ENTITY_LOCKS_WITH_INACTIVE_TASKS},
+
+          {EntityLockCleanerService.TaskState.TaskStage.FINISHED, null,
+              EntityLockCleanerService.TaskState.TaskStage.CREATED, null},
+          {EntityLockCleanerService.TaskState.TaskStage.FINISHED, null,
+              EntityLockCleanerService.TaskState.TaskStage.STARTED, null},
+          {EntityLockCleanerService.TaskState.TaskStage.FINISHED, null,
+              EntityLockCleanerService.TaskState.TaskStage.STARTED,
+              EntityLockCleanerService.TaskState.SubStage.RELEASE_ENTITY_LOCKS_WITH_INACTIVE_TASKS},
+          {EntityLockCleanerService.TaskState.TaskStage.FINISHED, null,
+              EntityLockCleanerService.TaskState.TaskStage.FINISHED, null},
+          {EntityLockCleanerService.TaskState.TaskStage.FINISHED, null,
+              EntityLockCleanerService.TaskState.TaskStage.FINISHED,
+              EntityLockCleanerService.TaskState.SubStage.RELEASE_ENTITY_LOCKS_WITH_INACTIVE_TASKS},
+          {EntityLockCleanerService.TaskState.TaskStage.FINISHED, null,
+              EntityLockCleanerService.TaskState.TaskStage.FAILED, null},
+          {EntityLockCleanerService.TaskState.TaskStage.FINISHED, null,
+              EntityLockCleanerService.TaskState.TaskStage.FAILED,
+              EntityLockCleanerService.TaskState.SubStage.RELEASE_ENTITY_LOCKS_WITH_INACTIVE_TASKS},
+          {EntityLockCleanerService.TaskState.TaskStage.FINISHED, null,
+              EntityLockCleanerService.TaskState.TaskStage.CANCELLED, null},
+          {EntityLockCleanerService.TaskState.TaskStage.FINISHED, null, null, null},
+
+          {EntityLockCleanerService.TaskState.TaskStage.FAILED, null,
+              EntityLockCleanerService.TaskState.TaskStage.CREATED, null},
+          {EntityLockCleanerService.TaskState.TaskStage.FAILED, null,
+              EntityLockCleanerService.TaskState.TaskStage.STARTED, null},
+          {EntityLockCleanerService.TaskState.TaskStage.FAILED, null,
+              EntityLockCleanerService.TaskState.TaskStage.STARTED,
+              EntityLockCleanerService.TaskState.SubStage.RELEASE_ENTITY_LOCKS_WITH_INACTIVE_TASKS},
+          {EntityLockCleanerService.TaskState.TaskStage.FAILED, null,
+              EntityLockCleanerService.TaskState.TaskStage.FINISHED, null},
+          {EntityLockCleanerService.TaskState.TaskStage.FAILED, null,
+              EntityLockCleanerService.TaskState.TaskStage.FINISHED,
+              EntityLockCleanerService.TaskState.SubStage.RELEASE_ENTITY_LOCKS_WITH_INACTIVE_TASKS},
+          {EntityLockCleanerService.TaskState.TaskStage.FAILED, null,
+              EntityLockCleanerService.TaskState.TaskStage.FAILED, null},
+          {EntityLockCleanerService.TaskState.TaskStage.FAILED, null,
+              EntityLockCleanerService.TaskState.TaskStage.FAILED,
+              EntityLockCleanerService.TaskState.SubStage.RELEASE_ENTITY_LOCKS_WITH_INACTIVE_TASKS},
+          {EntityLockCleanerService.TaskState.TaskStage.FAILED, null,
+              EntityLockCleanerService.TaskState.TaskStage.CANCELLED, null},
+          {EntityLockCleanerService.TaskState.TaskStage.FAILED, null, null, null},
+      };
+    }
+
+    /**
+     * Test that we can "restart" execution of the current stage by sending a self-patch with the same stage.
+     * Test that we can move to the "next" stage by sending a self-patch with a different stage.
+     *
+     * @param startStage
+     * @param startSubStage
+     * @param targetStage
+     * @param targetSubStage
+     * @throws Throwable
+     */
+    @Test(dataProvider = "stageTransitions")
+    public void testValidUpdateStage(final EntityLockCleanerService.TaskState.TaskStage startStage,
+                                     final EntityLockCleanerService.TaskState.SubStage startSubStage,
+                                     final EntityLockCleanerService.TaskState.TaskStage targetStage,
+                                     final EntityLockCleanerService.TaskState.SubStage targetSubStage)
+        throws Throwable {
+      host.startServiceSynchronously(service, buildValidStartupState(startStage, startSubStage));
+
+      EntityLockCleanerService.State patchState = new EntityLockCleanerService.State();
+      patchState.taskState = new EntityLockCleanerService.TaskState();
+      patchState.taskState.stage = targetStage;
+      patchState.taskState.subStage = targetSubStage;
+
+      Operation patchOp = spy(Operation
+          .createPatch(UriUtils.buildUri(host, BasicServiceHost.SERVICE_URI, null))
+          .setBody(patchState));
+
+      Operation resultOp = host.sendRequestAndWait(patchOp);
+      assertThat(resultOp.getStatusCode(), is(200));
+
+      EntityLockCleanerService.State savedState = host.getServiceState(EntityLockCleanerService.State.class);
+      assertThat(savedState.taskState.stage, is(targetStage));
+      assertThat(savedState.taskState.subStage, is(targetSubStage));
+    }
+
+    @DataProvider(name = "stageTransitions")
+    public Object[][] getValidStageTransitions() throws Throwable {
+      return new Object[][]{
+          {EntityLockCleanerService.TaskState.TaskStage.STARTED,
+              EntityLockCleanerService.TaskState.SubStage.DELETE_ENTITY_LOCKS_WITH_DELETED_ENTITIES,
+              EntityLockCleanerService.TaskState.TaskStage.STARTED,
+              EntityLockCleanerService.TaskState.SubStage.DELETE_ENTITY_LOCKS_WITH_DELETED_ENTITIES},
+          {EntityLockCleanerService.TaskState.TaskStage.STARTED,
+              EntityLockCleanerService.TaskState.SubStage.DELETE_ENTITY_LOCKS_WITH_DELETED_ENTITIES,
+              EntityLockCleanerService.TaskState.TaskStage.STARTED,
+              EntityLockCleanerService.TaskState.SubStage.RELEASE_ENTITY_LOCKS_WITH_INACTIVE_TASKS},
+          {EntityLockCleanerService.TaskState.TaskStage.STARTED,
+              EntityLockCleanerService.TaskState.SubStage.DELETE_ENTITY_LOCKS_WITH_DELETED_ENTITIES,
+              EntityLockCleanerService.TaskState.TaskStage.FINISHED, null},
+          {EntityLockCleanerService.TaskState.TaskStage.STARTED,
+              EntityLockCleanerService.TaskState.SubStage.DELETE_ENTITY_LOCKS_WITH_DELETED_ENTITIES,
+              EntityLockCleanerService.TaskState.TaskStage.FAILED, null},
+          {EntityLockCleanerService.TaskState.TaskStage.STARTED,
+              EntityLockCleanerService.TaskState.SubStage.DELETE_ENTITY_LOCKS_WITH_DELETED_ENTITIES,
+              EntityLockCleanerService.TaskState.TaskStage.CANCELLED, null},
+          {EntityLockCleanerService.TaskState.TaskStage.STARTED,
+              EntityLockCleanerService.TaskState.SubStage.RELEASE_ENTITY_LOCKS_WITH_INACTIVE_TASKS,
+              EntityLockCleanerService.TaskState.TaskStage.STARTED,
+              EntityLockCleanerService.TaskState.SubStage.RELEASE_ENTITY_LOCKS_WITH_INACTIVE_TASKS},
+          {EntityLockCleanerService.TaskState.TaskStage.STARTED,
+              EntityLockCleanerService.TaskState.SubStage.RELEASE_ENTITY_LOCKS_WITH_INACTIVE_TASKS,
+              EntityLockCleanerService.TaskState.TaskStage.FINISHED, null},
+          {EntityLockCleanerService.TaskState.TaskStage.STARTED,
+              EntityLockCleanerService.TaskState.SubStage.RELEASE_ENTITY_LOCKS_WITH_INACTIVE_TASKS,
+              EntityLockCleanerService.TaskState.TaskStage.FAILED, null},
+          {EntityLockCleanerService.TaskState.TaskStage.STARTED,
+              EntityLockCleanerService.TaskState.SubStage.RELEASE_ENTITY_LOCKS_WITH_INACTIVE_TASKS,
+              EntityLockCleanerService.TaskState.TaskStage.CANCELLED, null}
+      };
+    }
+
   }
 
   /**
