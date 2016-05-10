@@ -11,22 +11,30 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package com.vmware.photon.controller.dhcpagent.xenon;
+package com.vmware.photon.controller.dhcpagent.xenon.service;
 
 import com.vmware.photon.controller.dhcpagent.xenon.helpers.TestEnvironment;
 import com.vmware.photon.controller.status.gen.Status;
 import com.vmware.photon.controller.status.gen.StatusType;
 
+import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.MoreExecutors;
+
+import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
+import java.util.concurrent.Executors;
+
 /**
  * Tests {@link StatusService}.
  */
 public class StatusServiceTest {
+
+  private ListeningExecutorService listeningExecutorService;
 
   /**
    * Dummy test case to make Intellij recognize this as a test class.
@@ -44,13 +52,20 @@ public class StatusServiceTest {
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      testEnvironment = TestEnvironment.create(1);
+      listeningExecutorService = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(1));
+      testEnvironment = TestEnvironment.create(1, listeningExecutorService);
+
     }
 
     @AfterMethod
     public void tearDown() throws Throwable {
       testEnvironment.stop();
       testEnvironment = null;
+    }
+
+    @AfterClass
+    public void tearDownClass() throws Throwable {
+      listeningExecutorService.shutdown();
     }
 
     @Test

@@ -17,7 +17,11 @@ import com.vmware.photon.controller.common.manifest.BuildInfo;
 import com.vmware.photon.controller.common.xenon.host.XenonConfig;
 import com.vmware.photon.controller.dhcpagent.DHCPAgentConfig;
 
+import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.MoreExecutors;
 import com.google.inject.AbstractModule;
+
+import java.util.concurrent.Executors;
 
 /**
  * Provides common test dependencies.
@@ -35,5 +39,7 @@ public class TestDHCPAgentModule extends AbstractModule {
     bind(BuildInfo.class).toInstance(BuildInfo.get(this.getClass()));
     bind(DHCPAgentConfig.class).toInstance(dhcpAgentConfig);
     bind(XenonConfig.class).toInstance(dhcpAgentConfig.getXenonConfig());
+    bind(ListeningExecutorService.class)
+            .toInstance(MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(1)));
   }
 }
