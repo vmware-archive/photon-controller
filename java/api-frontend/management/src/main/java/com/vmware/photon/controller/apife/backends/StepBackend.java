@@ -14,7 +14,6 @@
 package com.vmware.photon.controller.apife.backends;
 
 import com.vmware.photon.controller.api.Operation;
-import com.vmware.photon.controller.api.Step;
 import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
 import com.vmware.photon.controller.api.common.exceptions.external.TaskNotFoundException;
 import com.vmware.photon.controller.apife.entities.StepEntity;
@@ -27,7 +26,6 @@ import java.util.Map;
  * StepBackend is performing common step operations.
  */
 public interface StepBackend {
-  Step toApiRepresentation(StepEntity stepEntity);
 
   void update(StepEntity step) throws TaskNotFoundException;
 

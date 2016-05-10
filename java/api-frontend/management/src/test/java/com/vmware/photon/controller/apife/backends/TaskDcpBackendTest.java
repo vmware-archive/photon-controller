@@ -336,7 +336,7 @@ public class TaskDcpBackendTest {
 
       taskBackend.markTaskAsStarted(createdTask);
 
-      createdTask = taskBackend.getById(createdTask.getId());
+      createdTask = taskBackend.findById(createdTask.getId());
       assertThat(createdTask, is(notNullValue()));
       assertThat(createdTask.getState(), is(TaskEntity.State.STARTED));
       assertThat(createdTask.getStartedTime(), is(notNullValue()));
@@ -350,7 +350,7 @@ public class TaskDcpBackendTest {
       TaskEntity createdTask = taskBackend.createQueuedTask(vmEntity, Operation.CREATE_VM);
       taskBackend.markTaskAsDone(createdTask);
 
-      createdTask = taskBackend.getById(createdTask.getId());
+      createdTask = taskBackend.findById(createdTask.getId());
       assertThat(createdTask, is(notNullValue()));
       assertThat(createdTask.getState(), is(TaskEntity.State.COMPLETED));
       assertThat(createdTask.getEndTime(), is(notNullValue()));
@@ -363,7 +363,7 @@ public class TaskDcpBackendTest {
       TaskEntity createdTask = taskBackend.createQueuedTask(vmEntity, Operation.CREATE_VM);
       taskBackend.markTaskAsFailed(createdTask);
 
-      createdTask = taskBackend.getById(createdTask.getId());
+      createdTask = taskBackend.findById(createdTask.getId());
       assertThat(createdTask, is(notNullValue()));
       assertThat(createdTask.getState(), is(TaskEntity.State.ERROR));
       assertThat(createdTask.getEndTime(), is(notNullValue()));
@@ -386,7 +386,7 @@ public class TaskDcpBackendTest {
       assertThat(stepEntity2.getState(), is(StepEntity.State.ERROR));
       assertThat(stepEntity3.getState(), is(StepEntity.State.ERROR));
 
-      taskEntity = taskBackend.getById(taskEntity.getId());
+      taskEntity = taskBackend.findById(taskEntity.getId());
       assertThat(taskEntity.getState(), is(TaskEntity.State.ERROR));
       for (StepEntity stepEntity : taskEntity.getSteps()) {
         assertThat(stepEntity.getState(), is(StepEntity.State.ERROR));
@@ -404,7 +404,7 @@ public class TaskDcpBackendTest {
       updatedTask.setState(TaskEntity.State.COMPLETED);
       taskBackend.update(updatedTask);
 
-      createdTask = taskBackend.getById(createdTask.getId());
+      createdTask = taskBackend.findById(createdTask.getId());
       assertThat(createdTask, is(notNullValue()));
       assertThat(createdTask.getState(), is(TaskEntity.State.COMPLETED));
       assertThat(createdTask.getSteps().get(0).getId(), is(createdStep.getId()));
@@ -418,7 +418,7 @@ public class TaskDcpBackendTest {
 
       taskBackend.setTaskResourceProperties(task, properties);
 
-      task = taskBackend.getById(task.getId());
+      task = taskBackend.findById(task.getId());
       assertThat(task.getResourceProperties(), is(properties));
     }
   }
@@ -468,18 +468,17 @@ public class TaskDcpBackendTest {
     }
 
     @Test
-    public void testGetById() {
+    public void testGetById() throws Throwable {
       TaskEntity task = taskBackend.createQueuedTask(vmEntity, Operation.CREATE_VM);
-      TaskEntity foundTask = taskBackend.getById(task.getId());
+      TaskEntity foundTask = taskBackend.findById(task.getId());
       assertThat(task, is(notNullValue()));
       assertThat(foundTask.getId(), is(task.getId()));
       assertThat(foundTask.getSteps().size(), is(0));
     }
 
-    @Test
-    public void testGetByIdFailure() {
-      TaskEntity task = taskBackend.getById(UUID.randomUUID().toString());
-      assertThat(task, is(nullValue()));
+    @Test(expectedExceptions = TaskNotFoundException.class)
+    public void testGetByIdFailure() throws Throwable {
+      TaskEntity task = taskBackend.findById(UUID.randomUUID().toString());
     }
 
     @Test
@@ -631,13 +630,12 @@ public class TaskDcpBackendTest {
       commonHostAndClientTeardown();
     }
 
-    @Test
-    public void testDelete() {
+    @Test(expectedExceptions = TaskNotFoundException.class)
+    public void testDelete() throws Throwable {
       TaskEntity createdTask = taskBackend.createQueuedTask(vmEntity, Operation.CREATE_VM);
       taskBackend.delete(createdTask);
 
-      createdTask = taskBackend.getById(createdTask.getId());
-      assertThat(createdTask, is(nullValue()));
+      createdTask = taskBackend.findById(createdTask.getId());
     }
   }
 
