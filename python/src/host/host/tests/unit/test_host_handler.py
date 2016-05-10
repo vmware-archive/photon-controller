@@ -295,8 +295,7 @@ class HostHandlerTestCase(unittest.TestCase):
         vm_flavor_info = Flavor(name=vm_flavor,
                                 cost=[QuotaLineItem("cpu", "1", 5)])
 
-        vm = Vm(vm_id, vm_flavor, State.STOPPED,
-                None, None, disks, vm_flavor_info)
+        vm = Vm(vm_id, State.STOPPED, None, None, disks, vm_flavor_info)
 
         request = ReserveRequest()
         request.generation = 1

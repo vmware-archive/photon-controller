@@ -184,7 +184,6 @@ public class VmCreateStepCmdTest extends PowerMockTestCase {
   private Vm createThriftVm(String id, String flavor, String datastoreId, String datastoreName) {
     Vm vm = new Vm();
     vm.setId(id);
-    vm.setFlavor(flavor);
     Datastore datestore = new Datastore(datastoreId);
     datestore.setName(datastoreName);
     vm.setDatastore(datestore);

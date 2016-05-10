@@ -231,7 +231,6 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
     verify(schedulerXenonRestClient).post(any(), placementTaskCaptor.capture());
     Resource resource = placementTaskCaptor.getValue().resource;
     assertThat(resource.getVm().getId(), is("foo"));
-    assertThat(resource.getVm().getFlavor(), is("vm-100"));
     assertThat(resource.getVm().getFlavor_info(), is(expectedFlavor));
     assertThat(resource.getVm().getProject_id(), is(project.getId()));
     assertThat(resource.getVm().getTenant_id(), is(project.getTenantId()));
