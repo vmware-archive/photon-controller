@@ -47,7 +47,8 @@ def normalize_datastore(vim_client, datastore):
 
 # create import spec
 def create_import_spec(image_id, upload_folder):
-    vm_spec = EsxVmConfigSpec(image_id, "otherGuest", 32, 1, upload_folder, None)
+    vm_spec = EsxVmConfigSpec()
+    vm_spec.init_for_import(image_id, upload_folder)
     disk_controller = vim.vm.device.VirtualLsiLogicController(
         key=0,
         sharedBus=vim.vm.device.VirtualSCSIController.Sharing.noSharing,

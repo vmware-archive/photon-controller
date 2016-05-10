@@ -42,7 +42,8 @@ from host.hypervisor.esx.path_util import SHADOW_VM_NAME_PREFIX
 from host.hypervisor.esx.path_util import get_image_base_disk
 from host.hypervisor.esx.path_util import get_root_disk
 from host.hypervisor.esx.path_util import is_persistent_disk
-from host.hypervisor.esx.vm_config import EsxVmConfig
+from host.hypervisor.esx.vm_config import EsxVmConfigSpec
+from host.hypervisor.esx.vm_config import EsxVmInfo
 
 from common.log import log_duration
 
@@ -88,7 +89,6 @@ class EsxVmManager(VmManager):
 
     Attributes:
         vim_client: The VimClient instance.
-        vm_config: The EsxVmConfig instance.
         _logger: The global _logger to log messages to.
 
     """
@@ -102,7 +102,6 @@ class EsxVmManager(VmManager):
 
     def __init__(self, vim_client, ds_manager):
         self.vim_client = vim_client
-        self.vm_config = EsxVmConfig(vim_client)
         self._logger = logging.getLogger(__name__)
         self._ds_manager = ds_manager
         self._lock = threading.Lock()
@@ -140,8 +139,7 @@ class EsxVmManager(VmManager):
                     self.METADATA_EXTRA_CONFIG_KEYS)
 
     @log_duration
-    def create_vm_spec(self, vm_id, datastore, flavor, metadata=None, env={},
-                       **kwargs):
+    def create_vm_spec(self, vm_id, datastore, flavor, metadata=None, env={}):
         """Create a new Virtual Machine create spec.
 
         :param vm_id: Name of the VM
@@ -151,41 +149,42 @@ class EsxVmManager(VmManager):
         :param flavor: VM flavor
         :type flavor: Flavor
         :param metadata: VM creation metadata
-        :param kwargs: not used
         """
 
         # TODO(vspivak): long term introduce separate config (from cost) for
         # the hypervisor sizing meta
         cpus = int(flavor.cost["vm.cpu"].convert(Unit.COUNT))
         memory = int(flavor.cost["vm.memory"].convert(Unit.MB))
-        spec = self.vm_config.create_spec(vm_id, datastore, memory,
-                                          cpus, metadata, env)
+        spec = EsxVmConfigSpec()
+        spec.init_for_create(vm_id, datastore, memory, cpus, metadata, env)
 
         extra_config_map = self._get_extra_config_map(spec._metadata)
         # our one vm-identifying extra config
         extra_config_map[self.GUESTINFO_PREFIX + "vm.id"] = vm_id
-        self.vm_config.set_extra_config(spec, extra_config_map)
+        spec.set_extra_config(extra_config_map)
 
-        self.vm_config.set_diskuuid_enabled(spec, True)
+        spec.set_diskuuid_enabled(True)
         return spec
 
     @log_duration
     def update_vm_spec(self):
         """ Return an empty update spec for a VM.
         """
-        return self.vm_config.update_spec()
+        spec = EsxVmConfigSpec()
+        spec.init_for_update()
+        return spec
 
     @log_duration
-    def create_vm(self, vm_id, create_spec):
+    def create_vm(self, vm_id, spec):
         """Create a new Virtual Maching given a VM create spec.
 
         :param vm_id: The Vm id
         :type vm_id: string
-        :param create_spec: The VM spec builder
+        :param spec: The VM spec builder
         :type ConfigSpec
         :raise: VmAlreadyExistException
         """
-        self.vim_client.create_vm(vm_id, create_spec)
+        self.vim_client.create_vm(vm_id, spec.get_spec())
 
     @log_duration
     def update_vm(self, vm_id, spec):
@@ -193,7 +192,7 @@ class EsxVmManager(VmManager):
         :type spec: vim.vm.ConfigSpec
         """
         vm = self.vim_client.get_vm(vm_id)
-        self._reconfig_vm(vm, spec)
+        self.vim_client.reconfigure_vm(vm, spec)
 
     def _ensure_directory_cleanup(self, vm_dir):
         # Upon successful destroy of VM, log any stray files still left in the
@@ -263,10 +262,11 @@ class EsxVmManager(VmManager):
         :param vmdk_file: vmdk disk path
         :type vmdk_file: str
         """
-        cfg_spec = self.vm_config.update_spec()
+        cfg_spec = EsxVmConfigSpec()
+        cfg_spec.init_for_update()
         cfg_info = self.get_vm_config(vm_id)
-        cfg_spec = self.vm_config.attach_disk(cfg_spec, cfg_info, vmdk_file)
-        self.update_vm(vm_id, cfg_spec)
+        cfg_spec.attach_disk(cfg_info, vmdk_file)
+        self.update_vm(vm_id, cfg_spec.get_spec())
 
     def detach_disk(self, vm_id, disk_id):
         """Remove an existing disk from a VM
@@ -275,10 +275,11 @@ class EsxVmManager(VmManager):
         :param disk_id: Disk id
         :type disk_id: str
         """
-        cfg_spec = self.vm_config.update_spec()
+        cfg_spec = EsxVmConfigSpec()
+        cfg_spec.init_for_update()
         cfg_info = self.get_vm_config(vm_id)
-        cfg_spec = self.vm_config.detach_disk(cfg_spec, cfg_info, disk_id)
-        self.update_vm(vm_id, cfg_spec)
+        cfg_spec.detach_disk(cfg_info, disk_id)
+        self.update_vm(vm_id, cfg_spec.get_spec())
 
     @log_duration
     def create_empty_disk(self, cfg_spec, datastore, disk_id, size_mb):
@@ -295,9 +296,7 @@ class EsxVmManager(VmManager):
         :param size_mb: size of the disk in MB
         :type size_mb: int
         """
-        self.vm_config.create_empty_disk(cfg_spec, datastore, disk_id,
-                                         size_mb)
-        return cfg_spec
+        cfg_spec.create_empty_disk(datastore, disk_id, size_mb)
 
     @log_duration
     def create_child_disk(self, cfg_spec, datastore, disk_id, parent_id):
@@ -314,12 +313,10 @@ class EsxVmManager(VmManager):
         :param parent_id: parent disk id
         :type parent_id: str
         """
-        self.vm_config.create_child_disk(cfg_spec, datastore, disk_id,
-                                         parent_id)
-        return cfg_spec
+        cfg_spec.create_child_disk(datastore, disk_id, parent_id)
 
     @log_duration
-    def add_nic(self, spec, network_name=None):
+    def add_nic(self, cfg_spec, network_name=None):
         """Add a network adapter to a VM
 
         :param spec: The VM config spec to update with the added nic
@@ -327,7 +324,7 @@ class EsxVmManager(VmManager):
         :param network_name: Network name
         :type network_id: str
         """
-        spec = self.vm_config.add_nic(spec, network_name)
+        cfg_spec.add_nic(network_name)
 
     def _get_datastore_uuid(self, name):
         try:
@@ -433,9 +430,6 @@ class EsxVmManager(VmManager):
 
         return cpu_count
 
-    def _reconfig_vm(self, vm, spec):
-        self.vim_client.reconfigure_vm(vm, spec)
-
     def _get_datastore_name_from_ds_path(self, vm_path):
         try:
             return vm_path[vm_path.index("[") + 1:vm_path.index("]")]
@@ -513,7 +507,7 @@ class EsxVmManager(VmManager):
 
         return network_info
 
-    def attach_cdrom(self, spec, iso_file, vm_id):
+    def attach_cdrom(self, cfg_spec, iso_file, vm_id):
         """ Attach an iso file to the VM after adding a CD-ROM device.
 
         :param spec: The VM config spec to update with the cdrom add
@@ -530,9 +524,9 @@ class EsxVmManager(VmManager):
             raise Exception("Invalid VM config")
 
         # callee will modify spec
-        return self.vm_config.add_iso_cdrom(spec, iso_file, vm.config)
+        cfg_spec.add_iso_cdrom(iso_file, vm.config)
 
-    def disconnect_cdrom(self, spec, vm_id):
+    def disconnect_cdrom(self, cfg_spec, vm_id):
         """ Disconnect cdrom device from VM
 
         :param spec: The VM config spec to update with the cdrom change
@@ -545,7 +539,7 @@ class EsxVmManager(VmManager):
             raise Exception("Invalid VM config")
 
         try:
-            iso_path = self.vm_config.disconnect_iso_cdrom(spec, vm.config)
+            iso_path = cfg_spec.disconnect_iso_cdrom(vm.config)
         except DeviceNotFoundException, e:
             raise IsoNotAttachedException(e)
         except TypeError, e:
@@ -573,8 +567,8 @@ class EsxVmManager(VmManager):
         """
 
         network_info = []
-        vm = self.vim_client.get_vm(vm_id)
-        networks = self.vm_config.get_network_config_int(vm.config)
+        vm_info = EsxVmInfo(self.vim_client.get_vm(vm_id))
+        networks = vm_info.get_networks()
 
         for idx, mac, network, _ in networks:
             # We don't set MAC address when VM gets created, so MAC address
@@ -604,39 +598,6 @@ class EsxVmManager(VmManager):
         # We should have failed earlier if we didn't have the nic
         assert(found)
         return ip, mask, conn_spec
-
-    @log_duration
-    def set_guestinfo_ip(self, spec, info, net_spec):
-        """ Set the ip address information for the VM in the config file.
-        Reads the network config from the vmx and sets the IP address for the
-        corresponding devices in guest info and the default GW properties in
-        guest info.
-        A script from within the guest will read these attributes and set it
-        within the guest.
-        :type spec: vim.vm.ConfigSpec, the virtual machine config spec
-        :type info: vim.vm.ConfigInfo, the virtual machine config info
-        :type: net_spec: the NetworkConnectionSpec object to apply
-        """
-        if net_spec is None:
-            return
-        prefix = self.GUESTINFO_PREFIX
-        guest_info = {}
-        if net_spec.default_gateway:
-            guest_info[prefix + "default_gateway"] = \
-                net_spec.default_gateway
-        # Read the networks from the created VM.
-        networks = self.vm_config.get_network_config_int(info)
-        for index, (_, _, network, _) in enumerate(networks):
-            ip, netmask, net_spec = self._find_ip(net_spec, network)
-            if ip and netmask:
-                guest_info[prefix + str(index) + ".ip"] = ip
-                guest_info[prefix + str(index) + ".netmask"] = netmask
-
-        if len(guest_info.keys()) > 0:
-            self.vm_config.set_extra_config(spec, guest_info)
-            return True
-
-        return False
 
     def get_vm_config(self, vm_id):
         """ Get the config info of a VM. """

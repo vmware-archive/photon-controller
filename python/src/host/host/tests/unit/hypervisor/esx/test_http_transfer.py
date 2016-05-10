@@ -105,7 +105,7 @@ class TestHttpTransfer(unittest.TestCase):
         vm_id_arg, vm_spec_arg = create_vm.call_args_list[0][0]
         self.assertEqual(vm_id_arg, shadow_vm_id)
         self.assertEqual(
-            vm_spec_arg.files.vmPathName,
+            vm_spec_arg.get_spec().files.vmPathName,
             '[] /vmfs/volumes/%s/vm_%s' % (self.image_datastores[0], shadow_vm_id))
 
     def test_delete_shadow_vm(self):
