@@ -147,6 +147,14 @@ public class ZookeeperModule extends AbstractModule {
     return new PathChildrenCacheFactory(zkClient, reader);
   }
 
+  /**
+   * Creates a new ZookeeperServerSet of the given service name.
+   * @param zkClient the ZookeeperClient to create the ServerSet.
+   * @param serviceName the name of the service.
+   * @param subscribeToUpdates boolean to subscribe to updates of the ServerSet with the same service name.
+   * @return
+   * @throws Exception
+   */
   public ServerSet getZookeeperServerSet(final CuratorFramework zkClient, String serviceName,
                                          boolean subscribeToUpdates) throws Exception {
     final ZookeeperServerReader zookeeperServerReader = getServiceServerReader();
@@ -156,11 +164,26 @@ public class ZookeeperModule extends AbstractModule {
         subscribeToUpdates);
   }
 
+  /**
+   * Creates a SimpleServiceNode with the given service name and address.
+   * @param zkClient the ZookeeperClient to create the SimpleServiceNode.
+   * @param serviceName the name of the service.
+   * @param registrationSocketAddress the address to register.
+   * @return
+   */
   public ServiceNode getSimpleServiceNode(final CuratorFramework zkClient,
                                                 String serviceName, InetSocketAddress registrationSocketAddress) {
     return new SimpleServiceNode(zkClient, serviceName, registrationSocketAddress);
   }
 
+  /**
+   * Registers the service and address with Zookeeper.
+   * @param zkClient the ZookeeperClient to register the service.
+   * @param serviceName the name of the service.
+   * @param registrationIpAddress the ip address of the service to register.
+   * @param port the port of the service to register.
+   * @param retryIntervalMilliSeconds the retry interval to join the service.
+   */
   public void registerWithZookeeper(final CuratorFramework zkClient, String serviceName,
                                     String registrationIpAddress, int port, long retryIntervalMilliSeconds) {
     InetSocketAddress registrationSocketAddress = new InetSocketAddress(registrationIpAddress, port);

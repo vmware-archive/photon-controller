@@ -19,7 +19,6 @@ import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.logging.LoggingFactory;
 import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.photon.controller.common.thrift.ThriftModule;
-import com.vmware.photon.controller.common.thrift.ThriftServiceModule;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperModule;
 import com.vmware.photon.controller.host.gen.Host;
@@ -65,18 +64,17 @@ public class Main {
     new LoggingFactory(config.getLogging(), "rootscheduler").configure();
 
     Injector injector = Guice.createInjector(
-        new RootSchedulerModule(),
-        new ThriftModule(),
-        new ThriftServiceModule<>(new TypeLiteral<Host.AsyncClient>() {
-        }));
+        new RootSchedulerModule()
+    );
 
     ZookeeperModule zkModule = new ZookeeperModule(config.getZookeeper());
     // Singleton
     final CuratorFramework zkClient = zkModule.getCuratorFramework();
-
     ServerSet cloudStoreServerSet = zkModule.getZookeeperServerSet(zkClient, CLOUDSTORE_SERVICE_NAME, true);
 
-    HostClientFactory hostClientFactory = injector.getInstance(HostClientFactory.class);
+    TypeLiteral type = new TypeLiteral<Host.AsyncClient>() {};
+    ThriftModule thriftModule = new ThriftModule();
+    HostClientFactory hostClientFactory = thriftModule.getHostClientFactory(type);
 
     final CloudStoreHelper cloudStoreHelper = new CloudStoreHelper(cloudStoreServerSet);
     final ConstraintChecker checker = new CloudStoreConstraintChecker(cloudStoreHelper);
