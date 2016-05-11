@@ -29,6 +29,7 @@ import com.vmware.photon.controller.common.zookeeper.ZookeeperModule;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
+import com.google.inject.name.Names;
 import org.apache.curator.framework.CuratorFramework;
 import static org.powermock.api.mockito.PowerMockito.mock;
 
@@ -44,6 +45,7 @@ public class CommandTestModule extends AbstractModule {
       ApiFeConfiguration config = ConfigurationUtils.parseConfiguration(CommandTestModule.class.getResource("/config" +
           ".yml").getPath());
       install(new ZookeeperModule(config.getZookeeper()));
+      bindConstant().annotatedWith(Names.named("useVirtualNetwork")).to(config.useVirtualNetwork());
     } catch (Exception ex) {
       throw new RuntimeException(ex);
     }

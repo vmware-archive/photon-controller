@@ -42,6 +42,7 @@ enum ResourceConstraintType {
   AVAILABILITY_ZONE = 3
   DATASTORE_TAG = 4
   MANAGEMENT_ONLY = 5
+  VIRTUAL_NETWORK = 6
 }
 
 enum ResourcePlacementType {

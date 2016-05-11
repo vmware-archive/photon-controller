@@ -169,6 +169,8 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
 
   private PersistentDiskEntity disk;
 
+  private Boolean useVirtualNetwork = false;
+
   @BeforeMethod
   public void setUp() throws ExternalException {
     project = new ProjectEntity();
@@ -743,7 +745,7 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
     }
 
     return spy(new ResourceReserveStepCmd(
-        taskCommand, stepBackend, step, diskBackend, vmBackend, networkBackend, flavorBackend));
+        taskCommand, stepBackend, step, diskBackend, vmBackend, networkBackend, flavorBackend, useVirtualNetwork));
   }
 
   private ResourceReserveStepCmd getDiskReservationCommand() {
@@ -752,7 +754,7 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
     step.addResource(disk);
 
     return spy(new ResourceReserveStepCmd(
-        taskCommand, stepBackend, step, diskBackend, vmBackend, networkBackend, flavorBackend));
+        taskCommand, stepBackend, step, diskBackend, vmBackend, networkBackend, flavorBackend, useVirtualNetwork));
   }
 
   private void attachEphemeralDisk(VmEntity vm) throws ExternalException {

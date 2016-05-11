@@ -109,6 +109,7 @@ import com.google.inject.Singleton;
 import com.google.inject.TypeLiteral;
 import com.google.inject.assistedinject.FactoryModuleBuilder;
 import com.google.inject.matcher.Matchers;
+import com.google.inject.name.Names;
 import com.google.inject.servlet.RequestScoped;
 import org.apache.curator.framework.CuratorFramework;
 import org.slf4j.Logger;
@@ -298,6 +299,8 @@ public class ApiFeModule extends AbstractModule {
     bindBackends();
     bindAuthSecurityGroupFetchers();
     bindListener(Matchers.any(), new RpcMetricListener());
+
+    bindConstant().annotatedWith(Names.named("useVirtualNetwork")).to(configuration.useVirtualNetwork());
 
     //These factories should be built using reflection. Annotate clients and commands and inject them in a loop
     install(new FactoryModuleBuilder()

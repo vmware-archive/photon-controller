@@ -106,6 +106,7 @@ public class ResourceReserveStepCmd extends StepCommand {
   private final NetworkBackend networkBackend;
   private final FlavorBackend flavorBackend;
   private InfrastructureEntity infrastructureEntity;
+  private final Boolean useVirtualNetwork;
 
   public ResourceReserveStepCmd(TaskCommand taskCommand,
                                 StepBackend stepBackend,
@@ -113,13 +114,15 @@ public class ResourceReserveStepCmd extends StepCommand {
                                 DiskBackend diskBackend,
                                 VmBackend vmBackend,
                                 NetworkBackend networkBackend,
-                                FlavorBackend flavorBackend) {
+                                FlavorBackend flavorBackend,
+                                Boolean useVirtualNetwork) {
     super(taskCommand, stepBackend, step);
 
     this.diskBackend = diskBackend;
     this.vmBackend = vmBackend;
     this.networkBackend = networkBackend;
     this.flavorBackend = flavorBackend;
+    this.useVirtualNetwork = useVirtualNetwork;
   }
 
   @Override
@@ -569,9 +572,13 @@ public class ResourceReserveStepCmd extends StepCommand {
     if (entity.getNetworks() != null && !entity.getNetworks().isEmpty()) {
       for (String network : entity.getNetworks()) {
         ResourceConstraint resourceConstraint = new ResourceConstraint();
-        resourceConstraint.setType(ResourceConstraintType.NETWORK);
-        for (String portGroup : networkBackend.toApiRepresentation(network).getPortGroups()) {
-          resourceConstraint.addToValues(portGroup);
+        if (!this.useVirtualNetwork) {
+          resourceConstraint.setType(ResourceConstraintType.NETWORK);
+          for (String portGroup : networkBackend.toApiRepresentation(network).getPortGroups()) {
+            resourceConstraint.addToValues(portGroup);
+          }
+        } else {
+          resourceConstraint.setType(ResourceConstraintType.VIRTUAL_NETWORK);
         }
 
         vm.addToResource_constraints(resourceConstraint);
