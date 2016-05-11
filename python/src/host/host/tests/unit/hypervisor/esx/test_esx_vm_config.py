@@ -230,7 +230,7 @@ class TestEsxVmConfig(unittest.TestCase):
         cspec = self._update_spec()
         cspec._cfg_opts = cfgOption
 
-        result = cspec.add_iso_cdrom(fake_iso_ds_path, cfg_info)
+        result = cspec.attach_iso(cfg_info, fake_iso_ds_path)
 
         assert_that(result.__class__,
                     equal_to(bool))
@@ -247,7 +247,7 @@ class TestEsxVmConfig(unittest.TestCase):
         cspec = self._update_spec()
         cfg_info = self._get_config_info_with_iso(fake_iso_ds_path)
 
-        result = cspec.add_iso_cdrom(fake_iso_ds_path, cfg_info)
+        result = cspec.attach_iso(cfg_info, fake_iso_ds_path)
 
         assert_that(result.__class__, equal_to(bool))
         assert_that(result, equal_to(False))
@@ -257,7 +257,7 @@ class TestEsxVmConfig(unittest.TestCase):
         cspec = self._update_spec()
         cfg_info = self._get_config_info_without_connected(is_iso_backing=True)
 
-        result = cspec.add_iso_cdrom(fake_iso_ds_path, cfg_info)
+        result = cspec.attach_iso(cfg_info, fake_iso_ds_path)
 
         assert_that(result.__class__, equal_to(bool))
         assert_that(result, equal_to(True))
@@ -273,20 +273,20 @@ class TestEsxVmConfig(unittest.TestCase):
         cspec = self._update_spec()
         cfg_info = self._get_config_info_without_connected(is_iso_backing=False)
 
-        self.assertRaises(TypeError, cspec.add_iso_cdrom, fake_iso_ds_path, cfg_info)
+        self.assertRaises(TypeError, cspec.attach_iso, cfg_info, fake_iso_ds_path)
 
     def test_disconnect_iso(self):
         # on vm config with no cdrom devices
         cfg_info = FakeConfigInfo()
         cspec = self._update_spec()
-        self.assertRaises(DeviceNotFoundException, cspec.disconnect_iso_cdrom, cfg_info)
+        self.assertRaises(DeviceNotFoundException, cspec.detach_iso, cfg_info)
         assert_that(len(cspec.get_spec().deviceChange), equal_to(0))
 
         # on vm config with no a fake cdrom device
         fake_iso_ds_path = '[ds] vm_fake/fake.iso'
         cspec = self._update_spec()
         cfg_info = self._get_config_info_with_iso(fake_iso_ds_path)
-        iso_path = cspec.disconnect_iso_cdrom(cfg_info)
+        iso_path = cspec.detach_iso(cfg_info)
 
         assert_that(len(cspec.get_spec().deviceChange), equal_to(1))
         dev = cspec.get_spec().deviceChange[0].device
