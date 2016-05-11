@@ -525,6 +525,10 @@ public class CloudStoreConstraintChecker implements ConstraintChecker {
           case NETWORK:
             addCollectionItemClause(queryBuilder, HostService.State.FIELD_NAME_REPORTED_NETWORKS, constraint);
             break;
+          case VIRTUAL_NETWORK:
+            // Nothing needs to be done here: In virtual network case, all hosts are already wired together.
+            // In other words, a VM on any host can join any virtual network. So this constraint should be ignored.
+            break;
           default:
             throw new IllegalStateException("Invalid resource constraint: " + constraint);
         }

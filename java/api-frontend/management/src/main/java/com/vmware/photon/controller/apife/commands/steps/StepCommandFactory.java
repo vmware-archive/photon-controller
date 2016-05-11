@@ -37,6 +37,7 @@ import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
+import com.google.inject.name.Named;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
@@ -63,6 +64,7 @@ public class StepCommandFactory {
   private final NetworkBackend networkBackend;
   private final TenantBackend tenantBackend;
   private final ProjectBackend projectBackend;
+  private final Boolean useVirtualNetwork;
 
   @Inject
   public StepCommandFactory(StepBackend stepBackend,
@@ -82,7 +84,8 @@ public class StepCommandFactory {
                             FlavorBackend flavorBackend,
                             ClusterBackend clusterBackend,
                             TenantBackend tenantBackend,
-                            ProjectBackend projectBackend) {
+                            ProjectBackend projectBackend,
+                            @Named("useVirtualNetwork") Boolean useVirtualNetwork) {
     this.stepBackend = stepBackend;
     this.entityLockBackend = entityLockBackend;
     this.vmBackend = vmBackend;
@@ -101,14 +104,15 @@ public class StepCommandFactory {
     this.clusterBackend = clusterBackend;
     this.tenantBackend = tenantBackend;
     this.projectBackend = projectBackend;
+    this.useVirtualNetwork = useVirtualNetwork;
   }
 
   public StepCommand createCommand(TaskCommand taskCommand, StepEntity stepEntity) throws InternalException {
     checkNotNull(stepEntity);
     switch (stepEntity.getOperation()) {
       case RESERVE_RESOURCE:
-        return new ResourceReserveStepCmd(
-            taskCommand, stepBackend, stepEntity, diskBackend, vmBackend, networkBackend, flavorBackend);
+        return new ResourceReserveStepCmd(taskCommand, stepBackend, stepEntity, diskBackend, vmBackend,
+            networkBackend, flavorBackend, useVirtualNetwork);
       case CREATE_DISK:
         return new DiskCreateStepCmd(taskCommand, stepBackend, stepEntity, diskBackend);
       case DELETE_DISK:

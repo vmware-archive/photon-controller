@@ -72,6 +72,7 @@ import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
 import com.google.inject.Scopes;
+import com.google.inject.name.Named;
 import com.google.inject.servlet.RequestScoped;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
@@ -139,6 +140,18 @@ public class ApiFeModuleTest {
     @Inject
     public TestPaginationConfigInjection(PaginationConfig config) {
       this.config = config;
+    }
+  }
+
+  /**
+   * Helper class used to test 'useVirtualNetwork' flag injection.
+   */
+  public static class TestUseVirtualNetworkFlag {
+    public Boolean useVirtualNetwork;
+
+    @Inject
+    public TestUseVirtualNetworkFlag(@Named("useVirtualNetwork") Boolean useVirtualNetwork) {
+      this.useVirtualNetwork = useVirtualNetwork;
     }
   }
 
@@ -492,6 +505,34 @@ public class ApiFeModuleTest {
       TestPaginationConfigInjection configWrapper = injector.getInstance(TestPaginationConfigInjection.class);
       assertThat(configWrapper.config.getDefaultPageSize(), is(10));
       assertThat(configWrapper.config.getMaxPageSize(), is(100));
+    }
+  }
+
+  /**
+   * Tests for injecting useVirtualNetwork.
+   */
+  public class TestUseVirtualNetworkConfig {
+
+    @Test
+    public void testUsingVirtualNetwork() throws Throwable {
+      ApiFeModule apiFeModule = new ApiFeModule();
+      apiFeModule.setConfiguration(
+          ConfigurationUtils.parseConfiguration(ApiFeConfigurationTest.class.getResource("/config.yml").getPath())
+      );
+
+      Injector injector = Guice.createInjector(
+          apiFeModule,
+          new ZookeeperModule(),
+          new AbstractModule() {
+            @Override
+            protected void configure() {
+              bindScope(RequestScoped.class, Scopes.NO_SCOPE);
+            }
+          }
+      );
+
+      TestUseVirtualNetworkFlag configWrapper = injector.getInstance(TestUseVirtualNetworkFlag.class);
+      assertThat(configWrapper.useVirtualNetwork, is(true));
     }
   }
 }

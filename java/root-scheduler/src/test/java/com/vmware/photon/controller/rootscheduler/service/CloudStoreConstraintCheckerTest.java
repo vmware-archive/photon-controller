@@ -470,6 +470,13 @@ public class CloudStoreConstraintCheckerTest {
     selectedHosts = checker.getCandidatesSync(Arrays.asList(constraint), 2);
     assertThat(selectedHosts.size(), equalTo(0));
 
+    // Part 6c: Test VIRTUAL_NETWORK constraints are ignored
+    constraint = new ResourceConstraint(
+        ResourceConstraintType.VIRTUAL_NETWORK,
+        Arrays.asList("network-1", "network-2"));
+    selectedHosts = checker.getCandidatesSync(Arrays.asList(constraint), 2);
+    assertThat(selectedHosts.size(), equalTo(2));
+
     deleteDatastores(cloudStoreEnvironment, datastores);
     deleteHosts(cloudStoreEnvironment, hosts);
   }
