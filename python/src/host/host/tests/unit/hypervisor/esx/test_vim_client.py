@@ -17,6 +17,8 @@ import unittest
 
 from datetime import datetime
 from datetime import timedelta
+
+from host.hypervisor.esx.vim_cache import VimCache
 from mock import patch
 from mock import MagicMock
 from mock import PropertyMock
@@ -74,7 +76,7 @@ class TestVimClient(unittest.TestCase):
         connect_mock.assert_called_once_with(host="esx.local", user="root", pwd="password",
                                              version="vim.version.version9")
 
-    @patch.object(VimClient, "_poll_updates")
+    @patch.object(VimCache, "poll_updates")
     @patch("pysdk.connect.Connect")
     def test_update_fail_without_looping(self, connect_mock, update_mock):
         client = VimClient(auto_sync=True, min_interval=1)
@@ -84,7 +86,7 @@ class TestVimClient(unittest.TestCase):
         client.disconnect(wait=True)
         assert_that(update_mock.call_count, less_than(5))  # no crazy loop
 
-    @patch.object(VimClient, "_poll_updates")
+    @patch.object(VimCache, "poll_updates")
     @patch("pysdk.connect.Connect")
     @patch("time.sleep")
     def test_update_fail_will_suicide(self, sleep_mock, connect_mock, update_mock):
@@ -99,7 +101,7 @@ class TestVimClient(unittest.TestCase):
 
         client = VimClient(auto_sync=True, min_interval=1, errback=lambda: suicide())
         client.connect_userpwd("esx.local", "root", "password")
-        client._poll_updates = poll_updates
+        client._vim_cache.poll_updates = poll_updates
 
         killed.wait(1)
         client.disconnect(wait=True)
@@ -108,12 +110,13 @@ class TestVimClient(unittest.TestCase):
         assert_that(poll_updates.call_count, is_(5))
         assert_that(killed.is_set(), is_(True))
 
-    @patch.object(VimClient, "_filter_spec")
+    @patch.object(VimCache, "_build_filter_spec")
     @patch("pysdk.connect.Connect")
     def test_update_cache(self, connect_mock, spec_mock):
         vim_client = VimClient(auto_sync=False)
         vim_client.connect_userpwd("esx.local", "root", "password")
         vim_client._property_collector.WaitForUpdatesEx.return_value = {}
+        vim_client._vim_cache = VimCache(vim_client)
 
         # Test enter
         update = vmodl.query.PropertyCollector.UpdateSet(version="1")
@@ -124,47 +127,32 @@ class TestVimClient(unittest.TestCase):
             obj=vim.VirtualMachine("vim.VirtualMachine:9"),
         )
         filter.objectSet.append(object_update)
-        object_update.changeSet.append(vmodl.query.PropertyCollector.Change(
-            name="name",
-            op="assign",
-            val="agent4"))
-        object_update.changeSet.append(vmodl.query.PropertyCollector.Change(
-            name="runtime.powerState",
-            op="assign",
-            val="poweredOff"))
-        object_update.changeSet.append(vmodl.query.PropertyCollector.Change(
-            name="config",
-            op="assign",
-            val=vim.vm.ConfigInfo(
-                files=vim.vm.FileInfo(
-                    vmPathName="[datastore2] agent4/agent4.vmx"),
-                hardware=vim.vm.VirtualHardware(
-                    memoryMB=4096
-                ),
+        object_update.changeSet.append(
+                vmodl.query.PropertyCollector.Change(name="name", op="assign", val="agent4"))
+        object_update.changeSet.append(
+                vmodl.query.PropertyCollector.Change(name="runtime.powerState", op="assign", val="poweredOff"))
+        object_update.changeSet.append(
+            vmodl.query.PropertyCollector.Change(name="config", op="assign", val=vim.vm.ConfigInfo(
+                files=vim.vm.FileInfo(vmPathName="[datastore2] agent4/agent4.vmx"),
+                hardware=vim.vm.VirtualHardware(memoryMB=4096),
                 extraConfig=[
-                    vim.option.OptionValue(
-                        key='photon_controller.vminfo.tenant', value='t1'),
-                    vim.option.OptionValue(
-                        key='photon_controller.vminfo.project', value='p1')
-                ]
-            )
-        ))
+                    vim.option.OptionValue(key='photon_controller.vminfo.tenant', value='t1'),
+                    vim.option.OptionValue(key='photon_controller.vminfo.project', value='p1')
+                ])
+            ))
         disk_list = vim.vm.FileLayout.DiskLayout.Array()
         disk_list.append(vim.vm.FileLayout.DiskLayout(diskFile=["disk1"]))
         disk_list.append(vim.vm.FileLayout.DiskLayout(diskFile=["disk2"]))
-        object_update.changeSet.append(vmodl.query.PropertyCollector.Change(
-            name="layout.disk",
-            op="assign",
-            val=disk_list
-        ))
+        object_update.changeSet.append(
+                vmodl.query.PropertyCollector.Change(name="layout.disk", op="assign", val=disk_list))
 
         vim_client._property_collector.WaitForUpdatesEx.return_value = update
         assert_that(len(vim_client.get_vms_in_cache()), is_(0))
-        vim_client._poll_updates()
+        vim_client._vim_cache.poll_updates(vim_client)
         vim_client._property_collector.WaitForUpdatesEx.assert_called()
 
         vms = vim_client.get_vms_in_cache()
-        assert_that(vim_client.current_version, is_("1"))
+        assert_that(vim_client._vim_cache._current_version, is_("1"))
         assert_that(len(vms), 1)
         assert_that(vms[0].memory_mb, is_(4096))
         assert_that(vms[0].path, is_("[datastore2] agent4/agent4.vmx"))
@@ -179,8 +167,7 @@ class TestVimClient(unittest.TestCase):
         vm_obj = vim_client.get_vm_obj_in_cache("agent4")
         assert_that(vm_obj._moId, is_("9"))
         assert_that(str(vm_obj), is_("'vim.VirtualMachine:9'"))
-        assert_that(vm_obj,
-                    instance_of(vim.VirtualMachine))
+        assert_that(vm_obj, instance_of(vim.VirtualMachine))
 
         # Test Modify
         update.version = "2"
@@ -189,26 +176,18 @@ class TestVimClient(unittest.TestCase):
             obj=vim.VirtualMachine("vim.VirtualMachine:9"),
         )
         filter.objectSet[0] = object_update
-        object_update.changeSet.append(vmodl.query.PropertyCollector.Change(
-            name="runtime.powerState",
-            op="assign",
-            val="poweredOn"))
-        object_update.changeSet.append(vmodl.query.PropertyCollector.Change(
-            name="runtime.powerState",
-            op="assign",
-            val="poweredOn"))
+        object_update.changeSet.append(
+                vmodl.query.PropertyCollector.Change(name="runtime.powerState", op="assign", val="poweredOn"))
+        object_update.changeSet.append(
+                vmodl.query.PropertyCollector.Change(name="runtime.powerState", op="assign", val="poweredOn"))
         disk_list = vim.vm.FileLayout.DiskLayout.Array()
-        disk_list.append(vim.vm.FileLayout.DiskLayout(diskFile=["disk3",
-                                                                "disk4"]))
-        object_update.changeSet.append(vmodl.query.PropertyCollector.Change(
-            name="layout.disk",
-            op="assign",
-            val=disk_list
-        ))
+        disk_list.append(vim.vm.FileLayout.DiskLayout(diskFile=["disk3", "disk4"]))
+        object_update.changeSet.append(
+                vmodl.query.PropertyCollector.Change(name="layout.disk", op="assign", val=disk_list))
 
-        vim_client._poll_updates()
+        vim_client._vim_cache.poll_updates(vim_client)
         vms = vim_client.get_vms_in_cache()
-        assert_that(vim_client.current_version, is_("2"))
+        assert_that(vim_client._vim_cache._current_version, is_("2"))
         assert_that(len(vms), is_(1))
         assert_that(vms[0].memory_mb, is_(4096))
         assert_that(vms[0].path, is_("[datastore2] agent4/agent4.vmx"))
@@ -226,13 +205,13 @@ class TestVimClient(unittest.TestCase):
             obj=vim.VirtualMachine("vim.VirtualMachine:9"),
         )
         filter.objectSet[0] = object_update
-        vim_client._poll_updates()
+        vim_client._vim_cache.poll_updates(vim_client)
         vms = vim_client.get_vms_in_cache()
-        assert_that(vim_client.current_version, is_("3"))
+        assert_that(vim_client._vim_cache._current_version, is_("3"))
         assert_that(len(vms), is_(0))
 
-    @patch.object(VimClient, "_poll_updates")
-    @patch.object(VimClient, "_filter_spec")
+    @patch.object(VimCache, "poll_updates")
+    @patch.object(VimCache, "_build_filter_spec")
     @patch("pysdk.connect.Connect")
     @patch("pysdk.connect.Disconnect")
     def test_poll_update_in_thread(self, disconnect_mock, connect_mock, spec_mock, update_mock):
@@ -343,8 +322,8 @@ class TestVimClient(unittest.TestCase):
         self.assertRaises(AcquireCredentialsException, vim_client._acquire_local_credentials)
 
     @patch('host.hypervisor.esx.vim_client.VimClient._property_collector', new_callable=PropertyMock)
-    @patch.object(VimClient, "_poll_updates")
-    @patch.object(VimClient, "_vm_filter_spec")
+    @patch.object(VimCache, "poll_updates")
+    @patch.object(VimCache, "_vm_filter_spec")
     @patch("pysdk.connect.Connect")
     @patch("pysdk.connect.Disconnect")
     def test_update_host_cache_in_thread(self, disconnect_mock, connect_mock, spec_mock,
