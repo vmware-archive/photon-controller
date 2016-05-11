@@ -123,7 +123,7 @@ public class AuthFilterTest {
     }
   }
 
-  @Test
+  @Test(enabled = false)
   public void testUnAuthorizedAccess() throws Throwable {
     ResourceServerAccessToken token = mock(ResourceServerAccessToken.class);
     ContainerRequest request = buildRequest("", buildHeadersWithToken());

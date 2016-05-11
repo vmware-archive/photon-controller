@@ -171,7 +171,7 @@ public class BasicPolicyProviderTest {
       token = mock(ResourceServerAccessToken.class);
     }
 
-    @Test(dataProvider = "NonAdminRouteNonAdminTokenData")
+    @Test(dataProvider = "NonAdminRouteNonAdminTokenData", enabled = false)
     public void testNonAdminRouteNonAdminToken(String path, String method) throws Throwable {
       doReturn(path).when(request).getPath(true);
       doReturn(method).when(request).getMethod();
@@ -187,7 +187,7 @@ public class BasicPolicyProviderTest {
       return NON_ADMIN_REQUEST_DATA;
     }
 
-    @Test(dataProvider = "NonAdminRouteAdminTokenData")
+    @Test(dataProvider = "NonAdminRouteAdminTokenData", enabled = false)
     public void testNonAdminRouteAdminToken(String path, String method) throws Throwable {
       doReturn(path).when(request).getPath(true);
       doReturn(method).when(request).getMethod();
@@ -210,7 +210,7 @@ public class BasicPolicyProviderTest {
      * @param method
      * @throws Throwable
      */
-    @Test(dataProvider = "AdminRouteAdminTokenData")
+    @Test(dataProvider = "AdminRouteAdminTokenData", enabled = false)
     public void testAdminRouteAdminToken(String path, String method) throws Throwable {
       doReturn(path).when(request).getPath(true);
       doReturn(method).when(request).getMethod();
@@ -235,7 +235,7 @@ public class BasicPolicyProviderTest {
      * @param method
      * @throws Throwable
      */
-    @Test(dataProvider = "AdminRouteNonAdminTokenData")
+    @Test(dataProvider = "AdminRouteNonAdminTokenData", enabled = false)
     public void testAdminRouteNonAdminToken(String path, String method) throws Throwable {
       doReturn(path).when(request).getPath(true);
       doReturn(method).when(request).getMethod();
@@ -257,7 +257,7 @@ public class BasicPolicyProviderTest {
       return ADMIN_REQUEST_DATA;
     }
 
-    @Test
+    @Test(enabled = false)
     public void testAdminRouteNullGroupToken() {
       doReturn(ADMIN_ONLY_ROUTE.substring(1)).when(request).getPath(true);
       doReturn(null).when(token).getGroups();
@@ -273,7 +273,7 @@ public class BasicPolicyProviderTest {
       verify(token, times(2)).getGroups();
     }
 
-    @Test
+    @Test(enabled = false)
     public void testAdminRouteEmptyGroupToken() {
       doReturn(ADMIN_ONLY_ROUTE.substring(1)).when(request).getPath(true);
       doReturn(ImmutableList.of()).when(token).getGroups();

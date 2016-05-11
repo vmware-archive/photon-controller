@@ -67,7 +67,7 @@ class ApiClientHelper
         auth_tool_path = ENV["PHOTON_AUTH_TOOL_PATH"].strip
       end
 
-      service_locator_url = ENV["PHOTON_AUTH_LS_ENDPOINT"].strip
+      service_locator_url = "10.146.64.236"
 
       username = ENV["PHOTON_USERNAME_#{user_suffix}"].strip
       password = ENV["PHOTON_PASSWORD_#{user_suffix}"].strip

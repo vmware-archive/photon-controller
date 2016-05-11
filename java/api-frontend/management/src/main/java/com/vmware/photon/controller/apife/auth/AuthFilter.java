@@ -123,6 +123,7 @@ public class AuthFilter implements ContainerRequestFilter {
     }
 
     String jwtAccessToken = extractJwtAccessToken(request);
+    logger.info("jwtAccessToken is: %s", jwtAccessToken);
 
     if (jwtAccessToken.equals(this.sharedSecret)) {
       // we don't need to authenticate a service
@@ -181,13 +182,15 @@ public class AuthFilter implements ContainerRequestFilter {
   /**
    * Lazily initializes the AuthTokenHandler object for the AuthFilter.
    *
-   * @throws WebApplicationException
+   * @throws ExternalException
    */
   private void initializeAuth() throws ExternalException {
     if (this.tokenHandler == null) {
       synchronized (this) {
         if (this.tokenHandler == null) {
           try {
+            logger.info("authServerAddress is: %s, authServerPort is: %s, tenant is: %s", authServerAddress,
+                authServerPort, tenant);
             this.tokenHandler = new AuthOIDCClient(authServerAddress, authServerPort, tenant).getTokenHandler();
           } catch (AuthException ex) {
             throw new ExternalException(
