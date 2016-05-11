@@ -144,20 +144,6 @@ def uuid_to_vmdk_uuid(uuid):
     return " ".join(pairs[:8]) + "-" + " ".join(pairs[8:])
 
 
-def get_image_base_disk(disk_files):
-
-    """Find the image base disk from a list of disks.
-
-    :type disk_files: list of str
-    :param disk_files: list of disk files. Typically this list comes from the
-                       vm.layout.disk.diskFile field in vim client.
-    """
-    for disk_file in disk_files:
-        if _root_folder(disk_file) == IMAGE_FOLDER_NAME_PREFIX:
-            return datastore_to_os_path(disk_file)
-    return None
-
-
 def get_root_disk(disk_files):
     """Find the COW child disk from the disk chain with an image parent.
 

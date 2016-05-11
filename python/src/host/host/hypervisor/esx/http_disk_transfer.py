@@ -295,7 +295,7 @@ class HttpNfcTransferer(HttpTransferer):
         spec.init_for_import(vm_id, vm_path)
         # Just specify a tiny capacity in the spec for now; the eventual vm
         # disk will be based on what is uploaded via the http nfc url.
-        self._vm_manager.create_empty_disk(spec, datastore, None, size_mb=1)
+        spec.create_empty_disk(datastore, None, size_mb=1)
         return spec
 
     def _get_url_from_import_vm(self, dst_host_client, dst_host, import_spec):

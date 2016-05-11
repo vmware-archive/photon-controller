@@ -36,7 +36,6 @@ from host.hypervisor.vm_manager import VmAlreadyExistException
 from host.hypervisor.vm_manager import VmNotFoundException
 from host.hypervisor.vm_manager import VmPowerStateException
 from host.hypervisor.esx.vim_client import VimClient
-from host.hypervisor.esx.path_util import datastore_to_os_path
 from host.hypervisor.esx.vm_manager import EsxVmManager
 from host.hypervisor.esx.vm_manager import NetUtil
 
@@ -103,10 +102,10 @@ class TestEsxVmManager(unittest.TestCase):
         spec = self._update_spec()
         spec._find_device = _get_device
         # Caller passes none
-        self.vm_manager.add_nic(spec, None)
+        spec.add_nic(None)
 
         # Caller passes some network_id
-        self.vm_manager.add_nic(spec, "Private Vlan")
+        spec.add_nic("Private Vlan")
 
     def test_create_vm_already_exist(self):
         """Test VM creation fails if VM is found"""
@@ -230,8 +229,8 @@ class TestEsxVmManager(unittest.TestCase):
         parent_disk_id = str(uuid.uuid4())
         capacity_mb = 1024
 
-        self.vm_manager.create_child_disk(spec, ds, disk_id, parent_disk_id)
-        self.vm_manager.create_empty_disk(spec, ds, disk_id, capacity_mb)
+        spec.create_child_disk(ds, disk_id, parent_disk_id)
+        spec.create_empty_disk(ds, disk_id, capacity_mb)
 
         # check that we only create one controller of desired type to attach
         # to both disks
@@ -253,7 +252,7 @@ class TestEsxVmManager(unittest.TestCase):
         }
         spec = self._create_vm_spec(metadata, {})
 
-        self.vm_manager.add_nic(spec, "fake_network_id")
+        spec.add_nic("fake_network_id")
 
         summary = TestEsxVmManager._summarize_controllers_in_spec(
             spec.get_spec(), vim.vm.device.VirtualEthernetCard, expected_ctlr_type)
@@ -286,15 +285,12 @@ class TestEsxVmManager(unittest.TestCase):
         vm = MagicMock()
         vm.runtime = runtime
         self.vm_manager.vim_client.get_vm = MagicMock(return_value=vm)
-        self.vm_manager.get_vm_path = MagicMock()
-        self.vm_manager.get_vm_path.return_value = "[fake] vm_foo/xxyy.vmx"
-        self.vm_manager.get_vm_datastore = MagicMock()
-        self.vm_manager.get_vm_datastore.return_value = "fake"
+        self.vm_manager._get_vm_datastore = MagicMock()
+        self.vm_manager._get_vm_datastore.return_value = "fake"
         self.vm_manager._ensure_directory_cleanup = MagicMock()
 
         self.vm_manager.delete_vm("vm_foo")
-        self.vm_manager._ensure_directory_cleanup.assert_called_once_with(
-            "/vmfs/volumes/fake/vm_vm_foo")
+        self.vm_manager._ensure_directory_cleanup.assert_called_once_with("/vmfs/volumes/fake/vm_vm_foo")
 
     @parameterized.expand([
         ("poweredOn"), ("suspended")
@@ -513,35 +509,6 @@ class TestEsxVmManager(unittest.TestCase):
                                    network=sample_network,
                                    is_connected=ConnectedStatus.CONNECTED)
         self.assertEqual(network_info, [expected_6])
-
-    def test_get_linked_clone_image_path(self):
-        image_path = self.vm_manager.get_linked_clone_image_path
-
-        # VM not found
-        vm = MagicMock(return_value=None)
-        self.vm_manager.vim_client.get_vm_in_cache = vm
-        assert_that(image_path("vm1"), is_(None))
-
-        # disks is None
-        vm = MagicMock(return_value=VmCache(disks=None))
-        self.vm_manager.vim_client.get_vm_in_cache = vm
-        assert_that(image_path("vm1"), is_(None))
-
-        # disks is an empty list
-        vm = MagicMock(return_value=VmCache(disks=[]))
-        self.vm_manager.vim_client.get_vm_in_cache = vm
-        assert_that(image_path("vm1"), is_(None))
-
-        # no image disk
-        vm = MagicMock(return_value=VmCache(disks=["a", "b", "c"]))
-        self.vm_manager.vim_client.get_vm_in_cache = vm
-        assert_that(image_path("vm1"), is_(None))
-
-        # image found
-        image = "[ds1] image_ttylinux/ttylinux.vmdk"
-        vm = MagicMock(return_value=VmCache(disks=["a", "b", image]))
-        self.vm_manager.vim_client.get_vm_in_cache = vm
-        assert_that(image_path("vm1"), is_(datastore_to_os_path(image)))
 
     def test_get_resources(self):
         """
