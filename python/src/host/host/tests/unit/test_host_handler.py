@@ -806,15 +806,11 @@ class HostHandlerTestCase(unittest.TestCase):
         request = DetachISORequest(vm_id="vm.id", delete_file=True)
         vm_manager = handler.hypervisor.vm_manager
 
-        vm_manager.remove_iso.side_effect = Exception
-        response = handler.detach_iso(request)
-        self.assertEqual(response.result, DetachISOResultCode.CANNOT_DELETE)
-
-        vm_manager.disconnect_cdrom.side_effect = VmNotFoundException
+        vm_manager.detach_iso.side_effect = VmNotFoundException
         response = handler.detach_iso(request)
         self.assertEqual(response.result, DetachISOResultCode.VM_NOT_FOUND)
 
-        vm_manager.disconnect_cdrom.side_effect = IsoNotAttachedException
+        vm_manager.detach_iso.side_effect = IsoNotAttachedException
         response = handler.detach_iso(request)
         self.assertEqual(response.result, DetachISOResultCode.ISO_NOT_ATTACHED)
 

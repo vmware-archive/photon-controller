@@ -16,7 +16,6 @@ import uuid
 
 from host.hypervisor.esx.vm_config import EsxVmConfigSpec
 from mock import MagicMock
-from mock import ANY
 from mock import patch
 
 from nose_parameterized import parameterized
@@ -125,7 +124,7 @@ class TestEsxVmManager(unittest.TestCase):
         mock_vm_folder.CreateVm.return_value = "fake-task"
 
         self.vm_manager.vim_client._vm_folder = MagicMock(return_value=mock_vm_folder)
-        self.vm_manager.vim_client.root_resource_pool = MagicMock(return_value="fake_rp")
+        self.vm_manager.vim_client._root_resource_pool = MagicMock(return_value="fake_rp")
 
         self.vm_manager.vim_client.get_vm_in_cache = MagicMock(return_value=None)
         self.vm_manager.vim_client.wait_for_task = MagicMock()
@@ -302,19 +301,7 @@ class TestEsxVmManager(unittest.TestCase):
         vm.runtime = runtime
         self.vm_manager.vim_client.get_vm = MagicMock(return_value=vm)
 
-        self.assertRaises(VmPowerStateException, self.vm_manager.delete_vm,
-                          "vm_foo")
-
-    def test_attach_vm_disk(self):
-        """Test adding VM disk"""
-
-        self.vm_manager.vim_client.get_vm = MagicMock()
-        self.vm_manager.vim_client.reconfigure_vm = MagicMock()
-
-        self.vm_manager.attach_disk("vm_id", "ds1.vmdk")
-
-        self.vm_manager.vim_client.get_vm.assert_called_with("vm_id")
-        self.vm_manager.vim_client.reconfigure_vm.assert_called_once_with(ANY, ANY)
+        self.assertRaises(VmPowerStateException, self.vm_manager.delete_vm, "vm_foo")
 
     def test_used_memory(self):
         self.vm_manager.vim_client.get_vms_in_cache = MagicMock(return_value=[
