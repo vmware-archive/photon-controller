@@ -35,10 +35,12 @@ module EsxCloud
     def create_vm(project, vm_name, image_id)
       ephemeral_disk = create_ephemeral_disk(random_name("#{vm_name}-disk-e-"))
       persistent_disk = create_persistent_disk(project, random_name("#{vm_name}-disk-"))
+      network = create_network
       create_vm_spec = { image_id: image_id,
                          name: vm_name,
                          flavor: create_vm_flavor.name,
-                         disks: [ephemeral_disk] }
+                         disks: [ephemeral_disk],
+                         networks: [network.id] }
       vm = project.create_vm create_vm_spec
       vm.attach_disk(persistent_disk.id)
       vm
@@ -95,6 +97,20 @@ module EsxCloud
 
       spec = EsxCloud::FlavorCreateSpec.new name, kind, cost
       EsxCloud::Flavor.create spec
+    end
+
+    def create_network
+      portgroup = get_port_group
+      network_spec = EsxCloud::NetworkCreateSpec.new(random_name("network-"), "VLAN", [portgroup])
+      Esxcloud::Network.create(network_spec)
+    end
+
+    def get_port_group
+      ENV["ESX_VM_PORT_GROUP"] || "VM Network"
+    end
+
+    def get_port_group2
+      ENV["ESX_VM_PORT_GROUP2"] || "VM Network2"
     end
 
     def create_small_limits
