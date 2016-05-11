@@ -23,6 +23,7 @@ from host.hypervisor.hypervisor import UpdateListener
 from host.hypervisor.esx.hypervisor import EsxHypervisor
 from host.hypervisor.esx.vim_client import AcquireCredentialsException
 from host.hypervisor.esx.vim_client import VimClient
+from host.hypervisor.esx.vim_cache import VimCache
 
 
 class TestUnitEsxHypervisor(unittest.TestCase):
@@ -40,8 +41,8 @@ class TestUnitEsxHypervisor(unittest.TestCase):
             # runs beyond its own context, other test case could mocks some
             # function the thread relies on, and it could lead to bad
             # behaviors.
-            self.hv.host_client.sync_thread.stop()
-            self.hv.host_client.sync_thread.join()
+            self.hv.host_client._sync_thread.stop()
+            self.hv.host_client._sync_thread.join()
         self.services_helper.teardown()
 
     def _retrieve_content(self):
@@ -54,7 +55,7 @@ class TestUnitEsxHypervisor(unittest.TestCase):
 
     @patch("host.hypervisor.esx.image_manager.EsxImageManager.monitor_for_cleanup")
     @patch.object(VimClient, "_acquire_local_credentials")
-    @patch.object(VimClient, "_poll_updates")
+    @patch.object(VimCache, "poll_updates")
     @patch("pysdk.connect.Connect")
     def test_config(self, connect_mock, update_mock, creds_mock, monitor_mock):
 
@@ -79,7 +80,7 @@ class TestUnitEsxHypervisor(unittest.TestCase):
 
     @patch("host.hypervisor.esx.image_manager.EsxImageManager.monitor_for_cleanup")
     @patch.object(VimClient, "_acquire_local_credentials")
-    @patch.object(VimClient, "_poll_updates")
+    @patch.object(VimCache, "poll_updates")
     @patch("pysdk.connect.Connect")
     def test_listener(self, connect_mock, update_mock, creds_mock, monitor_mock):
         """Test update listeners"""

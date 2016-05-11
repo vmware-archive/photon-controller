@@ -284,6 +284,7 @@ class TestEsxVmManager(unittest.TestCase):
         vm = MagicMock()
         vm.runtime = runtime
         self.vm_manager.vim_client.get_vm = MagicMock(return_value=vm)
+        self.vm_manager.vim_client.wait_for_vm_delete = MagicMock()
         self.vm_manager._get_vm_datastore = MagicMock()
         self.vm_manager._get_vm_datastore.return_value = "fake"
         self.vm_manager._ensure_directory_cleanup = MagicMock()

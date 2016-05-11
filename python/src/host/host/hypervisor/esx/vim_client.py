@@ -12,27 +12,24 @@
 
 """Wrapper around VIM API and Service Instance connection"""
 
-import copy
 import httplib
 import logging
 import sys
 import threading
 import time
-import weakref
 
 from calendar import timegm
-from common.blocking_dict import BlockingDict
 from common.lock import lock_with
 from common.log import log_duration
 from common.log import log_duration_with
 from datetime import datetime
-from gen.agent.ttypes import TaskCache
 from host.hypervisor.disk_manager import DiskAlreadyExistException, DiskPathException
 from host.hypervisor.disk_manager import DiskFileException
 from host.hypervisor.esx.host_client import HostClient
 from host.hypervisor.esx.host_client import NfcLeaseInitiatizationTimeout
 from host.hypervisor.esx.host_client import NfcLeaseInitiatizationError
 from host.hypervisor.esx.path_util import os_to_datastore_path
+from host.hypervisor.esx.vim_cache import SyncVimCacheThread, VimCache
 from host.hypervisor.esx.vm_config import uuid_to_vmdk_uuid
 from host.hypervisor.esx.vm_config import EsxVmConfigSpec
 from host.hypervisor.esx.vm_config import DEFAULT_DISK_ADAPTER_TYPE
@@ -47,7 +44,7 @@ from pyVmomi import vmodl
 
 from host.hypervisor.vm_manager import VmNotFoundException
 from host.hypervisor.esx import logging_wrappers
-from gen.agent.ttypes import VmCache, PowerState, TaskState
+from gen.agent.ttypes import TaskState
 
 # constants from bora/vim/hostd/private/hostdCommon.h
 HA_DATACENTER_ID = "ha-datacenter"
@@ -88,8 +85,8 @@ def hostd_error_handler(func):
         except (vim.fault.NotAuthenticated, vim.fault.HostConnectFault,
                 vim.fault.InvalidLogin, AcquireCredentialsException):
             self._logger.warning("Lost connection to hostd. Commit suicide.", exc_info=True)
-            if self.errback:
-                self.errback()
+            if self._errback:
+                self._errback()
             else:
                 raise
 
@@ -103,23 +100,15 @@ class VimClient(HostClient):
 
     def __init__(self, auto_sync=True, errback=None, wait_timeout=10, min_interval=1):
         self._logger = logging.getLogger(__name__)
-        self.host = host
-        self.current_version = None
-        self._vm_cache = {}
-        self._vm_name_to_ref = BlockingDict()
-        self._ds_name_properties = {}
-        self._vm_cache_lock = threading.RLock()
-        self._host_cache_lock = threading.Lock()
-        self._task_cache = BlockingDict()
-        self._task_counter_lock = threading.Lock()
+        self._sync_thread = None
+        self._auto_sync = auto_sync
+        self._errback = errback
+        self._wait_timeout = wait_timeout
+        self._min_interval = min_interval
+        self._update_listeners = set()
+        self._lock = threading.Lock()
         self._task_counter = 0
-        self.filter = None
-        self.min_interval = min_interval
-        self.sync_thread = None
-        self.wait_timeout = wait_timeout
-        self.auto_sync = auto_sync
-        self.errback = errback
-        self.update_listeners = set()
+        self._vim_cache = None
 
     def connect_ticket(self, host, ticket):
         if ticket:
@@ -163,9 +152,7 @@ class VimClient(HostClient):
 
     def _post_connect(self):
         self._content = self._si.RetrieveContent()
-        if self.auto_sync:
-            # Initialize vm cache
-            self._poll_updates()
+        if self._auto_sync:
             # Start syncing vm cache periodically
             self._start_syncing_cache()
 
@@ -180,6 +167,20 @@ class VimClient(HostClient):
         except:
             self._logger.warning("Failed to disconnect vim_client: %s" % sys.exc_info()[1])
 
+    def _start_syncing_cache(self):
+        self._logger.info("Start vim client sync vm cache thread")
+        self._vim_cache = VimCache(self)
+        self._vim_cache.poll_updates(self)
+        self._sync_thread = SyncVimCacheThread(self, self._vim_cache, self._wait_timeout,
+                                               self._min_interval, self._errback)
+        self._sync_thread.start()
+
+    def _stop_syncing_cache(self, wait=False):
+        if self._sync_thread:
+            self._sync_thread.stop()
+            if wait:
+                self._sync_thread.join()
+
     def _get_timestamps(self, sample_info_csv):
         # extract timestamps from sampleInfoCSV
         # format is '20,2015-12-03T18:39:20Z,20,2015-12-03T18:39:40Z...'
@@ -188,15 +189,20 @@ class VimClient(HostClient):
         timestamps = sample_info_csv.split(',')[1::2]
         return [timegm(datetime.strptime(dt, '%Y-%m-%dT%H:%M:%SZ').timetuple()) for dt in timestamps]
 
-    @lock_with("_vm_cache_lock")
+    @lock_with("_lock")
     def add_update_listener(self, listener):
         # Notify the listener immediately since there might have already been some updates.
         listener.datastores_updated()
-        self.update_listeners.add(listener)
+        self._update_listeners.add(listener)
 
-    @lock_with("_vm_cache_lock")
+    @lock_with("_lock")
     def remove_update_listener(self, listener):
-        self.update_listeners.discard(listener)
+        self._update_listeners.discard(listener)
+
+    @property
+    @lock_with("_lock")
+    def update_listeners(self):
+        return self._update_listeners
 
     def query_config(self):
         env_browser = invt.GetEnv(si=self._si)
@@ -379,20 +385,23 @@ class VimClient(HostClient):
 
         :return: list of vim.VirtualMachine
         """
-        filter_spec = self._vm_filter_spec()
+        PC = vmodl.query.PropertyCollector
+        traversal_spec = PC.TraversalSpec(name="folderTraversalSpec", type=vim.Folder, path="childEntity", skip=False)
+        property_spec = PC.PropertySpec(type=vim.VirtualMachine,
+                                        pathSet=["name", "runtime.powerState", "layout.disk", "config"])
+        object_spec = PC.ObjectSpec(obj=self._vm_folder(), selectSet=[traversal_spec])
+        filter_spec = PC.FilterSpec(propSet=[property_spec], objectSet=[object_spec])
+
         objects = self._property_collector.RetrieveContents([filter_spec])
         return [object.obj for object in objects]
 
-    @lock_with("_vm_cache_lock")
     def get_vms_in_cache(self):
         """ Get information of all VMs from cache.
 
         :return: list of VmCache
         """
-        return [copy.copy(vm) for vm in self._vm_cache.values()
-                if self._validate_vm(vm)]
+        return self._vim_cache.get_vms_in_cache()
 
-    @lock_with("_vm_cache_lock")
     def get_vm_in_cache(self, vm_id):
         """ Get information of a VM from cache. The vm state is not
         guaranteed to be up-to-date. Also only name and power_state is
@@ -401,27 +410,15 @@ class VimClient(HostClient):
         :return: VmCache for the vm that is found
         :raise VmNotFoundException when vm is not found
         """
-        if vm_id not in self._vm_name_to_ref:
-            raise VmNotFoundException("VM '%s' not found on host." % vm_id)
+        return self._vim_cache.get_vm_in_cache(vm_id)
 
-        ref = self._vm_name_to_ref[vm_id]
-        vm = self._vm_cache[ref]
-        if self._validate_vm(vm):
-            return copy.copy(vm)
-        else:
-            raise VmNotFoundException("VM '%s' not found on host." % vm_id)
-
-    @lock_with("_vm_cache_lock")
     def get_vm_obj_in_cache(self, vm_id):
         """ Get vim vm object given ID of the vm.
 
         :return: vim.VirtualMachine object
         :raise VmNotFoundException when vm is not found
         """
-        if vm_id not in self._vm_name_to_ref:
-            raise VmNotFoundException("VM '%s' not found on host." % vm_id)
-
-        moid = self._vm_name_to_ref[vm_id].split(":")[-1][:-1]
+        moid = self._vim_cache.get_vm_obj_in_cache(vm_id)
         return vim.VirtualMachine(moid, self._si._stub)
 
     @hostd_error_handler
@@ -614,6 +611,10 @@ class VimClient(HostClient):
         self._logger.debug("%s -> %s" % (dev_url.key, dev_url.url))
         return lease, dev_url.url
 
+    def _power_vm(self, vm_id, op):
+        vm = self.get_vm(vm_id)
+        self._invoke_vm(vm, op)
+
     def power_on_vm(self, vm_id):
         self._power_vm(vm_id, "PowerOn")
 
@@ -683,21 +684,10 @@ class VimClient(HostClient):
             self._logger.debug("Fail to initialize nfc lease: %s" % str(lease.error))
             raise NfcLeaseInitiatizationError()
 
-    @staticmethod
-    def _verify_task_done(task_cache):
-        if not task_cache:
-            return False
-
-        state = task_cache.state
-        if state == TaskState.error or state == TaskState.success:
-            return True
-        else:
-            return False
-
     @hostd_error_handler
     @log_duration_with(log_level="debug")
     def wait_for_task(self, vim_task, timeout=DEFAULT_TASK_TIMEOUT):
-        if not self.auto_sync:
+        if not self._auto_sync:
             raise Exception("wait_for_task only works when auto_sync=True")
 
         self._task_counter_add()
@@ -706,7 +696,7 @@ class VimClient(HostClient):
                            format(str(vim_task), self._task_counter_read()))
 
         try:
-            task_cache = self._task_cache.wait_until(str(vim_task), VimClient._verify_task_done, timeout=timeout)
+            task_cache = self._vim_cache.wait_for_task(vim_task, timeout)
         finally:
             self._task_counter_sub()
 
@@ -718,182 +708,34 @@ class VimClient(HostClient):
         else:
             return task_cache
 
+    @lock_with("_lock")
+    def _task_counter_add(self):
+        self._task_counter += 1
+
+    @lock_with("_lock")
+    def _task_counter_sub(self):
+        self._task_counter -= 1
+
+    @lock_with("_lock")
+    def _task_counter_read(self):
+        return self._task_counter
+
     @log_duration_with(log_level="debug")
     def wait_for_vm_create(self, vm_id, timeout=10):
         """Wait for vm to be created in cache
         :raise TimeoutError when timeout
         """
-        self._vm_name_to_ref.wait_until(vm_id, lambda x: x is not None, timeout)
+        self._vim_cache.wait_for_vm_create(vm_id, timeout)
 
     @log_duration_with(log_level="debug")
     def wait_for_vm_delete(self, vm_id, timeout=10):
         """Wait for vm to be deleted from cache
         :raise TimeoutError when timeout
         """
-        self._vm_name_to_ref.wait_until(vm_id, None, timeout)
-
-    @hostd_error_handler
-    def _poll_updates(self, timeout=10):
-        """Polling on VM updates on host. This call will block caller until
-        update of VM is available or timeout.
-        :param timeout: timeout in seconds
-        """
-        if not self.filter:
-            self.filter = self._property_collector.CreateFilter(self._filter_spec(), partialUpdates=False)
-        wait_options = vmodl.query.PropertyCollector.WaitOptions()
-        wait_options.maxWaitSeconds = timeout
-        update = self._property_collector.WaitForUpdatesEx(self.current_version, wait_options)
-        self._update_cache(update)
-        if update:
-            self.current_version = update.version
-        return update
-
-    def _datastore_filter_spec(self):
-        PC = vmodl.query.PropertyCollector
-        traversal_spec = PC.TraversalSpec(name="folderTraversalSpec", type=vim.Folder, path="childEntity", skip=False)
-        property_spec = PC.PropertySpec(type=vim.Datastore, pathSet=["name"])
-        object_spec = PC.ObjectSpec(obj=self._find_by_inventory_path(DATASTORE_FOLDER_NAME), selectSet=[traversal_spec])
-        return PC.FilterSpec(propSet=[property_spec], objectSet=[object_spec])
-
-    def _vm_filter_spec(self):
-        PC = vmodl.query.PropertyCollector
-        traversal_spec = PC.TraversalSpec(name="folderTraversalSpec", type=vim.Folder, path="childEntity", skip=False)
-        property_spec = PC.PropertySpec(type=vim.VirtualMachine,
-                                        pathSet=["name", "runtime.powerState", "layout.disk", "config"])
-        object_spec = PC.ObjectSpec(obj=self._vm_folder(), selectSet=[traversal_spec])
-        return PC.FilterSpec(propSet=[property_spec], objectSet=[object_spec])
-
-    def _task_filter_spec(self):
-        PC = vmodl.query.PropertyCollector
-        task_property_spec = PC.PropertySpec(type=vim.Task, pathSet=["info.error", "info.state"])
-        task_traversal_spec = PC.TraversalSpec(name="taskSpec", type=vim.TaskManager, path="recentTask", skip=False)
-        task_object_spec = PC.ObjectSpec(obj=self._content.taskManager, selectSet=[task_traversal_spec])
-        return PC.FilterSpec(propSet=[task_property_spec], objectSet=[task_object_spec])
-
-    def _filter_spec(self):
-        PC = vmodl.query.PropertyCollector
-        ds_spec = self._datastore_filter_spec()
-        task_spec = self._task_filter_spec()
-        vm_spec = self._vm_filter_spec()
-        propSet = ds_spec.propSet + task_spec.propSet + vm_spec.propSet
-        objectSet = ds_spec.objectSet + task_spec.objectSet + vm_spec.objectSet
-        return PC.FilterSpec(propSet=propSet, objectSet=objectSet)
-
-    def _apply_ds_update(self, obj_update):
-        ds_key = str(obj_update.obj)
-        updated = False
-        if obj_update.kind == "enter" or obj_update.kind == "modify":
-            for change in obj_update.changeSet:
-                if change.name == "name":
-                    ds_name = change.val
-                    self._logger.debug("cache update: %s ds name %s" % (obj_update.kind, ds_name))
-                    if ds_key not in self._ds_name_properties or self._ds_name_properties[ds_key] != ds_name:
-                        updated = True
-                    self._ds_name_properties[ds_key] = ds_name
-        elif obj_update.kind == "leave":
-            self._logger.debug("cache update: remove ds ref %s" % ds_key)
-            if ds_key in self._ds_name_properties:
-                del self._ds_name_properties[ds_key]
-                updated = True
-        return updated
-
-    @lock_with("_vm_cache_lock")
-    def _update_cache(self, update):
-        if not update or not update.filterSet:
-            return
-
-        ds_updated = False
-        for filter in update.filterSet:
-            for object in filter.objectSet:
-                # Update Vm cache
-                if isinstance(object.obj, vim.VirtualMachine):
-                    if object.kind == "enter":
-                        # Possible to have 2 enters for one object
-                        self._add_or_modify_vm_cache(object)
-                    elif object.kind == "leave":
-                        assert str(object.obj) in self._vm_cache, "%s not in cache for kind leave" % object.obj
-                        self._remove_vm_cache(object)
-                    elif object.kind == "modify":
-                        assert str(object.obj) in self._vm_cache, "%s not in cache for kind modify" % object.obj
-                        self._add_or_modify_vm_cache(object)
-                # Update task cache
-                elif isinstance(object.obj, vim.Task):
-                    if object.kind == "enter":
-                        self._update_task_cache(object)
-                    elif object.kind == "leave":
-                        self._remove_task_cache(object)
-                    elif object.kind == "modify":
-                        self._update_task_cache(object)
-                elif isinstance(object.obj, vim.Datastore):
-                    self._logger.debug("Datastore update: %s" % object)
-                    updated = self._apply_ds_update(object)
-                    ds_updated = ds_updated or updated
-
-        # Notify listeners.
-        for listener in self.update_listeners:
-            if ds_updated:
-                self._logger.debug("datastores updated for listener: %s" % (listener.__class__.__name__))
-                listener.datastores_updated()
-
-    def _add_or_modify_vm_cache(self, object):
-        # Type of object.obj is vim.VirtualMachine. str(object.obj) is moref
-        # id, something like 'vim.VirtualMachine:1227'. moref id is the unique
-        # representation of all objects in esx.
-        if str(object.obj) not in self._vm_cache:
-            vm = VmCache()
-        else:
-            vm = self._vm_cache[str(object.obj)]
-
-        for change in object.changeSet:
-            # We are not interested in ops other than assign.
-            # Other operations e.g. add/remove/indirectRemove, only appears
-            # when a property is added/removed. However the changes we
-            # watched are all static.
-            if change.op != "assign":
-                continue
-
-            # None value is not updated
-            if change.val is None:
-                continue
-
-            if change.name == "name":
-                vm.name = change.val
-                self._logger.debug("cache update: add vm name %s" % vm.name)
-                self._vm_name_to_ref[change.val] = str(object.obj)
-            elif change.name == "runtime.powerState":
-                vm.power_state = PowerState._NAMES_TO_VALUES[change.val]
-            elif change.name == "config":
-                vm.memory_mb = change.val.hardware.memoryMB
-                vm.num_cpu = change.val.hardware.numCPU
-                # files is an optional field, which could be None.
-                if change.val.files:
-                    vm.path = change.val.files.vmPathName
-                for e in change.val.extraConfig:
-                    if e.key == "photon_controller.vminfo.tenant":
-                        vm.tenant_id = e.value
-                    elif e.key == "photon_controller.vminfo.project":
-                        vm.project_id = e.value
-            elif change.name == "layout.disk":
-                disks = []
-                for disk in change.val:
-                    if disk.diskFile:
-                        for disk_file in disk.diskFile:
-                            disks.append(disk_file)
-                vm.disks = disks
-
-        self._logger.debug("cache update: update vm [%s] => %s" % (str(object.obj), vm))
-        if str(object.obj) not in self._vm_cache:
-            self._vm_cache[str(object.obj)] = vm
-
-    def _power_vm(self, vm_id, op):
-        vm = self.get_vm(vm_id)
-        self._invoke_vm(vm, op)
+        self._vim_cache.wait_for_vm_delete(vm_id, timeout)
 
     def _vm_op_to_requested_state(self, op):
         """ Return the string of a requested state from a VM op.
-
-            For example if the operation is PowerOn the requested state is
-            poweredOn.
         """
         if op == "PowerOn":
             return "poweredOn"
@@ -918,75 +760,6 @@ class VimClient(HostClient):
                 self._logger.info("Exception: %s" % e.msg)
                 raise VmPowerStateException(e.msg)
 
-    def _remove_vm_cache(self, object):
-        ref_id = str(object.obj)
-        assert ref_id in self._vm_cache, "%s not in cache" % ref_id
-
-        vm_cache = self._vm_cache[ref_id]
-        self._logger.debug("cache update: delete vm [%s] => %s" % (ref_id, vm_cache))
-        del self._vm_cache[ref_id]
-        if vm_cache.name in self._vm_name_to_ref:
-            # Only delete map in _vm_name_to_ref when it points to the right
-            # ref_id. If it points to another ref_id, it means a new VM is
-            # created with the same name, which cannot be deleted.
-            if self._vm_name_to_ref[vm_cache.name] == ref_id:
-                del self._vm_name_to_ref[vm_cache.name]
-
-    def _update_task_cache(self, object):
-        task_cache = TaskCache()
-        for change in object.changeSet:
-            if change.op != "assign":
-                continue
-            if change.val is None:
-                continue
-
-            if change.name == "info.error":
-                task_cache.error = change.val
-            elif change.name == "info.state":
-                task_cache.state = TaskState._NAMES_TO_VALUES[change.val]
-
-        self._logger.debug("task cache update: update task [%s] => %s" % (str(object.obj), task_cache))
-
-        self._task_cache[str(object.obj)] = task_cache
-
-    def _remove_task_cache(self, object):
-        assert str(object.obj) in self._task_cache, "%s not in cache" % str(object.obj)
-
-        self._logger.debug("task cache update: remove task [%s] => %s" %
-                           (str(object.obj), self._task_cache[str(object.obj)]))
-
-        del self._task_cache[str(object.obj)]
-
-    def _validate_vm(self, vm):
-        try:
-            vm.validate()
-            return True
-        except:
-            return False
-
-    def _start_syncing_cache(self):
-        self._logger.info("Start vim client sync vm cache thread")
-        self.sync_thread = SyncVmCacheThread(self, self.wait_timeout, self.min_interval, self.errback)
-        self.sync_thread.start()
-
-    def _stop_syncing_cache(self, wait=False):
-        if self.sync_thread:
-            self.sync_thread.stop()
-            if wait:
-                self.sync_thread.join()
-
-    @lock_with("_task_counter_lock")
-    def _task_counter_add(self):
-        self._task_counter += 1
-
-    @lock_with("_task_counter_lock")
-    def _task_counter_sub(self):
-        self._task_counter -= 1
-
-    @lock_with("_task_counter_lock")
-    def _task_counter_read(self):
-        return self._task_counter
-
     def set_large_page_support(self, disable=False):
         """Disables large page support on the ESX hypervisor
            This is done when the host memory is overcommitted.
@@ -1001,65 +774,3 @@ class VimClient(HostClient):
             option.value = 1L
             self._logger.warning("Enabling large page support")
         optionManager.UpdateOptions([option])
-
-
-class SyncVmCacheThread(threading.Thread):
-    """ Periodically sync vm cache with remote esx server
-    """
-    def __init__(self, vim_client, wait_timeout=10, min_interval=1, errback=None):
-        super(SyncVmCacheThread, self).__init__()
-        self._logger = logging.getLogger(__name__)
-        self.setDaemon(True)
-        self.errback = errback
-        self.vim_client = weakref.ref(vim_client)
-        self.wait_timeout = wait_timeout
-        self.min_interval = min_interval
-        self.active = True
-        self.fail_count = 0
-        self.last_updated = time.time()
-
-    def run(self):
-        while True:
-            if not self.active:
-                self._logger.info("Exit vmcache sync thread.")
-                break
-            client = self.vim_client()
-            if not client:
-                self._logger.info("Exit vmcache sync thread. vim client is " + "None")
-                break
-
-            try:
-                client._poll_updates(timeout=self.wait_timeout)
-                self._success_update()
-                self._wait_between_updates()
-
-            except:
-                self._logger.warning("Failed to poll update %d: %s" % (self.fail_count, str(sys.exc_info()[1])))
-                self.fail_count += 1
-                if self.fail_count == 5:
-                    self._logger.warning("Failed to poll update 5 times")
-                    if self.errback:
-                        self._logger.warning("Call errback")
-                        self.errback()
-                    else:
-                        self._logger.warning("No errback, vim_client disconnect")
-                        client.disconnect()
-                self._wait_between_failures()
-
-    def stop(self):
-        self._logger.info("Stop syncing vm cache thread")
-        self.active = False
-
-    def _success_update(self):
-        self.fail_count = 0
-        self.last_elapsed = time.time() - self.last_updated
-        self.last_updated = time.time()
-
-    def _wait_between_updates(self):
-        if self.last_elapsed < self.min_interval:
-            time.sleep(self.min_interval - self.last_elapsed)
-
-    def _wait_between_failures(self):
-        wait_seconds = 1 << (self.fail_count - 1)
-        self._logger.info("Wait %d second(s) to retry update cache" % wait_seconds)
-        time.sleep(wait_seconds)
