@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.dhcpagent.xenon;
 
 import com.vmware.photon.controller.common.logging.LoggingUtils;
+import com.vmware.photon.controller.common.provider.ListeningExecutorServiceProvider;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
@@ -21,7 +22,6 @@ import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
-import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
 import com.vmware.photon.controller.dhcpagent.dhcpdrivers.DHCPDriver;
 import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Operation;
@@ -158,7 +158,7 @@ public class ReleaseIPService extends StatefulService {
                                     currentState.ipAddress, currentState.macAddress);
                         }
                     });
-            HostUtils.getListeningExecutorService(this).submit(futureTask);
+            ((ListeningExecutorServiceProvider) getHost()).getListeningExecutorService().submit(futureTask);
             Futures.addCallback(futureTask,
                     new FutureCallback<DHCPDriver.Response>() {
                         @Override

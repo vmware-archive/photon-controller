@@ -14,11 +14,11 @@
 package com.vmware.photon.controller.dhcpagent.xenon;
 
 import com.vmware.photon.controller.common.manifest.BuildInfo;
+import com.vmware.photon.controller.common.provider.ListeningExecutorServiceProvider;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.XenonHostInfoProvider;
 import com.vmware.photon.controller.common.xenon.host.AbstractServiceHost;
 import com.vmware.photon.controller.common.xenon.host.XenonConfig;
-import com.vmware.photon.controller.deployer.dcp.ListeningExecutorServiceProvider;
 import com.vmware.photon.controller.dhcpagent.dhcpdrivers.DHCPDriver;
 import com.vmware.photon.controller.dhcpagent.xenon.service.StatusService;
 import com.vmware.xenon.common.ServiceHost;
