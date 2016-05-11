@@ -13,7 +13,10 @@
 
 package com.vmware.photon.controller.deployer.helpers.dcp;
 
+import com.vmware.photon.controller.agent.gen.AgentControl;
 import com.vmware.photon.controller.agent.gen.AgentStatusCode;
+import com.vmware.photon.controller.agent.gen.AgentStatusResponse;
+import com.vmware.photon.controller.agent.gen.ProvisionResponse;
 import com.vmware.photon.controller.agent.gen.ProvisionResultCode;
 import com.vmware.photon.controller.agent.gen.UpgradeResultCode;
 import com.vmware.photon.controller.api.FlavorCreateSpec;
@@ -61,14 +64,23 @@ import com.vmware.photon.controller.deployer.healthcheck.HealthCheckHelper;
 import com.vmware.photon.controller.deployer.healthcheck.HealthCheckHelperFactory;
 import com.vmware.photon.controller.deployer.healthcheck.HealthChecker;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
+import com.vmware.photon.controller.host.gen.GetConfigResponse;
 import com.vmware.photon.controller.host.gen.GetConfigResultCode;
+import com.vmware.photon.controller.host.gen.Host;
 import com.vmware.photon.controller.host.gen.HostConfig;
 import com.vmware.photon.controller.host.gen.SetHostModeResultCode;
+import com.vmware.photon.controller.nsxclient.models.FabricNode;
+import com.vmware.photon.controller.nsxclient.models.FabricNodeState;
+import com.vmware.photon.controller.nsxclient.models.TransportNode;
+import com.vmware.photon.controller.nsxclient.models.TransportNodeState;
+import com.vmware.photon.controller.resource.gen.Datastore;
+import com.vmware.photon.controller.resource.gen.Network;
 import com.vmware.xenon.common.Service;
 
 import com.github.dockerjava.api.DockerException;
 import com.google.common.util.concurrent.FutureCallback;
 import org.apache.http.entity.mime.content.FileBody;
+import org.apache.thrift.async.AsyncMethodCallback;
 import org.mockito.ArgumentMatcher;
 import org.mockito.Matchers;
 import org.mockito.invocation.InvocationOnMock;
@@ -90,7 +102,10 @@ import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.stream.Collectors;
 
 /**
  * This class provides utility functions for Mocks.
@@ -161,6 +176,10 @@ public class MockHelper {
     }
 
     doReturn(httpFileServiceClient).when(httpFileServiceClientFactory).create(anyString(), anyString(), anyString());
+  }
+
+  public static Callable<Integer> mockUploadFile(int returnCode) {
+    return () -> returnCode;
   }
 
   public static void mockCreateContainer(DockerProvisionerFactory dockerProvisionerFactory, boolean isSuccess) throws
@@ -247,6 +266,123 @@ public class MockHelper {
     doReturn(agentControlClient).when(agentControlClientFactory).create();
     doReturn(hostClient).when(hostClientFactory).create();
     return hostClient;
+  }
+
+  @SuppressWarnings("unchecked")
+  public static Answer<AsyncMethodCallback<AgentControl.AsyncClient.provision_call>> mockProvisionAgent(
+      ProvisionResultCode resultCode) {
+
+    return (invocation) -> {
+      AsyncMethodCallback<AgentControl.AsyncClient.provision_call> callback =
+          ((AsyncMethodCallback<AgentControl.AsyncClient.provision_call>) invocation.getArguments()[14]);
+      AgentControl.AsyncClient.provision_call provisionCall = mock(AgentControl.AsyncClient.provision_call.class);
+      ProvisionResponse provisionResponse = new ProvisionResponse(resultCode);
+      doReturn(provisionResponse).when(provisionCall).getResult();
+      callback.onComplete(provisionCall);
+      return null;
+    };
+  }
+
+  @SuppressWarnings("unchecked")
+  public static Answer<AsyncMethodCallback<AgentControl.AsyncClient.get_agent_status_call>> mockGetAgentStatus(
+      AgentStatusCode agentStatusCode) {
+
+    return (invocation) -> {
+      AsyncMethodCallback<AgentControl.AsyncClient.get_agent_status_call> callback =
+          ((AsyncMethodCallback<AgentControl.AsyncClient.get_agent_status_call>) invocation.getArguments()[0]);
+      AgentControl.AsyncClient.get_agent_status_call getAgentStatusCall =
+          mock(AgentControl.AsyncClient.get_agent_status_call.class);
+      AgentStatusResponse agentStatusResponse = new AgentStatusResponse(agentStatusCode);
+      doReturn(agentStatusResponse).when(getAgentStatusCall).getResult();
+      callback.onComplete(getAgentStatusCall);
+      return null;
+    };
+  }
+
+  @SuppressWarnings("unchecked")
+  public static Answer<FutureCallback<FabricNode>> mockRegisterFabricNode(String fabricNodeId) {
+    return (invocation) -> {
+      FutureCallback<FabricNode> callback = ((FutureCallback<FabricNode>) invocation.getArguments()[1]);
+      FabricNode fabricNode = new FabricNode();
+      fabricNode.setId(fabricNodeId);
+      callback.onSuccess(fabricNode);
+      return null;
+    };
+  }
+
+  @SuppressWarnings("unchecked")
+  public static Answer<FutureCallback<FabricNodeState>> mockGetFabricNodeState(
+      com.vmware.photon.controller.nsxclient.datatypes.FabricNodeState state) {
+
+    return (invocation) -> {
+      FutureCallback<FabricNodeState> callback = ((FutureCallback<FabricNodeState>) invocation.getArguments()[1]);
+      FabricNodeState fabricNodeState = new FabricNodeState();
+      fabricNodeState.setState(state);
+      callback.onSuccess(fabricNodeState);
+      return null;
+    };
+  }
+
+  @SuppressWarnings("unchecked")
+  public static Answer<FutureCallback<TransportNode>> mockCreateTransportNode(String transportNodeId) {
+    return (invocation) -> {
+      FutureCallback<TransportNode> callback = ((FutureCallback<TransportNode>) invocation.getArguments()[1]);
+      TransportNode transportNode = new TransportNode();
+      transportNode.setId(transportNodeId);
+      callback.onSuccess(transportNode);
+      return null;
+    };
+  }
+
+  @SuppressWarnings("unchecked")
+  public static Answer<FutureCallback<TransportNodeState>> mockGetTransportNodeState(
+      com.vmware.photon.controller.nsxclient.datatypes.TransportNodeState state) {
+
+    return (invocation) -> {
+      FutureCallback<TransportNodeState> callback = ((FutureCallback<TransportNodeState>) invocation.getArguments()[1]);
+      TransportNodeState transportNodeState = new TransportNodeState();
+      transportNodeState.setState(state);
+      callback.onSuccess(transportNodeState);
+      return null;
+    };
+  }
+
+  @SuppressWarnings("unchecked")
+  public static Answer<AsyncMethodCallback<Host.AsyncClient.get_host_config_call>> mockGetHostConfig(
+      List<String> datastoreList, List<String> networkList, String esxVersion) {
+
+    return (invocation) -> {
+      AsyncMethodCallback<Host.AsyncClient.get_host_config_call> callback =
+          ((AsyncMethodCallback<Host.AsyncClient.get_host_config_call>) invocation.getArguments()[0]);
+
+      HostConfig hostConfig = new HostConfig();
+      hostConfig.setDatastores(datastoreList.stream().map(Datastore::new).collect(Collectors.toList()));
+      hostConfig.setNetworks(networkList.stream().map(Network::new).collect(Collectors.toList()));
+      hostConfig.setEsx_version(esxVersion);
+
+      GetConfigResponse getConfigResponse = new GetConfigResponse(GetConfigResultCode.OK);
+      getConfigResponse.setHostConfig(hostConfig);
+      Host.AsyncClient.get_host_config_call getHostConfigCall = mock(Host.AsyncClient.get_host_config_call.class);
+      doReturn(getConfigResponse).when(getHostConfigCall).getResult();
+      callback.onComplete(getHostConfigCall);
+      return null;
+    };
+  }
+
+  @SuppressWarnings("unchecked")
+  public static Answer<AsyncMethodCallback<Host.AsyncClient.get_host_config_call>> mockGetHostConfig(
+      GetConfigResultCode resultCode) {
+
+    return (invocation) -> {
+      AsyncMethodCallback<Host.AsyncClient.get_host_config_call> callback =
+          ((AsyncMethodCallback<Host.AsyncClient.get_host_config_call>) invocation.getArguments()[0]);
+
+      GetConfigResponse getConfigResponse = new GetConfigResponse(resultCode);
+      Host.AsyncClient.get_host_config_call getHostConfigCall = mock(Host.AsyncClient.get_host_config_call.class);
+      doReturn(getConfigResponse).when(getHostConfigCall).getResult();
+      callback.onComplete(getHostConfigCall);
+      return null;
+    };
   }
 
   public static StaticServerSet mockCloudStoreServerSet() throws Throwable {

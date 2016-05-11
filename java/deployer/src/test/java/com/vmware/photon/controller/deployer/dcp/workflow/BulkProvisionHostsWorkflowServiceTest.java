@@ -344,7 +344,6 @@ public class BulkProvisionHostsWorkflowServiceTest {
       startState = buildValidStartState(null, null);
       startState.querySpecification = MiscUtils.generateHostQuerySpecification(null, UsageTag.MGMT.name());
       startState.controlFlags = null;
-      startState.taskPollDelay = 10;
     }
 
     @BeforeMethod
@@ -466,8 +465,13 @@ public class BulkProvisionHostsWorkflowServiceTest {
         Integer mgmtHostCount,
         Integer cloudHostCout,
         Integer mixedHostCount) throws Throwable {
+
       MockHelper.mockHttpFileServiceClient(httpFileServiceClientFactory, true);
-      MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(), ProvisionHostTaskService.SCRIPT_NAME, true);
+      MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(),
+          ProvisionHostTaskService.CONFIGURE_SYSLOG_SCRIPT_NAME, true);
+      MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(),
+          ProvisionHostTaskService.INSTALL_VIB_SCRIPT_NAME, true);
+
       createTestEnvironment(hostCount);
       createHostEntities(mgmtHostCount, cloudHostCout, mixedHostCount);
       startState.querySpecification = null;
@@ -494,7 +498,10 @@ public class BulkProvisionHostsWorkflowServiceTest {
         Integer cloudHostCout,
         Integer mixedHostCount) throws Throwable {
       MockHelper.mockHttpFileServiceClient(httpFileServiceClientFactory, true);
-      MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(), ProvisionHostTaskService.SCRIPT_NAME, true);
+      MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(),
+          ProvisionHostTaskService.CONFIGURE_SYSLOG_SCRIPT_NAME, true);
+      MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(),
+          ProvisionHostTaskService.INSTALL_VIB_SCRIPT_NAME, true);
       createTestEnvironment(hostCount);
       createHostEntities(mgmtHostCount, cloudHostCout, mixedHostCount);
       startState.querySpecification = null;
@@ -522,7 +529,10 @@ public class BulkProvisionHostsWorkflowServiceTest {
     @Test(enabled = false)
     public void testEndToEndFailNoMgmtHost() throws Throwable {
       MockHelper.mockHttpFileServiceClient(httpFileServiceClientFactory, true);
-      MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(), ProvisionHostTaskService.SCRIPT_NAME, true);
+      MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(),
+          ProvisionHostTaskService.CONFIGURE_SYSLOG_SCRIPT_NAME, true);
+      MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(),
+          ProvisionHostTaskService.INSTALL_VIB_SCRIPT_NAME, true);
       MockHelper.mockProvisionAgent(agentControlClientFactory, hostClientFactory, true);
       createTestEnvironment(1);
       createHostEntities(0, 2, 0);

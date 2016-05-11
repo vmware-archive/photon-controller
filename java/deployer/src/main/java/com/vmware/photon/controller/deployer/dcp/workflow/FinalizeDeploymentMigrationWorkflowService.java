@@ -592,7 +592,6 @@ public class FinalizeDeploymentMigrationWorkflowService extends StatefulService 
     startState.querySpecification.query.addBooleanClause(Query.Builder.create()
         .addFieldClause(HostService.State.FIELD_NAME_STATE, HostState.READY.name())
         .build());
-    startState.taskPollDelay = currentState.taskPollDelay;
 
     TaskUtils.startTaskAsync(
         FinalizeDeploymentMigrationWorkflowService.this,
