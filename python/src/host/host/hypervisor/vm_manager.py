@@ -180,34 +180,26 @@ class VmManager(object):
         pass
 
     @abc.abstractmethod
-    def attach_cdrom(self, iso_file, vm_id):
+    def attach_iso(self, vm_id, iso_file):
         """ Attach an iso file to the VM
 
-        :param spec: the vm update spec
-        :param iso_file: str, the file system path to the cdrom
         :param vm_id: id of vm to detach the iso from
         :type vm_id: str
+        :param iso_file: str, the file system path to the cdrom
         :returns : True, iso_file attached; False, iso_file attach fail
         :rtype: bool
         """
         pass
 
     @abc.abstractmethod
-    def disconnect_cdrom(self, vm_id):
+    def detach_iso(self, vm_id, delete_file):
         """ Disconnect cdrom device from VM
 
         :param vm_id: id of vm to detach the iso from
         :type vm_id: str
+        :param delete_file: a boolean that indicates whether to delete the iso file
         :returns : path to the iso detached
         :rtype: str
-        """
-        pass
-
-    @abc.abstractmethod
-    def remove_iso(self, iso_ds_path):
-        """ Remove an iso file
-        :param iso_ds_path: the path to the iso file to remove
-        :type iso_ds_path: str
         """
         pass
 

@@ -277,7 +277,7 @@ class EsxVmConfigSpec(VmConfigSpec):
         )
         self._add_device(device)
 
-    def add_iso_cdrom(self, iso_file, cfg_info):
+    def attach_iso(self, cfg_info, iso_file):
         """Create a cdrom spec to add a CD-ROM device with an iso
 
         :param iso_file: The iso file path, string
@@ -321,7 +321,7 @@ class EsxVmConfigSpec(VmConfigSpec):
                 self._update_device(dev)
                 return True
 
-    def disconnect_iso_cdrom(self, cfg_info):
+    def detach_iso(self, cfg_info):
         """Updates the config spec to detach an iso from the VM.
         :param cfg_info: The VM's ConfigInfo object
         :rtype: the datastore path of the iso
@@ -392,6 +392,8 @@ class EsxVmConfigSpec(VmConfigSpec):
         :type env: dictionary
         """
         vm_path = datastore_path(datastore, compond_path_join(VM_FOLDER_NAME_PREFIX, vm_id))
+        vm_flags = vim.vm.FlagInfo()
+        vm_flags.diskUuidEnabled = True
 
         filled_metadata = {}
         meta_config = metadata.get("configuration") if metadata else {}
@@ -416,6 +418,7 @@ class EsxVmConfigSpec(VmConfigSpec):
         self._cfg_spec.numCPUs = cpus
         self._cfg_spec.files = vim.vm.FileInfo(vmPathName=vm_path)
         self._cfg_spec.deviceChange = []
+        self._cfg_spec.flags = vm_flags
         self._metadata = filled_metadata
 
     def init_for_update(self):
@@ -555,16 +558,6 @@ class EsxVmConfigSpec(VmConfigSpec):
         for k, v in options.iteritems():
             extraConfig.append(vim.option.OptionValue(key=k, value=v))
         self._cfg_spec.extraConfig = extraConfig
-
-    def set_diskuuid_enabled(self, enable):
-        """Sets whether disk UUIDs are visible to guest OS
-
-        :param enable: whether to make disk UUIDs visible in guest
-        :type enable: bool
-        """
-        vm_flags = vim.vm.FlagInfo()
-        vm_flags.diskUuidEnabled = enable
-        self._cfg_spec.flags = vm_flags
 
 
 class EsxVmInfo(VmInfo):

@@ -1140,10 +1140,7 @@ class HostHandler(Host.Iface):
 
             # callee will modify spec
             # result: True if success, or False if fail
-            result = self.hypervisor.vm_manager.attach_cdrom(
-                request.iso_file_path,
-                request.vm_id)
-
+            result = self.hypervisor.vm_manager.attach_iso(request.vm_id, request.iso_file_path)
             if result:
                 response.result = AttachISOResultCode.OK
             else:
@@ -1181,7 +1178,7 @@ class HostHandler(Host.Iface):
         response = DetachISOResponse()
 
         try:
-            iso_path = self.hypervisor.vm_manager.disconnect_cdrom(request.vm_id)
+            self.hypervisor.vm_manager.detach_iso(request.vm_id, request.delete_file)
         except VmNotFoundException:
             return self._error_response(DetachISOResultCode.VM_NOT_FOUND,
                                         "VM %s not found" % request.vm_id, response)
@@ -1191,16 +1188,6 @@ class HostHandler(Host.Iface):
         except Exception:
             self._logger.info(sys.exc_info()[1])
             return self._error_response(DetachISOResultCode.SYSTEM_ERROR, str(sys.exc_info()[1]), response)
-
-        try:
-            if request.delete_file:
-                self._logger.info("Deleting iso file %s" % iso_path)
-                self.hypervisor.vm_manager.remove_iso(iso_path)
-        except Exception:
-            return self._error_response(
-                DetachISOResultCode.CANNOT_DELETE,
-                "Iso %s detached from VM, but not deleted" % iso_path,
-                response)
 
         response.result = DetachISOResultCode.OK
         return response

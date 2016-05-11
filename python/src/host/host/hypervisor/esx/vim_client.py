@@ -34,6 +34,7 @@ from host.hypervisor.esx.host_client import NfcLeaseInitiatizationTimeout
 from host.hypervisor.esx.host_client import NfcLeaseInitiatizationError
 from host.hypervisor.esx.path_util import os_to_datastore_path
 from host.hypervisor.esx.vm_config import uuid_to_vmdk_uuid
+from host.hypervisor.esx.vm_config import EsxVmConfigSpec
 from host.hypervisor.esx.vm_config import DEFAULT_DISK_ADAPTER_TYPE
 from host.hypervisor.vm_manager import VmPowerStateException
 from host.hypervisor.vm_manager import VmAlreadyExistException
@@ -257,7 +258,7 @@ class VimClient(HostClient):
         return self._content.propertyCollector
 
     @hostd_error_handler
-    def root_resource_pool(self):
+    def _root_resource_pool(self):
         """Get the root resource pool for this host.
         :rtype: vim.ResourcePool
         """
@@ -438,7 +439,7 @@ class VimClient(HostClient):
 
         :param vm_id: The Vm id
         :type vm_id: string
-        :param create_spec: The VM spec builder
+        :param create_spec: EsxVmConfigSpec
         :type ConfigSpec
         :raise: VmAlreadyExistException
         """
@@ -450,17 +451,18 @@ class VimClient(HostClient):
             pass
 
         folder = self._vm_folder()
-        resource_pool = self.root_resource_pool()
+        resource_pool = self._root_resource_pool()
+        spec = create_spec.get_spec()
         # The scenario of the vm creation at ESX where intermediate directory
         # has to be created has not been well exercised and is known to be
         # racy and not informative on failures. So be defensive and proactively
         # create the intermediate directory ("/vmfs/volumes/<dsid>/vm_xy").
         try:
-            self.make_directory(create_spec.files.vmPathName)
+            self.make_directory(spec.files.vmPathName)
         except vim.fault.FileAlreadyExists:
-            self._logger.debug("VM directory %s exists, will create VM using it" % create_spec.files.vmPathName)
+            self._logger.debug("VM directory %s exists, will create VM using it" % spec.files.vmPathName)
 
-        task = folder.CreateVm(create_spec, resource_pool, None)
+        task = folder.CreateVm(spec, resource_pool, None)
         self.wait_for_task(task)
         self.wait_for_vm_create(vm_id)
 
@@ -605,8 +607,8 @@ class VimClient(HostClient):
         :param spec: EsxVmConfigSpec
         :rtype: upload lease, url
         """
-        import_spec = vim.vm.VmImportSpec(configSpec=spec)
-        lease = self.root_resource_pool().ImportVApp(import_spec, self._vm_folder())
+        import_spec = vim.vm.VmImportSpec(configSpec=spec.get_spec())
+        lease = self._root_resource_pool().ImportVApp(import_spec, self._vm_folder())
         self._wait_for_lease(lease)
         dev_url = lease.info.deviceUrl[0]
         self._logger.debug("%s -> %s" % (dev_url.key, dev_url.url))
@@ -630,8 +632,39 @@ class VimClient(HostClient):
     def destroy_vm(self, vm):
         self._invoke_vm(vm, "Destroy")
 
-    def reconfigure_vm(self, vm, spec):
+    def _reconfigure_vm(self, vm, spec):
         self._invoke_vm(vm, "ReconfigVM_Task", spec)
+
+    def attach_disk(self, vm_id, vmdk_file):
+        cfg_spec = EsxVmConfigSpec(self.query_config())
+        cfg_spec.init_for_update()
+        vm = self.get_vm(vm_id)
+        cfg_spec.attach_disk(vm.config, vmdk_file)
+        self._reconfigure_vm(vm, cfg_spec.get_spec())
+
+    def detach_disk(self, vm_id, disk_id):
+        cfg_spec = EsxVmConfigSpec(self.query_config())
+        cfg_spec.init_for_update()
+        vm = self.get_vm(vm_id)
+        cfg_spec.detach_disk(vm.config, disk_id)
+        self._reconfigure_vm(vm, cfg_spec.get_spec())
+
+    def attach_iso(self, vm_id, iso_file):
+        cfg_spec = EsxVmConfigSpec(self.query_config())
+        cfg_spec.init_for_update()
+        vm = self.get_vm(vm_id)
+        result = cfg_spec.attach_iso(vm.config, iso_file)
+        if result:
+            self._reconfigure_vm(vm, cfg_spec.get_spec())
+        return result
+
+    def detach_iso(self, vm_id):
+        cfg_spec = EsxVmConfigSpec(self.query_config())
+        cfg_spec.init_for_update()
+        vm = self.get_vm(vm_id)
+        iso_path = cfg_spec.detach_iso(vm.config)
+        self._reconfigure_vm(vm, cfg_spec.get_spec())
+        return iso_path
 
     def _wait_for_lease(self, lease):
         retries = 10
