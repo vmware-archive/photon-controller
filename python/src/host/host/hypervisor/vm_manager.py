@@ -118,15 +118,6 @@ class VmManager(object):
         pass
 
     @abc.abstractmethod
-    def update_vm(self, vm_id, spec):
-        """ Update a VM given a spec.
-
-        :type vm_id: string
-        :param spec: The VM update spec
-        """
-        pass
-
-    @abc.abstractmethod
     def attach_disk(self, vm_id, vmdk_path):
         """Add an existing disk to a VM
 
@@ -141,49 +132,6 @@ class VmManager(object):
 
         :type vm_id: vm id
         :type disk_id: str
-        """
-        pass
-
-    @abc.abstractmethod
-    def create_empty_disk(self, cfg_spec, datastore, disk_id, size_mb):
-        """Add a create empty scsi disk spec to the config spec. The method
-        will try to find an existing scsi controller to add the disk to. If no
-        such scsi controller is found, it will add a new controller.
-
-        :param cfg_spec: The VMs reconfigure spec
-        :type cfg_spec: The VirtualMachineConfigSpec
-        :param datastore: Name of the VM's datastore
-        :type datastore: str
-        :param disk_id: vmdk id
-        :type disk_id: str
-        :param size_mb: size of the disk in MB
-        :type size_mb: int
-        """
-        pass
-
-    @abc.abstractmethod
-    def create_child_disk(self, cfg_spec, datastore, disk_id, parent_id):
-        """Add a create child scsi disk spec to the config spec. The method
-        will try to find an existing scsi controller to add the disk to. If no
-        such scsi controller is found, it will add a new controller.
-
-        :param cfg_spec: The VMs reconfigure spec
-        :type cfg_spec: The VirtualMachineConfigSpec
-        :param datastore: Name of the VM's datastore
-        :type datastore: str
-        :param disk_id: vmdk id
-        :type disk_id: str
-        :param parent_id: parent disk id
-        :type parent_id: str
-        """
-        pass
-
-    @abc.abstractmethod
-    def add_nic(self, spec, network_id=None):
-        """Add a network adapter to a VM
-
-        :type spec: the vm config spec to update
-        :type network_id: str, the network to connect the nic to
         """
         pass
 
@@ -264,39 +212,6 @@ class VmManager(object):
         pass
 
     @abc.abstractmethod
-    def get_vm_config(self, vm_id):
-        """ Get the current VMs current configuration.
-
-        The return value object is opaque and not to be interpreted by the
-        caller. It is to be passed on to other methods of concrete
-        implementation classes, supporting chaining
-
-        :param vm_id: the id of VM
-        :return: opaque config object associated with vm
-        """
-        pass
-
-    @abc.abstractmethod
-    def get_vm_path(self, config):
-        """ Get vm path information out from VM configuration.
-
-        :param config: the VM configuration from get_vm_config.
-        :return: vmx file path
-        :rtype: str
-        """
-        pass
-
-    @abc.abstractmethod
-    def get_vm_datastore(self, config):
-        """ Get the id of the datastore in which the VM configuration resides.
-
-        :param config: the VM configuration from get_vm_config.
-        :return: datastore id
-        :rtype: str
-        """
-        pass
-
-    @abc.abstractmethod
     def get_used_memory_mb(self):
         """Get total used memory for all Vms in MB
         :return: total used memory in mb
@@ -317,16 +232,6 @@ class VmManager(object):
 
         :param vm_id: VM ID as a string.
         :return: absolute path to the linked clone disk, or None if the VM
-                 doesn't exist in the cache or was created with full clone.
-        """
-        pass
-
-    @abc.abstractmethod
-    def get_linked_clone_image_path(self, vm_id):
-        """Get the absolute image path of a VM created with linked clone.
-
-        :param vm_id: VM ID as a string.
-        :return: absolute path to the image as as a string, or None if the VM
                  doesn't exist in the cache or was created with full clone.
         """
         pass
