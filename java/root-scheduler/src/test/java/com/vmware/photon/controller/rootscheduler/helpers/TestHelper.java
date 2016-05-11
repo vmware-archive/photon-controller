@@ -14,13 +14,9 @@
 package com.vmware.photon.controller.rootscheduler.helpers;
 
 import com.vmware.photon.controller.common.config.BadConfigException;
-import com.vmware.photon.controller.common.thrift.ThriftModule;
-import com.vmware.photon.controller.common.thrift.ThriftServiceModule;
-import com.vmware.photon.controller.host.gen.Host;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import com.google.inject.TypeLiteral;
 
 /**
  * This class implements helper routines for tests.
@@ -29,11 +25,6 @@ public class TestHelper {
   public static Injector createInjector()
       throws BadConfigException {
     return Guice.createInjector(
-        new ThriftModule(),
-        new ThriftServiceModule<>(
-            new TypeLiteral<Host.AsyncClient>() {
-            }
-        ),
         new TestRootSchedulerModule());
   }
 }

@@ -23,15 +23,14 @@ import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.host.XenonConfig;
 import com.vmware.photon.controller.rootscheduler.Config;
 import com.vmware.photon.controller.rootscheduler.ConfigTest;
-import com.vmware.photon.controller.rootscheduler.helpers.TestHelper;
 import com.vmware.photon.controller.rootscheduler.service.CloudStoreConstraintChecker;
 import com.vmware.photon.controller.rootscheduler.service.ConstraintChecker;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.services.common.LuceneDocumentIndexService;
 import com.vmware.xenon.services.common.ServiceUriPaths;
 
-import com.google.inject.Injector;
 import org.apache.commons.io.FileUtils;
+import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
@@ -63,13 +62,13 @@ public class SchedulerXenonHostTest {
 
   private static final String configFilePath = "/config.yml";
 
-  private Injector injector;
   private SchedulerXenonHost host;
   private Collection<String> serviceSelfLinks;
   private Config config;
   private ConstraintChecker checker;
   private CloudStoreHelper cloudStoreHelper;
   private ServerSet cloudStoreServerSet;
+  @Mock
   private HostClientFactory hostClientFactory;
 
   private void waitForServicesStartup(SchedulerXenonHost host)
@@ -120,8 +119,6 @@ public class SchedulerXenonHostTest {
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      injector = TestHelper.createInjector();
-      hostClientFactory = injector.getInstance(HostClientFactory.class);
       host = new SchedulerXenonHost(config.getXenonConfig(),
           hostClientFactory, config, checker, cloudStoreHelper);
     }
@@ -180,8 +177,6 @@ public class SchedulerXenonHostTest {
 
     @BeforeMethod
     private void setUp() throws Throwable {
-      injector = TestHelper.createInjector();
-      hostClientFactory = injector.getInstance(HostClientFactory.class);
       host = new SchedulerXenonHost(config.getXenonConfig(),
           hostClientFactory, config, checker, cloudStoreHelper);
     }
@@ -239,8 +234,6 @@ public class SchedulerXenonHostTest {
 
     @BeforeMethod
     private void setUp() throws Throwable {
-      injector = TestHelper.createInjector();
-      hostClientFactory = injector.getInstance(HostClientFactory.class);
       host = new SchedulerXenonHost(config.getXenonConfig(),
           hostClientFactory, config, checker, cloudStoreHelper);
     }
@@ -294,8 +287,6 @@ public class SchedulerXenonHostTest {
 
     @BeforeMethod
     private void setUp() throws Throwable {
-      injector = TestHelper.createInjector();
-
       XenonConfig xenonConfig = new XenonConfig();
       xenonConfig.setBindAddress("0.0.0.0");
       xenonConfig.setPort(18000);
