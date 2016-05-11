@@ -457,7 +457,7 @@ class AgentCommonTests(object):
         vms = []
         for _ in xrange(2):
             vm = VmWrapper(self.host_client)
-            image = DiskImage("ttylinux", CloneType.FULL_COPY)
+            image = DiskImage("ttylinux", CloneType.COPY_ON_WRITE)
 
             disks = [
                 Disk(new_id(), self.DEFAULT_DISK_FLAVOR.name, False, True,
@@ -530,14 +530,10 @@ class AgentCommonTests(object):
         vm = VmWrapper(self.host_client)
 
         tests = [
-            {"im": DiskImage("invalid", CloneType.FULL_COPY),
-             "rc": CreateDiskResultCode.SYSTEM_ERROR},
-            {"im": None,
-             "rc": CreateDiskResultCode.OK},
-            {"im": DiskImage("ttylinux", CloneType.FULL_COPY),
-             "rc": CreateDiskResultCode.OK},
-            {"im": DiskImage("ttylinux", CloneType.COPY_ON_WRITE),
-             "rc": CreateDiskResultCode.SYSTEM_ERROR},
+            {"im": DiskImage("invalid", CloneType.COPY_ON_WRITE), "rc": CreateDiskResultCode.SYSTEM_ERROR},
+            {"im": None, "rc": CreateDiskResultCode.OK},
+            {"im": DiskImage("ttylinux", CloneType.COPY_ON_WRITE), "rc": CreateDiskResultCode.OK},
+            {"im": DiskImage("ttylinux", CloneType.COPY_ON_WRITE), "rc": CreateDiskResultCode.SYSTEM_ERROR},
         ]
 
         for test in tests:
@@ -799,7 +795,7 @@ class AgentCommonTests(object):
 
     def test_default_network(self):
         vm_wrapper = VmWrapper(self.host_client)
-        image = DiskImage("ttylinux", CloneType.FULL_COPY)
+        image = DiskImage("ttylinux", CloneType.COPY_ON_WRITE)
         disks = [
             Disk(new_id(), self.DEFAULT_DISK_FLAVOR.name, False, True,
                  image=image, capacity_gb=1,
@@ -807,8 +803,7 @@ class AgentCommonTests(object):
         ]
 
         # create disk
-        reservation = \
-            vm_wrapper.place_and_reserve(vm_disks=disks).reservation
+        reservation = vm_wrapper.place_and_reserve(vm_disks=disks).reservation
 
         # create vm without network info specified
         request = vm_wrapper.create_request(res_id=reservation)
@@ -830,7 +825,7 @@ class AgentCommonTests(object):
         vm_id = vm_wrapper.create(request=request).vm.id
 
         # create 3 disks
-        image = DiskImage("ttylinux", CloneType.FULL_COPY)
+        image = DiskImage("ttylinux", CloneType.COPY_ON_WRITE)
         disks = [
             Disk(new_id(), self.DEFAULT_DISK_FLAVOR.name, False, True,
                  image=image,

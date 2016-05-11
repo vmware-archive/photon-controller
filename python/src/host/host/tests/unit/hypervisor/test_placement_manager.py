@@ -408,16 +408,11 @@ class TestPlacementManager(unittest.TestCase):
         total_storage = sum(t[0].total for t in ds_map.values())
         manager = PMBuilder(ds_map=ds_map, ds_with_image=ds_with_image).build()
 
-        image = DiskImage("disk_image",
-                          DiskImage.FULL_COPY)
-        disk1 = Disk(new_id(), DISK_FLAVOR, False,
-                     True, 1024, image)
-        disk2 = Disk(new_id(), DISK_FLAVOR, False,
-                     True, 1024, image)
-        disk3 = Disk(new_id(), DISK_FLAVOR, False,
-                     True, 1024, image)
-        disk4 = Disk(new_id(), DISK_FLAVOR, False,
-                     True, 1024, image)
+        image = DiskImage("disk_image", DiskImage.COPY_ON_WRITE)
+        disk1 = Disk(new_id(), DISK_FLAVOR, False, True, 1024, image)
+        disk2 = Disk(new_id(), DISK_FLAVOR, False, True, 1024, image)
+        disk3 = Disk(new_id(), DISK_FLAVOR, False, True, 1024, image)
+        disk4 = Disk(new_id(), DISK_FLAVOR, False, True, 1024, image)
         disk_list = [disk1, disk2, disk3, disk4]
         used_storage = sum(disk.capacity_gb for disk in disk_list)
 
@@ -557,16 +552,11 @@ class TestPlacementManager(unittest.TestCase):
                             image_ds=image_ds,
                             ds_map=ds_map).build()
 
-        image = DiskImage("disk_image",
-                          DiskImage.FULL_COPY)
-        disk1 = Disk(new_id(), DISK_FLAVOR, False,
-                     True, 7 * 1024, image)
-        disk2 = Disk(new_id(), DISK_FLAVOR, False,
-                     True, 7 * 1024, image)
-        disk3 = Disk(new_id(), DISK_FLAVOR, False,
-                     True, 7 * 1024, image)
-        disk4 = Disk(new_id(), DISK_FLAVOR, False,
-                     True, 7 * 1024, image)
+        image = DiskImage("disk_image", DiskImage.COPY_ON_WRITE)
+        disk1 = Disk(new_id(), DISK_FLAVOR, False, True, 7 * 1024, image)
+        disk2 = Disk(new_id(), DISK_FLAVOR, False, True, 7 * 1024, image)
+        disk3 = Disk(new_id(), DISK_FLAVOR, False, True, 7 * 1024, image)
+        disk4 = Disk(new_id(), DISK_FLAVOR, False, True, 7 * 1024, image)
         disk_list = [disk1, disk2, disk3, disk4]
 
         if use_vm:
