@@ -142,14 +142,23 @@ describe "migrate finalize", upgrade: true do
     self.get_upgrade_cloudstore_map.each do |k, v|
       it "all cloudstore factories should have entities" do
         puts k
-        begin
-          source_json = source_cloud_store.get k
-        rescue StandardError => e
-          next if e.message.include? "404"
-          raise e
+        exclusion_list = ["/photon/cloudstore/availabilityzones",
+                          "/photon/cloudstore/entity-locks",
+                          "/photon/cloudstore/groomers/availability-zone-entity-cleaners",
+                          "/photon/cloudstore/groomers/entity-lock-cleaners",
+                          "/photon/cloudstore/groomers/tombstone-entity-cleaners",
+                          "/photon/cloudstore/cluster-configurations",
+                          "/photon/cloudstore/clusters"]
+        if !exclusion_list.include?(k)
+          begin
+            source_json = source_cloud_store.get k
+          rescue StandardError => e
+            next if e.message.include? "404"
+            raise e
+          end
+          source_service_docs = parse_id_set(source_json).to_a
+          expect(source_service_docs.size).to be > 0
         end
-        source_service_docs = parse_id_set(source_json).to_a
-        expect(source_service_docs.size).to be > 0
       end
     end
   end
@@ -230,6 +239,12 @@ describe "migrate finalize", upgrade: true do
         end
       end
     end
+
+    # it "should be able to create vms with old networks" do
+    #   client.find_all_networks.items.each do |network|
+    #
+    #   end
+    # end
 
     private
 
