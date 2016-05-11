@@ -39,7 +39,6 @@ from host.hypervisor.esx.path_util import datastore_to_os_path
 from host.hypervisor.esx.path_util import os_datastore_path
 from host.hypervisor.esx.path_util import VM_FOLDER_NAME_PREFIX
 from host.hypervisor.esx.path_util import SHADOW_VM_NAME_PREFIX
-from host.hypervisor.esx.path_util import get_image_base_disk
 from host.hypervisor.esx.path_util import get_root_disk
 from host.hypervisor.esx.path_util import is_persistent_disk
 from host.hypervisor.esx.vm_config import EsxVmConfigSpec
@@ -187,7 +186,7 @@ class EsxVmManager(VmManager):
         self.vim_client.create_vm(vm_id, spec.get_spec())
 
     @log_duration
-    def update_vm(self, vm_id, spec):
+    def _update_vm(self, vm_id, spec):
         """ Update the VM using the given spec.
         :type spec: vim.vm.ConfigSpec
         """
@@ -233,7 +232,7 @@ class EsxVmManager(VmManager):
                                         vm.runtime.powerState)
 
         # Getting the path for the new dir structure if we have upgraded from older structure
-        datastore_id = self.get_vm_datastore(vm.config)
+        datastore_id = self._get_vm_datastore(vm.config)
         vm_path = os_datastore_path(datastore_id, compond_path_join(VM_FOLDER_NAME_PREFIX, vm_id))
 
         if not force:
@@ -263,9 +262,9 @@ class EsxVmManager(VmManager):
         :type vmdk_file: str
         """
         cfg_spec = self._update_vm_spec()
-        cfg_info = self.get_vm_config(vm_id)
+        cfg_info = self._get_vm_config(vm_id)
         cfg_spec.attach_disk(cfg_info, vmdk_file)
-        self.update_vm(vm_id, cfg_spec)
+        self._update_vm(vm_id, cfg_spec)
 
     def detach_disk(self, vm_id, disk_id):
         """Remove an existing disk from a VM
@@ -275,54 +274,9 @@ class EsxVmManager(VmManager):
         :type disk_id: str
         """
         cfg_spec = self._update_vm_spec()
-        cfg_info = self.get_vm_config(vm_id)
+        cfg_info = self._get_vm_config(vm_id)
         cfg_spec.detach_disk(cfg_info, disk_id)
-        self.update_vm(vm_id, cfg_spec)
-
-    @log_duration
-    def create_empty_disk(self, cfg_spec, datastore, disk_id, size_mb):
-        """Add a create empty scsi disk spec to the config spec. The method
-        will try to find an existing scsi controller to add the disk to. If no
-        such scsi controller is found, it will add a new controller.
-
-        :param cfg_spec: The VMs reconfigure spec
-        :type cfg_spec: The VirtualMachineConfigSpec
-        :param datastore: Name of the VM's datastore
-        :type datastore: str
-        :param disk_id: vmdk id
-        :type disk_id: str
-        :param size_mb: size of the disk in MB
-        :type size_mb: int
-        """
-        cfg_spec.create_empty_disk(datastore, disk_id, size_mb)
-
-    @log_duration
-    def create_child_disk(self, cfg_spec, datastore, disk_id, parent_id):
-        """Add a create child scsi disk spec to the config spec. The method
-        will try to find an existing scsi controller to add the disk to. If no
-        such scsi controller is found, it will add a new controller.
-
-        :param cfg_spec: The VMs reconfigure spec
-        :type cfg_spec: The VirtualMachineConfigSpec
-        :param datastore: Name of the VM's datastore
-        :type datastore: str
-        :param disk_id: vmdk id
-        :type disk_id: str
-        :param parent_id: parent disk id
-        :type parent_id: str
-        """
-        cfg_spec.create_child_disk(datastore, disk_id, parent_id)
-
-    @log_duration
-    def add_nic(self, cfg_spec, network_name=None):
-        """Add a network adapter to a VM
-
-        :param spec: The VM config spec to update with the added nic
-        :type spec: vim.vm.ConfigSpec
-        :param network_name: Network name
-        :type network_id: str
-        """
-        cfg_spec.add_nic(network_name)
+        self._update_vm(vm_id, cfg_spec)
 
     def _get_datastore_uuid(self, name):
         try:
@@ -353,9 +307,6 @@ class EsxVmManager(VmManager):
         vmcache = self.vim_client.get_vm_in_cache(vm_id)
         return self._get_resource_from_vmcache(vmcache)
 
-    def _vmdk_id(self, path):
-        return os.path.splitext(os.path.basename(path))[0]
-
     def _get_resource_from_vmcache(self, vmcache):
         """Translate to vm resource from vm cache
         """
@@ -364,7 +315,7 @@ class EsxVmManager(VmManager):
         vm_resource.disks = []
 
         for disk in vmcache.disks:
-            disk_id = self._vmdk_id(disk)
+            disk_id = os.path.splitext(os.path.basename(disk))[0]
             datastore_name = self._get_datastore_name_from_ds_path(disk)
             datastore_uuid = self._get_datastore_uuid(datastore_name)
             if datastore_uuid:
@@ -467,7 +418,7 @@ class EsxVmManager(VmManager):
 
         if (vm.guest is None or not vm.guest.net):
             # No guest info so return the info from the config file
-            return self.get_network_config(vm_id)
+            return self._get_network_config(vm_id)
 
         guest_nic_info_list = vm.guest.net
 
@@ -523,7 +474,7 @@ class EsxVmManager(VmManager):
         cfg_spec = self._update_vm_spec()
         result = cfg_spec.add_iso_cdrom(iso_file, vm.config)
         if result:
-            self.update_vm(vm_id, cfg_spec)
+            self._update_vm(vm_id, cfg_spec)
         return result
 
     def disconnect_cdrom(self, vm_id):
@@ -541,7 +492,7 @@ class EsxVmManager(VmManager):
         try:
             cfg_spec = self._update_vm_spec()
             iso_path = cfg_spec.disconnect_iso_cdrom(vm.config)
-            self.update_vm(vm_id, cfg_spec)
+            self._update_vm(vm_id, cfg_spec)
         except DeviceNotFoundException, e:
             raise IsoNotAttachedException(e)
         except TypeError, e:
@@ -557,7 +508,7 @@ class EsxVmManager(VmManager):
             pass
 
     @log_duration
-    def get_network_config(self, vm_id):
+    def _get_network_config(self, vm_id):
         """ Get the network backing of a VM by reading its configuration.
 
         This is different from the get_vm_network above which gets the network
@@ -575,42 +526,16 @@ class EsxVmManager(VmManager):
         for idx, mac, network, _ in networks:
             # We don't set MAC address when VM gets created, so MAC address
             # won't be set until the VM gets powered on.
-            info = VmNetworkInfo(mac_address=mac,
-                                 network=network)
+            info = VmNetworkInfo(mac_address=mac, network=network)
             network_info.append(info)
         return network_info
 
-    def _find_ip(self, conn_spec, network):
-        """ Finds the ip and netmast associated with the network name.
-        :type NetworkConnectionSpec: The network connection spec to extract
-                                      the ip info for.
-        :type network: The network to extract the connection info for.
-        :rtype: Tuple containing ip, netmask, updated network conn spec
-        """
-        found = False
-        ip, mask = None, None
-        for spec in conn_spec.nic_spec:
-            if (spec.network_name == network):
-                found = True
-                if spec.ip_address:
-                    ip = spec.ip_address.ip_address
-                    mask = spec.ip_address.netmask
-                conn_spec.nic_spec.remove(spec)
-                break
-        # We should have failed earlier if we didn't have the nic
-        assert(found)
-        return ip, mask, conn_spec
-
-    def get_vm_config(self, vm_id):
+    def _get_vm_config(self, vm_id):
         """ Get the config info of a VM. """
         vm = self.vim_client.get_vm(vm_id)
         return vm.config
 
-    def get_vm_path(self, config):
-        """ Get the datastore path to the VM's config file. """
-        return config.files.vmPathName
-
-    def get_vm_datastore(self, config):
+    def _get_vm_datastore(self, config):
         """ Get the datastore id to the VM's config file.
 
         The VM can have file components residing on other datastores as well,
@@ -636,20 +561,6 @@ class EsxVmManager(VmManager):
             self._logger.debug("Image disk not found for %s: %s" % (vm_id, vm))
             return None
         return get_root_disk(vm.disks)
-
-    @log_duration
-    def get_linked_clone_image_path(self, vm_id):
-        """Get image path for a VM created with linked clone.
-
-        VMs created with linked clone has a base image disk under
-        /vmfs/volumes/$datastore/images. This method fetches a VM from the
-        cache and find that disk.
-        """
-        vm = self.vim_client.get_vm_in_cache(vm_id)
-        if not vm or not vm.disks:
-            self._logger.debug("Image disk not found for %s: %s" % (vm_id, vm))
-            return None
-        return get_image_base_disk(vm.disks)
 
     def get_mks_ticket(self, vm_id):
         vm = self.vim_client.get_vm(vm_id)
