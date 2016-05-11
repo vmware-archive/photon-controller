@@ -72,11 +72,80 @@ class EsxVmConfigSpec(VmConfigSpec):
     """ESX VM configuration spec.
     """
 
-    def __init__(self, cfg_opts):
-        self._cfg_opts = cfg_opts
+    def __init__(self, vim_client):
+        self._vim_client = vim_client
+        self._cfg_opts = vim_client.query_config()
         self._cfg_spec = None
+        self._cfg_info = None
         self._metadata = None
         self._logger = logging.getLogger(__name__)
+
+    def init_for_create(self, vm_id, datastore, memory, cpus, metadata=None, env=None):
+        """Initialize VMConfigSpec for creating a new VM.
+
+        :param vm_id: Name of the VM
+        :type vm_id: str
+        :param datastore: Name of the VM's datastore
+        :type datastore: str
+        :param memory: VM memory in MB
+        :type memory: int
+        :param cpus: Number of virtual CPUs
+        :type cpus: int
+        :param metadata: VM creation metadata
+        :type metadata: dictionary
+        :param env: VM creation environment
+        :type env: dictionary
+        """
+        vm_path = datastore_path(datastore, compond_path_join(VM_FOLDER_NAME_PREFIX, vm_id))
+
+        filled_metadata = {}
+        meta_config = metadata.get("configuration") if metadata else {}
+        if meta_config:
+            # The metadata object contains creation configuration details
+            # that can be augmented by the env map. The only env map entries
+            # honored are the ones whose key is listed in the "parameters"
+            # section of the metadata structure.
+            filled_metadata = meta_config.copy()
+            param_names = [p["name"] for p in metadata.get("parameters", [])]
+            if env:
+                for k, v in env.items():
+                    if k in param_names:
+                        filled_metadata[k] = v
+                    else:
+                        self._logger.warning("Skipped unexpected env: %s" % k)
+
+        self._cfg_spec = vim.vm.ConfigSpec()
+        self._cfg_spec.name = vm_id
+        self._cfg_spec.guestId = filled_metadata.get('guestOS', 'otherGuest')
+        self._cfg_spec.memoryMB = memory
+        self._cfg_spec.numCPUs = cpus
+        self._cfg_spec.files = vim.vm.FileInfo(vmPathName=vm_path)
+        self._cfg_spec.deviceChange = []
+        self._cfg_info = vim.vm.ConfigInfo(hardware=vim.vm.VirtualHardware())
+        self._metadata = filled_metadata
+
+    def init_for_update(self, vm_id):
+        """Initialize VMConfigSpec for updating an existing VM.
+        """
+        self._cfg_spec = vim.vm.ConfigSpec(deviceChange=[])
+        self._cfg_info = self._vim_client.get_vm(vm_id).config
+
+    def init_for_import(self, vm_id, vm_path):
+        """Initialize VMConfigSpec for importing.
+        """
+        self._cfg_spec = vim.vm.ConfigSpec()
+        self._cfg_spec.name = vm_id
+        self._cfg_spec.guestId = "otherGuest"
+        # Just specify a tiny capacity in the spec for now; the eventual vm
+        # disk will be based on what is imported via the http nfc url.
+        self._cfg_spec.memoryMB = 32
+        self._cfg_spec.numCPUs = 1
+        self._cfg_spec.files = vim.vm.FileInfo(vmPathName=vm_path)
+        self._cfg_spec.deviceChange = []
+        self._cfg_info = vim.vm.ConfigInfo(hardware=vim.vm.VirtualHardware())
+
+    def get_spec(self):
+        return self._cfg_spec
 
     def _add_disk(self, datastore, disk_id, controller_key,
                   size_mb=None, parent_id=None, create=False, with_vm=False,
@@ -140,7 +209,7 @@ class EsxVmConfigSpec(VmConfigSpec):
             self._add_device(disk)
 
     @log_duration
-    def _add_scsi_controller(self, cfg_info):
+    def _add_scsi_controller(self):
         """Add a scsi controller to the device spec.
         """
 
@@ -155,7 +224,7 @@ class EsxVmConfigSpec(VmConfigSpec):
 
         bus_number = GetFreeBusNumber(self._cfg_opts,
                                       vim.vm.device.VirtualSCSIController,
-                                      cfg_info, self._cfg_spec)
+                                      self._cfg_info, self._cfg_spec)
 
         controller = controller_type(
             key=GetFreeKey(self._cfg_spec),
@@ -166,16 +235,12 @@ class EsxVmConfigSpec(VmConfigSpec):
         return controller
 
     @log_duration
-    def _find_scsi_controller(self, cfg_info):
+    def _find_scsi_controller(self):
         """Find a scsi controller in vm configuration and the spec. Return None
         if controller is not found.
-
-        :param cfg_info: The VMs cfg info object to search
-        :type cfg_info: vim.vm.ConfigInfo
         """
-        controller = self._find_device(self._get_devices_from_config(cfg_info),
+        controller = self._find_device(self._get_devices_from_config(),
                                        vim.vm.device.VirtualSCSIController)
-
         if controller is None:
             for change_item in self._cfg_spec.deviceChange:
                 if isinstance(change_item.device, vim.vm.device.VirtualSCSIController):
@@ -184,13 +249,13 @@ class EsxVmConfigSpec(VmConfigSpec):
 
         return controller
 
-    def _find_or_add_scsi_controller(self, cfg_info):
-        controller = self._find_scsi_controller(cfg_info)
+    def _find_or_add_scsi_controller(self):
+        controller = self._find_scsi_controller()
         if controller is None:
-            controller = self._add_scsi_controller(cfg_info)
+            controller = self._add_scsi_controller()
         return controller
 
-    def attach_disk(self, cfg_info, vmdk_file):
+    def attach_disk(self, vmdk_file):
         """Add a scsi disk spec to the config spec given the current vm
            info. The method adds a scsi controller if there is one that
            is not already present.
@@ -202,7 +267,7 @@ class EsxVmConfigSpec(VmConfigSpec):
         :param disk_id: vmdk id
         :type disk_id: str
         """
-        controller = self._find_or_add_scsi_controller(cfg_info)
+        controller = self._find_or_add_scsi_controller()
         backing = vim.vm.device.VirtualDisk.FlatVer2BackingInfo(
             fileName=vmdk_file,
             diskMode=vim.vm.device.VirtualDiskOption.DiskMode.persistent,
@@ -228,8 +293,7 @@ class EsxVmConfigSpec(VmConfigSpec):
         :param size_mb: size of the disk in MB
         :type size_mb: int
         """
-        cfg_info = vim.vm.ConfigInfo(hardware=vim.vm.VirtualHardware())
-        controller = self._find_or_add_scsi_controller(cfg_info)
+        controller = self._find_or_add_scsi_controller()
         self._add_disk(datastore, disk_id, controller.key, size_mb=size_mb, create=True, with_vm=True)
 
     def create_child_disk(self, datastore, disk_id, parent_id):
@@ -244,8 +308,7 @@ class EsxVmConfigSpec(VmConfigSpec):
         :param parent_id: parent disk id
         :type parent_id: str
         """
-        cfg_info = vim.vm.ConfigInfo(hardware=vim.vm.VirtualHardware())
-        controller = self._find_or_add_scsi_controller(cfg_info)
+        controller = self._find_or_add_scsi_controller()
         self._add_disk(datastore, disk_id, controller.key, parent_id=parent_id, create=True, with_vm=True)
 
     def add_nic(self, network):
@@ -277,14 +340,13 @@ class EsxVmConfigSpec(VmConfigSpec):
         )
         self._add_device(device)
 
-    def add_iso_cdrom(self, iso_file, cfg_info):
+    def add_iso_cdrom(self, iso_file):
         """Create a cdrom spec to add a CD-ROM device with an iso
 
         :param iso_file: The iso file path, string
-        :param cfg_info: The VM's ConfigInfo object
         :rtype: bool. True if success, False if failure
         """
-        devices = self._get_devices_from_config(cfg_info)
+        devices = self._get_devices_from_config()
         cd_devs = self._find_devices(devices, vim.vm.device.VirtualCdrom)
 
         conInfo = vim.vm.device.VirtualDevice.ConnectInfo()
@@ -321,12 +383,11 @@ class EsxVmConfigSpec(VmConfigSpec):
                 self._update_device(dev)
                 return True
 
-    def disconnect_iso_cdrom(self, cfg_info):
+    def disconnect_iso_cdrom(self):
         """Updates the config spec to detach an iso from the VM.
-        :param cfg_info: The VM's ConfigInfo object
         :rtype: the datastore path of the iso
         """
-        devices = self._get_devices_from_config(cfg_info)
+        devices = self._get_devices_from_config()
         cd_devs = self._find_devices(devices, vim.vm.device.VirtualCdrom)
         # assumes only working on one virtual cdrom
         if len(cd_devs) > 1:
@@ -344,100 +405,17 @@ class EsxVmConfigSpec(VmConfigSpec):
         self._update_device(dev)
         return dev.backing.fileName
 
-    def detach_disk(self, cfg_info, disk_id):
-        matcher = self._disk_matcher(disk_id)
-        devices = self._get_devices_from_config(cfg_info)
-        device = self._get_virtual_disk_device(devices, matcher=matcher)
+    def detach_disk(self, disk_id):
+        # On VMFS, device.backing.fileName is in the form of: '[ds_name] disk_[disk_id]/[disk_id].vmdk'
+        # On VSAN, top-level folder is symlink to its internal object id, so the fileName field becomes
+        # '[ds_name] [vsan object id]/[disk_id].vmdk'.
+        # Since disk_id is unique, we only need to match [disk_id].vmdk.
+        def matcher(device): return device.backing.fileName.endswith(vmdk_add_suffix(disk_id))
+        devices = self._get_devices_from_config()
+        device = self._find_device(devices, vim.vm.device.VirtualDisk, matcher=matcher)
+        if device is None:
+            raise DeviceNotFoundException()
         self._remove_device(device)
-
-    def _create_device_spec(self, device):
-        return vim.vm.device.VirtualDeviceSpec(
-            device=device,
-            fileOperation=vim.vm.device.VirtualDeviceSpec.FileOperation.create,
-            operation=vim.vm.device.VirtualDeviceSpec.Operation.add
-        )
-
-    def _add_device_spec(self, device):
-        return vim.vm.device.VirtualDeviceSpec(
-            device=device,
-            operation=vim.vm.device.VirtualDeviceSpec.Operation.add
-        )
-
-    def _edit_device_spec(self, device):
-        return vim.vm.device.VirtualDeviceSpec(
-            device=device,
-            operation=vim.vm.device.VirtualDeviceSpec.Operation.edit
-        )
-
-    def _remove_device_spec(self, device):
-        return vim.vm.device.VirtualDeviceSpec(
-            device=device,
-            operation=vim.vm.device.VirtualDeviceSpec.Operation.remove
-        )
-
-    def init_for_create(self, vm_id, datastore, memory, cpus, metadata=None, env=None):
-        """Initialize VMConfigSpec for creating a new VM.
-
-        :param vm_id: Name of the VM
-        :type vm_id: str
-        :param datastore: Name of the VM's datastore
-        :type datastore: str
-        :param memory: VM memory in MB
-        :type memory: int
-        :param cpus: Number of virtual CPUs
-        :type cpus: int
-        :param metadata: VM creation metadata
-        :type metadata: dictionary
-        :param env: VM creation environment
-        :type env: dictionary
-        """
-        vm_path = datastore_path(datastore, compond_path_join(VM_FOLDER_NAME_PREFIX, vm_id))
-
-        filled_metadata = {}
-        meta_config = metadata.get("configuration") if metadata else {}
-        if meta_config:
-            # The metadata object contains creation configuration details
-            # that can be augmented by the env map. The only env map entries
-            # honored are the ones whose key is listed in the "parameters"
-            # section of the metadata structure.
-            filled_metadata = meta_config.copy()
-            param_names = [p["name"] for p in metadata.get("parameters", [])]
-            if env:
-                for k, v in env.items():
-                    if k in param_names:
-                        filled_metadata[k] = v
-                    else:
-                        self._logger.warning("Skipped unexpected env: %s" % k)
-
-        self._cfg_spec = vim.vm.ConfigSpec()
-        self._cfg_spec.name = vm_id
-        self._cfg_spec.guestId = filled_metadata.get('guestOS', 'otherGuest')
-        self._cfg_spec.memoryMB = memory
-        self._cfg_spec.numCPUs = cpus
-        self._cfg_spec.files = vim.vm.FileInfo(vmPathName=vm_path)
-        self._cfg_spec.deviceChange = []
-        self._metadata = filled_metadata
-
-    def init_for_update(self):
-        """Initialize VMConfigSpec for updating an existing VM.
-        """
-        self._cfg_spec = vim.vm.ConfigSpec(deviceChange=[])
-
-    def init_for_import(self, vm_id, vm_path):
-        """Initialize VMConfigSpec for importing.
-        """
-        self._cfg_spec = vim.vm.ConfigSpec()
-        self._cfg_spec.name = vm_id
-        self._cfg_spec.guestId = "otherGuest"
-        # Just specify a tiny capacity in the spec for now; the eventual vm
-        # disk will be based on what is imported via the http nfc url.
-        self._cfg_spec.memoryMB = 32
-        self._cfg_spec.numCPUs = 1
-        self._cfg_spec.files = vim.vm.FileInfo(vmPathName=vm_path)
-        self._cfg_spec.deviceChange = []
-
-    def get_spec(self):
-        return self._cfg_spec
 
     def _create_device(self, device):
         """Create a device to a ConfigSpec
@@ -445,7 +423,10 @@ class EsxVmConfigSpec(VmConfigSpec):
         :param device: Device to add
         :type device: vim.Device
         """
-        device_spec = self._create_device_spec(device)
+        device_spec = vim.vm.device.VirtualDeviceSpec(
+            device=device,
+            operation=vim.vm.device.VirtualDeviceSpec.Operation.add
+        )
         self._cfg_spec.deviceChange.append(device_spec)
 
     def _add_device(self, device):
@@ -454,7 +435,10 @@ class EsxVmConfigSpec(VmConfigSpec):
         :param device: Device to add
         :type device: vim.Device
         """
-        device_spec = self._add_device_spec(device)
+        device_spec = vim.vm.device.VirtualDeviceSpec(
+            device=device,
+            operation=vim.vm.device.VirtualDeviceSpec.Operation.add
+        )
         self._cfg_spec.deviceChange.append(device_spec)
 
     def _update_device(self, device):
@@ -463,7 +447,10 @@ class EsxVmConfigSpec(VmConfigSpec):
         :param device: Device to add
         :type device: vim.Device
         """
-        device_spec = self._edit_device_spec(device)
+        device_spec = vim.vm.device.VirtualDeviceSpec(
+            device=device,
+            operation=vim.vm.device.VirtualDeviceSpec.Operation.edit
+        )
         self._cfg_spec.deviceChange.append(device_spec)
 
     def _remove_device(self, device):
@@ -472,18 +459,18 @@ class EsxVmConfigSpec(VmConfigSpec):
         :param device: Device to remove
         :type device: vim.Device
         """
-        device_spec = self._remove_device_spec(device)
+        device_spec = vim.vm.device.VirtualDeviceSpec(
+            device=device,
+            operation=vim.vm.device.VirtualDeviceSpec.Operation.remove
+        )
         self._cfg_spec.deviceChange.append(device_spec)
 
-    def _get_devices_from_config(self, cfg_info):
-        """Get the set of virtual devices belonging to a VM given
-           its config.
-        :param cfg_info: The VMs cfg info object
-        :type cfg_info: vim.vm.ConfigInfo
+    def _get_devices_from_config(self):
+        """Get the set of virtual devices belonging to a VM given its config.
         :rtype: vim.vm.device.VirtualDevice[]
         """
-        if cfg_info.hardware is not None:
-            return cfg_info.hardware.device
+        if self._cfg_info.hardware is not None:
+            return self._cfg_info.hardware.device
         return []
 
     def _find_device(self, devices, device_type, matcher=None):
@@ -527,25 +514,6 @@ class EsxVmConfigSpec(VmConfigSpec):
                 if matcher is None or matcher(device):
                     filtered_devices.append(device)
         return filtered_devices
-
-    def _disk_matcher(self, disk_id):
-        # On VMFS, device.backing.fileName is in the form of: '[ds_name] disk_[disk_id]/[disk_id].vmdk'
-        # On VSAN, top-level folder is symlink to its internal object id, so the fileName field becomes
-        # '[ds_name] [vsan object id]/[disk_id].vmdk'.
-        # Since disk_id is unique, we only need to match [disk_id].vmdk.
-        path = vmdk_add_suffix(disk_id)
-        return lambda device: device.backing.fileName.endswith(path)
-
-    def _get_virtual_disk_device(self, devices, **kwargs):
-        """Get a virtual device in a list of VM devices.
-
-        Args pass through to _find_device().
-        If no device is found, DeviceNotFoundException is raised.
-        """
-        device = self._find_device(devices, vim.vm.device.VirtualDisk, **kwargs)
-        if device is None:
-            raise DeviceNotFoundException()
-        return device
 
     def set_extra_config(self, options):
         """ Set the extra config options for a VM.

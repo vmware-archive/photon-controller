@@ -82,11 +82,6 @@ class TestEsxVmManager(unittest.TestCase):
         self.assertRaises(vim.fault.TaskInProgress,
                           self.vm_manager.power_on_vm, "foo")
 
-    def _update_spec(self):
-        spec = EsxVmConfigSpec(MagicMock())
-        spec.init_for_update()
-        return spec
-
     def test_add_nic(self):
         """Test add nic"""
 
@@ -100,7 +95,8 @@ class TestEsxVmManager(unittest.TestCase):
             f.key = 1
             return f
 
-        spec = self._update_spec()
+        spec = EsxVmConfigSpec(MagicMock())
+        spec.init_for_update("vm_id")
         spec._find_device = _get_device
         # Caller passes none
         self.vm_manager.add_nic(spec, None)

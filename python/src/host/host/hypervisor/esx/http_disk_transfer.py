@@ -237,7 +237,7 @@ class HttpNfcTransferer(HttpTransferer):
         accessible from this host.
         """
         shadow_vm_id = SHADOW_VM_NAME_PREFIX + str(uuid.uuid4())
-        spec = EsxVmConfigSpec(self._host_client.query_config())
+        spec = EsxVmConfigSpec(self._host_client)
         spec.init_for_create(shadow_vm_id, self._get_shadow_vm_datastore(), 32, 1)
         try:
             self._vm_manager.create_vm(shadow_vm_id, spec)
@@ -291,7 +291,7 @@ class HttpNfcTransferer(HttpTransferer):
         return response.import_vm_path, response.import_vm_id
 
     def _create_import_vm_spec(self, vm_id, datastore, vm_path):
-        spec = EsxVmConfigSpec(self._host_client.query_config())
+        spec = EsxVmConfigSpec(self._host_client)
         spec.init_for_import(vm_id, vm_path)
         # Just specify a tiny capacity in the spec for now; the eventual vm
         # disk will be based on what is uploaded via the http nfc url.

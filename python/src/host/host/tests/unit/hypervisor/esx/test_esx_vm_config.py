@@ -70,9 +70,11 @@ class TestEsxVmConfig(unittest.TestCase):
         expected_metadata = {'guestOS': 'otherLinuxGuest', 'key1': 'value1'}
         assert_that(cspec._metadata, equal_to(expected_metadata))
 
-    def _update_spec(self):
+    def _update_spec(self, cfg_info=None):
         spec = EsxVmConfigSpec(MagicMock())
-        spec.init_for_update()
+        spec.init_for_update("vm_id")
+        if cfg_info:
+            spec._cfg_info = cfg_info
         return spec
 
     def test_create_nic_spec(self):
@@ -101,26 +103,25 @@ class TestEsxVmConfig(unittest.TestCase):
         assert_that(disk_controller.key, equal_to(100))
 
     def test_find_virtual_disk(self):
-        spec = self._update_spec()
+        spec = self._update_spec(FakeConfigInfo())
         devices = self.dummy_devices()
         for device in devices:
             spec._add_device(device)
-        cfg_info = FakeConfigInfo()
         device_type = vim.vm.device.VirtualDisk
         datastore = "ds1"
         filename = "folder/foo"
         path = vmdk_path(datastore, filename)
 
-        find_disk = spec._disk_matcher(filename)
+        def find_disk(device): return device.backing.fileName.endswith(filename + ".vmdk")
         disk = spec._find_device(devices, device_type, matcher=find_disk)
         assert_that(disk, equal_to(None))
 
-        spec.attach_disk(cfg_info, vmdk_path(datastore, filename))
+        spec.attach_disk(vmdk_path(datastore, filename))
 
         device = spec._find_device(devices, device_type, matcher=find_disk)
         assert_that(device, equal_to(None))
 
-        spec.attach_disk(cfg_info, path)
+        spec.attach_disk(path)
         device_changes = spec.get_spec().deviceChange
         device_list = []
         for device_change in device_changes:
@@ -225,39 +226,31 @@ class TestEsxVmConfig(unittest.TestCase):
         fake_iso_ds_path = '[ds] vm_fake/fake.iso'
 
         # test if no virtual cdrom attached to the VM
-        cfg_info = FakeConfigInfo()
-
-        cspec = self._update_spec()
+        cspec = self._update_spec(FakeConfigInfo())
         cspec._cfg_opts = cfgOption
 
-        result = cspec.add_iso_cdrom(fake_iso_ds_path, cfg_info)
+        result = cspec.add_iso_cdrom(fake_iso_ds_path)
 
-        assert_that(result.__class__,
-                    equal_to(bool))
+        assert_that(result.__class__, equal_to(bool))
         assert_that(result, equal_to(True))
 
         dev = cspec.get_spec().deviceChange[0].device
         assert_that(len(cspec.get_spec().deviceChange), equal_to(1))
         assert_that(dev.connectable.connected, equal_to(True))
         assert_that(dev.connectable.startConnected, equal_to(True))
-        assert_that(dev.backing.__class__,
-                    equal_to(vim.vm.device.VirtualCdrom.IsoBackingInfo))
+        assert_that(dev.backing.__class__, equal_to(vim.vm.device.VirtualCdrom.IsoBackingInfo))
 
         # test if virtual cdrom exist and ISO already attached to the VM
-        cspec = self._update_spec()
-        cfg_info = self._get_config_info_with_iso(fake_iso_ds_path)
-
-        result = cspec.add_iso_cdrom(fake_iso_ds_path, cfg_info)
+        cspec = self._update_spec(self._get_config_info_with_iso(fake_iso_ds_path))
+        result = cspec.add_iso_cdrom(fake_iso_ds_path)
 
         assert_that(result.__class__, equal_to(bool))
         assert_that(result, equal_to(False))
 
         # test if virtual cdrom exist and it's iso_backing
         # and ISO is not attached to the VM
-        cspec = self._update_spec()
-        cfg_info = self._get_config_info_without_connected(is_iso_backing=True)
-
-        result = cspec.add_iso_cdrom(fake_iso_ds_path, cfg_info)
+        cspec = self._update_spec(self._get_config_info_without_connected(is_iso_backing=True))
+        result = cspec.add_iso_cdrom(fake_iso_ds_path)
 
         assert_that(result.__class__, equal_to(bool))
         assert_that(result, equal_to(True))
@@ -277,16 +270,14 @@ class TestEsxVmConfig(unittest.TestCase):
 
     def test_disconnect_iso(self):
         # on vm config with no cdrom devices
-        cfg_info = FakeConfigInfo()
-        cspec = self._update_spec()
-        self.assertRaises(DeviceNotFoundException, cspec.disconnect_iso_cdrom, cfg_info)
+        cspec = self._update_spec(FakeConfigInfo())
+        self.assertRaises(DeviceNotFoundException, cspec.disconnect_iso_cdrom)
         assert_that(len(cspec.get_spec().deviceChange), equal_to(0))
 
         # on vm config with no a fake cdrom device
         fake_iso_ds_path = '[ds] vm_fake/fake.iso'
-        cspec = self._update_spec()
-        cfg_info = self._get_config_info_with_iso(fake_iso_ds_path)
-        iso_path = cspec.disconnect_iso_cdrom(cfg_info)
+        cspec = self._update_spec(self._get_config_info_with_iso(fake_iso_ds_path))
+        iso_path = cspec.disconnect_iso_cdrom()
 
         assert_that(len(cspec.get_spec().deviceChange), equal_to(1))
         dev = cspec.get_spec().deviceChange[0].device
@@ -298,13 +289,12 @@ class TestEsxVmConfig(unittest.TestCase):
         assert_that(dev.connectable.startConnected, equal_to(False))
 
     def test_update_spec(self):
-        cfg_info = FakeConfigInfo()
-        spec = self._update_spec()
+        spec = self._update_spec(FakeConfigInfo())
         assert_that(len(spec.get_spec().deviceChange), equal_to(0))
         net_name = "VM_Network"
         spec.add_nic(net_name)
         assert_that(len(spec.get_spec().deviceChange), equal_to(1))
-        spec.attach_disk(cfg_info, "ds1.vmdk")
+        spec.attach_disk("ds1.vmdk")
         # One for the controller and one for the disk itself.
         assert_that(len(spec.get_spec().deviceChange), equal_to(3))
 

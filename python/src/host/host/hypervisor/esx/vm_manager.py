@@ -155,7 +155,7 @@ class EsxVmManager(VmManager):
         # the hypervisor sizing meta
         cpus = int(flavor.cost["vm.cpu"].convert(Unit.COUNT))
         memory = int(flavor.cost["vm.memory"].convert(Unit.MB))
-        spec = EsxVmConfigSpec(self.vim_client.query_config())
+        spec = EsxVmConfigSpec(self.vim_client)
         spec.init_for_create(vm_id, datastore, memory, cpus, metadata, env)
 
         extra_config_map = self._get_extra_config_map(spec._metadata)
@@ -167,11 +167,11 @@ class EsxVmManager(VmManager):
         return spec
 
     @log_duration
-    def _update_vm_spec(self):
+    def _update_vm_spec(self, vm_id):
         """ Return an empty update spec for a VM.
         """
-        spec = EsxVmConfigSpec(self.vim_client.query_config())
-        spec.init_for_update()
+        spec = EsxVmConfigSpec(self.vim_client)
+        spec.init_for_update(vm_id)
         return spec
 
     @log_duration
@@ -262,9 +262,8 @@ class EsxVmManager(VmManager):
         :param vmdk_file: vmdk disk path
         :type vmdk_file: str
         """
-        cfg_spec = self._update_vm_spec()
-        cfg_info = self.get_vm_config(vm_id)
-        cfg_spec.attach_disk(cfg_info, vmdk_file)
+        cfg_spec = self._update_vm_spec(vm_id)
+        cfg_spec.attach_disk(vmdk_file)
         self.update_vm(vm_id, cfg_spec)
 
     def detach_disk(self, vm_id, disk_id):
@@ -274,9 +273,8 @@ class EsxVmManager(VmManager):
         :param disk_id: Disk id
         :type disk_id: str
         """
-        cfg_spec = self._update_vm_spec()
-        cfg_info = self.get_vm_config(vm_id)
-        cfg_spec.detach_disk(cfg_info, disk_id)
+        cfg_spec = self._update_vm_spec(vm_id)
+        cfg_spec.detach_disk(disk_id)
         self.update_vm(vm_id, cfg_spec)
 
     @log_duration
@@ -516,12 +514,8 @@ class EsxVmManager(VmManager):
         :type vm_id: str
         :rtype: bool. True if success, False if failure
         """
-        vm = self.vim_client.get_vm(vm_id)
-        if vm.config is None:
-            raise Exception("Invalid VM config")
-
-        cfg_spec = self._update_vm_spec()
-        result = cfg_spec.add_iso_cdrom(iso_file, vm.config)
+        cfg_spec = self._update_vm_spec(vm_id)
+        result = cfg_spec.add_iso_cdrom(iso_file)
         if result:
             self.update_vm(vm_id, cfg_spec)
         return result
@@ -534,13 +528,9 @@ class EsxVmManager(VmManager):
         :param vm_id: The id of VM to detach iso from
         :type vm_id: str
         """
-        vm = self.vim_client.get_vm(vm_id)
-        if vm.config is None:
-            raise Exception("Invalid VM config")
-
         try:
-            cfg_spec = self._update_vm_spec()
-            iso_path = cfg_spec.disconnect_iso_cdrom(vm.config)
+            cfg_spec = self._update_vm_spec(vm_id)
+            iso_path = cfg_spec.disconnect_iso_cdrom()
             self.update_vm(vm_id, cfg_spec)
         except DeviceNotFoundException, e:
             raise IsoNotAttachedException(e)

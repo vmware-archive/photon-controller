@@ -214,7 +214,7 @@ class VmConfigSpec(object):
         pass
 
     @abc.abstractmethod
-    def init_for_update(self):
+    def init_for_update(self, vm_id):
         pass
 
     @abc.abstractmethod
@@ -226,7 +226,7 @@ class VmConfigSpec(object):
         pass
 
     @abc.abstractmethod
-    def attach_disk(self, cfg_info, vmdk_file):
+    def attach_disk(self, vmdk_file):
         pass
 
     @abc.abstractmethod
@@ -242,15 +242,15 @@ class VmConfigSpec(object):
         pass
 
     @abc.abstractmethod
-    def add_iso_cdrom(self, iso_file, cfg_info):
+    def add_iso_cdrom(self, iso_file):
         pass
 
     @abc.abstractmethod
-    def disconnect_iso_cdrom(self, cfg_info):
+    def disconnect_iso_cdrom(self):
         pass
 
     @abc.abstractmethod
-    def detach_disk(self, cfg_info, disk_id):
+    def detach_disk(self, disk_id):
         pass
 
     @abc.abstractmethod
