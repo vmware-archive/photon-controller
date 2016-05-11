@@ -242,7 +242,7 @@ Vagrant.configure("2") do |config|
     dynamic_params += %Q(,\n  "MGMT_API_PORT_SELECTOR" : "true")
 
     if ENV['PHOTON_AUTH_LS_ENDPOINT']
-      dynamic_params += %Q(,\n  "AUTH_SERVER_ADDRESS" : "#{ENV['PHOTON_AUTH_LS_ENDPOINT']}")
+      dynamic_params += %Q(,\n  "AUTH_SERVER_ADDRESS" : "10.146.64.236")
     else
       abort("auth is enabled, but server address is not set")
     end

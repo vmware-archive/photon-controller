@@ -13,9 +13,10 @@
 
 package com.vmware.photon.controller.auth;
 
-import com.vmware.identity.openidconnect.client.AccessToken;
 import com.vmware.identity.openidconnect.client.OIDCTokens;
-import com.vmware.identity.openidconnect.client.RefreshToken;
+import com.vmware.identity.openidconnect.common.AccessToken;
+import com.vmware.identity.openidconnect.common.ParseException;
+import com.vmware.identity.openidconnect.common.RefreshToken;
 import com.vmware.photon.controller.common.auth.AuthClientHandler;
 import com.vmware.photon.controller.common.auth.AuthException;
 import com.vmware.photon.controller.common.auth.AuthOIDCClient;
@@ -104,14 +105,14 @@ public class Main {
    * Print user access token.
    */
   static void printAccessToken(AccessToken token) throws Exception {
-    System.out.println(token.getValue());
+    System.out.println(token.serialize());
   }
 
   /**
    * Print refresh token.
    */
   static void printRefreshToken(RefreshToken token) {
-    System.out.println(token.getValue());
+    System.out.println(token.serialize());
   }
 
   /**
@@ -146,7 +147,8 @@ public class Main {
    *
    * @return The OIDC tokens, including ID Token, Access Token, Refresh Token.
    */
-  static OIDCTokens getAuthTokens(AuthToolCmdLine authToolCmdLine) throws AuthException, URISyntaxException {
+  static OIDCTokens getAuthTokens(AuthToolCmdLine authToolCmdLine) throws AuthException, URISyntaxException,
+      ParseException {
     AuthTokenArguments arguments = (AuthTokenArguments) authToolCmdLine.getArguments();
     AuthToolCmdLine.Command command = authToolCmdLine.getCommand();
 
@@ -160,7 +162,7 @@ public class Main {
 
       case GET_ACCESS_TOKEN:
         if (!StringUtils.isBlank(arguments.getRefreshToken())) {
-          return handler.getAuthTokensByRefreshToken(new RefreshToken(arguments.getRefreshToken()));
+          return handler.getAuthTokensByRefreshToken(RefreshToken.parse(arguments.getRefreshToken()));
         } else {
           return handler.getAuthTokensByPassword(arguments.getUsername(), arguments.getPassword());
         }
