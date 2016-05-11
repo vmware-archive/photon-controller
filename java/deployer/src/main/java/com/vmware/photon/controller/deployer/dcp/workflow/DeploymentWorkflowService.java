@@ -766,7 +766,6 @@ public class DeploymentWorkflowService extends StatefulService {
     BulkProvisionHostsWorkflowService.State startState = new BulkProvisionHostsWorkflowService.State();
     startState.deploymentServiceLink = currentState.deploymentServiceLink;
     startState.usageTag = UsageTag.CLOUD.name();
-    startState.taskPollDelay = currentState.taskPollDelay;
 
     TaskUtils.startTaskAsync(
         this,

@@ -28,14 +28,10 @@ import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
 import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
-import com.vmware.photon.controller.deployer.dcp.entity.VibFactoryService;
-import com.vmware.photon.controller.deployer.dcp.entity.VibService;
 import com.vmware.photon.controller.deployer.dcp.task.ChildTaskAggregatorFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.ChildTaskAggregatorService;
 import com.vmware.photon.controller.deployer.dcp.task.ProvisionHostTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.ProvisionHostTaskService;
-import com.vmware.photon.controller.deployer.dcp.task.UploadVibTaskFactoryService;
-import com.vmware.photon.controller.deployer.dcp.task.UploadVibTaskService;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
 import com.vmware.photon.controller.nsxclient.NsxClient;
 import com.vmware.photon.controller.nsxclient.datatypes.TransportType;
@@ -56,12 +52,8 @@ import static com.google.common.base.Preconditions.checkState;
 
 import javax.annotation.Nullable;
 
-import java.io.File;
 import java.util.Collection;
-import java.util.EnumSet;
-import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
 /**
@@ -80,7 +72,6 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
      */
     public enum SubStage {
       PROVISION_NETWORK,
-      UPLOAD_VIBS,
       PROVISION_HOSTS,
     }
 
@@ -129,12 +120,6 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
      */
     @Immutable
     public QueryTask.QuerySpecification querySpecification;
-
-    /**
-     * This value represents the interval, in milliseconds, to wait when polling the state of a child task.
-     */
-    @Immutable
-    public Integer taskPollDelay;
   }
 
   public BulkProvisionHostsWorkflowService() {
@@ -168,10 +153,6 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
     } catch (Throwable t) {
       ServiceUtils.failOperationAsBadRequest(this, startOp, t);
       return;
-    }
-
-    if (startState.taskPollDelay == null) {
-      startState.taskPollDelay = HostUtils.getDeployerContext(this).getTaskPollDelay();
     }
 
     if (startState.querySpecification == null) {
@@ -294,7 +275,6 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
         checkState(taskState.subStage != null);
         switch (taskState.subStage) {
           case PROVISION_NETWORK:
-          case UPLOAD_VIBS:
           case PROVISION_HOSTS:
             break;
           default:
@@ -315,9 +295,6 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
       case PROVISION_NETWORK:
         processProvisionNetworkSubStage(currentState);
         break;
-      case UPLOAD_VIBS:
-        processUploadVibsSubStage(currentState);
-        break;
       case PROVISION_HOSTS:
         processProvisionHostsSubStage(currentState);
         break;
@@ -335,13 +312,12 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
         .createGet(currentState.deploymentServiceLink)
         .setCompletion(
             (o, e) -> {
-              if (e != null) {
-                failTask(e);
-                return;
-              }
-
               try {
-                processProvisionNetworkSubStage(o.getBody(DeploymentService.State.class));
+                if (e != null) {
+                  failTask(e);
+                } else {
+                  processProvisionNetworkSubStage(o.getBody(DeploymentService.State.class));
+                }
               } catch (Throwable t) {
                 failTask(t);
               }
@@ -352,13 +328,13 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
 
     if (!deploymentState.virtualNetworkEnabled) {
       ServiceUtils.logInfo(this, "Skipping virtual network setup (disabled)");
-      sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.UPLOAD_VIBS);
+      sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.PROVISION_HOSTS);
       return;
     }
 
     if (deploymentState.networkZoneId != null) {
       ServiceUtils.logInfo(this, "Transport zone " + deploymentState.networkZoneId + " already configured");
-      sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.UPLOAD_VIBS);
+      sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.PROVISION_HOSTS);
       return;
     }
 
@@ -409,127 +385,9 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
               if (e != null) {
                 failTask(e);
               } else {
-                sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.UPLOAD_VIBS);
+                sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.PROVISION_HOSTS);
               }
             }));
-  }
-
-  //
-  // UPLOAD_VIB sub-stage routines
-  //
-
-  private void processUploadVibsSubStage(State currentState) {
-
-    sendRequest(HostUtils
-        .getCloudStoreHelper(this)
-        .createBroadcastPost(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS, ServiceUriPaths.DEFAULT_NODE_SELECTOR)
-        .setBody(QueryTask.create(currentState.querySpecification).setDirect(true))
-        .setCompletion(
-            (o, e) -> {
-              if (e != null) {
-                failTask(e);
-                return;
-              }
-
-              try {
-                processUploadVibsSubStage(currentState, QueryTaskUtils.getBroadcastQueryDocumentLinks(o));
-              } catch (Throwable t) {
-                failTask(t);
-              }
-            }));
-  }
-
-  private void processUploadVibsSubStage(State currentState, Set<String> hostServiceLinks) {
-
-    if (hostServiceLinks.isEmpty() && currentState.usageTag.equals(UsageTag.CLOUD.name())) {
-      ServiceUtils.logInfo(this, "No dedicated cloud hosts were found");
-      sendStageProgressPatch(TaskState.TaskStage.FINISHED, null);
-      return;
-    }
-
-    checkState(hostServiceLinks.size() > 0);
-
-    File sourceDirectory = new File(HostUtils.getDeployerContext(this).getVibDirectory());
-    if (!sourceDirectory.exists() || !sourceDirectory.isDirectory()) {
-      throw new IllegalStateException("Invalid VIB source directory " + sourceDirectory);
-    }
-
-    File[] vibFiles = sourceDirectory.listFiles((file) -> file.getName().toUpperCase().endsWith(".VIB"));
-    if (vibFiles.length == 0) {
-      throw new IllegalStateException("No VIB files were found in source directory " + sourceDirectory);
-    }
-
-    Stream<Operation> vibStartOps = Stream.of(vibFiles).flatMap((vibFile) ->
-        hostServiceLinks.stream().map((hostServiceLink) -> {
-          VibService.State startState = new VibService.State();
-          startState.vibName = vibFile.getName();
-          startState.hostServiceLink = hostServiceLink;
-          return Operation.createPost(this, VibFactoryService.SELF_LINK).setBody(startState);
-        }));
-
-    OperationJoin
-        .create(vibStartOps)
-        .setCompletion(
-            (ops, exs) -> {
-              if (exs != null && !exs.isEmpty()) {
-                failTask(exs.values());
-                return;
-              }
-
-              try {
-                createUploadVibTasks(ops.values());
-              } catch (Throwable t) {
-                failTask(t);
-              }
-            })
-        .sendWith(this);
-  }
-
-  private void createUploadVibTasks(Collection<Operation> vibStartOps) {
-
-    ChildTaskAggregatorService.State startState = new ChildTaskAggregatorService.State();
-    startState.parentTaskLink = getSelfLink();
-    startState.parentPatchBody = Utils.toJson(buildPatch(TaskState.TaskStage.STARTED,
-        TaskState.SubStage.PROVISION_HOSTS, null));
-    startState.pendingCompletionCount = vibStartOps.size();
-    startState.errorThreshold = 0.0;
-
-    sendRequest(Operation
-        .createPost(this, ChildTaskAggregatorFactoryService.SELF_LINK)
-        .setBody(startState)
-        .setCompletion(
-            (o, e) -> {
-              if (e != null) {
-                failTask(e);
-                return;
-              }
-
-              try {
-                createUploadVibTasks(vibStartOps, o.getBody(ServiceDocument.class).documentSelfLink);
-              } catch (Throwable t) {
-                failTask(t);
-              }
-            }));
-  }
-
-  private void createUploadVibTasks(Collection<Operation> vibStartOps, String aggregatorServiceLink) {
-
-    Stream<Operation> taskStartOps = vibStartOps.stream().map((vibStartOp) -> {
-      UploadVibTaskService.State startState = new UploadVibTaskService.State();
-      startState.parentTaskServiceLink = aggregatorServiceLink;
-      startState.vibServiceLink = vibStartOp.getBody(ServiceDocument.class).documentSelfLink;
-      return Operation.createPost(this, UploadVibTaskFactoryService.SELF_LINK).setBody(startState);
-    });
-
-    OperationJoin
-        .create(taskStartOps)
-        .setCompletion(
-            (ops, exs) -> {
-              if (exs != null && !exs.isEmpty()) {
-                failTask(exs.values());
-              }
-            })
-        .sendWith(this);
   }
 
   //
@@ -559,91 +417,63 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
 
   private void processProvisionHostsSubStage(State currentState, Set<String> hostServiceLinks) {
 
-    AtomicInteger atomicInteger = new AtomicInteger(hostServiceLinks.size());
+    if (hostServiceLinks.isEmpty() && currentState.usageTag.equals(UsageTag.CLOUD.name())) {
+      ServiceUtils.logInfo(this, "No dedicated cloud hosts were found");
+      sendStageProgressPatch(TaskState.TaskStage.FINISHED, null);
+      return;
+    }
 
-    FutureCallback<ProvisionHostTaskService.State> futureCallback =
-        new FutureCallback<ProvisionHostTaskService.State>() {
-          @Override
-          public void onSuccess(@javax.validation.constraints.NotNull ProvisionHostTaskService.State state) {
-            try {
-              switch (state.taskState.stage) {
-                case FINISHED:
-                  if (atomicInteger.decrementAndGet() == 0) {
-                    sendStageProgressPatch(TaskState.TaskStage.FINISHED, null);
-                  }
-                  break;
-                case FAILED:
-                  State patchState = buildPatch(TaskState.TaskStage.FAILED, null, null);
-                  patchState.taskState.failure = state.taskState.failure;
-                  TaskUtils.sendSelfPatch(BulkProvisionHostsWorkflowService.this, patchState);
-                  break;
-                case CANCELLED:
-                  sendStageProgressPatch(TaskState.TaskStage.CANCELLED, null);
-                  break;
-              }
-            } catch (Throwable t) {
-              failTask(t);
-            }
-          }
+    checkState(hostServiceLinks.size() > 0);
 
-          @Override
-          public void onFailure(Throwable throwable) {
-            failTask(throwable);
-          }
-        };
+    ChildTaskAggregatorService.State startState = new ChildTaskAggregatorService.State();
+    startState.parentTaskLink = getSelfLink();
+    startState.parentPatchBody = Utils.toJson(buildPatch(TaskState.TaskStage.FINISHED, null, null));
+    startState.pendingCompletionCount = hostServiceLinks.size();
+    startState.errorThreshold = 1.0;
 
-    for (String hostServiceLink : hostServiceLinks) {
-
-      QueryTask queryTask = QueryTask.Builder.createDirectTask()
-          .setQuery(QueryTask.Query.Builder.create()
-              .addKindFieldClause(VibService.State.class)
-              .addFieldClause(VibService.State.FIELD_NAME_HOST_SERVICE_LINK, hostServiceLink)
-              .build())
-          .addOptions(EnumSet.of(
-              QueryTask.QuerySpecification.QueryOption.BROADCAST,
-              QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT))
-          .build();
-
-      sendRequest(Operation
-          .createPost(this, ServiceUriPaths.CORE_QUERY_TASKS)
-          .setBody(queryTask)
-          .setCompletion(
-              (o, e) -> {
+    sendRequest(Operation
+        .createPost(this, ChildTaskAggregatorFactoryService.SELF_LINK)
+        .setBody(startState)
+        .setCompletion(
+            (o, e) -> {
+              try {
                 if (e != null) {
                   failTask(e);
-                  return;
+                } else {
+                  processProvisionHostsSubStage(currentState, hostServiceLinks,
+                      o.getBody(ServiceDocument.class).documentSelfLink);
                 }
-
-                try {
-                  Map<String, Object> vibDocuments = o.getBody(QueryTask.class).results.documents;
-                  checkState(vibDocuments.size() == 1);
-                  createProvisionHostTask(currentState, hostServiceLink,
-                      Utils.fromJson(vibDocuments.values().iterator().next(), VibService.State.class),
-                      futureCallback);
-                } catch (Throwable t) {
-                  failTask(t);
-                }
-              }));
-    }
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            }));
   }
 
-  private void createProvisionHostTask(State currentState,
-                                       String hostServiceLink,
-                                       VibService.State vibState,
-                                       FutureCallback<ProvisionHostTaskService.State> futureCallback) {
+  private void processProvisionHostsSubStage(State currentState,
+                                             Set<String> hostServiceLinks,
+                                             String aggregatorServiceLink) {
 
-    ProvisionHostTaskService.State startState = new ProvisionHostTaskService.State();
-    startState.deploymentServiceLink = currentState.deploymentServiceLink;
-    startState.hostServiceLink = hostServiceLink;
-    startState.vibPath = vibState.uploadPath;
+    Stream<Operation> taskStartOps = hostServiceLinks.stream().map((hostServiceLink) -> {
+      ProvisionHostTaskService.State startState = new ProvisionHostTaskService.State();
+      startState.parentTaskServiceLink = aggregatorServiceLink;
+      startState.deploymentServiceLink = currentState.deploymentServiceLink;
+      startState.hostServiceLink = hostServiceLink;
+      return Operation.createPost(this, ProvisionHostTaskFactoryService.SELF_LINK).setBody(startState);
+    });
 
-    TaskUtils.startTaskAsync(this,
-        ProvisionHostTaskFactoryService.SELF_LINK,
-        startState,
-        (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage),
-        ProvisionHostTaskService.State.class,
-        currentState.taskPollDelay,
-        futureCallback);
+    OperationJoin
+        .create(taskStartOps)
+        .setCompletion(
+            (ops, exs) -> {
+              try {
+                if (exs != null && !exs.isEmpty()) {
+                  failTask(exs.values());
+                }
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            })
+        .sendWith(this);
   }
 
   //

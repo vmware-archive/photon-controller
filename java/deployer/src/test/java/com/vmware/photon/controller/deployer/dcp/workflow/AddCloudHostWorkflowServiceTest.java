@@ -468,7 +468,8 @@ public class AddCloudHostWorkflowServiceTest {
     public void testSuccess() throws Throwable {
       MockHelper.mockHostClient(agentControlClientFactory, hostClientFactory, true);
       MockHelper.mockHttpFileServiceClient(httpFileServiceClientFactory, true);
-      MockHelper.mockCreateScriptFile(deployerContext, ProvisionHostTaskService.SCRIPT_NAME, true);
+      MockHelper.mockCreateScriptFile(deployerContext, ProvisionHostTaskService.CONFIGURE_SYSLOG_SCRIPT_NAME, true);
+      MockHelper.mockCreateScriptFile(deployerContext, ProvisionHostTaskService.INSTALL_VIB_SCRIPT_NAME, true);
       createTestEnvironment();
 
       startState.hostServiceLink =

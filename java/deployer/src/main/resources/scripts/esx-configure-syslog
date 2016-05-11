@@ -1,0 +1,44 @@
+#!/bin/bash -x
+
+tools=$(readlink -nf $(dirname $0))
+source $tools/common.sh
+
+function usage() {
+  echo "Usage: $0 HOST_ADDRESS USERNAME PASSWORD SYSLOG_URI" 1>&2
+  echo
+  echo "Supplied args:"
+  echo $*
+  exit 1
+}
+
+host_address=""
+syslog_uri=""
+username=""
+password=""
+
+if [ "$#" -lt 4 ]
+then
+  usage $*
+fi
+
+host_address=$1
+shift
+username=$1
+shift
+password=$1
+shift
+syslog_uri=$1
+shift
+
+while getopts d:l:n:h flag
+do
+  case $flag in
+    ?)
+      usage $*
+      ;;
+  esac
+done
+
+sshpass -p "$password" ssh -o StrictHostKeyChecking=no ${username}@${host_address} esxcli system syslog config set --loghost=tcp://$syslog_uri
+sshpass -p "$password" ssh -o StrictHostKeyChecking=no ${username}@${host_address} esxcli network firewall ruleset set -r syslog -e true
+sshpass -p "$password" ssh -o StrictHostKeyChecking=no ${username}@${host_address} esxcli system syslog reload

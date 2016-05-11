@@ -988,14 +988,14 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
 
       DatastoreService.State datastore = new DatastoreService.State();
       datastore.name = "ds-name";
-      datastore.id =  "ds-name1";
+      datastore.id = "ds-name1";
       datastore.documentSelfLink = datastore.id;
       datastore.type = DatastoreType.LOCAL_VMFS.name();
       TestHelper.createDatastoreService(sourceCloudStore, datastore);
 
       DatastoreService.State nonImageDataStore = new DatastoreService.State();
       nonImageDataStore.name = "ds-other-name";
-      nonImageDataStore.id =  "ds-other-name1";
+      nonImageDataStore.id = "ds-other-name1";
       nonImageDataStore.documentSelfLink = nonImageDataStore.id;
       nonImageDataStore.type = DatastoreType.LOCAL_VMFS.name();
       TestHelper.createDatastoreService(sourceCloudStore, nonImageDataStore);
@@ -1011,7 +1011,10 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
       mockApiClient(true);
       MockHelper.mockHttpFileServiceClient(httpFileServiceClientFactory, true);
       MockHelper.mockHostClient(agentControlClientFactory, hostClientFactory, true);
-      MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(), ProvisionHostTaskService.SCRIPT_NAME, true);
+      MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(),
+          ProvisionHostTaskService.CONFIGURE_SYSLOG_SCRIPT_NAME, true);
+      MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(),
+          ProvisionHostTaskService.INSTALL_VIB_SCRIPT_NAME, true);
       MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(), CreateManagementVmTaskService.SCRIPT_NAME,
           true);
 
@@ -1028,7 +1031,7 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
               startState,
               FinalizeDeploymentMigrationWorkflowService.State.class,
               (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
-        TestHelper.assertTaskStateFinished(finalState.taskState);
+      TestHelper.assertTaskStateFinished(finalState.taskState);
 
       //Make sure that the host is in destination
       Set<String> hosts = getDocuments(HostService.State.class, destinationCloudStore);

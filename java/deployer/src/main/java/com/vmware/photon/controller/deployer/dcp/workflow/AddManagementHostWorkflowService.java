@@ -689,7 +689,6 @@ public class AddManagementHostWorkflowService extends StatefulService {
     BulkProvisionHostsWorkflowService.State startState = new BulkProvisionHostsWorkflowService.State();
     startState.deploymentServiceLink = currentState.deploymentServiceLink;
     startState.usageTag = UsageTag.MGMT.name();
-    startState.taskPollDelay = currentState.taskPollDelay;
     if (currentState.hostServiceLink != null) {
       startState.querySpecification = MiscUtils.generateHostQuerySpecification(currentState.hostServiceLink, null);
     }
