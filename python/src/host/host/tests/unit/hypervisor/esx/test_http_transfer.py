@@ -15,7 +15,6 @@ import uuid
 
 from hamcrest import *  # noqa
 from mock import MagicMock
-from mock import ANY
 from mock import patch
 from nose_parameterized import parameterized
 
@@ -136,21 +135,6 @@ class TestHttpTransfer(unittest.TestCase):
         xferer._ensure_host_in_url.assert_called_once_with(url_mock, "localhost")
         self.assertEqual(lease, lease_mock)
         self.assertEqual(url, url_mock)
-
-    @patch("uuid.uuid4", return_value="fake_id")
-    def test_create_import_vm_spec(self, mock_uuid):
-        image_id = "fake_image_id"
-        destination_datastore = "fake_datastore"
-        vm_path = "[] /vmfs/volumes/vsanDatastore/image_fake_image_id"
-        create_empty_disk_mock = MagicMock()
-        self.vim_client.query_config = MagicMock()
-
-        xferer = self.http_transferer
-        xferer._vm_manager.create_empty_disk = create_empty_disk_mock
-
-        xferer._create_import_vm_spec(image_id, destination_datastore, vm_path)
-
-        create_empty_disk_mock.assert_called_once_with(ANY, destination_datastore, None, size_mb=1)
 
     def test_get_url_from_import_vm(self):
         host = "mock_host"

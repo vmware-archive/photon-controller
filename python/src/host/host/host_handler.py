@@ -344,15 +344,11 @@ class HostHandler(Host.Iface):
             datastore_id = self._select_datastore_for_vm_create(vm)
         except MissingPlacementDescriptorException, e:
             self._logger.error("Cannot create VM as reservation is missing placement information, %s" % vm.id)
-            return CreateVmResponse(
-                CreateVmResultCode.PLACEMENT_NOT_FOUND, type(e).__name__)
-
+            return CreateVmResponse(CreateVmResultCode.PLACEMENT_NOT_FOUND, type(e).__name__)
         self._logger.info("Creating VM %s in datastore %s" % (vm.id, datastore_id))
 
         # Step 0: Lazy copy image to datastore
-        image_id = self.hypervisor.image_manager.get_image_id_from_disks(
-            vm.disks)
-
+        image_id = self.hypervisor.image_manager.get_image_id_from_disks(vm.disks)
         if image_id and not self.hypervisor.image_manager.check_and_validate_image(image_id, datastore_id):
             self._logger.info("Lazy copying image %s to %s" % (image_id, datastore_id))
             try:
@@ -389,23 +385,27 @@ class HostHandler(Host.Iface):
             else:
                 self._logger.debug("Using the placement networks: {0}".format(placement_networks))
                 for network_name in placement_networks:
-                    self.hypervisor.vm_manager.add_nic(spec, network_name)
+                    spec.add_nic(network_name)
         elif networks:
             # Pick a default network.
             self._logger.debug("Using the default network: %s" % networks[0])
-            self.hypervisor.vm_manager.add_nic(spec, networks[0])
+            spec.add_nic(networks[0])
         else:
             self._logger.warning("VM %s created without a NIC" % vm.id)
 
         self._logger.debug("VM create, done creating nics, vm-id: %s" % vm.id)
 
         # Step 4: Add created_disk to create spec of the VM.
-        try:
-            self._create_disks(spec, datastore_id, vm.disks)
-        except ImageNotFoundException, e:
-            return CreateVmResponse(CreateVmResultCode.IMAGE_NOT_FOUND, "Invalid image id %s" % e.args[:1])
-        except Exception:
-            return CreateVmResponse(CreateVmResultCode.SYSTEM_ERROR, "Failed to create disk spec")
+        for disk in vm.disks:
+            if disk.image is None:
+                spec.create_empty_disk(datastore_id, disk.id, disk.capacity_gb * 1024)
+            else:
+                if disk.image.id is None:
+                    return CreateVmResponse(CreateVmResultCode.IMAGE_NOT_FOUND, "Invalid image id")
+                if disk.image.clone_type != CloneType.COPY_ON_WRITE:
+                    return CreateVmResponse(CreateVmResultCode.SYSTEM_ERROR, "Unexpected disk clone type")
+
+                spec.create_child_disk(datastore_id, disk.id, disk.image.id)
 
         self._logger.debug("VM create, done creating disks, vm-id: %s" % vm.id)
 
@@ -653,40 +653,6 @@ class HostHandler(Host.Iface):
         response.result = CreateDisksResultCode.OK
         pm.remove_disk_reservation(request.reservation)
         return response
-
-    @log_duration
-    def _create_disks(self, spec, datastore, disks):
-        """Update vm spec to Create and attach disks.
-
-        :type spec: vim.Vm.ConfigSpec
-        :type datastore: id of datastore VM will be in
-        :type disks list of Disks
-        """
-        if disks is None:
-            return
-
-        vm_manager = self.hypervisor.vm_manager
-
-        for disk in disks:
-            cow = False
-
-            if disk.image:
-                cow = disk.image.clone_type == CloneType.COPY_ON_WRITE
-
-                if disk.image.id is None:
-                    self._logger.warning("Image id not found %s" % disk.image.id)
-                    raise ImageNotFoundException(disk.image.id)
-
-            try:
-                if disk.image is None:
-                    vm_manager.create_empty_disk(spec, datastore, disk.id, disk.capacity_gb * 1024)
-                else:
-                    if cow:
-                        vm_manager.create_child_disk(spec, datastore, disk.id, disk.image.id)
-                        # else full clone: ignore.
-            except Exception, e:
-                self._logger.warning("Unexpected exception %s" % e, exc_info=True)
-                raise e
 
     @log_request
     @error_handler(DeleteDisksResponse, DeleteDisksResultCode)

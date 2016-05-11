@@ -137,10 +137,8 @@ class HostHandlerTestCase(unittest.TestCase):
     def create_resource(self, id):
         flavor = Flavor(name="flavor", cost=[QuotaLineItem("a", "b", 1)])
         disks = [
-            Disk(stable_uuid("%s-1" % id), flavor, False, False, 1,
-                 datastore=Datastore("ds1")),
-            Disk(stable_uuid("%s-2" % id), flavor, False, False, 1,
-                 datastore=Datastore("ds2")),
+            Disk(stable_uuid("%s-1" % id), flavor, False, False, 1, datastore=Datastore("ds1")),
+            Disk(stable_uuid("%s-2" % id), flavor, False, False, 1, datastore=Datastore("ds2")),
         ]
 
         vm = Vm()
@@ -170,22 +168,18 @@ class HostHandlerTestCase(unittest.TestCase):
         address = ServerAddress(host="localhost", port=1234)
 
         request = PlaceRequest(resource=Resource(self._sample_vm(), []))
-        handler.hypervisor.placement_manager.place.return_value = (score,
-                                                                   place_list)
+        handler.hypervisor.placement_manager.place.return_value = (score, place_list)
         response = handler.place(request)
         assert_that(response.result, is_(PlaceResultCode.OK))
         assert_that(response.score, is_(score))
-        assert_that(response.placementList.placements,
-                    is_([item.to_thrift() for item in place_list]))
+        assert_that(response.placementList.placements, is_([item.to_thrift() for item in place_list]))
         assert_that(response.address, is_(address))
 
-        common.services.get(ServiceName.MODE).set_mode(
-            MODE.ENTERING_MAINTENANCE)
+        common.services.get(ServiceName.MODE).set_mode(MODE.ENTERING_MAINTENANCE)
         response = handler.place(request)
         assert_that(response.result, is_(PlaceResultCode.INVALID_STATE))
 
-        common.services.get(ServiceName.MODE).set_mode(
-            MODE.MAINTENANCE)
+        common.services.get(ServiceName.MODE).set_mode(MODE.MAINTENANCE)
         response = handler.place(request)
         assert_that(response.result, is_(PlaceResultCode.INVALID_STATE))
 
@@ -215,8 +209,7 @@ class HostHandlerTestCase(unittest.TestCase):
             assert_that(vm_placement is not None)
             assert_that(vm_placement.type is ResourcePlacementType.VM)
             assert_that(vm_placement.resource_id, equal_to(vm_id))
-            assert_that(vm_placement.container_id,
-                        equal_to(datastore_ids[0]))
+            assert_that(vm_placement.container_id, equal_to(datastore_ids[0]))
 
             # Check VM networks
             vm_networks = vm.networks
@@ -230,12 +223,9 @@ class HostHandlerTestCase(unittest.TestCase):
                 assert_that(vm_disk.id, equal_to(disk_ids[disk_index]))
                 assert_that(vm_disk.placement is not None)
                 disk_placement = vm_disk.placement
-                assert_that(disk_placement.type is
-                            ResourcePlacementType.DISK)
-                assert_that(disk_placement.resource_id,
-                            equal_to(vm_disk.id))
-                assert_that(disk_placement.container_id,
-                            equal_to(datastore_ids[disk_index]))
+                assert_that(disk_placement.type is ResourcePlacementType.DISK)
+                assert_that(disk_placement.resource_id, equal_to(vm_disk.id))
+                assert_that(disk_placement.container_id, equal_to(datastore_ids[disk_index]))
                 disk_index += 1
             return "reservation_id"
 
@@ -280,8 +270,7 @@ class HostHandlerTestCase(unittest.TestCase):
 
         placement_list = ResourcePlacementList(placements)
 
-        disk_flavor_info = Flavor(name=disk_flavor,
-                                  cost=[QuotaLineItem("size", "1", 1)])
+        disk_flavor_info = Flavor(name=disk_flavor, cost=[QuotaLineItem("size", "1", 1)])
         disks = []
         for disk_id in disk_ids:
             disk = Disk(id=disk_id,
@@ -292,16 +281,12 @@ class HostHandlerTestCase(unittest.TestCase):
                         flavor_info=disk_flavor_info)
             disks.append(disk)
 
-        vm_flavor_info = Flavor(name=vm_flavor,
-                                cost=[QuotaLineItem("cpu", "1", 5)])
-
-        vm = Vm(vm_id, vm_flavor, State.STOPPED,
-                None, None, disks, vm_flavor_info)
+        vm_flavor_info = Flavor(name=vm_flavor, cost=[QuotaLineItem("cpu", "1", 5)])
+        vm = Vm(vm_id, vm_flavor, State.STOPPED, None, None, disks, vm_flavor_info)
 
         request = ReserveRequest()
         request.generation = 1
-        request.resource = Resource(vm=vm, disks=None,
-                                    placement_list=placement_list)
+        request.resource = Resource(vm=vm, disks=None, placement_list=placement_list)
 
         response = handler.reserve(request)
         assert_that(response.result, equal_to(ReserveResultCode.OK))
@@ -311,13 +296,11 @@ class HostHandlerTestCase(unittest.TestCase):
         state.set_mode(MODE.ENTERING_MAINTENANCE)
         request = MagicMock()
         response = handler.reserve(request)
-        assert_that(response.result,
-                    equal_to(ReserveResultCode.OPERATION_NOT_ALLOWED))
+        assert_that(response.result, equal_to(ReserveResultCode.OPERATION_NOT_ALLOWED))
 
         state.set_mode(MODE.MAINTENANCE)
         response = handler.reserve(request)
-        assert_that(response.result,
-                    equal_to(ReserveResultCode.OPERATION_NOT_ALLOWED))
+        assert_that(response.result, equal_to(ReserveResultCode.OPERATION_NOT_ALLOWED))
 
     @parameterized.expand([
         ("datastore_1", None, "datastore_1"),
@@ -341,18 +324,14 @@ class HostHandlerTestCase(unittest.TestCase):
                 assert isinstance(reserve_constraints, list)
                 assert_that(len(reserve_constraints) is 1)
                 reserve_constraint = reserve_constraints[0]
-                assert_that(reserve_constraint.type is
-                            ResourceConstraintType.DATASTORE)
+                assert_that(reserve_constraint.type is ResourceConstraintType.DATASTORE)
                 assert_that(reserve_constraint.values, equal_to([expected, ]))
 
             reserve_placement = disk.placement
             if reserve_placement:
-                assert_that(reserve_placement.type is
-                            ResourcePlacementType.DISK)
-                assert_that(reserve_placement.resource_id,
-                            equal_to(disk_id))
-                assert_that(reserve_placement.container_id,
-                            equal_to(expected))
+                assert_that(reserve_placement.type is ResourcePlacementType.DISK)
+                assert_that(reserve_placement.resource_id, equal_to(disk_id))
+                assert_that(reserve_placement.container_id, equal_to(expected))
             return "reservation_id"
 
         handler = HostHandler(MagicMock())
@@ -377,8 +356,7 @@ class HostHandlerTestCase(unittest.TestCase):
             placement.resource_id = disk_id
             placement_list = ResourcePlacementList([placement])
 
-        flavor_info = Flavor(name=disk_flavor,
-                             cost=[QuotaLineItem("a", "b", 1)])
+        flavor_info = Flavor(name=disk_flavor, cost=[QuotaLineItem("a", "b", 1)])
         disk = Disk(id=disk_id,
                     flavor=disk_flavor,
                     persistent=True,
@@ -388,8 +366,7 @@ class HostHandlerTestCase(unittest.TestCase):
                     resource_constraints=constraints)
         request = ReserveRequest()
         request.generation = 1
-        request.resource = Resource(vm=None, disks=[disk],
-                                    placement_list=placement_list)
+        request.resource = Resource(vm=None, disks=[disk], placement_list=placement_list)
 
         response = handler.reserve(request)
         assert_that(response.result, equal_to(ReserveResultCode.OK))
@@ -441,8 +418,7 @@ class HostHandlerTestCase(unittest.TestCase):
         # All 200 operations are either OK or CONCURRENT_VM_OPERATION.
         ok = result[PowerVmOpResultCode.OK]
         concurrent = result[PowerVmOpResultCode.CONCURRENT_VM_OPERATION]
-        assert_that(ok + concurrent, is_(200),
-                    "(OK:%d)+(concurrent:%d) should==200" % (ok, concurrent))
+        assert_that(ok + concurrent, is_(200), "(OK:%d)+(concurrent:%d) should==200" % (ok, concurrent))
 
     def test_power_vm_op(self):
         handler = HostHandler(MagicMock())
@@ -452,13 +428,11 @@ class HostHandlerTestCase(unittest.TestCase):
         state.set_mode(MODE.ENTERING_MAINTENANCE)
         request = MagicMock()
         response = handler.power_vm_op(request)
-        assert_that(response.result,
-                    equal_to(PowerVmOpResultCode.OPERATION_NOT_ALLOWED))
+        assert_that(response.result, equal_to(PowerVmOpResultCode.OPERATION_NOT_ALLOWED))
 
         state.set_mode(MODE.MAINTENANCE)
         response = handler.power_vm_op(request)
-        assert_that(response.result,
-                    equal_to(PowerVmOpResultCode.OPERATION_NOT_ALLOWED))
+        assert_that(response.result, equal_to(PowerVmOpResultCode.OPERATION_NOT_ALLOWED))
 
     @parameterized.expand([
         (None, CreateDiskResultCode.PLACEMENT_NOT_FOUND)
@@ -485,13 +459,11 @@ class HostHandlerTestCase(unittest.TestCase):
         handler = HostHandler(MagicMock())
 
         # set the list of datastores
-        handler.hypervisor.vm_datastores = \
-            ["datastore_1", "datastore_2", "datastore_3"]
+        handler.hypervisor.vm_datastores = ["datastore_1", "datastore_2", "datastore_3"]
         handler.hypervisor.placement_manager = MagicMock()
 
         mocked_consume_disk_reservation = MagicMock()
-        mocked_consume_disk_reservation.side_effect = \
-            local_consume_disk_reservation
+        mocked_consume_disk_reservation.side_effect = local_consume_disk_reservation
         pm = handler.hypervisor.placement_manager
         pm.consume_disk_reservation = mocked_consume_disk_reservation
 
@@ -534,17 +506,13 @@ class HostHandlerTestCase(unittest.TestCase):
         handler = HostHandler(MagicMock())
 
         # set the list of datastores
-        handler.hypervisor.datastore_manager.vm_datastores.return_value = \
-            ["datastore_1", "datastore_2", "datastore_3"]
-        handler.hypervisor.datastore_manager.datastore_name.return_value = \
-            expected_name
+        handler.hypervisor.datastore_manager.vm_datastores.return_value = ["datastore_1", "datastore_2", "datastore_3"]
+        handler.hypervisor.datastore_manager.datastore_name.return_value = expected_name
         handler.hypervisor.placement_manager = MagicMock()
 
         mocked_consume_disk_reservation = MagicMock()
-        mocked_consume_disk_reservation.side_effect = \
-            local_consume_disk_reservation
-        handler.hypervisor.placement_manager.consume_disk_reservation = \
-            mocked_consume_disk_reservation
+        mocked_consume_disk_reservation.side_effect = local_consume_disk_reservation
+        handler.hypervisor.placement_manager.consume_disk_reservation = mocked_consume_disk_reservation
 
         request = CreateDisksRequest()
         request.generation = 1
@@ -565,22 +533,18 @@ class HostHandlerTestCase(unittest.TestCase):
         state.set_mode(MODE.ENTERING_MAINTENANCE)
         request = MagicMock()
         response = handler.create_vm(request)
-        assert_that(response.result,
-                    equal_to(CreateVmResultCode.OPERATION_NOT_ALLOWED))
+        assert_that(response.result, equal_to(CreateVmResultCode.OPERATION_NOT_ALLOWED))
 
         state.set_mode(MODE.MAINTENANCE)
         response = handler.create_vm(request)
-        assert_that(response.result,
-                    equal_to(CreateVmResultCode.OPERATION_NOT_ALLOWED))
+        assert_that(response.result, equal_to(CreateVmResultCode.OPERATION_NOT_ALLOWED))
 
         # Back to NORMAL mode
         state.set_mode(MODE.NORMAL)
         handler.hypervisor.placement_manager = MagicMock()
         handler._select_datastore_for_vm_create = MagicMock(return_value="ds1")
-        handler.hypervisor.datastore_manager.image_datastores = MagicMock(
-            return_value=set("image_ds"))
-        handler.hypervisor.image_manager.get_image_id_from_disks = MagicMock(
-            return_value="image_id")
+        handler.hypervisor.datastore_manager.image_datastores = MagicMock(return_value=set("image_ds"))
+        handler.hypervisor.image_manager.get_image_id_from_disks = MagicMock(return_value="image_id")
 
         vm = MagicMock()
         vm.id = str(uuid.uuid4())
@@ -611,12 +575,10 @@ class HostHandlerTestCase(unittest.TestCase):
         im.check_image.return_value = True
         im.check_and_validate_image = MagicMock(side_effect=[False, True])
         pm.remove_vm_reservation.reset_mock()
-        handler.hypervisor.vm_manager.create_vm.side_effect = \
-            VmAlreadyExistException
+        handler.hypervisor.vm_manager.create_vm.side_effect = VmAlreadyExistException
 
         response = handler.create_vm(request)
-        assert_that(response.result, equal_to(
-            CreateVmResultCode.VM_ALREADY_EXIST))
+        assert_that(response.result, equal_to(CreateVmResultCode.VM_ALREADY_EXIST))
         pm.remove_vm_reservation.assert_called_once_with(request.reservation)
 
         # Test invalid reservation
@@ -624,11 +586,9 @@ class HostHandlerTestCase(unittest.TestCase):
             def consume_vm_reservation(self, reservation):
                 raise InvalidReservationException
 
-        handler.hypervisor.placement_manager = \
-            PlacementManagerInvalidReservation()
+        handler.hypervisor.placement_manager = PlacementManagerInvalidReservation()
         response = handler.create_vm(request)
-        assert_that(response.result,
-                    equal_to(CreateVmResultCode.INVALID_RESERVATION))
+        assert_that(response.result, equal_to(CreateVmResultCode.INVALID_RESERVATION))
 
     def test_create_vm_on_correct_resource(self):
         """Check that we create the vm on the correct datastore"""
@@ -651,46 +611,38 @@ class HostHandlerTestCase(unittest.TestCase):
         pm = handler.hypervisor.placement_manager
         pm.consume_vm_reservation.return_value = vm
         handler._datastores_for_image = MagicMock()
-        handler.hypervisor.datastore_manager.datastore_type.\
-            return_value = DatastoreType.EXT3
-        handler.hypervisor.datastore_manager.image_datastores = MagicMock(
-            return_value=set("ds2"))
+        handler.hypervisor.datastore_manager.datastore_type.return_value = DatastoreType.EXT3
+        handler.hypervisor.datastore_manager.image_datastores = MagicMock(return_value=set("ds2"))
         im = handler.hypervisor.image_manager
-        im.get_image_refcount_filename.return_value = \
-            os.path.join(self.agent_conf_dir, vm.id)
+        im.get_image_refcount_filename.return_value = os.path.join(self.agent_conf_dir, vm.id)
         im.get_image_id_from_disks.return_value = image_id
 
         # No placement descriptor
         vm.placement = None
         response = handler.create_vm(req)
         pm.remove_vm_reservation.assert_called_once_with(mock_reservation)
-        assert_that(response.result,
-                    equal_to(CreateVmResultCode.PLACEMENT_NOT_FOUND))
+        assert_that(response.result, equal_to(CreateVmResultCode.PLACEMENT_NOT_FOUND))
 
         # If vm reservation has placement datastore info, it should
         # be placed there
         handler.hypervisor.vm_manager.create_vm_spec.reset_mock()
         pm.remove_vm_reservation.reset_mock()
-        vm.placement = AgentResourcePlacement(AgentResourcePlacement.VM,
-                                              "vm_ids",
-                                              "ds2")
+        vm.placement = AgentResourcePlacement(AgentResourcePlacement.VM, "vm_ids", "ds2")
+        handler.hypervisor.network_manager.get_vm_networks.return_value = ["net_2", "net_1"]
+
         response = handler.create_vm(req)
         spec = handler.hypervisor.vm_manager.create_vm_spec.return_value
         metadata = handler.hypervisor.image_manager.image_metadata.return_value
         handler.hypervisor.vm_manager.create_vm_spec.assert_called_once_with(
             vm.id, "ds2", vm.flavor, metadata, mock_env)
-        handler.hypervisor.vm_manager.create_vm.assert_called_once_with(
-            vm.id, spec)
+        handler.hypervisor.vm_manager.create_vm.assert_called_once_with(vm.id, spec)
         pm.remove_vm_reservation.assert_called_once_with(mock_reservation)
         assert_that(response.result, equal_to(CreateVmResultCode.OK))
 
         # Test create_vm honors vm.networks information
         # Host has the provisioned networks required by placement_list,
         # should succeed.
-        handler.hypervisor.network_manager.get_vm_networks.return_value = \
-            ["net_2", "net_1"]
-        add_nic_mock = MagicMock()
-        handler.hypervisor.vm_manager.add_nic = add_nic_mock
+        handler.hypervisor.network_manager.get_vm_networks.return_value = ["net_2", "net_1"]
 
         handler.hypervisor.vm_manager.create_vm_spec.reset_mock()
         pm.remove_vm_reservation.reset_mock()
@@ -698,26 +650,22 @@ class HostHandlerTestCase(unittest.TestCase):
         req = CreateVmRequest(reservation=mock_reservation)
         response = handler.create_vm(req)
 
-        called_networks = add_nic_mock.call_args_list
-        expected_networks = [call(spec, 'net_1'), call(spec, 'net_2')]
-        assert_that(called_networks == expected_networks,
-                    is_(True))
+        called_networks = spec.add_nic.call_args_list
+        expected_networks = [call('net_1'), call('net_2')]
+        assert_that(called_networks == expected_networks, is_(True))
         pm.remove_vm_reservation.assert_called_once_with(mock_reservation)
         assert_that(response.result, equal_to(CreateVmResultCode.OK))
 
         # Host does not have the provisioned networks
         # required by placement_list, should fail.
-        handler.hypervisor.network_manager.get_vm_networks.return_value = \
-            ["net_1", "net_7"]
-        handler.hypervisor.vm_manager.add_nic.reset_mock()
+        handler.hypervisor.network_manager.get_vm_networks.return_value = ["net_1", "net_7"]
         pm.remove_vm_reservation.reset_mock()
 
         req = CreateVmRequest(reservation=mock_reservation)
         response = handler.create_vm(req)
 
         pm.remove_vm_reservation.assert_called_once_with(mock_reservation)
-        assert_that(response.result,
-                    equal_to(CreateVmResultCode.NETWORK_NOT_FOUND))
+        assert_that(response.result, equal_to(CreateVmResultCode.NETWORK_NOT_FOUND))
 
     def test_delete_vm_wrong_state(self):
         handler = HostHandler(MagicMock())
@@ -725,15 +673,13 @@ class HostHandlerTestCase(unittest.TestCase):
         dm.datastore_type.return_value = DatastoreType.EXT3
         vm_id = str(uuid.uuid4())
         im = handler.hypervisor.image_manager
-        im.get_image_refcount_filename.return_value = \
-            os.path.join(self.agent_conf_dir, vm_id)
+        im.get_image_refcount_filename.return_value = os.path.join(self.agent_conf_dir, vm_id)
         request = DeleteVmRequest(vm_id=vm_id)
         delete_vm = handler.hypervisor.vm_manager.delete_vm
 
         delete_vm.side_effect = VmPowerStateException
         response = handler.delete_vm(request)
-        assert_that(response.result,
-                    is_(DeleteVmResultCode.VM_NOT_POWERED_OFF))
+        assert_that(response.result, is_(DeleteVmResultCode.VM_NOT_POWERED_OFF))
 
         delete_vm.side_effect = VmNotFoundException
         response = handler.delete_vm(request)
@@ -749,8 +695,7 @@ class HostHandlerTestCase(unittest.TestCase):
         def _raise_disk_not_found_exception(disk_id):
             raise DiskNotFoundException
 
-        req = VmDisksDetachRequest(vm_id="vm.id",
-                                   disk_ids=["disk.id"])
+        req = VmDisksDetachRequest(vm_id="vm.id", disk_ids=["disk.id"])
 
         handler = HostHandler(MagicMock())
         get_resource = MagicMock()
@@ -758,40 +703,32 @@ class HostHandlerTestCase(unittest.TestCase):
         handler.hypervisor.disk_manager.get_resource = get_resource
 
         response = handler.attach_disks(req)
-        assert_that(response.result,
-                    equal_to(VmDiskOpResultCode.DISK_NOT_FOUND))
+        assert_that(response.result, equal_to(VmDiskOpResultCode.DISK_NOT_FOUND))
         response = handler.detach_disks(req)
-        assert_that(response.result,
-                    equal_to(VmDiskOpResultCode.DISK_NOT_FOUND))
+        assert_that(response.result, equal_to(VmDiskOpResultCode.DISK_NOT_FOUND))
 
     def test_disk_ops_vm_not_found(self):
         """
         Attaching/detaching a disk from a vm that doesn't exist should report
         error
         """
-        req = VmDisksDetachRequest(vm_id="vm.id",
-                                   disk_ids=["disk.id"])
+        req = VmDisksDetachRequest(vm_id="vm.id", disk_ids=["disk.id"])
 
         handler = HostHandler(MagicMock())
         handler.hypervisor = MagicMock()
         handler.hypervisor.disk_manager.get_resource = MagicMock()
-        handler.hypervisor.vm_manager.get_vm_config.side_effect = \
-            VmNotFoundException
-        handler.hypervisor.vm_manager.get_resource.side_effect = \
-            VmNotFoundException
+        handler.hypervisor.vm_manager._get_vm_config.side_effect = VmNotFoundException
+        handler.hypervisor.vm_manager.get_resource.side_effect = VmNotFoundException
 
         response = handler.attach_disks(req)
-        assert_that(response.result,
-                    equal_to(VmDiskOpResultCode.VM_NOT_FOUND))
+        assert_that(response.result, equal_to(VmDiskOpResultCode.VM_NOT_FOUND))
         response = handler.detach_disks(req)
-        assert_that(response.result,
-                    equal_to(VmDiskOpResultCode.VM_NOT_FOUND))
+        assert_that(response.result, equal_to(VmDiskOpResultCode.VM_NOT_FOUND))
 
     def test_disk_ops_vm_suspended(self):
         """ Attach/detach a disk from a vm when vm is suspended
         """
-        req = VmDisksDetachRequest(vm_id="vm.id",
-                                   disk_ids=["disk.id"])
+        req = VmDisksDetachRequest(vm_id="vm.id", disk_ids=["disk.id"])
 
         handler = HostHandler(MagicMock())
         handler.hypervisor = MagicMock()
@@ -799,11 +736,9 @@ class HostHandlerTestCase(unittest.TestCase):
         handler.hypervisor.vm_manager.get_resource.return_value = vm
 
         response = handler.attach_disks(req)
-        assert_that(response.result,
-                    equal_to(VmDiskOpResultCode.INVALID_VM_POWER_STATE))
+        assert_that(response.result, equal_to(VmDiskOpResultCode.INVALID_VM_POWER_STATE))
         response = handler.detach_disks(req)
-        assert_that(response.result,
-                    equal_to(VmDiskOpResultCode.INVALID_VM_POWER_STATE))
+        assert_that(response.result, equal_to(VmDiskOpResultCode.INVALID_VM_POWER_STATE))
 
     def test_copy_image(self):
         """ Copy image unit tests """
@@ -848,8 +783,7 @@ class HostHandlerTestCase(unittest.TestCase):
         image_mgr.copy_image = MagicMock(side_effect=DiskAlreadyExistException)
         req = CopyImageRequest(src_image, dst_image)
         response = handler.copy_image(req)
-        self.assertEqual(response.result,
-                         CopyImageResultCode.DESTINATION_ALREADY_EXIST)
+        self.assertEqual(response.result, CopyImageResultCode.DESTINATION_ALREADY_EXIST)
 
         # Happy path.
         src_image = Image("id1", Datastore("datastore1_name"))
@@ -858,11 +792,9 @@ class HostHandlerTestCase(unittest.TestCase):
         image_mgr.copy_image = MagicMock()
         req = CopyImageRequest(src_image, dst_image)
         response = handler.copy_image(req)
-        self.assertEqual(response.result,
-                         CopyImageResultCode.OK)
+        self.assertEqual(response.result, CopyImageResultCode.OK)
         image_mgr.check_image.assert_called_once_with("id1", "datastore1")
-        image_mgr.copy_image.assert_called_once_with(
-            "datastore1", "id1", "datastore2", "id1")
+        image_mgr.copy_image.assert_called_once_with("datastore1", "id1", "datastore2", "id1")
 
     def test_detach_iso(self):
         """ ISO detach unit tests """
@@ -871,8 +803,7 @@ class HostHandlerTestCase(unittest.TestCase):
         request = DetachISORequest(vm_id="vm.id", delete_file=False)
 
         response = handler.detach_iso(request)
-        self.assertEqual(response.result,
-                         DetachISOResultCode.SYSTEM_ERROR)
+        self.assertEqual(response.result, DetachISOResultCode.SYSTEM_ERROR)
         self.assertEqual(response.error, 'NotImplementedError')
 
         request = DetachISORequest(vm_id="vm.id", delete_file=True)
@@ -880,18 +811,15 @@ class HostHandlerTestCase(unittest.TestCase):
 
         vm_manager.remove_iso.side_effect = Exception
         response = handler.detach_iso(request)
-        self.assertEqual(response.result,
-                         DetachISOResultCode.CANNOT_DELETE)
+        self.assertEqual(response.result, DetachISOResultCode.CANNOT_DELETE)
 
         vm_manager.disconnect_cdrom.side_effect = VmNotFoundException
         response = handler.detach_iso(request)
-        self.assertEqual(response.result,
-                         DetachISOResultCode.VM_NOT_FOUND)
+        self.assertEqual(response.result, DetachISOResultCode.VM_NOT_FOUND)
 
         vm_manager.disconnect_cdrom.side_effect = IsoNotAttachedException
         response = handler.detach_iso(request)
-        self.assertEqual(response.result,
-                         DetachISOResultCode.ISO_NOT_ATTACHED)
+        self.assertEqual(response.result, DetachISOResultCode.ISO_NOT_ATTACHED)
 
     def test_get_mode(self):
         handler = HostHandler(MagicMock())
@@ -902,10 +830,8 @@ class HostHandlerTestCase(unittest.TestCase):
     def _sample_vm(self):
         flavor = Flavor(name="flavor", cost=[QuotaLineItem("a", "b", 1)])
         disks = [
-            Disk(stable_uuid("%s-1" % id), flavor, False, False, 1,
-                 datastore=Datastore("ds1")),
-            Disk(stable_uuid("%s-2" % id), flavor, False, False, 1,
-                 datastore=Datastore("ds2")),
+            Disk(stable_uuid("%s-1" % id), flavor, False, False, 1, datastore=Datastore("ds1")),
+            Disk(stable_uuid("%s-2" % id), flavor, False, False, 1, datastore=Datastore("ds2")),
         ]
 
         vm = Vm()
@@ -927,14 +853,12 @@ class HostHandlerTestCase(unittest.TestCase):
         assert_that(res.result, equal_to(CreateVmResultCode.OK))
 
         # image not found
-        handler.hypervisor.image_manager.\
-            touch_image_timestamp.side_effect = OSError()
+        handler.hypervisor.image_manager.touch_image_timestamp.side_effect = OSError()
         res = handler._touch_image_timestamp(vm_id, "ds", "image")
         assert_that(res.result, equal_to(CreateVmResultCode.IMAGE_NOT_FOUND))
 
         # invalid datastore, this must be last in the sequence
-        handler.hypervisor.datastore_manager.\
-            normalize.side_effect = DatastoreNotFoundException()
+        handler.hypervisor.datastore_manager.normalize.side_effect = DatastoreNotFoundException()
         res = handler._touch_image_timestamp(vm_id, "ds", "image")
         assert_that(res.result, equal_to(CreateVmResultCode.SYSTEM_ERROR))
 
@@ -965,16 +889,13 @@ class HostHandlerTestCase(unittest.TestCase):
         image_scanner.start.side_effect = TaskAlreadyRunning
         result = handler.start_image_scan(request)
 
-        assert_that(result.result is
-                    StartImageOperationResultCode.SCAN_IN_PROGRESS)
+        assert_that(result.result is StartImageOperationResultCode.SCAN_IN_PROGRESS)
 
         # Test invalid datastore
-        image_monitor.get_image_scanner.side_effect = \
-            DatastoreNotFoundException
+        image_monitor.get_image_scanner.side_effect = DatastoreNotFoundException
         result = handler.start_image_scan(request)
 
-        assert_that(result.result is
-                    StartImageOperationResultCode.DATASTORE_NOT_FOUND)
+        assert_that(result.result is StartImageOperationResultCode.DATASTORE_NOT_FOUND)
 
     def test_stop_image_scan(self):
         """Test start_image_scan against mock"""
@@ -998,12 +919,10 @@ class HostHandlerTestCase(unittest.TestCase):
         image_scanner.stop.assert_called()
 
         # Test invalid datastore
-        image_monitor.get_image_scanner.side_effect = \
-            DatastoreNotFoundException
+        image_monitor.get_image_scanner.side_effect = DatastoreNotFoundException
         result = handler.stop_image_scan(request)
 
-        assert_that(result.result is
-                    StopImageOperationResultCode.DATASTORE_NOT_FOUND)
+        assert_that(result.result is StopImageOperationResultCode.DATASTORE_NOT_FOUND)
 
     def test_start_image_sweep(self):
         """Test touch image timestamp against mock"""
@@ -1046,16 +965,13 @@ class HostHandlerTestCase(unittest.TestCase):
         image_sweeper.start.side_effect = TaskAlreadyRunning
         result = handler.start_image_sweep(request)
 
-        assert_that(result.result is
-                    StartImageOperationResultCode.SWEEP_IN_PROGRESS)
+        assert_that(result.result is StartImageOperationResultCode.SWEEP_IN_PROGRESS)
 
         # Test invalid datastore
-        image_monitor.get_image_sweeper.side_effect = \
-            DatastoreNotFoundException
+        image_monitor.get_image_sweeper.side_effect = DatastoreNotFoundException
         result = handler.start_image_sweep(request)
 
-        assert_that(result.result is
-                    StartImageOperationResultCode.DATASTORE_NOT_FOUND)
+        assert_that(result.result is StartImageOperationResultCode.DATASTORE_NOT_FOUND)
 
     def _local_image_sweeper_start(self, image_list, timeout,
                                    sweep_rate, grace_period):
@@ -1088,12 +1004,10 @@ class HostHandlerTestCase(unittest.TestCase):
         image_scanner.stop.assert_called()
 
         # Test invalid datastore
-        image_monitor.get_image_sweeper.side_effect = \
-            DatastoreNotFoundException
+        image_monitor.get_image_sweeper.side_effect = DatastoreNotFoundException
         result = handler.stop_image_sweep(request)
 
-        assert_that(result.result is
-                    StopImageOperationResultCode.DATASTORE_NOT_FOUND)
+        assert_that(result.result is StopImageOperationResultCode.DATASTORE_NOT_FOUND)
 
     def test_get_inactive_images(self):
         handler = HostHandler(MagicMock())
@@ -1107,15 +1021,13 @@ class HostHandlerTestCase(unittest.TestCase):
         # Mock datastore manager and datastore_info()
         datastore_manager = MagicMock()
         datastore_manager.datastore_info = MagicMock()
-        datastore_manager.\
-            datastore_info.return_value = DatastoreInfo(10.2, 6.1)
+        datastore_manager.datastore_info.return_value = DatastoreInfo(10.2, 6.1)
         handler._hypervisor.datastore_manager = datastore_manager
 
         # Mock image manager and get_timestamp_mod_time_from_dir()
         image_manager = MagicMock()
         image_manager.get_timestamp_mod_time_from_dir = MagicMock()
-        image_manager.get_timestamp_mod_time_from_dir.side_effect = \
-            self._local_get_mod_time
+        image_manager.get_timestamp_mod_time_from_dir.side_effect = self._local_get_mod_time
         handler._hypervisor.image_manager = image_manager
 
         # Setup request
@@ -1124,11 +1036,9 @@ class HostHandlerTestCase(unittest.TestCase):
 
         # Test success
         image_scanner.get_state = MagicMock()
-        image_scanner.\
-            get_state.return_value = DatastoreImageScanner.State.IDLE
+        image_scanner.get_state.return_value = DatastoreImageScanner.State.IDLE
         image_scanner.get_unused_images = MagicMock()
-        image_scanner.\
-            get_unused_images.side_effect = self._local_get_unused_images
+        image_scanner.get_unused_images.side_effect = self._local_get_unused_images
         image_monitor.get_image_scanner.return_value = image_scanner
 
         response = handler.get_inactive_images(request)
@@ -1146,8 +1056,7 @@ class HostHandlerTestCase(unittest.TestCase):
         assert_that(len(image_descriptors) is 2)
 
         # Test exception from get_timestamp_mod_time_from_dir
-        image_manager.get_timestamp_mod_time_from_dir.side_effect = \
-            OSError
+        image_manager.get_timestamp_mod_time_from_dir.side_effect = OSError
         response = handler.get_inactive_images(request)
         assert_that(response.result is GetMonitoredImagesResultCode.OK)
 
@@ -1162,18 +1071,14 @@ class HostHandlerTestCase(unittest.TestCase):
         assert_that(len(image_descriptors) is 2)
 
         # Test operation in progress
-        image_scanner.\
-            get_state.return_value = DatastoreImageSweeper.State.IMAGE_SWEEP
+        image_scanner.get_state.return_value = DatastoreImageSweeper.State.IMAGE_SWEEP
         response = handler.get_inactive_images(request)
-        assert_that(response.result is
-                    GetMonitoredImagesResultCode.OPERATION_IN_PROGRESS)
+        assert_that(response.result is GetMonitoredImagesResultCode.OPERATION_IN_PROGRESS)
 
         # Test invalid datastore
-        image_monitor.\
-            get_image_scanner.side_effect = DatastoreNotFoundException
+        image_monitor.get_image_scanner.side_effect = DatastoreNotFoundException
         response = handler.get_inactive_images(request)
-        assert_that(response.result is
-                    GetMonitoredImagesResultCode.DATASTORE_NOT_FOUND)
+        assert_that(response.result is GetMonitoredImagesResultCode.DATASTORE_NOT_FOUND)
 
     def _local_get_unused_images(self):
         unused_images = dict()
@@ -1205,9 +1110,7 @@ class HostHandlerTestCase(unittest.TestCase):
         image_sweeper.get_state = MagicMock()
         image_sweeper.get_state.return_value = DatastoreImageSweeper.State.IDLE
         image_sweeper.get_deleted_images = MagicMock()
-        image_sweeper.\
-            get_deleted_images.return_value = \
-            (["Image_Id_1", "Image_Id_2"], 1001)
+        image_sweeper.get_deleted_images.return_value = (["Image_Id_1", "Image_Id_2"], 1001)
         image_monitor.get_image_sweeper.return_value = image_sweeper
 
         response = handler.get_deleted_images(request)
@@ -1218,27 +1121,21 @@ class HostHandlerTestCase(unittest.TestCase):
         assert_that(len(response.image_descs) is 2)
 
         # Test operation in progress
-        image_sweeper.\
-            get_state.return_value = DatastoreImageSweeper.State.IMAGE_SWEEP
-        image_sweeper.\
-            get_deleted_images.return_value = \
-            (["Image_Id_3", "Image_Id_4"], 1002)
+        image_sweeper.get_state.return_value = DatastoreImageSweeper.State.IMAGE_SWEEP
+        image_sweeper.get_deleted_images.return_value = (["Image_Id_3", "Image_Id_4"], 1002)
 
         response = handler.get_deleted_images(request)
 
-        assert_that(response.result is
-                    GetMonitoredImagesResultCode.OPERATION_IN_PROGRESS)
+        assert_that(response.result is GetMonitoredImagesResultCode.OPERATION_IN_PROGRESS)
         assert_that(response.image_descs[0].image_id is "Image_Id_3")
         assert_that(response.image_descs[1].image_id is "Image_Id_4")
         assert_that(len(response.image_descs) is 2)
 
         # Test invalid datastore
-        image_monitor.\
-            get_image_sweeper.side_effect = DatastoreNotFoundException
+        image_monitor.get_image_sweeper.side_effect = DatastoreNotFoundException
         response = handler.get_deleted_images(request)
 
-        assert_that(response.result is
-                    GetMonitoredImagesResultCode.DATASTORE_NOT_FOUND)
+        assert_that(response.result is GetMonitoredImagesResultCode.DATASTORE_NOT_FOUND)
 
 
 if __name__ == '__main__':

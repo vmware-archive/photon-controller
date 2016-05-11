@@ -393,15 +393,14 @@ class TestRemoteAgent(unittest.TestCase, AgentCommonTests):
         iso_path_2 = self._generate_new_iso_ds_path()
 
         vm_wrapper = VmWrapper(self.host_client)
-        image = DiskImage("ttylinux", CloneType.FULL_COPY)
+        image = DiskImage("ttylinux", CloneType.COPY_ON_WRITE)
         disks = [
             Disk(new_id(), "default", False, True, image=image, capacity_gb=1,
                  flavor_info=self.DEFAULT_DISK_FLAVOR),
         ]
 
         # Create disk and VM.
-        reservation = \
-            vm_wrapper.place_and_reserve(vm_disks=disks).reservation
+        reservation = vm_wrapper.place_and_reserve(vm_disks=disks).reservation
         request = vm_wrapper.create_request(res_id=reservation)
         vm_id = vm_wrapper.create(request=request).vm.id
 
