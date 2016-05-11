@@ -134,7 +134,7 @@ public class AuthPolicyProviderTest {
       doReturn(authorizationObject).when(resolver).evaluate(request);
     }
 
-    @Test
+    @Test(enabled = false)
     public void testFetcherReturnsEveryone() throws Throwable {
       doReturn(ImmutableSet.of(SecurityGroupFetcher.EVERYONE)).when(fetcher).fetchSecurityGroups(authorizationObject);
 
@@ -142,7 +142,7 @@ public class AuthPolicyProviderTest {
       verify(token, never()).getGroups();
     }
 
-    @Test
+    @Test(enabled = false)
     public void testMatchDefaultAdminGroup() throws Throwable {
       doReturn(ImmutableSet.of()).when(fetcher).fetchSecurityGroups(authorizationObject);
       doReturn(ImmutableList.of(config.getTenant() + AuthPolicyProvider.DEFAULT_ADMIN_GROUP_NAME))
@@ -152,7 +152,7 @@ public class AuthPolicyProviderTest {
       verify(token, times(1)).getGroups();
     }
 
-    @Test(dataProvider = "GroupsInCommon")
+    @Test(dataProvider = "GroupsInCommon", enabled = false)
     public void testGroupsInCommon(Set<String> fetcherSGs, List<String> tokenSGs) throws Throwable {
       doReturn(fetcherSGs).when(fetcher).fetchSecurityGroups(authorizationObject);
       doReturn(tokenSGs).when(token).getGroups();
@@ -171,7 +171,7 @@ public class AuthPolicyProviderTest {
     }
 
     @Test(dataProvider = "NoGroupsInCommon",
-        expectedExceptions = ExternalException.class)
+        expectedExceptions = ExternalException.class, enabled = false)
     public void testNoGroupsInCommon(Set<String> fetcherSGs, List<String> tokenSGs) throws Throwable {
       doReturn(fetcherSGs).when(fetcher).fetchSecurityGroups(authorizationObject);
       doReturn(tokenSGs).when(token).getGroups();
