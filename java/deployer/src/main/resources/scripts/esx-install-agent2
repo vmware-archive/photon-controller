@@ -4,14 +4,14 @@ tools=$(readlink -nf $(dirname $0))
 source $tools/common.sh
 
 function usage() {
-  echo "Usage: $0 HOST_ADDRESS USERNAME PASSWORD VIB_PATH [-l SYSLOG_URI]" 1>&2
+  echo "Usage: $0 HOST_ADDRESS USERNAME PASSWORD VIB_PATH" 1>&2
   echo
   echo "Supplied args:"
   echo $*
   exit 1
 }
 
-syslog_uri=""
+host_address=""
 username=""
 password=""
 vib_path=""
@@ -33,23 +33,11 @@ shift
 while getopts d:l:n:h flag
 do
   case $flag in
-    l)
-      syslog_uri="$OPTARG"
-      ;;
     ?)
       usage $*
       ;;
   esac
 done
-
-if [ ! -z "$syslog_uri" ]
-then
-
-sshpass -p "$password" ssh -o StrictHostKeyChecking=no ${username}@${host_address} esxcli system syslog config set --loghost=tcp://$syslog_uri
-sshpass -p "$password" ssh -o StrictHostKeyChecking=no ${username}@${host_address} esxcli network firewall ruleset set -r syslog -e true
-sshpass -p "$password" ssh -o StrictHostKeyChecking=no ${username}@${host_address} esxcli system syslog reload
-
-fi
 
 function remove_vib() {
   sshpass -p "$password" ssh -o StrictHostKeyChecking=no ${username}@${host_address} esxcli software vib remove -f -n $1

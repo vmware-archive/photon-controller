@@ -15,6 +15,7 @@ package com.vmware.photon.controller.deployer.dcp.task;
 
 import com.vmware.photon.controller.agent.gen.AgentControl;
 import com.vmware.photon.controller.agent.gen.AgentStatusResponse;
+import com.vmware.photon.controller.agent.gen.ProvisionResponse;
 import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
@@ -24,17 +25,22 @@ import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
+import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
+import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
 import com.vmware.photon.controller.common.xenon.upgrade.NoMigrationDuringUpgrade;
 import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
+import com.vmware.photon.controller.common.xenon.validation.DefaultString;
 import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
-import com.vmware.photon.controller.common.xenon.validation.Positive;
+import com.vmware.photon.controller.common.xenon.validation.WriteOnce;
 import com.vmware.photon.controller.deployer.dcp.DeployerContext;
 import com.vmware.photon.controller.deployer.dcp.constant.ServicePortConstants;
+import com.vmware.photon.controller.deployer.dcp.entity.VibFactoryService;
+import com.vmware.photon.controller.deployer.dcp.entity.VibService;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
 import com.vmware.photon.controller.deployer.deployengine.ScriptRunner;
 import com.vmware.photon.controller.nsxclient.NsxClient;
@@ -54,7 +60,9 @@ import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.OperationJoin;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
+import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.QueryTask;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -74,25 +82,28 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * This class implements a DCP service which provisions a host and updates the corresponding cloud store documents.
  */
 public class ProvisionHostTaskService extends StatefulService {
 
-  public static final String SCRIPT_NAME = "esx-install-agent2";
-  private static final String COMMA_DELIMITED_REGEX = "\\s*,\\s*";
-  private static final String DEFAULT_AGENT_LOG_LEVEL = "debug";
+  /**
+   * This string specifies the script which is used to configure syslog on a host.
+   */
+  public static final String CONFIGURE_SYSLOG_SCRIPT_NAME = "esx-configure-syslog";
 
   /**
-   * This defines the total number of retries made by the task
-   * to check if the Host Service has been updated with configuration
-   * data. Given that the interval between each retry is 5secs,
-   * the task will timeout after 1-minute approx.
+   * This string specifies the script which is used to install a VIB.
    */
-  private static final int HOST_UPDATE_RETRY_COUNT = 12;
+  public static final String INSTALL_VIB_SCRIPT_NAME = "esx-install-agent2";
 
   /**
    * This class defines the state of a {@link ProvisionHostTaskService} task.
@@ -100,20 +111,25 @@ public class ProvisionHostTaskService extends StatefulService {
   public static class TaskState extends com.vmware.xenon.common.TaskState {
 
     /**
-     * This type defines the possible sub-states for this task.
+     * This type defines the possible sub-stages of a {@link ProvisionHostTaskService} task.
      */
     public enum SubStage {
-      PROVISION_NETWORK,
-      INSTALL_AGENT,
-      WAIT_FOR_INSTALLATION,
+      GET_NETWORK_MANAGER_INFO,
+      CREATE_FABRIC_NODE,
+      WAIT_FOR_FABRIC_NODE,
+      CREATE_TRANSPORT_NODE,
+      WAIT_FOR_TRANSPORT_NODE,
+      CONFIGURE_SYSLOG,
+      UPLOAD_VIBS,
+      INSTALL_VIBS,
+      WAIT_FOR_AGENT_START,
       PROVISION_AGENT,
-      WAIT_FOR_PROVISION,
-      UPDATE_HOST_STATE,
+      WAIT_FOR_AGENT_RESTART,
       WAIT_FOR_HOST_UPDATES,
     }
 
     /**
-     * This value defines the state of the current task.
+     * This value represents the sub-stage of the current task.
      */
     public SubStage subStage;
   }
@@ -134,83 +150,193 @@ public class ProvisionHostTaskService extends StatefulService {
      * This value represents the control flags for the current task.
      */
     @DefaultInteger(value = 0)
+    @Immutable
     public Integer controlFlags;
 
     /**
-     * This value represents the document link of the {@link HostService} object which represents
-     * the host to be provisioned.
+     * This value represents the optional document self-link of the parent task service to be
+     * notified on completion.
      */
-    @NotNull
     @Immutable
-    public String hostServiceLink;
+    public String parentTaskServiceLink;
 
     /**
-     * This value represents the document link of the {@link DeploymentService} object which
-     * represents the deployment in whose context the task is being performed.
+     * This value represents the optional patch body to be sent to the parent task service on
+     * successful completion.
+     */
+    @Immutable
+    public String parentPatchBody;
+
+    /**
+     * This value represents the document link of the {@link DeploymentService} in whose context
+     * the task is being performed.
      */
     @NotNull
     @Immutable
     public String deploymentServiceLink;
 
     /**
-     * This value represents the absolute path to the uploaded VIB image on the host.
+     * This value represents the document link of the {@link HostService} representing the host to
+     * be provisioned.
      */
     @NotNull
     @Immutable
-    public String vibPath;
+    public String hostServiceLink;
 
     /**
-     * This value represents the maximum number of agent status polling iterations which should be attempted before
-     * declaring failure.
+     * This value represents the address of the NSX network manager API.
+     */
+    @WriteOnce
+    public String networkManagerAddress;
+
+    /**
+     * This value represents the user name used to access the NSX network manager.
+     */
+    @WriteOnce
+    public String networkManagerUserName;
+
+    /**
+     * This value represents the password used to access the NSX network manager.
+     */
+    @WriteOnce
+    public String networkManagerPassword;
+
+    /**
+     * This value represents the NSX network zone ID associated with the current deployment.
+     */
+    @WriteOnce
+    public String networkZoneId;
+
+    /**
+     * This value represents the interval, in milliseconds, to wait before starting to poll the
+     * status of a task object in the NSX REST API.
+     */
+    @WriteOnce
+    public Integer nsxPollDelay;
+
+    /**
+     * This value represents the ID of the NSX fabric node created by the current task.
+     */
+    @WriteOnce
+    public String fabricNodeId;
+
+    /**
+     * This value represents the ID of the NSX transport node created by the current task.
+     */
+    @WriteOnce
+    public String transportNodeId;
+
+    /**
+     * This value represents the delay, in milliseconds, which should be observed between agent
+     * status polling iterations.
+     */
+    @WriteOnce
+    public Integer agentStatusPollDelay;
+
+    /**
+     * This value represents the maximum number of polling iterations which should be attempted
+     * while waiting for the agent to become ready after VIB installation.
      */
     @DefaultInteger(value = 60)
-    @Positive
     @Immutable
-    public Integer maximumPollCount;
+    public Integer agentStartMaxPollCount;
 
     /**
-     * This value represents the interval, in milliseconds, between agent status polling iterations.
-     */
-    @DefaultInteger(value = 5000)
-    @Positive
-    @Immutable
-    public Integer pollInterval;
-
-    /**
-     * This value is used for counting polling iterations for two stages:
-     * 1) retrieving agent provisioning status
-     * 2) waiting for host configuration to get updated.
+     * This value represents the number of polling iterations which have been attempted by the
+     * current task while waiting for the agent to become ready after VIB installation.
      */
     @DefaultInteger(value = 0)
-    public Integer pollCount;
+    public Integer agentStartPollCount;
+
+    /**
+     * This value represents the log level parameter to be specified to the agent at provisioning
+     * time.
+     */
+    @DefaultString(value = "debug")
+    @Immutable
+    public String agentLogLevel;
+
+    /**
+     * This value represents the maximum number of polling iterations which should be attempted
+     * while waiting for the agent to become ready after provisioning.
+     */
+    @DefaultInteger(value = 60)
+    @Immutable
+    public Integer agentRestartMaxPollCount;
+
+    /**
+     * This value represents the number of polling iterations which have been attempted by the
+     * current task while waiting for the agent to become ready after provisioning.
+     */
+    @DefaultInteger(value = 0)
+    public Integer agentRestartPollCount;
+
+    /**
+     * This value represents the interval, in milliseconds, which should be observed between host
+     * status polling iterations.
+     */
+    @WriteOnce
+    public Integer hostStatusPollDelay;
+
+    /**
+     * This value represents the maximum number of polling iterations which should be attempted
+     * while waiting for the host to become ready after provisioning.
+     */
+    @DefaultInteger(value = 12)
+    @Immutable
+    public Integer hostStatusMaxPollCount;
+
+    /**
+     * This value represents the number of polling iterations which have been attempted by the
+     * current task while waiting for the host to become ready after provisioning.
+     */
+    @DefaultInteger(value = 0)
+    public Integer hostStatusPollCount;
   }
 
-  /**
-   * This method provides a default constructor for {@link ProvisionHostTaskService} objects.
-   */
   public ProvisionHostTaskService() {
     super(State.class);
-    this.toggleOption(ServiceOption.OWNER_SELECTION, true);
-    this.toggleOption(ServiceOption.PERSISTENCE, true);
-    this.toggleOption(ServiceOption.REPLICATION, true);
+
+    /**
+     * These attributes are required because the {@link UploadVibTaskService} task is scheduled by
+     * the task scheduler. If and when this is not the case -- either these attributes are no
+     * longer required, or this task is not scheduled by the task scheduler -- then they should be
+     * removed, along with the same attributes in higher-level task services which create instances
+     * of this task.
+     */
+    super.toggleOption(ServiceOption.OWNER_SELECTION, true);
+    super.toggleOption(ServiceOption.PERSISTENCE, true);
+    super.toggleOption(ServiceOption.REPLICATION, true);
   }
 
-  /**
-   * This method is called when a service instance is started.
-   *
-   * @param operation Supplies the {@link Operation} which triggered the service start.
-   */
   @Override
-  public void handleStart(Operation operation) {
+  public void handleStart(Operation startOp) {
     ServiceUtils.logTrace(this, "Handling start operation");
-    State startState = operation.getBody(State.class);
+    if (!startOp.hasBody()) {
+      startOp.fail(new IllegalArgumentException("Body is required"));
+      return;
+    }
+
+    State startState = startOp.getBody(State.class);
     InitializationUtils.initialize(startState);
 
-    validateState(startState);
+    if (startState.nsxPollDelay == null) {
+      startState.nsxPollDelay = HostUtils.getDeployerContext(this).getTaskPollDelay();
+    }
 
-    if (startState.taskState.stage == TaskState.TaskStage.CREATED) {
-      startState.taskState.stage = TaskState.TaskStage.STARTED;
-      startState.taskState.subStage = TaskState.SubStage.PROVISION_NETWORK;
+    if (startState.agentStatusPollDelay == null) {
+      startState.agentStatusPollDelay = HostUtils.getDeployerContext(this).getTaskPollDelay();
+    }
+
+    if (startState.hostStatusPollDelay == null) {
+      startState.hostStatusPollDelay = HostUtils.getDeployerContext(this).getTaskPollDelay();
+    }
+
+    try {
+      validateState(startState);
+    } catch (Throwable t) {
+      ServiceUtils.failOperationAsBadRequest(this, startOp, t);
+      return;
     }
 
     if (startState.documentExpirationTimeMicros <= 0) {
@@ -218,58 +344,69 @@ public class ProvisionHostTaskService extends StatefulService {
           ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME_MICROS);
     }
 
-    operation.setBody(startState).complete();
+    startOp.setBody(startState).complete();
 
     try {
       if (ControlFlags.isOperationProcessingDisabled(startState.controlFlags)) {
         ServiceUtils.logInfo(this, "Skipping start operation processing (disabled)");
-      } else if (startState.taskState.stage == TaskState.TaskStage.STARTED) {
-        TaskUtils.sendSelfPatch(this, buildPatch(startState.taskState.stage, startState.taskState.subStage, null));
+      } else if (startState.taskState.stage == TaskState.TaskStage.CREATED) {
+        sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.GET_NETWORK_MANAGER_INFO);
+      } else {
+        throw new IllegalStateException("Task is not restartable");
       }
     } catch (Throwable t) {
       failTask(t);
     }
   }
 
-  /**
-   * This method is called when a service instance receives a patch.
-   *
-   * @param operation Supplies the {@link Operation} which triggered the patch.
-   */
   @Override
-  public void handlePatch(Operation operation) {
+  public void handlePatch(Operation patchOp) {
     ServiceUtils.logTrace(this, "Handling patch operation");
-    State currentState = getState(operation);
-    State patchState = operation.getBody(State.class);
-    validatePatchState(currentState, patchState);
-    PatchUtils.patchState(currentState, patchState);
-    validateState(currentState);
-    operation.complete();
+    if (!patchOp.hasBody()) {
+      patchOp.fail(new IllegalArgumentException("Body is required"));
+      return;
+    }
+
+    State currentState = getState(patchOp);
+    State patchState = patchOp.getBody(State.class);
+
+    try {
+      validatePatch(currentState, patchState);
+      PatchUtils.patchState(currentState, patchState);
+      validateState(currentState);
+    } catch (Throwable t) {
+      ServiceUtils.failOperationAsBadRequest(this, patchOp, t);
+      return;
+    }
+
+    patchOp.complete();
 
     try {
       if (ControlFlags.isOperationProcessingDisabled(currentState.controlFlags)) {
         ServiceUtils.logInfo(this, "Skipping patch operation processing (disabled)");
       } else if (currentState.taskState.stage == TaskState.TaskStage.STARTED) {
         processStartedStage(currentState);
+      } else {
+        TaskUtils.notifyParentTask(this, currentState.taskState, currentState.parentTaskServiceLink,
+            currentState.parentPatchBody);
       }
     } catch (Throwable t) {
       failTask(t);
     }
   }
 
-  private void validateState(State state) {
-    ValidationUtils.validateState(state);
-    validateTaskState(state.taskState);
+  private void validateState(State currentState) {
+    ValidationUtils.validateState(currentState);
+    validateTaskStage(currentState.taskState);
   }
 
-  private void validatePatchState(State currentState, State patchState) {
+  private void validatePatch(State currentState, State patchState) {
     ValidationUtils.validatePatch(currentState, patchState);
-    validateTaskState(patchState.taskState);
+    validateTaskStage(patchState.taskState);
     validateTaskStageProgression(currentState.taskState, patchState.taskState);
   }
 
-  private void validateTaskState(TaskState taskState) {
-    ValidationUtils.validateTaskStage(taskState);
+  private void validateTaskStage(TaskState taskState) {
     switch (taskState.stage) {
       case CREATED:
       case FINISHED:
@@ -280,16 +417,21 @@ public class ProvisionHostTaskService extends StatefulService {
       case STARTED:
         checkState(taskState.subStage != null);
         switch (taskState.subStage) {
-          case PROVISION_NETWORK:
-          case INSTALL_AGENT:
-          case WAIT_FOR_INSTALLATION:
+          case GET_NETWORK_MANAGER_INFO:
+          case CREATE_FABRIC_NODE:
+          case WAIT_FOR_FABRIC_NODE:
+          case CREATE_TRANSPORT_NODE:
+          case WAIT_FOR_TRANSPORT_NODE:
+          case CONFIGURE_SYSLOG:
+          case UPLOAD_VIBS:
+          case INSTALL_VIBS:
+          case WAIT_FOR_AGENT_START:
           case PROVISION_AGENT:
-          case WAIT_FOR_PROVISION:
-          case UPDATE_HOST_STATE:
+          case WAIT_FOR_AGENT_RESTART:
           case WAIT_FOR_HOST_UPDATES:
             break;
           default:
-            throw new IllegalStateException("Unknown task sub-stage: " + taskState.subStage);
+            throw new IllegalStateException("Unknown task sub-stage " + taskState.subStage);
         }
     }
   }
@@ -301,436 +443,894 @@ public class ProvisionHostTaskService extends StatefulService {
     }
   }
 
-  private void processStartedStage(State currentState) {
+  private void processStartedStage(State currentState) throws Throwable {
     switch (currentState.taskState.subStage) {
-      case PROVISION_NETWORK:
-        processProvisionNetworkSubStage(currentState);
+      case GET_NETWORK_MANAGER_INFO:
+        processGetNetworkManagerInfoSubStage(currentState);
         break;
-      case INSTALL_AGENT:
-        processInstallAgentSubStage(currentState);
+      case CREATE_FABRIC_NODE:
+        processCreateFabricNodeSubStage(currentState);
         break;
-      case WAIT_FOR_INSTALLATION:
-        processWaitForInstallationSubStage(currentState);
+      case WAIT_FOR_FABRIC_NODE:
+        processWaitForFabricNodeSubStage(currentState);
+        break;
+      case CREATE_TRANSPORT_NODE:
+        processCreateTransportNodeSubStage(currentState);
+        break;
+      case WAIT_FOR_TRANSPORT_NODE:
+        processWaitForTransportNodeSubStage(currentState);
+        break;
+      case CONFIGURE_SYSLOG:
+        processConfigureSyslogSubStage(currentState);
+        break;
+      case UPLOAD_VIBS:
+        processUploadVibsSubStage(currentState);
+        break;
+      case INSTALL_VIBS:
+        processInstallVibsSubStage(currentState);
+        break;
+      case WAIT_FOR_AGENT_START:
+        processWaitForAgentSubStage(currentState);
         break;
       case PROVISION_AGENT:
         processProvisionAgentSubStage(currentState);
         break;
-      case WAIT_FOR_PROVISION:
-        processWaitForProvisionSubStage(currentState);
-        break;
-      case UPDATE_HOST_STATE:
-        processUpdateHostState(currentState);
+      case WAIT_FOR_AGENT_RESTART:
+        processWaitForAgentRestartSubStage(currentState);
         break;
       case WAIT_FOR_HOST_UPDATES:
-        processWaitForHostUpdates(currentState);
+        processWaitForHostUpdatesSubStage(currentState);
         break;
     }
   }
 
   //
-  // PROVISION_NETWORK sub-stage routines
+  // GET_NETWORK_MANAGER_INFO sub-stage routines
   //
 
-  private void processProvisionNetworkSubStage(State currentState) {
+  private void processGetNetworkManagerInfoSubStage(State currentState) {
 
-    HostUtils.getCloudStoreHelper(this)
+    sendRequest(HostUtils
+        .getCloudStoreHelper(this)
         .createGet(currentState.deploymentServiceLink)
-        .setCompletion((op, ex) -> {
-          if (ex != null) {
-            failTask(ex);
-            return;
-          }
-
-          try {
-            processProvisionNetworkSubStage(currentState, op.getBody(DeploymentService.State.class));
-          } catch (Throwable t) {
-            failTask(t);
-          }
-        })
-        .sendWith(this);
+        .setCompletion(
+            (o, e) -> {
+              try {
+                if (e != null) {
+                  failTask(e);
+                } else {
+                  processGetNetworkManagerInfoSubStage(o.getBody(DeploymentService.State.class));
+                }
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            }));
   }
 
-  private void processProvisionNetworkSubStage(State currentState, DeploymentService.State deploymentState) {
+  private void processGetNetworkManagerInfoSubStage(DeploymentService.State deploymentState) {
 
     if (!deploymentState.virtualNetworkEnabled) {
-      ServiceUtils.logInfo(this, "Skip setting up virtual network (disabled)");
-      sendStageProgressPatch(currentState, TaskState.TaskStage.STARTED, TaskState.SubStage.INSTALL_AGENT);
+      ServiceUtils.logInfo(this, "Skipping virtual network configuration (disabled)");
+      sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.CONFIGURE_SYSLOG);
       return;
     }
 
-    HostUtils.getCloudStoreHelper(this)
+    State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.CREATE_FABRIC_NODE);
+    patchState.networkManagerAddress = deploymentState.networkManagerAddress;
+    patchState.networkManagerUserName = deploymentState.networkManagerUsername;
+    patchState.networkManagerPassword = deploymentState.networkManagerPassword;
+    patchState.networkZoneId = deploymentState.networkZoneId;
+    sendStageProgressPatch(patchState);
+  }
+
+  //
+  // CREATE_FABRIC_NODE sub-stage routines
+  //
+
+  private void processCreateFabricNodeSubStage(State currentState) {
+
+    sendRequest(HostUtils
+        .getCloudStoreHelper(this)
         .createGet(currentState.hostServiceLink)
-        .setCompletion((op, ex) -> {
-          if (ex != null) {
-            failTask(ex);
-            return;
-          }
-
-          try {
-            registerFabricNode(currentState, deploymentState, op.getBody(HostService.State.class));
-          } catch (Throwable t) {
-            failTask(t);
-          }
-        })
-        .sendWith(this);
+        .setCompletion(
+            (o, e) -> {
+              try {
+                if (e != null) {
+                  failTask(e);
+                } else {
+                  processCreateFabricNodeSubStage(currentState, o.getBody(HostService.State.class));
+                }
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            }));
   }
 
-  private void registerFabricNode(State currentState,
-                                  DeploymentService.State deploymentState,
-                                  HostService.State hostState) {
+  private void processCreateFabricNodeSubStage(State currentState, HostService.State hostState) throws Throwable {
 
-    if (hostState.nsxFabricNodeId != null) {
-      ServiceUtils.logInfo(this, "Skip registering fabric node");
-      createTransportNode(currentState, deploymentState, hostState, hostState.nsxFabricNodeId);
-      return;
-    }
+    checkState(hostState.nsxFabricNodeId == null);
 
-    try {
-      NsxClient nsxClient = HostUtils.getNsxClientFactory(this).create(
-          deploymentState.networkManagerAddress,
-          deploymentState.networkManagerUsername,
-          deploymentState.networkManagerPassword);
+    NsxClient nsxClient = HostUtils.getNsxClientFactory(this).create(
+        currentState.networkManagerAddress,
+        currentState.networkManagerUserName,
+        currentState.networkManagerPassword);
 
-      FabricNodeCreateSpec request = new FabricNodeCreateSpec();
-      request.setDisplayName(NameUtils.getFabricNodeName(hostState.hostAddress));
-      request.setDescription(NameUtils.getFabricNodeDescription(hostState.hostAddress));
-      request.setIpAddresses(Arrays.asList(hostState.hostAddress));
-      request.setOsType("ESXI");
-      request.setResourceType("HostNode");
-      HostNodeLoginCredential hostNodeLoginCredential = new HostNodeLoginCredential();
-      hostNodeLoginCredential.setUsername(hostState.userName);
-      hostNodeLoginCredential.setPassword(hostState.password);
-      hostNodeLoginCredential.setThumbprint(nsxClient.getHostThumbprint(
-          hostState.hostAddress,
-          ServicePortConstants.ESXI_PORT));
-      request.setHostCredential(hostNodeLoginCredential);
+    HostNodeLoginCredential hostNodeLoginCredential = new HostNodeLoginCredential();
+    hostNodeLoginCredential.setUsername(hostState.userName);
+    hostNodeLoginCredential.setPassword(hostState.password);
+    hostNodeLoginCredential.setThumbprint(nsxClient.getHostThumbprint(hostState.hostAddress,
+        ServicePortConstants.ESXI_PORT));
 
-      ObjectMapper om = new ObjectMapper();
-      om.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-      String payload = om.writeValueAsString(request);
-      ServiceUtils.logInfo(this, "FC request: " + payload);
+    FabricNodeCreateSpec request = new FabricNodeCreateSpec();
+    request.setDisplayName(NameUtils.getFabricNodeName(hostState.hostAddress));
+    request.setDescription(NameUtils.getFabricNodeDescription(hostState.hostAddress));
+    request.setIpAddresses(Collections.singletonList(hostState.hostAddress));
+    request.setOsType("ESXI");
+    request.setResourceType("HostNode");
+    request.setHostCredential(hostNodeLoginCredential);
 
-      nsxClient.getFabricApi().registerFabricNode(request,
-          new FutureCallback<FabricNode>() {
-            @Override
-            public void onSuccess(@Nullable FabricNode response) {
-              waitForRegisterFabricNode(currentState, deploymentState, hostState,
-                  response.getId());
+    ObjectMapper om = new ObjectMapper();
+    om.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+    String payload = om.writeValueAsString(request);
+    ServiceUtils.logInfo(this, "FC request: " + payload);
+
+    nsxClient.getFabricApi().registerFabricNode(request,
+        new FutureCallback<FabricNode>() {
+          @Override
+          public void onSuccess(@javax.validation.constraints.NotNull FabricNode fabricNode) {
+            try {
+              setFabricNodeId(currentState, fabricNode.getId());
+            } catch (Throwable t) {
+              failTask(t);
             }
-
-            @Override
-            public void onFailure(Throwable throwable) {
-              failTask(throwable);
-            }
-          });
-    } catch (Throwable t) {
-      failTask(t);
-    }
-  }
-
-  private void waitForRegisterFabricNode(State currentState,
-                                         DeploymentService.State deploymentState,
-                                         HostService.State hostState,
-                                         String fabricNodeId) {
-
-    getHost().schedule(() -> {
-          try {
-            NsxClient nsxClient = HostUtils.getNsxClientFactory(this).create(
-                deploymentState.networkManagerAddress,
-                deploymentState.networkManagerUsername,
-                deploymentState.networkManagerPassword);
-
-            nsxClient.getFabricApi().getFabricNodeState(fabricNodeId,
-                new FutureCallback<FabricNodeState>() {
-                  @Override
-                  public void onSuccess(@Nullable FabricNodeState response) {
-                    switch (response.getState()) {
-                      case SUCCESS:
-                        createTransportNode(currentState, deploymentState, hostState, fabricNodeId);
-                        break;
-                      case PENDING:
-                      case IN_PROGRESS:
-                        waitForRegisterFabricNode(currentState, deploymentState, hostState, fabricNodeId);
-                        break;
-                      case FAILED:
-                      case PARTIAL_SUCCESS:
-                      case ORPHANED:
-                        failTask(new IllegalStateException(
-                            String.format("Failed to register host as fabric node: %s", response.toString())));
-                        break;
-                    }
-                  }
-
-                  @Override
-                  public void onFailure(Throwable throwable) {
-                    failTask(throwable);
-                  }
-                });
-          } catch (Throwable t) {
-            failTask(t);
           }
-        },
-        currentState.pollInterval,
-        TimeUnit.MILLISECONDS);
-  }
 
-  private void createTransportNode(State currentState,
-                                   DeploymentService.State deploymentState,
-                                   HostService.State hostState,
-                                   String fabricNodeId) {
-
-    if (hostState.nsxTransportNodeId != null) {
-      ServiceUtils.logInfo(this, "Skip creating transport node");
-      sendStageProgressPatch(currentState, TaskState.TaskStage.STARTED, TaskState.SubStage.INSTALL_AGENT);
-      return;
-    }
-
-    try {
-      NsxClient nsxClient = HostUtils.getNsxClientFactory(this).create(
-          deploymentState.networkManagerAddress,
-          deploymentState.networkManagerUsername,
-          deploymentState.networkManagerPassword);
-
-      TransportNodeCreateSpec request = new TransportNodeCreateSpec();
-      request.setDisplayName(NameUtils.getTransportNodeName(hostState.hostAddress));
-      request.setDescription(NameUtils.getTransportNodeDescription(hostState.hostAddress));
-      request.setNodeId(fabricNodeId);
-      HostSwitch hostSwitch = new HostSwitch();
-      hostSwitch.setName(NameUtils.HOST_SWITCH_NAME);
-      request.setHostSwitches(Arrays.asList(hostSwitch));
-      if (deploymentState.networkZoneId != null) {
-        TransportZoneEndPoint transportZoneEndPoint = new TransportZoneEndPoint();
-        transportZoneEndPoint.setTransportZoneId(deploymentState.networkZoneId);
-        request.setTransportZoneEndPoints(Arrays.asList(transportZoneEndPoint));
-      }
-
-      nsxClient.getFabricApi().createTransportNode(request,
-          new FutureCallback<TransportNode>() {
-            @Override
-            public void onSuccess(@Nullable TransportNode response) {
-              waitForCreateTransportNode(currentState, deploymentState, fabricNodeId, response.getId());
-            }
-
-            @Override
-            public void onFailure(Throwable throwable) {
-              failTask(throwable);
-            }
-          });
-    } catch (Throwable t) {
-      failTask(t);
-    }
-  }
-
-  private void waitForCreateTransportNode(State currentState,
-                                          DeploymentService.State deploymentState,
-                                          String fabricNodeId,
-                                          String transportNodeId) {
-
-    getHost().schedule(() -> {
-          try {
-            NsxClient nsxClient = HostUtils.getNsxClientFactory(this).create(
-                deploymentState.networkManagerAddress,
-                deploymentState.networkManagerUsername,
-                deploymentState.networkManagerPassword);
-
-            nsxClient.getFabricApi().getTransportNodeState(transportNodeId,
-                new FutureCallback<TransportNodeState>() {
-                  @Override
-                  public void onSuccess(@Nullable TransportNodeState response) {
-                    switch (response.getState()) {
-                      case SUCCESS:
-                        HostService.State hostPatch = new HostService.State();
-                        hostPatch.nsxFabricNodeId = fabricNodeId;
-                        hostPatch.nsxTransportNodeId = transportNodeId;
-
-                        patchHost(currentState, hostPatch, TaskState.TaskStage.STARTED,
-                            TaskState.SubStage.INSTALL_AGENT);
-                        break;
-                      case PENDING:
-                      case IN_PROGRESS:
-                        waitForCreateTransportNode(currentState, deploymentState, fabricNodeId, transportNodeId);
-                        break;
-                      case PARTIAL_SUCCESS:
-                      case FAILED:
-                      case ORPHANED:
-                        failTask(new IllegalStateException(
-                            String.format("Failed to create transport node for host: %s", response.toString())));
-                        break;
-                    }
-                  }
-
-                  @Override
-                  public void onFailure(Throwable throwable) {
-                    failTask(throwable);
-                  }
-                });
-          } catch (Throwable t) {
-            failTask(t);
+          @Override
+          public void onFailure(Throwable throwable) {
+            failTask(throwable);
           }
-        },
-        currentState.pollInterval,
-        TimeUnit.MILLISECONDS);
+        });
+  }
+
+  private void setFabricNodeId(State currentState, String fabricNodeId) {
+
+    HostService.State hostPatchState = new HostService.State();
+    hostPatchState.nsxFabricNodeId = fabricNodeId;
+
+    sendRequest(HostUtils
+        .getCloudStoreHelper(this)
+        .createPatch(currentState.hostServiceLink)
+        .setBody(hostPatchState)
+        .setCompletion(
+            (o, e) -> {
+              try {
+                if (e != null) {
+                  failTask(e);
+                } else {
+
+                  //
+                  // N.B. Due to a quirk of the NSX REST API, it is necessary to wait for a period before
+                  // starting to poll the status of the task.
+                  //
+
+                  getHost().schedule(
+                      () -> {
+                        State selfPatchState = buildPatch(TaskState.TaskStage.STARTED,
+                            TaskState.SubStage.WAIT_FOR_FABRIC_NODE);
+                        selfPatchState.fabricNodeId = fabricNodeId;
+                        sendStageProgressPatch(selfPatchState);
+                      },
+                      currentState.nsxPollDelay,
+                      TimeUnit.MILLISECONDS);
+                }
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            }
+        ));
   }
 
   //
-  // INSTALL_AGENT sub-stage routines
+  // WAIT_FOR_FABRIC_NODE sub-stage routines
   //
 
-  private void processInstallAgentSubStage(State currentState) {
+  private void processWaitForFabricNodeSubStage(State currentState) throws Throwable {
 
-    CloudStoreHelper cloudStoreHelper = HostUtils.getCloudStoreHelper(this);
-    Operation deploymentOp = cloudStoreHelper.createGet(currentState.deploymentServiceLink);
-    Operation hostOp = cloudStoreHelper.createGet(currentState.hostServiceLink);
+    NsxClient nsxClient = HostUtils.getNsxClientFactory(this).create(
+        currentState.networkManagerAddress,
+        currentState.networkManagerUserName,
+        currentState.networkManagerPassword);
 
-    OperationJoin
-        .create(hostOp, deploymentOp)
-        .setCompletion((ops, exs) -> {
-          if (exs != null && !exs.isEmpty()) {
-            failTask(exs.values());
-            return;
+    nsxClient.getFabricApi().getFabricNodeState(currentState.fabricNodeId,
+        new FutureCallback<FabricNodeState>() {
+          @Override
+          public void onSuccess(@javax.validation.constraints.NotNull FabricNodeState fabricNodeState) {
+            try {
+              switch (fabricNodeState.getState()) {
+                case SUCCESS:
+                  sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.CREATE_TRANSPORT_NODE);
+                  break;
+                case PENDING:
+                case IN_PROGRESS:
+                  getHost().schedule(
+                      () -> sendStageProgressPatch(TaskState.TaskStage.STARTED,
+                          TaskState.SubStage.WAIT_FOR_FABRIC_NODE),
+                      currentState.nsxPollDelay,
+                      TimeUnit.MILLISECONDS);
+                  break;
+                case FAILED:
+                case PARTIAL_SUCCESS:
+                case ORPHANED:
+                  logFabricNodeResultAndFail(currentState, fabricNodeState);
+                  break;
+              }
+            } catch (Throwable t) {
+              failTask(t);
+            }
           }
 
-          try {
-            processInstallAgentSubStage(currentState,
-                ops.get(deploymentOp.getId()).getBody(DeploymentService.State.class),
-                ops.get(hostOp.getId()).getBody(HostService.State.class));
-          } catch (Throwable t) {
-            failTask(t);
+          @Override
+          public void onFailure(Throwable throwable) {
+            failTask(throwable);
           }
-        })
-        .sendWith(this);
-
+        });
   }
 
-  private void processInstallAgentSubStage(State currentState,
-                                           DeploymentService.State deploymentState,
-                                           HostService.State hostState) {
+  private void logFabricNodeResultAndFail(State currentState, FabricNodeState fabricNodeState) {
 
-    List<String> command = new ArrayList<>();
-    command.add("./" + SCRIPT_NAME);
-    command.add(hostState.hostAddress);
-    command.add(hostState.userName);
-    command.add(hostState.password);
-    command.add(currentState.vibPath);
+    sendRequest(HostUtils
+        .getCloudStoreHelper(this)
+        .createGet(currentState.hostServiceLink)
+        .setCompletion(
+            (o, e) -> {
+              try {
+                if (e != null) {
+                  failTask(e);
+                } else {
+                  throw new IllegalStateException("Registering host " +
+                      o.getBody(HostService.State.class).hostAddress + " as a fabric node failed with result " +
+                      fabricNodeState.getState() + " (fabric node ID " + currentState.fabricNodeId + ")");
+                }
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            }));
+  }
 
-    if (deploymentState.syslogEndpoint != null) {
-      command.add("-l");
-      command.add(deploymentState.syslogEndpoint);
+  //
+  // CREATE_TRANSPORT_NODE sub-stage routines
+  //
+
+  private void processCreateTransportNodeSubStage(State currentState) {
+
+    sendRequest(HostUtils
+        .getCloudStoreHelper(this)
+        .createGet(currentState.hostServiceLink)
+        .setCompletion(
+            (o, e) -> {
+              try {
+                if (e != null) {
+                  failTask(e);
+                } else {
+                  processCreateTransportNodeSubStage(currentState, o.getBody(HostService.State.class));
+                }
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            }));
+  }
+
+  private void processCreateTransportNodeSubStage(State currentState, HostService.State hostState) throws Throwable {
+
+    checkState(hostState.nsxTransportNodeId == null);
+
+    NsxClient nsxClient = HostUtils.getNsxClientFactory(this).create(
+        currentState.networkManagerAddress,
+        currentState.networkManagerUserName,
+        currentState.networkManagerPassword);
+
+    HostSwitch hostSwitch = new HostSwitch();
+    hostSwitch.setName(NameUtils.HOST_SWITCH_NAME);
+
+    TransportNodeCreateSpec request = new TransportNodeCreateSpec();
+    request.setDisplayName(NameUtils.getTransportNodeName(hostState.hostAddress));
+    request.setDescription(NameUtils.getTransportNodeDescription(hostState.hostAddress));
+    request.setNodeId(currentState.fabricNodeId);
+    request.setHostSwitches(Collections.singletonList(hostSwitch));
+
+    if (currentState.networkZoneId != null) {
+      TransportZoneEndPoint transportZoneEndPoint = new TransportZoneEndPoint();
+      transportZoneEndPoint.setTransportZoneId(currentState.networkZoneId);
+      request.setTransportZoneEndPoints(Collections.singletonList(transportZoneEndPoint));
     }
+
+    nsxClient.getFabricApi().createTransportNode(request,
+        new FutureCallback<TransportNode>() {
+          @Override
+          public void onSuccess(@javax.validation.constraints.NotNull TransportNode transportNode) {
+            try {
+              setTransportNodeId(currentState, transportNode.getId());
+            } catch (Throwable t) {
+              failTask(t);
+            }
+          }
+
+          @Override
+          public void onFailure(Throwable throwable) {
+            failTask(throwable);
+          }
+        });
+  }
+
+  private void setTransportNodeId(State currentState, String transportNodeId) {
+
+    HostService.State hostPatchState = new HostService.State();
+    hostPatchState.nsxTransportNodeId = transportNodeId;
+
+    sendRequest(HostUtils
+        .getCloudStoreHelper(this)
+        .createPatch(currentState.hostServiceLink)
+        .setBody(hostPatchState)
+        .setCompletion(
+            (o, e) -> {
+              try {
+                if (e != null) {
+                  failTask(e);
+                } else {
+
+                  //
+                  // N.B. Due to a quirk of the NSX REST API, it is necessary to wait for a period before
+                  // starting to poll the status of the task.
+                  //
+
+                  getHost().schedule(
+                      () -> {
+                        State selfPatchState = buildPatch(TaskState.TaskStage.STARTED,
+                            TaskState.SubStage.WAIT_FOR_TRANSPORT_NODE);
+                        selfPatchState.transportNodeId = transportNodeId;
+                        sendStageProgressPatch(selfPatchState);
+                      },
+                      currentState.nsxPollDelay,
+                      TimeUnit.MILLISECONDS);
+                }
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            }));
+  }
+
+  //
+  // WAIT_FOR_TRANSPORT_NODE sub-stage routines
+  //
+
+  private void processWaitForTransportNodeSubStage(State currentState) throws Throwable {
+
+    NsxClient nsxClient = HostUtils.getNsxClientFactory(this).create(
+        currentState.networkManagerAddress,
+        currentState.networkManagerUserName,
+        currentState.networkManagerPassword);
+
+    nsxClient.getFabricApi().getTransportNodeState(currentState.transportNodeId,
+        new FutureCallback<TransportNodeState>() {
+          @Override
+          public void onSuccess(@javax.validation.constraints.NotNull TransportNodeState transportNodeState) {
+            try {
+              switch (transportNodeState.getState()) {
+                case SUCCESS:
+                  sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.CONFIGURE_SYSLOG);
+                  break;
+                case PENDING:
+                case IN_PROGRESS:
+                  getHost().schedule(
+                      () -> sendStageProgressPatch(TaskState.TaskStage.STARTED,
+                          TaskState.SubStage.WAIT_FOR_TRANSPORT_NODE),
+                      currentState.nsxPollDelay,
+                      TimeUnit.MILLISECONDS);
+                  break;
+                case FAILED:
+                case PARTIAL_SUCCESS:
+                case ORPHANED:
+                  logTransportNodeResultAndFail(currentState, transportNodeState);
+                  break;
+              }
+            } catch (Throwable t) {
+              failTask(t);
+            }
+          }
+
+          @Override
+          public void onFailure(Throwable throwable) {
+            failTask(throwable);
+          }
+        });
+  }
+
+  private void logTransportNodeResultAndFail(State currentState, TransportNodeState transportNodeState) {
+
+    sendRequest(HostUtils
+        .getCloudStoreHelper(this)
+        .createGet(currentState.hostServiceLink)
+        .setCompletion(
+            (o, e) -> {
+              try {
+                if (e != null) {
+                  failTask(e);
+                } else {
+                  throw new IllegalStateException("Registering host " +
+                      o.getBody(HostService.State.class).hostAddress + " as a transport node failed with result " +
+                      transportNodeState.getState() + " (transport node ID " + currentState.transportNodeId + ")");
+                }
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            }));
+  }
+
+  //
+  // CONFIGURE_SYSLOG sub-stage routines
+  //
+
+  private void processConfigureSyslogSubStage(State currentState) {
+
+    sendRequest(HostUtils
+        .getCloudStoreHelper(this)
+        .createGet(currentState.deploymentServiceLink)
+        .setCompletion(
+            (o, e) -> {
+              try {
+                if (e != null) {
+                  failTask(e);
+                } else {
+                  processConfigureSyslogSubStage(currentState, o.getBody(DeploymentService.State.class));
+                }
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            }));
+  }
+
+  private void processConfigureSyslogSubStage(State currentState, DeploymentService.State deploymentState) {
+
+    if (deploymentState.syslogEndpoint == null) {
+      ServiceUtils.logInfo(this, "Skipping syslog endpoint configuration (disabled)");
+      sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.UPLOAD_VIBS);
+      return;
+    }
+
+    sendRequest(HostUtils
+        .getCloudStoreHelper(this)
+        .createGet(currentState.hostServiceLink)
+        .setCompletion(
+            (o, e) -> {
+              try {
+                if (e != null) {
+                  failTask(e);
+                } else {
+                  processConfigureSyslogSubStage(deploymentState, o.getBody(HostService.State.class));
+                }
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            }));
+  }
+
+  private void processConfigureSyslogSubStage(DeploymentService.State deploymentState, HostService.State hostState) {
+
+    List<String> command = Arrays.asList(
+        "./" + CONFIGURE_SYSLOG_SCRIPT_NAME,
+        hostState.hostAddress,
+        hostState.userName,
+        hostState.password,
+        deploymentState.syslogEndpoint);
 
     DeployerContext deployerContext = HostUtils.getDeployerContext(this);
-    String logPrefix = SCRIPT_NAME + "-" +
-        hostState.hostAddress + "-" + ServiceUtils.getIDFromDocumentSelfLink(currentState.documentSelfLink);
 
-    File scriptStdoutFile = new File(deployerContext.getScriptLogDirectory(), logPrefix + ".stdout.log");
-    File scriptStderrFile = new File(deployerContext.getScriptLogDirectory(), logPrefix + ".stderr.log");
+    File scriptLogFile = new File(deployerContext.getScriptLogDirectory(), CONFIGURE_SYSLOG_SCRIPT_NAME + "-" +
+        hostState.hostAddress + "-" + ServiceUtils.getIDFromDocumentSelfLink(hostState.documentSelfLink) + ".log");
 
     ScriptRunner scriptRunner = new ScriptRunner.Builder(command, deployerContext.getScriptTimeoutSec())
         .directory(deployerContext.getScriptDirectory())
-        .redirectOutput(ProcessBuilder.Redirect.to(scriptStdoutFile))
-        .redirectError(ProcessBuilder.Redirect.to(scriptStderrFile))
+        .redirectOutput(ProcessBuilder.Redirect.to(scriptLogFile))
+        .redirectErrorStream(true)
         .build();
 
     ListenableFutureTask<Integer> futureTask = ListenableFutureTask.create(scriptRunner);
     HostUtils.getListeningExecutorService(this).submit(futureTask);
-    Futures.addCallback(futureTask, new FutureCallback<Integer>() {
-      @Override
-      public void onSuccess(@Nullable Integer result) {
-        if (result == null) {
-          failTask(new NullPointerException(SCRIPT_NAME + " returned null"));
-        } else if (result != 0) {
-          logScriptErrorAndFail(hostState, result, scriptStdoutFile, scriptStderrFile);
-        } else {
-          sendStageProgressPatch(currentState, TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_FOR_INSTALLATION);
-        }
-      }
 
-      @Override
-      public void onFailure(Throwable throwable) {
-        failTask(throwable);
-      }
-    });
+    Futures.addCallback(futureTask,
+        new FutureCallback<Integer>() {
+          @Override
+          public void onSuccess(@javax.validation.constraints.NotNull Integer result) {
+            try {
+              if (result != 0) {
+                logSyslogConfigurationErrorAndFail(hostState, result, scriptLogFile);
+              } else {
+                sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.UPLOAD_VIBS);
+              }
+            } catch (Throwable t) {
+              failTask(t);
+            }
+          }
+
+          @Override
+          public void onFailure(Throwable throwable) {
+            failTask(throwable);
+          }
+        });
   }
 
-  private void logScriptErrorAndFail(HostService.State hostState,
-                                     Integer result,
-                                     File scriptStdoutFile,
-                                     File scriptStderrFile) {
+  private void logSyslogConfigurationErrorAndFail(HostService.State hostState,
+                                                  Integer result,
+                                                  File scriptLogFile) throws Throwable {
 
-    try {
-      ServiceUtils.logSevere(this, SCRIPT_NAME + " returned " + result.toString());
-      ServiceUtils.logSevere(this, "Script stdout:\n" + FileUtils.readFileToString(scriptStdoutFile));
-      ServiceUtils.logSevere(this, "Script stderr:\n" + FileUtils.readFileToString(scriptStderrFile));
-    } catch (Throwable t) {
-      ServiceUtils.logSevere(this, t);
+    ServiceUtils.logSevere(this, CONFIGURE_SYSLOG_SCRIPT_NAME + " returned " + result);
+    ServiceUtils.logSevere(this, "Script output: " + FileUtils.readFileToString(scriptLogFile));
+    throw new IllegalStateException("Configuring syslog on host " + hostState.hostAddress + " failed with exit code " +
+        result);
+  }
+
+  //
+  // UPLOAD_VIBS sub-stage routines
+  //
+
+  private void processUploadVibsSubStage(State currentState) {
+
+    QueryTask queryTask = QueryTask.Builder.createDirectTask()
+        .setQuery(QueryTask.Query.Builder.create()
+            .addKindFieldClause(VibService.State.class)
+            .addFieldClause(VibService.State.FIELD_NAME_HOST_SERVICE_LINK, currentState.hostServiceLink)
+            .build())
+        .addOptions(EnumSet.of(
+            QueryTask.QuerySpecification.QueryOption.BROADCAST,
+            QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT))
+        .build();
+
+    sendRequest(Operation
+        .createPost(this, ServiceUriPaths.CORE_QUERY_TASKS)
+        .setBody(queryTask)
+        .setCompletion(
+            (o, e) -> {
+              try {
+                if (e != null) {
+                  failTask(e);
+                } else {
+                  processUploadVibsSubStage(currentState, o.getBody(QueryTask.class).results.documents);
+                }
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            }));
+  }
+
+  private void processUploadVibsSubStage(State currentState, Map<String, Object> vibDocuments) {
+
+    Set<String> existingVibNames = vibDocuments.values().stream()
+        .map((vibDocument) -> Utils.fromJson(vibDocument, VibService.State.class))
+        .map((vibState) -> vibState.vibName)
+        .collect(Collectors.toSet());
+
+    File sourceDirectory = new File(HostUtils.getDeployerContext(this).getVibDirectory());
+    if (!sourceDirectory.exists() || !sourceDirectory.isDirectory()) {
+      throw new IllegalStateException("Invalid VIB source directory " + sourceDirectory);
     }
 
-    failTask(new IllegalStateException("Deploying the agent to host " + hostState.hostAddress +
-        " failed with exit code " + result.toString()));
-  }
+    File[] vibFiles = sourceDirectory.listFiles((file) -> file.getName().toUpperCase().endsWith(".VIB"));
+    if (vibFiles.length == 0) {
+      throw new IllegalStateException("No VIB files were found in source directory " + sourceDirectory);
+    }
 
-  //
-  // WAIT_FOR_INSTALLATION sub-stage routines
-  //
+    Set<File> vibFilesToUpload = Stream.of(vibFiles)
+        .filter((vibFile) -> !existingVibNames.contains(vibFile.getName()))
+        .collect(Collectors.toSet());
 
-  private void processWaitForInstallationSubStage(State currentState) {
+    if (vibFilesToUpload.isEmpty()) {
+      ServiceUtils.logInfo(this, "Found no VIB files to upload");
+      sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.INSTALL_VIBS);
+      return;
+    }
 
-    HostUtils.getCloudStoreHelper(this)
-        .createGet(currentState.hostServiceLink)
-        .setCompletion((op, ex) -> {
-          if (ex != null) {
-            failTask(ex);
-            return;
-          }
+    Stream<Operation> vibStartOps = vibFilesToUpload.stream().map((vibFile) -> {
+      VibService.State startState = new VibService.State();
+      startState.vibName = vibFile.getName();
+      startState.hostServiceLink = currentState.hostServiceLink;
+      return Operation.createPost(this, VibFactoryService.SELF_LINK).setBody(startState);
+    });
 
-          try {
-            processWaitForInstallationSubStage(currentState, op.getBody(HostService.State.class));
-          } catch (Throwable t) {
-            failTask(t);
-          }
-        })
+    OperationJoin
+        .create(vibStartOps)
+        .setCompletion(
+            (ops, exs) -> {
+              try {
+                if (exs != null && !exs.isEmpty()) {
+                  failTask(exs.values());
+                } else {
+                  createUploadVibTasks(ops.values());
+                }
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            })
         .sendWith(this);
   }
 
-  private void processWaitForInstallationSubStage(State currentState, HostService.State hostState) {
-    try {
-      AgentControlClient agentControlClient = HostUtils.getAgentControlClient(this);
-      agentControlClient.setIpAndPort(hostState.hostAddress, hostState.agentPort);
-      agentControlClient.getAgentStatus(new AsyncMethodCallback<AgentControl.AsyncClient.get_agent_status_call>() {
-        @Override
-        public void onComplete(AgentControl.AsyncClient.get_agent_status_call getAgentStatusCall) {
-          try {
-            AgentStatusResponse agentStatusResponse = getAgentStatusCall.getResult();
-            AgentControlClient.ResponseValidator.checkAgentStatusResponse(agentStatusResponse, hostState.hostAddress);
-            sendStageProgressPatch(currentState, TaskState.TaskStage.STARTED, TaskState.SubStage.PROVISION_AGENT);
-          } catch (Throwable t) {
-            retryGetInstallationStatusOrFail(currentState, hostState, t);
-          }
-        }
+  private void createUploadVibTasks(Collection<Operation> vibStartOps) {
 
-        @Override
-        public void onError(Exception e) {
-          retryGetInstallationStatusOrFail(currentState, hostState, e);
-        }
-      });
+    ChildTaskAggregatorService.State startState = new ChildTaskAggregatorService.State();
+    startState.parentTaskLink = getSelfLink();
+    startState.parentPatchBody = Utils.toJson(buildPatch(TaskState.TaskStage.STARTED,
+        TaskState.SubStage.INSTALL_VIBS));
+    startState.pendingCompletionCount = vibStartOps.size();
+    startState.errorThreshold = 0.0;
+
+    sendRequest(Operation
+        .createPost(this, ChildTaskAggregatorFactoryService.SELF_LINK)
+        .setBody(startState)
+        .setCompletion(
+            (o, e) -> {
+              try {
+                if (e != null) {
+                  failTask(e);
+                } else {
+                  createUploadVibTasks(vibStartOps, o.getBody(ServiceDocument.class).documentSelfLink);
+                }
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            }));
+  }
+
+  private void createUploadVibTasks(Collection<Operation> vibStartOps, String aggregatorServiceLink) {
+
+    Stream<Operation> taskStartOps = vibStartOps.stream().map((vibStartOp) -> {
+      UploadVibTaskService.State startState = new UploadVibTaskService.State();
+      startState.parentTaskServiceLink = aggregatorServiceLink;
+      startState.vibServiceLink = vibStartOp.getBody(ServiceDocument.class).documentSelfLink;
+      return Operation.createPost(this, UploadVibTaskFactoryService.SELF_LINK).setBody(startState);
+    });
+
+    OperationJoin
+        .create(taskStartOps)
+        .setCompletion(
+            (ops, exs) -> {
+              try {
+                if (exs != null && !exs.isEmpty()) {
+                  failTask(exs.values());
+                }
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            })
+        .sendWith(this);
+  }
+
+  //
+  // INSTALL_VIBS sub-stage routines
+  //
+  // N.B. Multiple VIBs may have been uploaded to the host -- either by this task, or previously
+  // during upgrae initialization. ESX does not handle parallel VIB installation gracefully, so
+  // this sub-stage will install VIBs in sequence. It does this by querying the set of VIB service
+  // entities associated with the host and -- if any are found -- by selecting one at random,
+  // installing it, deleting the VIB service entity, and self-patching to the same sub-stage (e.g.
+  // INSTALL_VIBS) to retry the query. Only when the query returns no results will the service
+  // transition to the next sub-stage.
+  //
+
+  private void processInstallVibsSubStage(State currentState) {
+
+    QueryTask queryTask = QueryTask.Builder.createDirectTask()
+        .setQuery(QueryTask.Query.Builder.create()
+            .addKindFieldClause(VibService.State.class)
+            .addFieldClause(VibService.State.FIELD_NAME_HOST_SERVICE_LINK, currentState.hostServiceLink)
+            .build())
+        .build();
+
+    sendRequest(Operation
+        .createPost(UriUtils.buildBroadcastRequestUri(
+            UriUtils.buildUri(getHost(), ServiceUriPaths.CORE_LOCAL_QUERY_TASKS),
+            ServiceUriPaths.DEFAULT_NODE_SELECTOR))
+        .setBody(queryTask)
+        .setCompletion(
+            (o, e) -> {
+              try {
+                if (e != null) {
+                  failTask(e);
+                } else {
+                  processInstallVibsSubStage(QueryTaskUtils.getBroadcastQueryDocumentLinks(o));
+                }
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            }));
+  }
+
+  private void processInstallVibsSubStage(Set<String> vibServiceLinks) {
+
+    if (vibServiceLinks.isEmpty()) {
+      ServiceUtils.logInfo(this, "Found no remaining VIBs to install");
+      State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_FOR_AGENT_START);
+      patchState.agentStartPollCount = 1;
+      sendStageProgressPatch(patchState);
+      return;
+    }
+
+    sendRequest(Operation
+        .createGet(this, vibServiceLinks.iterator().next())
+        .setCompletion(
+            (o, e) -> {
+              try {
+                if (e != null) {
+                  failTask(e);
+                } else {
+                  processInstallVibsSubStage(o.getBody(VibService.State.class));
+                }
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            }));
+  }
+
+  private void processInstallVibsSubStage(VibService.State vibState) {
+
+    sendRequest(HostUtils
+        .getCloudStoreHelper(this)
+        .createGet(vibState.hostServiceLink)
+        .setCompletion(
+            (o, e) -> {
+              try {
+                if (e != null) {
+                  failTask(e);
+                } else {
+                  processInstallVibsSubStage(vibState, o.getBody(HostService.State.class));
+                }
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            }));
+  }
+
+  private void processInstallVibsSubStage(VibService.State vibState, HostService.State hostState) {
+
+    List<String> command = Arrays.asList(
+        "./" + INSTALL_VIB_SCRIPT_NAME,
+        hostState.hostAddress,
+        hostState.userName,
+        hostState.password,
+        vibState.uploadPath);
+
+    DeployerContext deployerContext = HostUtils.getDeployerContext(this);
+
+    File scriptLogFile = new File(deployerContext.getScriptLogDirectory(), INSTALL_VIB_SCRIPT_NAME + "-" +
+        hostState.hostAddress + "-" + ServiceUtils.getIDFromDocumentSelfLink(vibState.documentSelfLink) + ".log");
+
+    ScriptRunner scriptRunner = new ScriptRunner.Builder(command, deployerContext.getScriptTimeoutSec())
+        .directory(deployerContext.getScriptDirectory())
+        .redirectOutput(ProcessBuilder.Redirect.to(scriptLogFile))
+        .redirectErrorStream(true)
+        .build();
+
+    ListenableFutureTask<Integer> futureTask = ListenableFutureTask.create(scriptRunner);
+    HostUtils.getListeningExecutorService(this).submit(futureTask);
+
+    Futures.addCallback(futureTask,
+        new FutureCallback<Integer>() {
+          @Override
+          public void onSuccess(@javax.validation.constraints.NotNull Integer result) {
+            try {
+              if (result != 0) {
+                logVibInstallationFailureAndFail(vibState, hostState, result, scriptLogFile);
+              } else {
+                deleteVibService(vibState);
+              }
+            } catch (Throwable t) {
+              failTask(t);
+            }
+          }
+
+          @Override
+          public void onFailure(Throwable throwable) {
+            failTask(throwable);
+          }
+        });
+  }
+
+  private void logVibInstallationFailureAndFail(VibService.State vibState,
+                                                HostService.State hostState,
+                                                int result,
+                                                File scriptLogFile) throws Throwable {
+
+    ServiceUtils.logSevere(this, INSTALL_VIB_SCRIPT_NAME + " returned " + result);
+    ServiceUtils.logSevere(this, "Script output: " + FileUtils.readFileToString(scriptLogFile));
+    throw new IllegalStateException("Installing VIB file " + vibState.vibName + " to host " + hostState.hostAddress +
+        " failed with exit code " + result);
+  }
+
+  private void deleteVibService(VibService.State vibState) {
+
+    sendRequest(Operation
+        .createDelete(this, vibState.documentSelfLink)
+        .setCompletion(
+            (o, e) -> {
+              try {
+                if (e != null) {
+                  failTask(e);
+                } else {
+                  sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.INSTALL_VIBS);
+                }
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            }));
+  }
+
+  //
+  // WAIT_FOR_AGENT_START sub-stage routines
+  //
+
+  private void processWaitForAgentSubStage(State currentState) {
+
+    sendRequest(HostUtils
+        .getCloudStoreHelper(this)
+        .createGet(currentState.hostServiceLink)
+        .setCompletion(
+            (o, e) -> {
+              try {
+                if (e != null) {
+                  failTask(e);
+                } else {
+                  processWaitForAgentSubStage(currentState, o.getBody(HostService.State.class));
+                }
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            }));
+  }
+
+  private void processWaitForAgentSubStage(State currentState, HostService.State hostState) throws Throwable {
+
+    AgentControlClient agentControlClient = HostUtils.getAgentControlClient(this);
+    agentControlClient.setIpAndPort(hostState.hostAddress, hostState.agentPort);
+
+    try {
+      agentControlClient.getAgentStatus(
+          new AsyncMethodCallback<AgentControl.AsyncClient.get_agent_status_call>() {
+            @Override
+            public void onComplete(AgentControl.AsyncClient.get_agent_status_call agentStatusCall) {
+              try {
+                AgentStatusResponse response = agentStatusCall.getResult();
+                AgentControlClient.ResponseValidator.checkAgentStatusResponse(response, hostState.hostAddress);
+                sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.PROVISION_AGENT);
+              } catch (Throwable t) {
+                retryWaitForAgentOrFail(currentState, hostState, t);
+              }
+            }
+
+            @Override
+            public void onError(Exception exception) {
+              retryWaitForAgentOrFail(currentState, hostState, exception);
+            }
+          });
+
     } catch (Throwable t) {
-      retryGetInstallationStatusOrFail(currentState, hostState, t);
+      retryWaitForAgentOrFail(currentState, hostState, t);
     }
   }
 
-  private void retryGetInstallationStatusOrFail(State currentState, HostService.State hostState, Throwable t) {
-    if (currentState.pollCount + 1 >= currentState.maximumPollCount) {
-      ServiceUtils.logSevere(this, t);
-      State patchState = buildPatch(TaskState.TaskStage.FAILED, null, new IllegalStateException(
-          "The agent on host " + hostState.hostAddress + " failed to become ready after installation after " +
-              Integer.toString(currentState.maximumPollCount) + " retries"));
-      patchState.pollCount = currentState.pollCount + 1;
-      TaskUtils.sendSelfPatch(this, patchState);
+  private void retryWaitForAgentOrFail(State currentState,
+                                       HostService.State hostState,
+                                       Throwable failure) {
+
+    if (currentState.agentStartPollCount >= currentState.agentStartMaxPollCount) {
+      ServiceUtils.logSevere(this, failure);
+      failTask(new IllegalStateException("The agent on host " + hostState.hostAddress +
+          " failed to become ready after installation after " + currentState.agentStartPollCount + " retries"));
     } else {
-      ServiceUtils.logTrace(this, t);
-      State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_FOR_INSTALLATION, null);
-      patchState.pollCount = currentState.pollCount + 1;
-      getHost().schedule(() -> TaskUtils.sendSelfPatch(this, patchState), currentState.pollInterval,
+      ServiceUtils.logTrace(this, failure);
+      State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_FOR_AGENT_START);
+      patchState.agentStartPollCount = currentState.agentStartPollCount + 1;
+
+      getHost().schedule(
+          () -> TaskUtils.sendSelfPatch(this, patchState),
+          currentState.agentStatusPollDelay,
           TimeUnit.MILLISECONDS);
     }
   }
@@ -742,22 +1342,21 @@ public class ProvisionHostTaskService extends StatefulService {
   private void processProvisionAgentSubStage(State currentState) {
 
     CloudStoreHelper cloudStoreHelper = HostUtils.getCloudStoreHelper(this);
-    Operation deploymentOp = cloudStoreHelper.createGet(currentState.deploymentServiceLink);
-    Operation hostOp = cloudStoreHelper.createGet(currentState.hostServiceLink);
+    Operation deploymentGetOp = cloudStoreHelper.createGet(currentState.deploymentServiceLink);
+    Operation hostGetOp = cloudStoreHelper.createGet(currentState.hostServiceLink);
 
     OperationJoin
-        .create(deploymentOp, hostOp)
+        .create(deploymentGetOp, hostGetOp)
         .setCompletion(
             (ops, exs) -> {
-              if (exs != null && !exs.isEmpty()) {
-                failTask(exs.values());
-                return;
-              }
-
               try {
-                processProvisionAgentSubStage(currentState,
-                    ops.get(deploymentOp.getId()).getBody(DeploymentService.State.class),
-                    ops.get(hostOp.getId()).getBody(HostService.State.class));
+                if (exs != null && !exs.isEmpty()) {
+                  failTask(exs.values());
+                } else {
+                  processProvisionAgentSubStage(currentState,
+                      ops.get(deploymentGetOp.getId()).getBody(DeploymentService.State.class),
+                      ops.get(hostGetOp.getId()).getBody(HostService.State.class));
+                }
               } catch (Throwable t) {
                 failTask(t);
               }
@@ -769,26 +1368,29 @@ public class ProvisionHostTaskService extends StatefulService {
                                              DeploymentService.State deploymentState,
                                              HostService.State hostState) {
 
-    List<String> datastores = null;
+    List<String> allowedDatastores = null;
     if (hostState.metadata != null
         && hostState.metadata.containsKey(HostService.State.METADATA_KEY_NAME_ALLOWED_DATASTORES)) {
-      String[] allowedDatastores = hostState.metadata.get(HostService.State.METADATA_KEY_NAME_ALLOWED_DATASTORES)
-          .trim().split(COMMA_DELIMITED_REGEX);
-      datastores = new ArrayList<>(allowedDatastores.length);
-      Collections.addAll(datastores, allowedDatastores);
+
+      allowedDatastores = Stream.of(
+          hostState.metadata.get(HostService.State.METADATA_KEY_NAME_ALLOWED_DATASTORES)
+              .trim()
+              .split("\\s*,\\s*"))
+          .collect(Collectors.toList());
     }
 
-    List<String> networks = null;
+    List<String> allowedNetworks = null;
     if (hostState.metadata != null
         && hostState.metadata.containsKey(HostService.State.METADATA_KEY_NAME_ALLOWED_NETWORKS)) {
-      String[] allowedNetworks = hostState.metadata.get(HostService.State.METADATA_KEY_NAME_ALLOWED_NETWORKS)
-          .trim().split(COMMA_DELIMITED_REGEX);
-      networks = new ArrayList<>(allowedNetworks.length);
-      Collections.addAll(networks, allowedNetworks);
+
+      allowedNetworks = Stream.of(
+          hostState.metadata.get(HostService.State.METADATA_KEY_NAME_ALLOWED_NETWORKS)
+              .trim()
+              .split("\\s*,\\s*"))
+          .collect(Collectors.toList());
     }
 
     StatsPluginConfig statsPluginConfig = new StatsPluginConfig(deploymentState.statsEnabled);
-
     if (deploymentState.statsStoreEndpoint != null) {
       statsPluginConfig.setStats_store_endpoint(deploymentState.statsStoreEndpoint);
     }
@@ -811,41 +1413,44 @@ public class ProvisionHostTaskService extends StatefulService {
       statsPluginConfig.setStats_host_tags(Joiner.on("-").skipNulls().join(usageTagList));
     }
 
+    AgentControlClient agentControlClient = HostUtils.getAgentControlClient(this);
+    agentControlClient.setIpAndPort(hostState.hostAddress, hostState.agentPort);
+
     try {
-      AgentControlClient agentControlClient = HostUtils.getAgentControlClient(this);
-      agentControlClient.setIpAndPort(hostState.hostAddress, hostState.agentPort);
       agentControlClient.provision(
-          datastores,
+          allowedDatastores,
           deploymentState.imageDataStoreNames,
           deploymentState.imageDataStoreUsedForVMs,
-          networks,
+          allowedNetworks,
           hostState.hostAddress,
           hostState.agentPort,
-          0, // Overcommit ratio is not implemented,
+          0, // Overcommit ratio is not implemented
           deploymentState.syslogEndpoint,
-          DEFAULT_AGENT_LOG_LEVEL,
+          currentState.agentLogLevel,
           statsPluginConfig,
           (hostState.usageTags != null
               && hostState.usageTags.contains(UsageTag.MGMT.name())
               && !hostState.usageTags.contains(UsageTag.CLOUD.name())),
-          ServiceUtils.getIDFromDocumentSelfLink(currentState.hostServiceLink),
-          ServiceUtils.getIDFromDocumentSelfLink(currentState.deploymentServiceLink),
+          ServiceUtils.getIDFromDocumentSelfLink(hostState.documentSelfLink),
+          ServiceUtils.getIDFromDocumentSelfLink(deploymentState.documentSelfLink),
           deploymentState.ntpEndpoint,
           new AsyncMethodCallback<AgentControl.AsyncClient.provision_call>() {
             @Override
             public void onComplete(AgentControl.AsyncClient.provision_call provisionCall) {
               try {
-                AgentControlClient.ResponseValidator.checkProvisionResponse(provisionCall.getResult());
-                sendStageProgressPatch(currentState, TaskState.TaskStage.STARTED,
-                    TaskState.SubStage.WAIT_FOR_PROVISION);
+                ProvisionResponse result = provisionCall.getResult();
+                AgentControlClient.ResponseValidator.checkProvisionResponse(result);
+                State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_FOR_AGENT_RESTART);
+                patchState.agentRestartPollCount = 1;
+                sendStageProgressPatch(patchState);
               } catch (Throwable t) {
                 logProvisioningErrorAndFail(hostState, t);
               }
             }
 
             @Override
-            public void onError(Exception e) {
-              logProvisioningErrorAndFail(hostState, e);
+            public void onError(Exception exception) {
+              logProvisioningErrorAndFail(hostState, exception);
             }
           });
 
@@ -854,131 +1459,150 @@ public class ProvisionHostTaskService extends StatefulService {
     }
   }
 
-  //
-  // WAIT_FOR_PROVISION sub-stage routines
-  //
-
-  private void processWaitForProvisionSubStage(State currentState) {
-
-    HostUtils.getCloudStoreHelper(this)
-        .createGet(currentState.hostServiceLink)
-        .setCompletion((o, e) -> {
-          if (e != null) {
-            failTask(e);
-            return;
-          }
-
-          try {
-            processWaitForProvisionSubStage(currentState, o.getBody(HostService.State.class));
-          } catch (Throwable t) {
-            failTask(t);
-          }
-        })
-        .sendWith(this);
+  private void logProvisioningErrorAndFail(HostService.State hostState, Throwable failure) {
+    ServiceUtils.logSevere(this, failure);
+    failTask(new IllegalStateException("Provisioning the agent on host " + hostState.hostAddress +
+        " failed with error " + failure));
   }
 
-  private void processWaitForProvisionSubStage(State currentState, HostService.State hostState) {
-    try {
-      AgentControlClient agentControlClient = HostUtils.getAgentControlClient(this);
-      agentControlClient.setIpAndPort(hostState.hostAddress, hostState.agentPort);
-      agentControlClient.getAgentStatus(new AsyncMethodCallback<AgentControl.AsyncClient.get_agent_status_call>() {
-        @Override
-        public void onComplete(AgentControl.AsyncClient.get_agent_status_call getAgentStatusCall) {
-          try {
-            AgentStatusResponse agentStatusResponse = getAgentStatusCall.getResult();
-            AgentControlClient.ResponseValidator.checkAgentStatusResponse(agentStatusResponse, hostState.hostAddress);
-            sendStageProgressPatch(currentState, TaskState.TaskStage.STARTED, TaskState.SubStage.UPDATE_HOST_STATE);
-          } catch (Throwable t) {
-            retryGetProvisionStatusOrFail(currentState, hostState, t);
-          }
-        }
+  //
+  // WAIT_FOR_AGENT_RESTART sub-stage routines
+  //
 
-        @Override
-        public void onError(Exception e) {
-          retryGetProvisionStatusOrFail(currentState, hostState, e);
-        }
-      });
+  private void processWaitForAgentRestartSubStage(State currentState) {
+
+    sendRequest(HostUtils
+        .getCloudStoreHelper(this)
+        .createGet(currentState.hostServiceLink)
+        .setCompletion(
+            (o, e) -> {
+              try {
+                if (e != null) {
+                  failTask(e);
+                } else {
+                  processWaitForAgentRestartSubStage(currentState, o.getBody(HostService.State.class));
+                }
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            }));
+  }
+
+  private void processWaitForAgentRestartSubStage(State currentState, HostService.State hostState) {
+
+    AgentControlClient agentControlClient = HostUtils.getAgentControlClient(this);
+    agentControlClient.setIpAndPort(hostState.hostAddress, hostState.agentPort);
+
+    try {
+      agentControlClient.getAgentStatus(
+          new AsyncMethodCallback<AgentControl.AsyncClient.get_agent_status_call>() {
+            @Override
+            public void onComplete(AgentControl.AsyncClient.get_agent_status_call agentStatusCall) {
+              try {
+                AgentStatusResponse result = agentStatusCall.getResult();
+                AgentControlClient.ResponseValidator.checkAgentStatusResponse(result, hostState.hostAddress);
+                updateHostState(hostState.documentSelfLink);
+              } catch (Throwable t) {
+                retryWaitForAgentRestartOrFail(currentState, hostState, t);
+              }
+            }
+
+            @Override
+            public void onError(Exception exception) {
+              retryWaitForAgentRestartOrFail(currentState, hostState, exception);
+            }
+          });
+
     } catch (Throwable t) {
-      retryGetProvisionStatusOrFail(currentState, hostState, t);
+      retryWaitForAgentRestartOrFail(currentState, hostState, t);
     }
   }
 
-  private void retryGetProvisionStatusOrFail(State currentState, HostService.State hostState, Throwable failure) {
-    if (currentState.pollCount + 1 >= currentState.maximumPollCount) {
+  private void retryWaitForAgentRestartOrFail(State currentState,
+                                              HostService.State hostState,
+                                              Throwable failure) {
+
+    if (currentState.agentRestartPollCount >= currentState.agentRestartMaxPollCount) {
       ServiceUtils.logSevere(this, failure);
-      State patchState = buildPatch(TaskState.TaskStage.FAILED, null, new IllegalStateException(
-          "The agent on host " + hostState.hostAddress + " failed to become ready after provisioning after " +
-              Integer.toString(currentState.maximumPollCount) + " retries"));
-      patchState.pollCount = currentState.pollCount + 1;
-      TaskUtils.sendSelfPatch(this, patchState);
+      failTask(new IllegalStateException("The agent on host " + hostState.hostAddress +
+          " failed to become ready after provisioning after " + currentState.agentRestartPollCount + " retries"));
     } else {
       ServiceUtils.logTrace(this, failure);
-      State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_FOR_PROVISION, null);
-      patchState.pollCount = currentState.pollCount + 1;
-      getHost().schedule(() -> TaskUtils.sendSelfPatch(this, patchState), currentState.pollInterval,
+      State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_FOR_AGENT_RESTART);
+      patchState.agentRestartPollCount = currentState.agentRestartPollCount + 1;
+
+      getHost().schedule(
+          () -> TaskUtils.sendSelfPatch(this, patchState),
+          currentState.agentStatusPollDelay,
           TimeUnit.MILLISECONDS);
     }
   }
 
-  //
-  // UPDATE_HOST_STATE sub-stage routines
-  //
+  private void updateHostState(String hostServiceLink) {
 
-  private void processUpdateHostState(State currentState) {
     HostService.State hostPatchState = new HostService.State();
     hostPatchState.state = HostState.READY;
 
-    State patchState = buildPatch(
-        TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_FOR_HOST_UPDATES, null);
-    patchState.pollCount = 0;
-
-    patchHost(currentState, hostPatchState, patchState);
-  }
-
-  //
-  // WAIT_FOR_HOST_Updates sub-stage routines
-  //
-
-  private void processWaitForHostUpdates(State currentState) {
-    try {
-      HostUtils.getCloudStoreHelper(this)
-          .createGet(currentState.hostServiceLink)
-          .setCompletion((o, e) -> {
-            if (e != null) {
-              retryWaitForHostUpdatesOrFail(currentState, e);
-              return;
-            }
-            try {
-              HostService.State hostState = o.getBody(HostService.State.class);
-              if (hostState.esxVersion == null) {
-                retryWaitForHostUpdatesOrFail(currentState, null);
-                return;
+    sendRequest(HostUtils
+        .getCloudStoreHelper(this)
+        .createPatch(hostServiceLink)
+        .setBody(hostPatchState)
+        .setCompletion(
+            (o, e) -> {
+              try {
+                if (e != null) {
+                  failTask(e);
+                } else {
+                  State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_FOR_HOST_UPDATES);
+                  patchState.hostStatusPollCount = 1;
+                  sendStageProgressPatch(patchState);
+                }
+              } catch (Throwable t) {
+                failTask(t);
               }
-              TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FINISHED, null, null));
-            } catch (Throwable t) {
-              retryWaitForHostUpdatesOrFail(currentState, t);
-            }
-          })
-          .sendWith(this);
-    } catch (Throwable t) {
-      retryWaitForHostUpdatesOrFail(currentState, t);
-    }
+            }));
   }
 
-  private void retryWaitForHostUpdatesOrFail(State currentState, Throwable failure) {
-    if (failure != null) {
-      ServiceUtils.logSevere(this, failure);
+  //
+  // WAIT_FOR_HOST_UPDATES sub-stage routines
+  //
+
+  private void processWaitForHostUpdatesSubStage(State currentState) {
+
+    sendRequest(HostUtils
+        .getCloudStoreHelper(this)
+        .createGet(currentState.hostServiceLink)
+        .setCompletion(
+            (o, e) -> {
+              try {
+                if (e != null) {
+                  failTask(e);
+                } else {
+                  processWaitForHostUpdatesSubStage(currentState, o.getBody(HostService.State.class));
+                }
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            }));
+  }
+
+  private void processWaitForHostUpdatesSubStage(State currentState, HostService.State hostState) {
+
+    if (hostState.esxVersion != null) {
+      sendStageProgressPatch(TaskState.TaskStage.FINISHED, null);
+      return;
     }
-    if (currentState.pollCount + 1 >= HOST_UPDATE_RETRY_COUNT) {
-      State patchState = buildPatch(TaskState.TaskStage.FAILED, null, new IllegalStateException(
-          "The hostService " + currentState.hostServiceLink + " failed to get updated with configuration details " +
-              "after " + Integer.toString(currentState.maximumPollCount) + " retries"));
-      patchState.pollCount = currentState.pollCount + 1;
-      TaskUtils.sendSelfPatch(this, patchState);
+
+    if (currentState.hostStatusPollCount >= currentState.hostStatusMaxPollCount) {
+      failTask(new IllegalStateException("Host " + hostState.hostAddress + " failed to become ready after " +
+          currentState.hostStatusMaxPollCount + " retries"));
     } else {
-      State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_FOR_HOST_UPDATES, null);
-      patchState.pollCount = currentState.pollCount + 1;
-      getHost().schedule(() -> TaskUtils.sendSelfPatch(this, patchState), currentState.pollInterval,
+      State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_FOR_HOST_UPDATES);
+      patchState.hostStatusPollCount = currentState.hostStatusPollCount + 1;
+
+      getHost().schedule(
+          () -> TaskUtils.sendSelfPatch(this, patchState),
+          currentState.hostStatusPollDelay,
           TimeUnit.MILLISECONDS);
     }
   }
@@ -987,48 +1611,14 @@ public class ProvisionHostTaskService extends StatefulService {
   // Utility routines
   //
 
-  private void patchHost(State currentState,
-                         HostService.State patchState,
-                         TaskState.TaskStage nextStage,
-                         TaskState.SubStage nextSubStage) {
-    patchHost(currentState, patchState, buildPatch(nextStage, nextSubStage, null));
+  private void sendStageProgressPatch(TaskState.TaskStage taskStage, TaskState.SubStage subStage) {
+    sendStageProgressPatch(buildPatch(taskStage, subStage, null));
   }
 
-  private void patchHost(State currentState,
-                         HostService.State hostPatchState,
-                         State patchState) {
-    HostUtils.getCloudStoreHelper(this)
-        .createPatch(currentState.hostServiceLink)
-        .setBody(hostPatchState)
-        .setCompletion((o, e) -> {
-          if (e != null) {
-            failTask(e);
-          } else {
-            sendStageProgressPatch(currentState, patchState);
-          }
-        })
-        .sendWith(this);
-  }
-
-  private void sendStageProgressPatch(State currentState,
-                                      TaskState.TaskStage taskStage,
-                                      TaskState.SubStage subStage) {
-    sendStageProgressPatch(currentState, buildPatch(taskStage, subStage, null));
-  }
-
-  private void sendStageProgressPatch(State currentState, State patchState) {
-    ServiceUtils.logInfo(this, "Sending self-patch to stage %s : %s",
-        patchState.taskState.stage, patchState.taskState.subStage);
-    if (ControlFlags.disableOperationProcessingOnStageTransition(currentState.controlFlags)) {
-      patchState.controlFlags = ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED;
-    }
+  private void sendStageProgressPatch(State patchState) {
+    ServiceUtils.logTrace(this, "Sending self-patch to stage %s : %s", patchState.taskState.stage,
+        patchState.taskState.subStage);
     TaskUtils.sendSelfPatch(this, patchState);
-  }
-
-  private void logProvisioningErrorAndFail(HostService.State hostState, Throwable failure) {
-    ServiceUtils.logSevere(this, failure);
-    TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, null, new IllegalStateException(
-        "Provisioning the agent on host " + hostState.hostAddress + " failed with error: " + failure)));
   }
 
   private void failTask(Throwable failure) {
@@ -1042,16 +1632,22 @@ public class ProvisionHostTaskService extends StatefulService {
   }
 
   @VisibleForTesting
+  protected static State buildPatch(TaskState.TaskStage taskStage, TaskState.SubStage subStage) {
+    return buildPatch(taskStage, subStage, null);
+  }
+
+  @VisibleForTesting
   protected static State buildPatch(TaskState.TaskStage taskStage,
                                     TaskState.SubStage subStage,
-                                    @Nullable Throwable t) {
+                                    @Nullable Throwable failure) {
+
     State patchState = new State();
     patchState.taskState = new TaskState();
     patchState.taskState.stage = taskStage;
     patchState.taskState.subStage = subStage;
 
-    if (t != null) {
-      patchState.taskState.failure = Utils.toServiceErrorResponse(t);
+    if (failure != null) {
+      patchState.taskState.failure = Utils.toServiceErrorResponse(failure);
     }
 
     return patchState;

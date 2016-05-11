@@ -265,11 +265,14 @@ public class TestHelper {
     startState.hostAddress = "hostAddress";
     startState.userName = "userName";
     startState.password = "password";
-    startState.availabilityZoneId = "availabilityZone";
-    startState.cpuCount = 1;
-    startState.esxVersion = "6.0";
-    startState.memoryMb = 2048;
     startState.usageTags = new HashSet<>(usageTags);
+    startState.availabilityZoneId = "availabilityZone";
+
+    if (state.ordinal() >= HostState.READY.ordinal()) {
+      startState.cpuCount = 1;
+      startState.esxVersion = "6.0";
+      startState.memoryMb = 2048;
+    }
 
     if (usageTags.contains(UsageTag.MGMT.name())) {
       startState.metadata = new HashMap<>();
