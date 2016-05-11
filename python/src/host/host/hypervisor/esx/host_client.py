@@ -109,7 +109,19 @@ class HostClient(object):
         pass
 
     @abc.abstractmethod
-    def reconfigure_vm(self, vm, spec):
+    def attach_disk(self, vm_id, vmdk_file):
+        pass
+
+    @abc.abstractmethod
+    def detach_disk(self, vm_id, disk_id):
+        pass
+
+    @abc.abstractmethod
+    def attach_iso(self, vm_id, iso_file):
+        pass
+
+    @abc.abstractmethod
+    def detach_iso(self, vm_id):
         pass
 
     """ Disk and file operations
@@ -226,10 +238,6 @@ class VmConfigSpec(object):
         pass
 
     @abc.abstractmethod
-    def attach_disk(self, cfg_info, vmdk_file):
-        pass
-
-    @abc.abstractmethod
     def create_empty_disk(self, datastore, disk_id, size_mb):
         pass
 
@@ -242,23 +250,7 @@ class VmConfigSpec(object):
         pass
 
     @abc.abstractmethod
-    def add_iso_cdrom(self, iso_file, cfg_info):
-        pass
-
-    @abc.abstractmethod
-    def disconnect_iso_cdrom(self, cfg_info):
-        pass
-
-    @abc.abstractmethod
-    def detach_disk(self, cfg_info, disk_id):
-        pass
-
-    @abc.abstractmethod
     def set_extra_config(self, options):
-        pass
-
-    @abc.abstractmethod
-    def set_diskuuid_enabled(self, enable):
         pass
 
 

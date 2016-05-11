@@ -161,16 +161,6 @@ class EsxVmManager(VmManager):
         # our one vm-identifying extra config
         extra_config_map[self.GUESTINFO_PREFIX + "vm.id"] = vm_id
         spec.set_extra_config(extra_config_map)
-
-        spec.set_diskuuid_enabled(True)
-        return spec
-
-    @log_duration
-    def _update_vm_spec(self):
-        """ Return an empty update spec for a VM.
-        """
-        spec = EsxVmConfigSpec(self.vim_client.query_config())
-        spec.init_for_update()
         return spec
 
     @log_duration
@@ -183,15 +173,7 @@ class EsxVmManager(VmManager):
         :type ConfigSpec
         :raise: VmAlreadyExistException
         """
-        self.vim_client.create_vm(vm_id, spec.get_spec())
-
-    @log_duration
-    def _update_vm(self, vm_id, spec):
-        """ Update the VM using the given spec.
-        :type spec: vim.vm.ConfigSpec
-        """
-        vm = self.vim_client.get_vm(vm_id)
-        self.vim_client.reconfigure_vm(vm, spec.get_spec())
+        self.vim_client.create_vm(vm_id, spec)
 
     def _ensure_directory_cleanup(self, vm_dir):
         # Upon successful destroy of VM, log any stray files still left in the
@@ -261,10 +243,7 @@ class EsxVmManager(VmManager):
         :param vmdk_file: vmdk disk path
         :type vmdk_file: str
         """
-        cfg_spec = self._update_vm_spec()
-        cfg_info = self._get_vm_config(vm_id)
-        cfg_spec.attach_disk(cfg_info, vmdk_file)
-        self._update_vm(vm_id, cfg_spec)
+        self.vim_client.attach_disk(vm_id, vmdk_file)
 
     def detach_disk(self, vm_id, disk_id):
         """Remove an existing disk from a VM
@@ -273,10 +252,7 @@ class EsxVmManager(VmManager):
         :param disk_id: Disk id
         :type disk_id: str
         """
-        cfg_spec = self._update_vm_spec()
-        cfg_info = self._get_vm_config(vm_id)
-        cfg_spec.detach_disk(cfg_info, disk_id)
-        self._update_vm(vm_id, cfg_spec)
+        self.vim_client.detach_disk(vm_id, disk_id)
 
     def _get_datastore_uuid(self, name):
         try:
@@ -456,56 +432,36 @@ class EsxVmManager(VmManager):
 
         return network_info
 
-    def attach_cdrom(self, iso_file, vm_id):
+    def attach_iso(self, vm_id, iso_file):
         """ Attach an iso file to the VM after adding a CD-ROM device.
-
-        :param spec: The VM config spec to update with the cdrom add
-        :type spec: vim.vm.ConfigSpec
-        :param iso_file: the file system path to the cdrom
-        :type iso_file: str
         :param vm_id: The id of VM to attach iso from
         :type vm_id: str
+        :param iso_file: the file system path to the cdrom
+        :type iso_file: str
         :rtype: bool. True if success, False if failure
         """
-        vm = self.vim_client.get_vm(vm_id)
-        if vm.config is None:
-            raise Exception("Invalid VM config")
+        return self.vim_client.attach_iso(vm_id, iso_file)
 
-        cfg_spec = self._update_vm_spec()
-        result = cfg_spec.add_iso_cdrom(iso_file, vm.config)
-        if result:
-            self._update_vm(vm_id, cfg_spec)
-        return result
-
-    def disconnect_cdrom(self, vm_id):
+    def detach_iso(self, vm_id, delete_file):
         """ Disconnect cdrom device from VM
 
-        :param spec: The VM config spec to update with the cdrom change
-        :type spec: vim.vm.ConfigSpec
         :param vm_id: The id of VM to detach iso from
+        :param delete_file: a boolean that indicates whether to delete the iso file
         :type vm_id: str
         """
-        vm = self.vim_client.get_vm(vm_id)
-        if vm.config is None:
-            raise Exception("Invalid VM config")
-
         try:
-            cfg_spec = self._update_vm_spec()
-            iso_path = cfg_spec.disconnect_iso_cdrom(vm.config)
-            self._update_vm(vm_id, cfg_spec)
+            iso_path = self.vim_client.detach_iso(vm_id)
         except DeviceNotFoundException, e:
             raise IsoNotAttachedException(e)
         except TypeError, e:
             raise IsoNotAttachedException(e)
 
-        return iso_path
-
-    def remove_iso(self, iso_ds_path):
-        try:
-            os.remove(datastore_to_os_path(iso_ds_path))
-        except:
-            # The iso may not exist, so just catch and move on.
-            pass
+        if delete_file:
+            try:
+                os.remove(datastore_to_os_path(iso_path))
+            except:
+                # The iso may not exist, so just catch and move on.
+                pass
 
     @log_duration
     def _get_network_config(self, vm_id):
@@ -529,11 +485,6 @@ class EsxVmManager(VmManager):
             info = VmNetworkInfo(mac_address=mac, network=network)
             network_info.append(info)
         return network_info
-
-    def _get_vm_config(self, vm_id):
-        """ Get the config info of a VM. """
-        vm = self.vim_client.get_vm(vm_id)
-        return vm.config
 
     def _get_vm_datastore(self, config):
         """ Get the datastore id to the VM's config file.

@@ -176,7 +176,7 @@ print_result("Importing VApp")
 importSpec = create_import_spec(image_id, upload_folder)
 # importVApp and get upload url
 vm_folder = vim_client._vm_folder()
-root_rp = vim_client.root_resource_pool()
+root_rp = vim_client._root_resource_pool()
 upload_lease = root_rp.ImportVApp(importSpec, vm_folder)
 wait_for_lease(upload_lease)
 upload_url = upload_lease.info.deviceUrl[0].url.replace("*", options.host)

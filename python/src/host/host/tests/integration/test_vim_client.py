@@ -95,7 +95,7 @@ class TestVimClient(unittest.TestCase):
         # Add disk
         disk2_path = "[%s] %s/disk2.vmdk" % (datastore, vm_id)
         update_spec = self.get_update_spec(vm, disk2_path)
-        task = vm.ReconfigVM_Task(update_spec)
+        task = vm.ReconfigVM_Task(update_spec.get_spec())
         self.vim_client.wait_for_task(task)
 
         # For the ReconfigVM task to remove disk, the hostd could update
@@ -116,7 +116,7 @@ class TestVimClient(unittest.TestCase):
         # Remove disk
         vm = self.vim_client.get_vm(vm_id)
         remove_spec = self.get_remove_spec(vm, disk2_path)
-        task = vm.ReconfigVM_Task(remove_spec)
+        task = vm.ReconfigVM_Task(remove_spec.get_spec())
         self.vim_client.wait_for_task(task)
 
         # Same as before when disk is added
@@ -214,7 +214,7 @@ class TestVimClient(unittest.TestCase):
             capacityInKB=1024,
         )
         create_spec._create_device(disk)
-        return create_spec.get_spec()
+        return create_spec
 
     def get_update_spec(self, vm_info, disk_path):
         update_spec = EsxVmConfigSpec(None)
@@ -232,7 +232,7 @@ class TestVimClient(unittest.TestCase):
             capacityInKB=1024,
         )
         update_spec._create_device(disk)
-        return update_spec.get_spec()
+        return update_spec
 
     def get_remove_spec(self, vm_info, disk_path):
         remove_spec = EsxVmConfigSpec(None)
@@ -243,7 +243,7 @@ class TestVimClient(unittest.TestCase):
             if isinstance(device, vim.vm.device.VirtualDisk) and device.backing.fileName.endswith(disk_path):
                 found_device = device
         remove_spec._remove_device(found_device)
-        return remove_spec.get_spec()
+        return remove_spec
 
     def test_clone_ticket(self):
         ticket = self.vim_client.acquire_clone_ticket()

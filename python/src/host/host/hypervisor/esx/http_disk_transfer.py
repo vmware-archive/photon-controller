@@ -299,7 +299,7 @@ class HttpNfcTransferer(HttpTransferer):
         return spec
 
     def _get_url_from_import_vm(self, dst_host_client, dst_host, import_spec):
-        lease, disk_url = dst_host_client.import_vm(import_spec.get_spec())
+        lease, disk_url = dst_host_client.import_vm(import_spec)
         disk_url = self._ensure_host_in_url(disk_url, dst_host)
         return lease, disk_url
 
