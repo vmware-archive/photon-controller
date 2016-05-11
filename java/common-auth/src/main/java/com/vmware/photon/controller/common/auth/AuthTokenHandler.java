@@ -13,19 +13,18 @@
 
 package com.vmware.photon.controller.common.auth;
 
+import com.vmware.identity.openidconnect.client.GroupMembershipType;
 import com.vmware.identity.openidconnect.client.OIDCClient;
 import com.vmware.identity.openidconnect.client.OIDCClientException;
 import com.vmware.identity.openidconnect.client.OIDCServerException;
 import com.vmware.identity.openidconnect.client.OIDCTokens;
-import com.vmware.identity.openidconnect.client.PasswordCredentialsGrant;
-import com.vmware.identity.openidconnect.client.ProviderMetadata;
-import com.vmware.identity.openidconnect.client.RefreshToken;
-import com.vmware.identity.openidconnect.client.RefreshTokenGrant;
 import com.vmware.identity.openidconnect.client.ResourceServerAccessToken;
 import com.vmware.identity.openidconnect.client.SSLConnectionException;
 import com.vmware.identity.openidconnect.client.TokenSpec;
-import com.vmware.identity.openidconnect.client.TokenType;
 import com.vmware.identity.openidconnect.client.TokenValidationException;
+import com.vmware.identity.openidconnect.common.PasswordGrant;
+import com.vmware.identity.openidconnect.common.RefreshToken;
+import com.vmware.identity.openidconnect.common.RefreshTokenGrant;
 
 import java.security.interfaces.RSAPublicKey;
 import java.util.Arrays;
@@ -37,15 +36,13 @@ public class AuthTokenHandler {
 
   private final OIDCClient oidcClient;
   private final RSAPublicKey providerPublicKey;
-  private final ProviderMetadata providerMetadata;
 
   /**
    * Constructor.
    */
-  AuthTokenHandler(OIDCClient oidcClient, RSAPublicKey providerPublickKey, ProviderMetadata providerMetadata) {
+  AuthTokenHandler(OIDCClient oidcClient, RSAPublicKey providerPublickKey) {
     this.oidcClient = oidcClient;
     this.providerPublicKey = providerPublickKey;
-    this.providerMetadata = providerMetadata;
   }
 
   /**
@@ -87,12 +84,12 @@ public class AuthTokenHandler {
       AuthOIDCClient.ResourceServer resourceServer)
       throws AuthException {
     try {
-      PasswordCredentialsGrant passwordGrant = new PasswordCredentialsGrant(username, password);
-      TokenSpec tokenSpec = new TokenSpec.Builder(TokenType.BEARER).
+      PasswordGrant passwordGrant = new PasswordGrant(username, password);
+      TokenSpec tokenSpec = new TokenSpec.Builder().
           refreshToken(true).
-          idTokenGroups(false).
-          accessTokenGroups(true).
-          resouceServers(Arrays.asList(resourceServer.toString())).build();
+          idTokenGroups(GroupMembershipType.NONE).
+          accessTokenGroups(GroupMembershipType.FULL).
+          resourceServers(Arrays.asList(resourceServer.toString())).build();
 
       return oidcClient.acquireTokens(passwordGrant, tokenSpec);
     } catch (OIDCClientException | OIDCServerException | TokenValidationException | SSLConnectionException e) {
@@ -112,10 +109,10 @@ public class AuthTokenHandler {
 
     try {
       RefreshTokenGrant refreshTokenGrant = new RefreshTokenGrant(refreshToken);
-      TokenSpec tokenSpec = new TokenSpec.Builder(TokenType.BEARER)
-          .idTokenGroups(false)
-          .accessTokenGroups(true)
-          .resouceServers(Arrays.asList(resourceServer.toString()))
+      TokenSpec tokenSpec = new TokenSpec.Builder()
+          .idTokenGroups(GroupMembershipType.NONE)
+          .accessTokenGroups(GroupMembershipType.FULL)
+          .resourceServers(Arrays.asList(resourceServer.toString()))
           .build();
 
       return oidcClient.acquireTokens(refreshTokenGrant, tokenSpec);
@@ -137,6 +134,6 @@ public class AuthTokenHandler {
         accessToken,
         providerPublicKey,
         AuthOIDCClient.ResourceServer.rs_esxcloud.toString(),
-        providerMetadata.getIssuer());
+        0);
   }
 }

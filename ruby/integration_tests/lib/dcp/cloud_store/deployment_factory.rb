@@ -87,7 +87,7 @@ module EsxCloud
               oAuthTenantName: tenant,
               oAuthUserName: ENV["PHOTON_USERNAME_ADMIN"],
               oAuthPassword: ENV["PHOTON_PASSWORD_ADMIN"],
-              oAuthServerAddress: ENV["PHOTON_AUTH_LS_ENDPOINT"] || ip,
+              oAuthServerAddress: "10.146.64.236" || ip,
               oAuthServerPort: ENV["PHOTON_AUTH_SERVER_PORT"] || "443",
               oAuthSecurityGroups: groups || []
             )
