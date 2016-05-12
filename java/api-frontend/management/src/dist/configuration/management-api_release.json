@@ -16,6 +16,7 @@
   "dynamicParameters": {
     "LOG_DIRECTORY": "/var/log/esxcloud",
     "MANAGEMENT-API_INSTALL_DIRECTORY": "/usr/lib/esxcloud/management-api",
-    "USE_ESX_STORE": true
+    "USE_ESX_STORE": true,
+    "USE_VIRTUAL_NETWORK": false
   }
 }
