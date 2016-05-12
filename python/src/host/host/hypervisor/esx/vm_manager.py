@@ -23,24 +23,17 @@ from gen.agent.ttypes import PowerState
 from gen.host.ttypes import ConnectedStatus
 from gen.host.ttypes import VmNetworkInfo
 from gen.host.ttypes import Ipv4Address
-from gen.resource.ttypes import MksTicket
 from host.hypervisor.resources import Disk
 from host.hypervisor.resources import Resource
 from host.hypervisor.resources import State
 from host.hypervisor.resources import Vm
-from host.hypervisor.vm_manager import OperationNotAllowedException
 from host.hypervisor.vm_manager import VmManager
 from host.hypervisor.vm_manager import IsoNotAttachedException
 from host.hypervisor.vm_manager import VmNotFoundException
-from host.hypervisor.vm_manager import VmPowerStateException
 from host.hypervisor.esx.host_client import DeviceNotFoundException
-from host.hypervisor.esx.path_util import compond_path_join
 from host.hypervisor.esx.path_util import datastore_to_os_path
-from host.hypervisor.esx.path_util import os_datastore_path
-from host.hypervisor.esx.path_util import VM_FOLDER_NAME_PREFIX
 from host.hypervisor.esx.path_util import SHADOW_VM_NAME_PREFIX
 from host.hypervisor.esx.path_util import get_root_disk
-from host.hypervisor.esx.path_util import is_persistent_disk
 from host.hypervisor.esx.vm_config import EsxVmConfigSpec
 from host.hypervisor.esx.vm_config import EsxVmInfo
 
@@ -175,7 +168,18 @@ class EsxVmManager(VmManager):
         """
         self.vim_client.create_vm(vm_id, spec)
 
-    def _ensure_directory_cleanup(self, vm_dir):
+    @log_duration
+    def delete_vm(self, vm_id, force=False):
+        """Delete a Virtual Machine
+
+        :param vm_id: Name of the VM
+        :type vm_id: str
+        :param force: Not to check persistent disk, forcefully delete vm.
+        :type force: boolean
+        :raise VmPowerStateException when vm is not powered off
+        """
+        vm_dir = self.vim_client.delete_vm(vm_id, force)
+
         # Upon successful destroy of VM, log any stray files still left in the
         # VM directory and delete the directory.
         if os.path.isdir(vm_dir):
@@ -197,35 +201,6 @@ class EsxVmManager(VmManager):
             # delete the directory
             self._logger.warning("Force delete vm directory %s" % vm_dir)
             self.vim_client.delete_file(vm_dir)
-
-    @log_duration
-    def delete_vm(self, vm_id, force=False):
-        """Delete a Virtual Machine
-
-        :param vm_id: Name of the VM
-        :type vm_id: str
-        :param force: Not to check persistent disk, forcefully delete vm.
-        :type force: boolean
-        :raise VmPowerStateException when vm is not powered off
-        """
-        vm = self.vim_client.get_vm(vm_id)
-        if vm.runtime.powerState != 'poweredOff':
-            raise VmPowerStateException("Can only delete vm in state %s" %
-                                        vm.runtime.powerState)
-
-        # Getting the path for the new dir structure if we have upgraded from older structure
-        datastore_id = self._get_vm_datastore(vm.config)
-        vm_path = os_datastore_path(datastore_id, compond_path_join(VM_FOLDER_NAME_PREFIX, vm_id))
-
-        if not force:
-            self._verify_disks(vm)
-
-        self._logger.info("Destroy VM at %s" % vm_path)
-        self.vim_client.destroy_vm(vm)
-
-        self._ensure_directory_cleanup(vm_path)
-
-        self.vim_client.wait_for_vm_delete(vm_id)
 
     @log_duration
     def has_vm(self, vm_id):
@@ -362,15 +337,6 @@ class EsxVmManager(VmManager):
             self._logger.warning("vm_path %s is malformated" % vm_path)
             raise
 
-    def _verify_disks(self, vm):
-        persistent_disks = [
-            disk for disk in vm.layout.disk
-            if is_persistent_disk(disk.diskFile)
-        ]
-
-        if persistent_disks:
-            raise OperationNotAllowedException("persistent disks attached")
-
     @log_duration
     def get_vm_network(self, vm_id):
         """ Get the vm's network information
@@ -486,19 +452,6 @@ class EsxVmManager(VmManager):
             network_info.append(info)
         return network_info
 
-    def _get_vm_datastore(self, config):
-        """ Get the datastore id to the VM's config file.
-
-        The VM can have file components residing on other datastores as well,
-        but this call is implemented by design to only return the datastore
-        in which the config file resides.
-        """
-        vmx = config.files.vmPathName
-        datastore_name = self._get_datastore_name_from_ds_path(vmx)
-        if self._ds_manager is not None:
-            return self._ds_manager.normalize(datastore_name)
-        return datastore_name
-
     @log_duration
     def get_linked_clone_path(self, vm_id):
         """Get the absolute path of a VM linked clone disk
@@ -514,13 +467,4 @@ class EsxVmManager(VmManager):
         return get_root_disk(vm.disks)
 
     def get_mks_ticket(self, vm_id):
-        vm = self.vim_client.get_vm(vm_id)
-        if vm.runtime.powerState != 'poweredOn':
-            raise OperationNotAllowedException('Not allowed on vm that is '
-                                               'not powered on.')
-        mks = vm.AcquireMksTicket()
-        return MksTicket(cfg_file=mks.cfgFile,
-                         host=mks.host,
-                         port=mks.port,
-                         ssl_thumbprint=mks.sslThumbprint,
-                         ticket=mks.ticket)
+        return self.vim_client.get_mks_ticket(vm_id)

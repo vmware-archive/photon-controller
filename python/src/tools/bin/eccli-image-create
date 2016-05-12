@@ -190,8 +190,7 @@ finally:
 
 # unregister vm
 print_result("Unregistering vm")
-vm = vim_client.get_vm(image_id)
-vm.Unregister()
+vim_client.unregister_vm(image_id)
 
 # finalize image
 print_result("Calling agent to finalize image")
