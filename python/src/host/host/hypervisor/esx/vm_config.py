@@ -61,12 +61,6 @@ _BOOT_SCSI_DEVICE = "scsi0"
 _FIRST_NIC_DEVICE = "ethernet0"
 
 
-def _string_to_bool(string_val):
-    if not string_val or string_val.lower() == 'false':
-        return False
-    return True
-
-
 class EsxVmConfigSpec(VmConfigSpec):
 
     """ESX VM configuration spec.
