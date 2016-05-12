@@ -16,6 +16,7 @@ import uuid
 
 from host.hypervisor.esx.vm_config import EsxVmConfigSpec
 from mock import MagicMock
+from mock import call
 from mock import patch
 
 from nose_parameterized import parameterized
@@ -263,34 +264,20 @@ class TestEsxVmManager(unittest.TestCase):
     ])
     @patch.object(os.path, "isdir", return_value=True)
     @patch.object(os.path, "islink", return_value=False)
-    def test_ensure_directory_cleanup(
-            self, stray_file, expected, islink, isdir):
-        """Test cleanup of stray vm directory"""
-
+    def test_delete_vm(self, stray_file, expected, islink, isdir):
+        """Test deleting a VM"""
+        self.vm_manager.vim_client.delete_vm = MagicMock(return_value="/vmfs/volumes/fake/vm_vm_foo")
         self.vm_manager._logger = MagicMock()
         self.vm_manager.vim_client.delete_file = MagicMock()
 
         with patch.object(os, "listdir", return_value=[stray_file]):
-            self.vm_manager._ensure_directory_cleanup("/vmfs/volumes/fake/vm_vm_foo")
-            self.vm_manager.vim_client.delete_file.assert_called_once_with("/vmfs/volumes/fake/vm_vm_foo")
-            self.vm_manager._logger.info.assert_called_once_with(expected)
-            self.vm_manager._logger.warning.assert_called_once_with(
-                "Force delete vm directory /vmfs/volumes/fake/vm_vm_foo")
+            self.vm_manager.delete_vm("vm_foo")
 
-    def test_delete_vm(self):
-        """Test deleting a VM"""
-        runtime = MagicMock()
-        runtime.powerState = "poweredOff"
-        vm = MagicMock()
-        vm.runtime = runtime
-        self.vm_manager.vim_client.get_vm = MagicMock(return_value=vm)
-        self.vm_manager.vim_client.wait_for_vm_delete = MagicMock()
-        self.vm_manager._get_vm_datastore = MagicMock()
-        self.vm_manager._get_vm_datastore.return_value = "fake"
-        self.vm_manager._ensure_directory_cleanup = MagicMock()
-
-        self.vm_manager.delete_vm("vm_foo")
-        self.vm_manager._ensure_directory_cleanup.assert_called_once_with("/vmfs/volumes/fake/vm_vm_foo")
+        self.vm_manager.vim_client.delete_vm.assert_called_once_with("vm_foo", False)
+        self.vm_manager.vim_client.delete_file.assert_called_once_with("/vmfs/volumes/fake/vm_vm_foo")
+        self.vm_manager._logger.info.assert_has_calls(call(expected))
+        self.vm_manager._logger.warning.assert_called_once_with(
+            "Force delete vm directory /vmfs/volumes/fake/vm_vm_foo")
 
     @parameterized.expand([
         ("poweredOn"), ("suspended")
