@@ -13,5 +13,6 @@
   "diskGb": "1",
   "MANAGEMENT-API_INSTALL_DIRECTORY": "/usr/lib/esxcloud/management-api",
   "cpuCount": "2",
-  "DATASTORE": "IMAGE_DATASTORE_NAME"
+  "DATASTORE": "IMAGE_DATASTORE_NAME",
+  "USE_VIRTUAL_NETWORK": "false"
 }
