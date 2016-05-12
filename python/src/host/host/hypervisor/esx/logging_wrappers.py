@@ -44,6 +44,7 @@ class ConnWrapper(object):
         :type conn: httplib.HTTPConnection
         """
         self._conn = conn
+        self._conn.sock.settimeout(300)  # set timeout to 5 minutes
 
     def request(self, method, url, body=None, headers={}):
         formatted_headers = "\n".join(
