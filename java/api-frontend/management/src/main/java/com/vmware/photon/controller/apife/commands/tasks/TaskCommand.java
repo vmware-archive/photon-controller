@@ -193,6 +193,10 @@ public class TaskCommand extends BaseCommand {
     return checkNotNull(hostClient);
   }
 
+  public ApiFeXenonRestClient getApiFeXenonRestClient() {
+    return dcpClient;
+  }
+
   public SchedulerXenonRestClient getSchedulerXenonRestClient() {
     return schedulerXenonRestClient;
   }
