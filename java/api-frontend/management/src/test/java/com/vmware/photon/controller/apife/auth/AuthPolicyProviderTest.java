@@ -32,10 +32,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -124,41 +122,38 @@ public class AuthPolicyProviderTest {
     TransactionAuthorizationObject authorizationObject;
 
     @BeforeMethod
-    public void setUp() {
+    public void setUp() throws Exception {
       setUpCommon();
 
       request = mock(ContainerRequest.class);
-      token = mock(ResourceServerAccessToken.class);
+      token = AuthTestHelper.generateResourceServerAccessToken(Collections.<String>emptySet());
       authorizationObject = mock(TransactionAuthorizationObject.class);
 
       doReturn(authorizationObject).when(resolver).evaluate(request);
     }
 
-    @Test(enabled = false)
+    @Test
     public void testFetcherReturnsEveryone() throws Throwable {
       doReturn(ImmutableSet.of(SecurityGroupFetcher.EVERYONE)).when(fetcher).fetchSecurityGroups(authorizationObject);
 
       policyProvider.checkAccessPermissions(request, token);
-      verify(token, never()).getGroups();
     }
 
-    @Test(enabled = false)
+    @Test
     public void testMatchDefaultAdminGroup() throws Throwable {
       doReturn(ImmutableSet.of()).when(fetcher).fetchSecurityGroups(authorizationObject);
-      doReturn(ImmutableList.of(config.getTenant() + AuthPolicyProvider.DEFAULT_ADMIN_GROUP_NAME))
-          .when(token).getGroups();
+      token = AuthTestHelper.generateResourceServerAccessToken(ImmutableSet.of(config.getTenant() + AuthPolicyProvider
+          .DEFAULT_ADMIN_GROUP_NAME));
 
       policyProvider.checkAccessPermissions(request, token);
-      verify(token, times(1)).getGroups();
     }
 
-    @Test(dataProvider = "GroupsInCommon", enabled = false)
+    @Test(dataProvider = "GroupsInCommon")
     public void testGroupsInCommon(Set<String> fetcherSGs, List<String> tokenSGs) throws Throwable {
       doReturn(fetcherSGs).when(fetcher).fetchSecurityGroups(authorizationObject);
-      doReturn(tokenSGs).when(token).getGroups();
 
+      token = AuthTestHelper.generateResourceServerAccessToken(fetcherSGs);
       policyProvider.checkAccessPermissions(request, token);
-      verify(token, times(1)).getGroups();
     }
 
     @DataProvider(name = "GroupsInCommon")
@@ -171,10 +166,9 @@ public class AuthPolicyProviderTest {
     }
 
     @Test(dataProvider = "NoGroupsInCommon",
-        expectedExceptions = ExternalException.class, enabled = false)
+        expectedExceptions = ExternalException.class)
     public void testNoGroupsInCommon(Set<String> fetcherSGs, List<String> tokenSGs) throws Throwable {
       doReturn(fetcherSGs).when(fetcher).fetchSecurityGroups(authorizationObject);
-      doReturn(tokenSGs).when(token).getGroups();
 
       policyProvider.checkAccessPermissions(request, token);
     }
@@ -184,6 +178,7 @@ public class AuthPolicyProviderTest {
       return new Object[][]{
           {ImmutableSet.of(), ImmutableList.of()},
           {ImmutableSet.of("SG1"), ImmutableList.of()},
+          {ImmutableSet.of(), ImmutableList.of("SG2")},
           {ImmutableSet.of(), ImmutableList.of("SG2")},
           {ImmutableSet.of("SG1"), ImmutableList.of("SG2")},
       };
