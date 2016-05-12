@@ -11,7 +11,7 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package com.vmware.photon.controller.dhcpagent.xenon;
+package com.vmware.photon.controller.dhcpagent.xenon.service;
 
 import com.vmware.photon.controller.common.logging.LoggingUtils;
 import com.vmware.photon.controller.common.provider.ListeningExecutorServiceProvider;
@@ -23,6 +23,7 @@ import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
 import com.vmware.photon.controller.dhcpagent.dhcpdrivers.DHCPDriver;
+import com.vmware.photon.controller.dhcpagent.xenon.DHCPAgentXenonHost;
 import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.StatefulService;
@@ -178,27 +179,17 @@ public class ReleaseIPService extends StatefulService {
                                     failTask(patchState, new Throwable(response.stdError), postOperation);
                                 }
                             } catch (Throwable throwable) {
-                                ReleaseIPTask patchState = buildPatch(TaskState.TaskStage.FAILED,
-                                        currentState.taskState.isDirect, throwable);
-                                patchState.requestId = currentState.requestId;
-                                failTask(patchState, new Throwable(throwable), postOperation);
+                                failWithThrowable(currentState, throwable, postOperation);
                             }
                         }
 
                         @Override
                         public void onFailure(Throwable throwable) {
-                            ReleaseIPTask patchState = buildPatch(TaskState.TaskStage.FAILED,
-                                    currentState.taskState.isDirect, throwable);
-                            patchState.requestId = currentState.requestId;
-                            failTask(patchState, new Throwable(throwable), postOperation);
+                            failWithThrowable(currentState, throwable, postOperation);
                         }
                     });
         } catch (Throwable throwable) {
-            ReleaseIPTask patchState = buildPatch(TaskState.TaskStage.FAILED, currentState.taskState.isDirect,
-                    throwable);
-            patchState.requestId = currentState.requestId;
-            failTask(patchState, throwable, postOperation);
-            return;
+            failWithThrowable(currentState, throwable, postOperation);
         }
     }
 
@@ -227,6 +218,21 @@ public class ReleaseIPService extends StatefulService {
     private void failTask(ReleaseIPTask patchState, Throwable t, Operation postOperation) {
         ServiceUtils.logSevere(this, t);
         sendPatch(patchState, postOperation);
+    }
+
+    /**
+     * This builds the patch and sends it to itself in case of failure.
+     * to itself.
+     * @param currentState the failed ReleaseIPTask
+     * @param throwable the error associated with the failed ReleaseIPTask
+     * @param postOperation if there is a postOperation, this is part of a direct task and will return
+     *                      once this update is complete, otherwise moves to a failed state
+     */
+    private void failWithThrowable(ReleaseIPTask currentState, Throwable throwable, Operation postOperation) {
+        ReleaseIPTask patchState = buildPatch(TaskState.TaskStage.FAILED,
+                currentState.taskState.isDirect, throwable);
+        patchState.requestId = currentState.requestId;
+        failTask(patchState, new Throwable(throwable), postOperation);
     }
 
     /**
