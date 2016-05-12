@@ -129,32 +129,6 @@ public class VirtualNetworkServiceTest {
         assertThat(e.getMessage(), is("state cannot be null"));
       }
     }
-
-    @Test
-    public void testMissingParentId() throws Throwable {
-      VirtualNetworkService.State startState = createInitialState();
-      startState.parentId = null;
-
-      try {
-        xenonClient.post(VirtualNetworkService.FACTORY_LINK, startState);
-        fail("Should have failed due to illegal state");
-      } catch (Exception e) {
-        assertThat(e.getMessage(), is("parentId cannot be null"));
-      }
-    }
-
-    @Test
-    public void testMissingParentKind() throws Throwable {
-      VirtualNetworkService.State startState = createInitialState();
-      startState.parentKind = null;
-
-      try {
-        xenonClient.post(VirtualNetworkService.FACTORY_LINK, startState);
-        fail("Should have failed due to illegal state");
-      } catch (Exception e) {
-        assertThat(e.getMessage(), is("parentKind cannot be null"));
-      }
-    }
   }
 
   /**
