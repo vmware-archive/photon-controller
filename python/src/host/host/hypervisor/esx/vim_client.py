@@ -14,6 +14,7 @@
 
 import httplib
 import logging
+import os
 import sys
 import threading
 import time
@@ -23,17 +24,24 @@ from common.lock import lock_with
 from common.log import log_duration
 from common.log import log_duration_with
 from datetime import datetime
-from host.hypervisor.disk_manager import DiskAlreadyExistException, DiskPathException
+
+from gen.resource.ttypes import MksTicket
+from host.hypervisor.disk_manager import DiskAlreadyExistException
+from host.hypervisor.disk_manager import DiskPathException
 from host.hypervisor.disk_manager import DiskFileException
 from host.hypervisor.esx.host_client import HostClient
 from host.hypervisor.esx.host_client import NfcLeaseInitiatizationTimeout
 from host.hypervisor.esx.host_client import NfcLeaseInitiatizationError
 from host.hypervisor.esx.path_util import os_to_datastore_path
-from host.hypervisor.esx.vim_cache import SyncVimCacheThread, VimCache
+from host.hypervisor.esx.path_util import datastore_to_os_path
+from host.hypervisor.esx.path_util import is_persistent_disk
+from host.hypervisor.esx.vim_cache import SyncVimCacheThread
+from host.hypervisor.esx.vim_cache import VimCache
 from host.hypervisor.esx.vm_config import uuid_to_vmdk_uuid
 from host.hypervisor.esx.vm_config import EsxVmConfigSpec
 from host.hypervisor.esx.vm_config import DEFAULT_DISK_ADAPTER_TYPE
 from host.hypervisor.vm_manager import VmPowerStateException
+from host.hypervisor.vm_manager import OperationNotAllowedException
 from host.hypervisor.vm_manager import VmAlreadyExistException
 from pysdk import connect
 from pysdk import host
@@ -208,6 +216,7 @@ class VimClient(HostClient):
         env_browser = invt.GetEnv(si=self._si)
         return env_browser.QueryConfigOption("vmx-10", None)
 
+    @hostd_error_handler
     def query_stats(self, entity, metric_names, sampling_interval, start_time, end_time=None):
         """ Returns the host statistics by querying the perf manager on the
             host for the passed-in metric_names.
@@ -412,15 +421,6 @@ class VimClient(HostClient):
         """
         return self._vim_cache.get_vm_in_cache(vm_id)
 
-    def get_vm_obj_in_cache(self, vm_id):
-        """ Get vim vm object given ID of the vm.
-
-        :return: vim.VirtualMachine object
-        :raise VmNotFoundException when vm is not found
-        """
-        moid = self._vim_cache.get_vm_obj_in_cache(vm_id)
-        return vim.VirtualMachine(moid, self._si._stub)
-
     @hostd_error_handler
     def get_vm_resource_ids(self):
         ids = []
@@ -591,7 +591,7 @@ class VimClient(HostClient):
         :param vm_id:
         :return: download lease, url
         """
-        vm = self.get_vm_obj_in_cache(vm_id)
+        vm = self.get_vm(vm_id)
         lease = vm.ExportVm()
         self._wait_for_lease(lease)
         dev_url = lease.info.deviceUrl[0]
@@ -615,27 +615,30 @@ class VimClient(HostClient):
         vm = self.get_vm(vm_id)
         self._invoke_vm(vm, op)
 
+    @hostd_error_handler
     def power_on_vm(self, vm_id):
         self._power_vm(vm_id, "PowerOn")
 
+    @hostd_error_handler
     def power_off_vm(self, vm_id):
         self._power_vm(vm_id, "PowerOff")
 
+    @hostd_error_handler
     def reset_vm(self, vm_id):
         self._power_vm(vm_id, "Reset")
 
+    @hostd_error_handler
     def suspend_vm(self, vm_id):
         self._power_vm(vm_id, "Suspend")
 
+    @hostd_error_handler
     def resume_vm(self, vm_id):
         self._power_vm(vm_id, "PowerOn")
-
-    def destroy_vm(self, vm):
-        self._invoke_vm(vm, "Destroy")
 
     def _reconfigure_vm(self, vm, spec):
         self._invoke_vm(vm, "ReconfigVM_Task", spec)
 
+    @hostd_error_handler
     def attach_disk(self, vm_id, vmdk_file):
         cfg_spec = EsxVmConfigSpec(self.query_config())
         cfg_spec.init_for_update()
@@ -643,6 +646,7 @@ class VimClient(HostClient):
         cfg_spec.attach_disk(vm.config, vmdk_file)
         self._reconfigure_vm(vm, cfg_spec.get_spec())
 
+    @hostd_error_handler
     def detach_disk(self, vm_id, disk_id):
         cfg_spec = EsxVmConfigSpec(self.query_config())
         cfg_spec.init_for_update()
@@ -650,6 +654,7 @@ class VimClient(HostClient):
         cfg_spec.detach_disk(vm.config, disk_id)
         self._reconfigure_vm(vm, cfg_spec.get_spec())
 
+    @hostd_error_handler
     def attach_iso(self, vm_id, iso_file):
         cfg_spec = EsxVmConfigSpec(self.query_config())
         cfg_spec.init_for_update()
@@ -659,6 +664,7 @@ class VimClient(HostClient):
             self._reconfigure_vm(vm, cfg_spec.get_spec())
         return result
 
+    @hostd_error_handler
     def detach_iso(self, vm_id):
         cfg_spec = EsxVmConfigSpec(self.query_config())
         cfg_spec.init_for_update()
@@ -666,6 +672,42 @@ class VimClient(HostClient):
         iso_path = cfg_spec.detach_iso(vm.config)
         self._reconfigure_vm(vm, cfg_spec.get_spec())
         return iso_path
+
+    @hostd_error_handler
+    def get_mks_ticket(self, vm_id):
+        vm = self.get_vm(vm_id)
+        if vm.runtime.powerState != 'poweredOn':
+            raise OperationNotAllowedException('Not allowed on vm that is not powered on.')
+        mks = vm.AcquireMksTicket()
+        return MksTicket(mks.host, mks.port, mks.cfgFile, mks.sslThumbprint, mks.ticket)
+
+    @hostd_error_handler
+    def unregister_vm(self, vm_id):
+        vm = self.get_vm(vm_id)
+        vm_dir = os.path.dirname(datastore_to_os_path(vm.config.files.vmPathName))
+        vm.Unregister()
+        return vm_dir
+
+    @hostd_error_handler
+    def delete_vm(self, vm_id, force):
+        vm = self.get_vm(vm_id)
+        if vm.runtime.powerState != 'poweredOff':
+            raise VmPowerStateException("Can only delete vm in state %s" % vm.runtime.powerState)
+
+        if not force:
+            persistent_disks = [
+                disk for disk in vm.layout.disk
+                if is_persistent_disk(disk.diskFile)
+            ]
+            if persistent_disks:
+                raise OperationNotAllowedException("persistent disks attached")
+
+        vm_dir = os.path.dirname(vm.config.files.vmPathName)
+        self._logger.info("Destroy VM at %s" % vm_dir)
+        self._invoke_vm(vm, "Destroy")
+        self._vim_cache.wait_for_vm_delete(vm_id)
+
+        return vm_dir
 
     def _wait_for_lease(self, lease):
         retries = 10
@@ -721,18 +763,11 @@ class VimClient(HostClient):
         return self._task_counter
 
     @log_duration_with(log_level="debug")
-    def wait_for_vm_create(self, vm_id, timeout=10):
+    def wait_for_vm_create(self, vm_id):
         """Wait for vm to be created in cache
         :raise TimeoutError when timeout
         """
-        self._vim_cache.wait_for_vm_create(vm_id, timeout)
-
-    @log_duration_with(log_level="debug")
-    def wait_for_vm_delete(self, vm_id, timeout=10):
-        """Wait for vm to be deleted from cache
-        :raise TimeoutError when timeout
-        """
-        self._vim_cache.wait_for_vm_delete(vm_id, timeout)
+        self._vim_cache.wait_for_vm_create(vm_id)
 
     def _vm_op_to_requested_state(self, op):
         """ Return the string of a requested state from a VM op.

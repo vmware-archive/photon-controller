@@ -80,7 +80,7 @@ class TestHttpTransfer(unittest.TestCase):
         self.vim_client._wait_for_lease = MagicMock()
         mock_get_vm = MagicMock()
         mock_lease = MagicMock()
-        self.vim_client.get_vm_obj_in_cache = mock_get_vm
+        self.vim_client.get_vm = mock_get_vm
         mock_get_vm.return_value.ExportVm.return_value = mock_lease
 
         lease, url = self.vim_client.export_vm(self.shadow_vm_id)

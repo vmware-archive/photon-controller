@@ -163,12 +163,6 @@ class TestVimClient(unittest.TestCase):
         assert_that(len(vms[0].disks), is_(2))
         assert_that(vms[0].disks, contains_inanyorder("disk1", "disk2"))
 
-        # Test retrieving VM moref
-        vm_obj = vim_client.get_vm_obj_in_cache("agent4")
-        assert_that(vm_obj._moId, is_("9"))
-        assert_that(str(vm_obj), is_("'vim.VirtualMachine:9'"))
-        assert_that(vm_obj, instance_of(vim.VirtualMachine))
-
         # Test Modify
         update.version = "2"
         object_update = vmodl.query.PropertyCollector.ObjectUpdate(
