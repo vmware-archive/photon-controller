@@ -20,10 +20,16 @@ import com.vmware.identity.openidconnect.client.OIDCTokens;
 import com.vmware.identity.openidconnect.client.TokenSpec;
 import com.vmware.identity.openidconnect.common.AccessToken;
 import com.vmware.identity.openidconnect.common.ClientID;
+import com.vmware.identity.openidconnect.common.Issuer;
+import com.vmware.identity.openidconnect.common.JWTID;
 import com.vmware.identity.openidconnect.common.Nonce;
 import com.vmware.identity.openidconnect.common.ResponseMode;
 import com.vmware.identity.openidconnect.common.ResponseType;
+import com.vmware.identity.openidconnect.common.Scope;
+import com.vmware.identity.openidconnect.common.SessionID;
 import com.vmware.identity.openidconnect.common.State;
+import com.vmware.identity.openidconnect.common.Subject;
+import com.vmware.identity.openidconnect.common.TokenType;
 import com.vmware.identity.rest.idm.client.IdmClient;
 import com.vmware.identity.rest.idm.client.OidcClientResource;
 import com.vmware.identity.rest.idm.data.OIDCClientDTO;
@@ -47,6 +53,8 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -92,6 +100,25 @@ public class AuthClientHandlerTest {
     clientCertificate = x509CertificateHelper.generateX509Certificate();
     certificateStore.setCertificateEntry("client_certificate", clientCertificate);
     clientID = new ClientID("dummyClientId");
+
+    accessToken = new AccessToken(
+        AuthTestHelper.privateKey,
+        TokenType.BEARER,
+        new JWTID(),
+        new Issuer("iss"),
+        new Subject("sub"),
+        Arrays.asList("rs_esxcloud"),
+        AuthTestHelper.issueTime,
+        AuthTestHelper.expirationTime,
+        Scope.OPENID,
+        "tenant",
+        (ClientID) null,
+        (SessionID) null,
+        AuthTestHelper.publicKey,
+        (Subject) null,
+        (Nonce) null,
+        Collections.<String>emptySet(),
+        "Administrator");
   }
 
   @Test
