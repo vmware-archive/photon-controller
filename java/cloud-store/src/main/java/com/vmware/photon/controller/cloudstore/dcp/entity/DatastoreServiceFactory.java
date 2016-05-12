@@ -14,7 +14,9 @@
 package com.vmware.photon.controller.cloudstore.dcp.entity;
 
 import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
+import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.xenon.common.FactoryService;
+import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
 
 /**
@@ -45,5 +47,17 @@ public class DatastoreServiceFactory extends FactoryService {
    */
   public static String getDocumentLink(String datastoreId) {
     return String.format("%s/%s", DatastoreServiceFactory.SELF_LINK, datastoreId);
+  }
+
+  @Override
+  public void handleStop(Operation stop) {
+    ServiceUtils.logWarning(this, "Stopping factory service %s", getSelfLink());
+    super.handleStop(stop);
+  }
+
+  @Override
+  public void handleDelete(Operation delete) {
+    ServiceUtils.logWarning(this, "Deleting factory service %s", getSelfLink());
+    super.handleDelete(delete);
   }
 }
