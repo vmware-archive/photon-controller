@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.rootscheduler.xenon;
 
 
+import com.vmware.photon.controller.common.manifest.BuildInfo;
 import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.status.gen.Status;
 import com.vmware.photon.controller.status.gen.StatusType;
@@ -30,6 +31,8 @@ public class StatusService extends StatelessService {
   @Override
   public void handleGet(Operation get) {
     Status status = new Status(StatusType.INITIALIZING);
+    BuildInfo buildInfo = ((SchedulerXenonHost) getHost()).getBuildInfo();
+    status.setBuild_info(buildInfo.toString());
 
     if (((SchedulerXenonHost) getHost()).isReady()) {
       status.setType(StatusType.READY);

@@ -16,6 +16,7 @@ package com.vmware.photon.controller.rootscheduler.xenon;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.clients.HostClientProvider;
+import com.vmware.photon.controller.common.manifest.BuildInfo;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.XenonHostInfoProvider;
@@ -51,6 +52,7 @@ public class SchedulerXenonHost
   private final ScoreCalculator scoreCalculator;
   private final CloudStoreHelper cloudStoreHelper;
   private ConstraintChecker checker;
+  private BuildInfo buildInfo;
 
   @SuppressWarnings("rawtypes")
   public static final Class[] FACTORY_SERVICES = {
@@ -68,6 +70,7 @@ public class SchedulerXenonHost
     this.scoreCalculator = new ScoreCalculator(config);
     this.cloudStoreHelper = cloudStoreHelper;
     this.checker = checker;
+    this.buildInfo = BuildInfo.get(this.getClass());
 
     logger.info("Initialized scheduler service with {}", this.checker.getClass());
   }
@@ -124,6 +127,10 @@ public class SchedulerXenonHost
       logger.debug("IsReady failed: {}", t);
       return false;
     }
+  }
+
+  public BuildInfo getBuildInfo() {
+    return this.buildInfo;
   }
 
   @SuppressWarnings("rawtypes")
