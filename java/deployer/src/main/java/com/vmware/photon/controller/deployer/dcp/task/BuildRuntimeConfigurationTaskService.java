@@ -98,6 +98,7 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
   private static final String MUSTACHE_KEY_MGMT_API_ESX_HOST = "ESX_HOST";
   private static final String MUSTACHE_KEY_MGMT_API_SWAGGER_LOGIN_URL = "SWAGGER_LOGIN_URL";
   private static final String MUSTACHE_KEY_MGMT_API_SWAGGER_LOGOUT_URL = "SWAGGER_LOGOUT_URL";
+  private static final String MUSTACHE_KEY_MGMT_API_USE_VIRTUAL_NETWORK = "USE_VIRTUAL_NETWORK";
   private static final String MUSTACHE_KEY_MGMT_UI_LOGIN_URL = "MGMT_UI_LOGIN_URL";
   private static final String MUSTACHE_KEY_MGMT_UI_LOGOUT_URL = "MGMT_UI_LOGOUT_URL";
   private static final String MUSTACHE_KEY_ZOOKEEPER_MY_ID = "ZOOKEEPER_MYID";
@@ -439,6 +440,8 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
           dynamicParameters.put(MUSTACHE_KEY_MGMT_API_AUTH_SERVER_TENANT, deploymentState.oAuthTenantName);
           dynamicParameters.put(MUSTACHE_KEY_MGMT_API_SWAGGER_LOGIN_URL, deploymentState.oAuthSwaggerLoginEndpoint);
           dynamicParameters.put(MUSTACHE_KEY_MGMT_API_SWAGGER_LOGOUT_URL, deploymentState.oAuthSwaggerLogoutEndpoint);
+          dynamicParameters.put(MUSTACHE_KEY_MGMT_API_USE_VIRTUAL_NETWORK,
+              deploymentState.virtualNetworkEnabled.toString());
         }
         break;
       case ManagementUi:
