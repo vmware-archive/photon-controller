@@ -78,7 +78,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.TimeoutException;
 
 /**
  * This class implements tests for the {@link GarbageInspectionTaskService} class.
@@ -374,7 +373,6 @@ public class GarbageInspectionTaskServiceTest {
       verifyInactiveVm(startState.clusterId);
     }
 
-    @Test(expectedExceptions = TimeoutException.class)
     public void testClusterNotFound() throws Throwable {
       startState.clusterId = "invalid-cluster-id";
 
@@ -383,7 +381,9 @@ public class GarbageInspectionTaskServiceTest {
               GarbageInspectionTaskFactoryService.SELF_LINK,
               startState,
               GarbageInspectionTaskService.State.class,
-              state -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
+              state -> TaskUtils.finalTaskStages.contains(state.taskState.stage),
+              60000,
+              3);
 
       assertThat(serviceState.taskState.stage, is(TaskState.TaskStage.FAILED));
     }
