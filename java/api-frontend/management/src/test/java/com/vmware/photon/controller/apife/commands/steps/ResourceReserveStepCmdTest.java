@@ -27,6 +27,7 @@ import com.vmware.photon.controller.apife.backends.FlavorBackend;
 import com.vmware.photon.controller.apife.backends.NetworkBackend;
 import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.backends.VmBackend;
+import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.backends.clients.SchedulerXenonRestClient;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.AttachedDiskEntity;
@@ -46,6 +47,7 @@ import com.vmware.photon.controller.apife.exceptions.external.NotEnoughDatastore
 import com.vmware.photon.controller.apife.exceptions.external.NotEnoughMemoryResourceException;
 import com.vmware.photon.controller.apife.exceptions.external.UnfulfillableAffinitiesException;
 import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
+import com.vmware.photon.controller.cloudstore.dcp.entity.VirtualNetworkService;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.exceptions.InvalidAgentStateException;
 import com.vmware.photon.controller.common.clients.exceptions.StaleGenerationException;
@@ -86,6 +88,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -157,6 +160,9 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
   @Mock
   private NetworkBackend networkBackend;
 
+  @Mock
+  private ApiFeXenonRestClient apiFeXenonRestClient;
+
   @Captor
   private ArgumentCaptor<Resource> resourceCaptor;
 
@@ -168,8 +174,6 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
   private VmEntity vm;
 
   private PersistentDiskEntity disk;
-
-  private Boolean useVirtualNetwork = false;
 
   @BeforeMethod
   public void setUp() throws ExternalException {
@@ -208,6 +212,7 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
     when(taskCommand.getSchedulerXenonRestClient()).thenReturn(schedulerXenonRestClient);
     when(flavorBackend.getEntityById(vmFlavorEntity.getId())).thenReturn(vmFlavorEntity);
     when(flavorBackend.getEntityById(diskFlavorEntity.getId())).thenReturn(diskFlavorEntity);
+    when(taskCommand.getApiFeXenonRestClient()).thenReturn(apiFeXenonRestClient);
   }
 
   @Test
@@ -448,7 +453,7 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
   @Test(expectedExceptions = InternalException.class,
       expectedExceptionsMessageRegExp = "Project entity not found in the step.")
   public void testFailedVmExecutionNoProject() throws Throwable {
-    ResourceReserveStepCmd command = getVmReservationCommand(false);
+    ResourceReserveStepCmd command = getVmReservationCommand(false, false);
     command.execute();
   }
 
@@ -655,6 +660,39 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
     assertThat(resourceConstraint.getValues().get(1), is("P2"));
   }
 
+  @Test
+  public void testCreateVirtualNetworkConstraints() throws Throwable {
+    String networkId = "n1";
+    vm.setNetworks(ImmutableList.of(networkId));
+
+    String logicalSwitchId = UUID.randomUUID().toString();
+    VirtualNetworkService.State virtualNetworkState = new VirtualNetworkService.State();
+    virtualNetworkState.logicalSwitchId = logicalSwitchId;
+    Operation operation = new Operation().setBody(virtualNetworkState);
+
+    doReturn(operation).when(apiFeXenonRestClient).get(VirtualNetworkService.FACTORY_LINK + "/n1");
+
+    PlacementTask placementTask = generateResourcePlacementList();
+    placementTask.resource.getPlacement_list().addToPlacements(
+        generateResourcePlacement(ResourcePlacementType.NETWORK, networkId));
+    Operation placementOperation = new Operation().setBody(placementTask);
+
+    when(schedulerXenonRestClient.post(any(), placementTaskCaptor.capture())).thenReturn(placementOperation);
+    when(hostClient.reserve(any(Resource.class), eq(SUCCESSFUL_GENERATION))).thenReturn(SUCCESSFUL_RESERVE_RESPONSE);
+
+    ResourceReserveStepCmd command = getVmReservationCommand(true);
+    command.setInfrastructureEntity(vm);
+    command.execute();
+
+    List<ResourceConstraint> resourceConstraints = placementTaskCaptor.getValue().resource.getVm()
+        .getResource_constraints();
+    assertThat(resourceConstraints.size(), is(1));
+    ResourceConstraint resourceConstraint = resourceConstraints.get(0);
+    assertThat(resourceConstraint.getType(), is(ResourceConstraintType.VIRTUAL_NETWORK));
+    assertThat(resourceConstraint.getValues().size(), is(1));
+    assertThat(resourceConstraint.getValues().get(0), is(logicalSwitchId));
+  }
+
   @Test(expectedExceptions = NullPointerException.class)
   public void testFailedVmReservationWithMissingImageForBootDisk() throws Throwable {
     PlacementTask placementTask = generateResourcePlacementList();
@@ -723,15 +761,20 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
   }
 
   private ResourceReserveStepCmd getVmReservationCommand() {
-    return this.getVmReservationCommand(true);
+    return this.getVmReservationCommand(false);
   }
 
-  private ResourceReserveStepCmd getVmReservationCommand(boolean addProjectEntity) {
-    return getVmReservationCommand(addProjectEntity, new ArrayList<>());
+  private ResourceReserveStepCmd getVmReservationCommand(boolean useVirtualNetwork) {
+    return this.getVmReservationCommand(true, useVirtualNetwork);
+  }
+
+  private ResourceReserveStepCmd getVmReservationCommand(boolean addProjectEntity, boolean useVirtualNetwork) {
+    return getVmReservationCommand(addProjectEntity, new ArrayList<>(), useVirtualNetwork);
   }
 
   private ResourceReserveStepCmd getVmReservationCommand(boolean addProjectEntity,
-                                                         List<String> candidateImageDatastores) {
+                                                         List<String> candidateImageDatastores,
+                                                         boolean useVirtualNetwork) {
     StepEntity step = new StepEntity();
     step.setId("step-1");
     step.addResource(vm);
@@ -754,7 +797,7 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
     step.addResource(disk);
 
     return spy(new ResourceReserveStepCmd(
-        taskCommand, stepBackend, step, diskBackend, vmBackend, networkBackend, flavorBackend, useVirtualNetwork));
+        taskCommand, stepBackend, step, diskBackend, vmBackend, networkBackend, flavorBackend, false));
   }
 
   private void attachEphemeralDisk(VmEntity vm) throws ExternalException {
