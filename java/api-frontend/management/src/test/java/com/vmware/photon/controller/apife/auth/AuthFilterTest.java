@@ -48,6 +48,7 @@ import javax.ws.rs.core.Response;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Arrays;
+import java.util.Collections;
 
 /**
  * Test AuthFilter.
@@ -123,9 +124,9 @@ public class AuthFilterTest {
     }
   }
 
-  @Test(enabled = false)
+  @Test
   public void testUnAuthorizedAccess() throws Throwable {
-    ResourceServerAccessToken token = mock(ResourceServerAccessToken.class);
+    ResourceServerAccessToken token = AuthTestHelper.generateResourceServerAccessToken(Collections.<String>emptySet());
     ContainerRequest request = buildRequest("", buildHeadersWithToken());
 
     AuthTokenHandler handler = mock(AuthTokenHandler.class);

@@ -21,6 +21,7 @@ import com.vmware.photon.controller.apife.resources.routes.DeploymentResourceRou
 import com.vmware.photon.controller.apife.resources.routes.HostResourceRoutes;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import org.glassfish.jersey.server.ContainerRequest;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
@@ -30,10 +31,10 @@ import static org.hamcrest.Matchers.is;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.testng.Assert.fail;
 
+import java.util.Collections;
 import java.util.regex.Pattern;
 
 /**
@@ -164,18 +165,18 @@ public class BasicPolicyProviderTest {
     ResourceServerAccessToken token;
 
     @BeforeMethod
-    public void setUp() {
+    public void setUp() throws Exception {
       setUpCommon();
 
       request = mock(ContainerRequest.class);
-      token = mock(ResourceServerAccessToken.class);
+      token = AuthTestHelper.generateResourceServerAccessToken(Collections.<String>emptyList());
     }
 
-    @Test(dataProvider = "NonAdminRouteNonAdminTokenData", enabled = false)
+    @Test(dataProvider = "NonAdminRouteNonAdminTokenData")
     public void testNonAdminRouteNonAdminToken(String path, String method) throws Throwable {
       doReturn(path).when(request).getPath(true);
       doReturn(method).when(request).getMethod();
-      doReturn(ImmutableList.of("esxcloud\\bob")).when(token).getGroups();
+      token = AuthTestHelper.generateResourceServerAccessToken(ImmutableList.of("esxcloud\\bob"));
 
       subject.checkAccessPermissions(request, token);
       verify(request).getPath(true);
@@ -187,11 +188,12 @@ public class BasicPolicyProviderTest {
       return NON_ADMIN_REQUEST_DATA;
     }
 
-    @Test(dataProvider = "NonAdminRouteAdminTokenData", enabled = false)
+    @Test(dataProvider = "NonAdminRouteAdminTokenData")
     public void testNonAdminRouteAdminToken(String path, String method) throws Throwable {
       doReturn(path).when(request).getPath(true);
       doReturn(method).when(request).getMethod();
-      doReturn(ImmutableList.of("esxcloud" + BasicPolicyProvider.ADMIN_GROUP)).when(token).getGroups();
+      token = AuthTestHelper
+          .generateResourceServerAccessToken(ImmutableList.of("esxcloud" + BasicPolicyProvider.ADMIN_GROUP));
 
       subject.checkAccessPermissions(request, token);
       verify(request).getPath(true);
@@ -210,16 +212,16 @@ public class BasicPolicyProviderTest {
      * @param method
      * @throws Throwable
      */
-    @Test(dataProvider = "AdminRouteAdminTokenData", enabled = false)
+    @Test(dataProvider = "AdminRouteAdminTokenData")
     public void testAdminRouteAdminToken(String path, String method) throws Throwable {
       doReturn(path).when(request).getPath(true);
       doReturn(method).when(request).getMethod();
-      doReturn(ImmutableList.of("esxcloud" + BasicPolicyProvider.ADMIN_GROUP)).when(token).getGroups();
+      token = AuthTestHelper
+          .generateResourceServerAccessToken(ImmutableSet.of("esxcloud" + BasicPolicyProvider.ADMIN_GROUP));
 
       subject.checkAccessPermissions(request, token);
       verify(request).getPath(true);
       verify(request).getMethod();
-      verify(token, times(2)).getGroups();
     }
 
     @DataProvider(name = "AdminRouteAdminTokenData")
@@ -235,11 +237,11 @@ public class BasicPolicyProviderTest {
      * @param method
      * @throws Throwable
      */
-    @Test(dataProvider = "AdminRouteNonAdminTokenData", enabled = false)
+    @Test(dataProvider = "AdminRouteNonAdminTokenData")
     public void testAdminRouteNonAdminToken(String path, String method) throws Throwable {
       doReturn(path).when(request).getPath(true);
       doReturn(method).when(request).getMethod();
-      doReturn(ImmutableList.of("esxcloud\\bob")).when(token).getGroups();
+      token = AuthTestHelper.generateResourceServerAccessToken(ImmutableList.of("esxcloud\\bob"));
 
       try {
         subject.checkAccessPermissions(request, token);
@@ -249,7 +251,6 @@ public class BasicPolicyProviderTest {
       }
       verify(request).getPath(true);
       verify(request).getMethod();
-      verify(token, times(3)).getGroups();
     }
 
     @DataProvider(name = "AdminRouteNonAdminTokenData")
@@ -257,10 +258,9 @@ public class BasicPolicyProviderTest {
       return ADMIN_REQUEST_DATA;
     }
 
-    @Test(enabled = false)
+    @Test
     public void testAdminRouteNullGroupToken() {
       doReturn(ADMIN_ONLY_ROUTE.substring(1)).when(request).getPath(true);
-      doReturn(null).when(token).getGroups();
 
       try {
         subject.checkAccessPermissions(request, token);
@@ -270,13 +270,11 @@ public class BasicPolicyProviderTest {
       }
       verify(request).getPath(true);
       verify(request).getMethod();
-      verify(token, times(2)).getGroups();
     }
 
-    @Test(enabled = false)
-    public void testAdminRouteEmptyGroupToken() {
+    @Test
+    public void testAdminRouteEmptyGroupToken() throws Exception {
       doReturn(ADMIN_ONLY_ROUTE.substring(1)).when(request).getPath(true);
-      doReturn(ImmutableList.of()).when(token).getGroups();
 
       try {
         subject.checkAccessPermissions(request, token);
@@ -286,7 +284,6 @@ public class BasicPolicyProviderTest {
       }
       verify(request).getPath(true);
       verify(request).getMethod();
-      verify(token, times(3)).getGroups();
     }
   }
 }
