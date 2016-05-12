@@ -29,7 +29,7 @@ fi
 
 if [ -n "$DEPLOYER_TEST" ]; then
   ./prepare-devbox-deployment.sh
-  exit $?
+  return
 fi
 
 # Start fresh devbox and build services
