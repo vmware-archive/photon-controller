@@ -19,7 +19,8 @@
     "/devbox_data/java/cluster-manager/backend/src/main/resources/scripts":"/usr/lib/esxcloud/deployer/scripts/clusters",
     "/vagrant/log/deployer": "/vagrant/log",
     "/devbox_data/tmp": "/devbox_data/tmp",
-    "/var/esxcloud": "/var/esxcloud"
+    "/var/esxcloud": "/var/esxcloud",
+    "/var/photon/images": "/var/photon/images"
   },
   "dynamicParameters": {
     "DEPLOYER_DCP_STORAGE_PATH": "/etc/esxcloud/deployer/sandbox_18000",
