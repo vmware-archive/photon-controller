@@ -276,6 +276,13 @@ Vagrant.configure("2") do |config|
     dynamic_params += %Q(,\n  "APIFE_PORT" : "28080")
   end
 
+  # Virtual network parameters
+  if ENV.has_key?('USE_VIRTUAL_NETWORK')
+    dynamic_params += %Q(,\n  "USE_VIRTUAL_NETWORK" : "#{ENV['USE_VIRTUAL_NETWORK']}")
+  else
+    dynamic_params += %Q(,\n  "USE_VIRTUAL_NETWORK" : "false")
+  end
+
   # Real agent parameters
   if ENV['REAL_AGENT']
     dynamic_params += %Q(,\n  "USE_ESX_STORE" : "true")

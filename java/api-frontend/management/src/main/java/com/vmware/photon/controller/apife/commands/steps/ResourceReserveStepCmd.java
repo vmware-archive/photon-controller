@@ -594,9 +594,9 @@ public class ResourceReserveStepCmd extends StepCommand {
     ApiFeXenonRestClient apiFeXenonRestClient = taskCommand.getApiFeXenonRestClient();
     try {
       Operation result = apiFeXenonRestClient.get(VirtualNetworkService.FACTORY_LINK + "/" + id);
-      VirtualNetworkService.State virtualNetworks = result.getBody(VirtualNetworkService.State.class);
+      VirtualNetworkService.State virtualNetwork = result.getBody(VirtualNetworkService.State.class);
 
-      return virtualNetworks.logicalSwitchId;
+      return virtualNetwork.logicalSwitchId;
     } catch (DocumentNotFoundException e) {
       throw new NetworkNotFoundException(id);
     }
