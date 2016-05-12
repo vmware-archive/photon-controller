@@ -13,9 +13,7 @@ import copy
 import logging
 import threading
 import weakref
-
 import time
-
 import sys
 
 from common.lock import lock_with
@@ -270,27 +268,14 @@ class VimCache:
         else:
             raise VmNotFoundException("VM '%s' not found on host." % vm_id)
 
-    @lock_with("_lock")
-    def get_vm_obj_in_cache(self, vm_id):
-        """ Get vim vm object given ID of the vm.
-
-        :return: vim.VirtualMachine object
-        :raise VmNotFoundException when vm is not found
-        """
-        if vm_id not in self._vm_name_to_ref:
-            raise VmNotFoundException("VM '%s' not found on host." % vm_id)
-
-        moid = self._vm_name_to_ref[vm_id].split(":")[-1][:-1]
-        return moid
-
     def wait_for_task(self, vim_task, timeout):
         return self._task_cache.wait_until(str(vim_task), self._verify_task_done, timeout=timeout)
 
-    def wait_for_vm_create(self, vm_id, timeout):
-        self._vm_name_to_ref.wait_until(vm_id, lambda x: x is not None, timeout)
+    def wait_for_vm_create(self, vm_id):
+        self._vm_name_to_ref.wait_until(vm_id, lambda x: x is not None)
 
-    def wait_for_vm_delete(self, vm_id, timeout):
-        self._vm_name_to_ref.wait_until(vm_id, None, timeout)
+    def wait_for_vm_delete(self, vm_id):
+        self._vm_name_to_ref.wait_until(vm_id, None)
 
     """ Helpers
     """

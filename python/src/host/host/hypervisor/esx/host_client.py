@@ -77,10 +77,6 @@ class HostClient(object):
         pass
 
     @abc.abstractmethod
-    def get_vm_obj_in_cache(self, vm_id):
-        pass
-
-    @abc.abstractmethod
     def get_vm_resource_ids(self):
         pass
 
@@ -105,10 +101,6 @@ class HostClient(object):
         pass
 
     @abc.abstractmethod
-    def destroy_vm(self, vm):
-        pass
-
-    @abc.abstractmethod
     def attach_disk(self, vm_id, vmdk_file):
         pass
 
@@ -122,6 +114,18 @@ class HostClient(object):
 
     @abc.abstractmethod
     def detach_iso(self, vm_id):
+        pass
+
+    @abc.abstractmethod
+    def get_mks_ticket(self, vm_id):
+        pass
+
+    @abc.abstractmethod
+    def unregister_vm(self, vm_id):
+        pass
+
+    @abc.abstractmethod
+    def delete_vm(self, vm_id, force):
         pass
 
     """ Disk and file operations

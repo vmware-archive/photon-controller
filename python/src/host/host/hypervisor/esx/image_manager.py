@@ -480,11 +480,8 @@ class EsxImageManager(ImageManager):
         """
 
         self._host_client.wait_for_vm_create(imported_vm_name)
-        vm = self._host_client.get_vm_obj_in_cache(imported_vm_name)
-        self._logger.warning("receive_image found vm %s, %s" % (imported_vm_name, vm))
-        vm_dir = os.path.dirname(datastore_to_os_path(vm.config.files.vmPathName))
-
-        vm.Unregister()
+        self._logger.info("receive_image found vm %s" % imported_vm_name)
+        vm_dir = self._host_client.unregister_vm(imported_vm_name)
 
         ds_type = self._get_datastore_type(datastore_id)
         if ds_type == DatastoreType.VSAN:
