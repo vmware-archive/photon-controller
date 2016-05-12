@@ -9,6 +9,8 @@ server:
 
 registrationAddress: "{{{REGISTRATION_ADDRESS}}}"
 
+use_virtual_network: {{{USE_VIRTUAL_NETWORK}}}
+
 # to add console logging add '- type: console' below
 logging:
   appenders:
