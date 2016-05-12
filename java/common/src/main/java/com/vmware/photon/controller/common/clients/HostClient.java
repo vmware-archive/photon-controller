@@ -136,29 +136,30 @@ public class HostClient {
   private static final int MAX_RESERVED_PORT_NUMBER = 1023;
 
   private static final Logger logger = LoggerFactory.getLogger(HostClient.class);
-  private static final long ATTACH_DISKS_TIMEOUT_MS = 60000;
-  private static final long ATTACH_ISO_TIMEOUT_MS = 60000;
-  private static final long CREATE_DISKS_TIMEOUT_MS = 3600000;
-  private static final long CREATE_VM_TIMEOUT_MS = 7200000; // two hours
-  private static final long DELETE_DISK_TIMEOUT_MS = 1800000;
-  private static final long CREATE_IMAGE_TIMEOUT_MS = 7200000;
-  private static final long FINALIZE_IMAGE_TIMEOUT_MS = 60000;
-  private static final long START_IMAGE_SCAN_TIMEOUT_MS = 60000;
-  private static final long START_IMAGE_SWEEP_TIMEOUT_MS = 60000;
-  private static final long GET_INACTIVE_IMAGES_TIMEOUT_MS = 60000;
-  private static final long GET_DELETED_IMAGES_TIMEOUT_MS = 60000;
-  private static final long DELETE_DIRECTORY_TIMEOUT_MS = 60000;
-  private static final long DELETE_VM_TIMEOUT_MS = 1800000;
-  private static final long DETACH_DISKS_TIMEOUT_MS = 60000;
-  private static final long DETACH_ISO_TIMEOUT_MS = 60000;
-  private static final long GET_HOST_CONFIG_TIMEOUT_MS = 60000;
-  private static final long GET_IMAGES_TIMEOUT_MS = 60000;
-  private static final long GET_SERVICE_TICKET_TIMEOUT_MS = 60000;
-  private static final long GET_VM_MKS_TICKET_TIMEOUT_MS = 60000;
-  private static final long GET_VM_NETWORK_TIMEOUT_MS = 60000;
-  private static final long PLACE_TIMEOUT_MS = 60000;
-  private static final long POWER_VM_OP_TIMEOUT_MS = 600000;
-  private static final long RESERVE_TIMEOUT_MS = 60000;
+  private static final long ATTACH_DISKS_TIMEOUT_MS = TimeUnit.MINUTES.toMillis(1);
+  private static final long ATTACH_ISO_TIMEOUT_MS = TimeUnit.MINUTES.toMillis(1);
+  private static final long CREATE_DISKS_TIMEOUT_MS = TimeUnit.HOURS.toMillis(1);
+  private static final long CREATE_VM_TIMEOUT_MS = TimeUnit.HOURS.toMillis(2);
+  private static final long DELETE_DISK_TIMEOUT_MS = TimeUnit.MINUTES.toMillis(30);
+  private static final long CREATE_IMAGE_TIMEOUT_MS = TimeUnit.HOURS.toMillis(2);
+  private static final long FINALIZE_IMAGE_TIMEOUT_MS = TimeUnit.MINUTES.toMillis(1);
+  private static final long START_IMAGE_SCAN_TIMEOUT_MS = TimeUnit.MINUTES.toMillis(1);
+  private static final long START_IMAGE_SWEEP_TIMEOUT_MS = TimeUnit.MINUTES.toMillis(1);
+  private static final long GET_INACTIVE_IMAGES_TIMEOUT_MS = TimeUnit.MINUTES.toMillis(1);
+  private static final long GET_DELETED_IMAGES_TIMEOUT_MS = TimeUnit.MINUTES.toMillis(1);
+  private static final long DELETE_DIRECTORY_TIMEOUT_MS = TimeUnit.MINUTES.toMillis(1);
+  private static final long DELETE_VM_TIMEOUT_MS = TimeUnit.MINUTES.toMillis(30);
+  private static final long DETACH_DISKS_TIMEOUT_MS = TimeUnit.MINUTES.toMillis(1);
+  private static final long DETACH_ISO_TIMEOUT_MS = TimeUnit.MINUTES.toMillis(1);
+  private static final long GET_HOST_CONFIG_TIMEOUT_MS = TimeUnit.MINUTES.toMillis(1);
+  private static final long GET_IMAGES_TIMEOUT_MS = TimeUnit.MINUTES.toMillis(1);
+  private static final long GET_SERVICE_TICKET_TIMEOUT_MS = TimeUnit.MINUTES.toMillis(1);
+  private static final long GET_VM_MKS_TICKET_TIMEOUT_MS = TimeUnit.MINUTES.toMillis(1);
+  private static final long GET_VM_NETWORK_TIMEOUT_MS = TimeUnit.MINUTES.toMillis(1);
+  private static final long PLACE_TIMEOUT_MS = TimeUnit.MINUTES.toMillis(1);
+  private static final long POWER_VM_OP_TIMEOUT_MS = TimeUnit.MINUTES.toMillis(10);
+  private static final long RESERVE_TIMEOUT_MS = TimeUnit.MINUTES.toMillis(1);
+  private static final long TRANSFER_IMAGE_TIMEOUT_MS = TimeUnit.HOURS.toMillis(2);
   private final ClientProxyFactory<Host.AsyncClient> clientProxyFactory;
   private final ClientPoolFactory<Host.AsyncClient> clientPoolFactory;
   /**
@@ -377,7 +378,8 @@ public class HostClient {
     transferImageRequest.setDestination_host(destinationHost);
     transferImageRequest.setSource_datastore_id(source);
     transferImageRequest.setSource_image_id(imageId);
-    // N.B. No timeout was specified here. This may be a bug.
+
+    clientProxy.setTimeout(TRANSFER_IMAGE_TIMEOUT_MS);
     logger.info("transfer_image target {}, request {}", getHostIp(), transferImageRequest);
 
     try {
