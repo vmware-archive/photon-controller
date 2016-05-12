@@ -1,24 +1,14 @@
-// This does not build the actual ${project.name}, but instead provides Gradle tasks
-// for building the ${project.name} inside of a running devbox via Vagrant plugin.
-import com.bmuschko.gradle.vagrant.tasks.VagrantSsh
-
-task buildVib(type: VagrantSsh) {
-  description = "Build ${project.name} VIB inside devbox"
-  boxDir = devboxDir
-  sshCommand = "build-${project.name} 2>&1 | tee -a build-${project.name}.log"
+task buildVib() {
+  shellTask buildVib, "build-${project.name} 2>&1 | tee -a build-${project.name}.log"
 }
 
-task start(type: VagrantSsh) {
+task start() {
   mustRunAfter buildVib
-  description = "Start ${project.name} inside devbox"
-  boxDir = devboxDir
-  sshCommand = "start-${project.name} 2>&1 | tee -a start-${project.name}.log"
+  shellTask start, "start-${project.name} 2>&1 | tee -a start-${project.name}.log"
 }
 
-task stop(type: VagrantSsh) {
-  description = "Stop ${project.name} inside devbox"
-  boxDir = devboxDir
-  sshCommand = "stop-${project.name} 2>&1 | tee -a stop-${project.name}.log"
+task stop() {
+  shellTask stop, "stop-${project.name} 2>&1 | tee -a stop-${project.name}.log"
 }
 
 task restart() {
