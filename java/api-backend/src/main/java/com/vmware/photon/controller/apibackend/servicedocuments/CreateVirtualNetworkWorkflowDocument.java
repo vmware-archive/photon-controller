@@ -60,15 +60,13 @@ public class CreateVirtualNetworkWorkflowDocument extends ServiceDocument{
   /**
    * ID of the parent object this virtual network belongs to.
    */
-  @NotBlank
-  @WriteOnce
+  @Immutable
   public String parentId;
 
   /**
    * Type of the parent object this virtual network belongs to.
    */
-  @NotBlank
-  @WriteOnce
+  @Immutable
   public String parentKind;
 
   /**

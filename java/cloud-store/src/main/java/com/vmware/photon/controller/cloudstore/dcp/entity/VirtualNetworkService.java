@@ -23,6 +23,7 @@ import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
 import com.vmware.photon.controller.common.xenon.upgrade.MigrateDuringUpgrade;
 import com.vmware.photon.controller.common.xenon.upgrade.UpgradeUtils;
+import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotBlank;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.common.xenon.validation.WriteOnce;
@@ -119,15 +120,13 @@ public class VirtualNetworkService extends StatefulService {
     /**
      * ID of the parent object this virtual network belongs to.
      */
-    @NotBlank
-    @WriteOnce
+    @Immutable
     public String parentId;
 
     /**
      * Type of the parent object this virtual network belongs to.
      */
-    @NotBlank
-    @WriteOnce
+    @Immutable
     public String parentKind;
 
     /**
