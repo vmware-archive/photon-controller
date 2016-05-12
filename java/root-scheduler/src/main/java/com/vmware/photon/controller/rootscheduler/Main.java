@@ -26,8 +26,6 @@ import com.vmware.photon.controller.rootscheduler.service.CloudStoreConstraintCh
 import com.vmware.photon.controller.rootscheduler.service.ConstraintChecker;
 import com.vmware.photon.controller.rootscheduler.xenon.SchedulerXenonHost;
 
-import com.google.inject.Guice;
-import com.google.inject.Injector;
 import com.google.inject.TypeLiteral;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
@@ -62,10 +60,6 @@ public class Main {
     Config config = getConfig(namespace);
 
     new LoggingFactory(config.getLogging(), "rootscheduler").configure();
-
-    Injector injector = Guice.createInjector(
-        new RootSchedulerModule()
-    );
 
     ZookeeperModule zkModule = new ZookeeperModule(config.getZookeeper());
     // Singleton
