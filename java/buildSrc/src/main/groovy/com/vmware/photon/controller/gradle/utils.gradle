@@ -1,4 +1,13 @@
 // Misc extensions and utils
+buildscript {
+  repositories {
+    jcenter()
+  }
+  dependencies {
+    classpath project.gradleVagrantPlugin
+  }
+}
+
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.nio.file.Path
@@ -6,6 +15,8 @@ import java.nio.file.FileVisitResult
 import java.nio.file.SimpleFileVisitor
 import java.nio.file.attribute.BasicFileAttributes
 import java.util.regex.Pattern
+import com.bmuschko.gradle.vagrant.tasks.VagrantSsh
+
 
 ext.findFile = { File f, Pattern pattern ->
   if(f == null || !f.exists()) { return null }
@@ -22,25 +33,19 @@ ext.findDirectory = { File f, Pattern pattern ->
 }
 
 ext.deleteRecursive = { File f ->
-  if(!f.exists()) return;
+  if(!f.exists()) return
   Files.walkFileTree(f.toPath(), new SimpleFileVisitor<Path>() {
     @Override
     public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-      Files.delete(file);
+      Files.delete(file)
       return FileVisitResult.CONTINUE;
     }
     @Override
     public FileVisitResult postVisitDirectory(Path dir, IOException ex) throws IOException {
-      Files.delete(dir);
+      Files.delete(dir)
       return FileVisitResult.CONTINUE;
     }
   });
-}
-
-// Resolves Docker remote API URL
-ext.dockerUrl = {
-  def url = System.getenv("DOCKER_URL")
-  return url ?: "http://127.0.0.1:2375"
 }
 
 // Extract a release tar to build/container/release
@@ -58,5 +63,27 @@ ext.extractRelease = { project, name ->
     def releaseDir = tarOutput.resolveSibling('release')
     deleteRecursive(releaseDir.toFile())
     Files.move(tarOutput, releaseDir)
+  }
+}
+
+// We are running inside Vagrant if IS_VAGRANT is defined
+ext.isVagrant = System.getenv("IS_VAGRANT")?.trim()?.isEmpty() != null
+ext.gitRoot = "git rev-parse --show-toplevel".execute().text.trim()
+ext.devboxDir = file("${gitRoot}/devbox-photon")
+
+// Automatically creates a shell or SSH task to run a command. It will use
+// a shell command if already running inside Vagrant, or SSH if being run from
+// outside of Vagrant.
+ext.shellTask = { Task task, String cmd ->
+  if (isVagrant) {
+    def shellTask = tasks.create(name: "${task.path}_shell", type: Exec)
+    shellTask.executable "sh"
+    shellTask.args "-c", cmd
+    task.dependsOn shellTask
+  } else {
+    def sshTask = tasks.create(name: "${task.path}_ssh", type: VagrantSsh)
+    sshTask.sshCommand = cmd
+    sshTask.boxDir = devboxDir
+    task.dependsOn sshTask
   }
 }
