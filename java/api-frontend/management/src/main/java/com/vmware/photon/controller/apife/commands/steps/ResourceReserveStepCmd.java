@@ -28,6 +28,7 @@ import com.vmware.photon.controller.apife.backends.FlavorBackend;
 import com.vmware.photon.controller.apife.backends.NetworkBackend;
 import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.backends.VmBackend;
+import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.backends.clients.SchedulerXenonRestClient;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.AttachedDiskEntity;
@@ -45,6 +46,7 @@ import com.vmware.photon.controller.apife.exceptions.external.InvalidLocalitySpe
 import com.vmware.photon.controller.apife.exceptions.external.NetworkNotFoundException;
 import com.vmware.photon.controller.apife.exceptions.external.UnfulfillableAffinitiesException;
 import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
+import com.vmware.photon.controller.cloudstore.dcp.entity.VirtualNetworkService;
 import com.vmware.photon.controller.common.clients.SchedulerErrorCodeToExceptionMapper;
 import com.vmware.photon.controller.common.clients.exceptions.InvalidAgentStateException;
 import com.vmware.photon.controller.common.clients.exceptions.InvalidSchedulerException;
@@ -55,6 +57,7 @@ import com.vmware.photon.controller.common.clients.exceptions.NotEnoughMemoryRes
 import com.vmware.photon.controller.common.clients.exceptions.ResourceConstraintException;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
 import com.vmware.photon.controller.common.clients.exceptions.StaleGenerationException;
+import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
 import com.vmware.photon.controller.common.zookeeper.gen.ServerAddress;
 import com.vmware.photon.controller.flavors.gen.Flavor;
 import com.vmware.photon.controller.flavors.gen.QuotaLineItem;
@@ -579,10 +582,23 @@ public class ResourceReserveStepCmd extends StepCommand {
           }
         } else {
           resourceConstraint.setType(ResourceConstraintType.VIRTUAL_NETWORK);
+          resourceConstraint.addToValues(getVirtualNetwork(network));
         }
 
         vm.addToResource_constraints(resourceConstraint);
       }
+    }
+  }
+
+  private String getVirtualNetwork(String id) throws NetworkNotFoundException {
+    ApiFeXenonRestClient apiFeXenonRestClient = taskCommand.getApiFeXenonRestClient();
+    try {
+      Operation result = apiFeXenonRestClient.get(VirtualNetworkService.FACTORY_LINK + "/" + id);
+      VirtualNetworkService.State virtualNetworks = result.getBody(VirtualNetworkService.State.class);
+
+      return virtualNetworks.logicalSwitchId;
+    } catch (DocumentNotFoundException e) {
+      throw new NetworkNotFoundException(id);
     }
   }
 }
