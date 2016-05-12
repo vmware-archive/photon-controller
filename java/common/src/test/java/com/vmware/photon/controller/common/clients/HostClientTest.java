@@ -125,6 +125,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
@@ -741,6 +742,7 @@ public class HostClientTest {
 
       hostClient.setClientProxy(clientProxy);
       assertThat(hostClient.transferImage(imageId, source, destination, destinationHost), is(transferImageResponse));
+      verify(clientProxy).setTimeout(anyInt());
     }
 
     @Test
