@@ -131,5 +131,5 @@ class Periodic(Stoppable):
 
     def run(self):
         while not self.stopped():
-            self._periodic_fn()
             time.sleep(self._interval_secs)
+            self._periodic_fn()
