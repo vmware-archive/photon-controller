@@ -45,7 +45,6 @@ public class ThriftBasedHealthChecker implements HealthChecker {
 
   private static final String HOUSEKEEPER_SERVICE_NAME = "Housekeeper";
 
-
   private final ContainersConfig.ContainerType containerType;
   private final String ipAddress;
   private final int port;
@@ -66,6 +65,8 @@ public class ThriftBasedHealthChecker implements HealthChecker {
 
   @VisibleForTesting
   protected StatusProvider buildStatusProvider() {
+    //TODO(adev): Remove after thrift removal. We need to keep this otherwise no interaction with these services works
+    // until we convert all
     switch (this.containerType) {
       case Deployer:
         return getThriftClient(DeployerClient.class, Deployer.AsyncClient.class, DeployerServer.SERVICE_NAME);
@@ -73,7 +74,6 @@ public class ThriftBasedHealthChecker implements HealthChecker {
       case Housekeeper:
         return getThriftClient(HousekeeperClient.class, Housekeeper.AsyncClient.class, HOUSEKEEPER_SERVICE_NAME);
     }
-
     throw new RuntimeException(String.format("%s does not support thrift health check", containerType));
   }
 
