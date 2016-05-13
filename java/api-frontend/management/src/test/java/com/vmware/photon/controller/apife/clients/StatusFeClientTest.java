@@ -19,19 +19,12 @@ import com.vmware.photon.controller.api.SystemStatus;
 import com.vmware.photon.controller.apife.clients.status.DcpStatusProvider;
 import com.vmware.photon.controller.apife.clients.status.DcpStatusProviderFactory;
 import com.vmware.photon.controller.apife.clients.status.StatusProviderFactory;
-import com.vmware.photon.controller.apife.clients.status.ThriftClientFactory;
 import com.vmware.photon.controller.apife.config.StatusConfig;
-import com.vmware.photon.controller.common.clients.DeployerClient;
-import com.vmware.photon.controller.common.clients.HousekeeperClient;
 import com.vmware.photon.controller.common.clients.StatusProvider;
 import com.vmware.photon.controller.common.thrift.ClientPool;
-import com.vmware.photon.controller.common.thrift.ClientPoolFactory;
 import com.vmware.photon.controller.common.thrift.ClientProxy;
-import com.vmware.photon.controller.common.thrift.ClientProxyFactory;
 import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
-import com.vmware.photon.controller.deployer.gen.Deployer;
-import com.vmware.photon.controller.housekeeper.gen.Housekeeper;
 import com.vmware.photon.controller.status.gen.Status;
 import com.vmware.photon.controller.status.gen.StatusType;
 
@@ -76,12 +69,6 @@ public class StatusFeClientTest {
   private List<StatusProvider> rootSchedulerClients;
   private List<StatusProvider> deployerClients;
   private List<StatusProvider> cloudStoreClients;
-
-  private ClientProxyFactory<Housekeeper.AsyncClient> houseKeeperProxyFactory = mock(ClientProxyFactory.class);
-  private ClientProxyFactory<Deployer.AsyncClient> deployerProxyFactory = mock(ClientProxyFactory.class);
-
-  private ClientPoolFactory<Housekeeper.AsyncClient> houseKeeperPoolFactory = mock(ClientPoolFactory.class);
-  private ClientPoolFactory<Deployer.AsyncClient> deployerPoolFactory = mock(ClientPoolFactory.class);
 
   private ServerSet housekeeperServerSet = mock(StaticServerSet.class);
   private ServerSet rootSchedulerServerSet = mock(StaticServerSet.class);
@@ -272,26 +259,21 @@ public class StatusFeClientTest {
     client = new StatusFeClient(
         executor,
         housekeeperServerSet, rootSchedulerServerSet, deployerServerSet, cloudStoreServerSet,
-        houseKeeperProxyFactory,
-        houseKeeperPoolFactory,
-        deployerProxyFactory,
-        deployerPoolFactory,
         statusConfig);
 
     Map<Component, StatusProviderFactory> statusProviderFactories = client.getStatusProviderFactories();
-    ThriftClientFactory housekeeperClientFactory = spy(new ThriftClientFactory(
-        housekeeperServerSet, houseKeeperPoolFactory, houseKeeperProxyFactory, HousekeeperClient.class, "Housekeeper"));
+    StatusProviderFactory housekeeperClientFactory = spy(new DcpStatusProviderFactory(
+        housekeeperServerSet, executor));
     setupStatusProviderFactory(housekeeperClientFactory, housekeeperClients);
     statusProviderFactories.put(Component.HOUSEKEEPER, housekeeperClientFactory);
-
-    ThriftClientFactory deployerClientFactory = spy(new ThriftClientFactory(
-        deployerServerSet, deployerPoolFactory, deployerProxyFactory, DeployerClient.class, "Deployer"));
-    setupStatusProviderFactory(deployerClientFactory, deployerClients);
-    statusProviderFactories.put(Component.DEPLOYER, deployerClientFactory);
 
     StatusProviderFactory cloudStoreClientFactory = spy(new DcpStatusProviderFactory(cloudStoreServerSet, executor));
     setupStatusProviderFactory(cloudStoreClientFactory, cloudStoreClients);
     statusProviderFactories.put(Component.CLOUD_STORE, cloudStoreClientFactory);
+
+    StatusProviderFactory deployerClientFactory = spy(new DcpStatusProviderFactory(deployerServerSet, executor));
+    setupStatusProviderFactory(deployerClientFactory, deployerClients);
+    statusProviderFactories.put(Component.DEPLOYER, deployerClientFactory);
 
     StatusProviderFactory rootSchedulerClientFactory = spy(
         new DcpStatusProviderFactory(rootSchedulerServerSet, executor));
@@ -349,8 +331,8 @@ public class StatusFeClientTest {
     deployerClients = new ArrayList<>();
     cloudStoreClients = new ArrayList<>();
     for (int i = 0; i < SERVER_COUNT; i++) {
-      housekeeperClients.add(mock(HousekeeperClient.class));
-      deployerClients.add(mock(DeployerClient.class));
+      housekeeperClients.add(mock(DcpStatusProvider.class));
+      deployerClients.add(mock(DcpStatusProvider.class));
       cloudStoreClients.add(mock(DcpStatusProvider.class));
       rootSchedulerClients.add(mock(DcpStatusProvider.class));
     }
