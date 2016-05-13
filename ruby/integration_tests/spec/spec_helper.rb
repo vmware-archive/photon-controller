@@ -55,7 +55,7 @@ def get_system_status(instances = 1)
   raise "Number of instances cannot be nil" if instances.nil?
 
   puts "Verifying system status..."
-  120.times do
+  180.times do
     begin
       system_status = EsxCloud::Config.client.get_status
       expect(system_status.status).to eq "READY"
@@ -68,7 +68,19 @@ def get_system_status(instances = 1)
       end
       return
     rescue
-      sleep 5
+      if system_status.status != "READY"
+        system_status.components.each do |component|
+          if component.status != "READY"
+            component.instances.each do |instance|
+              if instance.status != "READY"
+                puts "#{component.name}: #{instance}"
+              end
+            end
+          end
+        end
+      end
+      puts "============================================================"
+      sleep 10
     end
   end
 
