@@ -1,6 +1,3 @@
-# PROXY_PROFILE triggers vagrant shell provisioning
-# that installs host proxy configuration into guest VM
-export PROXY_PROFILE=1
 export NO_PORT_FORWARDING=1
 
 if [ -z "$WORKSPACE" ]
