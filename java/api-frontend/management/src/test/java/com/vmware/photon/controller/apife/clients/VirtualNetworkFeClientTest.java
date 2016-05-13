@@ -15,15 +15,20 @@ package com.vmware.photon.controller.apife.clients;
 
 import com.vmware.photon.controller.api.Project;
 import com.vmware.photon.controller.api.RoutingType;
+import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.VirtualNetworkCreateSpec;
 import com.vmware.photon.controller.apibackend.servicedocuments.CreateVirtualNetworkWorkflowDocument;
+import com.vmware.photon.controller.apibackend.servicedocuments.DeleteVirtualNetworkWorkflowDocument;
 import com.vmware.photon.controller.apibackend.workflows.CreateVirtualNetworkWorkflowService;
+import com.vmware.photon.controller.apibackend.workflows.DeleteVirtualNetworkWorkflowService;
 import com.vmware.photon.controller.apife.backends.clients.HousekeeperXenonRestClient;
 import com.vmware.photon.controller.cloudstore.dcp.entity.TaskService;
 import com.vmware.xenon.common.Operation;
 
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Matchers.refEq;
@@ -82,5 +87,30 @@ public class VirtualNetworkFeClientTest {
     frontendClient.create("parentId", spec);
 
     verify(backendClient).post(any(String.class), any(CreateVirtualNetworkWorkflowDocument.class));
+  }
+
+  @Test
+  public void succeedsToDelete() throws Throwable {
+    DeleteVirtualNetworkWorkflowDocument expectedFinalState = new DeleteVirtualNetworkWorkflowDocument();
+    expectedFinalState.taskServiceState = new TaskService.State();
+    expectedFinalState.taskServiceState.state = TaskService.State.TaskState.COMPLETED;
+    expectedFinalState.taskServiceState.documentSelfLink = UUID.randomUUID().toString();
+
+    Operation operation = new Operation();
+    operation.setBody(expectedFinalState);
+
+    String networkId = UUID.randomUUID().toString();
+    DeleteVirtualNetworkWorkflowDocument startState = new DeleteVirtualNetworkWorkflowDocument();
+    startState.virtualNetworkId = networkId;
+
+    doReturn(operation).when(backendClient).post(
+        eq(DeleteVirtualNetworkWorkflowService.FACTORY_LINK),
+        refEq(startState)
+    );
+
+    Task task = frontendClient.delete(networkId);
+
+    verify(backendClient).post(eq(DeleteVirtualNetworkWorkflowService.FACTORY_LINK), refEq(startState));
+    assertThat(task.getState(), is(TaskService.State.TaskState.COMPLETED.toString()));
   }
 }
