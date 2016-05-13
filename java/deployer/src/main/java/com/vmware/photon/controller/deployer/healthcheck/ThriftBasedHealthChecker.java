@@ -13,15 +13,10 @@
 
 package com.vmware.photon.controller.deployer.healthcheck;
 
-import com.vmware.photon.controller.common.clients.DeployerClient;
-import com.vmware.photon.controller.common.clients.HousekeeperClient;
 import com.vmware.photon.controller.common.clients.StatusProvider;
 import com.vmware.photon.controller.common.thrift.ClientProxy;
 import com.vmware.photon.controller.common.thrift.MultiplexedProtocolFactory;
-import com.vmware.photon.controller.deployer.DeployerServer;
 import com.vmware.photon.controller.deployer.dcp.ContainersConfig;
-import com.vmware.photon.controller.deployer.gen.Deployer;
-import com.vmware.photon.controller.housekeeper.gen.Housekeeper;
 import com.vmware.photon.controller.status.gen.Status;
 import com.vmware.photon.controller.status.gen.StatusType;
 
@@ -43,9 +38,6 @@ import java.lang.reflect.Constructor;
 public class ThriftBasedHealthChecker implements HealthChecker {
   private static final Logger logger = LoggerFactory.getLogger(ThriftBasedHealthChecker.class);
 
-  private static final String HOUSEKEEPER_SERVICE_NAME = "Housekeeper";
-
-
   private final ContainersConfig.ContainerType containerType;
   private final String ipAddress;
   private final int port;
@@ -66,14 +58,6 @@ public class ThriftBasedHealthChecker implements HealthChecker {
 
   @VisibleForTesting
   protected StatusProvider buildStatusProvider() {
-    switch (this.containerType) {
-      case Deployer:
-        return getThriftClient(DeployerClient.class, Deployer.AsyncClient.class, DeployerServer.SERVICE_NAME);
-
-      case Housekeeper:
-        return getThriftClient(HousekeeperClient.class, Housekeeper.AsyncClient.class, HOUSEKEEPER_SERVICE_NAME);
-    }
-
     throw new RuntimeException(String.format("%s does not support thrift health check", containerType));
   }
 
