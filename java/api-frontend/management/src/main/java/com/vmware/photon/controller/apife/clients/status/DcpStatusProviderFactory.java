@@ -13,6 +13,9 @@
 
 package com.vmware.photon.controller.apife.clients.status;
 
+import com.vmware.photon.controller.apife.HousekeeperServerSet;
+import com.vmware.photon.controller.apife.backends.clients.DeployerXenonRestClient;
+import com.vmware.photon.controller.apife.backends.clients.HousekeeperXenonRestClient;
 import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
 import com.vmware.photon.controller.common.clients.StatusProvider;
 import com.vmware.photon.controller.common.thrift.ServerSet;
@@ -23,6 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
+import java.net.URISyntaxException;
 import java.util.concurrent.ExecutorService;
 
 /**
@@ -49,6 +53,20 @@ public class DcpStatusProviderFactory implements StatusProviderFactory {
   public StatusProvider create(InetSocketAddress server) throws InternalException {
     logger.info("Creating DcpRestClient as StatusProvider on {}", server);
     XenonRestClient dcpRestClient = new XenonRestClient(new StaticServerSet(server), this.executor);
+    //TODO(adev): Remove this after thrift removal
+    try {
+      logger.info("*******Creating DcpRestClient as StatusProvider {}", server.getPort());
+      if (server.getPort() == 18000 || server.getPort() == 16000) {
+        dcpRestClient = new DeployerXenonRestClient(new StaticServerSet(server), this.executor);
+        logger.info("Creating DcpRestClient as StatusProvider on deployer");
+      } else if (HousekeeperServerSet.class.isAssignableFrom(serverSet.getClass())) {
+        dcpRestClient = new HousekeeperXenonRestClient(new StaticServerSet(server), this.executor);
+        logger.info("Creating DcpRestClient as StatusProvider on housekeeper");
+      }
+    } catch (URISyntaxException ex){
+
+    }
+    /////////////////////////////
     return new DcpStatusProvider(dcpRestClient);
   }
 }
