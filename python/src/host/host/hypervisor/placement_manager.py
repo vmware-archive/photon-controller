@@ -286,12 +286,13 @@ class PlacementManager(object):
         """
         placement_list = []
 
-        # supports network constraint only.
+        # supports network and virtual_network constraints.
         mapping = {
-            ResourceConstraintType.NETWORK: AgentResourcePlacement.NETWORK}
+            ResourceConstraintType.NETWORK: AgentResourcePlacement.NETWORK,
+            ResourceConstraintType.VIRTUAL_NETWORK: AgentResourcePlacement.VIRTUAL_NETWORK}
 
         if vm.resource_constraints:
-            # resource type to extract from VM's resource_constraint
+            # resource type to extract from VM's resource_constraint for matching
             extract_resources_type = set([ResourceConstraintType.NETWORK])
 
             # host available resources.
@@ -312,6 +313,23 @@ class PlacementManager(object):
                         vm.id,
                         value)
                     for value in values])
+
+            # resource type to extract from VM's resource_constraint for copying
+            extract_resources_type = set([ResourceConstraintType.VIRTUAL_NETWORK])
+
+            constraints = self._extract_resource_constraints(
+                vm.resource_constraints, extract_resources_type)
+
+            if len(constraints) > 0:
+                constraint_list = constraints[ResourceConstraintType.VIRTUAL_NETWORK]
+                for constraint in constraint_list:
+                    placement_list.extend([
+                        AgentResourcePlacement(
+                            mapping[ResourceConstraintType.VIRTUAL_NETWORK],
+                            vm.id,
+                            value)
+                        for value in constraint.values])
+
         return placement_list
 
     @log_duration

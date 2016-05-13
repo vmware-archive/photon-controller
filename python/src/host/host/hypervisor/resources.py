@@ -297,6 +297,7 @@ class AgentResourcePlacement(BaseResource):
     VM = ResourcePlacementType.VM
     DISK = ResourcePlacementType.DISK
     NETWORK = ResourcePlacementType.NETWORK
+    VIRTUAL_NETWORK = ResourcePlacementType.VIRTUAL_NETWORK
 
     def __init__(self, type, resource_id, container_id):
         """Placement score.
