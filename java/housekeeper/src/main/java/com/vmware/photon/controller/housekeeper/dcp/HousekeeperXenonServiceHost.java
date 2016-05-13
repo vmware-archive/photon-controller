@@ -17,6 +17,7 @@ import com.vmware.photon.controller.apibackend.ApiBackendFactory;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.clients.HostClientProvider;
+import com.vmware.photon.controller.common.manifest.BuildInfo;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelperProvider;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
@@ -89,6 +90,8 @@ public class HousekeeperXenonServiceHost
   private final ServiceConfigFactory serviceConfigFactory;
   private final NsxClientFactory nsxClientFactory;
 
+  private BuildInfo buildInfo;
+
   @Inject
   public HousekeeperXenonServiceHost(
       XenonConfig xenonConfig,
@@ -102,6 +105,7 @@ public class HousekeeperXenonServiceHost
     this.serviceConfigFactory = checkNotNull(serviceConfigFactory);
     this.cloudStoreHelper = checkNotNull(cloudStoreHelper);
     this.nsxClientFactory = checkNotNull(nsxClientFactory);
+    this.buildInfo = BuildInfo.get(this.getClass());
   }
 
   @Override
@@ -138,6 +142,14 @@ public class HousekeeperXenonServiceHost
     return ImageSeederSyncTriggerServiceFactory.SELF_LINK + TRIGGER_SERVICE_SUFFIX;
   }
 
+  /**
+   * Getter for BuildInfo
+   * @return
+   */
+  public BuildInfo getBuildInfo() {
+    return this.buildInfo;
+  }
+
   @Override
   public ServiceHost start() throws Throwable {
     super.start();
@@ -153,7 +165,7 @@ public class HousekeeperXenonServiceHost
     startImageCleanerTriggerService();
     startImageSeederSyncTriggerService();
     startTaskSchedulerServices();
-
+    ServiceHostUtils.startService(this, StatusService.class);
     return this;
   }
 

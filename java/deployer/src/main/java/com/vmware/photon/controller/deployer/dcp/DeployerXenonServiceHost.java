@@ -23,6 +23,7 @@ import com.vmware.photon.controller.common.clients.AgentControlClientProvider;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.clients.HostClientProvider;
+import com.vmware.photon.controller.common.manifest.BuildInfo;
 import com.vmware.photon.controller.common.provider.ListeningExecutorServiceProvider;
 import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
@@ -219,6 +220,8 @@ public class DeployerXenonServiceHost
 
   private static final String DEPLOYER_URI = "deployer";
 
+  private BuildInfo buildInfo;
+
   private final DeployerContext deployerContext;
   private final DockerProvisionerFactory dockerProvisionerFactory;
   private final ApiClientFactory apiClientFactory;
@@ -275,6 +278,7 @@ public class DeployerXenonServiceHost
     this.hostManagementVmAddressValidatorFactory = hostManagementVmAddressValidatorFactory;
     this.clusterManagerFactory = clusterManagerFactory;
     this.nsxClientFactory = nsxClientFactory;
+    this.buildInfo = BuildInfo.get(this.getClass());
   }
 
   /**
@@ -295,6 +299,7 @@ public class DeployerXenonServiceHost
 
     startTaskSchedulerServices();
 
+    ServiceHostUtils.startService(this, StatusService.class);
     return this;
   }
 
@@ -446,6 +451,14 @@ public class DeployerXenonServiceHost
   public CloudStoreHelper getCloudStoreHelper() {
     CloudStoreHelper cloudStoreHelper = new CloudStoreHelper(this.cloudStoreServerSet);
     return cloudStoreHelper;
+  }
+
+  /**
+   * Getter for BuildInfo
+   * @return
+   */
+  public BuildInfo getBuildInfo() {
+    return this.buildInfo;
   }
 
   /**

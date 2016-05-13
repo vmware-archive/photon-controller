@@ -13,8 +13,6 @@
 
 package com.vmware.photon.controller.deployer.healthcheck;
 
-import com.vmware.photon.controller.common.clients.DeployerClient;
-import com.vmware.photon.controller.common.clients.HousekeeperClient;
 import com.vmware.photon.controller.common.clients.StatusProvider;
 import com.vmware.photon.controller.deployer.dcp.ContainersConfig;
 import com.vmware.photon.controller.status.gen.Status;
@@ -25,7 +23,6 @@ import org.testng.annotations.Test;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
 import static org.powermock.api.mockito.PowerMockito.spy;
 import static org.powermock.api.mockito.PowerMockito.when;
 import static org.testng.AssertJUnit.fail;
@@ -52,21 +49,6 @@ public class ThriftBasedHealthCheckerTest {
     when(mockStatusProvider.getStatus()).thenReturn(statusResponse);
 
     assertThat(thriftBasedHealthChecker.isReady(), is(expectedResult));
-  }
-
-  @DataProvider(name = "ContainerTypesSupportingThriftStatus")
-  private Object[][] getContainerTypesSupportingThriftStatus() {
-    return new Object[][]{
-        {ContainersConfig.ContainerType.Deployer, mock(DeployerClient.class), StatusType.READY, true},
-        {ContainersConfig.ContainerType.Deployer, mock(DeployerClient.class), StatusType.INITIALIZING, false},
-        {ContainersConfig.ContainerType.Deployer, mock(DeployerClient.class), StatusType.UNREACHABLE, false},
-        {ContainersConfig.ContainerType.Deployer, mock(DeployerClient.class), StatusType.ERROR, false},
-
-        {ContainersConfig.ContainerType.Housekeeper, mock(HousekeeperClient.class), StatusType.READY, true},
-        {ContainersConfig.ContainerType.Housekeeper, mock(HousekeeperClient.class), StatusType.INITIALIZING, false},
-        {ContainersConfig.ContainerType.Housekeeper, mock(HousekeeperClient.class), StatusType.UNREACHABLE, false},
-        {ContainersConfig.ContainerType.Housekeeper, mock(HousekeeperClient.class), StatusType.ERROR, false},
-    };
   }
 
   @Test(expectedExceptions = RuntimeException.class,
