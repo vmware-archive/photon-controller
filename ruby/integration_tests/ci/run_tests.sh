@@ -87,9 +87,11 @@ fi
 
 # Disable in promote until graphite story is figured out for promote
 # Only run when REAL_AGENT is defined
-if [ "$PROMOTE" != "true" ] && [ ! -z "$REAL_AGENT" ]; then
-  bundle exec rake agent:stats
-fi
 
+if [ -z "$DISABLE_STATS_TESTS" ]; then
+  if [ "$PROMOTE" != "true" ] && [ ! -z "$REAL_AGENT" ]; then
+    bundle exec rake agent:stats
+  fi
+fi
 # verify that no objects were left over at the end of the run
 bundle exec rake esxcloud:validate
