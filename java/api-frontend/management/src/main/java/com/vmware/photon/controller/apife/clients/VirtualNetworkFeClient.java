@@ -18,7 +18,9 @@ import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.VirtualNetworkCreateSpec;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apibackend.servicedocuments.CreateVirtualNetworkWorkflowDocument;
+import com.vmware.photon.controller.apibackend.servicedocuments.DeleteVirtualNetworkWorkflowDocument;
 import com.vmware.photon.controller.apibackend.workflows.CreateVirtualNetworkWorkflowService;
+import com.vmware.photon.controller.apibackend.workflows.DeleteVirtualNetworkWorkflowService;
 import com.vmware.photon.controller.apife.backends.clients.HousekeeperXenonRestClient;
 import com.vmware.photon.controller.apife.backends.utils.TaskUtils;
 
@@ -53,6 +55,24 @@ public class VirtualNetworkFeClient {
     CreateVirtualNetworkWorkflowDocument finalState = backendClient.post(
         CreateVirtualNetworkWorkflowService.FACTORY_LINK,
         startState).getBody(CreateVirtualNetworkWorkflowDocument.class);
+
+    return TaskUtils.convertBackEndToFrontEnd(finalState.taskServiceState);
+  }
+
+  /**
+   * Delete the given virtual network.
+   *
+   * @param networkId
+   * @return
+   * @throws ExternalException
+   */
+  public Task delete(String networkId) throws ExternalException {
+    DeleteVirtualNetworkWorkflowDocument startState = new DeleteVirtualNetworkWorkflowDocument();
+    startState.virtualNetworkId = networkId;
+
+    DeleteVirtualNetworkWorkflowDocument finalState = backendClient
+        .post(DeleteVirtualNetworkWorkflowService.FACTORY_LINK, startState)
+        .getBody(DeleteVirtualNetworkWorkflowDocument.class);
 
     return TaskUtils.convertBackEndToFrontEnd(finalState.taskServiceState);
   }
