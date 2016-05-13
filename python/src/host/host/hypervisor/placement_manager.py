@@ -286,12 +286,13 @@ class PlacementManager(object):
         """
         placement_list = []
 
-        # supports network constraint only.
+        # supports network and virtual_network constraints.
         mapping = {
-            ResourceConstraintType.NETWORK: AgentResourcePlacement.NETWORK}
+            ResourceConstraintType.NETWORK: AgentResourcePlacement.NETWORK,
+            ResourceConstraintType.VIRTUAL_NETWORK: AgentResourcePlacement.VIRTUAL_NETWORK}
 
         if vm.resource_constraints:
-            # resource type to extract from VM's resource_constraint
+            # resource type to extract from VM's resource_constraint for matching
             extract_resources_type = set([ResourceConstraintType.NETWORK])
 
             # host available resources.
@@ -312,6 +313,37 @@ class PlacementManager(object):
                         vm.id,
                         value)
                     for value in values])
+
+            # resource type to extract from VM's resource_constraint for copying
+            virtual_network_resource_placement_list = self._pick_resources(
+                vm, ResourceConstraintType.VIRTUAL_NETWORK, AgentResourcePlacement.VIRTUAL_NETWORK)
+            placement_list.extend(virtual_network_resource_placement_list)
+
+        return placement_list
+
+    def _pick_resources(self, vm, constraintType, placementType):
+        """ Pick vm's specific resource constraints.
+
+        :param vm: Vm
+        :param constraintType: ResourceConstraintType
+        :param placementType: AgentResourcePlacement
+        :rtype: Placement List
+        """
+        placement_list = []
+
+        constraints = self._extract_resource_constraints(
+            vm.resource_constraints, set([constraintType]))
+
+        if len(constraints) > 0:
+            constraint_list = constraints[constraintType]
+            for constraint in constraint_list:
+                placement_list.extend([
+                    AgentResourcePlacement(
+                        placementType,
+                        vm.id,
+                        value)
+                    for value in constraint.values])
+
         return placement_list
 
     @log_duration
