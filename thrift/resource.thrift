@@ -49,6 +49,7 @@ enum ResourcePlacementType {
   VM = 1
   DISK = 2
   NETWORK = 3
+  VIRTUAL_NETWORK = 4
 }
 
 // Disk Image Operation
