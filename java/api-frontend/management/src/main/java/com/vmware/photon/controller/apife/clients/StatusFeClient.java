@@ -26,18 +26,11 @@ import com.vmware.photon.controller.apife.RootSchedulerServerSet;
 import com.vmware.photon.controller.apife.clients.status.DcpStatusProviderFactory;
 import com.vmware.photon.controller.apife.clients.status.StatusFeClientUtils;
 import com.vmware.photon.controller.apife.clients.status.StatusProviderFactory;
-import com.vmware.photon.controller.apife.clients.status.ThriftClientFactory;
 import com.vmware.photon.controller.apife.config.StatusConfig;
 import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
 import com.vmware.photon.controller.common.CloudStoreServerSet;
-import com.vmware.photon.controller.common.clients.DeployerClient;
-import com.vmware.photon.controller.common.clients.HousekeeperClient;
 import com.vmware.photon.controller.common.clients.StatusProvider;
-import com.vmware.photon.controller.common.thrift.ClientPoolFactory;
-import com.vmware.photon.controller.common.thrift.ClientProxyFactory;
 import com.vmware.photon.controller.common.thrift.ServerSet;
-import com.vmware.photon.controller.deployer.gen.Deployer;
-import com.vmware.photon.controller.housekeeper.gen.Housekeeper;
 import com.vmware.photon.controller.status.gen.Status;
 import com.vmware.photon.controller.status.gen.StatusType;
 
@@ -77,10 +70,6 @@ public class StatusFeClient {
    * @param housekeeperServerSet
    * @param rootSchedulerServerSet
    * @param deployerServerSet
-   * @param houseKeeperProxyFactory
-   * @param houseKeeperPoolFactory
-   * @param deployerProxyFactory
-   * @param deployerPoolFactory
    * @param statusConfig
    */
   @Inject
@@ -90,21 +79,17 @@ public class StatusFeClient {
       @RootSchedulerServerSet ServerSet rootSchedulerServerSet,
       @DeployerServerSet ServerSet deployerServerSet,
       @CloudStoreServerSet ServerSet cloudStoreServerSet,
-      ClientProxyFactory<Housekeeper.AsyncClient> houseKeeperProxyFactory,
-      ClientPoolFactory<Housekeeper.AsyncClient> houseKeeperPoolFactory,
-      ClientProxyFactory<Deployer.AsyncClient> deployerProxyFactory,
-      ClientPoolFactory<Deployer.AsyncClient> deployerPoolFactory,
       StatusConfig statusConfig) {
     this.executor = executor;
     this.components = statusConfig.getComponents();
 
     statusProviderFactories = Maps.newEnumMap(Component.class);
-    statusProviderFactories.put(Component.HOUSEKEEPER, new ThriftClientFactory(
-        housekeeperServerSet, houseKeeperPoolFactory, houseKeeperProxyFactory, HousekeeperClient.class, "Housekeeper"));
-    statusProviderFactories.put(Component.DEPLOYER, new ThriftClientFactory(
-        deployerServerSet, deployerPoolFactory, deployerProxyFactory, DeployerClient.class, "Deployer"));
+    statusProviderFactories.put(Component.HOUSEKEEPER,
+            new DcpStatusProviderFactory(housekeeperServerSet, this.executor));
     statusProviderFactories.put(Component.CLOUD_STORE,
         new DcpStatusProviderFactory(cloudStoreServerSet, this.executor));
+    statusProviderFactories.put(Component.DEPLOYER,
+            new DcpStatusProviderFactory(deployerServerSet, this.executor));
     statusProviderFactories.put(Component.ROOT_SCHEDULER,
         new DcpStatusProviderFactory(rootSchedulerServerSet, this.executor));
   }

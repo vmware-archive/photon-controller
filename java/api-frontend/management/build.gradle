@@ -20,6 +20,7 @@ dependencies {
   compile(project(':swagger-jersey'))
   compile(project(':nfc-client'))
   compile(project(':cluster-manager:service-documents'))
+  compile(project(':deployer'))
   compile(project(':root-scheduler'))
 
   compile "com.google.inject.extensions:guice-assistedinject:${versions.guice}"
