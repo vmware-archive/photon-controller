@@ -297,6 +297,7 @@ class AgentResourcePlacement(BaseResource):
     VM = ResourcePlacementType.VM
     DISK = ResourcePlacementType.DISK
     NETWORK = ResourcePlacementType.NETWORK
+    VIRTUAL_NETWORK = ResourcePlacementType.VIRTUAL_NETWORK
 
     def __init__(self, type, resource_id, container_id):
         """Placement score.
@@ -385,8 +386,9 @@ class AgentResourcePlacementList(BaseResource):
                 vm.placement = placement
                 continue
 
-            if placement.type is ResourcePlacementType.NETWORK and \
-               placement.resource_id == vm.id:
+            if (placement.type is ResourcePlacementType.NETWORK or \
+                placement.type is ResourcePlacementType.VIRTUAL_NETWORK) and \
+                placement.resource_id == vm.id:
                     vm.networks.append(placement.container_id)
 
         AgentResourcePlacementList.\

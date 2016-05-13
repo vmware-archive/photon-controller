@@ -259,6 +259,25 @@ class TestPlacementManager(unittest.TestCase):
 
         self.assertRaises(NoSuchResourceException, manager.place, vm, None)
 
+    def test_place_vm_with_virtual_network_constraint(self):
+        manager = PMBuilder().build()
+
+        # place with resource constraints that come back in placement_list.
+        resource_constraints = [
+            ResourceConstraint(ResourceConstraintType.VIRTUAL_NETWORK,
+                               ["virtual_net"])]
+        vm = Vm(new_id(), VM_FLAVOR,
+                State.STOPPED, None, None, None, None, resource_constraints)
+
+        score, placement_list = manager.place(vm, None)
+        assert_that(len(placement_list) is 2)
+        assert_that(placement_list[1].
+                    resource_id, equal_to(vm.id))
+
+        # randomly pick matched resources from host.
+        assert_that(placement_list[1].
+                    container_id == 'virtual_net', True)
+
     @parameterized.expand([
         [0,         100],
         [102 << 20, 90],
