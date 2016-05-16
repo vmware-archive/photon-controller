@@ -78,7 +78,7 @@ public class Main {
     new LoggingFactory(cloudStoreConfig.getLogging(), "photon-controller-core").configure();
 
     Injector injector = Guice.createInjector(
-        new CloudStoreModule(cloudStoreConfig),
+        new CloudStoreModule(),
         new ZookeeperModule(cloudStoreConfig.getZookeeper()),
         new ThriftModule(),
         new ThriftServiceModule<>(

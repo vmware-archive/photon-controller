@@ -13,22 +13,12 @@
 
 package com.vmware.photon.controller.cloudstore.dcp.helpers;
 
-import com.vmware.photon.controller.cloudstore.CloudStoreConfig;
-import com.vmware.photon.controller.common.CloudStoreServerSet;
 import com.vmware.photon.controller.common.clients.AgentControlClient;
 import com.vmware.photon.controller.common.clients.AgentControlClientFactory;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
-import com.vmware.photon.controller.common.manifest.BuildInfo;
-import com.vmware.photon.controller.common.thrift.ServerSet;
-import com.vmware.photon.controller.common.xenon.host.XenonConfig;
-import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
-import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
-import com.vmware.photon.controller.common.zookeeper.ZookeeperServerSetFactory;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Singleton;
 import com.google.inject.assistedinject.FactoryModuleBuilder;
 
 /**
@@ -36,18 +26,8 @@ import com.google.inject.assistedinject.FactoryModuleBuilder;
  */
 public class TestCloudStoreModule extends AbstractModule {
 
-  private final CloudStoreConfig cloudStoreConfig;
-
-  public TestCloudStoreModule(CloudStoreConfig cloudStoreConfig) {
-    this.cloudStoreConfig = cloudStoreConfig;
-  }
-
   @Override
   protected void configure() {
-    bind(BuildInfo.class).toInstance(BuildInfo.get(this.getClass()));
-    bind(CloudStoreConfig.class).toInstance(cloudStoreConfig);
-    bind(XenonConfig.class).toInstance(cloudStoreConfig.getXenonConfig());
-
     install(new FactoryModuleBuilder()
         .implement(HostClient.class, HostClient.class)
         .build(HostClientFactory.class));
@@ -55,16 +35,5 @@ public class TestCloudStoreModule extends AbstractModule {
     install(new FactoryModuleBuilder()
         .implement(AgentControlClient.class, AgentControlClient.class)
         .build(AgentControlClientFactory.class));
-
-    install(new FactoryModuleBuilder()
-        .implement(ServiceConfig.class, ServiceConfig.class)
-        .build(ServiceConfigFactory.class));
-  }
-
-  @Provides
-  @Singleton
-  @CloudStoreServerSet
-  public ServerSet getCloudStoreServerSet(ZookeeperServerSetFactory serverSetFactory) {
-    return serverSetFactory.createServiceServerSet("cloudstore", true);
   }
 }
