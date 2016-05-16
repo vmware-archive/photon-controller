@@ -135,10 +135,7 @@ class TestVimClient(unittest.TestCase):
             vmodl.query.PropertyCollector.Change(name="config", op="assign", val=vim.vm.ConfigInfo(
                 files=vim.vm.FileInfo(vmPathName="[datastore2] agent4/agent4.vmx"),
                 hardware=vim.vm.VirtualHardware(memoryMB=4096),
-                extraConfig=[
-                    vim.option.OptionValue(key='photon_controller.vminfo.tenant', value='t1'),
-                    vim.option.OptionValue(key='photon_controller.vminfo.project', value='p1')
-                ])
+                locationId="location1"),
             ))
         disk_list = vim.vm.FileLayout.DiskLayout.Array()
         disk_list.append(vim.vm.FileLayout.DiskLayout(diskFile=["disk1"]))
@@ -157,11 +154,10 @@ class TestVimClient(unittest.TestCase):
         assert_that(vms[0].memory_mb, is_(4096))
         assert_that(vms[0].path, is_("[datastore2] agent4/agent4.vmx"))
         assert_that(vms[0].name, is_("agent4"))
-        assert_that(vms[0].tenant_id, is_("t1"))
-        assert_that(vms[0].project_id, is_("p1"))
         assert_that(vms[0].power_state, is_(PowerState.poweredOff))
         assert_that(len(vms[0].disks), is_(2))
         assert_that(vms[0].disks, contains_inanyorder("disk1", "disk2"))
+        assert_that(vms[0].location_id, is_("location1"))
 
         # Test Modify
         update.version = "2"
@@ -186,8 +182,6 @@ class TestVimClient(unittest.TestCase):
         assert_that(vms[0].memory_mb, is_(4096))
         assert_that(vms[0].path, is_("[datastore2] agent4/agent4.vmx"))
         assert_that(vms[0].name, is_("agent4"))
-        assert_that(vms[0].tenant_id, is_("t1"))
-        assert_that(vms[0].project_id, is_("p1"))
         assert_that(vms[0].power_state, is_(PowerState.poweredOn))
         assert_that(len(vms[0].disks), is_(2))
         assert_that(vms[0].disks, contains_inanyorder("disk3", "disk4"))
