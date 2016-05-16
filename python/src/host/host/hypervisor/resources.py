@@ -105,6 +105,7 @@ class Vm(BaseResource):
         self.resource_constraints = resource_constraints
         self.placement = None
         self.networks = []
+        self.virtual_networks = []
         self.tenant_id = tenant_id
         self.project_id = project_id
 
@@ -127,6 +128,14 @@ class Vm(BaseResource):
         if thrift_object.resource_constraints:
             instance.resource_constraints = \
                 thrift_object.resource_constraints
+
+        if thrift_object.networks:
+            instance.networks = \
+                thrift_object.networks
+
+        if thrift_object.virtual_networks:
+            instance.virtual_networks = \
+                thrift_object.virtual_networks
 
         return instance
 
@@ -386,10 +395,13 @@ class AgentResourcePlacementList(BaseResource):
                 vm.placement = placement
                 continue
 
-            if (placement.type is ResourcePlacementType.NETWORK or
-                placement.type is ResourcePlacementType.VIRTUAL_NETWORK) and \
-                    placement.resource_id == vm.id:
-                        vm.networks.append(placement.container_id)
+            if placement.type is ResourcePlacementType.NETWORK and \
+               placement.resource_id == vm.id:
+                    vm.networks.append(placement.container_id)
+
+            if placement.type is ResourcePlacementType.VIRTUAL_NETWORK and \
+               placement.resource_id == vm.id:
+                    vm.virtual_networks.append(placement.container_id)
 
         AgentResourcePlacementList.\
             unpack_placement_list_disks(placement_list,
