@@ -268,6 +268,7 @@ describe "vm", management: true, image: true do
 
           vms = client.find_vms_by_name(@project.id, vm_name).items
           expect(vms.size).to eq 1
+          expect(vms[0].disks[0].id).to eq persistent_disks1.id
           expect(vms[0].state).to eq "STOPPED"
         end
 
@@ -278,17 +279,23 @@ describe "vm", management: true, image: true do
 
           vms = client.find_vms_by_name(@project.id, vm_name).items
           expect(vms.size).to eq 1
+          expect(vms[0].host).to eq get_esx_ip
           expect(vms[0].state).to eq "STOPPED"
         end
 
         it "can pass portGroup" do
 
           create_vm(@project, name: vm_name,
-                    affinities: [{id: get_mgmt_port_group, kind: "portGroup"}])
+                    affinities: [{id: get_vm_port_group2, kind: "portGroup"}])
 
           vms = client.find_vms_by_name(@project.id, vm_name).items
           expect(vms.size).to eq 1
           expect(vms[0].state).to eq "STOPPED"
+
+          # verify network connections
+          networks = client.get_vm_networks(vms[0].id).network_connections
+          network_ids = networks.map { |n| n.network }
+          expect(network_ids).to =~ [get_vm_port_group2]
         end
 
         it "can pass datastore id", datastore_id:true do
@@ -298,6 +305,7 @@ describe "vm", management: true, image: true do
 
           vms = client.find_vms_by_name(@project.id, vm_name).items
           expect(vms.size).to eq 1
+          expect(vms[0].datastore).to eq get_datastore_id
           expect(vms[0].state).to eq "STOPPED"
         end
 
@@ -310,6 +318,8 @@ describe "vm", management: true, image: true do
 
           vms = client.find_vms_by_name(@project.id, vm_name).items
           expect(vms.size).to eq 1
+          expect(vms[0].datastore).to eq get_datastore_id
+          expect(vms[0].host).to eq get_esx_ip
           expect(vms[0].state).to eq "STOPPED"
         end
       end

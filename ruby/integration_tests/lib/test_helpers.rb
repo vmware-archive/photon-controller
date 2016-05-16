@@ -96,7 +96,18 @@ module EsxCloud
     end
 
     def self.get_vm_port_groups
-      [self.get_vm_port_group, self.get_vm_port_group2].compact
+      [
+          self.get_vm_port_group,
+          self.get_vm_port_group2
+      ].compact
+    end
+
+    def self.get_all_port_groups
+      [
+          self.get_mgmt_port_group,
+          self.get_vm_port_group,
+          self.get_vm_port_group2
+      ].compact
     end
 
     def self.get_datastore_name
