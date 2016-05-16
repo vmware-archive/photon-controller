@@ -15,30 +15,27 @@ package com.vmware.photon.controller.cloudstore;
 
 import com.vmware.photon.controller.agent.gen.AgentControl;
 import com.vmware.photon.controller.cloudstore.dcp.CloudStoreXenonHost;
-import com.vmware.photon.controller.common.CloudStoreServerSet;
+import com.vmware.photon.controller.common.clients.AgentControlClientFactory;
+import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.config.BadConfigException;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.logging.LoggingFactory;
-import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.photon.controller.common.thrift.ThriftModule;
 import com.vmware.photon.controller.common.thrift.ThriftServiceModule;
-import com.vmware.photon.controller.common.zookeeper.ServiceNode;
-import com.vmware.photon.controller.common.zookeeper.ServiceNodeFactory;
-import com.vmware.photon.controller.common.zookeeper.ServiceNodeUtils;
+import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperModule;
 import com.vmware.photon.controller.host.gen.Host;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import com.google.inject.Key;
 import com.google.inject.TypeLiteral;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.Namespace;
+import org.apache.curator.framework.CuratorFramework;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.InetSocketAddress;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -46,8 +43,10 @@ import java.util.concurrent.TimeUnit;
  */
 public class Main {
 
+  public static final String CLOUDSTORE_SERVICE_NAME = "cloudstore";
+
   private static final Logger logger = LoggerFactory.getLogger(Main.class);
-  private static final long retryIntervalMsec = TimeUnit.SECONDS.toMillis(30);
+  private static final long retryIntervalMillisec = TimeUnit.SECONDS.toMillis(30);
 
   public static void main(String[] args) throws Throwable {
     LoggingFactory.bootstrap();
@@ -64,8 +63,7 @@ public class Main {
     new LoggingFactory(cloudStoreConfig.getLogging(), "cloudstore").configure();
 
     Injector injector = Guice.createInjector(
-        new CloudStoreModule(cloudStoreConfig),
-        new ZookeeperModule(cloudStoreConfig.getZookeeper()),
+        new CloudStoreModule(),
         new ThriftModule(),
         new ThriftServiceModule<>(
             new TypeLiteral<Host.AsyncClient>() {
@@ -77,28 +75,32 @@ public class Main {
         )
     );
 
-    final CloudStoreXenonHost cloudStoreDcpHost = injector.getInstance(CloudStoreXenonHost.class);
-    final ServiceNodeFactory serviceNodeFactory = injector.getInstance(ServiceNodeFactory.class);
+    ZookeeperModule zkModule = new ZookeeperModule(cloudStoreConfig.getZookeeper());
+    final CuratorFramework zkClient = zkModule.getCuratorFramework();
+    final ServiceConfigFactory serviceConfigFactory = zkModule.getServiceConfigFactory(zkClient);
+
+    final HostClientFactory hostClientFactory = injector.getInstance(HostClientFactory.class);
+    final AgentControlClientFactory agentControlClientFactory = injector.getInstance(AgentControlClientFactory.class);
+
+    final CloudStoreXenonHost cloudStoreXenonHost = new CloudStoreXenonHost(cloudStoreConfig.getXenonConfig(),
+        hostClientFactory, agentControlClientFactory, serviceConfigFactory);
 
     Runtime.getRuntime().addShutdownHook(new Thread() {
       @Override
       public void run() {
         logger.info("Shutting down");
-        cloudStoreDcpHost.stop();
+        cloudStoreXenonHost.stop();
         logger.info("Done");
         LoggingFactory.detachAndStop();
       }
     });
 
-    cloudStoreDcpHost.start();
+    // Start the CloudStore Xenon Host.
+    cloudStoreXenonHost.start();
 
-    // initialize CloudStoreServerSet instance
-    ServerSet cloudStoreServerSet = injector.getInstance(Key.get(ServerSet.class, CloudStoreServerSet.class));
-    logger.info("CloudStoreServerSet {}", cloudStoreServerSet.getServers());
-
-    registerWithZookeeper(serviceNodeFactory,
+    zkModule.registerWithZookeeper(zkClient, CLOUDSTORE_SERVICE_NAME,
         cloudStoreConfig.getXenonConfig().getRegistrationAddress(),
-        cloudStoreConfig.getXenonConfig().getPort());
+        cloudStoreConfig.getXenonConfig().getPort(), retryIntervalMillisec);
   }
 
   private static CloudStoreConfig getConfig(Namespace namespace) {
@@ -110,12 +112,5 @@ public class Main {
       System.exit(1);
     }
     return config;
-  }
-
-  private static void registerWithZookeeper(ServiceNodeFactory serviceNodeFactory, String registrationIpAddress,
-                                            int port) {
-    InetSocketAddress registrationSocketAddress = new InetSocketAddress(registrationIpAddress, port);
-    ServiceNode serviceNode = serviceNodeFactory.createSimple("cloudstore", registrationSocketAddress);
-    ServiceNodeUtils.joinService(serviceNode, retryIntervalMsec);
   }
 }

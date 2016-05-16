@@ -36,7 +36,6 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.TenantServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.TombstoneServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.VirtualNetworkService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.VmServiceFactory;
-import com.vmware.photon.controller.cloudstore.dcp.helpers.TestHelper;
 import com.vmware.photon.controller.cloudstore.dcp.helpers.UpgradeHelper;
 import com.vmware.photon.controller.cloudstore.dcp.task.AvailabilityZoneCleanerFactoryService;
 import com.vmware.photon.controller.cloudstore.dcp.task.EntityLockCleanerFactoryService;
@@ -44,15 +43,17 @@ import com.vmware.photon.controller.cloudstore.dcp.task.TombstoneCleanerFactoryS
 import com.vmware.photon.controller.cloudstore.dcp.task.trigger.AvailabilityZoneCleanerTriggerBuilder;
 import com.vmware.photon.controller.cloudstore.dcp.task.trigger.EntityLockCleanerTriggerBuilder;
 import com.vmware.photon.controller.cloudstore.dcp.task.trigger.TombstoneCleanerTriggerBuilder;
+import com.vmware.photon.controller.common.clients.AgentControlClientFactory;
+import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.config.BadConfigException;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.scheduler.TaskTriggerFactoryService;
+import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
 import com.vmware.xenon.services.common.LuceneDocumentIndexService;
 import com.vmware.xenon.services.common.RootNamespaceService;
 import com.vmware.xenon.services.common.ServiceUriPaths;
 
-import com.google.inject.Injector;
 import org.apache.commons.io.FileUtils;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
@@ -61,6 +62,7 @@ import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.mockito.Mockito.mock;
 
 import java.io.File;
 import java.io.IOException;
@@ -84,7 +86,6 @@ public class CloudStoreXenonHostTest {
    * Maximum time to wait for all factories to become available.
    */
   private static final long SERVICES_STARTUP_TIMEOUT = TimeUnit.SECONDS.toMillis(30);
-  private Injector injector;
   private CloudStoreXenonHost host;
   private String[] serviceSelfLinks = new String[]{
       FlavorServiceFactory.SELF_LINK,
@@ -124,6 +125,10 @@ public class CloudStoreXenonHostTest {
       // discovery
       RootNamespaceService.SELF_LINK,
   };
+  private CloudStoreConfig config;
+  private HostClientFactory hostClientFactory;
+  private AgentControlClientFactory agentControlClientFactory;
+  private ServiceConfigFactory serviceConfigFactory;
 
   /**
    * Dummy test case to make Intellij recognize this as a test class.
@@ -136,18 +141,25 @@ public class CloudStoreXenonHostTest {
    * Tests for the constructors.
    */
   public class InitializationTest {
+    private CloudStoreXenonHost host;
 
     @BeforeClass
     public void setUpClass() throws IOException, BadConfigException {
-      CloudStoreConfig config = ConfigBuilder.build(CloudStoreConfig.class,
+      config = ConfigBuilder.build(CloudStoreConfig.class,
           CloudStoreConfigTest.class.getResource(configFilePath).getPath());
+
+      hostClientFactory = mock(HostClientFactory.class);
+      agentControlClientFactory = mock(AgentControlClientFactory.class);
+      serviceConfigFactory = mock(ServiceConfigFactory.class);
+
       storageDir = new File(config.getXenonConfig().getStoragePath());
       FileUtils.deleteDirectory(storageDir);
     }
 
     @BeforeMethod
-    public void setUp() throws Exception {
-      injector = TestHelper.createInjector(configFilePath);
+    public void setUp() throws Throwable {
+      host = new CloudStoreXenonHost(config.getXenonConfig(), hostClientFactory, agentControlClientFactory,
+          serviceConfigFactory);
     }
 
     @AfterMethod
@@ -160,24 +172,24 @@ public class CloudStoreXenonHostTest {
       // make sure folder exists
       storageDir.mkdirs();
 
-      CloudStoreXenonHost host = injector.getInstance(CloudStoreXenonHost.class);
       assertThat(storageDir.exists(), is(true));
       assertThat(host, is(notNullValue()));
     }
 
     @Test
-    public void testStoragePathDoesNotExist() throws Exception {
+    public void testStoragePathDoesNotExist() throws Throwable {
       // make sure folder does not exist
       FileUtils.deleteDirectory(storageDir);
+      assertThat(storageDir.exists(), is(false));
 
-      CloudStoreXenonHost host = injector.getInstance(CloudStoreXenonHost.class);
+      host = new CloudStoreXenonHost(config.getXenonConfig(), hostClientFactory, agentControlClientFactory,
+          serviceConfigFactory);
       assertThat(storageDir.exists(), is(true));
       assertThat(host, is(notNullValue()));
     }
 
     @Test
     public void testParams() {
-      CloudStoreXenonHost host = injector.getInstance(CloudStoreXenonHost.class);
       assertThat(host.getPort(), is(19000));
       Path storagePath = Paths.get(storageDir.getPath()).resolve(Integer.toString(19000));
       assertThat(host.getStorageSandbox().getPath(), is(storagePath.toString()));
@@ -190,14 +202,21 @@ public class CloudStoreXenonHostTest {
   public class StartTest {
 
     @BeforeClass
-    private void setUpClass() throws IOException {
+    private void setUpClass() throws Throwable {
+      config = ConfigBuilder.build(CloudStoreConfig.class,
+          CloudStoreConfigTest.class.getResource(configFilePath).getPath());
+
+      hostClientFactory = mock(HostClientFactory.class);
+      agentControlClientFactory = mock(AgentControlClientFactory.class);
+      serviceConfigFactory = mock(ServiceConfigFactory.class);
+
       FileUtils.deleteDirectory(storageDir);
     }
 
     @BeforeMethod
     private void setUp() throws Throwable {
-      injector = TestHelper.createInjector(configFilePath);
-      host = injector.getInstance(CloudStoreXenonHost.class);
+      host = new CloudStoreXenonHost(config.getXenonConfig(), hostClientFactory, agentControlClientFactory,
+          serviceConfigFactory);
     }
 
     @AfterMethod
@@ -240,11 +259,20 @@ public class CloudStoreXenonHostTest {
    */
   public class IsReadyTest {
 
+    @BeforeClass
+    public void setUpClass() throws Throwable {
+      config = ConfigBuilder.build(CloudStoreConfig.class,
+          CloudStoreConfigTest.class.getResource(configFilePath).getPath());
+
+      hostClientFactory = mock(HostClientFactory.class);
+      agentControlClientFactory = mock(AgentControlClientFactory.class);
+      serviceConfigFactory = mock(ServiceConfigFactory.class);
+    }
+
     @BeforeMethod
     private void setUp() throws Throwable {
-      injector = TestHelper.createInjector(configFilePath);
-
-      host = injector.getInstance(CloudStoreXenonHost.class);
+      host = new CloudStoreXenonHost(config.getXenonConfig(), hostClientFactory, agentControlClientFactory,
+          serviceConfigFactory);
       host.start();
       ServiceHostUtils.waitForServiceAvailability(host, SERVICES_STARTUP_TIMEOUT, serviceSelfLinks.clone());
     }

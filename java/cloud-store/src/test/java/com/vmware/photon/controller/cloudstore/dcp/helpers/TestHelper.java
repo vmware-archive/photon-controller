@@ -17,11 +17,9 @@ import com.vmware.photon.controller.agent.gen.AgentControl;
 import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.CloudStoreConfig;
-import com.vmware.photon.controller.cloudstore.CloudStoreConfigTest;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
 import com.vmware.photon.controller.common.config.BadConfigException;
-import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.thrift.ThriftModule;
 import com.vmware.photon.controller.common.thrift.ThriftServiceModule;
 import com.vmware.photon.controller.common.xenon.BasicServiceHost;
@@ -29,7 +27,6 @@ import com.vmware.photon.controller.common.xenon.MultiHostEnvironment;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.XenonHostInfoProvider;
 import com.vmware.photon.controller.common.xenon.XenonRestClient;
-import com.vmware.photon.controller.common.zookeeper.ZookeeperModule;
 import com.vmware.photon.controller.host.gen.Host;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
@@ -57,12 +54,10 @@ import java.util.concurrent.TimeUnit;
  */
 public class TestHelper {
 
-  public static Injector createInjector(String configFileResourcePath)
+  public static Injector createInjector()
       throws BadConfigException {
-    CloudStoreConfig config = ConfigBuilder.build(CloudStoreConfig.class,
-        CloudStoreConfigTest.class.getResource(configFileResourcePath).getPath());
     return Guice.createInjector(
-        new TestCloudStoreModule(config),
+        new TestCloudStoreModule(),
         new ThriftModule(),
         new ThriftServiceModule<>(
             new TypeLiteral<Host.AsyncClient>() {
@@ -71,8 +66,7 @@ public class TestHelper {
         new ThriftServiceModule<>(
             new TypeLiteral<AgentControl.AsyncClient>() {
             }
-        ),
-        new ZookeeperModule(config.getZookeeper()));
+        ));
   }
 
   public static HostService.State getHostServiceStartState(Set<String> usageTags) {

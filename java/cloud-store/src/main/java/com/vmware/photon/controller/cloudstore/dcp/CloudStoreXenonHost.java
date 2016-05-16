@@ -81,7 +81,9 @@ import java.util.function.Supplier;
 @Singleton
 public class CloudStoreXenonHost
     extends AbstractServiceHost
-    implements XenonHostInfoProvider, HostClientProvider, AgentControlClientProvider,
+    implements XenonHostInfoProvider,
+    HostClientProvider,
+    AgentControlClientProvider,
     ServiceConfigProvider {
 
   private static final Logger logger = LoggerFactory.getLogger(CloudStoreXenonHost.class);
