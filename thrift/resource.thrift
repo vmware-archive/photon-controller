@@ -202,6 +202,7 @@ struct Vm {
   8: optional list<ResourceConstraint> resource_constraints
   9: optional string tenant_id
   10: optional string project_id
+  11: optional string location_id
 }
 
 // Resource
