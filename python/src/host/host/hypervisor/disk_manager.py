@@ -12,6 +12,8 @@
 
 import abc
 
+from six import with_metaclass
+
 
 class DiskFileException(Exception):
     pass
@@ -29,9 +31,8 @@ class DatastoreOutOfSpaceException(Exception):
     pass
 
 
-class DiskManager(object):
+class DiskManager(with_metaclass(abc.ABCMeta, object)):
     """A class that wraps hypervisor specific disk management code."""
-    __metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod
     def create_disk(self, datastore, disk_id, size):

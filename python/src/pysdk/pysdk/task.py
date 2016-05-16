@@ -18,10 +18,12 @@ many VIM operations return 'tasks' which can have varying completion
 times.
 """
 
-__author__ = 'VMware, Inc'
+from __future__ import print_function
 
 from pyVmomi import vmodl, vim
 from connect import GetSi
+
+__author__ = 'VMware, Inc'
 
 globalTaskUpdate = None
 
@@ -80,7 +82,7 @@ def WaitForTask(task,
         For example::
 
             def OnTaskProgressUpdate(task, percentDone):
-                print 'Task %s is %d%% complete.' % (task, percentDone)
+                print('Task %s is %d%% complete.' % (task, percentDone))
     """
 
     if si is None:
@@ -106,7 +108,7 @@ def WaitForTask(task,
         if raiseOnError:
             raise task.info.error
         else:
-            print "Task reported error: " + str(task.info.error)
+            print("Task reported error: " + str(task.info.error))
     else:
         progressUpdater.Update('completed')
 

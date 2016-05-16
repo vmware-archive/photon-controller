@@ -95,7 +95,7 @@ class PerfManagerCollector(Collector):
 
     def _get_metrics_at_or_below_level(self, level):
         selected = []
-        for i in xrange(len(self.metric_names)):
+        for i in range(len(self.metric_names)):
             if i > level:
                 break
             for counter in self.metric_names[i]:

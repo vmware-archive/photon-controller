@@ -47,11 +47,11 @@ class ImageMonitor:
                          self.datastore_image_scanners)
         if datastore_id in self.datastore_image_scanners:
             return self.datastore_image_scanners[datastore_id]
-        raise DatastoreNotFoundException
+        raise DatastoreNotFoundException()
 
     def get_image_sweeper(self, datastore_id):
         self.logger.info("IMAGE SCANNER: dict: %s" %
                          self.datastore_image_sweepers)
         if datastore_id in self.datastore_image_sweepers:
             return self.datastore_image_sweepers[datastore_id]
-        raise DatastoreNotFoundException
+        raise DatastoreNotFoundException()

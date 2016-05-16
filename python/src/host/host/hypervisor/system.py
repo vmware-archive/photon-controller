@@ -12,6 +12,8 @@
 
 import abc
 
+from six import with_metaclass
+
 
 class DatastoreInaccessibleException(Exception):
     pass
@@ -23,9 +25,8 @@ class DatastoreInfo(object):
         self.used = used
 
 
-class System(object):
+class System(with_metaclass(abc.ABCMeta, object)):
     """Hypervisor host system interface."""
-    __metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod
     def datastore_info(self, datastore_id):

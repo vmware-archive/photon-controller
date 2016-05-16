@@ -12,6 +12,7 @@
 
 import abc
 
+from six import with_metaclass
 
 class ImageNotFoundException(Exception):
     """ Exception thrown when image is not found on the datastore """
@@ -37,7 +38,7 @@ class DirectoryNotFound(Exception):
     """
 
 
-class ImageManager(object):
+class ImageManager(with_metaclass(abc.ABCMeta, object)):
     """A class that wraps hypervisor specific image management.
 
     Clarification of a few terms:
@@ -47,7 +48,6 @@ class ImageManager(object):
                     together with the image in every datastore.
 
     """
-    __metaclass__ = abc.ABCMeta
 
     def __init__(self):
         pass

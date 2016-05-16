@@ -10,6 +10,8 @@
 # License for then specific language governing permissions and limitations
 # under the License.
 
+from __future__ import print_function
+
 from common.photon_thrift.direct_client import DirectClient
 from gen.agent import AgentControl
 from gen.host import Host
@@ -18,7 +20,7 @@ from gen.scheduler import Scheduler
 
 def get_client(host, ns="Host"):
     port = 8835
-    print "Connecting %s:%d ..." % (host, port)
+    print("Connecting %s:%d ..." % (host, port))
     if ns == "Host":
         client = DirectClient("Host", Host.Client, host, port)
     elif ns == "AgentControl":

@@ -151,7 +151,7 @@ def CreateDefaultSpec(name="Dummy VM", memory=128, guest="otherGuest",
                       datastoreName=None, policy=None):
     cspec = vim.vm.ConfigSpec()
     cspec.annotation = annotation
-    cspec.memoryMB = long(memory)
+    cspec.memoryMB = memory
     cspec.guestId = guest
     cspec.name = name
     cspec.numCPUs = cpus

@@ -14,7 +14,8 @@ import logging
 import pickle
 import socket
 import struct
-
+from builtins import map
+from builtins import filter
 from .publisher import Publisher
 
 DEFAULT_CARBON_PORT = 2004
@@ -41,7 +42,7 @@ class GraphitePublisher(Publisher):
                 tag_list = host_tags.split(',')
                 tag_list = map(lambda tag: tag.strip().replace(' ', '-').replace('.', '-'), tag_list)
                 tag_list = filter(lambda tag: tag is not "", tag_list)
-                tag_list.sort()
+                tag_list = sorted(tag_list)
                 tags_joined = ".".join(tag_list)
                 if tags_joined != "":
                     tags = "." + tags_joined

@@ -51,9 +51,9 @@ class TestPlacementManager(unittest.TestCase):
 
     @parameterized.expand([
         # d1, d2,  oc,  (score)
-        (512, 512, 1.0, (87, 100)),  # disk score dominates 1-(0.5k+0.5k)/8k
+        (512, 512, 1.0, (88, 100)),  # disk score dominates 1-(0.5k+0.5k)/8k
         (1,   1,   1.0, (97, 100)),  # memory score dominates 1-2k/64k
-        (512, 512, 2.0, (87, 100)),  # disk score dominates 1-(0.5k+0.5k)/8k
+        (512, 512, 2.0, (88, 100)),  # disk score dominates 1-(0.5k+0.5k)/8k
         (1,   1,   2.0, (98, 100)),  # memory score dominates 1-2k/(64k*2)
     ])
     def test_place_new(self, disk_capacity_1, disk_capacity_2, overcommit,
@@ -859,7 +859,7 @@ class PMBuilder(object):
         if datastore_id not in self.ds_map.keys():
             self._logger.warning("Datastore (%s) not connected" %
                                  datastore_id)
-            raise Exception
+            raise Exception()
         return self.ds_map[datastore_id][0]
 
     def check_image(self, image_id, datastore_id):

@@ -417,9 +417,9 @@ class EsxVmManager(VmManager):
         """
         try:
             iso_path = self.vim_client.detach_iso(vm_id)
-        except DeviceNotFoundException, e:
+        except DeviceNotFoundException as e:
             raise IsoNotAttachedException(e)
-        except TypeError, e:
+        except TypeError as e:
             raise IsoNotAttachedException(e)
 
         if delete_file:

@@ -18,7 +18,7 @@ import re
 from pyVmomi import vim, vmodl, SoapStubAdapter, SessionOrientedStub
 from pyVmomi.VmomiSupport import versionIdMap, versionMap, IsChildVersion
 from pyVmomi.VmomiSupport import GetServiceVersions
-
+from io import open
 try:
     from xml.etree.ElementTree import ElementTree
 except ImportError:
@@ -153,7 +153,7 @@ def Disconnect(si):
 def GetLocalTicket(si, user):
     try:
         sessionManager = si.content.sessionManager
-    except Exception, e:
+    except Exception as e:
         if type(e).__name__ == 'ExpatError':
             msg = 'Malformed response while querying for local ticket: "%s"'\
                   % e
@@ -162,7 +162,7 @@ def GetLocalTicket(si, user):
             msg = 'Failed to query for local ticket: "%s"' % e
             raise vim.fault.HostConnectFault(msg=msg)
     localTicket = sessionManager.AcquireLocalTicket(userName=user)
-    return (localTicket.userName, file(localTicket.passwordFilePath).read())
+    return (localTicket.userName, open(localTicket.passwordFilePath, 'r').read())
 
 
 # Private method that performs the actual Connect and returns a
@@ -210,7 +210,7 @@ def __Login(host, port, user, pwd, service, adapter, version, path,
         content = si.RetrieveContent()
     except vmodl.MethodFault:
         raise
-    except Exception, e:
+    except Exception as e:
         raise vim.fault.HostConnectFault(msg=str(e))
 
     # Get a ticket if we're connecting to localhost and password is not
