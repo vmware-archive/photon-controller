@@ -17,6 +17,8 @@ import enum
 from gen.resource.ttypes import Datastore as ThriftDatastore
 from gen.resource.ttypes import Disk as ThriftDisk
 from gen.resource.ttypes import DiskImage as ThriftDiskImage
+from gen.resource.ttypes import NetworkInfo
+from gen.resource.ttypes import NetworkInfoType
 from gen.resource.ttypes import Resource as ThriftResource
 from gen.resource.ttypes import ResourceConstraintType
 from gen.resource.ttypes import ResourcePlacementType
@@ -386,10 +388,19 @@ class AgentResourcePlacementList(BaseResource):
                 vm.placement = placement
                 continue
 
-            if (placement.type is ResourcePlacementType.NETWORK or
-                placement.type is ResourcePlacementType.VIRTUAL_NETWORK) and \
-                    placement.resource_id == vm.id:
-                        vm.networks.append(placement.container_id)
+            if placement.type is ResourcePlacementType.NETWORK and \
+               placement.resource_id == vm.id:
+                    vm.networks.append(
+                        NetworkInfo(
+                            NetworkInfoType.NETWORK,
+                            placement.container_id))
+
+            if placement.type is ResourcePlacementType.VIRTUAL_NETWORK and \
+               placement.resource_id == vm.id:
+                    vm.networks.append(
+                        NetworkInfo(
+                            NetworkInfoType.VIRTUAL_NETWORK,
+                            placement.container_id))
 
         AgentResourcePlacementList.\
             unpack_placement_list_disks(placement_list,

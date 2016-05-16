@@ -63,6 +63,7 @@ from gen.resource.ttypes import DatastoreType
 from gen.resource.ttypes import Disk
 from gen.resource.ttypes import Image
 from gen.resource.ttypes import InactiveImageDescriptor
+from gen.resource.ttypes import NetworkInfo
 from gen.resource.ttypes import Resource
 from gen.resource.ttypes import ResourceConstraint
 from gen.resource.ttypes import ResourceConstraintType
@@ -196,7 +197,7 @@ class HostHandlerTestCase(unittest.TestCase):
         disk_ids = ["disk_id_1", "disk_id_2", "disk_id_3"]
         datastore_ids = ["datastore_1", "datastore_2", "datastore_3"]
         disk_flavor = "disk_flavor_1"
-        networks = ["net_1", "net_2"]
+        networks = [NetworkInfo(0, "net_1"), NetworkInfo(0, "net_2")]
         vm_flavor = "vm_flavor_1"
         vm_id = "vm_id_1"
 
@@ -248,14 +249,14 @@ class HostHandlerTestCase(unittest.TestCase):
         placement = ResourcePlacement()
         placement.type = ResourcePlacementType.NETWORK
         placement.resource_id = vm_id
-        placement.container_id = networks[0]
+        placement.container_id = networks[0].id
         placements.append(placement)
 
         # Add Network placement info : net_2
         placement = ResourcePlacement()
         placement.type = ResourcePlacementType.NETWORK
         placement.resource_id = vm_id
-        placement.container_id = networks[1]
+        placement.container_id = networks[1].id
         placements.append(placement)
 
         # Add disks placement info
