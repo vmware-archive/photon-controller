@@ -13,17 +13,27 @@
 
 package com.vmware.photon.controller.apife.clients;
 
-import com.vmware.photon.controller.api.Project;
+import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
+import com.vmware.photon.controller.api.VirtualNetwork;
 import com.vmware.photon.controller.api.VirtualNetworkCreateSpec;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
+import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
 import com.vmware.photon.controller.apibackend.servicedocuments.CreateVirtualNetworkWorkflowDocument;
 import com.vmware.photon.controller.apibackend.servicedocuments.DeleteVirtualNetworkWorkflowDocument;
 import com.vmware.photon.controller.apibackend.workflows.CreateVirtualNetworkWorkflowService;
 import com.vmware.photon.controller.apibackend.workflows.DeleteVirtualNetworkWorkflowService;
+import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.backends.clients.HousekeeperXenonRestClient;
 import com.vmware.photon.controller.apife.backends.utils.TaskUtils;
+import com.vmware.photon.controller.apife.backends.utils.VirtualNetworkUtils;
+import com.vmware.photon.controller.apife.utils.PaginationUtils;
+import com.vmware.photon.controller.cloudstore.dcp.entity.VirtualNetworkService;
+import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
+import com.vmware.xenon.common.ServiceDocumentQueryResult;
 
+import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 
 /**
@@ -33,21 +43,27 @@ public class VirtualNetworkFeClient {
 
   // We host api-backend in the Housekeeper service.
   private final HousekeeperXenonRestClient backendClient;
+  private final ApiFeXenonRestClient cloudStoreClient;
 
   @Inject
-  public VirtualNetworkFeClient(HousekeeperXenonRestClient housekeeperClient) {
+  public VirtualNetworkFeClient(HousekeeperXenonRestClient housekeeperClient,
+                                ApiFeXenonRestClient cloudStoreClient) {
     this.backendClient = housekeeperClient;
     this.backendClient.start();
+
+    this.cloudStoreClient = cloudStoreClient;
+    this.cloudStoreClient.start();
   }
 
   /**
    * Creates a virtual network by the given creation spec.
    */
-  public Task create(String projectId,
+  public Task create(String parentId,
+                     String parentKind,
                      VirtualNetworkCreateSpec spec) throws ExternalException {
     CreateVirtualNetworkWorkflowDocument startState = new CreateVirtualNetworkWorkflowDocument();
-    startState.parentId = projectId;
-    startState.parentKind = Project.KIND;
+    startState.parentId = parentId;
+    startState.parentKind = parentKind;
     startState.name = spec.getName();
     startState.description = spec.getDescription();
     startState.routingType = spec.getRoutingType();
@@ -61,10 +77,6 @@ public class VirtualNetworkFeClient {
 
   /**
    * Delete the given virtual network.
-   *
-   * @param networkId
-   * @return
-   * @throws ExternalException
    */
   public Task delete(String networkId) throws ExternalException {
     DeleteVirtualNetworkWorkflowDocument startState = new DeleteVirtualNetworkWorkflowDocument();
@@ -75,5 +87,49 @@ public class VirtualNetworkFeClient {
         .getBody(DeleteVirtualNetworkWorkflowDocument.class);
 
     return TaskUtils.convertBackEndToFrontEnd(finalState.taskServiceState);
+  }
+
+  /**
+   * Gets a list of virtual networks by the given parent ID and kind.
+   * The list can be filtered by the optional name of the virtual network. The size of the list
+   * can be restricted by the optional page size.
+   */
+  public ResourceList<VirtualNetwork> list(String parentId,
+                                           String parentKind,
+                                           Optional<String> name,
+                                           Optional<Integer> pageSize) throws ExternalException {
+    final ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
+    termsBuilder.put("parentId", parentId);
+    termsBuilder.put("parentKind", parentKind);
+    if (name.isPresent()) {
+      termsBuilder.put("name", name.get());
+    }
+
+    ImmutableMap<String, String> terms = termsBuilder.build();
+
+    ServiceDocumentQueryResult queryResult = cloudStoreClient.queryDocuments(
+        VirtualNetworkService.State.class, terms, pageSize, true);
+
+    return PaginationUtils.xenonQueryResultToResourceList(
+        VirtualNetworkService.State.class,
+        queryResult,
+        VirtualNetworkUtils::convert);
+  }
+
+  /**
+   * Gets the remaining list of the virtual network.
+   */
+  public ResourceList<VirtualNetwork> nextList(String pageLink) throws ExternalException {
+    ServiceDocumentQueryResult queryResult;
+    try {
+      queryResult = cloudStoreClient.queryDocumentPage(pageLink);
+    } catch (DocumentNotFoundException e) {
+      throw new PageExpiredException(pageLink);
+    }
+
+    return PaginationUtils.xenonQueryResultToResourceList(
+        VirtualNetworkService.State.class,
+        queryResult,
+        VirtualNetworkUtils::convert);
   }
 }

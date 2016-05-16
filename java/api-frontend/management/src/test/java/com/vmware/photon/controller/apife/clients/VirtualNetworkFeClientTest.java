@@ -13,18 +13,26 @@
 
 package com.vmware.photon.controller.apife.clients;
 
-import com.vmware.photon.controller.api.Project;
+import com.vmware.photon.controller.api.NetworkState;
+import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.RoutingType;
 import com.vmware.photon.controller.api.Task;
+import com.vmware.photon.controller.api.VirtualNetwork;
 import com.vmware.photon.controller.api.VirtualNetworkCreateSpec;
 import com.vmware.photon.controller.apibackend.servicedocuments.CreateVirtualNetworkWorkflowDocument;
 import com.vmware.photon.controller.apibackend.servicedocuments.DeleteVirtualNetworkWorkflowDocument;
 import com.vmware.photon.controller.apibackend.workflows.CreateVirtualNetworkWorkflowService;
 import com.vmware.photon.controller.apibackend.workflows.DeleteVirtualNetworkWorkflowService;
+import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.backends.clients.HousekeeperXenonRestClient;
 import com.vmware.photon.controller.cloudstore.dcp.entity.TaskService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.VirtualNetworkService;
 import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.ServiceDocumentQueryResult;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableMap;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import static org.hamcrest.CoreMatchers.is;
@@ -37,6 +45,8 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.UUID;
 
 /**
@@ -44,15 +54,22 @@ import java.util.UUID;
  */
 public class VirtualNetworkFeClientTest {
 
+  private ObjectMapper objectMapper;
   private HousekeeperXenonRestClient backendClient;
+  private ApiFeXenonRestClient cloudStoreClient;
   private VirtualNetworkFeClient frontendClient;
 
   @BeforeMethod
   public void setUp() {
+    objectMapper = new ObjectMapper();
+
     backendClient = mock(HousekeeperXenonRestClient.class);
     doNothing().when(backendClient).start();
 
-    frontendClient = new VirtualNetworkFeClient(backendClient);
+    cloudStoreClient = mock(ApiFeXenonRestClient.class);
+    doNothing().when(cloudStoreClient).start();
+
+    frontendClient = new VirtualNetworkFeClient(backendClient, cloudStoreClient);
   }
 
   @Test
@@ -67,7 +84,7 @@ public class VirtualNetworkFeClientTest {
     expectedStartState.description = spec.getDescription();
     expectedStartState.routingType = spec.getRoutingType();
     expectedStartState.parentId = "parentId";
-    expectedStartState.parentKind = Project.KIND;
+    expectedStartState.parentKind = "parentKind";
 
     CreateVirtualNetworkWorkflowDocument expectedFinalState = new CreateVirtualNetworkWorkflowDocument();
     expectedFinalState.taskServiceState = new TaskService.State();
@@ -84,9 +101,10 @@ public class VirtualNetworkFeClientTest {
         eq(CreateVirtualNetworkWorkflowService.FACTORY_LINK),
         refEq(expectedStartState));
 
-    frontendClient.create("parentId", spec);
+    Task task = frontendClient.create("parentId", "parentKind", spec);
 
     verify(backendClient).post(any(String.class), any(CreateVirtualNetworkWorkflowDocument.class));
+    assertThat(task.getState(), is(TaskService.State.TaskState.COMPLETED.toString()));
   }
 
   @Test
@@ -112,5 +130,92 @@ public class VirtualNetworkFeClientTest {
 
     verify(backendClient).post(eq(DeleteVirtualNetworkWorkflowService.FACTORY_LINK), refEq(startState));
     assertThat(task.getState(), is(TaskService.State.TaskState.COMPLETED.toString()));
+  }
+
+  @Test
+  public void succeedsToListAll() throws Throwable {
+    VirtualNetworkService.State expectedVirtualNetworkState = new VirtualNetworkService.State();
+    expectedVirtualNetworkState.state = NetworkState.READY;
+
+    ServiceDocumentQueryResult expectedQueryResult = new ServiceDocumentQueryResult();
+    String documentLink = UUID.randomUUID().toString();
+    String nextPageLink = "nextPageLink" + UUID.randomUUID().toString();
+    String prevPageLink = "prevPageLink" + UUID.randomUUID().toString();
+    expectedQueryResult.documentLinks = new ArrayList<>();
+    expectedQueryResult.documentLinks.add(documentLink);
+    expectedQueryResult.documents = new HashMap<>();
+    expectedQueryResult.documents.put(documentLink, objectMapper.writeValueAsString(expectedVirtualNetworkState));
+    expectedQueryResult.nextPageLink = nextPageLink;
+    expectedQueryResult.prevPageLink = prevPageLink;
+
+    ImmutableMap.Builder<String, String> expectedTermsBuilder = new ImmutableMap.Builder<>();
+    expectedTermsBuilder.put("parentId", "parentId");
+    expectedTermsBuilder.put("parentKind", "parentKind");
+
+    doReturn(expectedQueryResult).when(cloudStoreClient).queryDocuments(
+        eq(VirtualNetworkService.State.class),
+        refEq(expectedTermsBuilder.build()),
+        eq(Optional.absent()),
+        eq(true));
+
+    ResourceList<VirtualNetwork> actualVirtualNetworks = frontendClient.list(
+        "parentId",
+        "parentKind",
+        Optional.absent(),
+        Optional.absent());
+
+    verify(cloudStoreClient).queryDocuments(
+        eq(VirtualNetworkService.State.class),
+        refEq(expectedTermsBuilder.build()),
+        eq(Optional.absent()),
+        eq(true));
+    assertThat(actualVirtualNetworks.getItems().size(), is(1));
+
+    VirtualNetwork actualVirtualNetwork = actualVirtualNetworks.getItems().get(0);
+    assertThat(actualVirtualNetwork.getState(), is(NetworkState.READY));
+  }
+
+  @Test
+  public void succeedsToListByName() throws Throwable {
+    VirtualNetworkService.State expectedVirtualNetworkState = new VirtualNetworkService.State();
+    expectedVirtualNetworkState.state = NetworkState.READY;
+
+    ServiceDocumentQueryResult expectedQueryResult = new ServiceDocumentQueryResult();
+    String documentLink = UUID.randomUUID().toString();
+    String nextPageLink = "nextPageLink" + UUID.randomUUID().toString();
+    String prevPageLink = "prevPageLink" + UUID.randomUUID().toString();
+    expectedQueryResult.documentLinks = new ArrayList<>();
+    expectedQueryResult.documentLinks.add(documentLink);
+    expectedQueryResult.documents = new HashMap<>();
+    expectedQueryResult.documents.put(documentLink, objectMapper.writeValueAsString(expectedVirtualNetworkState));
+    expectedQueryResult.nextPageLink = nextPageLink;
+    expectedQueryResult.prevPageLink = prevPageLink;
+
+    ImmutableMap.Builder<String, String> expectedTermsBuilder = new ImmutableMap.Builder<>();
+    expectedTermsBuilder.put("parentId", "parentId");
+    expectedTermsBuilder.put("parentKind", "parentKind");
+    expectedTermsBuilder.put("name", "name");
+
+    doReturn(expectedQueryResult).when(cloudStoreClient).queryDocuments(
+        eq(VirtualNetworkService.State.class),
+        refEq(expectedTermsBuilder.build()),
+        eq(Optional.absent()),
+        eq(true));
+
+    ResourceList<VirtualNetwork> actualVirtualNetworks = frontendClient.list(
+        "parentId",
+        "parentKind",
+        Optional.of("name"),
+        Optional.absent());
+
+    verify(cloudStoreClient).queryDocuments(
+        eq(VirtualNetworkService.State.class),
+        refEq(expectedTermsBuilder.build()),
+        eq(Optional.absent()),
+        eq(true));
+    assertThat(actualVirtualNetworks.getItems().size(), is(1));
+
+    VirtualNetwork actualVirtualNetwork = actualVirtualNetworks.getItems().get(0);
+    assertThat(actualVirtualNetwork.getState(), is(NetworkState.READY));
   }
 }
