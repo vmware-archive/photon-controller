@@ -548,6 +548,9 @@ class HostHandlerTestCase(unittest.TestCase):
 
         vm = MagicMock()
         vm.id = str(uuid.uuid4())
+        vm_manager = handler.hypervisor.vm_manager
+        vm_location_id = str(uuid.uuid4())
+        vm_manager.get_location_id.return_value = vm_location_id
         pm = handler.hypervisor.placement_manager
         pm.consume_vm_reservation.return_value = vm
         dm = handler.hypervisor.datastore_manager
@@ -558,6 +561,9 @@ class HostHandlerTestCase(unittest.TestCase):
         response = handler.create_vm(request)
         assert_that(response.result, equal_to(CreateVmResultCode.OK))
         pm.remove_vm_reservation.assert_called_once_with(request.reservation)
+        vm_manager.get_location_id.assert_called_once_with(vm.id)
+        assert_that(vm.location_id, equal_to(vm_location_id))
+        vm.to_thrift.assert_called_once()
 
         # Test lazy image copy
         assert_that(im.copy_image.called, is_(False))
