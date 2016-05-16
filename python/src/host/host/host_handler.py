@@ -344,7 +344,7 @@ class HostHandler(Host.Iface):
 
         try:
             datastore_id = self._select_datastore_for_vm_create(vm)
-        except MissingPlacementDescriptorException, e:
+        except MissingPlacementDescriptorException as e:
             self._logger.error("Cannot create VM as reservation is missing placement information, %s" % vm.id)
             return CreateVmResponse(CreateVmResultCode.PLACEMENT_NOT_FOUND, type(e).__name__)
         self._logger.info("Creating VM %s in datastore %s" % (vm.id, datastore_id))
@@ -576,7 +576,7 @@ class HostHandler(Host.Iface):
             return response
         except VmNotFoundException:
             return self._error_response(PowerVmOpResultCode.VM_NOT_FOUND, "VM %s not found" % request.vm_id, response)
-        except VmPowerStateException, e:
+        except VmPowerStateException as e:
             return self._error_response(PowerVmOpResultCode.INVALID_VM_POWER_STATE, str(e), response)
 
     @log_request
@@ -629,12 +629,12 @@ class HostHandler(Host.Iface):
                 datastore_name = self.hypervisor.datastore_manager.datastore_name(datastore)
                 thrift_disk.datastore = Datastore(id=datastore, name=datastore_name)
                 disk_error.result = CreateDiskResultCode.OK
-            except MissingPlacementDescriptorException, e:
+            except MissingPlacementDescriptorException as e:
                 self._logger.error("Cannot create Disk as reservation is missing placement information, %s" % disk.id)
                 disk_error.result = CreateDiskResultCode.PLACEMENT_NOT_FOUND
                 disk_error.error = type(e).__name__
                 continue
-            except Exception, e:
+            except Exception as e:
                 self._logger.error("Unexpected exception %s, %s" % (disk.id, e), exc_info=True)
                 disk_error.result = CreateDiskResultCode.SYSTEM_ERROR
                 disk_error.error = type(e).__name__
@@ -666,7 +666,7 @@ class HostHandler(Host.Iface):
             try:
                 self.hypervisor.disk_manager.delete_disk(datastore, disk_id)
                 disk_error.result = DeleteDiskResultCode.OK
-            except Exception, e:
+            except Exception as e:
                 self._logger.warning("Unexpected exception %s" % e, exc_info=True)
                 disk_error.result = DeleteDiskResultCode.SYSTEM_ERROR
                 disk_error.error = str(e)
@@ -711,7 +711,7 @@ class HostHandler(Host.Iface):
                 response.error = "Vm in suspended state"
                 return
 
-        except VmNotFoundException, e:
+        except VmNotFoundException as e:
             self._logger.warning(
                 "_update_disks_with_response: %s" % (e),
                 exc_info=True)
@@ -737,13 +737,13 @@ class HostHandler(Host.Iface):
                     self.hypervisor.vm_manager.detach_disk(vm_id, disk_id)
 
                 disk_error.result = VmDiskOpResultCode.OK
-            except DiskNotFoundException, e:
+            except DiskNotFoundException as e:
                 self._logger.warning("_update_disks_with_response %s" % e, exc_info=True)
                 response.result = VmDiskOpResultCode.DISK_NOT_FOUND
                 disk_error.result = VmDiskOpResultCode.DISK_NOT_FOUND
                 disk_error.error = str(e)
                 continue
-            except ValueError, e:
+            except ValueError as e:
                 self._logger.warning("_update_disks_with_response %s" % e, exc_info=True)
                 if not is_attach and str(e) == 'ENOENT':
                     response.result = VmDiskOpResultCode.DISK_DETACHED
@@ -754,7 +754,7 @@ class HostHandler(Host.Iface):
                     disk_error.result = VmDiskOpResultCode.SYSTEM_ERROR
                     disk_error.error = str(e)
                 continue
-            except Exception, e:
+            except Exception as e:
                 self._logger.warning("_update_disks_with_response %s" % e, exc_info=True)
                 response.result = VmDiskOpResultCode.SYSTEM_ERROR
                 disk_error.result = VmDiskOpResultCode.SYSTEM_ERROR

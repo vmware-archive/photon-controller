@@ -11,6 +11,7 @@
 # under the License.
 
 import abc
+from six import with_metaclass
 from common.kind import Flavor
 import enum
 
@@ -53,9 +54,7 @@ class NetworkInfo(object):
         self.id = id
 
 
-class BaseResource(object):
-
-    __metaclass__ = abc.ABCMeta
+class BaseResource(with_metaclass(abc.ABCMeta, object)):
 
     @abc.abstractmethod
     def to_thrift(self):

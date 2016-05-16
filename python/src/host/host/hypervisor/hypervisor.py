@@ -15,20 +15,21 @@
 import abc
 import logging
 
+from six import with_metaclass
+
 from host.hypervisor.image_monitor import ImageMonitor
 from host.hypervisor.placement_manager import PlacementManager
 from host.hypervisor.placement_manager import PlacementOption
 from host.hypervisor.resources import Resource
 
 
-class UpdateListener(object):
+class UpdateListener(with_metaclass(abc.ABCMeta, object)):
     """
     Abstract base class for host update listener.
 
     IMPORTANT: The underlying hypervisor holds a lock while notifying
     listeners, so these callbacks should be reasonably light-weight.
     """
-    __metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod
     def datastores_updated(self):

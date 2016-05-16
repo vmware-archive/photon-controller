@@ -139,7 +139,7 @@ class HttpTransferer(object):
                     write_lease.Progress(progress)
                     self._logger.debug("Sent %d MB, Progress %d%%" %
                                        (CHUNK_SIZE * counter // (1024 * 1024), progress))
-        except socket.error, e:
+        except socket.error as e:
             err_str = str(e)
             self._logger.info("Upload failed: %s" % err_str)
             raise TransferException(err_str)

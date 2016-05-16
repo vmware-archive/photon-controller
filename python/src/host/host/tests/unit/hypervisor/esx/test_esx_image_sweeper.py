@@ -409,7 +409,7 @@ class ImageSweeperDeleteImageTestCase(unittest.TestCase):
 
     def patched_read_marker_file(self, filename):
         if not os.path.exists(filename):
-            raise OSError
+            raise OSError()
         return self.marker_file_content_time
 
     def patched_get_datastore_type(self, datastore_id):

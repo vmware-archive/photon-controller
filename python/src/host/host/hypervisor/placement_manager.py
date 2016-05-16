@@ -14,7 +14,8 @@ import logging
 import uuid
 from enum import enum, Enum
 from random import shuffle
-
+from six import iteritems
+from builtins import round
 from common.kind import Unit
 from common.log import log_duration
 from gen.resource.ttypes import ResourcePlacementType
@@ -306,7 +307,7 @@ class PlacementManager(object):
             matched_resources = self._collect_matched_resource(
                 constraints, host_available_resources)
 
-            for resource_type, values in matched_resources.iteritems():
+            for resource_type, values in iteritems(matched_resources):
                 placement_list.extend([
                     AgentResourcePlacement(
                         mapping[resource_type],

@@ -65,6 +65,9 @@ build_for_py_ver() {
    elif [ $esx_version == "6.0.0" ]; then
       PYTHON_VERSION=2.7
       PYTHON=python2.7
+   elif [ $esx_version == "6.5.0" ]; then
+      PYTHON_VERSION=3.0
+      PYTHON=3.0
    fi
 
    # Install virtualenv in the working directory

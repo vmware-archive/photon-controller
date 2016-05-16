@@ -12,10 +12,11 @@
 
 import abc
 
+from six import with_metaclass
 
-class Collector(object):
+
+class Collector(with_metaclass(abc.ABCMeta, object)):
     """The base class for any stats collector."""
-    __metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod
     def collect(self, since=None):

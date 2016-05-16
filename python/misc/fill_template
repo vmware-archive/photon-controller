@@ -25,4 +25,4 @@ with open(sys.argv[1], "r") as f:
     it = iter(sys.argv[2:])
     mapping = dict(zip(it, it))
 
-    print template.substitute(mapping)
+    print(template.substitute(mapping))

@@ -9,7 +9,6 @@
 # warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
 # License for then specific language governing permissions and limitations
 # under the License.
-
 import abc
 from enum import enum, Enum
 import copy

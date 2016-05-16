@@ -9,6 +9,7 @@
 # warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
 # License for then specific language governing permissions and limitations
 # under the License.
+
 import csv
 import uuid
 
@@ -277,7 +278,7 @@ class DatastoreImageScanner:
         if self._state != DatastoreImageScanner.State.IDLE:
             self.logger.info("Image marker thread already running: %s"
                              % self._state)
-            raise TaskAlreadyRunning
+            raise TaskAlreadyRunning()
         self._state = DatastoreImageScanner.State.INIT
         if timeout:
             self._timeout = timeout
@@ -294,7 +295,7 @@ class DatastoreImageScanner:
     @locked
     def set_state(self, state):
         if not self._validate_state_transition(state):
-            raise InvalidStateTransition
+            raise InvalidStateTransition()
         self._state = state
 
     def stop(self):
