@@ -82,6 +82,18 @@ struct Network {
   2: optional list<NetworkType> types
 }
 
+// NetworkInfoType
+enum NetworkInfoType {
+  NETWORK = 0
+  VIRTUAL_NETWORK = 1
+}
+
+// NetworkInfo
+struct NetworkInfo {
+  1: required NetworkInfoType type
+  2: required string id
+}
+
 // Datastore Type
 enum DatastoreType {
   LOCAL_VMFS = 0
@@ -202,6 +214,7 @@ struct Vm {
   8: optional list<ResourceConstraint> resource_constraints
   9: optional string tenant_id
   10: optional string project_id
+  11: optional list<NetworkInfo> networks
 }
 
 // Resource
