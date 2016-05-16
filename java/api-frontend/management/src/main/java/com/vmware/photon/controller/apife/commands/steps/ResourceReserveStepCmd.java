@@ -288,10 +288,15 @@ public class ResourceReserveStepCmd extends StepCommand {
         break;
 
       case HOST_KIND:
-      case PORT_GROUP_KIND:
         logger.info("{} locality is not honored by root scheduler and is to be ignored when building the resource " +
             "constraints", localityEntity.getKind());
         return null;
+
+      case PORT_GROUP_KIND:
+        resourceConstraint.setType(ResourceConstraintType.NETWORK);
+        constraintValues.add(localityEntity.getResourceId());
+        resourceConstraint.setValues(constraintValues);
+        break;
 
       default:
         String errorMessage = String.format("%s locality is an unexpected constraint for creating a VM.",
