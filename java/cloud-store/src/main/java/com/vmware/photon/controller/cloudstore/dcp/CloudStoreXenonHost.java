@@ -36,6 +36,7 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.VirtualNetworkService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.VmServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.task.AvailabilityZoneCleanerFactoryService;
 import com.vmware.photon.controller.cloudstore.dcp.task.EntityLockCleanerFactoryService;
+import com.vmware.photon.controller.cloudstore.dcp.task.EntityLockDeleteFactoryService;
 import com.vmware.photon.controller.cloudstore.dcp.task.TombstoneCleanerFactoryService;
 import com.vmware.photon.controller.cloudstore.dcp.task.trigger.AvailabilityZoneCleanerTriggerBuilder;
 import com.vmware.photon.controller.cloudstore.dcp.task.trigger.EntityLockCleanerTriggerBuilder;
@@ -130,6 +131,7 @@ public class CloudStoreXenonHost
       // Tasks
       TaskTriggerFactoryService.class,
       EntityLockCleanerFactoryService.class,
+      EntityLockDeleteFactoryService.class,
       TombstoneCleanerFactoryService.class,
       AvailabilityZoneCleanerFactoryService.class,
 
@@ -251,6 +253,7 @@ public class CloudStoreXenonHost
 
             //tasks
             && checkServiceAvailable(EntityLockCleanerFactoryService.SELF_LINK)
+            && checkServiceAvailable(EntityLockDeleteFactoryService.SELF_LINK)
             && checkServiceAvailable(TombstoneCleanerFactoryService.SELF_LINK)
             && checkServiceAvailable(AvailabilityZoneCleanerFactoryService.SELF_LINK)
 
