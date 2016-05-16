@@ -191,6 +191,29 @@ public class ZookeeperModule extends AbstractModule {
     ServiceNodeUtils.joinService(serviceNode, retryIntervalMilliSeconds);
   }
 
+  /**
+   * Creates a ServiceConfigFactory.
+   * @param zkClient the ZookeeperClient to register the service.
+   * @return
+   * @throws Exception
+   */
+  public ServiceConfigFactory getServiceConfigFactory(final CuratorFramework zkClient) throws Exception {
+    ServiceConfigFactory serviceConfigFactory = new ServiceConfigFactory() {
+      final ZookeeperServerReader zookeeperServerReader = getServiceServerReader();
+      final PathChildrenCacheFactory pathChildrenCacheFactory = getServicePathCacheFactory(zkClient,
+          zookeeperServerReader);
+      @Override
+      public ServiceConfig create(String serviceName) {
+        try {
+          return new ServiceConfig(zkClient, pathChildrenCacheFactory, serviceName);
+        } catch (Exception e) {
+          throw new RuntimeException(e);
+        }
+      }
+    };
+    return serviceConfigFactory;
+  }
+
   public void setConfig(ZookeeperConfig config) {
     this.config = config;
   }
