@@ -349,9 +349,9 @@ public class EntityLockCleanerServiceTest {
           EntityLockCleanerService.State.class,
           (EntityLockCleanerService.State state) -> state.taskState.stage == TaskState.TaskStage.FINISHED);
       assertThat(response.danglingEntityLocks,
-          is(Integer.min(danglingEntityLocks, EntityLockCleanerService.DEFAULT_PAGE_LIMIT)));
+          is(danglingEntityLocks));
       assertThat(response.releasedEntityLocks,
-          is(Integer.min(danglingEntityLocks, EntityLockCleanerService.DEFAULT_PAGE_LIMIT)));
+          is(danglingEntityLocks));
 
       verifyLockStatusAfterCleanup(machine, totalEntityLocks, danglingEntityLocks);
     }
@@ -377,9 +377,9 @@ public class EntityLockCleanerServiceTest {
           {7, 5, 1},
           {7, 5, TestEnvironment.DEFAULT_MULTI_HOST_COUNT},
           // Test cases with entity locks greater than the default page limit.
-          {EntityLockCleanerService.DEFAULT_PAGE_LIMIT + 1, EntityLockCleanerService
-              .DEFAULT_PAGE_LIMIT, 1},
-          {EntityLockCleanerService.DEFAULT_PAGE_LIMIT + 1, EntityLockCleanerService
+          {EntityLockCleanerService.DEFAULT_PAGE_LIMIT + 100, EntityLockCleanerService
+              .DEFAULT_PAGE_LIMIT + 100, 1},
+          {EntityLockCleanerService.DEFAULT_PAGE_LIMIT + 100, EntityLockCleanerService
               .DEFAULT_PAGE_LIMIT + 1, 1},
       };
     }
@@ -420,19 +420,13 @@ public class EntityLockCleanerServiceTest {
     private void verifyLockStatusAfterCleanup(TestEnvironment env,
                                               int totalEntityLocks,
                                               int danglingEntityLocks) throws Throwable {
-      Integer expectedNumberOfReleasedLocks =
-          Integer.min(danglingEntityLocks, EntityLockCleanerService.DEFAULT_PAGE_LIMIT);
 
-      for (int i = 0; i < totalEntityLocks; i++) {
+      for (int i = 0; i < danglingEntityLocks; i++) {
         EntityLockService.State entityLock = env.getServiceState(EntityLockServiceFactory.SELF_LINK + "/entity-id" + i,
             EntityLockService.State.class);
         assertThat(entityLock, is(notNullValue()));
         assertThat(entityLock.lockOperation, is(nullValue()));
-        if (i < expectedNumberOfReleasedLocks) {
-          assertThat(entityLock.ownerTaskId, is(nullValue()));
-        } else {
-          assertThat(entityLock.ownerTaskId, is(notNullValue()));
-        }
+        assertThat(entityLock.ownerTaskId, is(nullValue()));
       }
     }
   }
