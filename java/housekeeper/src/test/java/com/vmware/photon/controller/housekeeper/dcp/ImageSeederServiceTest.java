@@ -765,11 +765,12 @@ public class ImageSeederServiceTest {
           (state) -> state.taskInfo.stage == TaskState.TaskStage.FINISHED);
 
       //Check Image Service datastore counts
+      machine.waitForServiceState(ImageService.State.class, createdImageState.documentSelfLink,
+          (state) -> state.replicatedImageDatastore.equals(2));
       createdImageState = machine.getServiceState(createdImageState.documentSelfLink, ImageService.State.class);
       assertThat(createdImageState.totalDatastore, is(3));
       assertThat(createdImageState.totalImageDatastore, is(3));
       assertThat(createdImageState.replicatedDatastore, is(2));
-      assertThat(createdImageState.replicatedImageDatastore, is(2));
 
       // Check stats.
       ServiceStats stats = machine.getOwnerServiceStats(response);

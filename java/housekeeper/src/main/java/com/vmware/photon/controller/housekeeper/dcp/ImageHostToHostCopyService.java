@@ -626,6 +626,8 @@ public class ImageHostToHostCopyService extends StatefulService {
                       "Could not increment replicatedImageDatastore for image %s by %s: %s",
                       current.image, 1, t);
                 }
+                ServiceUtils.logInfo(this, "Image document has been updated with %s.",
+                    Utils.toJson(op.getBody(ImageService.State.class)));
               });
               sendRequest(adjustReplicationCountPatch);
             }
