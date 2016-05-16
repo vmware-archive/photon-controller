@@ -83,6 +83,8 @@ from host.hypervisor.placement_manager import InvalidReservationException
 from host.hypervisor.placement_manager import NoSuchResourceException
 from host.hypervisor.resources import AgentResourcePlacement
 from host.hypervisor.resources import Disk as HostDisk
+from host.hypervisor.resources import NetworkInfo
+from host.hypervisor.resources import NetworkInfoType
 from host.hypervisor.resources import State as VmState
 from host.hypervisor.system import DatastoreInfo
 from host.hypervisor.vm_manager import DiskNotFoundException
@@ -196,7 +198,8 @@ class HostHandlerTestCase(unittest.TestCase):
         disk_ids = ["disk_id_1", "disk_id_2", "disk_id_3"]
         datastore_ids = ["datastore_1", "datastore_2", "datastore_3"]
         disk_flavor = "disk_flavor_1"
-        networks = ["net_1", "net_2"]
+        networks = [NetworkInfo(NetworkInfoType.NETWORK, "net_1"),
+                    NetworkInfo(NetworkInfoType.NETWORK, "net_2")]
         vm_flavor = "vm_flavor_1"
         vm_id = "vm_id_1"
 
@@ -214,7 +217,12 @@ class HostHandlerTestCase(unittest.TestCase):
             # Check VM networks
             vm_networks = vm.networks
             assert_that(vm_networks is not None)
-            assert_that(set(networks), equal_to(set(vm_networks)))
+            assert_that(len(vm_networks) is 2)
+            network_index = 0
+            for network in vm_networks:
+                assert_that(networks[network_index].type, equal_to(network.type))
+                assert_that(networks[network_index].id, equal_to(network.id))
+                network_index += 1
 
             disks = vm.disks
             assert_that(len(disks) is 3)
@@ -248,14 +256,14 @@ class HostHandlerTestCase(unittest.TestCase):
         placement = ResourcePlacement()
         placement.type = ResourcePlacementType.NETWORK
         placement.resource_id = vm_id
-        placement.container_id = networks[0]
+        placement.container_id = networks[0].id
         placements.append(placement)
 
         # Add Network placement info : net_2
         placement = ResourcePlacement()
         placement.type = ResourcePlacementType.NETWORK
         placement.resource_id = vm_id
-        placement.container_id = networks[1]
+        placement.container_id = networks[1].id
         placements.append(placement)
 
         # Add disks placement info
@@ -301,6 +309,49 @@ class HostHandlerTestCase(unittest.TestCase):
         state.set_mode(MODE.MAINTENANCE)
         response = handler.reserve(request)
         assert_that(response.result, equal_to(ReserveResultCode.OPERATION_NOT_ALLOWED))
+
+    def test_reserve_vm_with_virtual_network(self):
+        network = NetworkInfo(NetworkInfoType.VIRTUAL_NETWORK, "vnet_1")
+        vm_flavor = "vm_flavor_1"
+        vm_id = "vm_id_1"
+
+        def reserve_vm_vnet_validate(vm, disks):
+            assert_that(vm)
+            assert_that(not disks)
+            assert_that(vm.id, equal_to(vm_id))
+
+            # Check VM virtual network
+            assert_that(len(vm.networks) is 1)
+            vm_network = vm.networks[0]
+            assert_that(vm_network is not None)
+            assert_that(network.type, equal_to(vm_network.type))
+            assert_that(network.id, equal_to(vm_network.id))
+
+            return "reservation_id"
+
+        handler = HostHandler(MagicMock())
+        mocked_reserve = MagicMock()
+        mocked_reserve.side_effect = reserve_vm_vnet_validate
+        handler.hypervisor.placement_manager = MagicMock()
+        handler.hypervisor.placement_manager.reserve = mocked_reserve
+
+        # Add Network placement info : vnet_1
+        placements = []
+        placement = ResourcePlacement()
+        placement.type = ResourcePlacementType.VIRTUAL_NETWORK
+        placement.resource_id = vm_id
+        placement.container_id = network.id
+        placements.append(placement)
+        placement_list = ResourcePlacementList(placements)
+
+        vm = Vm(vm_id, vm_flavor, State.STOPPED, None, None, None, None)
+
+        request = ReserveRequest()
+        request.generation = 1
+        request.resource = Resource(vm=vm, disks=None, placement_list=placement_list)
+
+        response = handler.reserve(request)
+        assert_that(response.result, equal_to(ReserveResultCode.OK))
 
     @parameterized.expand([
         ("datastore_1", None, "datastore_1"),
@@ -595,7 +646,8 @@ class HostHandlerTestCase(unittest.TestCase):
 
         vm = MagicMock()
         vm.id = str(uuid.uuid4())
-        vm.networks = ["net_1", "net_2"]
+        vm.networks = [NetworkInfo(NetworkInfoType.NETWORK, "net_1"),
+                       NetworkInfo(NetworkInfoType.NETWORK, "net_2")]
         vm.project_id = "p1"
         vm.tenant_id = "t1"
 

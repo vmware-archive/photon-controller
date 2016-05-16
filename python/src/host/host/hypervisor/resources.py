@@ -34,6 +34,25 @@ class State(enum.Enum):
     SUSPENDED = 2
 
 
+@enum.unique
+class NetworkInfoType(enum.Enum):
+    NETWORK = 0
+    VIRTUAL_NETWORK = 1
+
+
+class NetworkInfo(object):
+    """network information"""
+
+    def __init__(self, type=None, id=None):
+        """Create NetworkInfo
+        :type type: NetworkInfoType
+        :type id: network id
+        :return:
+        """
+        self.type = type
+        self.id = id
+
+
 class BaseResource(object):
 
     __metaclass__ = abc.ABCMeta
@@ -380,16 +399,22 @@ class AgentResourcePlacementList(BaseResource):
         if not placement_list:
             return
 
+        mapping = {
+            ResourcePlacementType.NETWORK: NetworkInfoType.NETWORK,
+            ResourcePlacementType.VIRTUAL_NETWORK: NetworkInfoType.VIRTUAL_NETWORK}
+
         for placement in placement_list.placements:
             if placement.type is \
                     ResourcePlacementType.VM:
                 vm.placement = placement
                 continue
 
-            if (placement.type is ResourcePlacementType.NETWORK or
-                placement.type is ResourcePlacementType.VIRTUAL_NETWORK) and \
-                    placement.resource_id == vm.id:
-                        vm.networks.append(placement.container_id)
+            if placement.type in mapping.keys() and \
+               placement.resource_id == vm.id:
+                    vm.networks.append(
+                        NetworkInfo(
+                            mapping.get(placement.type),
+                            placement.container_id))
 
         AgentResourcePlacementList.\
             unpack_placement_list_disks(placement_list,

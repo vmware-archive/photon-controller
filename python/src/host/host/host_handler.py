@@ -118,6 +118,7 @@ from host.hypervisor.placement_manager import NotEnoughDatastoreCapacityExceptio
 from host.hypervisor.placement_manager import NotEnoughMemoryResourceException
 from host.hypervisor.resources import AgentResourcePlacementList
 from host.hypervisor.resources import Disk
+from host.hypervisor.resources import NetworkInfoType
 from host.hypervisor.resources import State
 from host.hypervisor.resources import Vm
 
@@ -364,8 +365,8 @@ class HostHandler(Host.Iface):
 
         # Step 2: Add the nics to the create spec of the VM.
         networks = self._hypervisor.network_manager.get_vm_networks()
-        if len(vm.networks) != 0 and networks:
-            placement_networks = set(vm.networks)
+        placement_networks = self._get_network_ids_by_type(vm.networks, NetworkInfoType.NETWORK)
+        if placement_networks and networks:
             host_networks = set(networks)
 
             if not placement_networks.issubset(host_networks):
@@ -432,6 +433,18 @@ class HostHandler(Host.Iface):
         response.vm = vm.to_thrift()
 
         return response
+
+    def _get_network_ids_by_type(self, networks, network_type):
+        if not networks:
+            return None
+
+        network_ids = set()
+
+        for network in networks:
+            if network.type == network_type:
+                network_ids.add(network.id)
+
+        return network_ids
 
     def _find_datastore_by_image(self, image_id):
         image_datastores = self.hypervisor.datastore_manager.image_datastores()
