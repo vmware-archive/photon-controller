@@ -17,6 +17,8 @@ import enum
 from gen.resource.ttypes import Datastore as ThriftDatastore
 from gen.resource.ttypes import Disk as ThriftDisk
 from gen.resource.ttypes import DiskImage as ThriftDiskImage
+from gen.resource.ttypes import NetworkInfo
+from gen.resource.ttypes import NetworkInfoType
 from gen.resource.ttypes import Resource as ThriftResource
 from gen.resource.ttypes import ResourceConstraintType
 from gen.resource.ttypes import ResourcePlacementType
@@ -128,6 +130,10 @@ class Vm(BaseResource):
             instance.resource_constraints = \
                 thrift_object.resource_constraints
 
+        if thrift_object.networks:
+            instance.networks = \
+                thrift_object.networks
+
         return instance
 
     def to_thrift(self):
@@ -150,6 +156,9 @@ class Vm(BaseResource):
         if self.datastore:
             thrift_vm.datastore = ThriftDatastore(id=self.datastore,
                                                   name=self.datastore_name)
+
+        if self.networks:
+            thrift_vm.networks = self.networks
 
         return thrift_vm
 
@@ -386,10 +395,19 @@ class AgentResourcePlacementList(BaseResource):
                 vm.placement = placement
                 continue
 
-            if (placement.type is ResourcePlacementType.NETWORK or
-                placement.type is ResourcePlacementType.VIRTUAL_NETWORK) and \
-                    placement.resource_id == vm.id:
-                        vm.networks.append(placement.container_id)
+            if placement.type is ResourcePlacementType.NETWORK and \
+               placement.resource_id == vm.id:
+                    vm.networks.append(
+                        NetworkInfo(
+                            NetworkInfoType.NETWORK,
+                            placement.container_id))
+
+            if placement.type is ResourcePlacementType.VIRTUAL_NETWORK and \
+               placement.resource_id == vm.id:
+                    vm.networks.append(
+                        NetworkInfo(
+                            NetworkInfoType.VIRTUAL_NETWORK,
+                            placement.container_id))
 
         AgentResourcePlacementList.\
             unpack_placement_list_disks(placement_list,
