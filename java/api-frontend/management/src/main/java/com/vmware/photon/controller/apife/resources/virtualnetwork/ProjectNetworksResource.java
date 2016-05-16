@@ -13,14 +13,22 @@
 
 package com.vmware.photon.controller.apife.resources.virtualnetwork;
 
+import com.vmware.photon.controller.api.Project;
+import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
+import com.vmware.photon.controller.api.VirtualNetwork;
 import com.vmware.photon.controller.api.VirtualNetworkCreateSpec;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.clients.VirtualNetworkFeClient;
+import com.vmware.photon.controller.apife.config.PaginationConfig;
+import com.vmware.photon.controller.apife.resources.routes.NetworkResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.ProjectResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
+import com.vmware.photon.controller.apife.utils.PaginationUtils;
 import static com.vmware.photon.controller.api.common.Responses.generateCustomResponse;
+import static com.vmware.photon.controller.api.common.Responses.generateResourceListResponse;
 
+import com.google.common.base.Optional;
 import com.google.inject.Inject;
 import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
@@ -30,14 +38,17 @@ import io.dropwizard.validation.Validated;
 import org.glassfish.jersey.server.ContainerRequest;
 
 import javax.ws.rs.Consumes;
+import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriBuilder;
 
 /**
  * This resource is for network related API.
@@ -49,10 +60,13 @@ import javax.ws.rs.core.Response;
 public class ProjectNetworksResource {
 
   private final VirtualNetworkFeClient virtualNetworkFeClient;
+  private final PaginationConfig paginationConfig;
 
   @Inject
-  public ProjectNetworksResource(VirtualNetworkFeClient virtualNetworkFeClient) {
+  public ProjectNetworksResource(VirtualNetworkFeClient virtualNetworkFeClient,
+                                 PaginationConfig paginationConfig) {
     this.virtualNetworkFeClient = virtualNetworkFeClient;
+    this.paginationConfig = paginationConfig;
   }
 
   @POST
@@ -66,8 +80,40 @@ public class ProjectNetworksResource {
     throws ExternalException {
     return generateCustomResponse(
         Response.Status.CREATED,
-        virtualNetworkFeClient.create(projectId, spec),
+        virtualNetworkFeClient.create(projectId, Project.KIND, spec),
         (ContainerRequest) request,
         TaskResourceRoutes.TASK_PATH);
+  }
+
+  @GET
+  @ApiOperation(value = "Get all networks",
+      response = VirtualNetwork.class, responseContainer = ResourceList.CLASS_NAME)
+  @ApiResponses(value = {
+      @ApiResponse(code = 200, message = "List of all virtual networks")
+  })
+  public Response list(@Context Request request,
+                       @PathParam("id") String projectId,
+                       @QueryParam("name") Optional<String> name,
+                       @QueryParam("pageSize") Optional<Integer> pageSize,
+                       @QueryParam("pageLink") Optional<String> pageLink)
+    throws ExternalException {
+    ResourceList<VirtualNetwork> resourceList;
+    if (pageLink.isPresent()) {
+      resourceList = virtualNetworkFeClient.nextList(pageLink.get());
+    } else {
+      Optional<Integer> adjustedPageSize = PaginationUtils.determinePageSize(paginationConfig, pageSize);
+      resourceList = virtualNetworkFeClient.list(projectId, Project.KIND, name, adjustedPageSize);
+    }
+
+    String apiRoute = UriBuilder
+        .fromPath(ProjectResourceRoutes.PROJECT_NETWORKS_PATH)
+        .build(projectId)
+        .toString();
+
+    return generateResourceListResponse(
+        Response.Status.OK,
+        PaginationUtils.formalizePageLinks(resourceList, apiRoute),
+        (ContainerRequest) request,
+        NetworkResourceRoutes.NETWORK_PATH);
   }
 }
