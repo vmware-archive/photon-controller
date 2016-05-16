@@ -34,8 +34,7 @@ struct VmCache {
   4: required i32 memory_mb
   5: required i32 num_cpu
   6: required list<string> disks
-  7: optional string tenant_id
-  8: optional string project_id
+  7: required string location_id
 }
 
 // Task state
