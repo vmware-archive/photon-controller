@@ -523,7 +523,8 @@ public class CloudStoreConstraintChecker implements ConstraintChecker {
             addCollectionItemClause(queryBuilder, HostService.State.FIELD_NAME_USAGE_TAGS, constraint);
             break;
           case NETWORK:
-            addCollectionItemClause(queryBuilder, HostService.State.FIELD_NAME_REPORTED_NETWORKS, constraint);
+//            addCollectionItemClause(queryBuilder, HostService.State.FIELD_NAME_REPORTED_NETWORKS, constraint);
+            // Temporarily ignore.
             break;
           case VIRTUAL_NETWORK:
             // Nothing needs to be done here: In virtual network case, all hosts are already wired together.
