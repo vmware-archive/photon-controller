@@ -83,6 +83,8 @@ from host.hypervisor.placement_manager import InvalidReservationException
 from host.hypervisor.placement_manager import NoSuchResourceException
 from host.hypervisor.resources import AgentResourcePlacement
 from host.hypervisor.resources import Disk as HostDisk
+from host.hypervisor.resources import NetworkInfo
+from host.hypervisor.resources import NetworkInfoType
 from host.hypervisor.resources import State as VmState
 from host.hypervisor.system import DatastoreInfo
 from host.hypervisor.vm_manager import DiskNotFoundException
@@ -196,7 +198,8 @@ class HostHandlerTestCase(unittest.TestCase):
         disk_ids = ["disk_id_1", "disk_id_2", "disk_id_3"]
         datastore_ids = ["datastore_1", "datastore_2", "datastore_3"]
         disk_flavor = "disk_flavor_1"
-        networks = ["net_1", "net_2"]
+        networks = [NetworkInfo(NetworkInfoType.NETWORK, "net_1"),
+                    NetworkInfo(NetworkInfoType.NETWORK, "net_2")]
         vm_flavor = "vm_flavor_1"
         vm_id = "vm_id_1"
 
@@ -214,7 +217,12 @@ class HostHandlerTestCase(unittest.TestCase):
             # Check VM networks
             vm_networks = vm.networks
             assert_that(vm_networks is not None)
-            assert_that(set(networks), equal_to(set(vm_networks)))
+            assert_that(len(vm_networks) is 2)
+            network_index = 0
+            for network in vm_networks:
+                assert_that(networks[network_index].type, equal_to(network.type))
+                assert_that(networks[network_index].id, equal_to(network.id))
+                network_index += 1
 
             disks = vm.disks
             assert_that(len(disks) is 3)
@@ -248,14 +256,14 @@ class HostHandlerTestCase(unittest.TestCase):
         placement = ResourcePlacement()
         placement.type = ResourcePlacementType.NETWORK
         placement.resource_id = vm_id
-        placement.container_id = networks[0]
+        placement.container_id = networks[0].id
         placements.append(placement)
 
         # Add Network placement info : net_2
         placement = ResourcePlacement()
         placement.type = ResourcePlacementType.NETWORK
         placement.resource_id = vm_id
-        placement.container_id = networks[1]
+        placement.container_id = networks[1].id
         placements.append(placement)
 
         # Add disks placement info
