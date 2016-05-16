@@ -10,6 +10,9 @@
 # specific language governing permissions and limitations under the License.
 
 require "spec_helper"
+require 'dcp/cloud_store/cloud_store_client'
+require 'dcp/deployer_client'
+require 'thrift/thrift_helper'
 
 describe "deployment lifecycle", order: :defined, deployer: true do
 
@@ -151,6 +154,26 @@ describe "deployment lifecycle", order: :defined, deployer: true do
   end
 
   def verify_deployment_destroyed_successfuly(deployment_id)
+    # Verify there are no cloud store services
+    verify_cloud_store_servies_do_not_exist
+
+    # Verify there are no deployer services
+    verify_deployer_servies_do_not_exist
+
+    # Verify there are no agent on the host
+    verify_agent_do_not_exist_on_host
+
+    # Verify there are no vms on the host
+    verify_vm_do_not_exist_on_host
+
+    # Verify availabilityZone is deleted
+    availability_zones = api_client.find_all_availability_zones.items
+    availability_zones.each { |az| expect(az.state).to eq("PENDING_DELETE")}
+
+    # Verify deployment is deleted
+    deployments = api_client.find_all_api_deployments.items
+    expect(deployments.size).to eq(0)
+
     task_list = api_client.find_tasks(deployment_id, "deployment", "COMPLETED")
     tasks = task_list.items
 
@@ -162,9 +185,6 @@ describe "deployment lifecycle", order: :defined, deployer: true do
     expect(destroy_deployment_task.errors).to be_empty
     expect(destroy_deployment_task.warnings).to be_empty
 
-    # Verify availabilityZone is deleted
-    availability_zones = api_client.find_all_availability_zones.items
-    availability_zones.each { |az| expect(az.state).to eq("PENDING_DELETE")}
 
     # Verify that delete deployment succeeded
     delete_deployment_task = tasks.select {|task| task.operation == "DELETE_DEPLOYMENT" }.first
@@ -173,9 +193,82 @@ describe "deployment lifecycle", order: :defined, deployer: true do
     # Verify delete deployment has no errors and warnings
     expect(delete_deployment_task.errors).to be_empty
     expect(delete_deployment_task.warnings).to be_empty
+  end
 
-    # Verify deployment is deleted
-    deployments = api_client.find_all_api_deployments.items
-    expect(deployments.size).to eq(0)
+  def verify_cloud_store_servies_do_not_exist
+    cloud_store = EsxCloud::Dcp::CloudStore::CloudStoreClient.connect_to_endpoint(nil, nil)
+
+    exclusion_list = ["/photon/cloudstore/availabilityzones",
+                      "/photon/cloudstore/groomers/availability-zone-entity-cleaners",
+                      "/photon/cloudstore/groomers/entity-lock-cleaners",
+                      "/photon/cloudstore/groomers/tombstone-entity-cleaners",
+                      "/photon/cloudstore/tasks",
+                      "/photon/cloudstore/tombstones",
+                      "/photon/task-triggers",
+                      "/photon/cloudstore/datastores",
+                      "/photon/cloudstore/images-to-image-datastore-mapping",
+                      "/photon/cloudstore/entity-locks",]
+
+    get_cloudstore_services(cloud_store).each do |service_factory|
+      if !exclusion_list.include?(service_factory)
+        checkNoServiceExist(service_factory, cloud_store)
+      end
+    end
+  end
+
+  def verify_deployer_servies_do_not_exist
+    deployer_store = EsxCloud::Dcp::DeployerClient.connect_to_endpoint(nil, nil)
+    # Verify there are no container services
+    checkNoServiceExist("/photon/containers", deployer_store)
+
+    # Verify there are no container template services
+    checkNoServiceExist("/photon/container-templates", deployer_store)
+
+    # Verify there are no vm services
+    checkNoServiceExist("/photon/vms", deployer_store)
+
+    # Verify there are no vib services
+    checkNoServiceExist("/photon/deployer/entities/vibs", deployer_store)
+  end
+
+  def verify_agent_do_not_exist_on_host
+    begin
+      protocol = Photon::ThriftHelper.get_protocol(EsxCloud::TestHelpers.get_esx_ip, 8835, "AgentControl")
+      fail "Connection to agent on the host should have failed"
+    rescue StandardError => e
+      expect(e.message).to include("Could not connect")
+    end
+  end
+
+  def verify_vm_do_not_exist_on_host
+    Net::SSH.start(EsxCloud::TestHelpers.get_esx_ip,
+                   EsxCloud::TestHelpers.get_esx_username,
+                   {password: EsxCloud::TestHelpers.get_esx_password, user_known_hosts_file: "/dev/null"}) do |ssh|
+    vm_count = ssh.exec!("vim-cmd vmsvc/getallvms | tail -n+2 | awk '{print $1, $2}' | wc -l")
+    expect(vm_count.to_i).to eq(0)
+    end
+  end
+
+  def get_cloudstore_services cloud_store
+    json = cloud_store.get "/"
+    result = Set.new
+    json["documentLinks"].map do |item|
+      if item.include? "photon"
+        result.add(item)
+      end
+    end
+    result
+  end
+
+  def checkNoServiceExist(service_factory, store)
+    begin
+      service_json = store.get service_factory
+    rescue StandardError => e
+      if !e.message.include? "404"
+        raise e
+      end
+    end
+    docs_count = service_json["documentCount"].to_i
+    expect(docs_count).to eq(0)
   end
 end
