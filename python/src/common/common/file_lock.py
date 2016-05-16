@@ -20,6 +20,8 @@ import shutil
 import time
 import uuid
 
+from six import with_metaclass
+
 from gen.resource.ttypes import DatastoreType
 
 LOCK_EXTENSION = "ec_lock"
@@ -75,11 +77,10 @@ class _FileSystemType(Enum):
         raise UnsupportedFileSystem("FS type %d" % thrift_fs_type)
 
 
-class _FileIOBaseImpl(object):
+class _FileIOBaseImpl(with_metaclass(abc.ABCMeta, object)):
     """ Interface for file i/o.
         Specific filesystem implementations will extend this class.
     """
-    __metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod
     def build_lock_path(self, lock_target):

@@ -88,7 +88,7 @@ class TestTaskRunner(TaskRunner):
         test_container.wait_for_main()
 
         if test_container.raise_exception:
-            raise TestException
+            raise TestException()
 
         if self.is_stopped():
             return

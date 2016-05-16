@@ -12,10 +12,11 @@
 
 import abc
 
+from six import with_metaclass
 
-class Publisher(object):
+
+class Publisher(with_metaclass(abc.ABCMeta, object)):
     """The base class for any stats publisher."""
-    __metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod
     def publish(self, stats):

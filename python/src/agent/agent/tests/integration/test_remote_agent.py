@@ -418,7 +418,7 @@ class TestRemoteAgent(unittest.TestCase, AgentCommonTests):
 
         # Doing enough attaches will indirectly verify that we do not grow the
         # device list on reattach.
-        for i in xrange(3):
+        for i in range(3):
             # verify attach works
             vm_wrapper.attach_iso(vm_id, iso_path)
             # verify re-attach to another iso works

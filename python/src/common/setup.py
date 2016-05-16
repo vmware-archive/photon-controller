@@ -27,6 +27,7 @@ setup(name='photon.controller.common',
           'enum34==0.9.19',
           'photon.controller.gen.thrift',
           'setuptools==0.6c11',
+          'six',
           'thrift==0.9.3',
       ],
       extras_require={

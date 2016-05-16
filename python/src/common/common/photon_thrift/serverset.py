@@ -14,12 +14,13 @@
 
 import abc
 
+from six import with_metaclass
 
-class ServerSetListener(object):
+
+class ServerSetListener(with_metaclass(abc.ABCMeta, object)):
     """This is the ServerSet listener interface for handling server
     added and removed notifications.
     """
-    __metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod
     def on_server_added(self, address):
@@ -30,11 +31,10 @@ class ServerSetListener(object):
         pass
 
 
-class ServerSet(object):
+class ServerSet(with_metaclass(abc.ABCMeta, object)):
     """A ServerSet represents a managed set of servers with added/removed
     notifications.
     """
-    __metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod
     def add_change_listener(self, listener):

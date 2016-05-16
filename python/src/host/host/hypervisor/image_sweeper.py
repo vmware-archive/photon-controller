@@ -9,6 +9,7 @@
 # warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
 # License for then specific language governing permissions and limitations
 # under the License.
+
 import os
 from enum import Enum
 import logging
@@ -130,7 +131,7 @@ class DatastoreImageSweeper:
 
         if self._state != DatastoreImageSweeper.State.IDLE:
             self.logger.info("Image sweeper thread already running: %s" % self._state)
-            raise TaskAlreadyRunning
+            raise TaskAlreadyRunning()
         self._state = DatastoreImageSweeper.State.INIT
         if timeout:
             self._timeout = timeout
@@ -145,7 +146,7 @@ class DatastoreImageSweeper:
     @locked
     def set_state(self, state):
         if not self._validate_state_transition(state):
-            raise InvalidStateTransition
+            raise InvalidStateTransition()
         self._state = state
 
     def stop(self):

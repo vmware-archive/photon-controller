@@ -58,7 +58,7 @@ class AgentControlHandler(AgentControl.Iface):
         except InvalidConfig as e:
             return ProvisionResponse(ProvisionResultCode.INVALID_CONFIG,
                                      str(e))
-        except Exception, e:
+        except Exception as e:
             self._logger.warning("Unexpected exception", exc_info=True)
             return ProvisionResponse(ProvisionResultCode.SYSTEM_ERROR,
                                      str(e))
@@ -76,7 +76,7 @@ class AgentControlHandler(AgentControl.Iface):
         try:
             upgrade = common.services.get(ServiceName.UPGRADE)
             upgrade.start()
-        except Exception, e:
+        except Exception as e:
             self._logger.warning("Unexpected exception", exc_info=True)
             return UpgradeResponse(UpgradeResultCode.SYSTEM_ERROR, str(e))
 

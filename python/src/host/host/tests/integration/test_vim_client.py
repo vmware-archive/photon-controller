@@ -184,7 +184,7 @@ class TestVimClient(unittest.TestCase):
         self.vim_client.wait_for_task(task)
 
         # expect to get a datastore property update (unfortunately) ...
-        for _ in xrange(50):
+        for _ in range(50):
             if mock_apply.call_count > 0:
                 break
             time.sleep(0.1)
@@ -255,7 +255,7 @@ class TestVimClient(unittest.TestCase):
         """Wait until the vm has disk number of the vm becomes disk_num
         """
         now = time.time()
-        for _ in xrange(50):
+        for _ in range(50):
             vm_in_cache = self.vim_client.get_vm_in_cache(vm_id)
             if len(vm_in_cache.disks) == disk_num:
                 self._logger.info("VmCache disk number synced in %.2f second" %
@@ -267,7 +267,7 @@ class TestVimClient(unittest.TestCase):
         """Wait until the vm has power_state
         """
         now = time.time()
-        for _ in xrange(50):
+        for _ in range(50):
             vm_in_cache = self.vim_client.get_vm_in_cache(vm_id)
             if vm_in_cache.power_state == power_state:
                 self._logger.info("VmCache power_state synced in %.2f second" %

@@ -12,6 +12,8 @@
 
 import abc
 
+from six import with_metaclass
+
 
 class VmPowerStateException(Exception):
     pass
@@ -37,9 +39,8 @@ class OperationNotAllowedException(Exception):
     pass
 
 
-class VmManager(object):
+class VmManager(with_metaclass(abc.ABCMeta, object)):
     """A class that wraps hypervisor specific VM management code."""
-    __metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod
     def power_on_vm(self, vm_id):

@@ -31,6 +31,7 @@
     contain a larger set of samples than the retention policy specified.
 """
 
+from builtins import range
 from collections import defaultdict
 from collections import deque
 import math
@@ -131,7 +132,7 @@ class MemoryTimeSeriesDB(object):
         field is greater than since.
         """
         result = []
-        for idx in reversed(xrange(0, len(self._db[key]))):
+        for idx in reversed(range(0, len(self._db[key]))):
             value = self._db[key][idx]
             if value[0] > since:
                 result.insert(0, value)
