@@ -21,7 +21,6 @@ import com.vmware.photon.controller.api.Iso;
 import com.vmware.photon.controller.api.PersistentDisk;
 import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
-import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
 import com.vmware.photon.controller.common.xenon.upgrade.NoMigrationDuringUpgrade;
@@ -219,8 +218,7 @@ public class EntityLockService extends StatefulService {
     }
 
     StringBuilder builder = new StringBuilder();
-    builder.append(ServiceUriPaths.CLOUDSTORE_ROOT)
-        .append(factoryLink)
+    builder.append(factoryLink)
         .append("/")
         .append(entityId);
     return builder.toString();

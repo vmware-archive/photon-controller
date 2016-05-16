@@ -14,25 +14,25 @@
 package com.vmware.photon.controller.cloudstore.dcp.task;
 
 import com.vmware.photon.controller.api.Vm;
+import com.vmware.photon.controller.api.VmState;
 import com.vmware.photon.controller.cloudstore.dcp.entity.EntityLockService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.EntityLockServiceFactory;
-import com.vmware.photon.controller.cloudstore.dcp.entity.TaskService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.TaskServiceFactory;
+import com.vmware.photon.controller.cloudstore.dcp.entity.VmService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.VmServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment;
 import com.vmware.photon.controller.common.xenon.BasicServiceHost;
+import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.BadRequestException;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
+import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
-import static com.vmware.photon.controller.cloudstore.dcp.entity.TaskService.State.TaskState.COMPLETED;
-import static com.vmware.photon.controller.cloudstore.dcp.entity.TaskService.State.TaskState.ERROR;
-import static com.vmware.photon.controller.cloudstore.dcp.entity.TaskService.State.TaskState.QUEUED;
-import static com.vmware.photon.controller.cloudstore.dcp.entity.TaskService.State.TaskState.STARTED;
+import com.vmware.xenon.services.common.NodeGroupBroadcastResponse;
+import com.vmware.xenon.services.common.QueryTask;
 
-import org.hamcrest.Matchers;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
@@ -41,8 +41,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.closeTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.startsWith;
-import static org.hamcrest.core.IsNull.notNullValue;
-import static org.hamcrest.core.IsNull.nullValue;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.fail;
 
@@ -51,18 +49,19 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Tests {@link EntityLockCleanerService}.
+ * Tests {@link com.vmware.photon.controller.cloudstore.dcp.task.EntityLockDeleteService}.
  */
-public class EntityLockCleanerServiceTest {
+public class EntityLockDeleteServiceTest {
 
   private BasicServiceHost host;
-  private EntityLockCleanerService service;
+  private EntityLockDeleteService service;
 
-  private EntityLockCleanerService.State buildValidStartupState() {
-    EntityLockCleanerService.State state = new EntityLockCleanerService.State();
+  private EntityLockDeleteService.State buildValidStartupState() {
+    EntityLockDeleteService.State state = new EntityLockDeleteService.State();
     state.isSelfProgressionDisabled = true;
     return state;
   }
@@ -81,7 +80,7 @@ public class EntityLockCleanerServiceTest {
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      service = new EntityLockCleanerService();
+      service = new EntityLockDeleteService();
     }
 
     /**
@@ -106,7 +105,7 @@ public class EntityLockCleanerServiceTest {
   public class HandleStartTest {
     @BeforeMethod
     public void setUp() throws Throwable {
-      service = new EntityLockCleanerService();
+      service = new EntityLockDeleteService();
       host = BasicServiceHost.create();
     }
 
@@ -126,14 +125,14 @@ public class EntityLockCleanerServiceTest {
      */
     @Test
     public void testStartState() throws Throwable {
-      EntityLockCleanerService.State startState = buildValidStartupState();
+      EntityLockDeleteService.State startState = buildValidStartupState();
       Operation startOp = host.startServiceSynchronously(service, startState);
       assertThat(startOp.getStatusCode(), is(200));
 
-      EntityLockCleanerService.State savedState = host.getServiceState(EntityLockCleanerService.State.class);
+      EntityLockDeleteService.State savedState = host.getServiceState(EntityLockDeleteService.State.class);
       assertThat(savedState.documentSelfLink, is(BasicServiceHost.SERVICE_URI));
       assertEquals(savedState.entityLockDeleteWatermarkTimeInMicros,
-          (Long) EntityLockCleanerService.DEFAULT_DELETE_WATERMARK_TIME_MILLIS);
+          (Long) EntityLockDeleteService.DEFAULT_DELETE_WATERMARK_TIME_MILLIS);
       assertThat(new BigDecimal(savedState.documentExpirationTimeMicros),
           is(closeTo(new BigDecimal(ServiceUtils.computeExpirationTime(
                   ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME_MICROS)),
@@ -149,14 +148,14 @@ public class EntityLockCleanerServiceTest {
      */
     @Test(dataProvider = "AutoInitializedFields")
     public void testAutoInitializedFields(String fieldName, Object value) throws Throwable {
-      EntityLockCleanerService.State startState = buildValidStartupState();
+      EntityLockDeleteService.State startState = buildValidStartupState();
       Field fieldObj = startState.getClass().getField(fieldName);
       fieldObj.set(startState, null);
 
       Operation startOp = host.startServiceSynchronously(service, startState);
       assertThat(startOp.getStatusCode(), is(200));
 
-      EntityLockCleanerService.State savedState = host.getServiceState(EntityLockCleanerService.State.class);
+      EntityLockDeleteService.State savedState = host.getServiceState(EntityLockDeleteService.State.class);
       if (fieldObj.getType().equals(TaskState.class)) {
         assertThat(Utils.toJson(fieldObj.get(savedState)), is(Utils.toJson(value)));
       } else {
@@ -172,8 +171,8 @@ public class EntityLockCleanerServiceTest {
       return new Object[][]{
           {"taskState", state},
           {"isSelfProgressionDisabled", false},
-          {"danglingEntityLocksWithInactiveTasks", 0},
-          {"releasedEntityLocks", 0}
+          {"danglingEntityLocksWithDeletedEntities", 0},
+          {"deletedEntityLocks", 0}
       };
     }
 
@@ -189,13 +188,13 @@ public class EntityLockCleanerServiceTest {
     public void testExpirationTimeInitialization(long time,
                                                  BigDecimal expectedTime,
                                                  BigDecimal delta) throws Throwable {
-      EntityLockCleanerService.State startState = buildValidStartupState();
+      EntityLockDeleteService.State startState = buildValidStartupState();
       startState.documentExpirationTimeMicros = time;
 
       Operation startOp = host.startServiceSynchronously(service, startState);
       assertThat(startOp.getStatusCode(), is(200));
 
-      EntityLockCleanerService.State savedState = host.getServiceState(EntityLockCleanerService.State.class);
+      EntityLockDeleteService.State savedState = host.getServiceState(EntityLockDeleteService.State.class);
       assertThat(new BigDecimal(savedState.documentExpirationTimeMicros), is(closeTo(expectedTime, delta)));
     }
 
@@ -227,13 +226,13 @@ public class EntityLockCleanerServiceTest {
    * Tests for the handlePatch method.
    */
   public class HandlePatchTest {
-    EntityLockCleanerService.State serviceState;
+    EntityLockDeleteService.State serviceState;
 
     @BeforeMethod
     public void setUp() throws Throwable {
       host = BasicServiceHost.create();
 
-      service = new EntityLockCleanerService();
+      service = new EntityLockDeleteService();
       serviceState = buildValidStartupState();
       host.startServiceSynchronously(service, serviceState);
     }
@@ -274,7 +273,7 @@ public class EntityLockCleanerServiceTest {
   public class EndToEndTest {
 
     private TestEnvironment machine;
-    private EntityLockCleanerService.State request;
+    private EntityLockDeleteService.State request;
     private List<String> testSelfLinks = new ArrayList<>();
 
     @BeforeMethod
@@ -320,14 +319,14 @@ public class EntityLockCleanerServiceTest {
 
       // No entity locks should be deleted when entityLockDeleteWatermarkTimeInMicros is NowMicrosUtc
       request.entityLockDeleteWatermarkTimeInMicros = Utils.getNowMicrosUtc();
-      EntityLockCleanerService.State response = machine.callServiceAndWaitForState(
-          EntityLockCleanerFactoryService.SELF_LINK,
+      EntityLockDeleteService.State response = machine.callServiceAndWaitForState(
+          EntityLockDeleteFactoryService.SELF_LINK,
           request,
-          EntityLockCleanerService.State.class,
-          (EntityLockCleanerService.State state) -> state.taskState.stage == TaskState.TaskStage.FINISHED);
+          EntityLockDeleteService.State.class,
+          (EntityLockDeleteService.State state) -> state.taskState.stage == TaskState.TaskStage.FINISHED);
 
-      assertThat(response.danglingEntityLocksWithInactiveTasks, is(0));
-      assertThat(response.releasedEntityLocks, is(0));
+      assertThat(response.danglingEntityLocksWithDeletedEntities, is(0));
+      assertThat(response.deletedEntityLocks, is(0));
     }
 
     /**
@@ -344,14 +343,14 @@ public class EntityLockCleanerServiceTest {
 
       // All entity locks being created should be found when entityLockDeleteWatermarkTimeInMicros is 0
       request.entityLockDeleteWatermarkTimeInMicros = 0L;
-      EntityLockCleanerService.State response = machine.callServiceAndWaitForState(
-          EntityLockCleanerFactoryService.SELF_LINK,
+      EntityLockDeleteService.State response = machine.callServiceAndWaitForState(
+          EntityLockDeleteFactoryService.SELF_LINK,
           request,
-          EntityLockCleanerService.State.class,
-          (EntityLockCleanerService.State state) -> state.taskState.stage == TaskState.TaskStage.FINISHED);
-      assertThat(response.danglingEntityLocksWithInactiveTasks,
+          EntityLockDeleteService.State.class,
+          (EntityLockDeleteService.State state) -> state.taskState.stage == TaskState.TaskStage.FINISHED);
+      assertThat(response.danglingEntityLocksWithDeletedEntities,
           is(danglingEntityLocks));
-      assertThat(response.releasedEntityLocks,
+      assertThat(response.deletedEntityLocks,
           is(danglingEntityLocks));
 
       verifyLockStatusAfterCleanup(machine, totalEntityLocks, danglingEntityLocks);
@@ -375,12 +374,11 @@ public class EntityLockCleanerServiceTest {
           {2, 0, TestEnvironment.DEFAULT_MULTI_HOST_COUNT},
           {5, 5, 1},
           {7, 5, 1},
-          {7, 5, 1},
           {7, 5, TestEnvironment.DEFAULT_MULTI_HOST_COUNT},
           // Test cases with entity locks greater than the default page limit.
-          {EntityLockCleanerService.DEFAULT_PAGE_LIMIT + 100, EntityLockCleanerService
+          {EntityLockDeleteService.DEFAULT_PAGE_LIMIT + 100, EntityLockDeleteService
               .DEFAULT_PAGE_LIMIT + 100, 1},
-          {EntityLockCleanerService.DEFAULT_PAGE_LIMIT + 100, EntityLockCleanerService
+          {EntityLockDeleteService.DEFAULT_PAGE_LIMIT + 100, EntityLockDeleteService
               .DEFAULT_PAGE_LIMIT + 1, 1},
       };
     }
@@ -389,31 +387,37 @@ public class EntityLockCleanerServiceTest {
                                      int totalEntityLocks,
                                      int danglingEntityLocks) throws Throwable {
       for (int i = 0; i < totalEntityLocks; i++) {
-        // create task
-        TaskService.State newTask = new TaskService.State();
-        newTask.entityId = "entity-id" + i;
-        newTask.entityKind = Vm.KIND;
-        newTask.state = (i % 2 == 0) ? STARTED : QUEUED;
-
-        if (i < danglingEntityLocks) {
-          newTask.state = (i % 2 == 0) ? COMPLETED : ERROR;
-        }
-
-        Operation taskOperation = env.sendPostAndWait(TaskServiceFactory.SELF_LINK, newTask);
-        TaskService.State createdTask = taskOperation.getBody(TaskService.State.class);
-        testSelfLinks.add(createdTask.documentSelfLink);
 
         // create associated entity lock
         EntityLockService.State entityLock = new EntityLockService.State();
         entityLock.entityId = "entity-id" + i;
-        entityLock.ownerTaskId = ServiceUtils.getIDFromDocumentSelfLink(createdTask.documentSelfLink);
+        entityLock.ownerTaskId = "task-id" + i;
         entityLock.entityKind = Vm.KIND;
         entityLock.lockOperation = EntityLockService.State.LockOperation.ACQUIRE;
         entityLock.documentSelfLink = EntityLockServiceFactory.SELF_LINK + "/" + entityLock.entityId;
         Operation entityLockOperation = env.sendPostAndWait(EntityLockServiceFactory.SELF_LINK, entityLock);
         EntityLockService.State createdEntityLock = entityLockOperation.getBody(EntityLockService.State.class);
+
+        entityLock.entityId = createdEntityLock.entityId;
+        entityLock.ownerTaskId = createdEntityLock.ownerTaskId;
+        entityLock.entityKind = Vm.KIND;
+        entityLock.lockOperation = EntityLockService.State.LockOperation.RELEASE;
+        entityLock.documentSelfLink = EntityLockServiceFactory.SELF_LINK + "/" + entityLock.entityId;
+        env.sendPostAndWait(EntityLockServiceFactory.SELF_LINK, entityLock);
+
         if (i >= danglingEntityLocks) {
+          VmService.State vm = new VmService.State();
+          vm.name = UUID.randomUUID().toString();
+          vm.flavorId = UUID.randomUUID().toString();
+          vm.projectId = UUID.randomUUID().toString();
+          vm.imageId = UUID.randomUUID().toString();
+          vm.vmState = VmState.CREATING;
+          vm.documentSelfLink = createdEntityLock.entitySelfLink;
+          Operation vmCreate = env.sendPostAndWait(VmServiceFactory.SELF_LINK, vm);
+          VmService.State vmState = vmCreate.getBody(VmService.State.class);
+
           testSelfLinks.add(createdEntityLock.documentSelfLink);
+          testSelfLinks.add(vmState.documentSelfLink);
         }
       }
     }
@@ -422,20 +426,20 @@ public class EntityLockCleanerServiceTest {
                                               int totalEntityLocks,
                                               int danglingEntityLocks) throws Throwable {
 
-      for (int i = 0; i < totalEntityLocks; i++) {
-        EntityLockService.State entityLock = env.getServiceState(EntityLockServiceFactory.SELF_LINK + "/entity-id" + i,
-            EntityLockService.State.class);
-        assertThat(entityLock, is(notNullValue()));
-        assertThat(entityLock.lockOperation, is(nullValue()));
+      QueryTask.QuerySpecification querySpec = new QueryTask.QuerySpecification();
 
-        if (i < danglingEntityLocks) {
-          assertThat(entityLock.ownerTaskId, is(nullValue()));
-        } else {
-          assertThat(entityLock.ownerTaskId, is(Matchers.notNullValue()));
-        }
+      QueryTask.Query kindClause = new QueryTask.Query()
+          .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
+          .setTermMatchValue(Utils.buildKind(EntityLockService.State.class));
 
+      querySpec.query
+          .addBooleanClause(kindClause);
 
-      }
+      QueryTask queryTask = QueryTask.create(querySpec).setDirect(true);
+      NodeGroupBroadcastResponse response = env.sendBroadcastQueryAndWait(queryTask);
+      assertThat(QueryTaskUtils
+              .getBroadcastQueryDocumentLinks(response).size(),
+          is(totalEntityLocks - danglingEntityLocks));
     }
   }
 }
