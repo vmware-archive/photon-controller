@@ -427,6 +427,7 @@ class HostHandler(Host.Iface):
 
         vm.datastore = datastore_id
         vm.datastore_name = self.hypervisor.datastore_manager.datastore_name(datastore_id)
+        vm.location_id = self.hypervisor.vm_manager.get_location_id(vm.id)
         response = CreateVmResponse()
         response.result = CreateVmResultCode.OK
         response.vm = vm.to_thrift()

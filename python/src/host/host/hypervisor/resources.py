@@ -144,7 +144,7 @@ class Vm(BaseResource):
             self.id, self.flavor.name,
             thrift_state, None, self.environment,
             disks, self.flavor.to_thrift(), resource_constraints,
-            self.tenant_id, self.project_id,
+            self.tenant_id, self.project_id, self.location_id
         )
 
         if self.datastore:
