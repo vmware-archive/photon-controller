@@ -11,6 +11,7 @@
 # under the License.
 
 import abc
+from six import with_metaclass
 from common.kind import Flavor
 import enum
 
@@ -34,9 +35,8 @@ class State(enum.Enum):
     SUSPENDED = 2
 
 
-class BaseResource(object):
+class BaseResource(with_metaclass(abc.ABCMeta, object)):
 
-    __metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod
     def to_thrift(self):

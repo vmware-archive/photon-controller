@@ -132,7 +132,7 @@ class TaskRunner(object):
             if self._active or self._running:
                 self.logger.info("%s thread already running"
                                  % self._name)
-                raise TaskAlreadyRunning
+                raise TaskAlreadyRunning()
             self._active = True
 
             if timeout:

@@ -13,8 +13,9 @@
 import abc
 import logging
 
-from pkg_resources import iter_entry_points
+from six import with_metaclass
 
+from pkg_resources import iter_entry_points
 
 # All loaded plugins
 import common
@@ -26,12 +27,10 @@ loaded_plugins = []
 logger = logging.getLogger(__name__)
 
 
-class Plugin(object):
+class Plugin(with_metaclass(abc.ABCMeta, object)):
     """ Plugin represents a plugin that is dynamically loadable in photon
     controller agent.
     """
-
-    __metaclass__ = abc.ABCMeta
 
     def __init__(self, name, is_core=True):
         """

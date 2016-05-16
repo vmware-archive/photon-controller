@@ -45,7 +45,7 @@ class FakeCounter:
 
 def create_fake_counters():
     counters = []
-    letters = [chr(c) for c in xrange(ord('A'), ord('E')+1)]
+    letters = [chr(c) for c in range(ord('A'), ord('E')+1)]
     for i in letters:
         for j in letters:
             counter = FakeCounter(i, j)

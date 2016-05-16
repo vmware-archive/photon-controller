@@ -66,7 +66,7 @@ class TestDiskPlacementManager(unittest.TestCase):
 
         def fake_datastore_info(datastore_id):
             if datastore_id not in ds_map.keys():
-                raise Exception
+                raise Exception()
             return ds_map[datastore_id]
         ds_mgr.datastore_info.side_effect = fake_datastore_info
 

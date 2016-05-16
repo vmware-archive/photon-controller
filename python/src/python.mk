@@ -25,6 +25,8 @@ else
 	CHECK_COPYRIGHT := find . -name '*.py' | xargs -n1 -L1 $(MISC_BIN)/check_copyright
 endif
 
+CHECK_PYTHON3_COMPATIBILITY := find . -iname "*.py" | xargs pylint -r n  --py3k -d no-absolute-import -d print-statement
+
 ifdef PIP_INDEX_URL
 	PIP_INSTALL := $(BIN)/pip install -i $(PIP_INDEX_URL) -q
 else
@@ -118,3 +120,4 @@ $(BIN)/flake8: $(BIN)/python
 check: develop $(BIN)/flake8
 	$(CHECK_CMD)
 	$(CHECK_COPYRIGHT)
+  $(CHECK_PYTHON3_COMPATIBILTY)

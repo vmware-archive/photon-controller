@@ -12,13 +12,13 @@
 
 import abc
 
+from six import with_metaclass
 
 class DeviceNotFoundException(Exception):
     pass
 
 
-class HostClient(object):
-    __metaclass__ = abc.ABCMeta
+class HostClient(with_metaclass(abc.ABCMeta, object)):
 
     """ Connect and setup
     """

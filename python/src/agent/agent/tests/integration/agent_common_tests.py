@@ -16,6 +16,8 @@ import logging
 import time
 import uuid
 
+from builtins import range
+
 from gen.agent.ttypes import AgentStatusCode
 from gen.agent.ttypes import PingRequest
 from gen.agent.ttypes import ProvisionRequest
@@ -76,7 +78,7 @@ def new_id():
     uuid_gen = str(uuid.uuid4())
     if uuid_gen in uuid_list:
         logger.error("UUID collision for uuid %s" % uuid_gen)
-        raise AssertionError
+        raise AssertionError()
     uuid_list.add(uuid_gen)
     return uuid_gen
 
@@ -401,7 +403,7 @@ class AgentCommonTests(object):
 
     def test_continuous_create_delete_vm(self):
         vm = VmWrapper(self.host_client)
-        for i in xrange(10):
+        for i in range(10):
             vm.create()
             vm.delete()
 
@@ -455,7 +457,7 @@ class AgentCommonTests(object):
     def test_batch_get_resources(self):
         """Test that the agent can return resources in batch."""
         vms = []
-        for _ in xrange(2):
+        for _ in range(2):
             vm = VmWrapper(self.host_client)
             image = DiskImage("ttylinux", CloneType.COPY_ON_WRITE)
 

@@ -16,8 +16,8 @@ import logging
 import sys
 import threading
 import uuid
-
 import common
+from builtins import int
 from common.lock import AlreadyLocked
 from common.lock_vm import lock_vm
 from common.log import log_duration
@@ -342,7 +342,7 @@ class HostHandler(Host.Iface):
 
         try:
             datastore_id = self._select_datastore_for_vm_create(vm)
-        except MissingPlacementDescriptorException, e:
+        except MissingPlacementDescriptorException as e:
             self._logger.error("Cannot create VM as reservation is missing placement information, %s" % vm.id)
             return CreateVmResponse(CreateVmResultCode.PLACEMENT_NOT_FOUND, type(e).__name__)
         self._logger.info("Creating VM %s in datastore %s" % (vm.id, datastore_id))
@@ -560,7 +560,7 @@ class HostHandler(Host.Iface):
             return response
         except VmNotFoundException:
             return self._error_response(PowerVmOpResultCode.VM_NOT_FOUND, "VM %s not found" % request.vm_id, response)
-        except VmPowerStateException, e:
+        except VmPowerStateException as e:
             return self._error_response(PowerVmOpResultCode.INVALID_VM_POWER_STATE, str(e), response)
 
     @log_request
@@ -613,12 +613,12 @@ class HostHandler(Host.Iface):
                 datastore_name = self.hypervisor.datastore_manager.datastore_name(datastore)
                 thrift_disk.datastore = Datastore(id=datastore, name=datastore_name)
                 disk_error.result = CreateDiskResultCode.OK
-            except MissingPlacementDescriptorException, e:
+            except MissingPlacementDescriptorException as e:
                 self._logger.error("Cannot create Disk as reservation is missing placement information, %s" % disk.id)
                 disk_error.result = CreateDiskResultCode.PLACEMENT_NOT_FOUND
                 disk_error.error = type(e).__name__
                 continue
-            except Exception, e:
+            except Exception as e:
                 self._logger.error("Unexpected exception %s, %s" % (disk.id, e), exc_info=True)
                 disk_error.result = CreateDiskResultCode.SYSTEM_ERROR
                 disk_error.error = type(e).__name__
@@ -650,7 +650,7 @@ class HostHandler(Host.Iface):
             try:
                 self.hypervisor.disk_manager.delete_disk(datastore, disk_id)
                 disk_error.result = DeleteDiskResultCode.OK
-            except Exception, e:
+            except Exception as e:
                 self._logger.warning("Unexpected exception %s" % e, exc_info=True)
                 disk_error.result = DeleteDiskResultCode.SYSTEM_ERROR
                 disk_error.error = str(e)
@@ -695,7 +695,7 @@ class HostHandler(Host.Iface):
                 response.error = "Vm in suspended state"
                 return
 
-        except VmNotFoundException, e:
+        except VmNotFoundException as e:
             self._logger.warning(
                 "_update_disks_with_response: %s" % (e),
                 exc_info=True)
@@ -721,13 +721,13 @@ class HostHandler(Host.Iface):
                     self.hypervisor.vm_manager.detach_disk(vm_id, disk_id)
 
                 disk_error.result = VmDiskOpResultCode.OK
-            except DiskNotFoundException, e:
+            except DiskNotFoundException as e:
                 self._logger.warning("_update_disks_with_response %s" % e, exc_info=True)
                 response.result = VmDiskOpResultCode.DISK_NOT_FOUND
                 disk_error.result = VmDiskOpResultCode.DISK_NOT_FOUND
                 disk_error.error = str(e)
                 continue
-            except ValueError, e:
+            except ValueError as e:
                 self._logger.warning("_update_disks_with_response %s" % e, exc_info=True)
                 if not is_attach and str(e) == 'ENOENT':
                     response.result = VmDiskOpResultCode.DISK_DETACHED
@@ -738,7 +738,7 @@ class HostHandler(Host.Iface):
                     disk_error.result = VmDiskOpResultCode.SYSTEM_ERROR
                     disk_error.error = str(e)
                 continue
-            except Exception, e:
+            except Exception as e:
                 self._logger.warning("_update_disks_with_response %s" % e, exc_info=True)
                 response.result = VmDiskOpResultCode.SYSTEM_ERROR
                 disk_error.result = VmDiskOpResultCode.SYSTEM_ERROR
@@ -901,8 +901,8 @@ class HostHandler(Host.Iface):
 
             datastore_info = self._hypervisor.datastore_manager.datastore_info(request.datastore_id)
 
-            response.totalMB = long(datastore_info.total)
-            response.usedMB = long(datastore_info.used)
+            response.totalMB = int(datastore_info.total)
+            response.usedMB = int(datastore_info.used)
 
             self._logger.info("Datastore info, total: %d, used: %d" %
                               (datastore_info.total, datastore_info.used))
@@ -940,7 +940,7 @@ class HostHandler(Host.Iface):
             image_descriptor.image_id = image_id
             try:
                 _, mod_time = self.hypervisor.image_manager.get_timestamp_mod_time_from_dir(images[image_id])
-                image_descriptor.timestamp = long(mod_time)
+                image_descriptor.timestamp = int(mod_time)
             except Exception as ex:
                 image_descriptor.timestamp = 0
                 self._logger.exception("Unable to get mod time for %s, ex: %s" % (images[image_id], ex))

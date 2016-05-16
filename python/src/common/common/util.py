@@ -25,7 +25,7 @@ def dump_threads():
             text = text.strip() if text else ""
             result.append("  - File: %s, line %d, in %s  %s" % (
                 file_name, line_number, function_name, text))
-    print >> sys.stderr, "Thread dump:", "\n".join(result)
+    sys.stderr.write("Thread dump: %s" % "\n".join(result))
 
 
 def suicide(dump=True):

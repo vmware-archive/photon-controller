@@ -17,6 +17,8 @@ import unittest
 import uuid
 
 import common
+
+from builtins import int
 from common.exclusive_set import ExclusiveSet
 from common.file_util import mkdtemp
 from common.kind import Flavor as HostFlavor
@@ -584,7 +586,7 @@ class HostHandlerTestCase(unittest.TestCase):
         # Test invalid reservation
         class PlacementManagerInvalidReservation:
             def consume_vm_reservation(self, reservation):
-                raise InvalidReservationException
+                raise InvalidReservationException()
 
         handler.hypervisor.placement_manager = PlacementManagerInvalidReservation()
         response = handler.create_vm(request)
@@ -690,7 +692,7 @@ class HostHandlerTestCase(unittest.TestCase):
         """Attaching/detaching a disk that doesn't exist should report error"""
 
         def _raise_disk_not_found_exception(disk_id):
-            raise DiskNotFoundException
+            raise DiskNotFoundException()
 
         req = VmDisksDetachRequest(vm_id="vm.id", disk_ids=["disk.id"])
 
