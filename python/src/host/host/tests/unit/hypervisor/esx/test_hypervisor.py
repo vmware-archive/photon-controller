@@ -98,7 +98,7 @@ class TestUnitEsxHypervisor(unittest.TestCase):
 
         # Create 10 listeners each.
         listeners = []
-        for i in xrange(10):
+        for i in range(10):
             listeners.append(MyUpdateListener())
 
         # Add listeners to the hypervisor and verify that the listeners get

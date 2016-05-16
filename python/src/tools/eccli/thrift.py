@@ -18,7 +18,7 @@ from gen.scheduler import Scheduler
 
 def get_client(host, ns="Host"):
     port = 8835
-    print "Connecting %s:%d ..." % (host, port)
+    print("Connecting %s:%d ..." % (host, port))
     if ns == "Host":
         client = DirectClient("Host", Host.Client, host, port)
     elif ns == "AgentControl":

@@ -486,11 +486,11 @@ class VimClient(HostClient):
             disk_mgr = self._content.virtualDiskManager
             vim_task = disk_mgr.CreateVirtualDisk(name=os_to_datastore_path(path), spec=spec)
             self.wait_for_task(vim_task)
-        except vim.fault.FileAlreadyExists, e:
+        except vim.fault.FileAlreadyExists as e:
             raise DiskAlreadyExistException(e.msg)
-        except vim.fault.FileFault, e:
+        except vim.fault.FileFault as e:
             raise DiskFileException(e.msg)
-        except vim.fault.InvalidDatastore, e:
+        except vim.fault.InvalidDatastore as e:
             raise DiskPathException(e.msg)
 
     @hostd_error_handler
@@ -504,11 +504,11 @@ class VimClient(HostClient):
             vim_task = disk_mgr.CopyVirtualDisk(sourceName=os_to_datastore_path(src),
                                                 destName=os_to_datastore_path(dst), destSpec=vd_spec)
             self.wait_for_task(vim_task)
-        except vim.fault.FileAlreadyExists, e:
+        except vim.fault.FileAlreadyExists as e:
             raise DiskAlreadyExistException(e.msg)
-        except vim.fault.FileFault, e:
+        except vim.fault.FileFault as e:
             raise DiskFileException(e.msg)
-        except vim.fault.InvalidDatastore, e:
+        except vim.fault.InvalidDatastore as e:
             raise DiskPathException(e.msg)
 
     @hostd_error_handler
@@ -518,11 +518,11 @@ class VimClient(HostClient):
             vim_task = disk_mgr.MoveVirtualDisk(sourceName=os_to_datastore_path(src),
                                                 destName=os_to_datastore_path(dst))
             self.wait_for_task(vim_task)
-        except vim.fault.FileAlreadyExists, e:
+        except vim.fault.FileAlreadyExists as e:
             raise DiskAlreadyExistException(e.msg)
-        except vim.fault.FileFault, e:
+        except vim.fault.FileFault as e:
             raise DiskFileException(e.msg)
-        except vim.fault.InvalidDatastore, e:
+        except vim.fault.InvalidDatastore as e:
             raise DiskPathException(e.msg)
 
     @hostd_error_handler
@@ -531,9 +531,9 @@ class VimClient(HostClient):
             disk_mgr = self._content.virtualDiskManager
             vim_task = disk_mgr.DeleteVirtualDisk(name=os_to_datastore_path(path))
             self.wait_for_task(vim_task)
-        except vim.fault.FileFault, e:
+        except vim.fault.FileFault as e:
             raise DiskFileException(e.msg)
-        except vim.fault.InvalidDatastore, e:
+        except vim.fault.InvalidDatastore as e:
             raise DiskPathException(e.msg)
 
     @hostd_error_handler
@@ -541,9 +541,9 @@ class VimClient(HostClient):
         try:
             disk_mgr = self._content.virtualDiskManager
             disk_mgr.SetVirtualDiskUuid(name=os_to_datastore_path(path), uuid=uuid_to_vmdk_uuid(uuid))
-        except vim.fault.FileFault, e:
+        except vim.fault.FileFault as e:
             raise DiskFileException(e.msg)
-        except vim.fault.InvalidDatastore, e:
+        except vim.fault.InvalidDatastore as e:
             raise DiskPathException(e.msg)
 
     @hostd_error_handler
@@ -551,9 +551,9 @@ class VimClient(HostClient):
         try:
             disk_mgr = self._content.virtualDiskManager
             return disk_mgr.QueryVirtualDiskUuid(name=os_to_datastore_path(path))
-        except vim.fault.FileFault, e:
+        except vim.fault.FileFault as e:
             raise DiskFileException(e.msg)
-        except vim.fault.InvalidDatastore, e:
+        except vim.fault.InvalidDatastore as e:
             raise DiskPathException(e.msg)
 
     @hostd_error_handler
@@ -786,7 +786,7 @@ class VimClient(HostClient):
             self._logger.debug("Invoking '%s' for VM '%s'" % (op, vm.name))
             task = getattr(vm, op)(*args)
             self.wait_for_task(task)
-        except vim.fault.InvalidPowerState, e:
+        except vim.fault.InvalidPowerState as e:
             if e.existingState == self._vm_op_to_requested_state(op):
                 self._logger.info("VM %s already in %s state, %s successful." %
                                   (vm.name, e.existingState, op))

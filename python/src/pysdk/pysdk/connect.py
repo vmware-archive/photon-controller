@@ -153,7 +153,7 @@ def Disconnect(si):
 def GetLocalTicket(si, user):
     try:
         sessionManager = si.content.sessionManager
-    except Exception, e:
+    except Exception as e:
         if type(e).__name__ == 'ExpatError':
             msg = 'Malformed response while querying for local ticket: "%s"'\
                   % e
@@ -210,7 +210,7 @@ def __Login(host, port, user, pwd, service, adapter, version, path,
         content = si.RetrieveContent()
     except vmodl.MethodFault:
         raise
-    except Exception, e:
+    except Exception as e:
         raise vim.fault.HostConnectFault(msg=str(e))
 
     # Get a ticket if we're connecting to localhost and password is not

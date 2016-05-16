@@ -9,6 +9,7 @@
 # warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
 # License for then specific language governing permissions and limitations
 # under the License.
+
 import logging
 import unittest
 import uuid
@@ -859,7 +860,7 @@ class PMBuilder(object):
         if datastore_id not in self.ds_map.keys():
             self._logger.warning("Datastore (%s) not connected" %
                                  datastore_id)
-            raise Exception
+            raise Exception()
         return self.ds_map[datastore_id][0]
 
     def check_image(self, image_id, datastore_id):

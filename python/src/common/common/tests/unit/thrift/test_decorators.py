@@ -176,5 +176,5 @@ class DummyClass(object):
     @error_handler(DummyResponse, DummyResultCode)
     def bar(self, request):
         if request.value:
-            raise ValueError
+            raise ValueError()
         return DummyResponse(DummyResultCode.OK)

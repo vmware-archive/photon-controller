@@ -94,9 +94,9 @@ class TestRemoteStressAgent(unittest.TestCase):
     def workload(num_vms, additional_places, server, port):
         client = DirectClient("Host", Host.Client, server, port)
         client.connect()
-        for _ in xrange(num_vms):
+        for _ in range(num_vms):
             vm = VmWrapper(client)
-            for _ in xrange(additional_places):
+            for _ in range(additional_places):
                 vm.place()
             vm.create()
         client.close()
@@ -106,7 +106,7 @@ class TestRemoteStressAgent(unittest.TestCase):
         start = time.time()
         additional_places = place_to_create_ratio - 1
         for host in self.hosts:
-            for _ in xrange(num_processes):
+            for _ in range(num_processes):
                 args = (num_vms, additional_places, host, 8835)
                 process = Process(target=self.workload, args=args)
                 process.start()
@@ -116,8 +116,7 @@ class TestRemoteStressAgent(unittest.TestCase):
         end = time.time() - start
         num_hosts = len(self.hosts)
         total_vms = num_processes * num_vms * num_hosts
-        print "Created %d VMs on %d hosts with %d processes in %f seconds" % \
-              (total_vms, num_hosts, num_processes, end)
+        print("Created %d VMs on %d hosts with %d processes in %f seconds" % (total_vms, num_hosts, num_processes, end))
 
     def test_stress_concurrent(self):
         self.stress_driver(self.threads_per_host, self.vms_per_thread,

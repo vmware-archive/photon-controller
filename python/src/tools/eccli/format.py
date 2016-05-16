@@ -15,22 +15,20 @@ from datetime import datetime
 
 
 def print_request(request):
-    print "\n\033[32m***** %s (%s) *****\033[37m" %\
-          (type(request).__name__, datetime.now())
-    print pformat(vars(request), indent=2)
-    print "\n"
+    print("\n\033[32m***** %s (%s) *****\033[37m" %(type(request).__name__, datetime.now()))
+    print(pformat(vars(request), indent=2))
+    print("\n")
 
 
 def print_response(response):
-    print "\n\033[34m***** %s (%s) *****\033[37m" %\
-          (type(response).__name__, datetime.now())
-    print pformat(vars(response), indent=2)
-    print "\n"
+    print("\n\033[34m***** %s (%s) *****\033[37m" % (type(response).__name__, datetime.now()))
+    print(pformat(vars(response), indent=2))
+    print("\n")
 
 
 def print_result(result, margin=True):
     if margin:
-        print "\n"
-    print "\033[33m***** %s *****\033[37m" % result
+        print("\n")
+    print("\033[33m***** %s *****\033[37m" % result)
     if margin:
-        print "\n"
+        print("\n")

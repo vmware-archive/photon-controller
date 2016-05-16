@@ -58,9 +58,9 @@ class Collector(object):
             self._failed += 1
 
     def print_report(self):
-        print "success: %d" % self._success
-        print "failed: %d" % self._failed
-        print "average: %.2fs" % (self._time / self._current)
+        print("success: %d" % self._success)
+        print("failed: %d" % self._failed)
+        print("average: %.2fs" % (self._time // self._current))
 
 
 def run_concurrency(method, request, options):
@@ -79,12 +79,12 @@ def run_concurrency(method, request, options):
             else:
                 collector.report_failed(elapse)
 
-    print "Run concurrency test:"
-    print "Concurrency: %d, Requests: %d" % (options.concurrency,
-                                             options.requests)
+    print("Run concurrency test:")
+    print("Concurrency: %d, Requests: %d" % (options.concurrency,
+                                             options.requests))
     threads = []
     collector = Collector(options.requests)
-    for i in xrange(options.concurrency):
+    for i in range(options.concurrency):
         thread = threading.Thread(target=_loop, args=(collector,))
         thread.start()
         threads.append(thread)

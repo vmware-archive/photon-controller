@@ -56,13 +56,13 @@ class TestUnitMemoryDB(unittest.TestCase):
         db = memory_tsdb.MemoryTimeSeriesDB()
 
         db.set_policy("1s", "10s")
-        for i in xrange(12):
+        for i in range(12):
             db.add("foo", i, i)
 
         series = db._db["foo"]
         assert_that(len(series), equal_to(10))
         i = 2
-        for i in xrange(2, 12):
+        for i in range(2, 12):
             (timestamp, data) = series[i-2]
             assert_that(timestamp, equal_to(i))
             assert_that(data, equal_to(i))
@@ -72,11 +72,11 @@ class TestUnitMemoryDB(unittest.TestCase):
         # Test add and verify all adds after.
         db = memory_tsdb.MemoryTimeSeriesDB()
         db.set_policy("1s", "10s")
-        for i in xrange(10):
+        for i in range(10):
             db.add("bar", i, i)
 
         series = db._db["bar"]
-        for i in xrange(10):
+        for i in range(10):
             (timestamp, data) = series[i]
             assert_that(timestamp, equal_to(i))
             assert_that(data, equal_to(i))
@@ -85,7 +85,7 @@ class TestUnitMemoryDB(unittest.TestCase):
         # Test getting values after a particular timestamp
         db = memory_tsdb.MemoryTimeSeriesDB()
         db.set_policy("1s", "10s")
-        for i in xrange(15):
+        for i in range(15):
             db.add("foo", i, i)
             db.add("bar", i, i)
 
@@ -93,7 +93,7 @@ class TestUnitMemoryDB(unittest.TestCase):
         for key in ["foo", "bar"]:
             values = db.get_values_since(since, key)
             assert_that(len(values), equal_to(2))
-            for i in xrange(2):
+            for i in range(2):
                 (timestamp, data) = values[i]
                 assert_that(timestamp, equal_to(i+since+1))
                 assert_that(data, equal_to(i+since+1))

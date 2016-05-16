@@ -76,7 +76,7 @@ class AgentControlHandler(AgentControl.Iface):
         try:
             upgrade = common.services.get(ServiceName.UPGRADE)
             upgrade.start()
-        except Exception, e:
+        except Exception as e:
             self._logger.warning("Unexpected exception", exc_info=True)
             return UpgradeResponse(UpgradeResultCode.SYSTEM_ERROR, str(e))
 
