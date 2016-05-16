@@ -219,6 +219,15 @@ class VmManager(object):
         pass
 
     @abc.abstractmethod
+    def get_location_id(self, vm_id):
+        """Get the locationId of the vm
+
+        :param vm_id: VM ID as a string.
+        :return: location id as a string.
+        """
+        pass
+
+    @abc.abstractmethod
     def get_linked_clone_path(self, vm_id):
         """Get the absolute path of a VM linked clone disk
 

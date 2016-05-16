@@ -466,5 +466,20 @@ class EsxVmManager(VmManager):
             return None
         return get_root_disk(vm.disks)
 
+    @log_duration
+    def get_location_id(self, vm_id):
+        """Get the locationId of the vm
+
+        :param vm_id: VM ID as a string.
+        :return: location id as a string.
+        """
+        vm = self.vim_client.get_vm_in_cache(vm_id)
+        if not vm:
+            raise VmNotFoundException("Vm %s not found in cache" % vm_id)
+        if not vm.location_id:
+            self._logger.debug("Vm %s does not have location_id" % vm_id)
+
+        return vm.location_id
+
     def get_mks_ticket(self, vm_id):
         return self.vim_client.get_mks_ticket(vm_id)

@@ -179,14 +179,10 @@ class VimCache:
             elif change.name == "config":
                 vm.memory_mb = change.val.hardware.memoryMB
                 vm.num_cpu = change.val.hardware.numCPU
+                vm.location_id = change.val.locationId
                 # files is an optional field, which could be None.
                 if change.val.files:
                     vm.path = change.val.files.vmPathName
-                for e in change.val.extraConfig:
-                    if e.key == "photon_controller.vminfo.tenant":
-                        vm.tenant_id = e.value
-                    elif e.key == "photon_controller.vminfo.project":
-                        vm.project_id = e.value
             elif change.name == "layout.disk":
                 disks = []
                 for disk in change.val:
