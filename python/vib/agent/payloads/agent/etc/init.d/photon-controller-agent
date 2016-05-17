@@ -16,6 +16,7 @@ PHOTON_CONTROLLER_AGENT_TAG="photon-controller-agent"
 PHOTON_CONTROLLER_ROOT="/opt/vmware/photon/controller"
 PHOTON_CONTROLLER_AGENT_RUN="-m agent.agent"
 PHOTON_CONTROLLER_GROUPNAME="photon-controller-agent"
+ATTACHE_ROOT="/usr/lib/vmware/attache"
 
 # Optionally set additional PHOTON_CONTROLLER_AGENT_PARAMS
 . ${PHOTON_CONTROLLER_ROOT}/sh/photon_controller_params.sh
@@ -48,7 +49,7 @@ start() {
     return 1
   fi
 
-  export PYTHONPATH=$PHOTON_CONTROLLER_ROOT/$PYVER/site-packages
+  export PYTHONPATH=$PHOTON_CONTROLLER_ROOT/$PYVER/site-packages:$ATTACHE_ROOT/lib/python$PYVER/site-packages
 
   # Remove empty folders in python path to guarantee a clean environment
   SITE_PACKAGES=$PHOTON_CONTROLLER_ROOT/$PYVER/site-packages
