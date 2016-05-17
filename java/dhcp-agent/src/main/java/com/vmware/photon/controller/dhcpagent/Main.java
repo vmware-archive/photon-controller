@@ -48,7 +48,9 @@ public class Main {
 
     new LoggingFactory(dhcpAgentConfig.getLogging(), "dhcpagent").configure();
 
-    DnsmasqDriver dnsmasqDriver = new DnsmasqDriver("/usr/local/bin/dhcp_release");
+    DnsmasqDriver dnsmasqDriver = new DnsmasqDriver("/usr/local/bin/dhcp_release",
+            DnsmasqDriver.class.getResource("/scripts/release-ip.sh").getPath(),
+            DnsmasqDriver.class.getResource("/scripts/dhcp-status.sh").getPath());
 
     Injector injector = Guice.createInjector(new DHCPAgentModule(dhcpAgentConfig, dnsmasqDriver));
 

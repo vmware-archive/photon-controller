@@ -88,8 +88,9 @@ public class DHCPAgentXenonHostTest {
 
     @BeforeMethod
     public void setUp() throws Exception {
-      injector = TestHelper.createInjector(configFilePath, new DnsmasqDriver(
-              DHCPAgentXenonHostTest.class.getResource("/dhcp_release.sh").getPath()));
+      injector = TestHelper.createInjector(configFilePath, new DnsmasqDriver("/usr/local/bin/dhcp_release",
+              DHCPAgentXenonHostTest.class.getResource("/scripts/release-ip.sh").getPath(),
+              DHCPAgentXenonHostTest.class.getResource("/scripts/dhcp-status.sh").getPath()));
     }
 
     @AfterMethod
@@ -132,8 +133,9 @@ public class DHCPAgentXenonHostTest {
   public class StartTest {
     @BeforeMethod
     private void setUp() throws Throwable {
-      injector = TestHelper.createInjector(configFilePath, new DnsmasqDriver(
-              DHCPAgentXenonHostTest.class.getResource("/dhcp_release.sh").getPath()));
+      injector = TestHelper.createInjector(configFilePath, new DnsmasqDriver("/usr/local/bin/dhcp_release",
+              DHCPAgentXenonHostTest.class.getResource("/scripts/release-ip.sh").getPath(),
+              DHCPAgentXenonHostTest.class.getResource("/scripts/dhcp-status.sh").getPath()));
       host = injector.getInstance(DHCPAgentXenonHost.class);
     }
 
@@ -178,8 +180,9 @@ public class DHCPAgentXenonHostTest {
 
     @BeforeMethod
     private void setUp() throws Throwable {
-      injector = TestHelper.createInjector(configFilePath, new DnsmasqDriver(
-              DHCPAgentXenonHostTest.class.getResource("/dhcp_release.sh").getPath()));
+      injector = TestHelper.createInjector(configFilePath, new DnsmasqDriver("/usr/local/bin/dhcp_release",
+              DHCPAgentXenonHostTest.class.getResource("/scripts/release-ip.sh").getPath(),
+              DHCPAgentXenonHostTest.class.getResource("/scripts/dhcp-status.sh").getPath()));
       host = injector.getInstance(DHCPAgentXenonHost.class);
       host.start();
       ServiceHostUtils.waitForServiceAvailability(host, SERVICES_STARTUP_TIMEOUT, serviceSelfLinks.clone());
