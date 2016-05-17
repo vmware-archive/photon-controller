@@ -43,8 +43,8 @@ class TestHttpTransfer(unittest.TestCase):
     @parameterized.expand([
         (True,), (False,)
     ])
-    @patch("host.hypervisor.esx.http_disk_transfer.VimClient")
-    def test_create_remote_vim_client(self, get_svc_ticket_success, _vim_client_cls):
+    @patch("host.hypervisor.esx.vim_client.VimClient.connect_ticket")
+    def test_create_remote_vim_client(self, get_svc_ticket_success, _connect_ticket):
         host = "mock_host"
         get_service_ticket_mock = MagicMock()
         if get_svc_ticket_success:
@@ -59,9 +59,7 @@ class TestHttpTransfer(unittest.TestCase):
             request = ServiceTicketRequest(service_type=ServiceType.VIM)
             agent_client.get_service_ticket.assert_called_once_with(request)
 
-            _vim_client_cls.assert_called_once_with(auto_sync=False)
             vim_conn.connect_ticket.assert_called_once_with(host, get_service_ticket_mock.vim_ticket)
-            self.assertEqual(vim_conn, _vim_client_cls.return_value)
         else:
             self.assertRaises(ValueError, self.http_transferer._create_remote_host_client, agent_client, host)
 
