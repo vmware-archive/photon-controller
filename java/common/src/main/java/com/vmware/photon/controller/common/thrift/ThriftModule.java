@@ -13,6 +13,9 @@
 
 package com.vmware.photon.controller.common.thrift;
 
+import com.vmware.photon.controller.agent.gen.AgentControl;
+import com.vmware.photon.controller.common.clients.AgentControlClient;
+import com.vmware.photon.controller.common.clients.AgentControlClientFactory;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.zookeeper.ServiceNode;
@@ -43,6 +46,12 @@ import java.util.concurrent.ScheduledExecutorService;
  * Guice module for Thrift.
  */
 public class ThriftModule extends AbstractModule {
+  private static final Object lock = new Object();
+  private volatile SecureRandom secureRandom;
+  private volatile TProtocolFactory tProtocolFactory;
+  private volatile TAsyncClientManager tAsyncClientManager;
+  private volatile ScheduledExecutorService scheduledExecutorService;
+
   @Override
   protected void configure() {
     install(new FactoryModuleBuilder()
@@ -51,29 +60,60 @@ public class ThriftModule extends AbstractModule {
         .build(ThriftFactory.class));
   }
 
+  // The following getters lock to ensure a singleton for Thrift communication.
+  // This also includes Guice Singleton annotations since these methods are
+  // called by both Guice and ThriftModule.
   @Provides
   @Singleton
   @ClientPoolTimer
-  public ScheduledExecutorService getClientPoolTimer() {
-    return Executors.newScheduledThreadPool(1);
+  ScheduledExecutorService getClientPoolTimer() {
+    if (scheduledExecutorService == null)  {
+      synchronized (lock) {
+        if (scheduledExecutorService == null) {
+          scheduledExecutorService = Executors.newScheduledThreadPool(1);
+        }
+      }
+    }
+    return scheduledExecutorService;
   }
 
   @Provides
   @Singleton
-  public SecureRandom getSecureRandom() {
-    return new SecureRandom();
+  SecureRandom getSecureRandom() {
+    if (secureRandom == null) {
+      synchronized (lock) {
+        if (secureRandom == null) {
+          secureRandom = new SecureRandom();
+        }
+      }
+    }
+    return secureRandom;
   }
 
   @Provides
   @Singleton
   TAsyncClientManager getTAsyncClientManager() throws IOException {
-    return new TAsyncClientManager();
+    if (tAsyncClientManager == null) {
+      synchronized (lock) {
+        if (tAsyncClientManager == null) {
+          tAsyncClientManager = new TAsyncClientManager();
+        }
+      }
+    }
+    return tAsyncClientManager;
   }
 
   @Provides
   @Singleton
   TProtocolFactory getTProtocolFactory() {
-    return new TCompactProtocol.Factory();
+    if (tProtocolFactory == null) {
+      synchronized (lock) {
+        if (tProtocolFactory == null) {
+          tProtocolFactory = new TCompactProtocol.Factory();
+        }
+      }
+    }
+    return tProtocolFactory;
   }
 
   @Provides
@@ -140,13 +180,28 @@ public class ThriftModule extends AbstractModule {
   }
 
   /**
+   * Creates a AgentControlClientFactory of the given type.
+   *
+   * @return
+   * @throws IOException
+   */
+  public AgentControlClientFactory getAgentControlClientFactory() throws IOException {
+    TypeLiteral type = new TypeLiteral<AgentControl.AsyncClient>() {};
+    TAsyncClientFactory tAsyncClientFactory = getTAsyncClientFactory(type);
+    ClientPoolFactory clientPoolFactory = getClientPoolFactory(tAsyncClientFactory);
+    ClientProxyFactory clientProxyFactory = getClientProxyFactory(type);
+
+    return new AgentControlClientFactoryImpl(clientPoolFactory, clientProxyFactory);
+  }
+
+  /**
    * Creates a HostClientFactory of the given type.
    *
    * @return
    * @throws IOException
    */
   public HostClientFactory getHostClientFactory() throws IOException {
-    TypeLiteral type = new TypeLiteral<Host.AsyncClient>(){};
+    TypeLiteral type = new TypeLiteral<Host.AsyncClient>() {};
     TAsyncClientFactory tAsyncClientFactory = getTAsyncClientFactory(type);
     ClientPoolFactory clientPoolFactory = getClientPoolFactory(tAsyncClientFactory);
     ClientProxyFactory clientProxyFactory = getClientProxyFactory(type);
@@ -201,8 +256,8 @@ public class ThriftModule extends AbstractModule {
     private final TAsyncClientFactory tAsyncClientFactory;
 
     private ClientPoolFactoryImpl(final SecureRandom random, final TProtocolFactory protocolFactory,
-                          final ScheduledExecutorService scheduledExecutorService,
-                          final ThriftFactory thriftFactory, final TAsyncClientFactory tAsyncClientFactory) {
+                                  final ScheduledExecutorService scheduledExecutorService,
+                                  final ThriftFactory thriftFactory, final TAsyncClientFactory tAsyncClientFactory) {
       this.random = random;
       this.protocolFactory = protocolFactory;
       this.scheduledExecutorService = scheduledExecutorService;
@@ -222,6 +277,7 @@ public class ThriftModule extends AbstractModule {
           scheduledExecutorService, servers, options);
     }
   }
+
   /**
    * Implementation of a ThriftFactory.
    */
@@ -240,6 +296,24 @@ public class ThriftModule extends AbstractModule {
     @Override
     public MultiplexedProtocolFactory create(String serviceName) {
       return new MultiplexedProtocolFactory(protocolFactory, serviceName);
+    }
+  }
+
+  /**
+   * Implementation of AgentControlClientFactory.
+   */
+  private static class AgentControlClientFactoryImpl implements AgentControlClientFactory {
+    private ClientPoolFactory clientPoolFactory;
+    private ClientProxyFactory clientProxyFactory;
+
+    private AgentControlClientFactoryImpl(ClientPoolFactory clientPoolFactory, ClientProxyFactory clientProxyFactory) {
+      this.clientPoolFactory = clientPoolFactory;
+      this.clientProxyFactory = clientProxyFactory;
+    }
+
+    @Override
+    public AgentControlClient create() {
+      return new AgentControlClient(clientProxyFactory, clientPoolFactory);
     }
   }
 }

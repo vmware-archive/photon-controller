@@ -13,7 +13,6 @@
 
 package com.vmware.photon.controller.cloudstore;
 
-import com.vmware.photon.controller.agent.gen.AgentControl;
 import com.vmware.photon.controller.cloudstore.dcp.CloudStoreXenonHost;
 import com.vmware.photon.controller.common.clients.AgentControlClientFactory;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
@@ -21,14 +20,9 @@ import com.vmware.photon.controller.common.config.BadConfigException;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.logging.LoggingFactory;
 import com.vmware.photon.controller.common.thrift.ThriftModule;
-import com.vmware.photon.controller.common.thrift.ThriftServiceModule;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperModule;
-import com.vmware.photon.controller.host.gen.Host;
 
-import com.google.inject.Guice;
-import com.google.inject.Injector;
-import com.google.inject.TypeLiteral;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.Namespace;
@@ -62,25 +56,13 @@ public class Main {
 
     new LoggingFactory(cloudStoreConfig.getLogging(), "cloudstore").configure();
 
-    Injector injector = Guice.createInjector(
-        new CloudStoreModule(),
-        new ThriftModule(),
-        new ThriftServiceModule<>(
-            new TypeLiteral<Host.AsyncClient>() {
-            }
-        ),
-        new ThriftServiceModule<>(
-            new TypeLiteral<AgentControl.AsyncClient>() {
-            }
-        )
-    );
-
     ZookeeperModule zkModule = new ZookeeperModule(cloudStoreConfig.getZookeeper());
     final CuratorFramework zkClient = zkModule.getCuratorFramework();
     final ServiceConfigFactory serviceConfigFactory = zkModule.getServiceConfigFactory(zkClient);
 
-    final HostClientFactory hostClientFactory = injector.getInstance(HostClientFactory.class);
-    final AgentControlClientFactory agentControlClientFactory = injector.getInstance(AgentControlClientFactory.class);
+    ThriftModule thriftModule = new ThriftModule();
+    final HostClientFactory hostClientFactory = thriftModule.getHostClientFactory();
+    final AgentControlClientFactory agentControlClientFactory = thriftModule.getAgentControlClientFactory();
 
     final CloudStoreXenonHost cloudStoreXenonHost = new CloudStoreXenonHost(cloudStoreConfig.getXenonConfig(),
         hostClientFactory, agentControlClientFactory, serviceConfigFactory);
