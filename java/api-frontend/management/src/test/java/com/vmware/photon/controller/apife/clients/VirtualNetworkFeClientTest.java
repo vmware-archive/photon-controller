@@ -27,6 +27,8 @@ import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.backends.clients.HousekeeperXenonRestClient;
 import com.vmware.photon.controller.cloudstore.dcp.entity.TaskService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.VirtualNetworkService;
+import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
+import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocumentQueryResult;
 
@@ -34,16 +36,20 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Matchers.refEq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.testng.Assert.assertEquals;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -133,7 +139,36 @@ public class VirtualNetworkFeClientTest {
   }
 
   @Test
-  public void succeedsToListAll() throws Throwable {
+  public void succeedsToGet() throws Throwable {
+    VirtualNetworkService.State virtualNetworkState = new VirtualNetworkService.State();
+    virtualNetworkState.name = "virtualNetwork";
+
+    Operation operation = new Operation();
+    operation.setBody(virtualNetworkState);
+
+    String networkId = UUID.randomUUID().toString();
+
+    doReturn(operation).when(cloudStoreClient).get(
+        eq(VirtualNetworkService.FACTORY_LINK + "/" + networkId));
+
+
+    VirtualNetwork virtualNetwork = frontendClient.get(networkId);
+    assertEquals(virtualNetwork.getName(), virtualNetworkState.name);
+  }
+
+  @Test(expectedExceptions = XenonRuntimeException.class)
+  public void failsToGetWithException() throws Throwable {
+    doThrow(new DocumentNotFoundException(new Operation(), null))
+        .when(cloudStoreClient).get(anyString());
+
+    frontendClient.get("networkId");
+  }
+
+  @Test(dataProvider = "listAllTestData")
+  public void succeedsToListAll(String parentId,
+                                String parentKind,
+                                Optional<String> name,
+                                ImmutableMap<String, String> terms) throws Throwable {
     VirtualNetworkService.State expectedVirtualNetworkState = new VirtualNetworkService.State();
     expectedVirtualNetworkState.state = NetworkState.READY;
 
@@ -148,25 +183,21 @@ public class VirtualNetworkFeClientTest {
     expectedQueryResult.nextPageLink = nextPageLink;
     expectedQueryResult.prevPageLink = prevPageLink;
 
-    ImmutableMap.Builder<String, String> expectedTermsBuilder = new ImmutableMap.Builder<>();
-    expectedTermsBuilder.put("parentId", "parentId");
-    expectedTermsBuilder.put("parentKind", "parentKind");
-
     doReturn(expectedQueryResult).when(cloudStoreClient).queryDocuments(
         eq(VirtualNetworkService.State.class),
-        refEq(expectedTermsBuilder.build()),
+        refEq(terms),
         eq(Optional.absent()),
         eq(true));
 
     ResourceList<VirtualNetwork> actualVirtualNetworks = frontendClient.list(
-        "parentId",
-        "parentKind",
-        Optional.absent(),
+        parentId,
+        parentKind,
+        name,
         Optional.absent());
 
     verify(cloudStoreClient).queryDocuments(
         eq(VirtualNetworkService.State.class),
-        refEq(expectedTermsBuilder.build()),
+        refEq(terms),
         eq(Optional.absent()),
         eq(true));
     assertThat(actualVirtualNetworks.getItems().size(), is(1));
@@ -175,47 +206,34 @@ public class VirtualNetworkFeClientTest {
     assertThat(actualVirtualNetwork.getState(), is(NetworkState.READY));
   }
 
-  @Test
-  public void succeedsToListByName() throws Throwable {
-    VirtualNetworkService.State expectedVirtualNetworkState = new VirtualNetworkService.State();
-    expectedVirtualNetworkState.state = NetworkState.READY;
-
-    ServiceDocumentQueryResult expectedQueryResult = new ServiceDocumentQueryResult();
-    String documentLink = UUID.randomUUID().toString();
-    String nextPageLink = "nextPageLink" + UUID.randomUUID().toString();
-    String prevPageLink = "prevPageLink" + UUID.randomUUID().toString();
-    expectedQueryResult.documentLinks = new ArrayList<>();
-    expectedQueryResult.documentLinks.add(documentLink);
-    expectedQueryResult.documents = new HashMap<>();
-    expectedQueryResult.documents.put(documentLink, objectMapper.writeValueAsString(expectedVirtualNetworkState));
-    expectedQueryResult.nextPageLink = nextPageLink;
-    expectedQueryResult.prevPageLink = prevPageLink;
-
-    ImmutableMap.Builder<String, String> expectedTermsBuilder = new ImmutableMap.Builder<>();
-    expectedTermsBuilder.put("parentId", "parentId");
-    expectedTermsBuilder.put("parentKind", "parentKind");
-    expectedTermsBuilder.put("name", "name");
-
-    doReturn(expectedQueryResult).when(cloudStoreClient).queryDocuments(
-        eq(VirtualNetworkService.State.class),
-        refEq(expectedTermsBuilder.build()),
-        eq(Optional.absent()),
-        eq(true));
-
-    ResourceList<VirtualNetwork> actualVirtualNetworks = frontendClient.list(
-        "parentId",
-        "parentKind",
-        Optional.of("name"),
-        Optional.absent());
-
-    verify(cloudStoreClient).queryDocuments(
-        eq(VirtualNetworkService.State.class),
-        refEq(expectedTermsBuilder.build()),
-        eq(Optional.absent()),
-        eq(true));
-    assertThat(actualVirtualNetworks.getItems().size(), is(1));
-
-    VirtualNetwork actualVirtualNetwork = actualVirtualNetworks.getItems().get(0);
-    assertThat(actualVirtualNetwork.getState(), is(NetworkState.READY));
+  @DataProvider(name = "listAllTestData")
+  private Object[][] getListAllTestData() {
+    return new Object[][] {
+        // parentId, parentKind, name, expectedTerms
+        {
+            null,
+            null,
+            Optional.absent(),
+            ImmutableMap.of()
+        },
+        {
+            "parentId",
+            "parentKind",
+            Optional.absent(),
+            ImmutableMap.of("parentId", "parentId", "parentKind", "parentKind")
+        },
+        {
+            null,
+            null,
+            Optional.of("name"),
+            ImmutableMap.of("name", "name")
+        },
+        {
+            "parentId",
+            "parentKind",
+            Optional.of("name"),
+            ImmutableMap.of("parentId", "parentId", "parentKind", "parentKind", "name", "name")
+        }
+    };
   }
 }

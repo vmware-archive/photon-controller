@@ -30,6 +30,7 @@ import com.vmware.photon.controller.apife.backends.utils.VirtualNetworkUtils;
 import com.vmware.photon.controller.apife.utils.PaginationUtils;
 import com.vmware.photon.controller.cloudstore.dcp.entity.VirtualNetworkService;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
+import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
 import com.vmware.xenon.common.ServiceDocumentQueryResult;
 
 import com.google.common.base.Optional;
@@ -57,6 +58,8 @@ public class VirtualNetworkFeClient {
 
   /**
    * Creates a virtual network by the given creation spec.
+   *
+   * Parent ID can be project/tenant ID, or can be null in case the virtual network is global.
    */
   public Task create(String parentId,
                      String parentKind,
@@ -76,7 +79,7 @@ public class VirtualNetworkFeClient {
   }
 
   /**
-   * Delete the given virtual network.
+   * Deletes the given virtual network by ID.
    */
   public Task delete(String networkId) throws ExternalException {
     DeleteVirtualNetworkWorkflowDocument startState = new DeleteVirtualNetworkWorkflowDocument();
@@ -90,17 +93,41 @@ public class VirtualNetworkFeClient {
   }
 
   /**
+   * Gets the virtual network by ID.
+   */
+  public VirtualNetwork get(String id) throws ExternalException {
+    String documentLink = VirtualNetworkService.FACTORY_LINK + "/" + id;
+
+    try {
+      return VirtualNetworkUtils.convert(
+          cloudStoreClient.get(documentLink).getBody(VirtualNetworkService.State.class));
+    } catch (DocumentNotFoundException ex) {
+      // TODO(ysheng): we need to create our own exception type
+      throw new XenonRuntimeException(ex);
+    }
+  }
+
+  /**
    * Gets a list of virtual networks by the given parent ID and kind.
    * The list can be filtered by the optional name of the virtual network. The size of the list
    * can be restricted by the optional page size.
+   *
+   * Parent ID can be project/tenant ID, or can be null in case the virtual network is global.
    */
   public ResourceList<VirtualNetwork> list(String parentId,
                                            String parentKind,
                                            Optional<String> name,
                                            Optional<Integer> pageSize) throws ExternalException {
     final ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
-    termsBuilder.put("parentId", parentId);
-    termsBuilder.put("parentKind", parentKind);
+
+    if (parentId != null) {
+      termsBuilder.put("parentId", parentId);
+    }
+
+    if (parentKind != null) {
+      termsBuilder.put("parentKind", parentKind);
+    }
+
     if (name.isPresent()) {
       termsBuilder.put("name", name.get());
     }
