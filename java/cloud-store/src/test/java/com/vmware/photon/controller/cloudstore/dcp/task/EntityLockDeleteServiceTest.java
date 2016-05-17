@@ -388,7 +388,7 @@ public class EntityLockDeleteServiceTest {
                                      int danglingEntityLocks) throws Throwable {
       for (int i = 0; i < totalEntityLocks; i++) {
 
-        // create associated entity lock
+        // Create associated entity lock without creating task, but only with fake task id(that acts as deleted task)
         EntityLockService.State entityLock = new EntityLockService.State();
         entityLock.entityId = "entity-id" + i;
         entityLock.ownerTaskId = "task-id" + i;

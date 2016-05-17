@@ -375,7 +375,6 @@ public class EntityLockCleanerServiceTest {
           {2, 0, TestEnvironment.DEFAULT_MULTI_HOST_COUNT},
           {5, 5, 1},
           {7, 5, 1},
-          {7, 5, 1},
           {7, 5, TestEnvironment.DEFAULT_MULTI_HOST_COUNT},
           // Test cases with entity locks greater than the default page limit.
           {EntityLockCleanerService.DEFAULT_PAGE_LIMIT + 100, EntityLockCleanerService
@@ -433,8 +432,6 @@ public class EntityLockCleanerServiceTest {
         } else {
           assertThat(entityLock.ownerTaskId, is(Matchers.notNullValue()));
         }
-
-
       }
     }
   }

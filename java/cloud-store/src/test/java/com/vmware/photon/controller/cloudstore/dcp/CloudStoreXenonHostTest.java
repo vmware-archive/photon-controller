@@ -43,6 +43,7 @@ import com.vmware.photon.controller.cloudstore.dcp.task.EntityLockDeleteFactoryS
 import com.vmware.photon.controller.cloudstore.dcp.task.TombstoneCleanerFactoryService;
 import com.vmware.photon.controller.cloudstore.dcp.task.trigger.AvailabilityZoneCleanerTriggerBuilder;
 import com.vmware.photon.controller.cloudstore.dcp.task.trigger.EntityLockCleanerTriggerBuilder;
+import com.vmware.photon.controller.cloudstore.dcp.task.trigger.EntityLockDeleteTriggerBuilder;
 import com.vmware.photon.controller.cloudstore.dcp.task.trigger.TombstoneCleanerTriggerBuilder;
 import com.vmware.photon.controller.common.clients.AgentControlClientFactory;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
@@ -115,6 +116,7 @@ public class CloudStoreXenonHostTest {
       // triggers
       TaskTriggerFactoryService.SELF_LINK,
       TaskTriggerFactoryService.SELF_LINK + EntityLockCleanerTriggerBuilder.TRIGGER_SELF_LINK,
+      TaskTriggerFactoryService.SELF_LINK + EntityLockDeleteTriggerBuilder.TRIGGER_SELF_LINK,
       TaskTriggerFactoryService.SELF_LINK + TombstoneCleanerTriggerBuilder.TRIGGER_SELF_LINK,
       TaskTriggerFactoryService.SELF_LINK + AvailabilityZoneCleanerTriggerBuilder.TRIGGER_SELF_LINK,
 
