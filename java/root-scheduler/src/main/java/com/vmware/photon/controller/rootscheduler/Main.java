@@ -21,12 +21,10 @@ import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.photon.controller.common.thrift.ThriftModule;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperModule;
-import com.vmware.photon.controller.host.gen.Host;
 import com.vmware.photon.controller.rootscheduler.service.CloudStoreConstraintChecker;
 import com.vmware.photon.controller.rootscheduler.service.ConstraintChecker;
 import com.vmware.photon.controller.rootscheduler.xenon.SchedulerXenonHost;
 
-import com.google.inject.TypeLiteral;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.Namespace;
@@ -66,9 +64,8 @@ public class Main {
     final CuratorFramework zkClient = zkModule.getCuratorFramework();
     ServerSet cloudStoreServerSet = zkModule.getZookeeperServerSet(zkClient, CLOUDSTORE_SERVICE_NAME, true);
 
-    TypeLiteral type = new TypeLiteral<Host.AsyncClient>() {};
     ThriftModule thriftModule = new ThriftModule();
-    HostClientFactory hostClientFactory = thriftModule.getHostClientFactory(type);
+    HostClientFactory hostClientFactory = thriftModule.getHostClientFactory();
 
     final CloudStoreHelper cloudStoreHelper = new CloudStoreHelper(cloudStoreServerSet);
     final ConstraintChecker checker = new CloudStoreConstraintChecker(cloudStoreHelper);
