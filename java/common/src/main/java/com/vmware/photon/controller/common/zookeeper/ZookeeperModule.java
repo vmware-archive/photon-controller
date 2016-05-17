@@ -149,8 +149,9 @@ public class ZookeeperModule extends AbstractModule {
 
   /**
    * Creates a new ZookeeperServerSet of the given service name.
-   * @param zkClient the ZookeeperClient to create the ServerSet.
-   * @param serviceName the name of the service.
+   *
+   * @param zkClient           the ZookeeperClient to create the ServerSet.
+   * @param serviceName        the name of the service.
    * @param subscribeToUpdates boolean to subscribe to updates of the ServerSet with the same service name.
    * @return
    * @throws Exception
@@ -166,22 +167,24 @@ public class ZookeeperModule extends AbstractModule {
 
   /**
    * Creates a SimpleServiceNode with the given service name and address.
-   * @param zkClient the ZookeeperClient to create the SimpleServiceNode.
-   * @param serviceName the name of the service.
+   *
+   * @param zkClient                  the ZookeeperClient to create the SimpleServiceNode.
+   * @param serviceName               the name of the service.
    * @param registrationSocketAddress the address to register.
    * @return
    */
   public ServiceNode getSimpleServiceNode(final CuratorFramework zkClient,
-                                                String serviceName, InetSocketAddress registrationSocketAddress) {
+                                          String serviceName, InetSocketAddress registrationSocketAddress) {
     return new SimpleServiceNode(zkClient, serviceName, registrationSocketAddress);
   }
 
   /**
    * Registers the service and address with Zookeeper.
-   * @param zkClient the ZookeeperClient to register the service.
-   * @param serviceName the name of the service.
-   * @param registrationIpAddress the ip address of the service to register.
-   * @param port the port of the service to register.
+   *
+   * @param zkClient                  the ZookeeperClient to register the service.
+   * @param serviceName               the name of the service.
+   * @param registrationIpAddress     the ip address of the service to register.
+   * @param port                      the port of the service to register.
    * @param retryIntervalMilliSeconds the retry interval to join the service.
    */
   public void registerWithZookeeper(final CuratorFramework zkClient, String serviceName,
@@ -193,25 +196,17 @@ public class ZookeeperModule extends AbstractModule {
 
   /**
    * Creates a ServiceConfigFactory.
+   *
    * @param zkClient the ZookeeperClient to register the service.
    * @return
    * @throws Exception
    */
   public ServiceConfigFactory getServiceConfigFactory(final CuratorFramework zkClient) throws Exception {
-    ServiceConfigFactory serviceConfigFactory = new ServiceConfigFactory() {
-      final ZookeeperServerReader zookeeperServerReader = getServiceServerReader();
-      final PathChildrenCacheFactory pathChildrenCacheFactory = getServicePathCacheFactory(zkClient,
-          zookeeperServerReader);
-      @Override
-      public ServiceConfig create(String serviceName) {
-        try {
-          return new ServiceConfig(zkClient, pathChildrenCacheFactory, serviceName);
-        } catch (Exception e) {
-          throw new RuntimeException(e);
-        }
-      }
-    };
-    return serviceConfigFactory;
+    final ZookeeperServerReader zookeeperServerReader = getServiceServerReader();
+    final PathChildrenCacheFactory pathChildrenCacheFactory = getServicePathCacheFactory(zkClient,
+        zookeeperServerReader);
+
+    return new ServiceConfigFactoryImpl(zkClient, pathChildrenCacheFactory);
   }
 
   public void setConfig(ZookeeperConfig config) {
@@ -231,5 +226,29 @@ public class ZookeeperModule extends AbstractModule {
         .build(ZookeeperServerSetFactory.class));
 
     bind(ZookeeperServerReader.class).to(ZookeeperHostReader.class);
+  }
+
+  /**
+   * Implementation of a ServiceConfigFactory using the given ZookeeperClient and
+   * PathChildrenCacheFactory.
+   */
+  private static class ServiceConfigFactoryImpl implements ServiceConfigFactory {
+    private final CuratorFramework zkClient;
+    private final PathChildrenCacheFactory pathChildrenCacheFactory;
+
+    private ServiceConfigFactoryImpl(final CuratorFramework zkClient,
+                             final PathChildrenCacheFactory pathChildrenCacheFactory) {
+      this.zkClient = zkClient;
+      this.pathChildrenCacheFactory = pathChildrenCacheFactory;
+    }
+
+    @Override
+    public ServiceConfig create(String serviceName) {
+      try {
+        return new ServiceConfig(zkClient, pathChildrenCacheFactory, serviceName);
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+    }
   }
 }
