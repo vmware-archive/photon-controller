@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.apife.resources;
 
 import com.vmware.photon.controller.api.Task;
+import com.vmware.photon.controller.api.VirtualNetwork;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.clients.VirtualNetworkFeClient;
 import com.vmware.photon.controller.apife.resources.routes.NetworkResourceRoutes;
@@ -49,6 +50,29 @@ public class VirtualNetworkResourceTest extends ResourceTest {
   @Override
   public void setUpResources() throws Exception {
     addResource(new NetworkResource(frontendClient));
+  }
+
+  @Test
+  public void succeedsToGet() throws Throwable {
+    VirtualNetwork expectedVirtualNetwork = new VirtualNetwork();
+    expectedVirtualNetwork.setId(networkId);
+    doReturn(expectedVirtualNetwork).when(frontendClient).get(networkId);
+
+    Response response = client().target(networkRoute).request().get();
+    assertThat(response.getStatus(), is(HttpStatus.SC_OK));
+
+    VirtualNetwork actualVirtualNetwork = response.readEntity(VirtualNetwork.class);
+    assertThat(actualVirtualNetwork, is(expectedVirtualNetwork));
+    assertThat(new URI(actualVirtualNetwork.getSelfLink()).isAbsolute(), is(true));
+    assertThat(actualVirtualNetwork.getSelfLink().endsWith(networkRoute), is(true));
+  }
+
+  @Test
+  public void failsToGet() throws Throwable {
+    doThrow(new ExternalException("failed to get")).when(frontendClient).get(networkId);
+
+    Response response = client().target(networkRoute).request().get();
+    assertThat(response.getStatus(), is(HttpStatus.SC_INTERNAL_SERVER_ERROR));
   }
 
   @Test
