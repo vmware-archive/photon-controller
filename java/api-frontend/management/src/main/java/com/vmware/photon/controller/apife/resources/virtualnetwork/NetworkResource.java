@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.apife.resources.virtualnetwork;
 
 import com.vmware.photon.controller.api.Task;
+import com.vmware.photon.controller.api.VirtualNetwork;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.clients.VirtualNetworkFeClient;
 import com.vmware.photon.controller.apife.resources.routes.NetworkResourceRoutes;
@@ -29,6 +30,7 @@ import org.glassfish.jersey.server.ContainerRequest;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
+import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
@@ -51,6 +53,21 @@ public class NetworkResource {
   @Inject
   public NetworkResource(VirtualNetworkFeClient virtualNetworkFeClient) {
     this.virtualNetworkFeClient = virtualNetworkFeClient;
+  }
+
+  @GET
+  @ApiOperation(value = "Find Network by id", response = VirtualNetwork.class)
+  @ApiResponses(value = {
+      @ApiResponse(code = 200, message = "Network object")
+  })
+  public Response get(@Context Request request,
+                      @PathParam("id") String id)
+    throws ExternalException {
+    return generateCustomResponse(
+        Response.Status.OK,
+        virtualNetworkFeClient.get(id),
+        (ContainerRequest) request,
+        NetworkResourceRoutes.NETWORK_PATH);
   }
 
   @DELETE
