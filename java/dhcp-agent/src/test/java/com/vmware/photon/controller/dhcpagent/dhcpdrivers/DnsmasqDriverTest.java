@@ -30,15 +30,24 @@ import java.io.PrintWriter;
  */
 public class DnsmasqDriverTest {
 
+    private DnsmasqDriver dnsmasqDriver;
+
     @BeforeClass
     public void setUpClass() {
         try {
             String command = String.format("chmod +x %s",
-                    DnsmasqDriverTest.class.getResource("/dhcp_release.sh").getPath());
+                    DnsmasqDriverTest.class.getResource("/scripts/release-ip.sh").getPath());
+            Runtime.getRuntime().exec(command);
+            command = String.format("chmod +x %s",
+                    DnsmasqDriverTest.class.getResource("/scripts/dhcp-status.sh").getPath());
             Runtime.getRuntime().exec(command);
         } catch (IOException e) {
             fail(String.format("Failed with IOException: %s", e.toString()));
         }
+
+        dnsmasqDriver = new DnsmasqDriver(DnsmasqDriverTest.class.getResource("/scripts/release-ip.sh").getPath(),
+                DnsmasqDriverTest.class.getResource("/scripts/release-ip.sh").getPath(),
+                DnsmasqDriverTest.class.getResource("/scripts/dhcp-status.sh").getPath());
     }
 
     /**
@@ -52,8 +61,6 @@ public class DnsmasqDriverTest {
     public void testReleaseIPSuccess() {
         setupDHCPConfig("none");
 
-        DnsmasqDriver dnsmasqDriver = new DnsmasqDriver(
-                DnsmasqDriverTest.class.getResource("/dhcp_release.sh").getPath());
         DHCPDriver.Response response = dnsmasqDriver.releaseIP("VMLAN", "192.0.0.1", "01:23:45:67:89:ab");
 
         assertThat(response.stdError, isEmptyOrNullString());
@@ -65,18 +72,32 @@ public class DnsmasqDriverTest {
     public void testReleaseIPFailure() {
         setupDHCPConfig("error");
 
-        DnsmasqDriver dnsmasqDriver = new DnsmasqDriver(
-            DnsmasqDriverTest.class.getResource("/dhcp_release.sh").getPath());
         DHCPDriver.Response response = dnsmasqDriver.releaseIP("VMLAN", "192.0.0.1", "01:23:45:67:89:ab");
 
         assertThat(response.exitCode, is(113));
         assertThat(response.stdError, is("error"));
     }
 
+    @Test
+    public void testDHCPStatusSuccess() {
+        setupDHCPConfig("none");
+
+        boolean status = dnsmasqDriver.isRunning();
+        assertThat(status, is(true));
+    }
+
+    @Test
+    public void testDHCPStatusFailure() {
+        setupDHCPConfig("error");
+
+        boolean status = dnsmasqDriver.isRunning();
+        assertThat(status, is(false));
+    }
+
     private void setupDHCPConfig(String inputConfig) {
         try {
             PrintWriter writer = new PrintWriter(
-                    DnsmasqDriverTest.class.getResource("/dhcpServerTestConfig").getPath());
+                    DnsmasqDriverTest.class.getResource("/scripts/dhcpServerTestConfig").getPath());
             writer.println(inputConfig);
             writer.close();
         } catch (FileNotFoundException e) {

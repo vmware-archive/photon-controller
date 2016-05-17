@@ -43,8 +43,9 @@ public class DHCPAgentModuleTest {
 
     @BeforeMethod
     public void setUp() throws BadConfigException {
-      injector = TestHelper.createInjector("/config.yml", new DnsmasqDriver(
-              DHCPAgentModuleTest.class.getResource("/dhcp_release.sh").getPath()));
+      injector = TestHelper.createInjector("/config.yml", new DnsmasqDriver("/usr/local/bin/dhcp_release",
+              DHCPAgentModuleTest.class.getResource("/scripts/release-ip.sh").getPath(),
+              DHCPAgentModuleTest.class.getResource("/scripts/dhcp-status.sh").getPath()));
     }
 
     @Test

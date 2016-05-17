@@ -21,18 +21,24 @@ import java.io.InputStreamReader;
  * Class implements Driver interface for Dnsmasq DHCP server.
  */
 public class DnsmasqDriver implements DHCPDriver {
+    private String releaseIPUtilityPath = "/usr/local/bin/dhcp_release";
+    private String releaseIPPath = "/scripts/release-ip";
+    private String dhcpStatusPath = "/script/dhcp-status";
 
-    private String utilityPath = "/usr/local/bin/dhcp_release";
+    public DnsmasqDriver(String utilityPath,
+                         String releaseIPPath,
+                         String dhcpStatusPath) {
 
-    public DnsmasqDriver(String utilityPath) {
-        this.utilityPath = utilityPath;
+        this.releaseIPUtilityPath = utilityPath;
+        this.releaseIPPath = releaseIPPath;
+        this.dhcpStatusPath = dhcpStatusPath;
     }
 
     public Response releaseIP(String networkInterface, String ipAddress, String macAddress) {
         Response response = new Response();
 
         try {
-            String command = String.format("%s %s %s %s", utilityPath, networkInterface,
+            String command = String.format("%s %s %s %s", releaseIPUtilityPath, networkInterface,
                     ipAddress, macAddress);
             Process p = Runtime.getRuntime().exec(command);
             int exitVal = p.waitFor();
@@ -51,6 +57,32 @@ public class DnsmasqDriver implements DHCPDriver {
         } catch (IOException e) {
             response.exitCode = -1;
             response.stdError = e.toString();
+        } finally {
+            return response;
+        }
+    }
+
+    public boolean isRunning() {
+        boolean response = false;
+        try {
+            String command = dhcpStatusPath + " dnsmasq.service";
+            Process p = Runtime.getRuntime().exec(command);
+            int exitVal = p.waitFor();
+
+            if (exitVal == 0) {
+                String s;
+                BufferedReader stdOut = new BufferedReader(new
+                        InputStreamReader(p.getInputStream()));
+
+                while ((s = stdOut.readLine()) != null) {
+                    if (s.matches("(.*)(active)(.*)(running)(.*)")) {
+                        response = true;
+                        break;
+                    }
+                }
+            }
+        } catch (IOException e) {
+            return response;
         } finally {
             return response;
         }
