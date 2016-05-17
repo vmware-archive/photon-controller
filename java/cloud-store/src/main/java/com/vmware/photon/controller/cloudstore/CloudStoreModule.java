@@ -13,13 +13,7 @@
 
 package com.vmware.photon.controller.cloudstore;
 
-import com.vmware.photon.controller.common.clients.AgentControlClient;
-import com.vmware.photon.controller.common.clients.AgentControlClientFactory;
-import com.vmware.photon.controller.common.clients.HostClient;
-import com.vmware.photon.controller.common.clients.HostClientFactory;
-
 import com.google.inject.AbstractModule;
-import com.google.inject.assistedinject.FactoryModuleBuilder;
 
 /**
  * This class implements a Guice module for the deployer service.
@@ -30,12 +24,5 @@ public class CloudStoreModule extends AbstractModule {
 
   @Override
   protected void configure() {
-    install(new FactoryModuleBuilder()
-        .implement(HostClient.class, HostClient.class)
-        .build(HostClientFactory.class));
-
-    install(new FactoryModuleBuilder()
-        .implement(AgentControlClient.class, AgentControlClient.class)
-        .build(AgentControlClientFactory.class));
   }
 }

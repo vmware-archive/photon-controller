@@ -13,30 +13,20 @@
 
 package com.vmware.photon.controller.cloudstore.dcp.helpers;
 
-import com.vmware.photon.controller.agent.gen.AgentControl;
 import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.UsageTag;
-import com.vmware.photon.controller.cloudstore.CloudStoreConfig;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
-import com.vmware.photon.controller.common.config.BadConfigException;
-import com.vmware.photon.controller.common.thrift.ThriftModule;
-import com.vmware.photon.controller.common.thrift.ThriftServiceModule;
 import com.vmware.photon.controller.common.xenon.BasicServiceHost;
 import com.vmware.photon.controller.common.xenon.MultiHostEnvironment;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.XenonHostInfoProvider;
 import com.vmware.photon.controller.common.xenon.XenonRestClient;
-import com.vmware.photon.controller.host.gen.Host;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.ServiceHost;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.inject.Guice;
-import com.google.inject.Inject;
-import com.google.inject.Injector;
-import com.google.inject.TypeLiteral;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.closeTo;
 import static org.hamcrest.Matchers.is;
@@ -53,21 +43,6 @@ import java.util.concurrent.TimeUnit;
  * This class implements helper routines for tests.
  */
 public class TestHelper {
-
-  public static Injector createInjector()
-      throws BadConfigException {
-    return Guice.createInjector(
-        new TestCloudStoreModule(),
-        new ThriftModule(),
-        new ThriftServiceModule<>(
-            new TypeLiteral<Host.AsyncClient>() {
-            }
-        ),
-        new ThriftServiceModule<>(
-            new TypeLiteral<AgentControl.AsyncClient>() {
-            }
-        ));
-  }
 
   public static HostService.State getHostServiceStartState(Set<String> usageTags) {
     HostService.State startState = new HostService.State();
@@ -162,39 +137,4 @@ public class TestHelper {
                 expectedExpiration),
             new BigDecimal(TimeUnit.MINUTES.toMicros(1)))));
   }
-
-  /**
-   * Class for constructing config injection.
-   */
-  public static class TestInjectedConfig {
-    private String bind;
-    private String registrationAddress;
-    private int port;
-    private String path;
-
-    @Inject
-    public TestInjectedConfig(CloudStoreConfig cloudStoreConfig) {
-      this.bind = cloudStoreConfig.getXenonConfig().getBindAddress();
-      this.registrationAddress = cloudStoreConfig.getXenonConfig().getRegistrationAddress();
-      this.port = cloudStoreConfig.getXenonConfig().getPort();
-      this.path = cloudStoreConfig.getXenonConfig().getStoragePath();
-    }
-
-    public String getBind() {
-      return bind;
-    }
-
-    public String getRegistrationAddress() {
-      return registrationAddress;
-    }
-
-    public int getPort() {
-      return port;
-    }
-
-    public String getPath() {
-      return path;
-    }
-  }
-
 }
