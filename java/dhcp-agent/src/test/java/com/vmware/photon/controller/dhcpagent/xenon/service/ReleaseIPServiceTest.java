@@ -57,12 +57,6 @@ public class ReleaseIPServiceTest {
     private ReleaseIPService taskService;
 
     /**
-     * Path for DHCP release utility.
-     */
-    private final String dhcpReleasePath = "/usr/local/bin/dhcp_release";
-
-
-    /**
      * Dummy test case to make IntelliJ recognize this as a test class.
      */
     @Test(enabled = false)
@@ -255,6 +249,7 @@ public class ReleaseIPServiceTest {
      */
     public class EndToEndTest {
         private TestEnvironment testEnvironment;
+        private DnsmasqDriver dnsmasqDriver;
 
         @Mock
         private DHCPAgentConfig config;
@@ -265,19 +260,26 @@ public class ReleaseIPServiceTest {
         public void setUpClass() {
             try {
                 String command = String.format("chmod +x %s",
-                        ReleaseIPServiceTest.class.getResource("/dhcp_release.sh").getPath());
+                        ReleaseIPServiceTest.class.getResource("/scripts/release-ip.sh").getPath());
+                Runtime.getRuntime().exec(command);
+                command = String.format("chmod +x %s",
+                        ReleaseIPServiceTest.class.getResource("/scripts/dhcp-status.sh").getPath());
                 Runtime.getRuntime().exec(command);
             } catch (IOException e) {
                 fail(String.format("Failed with IOException: %s", e.toString()));
             }
+
+            dnsmasqDriver = new DnsmasqDriver(
+                    ReleaseIPServiceTest.class.getResource("/scripts/release-ip.sh").getPath(),
+                    ReleaseIPServiceTest.class.getResource("/scripts/release-ip.sh").getPath(),
+                    ReleaseIPServiceTest.class.getResource("/scripts/dhcp-status.sh").getPath());
         }
 
         @BeforeMethod
         public void setUpTest() throws Throwable {
             MockitoAnnotations.initMocks(this);
             listeningExecutorService = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(1));
-            testEnvironment = TestEnvironment.create(new DnsmasqDriver(
-                    ReleaseIPServiceTest.class.getResource("/dhcp_release.sh").getPath()), 1, listeningExecutorService);
+            testEnvironment = TestEnvironment.create(dnsmasqDriver, 1, listeningExecutorService);
         }
 
         @AfterMethod
@@ -390,7 +392,7 @@ public class ReleaseIPServiceTest {
     private void setupDHCPConfig(String inputConfig) {
         try {
             PrintWriter writer = new PrintWriter(
-                    ReleaseIPServiceTest.class.getResource("/dhcpServerTestConfig").getPath());
+                    ReleaseIPServiceTest.class.getResource("/scripts/dhcpServerTestConfig").getPath());
             writer.println(inputConfig);
             writer.close();
         } catch (FileNotFoundException e) {
