@@ -108,6 +108,7 @@ class VimClient(HostClient):
 
     def __init__(self, auto_sync=True, errback=None, wait_timeout=10, min_interval=1):
         self._logger = logging.getLogger(__name__)
+        self._logger.info("VimClient init")
         self._sync_thread = None
         self._auto_sync = auto_sync
         self._errback = errback

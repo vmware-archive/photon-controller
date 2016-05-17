@@ -31,7 +31,6 @@ from gen.host.ttypes import ServiceTicketRequest
 from gen.host.ttypes import ServiceTicketResultCode
 from gen.host.ttypes import ServiceType
 from host.hypervisor.disk_manager import DiskAlreadyExistException
-from host.hypervisor.esx.vim_client import VimClient
 from host.hypervisor.esx.path_util import IMAGE_FOLDER_NAME_PREFIX
 from host.hypervisor.esx.path_util import VM_FOLDER_NAME_PREFIX
 from host.hypervisor.esx.path_util import SHADOW_VM_NAME_PREFIX
@@ -206,9 +205,12 @@ class HttpNfcTransferer(HttpTransferer):
         if response.result != ServiceTicketResultCode.OK:
             self._logger.info("Get service ticket failed. Response = %s" % str(response))
             raise ValueError("No ticket")
-        vim_client = VimClient(auto_sync=False)
-        vim_client.connect_ticket(host, response.vim_ticket)
-        return vim_client
+
+        from host.hypervisor.esx.host_client import create_host_client
+        host_client = create_host_client(auto_sync=False)
+        host_client.connect_ticket(host, response.vim_ticket)
+
+        return host_client
 
     def _get_disk_url_from_lease(self, lease):
         for dev_url in lease.info.deviceUrl:
@@ -339,15 +341,15 @@ class HttpNfcTransferer(HttpTransferer):
             raise
 
     def _send_image(self, agent_client, host, tmp_path, spec):
-        vim_client = self._create_remote_host_client(agent_client, host)
+        host_client = self._create_remote_host_client(agent_client, host)
         try:
-            write_lease, disk_url = self._get_url_from_import_vm(vim_client, host, spec)
+            write_lease, disk_url = self._get_url_from_import_vm(host_client, host, spec)
             try:
                 self.upload_file(tmp_path, disk_url, write_lease)
             finally:
                 write_lease.Complete()
         finally:
-            vim_client.disconnect()
+            host_client.disconnect()
 
     @lock_non_blocking
     def send_image_to_host(self, image_id, image_datastore,

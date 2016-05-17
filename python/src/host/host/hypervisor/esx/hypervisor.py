@@ -20,7 +20,6 @@ from host.hypervisor.esx.datastore_manager import EsxDatastoreManager
 from host.hypervisor.esx.disk_manager import EsxDiskManager
 from host.hypervisor.esx.http_disk_transfer import HttpNfcTransferer
 from host.hypervisor.esx.network_manager import EsxNetworkManager
-from host.hypervisor.esx.vim_client import VimClient
 from host.hypervisor.esx.vm_manager import EsxVmManager
 from host.hypervisor.esx.image_manager import EsxImageManager
 from host.hypervisor.esx.system import EsxSystem
@@ -56,7 +55,15 @@ class EsxHypervisor(object):
 
     @staticmethod
     def create_host_client(auto_sync=True, errback=None):
-        return VimClient(auto_sync, errback)
+        import imp
+        try:
+            # check whether attache is installed. If not, find_module will throw ImportError.
+            imp.find_module("attache")
+            from host.hypervisor.esx.attache_client import AttacheClient
+            return AttacheClient(auto_sync)
+        except ImportError:
+            from host.hypervisor.esx.vim_client import VimClient
+            return VimClient(auto_sync, errback)
 
     def check_image(self, image_id, datastore_id):
         return self.image_manager.check_image(
