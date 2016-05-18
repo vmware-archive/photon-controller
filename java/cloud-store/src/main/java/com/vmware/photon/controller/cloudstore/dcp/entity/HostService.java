@@ -28,7 +28,8 @@ import com.vmware.photon.controller.common.xenon.PatchUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
-import com.vmware.photon.controller.common.xenon.upgrade.MigrateDuringUpgrade;
+import com.vmware.photon.controller.common.xenon.deployment.MigrateDuringDeployment;
+import com.vmware.photon.controller.common.xenon.migration.MigrateDuringUpgrade;
 import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
 import com.vmware.photon.controller.common.xenon.validation.DefaultLong;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
@@ -538,6 +539,9 @@ public class HostService extends StatefulService {
   @MigrateDuringUpgrade(transformationServicePath = HostTransformationService.SELF_LINK,
       sourceFactoryServicePath = HostServiceFactory.SELF_LINK,
       destinationFactoryServicePath = HostServiceFactory.SELF_LINK,
+      serviceName = Constants.CLOUDSTORE_SERVICE_NAME)
+  @MigrateDuringDeployment(
+      factoryServicePath = HostServiceFactory.SELF_LINK,
       serviceName = Constants.CLOUDSTORE_SERVICE_NAME)
   public static class State extends ServiceDocument {
 

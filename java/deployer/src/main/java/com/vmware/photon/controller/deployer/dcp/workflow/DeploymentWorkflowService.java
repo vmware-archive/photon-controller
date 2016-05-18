@@ -15,7 +15,6 @@ package com.vmware.photon.controller.deployer.dcp.workflow;
 
 import com.vmware.photon.controller.api.DeploymentState;
 import com.vmware.photon.controller.api.UsageTag;
-import com.vmware.photon.controller.cloudstore.dcp.CloudStoreXenonHost;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
@@ -23,7 +22,9 @@ import com.vmware.photon.controller.common.xenon.PatchUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
-import com.vmware.photon.controller.common.xenon.upgrade.NoMigrationDuringUpgrade;
+import com.vmware.photon.controller.common.xenon.deployment.NoMigrationDuringDeployment;
+import com.vmware.photon.controller.common.xenon.migration.DeploymentMigrationInformation;
+import com.vmware.photon.controller.common.xenon.migration.NoMigrationDuringUpgrade;
 import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
 import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
@@ -39,6 +40,7 @@ import com.vmware.photon.controller.deployer.dcp.task.CopyStateTaskFactoryServic
 import com.vmware.photon.controller.deployer.dcp.task.CopyStateTaskService;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
 import com.vmware.photon.controller.deployer.dcp.util.MiscUtils;
+import com.vmware.photon.controller.deployer.dcp.util.Pair;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClient;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClientFactoryProvider;
 import com.vmware.xenon.common.Operation;
@@ -48,6 +50,7 @@ import com.vmware.xenon.common.StatefulService;
 import com.vmware.xenon.common.Utils;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.FutureCallback;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 
@@ -58,12 +61,13 @@ import javax.annotation.Nullable;
 import java.net.InetSocketAddress;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 /**
  * This class implements a DCP service representing the end-to-end deployment workflow.
@@ -100,6 +104,7 @@ public class DeploymentWorkflowService extends StatefulService {
    * {@link DeploymentWorkflowService} instance.
    */
   @NoMigrationDuringUpgrade
+  @NoMigrationDuringDeployment
   public static class State extends ServiceDocument {
 
     /**
@@ -386,7 +391,7 @@ public class DeploymentWorkflowService extends StatefulService {
         allocateClusterManagerResources(currentState);
         break;
       case MIGRATE_DEPLOYMENT_DATA:
-        migrateDeploymentData(currentState);
+        migrateData(currentState);
         break;
       case SET_DEPLOYMENT_STATE:
         setDesiredDeploymentState(currentState);
@@ -560,7 +565,7 @@ public class DeploymentWorkflowService extends StatefulService {
         callback);
   }
 
-  private void migrateDeploymentData(State currentState) {
+  private void migrateData(State currentState) {
     ServiceUtils.logInfo(this, "Migrating deployment data");
 
     sendRequest(
@@ -574,7 +579,7 @@ public class DeploymentWorkflowService extends StatefulService {
 
                   try {
                     DeploymentService.State deploymentState = operation.getBody(DeploymentService.State.class);
-                    migrateDeploymentData(currentState, deploymentState.zookeeperQuorum);
+                    migrateData(currentState, deploymentState.zookeeperQuorum);
                   } catch (Throwable t) {
                     failTask(t);
                   }
@@ -583,84 +588,54 @@ public class DeploymentWorkflowService extends StatefulService {
     );
   }
 
-  private void migrateDeploymentData(State currentState, String zookeeperQuorum) {
+  private void migrateData(State currentState, String destinationZookeeperQuorum) {
+    Map<String, Integer> portAdjustment = ImmutableMap.of(DeployerModule.DEPLOYER_SERVICE_NAME, 1);
+
+    Map<String, Pair<Set<InetSocketAddress>, Set<InetSocketAddress>>> serviceSourceDestinationAddressCache
+      = new HashMap<>();
     ZookeeperClient zookeeperClient
-        = ((ZookeeperClientFactoryProvider) getHost()).getZookeeperServerSetFactoryBuilder().create();
-    Set<InetSocketAddress> localServers = zookeeperClient.getServers(
-        HostUtils.getDeployerContext(this).getZookeeperQuorum(),
-        DeployerModule.DEPLOYER_SERVICE_NAME);
-    Set<InetSocketAddress> remoteServers
-        = zookeeperClient.getServers(zookeeperQuorum, DeployerModule.DEPLOYER_SERVICE_NAME);
+      = ((ZookeeperClientFactoryProvider) getHost()).getZookeeperServerSetFactoryBuilder().create();
 
-    Set<Class<?>> servicesToMigrate
-        = new HashSet<Class<?>>((Arrays.<Class<?>>asList(DeployerXenonServiceHost.FACTORY_SERVICES_TO_MIGRATE)));
+    Collection<DeploymentMigrationInformation> migrationInformation
+      = HostUtils.getDeployerContext(this).getDeploymentMigrationInformation();
 
-    final AtomicInteger latch = new AtomicInteger(servicesToMigrate.size());
+    final AtomicInteger latch = new AtomicInteger(migrationInformation.size());
     final List<Throwable> errors = new BlockingArrayQueue<>();
-    for (Class<?> factoryClass : servicesToMigrate) {
-      CopyStateTaskService.State startState = MiscUtils.createCopyStateStartState(localServers, remoteServers,
-          MiscUtils.getSelfLink(factoryClass), null, 1);
 
-      TaskUtils.startTaskAsync(
-          this,
-          CopyStateTaskFactoryService.SELF_LINK,
-          startState,
-          state -> TaskUtils.finalTaskStages.contains(state.taskState.stage),
-          CopyStateTaskService.State.class,
-          currentState.taskPollDelay,
-          new FutureCallback<CopyStateTaskService.State>() {
-            @Override
-            public void onSuccess(@Nullable CopyStateTaskService.State result) {
-              switch (result.taskState.stage) {
-                case FINISHED:
-                  break;
-                case FAILED:
-                case CANCELLED:
-                  errors.add(new Throwable("service: " + result.documentSelfLink + " did not finish."));
-                  break;
-              }
+    for (DeploymentMigrationInformation entry : migrationInformation) {
+      if (!serviceSourceDestinationAddressCache.containsKey(entry.zookeeperServerSetName)) {
+        // need to adjust the port of the address since zookeeper entries only contain the thrift ports
+        Set<InetSocketAddress> sourceServers = zookeeperClient.getServers(
+            HostUtils.getDeployerContext(this).getZookeeperQuorum(),
+            entry.zookeeperServerSetName).stream()
+            .map(a ->
+              new InetSocketAddress(
+                  a.getAddress(),
+                  a.getPort() + portAdjustment.getOrDefault(entry.zookeeperServerSetName, 0))
+            ).collect(Collectors.toSet());
+        Set<InetSocketAddress> destinationServers
+            = zookeeperClient.getServers(destinationZookeeperQuorum, entry.zookeeperServerSetName).stream()
+                .map(a ->
+                new InetSocketAddress(
+                    a.getAddress(),
+                    a.getPort() + portAdjustment.getOrDefault(entry.zookeeperServerSetName, 0))
+              ).collect(Collectors.toSet());;
 
-              if (latch.decrementAndGet() == 0) {
-                if (!errors.isEmpty()) {
-                  failTask(errors);
-                } else {
-                  migrateCloudStore(currentState, zookeeperQuorum);
-                }
-              }
-            }
+        serviceSourceDestinationAddressCache.put(
+            entry.zookeeperServerSetName,
+            new Pair<>(sourceServers, destinationServers));
+      }
 
-            @Override
-            public void onFailure(Throwable t) {
-              errors.add(t);
-              if (latch.decrementAndGet() == 0) {
-                failTask(errors);
-              }
-            }
-          }
-      );
-    }
-  }
+      String factory = entry.factoryServicePath;
+      if (!factory.endsWith("/")) {
+        factory += "/";
+      }
 
-  private void migrateCloudStore(State currentState, String zookeeperQuorum) {
-    ServiceUtils.logInfo(this, "Migrating data to management plane cloudstore");
-
-    ZookeeperClient zookeeperClient
-        = ((ZookeeperClientFactoryProvider) getHost()).getZookeeperServerSetFactoryBuilder().create();
-    Set<InetSocketAddress> localServers = zookeeperClient.getServers(
-        HostUtils.getDeployerContext(this).getZookeeperQuorum(),
-        DeployerModule.CLOUDSTORE_SERVICE_NAME);
-    Set<InetSocketAddress> remoteServers
-        = zookeeperClient.getServers(zookeeperQuorum, DeployerModule.CLOUDSTORE_SERVICE_NAME);
-
-    Set<Class<?>> servicesToMigrate
-        = new HashSet<Class<?>>(Arrays.<Class<?>>asList(CloudStoreXenonHost.FACTORY_SERVICES));
-    servicesToMigrate.removeAll(HostUtils.getDeployerContext(this).getMigrationExcludedServices());
-
-    final AtomicInteger latch = new AtomicInteger(servicesToMigrate.size());
-    final List<Throwable> errors = new BlockingArrayQueue<>();
-    for (Class<?> factoryClass : servicesToMigrate) {
-      CopyStateTaskService.State startState = MiscUtils.createCopyStateStartState(localServers, remoteServers,
-          MiscUtils.getSelfLink(factoryClass), null);
+      CopyStateTaskService.State startState = MiscUtils.createCopyStateStartState(
+          serviceSourceDestinationAddressCache.get(entry.zookeeperServerSetName).getFirst(),
+          serviceSourceDestinationAddressCache.get(entry.zookeeperServerSetName).getSecond(),
+          factory,
+          factory);
 
       TaskUtils.startTaskAsync(
           this,
@@ -684,13 +659,22 @@ public class DeploymentWorkflowService extends StatefulService {
                           + " did not finish. "
                           + result.taskState.failure.message));
                   break;
+                default:
+                  errors.add(new Throwable(
+                      "service: "
+                          + result.documentSelfLink
+                          + " ended in unexpected stage "
+                          + result.taskState.stage.name()));
+                  break;
               }
 
               if (latch.decrementAndGet() == 0) {
                 if (!errors.isEmpty()) {
                   failTask(errors);
                 } else {
-                  updateDeploymentServiceState(remoteServers, currentState);
+                  updateDeploymentServiceState(
+                      serviceSourceDestinationAddressCache.get(DeployerModule.CLOUDSTORE_SERVICE_NAME).getSecond(),
+                      currentState);
                 }
               }
             }

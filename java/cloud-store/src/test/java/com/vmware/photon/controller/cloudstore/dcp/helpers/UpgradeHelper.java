@@ -15,7 +15,7 @@ package com.vmware.photon.controller.cloudstore.dcp.helpers;
 
 import com.vmware.photon.controller.cloudstore.dcp.CloudStoreXenonHost;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
-import com.vmware.photon.controller.common.xenon.upgrade.UpgradeUtils;
+import com.vmware.photon.controller.common.xenon.migration.MigrationUtils;
 import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceDocument;
@@ -68,7 +68,7 @@ public class UpgradeHelper {
   public static Map<String, HashMap<String, String>> populateCurrentState() throws Throwable {
     Map<String, HashMap<String, String>> currentServices = new HashMap<>();
 
-    List<String> factoriesToUpgrade = UpgradeUtils
+    List<String> factoriesToUpgrade = MigrationUtils
         .findAllUpgradeServices().stream()
         .map(entry -> entry.destinationFactoryServicePath)
         .collect(Collectors.toList());
