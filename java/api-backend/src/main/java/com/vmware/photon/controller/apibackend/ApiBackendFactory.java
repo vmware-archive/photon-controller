@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.apibackend;
 
 import com.vmware.photon.controller.apibackend.tasks.ConfigureRoutingTaskService;
+import com.vmware.photon.controller.apibackend.tasks.ConnectVmToSwitchTaskService;
 import com.vmware.photon.controller.apibackend.tasks.CreateLogicalRouterTaskService;
 import com.vmware.photon.controller.apibackend.tasks.CreateLogicalSwitchTaskService;
 import com.vmware.photon.controller.apibackend.tasks.DeleteLogicalPortsTaskService;
@@ -46,6 +47,7 @@ public class ApiBackendFactory {
       .put(DeleteLogicalSwitchTaskService.class, DeleteLogicalSwitchTaskService::createFactory)
       .put(DeleteLogicalRouterTaskService.class, DeleteLogicalRouterTaskService::createFactory)
       .put(DeleteLogicalPortsTaskService.class, DeleteLogicalPortsTaskService::createFactory)
+      .put(ConnectVmToSwitchTaskService.class, ConnectVmToSwitchTaskService::createFactory)
 
       // workflows
       .put(CreateVirtualNetworkWorkflowService.class, CreateVirtualNetworkWorkflowService::createFactory)
