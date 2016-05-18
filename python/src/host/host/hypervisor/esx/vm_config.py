@@ -13,15 +13,12 @@
 """ Contains the implementation for ESX VM configuration."""
 
 import logging
-from operator import itemgetter
 
 import os.path
 
 from common.log import log_duration
 from host.hypervisor.esx.host_client import DeviceNotFoundException
-from host.hypervisor.esx.host_client import VmInfo
 from host.hypervisor.esx.host_client import VmConfigSpec
-from host.hypervisor.esx.path_util import DISK_FOLDER_NAME_PREFIX
 from host.hypervisor.esx.path_util import IMAGE_FOLDER_NAME_PREFIX
 from host.hypervisor.esx.path_util import VM_FOLDER_NAME_PREFIX
 from host.hypervisor.esx.path_util import compond_path_join
@@ -72,13 +69,8 @@ class EsxVmConfigSpec(VmConfigSpec):
         self._metadata = None
         self._logger = logging.getLogger(__name__)
 
-    def _add_disk(self, datastore, disk_id, controller_key,
-                  size_mb=None, parent_id=None, create=False, with_vm=False,
-                  disk_root_folder=DISK_FOLDER_NAME_PREFIX):
+    def _add_disk(self, datastore, disk_id, controller_key, size_mb=None, parent_id=None):
         """Create a spec for adding a virtual disk.
-
-        If with_vm is true, the disk is created in the vm folder, otherwise,
-        the disk is created in disk folder.
 
         :param datastore: Name of the VM's datastore
         :type datastore: str
@@ -88,12 +80,7 @@ class EsxVmConfigSpec(VmConfigSpec):
         :type: int device key
         """
         if disk_id:
-            if with_vm:
-                vm_folder = self._cfg_spec.files.vmPathName
-                vmdk_file = os.path.join(vm_folder, "%s.vmdk" % disk_id)
-            else:
-                vmdk_file = vmdk_path(datastore, disk_id,
-                                      folder=disk_root_folder)
+            vmdk_file = os.path.join(self._cfg_spec.files.vmPathName, "%s.vmdk" % disk_id)
         else:
             # For a vm config spec used during VM importing, the vmdk
             # backing file path is just a placeholder for a disk that is
@@ -112,26 +99,17 @@ class EsxVmConfigSpec(VmConfigSpec):
                 fileName=vmdk_path(datastore, parent_id, IMAGE_FOLDER_NAME_PREFIX),
             )
 
-        disk = vim.vm.device.VirtualDisk(
-            controllerKey=controller_key,
-            key=-1,
-            unitNumber=-1,
-            backing=backing
-        )
+        disk = vim.vm.device.VirtualDisk(controllerKey=controller_key, key=-1, unitNumber=-1, backing=backing)
 
         if size_mb is not None:
             disk.capacityInKB = size_mb * 1024
 
-        if create:
-            if not parent_id:
-                # for any non-child disk we create, update its
-                # vmdk uuid to match the disk's id
-                # (child disk picks up its uuid from its parent).
-                if disk_id:
-                    disk.backing.uuid = uuid_to_vmdk_uuid(disk_id)
-            self._create_device(disk)
-        else:
-            self._add_device(disk)
+        if not parent_id:
+            # for any non-child disk we create, update its vmdk uuid to match the disk's id
+            # (child disk picks up its uuid from its parent).
+            if disk_id:
+                disk.backing.uuid = uuid_to_vmdk_uuid(disk_id)
+        self._create_device(disk)
 
     @log_duration
     def _add_scsi_controller(self, cfg_info):
@@ -224,7 +202,7 @@ class EsxVmConfigSpec(VmConfigSpec):
         """
         cfg_info = vim.vm.ConfigInfo(hardware=vim.vm.VirtualHardware())
         controller = self._find_or_add_scsi_controller(cfg_info)
-        self._add_disk(datastore, disk_id, controller.key, size_mb=size_mb, create=True, with_vm=True)
+        self._add_disk(datastore, disk_id, controller.key, size_mb=size_mb)
 
     def create_child_disk(self, datastore, disk_id, parent_id):
         """Add a create child scsi disk spec to the config spec. The method
@@ -240,7 +218,7 @@ class EsxVmConfigSpec(VmConfigSpec):
         """
         cfg_info = vim.vm.ConfigInfo(hardware=vim.vm.VirtualHardware())
         controller = self._find_or_add_scsi_controller(cfg_info)
-        self._add_disk(datastore, disk_id, controller.key, parent_id=parent_id, create=True, with_vm=True)
+        self._add_disk(datastore, disk_id, controller.key, parent_id=parent_id)
 
     def add_nic(self, network):
         """Add a virtual nic to this create spec.
@@ -344,46 +322,37 @@ class EsxVmConfigSpec(VmConfigSpec):
         device = self._get_virtual_disk_device(devices, matcher=matcher)
         self._remove_device(device)
 
-    def _create_device_spec(self, device):
-        return vim.vm.device.VirtualDeviceSpec(
+    def _create_device(self, device):
+        device_spec = vim.vm.device.VirtualDeviceSpec(
             device=device,
             fileOperation=vim.vm.device.VirtualDeviceSpec.FileOperation.create,
             operation=vim.vm.device.VirtualDeviceSpec.Operation.add
         )
+        self._cfg_spec.deviceChange.append(device_spec)
 
-    def _add_device_spec(self, device):
-        return vim.vm.device.VirtualDeviceSpec(
+    def _add_device(self, device):
+        device_spec = vim.vm.device.VirtualDeviceSpec(
             device=device,
             operation=vim.vm.device.VirtualDeviceSpec.Operation.add
         )
+        self._cfg_spec.deviceChange.append(device_spec)
 
-    def _edit_device_spec(self, device):
-        return vim.vm.device.VirtualDeviceSpec(
+    def _update_device(self, device):
+        device_spec = vim.vm.device.VirtualDeviceSpec(
             device=device,
             operation=vim.vm.device.VirtualDeviceSpec.Operation.edit
         )
+        self._cfg_spec.deviceChange.append(device_spec)
 
-    def _remove_device_spec(self, device):
-        return vim.vm.device.VirtualDeviceSpec(
+    def _remove_device(self, device):
+        device_spec = vim.vm.device.VirtualDeviceSpec(
             device=device,
             operation=vim.vm.device.VirtualDeviceSpec.Operation.remove
         )
+        self._cfg_spec.deviceChange.append(device_spec)
 
     def init_for_create(self, vm_id, datastore, memory, cpus, metadata=None, env=None):
         """Initialize VMConfigSpec for creating a new VM.
-
-        :param vm_id: Name of the VM
-        :type vm_id: str
-        :param datastore: Name of the VM's datastore
-        :type datastore: str
-        :param memory: VM memory in MB
-        :type memory: int
-        :param cpus: Number of virtual CPUs
-        :type cpus: int
-        :param metadata: VM creation metadata
-        :type metadata: dictionary
-        :param env: VM creation environment
-        :type env: dictionary
         """
         vm_path = datastore_path(datastore, compond_path_join(VM_FOLDER_NAME_PREFIX, vm_id))
         vm_flags = vim.vm.FlagInfo()
@@ -436,49 +405,7 @@ class EsxVmConfigSpec(VmConfigSpec):
     def get_spec(self):
         return self._cfg_spec
 
-    def _create_device(self, device):
-        """Create a device to a ConfigSpec
-
-        :param device: Device to add
-        :type device: vim.Device
-        """
-        device_spec = self._create_device_spec(device)
-        self._cfg_spec.deviceChange.append(device_spec)
-
-    def _add_device(self, device):
-        """Add a device to a ConfigSpec
-
-        :param device: Device to add
-        :type device: vim.Device
-        """
-        device_spec = self._add_device_spec(device)
-        self._cfg_spec.deviceChange.append(device_spec)
-
-    def _update_device(self, device):
-        """ Add a device edit to the ConfigSpec
-
-        :param device: Device to add
-        :type device: vim.Device
-        """
-        device_spec = self._edit_device_spec(device)
-        self._cfg_spec.deviceChange.append(device_spec)
-
-    def _remove_device(self, device):
-        """ConfigSpec to remove a device from a VM.
-
-        :param device: Device to remove
-        :type device: vim.Device
-        """
-        device_spec = self._remove_device_spec(device)
-        self._cfg_spec.deviceChange.append(device_spec)
-
     def _get_devices_from_config(self, cfg_info):
-        """Get the set of virtual devices belonging to a VM given
-           its config.
-        :param cfg_info: The VMs cfg info object
-        :type cfg_info: vim.vm.ConfigInfo
-        :rtype: vim.vm.device.VirtualDevice[]
-        """
         if cfg_info.hardware is not None:
             return cfg_info.hardware.device
         return []
@@ -552,37 +479,3 @@ class EsxVmConfigSpec(VmConfigSpec):
         for k, v in options.iteritems():
             extraConfig.append(vim.option.OptionValue(key=k, value=v))
         self._cfg_spec.extraConfig = extraConfig
-
-
-class EsxVmInfo(VmInfo):
-
-    """ESX VM Info.
-    """
-
-    def __init__(self, vm):
-        self._vm = vm
-        self._logger = logging.getLogger(__name__)
-
-    def get_networks(self):
-        """ Internal method that returns the device id, the network name and
-        the mac address of the device.
-        """
-        # Throws when VM is not found.
-        network_info = []
-
-        if self._vm.config is None:
-            self._logger.info("VM, has no hardware specification")
-            return network_info
-
-        if self._vm.config.hardware.device:
-            idx = 0
-            for device in self._vm.config.hardware.device:
-                if (isinstance(device, vim.vm.device.VirtualEthernetCard) and
-                        isinstance(device.backing, vim.vm.device.VirtualEthernetCard.NetworkBackingInfo)):
-                    # idx is used for mac address generation
-                    network_info.append((idx,
-                                         device.macAddress,
-                                         device.backing.deviceName,
-                                         device.key))
-                    idx += 1
-        return sorted(network_info, key=itemgetter(2))
