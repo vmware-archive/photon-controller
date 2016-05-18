@@ -106,6 +106,7 @@ from gen.scheduler.ttypes import PlaceResultCode
 from gen.scheduler.ttypes import Score
 from host.hypervisor.datastore_manager import DatastoreNotFoundException
 from host.hypervisor.esx.path_util import vmdk_path
+from host.hypervisor.esx.path_util import IMAGE_FOLDER_NAME_PREFIX
 from host.hypervisor.image_manager import DirectoryNotFound
 from host.hypervisor.image_manager import ImageNotFoundException
 from host.hypervisor.image_scanner import DatastoreImageScanner
@@ -390,14 +391,15 @@ class HostHandler(Host.Iface):
         # Step 4: Add created_disk to create spec of the VM.
         for disk in vm.disks:
             if disk.image is None:
-                spec.create_empty_disk(datastore_id, disk.id, disk.capacity_gb * 1024)
+                spec.create_empty_disk(disk.id, disk.capacity_gb * 1024)
             else:
                 if disk.image.id is None:
                     return CreateVmResponse(CreateVmResultCode.IMAGE_NOT_FOUND, "Invalid image id")
                 if disk.image.clone_type != CloneType.COPY_ON_WRITE:
                     return CreateVmResponse(CreateVmResultCode.SYSTEM_ERROR, "Unexpected disk clone type")
 
-                spec.create_child_disk(datastore_id, disk.id, disk.image.id)
+                parent_vmdk = vmdk_path(datastore_id, disk.image.id, IMAGE_FOLDER_NAME_PREFIX)
+                spec.create_child_disk(disk.id, parent_vmdk)
 
         self._logger.debug("VM create, done creating disks, vm-id: %s" % vm.id)
 

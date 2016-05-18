@@ -146,7 +146,7 @@ class TestEsxVmConfig(unittest.TestCase):
 
         size_mb = 100
         disk_id = str(uuid.uuid4())
-        spec.create_empty_disk(datastore, disk_id, size_mb)
+        spec.create_empty_disk(disk_id, size_mb)
 
         devs = [change.device for change in spec.get_spec().deviceChange]
         device_type = vim.vm.device.VirtualDisk
@@ -164,7 +164,7 @@ class TestEsxVmConfig(unittest.TestCase):
 
         disk_id = str(uuid.uuid4())
         parent_id = str(uuid.uuid4())
-        spec.create_child_disk(datastore, disk_id, parent_id)
+        spec.create_child_disk(disk_id, parent_id)
 
         devs = [change.device for change in spec.get_spec().deviceChange]
         device_type = vim.vm.device.VirtualDisk

@@ -244,11 +244,11 @@ class VmConfigSpec(object):
         pass
 
     @abc.abstractmethod
-    def create_empty_disk(self, datastore, disk_id, size_mb):
+    def create_empty_disk(self, disk_id, size_mb):
         pass
 
     @abc.abstractmethod
-    def create_child_disk(self, datastore, disk_id, parent_id):
+    def create_child_disk(self, disk_id, parent_vmdk_path):
         pass
 
     @abc.abstractmethod
