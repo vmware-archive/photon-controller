@@ -17,6 +17,16 @@ class DeviceNotFoundException(Exception):
     pass
 
 
+class NfcLeaseInitiatizationTimeout(Exception):
+    """ Timed out waiting for the HTTP NFC lease to initialize. """
+    pass
+
+
+class NfcLeaseInitiatizationError(Exception):
+    """ Error waiting for the HTTP NFC lease to initialize. """
+    pass
+
+
 class HostClient(object):
     __metaclass__ = abc.ABCMeta
 
@@ -216,6 +226,10 @@ class HostClient(object):
     def get_network_configs(self):
         pass
 
+    @abc.abstractmethod
+    def get_vm_network(self, vm_id):
+        pass
+
     """ Stats
     """
     @abc.abstractmethod
@@ -227,18 +241,6 @@ class VmConfigSpec(object):
 
     @abc.abstractmethod
     def init_for_create(self, vm_id, datastore, memory, cpus, metadata=None, env=None):
-        pass
-
-    @abc.abstractmethod
-    def init_for_update(self):
-        pass
-
-    @abc.abstractmethod
-    def init_for_import(self, vm_id, vm_path):
-        pass
-
-    @abc.abstractmethod
-    def get_spec(self):
         pass
 
     @abc.abstractmethod
@@ -256,19 +258,3 @@ class VmConfigSpec(object):
     @abc.abstractmethod
     def set_extra_config(self, options):
         pass
-
-
-class VmInfo(object):
-    @abc.abstractmethod
-    def get_networks(self):
-        pass
-
-
-class NfcLeaseInitiatizationTimeout(Exception):
-    """ Timed out waiting for the HTTP NFC lease to initialize. """
-    pass
-
-
-class NfcLeaseInitiatizationError(Exception):
-    """ Error waiting for the HTTP NFC lease to initialize. """
-    pass

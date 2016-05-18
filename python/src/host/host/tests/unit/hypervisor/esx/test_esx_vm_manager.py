@@ -37,7 +37,6 @@ from host.hypervisor.vm_manager import VmNotFoundException
 from host.hypervisor.vm_manager import VmPowerStateException
 from host.hypervisor.esx.vim_client import VimClient
 from host.hypervisor.esx.vm_manager import EsxVmManager
-from host.hypervisor.esx.vm_manager import NetUtil
 
 
 def FakeConfigInfo():
@@ -303,20 +302,20 @@ class TestEsxVmManager(unittest.TestCase):
 
     def test_check_ip_v4(self):
         """Test to check ipv4 validation"""
-        self.assertTrue(NetUtil.is_ipv4_address("1.2.3.4"))
-        self.assertFalse(NetUtil.is_ipv4_address(
+        self.assertTrue(VimClient._is_ipv4_address("1.2.3.4"))
+        self.assertFalse(VimClient._is_ipv4_address(
             "FE80:0000:0000:0000:0202:B3FF:FE1E:8329"))
-        self.assertFalse(NetUtil.is_ipv4_address("InvalidAddress"))
+        self.assertFalse(VimClient._is_ipv4_address("InvalidAddress"))
 
     def test_check_prefix_len_to_netmask_conversion(self):
         """Check the conversion from prefix length to netmask"""
-        self.assertEqual(NetUtil.prefix_len_to_mask(32), "255.255.255.255")
-        self.assertEqual(NetUtil.prefix_len_to_mask(0), "0.0.0.0")
+        self.assertEqual(VimClient._prefix_len_to_mask(32), "255.255.255.255")
+        self.assertEqual(VimClient._prefix_len_to_mask(0), "0.0.0.0")
         self.assertRaises(ValueError,
-                          NetUtil.prefix_len_to_mask, 33)
-        self.assertEqual(NetUtil.prefix_len_to_mask(23), "255.255.254.0")
-        self.assertEqual(NetUtil.prefix_len_to_mask(6), "252.0.0.0")
-        self.assertEqual(NetUtil.prefix_len_to_mask(32), "255.255.255.255")
+                          VimClient._prefix_len_to_mask, 33)
+        self.assertEqual(VimClient._prefix_len_to_mask(23), "255.255.254.0")
+        self.assertEqual(VimClient._prefix_len_to_mask(6), "252.0.0.0")
+        self.assertEqual(VimClient._prefix_len_to_mask(32), "255.255.255.255")
 
     def test_get_vm_network_guest_info(self):
         """

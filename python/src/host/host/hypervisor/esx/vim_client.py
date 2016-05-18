@@ -14,6 +14,9 @@
 
 import httplib
 import logging
+import socket
+import struct
+
 import os
 import sys
 import threading
@@ -25,10 +28,15 @@ from common.log import log_duration
 from common.log import log_duration_with
 from datetime import datetime
 
+from gen.agent.ttypes import TaskState
+from gen.host.ttypes import VmNetworkInfo
+from gen.host.ttypes import ConnectedStatus
+from gen.host.ttypes import Ipv4Address
 from gen.resource.ttypes import MksTicket
 from host.hypervisor.disk_manager import DiskAlreadyExistException
 from host.hypervisor.disk_manager import DiskPathException
 from host.hypervisor.disk_manager import DiskFileException
+from host.hypervisor.esx import logging_wrappers
 from host.hypervisor.esx.host_client import HostClient
 from host.hypervisor.esx.host_client import NfcLeaseInitiatizationTimeout
 from host.hypervisor.esx.host_client import NfcLeaseInitiatizationError
@@ -43,16 +51,13 @@ from host.hypervisor.esx.vm_config import DEFAULT_DISK_ADAPTER_TYPE
 from host.hypervisor.vm_manager import VmPowerStateException
 from host.hypervisor.vm_manager import OperationNotAllowedException
 from host.hypervisor.vm_manager import VmAlreadyExistException
+from host.hypervisor.vm_manager import VmNotFoundException
 from pysdk import connect
 from pysdk import host
 from pysdk import invt
 from pyVmomi import vim
 from pyVmomi import vmodl
 
-
-from host.hypervisor.vm_manager import VmNotFoundException
-from host.hypervisor.esx import logging_wrappers
-from gen.agent.ttypes import TaskState
 
 # constants from bora/vim/hostd/private/hostdCommon.h
 HA_DATACENTER_ID = "ha-datacenter"
@@ -809,3 +814,79 @@ class VimClient(HostClient):
             option.value = 1L
             self._logger.warning("Enabling large page support")
         optionManager.UpdateOptions([option])
+
+    def get_vm_network(self, vm_id):
+        """ Get the vm's network information
+        We only report ip info if vmware tools is running within the guest.
+        If tools are not running we can only report back the mac address
+        assigned by the vmx, the connected status of the device and the network
+        attached to the device.
+        The information for mac, networkname and connected status is available
+        through two places, the ethernetCards backing info and through the
+        guestInfo. Both of these codepaths are not using VimVigor and seem to
+        be implemented in a similar manner in hostd, so they should agree with
+        each other. Just read this from the guestInfo as well.
+        """
+        network_info = []
+
+        vm = self.get_vm(vm_id)
+
+        if vm.guest and vm.guest.net:
+            for guest_nic_info in vm.guest.net:
+                if guest_nic_info.macAddress is None:
+                    # No mac address no real guest info. Not possible to have mac
+                    # address not reported but ip stack info available.
+                    continue
+
+                info = VmNetworkInfo(mac_address=guest_nic_info.macAddress)
+                # Fill in the connected status.
+                if guest_nic_info.connected:
+                    info.is_connected = ConnectedStatus.CONNECTED
+                else:
+                    info.is_connected = ConnectedStatus.DISCONNECTED
+
+                # Fill in the network binding info
+                if guest_nic_info.network is not None:
+                    info.network = guest_nic_info.network
+
+                # See if the ip information is available.
+                if guest_nic_info.ipConfig is not None:
+                    ip_addresses = guest_nic_info.ipConfig.ipAddress
+                    for ip_address in ip_addresses:
+                        if self._is_ipv4_address(ip_address.ipAddress):
+                            netmask = self._prefix_len_to_mask(ip_address.prefixLength)
+                            info.ip_address = Ipv4Address(ip_address=ip_address.ipAddress, netmask=netmask)
+                            break
+                network_info.append(info)
+
+        elif vm.config and vm.config.hardware.device:
+            for device in vm.config.hardware.device:
+                if (isinstance(device, vim.vm.device.VirtualEthernetCard) and
+                        isinstance(device.backing, vim.vm.device.VirtualEthernetCard.NetworkBackingInfo)):
+                    info = VmNetworkInfo(mac_address=device.macAddress, network=device.backing.deviceName)
+                    network_info.append(info)
+        return network_info
+
+    @staticmethod
+    def _is_ipv4_address(ip_address):
+        """Utility method to check if an ip address is ipv4
+        :param ip_addres: string ip address
+        :rtype: bool, return True if the ip_address is a v4 address
+        """
+        try:
+            socket.inet_aton(ip_address)
+        except socket.error:
+            return False
+        return ip_address.count('.') == 3
+
+    @staticmethod
+    def _prefix_len_to_mask(prefix_len):
+        """Utility method to convert prefix length to netmask IpV4address pkg is not available on esx.
+        :param prefix_len: int prefix len
+        :rtype: string, string representation of the netmask
+        """
+        if (prefix_len < 0 or prefix_len > 32):
+            raise ValueError("Invalid prefix length")
+        mask = (1L << 32) - (1L << 32 >> prefix_len)
+
+        return socket.inet_ntoa(struct.pack('>L', mask))
