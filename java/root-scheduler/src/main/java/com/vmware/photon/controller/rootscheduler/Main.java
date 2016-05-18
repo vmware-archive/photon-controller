@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.rootscheduler;
 
+import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.config.BadConfigException;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
@@ -39,9 +40,6 @@ import java.util.concurrent.TimeUnit;
  */
 public class Main {
 
-  public static final String CLOUDSTORE_SERVICE_NAME = "cloudstore";
-  public static final String SCHEDULER_SERVICE_NAME = "root-scheduler";
-
   private static final Logger logger = LoggerFactory.getLogger(Main.class);
   private static final long retryIntervalMilliSeconds = TimeUnit.SECONDS.toMillis(30);
 
@@ -62,7 +60,7 @@ public class Main {
     ZookeeperModule zkModule = new ZookeeperModule(config.getZookeeper());
     // Singleton
     final CuratorFramework zkClient = zkModule.getCuratorFramework();
-    ServerSet cloudStoreServerSet = zkModule.getZookeeperServerSet(zkClient, CLOUDSTORE_SERVICE_NAME, true);
+    ServerSet cloudStoreServerSet = zkModule.getZookeeperServerSet(zkClient, Constants.CLOUDSTORE_SERVICE_NAME, true);
 
     ThriftModule thriftModule = new ThriftModule();
     HostClientFactory hostClientFactory = thriftModule.getHostClientFactory();
@@ -87,7 +85,7 @@ public class Main {
     host.start();
 
     // Register the local Scheduler Node with Zookeeper.
-    zkModule.registerWithZookeeper(zkClient, SCHEDULER_SERVICE_NAME,
+    zkModule.registerWithZookeeper(zkClient, Constants.SCHEDULER_SERVICE_NAME,
         config.getXenonConfig().getRegistrationAddress(),
         config.getXenonConfig().getPort(), retryIntervalMilliSeconds);
   }

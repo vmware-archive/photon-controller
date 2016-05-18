@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.housekeeper;
 
+import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.manifest.BuildInfo;
 import com.vmware.photon.controller.common.thrift.ThriftConfig;
 import com.vmware.photon.controller.common.thrift.ThriftEventHandler;
@@ -101,7 +102,7 @@ public class HousekeeperServer {
     // Need to re-fetch local port in case it was 0
     InetSocketAddress registrationSocketAddress = new InetSocketAddress(registrationIpAddress,
         transport.getServerSocket().getLocalPort());
-    serviceNode = serviceNodeFactory.createSimple("housekeeper", registrationSocketAddress);
+    serviceNode = serviceNodeFactory.createSimple(Constants.HOUSEKEEPER_SERVICE_NAME, registrationSocketAddress);
 
     server.setServerEventHandler(getThriftEventHandler());
 

@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.cloudstore.dcp.entity;
 
-import com.vmware.photon.controller.cloudstore.CloudStoreModule;
+import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
@@ -75,7 +75,7 @@ public class AttachedDiskService extends StatefulService {
       transformationServicePath = UpgradeUtils.REFLECTION_TRANSFORMATION_SERVICE_LINK,
       sourceFactoryServicePath = AttachedDiskServiceFactory.SELF_LINK,
       destinationFactoryServicePath = AttachedDiskServiceFactory.SELF_LINK,
-      serviceName = CloudStoreModule.CLOUDSTORE_SERVICE_NAME)
+      serviceName = Constants.CLOUDSTORE_SERVICE_NAME)
   public static class State extends ServiceDocument {
 
     public boolean bootDisk;
