@@ -36,7 +36,6 @@ import com.vmware.xenon.services.common.QueryTask;
 import com.vmware.xenon.services.common.QueryTask.Query.Occurance;
 import com.vmware.xenon.services.common.QueryTask.QuerySpecification.SortOrder;
 
-import com.google.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -166,7 +165,6 @@ public class CloudStoreConstraintChecker implements ConstraintChecker {
 
   }
 
-  @Inject
   public CloudStoreConstraintChecker(CloudStoreHelper cloudStoreHelper) {
     this.cloudStoreHelper = cloudStoreHelper;
 

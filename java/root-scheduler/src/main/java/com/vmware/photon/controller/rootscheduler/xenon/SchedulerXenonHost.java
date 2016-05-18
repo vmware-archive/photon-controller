@@ -29,7 +29,6 @@ import com.vmware.photon.controller.rootscheduler.xenon.task.PlacementTaskServic
 import com.vmware.xenon.common.ServiceHost;
 import com.vmware.xenon.services.common.RootNamespaceService;
 
-import com.google.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,7 +36,6 @@ import org.slf4j.LoggerFactory;
  * This class implements the Xenon service host object
  * for the Scheduler service.
  */
-@Singleton
 public class SchedulerXenonHost
     extends AbstractServiceHost
     implements XenonHostInfoProvider,
