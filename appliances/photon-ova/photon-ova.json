@@ -57,6 +57,10 @@
     {
       "type": "shell",
       "inline": "echo 'enabling network renaming' && sed -i \"s/NamePolicy=kernel database/NamePolicy=kernel database onboard slot path/g\" /lib/systemd/network/99-default.link"
+    },
+    {
+      "type": "shell",
+      "script": "../scripts/cleanup.sh"
     }
   ]
 }

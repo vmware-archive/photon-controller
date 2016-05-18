@@ -46,6 +46,10 @@
     {
       "type": "shell",
       "inline": "tar xf /usr/local/dhcp-agent/dhcp-agent-0.1.0-SNAPSHOT.tar --strip-components=1 -C /usr/local/dhcp-agent && rm /usr/local/dhcp-agent/dhcp-agent-0.1.0-SNAPSHOT.tar"
+    },
+    {
+      "type": "shell",
+      "script": "../scripts/cleanup.sh"
     }
   ]
 }
