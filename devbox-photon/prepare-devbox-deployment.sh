@@ -25,6 +25,7 @@ vagrant ssh -c "docker tag photon/management-api esxcloud/management-api"
 vagrant ssh -c "docker tag photon/root-scheduler esxcloud/root-scheduler"
 vagrant ssh -c "docker tag photon/housekeeper esxcloud/housekeeper"
 
+
 mgmt_ui_container_url="https://ci.ec.eng.vmware.com/view/UI/job/ec-ui-mgmt-publish-docker-image-develop/lastSuccessfulBuild/artifact/ci/docker-image/esxcloud-management-ui.tar"
 container_tar=$(basename "$mgmt_ui_container_url")
 vagrant ssh -c "wget -N -nv --no-proxy --no-check-certificate \"$mgmt_ui_container_url\""
@@ -45,6 +46,19 @@ photon_vm=$(VBoxManage list runningvms | grep devbox-photon_photon | sed 's/"\(.
 echo "sleeping for 2 minutes to let docker operations complete..."
 sleep 120
 
+# removing all docker containers in the vagrant box
+#
+#                              \         .  ./
+#                            \      .:";'.:.."   /
+#                                (M^^.^~~:.'").
+#                          -   (/  .    . . \ \)  -
+#   O                         ((| :. ~ ^  :. .|))
+#  |\\                     -   (\- |  \ /  |  /)  -
+#  |  T                         -\  \     /  /-
+# / \[_]..........................\  \   /  /
+vagrant ssh -c 'docker stop $(docker ps -a -q)'
+vagrant ssh -c 'docker rm $(docker ps -a -q)'
+
 vagrant suspend
 
 VBoxManage export "$photon_vm" -o "../$EXPORTED_OVA_FILE"
@@ -62,7 +76,7 @@ rm -f -- *.ovf
 rm -f -- *.mf
 cd ..
 
-vagrant up --no-provision
+./gradlew :devbox:renew
 vagrant ssh -c "sudo mkdir -p /var/photon/images"
 vagrant ssh -c "sudo chown vagrant /var/photon/images"
 vagrant ssh -c "sudo cp /vagrant/$MANAGEMENT_VM_DIR/photon-management-vm-disk1.vmdk /var/photon/images/"
