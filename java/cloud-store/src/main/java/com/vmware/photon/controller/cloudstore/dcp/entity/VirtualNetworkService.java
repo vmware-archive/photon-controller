@@ -178,5 +178,26 @@ public class VirtualNetworkService extends StatefulService {
     public String tier0RouterDownlinkPortId;
 
     public Long deleteRequestTime;
+
+    @Override
+    public String toString() {
+      return com.google.common.base.Objects.toStringHelper(this)
+          .add("name", name)
+          .add("description", description)
+          .add("state", state)
+          .add("parentId", parentId)
+          .add("parentKind", parentKind)
+          .add("routingType", routingType)
+          .add("logicalSwitchId", logicalSwitchId)
+          .add("logicalRouterId", logicalRouterId)
+          .add("tier0RouterId", tier0RouterId)
+          .add("logicalSwitchUplinkPortId", logicalSwitchUplinkPortId)
+          .add("logicalRouterDownlinkPortId", logicalRouterDownlinkPortId)
+          .add("logicalRouterUplinkPortId", logicalRouterUplinkPortId)
+          .add("logicalRouterUplinkPortId", logicalRouterUplinkPortId)
+          .add("tier0RouterDownlinkPortId", tier0RouterDownlinkPortId)
+          .add("documentSelfLink", documentSelfLink)
+          .toString();
+    }
   }
 }

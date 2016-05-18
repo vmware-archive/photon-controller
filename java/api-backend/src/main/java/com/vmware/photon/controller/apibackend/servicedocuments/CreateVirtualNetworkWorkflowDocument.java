@@ -138,6 +138,27 @@ public class CreateVirtualNetworkWorkflowDocument extends ServiceDocument{
   @DefaultInteger(5000)
   public Integer executionDelay;
 
+  @Override
+  public String toString() {
+    return com.google.common.base.Objects.toStringHelper(this)
+        .add("stage", taskState.stage)
+        .add("subStage", taskState.subStage)
+        .add("parentId", parentId)
+        .add("parentKind", parentKind)
+        .add("name", name)
+        .add("description", description)
+        .add("routingType", routingType)
+        .add("nsxManagerEndpoint", nsxManagerEndpoint)
+        .add("username", username)
+        .add("password", password)
+        .add("transportZoneId", transportZoneId)
+        .add("tier0RouterId", tier0RouterId)
+        .add("taskServiceEntity", taskServiceEntity.toString())
+        .add("taskServiceState", taskServiceState.toString())
+        .add("documentSelfLink", documentSelfLink)
+        .toString();
+  }
+
   /**
    * This class defines the state of a CreateVirtualNetworkWorkflowService instance.
    */

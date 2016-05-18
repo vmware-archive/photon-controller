@@ -123,6 +123,8 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
     ServiceUtils.logInfo(this, "Handling patch for service %s", getSelfLink());
     CreateVirtualNetworkWorkflowDocument currentState = getState(patchOperation);
 
+    ServiceUtils.logInfo(this, "Service document before patching %s", currentState.toString());
+
     try {
       CreateVirtualNetworkWorkflowDocument patchState =
           patchOperation.getBody(CreateVirtualNetworkWorkflowDocument.class);
@@ -130,6 +132,8 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
       applyPatch(currentState, patchState);
       validateState(currentState);
       patchOperation.complete();
+
+      ServiceUtils.logInfo(this, "Service document after patching %s", currentState.toString());
 
       if (ControlFlags.isOperationProcessingDisabled(currentState.controlFlags) ||
           ControlFlags.isHandlePatchDisabled(currentState.controlFlags) ||
