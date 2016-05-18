@@ -25,6 +25,16 @@ public class Constants {
 
   public static final String TENANT_NAME = "mgmt-tenant";
 
+  public static final String APIFE_SERVICE_NAME = "apife";
+
+  public static final String CLOUDSTORE_SERVICE_NAME = "cloudstore";
+
+  public static final String DEPLOYER_SERVICE_NAME = "deployer";
+
+  public static final String HOUSEKEEPER_SERVICE_NAME = "housekeeper";
+
+  public static final String SCHEDULER_SERVICE_NAME = "root-scheduler";
+
   private Constants() {
   }
 }

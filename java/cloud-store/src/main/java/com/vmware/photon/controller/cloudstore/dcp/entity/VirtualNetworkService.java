@@ -15,7 +15,7 @@ package com.vmware.photon.controller.cloudstore.dcp.entity;
 
 import com.vmware.photon.controller.api.NetworkState;
 import com.vmware.photon.controller.api.RoutingType;
-import com.vmware.photon.controller.cloudstore.CloudStoreModule;
+import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
@@ -106,7 +106,7 @@ public class VirtualNetworkService extends StatefulService {
   @MigrateDuringUpgrade(transformationServicePath = UpgradeUtils.REFLECTION_TRANSFORMATION_SERVICE_LINK,
       sourceFactoryServicePath = FACTORY_LINK,
       destinationFactoryServicePath = FACTORY_LINK,
-      serviceName = CloudStoreModule.CLOUDSTORE_SERVICE_NAME)
+      serviceName = Constants.CLOUDSTORE_SERVICE_NAME)
   public static class State extends ServiceDocument {
     @NotBlank
     @WriteOnce
