@@ -55,9 +55,9 @@ public class KubernetesClusterCreateStepCmd extends StepCommand {
 
     KubernetesClusterCreateTask serviceDocument = clusterBackend.getClusterManagerClient()
         .createKubernetesCluster(projectId, spec);
-    // pass remoteTaskId to ClusterTaskStatusStepCmd
+    // pass remoteTaskId to XenonTaskStatusStepCmd
     for (StepEntity nextStep : taskCommand.getTask().getSteps()) {
-      nextStep.createOrUpdateTransientResource(ClusterTaskStatusStepCmd.REMOTE_TASK_LINK_RESOURCE_KEY,
+      nextStep.createOrUpdateTransientResource(XenonTaskStatusStepCmd.REMOTE_TASK_LINK_RESOURCE_KEY,
           serviceDocument.documentSelfLink);
     }
     logger.info("Cluster creation initiated: id={}", serviceDocument.documentSelfLink);

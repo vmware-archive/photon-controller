@@ -123,7 +123,7 @@ public class KubernetesClusterCreateStepCmdTest extends PowerMockTestCase {
 
       command.execute();
       verify(clusterManagerClient, times(1)).createKubernetesCluster(any(String.class), any(ClusterCreateSpec.class));
-      assertEquals(nextStep.getTransientResource(ClusterTaskStatusStepCmd.REMOTE_TASK_LINK_RESOURCE_KEY),
+      assertEquals(nextStep.getTransientResource(XenonTaskStatusStepCmd.REMOTE_TASK_LINK_RESOURCE_KEY),
           remoteTaskLink);
     }
 

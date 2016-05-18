@@ -108,7 +108,7 @@ public class ClusterDeleteStepCmdTest extends PowerMockTestCase {
 
       command.execute();
       verify(clusterManagerClient, times(1)).deleteCluster(any(String.class));
-      assertEquals(nextStep.getTransientResource(ClusterTaskStatusStepCmd.REMOTE_TASK_LINK_RESOURCE_KEY),
+      assertEquals(nextStep.getTransientResource(XenonTaskStatusStepCmd.REMOTE_TASK_LINK_RESOURCE_KEY),
           remoteTaskLink);
     }
 

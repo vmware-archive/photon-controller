@@ -49,6 +49,8 @@ public class TaskCommandExecutorServiceTest {
   private HostClient hostClient = mock(HostClient.class);
   private EntityLockBackend entityLockBackend = mock(EntityLockBackend.class);
   private SchedulerXenonRestClient schedulerXenonRestClient = mock(SchedulerXenonRestClient.class);
+  private com.vmware.photon.controller.apife.backends.clients.DeployerClient deployerXenonClient =
+      mock(com.vmware.photon.controller.apife.backends.clients.DeployerClient.class);
 
   @DataProvider(name = "getSubmitParams")
   public Object[][] getSubmitParams() {
@@ -117,7 +119,7 @@ public class TaskCommandExecutorServiceTest {
       TaskEntity task = new TaskEntity();
       task.setId("t" + i);
       commands[i] = new TestTaskCommand(dcpClient, schedulerXenonRestClient, hostClient,
-          housekeeperClient, deployerClient, task, countDownLatch);
+          housekeeperClient, deployerClient, deployerXenonClient, task, countDownLatch);
       try {
         service.submit(commands[i]);
       } catch (ExternalException ex) {
@@ -141,9 +143,10 @@ public class TaskCommandExecutorServiceTest {
                            HostClient hostClient,
                            HousekeeperClient housekeeperClient,
                            DeployerClient deployerClient,
+                           com.vmware.photon.controller.apife.backends.clients.DeployerClient deployerXenonClient,
                            TaskEntity task,
                            CountDownLatch countDownLatch) {
-      super(dcpClient, schedulerXenonRestClient, hostClient, housekeeperClient, deployerClient,
+      super(dcpClient, schedulerXenonRestClient, hostClient, housekeeperClient, deployerClient, deployerXenonClient,
           entityLockBackend, task);
       this.countDownLatch = countDownLatch;
     }
