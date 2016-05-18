@@ -16,7 +16,8 @@ package com.vmware.photon.controller.deployer.dcp.entity;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
-import com.vmware.photon.controller.common.xenon.upgrade.NoMigrationDuringUpgrade;
+import com.vmware.photon.controller.common.xenon.deployment.MigrateDuringDeployment;
+import com.vmware.photon.controller.common.xenon.migration.NoMigrationDuringUpgrade;
 import com.vmware.photon.controller.common.xenon.validation.DefaultBoolean;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
@@ -36,6 +37,7 @@ public class ContainerTemplateService extends StatefulService {
    * This class defines the document state associated with a single {@link ContainerTemplateService} instance.
    */
   @NoMigrationDuringUpgrade
+  @MigrateDuringDeployment(factoryServicePath = ContainerTemplateFactoryService.SELF_LINK, serviceName = "deployer")
   public static class State extends ServiceDocument {
 
     public static final String FIELD_NAME_NAME = "name";

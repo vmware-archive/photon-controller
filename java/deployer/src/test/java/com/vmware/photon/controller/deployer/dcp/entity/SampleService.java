@@ -12,7 +12,8 @@
  */
 package com.vmware.photon.controller.deployer.dcp.entity;
 
-import com.vmware.photon.controller.common.xenon.upgrade.NoMigrationDuringUpgrade;
+import com.vmware.photon.controller.common.xenon.deployment.NoMigrationDuringDeployment;
+import com.vmware.photon.controller.common.xenon.migration.NoMigrationDuringUpgrade;
 import com.vmware.photon.controller.common.xenon.validation.RenamedField;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
@@ -42,6 +43,7 @@ public class SampleService extends StatefulService {
    * avoid test errors we need to annotate this class.
    */
   @NoMigrationDuringUpgrade
+  @NoMigrationDuringDeployment
   public static class State extends ServiceDocument {
 
     @RenamedField(originalName = "hostAddress")

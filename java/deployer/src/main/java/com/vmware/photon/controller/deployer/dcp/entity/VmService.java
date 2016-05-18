@@ -17,7 +17,8 @@ import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
-import com.vmware.photon.controller.common.xenon.upgrade.NoMigrationDuringUpgrade;
+import com.vmware.photon.controller.common.xenon.deployment.MigrateDuringDeployment;
+import com.vmware.photon.controller.common.xenon.migration.NoMigrationDuringUpgrade;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.common.xenon.validation.WriteOnce;
@@ -38,6 +39,7 @@ public class VmService extends StatefulService {
    * plane layout.
    */
   @NoMigrationDuringUpgrade
+  @MigrateDuringDeployment(factoryServicePath = VmFactoryService.SELF_LINK, serviceName = "deployer")
   public static class State extends ServiceDocument {
 
     public static final String FIELD_NAME_HOST_SERVICE_LINK = "hostServiceLink";

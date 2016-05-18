@@ -15,7 +15,7 @@ package com.vmware.photon.controller.cloudstore.xenon.upgrade;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
-import com.vmware.photon.controller.common.xenon.upgrade.UpgradeUtils;
+import com.vmware.photon.controller.common.xenon.migration.MigrationUtils;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.StatelessService;
 import com.vmware.xenon.common.Utils;
@@ -45,7 +45,7 @@ public class HostTransformationService extends StatelessService {
 
           // perform field renames
           HostService.State convertedServiceDocument = Utils.fromJson(entry.getKey(), HostService.State.class);
-          UpgradeUtils.handleRenamedField(entry.getKey(), convertedServiceDocument);
+          MigrationUtils.handleRenamedField(entry.getKey(), convertedServiceDocument);
 
           // change usage tags to be cloud only, this will allow us to use the old management hosts
           // for future place requests.

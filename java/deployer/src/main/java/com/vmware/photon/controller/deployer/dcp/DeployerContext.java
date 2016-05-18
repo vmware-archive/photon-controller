@@ -13,15 +13,13 @@
 
 package com.vmware.photon.controller.deployer.dcp;
 
-import com.vmware.photon.controller.cloudstore.dcp.entity.EntityLockServiceFactory;
-import com.vmware.photon.controller.common.xenon.upgrade.UpgradeInformation;
-import com.vmware.photon.controller.common.xenon.upgrade.UpgradeUtils;
+import com.vmware.photon.controller.common.xenon.migration.DeploymentMigrationInformation;
+import com.vmware.photon.controller.common.xenon.migration.MigrationUtils;
+import com.vmware.photon.controller.common.xenon.migration.UpgradeInformation;
 import com.vmware.photon.controller.deployer.dcp.constant.DeployerDefaults;
-import com.vmware.xenon.services.common.RootNamespaceService;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.ImmutableSet;
 import org.hibernate.validator.constraints.NotBlank;
 import org.hibernate.validator.constraints.Range;
 
@@ -109,11 +107,6 @@ public class DeployerContext {
   private final String configDirectory;
 
   private String zookeeperQuorum;
-
-  private Collection<Class<?>> migrationExecludedServices = ImmutableSet.<Class<?>>builder()
-      .add(RootNamespaceService.class)
-      .add(EntityLockServiceFactory.class)
-      .build();
 
   @VisibleForTesting
   public DeployerContext() {
@@ -218,7 +211,7 @@ public class DeployerContext {
   }
 
   public List<UpgradeInformation> getUpgradeInformation() {
-    return UpgradeUtils.findAllUpgradeServices();
+    return MigrationUtils.findAllUpgradeServices();
   }
 
   public int getWaitForServiceMaxRetryCount() {
@@ -241,7 +234,7 @@ public class DeployerContext {
     this.zookeeperQuorum = zookeeperQuorum;
   }
 
-  public Collection<Class<?>> getMigrationExcludedServices() {
-    return migrationExecludedServices;
+  public Collection<DeploymentMigrationInformation> getDeploymentMigrationInformation() {
+    return MigrationUtils.findAllMigrationServices();
   }
 }

@@ -20,7 +20,8 @@ import com.vmware.photon.controller.common.xenon.PatchUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
-import com.vmware.photon.controller.common.xenon.upgrade.NoMigrationDuringUpgrade;
+import com.vmware.photon.controller.common.xenon.deployment.NoMigrationDuringDeployment;
+import com.vmware.photon.controller.common.xenon.migration.NoMigrationDuringUpgrade;
 import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
 import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
@@ -50,6 +51,7 @@ public class DeleteVmTaskService extends StatefulService {
    * {@link DeleteVmTaskService} instance.
    */
   @NoMigrationDuringUpgrade
+  @NoMigrationDuringDeployment
   public static class State extends ServiceDocument {
     /**
      * This value represents the state of the current task.

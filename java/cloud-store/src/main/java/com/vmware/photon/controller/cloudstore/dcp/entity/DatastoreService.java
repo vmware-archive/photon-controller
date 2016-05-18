@@ -18,8 +18,9 @@ import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
-import com.vmware.photon.controller.common.xenon.upgrade.MigrateDuringUpgrade;
-import com.vmware.photon.controller.common.xenon.upgrade.UpgradeUtils;
+import com.vmware.photon.controller.common.xenon.deployment.MigrateDuringDeployment;
+import com.vmware.photon.controller.common.xenon.migration.MigrateDuringUpgrade;
+import com.vmware.photon.controller.common.xenon.migration.MigrationUtils;
 import com.vmware.photon.controller.common.xenon.validation.DefaultBoolean;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
@@ -149,9 +150,12 @@ public class DatastoreService extends StatefulService {
    * This class defines the document state associated with a single
    * {@link DatastoreService} instance.
    */
-  @MigrateDuringUpgrade(transformationServicePath = UpgradeUtils.REFLECTION_TRANSFORMATION_SERVICE_LINK,
+  @MigrateDuringUpgrade(transformationServicePath = MigrationUtils.REFLECTION_TRANSFORMATION_SERVICE_LINK,
       sourceFactoryServicePath = DatastoreServiceFactory.SELF_LINK,
       destinationFactoryServicePath = DatastoreServiceFactory.SELF_LINK,
+      serviceName = CloudStoreModule.CLOUDSTORE_SERVICE_NAME)
+  @MigrateDuringDeployment(
+      factoryServicePath = DatastoreServiceFactory.SELF_LINK,
       serviceName = CloudStoreModule.CLOUDSTORE_SERVICE_NAME)
   public static class State extends ServiceDocument {
 
