@@ -27,6 +27,7 @@ import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
+import com.vmware.photon.controller.apife.backends.clients.DeployerClient;
 import com.vmware.photon.controller.apife.entities.AvailabilityZoneEntity;
 import com.vmware.photon.controller.apife.entities.DeploymentEntity;
 import com.vmware.photon.controller.apife.entities.EntityStateValidator;
@@ -74,8 +75,10 @@ public class HostDcpBackend implements HostBackend {
   private final TombstoneBackend tombstoneBackend;
   private final AvailabilityZoneBackend availabilityZoneBackend;
 
+  private final DeployerClient deployerClient;
+
   @Inject
-  public HostDcpBackend(ApiFeXenonRestClient dcpClient, TaskBackend taskBackend,
+  public HostDcpBackend(ApiFeXenonRestClient dcpClient, DeployerClient deployerClient, TaskBackend taskBackend,
                         EntityLockBackend entityLockBackend, DeploymentBackend deploymentBackend,
                         TombstoneBackend tombstoneBackend, AvailabilityZoneBackend availabilityZoneBackend) {
     this.dcpClient = dcpClient;
@@ -84,7 +87,12 @@ public class HostDcpBackend implements HostBackend {
     this.deploymentBackend = deploymentBackend;
     this.tombstoneBackend = tombstoneBackend;
     this.availabilityZoneBackend = availabilityZoneBackend;
+    this.deployerClient = deployerClient;
     this.dcpClient.start();
+  }
+
+  public DeployerClient getDeployerClient() {
+    return deployerClient;
   }
 
   @Override
@@ -287,7 +295,7 @@ public class HostDcpBackend implements HostBackend {
 
   private TaskEntity createTask(HostEntity host, String deploymentId) throws ExternalException {
     TaskEntity task = createQueuedTaskEntity(host, Operation.CREATE_HOST);
-
+    taskBackend.getStepBackend().createQueuedStep(task, Operation.QUERY_HOST_TASK_RESULT);
     if (isDeploymentReady(deploymentId)) {
       taskBackend.getStepBackend().createQueuedStep(task, host, Operation.PROVISION_HOST);
     }

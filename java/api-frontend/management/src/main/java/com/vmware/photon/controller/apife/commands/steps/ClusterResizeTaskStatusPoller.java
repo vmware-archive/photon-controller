@@ -27,7 +27,7 @@ import java.util.Map;
 /**
  * Polls cluster resize task status.
  */
-public class ClusterResizeTaskStatusPoller implements ClusterTaskStatusStepCmd.ClusterTaskStatusPoller {
+public class ClusterResizeTaskStatusPoller implements XenonTaskStatusStepCmd.XenonTaskStatusPoller {
   private static final Map<Operation, Integer> OPERATION_TO_SUBSTAGE_MAP =
       ImmutableMap.<Operation, Integer>builder()
           .put(Operation.RESIZE_CLUSTER_INITIALIZE_CLUSTER, SubStage.INITIALIZE_CLUSTER.ordinal())
