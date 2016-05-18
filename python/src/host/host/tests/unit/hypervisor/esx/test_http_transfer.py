@@ -210,7 +210,7 @@ class TestHttpTransfer(unittest.TestCase):
         xferer.download_file.assert_called_once_with(from_url_mock, expected_tmp_file, read_lease_mock)
         read_lease_mock.Complete.assert_called_once_with()
         xferer._prepare_receive_image.assert_called_once_with(agent_conn_mock, image_id, destination_datastore)
-        xferer._create_import_vm_spec.assert_called_once_with(vm_id, destination_datastore, vm_path)
+        xferer._create_import_vm_spec.assert_called_once_with(vm_id, vm_path)
         xferer._get_url_from_import_vm.assert_called_once_with(vim_conn_mock, host, import_spec_mock)
         xferer.upload_file.assert_called_once_with(expected_tmp_file, to_url_mock, write_lease_mock)
         write_lease_mock.Complete.assert_called_once_with()

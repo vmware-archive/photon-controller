@@ -292,12 +292,12 @@ class HttpNfcTransferer(HttpTransferer):
             raise ValueError(err_msg)
         return response.import_vm_path, response.import_vm_id
 
-    def _create_import_vm_spec(self, vm_id, datastore, vm_path):
+    def _create_import_vm_spec(self, vm_id, vm_path):
         spec = EsxVmConfigSpec(self._host_client.query_config())
         spec.init_for_import(vm_id, vm_path)
         # Just specify a tiny capacity in the spec for now; the eventual vm
         # disk will be based on what is uploaded via the http nfc url.
-        spec.create_empty_disk(datastore, None, size_mb=1)
+        spec.create_empty_disk(None, size_mb=1)
         return spec
 
     def _get_url_from_import_vm(self, dst_host_client, dst_host, import_spec):
@@ -382,7 +382,7 @@ class HttpNfcTransferer(HttpTransferer):
             agent_client.connect()
 
             vm_path, vm_id = self._prepare_receive_image(agent_client, destination_image_id, destination_datastore)
-            spec = self._create_import_vm_spec(vm_id, destination_datastore, vm_path)
+            spec = self._create_import_vm_spec(vm_id, vm_path)
 
             self._send_image(agent_client, host, transfer_vmdk_path, spec)
             self._register_imported_image_at_host(
