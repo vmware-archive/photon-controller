@@ -27,7 +27,7 @@ import java.util.Map;
 /**
  * Polls cluster deletion task status.
  */
-public class ClusterDeleteTaskStatusPoller implements ClusterTaskStatusStepCmd.ClusterTaskStatusPoller {
+public class ClusterDeleteTaskStatusPoller implements XenonTaskStatusStepCmd.XenonTaskStatusPoller {
   private static final Map<Operation, Integer> OPERATION_TO_SUBSTAGE_MAP =
       ImmutableMap.<Operation, Integer>builder()
           .put(Operation.DELETE_CLUSTER_UPDATE_CLUSTER_DOCUMENT, SubStage.UPDATE_CLUSTER_DOCUMENT.ordinal())

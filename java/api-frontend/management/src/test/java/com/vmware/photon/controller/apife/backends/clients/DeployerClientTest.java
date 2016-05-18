@@ -17,11 +17,9 @@ import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.apife.entities.HostEntity;
 import com.vmware.photon.controller.apife.exceptions.external.SpecInvalidException;
 import com.vmware.photon.controller.apife.lib.UsageTagHelper;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ClusterService;
-import com.vmware.photon.controller.clustermanager.servicedocuments.KubernetesClusterCreateTask;
+import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.deployer.dcp.task.ValidateHostTaskService;
 import com.vmware.xenon.common.Operation;
-import com.vmware.xenon.common.Service;
 
 import org.mockito.Mock;
 import org.powermock.modules.testng.PowerMockTestCase;
@@ -29,6 +27,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.isNotNull;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 
@@ -44,7 +43,7 @@ public class DeployerClientTest {
   }
 
   /**
-   * Tests for the createKubernetesCluster method.
+   * Tests for the createHost method.
    */
   public static class CreateHostTest extends PowerMockTestCase {
     @Mock
@@ -56,13 +55,13 @@ public class DeployerClientTest {
     @BeforeMethod
     public void setUp() throws Throwable {
       Operation operation = new Operation();
-      ValidateHostTaskService task = new ValidateHostTaskService();
+      ValidateHostTaskService.State task = new ValidateHostTaskService.State();
       operation.setBody(task);
 
-      when(deployerXenonRestClient.post(any(String.class), any(KubernetesClusterCreateTask.class)))
+      when(deployerXenonRestClient.post(any(String.class), any(ValidateHostTaskService.State.class)))
           .thenReturn(operation);
 
-      when(apiFeXenonRestClient.post(any(String.class), any(ClusterService.State.class)))
+      when(apiFeXenonRestClient.post(any(String.class), any(HostService.State.class)))
           .thenReturn(null);
 
       deployerClient = new DeployerClient(deployerXenonRestClient, apiFeXenonRestClient);
@@ -73,6 +72,7 @@ public class DeployerClientTest {
       host.setAddress("1.1.1.1");
       host.setUsername("user1");
       host.setPassword("pwd");
+      host.setId("hostId");
       host.setUsageTags(UsageTagHelper.serialize(new ArrayList<UsageTag>() {{
         add(UsageTag.MGMT);
       }}));
@@ -80,11 +80,11 @@ public class DeployerClientTest {
     }
 
     @Test
-    public void testCreateKubernetesCluster() throws SpecInvalidException {
+    public void testCreateHost() throws SpecInvalidException {
       HostEntity host = buildCreateSpec();
-      ValidateHostTaskService createTask = deployerClient.createHost(host);
+      ValidateHostTaskService.State createTask = deployerClient.createHost(host);
 
-      assertEquals(createTask.getProcessingStage(), Service.ProcessingStage.CREATED);
+      assertEquals(createTask.documentSelfLink, isNotNull());
     }
   }
 }

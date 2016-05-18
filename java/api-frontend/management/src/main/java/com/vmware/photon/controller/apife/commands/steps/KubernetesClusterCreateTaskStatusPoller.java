@@ -32,7 +32,7 @@ import java.util.Map;
 /**
  * Polls Kubernetes cluster creation task status.
  */
-public class KubernetesClusterCreateTaskStatusPoller implements ClusterTaskStatusStepCmd.ClusterTaskStatusPoller {
+public class KubernetesClusterCreateTaskStatusPoller implements XenonTaskStatusStepCmd.XenonTaskStatusPoller {
   private static final Map<Operation, Integer> OPERATION_TO_SUBSTAGE_MAP =
       ImmutableMap.<Operation, Integer>builder()
           .put(Operation.CREATE_KUBERNETES_CLUSTER_SETUP_ETCD, SubStage.SETUP_ETCD.ordinal())

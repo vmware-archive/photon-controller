@@ -154,29 +154,29 @@ public class StepCommandFactoryTest {
 
         // Cluster
         {Operation.CREATE_KUBERNETES_CLUSTER_INITIATE, KubernetesClusterCreateStepCmd.class},
-        {Operation.CREATE_KUBERNETES_CLUSTER_SETUP_ETCD, ClusterTaskStatusStepCmd.class},
-        {Operation.CREATE_KUBERNETES_CLUSTER_SETUP_MASTER, ClusterTaskStatusStepCmd.class},
-        {Operation.CREATE_KUBERNETES_CLUSTER_SETUP_SLAVES, ClusterTaskStatusStepCmd.class},
+        {Operation.CREATE_KUBERNETES_CLUSTER_SETUP_ETCD, XenonTaskStatusStepCmd.class},
+        {Operation.CREATE_KUBERNETES_CLUSTER_SETUP_MASTER, XenonTaskStatusStepCmd.class},
+        {Operation.CREATE_KUBERNETES_CLUSTER_SETUP_SLAVES, XenonTaskStatusStepCmd.class},
 
         {Operation.CREATE_MESOS_CLUSTER_INITIATE, MesosClusterCreateStepCmd.class},
-        {Operation.CREATE_MESOS_CLUSTER_SETUP_ZOOKEEPERS, ClusterTaskStatusStepCmd.class},
-        {Operation.CREATE_MESOS_CLUSTER_SETUP_MASTERS, ClusterTaskStatusStepCmd.class},
-        {Operation.CREATE_MESOS_CLUSTER_SETUP_MARATHON, ClusterTaskStatusStepCmd.class},
-        {Operation.CREATE_MESOS_CLUSTER_SETUP_SLAVES, ClusterTaskStatusStepCmd.class},
+        {Operation.CREATE_MESOS_CLUSTER_SETUP_ZOOKEEPERS, XenonTaskStatusStepCmd.class},
+        {Operation.CREATE_MESOS_CLUSTER_SETUP_MASTERS, XenonTaskStatusStepCmd.class},
+        {Operation.CREATE_MESOS_CLUSTER_SETUP_MARATHON, XenonTaskStatusStepCmd.class},
+        {Operation.CREATE_MESOS_CLUSTER_SETUP_SLAVES, XenonTaskStatusStepCmd.class},
 
         {Operation.CREATE_SWARM_CLUSTER_INITIATE, SwarmClusterCreateStepCmd.class},
-        {Operation.CREATE_SWARM_CLUSTER_SETUP_ETCD, ClusterTaskStatusStepCmd.class},
-        {Operation.CREATE_SWARM_CLUSTER_SETUP_MASTER, ClusterTaskStatusStepCmd.class},
-        {Operation.CREATE_SWARM_CLUSTER_SETUP_SLAVES, ClusterTaskStatusStepCmd.class},
+        {Operation.CREATE_SWARM_CLUSTER_SETUP_ETCD, XenonTaskStatusStepCmd.class},
+        {Operation.CREATE_SWARM_CLUSTER_SETUP_MASTER, XenonTaskStatusStepCmd.class},
+        {Operation.CREATE_SWARM_CLUSTER_SETUP_SLAVES, XenonTaskStatusStepCmd.class},
 
         {Operation.RESIZE_CLUSTER_INITIATE, ClusterResizeStepCmd.class},
-        {Operation.RESIZE_CLUSTER_INITIALIZE_CLUSTER, ClusterTaskStatusStepCmd.class},
-        {Operation.RESIZE_CLUSTER_RESIZE, ClusterTaskStatusStepCmd.class},
+        {Operation.RESIZE_CLUSTER_INITIALIZE_CLUSTER, XenonTaskStatusStepCmd.class},
+        {Operation.RESIZE_CLUSTER_RESIZE, XenonTaskStatusStepCmd.class},
 
         {Operation.DELETE_CLUSTER_INITIATE, ClusterDeleteStepCmd.class},
-        {Operation.DELETE_CLUSTER_UPDATE_CLUSTER_DOCUMENT, ClusterTaskStatusStepCmd.class},
-        {Operation.DELETE_CLUSTER_DELETE_VMS, ClusterTaskStatusStepCmd.class},
-        {Operation.DELETE_CLUSTER_DOCUMENT, ClusterTaskStatusStepCmd.class},
+        {Operation.DELETE_CLUSTER_UPDATE_CLUSTER_DOCUMENT, XenonTaskStatusStepCmd.class},
+        {Operation.DELETE_CLUSTER_DELETE_VMS, XenonTaskStatusStepCmd.class},
+        {Operation.DELETE_CLUSTER_DOCUMENT, XenonTaskStatusStepCmd.class},
 
         // Misc
         {Operation.SET_TENANT_SECURITY_GROUPS, TenantSetSecurityGroupsStepCmd.class},

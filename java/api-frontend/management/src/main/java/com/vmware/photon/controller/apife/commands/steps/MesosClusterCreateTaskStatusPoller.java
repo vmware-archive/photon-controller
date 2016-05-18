@@ -32,7 +32,7 @@ import java.util.Map;
 /**
  * Polls Mesos cluster creation task status.
  */
-public class MesosClusterCreateTaskStatusPoller implements ClusterTaskStatusStepCmd.ClusterTaskStatusPoller {
+public class MesosClusterCreateTaskStatusPoller implements XenonTaskStatusStepCmd.XenonTaskStatusPoller {
   private static final Map<Operation, Integer> OPERATION_TO_SUBSTAGE_MAP =
       ImmutableMap.<Operation, Integer>builder()
           .put(Operation.CREATE_MESOS_CLUSTER_SETUP_ZOOKEEPERS, SubStage.SETUP_ZOOKEEPERS.ordinal())

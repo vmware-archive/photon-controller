@@ -76,6 +76,9 @@ public class VmGetMksTicketStepCmdTest extends PowerMockTestCase {
   private DeployerClient deployerClient;
 
   @Mock
+  private com.vmware.photon.controller.apife.backends.clients.DeployerClient deployerXenonClient;
+
+  @Mock
   private EntityLockBackend entityLockBackend;
 
   @Mock
@@ -109,7 +112,7 @@ public class VmGetMksTicketStepCmdTest extends PowerMockTestCase {
     datastore.setId("datastore-id");
 
     taskCommand = spy(new TaskCommand(dcpClient, schedulerXenonRestClient, hostClient,
-        housekeeperClient, deployerClient, entityLockBackend, task));
+        housekeeperClient, deployerClient, deployerXenonClient, entityLockBackend, task));
     when(taskCommand.getHostClient()).thenReturn(hostClient);
     when(taskCommand.getSchedulerXenonRestClient()).thenReturn(schedulerXenonRestClient);
     HostService.State hostServiceState = new HostService.State();

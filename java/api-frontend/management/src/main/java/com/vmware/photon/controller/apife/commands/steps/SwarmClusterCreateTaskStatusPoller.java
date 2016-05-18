@@ -32,7 +32,7 @@ import java.util.Map;
 /**
  * Polls Swarm cluster creation task status.
  */
-public class SwarmClusterCreateTaskStatusPoller implements ClusterTaskStatusStepCmd.ClusterTaskStatusPoller {
+public class SwarmClusterCreateTaskStatusPoller implements XenonTaskStatusStepCmd.XenonTaskStatusPoller {
   private static final Map<Operation, Integer> OPERATION_TO_SUBSTAGE_MAP =
       ImmutableMap.<Operation, Integer>builder()
           .put(Operation.CREATE_SWARM_CLUSTER_SETUP_ETCD, SubStage.SETUP_ETCD.ordinal())
