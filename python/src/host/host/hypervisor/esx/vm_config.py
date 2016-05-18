@@ -19,13 +19,11 @@ import os.path
 from common.log import log_duration
 from host.hypervisor.esx.host_client import DeviceNotFoundException
 from host.hypervisor.esx.host_client import VmConfigSpec
-from host.hypervisor.esx.path_util import IMAGE_FOLDER_NAME_PREFIX
 from host.hypervisor.esx.path_util import VM_FOLDER_NAME_PREFIX
 from host.hypervisor.esx.path_util import compond_path_join
 from host.hypervisor.esx.path_util import datastore_path
 from host.hypervisor.esx.path_util import uuid_to_vmdk_uuid
 from host.hypervisor.esx.path_util import vmdk_add_suffix
-from host.hypervisor.esx.path_util import vmdk_path
 
 from pyVmomi import vim
 from pysdk.vmconfig import AddIsoCdrom
@@ -123,11 +121,9 @@ class EsxVmConfigSpec(VmConfigSpec):
     def get_spec(self):
         return self._cfg_spec
 
-    def _add_disk(self, datastore, disk_id, controller_key, size_mb=None, parent_id=None):
+    def _add_disk(self, disk_id, controller_key, size_mb=None, parent_vmdk_path=None):
         """Create a spec for adding a virtual disk.
 
-        :param datastore: Name of the VM's datastore
-        :type datastore: str
         :param disk_id: File name for backing the virtual disk
         :type disk_id: str
         :param controller_key
@@ -148,17 +144,15 @@ class EsxVmConfigSpec(VmConfigSpec):
             thinProvisioned=True
         )
 
-        if parent_id:
-            backing.parent = vim.vm.device.VirtualDisk.FlatVer2BackingInfo(
-                fileName=vmdk_path(datastore, parent_id, IMAGE_FOLDER_NAME_PREFIX),
-            )
+        if parent_vmdk_path:
+            backing.parent = vim.vm.device.VirtualDisk.FlatVer2BackingInfo(fileName=parent_vmdk_path)
 
         disk = vim.vm.device.VirtualDisk(controllerKey=controller_key, key=-1, unitNumber=-1, backing=backing)
 
         if size_mb is not None:
             disk.capacityInKB = size_mb * 1024
 
-        if not parent_id:
+        if not parent_vmdk_path:
             # for any non-child disk we create, update its vmdk uuid to match the disk's id
             # (child disk picks up its uuid from its parent).
             if disk_id:
@@ -199,8 +193,11 @@ class EsxVmConfigSpec(VmConfigSpec):
         :param cfg_info: The VMs cfg info object to search
         :type cfg_info: vim.vm.ConfigInfo
         """
-        controller = self._find_device(self._get_devices_from_config(cfg_info),
-                                       vim.vm.device.VirtualSCSIController)
+        controller = None
+
+        if cfg_info:
+            controller = self._find_device(self._get_devices_from_config(cfg_info),
+                                           vim.vm.device.VirtualSCSIController)
 
         if controller is None:
             for change_item in self._cfg_spec.deviceChange:
@@ -242,7 +239,7 @@ class EsxVmConfigSpec(VmConfigSpec):
         )
         self._add_device(disk)
 
-    def create_empty_disk(self, datastore, disk_id, size_mb):
+    def create_empty_disk(self, disk_id, size_mb):
         """Add a create empty scsi disk spec to the config spec. The method
         will try to find an existing scsi controller to add the disk to. If no
         such scsi controller is found, it will add a new controller.
@@ -254,25 +251,21 @@ class EsxVmConfigSpec(VmConfigSpec):
         :param size_mb: size of the disk in MB
         :type size_mb: int
         """
-        cfg_info = vim.vm.ConfigInfo(hardware=vim.vm.VirtualHardware())
-        controller = self._find_or_add_scsi_controller(cfg_info)
-        self._add_disk(datastore, disk_id, controller.key, size_mb=size_mb)
+        controller = self._find_or_add_scsi_controller(None)
+        self._add_disk(disk_id, controller.key, size_mb=size_mb)
 
-    def create_child_disk(self, datastore, disk_id, parent_id):
+    def create_child_disk(self, disk_id, parent_vmdk_path):
         """Add a create child scsi disk spec to the config spec. The method
         will try to find an existing scsi controller to add the disk to. If no
         such scsi controller is found, it will add a new controller.
 
-        :param datastore: Name of the VM's datastore
-        :type datastore: str
         :param disk_id: vmdk id
         :type disk_id: str
         :param parent_id: parent disk id
         :type parent_id: str
         """
-        cfg_info = vim.vm.ConfigInfo(hardware=vim.vm.VirtualHardware())
-        controller = self._find_or_add_scsi_controller(cfg_info)
-        self._add_disk(datastore, disk_id, controller.key, parent_id=parent_id)
+        controller = self._find_or_add_scsi_controller(None)
+        self._add_disk(disk_id, controller.key, parent_vmdk_path=parent_vmdk_path)
 
     def add_nic(self, network):
         """Add a virtual nic to this create spec.
@@ -283,24 +276,18 @@ class EsxVmConfigSpec(VmConfigSpec):
         backing = None
 
         if network:
-            backing = vim.vm.device.VirtualEthernetCard.NetworkBackingInfo(
-                deviceName=network
-            )
+            backing = vim.vm.device.VirtualEthernetCard.NetworkBackingInfo(deviceName=network)
 
         controller_type = DEFAULT_NIC_CONTROLLER_CLASS
-        # We assume consistency in nic controller used -- the
-        # type of the nic controller will be the type of
-        # controller used for all nics.
+        # We assume consistency in nic controller used --
+        # the type of the nic controller will be the type of controller used for all nics.
         device_key = _FIRST_NIC_DEVICE + '.virtualDev'
 
         if self._metadata and device_key in self._metadata:
             controller_type = _ethernet_virtual_dev_to_vim_adapter_map.get(
                 self._metadata[device_key], controller_type)
 
-        device = controller_type(
-            key=-1,
-            backing=backing
-        )
+        device = controller_type(key=-1, backing=backing)
         self._add_device(device)
 
     def attach_iso(self, cfg_info, iso_file):

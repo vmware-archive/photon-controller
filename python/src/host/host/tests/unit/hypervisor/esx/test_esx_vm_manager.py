@@ -223,13 +223,12 @@ class TestEsxVmManager(unittest.TestCase):
         }
         spec = self._create_vm_spec(metadata, {})
 
-        ds = "fake_ds"
         disk_id = str(uuid.uuid4())
         parent_disk_id = str(uuid.uuid4())
         capacity_mb = 1024
 
-        spec.create_child_disk(ds, disk_id, parent_disk_id)
-        spec.create_empty_disk(ds, disk_id, capacity_mb)
+        spec.create_child_disk(disk_id, parent_disk_id)
+        spec.create_empty_disk(disk_id, capacity_mb)
 
         # check that we only create one controller of desired type to attach
         # to both disks
