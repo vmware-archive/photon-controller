@@ -271,7 +271,6 @@ public class ReleaseIPServiceTest {
 
             dnsmasqDriver = new DnsmasqDriver(
                     ReleaseIPServiceTest.class.getResource("/scripts/release-ip.sh").getPath(),
-                    ReleaseIPServiceTest.class.getResource("/scripts/release-ip.sh").getPath(),
                     ReleaseIPServiceTest.class.getResource("/scripts/dhcp-status.sh").getPath());
         }
 
