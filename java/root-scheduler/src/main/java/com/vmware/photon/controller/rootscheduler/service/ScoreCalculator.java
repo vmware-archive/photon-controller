@@ -19,7 +19,6 @@ import com.vmware.photon.controller.scheduler.gen.Score;
 
 import com.google.common.collect.Ordering;
 import com.google.common.primitives.Doubles;
-import com.google.inject.Inject;
 
 import java.util.Set;
 
@@ -29,7 +28,7 @@ import java.util.Set;
 public class ScoreCalculator {
   private final RootSchedulerConfig config;
 
-  @Inject
+
   public ScoreCalculator(RootSchedulerConfig config) {
     this.config = config;
   }

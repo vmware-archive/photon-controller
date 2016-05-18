@@ -16,8 +16,6 @@ dependencies {
   compile project(':common-logging')
 
   compile "com.google.guava:guava:${versions.guava}"
-  compile "com.google.inject.extensions:guice-assistedinject:${versions.guice}"
-  compile "com.google.inject:guice:${versions.guice}"
   compile 'net.sourceforge.argparse4j:argparse4j:0.4.0'
 
   thrift files('../../thrift/host.thrift',
