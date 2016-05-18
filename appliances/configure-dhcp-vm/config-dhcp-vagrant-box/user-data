@@ -37,7 +37,7 @@ write_files:
     path: /etc/systemd/network/10-dhcp-enp0s8.network
 
   - content: |
-        dhcp-range=192.168.0.1,192.168.0.1,24h
+        dhcp-range=192.168.0.1,192.168.0.10,24h
     owner: root:root
     path: /etc/dnsmasq.conf
 
