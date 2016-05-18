@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.deployer;
 
+import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.manifest.BuildInfo;
 import com.vmware.photon.controller.common.thrift.ThriftConfig;
 import com.vmware.photon.controller.common.thrift.ThriftEventHandler;
@@ -109,7 +110,7 @@ public class DeployerServer {
     // Need to re-fetch local port in case it was 0
     InetSocketAddress registrationSocketAddress = new InetSocketAddress(registrationIpAddress,
         transport.getServerSocket().getLocalPort());
-    serviceNode = serviceNodeFactory.createSimple("deployer", registrationSocketAddress);
+    serviceNode = serviceNodeFactory.createSimple(Constants.DEPLOYER_SERVICE_NAME, registrationSocketAddress);
 
     server.setServerEventHandler(getThriftEventHandler());
 

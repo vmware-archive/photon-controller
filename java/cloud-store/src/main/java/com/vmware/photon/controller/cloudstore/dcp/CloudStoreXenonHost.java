@@ -41,6 +41,7 @@ import com.vmware.photon.controller.cloudstore.dcp.task.TombstoneCleanerFactoryS
 import com.vmware.photon.controller.cloudstore.dcp.task.trigger.AvailabilityZoneCleanerTriggerBuilder;
 import com.vmware.photon.controller.cloudstore.dcp.task.trigger.EntityLockCleanerTriggerBuilder;
 import com.vmware.photon.controller.cloudstore.dcp.task.trigger.TombstoneCleanerTriggerBuilder;
+import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.clients.AgentControlClient;
 import com.vmware.photon.controller.common.clients.AgentControlClientFactory;
 import com.vmware.photon.controller.common.clients.AgentControlClientProvider;
@@ -180,7 +181,7 @@ public class CloudStoreXenonHost
    */
   @Override
   public ServiceConfig getServiceConfig() {
-    return serviceConfigFactory.create("apife");
+    return serviceConfigFactory.create(Constants.APIFE_SERVICE_NAME);
   }
 
   /**
