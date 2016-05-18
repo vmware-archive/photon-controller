@@ -12,8 +12,8 @@
  */
 package com.vmware.photon.controller.deployer.dcp.upgrade;
 
-import com.vmware.photon.controller.common.xenon.upgrade.UpgradeInformation;
-import com.vmware.photon.controller.common.xenon.upgrade.UpgradeUtils;
+import com.vmware.photon.controller.common.xenon.migration.MigrationUtils;
+import com.vmware.photon.controller.common.xenon.migration.UpgradeInformation;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
@@ -29,7 +29,7 @@ import java.util.Map;
  */
 public class ReflectionTransformationService extends StatelessService {
 
-  public static final String SELF_LINK = UpgradeUtils.REFLECTION_TRANSFORMATION_SERVICE_LINK;
+  public static final String SELF_LINK = MigrationUtils.REFLECTION_TRANSFORMATION_SERVICE_LINK;
 
   @Override
   public void handlePost(Operation postOperation) {
@@ -47,7 +47,7 @@ public class ReflectionTransformationService extends StatelessService {
         String factoryPath = Utils.fromJson(entry.getValue(), String.class);
 
         ServiceDocument convertedServiceDocument = Utils.fromJson(entry.getKey(), documentType);
-        UpgradeUtils.handleRenamedField(entry.getKey(), convertedServiceDocument);
+        MigrationUtils.handleRenamedField(entry.getKey(), convertedServiceDocument);
 
         results.put(Utils.toJson(convertedServiceDocument), factoryPath);
       }

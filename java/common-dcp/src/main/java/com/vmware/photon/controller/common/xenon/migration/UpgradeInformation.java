@@ -11,7 +11,7 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package com.vmware.photon.controller.common.xenon.upgrade;
+package com.vmware.photon.controller.common.xenon.migration;
 
 import com.vmware.xenon.common.ServiceDocument;
 

@@ -13,11 +13,13 @@
 
 package com.vmware.photon.controller.deployer.dcp.entity;
 
+import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
-import com.vmware.photon.controller.common.xenon.upgrade.NoMigrationDuringUpgrade;
+import com.vmware.photon.controller.common.xenon.deployment.MigrateDuringDeployment;
+import com.vmware.photon.controller.common.xenon.migration.NoMigrationDuringUpgrade;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.common.xenon.validation.WriteOnce;
@@ -38,6 +40,7 @@ public class VmService extends StatefulService {
    * plane layout.
    */
   @NoMigrationDuringUpgrade
+  @MigrateDuringDeployment(factoryServicePath = VmFactoryService.SELF_LINK, serviceName = Constants.DEPLOYER_SERVICE_NAME)
   public static class State extends ServiceDocument {
 
     public static final String FIELD_NAME_HOST_SERVICE_LINK = "hostServiceLink";
@@ -143,27 +146,5 @@ public class VmService extends StatefulService {
 
   private void validatePatchState(State startState, State patchState) {
     ValidationUtils.validatePatch(startState, patchState);
-  }
-
-  private void applyPatch(State currentState, State patchState) {
-    if (null != patchState.vmId) {
-      currentState.vmId = patchState.vmId;
-    }
-
-    if (null != patchState.vmFlavorId) {
-      currentState.vmFlavorId = patchState.vmFlavorId;
-    }
-
-    if (null != patchState.diskFlavorId) {
-      currentState.diskFlavorId = patchState.diskFlavorId;
-    }
-
-    if (null != patchState.imageId) {
-      currentState.imageId = patchState.imageId;
-    }
-
-    if (null != patchState.projectId) {
-      currentState.projectId = patchState.projectId;
-    }
   }
 }

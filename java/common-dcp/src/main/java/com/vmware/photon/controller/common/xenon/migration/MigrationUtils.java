@@ -10,9 +10,10 @@
  * conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package com.vmware.photon.controller.common.xenon.upgrade;
+package com.vmware.photon.controller.common.xenon.migration;
 
 import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
+import com.vmware.photon.controller.common.xenon.deployment.MigrateDuringDeployment;
 import com.vmware.photon.controller.common.xenon.validation.RenamedFieldHandler;
 import com.vmware.xenon.common.ServiceDocument;
 
@@ -28,7 +29,7 @@ import java.util.List;
 /**
  * This class implements common upgrade utils and map.
  */
-public class UpgradeUtils {
+public class MigrationUtils {
   public static final String REFLECTION_TRANSFORMATION_SERVICE_LINK = ServiceUriPaths.UPGRADE_ROOT + "/reflection";
 
   public static final String PHOTON_CONTROLLER_PACKAGE = "com.vmware.photon.controller";
@@ -42,7 +43,7 @@ public class UpgradeUtils {
   /**
    * This method searches the class path to identify each class definition that extends {@link ServiceDocument}
    * that is part of the Photon Controller code base.
-   * It selects all {@link ServiceDocument} with the {@link MigrateDuringUpgrade} annotation and record the necessesary
+   * It selects all {@link ServiceDocument} with the {@link MigrateDuringUpgrade} annotation and record the necessary
    * upgrade information.
    *
    * @return list of {@link UpgradeInfromation} objects describing each service document that needs to be migrated
@@ -84,6 +85,48 @@ public class UpgradeUtils {
       }
     }
     cachedList = infoEntries;
+    return infoEntries;
+  }
+
+  /**
+   * This method searches the class path to identify each class definition that extends {@link ServiceDocument}
+   * that is part of the Photon Controller code base.
+   * It selects all {@link ServiceDocument} with the {@link MigrateDuringDeployment} annotation and record the necessary
+   * upgrade information.
+   *
+   * @return list of {@link DeploymentMigrationInformation} objects describing each service document that needs to be
+   * migrated during deployment.
+   */
+  @SuppressWarnings("unchecked")
+  public static List<DeploymentMigrationInformation> findAllMigrationServices() {
+    List<DeploymentMigrationInformation> infoEntries = new ArrayList<>();
+    ClassLoader cl = ClassLoader.getSystemClassLoader();
+    ClassPath classPath;
+    try {
+      classPath = ClassPath.from(cl);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+
+    for (ClassInfo classFile : classPath.getAllClasses()) {
+      if (classFile.getName().contains(PHOTON_CONTROLLER_PACKAGE)) {
+        Class<?> type = classFile.load();
+        if (type.getSuperclass() != null && type.getSuperclass() == ServiceDocument.class) {
+          for (Annotation a : type.getAnnotations()) {
+            if (a.annotationType() == MigrateDuringDeployment.class) {
+              MigrateDuringDeployment u = (MigrateDuringDeployment) a;
+
+              DeploymentMigrationInformation info = new DeploymentMigrationInformation(
+                  u.factoryServicePath(),
+                  u.serviceName(),
+                  (Class<? extends ServiceDocument>) type);
+
+              infoEntries.add(info);
+            }
+          }
+        }
+      }
+    }
     return infoEntries;
   }
 }

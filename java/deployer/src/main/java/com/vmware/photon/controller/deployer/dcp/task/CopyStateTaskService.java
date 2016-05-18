@@ -25,8 +25,9 @@ import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
-import com.vmware.photon.controller.common.xenon.upgrade.NoMigrationDuringUpgrade;
-import com.vmware.photon.controller.common.xenon.upgrade.UpgradeUtils;
+import com.vmware.photon.controller.common.xenon.deployment.NoMigrationDuringDeployment;
+import com.vmware.photon.controller.common.xenon.migration.MigrationUtils;
+import com.vmware.photon.controller.common.xenon.migration.NoMigrationDuringUpgrade;
 import com.vmware.photon.controller.common.xenon.validation.DefaultBoolean;
 import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
 import com.vmware.photon.controller.common.xenon.validation.DefaultLong;
@@ -81,6 +82,7 @@ public class CopyStateTaskService extends StatefulService {
    * {@link CopyStateTaskService} instance.
    */
   @NoMigrationDuringUpgrade
+  @NoMigrationDuringDeployment
   public static class State extends ServiceDocument {
 
     public static final String FIELD_NAME_SOURCE_FACTORY_LINK = "sourceFactoryLink";
@@ -460,7 +462,7 @@ public class CopyStateTaskService extends StatefulService {
       @SuppressWarnings("unchecked")
       Service sd = ((Class<Service>) destinationDoc).newInstance();
       ServiceDocument convertedServiceDocument = Utils.fromJson(document, sd.getStateType());
-      UpgradeUtils.handleRenamedField(document, convertedServiceDocument);
+      MigrationUtils.handleRenamedField(document, convertedServiceDocument);
       // Convert it back to json
 
       if (sd.getStateType() == HostService.State.class) {

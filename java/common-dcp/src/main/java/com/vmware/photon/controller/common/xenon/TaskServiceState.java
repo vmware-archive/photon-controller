@@ -13,7 +13,8 @@
 
 package com.vmware.photon.controller.common.xenon;
 
-import com.vmware.photon.controller.common.xenon.upgrade.NoMigrationDuringUpgrade;
+import com.vmware.photon.controller.common.xenon.deployment.NoMigrationDuringDeployment;
+import com.vmware.photon.controller.common.xenon.migration.NoMigrationDuringUpgrade;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.TaskState;
 
@@ -22,6 +23,7 @@ import com.vmware.xenon.common.TaskState;
  * instances.
  */
 @NoMigrationDuringUpgrade
+@NoMigrationDuringDeployment
 public class TaskServiceState extends ServiceDocument {
 
   /**

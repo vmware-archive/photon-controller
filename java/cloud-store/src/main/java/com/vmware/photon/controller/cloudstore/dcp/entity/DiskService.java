@@ -22,8 +22,9 @@ import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
-import com.vmware.photon.controller.common.xenon.upgrade.MigrateDuringUpgrade;
-import com.vmware.photon.controller.common.xenon.upgrade.UpgradeUtils;
+import com.vmware.photon.controller.common.xenon.deployment.MigrateDuringDeployment;
+import com.vmware.photon.controller.common.xenon.migration.MigrateDuringUpgrade;
+import com.vmware.photon.controller.common.xenon.migration.MigrationUtils;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotBlank;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
@@ -99,9 +100,12 @@ public class DiskService extends StatefulService {
   /**
    * Durable service state data. Class encapsulating the data for Disk.
    */
-  @MigrateDuringUpgrade(transformationServicePath = UpgradeUtils.REFLECTION_TRANSFORMATION_SERVICE_LINK,
+  @MigrateDuringUpgrade(transformationServicePath = MigrationUtils.REFLECTION_TRANSFORMATION_SERVICE_LINK,
       sourceFactoryServicePath = DiskServiceFactory.SELF_LINK,
       destinationFactoryServicePath = DiskServiceFactory.SELF_LINK,
+      serviceName = Constants.CLOUDSTORE_SERVICE_NAME)
+  @MigrateDuringDeployment(
+      factoryServicePath = DiskServiceFactory.SELF_LINK,
       serviceName = Constants.CLOUDSTORE_SERVICE_NAME)
   public static class State extends ServiceDocument {
     @NotBlank
