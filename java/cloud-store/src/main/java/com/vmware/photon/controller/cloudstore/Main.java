@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.cloudstore;
 
 import com.vmware.photon.controller.cloudstore.dcp.CloudStoreXenonHost;
+import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.clients.AgentControlClientFactory;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.config.BadConfigException;
@@ -36,8 +37,6 @@ import java.util.concurrent.TimeUnit;
  * Cloud-store entry point.
  */
 public class Main {
-
-  public static final String CLOUDSTORE_SERVICE_NAME = "cloudstore";
 
   private static final Logger logger = LoggerFactory.getLogger(Main.class);
   private static final long retryIntervalMillisec = TimeUnit.SECONDS.toMillis(30);
@@ -80,7 +79,7 @@ public class Main {
     // Start the CloudStore Xenon Host.
     cloudStoreXenonHost.start();
 
-    zkModule.registerWithZookeeper(zkClient, CLOUDSTORE_SERVICE_NAME,
+    zkModule.registerWithZookeeper(zkClient, Constants.CLOUDSTORE_SERVICE_NAME,
         cloudStoreConfig.getXenonConfig().getRegistrationAddress(),
         cloudStoreConfig.getXenonConfig().getPort(), retryIntervalMillisec);
   }

@@ -26,7 +26,6 @@ import com.vmware.photon.controller.client.ApiClient;
 import com.vmware.photon.controller.client.resource.DeploymentApi;
 import com.vmware.photon.controller.client.resource.TasksApi;
 import com.vmware.photon.controller.client.resource.VmApi;
-import com.vmware.photon.controller.cloudstore.CloudStoreModule;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.FlavorService;
@@ -35,6 +34,7 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.NetworkService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.TaskService;
 import com.vmware.photon.controller.cloudstore.xenon.upgrade.HostTransformationService;
+import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.clients.AgentControlClientFactory;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
@@ -852,22 +852,22 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
 
       List<UpgradeInformation> upgradeInfo = ImmutableList.<UpgradeInformation>builder()
           .add(new UpgradeInformation("/photon/cloudstore/flavors", "/photon/cloudstore/flavors",
-              CloudStoreModule.CLOUDSTORE_SERVICE_NAME, UpgradeUtils.REFLECTION_TRANSFORMATION_SERVICE_LINK,
+              Constants.CLOUDSTORE_SERVICE_NAME, UpgradeUtils.REFLECTION_TRANSFORMATION_SERVICE_LINK,
               FlavorService.State.class))
           .add(new UpgradeInformation("/photon/cloudstore/images", "/photon/cloudstore/images",
-              CloudStoreModule.CLOUDSTORE_SERVICE_NAME, UpgradeUtils.REFLECTION_TRANSFORMATION_SERVICE_LINK,
+              Constants.CLOUDSTORE_SERVICE_NAME, UpgradeUtils.REFLECTION_TRANSFORMATION_SERVICE_LINK,
               ImageService.State.class))
           .add(new UpgradeInformation("/photon/cloudstore/hosts", "/photon/cloudstore/hosts",
-              CloudStoreModule.CLOUDSTORE_SERVICE_NAME, HostTransformationService.SELF_LINK,
+              Constants.CLOUDSTORE_SERVICE_NAME, HostTransformationService.SELF_LINK,
               HostService.State.class))
           .add(new UpgradeInformation("/photon/cloudstore/networks", "/photon/cloudstore/networks",
-              CloudStoreModule.CLOUDSTORE_SERVICE_NAME, UpgradeUtils.REFLECTION_TRANSFORMATION_SERVICE_LINK,
+              Constants.CLOUDSTORE_SERVICE_NAME, UpgradeUtils.REFLECTION_TRANSFORMATION_SERVICE_LINK,
               NetworkService.State.class))
           .add(new UpgradeInformation("/photon/cloudstore/datastores", "/photon/cloudstore/datastores",
-              CloudStoreModule.CLOUDSTORE_SERVICE_NAME, UpgradeUtils.REFLECTION_TRANSFORMATION_SERVICE_LINK,
+              Constants.CLOUDSTORE_SERVICE_NAME, UpgradeUtils.REFLECTION_TRANSFORMATION_SERVICE_LINK,
               DatastoreService.State.class))
           .add(new UpgradeInformation("/photon/cloudstore/tasks", "/photon/cloudstore/tasks",
-              CloudStoreModule.CLOUDSTORE_SERVICE_NAME, UpgradeUtils.REFLECTION_TRANSFORMATION_SERVICE_LINK,
+              Constants.CLOUDSTORE_SERVICE_NAME, UpgradeUtils.REFLECTION_TRANSFORMATION_SERVICE_LINK,
               TaskService.State.class))
           .build();
 
