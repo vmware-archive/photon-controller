@@ -13,16 +13,11 @@
 """ Contains the implementation code for ESX VM operations."""
 import logging
 import os
-import socket
-import struct
 import threading
 
 from common.kind import Flavor
 from common.kind import Unit
 from gen.agent.ttypes import PowerState
-from gen.host.ttypes import ConnectedStatus
-from gen.host.ttypes import VmNetworkInfo
-from gen.host.ttypes import Ipv4Address
 from host.hypervisor.resources import Disk
 from host.hypervisor.resources import Resource
 from host.hypervisor.resources import State
@@ -35,40 +30,8 @@ from host.hypervisor.esx.path_util import datastore_to_os_path
 from host.hypervisor.esx.path_util import SHADOW_VM_NAME_PREFIX
 from host.hypervisor.esx.path_util import get_root_disk
 from host.hypervisor.esx.vm_config import EsxVmConfigSpec
-from host.hypervisor.esx.vm_config import EsxVmInfo
 
 from common.log import log_duration
-
-
-class NetUtil(object):
-    """ Network utility classes for dealing with vmomi dataobjects
-        We don't have Ipv4Address python packages on esx.
-    """
-
-    @staticmethod
-    def is_ipv4_address(ip_address):
-        """Utility method to check if an ip address is ipv4
-        :param ip_addres: string ip address
-        :rtype: bool, return True if the ip_address is a v4 address
-        """
-        try:
-            socket.inet_aton(ip_address)
-        except socket.error:
-            return False
-        return ip_address.count('.') == 3
-
-    @staticmethod
-    def prefix_len_to_mask(prefix_len):
-        """Utility method to convert prefix length to netmask
-        IpV4address pkg is not available on esx.
-        :param prefix_len: int prefix len
-        :rtype: string, string representation of the netmask
-        """
-        if (prefix_len < 0 or prefix_len > 32):
-            raise ValueError("Invalid prefix length")
-        mask = (1L << 32) - (1L << 32 >> prefix_len)
-
-        return socket.inet_ntoa(struct.pack('>L', mask))
 
 
 class EsxVmManager(VmManager):
@@ -339,64 +302,7 @@ class EsxVmManager(VmManager):
 
     @log_duration
     def get_vm_network(self, vm_id):
-        """ Get the vm's network information
-        We only report ip info if vmware tools is running within the guest.
-        If tools are not running we can only report back the mac address
-        assigned by the vmx, the connected status of the device and the network
-        attached to the device.
-        The information for mac, networkname and connected status is available
-        through two places, the ethernetCards backing info and through the
-        guestInfo. Both of these codepaths are not using VimVigor and seem to
-        be implemented in a similar manner in hostd, so they should agree with
-        each other. Just read this from the guestInfo as well.
-
-        :param vm_id: Name of the VM
-        :rtype: VmNetworkInfo
-        """
-        network_info = []
-
-        # Throws when VM is not found.
-        vm = self.vim_client.get_vm(vm_id)
-
-        if (vm.guest is None or not vm.guest.net):
-            # No guest info so return the info from the config file
-            return self._get_network_config(vm_id)
-
-        guest_nic_info_list = vm.guest.net
-
-        # vmomi list attrs are never None could be an empty list
-        for guest_nic_info in guest_nic_info_list:
-            if (guest_nic_info.macAddress is None):
-                # No mac address no real guest info. Not possible to have mac
-                # address not reporte but ip stack info available.
-                continue
-            info = VmNetworkInfo(mac_address=guest_nic_info.macAddress)
-
-            # Fill in the connected status.
-            if guest_nic_info.connected:
-                info.is_connected = ConnectedStatus.CONNECTED
-            else:
-                info.is_connected = ConnectedStatus.DISCONNECTED
-
-            # Fill in the network binding info
-            if guest_nic_info.network is not None:
-                info.network = guest_nic_info.network
-
-            # See if the ip information is available.
-            if guest_nic_info.ipConfig is not None:
-                ip_addresses = guest_nic_info.ipConfig.ipAddress
-                # This is an array due to ipv6 support
-                for ip_address in ip_addresses:
-                    if (NetUtil.is_ipv4_address(ip_address.ipAddress)):
-                        ip = Ipv4Address(
-                            ip_address=ip_address.ipAddress,
-                            netmask=NetUtil.prefix_len_to_mask(
-                                ip_address.prefixLength))
-                        info.ip_address = ip
-                        break
-            network_info.append(info)
-
-        return network_info
+        return self.vim_client.get_vm_network(vm_id)
 
     def attach_iso(self, vm_id, iso_file):
         """ Attach an iso file to the VM after adding a CD-ROM device.
@@ -428,29 +334,6 @@ class EsxVmManager(VmManager):
             except:
                 # The iso may not exist, so just catch and move on.
                 pass
-
-    @log_duration
-    def _get_network_config(self, vm_id):
-        """ Get the network backing of a VM by reading its configuration.
-
-        This is different from the get_vm_network above which gets the network
-        information from tools.
-        Only the mac address and the corresponding network name is going to be
-        populated in this model.
-        :type vm_id: VM str
-        :rtype VMNetworkInfo list.
-        """
-
-        network_info = []
-        vm_info = EsxVmInfo(self.vim_client.get_vm(vm_id))
-        networks = vm_info.get_networks()
-
-        for idx, mac, network, _ in networks:
-            # We don't set MAC address when VM gets created, so MAC address
-            # won't be set until the VM gets powered on.
-            info = VmNetworkInfo(mac_address=mac, network=network)
-            network_info.append(info)
-        return network_info
 
     @log_duration
     def get_linked_clone_path(self, vm_id):
