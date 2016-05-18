@@ -17,8 +17,11 @@ import com.vmware.photon.controller.apife.entities.HostEntity;
 import com.vmware.photon.controller.apife.exceptions.external.SpecInvalidException;
 import com.vmware.photon.controller.apife.lib.UsageTagHelper;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
+import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
 import com.vmware.photon.controller.deployer.dcp.task.ValidateHostTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.ValidateHostTaskService;
+import com.vmware.photon.controller.deployer.dcp.workflow.DeprovisionHostWorkflowFactoryService;
+import com.vmware.photon.controller.deployer.dcp.workflow.DeprovisionHostWorkflowService;
 import com.vmware.xenon.common.Operation;
 
 import com.google.inject.Inject;
@@ -42,18 +45,18 @@ public class DeployerClient {
     private static final String COMMA_DELIMITED_REGEX = "\\s*,\\s*";
 
     private DeployerXenonRestClient dcpClient;
-    private ApiFeXenonRestClient apiFeDcpClient;
+    private ApiFeXenonRestClient apiFeXenonRestClient;
 
     @Inject
-    public DeployerClient(DeployerXenonRestClient dcpClient, ApiFeXenonRestClient apiFeDcpClient)
+    public DeployerClient(DeployerXenonRestClient dcpClient, ApiFeXenonRestClient apiFeXenonClient)
             throws URISyntaxException {
         this.dcpClient = dcpClient;
         this.dcpClient.start();
-        this.apiFeDcpClient = apiFeDcpClient;
-        this.apiFeDcpClient.start();
+        this.apiFeXenonRestClient = apiFeXenonClient;
+        this.apiFeXenonRestClient.start();
     }
 
-    public ValidateHostTaskService createHost(HostEntity host)
+    public ValidateHostTaskService.State createHost(HostEntity host)
             throws SpecInvalidException {
         ValidateHostTaskService.State state = new ValidateHostTaskService.State();
         state.hostAddress = host.getAddress();
@@ -82,7 +85,22 @@ public class DeployerClient {
 
         Operation operation = dcpClient.post(
                 ValidateHostTaskFactoryService.SELF_LINK, state);
-        return operation.getBody(ValidateHostTaskService.class);
+        return operation.getBody(ValidateHostTaskService.State.class);
     }
 
+    public ValidateHostTaskService.State getHostCreationStatus(String creationTaskLink)
+        throws DocumentNotFoundException {
+        Operation operation = dcpClient.get(creationTaskLink);
+        return operation.getBody(ValidateHostTaskService.State.class);
+    }
+
+    public DeprovisionHostWorkflowService deprovisionHost(String hostServiceLink) {
+        DeprovisionHostWorkflowService.State deprovisionHostState = new DeprovisionHostWorkflowService.State();
+        deprovisionHostState.hostServiceLink = hostServiceLink;
+
+        Operation operation = dcpClient.post(
+            DeprovisionHostWorkflowFactoryService.SELF_LINK, deprovisionHostState);
+
+        return operation.getBody(DeprovisionHostWorkflowService.class);
+    }
 }

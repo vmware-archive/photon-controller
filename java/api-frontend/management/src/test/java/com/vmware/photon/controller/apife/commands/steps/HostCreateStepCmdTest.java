@@ -14,47 +14,29 @@
 package com.vmware.photon.controller.apife.commands.steps;
 
 import com.vmware.photon.controller.api.HostState;
-import com.vmware.photon.controller.api.UsageTag;
-import com.vmware.photon.controller.apife.backends.HostBackend;
+import com.vmware.photon.controller.apife.backends.HostDcpBackend;
 import com.vmware.photon.controller.apife.backends.StepBackend;
+import com.vmware.photon.controller.apife.backends.clients.DeployerClient;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.HostEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
-import com.vmware.photon.controller.apife.exceptions.external.DuplicateHostException;
-import com.vmware.photon.controller.apife.exceptions.external.IpAddressInUseException;
-import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
-import com.vmware.photon.controller.apife.lib.UsageTagHelper;
-import com.vmware.photon.controller.common.clients.DeployerClient;
-import com.vmware.photon.controller.common.clients.exceptions.HostExistWithSameAddressException;
-import com.vmware.photon.controller.common.clients.exceptions.HostNotFoundException;
-import com.vmware.photon.controller.common.clients.exceptions.InvalidLoginException;
-import com.vmware.photon.controller.common.clients.exceptions.ManagementVmAddressAlreadyExistException;
-import com.vmware.photon.controller.common.clients.exceptions.RpcException;
-import com.vmware.photon.controller.deployer.gen.CreateHostResponse;
-import com.vmware.photon.controller.deployer.gen.CreateHostResult;
-import com.vmware.photon.controller.deployer.gen.CreateHostResultCode;
-import com.vmware.photon.controller.deployer.gen.CreateHostStatus;
-import com.vmware.photon.controller.deployer.gen.CreateHostStatusCode;
-import com.vmware.photon.controller.deployer.gen.CreateHostStatusResponse;
-import com.vmware.photon.controller.resource.gen.Host;
+import com.vmware.photon.controller.apife.entities.TaskEntity;
+import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
+import com.vmware.photon.controller.deployer.dcp.task.ValidateHostTaskFactoryService;
+import com.vmware.photon.controller.deployer.dcp.task.ValidateHostTaskService;
 
-import org.junit.Assert;
+import com.google.common.collect.ImmutableList;
 import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
-import java.util.ArrayList;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertTrue;
 
 /**
  * Tests {@link HostCreateStepCmd}.
@@ -66,14 +48,22 @@ public class HostCreateStepCmdTest {
   private DeployerClient deployerClient;
   private StepBackend stepBackend;
   private TaskCommand taskCommand;
-  private HostBackend hostBackend;
+  private HostDcpBackend hostBackend;
   private HostEntity host;
+
+  private ValidateHostTaskService.State serviceDocument;
+  private String remoteTaskLink;
+  private TaskEntity taskEntity;
+  private StepEntity currentStep;
+  private StepEntity nextStep;
+  private HostTaskStatusPoller poller;
 
   public void setUpCommon() {
     deployerClient = mock(DeployerClient.class);
     stepBackend = mock(StepBackend.class);
     taskCommand = mock(TaskCommand.class);
-    hostBackend = mock(HostBackend.class);
+    hostBackend = mock(HostDcpBackend.class);
+    poller = mock(HostTaskStatusPoller.class);
 
     StepEntity step = new StepEntity();
     step.setId("step-1");
@@ -85,7 +75,23 @@ public class HostCreateStepCmdTest {
     step.addResource(host);
 
     command = spy(new HostCreateStepCmd(taskCommand, stepBackend, step, hostBackend));
-    when(taskCommand.getDeployerClient()).thenReturn(deployerClient);
+    when(taskCommand.getDeployerXenonClient()).thenReturn(deployerClient);
+
+    currentStep = new StepEntity();
+    currentStep.setId("id");
+    nextStep = new StepEntity();
+
+    taskEntity = new TaskEntity();
+    taskEntity.setSteps(ImmutableList.of(currentStep, nextStep));
+    when(taskCommand.getTask()).thenReturn(taskEntity);
+    when(hostBackend.getDeployerClient()).thenReturn(deployerClient);
+
+    serviceDocument = new ValidateHostTaskService.State();
+    serviceDocument.taskState = new ValidateHostTaskService.TaskState();
+    serviceDocument.taskState.stage = ValidateHostTaskService.TaskState.TaskStage.STARTED;
+    remoteTaskLink = "http://deployer" + ValidateHostTaskFactoryService.SELF_LINK
+        + "/00000000-0000-0000-0000-000000000001";
+    serviceDocument.documentSelfLink = remoteTaskLink;
   }
 
   /**
@@ -106,153 +112,38 @@ public class HostCreateStepCmdTest {
 
     @Test
     public void testSuccess() throws Exception {
-      CreateHostResponse createHostResponse = new CreateHostResponse(new CreateHostResult(CreateHostResultCode.OK));
-      CreateHostStatusResponse createHostStatusResponse = new CreateHostStatusResponse(new CreateHostResult
-          (CreateHostResultCode.OK));
-      createHostStatusResponse.setStatus(new CreateHostStatus(CreateHostStatusCode.FINISHED));
-
-      when(deployerClient.createHost(any(Host.class))).thenReturn(createHostResponse);
-      when(deployerClient.createHostStatus(any(String.class))).thenReturn(createHostStatusResponse);
-
+      when(deployerClient.createHost(any(HostEntity.class))).thenReturn(serviceDocument);
       command.execute();
-      verify(deployerClient).createHost(any(Host.class));
+      verify(deployerClient, times(1)).createHost(any(HostEntity.class));
+      assertEquals(nextStep.getTransientResource(XenonTaskStatusStepCmd.REMOTE_TASK_LINK_RESOURCE_KEY),
+          remoteTaskLink);
       verify(hostBackend).updateState(host, HostState.NOT_PROVISIONED);
     }
 
     @Test
-    public void testRpcException() throws Exception {
-      when(deployerClient.createHost(any(Host.class))).thenThrow(new RpcException("rpc-error"));
-
-      try {
-        command.execute();
-        fail("should have failed with RpcException.");
-      } catch (InternalException e) {
-        Assert.assertThat(e.getMessage(), containsString("rpc-error"));
-      }
-
-      verify(hostBackend).updateState(host, HostState.ERROR);
-    }
-
-    @Test
-    public void testRuntimeException() throws Exception {
-      when(deployerClient.createHost(any(Host.class))).thenThrow(new RuntimeException("error"));
+    public void testFailure() throws Throwable {
+      when(deployerClient.createHost(any(HostEntity.class)))
+          .thenThrow(new RuntimeException("testFailure"));
 
       try {
         command.execute();
         fail("should have failed with RuntimeException.");
-      } catch (RuntimeException e) {
-        Assert.assertThat(e.getMessage(), is("error"));
+      } catch (Throwable e) {
+        assertTrue(e.getMessage().contains("testFailure"));
       }
-
-      verify(hostBackend).updateState(host, HostState.ERROR);
+      verify(deployerClient, times(1)).createHost(any(HostEntity.class));
     }
 
-    @Test
-    public void testCreateHostFailedHostExistWithSameAddress() throws Exception {
-      CreateHostResponse createHostResponse = new CreateHostResponse(new CreateHostResult(CreateHostResultCode.OK));
-      when(deployerClient.createHost(any(Host.class))).thenReturn(createHostResponse);
-      when(deployerClient.createHostStatus(any(String.class)))
-          .thenThrow(new HostExistWithSameAddressException("error"));
 
-      try {
-        command.execute();
-        fail("should have failed with HostExistWithSameAddressException.");
-      } catch (DuplicateHostException e) {
-        Assert.assertThat(e.getMessage(), is("Host with IP host-addr already registered."));
-      }
+    @Test(expectedExceptions = DocumentNotFoundException.class)
+    public void testCreateHostFailedOnDeployer() throws Throwable {
+      when(deployerClient.createHost(any(HostEntity.class))).thenReturn(serviceDocument);
+      when(deployerClient.getHostCreationStatus(any(String.class))).thenThrow(DocumentNotFoundException.class);
+      deployerClient.createHost(any(HostEntity.class));
+      command.execute();
 
-      verify(hostBackend).updateState(host, HostState.ERROR);
-    }
-
-    @Test
-    public void testCreateHostFailedHostNotFound() throws Exception {
-      when(deployerClient.createHost(any(Host.class))).thenThrow(new HostNotFoundException("error"));
-
-      try {
-        command.execute();
-        fail("should have failed with HostNotFoundException.");
-      } catch (com.vmware.photon.controller.apife.exceptions.external.HostNotFoundException e) {
-        Assert.assertThat(e.getMessage(), containsString("not found"));
-      }
-
-      verify(hostBackend).updateState(host, HostState.ERROR);
-    }
-
-    @Test
-    public void testCreateHostFailedLoginInvalid() throws Exception {
-      CreateHostResponse createHostResponse = new CreateHostResponse(new CreateHostResult(CreateHostResultCode.OK));
-
-      when(deployerClient.createHost(any(Host.class))).thenReturn(createHostResponse);
-      when(deployerClient.createHostStatus(any(String.class)))
-          .thenThrow(new InvalidLoginException("Invalid Username or Password"));
-
-      try {
-        command.execute();
-        fail("should have failed with InvalidLoginException.");
-      } catch (com.vmware.photon.controller.apife.exceptions.external.InvalidLoginException e) {
-        Assert.assertThat(e.getMessage(), is("Invalid Username or Password"));
-      }
-
-      verify(hostBackend).updateState(host, HostState.ERROR);
-    }
-
-    @Test
-    public void testCreateHostFailedManagementVmAddressAlreadyInUse() throws Exception {
-      CreateHostResponse createHostResponse = new CreateHostResponse(new CreateHostResult(CreateHostResultCode.OK));
-
-      when(deployerClient.createHost(any(Host.class))).thenReturn(createHostResponse);
-      when(deployerClient.createHostStatus(any(String.class)))
-          .thenThrow(new ManagementVmAddressAlreadyExistException("mgmt-vm-ip-addr"));
-
-      try {
-        command.execute();
-        fail("should have failed with ManagementVmAddressAlreadyExistException.");
-      } catch (IpAddressInUseException e) {
-        Assert.assertThat(e.getMessage(), containsString("IP Address mgmt-vm-ip-addr is in use"));
-      }
-
-      verify(hostBackend).updateState(host, HostState.ERROR);
+      deployerClient.getHostCreationStatus(serviceDocument.documentSelfLink);
+      fail("should have failed with DocumentNotFoundException");
     }
   }
-
-  /**
-   * Tests for the createHost method.
-   */
-  public class BuildHostTest {
-    @BeforeMethod
-    public void setUp() {
-      setUpCommon();
-    }
-
-    @Test(dataProvider = "HostDoesNotHaveUsageTags")
-    public void testHostDoesNotHaveUsageTags(String usageTags) throws Throwable {
-      HostEntity entity = new HostEntity();
-      entity.setUsageTags(usageTags);
-
-      Host host = command.buildHost(entity);
-      assertThat(host.getUsageTags(), nullValue());
-    }
-
-    @DataProvider(name = "HostDoesNotHaveUsageTags")
-    Object[][] getHostDoesNotHaveUsageTagsData() {
-      return new Object[][]{
-          {null},
-          {""}
-      };
-    }
-
-    @Test
-    public void testHostHasUsageTags() throws Throwable {
-      HostEntity entity = new HostEntity();
-      entity.setUsageTags(UsageTagHelper.serialize(new ArrayList<UsageTag>() {{
-        add(UsageTag.MGMT);
-      }}));
-
-      Host host = command.buildHost(entity);
-      assertThat(host.getUsageTags(), notNullValue());
-      assertThat(host.getUsageTags().size(), is(1));
-      assertThat(host.getUsageTags().contains(UsageTag.MGMT.name()), is(true));
-    }
-  }
-
 }

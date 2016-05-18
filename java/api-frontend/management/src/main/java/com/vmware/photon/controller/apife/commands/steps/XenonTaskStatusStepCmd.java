@@ -35,8 +35,8 @@ import java.util.concurrent.TimeUnit;
 /**
  * StepCommand that monitors the status of a dcp task.
  */
-public class ClusterTaskStatusStepCmd extends StepCommand {
-  private static final Logger logger = LoggerFactory.getLogger(ClusterTaskStatusStepCmd.class);
+public class XenonTaskStatusStepCmd extends StepCommand {
+  private static final Logger logger = LoggerFactory.getLogger(XenonTaskStatusStepCmd.class);
   public static final String REMOTE_TASK_LINK_RESOURCE_KEY = "remote-task-link";
 
   private static final long DEFAULT_TIMEOUT = TimeUnit.MINUTES.toMillis(30);
@@ -49,9 +49,9 @@ public class ClusterTaskStatusStepCmd extends StepCommand {
   private long documentNotFoundOccurrence;
   private final String remoteTaskLink;
   private final int targetSubStage;
-  private final ClusterTaskStatusPoller clusterTaskStatusPoller;
+  private final XenonTaskStatusPoller xenonTaskStatusPoller;
 
-  interface ClusterTaskStatusPoller {
+  interface XenonTaskStatusPoller {
     TaskState poll(String taskLink)
         throws DocumentNotFoundException, TaskNotFoundException;
 
@@ -60,17 +60,17 @@ public class ClusterTaskStatusStepCmd extends StepCommand {
     int getSubStage(TaskState taskState);
   }
 
-  public ClusterTaskStatusStepCmd(TaskCommand taskCommand, StepBackend stepBackend,
+  public XenonTaskStatusStepCmd(TaskCommand taskCommand, StepBackend stepBackend,
                                   StepEntity step,
-                                  ClusterTaskStatusPoller clusterTaskStatusPoller) {
+                                XenonTaskStatusPoller xenonTaskStatusPoller) {
     super(taskCommand, stepBackend, step);
     this.timeout = DEFAULT_TIMEOUT;
     this.pollInterval = DEFAULT_POLL_INTERVAL;
     this.documentNotFoundMaxCount = DEFAULT_SERVICE_UNAVAILABLE_MAX_COUNT;
-    this.clusterTaskStatusPoller = Preconditions.checkNotNull(clusterTaskStatusPoller);
+    this.xenonTaskStatusPoller = Preconditions.checkNotNull(xenonTaskStatusPoller);
 
     // get the targetSubStage from Operation
-    targetSubStage = clusterTaskStatusPoller.getTargetSubStage(step.getOperation());
+    targetSubStage = xenonTaskStatusPoller.getTargetSubStage(step.getOperation());
 
     // get remoteTaskLink and recent status past from previous step
     remoteTaskLink = (String) step.getTransientResource(REMOTE_TASK_LINK_RESOURCE_KEY);
@@ -95,14 +95,14 @@ public class ClusterTaskStatusStepCmd extends StepCommand {
   protected void execute() throws ApiFeException, InterruptedException, RpcException {
     checkNotNull(remoteTaskLink, "remote-task-link is not defined in TransientResource");
 
-    logger.info("ClusterTaskStatusStepCmd started, operation={}, remoteTaskLink={}",
+    logger.info("XenonTaskStatusStepCmd started, operation={}, remoteTaskLink={}",
         step.getOperation(), remoteTaskLink);
 
     // Poll remote task status until currentSubStage is completed.
     long startTime = System.currentTimeMillis();
     while (!checkSubStageCompletion()) {
       if (System.currentTimeMillis() - startTime >= timeout) {
-        throw new RuntimeException("Cluster task did not complete in timely fashion.");
+        throw new RuntimeException("Xenon task did not complete in timely fashion.");
       }
       Thread.sleep(pollInterval);
     }
@@ -120,7 +120,7 @@ public class ClusterTaskStatusStepCmd extends StepCommand {
     // Call service to get task status
     TaskState taskState;
     try {
-      taskState = clusterTaskStatusPoller.poll(remoteTaskLink);
+      taskState = xenonTaskStatusPoller.poll(remoteTaskLink);
     } catch (DocumentNotFoundException ex) {
       documentNotFoundOccurrence++;
       if (documentNotFoundOccurrence < this.documentNotFoundMaxCount) {
@@ -139,7 +139,7 @@ public class ClusterTaskStatusStepCmd extends StepCommand {
       case STARTED:
         // If currentSubStage is later than targetSubStage, we can consider targetSubStage
         // is done, and exit this step command.
-        return clusterTaskStatusPoller.getSubStage(taskState) > targetSubStage;
+        return xenonTaskStatusPoller.getSubStage(taskState) > targetSubStage;
       case FINISHED:
         // The overall task has finished, we can consider targetSubStage is done,
         // and exit this step command.

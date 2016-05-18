@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.apife.backends;
 
 import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
+import com.vmware.photon.controller.apife.backends.clients.DeployerXenonRestClient;
 import com.vmware.photon.controller.cloudstore.dcp.CloudStoreXenonHost;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.common.xenon.BasicServiceHost;
@@ -24,6 +25,7 @@ import com.google.inject.Provides;
 import com.google.inject.Singleton;
 
 import java.net.InetSocketAddress;
+import java.net.URISyntaxException;
 import java.util.concurrent.Executors;
 
 /**
@@ -71,5 +73,13 @@ public class DcpBackendTestModule extends AbstractModule {
     //be shared. To address this scenario I am setting the thread pool to be 4 assuming
     //that there are 4 cores present in the machine executing the tests.
     return new ApiFeXenonRestClient(serverSet, Executors.newFixedThreadPool(128));
+  }
+
+  @Provides
+  @Singleton
+  DeployerXenonRestClient getDeployerXenonRestClient(BasicServiceHost host) throws URISyntaxException {
+    StaticServerSet serverSet = new StaticServerSet(
+        new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
+    return new DeployerXenonRestClient(serverSet, Executors.newFixedThreadPool(128));
   }
 }

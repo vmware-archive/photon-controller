@@ -74,6 +74,8 @@ public class TaskCommand extends BaseCommand {
   private HostClient hostClient;
   private HousekeeperClient housekeeperClient;
   private DeployerClient deployerClient;
+
+  private com.vmware.photon.controller.apife.backends.clients.DeployerClient deployerXenonClient;
   private EntityLockBackend entityLockBackend;
 
   @Inject
@@ -82,6 +84,7 @@ public class TaskCommand extends BaseCommand {
                      HostClient hostClient,
                      HousekeeperClient housekeeperClient,
                      DeployerClient deployerClient,
+                     com.vmware.photon.controller.apife.backends.clients.DeployerClient deployerXenonClient,
                      EntityLockBackend entityLockBackend,
                      @Assisted TaskEntity task) {
     super(task.getId());
@@ -91,6 +94,7 @@ public class TaskCommand extends BaseCommand {
     this.hostClient = checkNotNull(hostClient);
     this.housekeeperClient = checkNotNull(housekeeperClient);
     this.deployerClient = deployerClient;
+    this.deployerXenonClient = deployerXenonClient;
     this.entityLockBackend = entityLockBackend;
   }
 
@@ -207,6 +211,10 @@ public class TaskCommand extends BaseCommand {
 
   public DeployerClient getDeployerClient() {
     return checkNotNull(deployerClient);
+  }
+
+  public com.vmware.photon.controller.apife.backends.clients.DeployerClient getDeployerXenonClient() {
+    return checkNotNull(deployerXenonClient);
   }
 
   public HostClient getHostClient(VmEntity vm)

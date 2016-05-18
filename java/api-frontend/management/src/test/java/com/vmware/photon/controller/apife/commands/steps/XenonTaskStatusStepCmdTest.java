@@ -40,14 +40,14 @@ import static org.testng.AssertJUnit.fail;
 import java.util.ArrayList;
 
 /**
- * Tests {@link ClusterTaskStatusStepCmd}.
+ * Tests {@link XenonTaskStatusStepCmd}.
  */
-public class ClusterTaskStatusStepCmdTest extends PowerMockTestCase {
-  ClusterTaskStatusStepCmd command;
+public class XenonTaskStatusStepCmdTest extends PowerMockTestCase {
+  XenonTaskStatusStepCmd command;
 
   private StepBackend stepBackend;
   private TaskCommand taskCommand;
-  private ClusterTaskStatusStepCmd.ClusterTaskStatusPoller clusterTaskStatusPoller;
+  private XenonTaskStatusStepCmd.XenonTaskStatusPoller xenonTaskStatusPoller;
 
   private TaskEntity taskEntity;
   private StepEntity currentStep;
@@ -58,7 +58,7 @@ public class ClusterTaskStatusStepCmdTest extends PowerMockTestCase {
       throws JsonProcessingException {
     stepBackend = mock(StepBackend.class);
     taskCommand = mock(TaskCommand.class);
-    clusterTaskStatusPoller = mock(KubernetesClusterCreateTaskStatusPoller.class);
+    xenonTaskStatusPoller = mock(KubernetesClusterCreateTaskStatusPoller.class);
 
     remoteTaskLink = "/mock-service/00000000-0000-0000-0000-000000000001";
 
@@ -67,7 +67,7 @@ public class ClusterTaskStatusStepCmdTest extends PowerMockTestCase {
     currentStep.setId("id");
     currentStep.setSequence(0);
     currentStep.setOperation(Operation.MOCK_OP);
-    currentStep.createOrUpdateTransientResource(ClusterTaskStatusStepCmd.REMOTE_TASK_LINK_RESOURCE_KEY,
+    currentStep.createOrUpdateTransientResource(XenonTaskStatusStepCmd.REMOTE_TASK_LINK_RESOURCE_KEY,
         remoteTaskLink);
     steps.add(currentStep);
     if (hasNextStep) {
@@ -78,9 +78,9 @@ public class ClusterTaskStatusStepCmdTest extends PowerMockTestCase {
     taskEntity = new TaskEntity();
     taskEntity.setSteps(steps);
 
-    when(clusterTaskStatusPoller.getTargetSubStage(any(Operation.class)))
+    when(xenonTaskStatusPoller.getTargetSubStage(any(Operation.class)))
         .thenReturn(targetSubStage);
-    command = spy(new ClusterTaskStatusStepCmd(taskCommand, stepBackend, currentStep, clusterTaskStatusPoller));
+    command = spy(new XenonTaskStatusStepCmd(taskCommand, stepBackend, currentStep, xenonTaskStatusPoller));
     command.setPollInterval(1);
     command.setTimeout(1000); // none of these tests should take more than 1 second
     when(taskCommand.getTask()).thenReturn(taskEntity);
@@ -108,8 +108,8 @@ public class ClusterTaskStatusStepCmdTest extends PowerMockTestCase {
     public void setUp() throws JsonProcessingException {
       setUpCommon(true, 1);
 
-      currentStep.createOrUpdateTransientResource(ClusterTaskStatusStepCmd.REMOTE_TASK_LINK_RESOURCE_KEY, null);
-      command = new ClusterTaskStatusStepCmd(taskCommand, stepBackend, currentStep, clusterTaskStatusPoller);
+      currentStep.createOrUpdateTransientResource(XenonTaskStatusStepCmd.REMOTE_TASK_LINK_RESOURCE_KEY, null);
+      command = new XenonTaskStatusStepCmd(taskCommand, stepBackend, currentStep, xenonTaskStatusPoller);
     }
 
     @Test(expectedExceptions = NullPointerException.class,
@@ -132,16 +132,16 @@ public class ClusterTaskStatusStepCmdTest extends PowerMockTestCase {
     // happy path: DCP response set currentStage to FINISHED, step completes
     @Test
     public void testSuccess() throws Throwable {
-      when(clusterTaskStatusPoller.poll(any(String.class)))
+      when(xenonTaskStatusPoller.poll(any(String.class)))
           .thenReturn(buildTaskState(TaskState.TaskStage.FINISHED));
 
       command.execute();
-      verify(clusterTaskStatusPoller, times(1)).poll(remoteTaskLink);
+      verify(xenonTaskStatusPoller, times(1)).poll(remoteTaskLink);
     }
 
     @Test
     public void testFailure() throws Throwable {
-      when(clusterTaskStatusPoller.poll(any(String.class)))
+      when(xenonTaskStatusPoller.poll(any(String.class)))
           .thenReturn(buildTaskState(TaskState.TaskStage.FAILED));
 
       try {
@@ -154,7 +154,7 @@ public class ClusterTaskStatusStepCmdTest extends PowerMockTestCase {
 
     @Test
     public void testCancel() throws Throwable {
-      when(clusterTaskStatusPoller.poll(any(String.class)))
+      when(xenonTaskStatusPoller.poll(any(String.class)))
           .thenReturn(buildTaskState(TaskState.TaskStage.CANCELLED));
 
       try {
@@ -168,7 +168,7 @@ public class ClusterTaskStatusStepCmdTest extends PowerMockTestCase {
     @Test
     public void testException() throws Throwable {
       DocumentNotFoundException documentNotFoundException = mock(DocumentNotFoundException.class);
-      when(clusterTaskStatusPoller.poll(any(String.class)))
+      when(xenonTaskStatusPoller.poll(any(String.class)))
           .thenThrow(documentNotFoundException);
 
       try {
@@ -181,7 +181,7 @@ public class ClusterTaskStatusStepCmdTest extends PowerMockTestCase {
 
     @Test
     public void testTimeout() throws Throwable {
-      when(clusterTaskStatusPoller.poll(any(String.class)))
+      when(xenonTaskStatusPoller.poll(any(String.class)))
           .thenReturn(buildTaskState(TaskState.TaskStage.STARTED));
       command.setTimeout(10);
 
@@ -196,7 +196,7 @@ public class ClusterTaskStatusStepCmdTest extends PowerMockTestCase {
     @Test
     public void testServiceUnavailable() throws Throwable {
       DocumentNotFoundException documentNotFoundException = mock(DocumentNotFoundException.class);
-      when(clusterTaskStatusPoller.poll(any(String.class)))
+      when(xenonTaskStatusPoller.poll(any(String.class)))
           .thenThrow(documentNotFoundException);
       command.setDocumentNotFoundMaxCount(3);
 
@@ -206,7 +206,7 @@ public class ClusterTaskStatusStepCmdTest extends PowerMockTestCase {
       } catch (ExternalException e) {
         assertTrue(e.getCause() == documentNotFoundException);
       }
-      verify(clusterTaskStatusPoller, times(3)).poll(any(String.class));
+      verify(xenonTaskStatusPoller, times(3)).poll(any(String.class));
     }
   }
 
@@ -262,37 +262,37 @@ public class ClusterTaskStatusStepCmdTest extends PowerMockTestCase {
     @Test
     public void testSubStageComplete() throws Throwable {
       setUpCommon(true, 1);
-      when(clusterTaskStatusPoller.poll(any(String.class)))
+      when(xenonTaskStatusPoller.poll(any(String.class)))
           .thenReturn(buildTaskState(TaskState.TaskStage.STARTED));
-      when(clusterTaskStatusPoller.getSubStage(any(TaskState.class)))
+      when(xenonTaskStatusPoller.getSubStage(any(TaskState.class)))
           .thenAnswer(new TaskSubStageAnswer(10, 1, 2));
 
       command.execute();
-      verify(clusterTaskStatusPoller, times(11)).poll(remoteTaskLink);
+      verify(xenonTaskStatusPoller, times(11)).poll(remoteTaskLink);
     }
 
     // happy path: stage completed after a few retries
     @Test
     public void testStageFinish() throws Throwable {
       setUpCommon(true, 2);
-      when(clusterTaskStatusPoller.poll(any(String.class)))
+      when(xenonTaskStatusPoller.poll(any(String.class)))
           .thenAnswer(new TaskStageAnswer(10, TaskState.TaskStage.STARTED, TaskState.TaskStage.FINISHED));
-      when(clusterTaskStatusPoller.getSubStage(any(TaskState.class))).thenReturn(1);
+      when(xenonTaskStatusPoller.getSubStage(any(TaskState.class))).thenReturn(1);
 
       command.execute();
-      verify(clusterTaskStatusPoller, times(11)).poll(remoteTaskLink);
+      verify(xenonTaskStatusPoller, times(11)).poll(remoteTaskLink);
     }
 
     // test passTransientPropertiesToNextStep can handle last step
     @Test
     public void testLastStep() throws Throwable {
       setUpCommon(false, 1);
-      when(clusterTaskStatusPoller.poll(any(String.class)))
+      when(xenonTaskStatusPoller.poll(any(String.class)))
           .thenReturn(buildTaskState(TaskState.TaskStage.STARTED));
-      when(clusterTaskStatusPoller.getSubStage(any(TaskState.class))).thenReturn(2);
+      when(xenonTaskStatusPoller.getSubStage(any(TaskState.class))).thenReturn(2);
 
       command.execute();
-      verify(clusterTaskStatusPoller, times(1)).poll(remoteTaskLink);
+      verify(xenonTaskStatusPoller, times(1)).poll(remoteTaskLink);
     }
   }
 }
