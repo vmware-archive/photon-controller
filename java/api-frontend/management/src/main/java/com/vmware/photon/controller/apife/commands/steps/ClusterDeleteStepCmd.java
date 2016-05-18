@@ -49,9 +49,9 @@ public class ClusterDeleteStepCmd extends StepCommand {
 
     ClusterDeleteTask serviceDocument = clusterBackend.getClusterManagerClient()
         .deleteCluster(clusterId);
-    // pass remoteTaskId to ClusterTaskStatusStepCmd
+    // pass remoteTaskId to XenonTaskStatusStepCmd
     for (StepEntity nextStep : taskCommand.getTask().getSteps()) {
-      nextStep.createOrUpdateTransientResource(ClusterTaskStatusStepCmd.REMOTE_TASK_LINK_RESOURCE_KEY,
+      nextStep.createOrUpdateTransientResource(XenonTaskStatusStepCmd.REMOTE_TASK_LINK_RESOURCE_KEY,
           serviceDocument.documentSelfLink);
     }
 

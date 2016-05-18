@@ -19,7 +19,7 @@ import com.vmware.photon.controller.apife.backends.DeploymentBackend;
 import com.vmware.photon.controller.apife.backends.DiskBackend;
 import com.vmware.photon.controller.apife.backends.EntityLockBackend;
 import com.vmware.photon.controller.apife.backends.FlavorBackend;
-import com.vmware.photon.controller.apife.backends.HostBackend;
+import com.vmware.photon.controller.apife.backends.HostDcpBackend;
 import com.vmware.photon.controller.apife.backends.ImageBackend;
 import com.vmware.photon.controller.apife.backends.NetworkBackend;
 import com.vmware.photon.controller.apife.backends.ProjectBackend;
@@ -54,7 +54,7 @@ public class StepCommandFactory {
   private final ImageBackend imageBackend;
   private final TaskBackend taskBackend;
   private final DeploymentBackend deploymentBackend;
-  private final HostBackend hostBackend;
+  private final HostDcpBackend hostBackend;
   private final ImageConfig imageConfig;
   private final ImageStoreFactory imageStoreFactory;
   private final ServiceConfig serviceConfig;
@@ -75,7 +75,7 @@ public class StepCommandFactory {
                             ImageBackend imageBackend,
                             TaskBackend taskBackend,
                             DeploymentBackend deploymentBackend,
-                            HostBackend hostBackend,
+                            HostDcpBackend hostBackend,
                             ImageConfig imageConfig,
                             ImageStoreFactory imageStoreFactory,
                             ServiceConfig serviceConfig,
@@ -162,6 +162,9 @@ public class StepCommandFactory {
         return new HostEnterSuspendedModeStepCmd(taskCommand, stepBackend, stepEntity, hostBackend);
       case RESUME_HOST:
         return new HostResumeStepCmd(taskCommand, stepBackend, stepEntity, hostBackend);
+      case QUERY_HOST_TASK_RESULT:
+        return new XenonTaskStatusStepCmd(taskCommand, stepBackend, stepEntity,
+            new HostTaskStatusPoller(taskCommand, hostBackend, taskBackend));
       case ENTER_MAINTENANCE_MODE:
         return new HostEnterMaintenanceModeStepCmd(taskCommand, stepBackend, stepEntity, hostBackend, vmBackend);
       case EXIT_MAINTENANCE_MODE:
@@ -195,7 +198,7 @@ public class StepCommandFactory {
       case CREATE_KUBERNETES_CLUSTER_SETUP_ETCD:
       case CREATE_KUBERNETES_CLUSTER_SETUP_MASTER:
       case CREATE_KUBERNETES_CLUSTER_SETUP_SLAVES:
-        return new ClusterTaskStatusStepCmd(taskCommand, stepBackend, stepEntity,
+        return new XenonTaskStatusStepCmd(taskCommand, stepBackend, stepEntity,
             new KubernetesClusterCreateTaskStatusPoller(taskCommand, clusterBackend, taskBackend));
       case CREATE_MESOS_CLUSTER_INITIATE:
         return new MesosClusterCreateStepCmd(taskCommand, stepBackend, stepEntity, clusterBackend);
@@ -203,27 +206,27 @@ public class StepCommandFactory {
       case CREATE_MESOS_CLUSTER_SETUP_MASTERS:
       case CREATE_MESOS_CLUSTER_SETUP_MARATHON:
       case CREATE_MESOS_CLUSTER_SETUP_SLAVES:
-        return new ClusterTaskStatusStepCmd(taskCommand, stepBackend, stepEntity,
+        return new XenonTaskStatusStepCmd(taskCommand, stepBackend, stepEntity,
             new MesosClusterCreateTaskStatusPoller(taskCommand, clusterBackend, taskBackend));
       case CREATE_SWARM_CLUSTER_INITIATE:
         return new SwarmClusterCreateStepCmd(taskCommand, stepBackend, stepEntity, clusterBackend);
       case CREATE_SWARM_CLUSTER_SETUP_ETCD:
       case CREATE_SWARM_CLUSTER_SETUP_MASTER:
       case CREATE_SWARM_CLUSTER_SETUP_SLAVES:
-        return new ClusterTaskStatusStepCmd(taskCommand, stepBackend, stepEntity,
+        return new XenonTaskStatusStepCmd(taskCommand, stepBackend, stepEntity,
             new SwarmClusterCreateTaskStatusPoller(taskCommand, clusterBackend, taskBackend));
       case RESIZE_CLUSTER_INITIATE:
         return new ClusterResizeStepCmd(taskCommand, stepBackend, stepEntity, clusterBackend);
       case RESIZE_CLUSTER_INITIALIZE_CLUSTER:
       case RESIZE_CLUSTER_RESIZE:
-        return new ClusterTaskStatusStepCmd(taskCommand, stepBackend, stepEntity,
+        return new XenonTaskStatusStepCmd(taskCommand, stepBackend, stepEntity,
             new ClusterResizeTaskStatusPoller(clusterBackend));
       case DELETE_CLUSTER_INITIATE:
         return new ClusterDeleteStepCmd(taskCommand, stepBackend, stepEntity, clusterBackend);
       case DELETE_CLUSTER_UPDATE_CLUSTER_DOCUMENT:
       case DELETE_CLUSTER_DELETE_VMS:
       case DELETE_CLUSTER_DOCUMENT:
-        return new ClusterTaskStatusStepCmd(taskCommand, stepBackend, stepEntity,
+        return new XenonTaskStatusStepCmd(taskCommand, stepBackend, stepEntity,
             new ClusterDeleteTaskStatusPoller(clusterBackend));
       case SET_TENANT_SECURITY_GROUPS:
         return new TenantSetSecurityGroupsStepCmd(taskCommand, stepBackend, stepEntity, tenantBackend);

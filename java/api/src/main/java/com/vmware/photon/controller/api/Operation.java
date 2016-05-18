@@ -82,7 +82,7 @@ public enum Operation {
   ENTER_MAINTENANCE_MODE("EnterHostMaintenanceMode"),
   EXIT_MAINTENANCE_MODE("ExitHostMaintenanceMode"),
   RESUME_HOST("ResumeHost"),
-
+  QUERY_HOST_TASK_RESULT("QueryHostResult"),
 
   CREATE_DEPLOYMENT("CreateDeployment"),
   PERFORM_DEPLOYMENT("PerformDeployment"),

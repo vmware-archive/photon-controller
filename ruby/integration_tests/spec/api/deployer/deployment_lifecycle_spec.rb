@@ -74,7 +74,7 @@ describe "deployment lifecycle", order: :defined, deployer: true do
       step_error = e.errors.first.first
       expect(step_error.code).to eq("InvalidLoginCredentials")
       expect(step_error.message).to eq("Invalid Username or Password")
-      expect(step_error.step["operation"]).to eq("CREATE_HOST")
+      expect(step_error.step["operation"]).to eq("QUERY_HOST_TASK_RESULT")
     end
   end
 
