@@ -19,9 +19,11 @@ import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
-import com.vmware.photon.controller.common.xenon.upgrade.MigrateDuringUpgrade;
-import com.vmware.photon.controller.common.xenon.upgrade.NoMigrationDuringUpgrade;
-import com.vmware.photon.controller.common.xenon.upgrade.UpgradeUtils;
+import com.vmware.photon.controller.common.xenon.deployment.MigrateDuringDeployment;
+import com.vmware.photon.controller.common.xenon.deployment.NoMigrationDuringDeployment;
+import com.vmware.photon.controller.common.xenon.migration.MigrateDuringUpgrade;
+import com.vmware.photon.controller.common.xenon.migration.MigrationUtils;
+import com.vmware.photon.controller.common.xenon.migration.NoMigrationDuringUpgrade;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
@@ -374,6 +376,7 @@ public class ResourceTicketService extends StatefulService {
    * Class encapsulating patch data for ResourceTicket.
    */
   @NoMigrationDuringUpgrade
+  @NoMigrationDuringDeployment
   public static class Patch extends ServiceDocument {
 
     public PatchType patchtype = PatchType.NONE;
@@ -393,9 +396,12 @@ public class ResourceTicketService extends StatefulService {
   /**
    * Durable service state data. Class encapsulating the data for ResourceTicket.
    */
-  @MigrateDuringUpgrade(transformationServicePath = UpgradeUtils.REFLECTION_TRANSFORMATION_SERVICE_LINK,
+  @MigrateDuringUpgrade(transformationServicePath = MigrationUtils.REFLECTION_TRANSFORMATION_SERVICE_LINK,
       sourceFactoryServicePath = ResourceTicketServiceFactory.SELF_LINK,
       destinationFactoryServicePath = ResourceTicketServiceFactory.SELF_LINK,
+      serviceName = Constants.CLOUDSTORE_SERVICE_NAME)
+  @MigrateDuringDeployment(
+      factoryServicePath = ResourceTicketServiceFactory.SELF_LINK,
       serviceName = Constants.CLOUDSTORE_SERVICE_NAME)
   public static class State extends ServiceDocument {
 

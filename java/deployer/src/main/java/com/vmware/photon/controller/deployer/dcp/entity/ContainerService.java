@@ -13,11 +13,13 @@
 
 package com.vmware.photon.controller.deployer.dcp.entity;
 
+import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
-import com.vmware.photon.controller.common.xenon.upgrade.NoMigrationDuringUpgrade;
+import com.vmware.photon.controller.common.xenon.deployment.MigrateDuringDeployment;
+import com.vmware.photon.controller.common.xenon.migration.NoMigrationDuringUpgrade;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.common.xenon.validation.Range;
@@ -40,6 +42,9 @@ public class ContainerService extends StatefulService {
    * plane layout.
    */
   @NoMigrationDuringUpgrade
+  @MigrateDuringDeployment(
+      factoryServicePath = ContainerFactoryService.SELF_LINK,
+      serviceName = Constants.DEPLOYER_SERVICE_NAME)
   public static class State extends ServiceDocument {
 
     public static final String FIELD_NAME_CONTAINER_TEMPLATE_SERVICE_LINK = "containerTemplateServiceLink";

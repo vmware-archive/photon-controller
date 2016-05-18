@@ -13,10 +13,12 @@
 
 package com.vmware.photon.controller.deployer.dcp.entity;
 
+import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
-import com.vmware.photon.controller.common.xenon.upgrade.NoMigrationDuringUpgrade;
+import com.vmware.photon.controller.common.xenon.deployment.MigrateDuringDeployment;
+import com.vmware.photon.controller.common.xenon.migration.NoMigrationDuringUpgrade;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.xenon.common.Operation;
@@ -32,6 +34,9 @@ public class VibService extends StatefulService {
    * This class defines the document state associated with a {@link VibService} instance.
    */
   @NoMigrationDuringUpgrade
+  @MigrateDuringDeployment(
+      factoryServicePath = VibFactoryService.SELF_LINK,
+      serviceName = Constants.DEPLOYER_SERVICE_NAME)
   public static class State extends ServiceDocument {
 
     /**

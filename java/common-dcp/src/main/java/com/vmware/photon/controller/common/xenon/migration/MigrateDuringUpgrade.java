@@ -10,7 +10,7 @@
  * conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package com.vmware.photon.controller.common.xenon.upgrade;
+package com.vmware.photon.controller.common.xenon.migration;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -48,7 +48,7 @@ public @interface MigrateDuringUpgrade {
   String destinationFactoryServicePath();
 
   /**
-   * The name of the Xenon service that contains the ServiceDocuments bein migrated.
+   * The name of the Xenon service that contains the ServiceDocuments being migrated.
    */
   String serviceName();
 }

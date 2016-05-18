@@ -13,9 +13,9 @@
 
 package com.vmware.photon.controller.common.xenon.service;
 
+import com.vmware.photon.controller.common.xenon.migration.MigrateDuringUpgrade;
 import com.vmware.photon.controller.common.xenon.service.UpgradeInformationService.UpgradeInfo;
 import com.vmware.photon.controller.common.xenon.service.UpgradeInformationService.UpgradeList;
-import com.vmware.photon.controller.common.xenon.upgrade.MigrateDuringUpgrade;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service.ServiceOption;
 import com.vmware.xenon.common.ServiceDocument;

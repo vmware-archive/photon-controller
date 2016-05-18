@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.common.xenon;
 
-import com.vmware.photon.controller.common.xenon.upgrade.UpgradeUtils;
+import com.vmware.photon.controller.common.xenon.migration.MigrationUtils;
 import com.vmware.photon.controller.common.xenon.validation.DefaultBoolean;
 import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
 import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
@@ -28,7 +28,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 
 /**
- * Test {@link UpgradeUtils} class.
+ * Test {@link MigrationUtils} class.
  */
 public class UpgradeUtilsTest {
 
@@ -37,7 +37,7 @@ public class UpgradeUtilsTest {
     Document source = new Document(true, 1, "uuid123", new TaskState());
     Document2 destination = new Document2();
 
-    UpgradeUtils.handleRenamedField(Utils.toJson(source), destination);
+    MigrationUtils.handleRenamedField(Utils.toJson(source), destination);
     assertThat(destination.guid.equals(source.uuid), is(true));
     assertThat(destination.aBoolean.equals(source.bool), is(true));
   }
