@@ -86,6 +86,8 @@ public abstract class BaseWorkflowService <S extends ServiceDocument, T extends 
    * Creates a {@link TaskService.State} entity when the workflow is created.
    */
   protected void create(S state, Operation operation) {
+    ServiceUtils.logInfo(this, "Creating task service for workflow %s", state.documentSelfLink);
+
     try {
       TaskService.State taskServiceState = buildTaskServiceStartState(state);
       TaskServiceUtils.create(
@@ -99,7 +101,11 @@ public abstract class BaseWorkflowService <S extends ServiceDocument, T extends 
             }
 
             try {
-              ServiceDocumentUtils.setTaskServiceState(state, op.getBody(TaskService.State.class));
+              TaskService.State taskServiceFinalState = op.getBody(TaskService.State.class);
+              ServiceUtils.logInfo(this, "Task service created.");
+              ServiceUtils.logInfo(this, taskServiceFinalState.toString());
+
+              ServiceDocumentUtils.setTaskServiceState(state, taskServiceFinalState);
               operation.setBody(state).complete();
             } catch (Throwable t) {
               operation.fail(t);
@@ -116,6 +122,8 @@ public abstract class BaseWorkflowService <S extends ServiceDocument, T extends 
    * Moves the service to the first sub-stage of the STARTED state.
    */
   protected void start(S state) {
+    ServiceUtils.logInfo(this, "Starting task service for workflow %s", state.documentSelfLink);
+
     try {
       TaskServiceUtils.start(
           this,
@@ -127,9 +135,13 @@ public abstract class BaseWorkflowService <S extends ServiceDocument, T extends 
             }
 
             try {
+              TaskService.State taskServiceFinalState = op.getBody(TaskService.State.class);
+              ServiceUtils.logInfo(this, "Task service started.");
+              ServiceUtils.logInfo(this, taskServiceFinalState.toString());
+
               S patchState = buildPatch(TaskState.TaskStage.STARTED,
                   ServiceDocumentUtils.getTaskStateSubStageEntries(taskSubStageType)[0]);
-              ServiceDocumentUtils.setTaskServiceState(patchState, op.getBody(TaskService.State.class));
+              ServiceDocumentUtils.setTaskServiceState(patchState, taskServiceFinalState);
               TaskUtils.sendSelfPatch(this, patchState);
             } catch (Throwable t) {
               fail(state, t);
@@ -144,6 +156,8 @@ public abstract class BaseWorkflowService <S extends ServiceDocument, T extends 
    * Moves the service to the next sub-stage of the STARTED state.
    */
   protected void progress(S state, E nextSubStage) {
+    ServiceUtils.logInfo(this, "Progressing task service for workflow %s", state.documentSelfLink);
+
     try {
       TaskServiceUtils.progress(
           this,
@@ -156,6 +170,10 @@ public abstract class BaseWorkflowService <S extends ServiceDocument, T extends 
             }
 
             try {
+              TaskService.State taskServiceFinalState = op.getBody(TaskService.State.class);
+              ServiceUtils.logInfo(this, "Task service progressed.");
+              ServiceUtils.logInfo(this, taskServiceFinalState.toString());
+
               if (ControlFlags.disableOperationProcessingOnStageTransition(
                   ServiceDocumentUtils.getControlFlags(state))) {
                 ServiceUtils.logInfo(this, "Operation processing on stage transition disabled");
@@ -163,7 +181,7 @@ public abstract class BaseWorkflowService <S extends ServiceDocument, T extends 
               }
 
               S patchState = buildPatch(TaskState.TaskStage.STARTED, nextSubStage);
-              ServiceDocumentUtils.setTaskServiceState(patchState, op.getBody(TaskService.State.class));
+              ServiceDocumentUtils.setTaskServiceState(patchState, taskServiceFinalState);
               TaskUtils.sendSelfPatch(this, patchState);
             } catch (Throwable t) {
               fail(state, t);
@@ -179,6 +197,8 @@ public abstract class BaseWorkflowService <S extends ServiceDocument, T extends 
    * document with the given patch.
    */
   protected void progress(S state, S patchState) {
+    ServiceUtils.logInfo(this, "Progressing task service for workflow %s", state.documentSelfLink);
+
     try {
       E nextSubStage = ServiceDocumentUtils.getTaskStateSubStage(patchState);
 
@@ -193,13 +213,17 @@ public abstract class BaseWorkflowService <S extends ServiceDocument, T extends 
             }
 
             try {
+              TaskService.State taskServiceFinalState = op.getBody(TaskService.State.class);
+              ServiceUtils.logInfo(this, "Task service progressed.");
+              ServiceUtils.logInfo(this, taskServiceFinalState.toString());
+
               if (ControlFlags.disableOperationProcessingOnStageTransition(
                   ServiceDocumentUtils.getControlFlags(state))) {
                 ServiceUtils.logInfo(this, "Operation processing on stage transition disabled");
                 return;
               }
 
-              ServiceDocumentUtils.setTaskServiceState(patchState, op.getBody(TaskService.State.class));
+              ServiceDocumentUtils.setTaskServiceState(patchState, taskServiceFinalState);
               TaskUtils.sendSelfPatch(this, patchState);
             } catch (Throwable t) {
               fail(state, t);
@@ -214,6 +238,8 @@ public abstract class BaseWorkflowService <S extends ServiceDocument, T extends 
    * Moves the service to the FINISHED state.
    */
   protected void finish(S state) {
+    ServiceUtils.logInfo(this, "Finishing task service for workflow %s", state.documentSelfLink);
+
     try {
       TaskServiceUtils.complete(
           this,
@@ -225,8 +251,12 @@ public abstract class BaseWorkflowService <S extends ServiceDocument, T extends 
             }
 
             try {
+              TaskService.State taskServiceFinalState = op.getBody(TaskService.State.class);
+              ServiceUtils.logInfo(this, "Task service finished.");
+              ServiceUtils.logInfo(this, taskServiceFinalState.toString());
+
               S patchState = buildPatch(TaskState.TaskStage.FINISHED, null);
-              ServiceDocumentUtils.setTaskServiceState(patchState, op.getBody(TaskService.State.class));
+              ServiceDocumentUtils.setTaskServiceState(patchState, taskServiceFinalState);
               TaskUtils.sendSelfPatch(this, patchState);
             } catch (Throwable t) {
               fail(state, t);
@@ -241,6 +271,8 @@ public abstract class BaseWorkflowService <S extends ServiceDocument, T extends 
    * Moves the service to the FINISHED state.
    */
   protected void finish(S state, S patchState) {
+    ServiceUtils.logInfo(this, "Finishing task service for workflow %s", state.documentSelfLink);
+
     try {
       TaskServiceUtils.complete(
           this,
@@ -252,7 +284,11 @@ public abstract class BaseWorkflowService <S extends ServiceDocument, T extends 
             }
 
             try {
-              ServiceDocumentUtils.setTaskServiceState(patchState, op.getBody(TaskService.State.class));
+              TaskService.State taskServiceFinalState = op.getBody(TaskService.State.class);
+              ServiceUtils.logInfo(this, "Task service finished.");
+              ServiceUtils.logInfo(this, taskServiceFinalState.toString());
+
+              ServiceDocumentUtils.setTaskServiceState(patchState, taskServiceFinalState);
               TaskUtils.sendSelfPatch(this, patchState);
             } catch (Throwable t) {
               fail(state, t);
@@ -268,6 +304,7 @@ public abstract class BaseWorkflowService <S extends ServiceDocument, T extends 
    */
   protected void fail(S state, Throwable t) {
     ServiceUtils.logSevere(this, t);
+    ServiceUtils.logInfo(this, "Failing task service for workflow %s", state.documentSelfLink);
 
     try {
       TaskServiceUtils.fail(
@@ -283,7 +320,11 @@ public abstract class BaseWorkflowService <S extends ServiceDocument, T extends 
             try {
               S patchState = buildPatch(TaskState.TaskStage.FAILED, null, t);
               if (op != null) {
-                ServiceDocumentUtils.setTaskServiceState(patchState, op.getBody(TaskService.State.class));
+                TaskService.State taskServiceFinalState = op.getBody(TaskService.State.class);
+                ServiceUtils.logInfo(this, "Task service failed.");
+                ServiceUtils.logInfo(this, taskServiceFinalState.toString());
+
+                ServiceDocumentUtils.setTaskServiceState(patchState, taskServiceFinalState);
               }
               TaskUtils.sendSelfPatch(this, patchState);
             } catch (Throwable tt) {

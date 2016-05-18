@@ -659,8 +659,8 @@ public class CreateVirtualNetworkWorkflowServiceTest {
       assertEquals(actualVirtualNetworkServiceState.description, expectedVirtualNetworkServiceState.description);
       assertEquals(actualVirtualNetworkServiceState.state, expectedVirtualNetworkServiceState.state,
           String.format("Actual state: %s\n Expected state: %s",
-              virtualNetworkStateToString(actualVirtualNetworkServiceState),
-              virtualNetworkStateToString(expectedVirtualNetworkServiceState)));
+              actualVirtualNetworkServiceState.toString(),
+              expectedVirtualNetworkServiceState.toString()));
       assertEquals(actualVirtualNetworkServiceState.routingType, expectedVirtualNetworkServiceState.routingType);
       assertEquals(actualVirtualNetworkServiceState.parentId, expectedVirtualNetworkServiceState.parentId);
       assertEquals(actualVirtualNetworkServiceState.parentKind, expectedVirtualNetworkServiceState.parentKind);
@@ -761,8 +761,8 @@ public class CreateVirtualNetworkWorkflowServiceTest {
       assertEquals(actualVirtualNetworkServiceState.description, expectedVirtualNetworkServiceState.description);
       assertEquals(actualVirtualNetworkServiceState.state, expectedVirtualNetworkServiceState.state,
           String.format("Actual state: %s\n Expected state: %s",
-              virtualNetworkStateToString(actualVirtualNetworkServiceState),
-              virtualNetworkStateToString(expectedVirtualNetworkServiceState)));
+              actualVirtualNetworkServiceState.toString(),
+              expectedVirtualNetworkServiceState.toString()));
       assertEquals(actualVirtualNetworkServiceState.routingType, expectedVirtualNetworkServiceState.routingType);
       assertEquals(actualVirtualNetworkServiceState.parentId, expectedVirtualNetworkServiceState.parentId);
       assertEquals(actualVirtualNetworkServiceState.parentKind, expectedVirtualNetworkServiceState.parentKind);
@@ -965,18 +965,6 @@ public class CreateVirtualNetworkWorkflowServiceTest {
           {1},
           {TestEnvironment.DEFAULT_MULTI_HOST_COUNT}
       };
-    }
-
-    private String virtualNetworkStateToString(VirtualNetworkService.State state) {
-      StringBuilder sb = new StringBuilder();
-      sb.append("Name: " + state.name);
-      sb.append("Description: " + state.description);
-      sb.append("State: " + state.state);
-      sb.append("DocumentSelfLink " + state.documentSelfLink);
-      sb.append("LogicalSwitchId " + state.logicalSwitchId);
-      sb.append("LogicalRouterId " + state.logicalRouterId);
-
-      return sb.toString();
     }
   }
 }

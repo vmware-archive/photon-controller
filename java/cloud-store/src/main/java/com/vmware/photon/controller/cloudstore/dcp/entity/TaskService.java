@@ -219,6 +219,24 @@ public class TaskService extends StatefulService {
 
     public List<Step> steps;
 
+    @Override
+    public String toString() {
+      return com.google.common.base.Objects.toStringHelper(this)
+          .add("entityId", entityId)
+          .add("entityKind", entityKind)
+          .add("projectId", projectId)
+          .add("state", state)
+          .add("operation", operation)
+          .add("startedTime", startedTime != null ? startedTime.toString() : null)
+          .add("queuedTime", queuedTime != null ? queuedTime.toString() : null)
+          .add("endTime", endTime != null ? endTime.toString() : null)
+          .add("resourceProperties", resourceProperties)
+          .add("steps", steps != null && !steps.isEmpty() ?
+              steps.stream().map(Step::toString).reduce((acc, item) -> acc + " " + item).get() : null)
+          .add("documentSelfLink", documentSelfLink)
+          .toString();
+    }
+
     /**
      * Task state.
      */
@@ -253,6 +271,25 @@ public class TaskService extends StatefulService {
       public List<StepError> warnings;
       public List<StepError> errors;
       public List<StepResource> resources;
+
+      @Override
+      public String toString() {
+        return com.google.common.base.Objects.toStringHelper(this)
+            .add("sequence", sequence)
+            .add("state", state)
+            .add("operation", operation)
+            .add("options", options)
+            .add("startedTime", startedTime != null ? startedTime.toString() : null)
+            .add("queuedTime", queuedTime != null ? queuedTime.toString() : null)
+            .add("endTime", endTime != null ? endTime.toString() : null)
+            .add("warnings", warnings != null && !warnings.isEmpty() ?
+                warnings.stream().map(StepError::toString).reduce((acc, item) -> acc + " " + item).get() : null)
+            .add("errors", errors != null && !errors.isEmpty() ?
+                errors.stream().map(StepError::toString).reduce((acc, item) -> acc + " " + item).get() : null)
+            .add("resources", resources != null && !resources.isEmpty() ?
+                resources.stream().map(StepResource::toString).reduce((acc, item) -> acc + " " + item).get() : null)
+            .toString();
+      }
     }
 
     /**
@@ -261,6 +298,14 @@ public class TaskService extends StatefulService {
     public static class StepResource {
       public String resourceId;
       public String resourceKind;
+
+      @Override
+      public String toString() {
+        return com.google.common.base.Objects.toStringHelper(this)
+            .add("resourceId", resourceId)
+            .add("resourceKind", resourceKind)
+            .toString();
+      }
     }
 
     /**
@@ -270,6 +315,15 @@ public class TaskService extends StatefulService {
       public String code;
       public String message;
       public Map<String, String> data;
+
+      @Override
+      public String toString() {
+        return com.google.common.base.Objects.toStringHelper(this)
+            .add("code", code)
+            .add("message", message)
+            .add("data", data != null ? data.toString() : null)
+            .toString();
+      }
     }
   }
 }
