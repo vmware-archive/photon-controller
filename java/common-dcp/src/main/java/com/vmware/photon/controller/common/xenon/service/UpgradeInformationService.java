@@ -14,8 +14,8 @@
 package com.vmware.photon.controller.common.xenon.service;
 
 import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
-import com.vmware.photon.controller.common.xenon.upgrade.UpgradeInformation;
-import com.vmware.photon.controller.common.xenon.upgrade.UpgradeUtils;
+import com.vmware.photon.controller.common.xenon.migration.MigrationUtils;
+import com.vmware.photon.controller.common.xenon.migration.UpgradeInformation;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocumentQueryResult;
 import com.vmware.xenon.common.StatelessService;
@@ -45,7 +45,7 @@ public class UpgradeInformationService extends StatelessService {
       }
       ServiceDocumentQueryResult result = o.getBody(ServiceDocumentQueryResult.class);
       Set<String> factories = new HashSet<>(result.documentLinks);
-      List<UpgradeInfo> info = UpgradeUtils.findAllUpgradeServices().stream()
+      List<UpgradeInfo> info = MigrationUtils.findAllUpgradeServices().stream()
           .filter(i -> factories.contains(i.destinationFactoryServicePath))
           .map(i -> new UpgradeInfo(i))
           .collect(Collectors.toList());

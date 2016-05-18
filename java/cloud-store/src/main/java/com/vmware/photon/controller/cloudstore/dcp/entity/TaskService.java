@@ -18,9 +18,11 @@ import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
-import com.vmware.photon.controller.common.xenon.upgrade.MigrateDuringUpgrade;
-import com.vmware.photon.controller.common.xenon.upgrade.NoMigrationDuringUpgrade;
-import com.vmware.photon.controller.common.xenon.upgrade.UpgradeUtils;
+import com.vmware.photon.controller.common.xenon.deployment.MigrateDuringDeployment;
+import com.vmware.photon.controller.common.xenon.deployment.NoMigrationDuringDeployment;
+import com.vmware.photon.controller.common.xenon.migration.MigrateDuringUpgrade;
+import com.vmware.photon.controller.common.xenon.migration.MigrationUtils;
+import com.vmware.photon.controller.common.xenon.migration.NoMigrationDuringUpgrade;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.OperationProcessingChain;
 import com.vmware.xenon.common.RequestRouter;
@@ -158,6 +160,7 @@ public class TaskService extends StatefulService {
    * Class for updating step.
    */
   @NoMigrationDuringUpgrade
+  @NoMigrationDuringDeployment
   public static class StepUpdate extends ServiceDocument {
     public static final String KIND = StepUpdate.class.getCanonicalName();
     public final String kind;
@@ -192,9 +195,12 @@ public class TaskService extends StatefulService {
   /**
    * Durable service state data. Class encapsulating the data for Task.
    */
-  @MigrateDuringUpgrade(transformationServicePath = UpgradeUtils.REFLECTION_TRANSFORMATION_SERVICE_LINK,
+  @MigrateDuringUpgrade(transformationServicePath = MigrationUtils.REFLECTION_TRANSFORMATION_SERVICE_LINK,
       sourceFactoryServicePath = TaskServiceFactory.SELF_LINK,
       destinationFactoryServicePath = TaskServiceFactory.SELF_LINK,
+      serviceName = CloudStoreModule.CLOUDSTORE_SERVICE_NAME)
+  @MigrateDuringDeployment(
+      factoryServicePath = TaskServiceFactory.SELF_LINK,
       serviceName = CloudStoreModule.CLOUDSTORE_SERVICE_NAME)
   public static class State extends ServiceDocument {
 

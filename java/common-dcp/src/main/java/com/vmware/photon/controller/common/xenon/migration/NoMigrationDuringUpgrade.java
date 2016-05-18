@@ -10,7 +10,7 @@
  * conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package com.vmware.photon.controller.common.xenon.upgrade;
+package com.vmware.photon.controller.common.xenon.migration;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -21,7 +21,7 @@ import java.lang.annotation.Target;
  * This annotation indicates that a given ServiceDocument will not be migrated during upgrade.
  *
  * This annotation should be used on Task and Trigger services or entities that should not be
- * migrated between different versions of the controll plane.
+ * migrated between different versions of the control plane.
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)

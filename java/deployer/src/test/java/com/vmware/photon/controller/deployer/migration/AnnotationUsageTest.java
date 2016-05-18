@@ -11,11 +11,13 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package com.vmware.photon.controller.deployer.upgrade;
+package com.vmware.photon.controller.deployer.migration;
 
 import com.vmware.photon.controller.cloudstore.dcp.CloudStoreXenonHost;
-import com.vmware.photon.controller.common.xenon.upgrade.MigrateDuringUpgrade;
-import com.vmware.photon.controller.common.xenon.upgrade.NoMigrationDuringUpgrade;
+import com.vmware.photon.controller.common.xenon.deployment.MigrateDuringDeployment;
+import com.vmware.photon.controller.common.xenon.deployment.NoMigrationDuringDeployment;
+import com.vmware.photon.controller.common.xenon.migration.MigrateDuringUpgrade;
+import com.vmware.photon.controller.common.xenon.migration.NoMigrationDuringUpgrade;
 import com.vmware.photon.controller.deployer.dcp.DeployerXenonServiceHost;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.UriUtils;
@@ -48,8 +50,13 @@ public class AnnotationUsageTest {
       .add(NoMigrationDuringUpgrade.class)
       .build();
 
+  private static Set<Class<?>> deploymentAnnotations = ImmutableSet.<Class<?>>builder()
+      .add(NoMigrationDuringDeployment.class)
+      .add(MigrateDuringDeployment.class)
+      .build();
+
   @Test
-  public void checkServiceDocumentsAreAnnotated() throws Throwable {
+  public void checkServiceDocumentsAreAnnotatedWithUpgradeAnnotation() throws Throwable {
     Collection<String> missingUpgradeAnnotation = new HashSet<>();
     ClassLoader cl = ClassLoader.getSystemClassLoader();
     ClassPath classPath = ClassPath.from(cl);
@@ -79,6 +86,36 @@ public class AnnotationUsageTest {
   }
 
   @Test
+  public void checkServiceDocumentsAreAnnotatedWithDeploymentAnnotation() throws Throwable {
+    Collection<String> missingUpgradeAnnotation = new HashSet<>();
+    ClassLoader cl = ClassLoader.getSystemClassLoader();
+    ClassPath classPath = ClassPath.from(cl);
+
+    for (ClassInfo classFile : classPath.getAllClasses()) {
+      if (classFile.getName().contains(PHOTON_CONTROLLER_PACKAGE)
+          && !classFile.getName().endsWith("Test")
+          && !classFile.getName().contains(".Test")
+          && !classFile.getName().contains("Test$")) {
+        Class<?> type = classFile.load();
+          if (type.getSuperclass() != null && type.getSuperclass() == ServiceDocument.class) {
+            boolean hasUpgradeAnnotation = false;
+            for (Annotation a : type.getAnnotations()) {
+              hasUpgradeAnnotation = hasUpgradeAnnotation || deploymentAnnotations.contains(a.annotationType());
+            }
+            if (!hasUpgradeAnnotation) {
+              missingUpgradeAnnotation.add(type.getName());
+            }
+          }
+      }
+    }
+    String errorMessage = "The following classes are missing upgrade annotations:\n";
+    if (!missingUpgradeAnnotation.isEmpty()) {
+      errorMessage += String.join("\n", missingUpgradeAnnotation);
+    }
+    assertThat(errorMessage, missingUpgradeAnnotation.size(), is(0));
+  }
+
+  @Test
   public void checkAllTransformationServicesAreStartedInDeployer() throws Throwable {
     Collection<String> transformationServicePaths = new HashSet<>();
 
@@ -93,7 +130,10 @@ public class AnnotationUsageTest {
     ClassPath classPath = ClassPath.from(cl);
 
     for (ClassInfo classFile : classPath.getAllClasses()) {
-      if (classFile.getName().contains(PHOTON_CONTROLLER_PACKAGE)) {
+      if (classFile.getName().contains(PHOTON_CONTROLLER_PACKAGE)
+          && !classFile.getName().endsWith("Test")
+          && !classFile.getName().contains(".Test")
+          && !classFile.getName().contains("Test$")) {
         Collection<Class<?>> allClasses = getNestedClasses(classFile.load());
 
         for (Class<?> type : allClasses) {

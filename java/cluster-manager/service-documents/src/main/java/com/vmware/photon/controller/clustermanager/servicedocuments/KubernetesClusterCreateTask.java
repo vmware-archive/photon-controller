@@ -13,7 +13,8 @@
 
 package com.vmware.photon.controller.clustermanager.servicedocuments;
 
-import com.vmware.photon.controller.common.xenon.upgrade.NoMigrationDuringUpgrade;
+import com.vmware.photon.controller.common.xenon.deployment.NoMigrationDuringDeployment;
+import com.vmware.photon.controller.common.xenon.migration.NoMigrationDuringUpgrade;
 import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
 import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.xenon.validation.DefaultUuid;
@@ -25,6 +26,7 @@ import com.vmware.xenon.common.ServiceDocument;
  * KubernetesClusterCreateTaskService instance.
  */
 @NoMigrationDuringUpgrade
+@NoMigrationDuringDeployment
 public class KubernetesClusterCreateTask extends ServiceDocument {
 
   /**
