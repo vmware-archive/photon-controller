@@ -17,8 +17,8 @@ import com.vmware.photon.controller.agent.gen.AgentControl;
 import com.vmware.photon.controller.api.AgentState;
 import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.UsageTag;
-import com.vmware.photon.controller.cloudstore.CloudStoreModule;
 import com.vmware.photon.controller.cloudstore.xenon.upgrade.HostTransformationService;
+import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.clients.AgentControlClient;
 import com.vmware.photon.controller.common.clients.AgentControlClientProvider;
 import com.vmware.photon.controller.common.clients.HostClient;
@@ -538,7 +538,7 @@ public class HostService extends StatefulService {
   @MigrateDuringUpgrade(transformationServicePath = HostTransformationService.SELF_LINK,
       sourceFactoryServicePath = HostServiceFactory.SELF_LINK,
       destinationFactoryServicePath = HostServiceFactory.SELF_LINK,
-      serviceName = CloudStoreModule.CLOUDSTORE_SERVICE_NAME)
+      serviceName = Constants.CLOUDSTORE_SERVICE_NAME)
   public static class State extends ServiceDocument {
 
     public static final String FIELD_NAME_STATE = "state";

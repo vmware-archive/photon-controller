@@ -15,6 +15,7 @@ package com.vmware.photon.controller.core;
 
 import com.vmware.photon.controller.cloudstore.CloudStoreConfig;
 import com.vmware.photon.controller.cloudstore.dcp.CloudStoreXenonHost;
+import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.clients.AgentControlClientFactory;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.config.BadConfigException;
@@ -49,8 +50,6 @@ public class Main {
 
   private static final Logger logger = LoggerFactory.getLogger(Main.class);
   private static final long retryIntervalMillis = TimeUnit.SECONDS.toMillis(30);
-  public static final String CLOUDSTORE_SERVICE_NAME = "cloudstore";
-  public static final String SCHEDULER_SERVICE_NAME = "root-scheduler";
 
   public static void main(String[] args) throws Throwable {
     LoggingFactory.bootstrap();
@@ -111,7 +110,7 @@ public class Main {
     Integer cloudStoreXenonPort = cloudStoreConfig.getXenonConfig().getPort();
     logger.info("Registering CloudStore Xenon Host with Zookeeper at {}:{}",
             cloudStoreXenonAddress, cloudStoreXenonPort);
-    registerServiceWithZookeeper(CLOUDSTORE_SERVICE_NAME, zkModule, zkClient,
+    registerServiceWithZookeeper(Constants.CLOUDSTORE_SERVICE_NAME, zkModule, zkClient,
             cloudStoreXenonAddress, cloudStoreXenonPort);
     logger.info("Registered CloudStore Xenon Host with Zookeeper");
 
@@ -120,7 +119,7 @@ public class Main {
 
   private static ServiceHost startScheduler(RootSchedulerConfig schedulerConfig, ZookeeperModule zkModule,
                                             CuratorFramework zkClient, ThriftModule thriftModule) throws Throwable {
-    ServerSet cloudStoreServerSet = zkModule.getZookeeperServerSet(zkClient, CLOUDSTORE_SERVICE_NAME, true);
+    ServerSet cloudStoreServerSet = zkModule.getZookeeperServerSet(zkClient, Constants.CLOUDSTORE_SERVICE_NAME, true);
     HostClientFactory hostClientFactory = thriftModule.getHostClientFactory();
 
     final CloudStoreHelper cloudStoreHelper = new CloudStoreHelper(cloudStoreServerSet);
@@ -139,7 +138,8 @@ public class Main {
     String schedulerXenonAddress = schedulerConfig.getXenonConfig().getRegistrationAddress();
     Integer schedulerXenonPort = schedulerConfig.getXenonConfig().getPort();
     logger.info("Registering Scheduler Xenon Host with Zookeeper at {}:{}", schedulerXenonAddress, schedulerXenonPort);
-    registerServiceWithZookeeper(SCHEDULER_SERVICE_NAME, zkModule, zkClient, schedulerXenonAddress, schedulerXenonPort);
+    registerServiceWithZookeeper(Constants.SCHEDULER_SERVICE_NAME, zkModule, zkClient, schedulerXenonAddress,
+        schedulerXenonPort);
     logger.info("Registered Scheduler Xenon Host with Zookeeper");
 
     return schedulerXenonHost;

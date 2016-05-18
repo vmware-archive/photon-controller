@@ -15,7 +15,7 @@ package com.vmware.photon.controller.cloudstore.dcp.entity;
 
 import com.vmware.photon.controller.api.ImageReplicationType;
 import com.vmware.photon.controller.api.ImageState;
-import com.vmware.photon.controller.cloudstore.CloudStoreModule;
+import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
@@ -212,7 +212,7 @@ public class ImageService extends StatefulService {
   @MigrateDuringUpgrade(transformationServicePath = UpgradeUtils.REFLECTION_TRANSFORMATION_SERVICE_LINK,
       sourceFactoryServicePath = ImageServiceFactory.SELF_LINK,
       destinationFactoryServicePath = ImageServiceFactory.SELF_LINK,
-      serviceName = CloudStoreModule.CLOUDSTORE_SERVICE_NAME)
+      serviceName = Constants.CLOUDSTORE_SERVICE_NAME)
   public static class State extends ServiceDocument {
 
     @NotNull

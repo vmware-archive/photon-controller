@@ -17,7 +17,7 @@ import com.vmware.photon.controller.api.Iso;
 import com.vmware.photon.controller.api.LocalitySpec;
 import com.vmware.photon.controller.api.QuotaLineItem;
 import com.vmware.photon.controller.api.VmState;
-import com.vmware.photon.controller.cloudstore.CloudStoreModule;
+import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
@@ -109,7 +109,7 @@ public class VmService extends StatefulService {
   @MigrateDuringUpgrade(transformationServicePath = UpgradeUtils.REFLECTION_TRANSFORMATION_SERVICE_LINK,
       sourceFactoryServicePath = VmServiceFactory.SELF_LINK,
       destinationFactoryServicePath = VmServiceFactory.SELF_LINK,
-      serviceName = CloudStoreModule.CLOUDSTORE_SERVICE_NAME)
+      serviceName = Constants.CLOUDSTORE_SERVICE_NAME)
   public static class State extends ServiceDocument {
 
     public static final String FIELD_NAME_TAGS = "tags";

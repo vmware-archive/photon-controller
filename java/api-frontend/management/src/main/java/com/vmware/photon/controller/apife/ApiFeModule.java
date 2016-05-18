@@ -78,6 +78,7 @@ import com.vmware.photon.controller.apife.config.ImageConfig;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.config.StatusConfig;
 import com.vmware.photon.controller.common.CloudStoreServerSet;
+import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.clients.HousekeeperClientConfig;
@@ -206,21 +207,21 @@ public class ApiFeModule extends AbstractModule {
   @Singleton
   @ApiFeServerSet
   public ServerSet getApiFeServerSet(ZookeeperServerSetFactory serverSetFactory) {
-    return serverSetFactory.createServiceServerSet("apife", true);
+    return serverSetFactory.createServiceServerSet(Constants.APIFE_SERVICE_NAME, true);
   }
 
   @Provides
   @Singleton
   @RootSchedulerServerSet
   public ServerSet getRootSchedulerServerSet(ZookeeperServerSetFactory serverSetFactory) {
-    return serverSetFactory.createServiceServerSet("root-scheduler", true);
+    return serverSetFactory.createServiceServerSet(Constants.SCHEDULER_SERVICE_NAME, true);
   }
 
   @Provides
   @Singleton
   @HousekeeperServerSet
   public ServerSet getHousekeeperServerSet(ZookeeperServerSetFactory serverSetFactory) {
-    return serverSetFactory.createServiceServerSet("housekeeper", true);
+    return serverSetFactory.createServiceServerSet(Constants.HOUSEKEEPER_SERVICE_NAME, true);
   }
 
   @Provides
@@ -242,7 +243,7 @@ public class ApiFeModule extends AbstractModule {
   @Singleton
   @CloudStoreServerSet
   public ServerSet getCloudStoreServerSet(ZookeeperServerSetFactory serverSetFactory) {
-    return serverSetFactory.createServiceServerSet("cloudstore", true);
+    return serverSetFactory.createServiceServerSet(Constants.CLOUDSTORE_SERVICE_NAME, true);
   }
 
   @Provides
@@ -267,7 +268,7 @@ public class ApiFeModule extends AbstractModule {
   @Singleton
   @DeployerServerSet
   public ServerSet getDeployerServerSet(ZookeeperServerSetFactory serverSetFactory) {
-    return serverSetFactory.createServiceServerSet("deployer", true);
+    return serverSetFactory.createServiceServerSet(Constants.DEPLOYER_SERVICE_NAME, true);
   }
 
   @Provides
