@@ -22,15 +22,12 @@ import java.io.InputStreamReader;
  */
 public class DnsmasqDriver implements DHCPDriver {
     private String releaseIPUtilityPath = "/usr/local/bin/dhcp_release";
-    private String releaseIPPath = "/scripts/release-ip";
     private String dhcpStatusPath = "/script/dhcp-status";
 
     public DnsmasqDriver(String utilityPath,
-                         String releaseIPPath,
                          String dhcpStatusPath) {
 
         this.releaseIPUtilityPath = utilityPath;
-        this.releaseIPPath = releaseIPPath;
         this.dhcpStatusPath = dhcpStatusPath;
     }
 

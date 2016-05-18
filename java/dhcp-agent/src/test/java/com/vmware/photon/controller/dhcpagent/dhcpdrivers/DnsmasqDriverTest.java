@@ -46,7 +46,6 @@ public class DnsmasqDriverTest {
         }
 
         dnsmasqDriver = new DnsmasqDriver(DnsmasqDriverTest.class.getResource("/scripts/release-ip.sh").getPath(),
-                DnsmasqDriverTest.class.getResource("/scripts/release-ip.sh").getPath(),
                 DnsmasqDriverTest.class.getResource("/scripts/dhcp-status.sh").getPath());
     }
 
