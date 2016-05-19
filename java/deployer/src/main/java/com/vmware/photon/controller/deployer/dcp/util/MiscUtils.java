@@ -289,12 +289,24 @@ public class MiscUtils {
         DeployerDefaults.MANAGEMENT_VM_TO_MANAGEMENT_ONLY_HOST_RESOURCE_RATIO;
   }
 
-  public static int getAdjustedManagementHostCpu(HostService.State hostState) {
+  public static int getAdjustedManagementVmCpu(HostService.State hostState) {
+    if (hostState.metadata != null
+        && hostState.metadata.containsKey(HostService.State.METADATA_KEY_NAME_MANAGEMENT_VM_CPU_COUNT_OVERWRITE)) {
+      return Integer.parseInt(
+          hostState.metadata.get(HostService.State.METADATA_KEY_NAME_MANAGEMENT_VM_CPU_COUNT_OVERWRITE));
+    }
+
     float managementVmHostRatio = getManagementVmHostRatio(hostState);
     return Math.max((int) (hostState.cpuCount * managementVmHostRatio), 1);
   }
 
-  public static long getAdjustedManagementHostMemory(HostService.State hostState) {
+  public static long getAdjustedManagementVmMemory(HostService.State hostState) {
+    if (hostState.metadata != null
+        && hostState.metadata.containsKey(HostService.State.METADATA_KEY_NAME_MANAGEMENT_VM_MEMORY_MB_OVERWRITE)) {
+      return Long.parseLong(
+          hostState.metadata.get(HostService.State.METADATA_KEY_NAME_MANAGEMENT_VM_MEMORY_MB_OVERWRITE));
+    }
+
     float managementVmHostRatio = getManagementVmHostRatio(hostState);
     long afterRationMemeory = (long) (hostState.memoryMb * managementVmHostRatio);
     return floorToNearestNumberDivisibleByFour(afterRationMemeory);

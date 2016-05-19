@@ -553,8 +553,8 @@ public class CreateDhcpVmTaskService extends StatefulService {
 
     } else if (hostState.cpuCount != null && hostState.memoryMb != null) {
 
-      cpuCount = MiscUtils.getAdjustedManagementHostCpu(hostState);
-      memoryMb = MiscUtils.getAdjustedManagementHostMemory(hostState);
+      cpuCount = MiscUtils.getAdjustedManagementVmCpu(hostState);
+      memoryMb = MiscUtils.getAdjustedManagementVmMemory(hostState);
 
       ServiceUtils.logInfo(this, "Computed flavor values for VM %s from host size: %d vCPUs, %d MB memory",
           vmState.name, cpuCount, memoryMb);
