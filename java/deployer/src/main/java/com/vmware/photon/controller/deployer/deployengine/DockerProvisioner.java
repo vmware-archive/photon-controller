@@ -201,10 +201,6 @@ public class DockerProvisioner {
     CreateContainerCmd createContainerCmd = this.getDockerClient().createContainerCmd(containerImage);
     createContainerCmd = createContainerCmd.withName(containerName);
 
-    if (memoryMb != null) {
-      createContainerCmd = createContainerCmd.withMemoryLimit(memoryMb * MB_TO_BYTES);
-    }
-
     if (cpuShares != null) {
       createContainerCmd = createContainerCmd.withCpuShares(cpuShares);
     }
