@@ -20,6 +20,7 @@ import com.vmware.photon.controller.api.common.exceptions.external.TaskNotFoundE
 import com.vmware.photon.controller.apife.backends.EntityLockBackend;
 import com.vmware.photon.controller.apife.backends.TaskBackend;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
+import com.vmware.photon.controller.apife.backends.clients.HousekeeperXenonRestClient;
 import com.vmware.photon.controller.apife.backends.clients.SchedulerXenonRestClient;
 import com.vmware.photon.controller.apife.commands.BaseCommand;
 import com.vmware.photon.controller.apife.commands.steps.StepCommand;
@@ -73,6 +74,7 @@ public class TaskCommand extends BaseCommand {
   private SchedulerXenonRestClient schedulerXenonRestClient;
   private HostClient hostClient;
   private HousekeeperClient housekeeperClient;
+  private HousekeeperXenonRestClient housekeeperXenonRestClient;
   private DeployerClient deployerClient;
 
   private com.vmware.photon.controller.apife.backends.clients.DeployerClient deployerXenonClient;
@@ -83,6 +85,7 @@ public class TaskCommand extends BaseCommand {
                      SchedulerXenonRestClient schedulerXenonRestClient,
                      HostClient hostClient,
                      HousekeeperClient housekeeperClient,
+                     HousekeeperXenonRestClient housekeeperXenonRestClient,
                      DeployerClient deployerClient,
                      com.vmware.photon.controller.apife.backends.clients.DeployerClient deployerXenonClient,
                      EntityLockBackend entityLockBackend,
@@ -93,6 +96,7 @@ public class TaskCommand extends BaseCommand {
     this.schedulerXenonRestClient = schedulerXenonRestClient;
     this.hostClient = checkNotNull(hostClient);
     this.housekeeperClient = checkNotNull(housekeeperClient);
+    this.housekeeperXenonRestClient = checkNotNull(housekeeperXenonRestClient);
     this.deployerClient = deployerClient;
     this.deployerXenonClient = deployerXenonClient;
     this.entityLockBackend = entityLockBackend;
@@ -207,6 +211,10 @@ public class TaskCommand extends BaseCommand {
 
   public HousekeeperClient getHousekeeperClient() {
     return checkNotNull(housekeeperClient);
+  }
+
+  public HousekeeperXenonRestClient getHousekeeperXenonRestClient() {
+    return housekeeperXenonRestClient;
   }
 
   public DeployerClient getDeployerClient() {

@@ -17,6 +17,7 @@ import com.vmware.photon.controller.api.common.exceptions.ApiFeException;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.common.exceptions.external.OutOfThreadPoolWorkerException;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
+import com.vmware.photon.controller.apife.backends.clients.HousekeeperXenonRestClient;
 import com.vmware.photon.controller.apife.backends.clients.SchedulerXenonRestClient;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
@@ -25,7 +26,6 @@ import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HousekeeperClient;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import com.google.inject.Inject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.annotations.DataProvider;
@@ -45,6 +45,7 @@ public class TaskCommandExecutorServiceTest {
   private static final Logger logger = LoggerFactory.getLogger(TaskCommandExecutorServiceTest.class);
   private ApiFeXenonRestClient dcpClient = mock(ApiFeXenonRestClient.class);
   private HousekeeperClient housekeeperClient = mock(HousekeeperClient.class);
+  private HousekeeperXenonRestClient housekeeperXenonRestClient = mock(HousekeeperXenonRestClient.class);
   private DeployerClient deployerClient = mock(DeployerClient.class);
   private HostClient hostClient = mock(HostClient.class);
   private EntityLockBackend entityLockBackend = mock(EntityLockBackend.class);
@@ -119,7 +120,7 @@ public class TaskCommandExecutorServiceTest {
       TaskEntity task = new TaskEntity();
       task.setId("t" + i);
       commands[i] = new TestTaskCommand(dcpClient, schedulerXenonRestClient, hostClient,
-          housekeeperClient, deployerClient, deployerXenonClient, task, countDownLatch);
+          housekeeperClient, housekeeperXenonRestClient, deployerClient, deployerXenonClient, task, countDownLatch);
       try {
         service.submit(commands[i]);
       } catch (ExternalException ex) {
@@ -137,17 +138,17 @@ public class TaskCommandExecutorServiceTest {
     private volatile Throwable exception = null;
     private volatile boolean done = false;
 
-    @Inject
     public TestTaskCommand(ApiFeXenonRestClient dcpClient,
                            SchedulerXenonRestClient schedulerXenonRestClient,
                            HostClient hostClient,
                            HousekeeperClient housekeeperClient,
+                           HousekeeperXenonRestClient housekeeperXenonRestClient,
                            DeployerClient deployerClient,
                            com.vmware.photon.controller.apife.backends.clients.DeployerClient deployerXenonClient,
                            TaskEntity task,
                            CountDownLatch countDownLatch) {
-      super(dcpClient, schedulerXenonRestClient, hostClient, housekeeperClient, deployerClient, deployerXenonClient,
-          entityLockBackend, task);
+      super(dcpClient, schedulerXenonRestClient, hostClient, housekeeperClient, housekeeperXenonRestClient,
+          deployerClient, deployerXenonClient, entityLockBackend, task);
       this.countDownLatch = countDownLatch;
     }
 

@@ -25,6 +25,7 @@ import com.vmware.photon.controller.apife.backends.EntityLockBackend;
 import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.backends.VmBackend;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
+import com.vmware.photon.controller.apife.backends.clients.HousekeeperXenonRestClient;
 import com.vmware.photon.controller.apife.backends.clients.SchedulerXenonRestClient;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.AttachedDiskEntity;
@@ -147,6 +148,8 @@ public class VmDiskOpStepCmdTest extends PowerMockTestCase {
   private VmDisksOpResponse response;
   @Mock
   private HousekeeperClient housekeeperClient;
+  @Mock
+  private HousekeeperXenonRestClient housekeeperXenonRestClient;
 
   @Mock
   private EntityLockBackend entityLockBackend;
@@ -239,7 +242,7 @@ public class VmDiskOpStepCmdTest extends PowerMockTestCase {
     when(diskBackend.find(PersistentDisk.KIND, diskId2)).thenReturn(disk2);
 
     taskCommand = spy(new TaskCommand(dcpClient, schedulerXenonRestClient, hostClient,
-        housekeeperClient, deployerClient, deployerXenonClient, entityLockBackend, task));
+        housekeeperClient, housekeeperXenonRestClient, deployerClient, deployerXenonClient, entityLockBackend, task));
     when(taskCommand.getHostClient()).thenReturn(hostClient);
     when(taskCommand.getSchedulerXenonRestClient()).thenReturn(schedulerXenonRestClient);
     when(vmBackend.findById(vmId)).thenReturn(vm);

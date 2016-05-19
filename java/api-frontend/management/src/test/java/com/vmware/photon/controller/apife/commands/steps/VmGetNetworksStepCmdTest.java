@@ -22,6 +22,7 @@ import com.vmware.photon.controller.apife.backends.NetworkBackend;
 import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.backends.TaskBackend;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
+import com.vmware.photon.controller.apife.backends.clients.HousekeeperXenonRestClient;
 import com.vmware.photon.controller.apife.backends.clients.SchedulerXenonRestClient;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
@@ -93,6 +94,9 @@ public class VmGetNetworksStepCmdTest extends PowerMockTestCase {
   private HousekeeperClient housekeeperClient;
 
   @Mock
+  private HousekeeperXenonRestClient housekeeperXenonRestClient;
+
+  @Mock
   private DeployerClient deployerClient;
 
   @Mock
@@ -139,7 +143,7 @@ public class VmGetNetworksStepCmdTest extends PowerMockTestCase {
     datastore.setId("datastore-id");
 
     taskCommand = spy(new TaskCommand(dcpClient, schedulerXenonRestClient, hostClient,
-        housekeeperClient, deployerClient, deployerXenonClient, entityLockBackend, task));
+        housekeeperClient, housekeeperXenonRestClient, deployerClient, deployerXenonClient, entityLockBackend, task));
     when(taskCommand.getHostClient()).thenReturn(hostClient);
     when(taskCommand.getSchedulerXenonRestClient()).thenReturn(schedulerXenonRestClient);
     HostService.State hostServiceState = new HostService.State();

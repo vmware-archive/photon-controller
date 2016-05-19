@@ -21,6 +21,7 @@ import com.vmware.photon.controller.apife.backends.EntityLockBackend;
 import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.backends.VmBackend;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
+import com.vmware.photon.controller.apife.backends.clients.HousekeeperXenonRestClient;
 import com.vmware.photon.controller.apife.backends.clients.SchedulerXenonRestClient;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.AttachedDiskEntity;
@@ -72,6 +73,9 @@ public class VmDeleteStepCmdTest extends PowerMockTestCase {
   private HousekeeperClient housekeeperClient;
 
   @Mock
+  private HousekeeperXenonRestClient housekeeperXenonRestClient;
+
+  @Mock
   private DeployerClient deployerClient;
 
   @Mock
@@ -115,7 +119,7 @@ public class VmDeleteStepCmdTest extends PowerMockTestCase {
     datastore.setId("datastore-id");
 
     taskCommand = spy(new TaskCommand(dcpClient, schedulerXenonRestClient, hostClient,
-        housekeeperClient, deployerClient, deployerXenonClient, entityLockBackend, task));
+        housekeeperClient, housekeeperXenonRestClient, deployerClient, deployerXenonClient, entityLockBackend, task));
     when(taskCommand.getHostClient()).thenReturn(hostClient);
     when(taskCommand.getSchedulerXenonRestClient()).thenReturn(schedulerXenonRestClient);
     HostService.State hostServiceState = new HostService.State();
