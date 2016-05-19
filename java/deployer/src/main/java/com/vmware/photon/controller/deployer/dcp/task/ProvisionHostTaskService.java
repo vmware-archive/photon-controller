@@ -321,7 +321,7 @@ public class ProvisionHostTaskService extends StatefulService {
     InitializationUtils.initialize(startState);
 
     if (startState.nsxPollDelay == null) {
-      startState.nsxPollDelay = HostUtils.getDeployerContext(this).getTaskPollDelay();
+      startState.nsxPollDelay = HostUtils.getDeployerContext(this).getNsxPollDelay();
     }
 
     if (startState.agentStatusPollDelay == null) {
