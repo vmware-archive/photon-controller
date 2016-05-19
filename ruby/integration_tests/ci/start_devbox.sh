@@ -44,6 +44,7 @@ fi
 
 if [ "$DEPLOYER_TEST" ]
 then
+  bundle exec rake reboot:host
   ./prepare-devbox-deployment.sh
 else
   vagrant up

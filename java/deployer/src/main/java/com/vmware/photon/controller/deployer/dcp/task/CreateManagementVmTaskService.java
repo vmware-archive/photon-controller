@@ -533,32 +533,20 @@ public class CreateManagementVmTaskService extends StatefulService {
     // if this fails, then fall back to using the resource requirements specified by the service
     // containers placed on the VM.
     //
+    if (hostState.cpuCount == null || hostState.memoryMb == null) {
+      throw new IllegalStateException("Failed to calculate host resources for host " + hostState.hostAddress);
+    }
 
-    int cpuCount;
-    long memoryMb;
+    int cpuCount = MiscUtils.getAdjustedManagementVmCpu(hostState);
+    long memoryMb = MiscUtils.getAdjustedManagementVmMemory(hostState);
 
-    if (hostState.metadata.containsKey(HostService.State.METADATA_KEY_NAME_MANAGEMENT_VM_CPU_COUNT_OVERWRITE) &&
-        hostState.metadata.containsKey(HostService.State.METADATA_KEY_NAME_MANAGEMENT_VM_MEMORY_MB_OVERWRITE) &&
-        hostState.metadata.containsKey(HostService.State.METADATA_KEY_NAME_MANAGEMENT_VM_DISK_GB_OVERWRITE)) {
-
-      cpuCount = Integer.parseInt(
-          hostState.metadata.get(HostService.State.METADATA_KEY_NAME_MANAGEMENT_VM_CPU_COUNT_OVERWRITE));
-      memoryMb = Long.parseLong(
-          hostState.metadata.get(HostService.State.METADATA_KEY_NAME_MANAGEMENT_VM_MEMORY_MB_OVERWRITE));
-
+    if (hostState.metadata.containsKey(HostService.State.METADATA_KEY_NAME_MANAGEMENT_VM_CPU_COUNT_OVERWRITE) ||
+        hostState.metadata.containsKey(HostService.State.METADATA_KEY_NAME_MANAGEMENT_VM_MEMORY_MB_OVERWRITE)) {
       ServiceUtils.logInfo(this, "Found flavor override values for VM %s: %d vCPUs, %d MB memory",
           vmState.name, cpuCount, memoryMb);
-
-    } else if (hostState.cpuCount != null && hostState.memoryMb != null) {
-
-      cpuCount = MiscUtils.getAdjustedManagementHostCpu(hostState);
-      memoryMb = MiscUtils.getAdjustedManagementHostMemory(hostState);
-
+    } else {
       ServiceUtils.logInfo(this, "Computed flavor values for VM %s from host size: %d vCPUs, %d MB memory",
           vmState.name, cpuCount, memoryMb);
-
-    } else {
-      throw new IllegalStateException("Failed to calculate host resources for host " + hostState.hostAddress);
     }
 
     List<QuotaLineItem> vmCost = new ArrayList<>();
