@@ -42,6 +42,7 @@ import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateFactory
 import com.vmware.photon.controller.deployer.dcp.entity.VibFactoryService;
 import com.vmware.photon.controller.deployer.dcp.entity.VmFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.AllocateClusterManagerResourcesTaskFactoryService;
+import com.vmware.photon.controller.deployer.dcp.task.AllocateDhcpVmResourcesTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.AllocateHostResourceTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.AllocateTenantResourcesTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.BuildRuntimeConfigurationTaskFactoryService;
@@ -156,6 +157,7 @@ public class DeployerXenonServiceHost
       VmFactoryService.class,
 
       // Task Services
+      AllocateDhcpVmResourcesTaskFactoryService.class,
       AllocateClusterManagerResourcesTaskFactoryService.class,
       AllocateTenantResourcesTaskFactoryService.class,
       AllocateHostResourceTaskFactoryService.class,
@@ -457,6 +459,7 @@ public class DeployerXenonServiceHost
 
   /**
    * Getter for BuildInfo.
+   *
    * @return
    */
   public BuildInfo getBuildInfo() {
