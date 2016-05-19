@@ -35,6 +35,7 @@ import static com.vmware.photon.controller.api.common.Responses.generateResource
 
 import com.google.common.base.Optional;
 import com.google.inject.Inject;
+import com.google.inject.name.Named;
 import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiResponse;
@@ -75,11 +76,15 @@ public class ProjectVmsResource {
 
   private final VmFeClient vmFeClient;
   private final PaginationConfig paginationConfig;
+  private final Boolean useVirtualNetwork;
 
   @Inject
-  public ProjectVmsResource(VmFeClient vmFeClient, PaginationConfig paginationConfig) {
+  public ProjectVmsResource(VmFeClient vmFeClient,
+                            PaginationConfig paginationConfig,
+                            @Named("useVirtualNetwork") Boolean useVirtualNetwork) {
     this.vmFeClient = vmFeClient;
     this.paginationConfig = paginationConfig;
+    this.useVirtualNetwork = useVirtualNetwork;
   }
 
   @POST
@@ -154,6 +159,13 @@ public class ProjectVmsResource {
 
     if (spec.getSourceImageId() == null || spec.getSourceImageId().isEmpty()) {
       throw new InvalidVmSourceImageSpecException("No sourceImageId specified in VM create Spec");
+    }
+
+    if (useVirtualNetwork &&
+        (spec.getNetworks() == null ||
+            spec.getNetworks().size() == 0 ||
+            spec.getNetworks().size() > 1)) {
+      throw new InvalidVmNetworksSpecException("Cannot put a single VM on 0 or more than one virtual network.");
     }
   }
 

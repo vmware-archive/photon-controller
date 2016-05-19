@@ -15,6 +15,7 @@ package com.vmware.photon.controller.apife.commands.steps;
 
 import com.vmware.photon.controller.api.DiskState;
 import com.vmware.photon.controller.api.EphemeralDisk;
+import com.vmware.photon.controller.api.Operation;
 import com.vmware.photon.controller.api.PersistentDisk;
 import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.api.VmState;
@@ -42,17 +43,21 @@ import java.util.List;
  */
 public class VmCreateStepCmd extends StepCommand {
 
+  public static final String VM_LOCATION_ID = "vm-location-id";
+
   protected static final String PORT_GROUP_KIND = "portGroup";
   private static Logger logger = LoggerFactory.getLogger(VmCreateStepCmd.class);
   private final VmBackend vmBackend;
   private final DiskBackend diskBackend;
+  private final Boolean useVirtualNetwork;
   private VmEntity vm;
 
   public VmCreateStepCmd(TaskCommand taskCommand, StepBackend stepBackend,
-                         StepEntity step, VmBackend vmBackend, DiskBackend diskBackend) {
+                         StepEntity step, VmBackend vmBackend, DiskBackend diskBackend, Boolean useVirtualNetwork) {
     super(taskCommand, stepBackend, step);
     this.vmBackend = vmBackend;
     this.diskBackend = diskBackend;
+    this.useVirtualNetwork = useVirtualNetwork;
   }
 
   @Override
@@ -75,6 +80,12 @@ public class VmCreateStepCmd extends StepCommand {
 
       CreateVmResponse response = taskCommand.getHostClient().createVm(
           taskCommand.getReservation(), vm.getEnvironment());
+
+      // Need to pass the location of vm to the next step if virtual network is being used.
+      if (useVirtualNetwork) {
+        taskCommand.getTask().findStep(Operation.CONNECT_VM_SWITCH)
+            .createOrUpdateTransientResource(VmCreateStepCmd.VM_LOCATION_ID, response.getVm().getLocation_id());
+      }
 
       vmBackend.updateState(vm, VmState.STOPPED,
           taskCommand.lookupAgentId(taskCommand.getHostClient().getHostIp()),
