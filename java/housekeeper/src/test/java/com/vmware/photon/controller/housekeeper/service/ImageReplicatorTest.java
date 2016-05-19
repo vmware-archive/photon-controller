@@ -63,7 +63,7 @@ public class ImageReplicatorTest {
   private static final String configFilePath = "/config.yml";
 
   private Injector injector;
-  private TestHost dcpHost;
+  private TestHost xenonHost;
   private ImageReplicator replicator;
   private String datastoreId;
 
@@ -78,23 +78,23 @@ public class ImageReplicatorTest {
   private String startTestReplicatorService(ImageReplicatorService.State state) throws Throwable {
     TestServiceIgnoresPosts service = new TestServiceIgnoresPosts(ImageReplicatorService.State.class);
 
-    Operation op = dcpHost.startServiceSynchronously(service, state, ImageReplicatorServiceFactory.SELF_LINK);
+    Operation op = xenonHost.startServiceSynchronously(service, state, ImageReplicatorServiceFactory.SELF_LINK);
     return op.getBody(ImageReplicatorService.State.class).documentSelfLink;
   }
 
   private String startTestSeederService(ImageSeederService.State state) throws Throwable {
     TestServiceIgnoresPosts service = new TestServiceIgnoresPosts(ImageSeederService.State.class);
 
-    Operation op = dcpHost.startServiceSynchronously(service, state, ImageSeederServiceFactory.SELF_LINK);
+    Operation op = xenonHost.startServiceSynchronously(service, state, ImageSeederServiceFactory.SELF_LINK);
     return op.getBody(ImageSeederService.State.class).documentSelfLink;
   }
 
   private void startTestDatastoreService(DatastoreService.State state) throws Throwable {
-    dcpHost.startFactoryServiceSynchronously(new DatastoreServiceFactory(), DatastoreServiceFactory.SELF_LINK);
+    xenonHost.startFactoryServiceSynchronously(new DatastoreServiceFactory(), DatastoreServiceFactory.SELF_LINK);
     Operation patchOp = Operation
-        .createPost(UriUtils.buildUri(dcpHost, DatastoreServiceFactory.SELF_LINK, null))
+        .createPost(UriUtils.buildUri(xenonHost, DatastoreServiceFactory.SELF_LINK, null))
         .setBody(state);
-    dcpHost.sendRequestAndWait(patchOp);
+    xenonHost.sendRequestAndWait(patchOp);
   }
 
   /**
@@ -110,16 +110,16 @@ public class ImageReplicatorTest {
   public class ReplicateImageTest {
     @BeforeMethod
     private void setUp() throws Throwable {
-      injector = TestHelper.createInjector(configFilePath);
+      injector = TestHelper.createInjector();
       HostClient hostClient = injector.getInstance(HostClient.class);
-      dcpHost = spy(TestHost.create(hostClient));
+      xenonHost = spy(TestHost.create(hostClient));
       CloudStoreHelper cloudStoreHelper = new CloudStoreHelper();
       StaticServerSet serverSet = new StaticServerSet(
-          new InetSocketAddress(dcpHost.getPreferredAddress(), dcpHost.getPort()));
+          new InetSocketAddress(xenonHost.getPreferredAddress(), xenonHost.getPort()));
       cloudStoreHelper.setServerSet(serverSet);
       doReturn(cloudStoreHelper)
-          .when(dcpHost).getCloudStoreHelper();
-      replicator = spy(new ImageReplicator(dcpHost));
+          .when(xenonHost).getCloudStoreHelper();
+      replicator = spy(new ImageReplicator(xenonHost));
 
       LoggingUtils.setRequestId(null);
 
@@ -128,8 +128,8 @@ public class ImageReplicatorTest {
 
     @AfterMethod
     private void tearDown() throws Throwable {
-      if (dcpHost != null) {
-        TestHost.destroy(dcpHost);
+      if (xenonHost != null) {
+        TestHost.destroy(xenonHost);
       }
     }
 
@@ -144,7 +144,7 @@ public class ImageReplicatorTest {
     @Test(dataProvider = "replicationType")
     public void testOperationContainsContextId(ImageReplication imageReplication) throws Throwable {
       LoggingUtils.setRequestId("validRequestId");
-      String[] contextId = TestHelper.setupOperationContextIdCaptureOnSendRequest(dcpHost);
+      String[] contextId = TestHelper.setupOperationContextIdCaptureOnSendRequest(xenonHost);
 
       ReplicateImageRequest requestStart = new ReplicateImageRequest();
       requestStart.setReplicationType(imageReplication);
@@ -155,7 +155,7 @@ public class ImageReplicatorTest {
 
     @Test(dataProvider = "replicationType")
     public void testOperationDoesNotContainContextId(ImageReplication imageReplication) throws Throwable {
-      String[] contextId = TestHelper.setupOperationContextIdCaptureOnSendRequest(dcpHost);
+      String[] contextId = TestHelper.setupOperationContextIdCaptureOnSendRequest(xenonHost);
 
       ReplicateImageRequest requestStart = new ReplicateImageRequest();
       requestStart.setReplicationType(imageReplication);
@@ -200,10 +200,10 @@ public class ImageReplicatorTest {
 
     @Test(dataProvider = "replicationType")
     public void testCopyTriggerFails(ImageReplication imageReplication) throws Throwable {
-      doThrow(Exception.class).when(dcpHost).sendRequest(any(Operation.class));
+      doThrow(Exception.class).when(xenonHost).sendRequest(any(Operation.class));
 
       TestServiceIgnoresPosts service = new TestServiceIgnoresPosts(ImageReplicatorService.State.class);
-      dcpHost.startServiceSynchronously(service, null, ImageReplicatorServiceFactory.SELF_LINK);
+      xenonHost.startServiceSynchronously(service, null, ImageReplicatorServiceFactory.SELF_LINK);
 
       ReplicateImageRequest request = new ReplicateImageRequest();
       request.setReplicationType(imageReplication);
@@ -214,11 +214,11 @@ public class ImageReplicatorTest {
 
     @Test(dataProvider = "replicationType")
     public void testCopyTriggerTimesOut(ImageReplication imageReplication) throws Throwable {
-      doNothing().when(dcpHost).sendRequest(any(Operation.class));
+      doNothing().when(xenonHost).sendRequest(any(Operation.class));
       replicator.setDcpOperationTimeout(1);
 
       TestServiceIgnoresPosts service = new TestServiceIgnoresPosts(ImageReplicatorService.State.class);
-      dcpHost.startServiceSynchronously(service, null, ImageReplicatorServiceFactory.SELF_LINK);
+      xenonHost.startServiceSynchronously(service, null, ImageReplicatorServiceFactory.SELF_LINK);
 
       ReplicateImageRequest request = new ReplicateImageRequest();
       request.setReplicationType(imageReplication);
@@ -235,18 +235,18 @@ public class ImageReplicatorTest {
 
     @BeforeMethod
     private void setUp() throws Throwable {
-      injector = TestHelper.createInjector(configFilePath);
+      injector = TestHelper.createInjector();
       HostClient hostClient = injector.getInstance(HostClient.class);
-      dcpHost = spy(TestHost.create(hostClient));
-      replicator = spy(new ImageReplicator(dcpHost));
+      xenonHost = spy(TestHost.create(hostClient));
+      replicator = spy(new ImageReplicator(xenonHost));
 
       LoggingUtils.setRequestId(null);
     }
 
     @AfterMethod
     private void tearDown() throws Throwable {
-      if (dcpHost != null) {
-        TestHost.destroy(dcpHost);
+      if (xenonHost != null) {
+        TestHost.destroy(xenonHost);
       }
     }
 
@@ -254,7 +254,7 @@ public class ImageReplicatorTest {
     public void testOperationContainsContextId() throws Throwable {
       LoggingUtils.setRequestId("validRequestId");
 
-      String[] contextId = TestHelper.setupOperationContextIdCaptureOnSendRequest(dcpHost);
+      String[] contextId = TestHelper.setupOperationContextIdCaptureOnSendRequest(xenonHost);
       assertThat("Unexpected operation RequestId", contextId[0], not("validRequestId"));
 
       ReplicateImageStatusRequest request = new ReplicateImageStatusRequest(
@@ -266,7 +266,7 @@ public class ImageReplicatorTest {
 
     @Test
     public void testOperationDoesNotContainContextId() throws Throwable {
-      String[] contextId = TestHelper.setupOperationContextIdCaptureOnSendRequest(dcpHost);
+      String[] contextId = TestHelper.setupOperationContextIdCaptureOnSendRequest(xenonHost);
       ReplicateImageStatusRequest request = new ReplicateImageStatusRequest(
           startTestReplicatorServiceInStage(ImageReplicatorService.TaskState.TaskStage.FINISHED));
 

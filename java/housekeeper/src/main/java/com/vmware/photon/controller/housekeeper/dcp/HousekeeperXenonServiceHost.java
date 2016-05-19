@@ -38,7 +38,6 @@ import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.services.common.RootNamespaceService;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,7 +53,10 @@ import java.util.Map;
 public class HousekeeperXenonServiceHost
     extends AbstractServiceHost
     implements XenonHostInfoProvider,
-    HostClientProvider, CloudStoreHelperProvider, ServiceConfigProvider, NsxClientFactoryProvider {
+    HostClientProvider,
+    CloudStoreHelperProvider,
+    ServiceConfigProvider,
+    NsxClientFactoryProvider {
 
   protected static final String IMAGE_COPY_SCHEDULER_SERVICE =
       TaskSchedulerServiceFactory.SELF_LINK + "/image-copy";
@@ -92,7 +94,6 @@ public class HousekeeperXenonServiceHost
 
   private BuildInfo buildInfo;
 
-  @Inject
   public HousekeeperXenonServiceHost(
       XenonConfig xenonConfig,
       CloudStoreHelper cloudStoreHelper,

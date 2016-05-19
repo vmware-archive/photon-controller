@@ -14,11 +14,8 @@
 package com.vmware.photon.controller.housekeeper.service;
 
 import com.vmware.photon.controller.common.logging.LoggingUtils;
-import com.vmware.photon.controller.common.manifest.BuildInfo;
 import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.photon.controller.common.zookeeper.ServiceNodeEventHandler;
-import com.vmware.photon.controller.housekeeper.Config;
-import com.vmware.photon.controller.housekeeper.HousekeeperServerSet;
 import com.vmware.photon.controller.housekeeper.dcp.HousekeeperXenonServiceHost;
 import com.vmware.photon.controller.housekeeper.gen.Housekeeper;
 import com.vmware.photon.controller.housekeeper.gen.ReplicateImageRequest;
@@ -30,7 +27,6 @@ import com.vmware.photon.controller.status.gen.StatusType;
 import com.vmware.photon.controller.tracing.gen.TracingInfo;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import org.apache.thrift.TException;
 import org.slf4j.Logger;
@@ -49,28 +45,20 @@ public class HousekeeperService implements Housekeeper.Iface, ServiceNodeEventHa
   private static final Logger logger = LoggerFactory.getLogger(HousekeeperService.class);
 
   private final ServerSet serverSet;
-  private final HousekeeperXenonServiceHost dcpHost;
-  private final Config config;
-  private final BuildInfo buildInfo;
+  private final HousekeeperXenonServiceHost xenonHost;
 
-  @Inject
   public HousekeeperService(
-      @HousekeeperServerSet ServerSet serverSet,
-      HousekeeperXenonServiceHost host,
-      Config config,
-      BuildInfo buildInfo) {
+      ServerSet serverSet,
+      HousekeeperXenonServiceHost host) {
     this.serverSet = serverSet;
     this.serverSet.addChangeListener(this);
-    this.dcpHost = host;
-    this.config = config;
-    this.buildInfo = buildInfo;
+    this.xenonHost = host;
   }
 
   @Override
   public Status get_status() throws TException {
-    if (dcpHost.isReady()) {
+    if (xenonHost.isReady()) {
       Status status = new Status(StatusType.READY);
-      status.setBuild_info(buildInfo.toString());
       return status;
     }
     return new Status(StatusType.INITIALIZING);
@@ -105,7 +93,7 @@ public class HousekeeperService implements Housekeeper.Iface, ServiceNodeEventHa
 
   @VisibleForTesting
   protected ImageReplicator buildReplicator() {
-    return new ImageReplicator(dcpHost);
+    return new ImageReplicator(xenonHost);
   }
 
   @Override

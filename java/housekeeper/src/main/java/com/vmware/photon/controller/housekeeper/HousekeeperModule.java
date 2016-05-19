@@ -13,24 +13,10 @@
 
 package com.vmware.photon.controller.housekeeper;
 
-import com.vmware.photon.controller.common.CloudStoreServerSet;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
-import com.vmware.photon.controller.common.manifest.BuildInfo;
-import com.vmware.photon.controller.common.thrift.ServerSet;
-import com.vmware.photon.controller.common.thrift.ThriftConfig;
-import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
-import com.vmware.photon.controller.common.xenon.host.XenonConfig;
-import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
-import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
-import com.vmware.photon.controller.common.zookeeper.ZookeeperServerSetFactory;
-import com.vmware.photon.controller.housekeeper.dcp.HousekeeperXenonServiceHost;
-import com.vmware.photon.controller.housekeeper.service.HousekeeperService;
-import com.vmware.photon.controller.nsxclient.NsxClientFactory;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Singleton;
 import com.google.inject.assistedinject.FactoryModuleBuilder;
 
 import java.util.concurrent.Executors;
@@ -41,66 +27,13 @@ import java.util.concurrent.ScheduledExecutorService;
  */
 public class HousekeeperModule extends AbstractModule {
 
-  public static final String CLOUDSTORE_SERVICE_NAME = "cloudstore";
-
-  private final Config config;
-
-  public HousekeeperModule(Config config) {
-    this.config = config;
-  }
-
   @Override
   protected void configure() {
-    bind(BuildInfo.class).toInstance(BuildInfo.get(HousekeeperModule.class));
-    bind(ThriftConfig.class).toInstance(config.getThriftConfig());
-    bind(XenonConfig.class).toInstance(config.getXenonConfig());
-
     bind(ScheduledExecutorService.class)
         .toInstance(Executors.newScheduledThreadPool(4));
 
     install(new FactoryModuleBuilder()
         .implement(HostClient.class, HostClient.class)
         .build(HostClientFactory.class));
-
-    install(new FactoryModuleBuilder()
-        .implement(ServiceConfig.class, ServiceConfig.class)
-        .build(ServiceConfigFactory.class));
-  }
-
-  @Provides
-  @Singleton
-  @HousekeeperServerSet
-  public ServerSet getHousekeeperServerSet(ZookeeperServerSetFactory serverSetFactory) {
-    ServerSet serverSet = serverSetFactory.createServiceServerSet("housekeeper", true);
-    return serverSet;
-  }
-
-  @Provides
-  @Singleton
-  public HousekeeperService getHousekeeperService(
-      @HousekeeperServerSet ServerSet serverSet,
-      HousekeeperXenonServiceHost host,
-      Config config,
-      BuildInfo buildInfo) {
-    return new HousekeeperService(serverSet, host, config, buildInfo);
-  }
-
-  @Provides
-  @Singleton
-  @CloudStoreServerSet
-  public ServerSet getCloudStoreServerSet(ZookeeperServerSetFactory serverSetFactory) {
-    return serverSetFactory.createServiceServerSet(CLOUDSTORE_SERVICE_NAME, true);
-  }
-
-  @Provides
-  @Singleton
-  public CloudStoreHelper getCloudStoreHelper(@CloudStoreServerSet ServerSet cloudStoreServerSet) {
-    return new CloudStoreHelper(cloudStoreServerSet);
-  }
-
-  @Provides
-  @Singleton
-  public NsxClientFactory getNsxClientFactory() {
-    return new NsxClientFactory();
   }
 }
