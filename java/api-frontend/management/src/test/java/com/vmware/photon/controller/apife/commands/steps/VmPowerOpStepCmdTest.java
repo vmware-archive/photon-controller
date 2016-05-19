@@ -19,6 +19,7 @@ import com.vmware.photon.controller.apife.backends.EntityLockBackend;
 import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.backends.VmBackend;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
+import com.vmware.photon.controller.apife.backends.clients.HousekeeperXenonRestClient;
 import com.vmware.photon.controller.apife.backends.clients.SchedulerXenonRestClient;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.StepEntity;
@@ -75,6 +76,9 @@ public class VmPowerOpStepCmdTest extends PowerMockTestCase {
   private HousekeeperClient housekeeperClient;
 
   @Mock
+  private HousekeeperXenonRestClient housekeeperXenonRestClient;
+
+  @Mock
   private DeployerClient deployerClient;
 
   @Mock
@@ -102,7 +106,7 @@ public class VmPowerOpStepCmdTest extends PowerMockTestCase {
     datastore.setId("datastore-id");
 
     taskCommand = spy(new TaskCommand(dcpClient, schedulerXenonRestClient, hostClient,
-        housekeeperClient, deployerClient, entityLockBackend, task));
+        housekeeperClient, housekeeperXenonRestClient, deployerClient, entityLockBackend, task));
     when(taskCommand.getHostClient()).thenReturn(hostClient);
     when(taskCommand.getSchedulerXenonRestClient()).thenReturn(schedulerXenonRestClient);
     HostService.State hostServiceState = new HostService.State();
