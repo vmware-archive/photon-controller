@@ -165,6 +165,12 @@ task :reboot_hosts, [:dc_yml] do |t, args|
   sleep(5 * 60)
 end
 
+desc 'Reboot host'
+task :reboot_host do |t|
+  EsxCloud::HostCleaner.reboot_host EsxCloud::TestHelpers.get_esx_ip, EsxCloud::TestHelpers.get_esx_username, EsxCloud::TestHelpers.get_esx_password
+  sleep(5 * 60)
+end
+
 desc 'Power off management vms'
 task :power_off_management_vms, [:count] do |t, args|
   EsxCloud::UptimeHelper.power_off_management_vms args[:count]
