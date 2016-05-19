@@ -17,13 +17,21 @@ import com.vmware.photon.controller.api.common.exceptions.ApiFeException;
 import com.vmware.photon.controller.apibackend.servicedocuments.ConnectVmToSwitchTask;
 import com.vmware.photon.controller.apibackend.tasks.ConnectVmToSwitchTaskService;
 import com.vmware.photon.controller.apife.backends.StepBackend;
+import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.backends.clients.HousekeeperXenonRestClient;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.StepEntity;
+import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
+import com.vmware.photon.controller.nsxclient.utils.NameUtils;
 
+import com.google.common.collect.ImmutableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
+
+import java.util.List;
 
 /**
  * This is an optional step which only happens when an VM is to be
@@ -39,16 +47,46 @@ public class VmJoinVirtualNetworkStepCmd extends StepCommand {
 
   @Override
   protected void execute() throws ApiFeException, InterruptedException, RpcException {
+    String vmLocationId = (String) step.getTransientResource(VmCreateStepCmd.VM_LOCATION_ID);
+    checkNotNull(vmLocationId, "VM location id is not available");
+
+    List<String> logicalSwitchIds = (List<String>) step.getTransientResource(ResourceReserveStepCmd.LOGICAL_SWITCH_IDS);
+    checkNotNull(logicalSwitchIds, "Logical switches to connect VM to are not available");
+
+    DeploymentService.State deploymentServiceState = getDeploymentServiceState();
+
     ConnectVmToSwitchTask startState = new ConnectVmToSwitchTask();
+    startState.vmLocationId = vmLocationId;
+    startState.toVmPortDisplayName = NameUtils.getLogicalSwitchDownlinkPortName(vmLocationId);
+    startState.nsxManagerEndpoint = deploymentServiceState.networkManagerAddress;
+    startState.username = deploymentServiceState.networkManagerUsername;
+    startState.password = deploymentServiceState.networkManagerPassword;
 
-    // The data required in the startState will be filled out in a different CR.
-
+    taskCommand.getApiFeXenonRestClient();
     HousekeeperXenonRestClient housekeeperXenonRestClient = taskCommand.getHousekeeperXenonRestClient();
-    housekeeperXenonRestClient.post(ConnectVmToSwitchTaskService.FACTORY_LINK, startState)
-        .getBody(ConnectVmToSwitchTask.class);
+
+    for (String switchId : logicalSwitchIds) {
+      startState.logicalSwitchId = switchId;
+      housekeeperXenonRestClient.post(ConnectVmToSwitchTaskService.FACTORY_LINK, startState)
+          .getBody(ConnectVmToSwitchTask.class);
+
+      logger.info("Connected VM at {} to logical switch {}", vmLocationId, switchId);
+    }
   }
 
   @Override
   protected void cleanup() {
+  }
+
+  private DeploymentService.State getDeploymentServiceState() {
+    ApiFeXenonRestClient apiFeXenonRestClient = taskCommand.getApiFeXenonRestClient();
+
+    final ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
+    List<DeploymentService.State> deploymentStates = apiFeXenonRestClient.queryDocuments(
+        DeploymentService.State.class, termsBuilder.build());
+
+    checkState(deploymentStates.size() == 1, "Found " + deploymentStates.size() + " deployment service(s).");
+
+    return deploymentStates.get(0);
   }
 }

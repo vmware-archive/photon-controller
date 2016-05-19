@@ -16,12 +16,16 @@ package com.vmware.photon.controller.apife.commands.steps;
 import com.vmware.photon.controller.apibackend.servicedocuments.ConnectVmToSwitchTask;
 import com.vmware.photon.controller.apibackend.tasks.ConnectVmToSwitchTaskService;
 import com.vmware.photon.controller.apife.backends.StepBackend;
+import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.backends.clients.HousekeeperXenonRestClient;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.StepEntity;
+import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
 import com.vmware.xenon.common.Operation;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import static org.hamcrest.CoreMatchers.is;
@@ -35,6 +39,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.testng.Assert.fail;
 
+import java.util.ArrayList;
 import java.util.UUID;
 
 /**
@@ -44,22 +49,76 @@ public class VmJoinVirtualNetworkStepCmdTest {
 
   private TaskCommand taskCommand;
   private HousekeeperXenonRestClient housekeeperXenonRestClient;
+  private ApiFeXenonRestClient apiFeXenonRestClient;
+  private StepEntity step;
 
   @BeforeMethod
   public void setup() {
     taskCommand = mock(TaskCommand.class);
     housekeeperXenonRestClient = mock(HousekeeperXenonRestClient.class);
+    apiFeXenonRestClient = mock(ApiFeXenonRestClient.class);
 
     doReturn(housekeeperXenonRestClient).when(taskCommand).getHousekeeperXenonRestClient();
+    doReturn(apiFeXenonRestClient).when(taskCommand).getApiFeXenonRestClient();
+  }
+
+  @Test
+  public void testVmLocationIdMissing() throws Throwable {
+    VmJoinVirtualNetworkStepCmd command = getVmJoinVirtualNetworkStepCmd();
+
+    try {
+      command.execute();
+      fail("Should have failed due to missing VM location ID");
+    } catch (NullPointerException e) {
+      assertThat(e.getMessage(), is("VM location id is not available"));
+    }
+  }
+
+  @Test
+  public void testLogicalSwitchMissing() throws Throwable {
+    VmJoinVirtualNetworkStepCmd command = getVmJoinVirtualNetworkStepCmd();
+    step.createOrUpdateTransientResource(VmCreateStepCmd.VM_LOCATION_ID, "vm-location-id");
+
+    try {
+      command.execute();
+      fail("Should have failed due to missing logical switches");
+    } catch (NullPointerException e) {
+      assertThat(e.getMessage(), is("Logical switches to connect VM to are not available"));
+    }
+  }
+
+  @Test
+  public void testDeploymentServiceMissing() throws Throwable {
+    VmJoinVirtualNetworkStepCmd command = getVmJoinVirtualNetworkStepCmd();
+    step.createOrUpdateTransientResource(VmCreateStepCmd.VM_LOCATION_ID, "vm-location-id");
+    step.createOrUpdateTransientResource(ResourceReserveStepCmd.LOGICAL_SWITCH_IDS,
+        ImmutableList.of("logical-switch1"));
+
+    doReturn(new ArrayList<>()).when(apiFeXenonRestClient)
+        .queryDocuments(eq(DeploymentService.State.class), any(ImmutableMap.class));
+
+    try {
+      command.execute();
+      fail("Should have failed due to missing deployment service");
+    } catch (IllegalStateException e) {
+      assertThat(e.getMessage(), is("Found 0 deployment service(s)."));
+    }
   }
 
   @Test
   public void testSuccessfulJoin() throws Throwable{
+    VmJoinVirtualNetworkStepCmd command = getVmJoinVirtualNetworkStepCmd();
+    step.createOrUpdateTransientResource(VmCreateStepCmd.VM_LOCATION_ID, "vm-location-id");
+    step.createOrUpdateTransientResource(ResourceReserveStepCmd.LOGICAL_SWITCH_IDS,
+        ImmutableList.of("logical-switch1"));
+
+    doReturn(ImmutableList.of(new DeploymentService.State())).when(apiFeXenonRestClient)
+        .queryDocuments(eq(DeploymentService.State.class), any(ImmutableMap.class));
+
     Operation operation = mock(Operation.class);
     doReturn(operation).when(housekeeperXenonRestClient).post(eq(ConnectVmToSwitchTaskService.FACTORY_LINK),
         any(ConnectVmToSwitchTask.class));
 
-    VmJoinVirtualNetworkStepCmd command = getVmJoinVirtualNetworkStepCmd();
     command.execute();
 
     verify(housekeeperXenonRestClient).post(eq(ConnectVmToSwitchTaskService.FACTORY_LINK),
@@ -69,12 +128,18 @@ public class VmJoinVirtualNetworkStepCmdTest {
 
   @Test
   public void testFailedToJoin()  throws Throwable {
+    VmJoinVirtualNetworkStepCmd command = getVmJoinVirtualNetworkStepCmd();
+    step.createOrUpdateTransientResource(VmCreateStepCmd.VM_LOCATION_ID, "vm-location-id");
+    step.createOrUpdateTransientResource(ResourceReserveStepCmd.LOGICAL_SWITCH_IDS,
+        ImmutableList.of("logical-switch1"));
+
+    doReturn(ImmutableList.of(new DeploymentService.State())).when(apiFeXenonRestClient)
+        .queryDocuments(eq(DeploymentService.State.class), any(ImmutableMap.class));
+
     String errorMsg = "Failed with error code 500";
     doThrow(new XenonRuntimeException(errorMsg))
         .when(housekeeperXenonRestClient).post(eq(ConnectVmToSwitchTaskService.FACTORY_LINK),
         any(ConnectVmToSwitchTask.class));
-
-    VmJoinVirtualNetworkStepCmd command = getVmJoinVirtualNetworkStepCmd();
 
     try {
       command.execute();
@@ -85,7 +150,7 @@ public class VmJoinVirtualNetworkStepCmdTest {
   }
 
   private VmJoinVirtualNetworkStepCmd getVmJoinVirtualNetworkStepCmd() {
-    StepEntity step = new StepEntity();
+    step = new StepEntity();
     step.setId(UUID.randomUUID().toString());
 
     StepBackend stepBackend = mock(StepBackend.class);

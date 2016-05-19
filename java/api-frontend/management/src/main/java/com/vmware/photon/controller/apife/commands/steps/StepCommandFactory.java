@@ -118,7 +118,7 @@ public class StepCommandFactory {
       case DELETE_DISK:
         return new DiskDeleteStepCmd(taskCommand, stepBackend, stepEntity, diskBackend, attachedDiskBackend);
       case CREATE_VM:
-        return new VmCreateStepCmd(taskCommand, stepBackend, stepEntity, vmBackend, diskBackend);
+        return new VmCreateStepCmd(taskCommand, stepBackend, stepEntity, vmBackend, diskBackend, useVirtualNetwork);
       case DELETE_VM:
         return new VmDeleteStepCmd(taskCommand, stepBackend, stepEntity, vmBackend, diskBackend);
       case START_VM:

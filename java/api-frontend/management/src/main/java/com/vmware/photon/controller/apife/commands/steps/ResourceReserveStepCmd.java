@@ -44,6 +44,7 @@ import com.vmware.photon.controller.apife.entities.base.InfrastructureEntity;
 import com.vmware.photon.controller.apife.exceptions.external.DiskNotFoundException;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidLocalitySpecException;
 import com.vmware.photon.controller.apife.exceptions.external.NetworkNotFoundException;
+import com.vmware.photon.controller.apife.exceptions.external.StepNotFoundException;
 import com.vmware.photon.controller.apife.exceptions.external.UnfulfillableAffinitiesException;
 import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
 import com.vmware.photon.controller.cloudstore.dcp.entity.VirtualNetworkService;
@@ -92,6 +93,8 @@ import java.util.concurrent.TimeUnit;
  * StepCommand for resource reservation.
  */
 public class ResourceReserveStepCmd extends StepCommand {
+
+  public static final String LOGICAL_SWITCH_IDS = "logical-switch-ids";
 
   private static final int MAX_PLACEMENT_RETRIES = 5;
   private static final long PLACEMENT_RETRY_INTERVAL = TimeUnit.SECONDS.toMillis(1);
@@ -576,8 +579,9 @@ public class ResourceReserveStepCmd extends StepCommand {
   private void createNetworkConstraints(
       VmEntity entity,
       com.vmware.photon.controller.resource.gen.Vm vm)
-      throws NetworkNotFoundException {
+      throws NetworkNotFoundException, StepNotFoundException {
     if (entity.getNetworks() != null && !entity.getNetworks().isEmpty()) {
+      List<String> logicalSwitchIds = new ArrayList<>();
       for (String network : entity.getNetworks()) {
         ResourceConstraint resourceConstraint = new ResourceConstraint();
         if (!this.useVirtualNetwork) {
@@ -587,10 +591,19 @@ public class ResourceReserveStepCmd extends StepCommand {
           }
         } else {
           resourceConstraint.setType(ResourceConstraintType.VIRTUAL_NETWORK);
-          resourceConstraint.addToValues(getVirtualNetwork(network));
+
+          String switchId = getVirtualNetwork(network);
+          resourceConstraint.addToValues(switchId);
+          logicalSwitchIds.add(switchId);
         }
 
         vm.addToResource_constraints(resourceConstraint);
+
+        // Need to pass the logical switch IDs to further steps if virtual network is being used.
+        if (this.useVirtualNetwork) {
+          taskCommand.getTask().findStep(com.vmware.photon.controller.api.Operation.CONNECT_VM_SWITCH)
+              .createOrUpdateTransientResource(ResourceReserveStepCmd.LOGICAL_SWITCH_IDS, logicalSwitchIds);
+        }
       }
     }
   }

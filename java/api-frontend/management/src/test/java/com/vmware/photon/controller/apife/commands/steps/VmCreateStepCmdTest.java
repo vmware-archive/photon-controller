@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.apife.commands.steps;
 
 import com.vmware.photon.controller.api.DiskState;
+import com.vmware.photon.controller.api.Operation;
 import com.vmware.photon.controller.api.VmState;
 import com.vmware.photon.controller.apife.backends.DiskBackend;
 import com.vmware.photon.controller.apife.backends.StepBackend;
@@ -23,7 +24,9 @@ import com.vmware.photon.controller.apife.entities.EphemeralDiskEntity;
 import com.vmware.photon.controller.apife.entities.LocalityEntity;
 import com.vmware.photon.controller.apife.entities.PersistentDiskEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
+import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.entities.VmEntity;
+import com.vmware.photon.controller.apife.exceptions.external.StepNotFoundException;
 import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.exceptions.InvalidReservationException;
@@ -37,8 +40,12 @@ import org.mockito.Mock;
 import org.powermock.modules.testng.PowerMockTestCase;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.nullValue;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Matchers.anyMap;
 import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -68,30 +75,40 @@ public class VmCreateStepCmdTest extends PowerMockTestCase {
   @Mock
   private TaskCommand taskCommand;
 
+  @Mock
+  private TaskEntity task;
+
   private VmEntity vm;
   private StepEntity step;
   private String stepId = "step-1";
   private String agentId = "agent-1";
   private String reservationId = "r-100";
   private String agentIp = "1.1.1.1";
+  private String vmLocationId = "vm-location";
   private CreateVmResponse createVmResponse = new CreateVmResponse();
+  private StepEntity connectVmSwitchStep = new StepEntity();
 
   @BeforeMethod
-  public void setUp() throws InternalException, InterruptedException {
+  public void setUp() throws InternalException, InterruptedException, StepNotFoundException {
     vm = new VmEntity();
     vm.setId("vm-1");
+    createVmResponse.setVm(createThriftVm("vm-1", "vm-100", "datastore-1", "datastore-name"));
+
     when(taskCommand.getReservation()).thenReturn(reservationId);
     when(taskCommand.getHostClient()).thenReturn(hostClient);
     when(taskCommand.lookupAgentId(agentIp)).thenReturn(agentId);
     when(hostClient.getHostIp()).thenReturn(agentIp);
 
-    createVmResponse.setVm(createThriftVm("vm-1", "vm-100", "datastore-1", "datastore-name"));
+    doReturn(task).when(taskCommand).getTask();
+    doReturn(connectVmSwitchStep).when(task).findStep(Operation.CONNECT_VM_SWITCH);
   }
 
   @Test
   public void testSuccessfulVmCreate() throws Throwable {
     VmCreateStepCmd command = getVmCreateStepCmd();
     command.createVm();
+
+    assertThat(connectVmSwitchStep.getTransientResource(VmCreateStepCmd.VM_LOCATION_ID), nullValue());
 
     InOrder inOrder = inOrder(hostClient, vmBackend);
     inOrder.verify(hostClient).createVm(reservationId, new HashMap<>());
@@ -112,6 +129,25 @@ public class VmCreateStepCmdTest extends PowerMockTestCase {
     when(hostClient.createVm(reservationId, new HashMap<>())).thenReturn(createVmResponse);
 
     command.createVm();
+
+    assertThat(connectVmSwitchStep.getTransientResource(VmCreateStepCmd.VM_LOCATION_ID), nullValue());
+
+    InOrder inOrder = inOrder(hostClient, vmBackend);
+    inOrder.verify(hostClient).createVm(reservationId, new HashMap<String, String>());
+    inOrder.verify(vmBackend).updateState(vm, VmState.STOPPED, agentId, agentIp, "datastore-1", "datastore-name");
+
+    verifyNoMoreInteractions(vmBackend);
+  }
+
+  @Test
+  public void testSuccessfulVmCreateWithVirtualNetwork() throws Throwable {
+    vm.setNetworks(ImmutableList.of("network-1"));
+    when(hostClient.createVm(reservationId, new HashMap<>())).thenReturn(createVmResponse);
+
+    VmCreateStepCmd command = getVmCreateStepCmd(true);
+    command.createVm();
+
+    assertThat(connectVmSwitchStep.getTransientResource(VmCreateStepCmd.VM_LOCATION_ID), is(vmLocationId));
 
     InOrder inOrder = inOrder(hostClient, vmBackend);
     inOrder.verify(hostClient).createVm(reservationId, new HashMap<String, String>());
@@ -171,13 +207,17 @@ public class VmCreateStepCmdTest extends PowerMockTestCase {
   }
 
   private VmCreateStepCmd getVmCreateStepCmd() throws Throwable {
+    return getVmCreateStepCmd(false);
+  }
+
+  private VmCreateStepCmd getVmCreateStepCmd(boolean useVirtualNetwork) throws Throwable {
     when(hostClient.createVm(anyString(), anyMap())).thenReturn(createVmResponse);
 
     step = new StepEntity();
     step.setId(stepId);
     step.addResource(vm);
     VmCreateStepCmd cmd = new VmCreateStepCmd(taskCommand,
-        stepBackend, step, vmBackend, diskBackend);
+        stepBackend, step, vmBackend, diskBackend, useVirtualNetwork);
     return spy(cmd);
   }
 
@@ -188,6 +228,7 @@ public class VmCreateStepCmdTest extends PowerMockTestCase {
     Datastore datestore = new Datastore(datastoreId);
     datestore.setName(datastoreName);
     vm.setDatastore(datestore);
+    vm.setLocation_id(vmLocationId);
     return vm;
   }
 
