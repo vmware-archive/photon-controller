@@ -85,11 +85,13 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -646,6 +648,11 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
     when(schedulerXenonRestClient.post(any(), placementTaskCaptor.capture())).thenReturn(placementOperation);
     when(hostClient.reserve(any(Resource.class), eq(SUCCESSFUL_GENERATION))).thenReturn(SUCCESSFUL_RESERVE_RESPONSE);
 
+    TaskEntity task = mock(TaskEntity.class);
+    StepEntity connectVmSwitchStep = new StepEntity();
+    doReturn(task).when(taskCommand).getTask();
+    doReturn(connectVmSwitchStep).when(task).findStep(com.vmware.photon.controller.api.Operation.CONNECT_VM_SWITCH);
+
     ResourceReserveStepCmd command = getVmReservationCommand();
     command.setInfrastructureEntity(vm);
     command.execute();
@@ -658,6 +665,10 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
     assertThat(resourceConstraint.getValues().size(), is(2));
     assertThat(resourceConstraint.getValues().get(0), is("P1"));
     assertThat(resourceConstraint.getValues().get(1), is("P2"));
+
+    String logicalSwitchId =
+        (String) connectVmSwitchStep.getTransientResource(ResourceReserveStepCmd.LOGICAL_SWITCH_ID);
+    assertThat(logicalSwitchId, nullValue());
   }
 
   @Test
@@ -680,6 +691,11 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
     when(schedulerXenonRestClient.post(any(), placementTaskCaptor.capture())).thenReturn(placementOperation);
     when(hostClient.reserve(any(Resource.class), eq(SUCCESSFUL_GENERATION))).thenReturn(SUCCESSFUL_RESERVE_RESPONSE);
 
+    TaskEntity task = mock(TaskEntity.class);
+    StepEntity connectVmSwitchStep = new StepEntity();
+    doReturn(task).when(taskCommand).getTask();
+    doReturn(connectVmSwitchStep).when(task).findStep(com.vmware.photon.controller.api.Operation.CONNECT_VM_SWITCH);
+
     ResourceReserveStepCmd command = getVmReservationCommand(true);
     command.setInfrastructureEntity(vm);
     command.execute();
@@ -691,6 +707,10 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
     assertThat(resourceConstraint.getType(), is(ResourceConstraintType.VIRTUAL_NETWORK));
     assertThat(resourceConstraint.getValues().size(), is(1));
     assertThat(resourceConstraint.getValues().get(0), is(logicalSwitchId));
+
+    String savedLogicalSwitchId = (String) connectVmSwitchStep
+        .getTransientResource(ResourceReserveStepCmd.LOGICAL_SWITCH_ID);
+    assertThat(savedLogicalSwitchId, is(logicalSwitchId));
   }
 
   @Test(expectedExceptions = NullPointerException.class)

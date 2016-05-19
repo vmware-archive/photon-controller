@@ -95,7 +95,7 @@ public class ProjectVmsResourceTest extends ResourceTest {
     spec.setAttachedDisks(disks);
     spec.setSourceImageId("x");
 
-    addResource(new ProjectVmsResource(vmFeClient, paginationConfig));
+    addResource(new ProjectVmsResource(vmFeClient, paginationConfig, false));
   }
 
   @BeforeMethod

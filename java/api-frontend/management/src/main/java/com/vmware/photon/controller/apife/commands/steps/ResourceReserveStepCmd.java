@@ -44,6 +44,7 @@ import com.vmware.photon.controller.apife.entities.base.InfrastructureEntity;
 import com.vmware.photon.controller.apife.exceptions.external.DiskNotFoundException;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidLocalitySpecException;
 import com.vmware.photon.controller.apife.exceptions.external.NetworkNotFoundException;
+import com.vmware.photon.controller.apife.exceptions.external.StepNotFoundException;
 import com.vmware.photon.controller.apife.exceptions.external.UnfulfillableAffinitiesException;
 import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
 import com.vmware.photon.controller.cloudstore.dcp.entity.VirtualNetworkService;
@@ -92,6 +93,8 @@ import java.util.concurrent.TimeUnit;
  * StepCommand for resource reservation.
  */
 public class ResourceReserveStepCmd extends StepCommand {
+
+  public static final String LOGICAL_SWITCH_ID = "logical-switch-id";
 
   private static final int MAX_PLACEMENT_RETRIES = 5;
   private static final long PLACEMENT_RETRY_INTERVAL = TimeUnit.SECONDS.toMillis(1);
@@ -576,7 +579,7 @@ public class ResourceReserveStepCmd extends StepCommand {
   private void createNetworkConstraints(
       VmEntity entity,
       com.vmware.photon.controller.resource.gen.Vm vm)
-      throws NetworkNotFoundException {
+      throws NetworkNotFoundException, StepNotFoundException {
     if (entity.getNetworks() != null && !entity.getNetworks().isEmpty()) {
       for (String network : entity.getNetworks()) {
         ResourceConstraint resourceConstraint = new ResourceConstraint();
@@ -587,7 +590,16 @@ public class ResourceReserveStepCmd extends StepCommand {
           }
         } else {
           resourceConstraint.setType(ResourceConstraintType.VIRTUAL_NETWORK);
-          resourceConstraint.addToValues(getVirtualNetwork(network));
+
+          String logicalSwitchId = getLogicalSwitchId(network);
+          resourceConstraint.addToValues(logicalSwitchId);
+
+          // Need to pass the logical switch id to further steps if virtual network is being used.
+          // Only one logical switch is supported at this time.
+          if (this.useVirtualNetwork) {
+            taskCommand.getTask().findStep(com.vmware.photon.controller.api.Operation.CONNECT_VM_SWITCH)
+                .createOrUpdateTransientResource(ResourceReserveStepCmd.LOGICAL_SWITCH_ID, logicalSwitchId);
+          }
         }
 
         vm.addToResource_constraints(resourceConstraint);
@@ -595,7 +607,7 @@ public class ResourceReserveStepCmd extends StepCommand {
     }
   }
 
-  private String getVirtualNetwork(String id) throws NetworkNotFoundException {
+  private String getLogicalSwitchId(String id) throws NetworkNotFoundException {
     ApiFeXenonRestClient apiFeXenonRestClient = taskCommand.getApiFeXenonRestClient();
     try {
       Operation result = apiFeXenonRestClient.get(VirtualNetworkService.FACTORY_LINK + "/" + id);
