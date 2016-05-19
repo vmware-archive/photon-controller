@@ -237,10 +237,10 @@ class TestVimClient(unittest.TestCase):
     def get_remove_spec(self, vm_info, disk_path):
         remove_spec = EsxVmConfigSpec(None)
         remove_spec.init_for_update()
-        devices = remove_spec._get_devices_from_config(vm_info.config)
+        devices = remove_spec._get_devices_by_type(vm_info.config, vim.vm.device.VirtualDisk)
         found_device = None
         for device in devices:
-            if isinstance(device, vim.vm.device.VirtualDisk) and device.backing.fileName.endswith(disk_path):
+            if device.backing.fileName.endswith(disk_path):
                 found_device = device
         remove_spec._remove_device(found_device)
         return remove_spec
