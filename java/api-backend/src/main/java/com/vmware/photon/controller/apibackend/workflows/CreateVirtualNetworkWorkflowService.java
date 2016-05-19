@@ -439,7 +439,6 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
           } catch (Throwable t) {
             fail(state, t);
           }
-          finish(state);
         })
         .sendWith(this);
   }
