@@ -14,16 +14,18 @@
 package com.vmware.photon.controller.housekeeper.dcp;
 
 import com.vmware.photon.controller.apibackend.ApiBackendFactory;
+import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
+import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.host.XenonConfig;
 import com.vmware.photon.controller.common.xenon.scheduler.TaskSchedulerServiceFactory;
+import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
 import com.vmware.photon.controller.housekeeper.Config;
 import com.vmware.photon.controller.housekeeper.ConfigTest;
-import com.vmware.photon.controller.housekeeper.helpers.TestHelper;
 import com.vmware.photon.controller.nsxclient.NsxClientFactory;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.services.common.LuceneDocumentIndexService;
@@ -31,10 +33,10 @@ import com.vmware.xenon.services.common.LuceneQueryTaskFactoryService;
 import com.vmware.xenon.services.common.RootNamespaceService;
 import com.vmware.xenon.services.common.ServiceUriPaths;
 
-import com.google.inject.Injector;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -42,6 +44,8 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.io.File;
 import java.io.IOException;
@@ -67,8 +71,13 @@ public class HousekeeperXenonServiceHostTest {
    */
   private static final long SERVICES_STARTUP_TIMEOUT = TimeUnit.SECONDS.toMillis(30);
 
-  private Injector injector;
   private HousekeeperXenonServiceHost host;
+  private Config config;
+  private CloudStoreHelper cloudStoreHelper;
+  private HostClientFactory hostClientFactory;
+  private ServiceConfigFactory serviceConfigFactory;
+  private NsxClientFactory nsxClientFactory;
+  private ServerSet cloudStoreServerSet;
 
   private String[] serviceSelfLinks = createServiceSelfLinks();
 
@@ -84,15 +93,29 @@ public class HousekeeperXenonServiceHostTest {
    */
   public class InitializationTest {
 
-    @BeforeMethod
-    public void setUp() throws Exception {
-
-      Config config = ConfigBuilder.build(Config.class,
+    @BeforeClass
+    public void setUpClass() throws Exception {
+      config = ConfigBuilder.build(Config.class,
           ConfigTest.class.getResource(configFilePath).getPath());
+
+      cloudStoreServerSet = mock(ServerSet.class);
+      cloudStoreHelper = new CloudStoreHelper(cloudStoreServerSet);
+      hostClientFactory = mock(HostClientFactory.class);
+      HostClient client = mock(HostClient.class);
+      when(hostClientFactory.create()).thenReturn(client);
+      serviceConfigFactory = mock(ServiceConfigFactory.class);
+      ServiceConfig serviceConfig = mock(ServiceConfig.class);
+      when(serviceConfigFactory.create(anyString())).thenReturn(serviceConfig);
+      nsxClientFactory = new NsxClientFactory();
+
       storageDir = new File(config.getXenonConfig().getStoragePath());
       FileUtils.deleteDirectory(storageDir);
+    }
 
-      injector = TestHelper.createInjector(configFilePath);
+    @BeforeMethod
+    public void setUp() throws Throwable {
+        host = new HousekeeperXenonServiceHost(config.getXenonConfig(), cloudStoreHelper, hostClientFactory,
+            serviceConfigFactory, nsxClientFactory);
     }
 
     @AfterMethod
@@ -105,24 +128,26 @@ public class HousekeeperXenonServiceHostTest {
       // make sure folder exists
       storageDir.mkdirs();
 
-      HousekeeperXenonServiceHost host = injector.getInstance(HousekeeperXenonServiceHost.class);
       assertThat(storageDir.exists(), is(true));
       assertThat(host, is(notNullValue()));
     }
 
     @Test
-    public void testStoragePathDoesNotExist() throws Exception {
+    public void testStoragePathDoesNotExist() throws Throwable {
       // make sure folder does not exist
       FileUtils.deleteDirectory(storageDir);
+      assertThat(storageDir.exists(), is(false));
 
-      HousekeeperXenonServiceHost host = injector.getInstance(HousekeeperXenonServiceHost.class);
+      // Check that the host will create the storage directory.
+      host = new HousekeeperXenonServiceHost(config.getXenonConfig(), cloudStoreHelper, hostClientFactory,
+          serviceConfigFactory, nsxClientFactory);
+
       assertThat(storageDir.exists(), is(true));
       assertThat(host, is(notNullValue()));
     }
 
     @Test
     public void testParams() {
-      HousekeeperXenonServiceHost host = injector.getInstance(HousekeeperXenonServiceHost.class);
       assertThat(host.getPort(), is(16001));
       Path storagePath = Paths.get(storageDir.getPath()).resolve(Integer.toString(16001));
       assertThat(host.getStorageSandbox().getPath(), is(storagePath.toString()));
@@ -130,19 +155,16 @@ public class HousekeeperXenonServiceHostTest {
 
     @Test
     public void testGetHostClientFactory() {
-      HousekeeperXenonServiceHost host = injector.getInstance(HousekeeperXenonServiceHost.class);
       assertThat(host.getHostClient(), notNullValue());
     }
 
     @Test
     public void testGetServiceConfig() {
-      HousekeeperXenonServiceHost host = injector.getInstance(HousekeeperXenonServiceHost.class);
       assertThat(host.getServiceConfig(), notNullValue());
     }
 
     @Test
     public void testGetNsxClientFactory() {
-      HousekeeperXenonServiceHost host = injector.getInstance(HousekeeperXenonServiceHost.class);
       assertThat(host.getNsxClientFactory(), notNullValue());
     }
   }
@@ -152,10 +174,25 @@ public class HousekeeperXenonServiceHostTest {
    */
   public class StartTest {
 
+    @BeforeClass
+    private void setUpClass() throws Throwable {
+      config = ConfigBuilder.build(Config.class,
+          ConfigTest.class.getResource(configFilePath).getPath());
+
+      cloudStoreServerSet = mock(ServerSet.class);
+      cloudStoreHelper = new CloudStoreHelper(cloudStoreServerSet);
+      hostClientFactory = mock(HostClientFactory.class);
+      serviceConfigFactory = mock(ServiceConfigFactory.class);
+      nsxClientFactory = new NsxClientFactory();
+
+      storageDir = new File(config.getXenonConfig().getStoragePath());
+      FileUtils.deleteDirectory(storageDir);
+    }
+
     @BeforeMethod
     private void setUp() throws Throwable {
-      injector = TestHelper.createInjector(configFilePath);
-      host = injector.getInstance(HousekeeperXenonServiceHost.class);
+      host = new HousekeeperXenonServiceHost(config.getXenonConfig(), cloudStoreHelper, hostClientFactory,
+          serviceConfigFactory, nsxClientFactory);
     }
 
     @AfterMethod
@@ -195,11 +232,25 @@ public class HousekeeperXenonServiceHostTest {
    */
   public class IsReadyTest {
 
+    @BeforeClass
+    private void setUpClass() throws Throwable {
+      config = ConfigBuilder.build(Config.class,
+          ConfigTest.class.getResource(configFilePath).getPath());
+
+      cloudStoreServerSet = mock(ServerSet.class);
+      cloudStoreHelper = new CloudStoreHelper(cloudStoreServerSet);
+      hostClientFactory = mock(HostClientFactory.class);
+      serviceConfigFactory = mock(ServiceConfigFactory.class);
+      nsxClientFactory = new NsxClientFactory();
+
+      storageDir = new File(config.getXenonConfig().getStoragePath());
+      FileUtils.deleteDirectory(storageDir);
+    }
+
     @BeforeMethod
     private void setUp() throws Throwable {
-      injector = TestHelper.createInjector(configFilePath);
-
-      host = injector.getInstance(HousekeeperXenonServiceHost.class);
+      host = new HousekeeperXenonServiceHost(config.getXenonConfig(), cloudStoreHelper, hostClientFactory,
+          serviceConfigFactory, nsxClientFactory);
       host.start();
       ServiceHostUtils.waitForServiceAvailability(host, SERVICES_STARTUP_TIMEOUT, serviceSelfLinks.clone());
     }
@@ -233,21 +284,30 @@ public class HousekeeperXenonServiceHostTest {
     private final File storageDir2 = new File("/tmp/dcp/16002/");
     private HousekeeperXenonServiceHost host2;
 
+    @BeforeClass
+    private void setUpClass() throws Throwable {
+      config = ConfigBuilder.build(Config.class,
+          ConfigTest.class.getResource(configFilePath).getPath());
+
+      cloudStoreServerSet = mock(ServerSet.class);
+      cloudStoreHelper = new CloudStoreHelper(cloudStoreServerSet);
+      hostClientFactory = mock(HostClientFactory.class);
+      serviceConfigFactory = mock(ServiceConfigFactory.class);
+      nsxClientFactory = new NsxClientFactory();
+
+      storageDir = new File(config.getXenonConfig().getStoragePath());
+      FileUtils.deleteDirectory(storageDir);
+    }
+
     @BeforeMethod
     private void setUp() throws Throwable {
-      injector = TestHelper.createInjector(configFilePath);
-
       XenonConfig xenonConfig = new XenonConfig();
       xenonConfig.setBindAddress("0.0.0.0");
       xenonConfig.setPort(16001);
       xenonConfig.setStoragePath(storageDir.getAbsolutePath());
 
-      host = new HousekeeperXenonServiceHost(
-          xenonConfig,
-          injector.getInstance(CloudStoreHelper.class),
-          injector.getInstance(HostClientFactory.class),
-          injector.getInstance(ServiceConfigFactory.class),
-          injector.getInstance(NsxClientFactory.class));
+      host = new HousekeeperXenonServiceHost(xenonConfig, cloudStoreHelper, hostClientFactory,
+          serviceConfigFactory, nsxClientFactory);
 
       host.setMaintenanceIntervalMicros(maintenanceInterval);
       host.start();
@@ -258,12 +318,8 @@ public class HousekeeperXenonServiceHostTest {
       xenonConfig2.setPort(16002);
       xenonConfig2.setStoragePath(storageDir2.getAbsolutePath());
 
-      host2 = new HousekeeperXenonServiceHost(
-          xenonConfig2,
-          injector.getInstance(CloudStoreHelper.class),
-          injector.getInstance(HostClientFactory.class),
-          injector.getInstance(ServiceConfigFactory.class),
-          injector.getInstance(NsxClientFactory.class));
+      host2 = new HousekeeperXenonServiceHost(xenonConfig2, cloudStoreHelper, hostClientFactory,
+          serviceConfigFactory, nsxClientFactory);
       host2.setMaintenanceIntervalMicros(maintenanceInterval);
       host2.start();
       ServiceHostUtils.waitForServiceAvailability(host2, SERVICES_STARTUP_TIMEOUT, serviceSelfLinks.clone());
