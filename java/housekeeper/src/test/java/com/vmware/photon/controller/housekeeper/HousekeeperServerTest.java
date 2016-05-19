@@ -13,13 +13,20 @@
 
 package com.vmware.photon.controller.housekeeper;
 
-import com.vmware.photon.controller.common.config.BadConfigException;
+import com.vmware.photon.controller.common.config.ConfigBuilder;
+import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.photon.controller.common.thrift.ThriftEventHandler;
+import com.vmware.photon.controller.common.thrift.ThriftFactory;
+import com.vmware.photon.controller.common.zookeeper.ServiceNodeFactory;
+import com.vmware.photon.controller.housekeeper.dcp.HousekeeperXenonServiceHost;
 import com.vmware.photon.controller.housekeeper.gen.Housekeeper;
 import com.vmware.photon.controller.housekeeper.helpers.TestHelper;
+import com.vmware.photon.controller.housekeeper.service.HousekeeperService;
 import com.vmware.photon.controller.status.gen.StatusType;
 
 import com.google.inject.Injector;
+import org.apache.thrift.protocol.TProtocolFactory;
+import org.apache.thrift.transport.TTransportFactory;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -47,14 +54,34 @@ public class HousekeeperServerTest {
   public class StartupTest {
 
     private Injector injector;
+    private Config config;
     private HousekeeperServer server;
+    private ServiceNodeFactory serviceNodeFactory;
+    private TProtocolFactory tProtocolFactory;
+    private TTransportFactory tTransportFactory;
+    private ThriftFactory thriftFactory;
+    private HousekeeperService housekeeperService;
+    private ServerSet serverSet;
+    private HousekeeperXenonServiceHost host;
 
     @BeforeMethod
-    public void setUp() throws BadConfigException {
-      injector = TestHelper.createInjector("/config.yml");
+    public void setUp() throws Exception {
+      config = ConfigBuilder.build(Config.class,
+          ConfigTest.class.getResource("/config.yml").getPath());
+      injector = TestHelper.createInjector();
+
+      serviceNodeFactory = mock(ServiceNodeFactory.class);
+      tProtocolFactory = injector.getInstance(TProtocolFactory.class);
+      tTransportFactory = injector.getInstance(TTransportFactory.class);
+      thriftFactory = injector.getInstance(ThriftFactory.class);
+      serverSet = mock(ServerSet.class);
+      host = mock(HousekeeperXenonServiceHost.class);
+      housekeeperService = new HousekeeperService(serverSet, host);
 
       // start the server
-      server = spy(injector.getInstance(HousekeeperServer.class));
+      server = spy(new HousekeeperServer(serviceNodeFactory, tProtocolFactory,
+          tTransportFactory, thriftFactory, housekeeperService, config.getThriftConfig()));
+
       ThriftEventHandler thriftEventHandler = mock(ThriftEventHandler.class);
       doReturn(thriftEventHandler).when(server).getThriftEventHandler();
 
@@ -86,8 +113,7 @@ public class HousekeeperServerTest {
     @Test
     public void testThriftEndpoint() throws Throwable {
       Housekeeper.Client client =
-          TestHelper.createLocalThriftClient(
-              injector.getInstance(TestHelper.TestInjectedConfig.class));
+          TestHelper.createLocalThriftClient(config);
 
       assertThat(client.get_status().getType(), is(StatusType.INITIALIZING));
     }

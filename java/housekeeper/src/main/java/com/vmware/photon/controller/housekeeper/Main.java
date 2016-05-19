@@ -13,14 +13,22 @@
 
 package com.vmware.photon.controller.housekeeper;
 
+import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.config.BadConfigException;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.logging.LoggingFactory;
+import com.vmware.photon.controller.common.thrift.ServerSet;
+import com.vmware.photon.controller.common.thrift.ThriftFactory;
 import com.vmware.photon.controller.common.thrift.ThriftModule;
 import com.vmware.photon.controller.common.thrift.ThriftServiceModule;
+import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
+import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
+import com.vmware.photon.controller.common.zookeeper.ServiceNodeFactory;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperModule;
 import com.vmware.photon.controller.host.gen.Host;
 import com.vmware.photon.controller.housekeeper.dcp.HousekeeperXenonServiceHost;
+import com.vmware.photon.controller.housekeeper.service.HousekeeperService;
+import com.vmware.photon.controller.nsxclient.NsxClientFactory;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -28,6 +36,9 @@ import com.google.inject.TypeLiteral;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.Namespace;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.thrift.protocol.TProtocolFactory;
+import org.apache.thrift.transport.TTransportFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,6 +46,8 @@ import org.slf4j.LoggerFactory;
  * Housekeeper entry point.
  */
 public class Main {
+  public static final String CLOUDSTORE_SERVICE_NAME = "cloudstore";
+  public static final String HOUSEKEEPER_SERVICE_NAME = "housekeeper";
 
   private static final Logger logger = LoggerFactory.getLogger(Main.class);
 
@@ -53,8 +66,7 @@ public class Main {
     new LoggingFactory(config.getLogging(), "housekeeper").configure();
 
     Injector injector = Guice.createInjector(
-        new HousekeeperModule(config),
-        new ZookeeperModule(config.getZookeeper()),
+        new HousekeeperModule(),
         new ThriftModule(),
         new ThriftServiceModule<>(
             new TypeLiteral<Host.AsyncClient>() {
@@ -62,22 +74,42 @@ public class Main {
         )
     );
 
-    final HousekeeperServer thriftServer = injector.getInstance(HousekeeperServer.class);
-    final HousekeeperXenonServiceHost housekeeperDcpServiceHost = injector.getInstance(
-        HousekeeperXenonServiceHost.class);
+    final ZookeeperModule zkModule = new ZookeeperModule(config.getZookeeper());
+    final CuratorFramework zkClient = zkModule.getCuratorFramework();
+    final ServiceConfigFactory serviceConfigFactory = zkModule.getServiceConfigFactory(zkClient);
+    ServerSet cloudStoreServerSet = zkModule.getZookeeperServerSet(zkClient, CLOUDSTORE_SERVICE_NAME, true);
+
+    final ServiceNodeFactory serviceNodeFactory = zkModule.getServiceNodeFactory(zkClient);
+    final HostClientFactory hostClientFactory = injector.getInstance(HostClientFactory.class);
+    final TProtocolFactory tProtocolFactory = injector.getInstance(TProtocolFactory.class);
+    final TTransportFactory tTransportFactory = injector.getInstance(TTransportFactory.class);
+    final ThriftFactory thriftFactory = injector.getInstance(ThriftFactory.class);
+
+    final CloudStoreHelper cloudStoreHelper = new CloudStoreHelper(cloudStoreServerSet);
+    final NsxClientFactory nsxClientFactory = new NsxClientFactory();
+
+    final HousekeeperXenonServiceHost housekeeperXenonServiceHost = new HousekeeperXenonServiceHost(
+        config.getXenonConfig(), cloudStoreHelper, hostClientFactory, serviceConfigFactory, nsxClientFactory);
+
+    ServerSet housekeeperServerSet = zkModule.getZookeeperServerSet(zkClient, HOUSEKEEPER_SERVICE_NAME, true);
+    final HousekeeperService housekeeperService = new HousekeeperService(housekeeperServerSet,
+        housekeeperXenonServiceHost);
+
+    final HousekeeperServer thriftServer = new HousekeeperServer(serviceNodeFactory, tProtocolFactory,
+        tTransportFactory, thriftFactory, housekeeperService, config.getThriftConfig());
 
     Runtime.getRuntime().addShutdownHook(new Thread() {
       @Override
       public void run() {
         logger.info("Shutting down");
         thriftServer.stop();
-        housekeeperDcpServiceHost.stop();
+        housekeeperXenonServiceHost.stop();
         logger.info("Done");
         LoggingFactory.detachAndStop();
       }
     });
 
-    housekeeperDcpServiceHost.start();
+    housekeeperXenonServiceHost.start();
     thriftServer.serve();
   }
 

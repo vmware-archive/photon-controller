@@ -209,6 +209,10 @@ public class ZookeeperModule extends AbstractModule {
     return new ServiceConfigFactoryImpl(zkClient, pathChildrenCacheFactory);
   }
 
+  public ServiceNodeFactory getServiceNodeFactory(final CuratorFramework zkClient) throws Exception {
+    return new ServiceNodeFactoryImpl(zkClient);
+  }
+
   public void setConfig(ZookeeperConfig config) {
     this.config = config;
   }
@@ -249,6 +253,28 @@ public class ZookeeperModule extends AbstractModule {
       } catch (Exception e) {
         throw new RuntimeException(e);
       }
+    }
+  }
+
+  /**
+   * Implementation of ServiceNodeFactory.
+   */
+  // TODO(wyork) remove when thrift servers in housekeeper and deployer are removed.
+  private static class ServiceNodeFactoryImpl implements ServiceNodeFactory {
+    private final CuratorFramework zkClient;
+
+    private ServiceNodeFactoryImpl(final CuratorFramework zkClient) {
+      this.zkClient = zkClient;
+    }
+
+    @Override
+    public ServiceNode createSimple(String serviceName, InetSocketAddress address) {
+      return new SimpleServiceNode(zkClient, serviceName, address);
+    }
+
+    @Override
+    public ServiceNode createLeader(String serviceName, InetSocketAddress address) {
+      return new LeaderElectedServiceNode(zkClient, serviceName, address);
     }
   }
 }

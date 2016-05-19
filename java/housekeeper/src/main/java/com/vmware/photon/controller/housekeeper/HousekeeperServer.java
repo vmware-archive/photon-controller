@@ -13,7 +13,6 @@
 
 package com.vmware.photon.controller.housekeeper;
 
-import com.vmware.photon.controller.common.manifest.BuildInfo;
 import com.vmware.photon.controller.common.thrift.ThriftConfig;
 import com.vmware.photon.controller.common.thrift.ThriftEventHandler;
 import com.vmware.photon.controller.common.thrift.ThriftFactory;
@@ -23,7 +22,6 @@ import com.vmware.photon.controller.housekeeper.gen.Housekeeper;
 import com.vmware.photon.controller.housekeeper.service.HousekeeperService;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.inject.Inject;
 import org.apache.thrift.TMultiplexedProcessor;
 import org.apache.thrift.protocol.TProtocolFactory;
 import org.apache.thrift.server.TServer;
@@ -49,27 +47,23 @@ public class HousekeeperServer {
   private final TProtocolFactory protocolFactory;
   private final ThriftFactory thriftFactory;
   private final HousekeeperService housekeeperService;
-  private final BuildInfo buildInfo;
   private final String bind;
   private final String registrationAddress;
   private final int port;
   private TServer server;
   private ServiceNode serviceNode;
 
-  @Inject
   public HousekeeperServer(ServiceNodeFactory serviceNodeFactory,
                            TProtocolFactory protocolFactory,
                            TTransportFactory transportFactory,
                            ThriftFactory thriftFactory,
                            HousekeeperService housekeeperService,
-                           BuildInfo buildInfo,
                            ThriftConfig thriftConfig) {
     this.serviceNodeFactory = serviceNodeFactory;
     this.transportFactory = transportFactory;
     this.protocolFactory = protocolFactory;
     this.thriftFactory = thriftFactory;
     this.housekeeperService = housekeeperService;
-    this.buildInfo = buildInfo;
     this.bind = thriftConfig.getBindAddress();
     this.registrationAddress = thriftConfig.getRegistrationAddress();
     this.port = thriftConfig.getPort();
@@ -105,7 +99,6 @@ public class HousekeeperServer {
 
     server.setServerEventHandler(getThriftEventHandler());
 
-    logger.info("Starting housekeeper ({})", buildInfo);
     logger.info("Listening on: {}", bindSocketAddress);
     logger.info("Registering address: {}", registrationSocketAddress);
     server.serve();

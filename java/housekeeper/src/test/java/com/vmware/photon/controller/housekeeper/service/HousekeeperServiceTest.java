@@ -14,7 +14,6 @@
 package com.vmware.photon.controller.housekeeper.service;
 
 
-import com.vmware.photon.controller.common.manifest.BuildInfo;
 import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.zookeeper.PathChildrenCacheFactory;
@@ -23,18 +22,15 @@ import com.vmware.photon.controller.common.zookeeper.SimpleServiceNode;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperServerReader;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperServerSet;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperServiceReader;
-import com.vmware.photon.controller.housekeeper.Config;
 import com.vmware.photon.controller.housekeeper.dcp.HousekeeperXenonServiceHost;
 import com.vmware.photon.controller.housekeeper.gen.ReplicateImageRequest;
 import com.vmware.photon.controller.housekeeper.gen.ReplicateImageResponse;
 import com.vmware.photon.controller.housekeeper.gen.ReplicateImageResult;
 import com.vmware.photon.controller.housekeeper.gen.ReplicateImageResultCode;
-import com.vmware.photon.controller.housekeeper.helpers.TestHelper;
 import com.vmware.photon.controller.status.gen.StatusType;
 import com.vmware.photon.controller.tracing.gen.TracingInfo;
 import com.vmware.xenon.common.UriUtils;
 
-import com.google.inject.Injector;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryOneTime;
@@ -42,6 +38,7 @@ import org.apache.curator.test.TestingServer;
 import org.apache.curator.test.Timing;
 import org.slf4j.MDC;
 import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -65,7 +62,8 @@ import java.util.concurrent.TimeUnit;
 public class HousekeeperServiceTest {
 
   private HousekeeperService service;
-  private Injector injector;
+  private ServerSet serverSet;
+  private HousekeeperXenonServiceHost host;
 
   /**
    * Dummy test case to make Intellij recognize this as a test class.
@@ -78,16 +76,20 @@ public class HousekeeperServiceTest {
    * Tests for the replicateImage method.
    */
   public class ReplicateImageTest {
+    @BeforeClass
+    private void setUpClass() {
+      serverSet = mock(ServerSet.class);
+      host = mock(HousekeeperXenonServiceHost.class);
+    }
+
     @BeforeMethod
     private void setUp() throws Throwable {
-      injector = TestHelper.createInjector("/config.yml");
-      service = spy(injector.getInstance(HousekeeperService.class));
+      service = spy(new HousekeeperService(serverSet, host));
     }
 
     @Test
     public void testInvocation() throws Throwable {
-      ImageReplicator replicator = spy(new ImageReplicator(
-          injector.getInstance(HousekeeperXenonServiceHost.class)));
+      ImageReplicator replicator = mock(ImageReplicator.class);
       doReturn(replicator).when(service).buildReplicator();
 
       ReplicateImageResponse response = new ReplicateImageResponse(new ReplicateImageResult(ReplicateImageResultCode
@@ -99,8 +101,7 @@ public class HousekeeperServiceTest {
 
     @Test
     public void testInvocationWithGivenRequestId() throws Throwable {
-      ImageReplicator replicator = spy(new ImageReplicator(
-          injector.getInstance(HousekeeperXenonServiceHost.class)));
+      ImageReplicator replicator = mock(ImageReplicator.class);
       doReturn(replicator).when(service).buildReplicator();
 
       ReplicateImageResponse response = new ReplicateImageResponse(new ReplicateImageResult(ReplicateImageResultCode
@@ -130,8 +131,9 @@ public class HousekeeperServiceTest {
 
     @BeforeMethod
     private void setUp() throws Throwable {
-      injector = TestHelper.createInjector("/config.yml");
-      service = injector.getInstance(HousekeeperService.class);
+      serverSet = mock(ServerSet.class);
+      host = mock(HousekeeperXenonServiceHost.class);
+      service = new HousekeeperService(serverSet, host);
     }
 
     @Test
@@ -141,9 +143,7 @@ public class HousekeeperServiceTest {
 
     @Test
     public void testReady() throws Throwable {
-      HousekeeperXenonServiceHost dcpHost = injector.getInstance(HousekeeperXenonServiceHost.class);
-
-      doReturn(true).when(dcpHost).isReady();
+      doReturn(true).when(host).isReady();
       assertThat(service.get_status().getType(), is(StatusType.READY));
     }
   }
@@ -210,22 +210,19 @@ public class HousekeeperServiceTest {
       when(dcpHost.getUri()).thenReturn(UriUtils.buildUri(hostname, port + 1, "", null));
 
       TestHouseKeeperService housekeeperService =
-          new TestHouseKeeperService(serverSet, dcpHost, mock(Config.class), mock(BuildInfo.class));
+          new TestHouseKeeperService(serverSet, dcpHost);
       serverSet.addChangeListener(housekeeperService);
 
-      return new TestGroup(node, dcpHost, housekeeperService);
+      return new TestGroup(node, housekeeperService);
     }
 
     private class TestGroup {
       private ServiceNode node; // zookeeper node
-      private HousekeeperXenonServiceHost dcpHost; // DcpHost
       private TestHouseKeeperService houseKeeperService;
 
       private TestGroup(ServiceNode node,
-                        HousekeeperXenonServiceHost dcpHost,
                         TestHouseKeeperService houseKeeperService) {
         this.node = node;
-        this.dcpHost = dcpHost;
         this.houseKeeperService = houseKeeperService;
       }
     }
@@ -235,10 +232,8 @@ public class HousekeeperServiceTest {
       private CountDownLatch countDownLatch;
 
       public TestHouseKeeperService(ServerSet serverSet,
-                                    HousekeeperXenonServiceHost host,
-                                    Config config,
-                                    BuildInfo buildInfo) {
-        super(serverSet, host, config, buildInfo);
+                                    HousekeeperXenonServiceHost host) {
+        super(serverSet, host);
       }
 
       public void setCountDownLatch(CountDownLatch countDownLatch) {
