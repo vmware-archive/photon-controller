@@ -295,7 +295,7 @@ public class AllocateHostResourceTaskService extends StatefulService {
                                          int maxCpuCount) {
 
     ContainerService.State patchState = new ContainerService.State();
-    patchState.memoryMb = templateState.memoryMb * MiscUtils.getAdjustedManagementHostMemory(hostState) / totalMemory;
+    patchState.memoryMb = templateState.memoryMb * MiscUtils.getAdjustedManagementVmMemory(hostState) / totalMemory;
     patchState.cpuShares = templateState.cpuCount * ContainerService.State.DOCKER_CPU_SHARES_MAX / maxCpuCount;
     patchState.dynamicParameters = new HashMap<>();
     if (null != containerState.dynamicParameters) {
