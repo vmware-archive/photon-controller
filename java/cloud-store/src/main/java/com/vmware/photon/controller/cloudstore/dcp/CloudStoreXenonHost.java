@@ -69,8 +69,6 @@ import com.vmware.xenon.services.common.LuceneDocumentIndexService;
 import com.vmware.xenon.services.common.RootNamespaceService;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.inject.Inject;
-import com.google.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -80,7 +78,6 @@ import java.util.function.Supplier;
 /**
  * Class to initialize a Xenon host for cloud-store.
  */
-@Singleton
 public class CloudStoreXenonHost
     extends AbstractServiceHost
     implements XenonHostInfoProvider,
@@ -152,7 +149,6 @@ public class CloudStoreXenonHost
   private final ServiceConfigFactory serviceConfigFactory;
   private final AgentControlClientFactory agentControlClientFactory;
 
-  @Inject
   public CloudStoreXenonHost(
       XenonConfig xenonConfig,
       HostClientFactory hostClientFactory,
