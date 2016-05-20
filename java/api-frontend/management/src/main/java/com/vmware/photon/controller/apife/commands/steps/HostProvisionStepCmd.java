@@ -15,25 +15,26 @@ package com.vmware.photon.controller.apife.commands.steps;
 
 import com.vmware.photon.controller.api.Host;
 import com.vmware.photon.controller.api.HostState;
+import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.api.common.exceptions.ApiFeException;
+import com.vmware.photon.controller.api.common.exceptions.external.TaskNotFoundException;
 import com.vmware.photon.controller.apife.backends.HostBackend;
 import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.HostEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
-import com.vmware.photon.controller.apife.exceptions.external.HostProvisionFailedException;
+import com.vmware.photon.controller.apife.exceptions.external.HostNotFoundException;
+import com.vmware.photon.controller.apife.lib.UsageTagHelper;
+import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
-import com.vmware.photon.controller.common.clients.exceptions.ServiceUnavailableException;
-import com.vmware.photon.controller.deployer.gen.ProvisionHostResponse;
-import com.vmware.photon.controller.deployer.gen.ProvisionHostStatusResponse;
+import com.vmware.photon.controller.deployer.dcp.workflow.AddCloudHostWorkflowService;
+import com.vmware.photon.controller.deployer.dcp.workflow.AddManagementHostWorkflowService;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 /**
  * StepCommand for host provision.
@@ -41,39 +42,44 @@ import java.util.concurrent.TimeUnit;
 public class HostProvisionStepCmd extends StepCommand {
 
   private static final Logger logger = LoggerFactory.getLogger(HostProvisionStepCmd.class);
-  private static final long DEFAULT_PROVISION_TIMEOUT = TimeUnit.MINUTES.toMillis(30);
-  private static final long STATUS_POLL_INTERVAL = TimeUnit.SECONDS.toMillis(10);
-  private static final long DEFAULT_MAX_SERVICE_UNAVAILABLE_COUNT = 100;
   private final HostBackend hostBackend;
 
-  private long provisionTimeout;
-  private long statusPollInterval;
-  private long maxServiceUnavailableCount;
+  private HostEntity hostEntity;
 
   public HostProvisionStepCmd(
       TaskCommand taskCommand, StepBackend stepBackend, StepEntity step, HostBackend hostBackend) {
     super(taskCommand, stepBackend, step);
     this.hostBackend = hostBackend;
-    this.provisionTimeout = DEFAULT_PROVISION_TIMEOUT;
-    this.statusPollInterval = STATUS_POLL_INTERVAL;
-    this.maxServiceUnavailableCount = DEFAULT_MAX_SERVICE_UNAVAILABLE_COUNT;
   }
 
   @Override
   protected void execute() throws ApiFeException, InterruptedException, RpcException {
     List<HostEntity> hostList = step.getTransientResourceEntities(Host.KIND);
     Preconditions.checkArgument(hostList.size() == 1);
-    HostEntity host = hostList.get(0);
+    this.hostEntity = hostList.get(0);
 
-    try {
-      logger.info("Calling deployer to provision host {}", host);
-      ProvisionHostResponse response = taskCommand.getDeployerClient().provisionHost(host.getId());
-      checkProvisionStatus(response.getOperation_id());
-      hostBackend.updateState(host, HostState.READY);
-    } catch (Exception ex) {
-      logger.error("Host provision failed, mark {} as ERROR", host);
-      hostBackend.updateState(host, HostState.ERROR);
-      throw ex;
+    logger.info("Calling deployer to provision host {}", hostEntity);
+
+    List<UsageTag> usageTagList = UsageTagHelper.deserialize(hostEntity.getUsageTags());
+    String taskLink;
+    if (usageTagList.size() == 1 && usageTagList.get(0).name().equals(UsageTag.CLOUD.name()))  {
+      AddCloudHostWorkflowService.State serviceDocument = taskCommand.getDeployerXenonClient().provisionCloudHost
+          (HostServiceFactory.SELF_LINK + "/" + hostEntity.getId());
+      taskLink = serviceDocument.documentSelfLink;
+      logger.info("Provision cloud host initiated: address={}, link={}",
+          hostEntity.getAddress(), taskLink);
+    } else {
+      AddManagementHostWorkflowService.State serviceDocument = taskCommand.getDeployerXenonClient()
+          .provisionManagementHost(HostServiceFactory.SELF_LINK + "/" + hostEntity.getId());
+      taskLink = serviceDocument.documentSelfLink;
+      logger.info("Provision management host initiated: address={}, link={}",
+          hostEntity.getAddress(), taskLink);
+    }
+
+    // pass remoteTaskId to XenonTaskStatusStepCmd
+    for (StepEntity nextStep : taskCommand.getTask().getSteps()) {
+      nextStep.createOrUpdateTransientResource(XenonTaskStatusStepCmd.REMOTE_TASK_LINK_RESOURCE_KEY,
+          taskLink);
     }
   }
 
@@ -81,67 +87,27 @@ public class HostProvisionStepCmd extends StepCommand {
   protected void cleanup() {
   }
 
-  @VisibleForTesting
-  protected void setMaxServiceUnavailableCount(long maxServiceUnavailableCount) {
-    this.maxServiceUnavailableCount = maxServiceUnavailableCount;
-  }
+  @Override
+  protected void markAsFailed(Throwable t) throws TaskNotFoundException {
+    super.markAsFailed(t);
 
-  @VisibleForTesting
-  protected void setStatusPollInterval(long statusPollInterval) {
-    this.statusPollInterval = statusPollInterval;
-  }
-
-  @VisibleForTesting
-  protected void setProvisionTimeout(long provisionTimeout) {
-    this.provisionTimeout = provisionTimeout;
-  }
-
-  private void checkProvisionStatus(String operationId)
-      throws InterruptedException, RpcException, HostProvisionFailedException {
-    long startTime = System.currentTimeMillis();
-    int serviceUnavailableOccurrence = 0;
-    ProvisionHostStatusResponse response = null;
-
-    while (true) {
+    if (this.hostEntity != null) {
+      logger.info("Host provision failed, mark {} state as ERROR", this.hostEntity.getId());
       try {
-        response = this.taskCommand.getDeployerClient().provisionHostStatus(operationId);
-        switch (response.getStatus().getResult()) {
-          case IN_PROGRESS:
-            break;
-          case FINISHED:
-            return;
-          case FAILED:
-          case CANCELLED:
-            logger.error("provision failed {}", response);
-            throw new HostProvisionFailedException(operationId, response.getStatus().getError());
-          default:
-            logger.error("unexpected provision status {}", response);
-            throw new RuntimeException(response.getStatus().getError());
+        if (hostEntity.getState() == HostState.ERROR) {
+          return;
         }
-
-        serviceUnavailableOccurrence = 0;
-      } catch (ServiceUnavailableException e) {
-        serviceUnavailableOccurrence++;
-        if (serviceUnavailableOccurrence >= this.maxServiceUnavailableCount) {
-          logger.error("checking provision status failed {}", response);
-          throw e;
-        }
+        this.hostBackend.updateState(this.hostEntity, HostState.ERROR);
+      } catch (HostNotFoundException e) {
+        logger.warn("Could not find host to mark as error, HostAddress=" + hostEntity.getAddress(), e);
       }
-
-      this.checkProvisionTimeout(startTime);
-      Thread.sleep(this.statusPollInterval);
     }
   }
 
-  /**
-   * Check if the provision has been taking too long.
-   *
-   * @param startTimeMs
-   * @return
-   */
-  private void checkProvisionTimeout(long startTimeMs) {
-    if (System.currentTimeMillis() - startTimeMs >= this.provisionTimeout) {
-      throw new RuntimeException("Timeout waiting for provision to complete.");
-    }
+  @Override
+  protected void markAsDone() throws Throwable {
+    super.markAsDone();
+    hostBackend.updateState(hostEntity, HostState.READY);
   }
+
 }
