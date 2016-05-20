@@ -65,7 +65,7 @@ public abstract class StepCommand extends BaseCommand {
   }
 
   @Override
-  protected void markAsDone() throws TaskNotFoundException {
+  protected void markAsDone() throws Throwable {
     stepBackend.markStepAsDone(step);
   }
 

@@ -112,7 +112,7 @@ public class StepCommandTest {
   }
 
   @Test
-  public void testMarkAsDone() throws Exception {
+  public void testMarkAsDone() throws Throwable {
     TestStepCommand command = new TestStepCommand(taskCommand, stepBackend, step);
 
     command.markAsDone();
