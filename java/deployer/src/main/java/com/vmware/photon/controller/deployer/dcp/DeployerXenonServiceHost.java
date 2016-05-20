@@ -27,6 +27,7 @@ import com.vmware.photon.controller.common.manifest.BuildInfo;
 import com.vmware.photon.controller.common.provider.ListeningExecutorServiceProvider;
 import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
+import com.vmware.photon.controller.common.xenon.CloudStoreHelperProvider;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.XenonHostInfoProvider;
 import com.vmware.photon.controller.common.xenon.host.AbstractServiceHost;
@@ -107,7 +108,6 @@ import com.vmware.xenon.services.common.RootNamespaceService;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ObjectArrays;
 import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -136,7 +136,8 @@ public class DeployerXenonServiceHost
     ZookeeperClientFactoryProvider,
     HostManagementVmAddressValidatorFactoryProvider,
     ClusterManagerFactoryProvider,
-    NsxClientFactoryProvider {
+    NsxClientFactoryProvider,
+    CloudStoreHelperProvider {
 
   private static final Logger logger = LoggerFactory.getLogger(DeployerXenonServiceHost.class);
 
@@ -244,7 +245,6 @@ public class DeployerXenonServiceHost
 
   private final ServerSet cloudStoreServerSet;
 
-  @Inject
   public DeployerXenonServiceHost(
       XenonConfig xenonConfig,
       @CloudStoreServerSet ServerSet cloudStoreServerSet,

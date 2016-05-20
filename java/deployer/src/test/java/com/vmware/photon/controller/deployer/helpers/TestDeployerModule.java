@@ -27,28 +27,12 @@ import com.vmware.photon.controller.common.xenon.host.XenonConfig;
 import com.vmware.photon.controller.deployer.ApiFeServerSet;
 import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.DeployerServerSet;
-import com.vmware.photon.controller.deployer.configuration.ServiceConfigurator;
-import com.vmware.photon.controller.deployer.configuration.ServiceConfiguratorFactory;
-import com.vmware.photon.controller.deployer.dcp.ContainersConfig;
 import com.vmware.photon.controller.deployer.dcp.DeployerContext;
-import com.vmware.photon.controller.deployer.dcp.DeployerXenonServiceHost;
 import com.vmware.photon.controller.deployer.deployengine.ApiClientFactory;
-import com.vmware.photon.controller.deployer.deployengine.AuthHelper;
-import com.vmware.photon.controller.deployer.deployengine.AuthHelperFactory;
-import com.vmware.photon.controller.deployer.deployengine.DockerProvisioner;
-import com.vmware.photon.controller.deployer.deployengine.DockerProvisionerFactory;
-import com.vmware.photon.controller.deployer.deployengine.HostManagementVmAddressValidator;
-import com.vmware.photon.controller.deployer.deployengine.HostManagementVmAddressValidatorFactory;
-import com.vmware.photon.controller.deployer.deployengine.HttpFileServiceClient;
-import com.vmware.photon.controller.deployer.deployengine.HttpFileServiceClientFactory;
 import com.vmware.photon.controller.deployer.deployengine.NsxClientFactory;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClient;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClientFactory;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperNameSpace;
-import com.vmware.photon.controller.deployer.healthcheck.HealthCheckHelper;
-import com.vmware.photon.controller.deployer.healthcheck.HealthCheckHelperFactory;
-import com.vmware.photon.controller.deployer.healthcheck.HealthChecker;
-import com.vmware.photon.controller.deployer.healthcheck.XenonBasedHealthChecker;
 import com.vmware.photon.controller.deployer.service.client.HostServiceClientFactory;
 
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -106,33 +90,8 @@ public class TestDeployerModule extends AbstractModule {
         .build(HostClientFactory.class));
 
     install(new FactoryModuleBuilder()
-        .implement(HttpFileServiceClient.class, HttpFileServiceClient.class)
-        .build(HttpFileServiceClientFactory.class));
-
-    install(new FactoryModuleBuilder()
-        .implement(DockerProvisioner.class, DockerProvisioner.class)
-        .build(DockerProvisionerFactory.class));
-
-    install(new FactoryModuleBuilder()
-        .implement(AuthHelper.class, AuthHelper.class)
-        .build(AuthHelperFactory.class));
-
-    install(new FactoryModuleBuilder()
-        .implement(HealthCheckHelper.class, HealthCheckHelper.class)
-        .implement(HealthChecker.class, XenonBasedHealthChecker.class)
-        .build(HealthCheckHelperFactory.class));
-
-    install(new FactoryModuleBuilder()
-        .implement(ServiceConfigurator.class, ServiceConfigurator.class)
-        .build(ServiceConfiguratorFactory.class));
-
-    install(new FactoryModuleBuilder()
         .implement(ZookeeperClient.class, ZookeeperClient.class)
         .build(ZookeeperClientFactory.class));
-
-    install(new FactoryModuleBuilder()
-        .implement(HostManagementVmAddressValidator.class, HostManagementVmAddressValidator.class)
-        .build(HostManagementVmAddressValidatorFactory.class));
   }
 
   @Provides
@@ -185,48 +144,6 @@ public class TestDeployerModule extends AbstractModule {
           }
         }
     );
-  }
-
-  @Provides
-  @Singleton
-  public DeployerXenonServiceHost createServer(
-      XenonConfig xenonConfig,
-      DeployerContext deployerContext,
-      ContainersConfig containersConfig,
-      AgentControlClientFactory agentControlClientFactory,
-      HostClientFactory hostClientFactory,
-      HttpFileServiceClientFactory httpFileServiceClientFactory,
-      ListeningExecutorService listeningExecutorService,
-      ApiClientFactory apiClientFactory,
-      DockerProvisionerFactory dockerProvisionerFactory,
-      AuthHelperFactory authHelperFactory,
-      HealthCheckHelperFactory healthCheckHelperFactory,
-      ServiceConfiguratorFactory serviceConfiguratorFactory,
-      ZookeeperClientFactory zookeeperServerSetBuilderFactory,
-      HostManagementVmAddressValidatorFactory hostManagementVmAddressValidatorFactory,
-      @Nullable ClusterManagerFactory clusterManagerFactory,
-      @Nullable NsxClientFactory nsxClientFactory)
-      throws Throwable {
-
-    return spy(
-        new DeployerXenonServiceHost(
-            xenonConfig,
-            null,
-            deployerContext,
-            containersConfig,
-            agentControlClientFactory,
-            hostClientFactory,
-            httpFileServiceClientFactory,
-            listeningExecutorService,
-            apiClientFactory,
-            dockerProvisionerFactory,
-            authHelperFactory,
-            healthCheckHelperFactory,
-            serviceConfiguratorFactory,
-            zookeeperServerSetBuilderFactory,
-            hostManagementVmAddressValidatorFactory,
-            clusterManagerFactory,
-            nsxClientFactory));
   }
 
   @Provides

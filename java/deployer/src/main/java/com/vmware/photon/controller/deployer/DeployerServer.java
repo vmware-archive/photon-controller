@@ -14,7 +14,6 @@
 package com.vmware.photon.controller.deployer;
 
 import com.vmware.photon.controller.common.Constants;
-import com.vmware.photon.controller.common.manifest.BuildInfo;
 import com.vmware.photon.controller.common.thrift.ThriftConfig;
 import com.vmware.photon.controller.common.thrift.ThriftEventHandler;
 import com.vmware.photon.controller.common.thrift.ThriftFactory;
@@ -24,7 +23,6 @@ import com.vmware.photon.controller.deployer.gen.Deployer;
 import com.vmware.photon.controller.deployer.service.DeployerService;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.inject.Inject;
 import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
 import org.apache.thrift.TMultiplexedProcessor;
 import org.apache.thrift.protocol.TProtocolFactory;
@@ -54,7 +52,6 @@ public class DeployerServer {
   private final TProtocolFactory protocolFactory;
   private final ThriftFactory thriftFactory;
   private final DeployerService deployerService;
-  private final BuildInfo buildInfo;
   private final String bind;
   private final String registrationAddress;
   private final int port;
@@ -63,13 +60,11 @@ public class DeployerServer {
   private TServer server;
   private ServiceNode serviceNode;
 
-  @Inject
   public DeployerServer(ServiceNodeFactory serviceNodeFactory,
                         TProtocolFactory protocolFactory,
                         TTransportFactory transportFactory,
                         ThriftFactory thriftFactory,
                         DeployerService deployerService,
-                        BuildInfo buildInfo,
                         ThriftConfig thriftConfig,
                         CloseableHttpAsyncClient httpClient) {
     this.serviceNodeFactory = serviceNodeFactory;
@@ -77,7 +72,6 @@ public class DeployerServer {
     this.protocolFactory = protocolFactory;
     this.thriftFactory = thriftFactory;
     this.deployerService = deployerService;
-    this.buildInfo = buildInfo;
     this.bind = thriftConfig.getBindAddress();
     this.registrationAddress = thriftConfig.getRegistrationAddress();
     this.port = thriftConfig.getPort();
@@ -114,7 +108,6 @@ public class DeployerServer {
 
     server.setServerEventHandler(getThriftEventHandler());
 
-    logger.info("Starting deployer ({})", buildInfo);
     logger.info("Listening on: {}", bindSocketAddress);
     logger.info("Registering address: {}", registrationSocketAddress);
     logger.info("HttpClient is: {}", httpClient);
