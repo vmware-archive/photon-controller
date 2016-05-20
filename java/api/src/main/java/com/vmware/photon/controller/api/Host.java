@@ -21,6 +21,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.wordnik.swagger.annotations.ApiModel;
 import com.wordnik.swagger.annotations.ApiModelProperty;
+import org.slf4j.LoggerFactory;
 
 import javax.persistence.ElementCollection;
 import javax.validation.constraints.NotNull;
@@ -178,6 +179,10 @@ public class Host extends Base {
   }
 
   public void setDatastores(List<HostDatastore> datastores) {
+    LoggerFactory.getLogger(Host.class).debug("setDatastores {}", datastores);
+    for (StackTraceElement ste : Thread.currentThread().getStackTrace()) {
+      LoggerFactory.getLogger(Host.class).debug(ste.getFileName() + ste.getLineNumber());
+    }
     this.datastores = datastores;
   }
 

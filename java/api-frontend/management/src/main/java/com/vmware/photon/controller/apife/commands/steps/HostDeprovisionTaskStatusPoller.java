@@ -20,23 +20,21 @@ import com.vmware.photon.controller.apife.backends.HostDcpBackend;
 import com.vmware.photon.controller.apife.backends.TaskBackend;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
-import com.vmware.photon.controller.apife.exceptions.external.DuplicateHostException;
-import com.vmware.photon.controller.apife.exceptions.external.InvalidLoginException;
-import com.vmware.photon.controller.apife.exceptions.external.IpAddressInUseException;
+import com.vmware.photon.controller.apife.exceptions.external.HostDeprovisionFailedException;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
-import com.vmware.photon.controller.deployer.dcp.task.ValidateHostTaskService;
+import com.vmware.photon.controller.deployer.dcp.workflow.DeprovisionHostWorkflowService;
 import com.vmware.xenon.common.TaskState;
 
 /**
  * Polls host task status.
  */
-public class HostTaskStatusPoller implements XenonTaskStatusStepCmd.XenonTaskStatusPoller {
+public class HostDeprovisionTaskStatusPoller implements XenonTaskStatusStepCmd.XenonTaskStatusPoller {
   private final TaskCommand taskCommand;
   private final HostDcpBackend hostBackend;
   private final TaskBackend taskBackend;
 
-  public HostTaskStatusPoller(TaskCommand taskCommand, HostDcpBackend hostBackend,
-                                    TaskBackend taskBackend) {
+  public HostDeprovisionTaskStatusPoller(TaskCommand taskCommand, HostDcpBackend hostBackend,
+                                         TaskBackend taskBackend) {
     this.taskCommand = taskCommand;
     this.hostBackend = hostBackend;
     this.taskBackend = taskBackend;
@@ -44,8 +42,8 @@ public class HostTaskStatusPoller implements XenonTaskStatusStepCmd.XenonTaskSta
 
   @Override
   public TaskState poll(String remoteTaskLink) throws DocumentNotFoundException, ApiFeException {
-    ValidateHostTaskService.State serviceDocument = hostBackend.getDeployerClient()
-        .getHostCreationStatus(remoteTaskLink);
+    DeprovisionHostWorkflowService.State serviceDocument = hostBackend.getDeployerClient()
+        .getHostDeprovisionStatus(remoteTaskLink);
     if (serviceDocument.taskState.stage == TaskState.TaskStage.FINISHED) {
       TaskEntity taskEntity = taskCommand.getTask();
       taskEntity.setEntityKind(Host.KIND);
@@ -56,19 +54,9 @@ public class HostTaskStatusPoller implements XenonTaskStatusStepCmd.XenonTaskSta
     return serviceDocument.taskState;
   }
 
-  private void handleTaskFailure(ValidateHostTaskService.State state) throws ApiFeException {
-    switch (state.taskState.resultCode) {
-      case ExistHostWithSameAddress:
-        throw new DuplicateHostException(state.taskState.failure.message);
-      case InvalidLogin:
-        throw new InvalidLoginException();
-      case ManagementVmAddressAlreadyInUse:
-        throw new IpAddressInUseException(state.hostAddress);
-      default:
-        break;
-    }
+  private void handleTaskFailure(DeprovisionHostWorkflowService.State state) throws ApiFeException {
+    throw new HostDeprovisionFailedException(state.uniqueId, state.taskState.failure.message);
   }
-
 
   @Override
   public int getTargetSubStage(Operation op) {

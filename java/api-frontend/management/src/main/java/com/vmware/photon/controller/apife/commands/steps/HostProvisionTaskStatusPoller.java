@@ -14,29 +14,34 @@
 package com.vmware.photon.controller.apife.commands.steps;
 
 import com.vmware.photon.controller.api.Host;
+import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.Operation;
 import com.vmware.photon.controller.api.common.exceptions.ApiFeException;
 import com.vmware.photon.controller.apife.backends.HostDcpBackend;
 import com.vmware.photon.controller.apife.backends.TaskBackend;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
+import com.vmware.photon.controller.apife.entities.HostEntity;
+import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
-import com.vmware.photon.controller.apife.exceptions.external.DuplicateHostException;
-import com.vmware.photon.controller.apife.exceptions.external.InvalidLoginException;
-import com.vmware.photon.controller.apife.exceptions.external.IpAddressInUseException;
+import com.vmware.photon.controller.apife.exceptions.external.HostProvisionFailedException;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
-import com.vmware.photon.controller.deployer.dcp.task.ValidateHostTaskService;
+import com.vmware.photon.controller.deployer.dcp.util.Pair;
 import com.vmware.xenon.common.TaskState;
+
+import com.google.common.base.Preconditions;
+
+import java.util.List;
 
 /**
  * Polls host task status.
  */
-public class HostTaskStatusPoller implements XenonTaskStatusStepCmd.XenonTaskStatusPoller {
+public class HostProvisionTaskStatusPoller implements XenonTaskStatusStepCmd.XenonTaskStatusPoller {
   private final TaskCommand taskCommand;
   private final HostDcpBackend hostBackend;
   private final TaskBackend taskBackend;
 
-  public HostTaskStatusPoller(TaskCommand taskCommand, HostDcpBackend hostBackend,
-                                    TaskBackend taskBackend) {
+  public HostProvisionTaskStatusPoller(TaskCommand taskCommand, HostDcpBackend hostBackend,
+                                       TaskBackend taskBackend) {
     this.taskCommand = taskCommand;
     this.hostBackend = hostBackend;
     this.taskBackend = taskBackend;
@@ -44,31 +49,23 @@ public class HostTaskStatusPoller implements XenonTaskStatusStepCmd.XenonTaskSta
 
   @Override
   public TaskState poll(String remoteTaskLink) throws DocumentNotFoundException, ApiFeException {
-    ValidateHostTaskService.State serviceDocument = hostBackend.getDeployerClient()
-        .getHostCreationStatus(remoteTaskLink);
-    if (serviceDocument.taskState.stage == TaskState.TaskStage.FINISHED) {
+    Pair<TaskState, String> pair = hostBackend.getDeployerClient()
+        .getHostProvisionStatus(remoteTaskLink);
+    TaskState taskState = pair.getFirst();
+    if (taskState.stage == TaskState.TaskStage.FINISHED) {
       TaskEntity taskEntity = taskCommand.getTask();
+      taskEntity.setEntityId(pair.getSecond());
       taskEntity.setEntityKind(Host.KIND);
       taskBackend.update(taskEntity);
-    } else if (serviceDocument.taskState.stage == TaskState.TaskStage.FAILED) {
-      handleTaskFailure(serviceDocument);
+    } else if (taskState.stage == TaskState.TaskStage.FAILED) {
+      handleTaskFailure(taskState);
     }
-    return serviceDocument.taskState;
+    return taskState;
   }
 
-  private void handleTaskFailure(ValidateHostTaskService.State state) throws ApiFeException {
-    switch (state.taskState.resultCode) {
-      case ExistHostWithSameAddress:
-        throw new DuplicateHostException(state.taskState.failure.message);
-      case InvalidLogin:
-        throw new InvalidLoginException();
-      case ManagementVmAddressAlreadyInUse:
-        throw new IpAddressInUseException(state.hostAddress);
-      default:
-        break;
-    }
+  private void handleTaskFailure(TaskState state) throws ApiFeException {
+    throw new HostProvisionFailedException(state.toString(), state.failure.message);
   }
-
 
   @Override
   public int getTargetSubStage(Operation op) {
@@ -81,7 +78,19 @@ public class HostTaskStatusPoller implements XenonTaskStatusStepCmd.XenonTaskSta
   }
 
   @Override
-  public void handleDone(TaskState taskState) {
-
+  public void handleDone(TaskState taskState) throws ApiFeException {
+    List<HostEntity> hostList = null;
+    for (StepEntity step : taskCommand.getTask().getSteps()) {
+      hostList = step.getTransientResourceEntities(Host.KIND);
+      if (!hostList.isEmpty()) {
+        break;
+      }
+    }
+    if (hostList == null) {
+      return;
+    }
+    Preconditions.checkArgument(hostList.size() == 1);
+    HostEntity hostEntity = hostList.get(0);
+    hostBackend.updateState(hostEntity, HostState.READY);
   }
 }

@@ -16,18 +16,28 @@ package com.vmware.photon.controller.apife.backends.clients;
 import com.vmware.photon.controller.apife.entities.HostEntity;
 import com.vmware.photon.controller.apife.exceptions.external.SpecInvalidException;
 import com.vmware.photon.controller.apife.lib.UsageTagHelper;
+import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
+import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
 import com.vmware.photon.controller.deployer.dcp.task.ChangeHostModeTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.ChangeHostModeTaskService;
 import com.vmware.photon.controller.deployer.dcp.task.ValidateHostTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.ValidateHostTaskService;
+import com.vmware.photon.controller.deployer.dcp.util.Pair;
+import com.vmware.photon.controller.deployer.dcp.workflow.AddCloudHostWorkflowFactoryService;
+import com.vmware.photon.controller.deployer.dcp.workflow.AddCloudHostWorkflowService;
+import com.vmware.photon.controller.deployer.dcp.workflow.AddManagementHostWorkflowFactoryService;
+import com.vmware.photon.controller.deployer.dcp.workflow.AddManagementHostWorkflowService;
 import com.vmware.photon.controller.deployer.dcp.workflow.DeprovisionHostWorkflowFactoryService;
 import com.vmware.photon.controller.deployer.dcp.workflow.DeprovisionHostWorkflowService;
 import com.vmware.photon.controller.host.gen.HostMode;
 import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.TaskState;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 
@@ -37,6 +47,7 @@ import org.slf4j.LoggerFactory;
 import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 
 /**
  * Deployer Client Facade that exposes deployer functionality via high-level methods,
@@ -88,7 +99,7 @@ public class DeployerClient {
         state.documentSelfLink = host.getId();
 
         Operation operation = dcpClient.post(
-                ValidateHostTaskFactoryService.SELF_LINK, state);
+            ValidateHostTaskFactoryService.SELF_LINK, state);
 
         return operation.getBody(ValidateHostTaskService.State.class);
     }
@@ -99,14 +110,62 @@ public class DeployerClient {
         return operation.getBody(ValidateHostTaskService.State.class);
     }
 
-    public DeprovisionHostWorkflowService deprovisionHost(String hostServiceLink) {
+    public DeprovisionHostWorkflowService.State getHostDeprovisionStatus(String taskLink)
+        throws DocumentNotFoundException {
+        Operation operation = dcpClient.get(taskLink);
+        return operation.getBody(DeprovisionHostWorkflowService.State.class);
+    }
+
+    public Pair<TaskState, String> getHostProvisionStatus(String taskLink)
+        throws DocumentNotFoundException {
+        Operation operation = dcpClient.get(taskLink);
+        TaskState taskState;
+        ServiceDocument serviceState;
+        String hostId;
+        if (operation.getBodyRaw().getClass() == AddCloudHostWorkflowService.State.class) {
+            serviceState = operation.getBody(AddCloudHostWorkflowService.State.class);
+            taskState = ((AddCloudHostWorkflowService.State) serviceState).taskState;
+            hostId = ((AddCloudHostWorkflowService.State) serviceState).hostServiceLink;
+        } else {
+            serviceState = operation.getBody(AddManagementHostWorkflowService.State.class);
+            taskState = ((AddManagementHostWorkflowService.State) serviceState).taskState;
+            hostId = ((AddManagementHostWorkflowService.State) serviceState).hostServiceLink;
+        }
+        return new Pair<>(taskState, ServiceUtils.getIDFromDocumentSelfLink(hostId));
+    }
+
+    public DeprovisionHostWorkflowService.State deprovisionHost(String hostServiceLink) {
         DeprovisionHostWorkflowService.State deprovisionHostState = new DeprovisionHostWorkflowService.State();
         deprovisionHostState.hostServiceLink = hostServiceLink;
 
         Operation operation = dcpClient.post(
             DeprovisionHostWorkflowFactoryService.SELF_LINK, deprovisionHostState);
 
-        return operation.getBody(DeprovisionHostWorkflowService.class);
+        return operation.getBody(DeprovisionHostWorkflowService.State.class);
+    }
+
+    public AddCloudHostWorkflowService.State provisionCloudHost(String hostServiceLink){
+        AddCloudHostWorkflowService.State addCloudHostState = new AddCloudHostWorkflowService.State();
+        addCloudHostState.hostServiceLink = hostServiceLink;
+        Operation operation = dcpClient.post(
+            AddCloudHostWorkflowFactoryService.SELF_LINK, addCloudHostState);
+
+        return operation.getBody(AddCloudHostWorkflowService.State.class);
+    }
+
+    public AddManagementHostWorkflowService.State provisionManagementHost(String hostServiceLink){
+        final ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
+        List<DeploymentService.State> queryResult = dcpClient.queryDocuments(DeploymentService.State.class,
+            termsBuilder.build());
+
+        AddManagementHostWorkflowService.State addMgmtHostState = new AddManagementHostWorkflowService.State();
+        addMgmtHostState.hostServiceLink = hostServiceLink;
+        addMgmtHostState.isNewDeployment = false;
+        addMgmtHostState.deploymentServiceLink = queryResult.get(0).documentSelfLink;
+        Operation operation = dcpClient.post(
+            AddManagementHostWorkflowFactoryService.SELF_LINK, addMgmtHostState);
+
+        return operation.getBody(AddManagementHostWorkflowService.State.class);
     }
 
     public ChangeHostModeTaskService.State enterSuspendedMode(String hostId) {

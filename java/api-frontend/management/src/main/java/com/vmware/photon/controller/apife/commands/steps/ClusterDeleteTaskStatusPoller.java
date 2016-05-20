@@ -61,4 +61,9 @@ public class ClusterDeleteTaskStatusPoller implements XenonTaskStatusStepCmd.Xen
   public int getSubStage(TaskState taskState) {
     return ((ClusterDeleteTask.TaskState) taskState).subStage.ordinal();
   }
+
+  @Override
+  public void handleDone(TaskState taskState) {
+
+  }
 }
