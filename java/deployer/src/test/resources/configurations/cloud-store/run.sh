@@ -1,1 +1,0 @@
-../../../../../../cloud-store/src/dist/configuration/run.sh
