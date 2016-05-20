@@ -15,8 +15,7 @@ container_ip=$(ifconfig $en_name | grep 'inet addr:' | cut -d: -f2 | awk '{ prin
 
 CONFIG_PATH="/etc/esxcloud"
 PHOTON_CONTROLLER_CORE_BIN="{{{PHOTON-CONTROLLER-CORE_INSTALL_DIRECTORY}}}/bin"
-CLOUD_STORE_CONFIG="$CONFIG_PATH/cloud-store.yml"
-ROOT_SCHEDULER_CONFIG="$CONFIG_PATH/root-scheduler.yml"
+PHOTON_CONTROLLER_CORE_CONFIG="$CONFIG_PATH/photon-controller-core.yml"
 
 #
 # Add hosts entry to allow InetAddress.getLocalHost() to
@@ -40,4 +39,4 @@ export JAVA_OPTS="-Xmx${jvm_mem}m -Xms${jvm_mem}m -XX:+UseConcMarkSweepGC {{{JAV
 #
 # Start service
 #
-$PHOTON_CONTROLLER_CORE_BIN/photon-controller-core $CLOUD_STORE_CONFIG $ROOT_SCHEDULER_CONFIG
+$PHOTON_CONTROLLER_CORE_BIN/photon-controller-core $PHOTON_CONTROLLER_CORE_CONFIG

@@ -11,13 +11,6 @@ zookeeper:
   retries:
     max_retries: 3
 
-logging:
-  level: INFO
-  console:
-    logFormat: "%-5p [%d{ISO8601}]%X{request} %c: %m\n%ex"
-  loggers:
-    "com.vmware.esxcloud.rootscheduler": DEBUG
-
 root:
   place_timeout_ms: 10000
   max_fan_out_count: 4
