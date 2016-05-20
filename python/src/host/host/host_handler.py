@@ -424,12 +424,22 @@ class HostHandler(Host.Iface):
 
         self._logger.debug("VM create, done touching timestamp file, vm-id: %s" % vm.id)
 
+        # Step 7: get VM network information
+        try:
+            network_info = self.hypervisor.vm_manager.get_vm_network(request.vm_id)
+        except VmNotFoundException as e:
+            return CreateVmResponse(CreateVmResultCode.SYSTEM_ERROR, str(e))
+        except ValueError as e:
+            return CreateVmResponse(CreateVmResultCode.SYSTEM_ERROR, str(e))
+
         vm.datastore = datastore_id
         vm.datastore_name = self.hypervisor.datastore_manager.datastore_name(datastore_id)
         vm.location_id = self.hypervisor.vm_manager.get_location_id(vm.id)
+
         response = CreateVmResponse()
         response.result = CreateVmResultCode.OK
         response.vm = vm.to_thrift()
+        response.network_info = network_info
 
         return response
 
