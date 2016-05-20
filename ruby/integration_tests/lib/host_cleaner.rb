@@ -67,6 +67,29 @@ module EsxCloud
         end
       end
 
+      def clean_xenon_state(server, user_name, password)
+        puts "cleaning up xenon state and restarting containers on VM #{server}"
+        Net::SSH.start(server, user_name, {password: password, user_known_hosts_file: "/dev/null"}) do |ssh|
+          ssh.exec!("sudo rm -rf /etc/esxcloud/mustache/cloud-store/cloud-store/sandbox_19000/19000/CloudStoreXenonHost*")
+          ssh.exec!("sudo rm -rf /etc/esxcloud/mustache/cloud-store/cloud-store/sandbox_19000/19000/lucene*")
+          ssh.exec!("sudo rm -rf /etc/esxcloud/mustache/cloud-store/cloud-store/sandbox_19000/19000/resources/")
+
+          ssh.exec!("sudo rm -rf /etc/esxcloud/mustache/housekeeper/housekeeper/sandbox_16000/16001/HousekeeperXenonServiceHost*")
+          ssh.exec!("sudo rm -rf /etc/esxcloud/mustache/housekeeper/housekeeper/sandbox_16000/16001/lucene*")
+          ssh.exec!("sudo rm -rf /etc/esxcloud/mustache/housekeeper/housekeeper/sandbox_16000/16001/resources/")
+
+          ssh.exec!("sudo rm -rf /etc/esxcloud/mustache/deployer/deployer/sandbox_18000/18001/DeployerXenonServiceHost*")
+          ssh.exec!("sudo rm -rf /etc/esxcloud/mustache/deployer/deployer/sandbox_18000/18001/lucene*")
+          ssh.exec!("sudo rm -rf /etc/esxcloud/mustache/deployer/deployer/sandbox_18000/18001/resources/")
+
+          ssh.exec!("sudo rm -rf /etc/esxcloud/mustache/root-scheduler/root-scheduler/sandbox_13010/13010/SchedulerXenonHost*")
+          ssh.exec!("sudo rm -rf /etc/esxcloud/mustache/root-scheduler/root-scheduler/sandbox_13010/13010/lucene*")
+          ssh.exec!("sudo rm -rf /etc/esxcloud/mustache/root-scheduler/root-scheduler/sandbox_13010/13010/resources/")
+
+          ssh.exec!("docker restart CloudStore Housekeeper Deployer RootScheduler")
+        end
+      end
+
       def clean_datastores(server, user_name, password, folders = DATASTORE_DIRS_TO_DELETE)
         puts "cleaning datastores on #{server}"
         Net::SSH.start(server, user_name, {password: password, user_known_hosts_file: "/dev/null"}) do |ssh|

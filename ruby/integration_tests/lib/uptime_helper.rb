@@ -48,6 +48,15 @@ module EsxCloud
           if management_vm.state == "STOPPED"
             puts "Powering on management VM " + management_vm.id
             management_vm.start!
+            # Wait for the VM to come up and get an ip address
+            sleep 120
+
+            vm_networks = EsxCloud::Config.client.get_vm_networks(management_vm.id)
+            vm_networks.network_connections.each do |network|
+              if network.network == "VM VLAN"
+                EsxCloud::HostCleaner.clean_xenon_state network.ip_address, "esxcloud", "vmware"
+              end
+            end
           end
         end
       end
