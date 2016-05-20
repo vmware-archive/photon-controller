@@ -1,6 +1,6 @@
-Photon Controller version 1.0.0 Technical Preview 1
+Photon Controller version 0.9.0-PCF
 
-Copyright © 2015 VMware, Inc. All Rights Reserved.
+Copyright © 2015-2016 VMware, Inc. All Rights Reserved.
 
 This product is licensed to you under the Apache License, Version 2.0 (the "License").  You may not use this product except in compliance with the License.  
 
