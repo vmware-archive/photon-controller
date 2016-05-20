@@ -57,6 +57,8 @@ public class XenonTaskStatusStepCmd extends StepCommand {
     int getTargetSubStage(Operation op);
 
     int getSubStage(TaskState taskState);
+
+    void handleDone(TaskState taskState) throws ApiFeException;
   }
 
   public XenonTaskStatusStepCmd(TaskCommand taskCommand, StepBackend stepBackend,
@@ -142,6 +144,7 @@ public class XenonTaskStatusStepCmd extends StepCommand {
       case FINISHED:
         // The overall task has finished, we can consider targetSubStage is done,
         // and exit this step command.
+        xenonTaskStatusPoller.handleDone(taskState);
         return true;
       case FAILED:
         // If task has failed, use exception to exit.

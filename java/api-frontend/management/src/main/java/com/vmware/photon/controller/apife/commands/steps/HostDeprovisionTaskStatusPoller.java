@@ -14,28 +14,27 @@
 package com.vmware.photon.controller.apife.commands.steps;
 
 import com.vmware.photon.controller.api.Host;
-import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.Operation;
 import com.vmware.photon.controller.api.common.exceptions.ApiFeException;
 import com.vmware.photon.controller.apife.backends.HostDcpBackend;
 import com.vmware.photon.controller.apife.backends.TaskBackend;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
-import com.vmware.photon.controller.apife.exceptions.external.HostStateChangeException;
+import com.vmware.photon.controller.apife.exceptions.external.HostDeprovisionFailedException;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
-import com.vmware.photon.controller.deployer.dcp.task.ChangeHostModeTaskService;
+import com.vmware.photon.controller.deployer.dcp.workflow.DeprovisionHostWorkflowService;
 import com.vmware.xenon.common.TaskState;
 
 /**
  * Polls host task status.
  */
-public class HostChangeModeTaskStatusPoller implements XenonTaskStatusStepCmd.XenonTaskStatusPoller {
+public class HostDeprovisionTaskStatusPoller implements XenonTaskStatusStepCmd.XenonTaskStatusPoller {
   private final TaskCommand taskCommand;
   private final HostDcpBackend hostBackend;
   private final TaskBackend taskBackend;
 
-  public HostChangeModeTaskStatusPoller(TaskCommand taskCommand, HostDcpBackend hostBackend,
-                                        TaskBackend taskBackend) {
+  public HostDeprovisionTaskStatusPoller(TaskCommand taskCommand, HostDcpBackend hostBackend,
+                                         TaskBackend taskBackend) {
     this.taskCommand = taskCommand;
     this.hostBackend = hostBackend;
     this.taskBackend = taskBackend;
@@ -43,8 +42,8 @@ public class HostChangeModeTaskStatusPoller implements XenonTaskStatusStepCmd.Xe
 
   @Override
   public TaskState poll(String remoteTaskLink) throws DocumentNotFoundException, ApiFeException {
-    ChangeHostModeTaskService.State serviceDocument = hostBackend.getDeployerClient()
-        .getHostChangeModeStatus(remoteTaskLink);
+    DeprovisionHostWorkflowService.State serviceDocument = hostBackend.getDeployerClient()
+        .getHostDeprovisionStatus(remoteTaskLink);
     if (serviceDocument.taskState.stage == TaskState.TaskStage.FINISHED) {
       TaskEntity taskEntity = taskCommand.getTask();
       taskEntity.setEntityKind(Host.KIND);
@@ -55,30 +54,9 @@ public class HostChangeModeTaskStatusPoller implements XenonTaskStatusStepCmd.Xe
     return serviceDocument.taskState;
   }
 
-  private void handleTaskFailure(ChangeHostModeTaskService.State state) throws ApiFeException {
-    HostState hostState;
-    switch (state.hostMode) {
-      case NORMAL:
-        hostState = HostState.READY;
-        break;
-      case ENTERING_MAINTENANCE:
-        hostState = HostState.SUSPENDED;
-        break;
-      case MAINTENANCE:
-        hostState = HostState.MAINTENANCE;
-        break;
-      case DEPROVISIONED:
-        hostState = HostState.NOT_PROVISIONED;
-        break;
-      default:
-        hostState = HostState.ERROR;
-        break;
-    }
-
-    throw new HostStateChangeException(state.hostServiceLink,
-        hostState, new Exception(state.taskState.failure.message));
+  private void handleTaskFailure(DeprovisionHostWorkflowService.State state) throws ApiFeException {
+    throw new HostDeprovisionFailedException(state.uniqueId, state.taskState.failure.message);
   }
-
 
   @Override
   public int getTargetSubStage(Operation op) {
@@ -91,6 +69,7 @@ public class HostChangeModeTaskStatusPoller implements XenonTaskStatusStepCmd.Xe
   }
 
   @Override
-  public void handleDone(TaskState taskState) throws ApiFeException {
+  public void handleDone(TaskState taskState) {
+
   }
 }

@@ -15,13 +15,13 @@ package com.vmware.photon.controller.apife.commands.steps;
 
 import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
 import com.vmware.photon.controller.api.common.exceptions.ApiFeException;
+import com.vmware.photon.controller.api.common.exceptions.external.TaskNotFoundException;
 import com.vmware.photon.controller.apife.backends.HostBackend;
 import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.backends.VmBackend;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.HostEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
-import com.vmware.photon.controller.common.clients.exceptions.HostNotFoundException;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
 
 import com.google.common.base.Preconditions;
@@ -39,6 +39,7 @@ public class HostDeleteStepCmd extends StepCommand {
   private final HostBackend hostBackend;
   private final VmBackend vmBackend;
   private final TaskCommand taskCommand;
+  private HostEntity hostEntity;
 
   public HostDeleteStepCmd(TaskCommand taskCommand,
                            StepBackend stepBackend,
@@ -58,19 +59,21 @@ public class HostDeleteStepCmd extends StepCommand {
     Preconditions.checkArgument(entityList.size() == 1,
         "There should be only 1 host referenced by step %s", step.getId());
 
-    HostEntity hostEntity = (HostEntity) entityList.get(0);
-
-    try {
-      taskCommand.getDeployerClient().deleteHost(hostEntity.getId());
-    } catch (HostNotFoundException ex) {
-      logger.warn("delete host '{}' in '{}' state failed, deleting the model : {}",
-          hostEntity.getId(), hostEntity.getState(), ex);
-    }
-
+    this.hostEntity = (HostEntity) entityList.get(0);
     hostBackend.tombstone(hostEntity);
   }
 
   @Override
   protected void cleanup() {
+  }
+
+  @Override
+  protected void markAsFailed(Throwable t) throws TaskNotFoundException {
+    super.markAsFailed(t);
+
+    if (this.hostEntity != null) {
+      logger.info("delete host '{}' in '{}' state failed, deleting the model", this.hostEntity.getId(),
+          hostEntity.getState());
+ }
   }
 }

@@ -79,4 +79,9 @@ public class HostTaskStatusPoller implements XenonTaskStatusStepCmd.XenonTaskSta
   public int getSubStage(TaskState taskState) {
     return 0;
   }
+
+  @Override
+  public void handleDone(TaskState taskState) {
+
+  }
 }
