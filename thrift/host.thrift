@@ -160,6 +160,7 @@ struct CreateVmResponse {
   1: required CreateVmResultCode result
   2: optional string error
   3: optional resource.Vm vm
+  4: optional VmNetworkInfo network_info
 }
 
 // Delete VM

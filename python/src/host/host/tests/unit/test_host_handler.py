@@ -584,6 +584,7 @@ class HostHandlerTestCase(unittest.TestCase):
         state.set_mode(MODE.ENTERING_MAINTENANCE)
         request = MagicMock()
         response = handler.create_vm(request)
+        handler.get_vm_networks = MagicMock()
         assert_that(response.result, equal_to(CreateVmResultCode.OPERATION_NOT_ALLOWED))
 
         state.set_mode(MODE.MAINTENANCE)
@@ -615,6 +616,7 @@ class HostHandlerTestCase(unittest.TestCase):
         vm_manager.get_location_id.assert_called_once_with(vm.id)
         assert_that(vm.location_id, equal_to(vm_location_id))
         vm.to_thrift.assert_called_once()
+        handler.get_vm_networks.assert_called_once_with(vm.id)
 
         # Test lazy image copy
         assert_that(im.copy_image.called, is_(False))
