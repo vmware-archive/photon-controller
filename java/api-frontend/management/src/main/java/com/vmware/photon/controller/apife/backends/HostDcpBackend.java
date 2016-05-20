@@ -280,7 +280,7 @@ public class HostDcpBackend implements HostBackend {
     com.vmware.xenon.common.Operation result = dcpClient.post(HostServiceFactory.SELF_LINK, hostState);
     HostService.State createdState = result.getBody(HostService.State.class);
     HostEntity hostEntity = toHostEntity(createdState);
-    logger.info("Host {} has been created", hostEntity.getId());
+    logger.info("Host {} has been created", hostEntity);
 
     return hostEntity;
   }
@@ -298,6 +298,7 @@ public class HostDcpBackend implements HostBackend {
     taskBackend.getStepBackend().createQueuedStep(task, Operation.QUERY_HOST_TASK_RESULT);
     if (isDeploymentReady(deploymentId)) {
       taskBackend.getStepBackend().createQueuedStep(task, host, Operation.PROVISION_HOST);
+      taskBackend.getStepBackend().createQueuedStep(task, host, Operation.QUERY_PROVISION_HOST_TASK_RESULT);
     }
 
     return task;
@@ -429,6 +430,7 @@ public class HostDcpBackend implements HostBackend {
     TaskEntity task = taskBackend.createQueuedTask(hostEntity, Operation.DELETE_HOST);
     if (hasDeploymentInReadyState()) {
       taskBackend.getStepBackend().createQueuedStep(task, hostEntity, Operation.DEPROVISION_HOST);
+      taskBackend.getStepBackend().createQueuedStep(task, Operation.QUERY_DEPROVISION_HOST_TASK_RESULT);
     }
 
     taskBackend.getStepBackend().createQueuedStep(task, hostEntity, Operation.DELETE_HOST);

@@ -18,6 +18,8 @@ import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
 import com.vmware.photon.controller.api.constraints.DomainOrIP;
 
+import org.slf4j.LoggerFactory;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -122,6 +124,10 @@ public class HostEntity extends BaseEntity {
   }
 
   public void setDatastores(List<HostDatastoreEntity> datastores) {
+    LoggerFactory.getLogger(HostEntity.class).debug("setDatastores {}", datastores);
+    for (StackTraceElement ste : Thread.currentThread().getStackTrace()) {
+      LoggerFactory.getLogger(HostEntity.class).debug(ste.getFileName() + ste.getLineNumber());
+    }
     this.datastores = datastores;
   }
 
