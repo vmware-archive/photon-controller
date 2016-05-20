@@ -44,6 +44,15 @@ task buildAll() {
   mustRunAfter vagrantUp, cleanAll
 }
 
+task buildPhoton() {
+  dependsOn(
+    ":auth-tool:assemble",
+    ":containers:photon",
+    ":devbox:agent:buildVib"
+  )
+  mustRunAfter vagrantUp, cleanAll
+}
+
 task rebuild() {
   dependsOn cleanAll, buildAll
 }
@@ -69,7 +78,17 @@ task up() {
   mustRunAfter destroy
 }
 
+task upPhoton() {
+  dependsOn vagrantUp, buildPhoton, startAll
+  mustRunAfter destroy
+}
+
 // Destroys existing devbox and brings up a new one
 task renew() {
   dependsOn cleanAll, destroy, up
+}
+
+// Destroys existing photon services
+task renewPhoton() {
+  dependsOn cleanAll, destroy, upPhoton
 }

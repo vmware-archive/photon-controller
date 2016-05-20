@@ -34,7 +34,7 @@ fi
 
 # Start fresh devbox and build services
 rm -rf "$DEVBOX/log/"
-./gradlew :devbox:renew
+./gradlew :devbox:renewPhoton
 
 # Seed cloudstore with deployment
 (cd "$TESTS" && bundle exec rake cloudstore:seed)
