@@ -156,10 +156,19 @@ enum CreateVmResultCode {
   OPERATION_NOT_ALLOWED = 11
 }
 
+struct VmNetworkInfo {
+  1: optional string mac_address
+  2: optional Ipv4Address ip_address
+  3: optional ConnectedStatus is_connected
+  // There could be nic cards that are not connected to networks.
+  4: optional string network
+}
+
 struct CreateVmResponse {
   1: required CreateVmResultCode result
   2: optional string error
   3: optional resource.Vm vm
+  4: optional VmNetworkInfo network_info
 }
 
 // Delete VM
@@ -194,14 +203,6 @@ enum ConnectedStatus {
   CONNECTED = 0
   DISCONNECTED = 1
   UNKNOWN = 2
-}
-
-struct VmNetworkInfo {
-  1: optional string mac_address
-  2: optional Ipv4Address ip_address
-  3: optional ConnectedStatus is_connected
-  // There could be nic cards that are not connected to networks.
-  4: optional string network
 }
 
 // Get VM
