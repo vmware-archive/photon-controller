@@ -583,6 +583,7 @@ class HostHandlerTestCase(unittest.TestCase):
         state = common.services.get(ServiceName.MODE)
         state.set_mode(MODE.ENTERING_MAINTENANCE)
         request = MagicMock()
+        handler.hypervisor.vm_manager.get_vm_network = MagicMock()
         response = handler.create_vm(request)
         assert_that(response.result, equal_to(CreateVmResultCode.OPERATION_NOT_ALLOWED))
 
@@ -615,6 +616,7 @@ class HostHandlerTestCase(unittest.TestCase):
         vm_manager.get_location_id.assert_called_once_with(vm.id)
         assert_that(vm.location_id, equal_to(vm_location_id))
         vm.to_thrift.assert_called_once()
+        handler.hypervisor.vm_manager.get_vm_network.assert_called_once_with(request)
 
         # Test lazy image copy
         assert_that(im.copy_image.called, is_(False))
@@ -668,6 +670,7 @@ class HostHandlerTestCase(unittest.TestCase):
         handler._datastores_for_image = MagicMock()
         handler.hypervisor.datastore_manager.datastore_type.return_value = DatastoreType.EXT3
         handler.hypervisor.datastore_manager.image_datastores = MagicMock(return_value=set("ds2"))
+        handler.hypervisor.vm_manager.get_vm_network = MagicMock()
         im = handler.hypervisor.image_manager
         im.get_image_refcount_filename.return_value = os.path.join(self.agent_conf_dir, vm.id)
         im.get_image_id_from_disks.return_value = image_id
