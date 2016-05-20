@@ -20,22 +20,28 @@ import com.vmware.photon.controller.api.common.exceptions.ApiFeException;
 import com.vmware.photon.controller.apife.backends.HostDcpBackend;
 import com.vmware.photon.controller.apife.backends.TaskBackend;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
+import com.vmware.photon.controller.apife.entities.HostEntity;
+import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
-import com.vmware.photon.controller.apife.exceptions.external.HostStateChangeException;
+import com.vmware.photon.controller.apife.exceptions.external.HostProvisionFailedException;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
-import com.vmware.photon.controller.deployer.dcp.task.ChangeHostModeTaskService;
+import com.vmware.photon.controller.deployer.dcp.util.Pair;
 import com.vmware.xenon.common.TaskState;
+
+import com.google.common.base.Preconditions;
+
+import java.util.List;
 
 /**
  * Polls host task status.
  */
-public class HostChangeModeTaskStatusPoller implements XenonTaskStatusStepCmd.XenonTaskStatusPoller {
+public class HostProvisionTaskStatusPoller implements XenonTaskStatusStepCmd.XenonTaskStatusPoller {
   private final TaskCommand taskCommand;
   private final HostDcpBackend hostBackend;
   private final TaskBackend taskBackend;
 
-  public HostChangeModeTaskStatusPoller(TaskCommand taskCommand, HostDcpBackend hostBackend,
-                                        TaskBackend taskBackend) {
+  public HostProvisionTaskStatusPoller(TaskCommand taskCommand, HostDcpBackend hostBackend,
+                                       TaskBackend taskBackend) {
     this.taskCommand = taskCommand;
     this.hostBackend = hostBackend;
     this.taskBackend = taskBackend;
@@ -43,42 +49,23 @@ public class HostChangeModeTaskStatusPoller implements XenonTaskStatusStepCmd.Xe
 
   @Override
   public TaskState poll(String remoteTaskLink) throws DocumentNotFoundException, ApiFeException {
-    ChangeHostModeTaskService.State serviceDocument = hostBackend.getDeployerClient()
-        .getHostChangeModeStatus(remoteTaskLink);
-    if (serviceDocument.taskState.stage == TaskState.TaskStage.FINISHED) {
+    Pair<TaskState, String> pair = hostBackend.getDeployerClient()
+        .getHostProvisionStatus(remoteTaskLink);
+    TaskState taskState = pair.getFirst();
+    if (taskState.stage == TaskState.TaskStage.FINISHED) {
       TaskEntity taskEntity = taskCommand.getTask();
+      taskEntity.setEntityId(pair.getSecond());
       taskEntity.setEntityKind(Host.KIND);
       taskBackend.update(taskEntity);
-    } else if (serviceDocument.taskState.stage == TaskState.TaskStage.FAILED) {
-      handleTaskFailure(serviceDocument);
+    } else if (taskState.stage == TaskState.TaskStage.FAILED) {
+      handleTaskFailure(taskState);
     }
-    return serviceDocument.taskState;
+    return taskState;
   }
 
-  private void handleTaskFailure(ChangeHostModeTaskService.State state) throws ApiFeException {
-    HostState hostState;
-    switch (state.hostMode) {
-      case NORMAL:
-        hostState = HostState.READY;
-        break;
-      case ENTERING_MAINTENANCE:
-        hostState = HostState.SUSPENDED;
-        break;
-      case MAINTENANCE:
-        hostState = HostState.MAINTENANCE;
-        break;
-      case DEPROVISIONED:
-        hostState = HostState.NOT_PROVISIONED;
-        break;
-      default:
-        hostState = HostState.ERROR;
-        break;
-    }
-
-    throw new HostStateChangeException(state.hostServiceLink,
-        hostState, new Exception(state.taskState.failure.message));
+  private void handleTaskFailure(TaskState state) throws ApiFeException {
+    throw new HostProvisionFailedException(state.toString(), state.failure.message);
   }
-
 
   @Override
   public int getTargetSubStage(Operation op) {
@@ -92,5 +79,18 @@ public class HostChangeModeTaskStatusPoller implements XenonTaskStatusStepCmd.Xe
 
   @Override
   public void handleDone(TaskState taskState) throws ApiFeException {
+    List<HostEntity> hostList = null;
+    for (StepEntity step : taskCommand.getTask().getSteps()) {
+      hostList = step.getTransientResourceEntities(Host.KIND);
+      if (!hostList.isEmpty()) {
+        break;
+      }
+    }
+    if (hostList == null) {
+      return;
+    }
+    Preconditions.checkArgument(hostList.size() == 1);
+    HostEntity hostEntity = hostList.get(0);
+    hostBackend.updateState(hostEntity, HostState.READY);
   }
 }

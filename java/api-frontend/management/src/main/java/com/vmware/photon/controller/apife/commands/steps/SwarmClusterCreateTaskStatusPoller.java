@@ -78,4 +78,9 @@ public class SwarmClusterCreateTaskStatusPoller implements XenonTaskStatusStepCm
   public int getSubStage(TaskState taskState) {
     return ((SwarmClusterCreateTask.TaskState) taskState).subStage.ordinal();
   }
+
+  @Override
+  public void handleDone(TaskState taskState) {
+
+  }
 }

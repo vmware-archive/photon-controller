@@ -78,4 +78,9 @@ public class KubernetesClusterCreateTaskStatusPoller implements XenonTaskStatusS
   public int getSubStage(TaskState taskState) {
     return ((KubernetesClusterCreateTask.TaskState) taskState).subStage.ordinal();
   }
+
+  @Override
+  public void handleDone(TaskState taskState) {
+
+  }
 }
