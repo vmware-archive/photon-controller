@@ -39,6 +39,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -55,19 +56,20 @@ public class Main {
   public static void main(String[] args) throws Throwable {
     LoggingFactory.bootstrap();
 
+    logger.info("args: " + Arrays.toString(args));
+
     ArgumentParser parser = ArgumentParsers.newArgumentParser("PhotonControllerCore")
         .defaultHelp(true)
         .description("Photon Controller Core");
-    parser.addArgument("cloud-store-file").help("cloud store configuration file");
-    parser.addArgument("root-scheduler-file").help("root scheduler configuration file");
+    parser.addArgument("photon-controller-core-file").help("photon controller core configuration file");
 
     Namespace namespace = parser.parseArgsOrFail(args);
 
-    CloudStoreConfig cloudStoreConfig = getCloudStoreConfig(namespace);
-    RootSchedulerConfig schedulerConfig = getRootSchedulerConfig(namespace);
+    PhotonControllerConfig photonControllerConfig = getPhotonControllerConfig(namespace);
+    CloudStoreConfig cloudStoreConfig = photonControllerConfig.getCloudStoreConfig();
+    RootSchedulerConfig schedulerConfig = photonControllerConfig.getSchedulerConfig();
 
-    // TODO(bmace) -- for now pull the logging config from cloud store
-    new LoggingFactory(cloudStoreConfig.getLogging(), "photon-controller-core").configure();
+    new LoggingFactory(photonControllerConfig.getLogging(), "photon-controller-core").configure();
 
     final ZookeeperModule zkModule = new ZookeeperModule(cloudStoreConfig.getZookeeper());
     final CuratorFramework zkClient = zkModule.getCuratorFramework();
@@ -145,21 +147,10 @@ public class Main {
     return schedulerXenonHost;
   }
 
-  private static CloudStoreConfig getCloudStoreConfig(Namespace namespace) {
-    CloudStoreConfig config = null;
+  private static PhotonControllerConfig getPhotonControllerConfig(Namespace namespace) {
+    PhotonControllerConfig config = null;
     try {
-      config = ConfigBuilder.build(CloudStoreConfig.class, namespace.getString("cloud-store-file"));
-    } catch (BadConfigException e) {
-      logger.error(e.getMessage());
-      System.exit(1);
-    }
-    return config;
-  }
-
-  private static RootSchedulerConfig getRootSchedulerConfig(Namespace namespace) {
-    RootSchedulerConfig config = null;
-    try {
-      config = ConfigBuilder.build(RootSchedulerConfig.class, namespace.getString("root-scheduler-file"));
+      config = ConfigBuilder.build(PhotonControllerConfig.class, namespace.getString("photon-controller-core-file"));
     } catch (BadConfigException e) {
       logger.error(e.getMessage());
       System.exit(1);

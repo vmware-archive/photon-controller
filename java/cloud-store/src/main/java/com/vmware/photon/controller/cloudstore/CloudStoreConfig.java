@@ -13,12 +13,10 @@
 
 package com.vmware.photon.controller.cloudstore;
 
-import com.vmware.photon.controller.common.logging.LoggingConfiguration;
 import com.vmware.photon.controller.common.xenon.host.XenonConfig;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperConfig;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import static com.google.common.base.Preconditions.checkNotNull;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
@@ -37,16 +35,8 @@ public class CloudStoreConfig {
   @NotNull
   private ZookeeperConfig zookeeper = new ZookeeperConfig();
 
-  @Valid
-  @NotNull
-  private LoggingConfiguration logging = new LoggingConfiguration();
-
   public XenonConfig getXenonConfig() {
     return this.xenonConfig;
-  }
-
-  public LoggingConfiguration getLogging() {
-    return checkNotNull(logging);
   }
 
   public ZookeeperConfig getZookeeper() {
