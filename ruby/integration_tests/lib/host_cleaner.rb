@@ -64,7 +64,7 @@ module EsxCloud
         end
       end
 
-      DATASTORE_DIRS_TO_DELETE = ["deleted_image", "disk", "image", "tmp_image", "vm", "tmp_upload", "installer"]
+      DATASTORE_DIRS_TO_DELETE = ["deleted_image", "disk", "image", "tmp_image", "vm", "tmp_upload"]
       def clean_datastore(ssh, datastore)
         puts "cleaning datastore #{datastore}"
 
@@ -77,7 +77,7 @@ module EsxCloud
                      " && /usr/lib/vmware/osfs/bin/osfs-rmdir #{datastore_dir}$dir;"\
                      " done"
           else
-            rm_cmd = "rm -rf #{datastore_dir}#{folder}*"
+            rm_cmd = "rm -rf #{datastore_dir}#{folder}* && rm -rf *installer*"
           end
           ssh.exec!(rm_cmd)
         end
