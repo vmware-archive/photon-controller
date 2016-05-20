@@ -13,7 +13,6 @@
 
 package com.vmware.photon.controller.deployer.helpers;
 
-import com.vmware.photon.controller.agent.gen.AgentControl;
 import com.vmware.photon.controller.api.DeploymentState;
 import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.Image;
@@ -35,15 +34,8 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.ResourceTicketServiceF
 import com.vmware.photon.controller.cloudstore.dcp.entity.TenantService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.TenantServiceFactory;
 import com.vmware.photon.controller.common.Constants;
-import com.vmware.photon.controller.common.config.BadConfigException;
-import com.vmware.photon.controller.common.config.ConfigBuilder;
-import com.vmware.photon.controller.common.thrift.ThriftModule;
-import com.vmware.photon.controller.common.thrift.ThriftServiceModule;
 import com.vmware.photon.controller.common.xenon.MultiHostEnvironment;
-import com.vmware.photon.controller.common.xenon.host.XenonConfig;
-import com.vmware.photon.controller.common.zookeeper.ZookeeperModule;
 import com.vmware.photon.controller.deployer.DeployerConfig;
-import com.vmware.photon.controller.deployer.DeployerConfigTest;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfigurator;
 import com.vmware.photon.controller.deployer.dcp.ContainersConfig;
 import com.vmware.photon.controller.deployer.dcp.DeployerContext;
@@ -56,16 +48,11 @@ import com.vmware.photon.controller.deployer.dcp.entity.VibService;
 import com.vmware.photon.controller.deployer.dcp.entity.VmFactoryService;
 import com.vmware.photon.controller.deployer.dcp.entity.VmService;
 import com.vmware.photon.controller.deployer.helpers.dcp.TestEnvironment;
-import com.vmware.photon.controller.host.gen.Host;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.QueryTask;
 
-import com.google.inject.Guice;
-import com.google.inject.Inject;
-import com.google.inject.Injector;
-import com.google.inject.TypeLiteral;
 import org.apache.commons.io.FileUtils;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -90,65 +77,6 @@ import java.util.UUID;
  * This class implements helper routines for tests.
  */
 public class TestHelper {
-  public static Injector createInjector(String configFileResourcePath)
-      throws BadConfigException {
-    DeployerConfig config = ConfigBuilder.build(DeployerConfig.class,
-        DeployerConfigTest.class.getResource(configFileResourcePath).getPath());
-    return Guice.createInjector(
-        new ZookeeperModule(),
-        new ThriftModule(),
-        new ThriftServiceModule<>(
-            new TypeLiteral<AgentControl.AsyncClient>() {
-            }
-        ),
-        new ThriftServiceModule<>(
-            new TypeLiteral<Host.AsyncClient>() {
-            }
-        ),
-        new TestDeployerModule(config));
-  }
-
-  /**
-   * Class for constructing config injection.
-   */
-  public static class TestInjectedConfig {
-
-    private String bind;
-    private String registrationAddress;
-    private int port;
-    private String path;
-    private String[] peerNodes;
-
-    @Inject
-    public TestInjectedConfig(XenonConfig xenonConfig) {
-      this.bind = xenonConfig.getBindAddress();
-      this.registrationAddress = xenonConfig.getRegistrationAddress();
-      this.port = xenonConfig.getPort();
-      this.path = xenonConfig.getStoragePath();
-      this.peerNodes = xenonConfig.getPeerNodes();
-    }
-
-    public String getBind() {
-      return this.bind;
-    }
-
-    public String getRegistrationAddress() {
-      return this.registrationAddress;
-    }
-
-    public int getPort() {
-      return this.port;
-    }
-
-    public String getPath() {
-      return this.path;
-    }
-
-    public String[] getPeerNodes() {
-      return this.peerNodes;
-    }
-  }
-
   //
   // Start state routines
   //

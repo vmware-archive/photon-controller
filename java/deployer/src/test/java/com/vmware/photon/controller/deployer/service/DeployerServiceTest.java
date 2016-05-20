@@ -70,7 +70,6 @@ import com.vmware.photon.controller.deployer.gen.ProvisionHostResponse;
 import com.vmware.photon.controller.deployer.gen.ProvisionHostResultCode;
 import com.vmware.photon.controller.deployer.gen.ProvisionHostStatusRequest;
 import com.vmware.photon.controller.deployer.gen.ProvisionHostStatusResponse;
-import com.vmware.photon.controller.deployer.helpers.TestHelper;
 import com.vmware.photon.controller.deployer.service.client.AddHostWorkflowServiceClient;
 import com.vmware.photon.controller.deployer.service.client.AddHostWorkflowServiceClientFactory;
 import com.vmware.photon.controller.deployer.service.client.ChangeHostModeTaskServiceClient;
@@ -93,7 +92,6 @@ import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
 
-import com.google.inject.Injector;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.RetryOneTime;
@@ -133,7 +131,6 @@ import java.util.concurrent.TimeUnit;
 public class DeployerServiceTest {
 
   private DeployerService service;
-  private Injector injector;
 
   /**
    * Dummy test case to make Intellij recognize this as a test class.
@@ -146,12 +143,13 @@ public class DeployerServiceTest {
    * Tests for the info method.
    */
   public class InfoTest {
+    private DeployerXenonServiceHost xenonHost;
 
     @BeforeMethod
     private void setUp() throws Throwable {
-      injector = TestHelper.createInjector("/config.yml");
-      injector.getInstance(DeployerXenonServiceHost.class);
-      service = injector.getInstance(DeployerService.class);
+      ServerSet deployerServerSet = mock(ServerSet.class);
+      xenonHost = mock(DeployerXenonServiceHost.class);
+      service = new DeployerService(deployerServerSet, xenonHost, null, null, null, null, null, null);
     }
 
     @Test
@@ -161,9 +159,7 @@ public class DeployerServiceTest {
 
     @Test
     public void testReady() throws Throwable {
-      DeployerXenonServiceHost dcpHost = injector.getInstance(DeployerXenonServiceHost.class);
-
-      doReturn(true).when(dcpHost).isReady();
+      doReturn(true).when(xenonHost).isReady();
       assertThat(service.get_status().getType(), is(StatusType.READY));
     }
   }
@@ -243,7 +239,7 @@ public class DeployerServiceTest {
       private CountDownLatch countDownLatch;
 
       public TestDeployerService(ServerSet serverSet) {
-        super(serverSet, null, null, null, null, null, null, null, null);
+        super(serverSet, null, null, null, null, null, null, null);
       }
 
       public void setCountDownLatch(CountDownLatch countDownLatch) {
@@ -276,7 +272,7 @@ public class DeployerServiceTest {
       when(changeHostModeTaskServiceClientFactory.getInstance(any(DeployerXenonServiceHost.class))).thenReturn
           (changeHostModeTaskServiceClient);
       service = new DeployerService(serverSet, null, null, changeHostModeTaskServiceClientFactory, null, null,
-          null, null, null);
+          null, null);
       request = createEnterMaintenanceModeRequest();
     }
 
@@ -320,7 +316,7 @@ public class DeployerServiceTest {
       when(changeHostModeTaskServiceClientFactory.getInstance(any(DeployerXenonServiceHost.class))).thenReturn
           (changeHostModeTaskServiceClient);
       service = new DeployerService(serverSet, null, null, changeHostModeTaskServiceClientFactory, null, null
-          , null, null, null);
+          , null, null);
       request = createEnterMaintenanceModeStatusRequest();
     }
 
@@ -388,7 +384,7 @@ public class DeployerServiceTest {
       when(changeHostModeTaskServiceClientFactory.getInstance(any(DeployerXenonServiceHost.class))).thenReturn
           (changeHostModeTaskServiceClient);
       service = new DeployerService(serverSet, null, null, changeHostModeTaskServiceClientFactory, null, null
-          , null, null, null);
+          , null, null);
       request = createMaintenanceModeRequest();
     }
 
@@ -432,7 +428,7 @@ public class DeployerServiceTest {
       when(changeHostModeTaskServiceClientFactory.getInstance(any(DeployerXenonServiceHost.class))).thenReturn
           (changeHostModeTaskServiceClient);
       service = new DeployerService(serverSet, null, null, changeHostModeTaskServiceClientFactory, null, null
-          , null, null, null);
+          , null, null);
       request = createNormalModeRequest();
     }
 
@@ -476,7 +472,7 @@ public class DeployerServiceTest {
       when(validateHostTaskServiceClientFactory.getInstance(any(DeployerXenonServiceHost.class))).thenReturn
           (validateHostTaskServiceClient);
       service = new DeployerService(serverSet, null, null, null, null, null,
-          validateHostTaskServiceClientFactory, null, null);
+          validateHostTaskServiceClientFactory, null);
       request = createCreateHostRequest();
     }
 
@@ -525,7 +521,7 @@ public class DeployerServiceTest {
       when(validateHostTaskServiceClientFactory.getInstance(any(DeployerXenonServiceHost.class))).thenReturn
           (validateHostTaskServiceClient);
       service = new DeployerService(serverSet, null, null, null, null, null,
-          validateHostTaskServiceClientFactory, null, null);
+          validateHostTaskServiceClientFactory, null);
       request = createCreateHostStatusRequest();
     }
 
@@ -588,7 +584,7 @@ public class DeployerServiceTest {
       entityClient = mock(HostServiceClient.class);
       ServerSet serverSet = mock(ServerSet.class);
       when(entityClientFactory.getInstance(any(DeployerXenonServiceHost.class))).thenReturn(entityClient);
-      service = new DeployerService(serverSet, null, entityClientFactory, null, null, null, null, null, null);
+      service = new DeployerService(serverSet, null, entityClientFactory, null, null, null, null, null);
       request = createDeleteHostRequest();
     }
 
@@ -644,7 +640,7 @@ public class DeployerServiceTest {
       when(addHostWorkflowServiceClientFactory.getInstance(any(DeployerXenonServiceHost.class))).
           thenReturn(addHostWorkflowServiceClient);
       service = new DeployerService(serverSet, null, entityClientFactory, null, null,
-          addHostWorkflowServiceClientFactory, null, null, null);
+          addHostWorkflowServiceClientFactory, null, null);
       request = createProvisionHostRequest();
     }
 
@@ -685,7 +681,7 @@ public class DeployerServiceTest {
       ServerSet serverSet = mock(ServerSet.class);
       when(deprovisionHostClientFactory.getInstance(any(DeployerXenonServiceHost.class)))
           .thenReturn(deprovisionHostClient);
-      service = new DeployerService(serverSet, null, null, null, null, null, null, deprovisionHostClientFactory, null);
+      service = new DeployerService(serverSet, null, null, null, null, null, null, deprovisionHostClientFactory);
       request = createDeprovisionHostRequest();
     }
 
@@ -739,7 +735,7 @@ public class DeployerServiceTest {
       when(addHostWorkflowServiceClientFactory.getInstance(any(DeployerXenonServiceHost.class))).
           thenReturn(addHostWorkflowServiceClient);
       service = new DeployerService(serverSet, null, entityClientFactory, null, null,
-          addHostWorkflowServiceClientFactory, null, null, null);
+          addHostWorkflowServiceClientFactory, null, null);
       request = createProvisionHostStatusRequest();
     }
 
@@ -788,7 +784,7 @@ public class DeployerServiceTest {
       ServerSet serverSet = mock(ServerSet.class);
       when(deprovisionHostClientFactory.getInstance(any(DeployerXenonServiceHost.class)))
           .thenReturn(deprovisionHostClient);
-      service = new DeployerService(serverSet, null, null, null, null, null, null, deprovisionHostClientFactory, null);
+      service = new DeployerService(serverSet, null, null, null, null, null, null, deprovisionHostClientFactory);
       request = createDeprovisionHostStatusRequest();
     }
 
@@ -844,7 +840,7 @@ public class DeployerServiceTest {
       when(hostServiceClientFactory.getInstance(any(DeployerXenonServiceHost.class)))
           .thenReturn(hostServiceClient);
       service = new DeployerService(serverSet, null, hostServiceClientFactory, null,
-          deploymentWorkflowServiceClientFactory, null, null, null, null);
+          deploymentWorkflowServiceClientFactory, null, null, null);
       request = createDeployRequest();
     }
 
@@ -952,7 +948,7 @@ public class DeployerServiceTest {
       when(deployerServiceClientFactory.getInstance(any(DeployerXenonServiceHost.class)))
           .thenReturn(deploymentWorkFlowServiceClient);
 
-      service = new DeployerService(serverSet, null, null, null, deployerServiceClientFactory, null, null, null, null);
+      service = new DeployerService(serverSet, null, null, null, deployerServiceClientFactory, null, null, null);
     }
 
     @Test(dataProvider = "DeployTaskStates")
@@ -1055,7 +1051,7 @@ public class DeployerServiceTest {
       when(deploymentWorkflowServiceClientFactory.getInstance(any(DeployerXenonServiceHost.class))).thenReturn
           (deploymentWorkFlowServiceClient);
       service = new DeployerService(serverSet, null, null, null, deploymentWorkflowServiceClientFactory, null
-          , null, null, null);
+          , null, null);
       request = createRequest();
     }
 
@@ -1100,7 +1096,7 @@ public class DeployerServiceTest {
       when(deploymentWorkflowServiceClientFactory.getInstance(any(DeployerXenonServiceHost.class))).thenReturn
           (deploymentWorkFlowServiceClient);
       service = new DeployerService(serverSet, null, null, null, deploymentWorkflowServiceClientFactory, null
-          , null, null, null);
+          , null, null);
       request = createRequest();
     }
 
