@@ -174,7 +174,7 @@ public class HostUtils {
   }
 
   /**
-   * This function gets the service configuartor factory from the host associated with the specified service.
+   * This function gets the service configurator factory from the host associated with the specified service.
    *
    * @param service Supplies a DCP service instance.
    * @return The docker provisioner factory provided by the DCP host associated with the service.

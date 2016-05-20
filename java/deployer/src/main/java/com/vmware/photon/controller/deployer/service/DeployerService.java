@@ -17,7 +17,6 @@ import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
 import com.vmware.photon.controller.common.logging.LoggingUtils;
-import com.vmware.photon.controller.common.manifest.BuildInfo;
 import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.photon.controller.common.zookeeper.ServiceNodeEventHandler;
 import com.vmware.photon.controller.deployer.DeployerServerSet;
@@ -122,7 +121,6 @@ import com.vmware.xenon.common.ServiceHost;
 import com.vmware.xenon.common.TaskState;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import org.apache.thrift.TException;
 import org.slf4j.Logger;
@@ -144,7 +142,6 @@ public class DeployerService implements Deployer.Iface, ServerSet.ChangeListener
 
   private final ServerSet serverSet;
   private final DeployerXenonServiceHost dcpHost;
-  private final BuildInfo buildInfo;
 
   private final AddHostWorkflowServiceClientFactory addHostWorkflowServiceClientFactory;
   private final ValidateHostTaskServiceClientFactory validateHostTaskServiceClientFactory;
@@ -153,7 +150,6 @@ public class DeployerService implements Deployer.Iface, ServerSet.ChangeListener
   private final DeploymentWorkflowServiceClientFactory deploymentWorkflowServiceClientFactory;
   private final ChangeHostModeTaskServiceClientFactory changeHostModeTaskServiceClientFactory;
 
-  @Inject
   public DeployerService(
       @DeployerServerSet ServerSet serverSet,
       DeployerXenonServiceHost host,
@@ -162,8 +158,7 @@ public class DeployerService implements Deployer.Iface, ServerSet.ChangeListener
       DeploymentWorkflowServiceClientFactory deploymentWorkflowServiceClientFactory,
       AddHostWorkflowServiceClientFactory addHostWorkflowServiceClientFactory,
       ValidateHostTaskServiceClientFactory validateHostTaskServiceClientFactory,
-      DeprovisionHostWorkflowServiceClientFactory deprovisionHostClientFactory,
-      BuildInfo buildInfo) {
+      DeprovisionHostWorkflowServiceClientFactory deprovisionHostClientFactory) {
     this.serverSet = serverSet;
     this.hostServiceClientFactory = hostServiceClientFactory;
     this.changeHostModeTaskServiceClientFactory = changeHostModeTaskServiceClientFactory;
@@ -171,7 +166,6 @@ public class DeployerService implements Deployer.Iface, ServerSet.ChangeListener
     this.addHostWorkflowServiceClientFactory = addHostWorkflowServiceClientFactory;
     this.validateHostTaskServiceClientFactory = validateHostTaskServiceClientFactory;
     this.deprovisionHostClientFactory = deprovisionHostClientFactory;
-    this.buildInfo = buildInfo;
     this.dcpHost = host;
     this.serverSet.addChangeListener(this);
   }
@@ -322,7 +316,6 @@ public class DeployerService implements Deployer.Iface, ServerSet.ChangeListener
   public Status get_status() throws TException {
     if (dcpHost.isReady()) {
       Status status = new Status(StatusType.READY);
-      status.setBuild_info(this.buildInfo.toString());
       return status;
     }
     return new Status(StatusType.INITIALIZING);
