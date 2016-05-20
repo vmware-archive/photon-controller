@@ -21,8 +21,6 @@ import com.vmware.photon.controller.apife.backends.VmBackend;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.HostEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
-import com.vmware.photon.controller.common.clients.DeployerClient;
-import com.vmware.photon.controller.common.clients.exceptions.HostNotFoundException;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
 
 import org.mockito.InOrder;
@@ -33,9 +31,7 @@ import org.testng.annotations.Test;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
 
 /**
  * Test {@link HostDeleteStepCmd}.
@@ -54,7 +50,6 @@ public class HostDeleteStepCmdTest extends PowerMockTestCase {
   @Mock
   private VmBackend vmBackend;
 
-  private DeployerClient deployerClient;
   private StepEntity step;
   private HostEntity hostEntity;
   private HostDeleteStepCmd command;
@@ -73,8 +68,6 @@ public class HostDeleteStepCmdTest extends PowerMockTestCase {
     step.addResource(hostEntity);
 
     command = new HostDeleteStepCmd(taskCommand, stepBackend, step, hostBackend, vmBackend);
-    deployerClient = mock(DeployerClient.class);
-    when(taskCommand.getDeployerClient()).thenReturn(deployerClient);
   }
 
   @Test
@@ -84,24 +77,19 @@ public class HostDeleteStepCmdTest extends PowerMockTestCase {
 
     command.execute();
 
-    InOrder inOrder = inOrder(vmBackend, deployerClient, hostBackend);
-    inOrder.verify(deployerClient).deleteHost(hostEntity.getId());
+    InOrder inOrder = inOrder(vmBackend, hostBackend);
     inOrder.verify(hostBackend).tombstone(hostEntity);
-    verifyNoMoreInteractions(vmBackend, deployerClient, hostBackend);
+    verifyNoMoreInteractions(vmBackend, hostBackend);
   }
 
   @Test
   public void testForceDeleteHostNotFound() throws Exception {
-    when(deployerClient.deleteHost(hostEntity.getId())).thenThrow(new HostNotFoundException("Error"));
-
     doReturn(0).when(vmBackend).countVmsOnHost(hostEntity);
-    doNothing().when(hostBackend).tombstone(hostEntity);
 
     command.execute();
 
-    InOrder inOrder = inOrder(vmBackend, deployerClient, hostBackend);
-    inOrder.verify(deployerClient).deleteHost(hostEntity.getId());
+    InOrder inOrder = inOrder(vmBackend, hostBackend);
     inOrder.verify(hostBackend).tombstone(hostEntity);
-    verifyNoMoreInteractions(vmBackend, deployerClient, hostBackend);
+    verifyNoMoreInteractions(vmBackend, hostBackend);
   }
 }

@@ -80,4 +80,9 @@ public class MesosClusterCreateTaskStatusPoller implements XenonTaskStatusStepCm
   public int getSubStage(TaskState taskState) {
     return ((MesosClusterCreateTask.TaskState) taskState).subStage.ordinal();
   }
+
+  @Override
+  public void handleDone(TaskState taskState) {
+
+  }
 }
