@@ -79,7 +79,6 @@ public class Main {
     RootSchedulerConfig schedulerConfig = photonControllerConfig.getSchedulerConfig();
     HousekeeperConfig housekeeperConfig = photonControllerConfig.getHousekeeperConfig();
 
-
     new LoggingFactory(photonControllerConfig.getLogging(), "photon-controller-core").configure();
 
     final ZookeeperModule zkModule = new ZookeeperModule(cloudStoreConfig.getZookeeper());
