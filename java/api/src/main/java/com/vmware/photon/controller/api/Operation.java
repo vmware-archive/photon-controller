@@ -76,8 +76,10 @@ public enum Operation {
 
   CREATE_HOST("CreateHost"),
   PROVISION_HOST("ProvisionHost"),
+  QUERY_PROVISION_HOST_TASK_RESULT("QueryProvisionHostResult"),
   DELETE_HOST("DeleteHost"),
   DEPROVISION_HOST("DeprovisionHost"),
+  QUERY_DEPROVISION_HOST_TASK_RESULT("QueryDeprovisionHostResult"),
   SUSPEND_HOST("EnterHostSuspendedMode"),
   ENTER_MAINTENANCE_MODE("EnterHostMaintenanceMode"),
   EXIT_MAINTENANCE_MODE("ExitHostMaintenanceMode"),
