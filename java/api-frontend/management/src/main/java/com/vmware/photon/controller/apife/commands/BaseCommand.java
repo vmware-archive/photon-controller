@@ -82,7 +82,7 @@ public abstract class BaseCommand implements Runnable {
 
   protected abstract void markAsStarted() throws TaskNotFoundException, ConcurrentTaskException;
 
-  protected abstract void markAsDone() throws TaskNotFoundException;
+  protected abstract void markAsDone() throws Throwable;
 
   protected abstract void markAsFailed(Throwable t) throws TaskNotFoundException;
 }

@@ -156,6 +156,9 @@ public class StepCommandFactory {
         return new HostProvisionStepCmd(taskCommand, stepBackend, stepEntity, hostBackend);
       case DEPROVISION_HOST:
         return new HostDeprovisionStepCmd(taskCommand, stepBackend, stepEntity, hostBackend);
+      case QUERY_DEPROVISION_HOST_TASK_RESULT:
+        return new XenonTaskStatusStepCmd(taskCommand, stepBackend, stepEntity,
+            new HostDeprovisionTaskStatusPoller(taskCommand, hostBackend, taskBackend));
       case DELETE_HOST:
         return new HostDeleteStepCmd(taskCommand, stepBackend, stepEntity, hostBackend, vmBackend);
       case SUSPEND_HOST:

@@ -429,6 +429,7 @@ public class HostDcpBackend implements HostBackend {
     TaskEntity task = taskBackend.createQueuedTask(hostEntity, Operation.DELETE_HOST);
     if (hasDeploymentInReadyState()) {
       taskBackend.getStepBackend().createQueuedStep(task, hostEntity, Operation.DEPROVISION_HOST);
+      taskBackend.getStepBackend().createQueuedStep(task, Operation.QUERY_DEPROVISION_HOST_TASK_RESULT);
     }
 
     taskBackend.getStepBackend().createQueuedStep(task, hostEntity, Operation.DELETE_HOST);
