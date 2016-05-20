@@ -13,11 +13,7 @@
 
 package com.vmware.photon.controller.housekeeper;
 
-import com.vmware.photon.controller.common.clients.HostClient;
-import com.vmware.photon.controller.common.clients.HostClientFactory;
-
 import com.google.inject.AbstractModule;
-import com.google.inject.assistedinject.FactoryModuleBuilder;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -31,9 +27,5 @@ public class HousekeeperModule extends AbstractModule {
   protected void configure() {
     bind(ScheduledExecutorService.class)
         .toInstance(Executors.newScheduledThreadPool(4));
-
-    install(new FactoryModuleBuilder()
-        .implement(HostClient.class, HostClient.class)
-        .build(HostClientFactory.class));
   }
 }

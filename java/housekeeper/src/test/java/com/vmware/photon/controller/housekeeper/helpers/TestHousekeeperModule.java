@@ -13,21 +13,8 @@
 
 package com.vmware.photon.controller.housekeeper.helpers;
 
-import com.vmware.photon.controller.common.CloudStoreServerSet;
-import com.vmware.photon.controller.common.clients.HostClient;
-import com.vmware.photon.controller.common.clients.HostClientFactory;
-import com.vmware.photon.controller.common.thrift.ServerSet;
-
 import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.google.inject.Singleton;
-import com.google.inject.assistedinject.FactoryModuleBuilder;
-import static org.mockito.Mockito.spy;
 
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
@@ -40,36 +27,5 @@ public class TestHousekeeperModule extends AbstractModule {
   protected void configure() {
     bind(ScheduledExecutorService.class)
         .toInstance(Executors.newScheduledThreadPool(4));
-
-    install(new FactoryModuleBuilder()
-        .implement(HostClient.class, HostClient.class)
-        .build(HostClientFactory.class));
-  }
-
-  @Provides
-  @Singleton
-  @CloudStoreServerSet
-  public ServerSet getCloudStoreServerSet() {
-    return spy(new ServerSet() {
-      @Override
-      public void addChangeListener(ChangeListener listener) {
-
-      }
-
-      @Override
-      public void removeChangeListener(ChangeListener listener) {
-
-      }
-
-      @Override
-      public void close() throws IOException {
-
-      }
-
-      @Override
-      public Set<InetSocketAddress> getServers() {
-        return new HashSet<>();
-      }
-    });
   }
 }

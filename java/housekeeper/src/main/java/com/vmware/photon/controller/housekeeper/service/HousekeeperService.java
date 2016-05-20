@@ -27,7 +27,6 @@ import com.vmware.photon.controller.status.gen.StatusType;
 import com.vmware.photon.controller.tracing.gen.TracingInfo;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.inject.Singleton;
 import org.apache.thrift.TException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,7 +38,6 @@ import java.util.UUID;
 /**
  * HousekeeperService implements all methods required by Housekeeper thrift service definition.
  */
-@Singleton
 public class HousekeeperService implements Housekeeper.Iface, ServiceNodeEventHandler, ServerSet.ChangeListener {
 
   private static final Logger logger = LoggerFactory.getLogger(HousekeeperService.class);
