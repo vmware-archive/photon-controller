@@ -15,7 +15,7 @@ fi
 
 export NO_RESTART_ALWAYS=1
 
-./gradlew :devbox:renew
+./gradlew :devbox:renewPhoton
 
 vagrant ssh -c "docker tag photon/zookeeper esxcloud/zookeeper"
 vagrant ssh -c "docker tag photon/haproxy esxcloud/haproxy"
@@ -75,7 +75,7 @@ rm -f -- *.ovf
 rm -f -- *.mf
 cd ..
 
-./gradlew :devbox:renew
+./gradlew :devbox:renewPhoton
 vagrant ssh -c "sudo mkdir -p /var/photon/images"
 vagrant ssh -c "sudo chown vagrant /var/photon/images"
 vagrant ssh -c "sudo cp /vagrant/$MANAGEMENT_VM_DIR/photon-management-vm-disk1.vmdk /var/photon/images/"

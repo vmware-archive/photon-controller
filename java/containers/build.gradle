@@ -30,14 +30,20 @@ task removeServicebase(type: DockerRemoveImage) {
   targetImageId { servicebase.tag }
 }
 
-task all() {
+task photon() {
   dependsOn(
-    zookeeper,
-    haproxy,
     ":deployer:container",
     ":housekeeper:container",
     ":api-frontend:management:container",
     ":photon-controller-core:container"
+  )
+}
+
+task all() {
+  dependsOn(
+    zookeeper,
+    haproxy,
+    photon
   )
 }
 

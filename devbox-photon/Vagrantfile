@@ -332,6 +332,12 @@ EOM
 
   # ================ PROVISIONING ================
 
+  # renaming esxcloud containers to zookeeper Containers
+  config.vm.provision :shell, :inline => <<-EOS
+    docker tag devbox/zookeeper photon/zookeeper
+    docker tag devbox/haproxy photon/haproxy
+  EOS
+
   #
   # Give access to zookeeper user inside container to write to log directory in host
   #
