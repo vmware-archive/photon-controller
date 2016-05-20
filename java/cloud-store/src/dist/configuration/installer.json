@@ -1,7 +1,0 @@
-{
-    "CLOUD-STORE_DCP_STORAGE_PATH": "/etc/esxcloud/cloud-store/sandbox_19000",
-    "LOG_DIRECTORY": "/var/log/esxcloud",
-    "CLOUD-STORE_INSTALL_DIRECTORY": "/usr/lib/esxcloud/cloud-store",
-    "REGISTRATION_ADDRESS": "127.0.0.1",
-    "ZOOKEEPER_QUORUM": "127.0.0.1:2181"
-}

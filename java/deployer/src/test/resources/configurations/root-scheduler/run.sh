@@ -1,1 +1,0 @@
-../../../../../../root-scheduler/src/dist/configuration/run.sh
