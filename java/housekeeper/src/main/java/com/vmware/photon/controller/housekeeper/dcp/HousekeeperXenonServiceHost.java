@@ -38,7 +38,6 @@ import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.services.common.RootNamespaceService;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -49,7 +48,6 @@ import java.util.Map;
 /**
  * Class to initialize a Xenon host.
  */
-@Singleton
 public class HousekeeperXenonServiceHost
     extends AbstractServiceHost
     implements XenonHostInfoProvider,

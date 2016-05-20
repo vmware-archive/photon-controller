@@ -20,18 +20,15 @@ import com.vmware.photon.controller.common.logging.LoggingFactory;
 import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.photon.controller.common.thrift.ThriftFactory;
 import com.vmware.photon.controller.common.thrift.ThriftModule;
-import com.vmware.photon.controller.common.thrift.ThriftServiceModule;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperModule;
-import com.vmware.photon.controller.host.gen.Host;
 import com.vmware.photon.controller.housekeeper.dcp.HousekeeperXenonServiceHost;
 import com.vmware.photon.controller.housekeeper.service.HousekeeperService;
 import com.vmware.photon.controller.nsxclient.NsxClientFactory;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import com.google.inject.TypeLiteral;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.Namespace;
@@ -66,11 +63,7 @@ public class Main {
 
     Injector injector = Guice.createInjector(
         new HousekeeperModule(),
-        new ThriftModule(),
-        new ThriftServiceModule<>(
-            new TypeLiteral<Host.AsyncClient>() {
-            }
-        )
+        new ThriftModule()
     );
 
     final ZookeeperModule zkModule = new ZookeeperModule(config.getZookeeper());
@@ -78,7 +71,8 @@ public class Main {
     final ServiceConfigFactory serviceConfigFactory = zkModule.getServiceConfigFactory(zkClient);
     ServerSet cloudStoreServerSet = zkModule.getZookeeperServerSet(zkClient, CLOUDSTORE_SERVICE_NAME, true);
 
-    final HostClientFactory hostClientFactory = injector.getInstance(HostClientFactory.class);
+    final ThriftModule thriftModule = injector.getInstance(ThriftModule.class);
+    final HostClientFactory hostClientFactory = thriftModule.getHostClientFactory();
     final TProtocolFactory tProtocolFactory = injector.getInstance(TProtocolFactory.class);
     final TTransportFactory tTransportFactory = injector.getInstance(TTransportFactory.class);
     final ThriftFactory thriftFactory = injector.getInstance(ThriftFactory.class);

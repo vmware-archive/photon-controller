@@ -14,8 +14,6 @@
 package com.vmware.photon.controller.housekeeper.helpers;
 
 import com.vmware.photon.controller.common.thrift.ThriftModule;
-import com.vmware.photon.controller.common.thrift.ThriftServiceModule;
-import com.vmware.photon.controller.host.gen.Host;
 import com.vmware.photon.controller.housekeeper.Config;
 import com.vmware.photon.controller.housekeeper.HousekeeperServer;
 import com.vmware.photon.controller.housekeeper.gen.Housekeeper;
@@ -24,7 +22,6 @@ import com.vmware.xenon.common.ServiceHost;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import com.google.inject.TypeLiteral;
 import org.apache.thrift.protocol.TCompactProtocol;
 import org.apache.thrift.protocol.TMultiplexedProtocol;
 import org.apache.thrift.transport.TFastFramedTransport;
@@ -48,10 +45,6 @@ public class TestHelper {
   public static Injector createInjector() {
     return Guice.createInjector(
         new ThriftModule(),
-        new ThriftServiceModule<>(
-            new TypeLiteral<Host.AsyncClient>() {
-            }
-        ),
         new TestHousekeeperModule());
   }
 

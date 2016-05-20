@@ -24,6 +24,7 @@ import com.vmware.photon.controller.housekeeper.dcp.ImageReplicatorService;
 import com.vmware.photon.controller.housekeeper.dcp.ImageReplicatorServiceFactory;
 import com.vmware.photon.controller.housekeeper.dcp.ImageSeederService;
 import com.vmware.photon.controller.housekeeper.dcp.ImageSeederServiceFactory;
+import com.vmware.photon.controller.housekeeper.dcp.mock.HostClientMock;
 import com.vmware.photon.controller.housekeeper.gen.ReplicateImageRequest;
 import com.vmware.photon.controller.housekeeper.gen.ReplicateImageResponse;
 import com.vmware.photon.controller.housekeeper.gen.ReplicateImageResultCode;
@@ -37,7 +38,6 @@ import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
 
-import com.google.inject.Injector;
 import org.hamcrest.Matchers;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -60,9 +60,6 @@ import java.net.InetSocketAddress;
  */
 public class ImageReplicatorTest {
 
-  private static final String configFilePath = "/config.yml";
-
-  private Injector injector;
   private TestHost xenonHost;
   private ImageReplicator replicator;
   private String datastoreId;
@@ -110,8 +107,7 @@ public class ImageReplicatorTest {
   public class ReplicateImageTest {
     @BeforeMethod
     private void setUp() throws Throwable {
-      injector = TestHelper.createInjector();
-      HostClient hostClient = injector.getInstance(HostClient.class);
+      HostClient hostClient = new HostClientMock();
       xenonHost = spy(TestHost.create(hostClient));
       CloudStoreHelper cloudStoreHelper = new CloudStoreHelper();
       StaticServerSet serverSet = new StaticServerSet(
@@ -235,8 +231,7 @@ public class ImageReplicatorTest {
 
     @BeforeMethod
     private void setUp() throws Throwable {
-      injector = TestHelper.createInjector();
-      HostClient hostClient = injector.getInstance(HostClient.class);
+      HostClient hostClient = new HostClientMock();
       xenonHost = spy(TestHost.create(hostClient));
       replicator = spy(new ImageReplicator(xenonHost));
 
