@@ -18,6 +18,7 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.ImageToImageDatastoreM
 import com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
+import com.vmware.photon.controller.common.clients.exceptions.NoSuchResourceException;
 import com.vmware.photon.controller.common.clients.exceptions.SystemErrorException;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
@@ -32,7 +33,6 @@ import com.vmware.photon.controller.resource.gen.ResourceConstraint;
 import com.vmware.photon.controller.resource.gen.Vm;
 import com.vmware.photon.controller.rootscheduler.RootSchedulerConfig;
 import com.vmware.photon.controller.rootscheduler.SchedulerConfig;
-import com.vmware.photon.controller.rootscheduler.exceptions.NoSuchResourceException;
 import com.vmware.photon.controller.rootscheduler.helpers.xenon.SchedulerTestEnvironment;
 import com.vmware.photon.controller.rootscheduler.helpers.xenon.TestHost;
 import com.vmware.photon.controller.rootscheduler.service.ConstraintChecker;

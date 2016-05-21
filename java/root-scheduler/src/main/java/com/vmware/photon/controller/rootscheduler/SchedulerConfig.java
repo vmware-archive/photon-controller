@@ -19,7 +19,7 @@ import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 
 /**
- * Root scheduler configuration.
+ * Scheduler configuration.
  */
 @SuppressWarnings("UnusedDeclaration")
 public class SchedulerConfig {
