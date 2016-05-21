@@ -32,6 +32,8 @@ import com.vmware.xenon.common.RequestRouter;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
 
+import org.apache.commons.lang3.StringUtils;
+
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -183,6 +185,18 @@ public class DeploymentService extends StatefulService {
 
   private void validateState(State currentState) {
     ValidationUtils.validateState(currentState);
+
+    if (currentState.dhcpVmConfiguration != null) {
+      if (StringUtils.isBlank(currentState.dhcpVmConfiguration.vmImageId)) {
+        throw new IllegalArgumentException("vmImageId should not be blank when dhcpVmConfiguration is not null");
+      }
+      if (StringUtils.isBlank(currentState.dhcpVmConfiguration.vmFlavorId)) {
+        throw new IllegalArgumentException("vmFlavorId should not be blank when dhcpVmConfiguration is not null");
+      }
+      if (StringUtils.isBlank(currentState.dhcpVmConfiguration.vmDiskFlavorId)) {
+        throw new IllegalArgumentException("vmDiskFlavorId should not be blank when dhcpVmConfiguration is not null");
+      }
+    }
   }
 
   private void validatePatchState(State startState, State patchState) {
@@ -210,6 +224,16 @@ public class DeploymentService extends StatefulService {
     public enum Kind {
       UPDATE_ZOOKEEPER_INFO,
     }
+  }
+
+  /**
+   * This structure stores the image and flavor information we need
+   * to deploy a dhcp server for a network.
+   */
+  public static class DhcpVmConfiguration {
+    public String vmImageId;
+    public String vmFlavorId;
+    public String vmDiskFlavorId;
   }
 
   /**
@@ -417,5 +441,12 @@ public class DeploymentService extends StatefulService {
     public Long vibsUploading;
 
     public Map<Integer, String> zookeeperIdToIpMap;
+
+    /**
+     * This structure stores the image and flavor information we need
+     * to deploy a dhcp server for a network.
+     * A null value here indicates that dhcp feature is not supported.
+     */
+    public DhcpVmConfiguration dhcpVmConfiguration;
   }
 }

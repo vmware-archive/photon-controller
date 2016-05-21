@@ -25,18 +25,22 @@ import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.UriUtils;
 
+import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertTrue;
 
 import java.lang.reflect.Field;
 import java.net.InetSocketAddress;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
@@ -120,6 +124,67 @@ public class DeploymentServiceTest {
       Field declaredField = startState.getClass().getDeclaredField(fieldName);
       declaredField.set(startState, null);
       testHost.startServiceSynchronously(deploymentService, startState);
+    }
+
+    @Test
+    public void testStartWithDhcpConfiguration() throws Throwable {
+      DeploymentService.State startState = buildServiceStartState();
+      startState.dhcpVmConfiguration = new DeploymentService.DhcpVmConfiguration();
+      startState.dhcpVmConfiguration.vmImageId = UUID.randomUUID().toString();
+      startState.dhcpVmConfiguration.vmFlavorId = UUID.randomUUID().toString();
+      startState.dhcpVmConfiguration.vmDiskFlavorId = UUID.randomUUID().toString();
+      Operation startOperation = testHost.startServiceSynchronously(deploymentService, startState);
+
+      assertThat(startOperation.getStatusCode(), is(200));
+
+      DeploymentService.State savedState = testHost.getServiceState(DeploymentService.State.class);
+      assertThat(savedState.dhcpVmConfiguration.vmImageId, is(startState.dhcpVmConfiguration.vmImageId));
+      assertThat(savedState.dhcpVmConfiguration.vmFlavorId, is(startState.dhcpVmConfiguration.vmFlavorId));
+      assertThat(savedState.dhcpVmConfiguration.vmDiskFlavorId, is(startState.dhcpVmConfiguration.vmDiskFlavorId));
+    }
+
+    @Test
+    public void testStartWithIncompleteDhcpConfiguration() throws Throwable {
+      DeploymentService.State startState = buildServiceStartState();
+      startState.dhcpVmConfiguration = new DeploymentService.DhcpVmConfiguration();
+      try {
+        testHost.startServiceSynchronously(deploymentService, startState);
+        Assert.fail("Service start should fail with incomplete dhcp configuration");
+      } catch (BadRequestException be) {
+        assertThat(be.getMessage(),
+            containsString("vmImageId should not be blank when dhcpVmConfiguration is not null"));
+      }
+
+      deploymentService = new DeploymentService();
+      startState.dhcpVmConfiguration.vmImageId = UUID.randomUUID().toString();
+      try {
+        testHost.startServiceSynchronously(deploymentService, startState);
+        Assert.fail("Service start should fail with incomplete dhcp configuration");
+      } catch (BadRequestException be) {
+        assertThat(be.getMessage(),
+            containsString("vmFlavorId should not be blank when dhcpVmConfiguration is not null"));
+      }
+
+      deploymentService = new DeploymentService();
+      startState.dhcpVmConfiguration.vmFlavorId = UUID.randomUUID().toString();
+      try {
+        testHost.startServiceSynchronously(deploymentService, startState);
+        Assert.fail("Service start should fail with incomplete dhcp configuration");
+      } catch (BadRequestException be) {
+        assertThat(be.getMessage(),
+            containsString("vmDiskFlavorId should not be blank when dhcpVmConfiguration is not null"));
+      }
+
+      deploymentService = new DeploymentService();
+      startState.dhcpVmConfiguration.vmDiskFlavorId = UUID.randomUUID().toString();
+      Operation startOperation = testHost.startServiceSynchronously(deploymentService, startState);
+
+      assertThat(startOperation.getStatusCode(), is(200));
+
+      DeploymentService.State savedState = testHost.getServiceState(DeploymentService.State.class);
+      assertThat(savedState.dhcpVmConfiguration.vmImageId, is(startState.dhcpVmConfiguration.vmImageId));
+      assertThat(savedState.dhcpVmConfiguration.vmFlavorId, is(startState.dhcpVmConfiguration.vmFlavorId));
+      assertThat(savedState.dhcpVmConfiguration.vmDiskFlavorId, is(startState.dhcpVmConfiguration.vmDiskFlavorId));
     }
 
     @DataProvider(name = "RequiredFieldNames")
@@ -211,6 +276,98 @@ public class DeploymentServiceTest {
           .setBody(patchState);
 
       testHost.sendRequestAndWait(patchOperation);
+    }
+
+    @Test
+    public void testPatchWithDhcpConfiguration() throws Throwable {
+      DeploymentService.State startState = buildServiceStartState();
+      Operation startOperation = testHost.startServiceSynchronously(deploymentService, startState);
+      assertThat(startOperation.getStatusCode(), is(200));
+
+      DeploymentService.State savedState = testHost.getServiceState(DeploymentService.State.class);
+      assertThat(savedState.dhcpVmConfiguration, is(nullValue()));
+
+      DeploymentService.State patchState = new DeploymentService.State();
+      patchState.dhcpVmConfiguration = new DeploymentService.DhcpVmConfiguration();
+      patchState.dhcpVmConfiguration.vmImageId = UUID.randomUUID().toString();
+      patchState.dhcpVmConfiguration.vmFlavorId = UUID.randomUUID().toString();
+      patchState.dhcpVmConfiguration.vmDiskFlavorId = UUID.randomUUID().toString();
+
+      Operation patchOperation = Operation
+          .createPatch(UriUtils.buildUri(testHost, BasicServiceHost.SERVICE_URI, null))
+          .setBody(patchState);
+
+      testHost.sendRequestAndWait(patchOperation);
+
+      savedState = testHost.getServiceState(DeploymentService.State.class);
+      assertThat(savedState.dhcpVmConfiguration.vmImageId, is(patchState.dhcpVmConfiguration.vmImageId));
+      assertThat(savedState.dhcpVmConfiguration.vmFlavorId, is(patchState.dhcpVmConfiguration.vmFlavorId));
+      assertThat(savedState.dhcpVmConfiguration.vmDiskFlavorId, is(patchState.dhcpVmConfiguration.vmDiskFlavorId));
+    }
+
+    @Test
+    public void testPatchWithIncompleteDhcpConfiguration() throws Throwable {
+
+      DeploymentService.State startState = buildServiceStartState();
+      Operation startOperation = testHost.startServiceSynchronously(deploymentService, startState);
+      assertThat(startOperation.getStatusCode(), is(200));
+
+      DeploymentService.State savedState = testHost.getServiceState(DeploymentService.State.class);
+      assertThat(savedState.dhcpVmConfiguration, is(nullValue()));
+
+      DeploymentService.State patchState = new DeploymentService.State();
+      patchState.dhcpVmConfiguration = new DeploymentService.DhcpVmConfiguration();
+      try {
+        Operation patchOperation = Operation
+            .createPatch(UriUtils.buildUri(testHost, BasicServiceHost.SERVICE_URI, null))
+            .setBody(patchState);
+
+        testHost.sendRequestAndWait(patchOperation);
+        Assert.fail("Service patch should fail with incomplete dhcp configuration");
+      } catch (BadRequestException be) {
+        assertThat(be.getMessage(),
+            containsString("vmImageId should not be blank when dhcpVmConfiguration is not null"));
+      }
+
+      patchState.dhcpVmConfiguration.vmImageId = UUID.randomUUID().toString();
+      try {
+        Operation patchOperation = Operation
+            .createPatch(UriUtils.buildUri(testHost, BasicServiceHost.SERVICE_URI, null))
+            .setBody(patchState);
+
+        testHost.sendRequestAndWait(patchOperation);
+        Assert.fail("Service patch should fail with incomplete dhcp configuration");
+      } catch (BadRequestException be) {
+        assertThat(be.getMessage(),
+            containsString("vmFlavorId should not be blank when dhcpVmConfiguration is not null"));
+      }
+
+      patchState.dhcpVmConfiguration.vmFlavorId = UUID.randomUUID().toString();
+      try {
+        Operation patchOperation = Operation
+            .createPatch(UriUtils.buildUri(testHost, BasicServiceHost.SERVICE_URI, null))
+            .setBody(patchState);
+
+        testHost.sendRequestAndWait(patchOperation);
+        Assert.fail("Service patch should fail with incomplete dhcp configuration");
+      } catch (BadRequestException be) {
+        assertThat(be.getMessage(),
+            containsString("vmDiskFlavorId should not be blank when dhcpVmConfiguration is not null"));
+      }
+
+      patchState.dhcpVmConfiguration.vmDiskFlavorId = UUID.randomUUID().toString();
+      Operation patchOperation = Operation
+          .createPatch(UriUtils.buildUri(testHost, BasicServiceHost.SERVICE_URI, null))
+          .setBody(patchState);
+
+      patchOperation = testHost.sendRequestAndWait(patchOperation);
+
+      assertThat(patchOperation.getStatusCode(), is(200));
+
+      savedState = testHost.getServiceState(DeploymentService.State.class);
+      assertThat(savedState.dhcpVmConfiguration.vmImageId, is(patchState.dhcpVmConfiguration.vmImageId));
+      assertThat(savedState.dhcpVmConfiguration.vmFlavorId, is(patchState.dhcpVmConfiguration.vmFlavorId));
+      assertThat(savedState.dhcpVmConfiguration.vmDiskFlavorId, is(patchState.dhcpVmConfiguration.vmDiskFlavorId));
     }
   }
 
