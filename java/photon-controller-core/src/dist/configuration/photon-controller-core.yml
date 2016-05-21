@@ -16,9 +16,6 @@ cloudstore:
     quorum: "{{{ZOOKEEPER_QUORUM}}}"
 
 scheduler:
-  # Refresh interval for in-memory constraint checker cache in seconds.
-  refreshIntervalSec: 30
-
   xenon:
     bindAddress: "0.0.0.0"
     port: 13010

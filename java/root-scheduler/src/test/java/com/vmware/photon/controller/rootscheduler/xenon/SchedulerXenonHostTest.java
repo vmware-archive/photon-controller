@@ -30,8 +30,6 @@ import com.vmware.xenon.services.common.LuceneDocumentIndexService;
 import com.vmware.xenon.services.common.ServiceUriPaths;
 
 import org.apache.commons.io.FileUtils;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
@@ -68,7 +66,6 @@ public class SchedulerXenonHostTest {
   private ConstraintChecker checker;
   private CloudStoreHelper cloudStoreHelper;
   private ServerSet cloudStoreServerSet;
-  @Mock
   private HostClientFactory hostClientFactory;
 
   private void waitForServicesStartup(SchedulerXenonHost host)
@@ -108,7 +105,7 @@ public class SchedulerXenonHostTest {
       config = ConfigBuilder.build(RootSchedulerConfig.class,
           ConfigTest.class.getResource(configFilePath).getPath());
 
-      MockitoAnnotations.initMocks(this);
+      hostClientFactory = mock(HostClientFactory.class);
       cloudStoreServerSet = mock(ServerSet.class);
       cloudStoreHelper = new CloudStoreHelper(cloudStoreServerSet);
       checker = new CloudStoreConstraintChecker(cloudStoreHelper);
@@ -166,7 +163,7 @@ public class SchedulerXenonHostTest {
       config = ConfigBuilder.build(RootSchedulerConfig.class,
           ConfigTest.class.getResource(configFilePath).getPath());
 
-      MockitoAnnotations.initMocks(this);
+      hostClientFactory = mock(HostClientFactory.class);
       cloudStoreServerSet = mock(ServerSet.class);
       cloudStoreHelper = new CloudStoreHelper(cloudStoreServerSet);
       checker = new CloudStoreConstraintChecker(cloudStoreHelper);
@@ -223,7 +220,7 @@ public class SchedulerXenonHostTest {
       config = ConfigBuilder.build(RootSchedulerConfig.class,
           ConfigTest.class.getResource(configFilePath).getPath());
 
-      MockitoAnnotations.initMocks(this);
+      hostClientFactory = mock(HostClientFactory.class);
       cloudStoreServerSet = mock(ServerSet.class);
       cloudStoreHelper = new CloudStoreHelper(cloudStoreServerSet);
       checker = new CloudStoreConstraintChecker(cloudStoreHelper);
@@ -282,6 +279,11 @@ public class SchedulerXenonHostTest {
 
     @BeforeClass
     private void setUpClass() throws IOException {
+      hostClientFactory = mock(HostClientFactory.class);
+      cloudStoreServerSet = mock(ServerSet.class);
+      cloudStoreHelper = new CloudStoreHelper(cloudStoreServerSet);
+      checker = new CloudStoreConstraintChecker(cloudStoreHelper);
+
       FileUtils.deleteDirectory(storageDir);
     }
 
@@ -291,8 +293,8 @@ public class SchedulerXenonHostTest {
       xenonConfig.setBindAddress("0.0.0.0");
       xenonConfig.setPort(18000);
       xenonConfig.setStoragePath(storageDir.getAbsolutePath());
-      CloudStoreConstraintChecker checker = new CloudStoreConstraintChecker(null);
-      host = new SchedulerXenonHost(xenonConfig, () -> null, null, checker, null);
+
+      host = new SchedulerXenonHost(xenonConfig, hostClientFactory, null, checker, cloudStoreHelper);
       host.setMaintenanceIntervalMicros(maintenanceInterval);
       host.start();
       waitForServicesStartup(host);
@@ -302,7 +304,7 @@ public class SchedulerXenonHostTest {
       xenonConfig2.setPort(18002);
       xenonConfig2.setStoragePath(storageDir2.getAbsolutePath());
 
-      host2 = new SchedulerXenonHost(xenonConfig2, () -> null, null, checker, null);
+      host2 = new SchedulerXenonHost(xenonConfig2, hostClientFactory, null, checker, cloudStoreHelper);
       host2.setMaintenanceIntervalMicros(maintenanceInterval);
       host2.start();
       waitForServicesStartup(host2);

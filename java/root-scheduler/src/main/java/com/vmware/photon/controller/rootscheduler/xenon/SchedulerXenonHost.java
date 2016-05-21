@@ -18,6 +18,7 @@ import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.clients.HostClientProvider;
 import com.vmware.photon.controller.common.manifest.BuildInfo;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
+import com.vmware.photon.controller.common.xenon.CloudStoreHelperProvider;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.XenonHostInfoProvider;
 import com.vmware.photon.controller.common.xenon.host.AbstractServiceHost;
@@ -26,11 +27,18 @@ import com.vmware.photon.controller.rootscheduler.RootSchedulerConfig;
 import com.vmware.photon.controller.rootscheduler.service.ConstraintChecker;
 import com.vmware.photon.controller.rootscheduler.service.ScoreCalculator;
 import com.vmware.photon.controller.rootscheduler.xenon.task.PlacementTaskService;
+import com.vmware.xenon.common.FactoryService;
+import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceHost;
 import com.vmware.xenon.services.common.RootNamespaceService;
 
+import com.google.common.collect.ImmutableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import static com.google.common.base.Preconditions.checkNotNull;
+
+import java.util.Map;
+import java.util.function.Supplier;
 
 /**
  * This class implements the Xenon service host object
@@ -41,7 +49,8 @@ public class SchedulerXenonHost
     implements XenonHostInfoProvider,
     HostClientProvider,
     ScoreCalculatorProvider,
-    ConstraintCheckerProvider {
+    ConstraintCheckerProvider,
+    CloudStoreHelperProvider {
 
   private static final Logger logger = LoggerFactory.getLogger(SchedulerXenonHost.class);
   public static final String FACTORY_SERVICE_FIELD_NAME_SELF_LINK = "SELF_LINK";
@@ -58,13 +67,17 @@ public class SchedulerXenonHost
       StatusService.class
   };
 
+  public static final Map<Class<? extends Service>, Supplier<FactoryService>> FACTORY_SERVICES_MAP = ImmutableMap.of(
+      PlacementTaskService.class, PlacementTaskService::createFactory
+  );
+
   public SchedulerXenonHost(XenonConfig xenonConfig,
                             HostClientFactory hostClientFactory,
                             RootSchedulerConfig config,
                             ConstraintChecker checker,
                             CloudStoreHelper cloudStoreHelper) throws Throwable {
     super(xenonConfig);
-    this.hostClientFactory = hostClientFactory;
+    this.hostClientFactory = checkNotNull(hostClientFactory);
     this.scoreCalculator = new ScoreCalculator(config);
     this.cloudStoreHelper = cloudStoreHelper;
     this.checker = checker;
@@ -88,6 +101,7 @@ public class SchedulerXenonHost
     return checker;
   }
 
+  @Override
   public CloudStoreHelper getCloudStoreHelper() {
     return this.cloudStoreHelper;
   }
@@ -105,8 +119,10 @@ public class SchedulerXenonHost
     startDefaultCoreServicesSynchronously();
 
     // Start all the factories
-    super.startFactory(PlacementTaskService.class, PlacementTaskService::createFactory);
     ServiceHostUtils.startServices(this, getFactoryServices());
+
+    // Start the factories implemented using the xenon default factory service
+    ServiceHostUtils.startFactoryServices(this, FACTORY_SERVICES_MAP);
 
     return this;
   }
