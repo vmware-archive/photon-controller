@@ -16,6 +16,7 @@ package com.vmware.photon.controller.rootscheduler.xenon.task;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ImageToImageDatastoreMappingService;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientProvider;
+import com.vmware.photon.controller.common.clients.exceptions.NoSuchResourceException;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
 import com.vmware.photon.controller.common.clients.exceptions.SystemErrorException;
 import com.vmware.photon.controller.common.logging.LoggingUtils;
@@ -35,7 +36,6 @@ import com.vmware.photon.controller.resource.gen.Resource;
 import com.vmware.photon.controller.resource.gen.ResourceConstraint;
 import com.vmware.photon.controller.resource.gen.ResourceConstraintType;
 import com.vmware.photon.controller.resource.gen.Vm;
-import com.vmware.photon.controller.rootscheduler.exceptions.NoSuchResourceException;
 import com.vmware.photon.controller.rootscheduler.service.ConstraintChecker;
 import com.vmware.photon.controller.rootscheduler.service.ScoreCalculator;
 import com.vmware.photon.controller.rootscheduler.xenon.ConstraintCheckerProvider;
@@ -199,6 +199,7 @@ public class PlacementTaskService extends StatefulService {
    * the responses from the candidates.
    *
    * @param currentState
+   * @param postOperation
    */
   private void handlePlaceRequest(PlacementTask currentState, Operation postOperation) {
     Stopwatch placementWatch = Stopwatch.createStarted();
@@ -269,13 +270,12 @@ public class PlacementTaskService extends StatefulService {
         });
   }
 
+
   /**
    * Retrieves potential hosts from constraint checker that satisfy the resource constraints from the current state.
    *
    * @param currentState
-   * @return
-   * @throws NoSuchResourceException
-   * @throws SystemErrorException
+   * @param completion
    */
   private void getPotentialCandidates(
       PlacementTask currentState,
@@ -328,9 +328,9 @@ public class PlacementTaskService extends StatefulService {
    * - The set of "okResponses", from hosts that could accept the resource. This will include the score.
    * - All responses. These are used when there's an error, to summarize what went wrong
    *
-   * @param currentState Contains the
-   * @param candidates   the hosts to send place requests
-   * @param completion   the completion that will be called when the scoring completes
+   * @param resource
+   * @param candidates
+   * @param completion
    */
   private void queryHostsForScores(
       Resource resource,
@@ -412,7 +412,8 @@ public class PlacementTaskService extends StatefulService {
    * this returns a result from the host responses.
    *
    * @param okResponses
-   * @param returnCodes
+   * @param allResponses
+   * @param currentState
    * @param watch
    * @return
    */

@@ -26,7 +26,7 @@ import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.fail;
 
 /**
- * Tests {@link Config}.
+ * Tests {@link RootSchedulerConfig}.
  */
 public class ConfigTest {
 

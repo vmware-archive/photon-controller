@@ -18,6 +18,7 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.ImageToImageDatastoreM
 import com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
+import com.vmware.photon.controller.common.clients.exceptions.NoSuchResourceException;
 import com.vmware.photon.controller.common.clients.exceptions.SystemErrorException;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
@@ -32,7 +33,6 @@ import com.vmware.photon.controller.resource.gen.ResourceConstraint;
 import com.vmware.photon.controller.resource.gen.Vm;
 import com.vmware.photon.controller.rootscheduler.RootSchedulerConfig;
 import com.vmware.photon.controller.rootscheduler.SchedulerConfig;
-import com.vmware.photon.controller.rootscheduler.exceptions.NoSuchResourceException;
 import com.vmware.photon.controller.rootscheduler.helpers.xenon.SchedulerTestEnvironment;
 import com.vmware.photon.controller.rootscheduler.helpers.xenon.TestHost;
 import com.vmware.photon.controller.rootscheduler.service.ConstraintChecker;
@@ -130,7 +130,7 @@ public class PlacementTaskServiceTest {
     public void testValidStartStage(TaskState.TaskStage taskStage) throws Throwable {
       PlacementTask startState = buildValidStartState(taskStage);
       Operation startOp = testHost.startServiceSynchronously(taskService, startState);
-      assertThat(startOp.getStatusCode(), is(200));
+      assertThat(startOp.getStatusCode(), is(Operation.STATUS_CODE_OK));
 
       PlacementTask serviceState = testHost.getServiceState(PlacementTask.class);
       assertThat(serviceState.controlFlags, is(ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED));
@@ -151,7 +151,7 @@ public class PlacementTaskServiceTest {
     public void testTerminalStartStage(TaskState.TaskStage taskStage) throws Throwable {
       PlacementTask startState = buildValidStartState(taskStage);
       Operation op = testHost.startServiceSynchronously(taskService, startState);
-      assertThat(op.getStatusCode(), is(200));
+      assertThat(op.getStatusCode(), is(Operation.STATUS_CODE_OK));
 
       PlacementTask serviceState = testHost.getServiceState(PlacementTask.class);
       assertThat(serviceState.taskState.stage, is(taskStage));
@@ -204,14 +204,14 @@ public class PlacementTaskServiceTest {
         throws Throwable {
       PlacementTask startState = buildValidStartState(startStage);
       Operation op = testHost.startServiceSynchronously(taskService, startState);
-      assertThat(op.getStatusCode(), is(200));
+      assertThat(op.getStatusCode(), is(Operation.STATUS_CODE_OK));
 
       Operation patchOperation = Operation
           .createPatch(UriUtils.buildUri(testHost, TestHost.SERVICE_URI))
           .setBody(PlacementTaskService.buildPatch(patchStage, false, null));
 
       op = testHost.sendRequestAndWait(patchOperation);
-      assertThat(op.getStatusCode(), is(200));
+      assertThat(op.getStatusCode(), is(Operation.STATUS_CODE_OK));
 
       PlacementTask serviceState = testHost.getServiceState(PlacementTask.class);
       assertThat(serviceState.taskState.stage, is(patchStage));
@@ -238,7 +238,7 @@ public class PlacementTaskServiceTest {
         throws Throwable {
       PlacementTask startState = buildValidStartState(startStage);
       Operation op = testHost.startServiceSynchronously(taskService, startState);
-      assertThat(op.getStatusCode(), is(200));
+      assertThat(op.getStatusCode(), is(Operation.STATUS_CODE_OK));
 
       Operation patchOperation = Operation
           .createPatch(UriUtils.buildUri(testHost, TestHost.SERVICE_URI))
