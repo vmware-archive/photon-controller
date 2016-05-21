@@ -18,7 +18,6 @@ import com.vmware.photon.controller.common.xenon.host.XenonConfig;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperConfig;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.hibernate.validator.constraints.Range;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
@@ -28,11 +27,6 @@ import javax.validation.constraints.NotNull;
  */
 @SuppressWarnings("UnusedDeclaration")
 public class RootSchedulerConfig {
-  // Refresh interval for in-memory constraint checker cache in seconds.
-  @NotNull
-  @Range(min = 1, max = 600)
-  private Integer refreshIntervalSec = 30;
-
   @Valid
   @NotNull
   @JsonProperty("xenon")
@@ -49,10 +43,6 @@ public class RootSchedulerConfig {
   @Valid
   @NotNull
   private SchedulerConfig root = new SchedulerConfig();
-
-  public Integer getRefreshIntervalSec() {
-    return refreshIntervalSec;
-  }
 
   public XenonConfig getXenonConfig() {
     return this.xenonConfig;
