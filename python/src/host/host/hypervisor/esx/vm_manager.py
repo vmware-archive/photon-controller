@@ -301,8 +301,8 @@ class EsxVmManager(VmManager):
             raise
 
     @log_duration
-    def get_vm_network(self, vm_id):
-        return self.vim_client.get_vm_network(vm_id)
+    def get_vm_networks(self, vm_id):
+        return self.vim_client.get_vm_networks(vm_id)
 
     def attach_iso(self, vm_id, iso_file):
         """ Attach an iso file to the VM after adding a CD-ROM device.

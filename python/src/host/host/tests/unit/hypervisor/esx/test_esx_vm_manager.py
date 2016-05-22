@@ -437,14 +437,14 @@ class TestEsxVmManager(unittest.TestCase):
         _guest_info = _guest_info_1
         self.vm_manager.vim_client.get_vm = _get_vm
         self.vm_manager._get_mac_network_mapping = MagicMock(return_value={})
-        network_info = self.vm_manager.get_vm_network("vm_foo1")
+        network_info = self.vm_manager.get_vm_networks("vm_foo1")
         expected_1 = VmNetworkInfo(mac_address=sample_mac_address,
                                    is_connected=ConnectedStatus.CONNECTED)
         self.assertEqual(network_info, [expected_1])
 
         # Test 2
         _guest_info = _guest_info_2
-        network_info = self.vm_manager.get_vm_network("vm_foo2")
+        network_info = self.vm_manager.get_vm_networks("vm_foo2")
         ip_address = Ipv4Address(ip_address=sample_ip_address,
                                  netmask=sample_netmask)
         expected_2 = VmNetworkInfo(mac_address=sample_mac_address,
@@ -455,7 +455,7 @@ class TestEsxVmManager(unittest.TestCase):
 
         # Test 3
         _guest_info = _guest_info_3
-        network_info = self.vm_manager.get_vm_network("vm_foo3")
+        network_info = self.vm_manager.get_vm_networks("vm_foo3")
         expected_3 = VmNetworkInfo(mac_address=sample_mac_address,
                                    network=sample_network,
                                    is_connected=ConnectedStatus.DISCONNECTED)
@@ -463,7 +463,7 @@ class TestEsxVmManager(unittest.TestCase):
 
         # Test 4
         _guest_info = _guest_info_4
-        network_info = self.vm_manager.get_vm_network("vm_foo4")
+        network_info = self.vm_manager.get_vm_networks("vm_foo4")
         expected_4 = VmNetworkInfo(mac_address=sample_mac_address,
                                    ip_address=ip_address,
                                    is_connected=ConnectedStatus.CONNECTED)
@@ -471,12 +471,12 @@ class TestEsxVmManager(unittest.TestCase):
 
         # Test 5
         self.vm_manager.vim_client.get_vm = _get_vm_no_net_info
-        network_info = self.vm_manager.get_vm_network("vm_foo5")
+        network_info = self.vm_manager.get_vm_networks("vm_foo5")
         self.assertEqual(network_info, [])
 
         # Test 6
         self.vm_manager.vim_client.get_vm = _get_vm_vim_guest_info
-        network_info = self.vm_manager.get_vm_network("vm_foo5")
+        network_info = self.vm_manager.get_vm_networks("vm_foo5")
         expected_6 = VmNetworkInfo(mac_address=sample_mac_address,
                                    ip_address=ip_address,
                                    network=sample_network,

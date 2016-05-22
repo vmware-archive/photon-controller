@@ -37,37 +37,16 @@ class TestEsxNetworkManager(unittest.TestCase):
         correctly.
         """
         vim_client = MagicMock()
-        vim_client.get_network_configs.return_value = [
-            _net_config("faultToleranceLogging"),
-            _net_config("management"),
-            _net_config("vSphereReplication"),
-            _net_config("vSphereReplicationNFC"),
-            _net_config("vmotion"),
-            _net_config("vsan"),
-            _net_config("gandalfTheGray"),
-        ]
         vim_client.get_networks.return_value = ["VM Network", "VM Network 2"]
         network_manager = EsxNetworkManager(vim_client, [])
         networks = network_manager.get_networks()
 
-        assert_that(networks, has_length(3))
+        assert_that(networks, has_length(2))
         # Verify 2 VM networks
         assert_that(networks, has_item(Network("VM Network",
                                                [NetworkType.VM])))
         assert_that(networks, has_item(Network("VM Network 2",
                                                [NetworkType.VM])))
-        # Verify management network
-        mgmt_types = [
-            NetworkType.FT_LOGGING,
-            NetworkType.MANAGEMENT,
-            NetworkType.VSPHERE_REPLICATION,
-            NetworkType.VSPHERE_REPLICATION_NFC,
-            NetworkType.VMOTION,
-            NetworkType.VSAN,
-            NetworkType.OTHER,
-        ].sort()
-        network = self._find(MGMT_NETWORK_NAME, networks)
-        assert_that(network.types.sort(), is_(mgmt_types))
 
     def test_get_vm_netwokrs(self):
         vim_client = MagicMock()
