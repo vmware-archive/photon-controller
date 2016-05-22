@@ -475,13 +475,6 @@ class VimClient(HostClient):
                 self._find_by_inventory_path(NETWORK_FOLDER_NAME).childEntity]
 
     @hostd_error_handler
-    def get_network_configs(self):
-        """Get NetConfig list
-        :return: vim.host.VirtualNicManager.NetConfig[]
-        """
-        return host.GetHostVirtualNicManager(self._si).info.netConfig
-
-    @hostd_error_handler
     def create_disk(self, path, size):
         spec = vim.VirtualDiskManager.FileBackedVirtualDiskSpec()
         spec.capacityKb = size * (1024 ** 2)
@@ -816,7 +809,7 @@ class VimClient(HostClient):
             self._logger.warning("Enabling large page support")
         optionManager.UpdateOptions([option])
 
-    def get_vm_network(self, vm_id):
+    def get_vm_networks(self, vm_id):
         """ Get the vm's network information
         We only report ip info if vmware tools is running within the guest.
         If tools are not running we can only report back the mac address

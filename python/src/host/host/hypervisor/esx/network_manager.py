@@ -37,15 +37,10 @@ class EsxNetworkManager(NetworkManager):
         if configured_networks:
             for network in configured_networks:
                 if network not in actual_networks:
-                    self.logger.warning("Unknown network %s: Skipping"
-                                        % network)
+                    self.logger.warning("Unknown network %s: Skipping" % network)
                     continue
                 networks.append(network)
         else:
-            # HACK(mmutsuzaki) We are in the process of changing the installer
-            # to not specify the network list. This is a temporary workaround
-            # to support both new and old installers. If the installer does not
-            # specify networks, return the actual networks on the host.
             networks = actual_networks
         return networks
 
@@ -54,59 +49,15 @@ class EsxNetworkManager(NetworkManager):
         return self._validate_networks(self._configured_networks)
 
     def get_networks(self):
-        """ This method will call vim_client to get a list of networks and
+        """ This method will call vim_client to get a list of VM networks and
         translate them into thrift representation.
-
-        - Get management networks and network types through VirtualNicManager.
-        The type of the vnic infers the type of network it connects to.
-        - Get VM networks from the network folder.
-
-        Check _to_network_type method for the network type mappings.
         """
-        net_configs = self.vim_client.get_network_configs()
         vm_networks = self.vim_client.get_networks()
 
-        # Management networks
-        mgmt_network_map = {}
-        for net_config in net_configs:
-            type = net_config.nicType
-
-            if net_config.candidateVnic:
-                for vnic in net_config.candidateVnic:
-                    if vnic.portgroup not in mgmt_network_map:
-                        mgmt_network_map[vnic.portgroup] = set()
-                    mgmt_network_map[vnic.portgroup].add(type)
-
-        # Add management networks in network list
         networks = []
-        for network_name, type_set in mgmt_network_map.items():
-            network = Network(network_name, [])
-
-            for type_name in type_set:
-                network.types.append(self._to_network_type(type_name))
-
-            networks.append(network)
-
         # Add VM networks in network list
         for network_name in vm_networks:
             network = Network(network_name, [NetworkType.VM])
             networks.append(network)
 
         return networks
-
-    @staticmethod
-    def _to_network_type(type_name):
-        if type_name == "faultToleranceLogging":
-            return NetworkType.FT_LOGGING
-        elif type_name == "management":
-            return NetworkType.MANAGEMENT
-        elif type_name == "vSphereReplication":
-            return NetworkType.VSPHERE_REPLICATION
-        elif type_name == "vSphereReplicationNFC":
-            return NetworkType.VSPHERE_REPLICATION_NFC
-        elif type_name == "vmotion":
-            return NetworkType.VMOTION
-        elif type_name == "vsan":
-            return NetworkType.VSAN
-        else:
-            return NetworkType.OTHER

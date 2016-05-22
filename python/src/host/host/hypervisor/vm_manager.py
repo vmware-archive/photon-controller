@@ -171,7 +171,7 @@ class VmManager(object):
         pass
 
     @abc.abstractmethod
-    def get_vm_network(self, vm_id):
+    def get_vm_networks(self, vm_id):
         """ Get a VMs network information.
 
         :type vm_id: str

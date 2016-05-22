@@ -1106,7 +1106,7 @@ class HostHandler(Host.Iface):
 
         response = GetVmNetworkResponse()
         try:
-            response.network_info = self.hypervisor.vm_manager.get_vm_network(request.vm_id)
+            response.network_info = self.hypervisor.vm_manager.get_vm_networks(request.vm_id)
             response.result = GetVmNetworkResultCode.OK
             return response
         except VmNotFoundException:
