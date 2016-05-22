@@ -223,10 +223,6 @@ class HostClient(object):
         pass
 
     @abc.abstractmethod
-    def get_network_configs(self):
-        pass
-
-    @abc.abstractmethod
     def get_vm_network(self, vm_id):
         pass
 

@@ -475,13 +475,6 @@ class VimClient(HostClient):
                 self._find_by_inventory_path(NETWORK_FOLDER_NAME).childEntity]
 
     @hostd_error_handler
-    def get_network_configs(self):
-        """Get NetConfig list
-        :return: vim.host.VirtualNicManager.NetConfig[]
-        """
-        return host.GetHostVirtualNicManager(self._si).info.netConfig
-
-    @hostd_error_handler
     def create_disk(self, path, size):
         spec = vim.VirtualDiskManager.FileBackedVirtualDiskSpec()
         spec.capacityKb = size * (1024 ** 2)
