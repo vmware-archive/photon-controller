@@ -853,40 +853,9 @@ struct MksTicketResponse {
   3: optional resource.MksTicket ticket
 }
 
-struct GetDatastoresRequest {
-  99: optional tracing.TracingInfo tracing_info
-}
-
-enum GetDatastoresResultCode {
-  OK = 0
-  SYSTEM_ERROR = 1
-}
-
-struct GetDatastoresResponse {
-  1: required GetDatastoresResultCode result
-  2: required list<resource.Datastore> datastores
-}
-
-struct GetNetworksRequest {
-  99: optional tracing.TracingInfo tracing_info
-}
-
-enum GetNetworksResultCode {
-  OK = 0
-  SYSTEM_ERROR = 1
-}
-
-struct GetNetworksResponse {
-  1: required GetNetworksResultCode result
-  2: optional list<resource.Network> networks
-}
-
 // Host service
 service Host {
   GetConfigResponse get_host_config(1: GetConfigRequest request)
-
-  GetDatastoresResponse get_datastores(1: GetDatastoresRequest request)
-  GetNetworksResponse get_networks(1: GetNetworksRequest request)
 
   // Get/set host mode
   GetHostModeResponse get_host_mode(1: GetHostModeRequest request)

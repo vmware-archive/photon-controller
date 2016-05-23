@@ -56,8 +56,6 @@ from gen.host.ttypes import FinalizeImageResponse
 from gen.host.ttypes import FinalizeImageResultCode
 from gen.host.ttypes import GetConfigResponse
 from gen.host.ttypes import GetConfigResultCode
-from gen.host.ttypes import GetDatastoresResponse
-from gen.host.ttypes import GetDatastoresResultCode
 from gen.host.ttypes import GetDeletedImagesResponse
 from gen.host.ttypes import GetHostModeResponse
 from gen.host.ttypes import GetHostModeResultCode
@@ -65,8 +63,6 @@ from gen.host.ttypes import GetImagesResponse
 from gen.host.ttypes import GetImagesResultCode
 from gen.host.ttypes import GetInactiveImagesResponse
 from gen.host.ttypes import GetMonitoredImagesResultCode
-from gen.host.ttypes import GetNetworksResponse
-from gen.host.ttypes import GetNetworksResultCode
 from gen.host.ttypes import GetResourcesResponse
 from gen.host.ttypes import GetResourcesResultCode
 from gen.host.ttypes import GetVmNetworkResponse
@@ -1238,22 +1234,6 @@ class HostHandler(Host.Iface):
             return MksTicketResponse(result=MksTicketResultCode.VM_NOT_FOUND, error=str(e))
         except OperationNotAllowedException as e:
             return MksTicketResponse(result=MksTicketResultCode.INVALID_VM_POWER_STATE, error=str(e))
-
-    @log_request
-    @error_handler(GetDatastoresResponse, GetDatastoresResultCode)
-    def get_datastores(self, request):
-        response = GetDatastoresResponse()
-        response.result = GetDatastoresResultCode.OK
-        response.datastores = self._hypervisor.datastore_manager.get_datastores()
-        return response
-
-    @log_request
-    @error_handler(GetNetworksResponse, GetNetworksResultCode)
-    def get_networks(self, request):
-        response = GetNetworksResponse()
-        response.result = GetNetworksResultCode.OK
-        response.networks = self._hypervisor.network_manager.get_networks()
-        return response
 
     @log_request
     @error_handler(CreateImageResponse, CreateImageResultCode)

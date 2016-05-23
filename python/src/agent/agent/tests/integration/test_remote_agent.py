@@ -32,13 +32,11 @@ from gen.host.ttypes import DeleteDirectoryRequest
 from gen.host.ttypes import DeleteDirectoryResultCode
 from gen.host.ttypes import DeleteVmResultCode
 from gen.host.ttypes import GetConfigResultCode
-from gen.host.ttypes import GetDatastoresRequest
 from gen.host.ttypes import GetHostModeRequest
 from gen.host.ttypes import GetHostModeResultCode
 from gen.host.ttypes import GetImagesResultCode
 from gen.host.ttypes import GetInactiveImagesRequest
 from gen.host.ttypes import GetMonitoredImagesResultCode
-from gen.host.ttypes import GetNetworksRequest
 from gen.host.ttypes import GetResourcesRequest
 from gen.host.ttypes import GetResourcesResultCode
 from gen.host.ttypes import HostMode
@@ -935,22 +933,6 @@ class TestRemoteAgent(unittest.TestCase, AgentCommonTests):
         res = self.create_client().get_host_config(req)
         self.assertEqual(len(res.hostConfig.datastores),
                          len(self.vim_client.get_all_datastores()))
-
-        # verify that get_datastores return all the datastores.
-        req = GetDatastoresRequest()
-        host_client = self.create_client()
-        res = host_client.get_datastores(req)
-        self.assertTrue(len(res.datastores) > 0)
-
-    def test_get_networks(self):
-        # provision the host without networks
-        self.provision_hosts(vm_networks=[])
-
-        # verify that the get_networks contains at least one network.
-        req = GetNetworksRequest()
-        host_client = self.create_client()
-        res = host_client.get_networks(req)
-        self.assertTrue(len(res.networks) > 0)
 
     def _manage_disk(self, op, **kwargs):
         task = op(self.vim_client._content.virtualDiskManager, **kwargs)
