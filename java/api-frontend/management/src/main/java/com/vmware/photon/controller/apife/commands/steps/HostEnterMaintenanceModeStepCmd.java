@@ -23,8 +23,8 @@ import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.HostEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.exceptions.external.HostHasVmsException;
-import com.vmware.photon.controller.apife.exceptions.external.HostStateChangeException;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
+import com.vmware.photon.controller.deployer.dcp.task.ChangeHostModeTaskService;
 
 import com.google.common.collect.Iterables;
 import org.slf4j.Logger;
@@ -41,6 +41,7 @@ public class HostEnterMaintenanceModeStepCmd extends StepCommand {
 
   private final HostBackend hostBackend;
   private final VmBackend vmBackend;
+  private HostEntity hostEntity;
 
   public HostEnterMaintenanceModeStepCmd(TaskCommand taskCommand,
                                          StepBackend stepBackend,
@@ -57,23 +58,20 @@ public class HostEnterMaintenanceModeStepCmd extends StepCommand {
 
     List<BaseEntity> entityList = step.getTransientResourceEntities();
 
-    HostEntity hostEntity = (HostEntity) Iterables.getOnlyElement(entityList);
+    hostEntity = (HostEntity) Iterables.getOnlyElement(entityList);
 
     int vmCount = vmBackend.countVmsOnHost(hostEntity);
     if (vmCount > 0) {
       throw new HostHasVmsException(hostEntity.getId(), vmCount);
     }
 
-    try {
-      taskCommand.getDeployerClient().enterMaintenanceMode(hostEntity.getId());
-      hostBackend.updateState(hostEntity, HostState.MAINTENANCE);
-    } catch (InterruptedException | RpcException e) {
-      HostStateChangeException exception = new HostStateChangeException(
-          hostEntity,
-          HostState.SUSPENDED,
-          e);
-      logger.error(exception.getMessage());
-      throw exception;
+    logger.info("Calling deployer to enter host to maintenance mode {}", hostEntity);
+    ChangeHostModeTaskService.State serviceDocument = taskCommand.getDeployerXenonClient()
+        .enterMaintenanceMode(hostEntity.getId());
+    // pass remoteTaskId to XenonTaskStatusStepCmd
+    for (StepEntity nextStep : taskCommand.getTask().getSteps()) {
+      nextStep.createOrUpdateTransientResource(XenonTaskStatusStepCmd.REMOTE_TASK_LINK_RESOURCE_KEY,
+          serviceDocument.documentSelfLink);
     }
   }
 
@@ -81,5 +79,11 @@ public class HostEnterMaintenanceModeStepCmd extends StepCommand {
   @Override
   protected void cleanup() {
 
+  }
+
+  @Override
+  protected void markAsDone() throws Throwable {
+    super.markAsDone();
+    hostBackend.updateState(hostEntity, HostState.MAINTENANCE);
   }
 }

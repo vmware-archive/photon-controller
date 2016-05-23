@@ -21,8 +21,7 @@ import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.HostEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
-import com.vmware.photon.controller.apife.exceptions.external.HostStateChangeException;
-import com.vmware.photon.controller.common.clients.exceptions.RpcException;
+import com.vmware.photon.controller.deployer.dcp.task.ChangeHostModeTaskService;
 
 import com.google.common.collect.Iterables;
 import org.slf4j.Logger;
@@ -43,6 +42,7 @@ public class HostEnterSuspendedModeStepCmd extends StepCommand {
   private static final Logger logger = LoggerFactory.getLogger(HostEnterSuspendedModeStepCmd.class);
 
   private final HostBackend hostBackend;
+  private HostEntity hostEntity;
 
   public HostEnterSuspendedModeStepCmd(TaskCommand taskCommand,
                                        StepBackend stepBackend,
@@ -57,23 +57,27 @@ public class HostEnterSuspendedModeStepCmd extends StepCommand {
 
     // Precondition check: only one host can be referenced.
     List<BaseEntity> entityList = step.getTransientResourceEntities();
-    HostEntity hostEntity = (HostEntity) Iterables.getOnlyElement(entityList);
+    hostEntity = (HostEntity) Iterables.getOnlyElement(entityList);
 
     // Call deployer for action and error handling.
-    try {
-      taskCommand.getDeployerClient().enterSuspendedMode(hostEntity.getId());
-      hostBackend.updateState(hostEntity, HostState.SUSPENDED);
-    } catch (InterruptedException | RpcException e) {
-      HostStateChangeException exception = new HostStateChangeException(
-          hostEntity,
-          HostState.SUSPENDED,
-          e);
-      throw exception;
+    logger.info("Calling deployer to suspend host {}", hostEntity);
+    ChangeHostModeTaskService.State serviceDocument = taskCommand.getDeployerXenonClient()
+        .enterSuspendedMode(hostEntity.getId());
+    // pass remoteTaskId to XenonTaskStatusStepCmd
+    for (StepEntity nextStep : taskCommand.getTask().getSteps()) {
+      nextStep.createOrUpdateTransientResource(XenonTaskStatusStepCmd.REMOTE_TASK_LINK_RESOURCE_KEY,
+          serviceDocument.documentSelfLink);
     }
   }
 
   @Override
   protected void cleanup() {
 
+  }
+
+  @Override
+  protected void markAsDone() throws Throwable {
+    super.markAsDone();
+    hostBackend.updateState(hostEntity, HostState.SUSPENDED);
   }
 }

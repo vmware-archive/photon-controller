@@ -21,8 +21,8 @@ import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.HostEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
-import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
+import com.vmware.photon.controller.deployer.dcp.task.ChangeHostModeTaskService;
 
 import com.google.common.base.Preconditions;
 import org.slf4j.Logger;
@@ -38,6 +38,7 @@ public class HostResumeStepCmd extends StepCommand {
   private static final Logger logger = LoggerFactory.getLogger(HostExitMaintenanceModeStepCmd.class);
   private final HostBackend hostBackend;
   private final TaskCommand taskCommand;
+  private HostEntity hostEntity;
 
   public HostResumeStepCmd(TaskCommand taskCommand,
                            StepBackend stepBackend,
@@ -55,24 +56,24 @@ public class HostResumeStepCmd extends StepCommand {
     Preconditions.checkArgument(entityList.size() == 1,
         "There should be only 1 host referenced by step %s", step.getId());
 
-    HostEntity hostEntity = (HostEntity) entityList.get(0);
-
-    try {
-      taskCommand.getDeployerClient().enterNormalMode(hostEntity.getId());
-      hostBackend.updateState(hostEntity, HostState.READY);
-    } catch (RpcException | InterruptedException ex) {
-      logger.error("Resumimg host '{}' to normal mode in '{}' state failed, with exception : {}",
-          hostEntity.getId(), hostEntity.getState(), ex);
-      throw new InternalException(ex);
-    } catch (Exception ex) {
-      logger.error("Resumimg host '{}' to normal mode in '{}' state failed, with exception : {}",
-          hostEntity.getId(), hostEntity.getState(), ex);
-      throw ex;
+    hostEntity = (HostEntity) entityList.get(0);
+    logger.info("Calling deployer to resume host {}", hostEntity);
+    ChangeHostModeTaskService.State serviceDocument = taskCommand.getDeployerXenonClient()
+        .enterNormalMode(hostEntity.getId());
+    // pass remoteTaskId to XenonTaskStatusStepCmd
+    for (StepEntity nextStep : taskCommand.getTask().getSteps()) {
+      nextStep.createOrUpdateTransientResource(XenonTaskStatusStepCmd.REMOTE_TASK_LINK_RESOURCE_KEY,
+          serviceDocument.documentSelfLink);
     }
-
   }
 
   @Override
   protected void cleanup() {
+  }
+
+  @Override
+  protected void markAsDone() throws Throwable {
+    super.markAsDone();
+    hostBackend.updateState(hostEntity, HostState.READY);
   }
 }

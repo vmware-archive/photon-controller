@@ -17,23 +17,29 @@ import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.apife.backends.HostBackend;
 import com.vmware.photon.controller.apife.backends.StepBackend;
+import com.vmware.photon.controller.apife.backends.clients.DeployerClient;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.HostEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
+import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.exceptions.external.HostStateChangeException;
-import com.vmware.photon.controller.common.clients.DeployerClient;
-import com.vmware.photon.controller.common.clients.exceptions.HostNotFoundException;
-import com.vmware.photon.controller.common.clients.exceptions.RpcException;
-import com.vmware.photon.controller.deployer.gen.EnterMaintenanceModeResponse;
-import com.vmware.photon.controller.deployer.gen.EnterMaintenanceModeResult;
-import com.vmware.photon.controller.deployer.gen.EnterMaintenanceModeResultCode;
+import com.vmware.photon.controller.deployer.dcp.task.ChangeHostModeTaskFactoryService;
+import com.vmware.photon.controller.deployer.dcp.task.ChangeHostModeTaskService;
+import com.vmware.xenon.common.TaskState;
 
+import com.google.common.collect.ImmutableList;
+import org.mockito.InOrder;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-import static org.mockito.Mockito.doNothing;
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.testng.Assert.fail;
 
 /**
  * Test {@link HostEnterSuspendedModeStepCmd}.
@@ -48,6 +54,12 @@ public class HostEnterSuspendedModeStepCmdTest {
   private StepEntity step;
   private HostEntity hostEntity;
   private HostEnterSuspendedModeStepCmd command;
+
+  private ChangeHostModeTaskService.State serviceDocument;
+  private String remoteTaskLink;
+  private TaskEntity taskEntity;
+  private StepEntity currentStep;
+  private StepEntity nextStep;
 
   @BeforeMethod
   public void setUp() {
@@ -68,33 +80,46 @@ public class HostEnterSuspendedModeStepCmdTest {
     step.addResource(hostEntity);
 
     command = new HostEnterSuspendedModeStepCmd(taskCommand, stepBackend, step, hostBackend);
-    when(taskCommand.getDeployerClient()).thenReturn(deployerClient);
+    when(taskCommand.getDeployerXenonClient()).thenReturn(deployerClient);
+
+    currentStep = new StepEntity();
+    currentStep.setId("id");
+    nextStep = new StepEntity();
+
+    taskEntity = new TaskEntity();
+    taskEntity.setSteps(ImmutableList.of(currentStep, nextStep));
+    when(taskCommand.getTask()).thenReturn(taskEntity);
+
+    serviceDocument = new ChangeHostModeTaskService.State();
+    serviceDocument.taskState = new TaskState();
+    serviceDocument.taskState.stage = TaskState.TaskStage.STARTED;
+    remoteTaskLink = "http://deployer" + ChangeHostModeTaskFactoryService.SELF_LINK
+        + "/00000000-0000-0000-0000-000000000001";
+    serviceDocument.documentSelfLink = remoteTaskLink;
   }
 
   @Test
-  public void testHappy() throws Exception {
-    EnterMaintenanceModeResponse response =
-        new EnterMaintenanceModeResponse(new EnterMaintenanceModeResult(EnterMaintenanceModeResultCode.OK));
-    when(deployerClient.enterSuspendedMode(hostEntity.getId())).thenReturn(response);
+  public void testHappy() throws Throwable {
+    when(deployerClient.enterSuspendedMode((hostEntity.getId()))).thenReturn(serviceDocument);
+    command.run();
+    deployerClient.getHostChangeModeStatus(serviceDocument.documentSelfLink);
+    verify(deployerClient, times(1)).enterSuspendedMode(hostEntity.getId());
+    assertEquals(nextStep.getTransientResource(XenonTaskStatusStepCmd.REMOTE_TASK_LINK_RESOURCE_KEY),
+        remoteTaskLink);
+    InOrder inOrder = inOrder(deployerClient, hostBackend);
+    inOrder.verify(deployerClient).enterSuspendedMode(hostEntity.getId());
 
-    command.execute();
-    verify(deployerClient).enterSuspendedMode(hostEntity.getId());
     verify(hostBackend).updateState(hostEntity, HostState.SUSPENDED);
 
   }
 
-  @Test (expectedExceptions = HostStateChangeException.class)
-  public void testFailedHostExitMaintenanceMode() throws Exception {
-    when(deployerClient.enterSuspendedMode(hostEntity.getId())).thenThrow(new RpcException("Test Rpc Exception"));
-
-    command.execute();
-  }
 
   @Test(expectedExceptions = HostStateChangeException.class)
-  public void testHostInvalid() throws Exception {
-    when(deployerClient.enterSuspendedMode(hostEntity.getId())).thenThrow(new HostNotFoundException("Error"));
-    doNothing().when(hostBackend).updateState(hostEntity, HostState.SUSPENDED);
-
+  public void testFailure() throws Throwable {
+    when(deployerClient.enterSuspendedMode(anyString())).thenReturn(serviceDocument);
+    when(deployerClient.getHostChangeModeStatus(any(String.class))).thenThrow(HostStateChangeException.class);
     command.execute();
+    deployerClient.getHostChangeModeStatus(serviceDocument.documentSelfLink);
+    fail("Should have failed");
   }
 }

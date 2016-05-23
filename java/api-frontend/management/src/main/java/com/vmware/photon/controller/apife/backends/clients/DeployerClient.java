@@ -17,11 +17,15 @@ import com.vmware.photon.controller.apife.entities.HostEntity;
 import com.vmware.photon.controller.apife.exceptions.external.SpecInvalidException;
 import com.vmware.photon.controller.apife.lib.UsageTagHelper;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
+import com.vmware.photon.controller.deployer.dcp.task.ChangeHostModeTaskFactoryService;
+import com.vmware.photon.controller.deployer.dcp.task.ChangeHostModeTaskService;
 import com.vmware.photon.controller.deployer.dcp.task.ValidateHostTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.ValidateHostTaskService;
 import com.vmware.photon.controller.deployer.dcp.workflow.DeprovisionHostWorkflowFactoryService;
 import com.vmware.photon.controller.deployer.dcp.workflow.DeprovisionHostWorkflowService;
+import com.vmware.photon.controller.host.gen.HostMode;
 import com.vmware.xenon.common.Operation;
 
 import com.google.inject.Inject;
@@ -103,5 +107,34 @@ public class DeployerClient {
             DeprovisionHostWorkflowFactoryService.SELF_LINK, deprovisionHostState);
 
         return operation.getBody(DeprovisionHostWorkflowService.class);
+    }
+
+    public ChangeHostModeTaskService.State enterSuspendedMode(String hostId) {
+        return changeHostMode(hostId, HostMode.ENTERING_MAINTENANCE);
+    }
+
+    public ChangeHostModeTaskService.State enterMaintenanceMode(String hostId) {
+        return changeHostMode(hostId, HostMode.MAINTENANCE);
+    }
+
+    public ChangeHostModeTaskService.State enterNormalMode(String hostId) {
+        return changeHostMode(hostId, HostMode.NORMAL);
+    }
+
+    private ChangeHostModeTaskService.State changeHostMode(String hostId, HostMode hostMode) {
+        ChangeHostModeTaskService.State state = new ChangeHostModeTaskService.State();
+        state.hostServiceLink = HostServiceFactory.SELF_LINK + "/" + hostId;
+        state.hostMode = hostMode;
+
+        Operation operation = dcpClient.post(
+            ChangeHostModeTaskFactoryService.SELF_LINK, state);
+
+        return operation.getBody(ChangeHostModeTaskService.State.class);
+    }
+
+    public ChangeHostModeTaskService.State getHostChangeModeStatus(String creationTaskLink)
+        throws DocumentNotFoundException {
+        Operation operation = dcpClient.get(creationTaskLink);
+        return operation.getBody(ChangeHostModeTaskService.State.class);
     }
 }

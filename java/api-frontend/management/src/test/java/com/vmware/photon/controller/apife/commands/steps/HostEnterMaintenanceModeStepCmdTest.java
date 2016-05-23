@@ -15,26 +15,32 @@ package com.vmware.photon.controller.apife.commands.steps;
 
 import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.UsageTag;
-import com.vmware.photon.controller.api.common.exceptions.ApiFeException;
 import com.vmware.photon.controller.apife.backends.HostBackend;
 import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.backends.VmBackend;
+import com.vmware.photon.controller.apife.backends.clients.DeployerClient;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.HostEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
+import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.exceptions.external.HostStateChangeException;
-import com.vmware.photon.controller.common.clients.DeployerClient;
-import com.vmware.photon.controller.common.clients.exceptions.HostNotFoundException;
-import com.vmware.photon.controller.common.clients.exceptions.RpcException;
-import com.vmware.photon.controller.deployer.gen.MaintenanceModeResponse;
-import com.vmware.photon.controller.deployer.gen.MaintenanceModeResult;
-import com.vmware.photon.controller.deployer.gen.MaintenanceModeResultCode;
+import com.vmware.photon.controller.deployer.dcp.task.ChangeHostModeTaskFactoryService;
+import com.vmware.photon.controller.deployer.dcp.task.ChangeHostModeTaskService;
+import com.vmware.xenon.common.TaskState;
 
+import com.google.common.collect.ImmutableList;
+import org.mockito.InOrder;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.testng.Assert.fail;
 
 /**
  * Test {@link HostEnterMaintenanceModeStepCmd}.
@@ -50,6 +56,12 @@ public class HostEnterMaintenanceModeStepCmdTest {
   private StepEntity step;
   private HostEntity hostEntity;
   private HostEnterMaintenanceModeStepCmd command;
+
+  private ChangeHostModeTaskService.State serviceDocument;
+  private String remoteTaskLink;
+  private TaskEntity taskEntity;
+  private StepEntity currentStep;
+  private StepEntity nextStep;
 
 
   @BeforeMethod
@@ -72,30 +84,45 @@ public class HostEnterMaintenanceModeStepCmdTest {
     step.addResource(hostEntity);
 
     command = new HostEnterMaintenanceModeStepCmd(taskCommand, stepBackend, step, hostBackend, vmBackend);
-    when(taskCommand.getDeployerClient()).thenReturn(deployerClient);
+    when(taskCommand.getDeployerXenonClient()).thenReturn(deployerClient);
+
+    currentStep = new StepEntity();
+    currentStep.setId("id");
+    nextStep = new StepEntity();
+
+    taskEntity = new TaskEntity();
+    taskEntity.setSteps(ImmutableList.of(currentStep, nextStep));
+    when(taskCommand.getTask()).thenReturn(taskEntity);
+
+    serviceDocument = new ChangeHostModeTaskService.State();
+    serviceDocument.taskState = new TaskState();
+    serviceDocument.taskState.stage = TaskState.TaskStage.STARTED;
+    remoteTaskLink = "http://deployer" + ChangeHostModeTaskFactoryService.SELF_LINK
+        + "/00000000-0000-0000-0000-000000000001";
+    serviceDocument.documentSelfLink = remoteTaskLink;
   }
 
 
   @Test
-  public void testSuccess() throws InterruptedException, RpcException, ApiFeException {
-    MaintenanceModeResponse response = new MaintenanceModeResponse(
-        new MaintenanceModeResult(MaintenanceModeResultCode.OK));
-    when(deployerClient.enterMaintenanceMode(hostEntity.getId())).thenReturn(response);
+  public void testSuccess() throws Throwable {
+    when(deployerClient.enterMaintenanceMode(hostEntity.getId())).thenReturn(serviceDocument);
+    command.run();
+    deployerClient.getHostChangeModeStatus(serviceDocument.documentSelfLink);
+    verify(deployerClient, times(1)).enterMaintenanceMode(hostEntity.getId());
+    assertEquals(nextStep.getTransientResource(XenonTaskStatusStepCmd.REMOTE_TASK_LINK_RESOURCE_KEY),
+        remoteTaskLink);
+    InOrder inOrder = inOrder(deployerClient, hostBackend);
+    inOrder.verify(deployerClient).enterMaintenanceMode(hostEntity.getId());
 
-    command.execute();
-    verify(deployerClient).enterMaintenanceMode(hostEntity.getId());
     verify(hostBackend).updateState(hostEntity, HostState.MAINTENANCE);
   }
 
   @Test(expectedExceptions = HostStateChangeException.class)
-  public void testRpcException() throws RpcException, InterruptedException, ApiFeException {
-    when(deployerClient.enterMaintenanceMode(hostEntity.getId())).thenThrow(new RpcException());
+  public void testFailure() throws Throwable {
+    when(deployerClient.enterMaintenanceMode(anyString())).thenReturn(serviceDocument);
+    when(deployerClient.getHostChangeModeStatus(any(String.class))).thenThrow(HostStateChangeException.class);
     command.execute();
-  }
-
-  @Test(expectedExceptions = HostStateChangeException.class)
-  public void testHostNotFound() throws RpcException, InterruptedException, ApiFeException {
-    when(deployerClient.enterMaintenanceMode(hostEntity.getId())).thenThrow(new HostNotFoundException("HostNotFound"));
-    command.execute();
+    deployerClient.getHostChangeModeStatus(serviceDocument.documentSelfLink);
+    fail("Should have failed");
   }
 }

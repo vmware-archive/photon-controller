@@ -213,7 +213,7 @@ public class HostDcpBackend implements HostBackend {
     logger.info("putting host {} in suspended mode.");
     hostEntity.setState(HostState.SUSPENDED);
     TaskEntity taskEntity = createQueuedTaskEntity(hostEntity, Operation.SUSPEND_HOST);
-
+    taskBackend.getStepBackend().createQueuedStep(taskEntity, Operation.QUERY_HOST_CHANGE_MODE_TASK_RESULT);
     return taskEntity;
   }
 
@@ -224,7 +224,7 @@ public class HostDcpBackend implements HostBackend {
         Operation.RESUME_HOST, HostState.OPERATION_PREREQ_STATE);
     logger.info("resuming host {} to normal mode.");
     TaskEntity taskEntity = createQueuedTaskEntity(hostEntity, Operation.RESUME_HOST);
-
+    taskBackend.getStepBackend().createQueuedStep(taskEntity, Operation.QUERY_HOST_CHANGE_MODE_TASK_RESULT);
     return taskEntity;
   }
 
@@ -235,6 +235,7 @@ public class HostDcpBackend implements HostBackend {
         Operation.ENTER_MAINTENANCE_MODE, HostState.OPERATION_PREREQ_STATE);
     logger.info("host {} enters maintenance mode.");
     TaskEntity taskEntity = createQueuedTaskEntity(hostEntity, Operation.ENTER_MAINTENANCE_MODE);
+    taskBackend.getStepBackend().createQueuedStep(taskEntity, Operation.QUERY_HOST_CHANGE_MODE_TASK_RESULT);
     return taskEntity;
   }
 
@@ -245,7 +246,7 @@ public class HostDcpBackend implements HostBackend {
         Operation.EXIT_MAINTENANCE_MODE, HostState.OPERATION_PREREQ_STATE);
     logger.info("host {} exits maintenance mode.");
     TaskEntity taskEntity = createQueuedTaskEntity(hostEntity, Operation.EXIT_MAINTENANCE_MODE);
-
+    taskBackend.getStepBackend().createQueuedStep(taskEntity, Operation.QUERY_HOST_CHANGE_MODE_TASK_RESULT);
     return taskEntity;
   }
 
