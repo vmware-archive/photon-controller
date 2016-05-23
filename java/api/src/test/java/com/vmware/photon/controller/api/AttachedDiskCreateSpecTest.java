@@ -24,7 +24,6 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.core.StringStartsWith.startsWith;
 import static uk.co.datumedge.hamcrest.json.SameJSONAs.sameJSONAs;
 
 /**
@@ -35,7 +34,7 @@ public class AttachedDiskCreateSpecTest {
   /**
    * Dummy test case to make Intellij recognize this as a test class.
    */
-  @Test
+  @Test(enabled = false)
   private void dummy() {
   }
 
@@ -57,6 +56,7 @@ public class AttachedDiskCreateSpecTest {
       return new Object[][]{
           {new AttachedDiskCreateSpecBuilder().name("d").flavor("f").bootDisk(true).build()},
           {new AttachedDiskCreateSpecBuilder().name("d").flavor("f").capacityGb(2).build()},
+          {new AttachedDiskCreateSpecBuilder().name("d").kind("ephemeral").flavor("f").capacityGb(2).build()}
       };
     }
 
@@ -65,7 +65,7 @@ public class AttachedDiskCreateSpecTest {
       ImmutableList<String> violations = validator.validate(spec);
 
       assertThat(violations.size(), is(1));
-      assertThat(violations.get(0), startsWith(errorMsg));
+      assertThat(violations.get(0), is(errorMsg));
     }
 
     @DataProvider(name = "invalidAttachedDiskCreateSpecs")
@@ -73,6 +73,10 @@ public class AttachedDiskCreateSpecTest {
       return new Object[][]{
           {new AttachedDiskCreateSpecBuilder().name("d").flavor("f").capacityGb(-2).build(),
               "capacityGb must be greater than or equal to 1 (was -2)"},
+          {new AttachedDiskCreateSpecBuilder().name("d").kind("persistent").flavor("f").capacityGb(2).build(),
+              "kind must match \"ephemeral-disk|ephemeral\" (was persistent-disk)"},
+          {new AttachedDiskCreateSpecBuilder().name("d").kind("other-kind").flavor("f").capacityGb(2).build(),
+              "kind must match \"ephemeral-disk|ephemeral\" (was other-kind)"}
       };
     }
   }
@@ -103,6 +107,33 @@ public class AttachedDiskCreateSpecTest {
       assertThat(fromJson(json, AttachedDiskCreateSpec.class), is(attachedDiskCreateSpec));
       assertThat(asJson(attachedDiskCreateSpec), is(sameJSONAs(json)));
     }
-  }
 
+    @Test
+    public void testShortKind() throws Exception {
+      AttachedDiskCreateSpec attachedDiskCreateSpec =
+          new AttachedDiskCreateSpecBuilder().name("mydisk").flavor("good-flavor").capacityGb(2).build();
+
+      String jsonIn = jsonFixture("fixtures/attached-disk-create-spec-non-boot-disk-short-kind.json");
+      String jsonOut = jsonFixture("fixtures/attached-disk-create-spec-non-boot-disk.json");
+
+      assertThat(fromJson(jsonIn, AttachedDiskCreateSpec.class), is(attachedDiskCreateSpec));
+      assertThat(asJson(attachedDiskCreateSpec), is(sameJSONAs(jsonOut)));
+    }
+
+    @Test
+    public void otherKind() throws Exception {
+      AttachedDiskCreateSpec attachedDiskCreateSpec =
+          new AttachedDiskCreateSpecBuilder()
+              .name("mydisk")
+              .kind("other-kind")
+              .flavor("good-flavor")
+              .capacityGb(2)
+              .build();
+
+      String json = jsonFixture("fixtures/attached-disk-create-spec-non-boot-disk-other-kind.json");
+
+      assertThat(fromJson(json, AttachedDiskCreateSpec.class), is(attachedDiskCreateSpec));
+      assertThat(asJson(attachedDiskCreateSpec), is(sameJSONAs(json)));
+    }
+  }
 }
