@@ -50,19 +50,15 @@ public class VirtualNetworkTest {
     public Object[][] getValidVirtualNetworkData() {
       return new Object[][]{
           {
-              new VirtualNetworkBuilder().name("vn1")
+              new VirtualNetworkBuilder()
+                  .name("vn1")
                   .routingType(RoutingType.ROUTED)
                   .state(NetworkState.READY)
                   .build()
           },
           {
-              new VirtualNetworkBuilder().name("vn1")
-                  .routingType(RoutingType.ROUTED)
-                  .state(NetworkState.READY)
-                  .build()
-          },
-          {
-              new VirtualNetworkBuilder().name("vn1")
+              new VirtualNetworkBuilder()
+                  .name("vn1")
                   .routingType(RoutingType.ROUTED)
                   .description("desc")
                   .state(NetworkState.READY)
@@ -73,6 +69,7 @@ public class VirtualNetworkTest {
                   .name("vn1")
                   .state(NetworkState.READY)
                   .routingType(RoutingType.ROUTED)
+                  .isDefault(true)
                   .build()
           },
       };
@@ -131,20 +128,29 @@ public class VirtualNetworkTest {
       return new Object[][] {
           {
               new VirtualNetworkBuilder()
-                  .name("vn1")
-                  .state(NetworkState.READY)
-                  .routingType(RoutingType.ROUTED)
-                  .build(),
-                  "VirtualNetwork{name=vn1, description=null, state=READY, routingType=ROUTED}"
+                    .name("vn1")
+                    .state(NetworkState.READY)
+                    .routingType(RoutingType.ROUTED)
+                    .build(),
+              "VirtualNetwork{name=vn1, description=null, state=READY, routingType=ROUTED, isDefault=null}"
           },
           {
               new VirtualNetworkBuilder()
-              .name("vn1")
-              .description("desc")
-              .state(NetworkState.READY)
-              .routingType(RoutingType.ROUTED)
-              .build(),
-              "VirtualNetwork{name=vn1, description=desc, state=READY, routingType=ROUTED}"
+                    .name("vn1")
+                    .description("desc")
+                    .state(NetworkState.READY)
+                    .routingType(RoutingType.ROUTED)
+                    .build(),
+              "VirtualNetwork{name=vn1, description=desc, state=READY, routingType=ROUTED, isDefault=null}"
+          },
+          {
+              new VirtualNetworkBuilder()
+                  .name("vn1")
+                  .state(NetworkState.READY)
+                  .routingType(RoutingType.ROUTED)
+                  .isDefault(true)
+                  .build(),
+              "VirtualNetwork{name=vn1, description=null, state=READY, routingType=ROUTED, isDefault=true}"
           }
       };
     }
@@ -162,6 +168,7 @@ public class VirtualNetworkTest {
           .description("desc")
           .state(NetworkState.READY)
           .routingType(RoutingType.ROUTED)
+          .isDefault(true)
           .build();
       String json = JsonHelpers.jsonFixture("fixtures/virtual-network.json");
 

@@ -30,6 +30,7 @@ public class VirtualNetworkUtils {
     virtualNetwork.setDescription(virtualNetworkState.description);
     virtualNetwork.setState(virtualNetworkState.state);
     virtualNetwork.setRoutingType(virtualNetworkState.routingType);
+    virtualNetwork.setIsDefault(virtualNetworkState.isDefault);
 
     return virtualNetwork;
   }
