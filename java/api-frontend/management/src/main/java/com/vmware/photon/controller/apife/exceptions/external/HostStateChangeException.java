@@ -15,14 +15,13 @@ package com.vmware.photon.controller.apife.exceptions.external;
 
 import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
-import com.vmware.photon.controller.apife.entities.HostEntity;
 
 /**
  * Thrown when the host fails to change from one state to another.
  */
 public class HostStateChangeException extends ExternalException {
 
-  public HostStateChangeException(HostEntity hostEntity, HostState newState, Exception ex) {
-    super(hostEntity.toString() + " failed to change state to " + newState + ": " + ex.getMessage());
+  public HostStateChangeException(String hostLink, HostState newState, Exception ex) {
+    super(hostLink + " failed to change state to " + newState + ": " + ex.getMessage());
   }
 }

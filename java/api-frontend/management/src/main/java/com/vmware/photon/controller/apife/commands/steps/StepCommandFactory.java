@@ -162,6 +162,9 @@ public class StepCommandFactory {
         return new HostEnterSuspendedModeStepCmd(taskCommand, stepBackend, stepEntity, hostBackend);
       case RESUME_HOST:
         return new HostResumeStepCmd(taskCommand, stepBackend, stepEntity, hostBackend);
+      case QUERY_HOST_CHANGE_MODE_TASK_RESULT:
+        return new XenonTaskStatusStepCmd(taskCommand, stepBackend, stepEntity,
+            new HostChangeModeTaskStatusPoller(taskCommand, hostBackend, taskBackend));
       case QUERY_HOST_TASK_RESULT:
         return new XenonTaskStatusStepCmd(taskCommand, stepBackend, stepEntity,
             new HostTaskStatusPoller(taskCommand, hostBackend, taskBackend));

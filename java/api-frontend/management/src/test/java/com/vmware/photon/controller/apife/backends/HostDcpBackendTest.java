@@ -491,7 +491,7 @@ public class HostDcpBackendTest {
 
       assertThat(taskEntity.getEntityId(), is(hostId));
       assertThat(taskEntity.getState(), is(TaskEntity.State.QUEUED));
-      assertThat(taskEntity.getSteps().size(), is(1));
+      assertThat(taskEntity.getSteps().size(), is(2));
       assertThat(taskEntity.getSteps().get(0).getOperation(), is(Operation.SUSPEND_HOST));
 
       hostBackend.updateState(hostEntity, HostState.SUSPENDED);
@@ -499,7 +499,7 @@ public class HostDcpBackendTest {
 
       assertThat(taskEntity.getEntityId(), is(hostId));
       assertThat(taskEntity.getState(), is(TaskEntity.State.QUEUED));
-      assertThat(taskEntity.getSteps().size(), is(1));
+      assertThat(taskEntity.getSteps().size(), is(2));
       assertThat(taskEntity.getSteps().get(0).getOperation(), is(Operation.RESUME_HOST));
 
     }
@@ -512,7 +512,7 @@ public class HostDcpBackendTest {
 
       assertThat(taskEntity.getEntityId(), is(hostId));
       assertThat(taskEntity.getState(), is(TaskEntity.State.QUEUED));
-      assertThat(taskEntity.getSteps().size(), is(1));
+      assertThat(taskEntity.getSteps().size(), is(2));
       assertThat(taskEntity.getSteps().get(0).getOperation(), is(Operation.ENTER_MAINTENANCE_MODE));
 
       hostBackend.updateState(hostEntity, HostState.MAINTENANCE);
@@ -520,7 +520,7 @@ public class HostDcpBackendTest {
 
       assertThat(taskEntity.getEntityId(), is(hostId));
       assertThat(taskEntity.getState(), is(TaskEntity.State.QUEUED));
-      assertThat(taskEntity.getSteps().size(), is(1));
+      assertThat(taskEntity.getSteps().size(), is(2));
       assertThat(taskEntity.getSteps().get(0).getOperation(), is(Operation.EXIT_MAINTENANCE_MODE));
     }
 

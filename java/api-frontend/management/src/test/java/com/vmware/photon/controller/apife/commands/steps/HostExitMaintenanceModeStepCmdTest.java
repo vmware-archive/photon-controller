@@ -17,24 +17,29 @@ import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.apife.backends.HostBackend;
 import com.vmware.photon.controller.apife.backends.StepBackend;
+import com.vmware.photon.controller.apife.backends.clients.DeployerClient;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.HostEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
-import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
-import com.vmware.photon.controller.common.clients.DeployerClient;
-import com.vmware.photon.controller.deployer.gen.NormalModeResponse;
-import com.vmware.photon.controller.deployer.gen.NormalModeResult;
-import com.vmware.photon.controller.deployer.gen.NormalModeResultCode;
+import com.vmware.photon.controller.apife.entities.TaskEntity;
+import com.vmware.photon.controller.apife.exceptions.external.HostStateChangeException;
+import com.vmware.photon.controller.deployer.dcp.task.ChangeHostModeTaskFactoryService;
+import com.vmware.photon.controller.deployer.dcp.task.ChangeHostModeTaskService;
+import com.vmware.xenon.common.TaskState;
 
+import com.google.common.collect.ImmutableList;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.powermock.modules.testng.PowerMockTestCase;
+import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -57,6 +62,12 @@ public class HostExitMaintenanceModeStepCmdTest extends PowerMockTestCase {
   private HostEntity hostEntity;
   private HostExitMaintenanceModeStepCmd command;
 
+  private ChangeHostModeTaskService.State serviceDocument;
+  private String remoteTaskLink;
+  private TaskEntity taskEntity;
+  private StepEntity currentStep;
+  private StepEntity nextStep;
+
   @BeforeMethod
   public void setUp() {
     hostEntity = new HostEntity();
@@ -72,33 +83,45 @@ public class HostExitMaintenanceModeStepCmdTest extends PowerMockTestCase {
 
     command = new HostExitMaintenanceModeStepCmd(taskCommand, stepBackend, step, hostBackend);
     deployerClient = mock(DeployerClient.class);
-    when(taskCommand.getDeployerClient()).thenReturn(deployerClient);
+    when(taskCommand.getDeployerXenonClient()).thenReturn(deployerClient);
+
+    currentStep = new StepEntity();
+    currentStep.setId("id");
+    nextStep = new StepEntity();
+
+    taskEntity = new TaskEntity();
+    taskEntity.setSteps(ImmutableList.of(currentStep, nextStep));
+    when(taskCommand.getTask()).thenReturn(taskEntity);
+
+    serviceDocument = new ChangeHostModeTaskService.State();
+    serviceDocument.taskState = new TaskState();
+    serviceDocument.taskState.stage = TaskState.TaskStage.STARTED;
+    remoteTaskLink = "http://deployer" + ChangeHostModeTaskFactoryService.SELF_LINK
+        + "/00000000-0000-0000-0000-000000000001";
+    serviceDocument.documentSelfLink = remoteTaskLink;
   }
 
   @Test
-  public void testSuccessfulHostExitMaintenanceMode() throws Exception {
-    NormalModeResponse normalModeResponse = new NormalModeResponse(new NormalModeResult(NormalModeResultCode.OK));
-    when(deployerClient.enterNormalMode(hostEntity.getId())).thenReturn(normalModeResponse);
+  public void testSuccessfulHostExitMaintenanceMode() throws Throwable {
+    when(deployerClient.enterNormalMode((hostEntity.getId()))).thenReturn(serviceDocument);
+    command.run();
+    deployerClient.getHostChangeModeStatus(serviceDocument.documentSelfLink);
+    verify(deployerClient, times(1)).enterNormalMode(hostEntity.getId());
+    assertEquals(nextStep.getTransientResource(XenonTaskStatusStepCmd.REMOTE_TASK_LINK_RESOURCE_KEY),
+        remoteTaskLink);
+    InOrder inOrder = inOrder(deployerClient, hostBackend);
+    inOrder.verify(deployerClient).enterNormalMode(hostEntity.getId());
 
-    command.execute();
-    verify(deployerClient).enterNormalMode(hostEntity.getId());
     verify(hostBackend).updateState(hostEntity, HostState.READY);
-
   }
 
-  @Test
-  public void testRuntimeException() throws Exception {
-    when(deployerClient.enterNormalMode(hostEntity.getId())).
-        thenThrow(new RuntimeException("Failed to exit maintenance mode with Runtime exception."));
-
-    try {
-      command.execute();
-      fail("should have failed with RuntimeException.");
-    } catch (InternalException e) {
-      assertThat(e.getMessage(), containsString("Failed to exit maintenance mode with Runtime exception."));
-    }
-    verify(deployerClient).enterNormalMode(hostEntity.getId());
-    verify(hostBackend, never()).updateState(hostEntity, HostState.READY);
+  @Test(expectedExceptions = HostStateChangeException.class)
+  public void testFailure() throws Throwable {
+    when(deployerClient.enterNormalMode(anyString())).thenReturn(serviceDocument);
+    when(deployerClient.getHostChangeModeStatus(any(String.class))).thenThrow(HostStateChangeException.class);
+    command.execute();
+    deployerClient.getHostChangeModeStatus(serviceDocument.documentSelfLink);
+    Assert.fail("Should have failed");
   }
 
 }
