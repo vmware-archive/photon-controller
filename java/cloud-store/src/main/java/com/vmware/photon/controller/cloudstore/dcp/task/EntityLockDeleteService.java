@@ -278,7 +278,6 @@ public class EntityLockDeleteService extends StatefulService {
       if (entityLock.ownerTaskId == null) {
         Operation getEntityOperation = Operation
             .createGet(UriUtils.buildUri(getHost(), entityLock.entitySelfLink))
-            .addPragmaDirective(Operation.PRAGMA_DIRECTIVE_NO_QUEUING)
             .setReferer(UriUtils.buildUri(getHost(), getSelfLink()));
 
         getEntityOperations.add(getEntityOperation);
