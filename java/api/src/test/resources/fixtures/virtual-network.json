@@ -4,5 +4,6 @@
     "name": "vn1",
     "description": "desc",
     "state": "READY",
-    "routingType": "ROUTED"
+    "routingType": "ROUTED",
+    "isDefault": true
 }

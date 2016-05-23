@@ -21,41 +21,38 @@ import com.vmware.photon.controller.api.VirtualNetwork;
  * Builder class for {@link com.vmware.photon.controller.api.VirtualNetwork}.
  */
 public class VirtualNetworkBuilder {
-  private String name;
-  private String description;
-  private NetworkState state;
-  private RoutingType routingType;
+  private VirtualNetwork virtualNetwork;
 
   public VirtualNetworkBuilder() {
+    virtualNetwork = new VirtualNetwork();
   }
 
   public VirtualNetworkBuilder name(String name) {
-    this.name = name;
+    virtualNetwork.setName(name);
     return this;
   }
 
   public VirtualNetworkBuilder description(String description) {
-    this.description = description;
+    virtualNetwork.setDescription(description);
     return this;
   }
 
   public VirtualNetworkBuilder state(NetworkState state) {
-    this.state = state;
+    virtualNetwork.setState(state);
     return this;
   }
 
   public VirtualNetworkBuilder routingType(RoutingType routingType) {
-    this.routingType = routingType;
+    virtualNetwork.setRoutingType(routingType);
+    return this;
+  }
+
+  public VirtualNetworkBuilder isDefault(Boolean isDefault) {
+    virtualNetwork.setIsDefault(isDefault);
     return this;
   }
 
   public VirtualNetwork build() {
-    VirtualNetwork virtualNetwork = new VirtualNetwork();
-    virtualNetwork.setName(name);
-    virtualNetwork.setDescription(description);
-    virtualNetwork.setState(state);
-    virtualNetwork.setRoutingType(routingType);
-
     return virtualNetwork;
   }
 }

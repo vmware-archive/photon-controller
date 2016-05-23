@@ -52,6 +52,10 @@ public class VirtualNetwork extends VisibleModel {
   @NotNull
   private RoutingType routingType;
 
+  @JsonProperty
+  @ApiModelProperty(value = "Indicates whether the network is default", required = false)
+  private Boolean isDefault;
+
   @Override
   public String getKind() {
     return kind;
@@ -81,6 +85,14 @@ public class VirtualNetwork extends VisibleModel {
     this.routingType = routingType;
   }
 
+  public Boolean getIsDefault() {
+    return isDefault;
+  }
+
+  public void setIsDefault(Boolean isDefault) {
+    this.isDefault = isDefault;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -96,12 +108,18 @@ public class VirtualNetwork extends VisibleModel {
     return Objects.equals(this.getName(), other.getName())
         && Objects.equals(this.description, other.description)
         && Objects.equals(this.state, other.state)
-        && Objects.equals(this.routingType, other.routingType);
+        && Objects.equals(this.routingType, other.routingType)
+        && Objects.equals(this.isDefault, other.isDefault);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode(), this.description, this.state, this.routingType);
+    return Objects.hash(
+        super.hashCode(),
+        this.description,
+        this.state,
+        this.routingType,
+        this.isDefault);
   }
 
   @Override
@@ -111,6 +129,7 @@ public class VirtualNetwork extends VisibleModel {
         .add("description", description)
         .add("state", state)
         .add("routingType", routingType)
+        .add("isDefault", isDefault)
         .toString();
   }
 }
