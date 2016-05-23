@@ -29,7 +29,6 @@ import com.vmware.photon.controller.housekeeper.HousekeeperConfig;
 import com.vmware.photon.controller.nsxclient.NsxClientFactory;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.services.common.LuceneDocumentIndexService;
-import com.vmware.xenon.services.common.LuceneQueryTaskFactoryService;
 import com.vmware.xenon.services.common.RootNamespaceService;
 import com.vmware.xenon.services.common.ServiceUriPaths;
 
@@ -114,8 +113,8 @@ public class HousekeeperXenonServiceHostTest {
 
     @BeforeMethod
     public void setUp() throws Throwable {
-        host = new HousekeeperXenonServiceHost(housekeeperConfig.getXenonConfig(), cloudStoreHelper, hostClientFactory,
-            serviceConfigFactory, nsxClientFactory);
+      host = new HousekeeperXenonServiceHost(housekeeperConfig.getXenonConfig(), cloudStoreHelper, hostClientFactory,
+          serviceConfigFactory, nsxClientFactory);
     }
 
     @AfterMethod
@@ -216,7 +215,7 @@ public class HousekeeperXenonServiceHostTest {
 
       assertThat(host.checkServiceAvailable(ServiceUriPaths.DEFAULT_NODE_GROUP), is(true));
       assertThat(host.checkServiceAvailable(LuceneDocumentIndexService.SELF_LINK), is(true));
-      assertThat(host.checkServiceAvailable(LuceneQueryTaskFactoryService.SELF_LINK), is(true));
+      assertThat(host.checkServiceAvailable(ServiceUriPaths.CORE_QUERY_TASKS), is(true));
 
       for (String selfLink : serviceSelfLinks) {
         assertThat(

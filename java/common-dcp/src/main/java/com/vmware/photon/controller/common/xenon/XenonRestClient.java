@@ -170,7 +170,6 @@ public class XenonRestClient implements XenonClient {
     Operation getOperation = Operation
         .createGet(serviceUri)
         .setUri(serviceUri)
-        .addPragmaDirective(Operation.PRAGMA_DIRECTIVE_NO_QUEUING)
         .setExpiration(Utils.getNowMicrosUtc() + getGetOperationExpirationMicros())
         .setReferer(this.localHostUri)
         .setContextId(LoggingUtils.getRequestId());
@@ -185,7 +184,6 @@ public class XenonRestClient implements XenonClient {
     Operation getOperation = Operation
         .createGet(documentServiceUri)
         .setUri(documentServiceUri)
-        .addPragmaDirective(Operation.PRAGMA_DIRECTIVE_NO_QUEUING)
         .setExpiration(Utils.getNowMicrosUtc() + getGetOperationExpirationMicros())
         .setReferer(this.localHostUri)
         .setContextId(LoggingUtils.getRequestId());
@@ -214,7 +212,6 @@ public class XenonRestClient implements XenonClient {
       Operation getOperation = Operation
           .createGet(serviceUri)
           .setUri(serviceUri)
-          .addPragmaDirective(Operation.PRAGMA_DIRECTIVE_NO_QUEUING)
           .setExpiration(Utils.getNowMicrosUtc() + batchCount * getGetOperationExpirationMicros())
           .setReferer(this.localHostUri)
           .setContextId(LoggingUtils.getRequestId());
@@ -234,7 +231,6 @@ public class XenonRestClient implements XenonClient {
     Operation deleteOperation = Operation
         .createDelete(serviceUri)
         .setUri(serviceUri)
-        .addPragmaDirective(Operation.PRAGMA_DIRECTIVE_NO_QUEUING)
         .setExpiration(Utils.getNowMicrosUtc() + getDeleteOperationExpirationMicros())
         .setReferer(this.localHostUri)
         .setContextId(LoggingUtils.getRequestId())
@@ -253,22 +249,22 @@ public class XenonRestClient implements XenonClient {
 
   /**
    * Send a Xenon query that is broadcast to all nodes.
-   *
+   * <p>
    * There are two ways to do broadcast queries:
-   *
+   * <p>
    * 1) We could make a query task (/core/query-tasks) with the BROADCAST option. In theory we could us this, but Xenon
    * has a single method for collating the results into a single list, and it doesn't match what we use. (See
    * {@link QueryTaskUtils#getBroadcastQueryDocuments} for how we collate.)
-   *
+   * <p>
    * 2) We can ask Xenon to forward a single request (for us, a query with any options, including sorting) to all nodes.
    * This is done by sending a query to /core/node-selectors/default/forwarding?path=/core/local-query-tasks&target=ALL
    * This is the option we use because it allows us to collate the results as we want them.
    */
   public Operation postToBroadcastQueryService(QueryTask query)
       throws BadRequestException,
-        DocumentNotFoundException,
-        TimeoutException,
-        InterruptedException {
+      DocumentNotFoundException,
+      TimeoutException,
+      InterruptedException {
 
     // Build the URI that will broadcast. The base URI is something like /core-node-selectors/default/forwarding
     // (which is the node selector's forwarder that will pick all nodes), and there is a query term to
@@ -309,7 +305,6 @@ public class XenonRestClient implements XenonClient {
     Operation patchOperation = Operation
         .createPatch(serviceUri)
         .setUri(serviceUri)
-        .addPragmaDirective(Operation.PRAGMA_DIRECTIVE_NO_QUEUING)
         .setExpiration(Utils.getNowMicrosUtc() + getPatchOperationExpirationMicros())
         .setBody(body)
         .setReferer(referrerURI)
@@ -349,8 +344,7 @@ public class XenonRestClient implements XenonClient {
    * @param terms
    * @param <T>
    * @return
-   * @throws BadRequestException,
-   *           DocumentNotFoundException, TimeoutException, InterruptedException
+   * @throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException
    */
   @Override
   public <T extends ServiceDocument> List<T> queryDocuments(Class<T> documentType,
@@ -470,8 +464,7 @@ public class XenonRestClient implements XenonClient {
    * @param terms
    * @param <T>
    * @return
-   * @throws BadRequestException,
-   *           DocumentNotFoundException, TimeoutException, InterruptedException
+   * @throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException
    */
   @Override
   public <T extends ServiceDocument> List<String> queryDocumentsForLinks(Class<T> documentType,
