@@ -49,15 +49,16 @@ public class TestHost extends BasicServiceHost
     this.testFactoryServiceMap = testFactoryServiceMap;
     this.nsxClientFactory = nsxClientFactory;
     this.cloudStoreHelper = cloudStoreHelper;
-    if (this.cloudStoreHelper != null) {
-      this.cloudStoreHelper.setServerSet(
-          new StaticServerSet(new InetSocketAddress(getPreferredAddress(), getPort())));
-    }
   }
 
   @Override
   public ServiceHost start() throws Throwable {
     super.start();
+
+    if (this.cloudStoreHelper != null) {
+      this.cloudStoreHelper.setServerSet(
+          new StaticServerSet(new InetSocketAddress(getPreferredAddress(), getPort())));
+    }
 
     this.startWithCoreServices();
     ServiceHostUtils.startFactoryServices(this, ApiBackendFactory.FACTORY_SERVICES_MAP);
