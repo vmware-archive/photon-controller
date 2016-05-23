@@ -26,53 +26,25 @@ describe "disk", management: true do
   let(:disk_name) { random_name("disk-") }
   let(:disk_flavor) { EsxCloud::SystemSeeder.instance.pending_delete_disk_flavor! }
 
-  context "with VM affinity" do
-    it "should create one persistent disk with one affinity setting" do
-      disk = @project.create_disk(name: disk_name, kind: "persistent-disk",
+  [
+      "persistent-disk",
+      "persistent"
+  ].each do |kind|
+    it "should create one disk with kind '#{kind}'" do
+      disk = @project.create_disk(name: disk_name, kind: kind,
                                   flavor: @seeder.persistent_disk_flavor!.name,
-                                  capacity_gb: 2, boot_disk: false,
-                                  affinities: [{id: @vm.id, kind: "vm"}])
-      disk.name.should == disk_name
+                                  capacity_gb: 2, boot_disk: false, tags: ["disk_tag"])
+      expect(disk.name).to eq disk_name
+      expect(disk.flavor).to eq @seeder.persistent_disk_flavor!.name
+      expect(disk.capacity_gb).to eq 2
+      expect(disk.datastore).to_not be_empty
+      expect(disk.tags).to eq ["disk_tag"]
 
       validate_disk_tasks(client.get_disk_tasks(disk.id))
       validate_disk_tasks(client.get_disk_tasks(disk.id, "COMPLETED"))
 
       disk.delete
     end
-
-    it "should create two persistent disk with same affinity setting" do
-      disk1 = @project.create_disk(name: disk_name, kind: "persistent-disk",
-                                   flavor: @seeder.persistent_disk_flavor!.name,
-                                   capacity_gb: 2, boot_disk: false,
-                                   affinities: [{id: @vm.id, kind: "vm"}])
-      disk1.name.should == disk_name
-
-      disk_name = random_name("disk-")
-      disk2 = @project.create_disk(name: disk_name, kind: "persistent-disk",
-                                   flavor: @seeder.persistent_disk_flavor!.name,
-                                   capacity_gb: 2, boot_disk: false,
-                                   affinities: [{id: @vm.id, kind: "vm"}])
-      disk2.name.should == disk_name
-
-      disk1.delete
-      disk2.delete
-    end
-  end
-
-  it "should create one persistent disk" do
-    disk = @project.create_disk(name: disk_name, kind: "persistent-disk",
-                                flavor: @seeder.persistent_disk_flavor!.name,
-                                capacity_gb: 2, boot_disk: false, tags: ["disk_tag"])
-    expect(disk.name).to eq disk_name
-    expect(disk.flavor).to eq @seeder.persistent_disk_flavor!.name
-    expect(disk.capacity_gb).to eq 2
-    expect(disk.datastore).to_not be_empty
-    expect(disk.tags).to eq ["disk_tag"]
-
-    validate_disk_tasks(client.get_disk_tasks(disk.id))
-    validate_disk_tasks(client.get_disk_tasks(disk.id, "COMPLETED"))
-
-    disk.delete
   end
 
   it "should not delete a project with a disk" do
@@ -256,6 +228,39 @@ describe "disk", management: true do
             capacity_gb: 2, boot_disk: false)
         expect(disk1.name).to eq(disk_name)
       end
+    end
+  end
+
+  context "with VM affinity" do
+    it "should create one persistent disk with one affinity setting" do
+      disk = @project.create_disk(name: disk_name, kind: "persistent-disk",
+          flavor: @seeder.persistent_disk_flavor!.name,
+          capacity_gb: 2, boot_disk: false,
+          affinities: [{id: @vm.id, kind: "vm"}])
+      disk.name.should == disk_name
+
+      validate_disk_tasks(client.get_disk_tasks(disk.id))
+      validate_disk_tasks(client.get_disk_tasks(disk.id, "COMPLETED"))
+
+      disk.delete
+    end
+
+    it "should create two persistent disk with same affinity setting" do
+      disk1 = @project.create_disk(name: disk_name, kind: "persistent-disk",
+          flavor: @seeder.persistent_disk_flavor!.name,
+          capacity_gb: 2, boot_disk: false,
+          affinities: [{id: @vm.id, kind: "vm"}])
+      disk1.name.should == disk_name
+
+      disk_name = random_name("disk-")
+      disk2 = @project.create_disk(name: disk_name, kind: "persistent-disk",
+          flavor: @seeder.persistent_disk_flavor!.name,
+          capacity_gb: 2, boot_disk: false,
+          affinities: [{id: @vm.id, kind: "vm"}])
+      disk2.name.should == disk_name
+
+      disk1.delete
+      disk2.delete
     end
   end
 

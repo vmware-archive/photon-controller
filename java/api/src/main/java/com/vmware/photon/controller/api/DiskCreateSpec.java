@@ -73,6 +73,7 @@ public class DiskCreateSpec implements Flavorful, Named {
   @ApiModelProperty(value = "This property specifies the set of machine-tags to attach to the Disk on creation",
       required = false)
   private Set<String> tags = new HashSet<>();
+
   @JsonProperty
   @ApiModelProperty(value = "Locality parameters provide information that will guide the scheduler in placement" +
       " of the disk with respect to an existing VM. The only supported value for the 'kind' in the " +
@@ -85,7 +86,16 @@ public class DiskCreateSpec implements Flavorful, Named {
   }
 
   public void setKind(String kind) {
-    this.kind = kind;
+    switch (kind) {
+      case "persistent":
+        this.kind = PersistentDisk.KIND;
+        break;
+      case "ephemeral":
+        this.kind = EphemeralDisk.KIND;
+        break;
+      default:
+        this.kind = kind;
+    }
   }
 
   public String getName() {
