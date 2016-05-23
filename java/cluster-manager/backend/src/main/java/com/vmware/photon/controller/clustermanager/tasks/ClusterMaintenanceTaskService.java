@@ -268,7 +268,6 @@ public class ClusterMaintenanceTaskService extends StatefulService {
                       sendRequest(Operation
                           .createDelete(UriUtils.buildUri(getHost(), getSelfLink()))
                           .setBody(new ServiceDocument())
-                          .addPragmaDirective(Operation.PRAGMA_DIRECTIVE_NO_QUEUING)
                           .setReferer(getHost().getUri()));
 
                       return;
