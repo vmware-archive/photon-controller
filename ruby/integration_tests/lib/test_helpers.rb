@@ -304,9 +304,13 @@ module EsxCloud
     end
 
     def create_ephemeral_disks(names)
+      kinds = ["ephemeral-disk", "ephemeral"]
+
       flavor_name = EsxCloud::SystemSeeder.instance.ephemeral_disk_flavor!.name
-      disks = [VmDisk.new(names.delete_at(0), "ephemeral-disk", flavor_name, nil, true)]
-      disks + names.map { |name| EsxCloud::VmDisk.new(name, "ephemeral-disk", flavor_name, 1, false) }
+      disks = [VmDisk.new(names.delete_at(0), kinds[0], flavor_name, nil, true)]
+      disks + names.map.with_index(1) do |name, i|
+        EsxCloud::VmDisk.new(name, kinds[i % kinds.length], flavor_name, 1, false) }
+      end
     end
 
     def create_subdivide_limit(percent)
