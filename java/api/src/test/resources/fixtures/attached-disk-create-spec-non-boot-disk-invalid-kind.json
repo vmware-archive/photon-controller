@@ -1,0 +1,7 @@
+{
+    "name": "mydisk",
+    "kind": "invalid-kind",
+    "flavor": "good-flavor",
+    "capacityGb": 2,
+    "bootDisk": false
+}
