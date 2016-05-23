@@ -42,6 +42,7 @@ import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.OperationJoin;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
+import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.QueryTask;
 import com.vmware.xenon.services.common.ServiceUriPaths;
@@ -53,6 +54,7 @@ import static com.google.common.base.Preconditions.checkState;
 import javax.annotation.Nullable;
 
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -99,6 +101,13 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
     @DefaultInteger(value = 0)
     @Immutable
     public Integer controlFlags;
+
+    /**
+     * This value represents the interval, in milliseconds, to use when polling
+     * the state of a task object returned by an API call.
+     */
+    @Immutable
+    public Integer taskPollDelay;
 
     /**
      * This value represents the document link of the deployment in whose context the task operation is
@@ -162,6 +171,10 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
     if (startState.documentExpirationTimeMicros <= 0) {
       startState.documentExpirationTimeMicros =
           ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME_MICROS);
+    }
+
+    if (null == startState.taskPollDelay) {
+      startState.taskPollDelay = HostUtils.getDeployerContext(this).getTaskPollDelay();
     }
 
     startOp.setBody(startState).complete();
@@ -425,28 +438,90 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
 
     checkState(hostServiceLinks.size() > 0);
 
-    ChildTaskAggregatorService.State startState = new ChildTaskAggregatorService.State();
-    startState.parentTaskLink = getSelfLink();
-    startState.parentPatchBody = Utils.toJson(buildPatch(TaskState.TaskStage.FINISHED, null, null));
-    startState.pendingCompletionCount = hostServiceLinks.size();
-    startState.errorThreshold = 1.0;
-
-    sendRequest(Operation
-        .createPost(this, ChildTaskAggregatorFactoryService.SELF_LINK)
-        .setBody(startState)
+    sendRequest(HostUtils
+        .getCloudStoreHelper(this)
+        .createGet(currentState.deploymentServiceLink)
         .setCompletion(
             (o, e) -> {
               try {
                 if (e != null) {
                   failTask(e);
                 } else {
-                  processProvisionHostsSubStage(currentState, hostServiceLinks,
-                      o.getBody(ServiceDocument.class).documentSelfLink);
+                  processProvisionHostsSubStage(
+                      currentState,
+                      hostServiceLinks,
+                      o.getBody(DeploymentService.State.class));
                 }
               } catch (Throwable t) {
                 failTask(t);
               }
             }));
+  }
+
+  private void processProvisionHostsSubStage(State currentState,
+                                             Set<String> hostServiceLinks,
+                                             DeploymentService.State deploymentState) {
+
+    if (deploymentState.virtualNetworkEnabled) {
+      // Due to bug https://bugzilla.eng.vmware.com/show_bug.cgi?id=1646837, we cannot provision
+      // hosts concurrently if NSX is used. Otherwise NSX will fail to register hosts as
+      // fabric nodes.
+      processProvisionHostsSubStage(currentState, hostServiceLinks.iterator());
+    } else {
+      ChildTaskAggregatorService.State startState = new ChildTaskAggregatorService.State();
+      startState.parentTaskLink = getSelfLink();
+      startState.parentPatchBody = Utils.toJson(buildPatch(TaskState.TaskStage.FINISHED, null, null));
+      startState.pendingCompletionCount = hostServiceLinks.size();
+      startState.errorThreshold = 1.0;
+
+      sendRequest(Operation
+          .createPost(this, ChildTaskAggregatorFactoryService.SELF_LINK)
+          .setBody(startState)
+          .setCompletion(
+              (o, e) -> {
+                try {
+                  if (e != null) {
+                    failTask(e);
+                  } else {
+                    processProvisionHostsSubStage(currentState, hostServiceLinks,
+                        o.getBody(ServiceDocument.class).documentSelfLink);
+                  }
+                } catch (Throwable t) {
+                  failTask(t);
+                }
+              }));
+    }
+  }
+
+  private void processProvisionHostsSubStage(State currentState,
+                                             Iterator<String> hostServiceLink) {
+    if (hostServiceLink.hasNext()) {
+      ProvisionHostTaskService.State startState = new ProvisionHostTaskService.State();
+      startState.deploymentServiceLink = currentState.deploymentServiceLink;
+      startState.hostServiceLink = hostServiceLink.next();
+
+      TaskUtils.startTaskAsync(
+          this,
+          ProvisionHostTaskFactoryService.SELF_LINK,
+          startState,
+          (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage),
+          ProvisionHostTaskService.State.class,
+          currentState.taskPollDelay,
+          new FutureCallback<ProvisionHostTaskService.State>() {
+            @Override
+            public void onSuccess(@Nullable ProvisionHostTaskService.State state) {
+              processProvisionHostsSubStage(currentState, hostServiceLink);
+            }
+
+            @Override
+            public void onFailure(Throwable throwable) {
+              failTask(throwable);
+            }
+          }
+      );
+    } else {
+      sendStageProgressPatch(TaskState.TaskStage.FINISHED, null);
+    }
   }
 
   private void processProvisionHostsSubStage(State currentState,

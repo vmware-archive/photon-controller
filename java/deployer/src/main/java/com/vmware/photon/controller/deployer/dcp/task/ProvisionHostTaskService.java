@@ -386,7 +386,7 @@ public class ProvisionHostTaskService extends StatefulService {
         ServiceUtils.logInfo(this, "Skipping patch operation processing (disabled)");
       } else if (currentState.taskState.stage == TaskState.TaskStage.STARTED) {
         processStartedStage(currentState);
-      } else {
+      } else if (currentState.parentTaskServiceLink != null) {
         TaskUtils.notifyParentTask(this, currentState.taskState, currentState.parentTaskServiceLink,
             currentState.parentPatchBody);
       }
