@@ -18,7 +18,6 @@ import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.ExampleService;
 import com.vmware.xenon.services.common.LuceneDocumentIndexService;
-import com.vmware.xenon.services.common.LuceneQueryTaskFactoryService;
 import com.vmware.xenon.services.common.QueryTask;
 
 import org.apache.commons.io.FileUtils;
@@ -190,7 +189,7 @@ public class BasicServiceHostTest {
           host.checkServiceAvailable(com.vmware.xenon.services.common.ServiceUriPaths.DEFAULT_NODE_GROUP),
           is(true));
       assertThat(host.checkServiceAvailable(LuceneDocumentIndexService.SELF_LINK), is(true));
-      assertThat(host.checkServiceAvailable(LuceneQueryTaskFactoryService.SELF_LINK), is(true));
+      assertThat(host.checkServiceAvailable(ServiceUriPaths.CORE_QUERY_TASKS), is(true));
     }
 
     @Test
@@ -204,7 +203,7 @@ public class BasicServiceHostTest {
           host.checkServiceAvailable(com.vmware.xenon.services.common.ServiceUriPaths.DEFAULT_NODE_GROUP),
           is(true));
       assertThat(host.checkServiceAvailable(LuceneDocumentIndexService.SELF_LINK), is(true));
-      assertThat(host.checkServiceAvailable(LuceneQueryTaskFactoryService.SELF_LINK), is(true));
+      assertThat(host.checkServiceAvailable(ServiceUriPaths.CORE_QUERY_TASKS), is(true));
     }
 
     @Test

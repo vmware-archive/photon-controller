@@ -23,7 +23,6 @@ import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.ServiceHost;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
-import com.vmware.xenon.services.common.LuceneQueryTaskFactoryService;
 import com.vmware.xenon.services.common.NodeGroupBroadcastResponse;
 import com.vmware.xenon.services.common.NodeGroupService;
 import com.vmware.xenon.services.common.NodeState;
@@ -244,6 +243,7 @@ public class ServiceHostUtils {
 
   /**
    * Starts the factory services for the given list of services.
+   *
    * @param host
    * @param factoryServicesMap
    */
@@ -478,7 +478,7 @@ public class ServiceHostUtils {
   public static QueryTask sendQueryAndWait(ServiceHost host, String referrer, QueryTask query) throws Throwable {
 
     Operation queryOp = Operation
-        .createPost(UriUtils.buildUri(host, LuceneQueryTaskFactoryService.SELF_LINK))
+        .createPost(UriUtils.buildUri(host, ServiceUriPaths.CORE_QUERY_TASKS))
         .setBody(query);
 
     return sendRequestAndWait(host, queryOp, referrer).getBody(QueryTask.class);
@@ -528,7 +528,7 @@ public class ServiceHostUtils {
             } catch (Throwable t) {
               throw new RuntimeException("Failed to get service state", t);
             }
-            }
+          }
         },
         predicate,
         waitIterationSleep,
