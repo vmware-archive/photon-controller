@@ -46,6 +46,7 @@ public class AttachedDiskCreateSpec implements Flavorful, Named {
   @Size(min = 1, max = 63)
   @Pattern(regexp = Named.PATTERN, message = ": The specified flavor name does not match pattern: " + Named.PATTERN)
   protected String flavor;
+
   @JsonProperty
   @ApiModelProperty(value = "This property specifies the name of the Disk. Disk names must be unique within their " +
       "project.",
@@ -54,12 +55,14 @@ public class AttachedDiskCreateSpec implements Flavorful, Named {
   @Size(min = 1, max = 63)
   @Pattern(regexp = Named.PATTERN, message = ": The specified disk name does not match pattern: " + Named.PATTERN)
   private String name;
+
   @JsonProperty
   @ApiModelProperty(value = "This property specifies the desired kind of the Disk: ephemeral is the only one " +
       "currently supported",
       required = true)
   @Pattern(regexp = "ephemeral-disk|ephemeral")
   private String kind;
+
   @JsonProperty
   @ApiModelProperty(value = "This property is the capacity of the disk in GB units. When used in the context of " +
       "attaching an existing disk, this property, if specified, must be valid, but is otherwise ignored. " +
@@ -75,11 +78,22 @@ public class AttachedDiskCreateSpec implements Flavorful, Named {
 
   @JsonProperty
   public String getKind() {
-    return kind;
+    return this.kind;
   }
 
   public void setKind(String kind) {
-    this.kind = kind;
+    switch (kind) {
+      case PersistentDisk.KIND:
+      case "persistent":
+        this.kind = PersistentDisk.KIND;
+        break;
+      case EphemeralDisk.KIND:
+      case "ephemeral":
+        this.kind = EphemeralDisk.KIND;
+        break;
+      default:
+        throw new IllegalArgumentException("Unknown disk kind: " + kind);
+    }
   }
 
   public String getName() {
