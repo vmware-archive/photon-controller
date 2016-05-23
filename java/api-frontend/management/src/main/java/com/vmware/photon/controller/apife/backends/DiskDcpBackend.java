@@ -444,7 +444,6 @@ public class DiskDcpBackend implements DiskBackend {
     String kind = spec.getKind();
     switch (kind) {
       case PersistentDisk.KIND:
-      case "persistent":
         diskState.diskType = DiskType.PERSISTENT;
         diskState.affinities = spec.getAffinities();
         disk = new PersistentDiskEntity();
@@ -461,7 +460,7 @@ public class DiskDcpBackend implements DiskBackend {
     diskState.state = DiskState.CREATING;
     diskState.capacityGb = spec.getCapacityGb();
 
-    FlavorEntity flavorEntity = flavorBackend.getEntityByNameAndKind(spec.getFlavor(), spec.getKind());
+    FlavorEntity flavorEntity = flavorBackend.getEntityByNameAndKind(spec.getFlavor(), kind);
     if (!FlavorState.READY.equals(flavorEntity.getState())) {
       throw new InvalidFlavorStateException(
           String.format("Create disk using flavor with name: %s is in invalid state %s.",
@@ -499,5 +498,4 @@ public class DiskDcpBackend implements DiskBackend {
     termsBuilder.put("flavorId", flavorId);
     return dcpClient.queryDocuments(DiskService.State.class, termsBuilder.build());
   }
-
 }
