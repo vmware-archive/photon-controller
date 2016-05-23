@@ -100,13 +100,28 @@ public class VirtualNetworkCreateSpecTest {
     @DataProvider(name = "VirtualNetworkData")
     public Object[][] getVirtualNetworkData() {
       return new Object[][] {
-          {new VirtualNetworkCreateSpecBuilder().name("vn1").build(),
-              "VirtualNetworkCreateSpec{name=vn1, description=null, routingType=null}"},
-          {new VirtualNetworkCreateSpecBuilder().name("vn1").description("desc").build(),
-              "VirtualNetworkCreateSpec{name=vn1, description=desc, routingType=null}"},
-          {new VirtualNetworkCreateSpecBuilder().name("vn1").description("desc")
-              .routingType(RoutingType.ROUTED).build(),
-              "VirtualNetworkCreateSpec{name=vn1, description=desc, routingType=ROUTED}"}
+          { new VirtualNetworkCreateSpecBuilder()
+                  .name("vn1")
+                  .build(),
+            "VirtualNetworkCreateSpec{name=vn1, description=null, routingType=null, isDefault=null}"},
+          { new VirtualNetworkCreateSpecBuilder()
+                  .name("vn1")
+                  .description("desc")
+                  .build(),
+            "VirtualNetworkCreateSpec{name=vn1, description=desc, routingType=null, isDefault=null}"},
+          { new VirtualNetworkCreateSpecBuilder()
+                  .name("vn1")
+                  .description("desc")
+                  .routingType(RoutingType.ROUTED)
+                  .build(),
+            "VirtualNetworkCreateSpec{name=vn1, description=desc, routingType=ROUTED, isDefault=null}"},
+          { new VirtualNetworkCreateSpecBuilder()
+                  .name("vn1")
+                  .description("desc")
+                  .routingType(RoutingType.ROUTED)
+                  .isDefault(true)
+                  .build(),
+            "VirtualNetworkCreateSpec{name=vn1, description=desc, routingType=ROUTED, isDefault=true}"}
       };
     }
   }
@@ -122,6 +137,7 @@ public class VirtualNetworkCreateSpecTest {
           .name("vn1")
           .description("desc")
           .routingType(RoutingType.ROUTED)
+          .isDefault(true)
           .build();
       String json = JsonHelpers.jsonFixture("fixtures/virtual-network-create-spec.json");
 

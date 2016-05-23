@@ -130,6 +130,11 @@ public class VirtualNetworkService extends StatefulService {
     public String parentKind;
 
     /**
+     * Indicates whether this network is the default one, confined in the level of its parentId.
+     */
+    public Boolean isDefault;
+
+    /**
      * Whether this network is isolated or connected to outside.
      */
     @NotNull

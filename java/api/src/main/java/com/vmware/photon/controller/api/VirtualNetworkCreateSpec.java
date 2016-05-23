@@ -47,6 +47,10 @@ public class VirtualNetworkCreateSpec implements Named {
   @NotNull
   private RoutingType routingType;
 
+  @JsonProperty
+  @ApiModelProperty(value = "Indicates whether the network is default", required = false)
+  private Boolean isDefault;
+
   public String getName() {
     return name;
   }
@@ -71,6 +75,14 @@ public class VirtualNetworkCreateSpec implements Named {
     this.routingType = routingType;
   }
 
+  public Boolean getIsDefault() {
+    return isDefault;
+  }
+
+  public void setIsDefault(Boolean isDefault) {
+    this.isDefault = isDefault;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -84,12 +96,18 @@ public class VirtualNetworkCreateSpec implements Named {
     VirtualNetworkCreateSpec other = (VirtualNetworkCreateSpec) o;
     return Objects.equals(this.name, other.name)
         && Objects.equals(this.description, other.description)
-        && Objects.equals(this.routingType, other.routingType);
+        && Objects.equals(this.routingType, other.routingType)
+        && Objects.equals(this.isDefault, other.isDefault);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode(), this.name, this.description, this.routingType);
+    return Objects.hash(
+        super.hashCode(),
+        this.name,
+        this.description,
+        this.routingType,
+        this.isDefault);
   }
 
   @Override
@@ -98,6 +116,7 @@ public class VirtualNetworkCreateSpec implements Named {
         .add("name", name)
         .add("description", description)
         .add("routingType", routingType)
+        .add("isDefault", isDefault)
         .toString();
   }
 }

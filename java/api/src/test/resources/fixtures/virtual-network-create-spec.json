@@ -1,5 +1,6 @@
 {
     "name": "vn1",
     "description": "desc",
-    "routingType": "ROUTED"
+    "routingType": "ROUTED",
+    "isDefault": true
 }

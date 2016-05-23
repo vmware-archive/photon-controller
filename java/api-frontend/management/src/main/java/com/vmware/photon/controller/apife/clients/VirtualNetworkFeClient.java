@@ -67,6 +67,7 @@ public class VirtualNetworkFeClient {
     CreateVirtualNetworkWorkflowDocument startState = new CreateVirtualNetworkWorkflowDocument();
     startState.parentId = parentId;
     startState.parentKind = parentKind;
+    startState.isDefault = spec.getIsDefault();
     startState.name = spec.getName();
     startState.description = spec.getDescription();
     startState.routingType = spec.getRoutingType();

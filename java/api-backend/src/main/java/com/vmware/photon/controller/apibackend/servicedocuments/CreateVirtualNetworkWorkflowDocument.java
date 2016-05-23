@@ -70,6 +70,11 @@ public class CreateVirtualNetworkWorkflowDocument extends ServiceDocument{
   public String parentKind;
 
   /**
+   * Indicates whether this network is the default one, confined in the level of its parentId.
+   */
+  public Boolean isDefault;
+
+  /**
    * The name of the logical network.
    */
   @NotBlank
@@ -145,6 +150,7 @@ public class CreateVirtualNetworkWorkflowDocument extends ServiceDocument{
         .add("subStage", taskState.subStage)
         .add("parentId", parentId)
         .add("parentKind", parentKind)
+        .add("isDefault", isDefault)
         .add("name", name)
         .add("description", description)
         .add("routingType", routingType)

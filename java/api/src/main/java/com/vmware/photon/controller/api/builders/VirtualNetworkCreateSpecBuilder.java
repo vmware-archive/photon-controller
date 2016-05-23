@@ -20,31 +20,33 @@ import com.vmware.photon.controller.api.VirtualNetworkCreateSpec;
  * Builder class for {@link com.vmware.photon.controller.api.VirtualNetworkCreateSpec}.
  */
 public class VirtualNetworkCreateSpecBuilder {
-  private String name;
-  private String description;
-  private RoutingType routingType;
+  private VirtualNetworkCreateSpec virtualNetworkCreateSpec;
+
+  public VirtualNetworkCreateSpecBuilder() {
+    virtualNetworkCreateSpec = new VirtualNetworkCreateSpec();
+  }
 
   public VirtualNetworkCreateSpecBuilder name(String name) {
-    this.name = name;
+    virtualNetworkCreateSpec.setName(name);
     return this;
   }
 
   public VirtualNetworkCreateSpecBuilder description(String description) {
-    this.description = description;
+    virtualNetworkCreateSpec.setDescription(description);
     return this;
   }
 
   public VirtualNetworkCreateSpecBuilder routingType(RoutingType routingType) {
-    this.routingType = routingType;
+    virtualNetworkCreateSpec.setRoutingType(routingType);
+    return this;
+  }
+
+  public VirtualNetworkCreateSpecBuilder isDefault(Boolean isDefault) {
+    virtualNetworkCreateSpec.setIsDefault(isDefault);
     return this;
   }
 
   public VirtualNetworkCreateSpec build() {
-    VirtualNetworkCreateSpec virtualNetworkCreateSpec = new VirtualNetworkCreateSpec();
-    virtualNetworkCreateSpec.setName(name);
-    virtualNetworkCreateSpec.setDescription(description);
-    virtualNetworkCreateSpec.setRoutingType(routingType);
-
     return virtualNetworkCreateSpec;
   }
 }
