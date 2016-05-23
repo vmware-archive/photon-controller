@@ -36,7 +36,6 @@ import com.vmware.xenon.common.StatefulService;
 import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
-import com.vmware.xenon.services.common.LuceneQueryTaskFactoryService;
 import com.vmware.xenon.services.common.QueryTask;
 
 import java.net.URI;
@@ -213,7 +212,7 @@ public class AvailabilityZoneCleanerService extends StatefulService {
     };
 
     Operation queryPost = Operation
-        .createPost(UriUtils.buildUri(getHost(), LuceneQueryTaskFactoryService.SELF_LINK))
+        .createPost(UriUtils.buildUri(getHost(), ServiceUriPaths.CORE_QUERY_TASKS))
         .setBody(buildAvailabilityZoneQuery(state))
         .setCompletion(handler);
 
@@ -275,6 +274,7 @@ public class AvailabilityZoneCleanerService extends StatefulService {
 
   /**
    * Create Tombstone entities.
+   *
    * @param availabilityZones
    * @param state
    * @param exceptions
@@ -289,7 +289,7 @@ public class AvailabilityZoneCleanerService extends StatefulService {
       @Override
       public void handle(Map<Long, Operation> ops, Map<Long, Throwable> failures) {
         if (failures != null && !failures.isEmpty()) {
-            exceptions.addAll(failures.values());
+          exceptions.addAll(failures.values());
         }
 
         Collection<String> deleteAvailabilityZones = new LinkedList<>();
@@ -328,6 +328,7 @@ public class AvailabilityZoneCleanerService extends StatefulService {
 
   /**
    * Deletes availability zone entities.
+   *
    * @param availabilityZones
    * @param state
    * @param exceptions

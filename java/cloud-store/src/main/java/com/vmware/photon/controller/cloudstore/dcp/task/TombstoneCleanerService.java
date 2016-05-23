@@ -35,7 +35,6 @@ import com.vmware.xenon.common.StatefulService;
 import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
-import com.vmware.xenon.services.common.LuceneQueryTaskFactoryService;
 import com.vmware.xenon.services.common.NodeGroupBroadcastResponse;
 import com.vmware.xenon.services.common.QueryTask;
 
@@ -222,7 +221,7 @@ public class TombstoneCleanerService extends StatefulService {
     };
 
     Operation queryPost = Operation
-        .createPost(UriUtils.buildUri(getHost(), LuceneQueryTaskFactoryService.SELF_LINK))
+        .createPost(UriUtils.buildUri(getHost(), ServiceUriPaths.CORE_QUERY_TASKS))
         .setBody(buildTombstoneQuery(current))
         .setCompletion(handler);
 

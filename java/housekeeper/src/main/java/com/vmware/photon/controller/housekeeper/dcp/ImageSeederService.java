@@ -30,7 +30,6 @@ import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
-import com.vmware.xenon.services.common.LuceneQueryTaskFactoryService;
 import com.vmware.xenon.services.common.NodeGroupBroadcastResponse;
 import com.vmware.xenon.services.common.QueryTask;
 
@@ -502,7 +501,7 @@ public class ImageSeederService extends StatefulService {
         .setDirect(true);
 
     return Operation
-        .createPost(UriUtils.buildUri(getHost(), LuceneQueryTaskFactoryService.SELF_LINK))
+        .createPost(UriUtils.buildUri(getHost(), ServiceUriPaths.CORE_QUERY_TASKS))
         .setBody(task);
   }
 
