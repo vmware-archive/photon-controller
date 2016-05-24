@@ -533,10 +533,10 @@ public class VmDcpBackendTest {
   }
 
   /**
-   * Tests for creating VMs.
+   * Tests for creating VMs on physical network.
    */
   @Guice(modules = {DcpBackendTestModule.class, TestModule.class})
-  public static class CreateVmTest {
+  public static class CreateVmOnPhysicalNetworkTest {
 
     @Inject
     private BasicServiceHost basicServiceHost;
@@ -603,6 +603,110 @@ public class VmDcpBackendTest {
       assertThat(createdVmTaskEntity.getToBeLockedEntities().size(), is(1));
       assertThat(createdVmTaskEntity.getToBeLockedEntities().get(0).getId(), is(vmId));
       assertThat(createdVmTaskEntity.getToBeLockedEntities().get(0).getKind(), is(Vm.KIND));
+
+      VmEntity vm = vmDcpBackend.findById(vmId);
+      assertThat(vm, is(notNullValue()));
+      assertThat(getUsage("vm.cost"), is(1.0));
+      assertThat(vm.getImageId(), is(imageId));
+
+      assertThat(vm.getAffinities().get(0).getResourceId(), is("disk-id1"));
+      assertThat(vm.getAffinities().get(0).getKind(), is("disk"));
+      assertThat(vm.getAffinities().get(1).getResourceId(), is("disk-id2"));
+      assertThat(vm.getAffinities().get(1).getKind(), is("disk"));
+
+      Set<TagEntity> tags = vm.getTags();
+      assertThat(tags.size(), is(2));
+      TagEntity tag1 = new TagEntity();
+      tag1.setValue("value1");
+      TagEntity tag2 = new TagEntity();
+      tag2.setValue("value2");
+      assertTrue(tags.contains(tag1));
+      assertTrue(tags.contains(tag2));
+
+      assertThat(vmCreateSpec.getNetworks().equals(vm.getNetworks()), is(true));
+    }
+
+    private double getUsage(String key) throws Throwable {
+      ProjectEntity projectEntity = projectDcpBackend.findById(projectId);
+      String resourceTicketId = projectEntity.getResourceTicketId();
+      ResourceTicketEntity resourceTicketEntity = resourceTicketDcpBackend.findById(resourceTicketId);
+      return resourceTicketEntity.getUsage(key).getValue();
+    }
+  }
+
+  /**
+   * Tests for creating VMs on virtual network.
+   */
+  @Guice(modules = {DcpBackendWithVirtualNetworkTestModule.class, TestModule.class})
+  public static class CreateVmOnVirtualNetworkTest {
+
+    @Inject
+    private BasicServiceHost basicServiceHost;
+
+    @Inject
+    private ApiFeXenonRestClient apiFeXenonRestClient;
+
+    @Inject
+    private VmDcpBackend vmDcpBackend;
+
+    @Inject
+    private TenantDcpBackend tenantDcpBackend;
+
+    @Inject
+    private ResourceTicketDcpBackend resourceTicketDcpBackend;
+
+    @Inject
+    private ProjectDcpBackend projectDcpBackend;
+
+    @Inject
+    private FlavorDcpBackend flavorDcpBackend;
+
+    @Inject
+    private NetworkDcpBackend networkDcpBackend;
+
+    @Inject
+    private FlavorLoader flavorLoader;
+
+    @BeforeMethod
+    public void setUp() throws Throwable {
+      commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
+
+      commonDataSetup(
+          tenantDcpBackend,
+          resourceTicketDcpBackend,
+          projectDcpBackend,
+          flavorDcpBackend,
+          flavorLoader);
+
+      commonVmAndImageSetup(vmDcpBackend, networkDcpBackend);
+    }
+
+    @AfterMethod
+    public void tearDown() throws Throwable {
+      commonHostDocumentsCleanup();
+    }
+
+    @AfterClass
+    public static void afterClassCleanup() throws Throwable {
+      commonHostAndClientTeardown();
+    }
+
+    @Test
+    public void testPrepareVmCreate() throws Throwable {
+      String vmId = createdVmTaskEntity.getEntityId();
+      assertThat(createdVmTaskEntity.getSteps().size(), is(3));
+      assertThat(createdVmTaskEntity.getSteps().get(0).getOperation(),
+          is(com.vmware.photon.controller.api.Operation.RESERVE_RESOURCE));
+      assertThat(createdVmTaskEntity.getSteps().get(0).getTransientResourceEntities(ProjectEntity.KIND).size(), is(1));
+      assertThat(createdVmTaskEntity.getSteps().get(0).getTransientResourceEntities(ProjectEntity.KIND).get(0).getId(),
+          is(projectId));
+      assertThat(createdVmTaskEntity.getSteps().get(1).getOperation(),
+          is(com.vmware.photon.controller.api.Operation.CREATE_VM));
+      assertThat(createdVmTaskEntity.getToBeLockedEntities().size(), is(1));
+      assertThat(createdVmTaskEntity.getToBeLockedEntities().get(0).getId(), is(vmId));
+      assertThat(createdVmTaskEntity.getToBeLockedEntities().get(0).getKind(), is(Vm.KIND));
+      assertThat(createdVmTaskEntity.getSteps().get(2).getOperation(),
+          is(com.vmware.photon.controller.api.Operation.CONNECT_VM_SWITCH));
 
       VmEntity vm = vmDcpBackend.findById(vmId);
       assertThat(vm, is(notNullValue()));

@@ -79,6 +79,7 @@ import com.google.common.base.Optional;
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
+import com.google.inject.name.Named;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -115,6 +116,7 @@ public class VmDcpBackend implements VmBackend {
   private final HostBackend hostBackend;
   private final NetworkBackend networkBackend;
   private final TombstoneBackend tombstoneBackend;
+  private final Boolean useVirtualNetwork;
 
   @Inject
   public VmDcpBackend(ApiFeXenonRestClient dcpClient, ResourceTicketBackend resourceTicketBackend,
@@ -126,7 +128,8 @@ public class VmDcpBackend implements VmBackend {
                       FlavorBackend flavorBackend,
                       HostBackend hostBackend,
                       NetworkBackend networkBackend,
-                      TombstoneBackend tombstoneBackend) {
+                      TombstoneBackend tombstoneBackend,
+                      @Named("useVirtualNetwork") Boolean useVirtualNetwork) {
     this.dcpClient = dcpClient;
     dcpClient.start();
 
@@ -140,6 +143,7 @@ public class VmDcpBackend implements VmBackend {
     this.hostBackend = hostBackend;
     this.networkBackend = networkBackend;
     this.tombstoneBackend = tombstoneBackend;
+    this.useVirtualNetwork = useVirtualNetwork;
   }
 
 
@@ -812,6 +816,15 @@ public class VmDcpBackend implements VmBackend {
     stepEntities.add(step);
     step.addResources(entityList);
     step.setOperation(Operation.CREATE_VM);
+
+    // Conditional step. If virtual network is to be used, we need to connect the vm
+    // with the logical switch.
+    if (useVirtualNetwork) {
+      step = new StepEntity();
+      step.setOperation(Operation.CONNECT_VM_SWITCH);
+
+      stepEntities.add(step);
+    }
 
     TaskEntity task = taskBackend.createTaskWithSteps(vm, Operation.CREATE_VM, false, stepEntities);
     task.getToBeLockedEntities().add(vm);
