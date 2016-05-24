@@ -81,6 +81,5 @@ public class KubernetesClusterCreateTaskStatusPoller implements XenonTaskStatusS
 
   @Override
   public void handleDone(TaskState taskState) {
-
   }
 }

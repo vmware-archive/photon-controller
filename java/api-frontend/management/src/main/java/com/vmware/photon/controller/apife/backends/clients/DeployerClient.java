@@ -13,13 +13,18 @@
 
 package com.vmware.photon.controller.apife.backends.clients;
 
+import com.vmware.photon.controller.api.DeploymentState;
+import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
+import com.vmware.photon.controller.apife.entities.DeploymentEntity;
 import com.vmware.photon.controller.apife.entities.HostEntity;
 import com.vmware.photon.controller.apife.exceptions.external.SpecInvalidException;
 import com.vmware.photon.controller.apife.lib.UsageTagHelper;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
+import com.vmware.photon.controller.common.xenon.exceptions.BadRequestException;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
 import com.vmware.photon.controller.deployer.dcp.task.ChangeHostModeTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.ChangeHostModeTaskService;
@@ -30,13 +35,24 @@ import com.vmware.photon.controller.deployer.dcp.workflow.AddCloudHostWorkflowFa
 import com.vmware.photon.controller.deployer.dcp.workflow.AddCloudHostWorkflowService;
 import com.vmware.photon.controller.deployer.dcp.workflow.AddManagementHostWorkflowFactoryService;
 import com.vmware.photon.controller.deployer.dcp.workflow.AddManagementHostWorkflowService;
+import com.vmware.photon.controller.deployer.dcp.workflow.DeploymentWorkflowFactoryService;
+import com.vmware.photon.controller.deployer.dcp.workflow.DeploymentWorkflowService;
 import com.vmware.photon.controller.deployer.dcp.workflow.DeprovisionHostWorkflowFactoryService;
 import com.vmware.photon.controller.deployer.dcp.workflow.DeprovisionHostWorkflowService;
+import com.vmware.photon.controller.deployer.dcp.workflow.FinalizeDeploymentMigrationWorkflowFactoryService;
+import com.vmware.photon.controller.deployer.dcp.workflow.FinalizeDeploymentMigrationWorkflowService;
+import com.vmware.photon.controller.deployer.dcp.workflow.InitializeDeploymentMigrationWorkflowFactoryService;
+import com.vmware.photon.controller.deployer.dcp.workflow.InitializeDeploymentMigrationWorkflowService;
+import com.vmware.photon.controller.deployer.dcp.workflow.RemoveDeploymentWorkflowFactoryService;
+import com.vmware.photon.controller.deployer.dcp.workflow.RemoveDeploymentWorkflowService;
 import com.vmware.photon.controller.host.gen.HostMode;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.ServiceDocumentQueryResult;
 import com.vmware.xenon.common.TaskState;
+import com.vmware.xenon.common.Utils;
 
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
@@ -45,9 +61,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.concurrent.TimeoutException;
 
 /**
  * Deployer Client Facade that exposes deployer functionality via high-level methods,
@@ -195,5 +213,128 @@ public class DeployerClient {
         throws DocumentNotFoundException {
         Operation operation = dcpClient.get(creationTaskLink);
         return operation.getBody(ChangeHostModeTaskService.State.class);
+    }
+
+    public DeploymentWorkflowService.State deploy(DeploymentEntity deploymentEntity, String desiredState)
+        throws ExternalException, InterruptedException {
+        DeploymentState deploymentState = null;
+        if (desiredState != null) {
+            switch (desiredState) {
+                case "READY":
+                    deploymentState = DeploymentState.READY;
+                    break;
+                case "PAUSED":
+                    deploymentState = DeploymentState.PAUSED;
+                    break;
+                case "BACKGROUND_PAUSED":
+                    deploymentState = DeploymentState.BACKGROUND_PAUSED;
+                    break;
+                default:
+                    throw new RuntimeException(String.format("Unexpected desired state for deployment: %s",
+                        desiredState));
+            }
+        }
+
+        if (isDeploymentAlreadyRunning()) {
+            throw new ExternalException("Found running deployment");
+        }
+
+        DeploymentWorkflowService.State state = new DeploymentWorkflowService.State();
+        state.deploymentServiceLink = DeploymentServiceFactory.SELF_LINK + "/" + deploymentEntity.getId();
+        state.desiredState = deploymentState;
+
+        Operation operation = dcpClient.post(
+            DeploymentWorkflowFactoryService.SELF_LINK, state);
+
+        return operation.getBody(DeploymentWorkflowService.State.class);
+    }
+
+    public DeploymentWorkflowService.State getDeploymentStatus(String taskLink)
+        throws DocumentNotFoundException {
+        Operation operation = dcpClient.get(taskLink);
+        return operation.getBody(DeploymentWorkflowService.State.class);
+    }
+
+    public RemoveDeploymentWorkflowService.State removeDeployment(String deploymentId) {
+        RemoveDeploymentWorkflowService.State removeDeploymentState = new RemoveDeploymentWorkflowService.State();
+        removeDeploymentState.deploymentId = deploymentId;
+
+        Operation operation = dcpClient.post(
+            RemoveDeploymentWorkflowFactoryService.SELF_LINK, removeDeploymentState);
+
+        return operation.getBody(RemoveDeploymentWorkflowService.State.class);
+    }
+
+    public RemoveDeploymentWorkflowService.State getRemoveDeploymentStatus(String taskLink)
+        throws DocumentNotFoundException {
+        Operation operation = dcpClient.get(taskLink);
+        return operation.getBody(RemoveDeploymentWorkflowService.State.class);
+    }
+
+    public InitializeDeploymentMigrationWorkflowService.State initializeMigrateDeployment
+        (String sourceLoadbalancerAddress, String destinationDeploymentId) {
+        InitializeDeploymentMigrationWorkflowService.State state = new
+            InitializeDeploymentMigrationWorkflowService.State();
+        state.destinationDeploymentId = destinationDeploymentId;
+        state.sourceLoadBalancerAddress = sourceLoadbalancerAddress;
+
+        Operation operation = dcpClient.post(
+            InitializeDeploymentMigrationWorkflowFactoryService.SELF_LINK, state);
+
+        return operation.getBody(InitializeDeploymentMigrationWorkflowService.State.class);
+    }
+
+    public InitializeDeploymentMigrationWorkflowService.State getInitializeMigrateDeploymentStatus
+        (String taskLink) throws DocumentNotFoundException {
+        Operation operation = dcpClient.get(taskLink);
+        return operation.getBody(InitializeDeploymentMigrationWorkflowService.State.class);
+    }
+
+    public FinalizeDeploymentMigrationWorkflowService.State finalizeMigrateDeployment
+        (String sourceLoadbalancerAddress, String destinationDeploymentId) {
+        InitializeDeploymentMigrationWorkflowService.State state = new
+            InitializeDeploymentMigrationWorkflowService.State();
+        state.destinationDeploymentId = destinationDeploymentId;
+        state.sourceLoadBalancerAddress = sourceLoadbalancerAddress;
+
+        Operation operation = dcpClient.post(
+            FinalizeDeploymentMigrationWorkflowFactoryService.SELF_LINK, state);
+
+        return operation.getBody(FinalizeDeploymentMigrationWorkflowService.State.class);
+    }
+
+    public FinalizeDeploymentMigrationWorkflowService.State getFinalizeMigrateDeploymentStatus
+        (String taskLink) throws DocumentNotFoundException {
+        Operation operation = dcpClient.get(taskLink);
+        return operation.getBody(FinalizeDeploymentMigrationWorkflowService.State.class);
+    }
+
+    public boolean isDeploymentAlreadyRunning() throws ExternalException, InterruptedException {
+        final ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
+        ServiceDocumentQueryResult queryResult = null;
+        try {
+            queryResult = dcpClient.queryDocuments(
+                DeploymentWorkflowService.State.class, termsBuilder.build(), Optional.<Integer>absent(), true, true);
+        } catch (DocumentNotFoundException e) {
+            return false;
+        } catch (BadRequestException be) {
+            throw new ExternalException(be);
+        } catch (TimeoutException te) {
+            throw new ExternalException(te);
+        }
+        List<DeploymentWorkflowService.State> documents = new ArrayList<>();
+        if (queryResult.documentLinks != null) {
+            for (String link : queryResult.documentLinks) {
+                documents.add(Utils.fromJson(queryResult.documents.get(link), DeploymentWorkflowService.State.class));
+            }
+        }
+
+        for (DeploymentWorkflowService.State state : documents) {
+            if (state.taskState.stage.ordinal() <= DeploymentWorkflowService.TaskState.TaskStage.STARTED.ordinal()) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

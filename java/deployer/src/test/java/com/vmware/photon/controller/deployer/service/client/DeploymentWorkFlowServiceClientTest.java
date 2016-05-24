@@ -86,6 +86,7 @@ public class DeploymentWorkFlowServiceClientTest {
       deployerConfig = mock(DeployerConfig.class);
       containerConfig = mock(ContainersConfig.class);
       doReturn(containerConfig).when(deployerConfig).getContainersConfig();
+      doReturn("file1").when(deployerConfig).getManagementImageFile();
       target = new DeploymentWorkFlowServiceClient(deployerConfig, host);
       serviceDocument = new DeploymentWorkflowService.State();
       serviceDocument.documentSelfLink = "self-link";
