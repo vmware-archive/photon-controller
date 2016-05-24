@@ -46,7 +46,7 @@ public class XenonTaskStatusStepCmd extends StepCommand {
   private long pollInterval;
   private long documentNotFoundMaxCount;
   private long documentNotFoundOccurrence;
-  private final String remoteTaskLink;
+  private String remoteTaskLink;
   private final int targetSubStage;
   private final XenonTaskStatusPoller xenonTaskStatusPoller;
 
@@ -75,6 +75,10 @@ public class XenonTaskStatusStepCmd extends StepCommand {
 
     // get remoteTaskLink and recent status past from previous step
     remoteTaskLink = (String) step.getTransientResource(REMOTE_TASK_LINK_RESOURCE_KEY);
+  }
+
+  protected void setRemoteTaskLink(String remoteTaskLink) {
+    this.remoteTaskLink = remoteTaskLink;
   }
 
   @VisibleForTesting

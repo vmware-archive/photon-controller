@@ -14,30 +14,27 @@ package com.vmware.photon.controller.apife.commands.steps;
 
 import com.vmware.photon.controller.apife.backends.DeploymentBackend;
 import com.vmware.photon.controller.apife.backends.StepBackend;
+import com.vmware.photon.controller.apife.backends.clients.DeployerClient;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.DeploymentEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
-import com.vmware.photon.controller.common.clients.DeployerClient;
-import com.vmware.photon.controller.common.clients.exceptions.RpcException;
-import com.vmware.photon.controller.deployer.gen.FinalizeMigrateDeploymentResponse;
-import com.vmware.photon.controller.deployer.gen.FinalizeMigrateDeploymentResult;
-import com.vmware.photon.controller.deployer.gen.FinalizeMigrateDeploymentResultCode;
+import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
+import com.vmware.photon.controller.deployer.dcp.workflow.FinalizeDeploymentMigrationWorkflowFactoryService;
+import com.vmware.photon.controller.deployer.dcp.workflow.FinalizeDeploymentMigrationWorkflowService;
 
 import com.google.common.collect.ImmutableList;
 import org.mockito.InOrder;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-import static org.hamcrest.CoreMatchers.isA;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
-import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 /**
@@ -53,6 +50,12 @@ public class DeploymentFinalizeMigrationStepCmdTest {
   private DeploymentBackend deploymentBackend;
   private DeploymentEntity deploymentEntity;
 
+  private FinalizeDeploymentMigrationWorkflowService.State serviceDocument;
+  private String remoteTaskLink;
+  private TaskEntity taskEntity;
+  private StepEntity currentStep;
+  private StepEntity nextStep;
+
   public void setUpCommon() {
     deploymentEntity = new DeploymentEntity();
     deploymentEntity.setId("deployment");
@@ -64,7 +67,7 @@ public class DeploymentFinalizeMigrationStepCmdTest {
 
     StepEntity step = new StepEntity();
     step.setId("id");
-    step.createOrUpdateTransientResource(DeploymentInitializeMigrationStepCmd.SOURCE_ADDRESS_RESOURCE_KEY,
+    step.createOrUpdateTransientResource(DeploymentFinalizeMigrationStepCmd.SOURCE_ADDRESS_RESOURCE_KEY,
         "address");
     step.addResource(deploymentEntity);
 
@@ -73,7 +76,22 @@ public class DeploymentFinalizeMigrationStepCmdTest {
     when(taskCommand.getTask()).thenReturn(taskEntity);
 
     command = spy(new DeploymentFinalizeMigrationStepCmd(taskCommand, stepBackend, step, deploymentBackend));
-    when(taskCommand.getDeployerClient()).thenReturn(deployerClient);
+    when(taskCommand.getDeployerXenonClient()).thenReturn(deployerClient);
+
+    currentStep = new StepEntity();
+    currentStep.setId("id");
+    nextStep = new StepEntity();
+
+    taskEntity = new TaskEntity();
+    taskEntity.setSteps(ImmutableList.of(currentStep, nextStep));
+    when(taskCommand.getTask()).thenReturn(taskEntity);
+
+    serviceDocument = new FinalizeDeploymentMigrationWorkflowService.State();
+    serviceDocument.taskState = new FinalizeDeploymentMigrationWorkflowService.TaskState();
+    serviceDocument.taskState.stage = FinalizeDeploymentMigrationWorkflowService.TaskState.TaskStage.STARTED;
+    remoteTaskLink = "http://deployer" + FinalizeDeploymentMigrationWorkflowFactoryService.SELF_LINK
+        + "/00000000-0000-0000-0000-000000000001";
+    serviceDocument.documentSelfLink = remoteTaskLink;
   }
 
   /**
@@ -93,33 +111,27 @@ public class DeploymentFinalizeMigrationStepCmdTest {
     }
 
     @Test
-    public void testSuccessfulFinalizeDeploymentMigration() throws Exception {
-      FinalizeMigrateDeploymentResponse response = new FinalizeMigrateDeploymentResponse(
-          new FinalizeMigrateDeploymentResult(FinalizeMigrateDeploymentResultCode.OK));
-      when(deployerClient.finalizeMigrateDeployment("address", deploymentEntity.getId())).thenReturn(response);
-
+    public void testSuccessfulFinalizeDeploymentMigration() throws Throwable {
+      when(deployerClient.finalizeMigrateDeployment(anyString(), anyString())).thenReturn(serviceDocument);
       command.execute();
-      verify(deployerClient).finalizeMigrateDeployment(anyString(), any(String.class));
+
+      deployerClient.getFinalizeMigrateDeploymentStatus(remoteTaskLink);
+      verify(deployerClient, times(1)).finalizeMigrateDeployment(anyString(), anyString());
+      assertEquals(nextStep.getTransientResource(XenonTaskStatusStepCmd.REMOTE_TASK_LINK_RESOURCE_KEY),
+          remoteTaskLink);
       InOrder inOrder = inOrder(deployerClient, deploymentBackend);
-      inOrder.verify(deployerClient).finalizeMigrateDeployment("address", deploymentEntity.getId());
-      verifyNoMoreInteractions(deployerClient, deploymentBackend);
+      inOrder.verify(deployerClient).finalizeMigrateDeployment(anyString(), anyString());
     }
 
-    @Test
-    public void testFailedFinalizeDeploymentMigration() throws Exception {
-      when(deployerClient.finalizeMigrateDeployment("address", deploymentEntity.getId())).thenThrow(
-          new RpcException());
+    @Test(expectedExceptions = DocumentNotFoundException.class)
+    public void testFailedFinalizeDeploymentMigration() throws Throwable {
+      when(deployerClient.finalizeMigrateDeployment(anyString(), anyString())).thenReturn(serviceDocument);
 
-      try {
-        command.execute();
-        fail("should have failed with RpcException.");
-      } catch (RpcException e) {
-        assertThat(e, isA(RpcException.class));
-      }
-
-      InOrder inOrder = inOrder(deployerClient, deploymentBackend);
-      inOrder.verify(deployerClient).finalizeMigrateDeployment("address", deploymentEntity.getId());
-      verifyNoMoreInteractions(deployerClient, deploymentBackend);
+      when(deployerClient.getFinalizeMigrateDeploymentStatus(remoteTaskLink))
+          .thenThrow(new DocumentNotFoundException(null, null));
+      command.execute();
+      deployerClient.getFinalizeMigrateDeploymentStatus(remoteTaskLink);
+      fail("should have failed with DocumentNotFoundException.");
     }
   }
 }

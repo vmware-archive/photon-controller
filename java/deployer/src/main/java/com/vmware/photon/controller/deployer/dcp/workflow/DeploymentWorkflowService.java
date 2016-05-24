@@ -29,10 +29,10 @@ import com.vmware.photon.controller.common.xenon.migration.NoMigrationDuringUpgr
 import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
 import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
-import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.common.xenon.validation.Positive;
 import com.vmware.photon.controller.common.xenon.validation.WriteOnce;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
+import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.dcp.DeployerXenonServiceHost;
 import com.vmware.photon.controller.deployer.dcp.task.AllocateClusterManagerResourcesTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.AllocateClusterManagerResourcesTaskService;
@@ -109,7 +109,6 @@ public class DeploymentWorkflowService extends StatefulService {
     /**
      * This value represents the file name of the management VM image.
      */
-    @NotNull
     @Immutable
     public String managementVmImageFile;
 
@@ -191,6 +190,10 @@ public class DeploymentWorkflowService extends StatefulService {
 
     if (null == startState.desiredState) {
       startState.desiredState = DeploymentState.PAUSED;
+    }
+
+    if (null == startState.managementVmImageFile) {
+      startState.managementVmImageFile =  DeployerConfig.getManagementImageFile();
     }
 
     if (TaskState.TaskStage.CREATED == startState.taskState.stage) {

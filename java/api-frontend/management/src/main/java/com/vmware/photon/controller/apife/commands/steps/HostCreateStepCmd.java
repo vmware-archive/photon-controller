@@ -63,7 +63,6 @@ public class HostCreateStepCmd extends StepCommand {
 
     logger.info("Create host initiated: address={}, link={}",
         hostEntity.getAddress(), serviceDocument.documentSelfLink);
-    hostBackend.updateState(hostEntity, HostState.NOT_PROVISIONED);
   }
 
   @Override

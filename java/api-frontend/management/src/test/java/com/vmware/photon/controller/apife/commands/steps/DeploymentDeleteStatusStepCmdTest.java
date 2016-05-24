@@ -14,29 +14,31 @@
 package com.vmware.photon.controller.apife.commands.steps;
 
 import com.vmware.photon.controller.api.DeploymentState;
-import com.vmware.photon.controller.apife.backends.DeploymentBackend;
+import com.vmware.photon.controller.apife.backends.DeploymentDcpBackend;
 import com.vmware.photon.controller.apife.backends.StepBackend;
+import com.vmware.photon.controller.apife.backends.TaskBackend;
+import com.vmware.photon.controller.apife.backends.clients.DeployerClient;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.DeploymentEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
+import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.exceptions.external.DeleteDeploymentFailedException;
-import com.vmware.photon.controller.common.clients.DeployerClient;
-import com.vmware.photon.controller.common.clients.exceptions.RpcException;
-import com.vmware.photon.controller.common.clients.exceptions.ServiceUnavailableException;
-import com.vmware.photon.controller.deployer.gen.RemoveDeploymentResult;
-import com.vmware.photon.controller.deployer.gen.RemoveDeploymentResultCode;
-import com.vmware.photon.controller.deployer.gen.RemoveDeploymentStatus;
-import com.vmware.photon.controller.deployer.gen.RemoveDeploymentStatusCode;
-import com.vmware.photon.controller.deployer.gen.RemoveDeploymentStatusResponse;
+import com.vmware.photon.controller.deployer.dcp.workflow.DeploymentWorkflowFactoryService;
+import com.vmware.photon.controller.deployer.dcp.workflow.RemoveDeploymentWorkflowService;
+import com.vmware.xenon.common.ServiceErrorResponse;
+import com.vmware.xenon.common.TaskState;
 
+import com.google.common.collect.ImmutableList;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
+import java.util.UUID;
 
 /**
  * Tests {@link DeploymentDeleteStatusStepCmd}.
@@ -48,23 +50,46 @@ public class DeploymentDeleteStatusStepCmdTest {
 
   private StepBackend stepBackend;
   private TaskCommand taskCommand;
-  private DeploymentBackend deploymentBackend;
+  private DeploymentDcpBackend deploymentBackend;
   private DeployerClient deployerClient;
+  private DeploymentDeleteStatusStepCmd.DeploymentDeleteStepPoller poller;
+
+  private RemoveDeploymentWorkflowService.State serviceDocument;
+  private String remoteTaskLink;
+  private TaskEntity taskEntity;
+  private StepEntity currentStep;
+  private TaskBackend taskBackend;
 
   public void setUpCommon() {
     deployerClient = mock(DeployerClient.class);
     taskCommand = mock(TaskCommand.class);
-    when(taskCommand.getDeployerClient()).thenReturn(deployerClient);
+    taskBackend = mock(TaskBackend.class);
+    when(taskCommand.getDeployerXenonClient()).thenReturn(deployerClient);
 
     stepBackend = mock(StepBackend.class);
-    deploymentBackend = mock(DeploymentBackend.class);
+    deploymentBackend = mock(DeploymentDcpBackend.class);
+    when(deploymentBackend.getDeployerClient()).thenReturn(deployerClient);
+    poller = new DeploymentDeleteStatusStepCmd.DeploymentDeleteStepPoller(taskCommand, taskBackend, deploymentBackend);
 
     entity = new DeploymentEntity();
-    entity.setOperationId("opid");
-    StepEntity step = new StepEntity();
-    step.setId("id");
-    step.addResource(entity);
-    command = spy(new DeploymentDeleteStatusStepCmd(taskCommand, stepBackend, step, deploymentBackend));
+
+    currentStep = new StepEntity();
+    currentStep.setId("id");
+    currentStep.addResource(entity);
+    command = spy(new DeploymentDeleteStatusStepCmd(taskCommand, stepBackend, currentStep, poller));
+
+    taskEntity = new TaskEntity();
+    taskEntity.setSteps(ImmutableList.of(currentStep));
+    when(taskCommand.getTask()).thenReturn(taskEntity);
+
+    serviceDocument = new RemoveDeploymentWorkflowService.State();
+    serviceDocument.taskState = new RemoveDeploymentWorkflowService.TaskState();
+    serviceDocument.taskState.stage = RemoveDeploymentWorkflowService.TaskState.TaskStage.STARTED;
+    remoteTaskLink = "http://deployer" + DeploymentWorkflowFactoryService.SELF_LINK
+        + "/00000000-0000-0000-0000-000000000001";
+    serviceDocument.documentSelfLink = remoteTaskLink;
+
+    entity.setOperationId(remoteTaskLink);
   }
 
   /**
@@ -87,87 +112,50 @@ public class DeploymentDeleteStatusStepCmdTest {
 
     @Test
     public void testSuccessfulDeleteDeployment() throws Throwable {
-      configureClient(RemoveDeploymentStatusCode.FINISHED);
+      configureClient(RemoveDeploymentWorkflowService.TaskState.TaskStage.FINISHED);
 
       command.execute();
-      verify(deployerClient).removeDeploymentStatus(entity.getOperationId());
+      verify(deployerClient).getRemoveDeploymentStatus(remoteTaskLink);
       verify(deploymentBackend).updateState(entity, DeploymentState.NOT_DEPLOYED);
     }
 
-    @Test(expectedExceptions = DeleteDeploymentFailedException.class,
-        expectedExceptionsMessageRegExp = "^Delete deployment #opid failed: Remove deployment failed$")
+    @Test
     public void testFailedDeleteDeployment() throws Throwable {
-      configureClient(RemoveDeploymentStatusCode.FAILED);
+      configureClient(RemoveDeploymentWorkflowService.TaskState.TaskStage.FAILED);
+      try {
+        command.execute();
+        fail("Should have failed");
+      } catch (DeleteDeploymentFailedException ex) {
 
-      command.execute();
-      verify(deployerClient).removeDeploymentStatus(entity.getOperationId());
+      }
+      verify(deployerClient).getRemoveDeploymentStatus(remoteTaskLink);
+      verify(deploymentBackend).updateState(entity, DeploymentState.ERROR);
     }
 
-    @Test(expectedExceptions = RuntimeException.class,
-        expectedExceptionsMessageRegExp = "^Timeout waiting for deleting deployment to complete.$")
+    @Test
     public void testTimeoutDeleteDeployment() throws Throwable {
       command.setDeleteDeploymentTimeout(10);
-      configureClient(RemoveDeploymentStatusCode.IN_PROGRESS);
+      configureClient(TaskState.TaskStage.STARTED);
+      try {
+        command.execute();
+        fail("Should have failed");
+      } catch (RuntimeException ex) {
 
-      command.execute();
-      verify(deployerClient).removeDeploymentStatus(entity.getOperationId());
+      }
     }
 
-    @Test(expectedExceptions = ServiceUnavailableException.class,
-        expectedExceptionsMessageRegExp = "^Service sue is unavailable$")
-    public void testServiceUnavailableError() throws Throwable {
-      command.setMaxServiceUnavailableCount(5);
-      when(deployerClient.removeDeploymentStatus(any(String.class))).thenThrow(new ServiceUnavailableException("sue"));
-
-      command.execute();
-      verify(deployerClient).removeDeploymentStatus(entity.getOperationId());
-    }
-
-    @Test(expectedExceptions = RpcException.class, expectedExceptionsMessageRegExp = "^failed to get status$")
-    public void testErrorGettingStatus() throws Exception {
-      when(deployerClient.removeDeploymentStatus(any(String.class)))
-          .thenThrow(new RpcException("failed to get status"));
-
-      command.execute();
-      verify(deployerClient).removeDeploymentStatus(entity.getOperationId());
-    }
-
-    private void configureClient(RemoveDeploymentStatusCode code) throws Throwable {
-      RemoveDeploymentStatus status = new RemoveDeploymentStatus(code);
-      if (code == RemoveDeploymentStatusCode.FAILED) {
-        status.setError("Remove deployment failed");
+    private void configureClient(RemoveDeploymentWorkflowService.TaskState.TaskStage stage) throws Throwable {
+      RemoveDeploymentWorkflowService.State state = new RemoveDeploymentWorkflowService.State();
+      state.taskState = new RemoveDeploymentWorkflowService.TaskState();
+      state.taskState.stage = stage;
+      state.taskState.subStage = RemoveDeploymentWorkflowService.TaskState.SubStage.REMOVE_FROM_API_FE;
+      state.deploymentId = UUID.randomUUID().toString();
+      if (stage == TaskState.TaskStage.FAILED) {
+        state.taskState.failure = new ServiceErrorResponse();
+        state.taskState.failure.message = "Remove deployment failed";
       }
 
-      RemoveDeploymentStatusResponse response = new RemoveDeploymentStatusResponse(
-          new RemoveDeploymentResult(RemoveDeploymentResultCode.OK));
-      response.setStatus(status);
-
-      when(deployerClient.removeDeploymentStatus(any(String.class))).thenReturn(response);
-    }
-  }
-
-  /**
-   * Tests for markAsFailed method.
-   */
-  public class MarkAsFailedTest {
-    @BeforeMethod
-    public void setUp() {
-      setUpCommon();
-    }
-
-    @Test
-    public void testEntityNotSet() throws Throwable {
-      command.markAsFailed(new Throwable());
-      verify(deploymentBackend, never()).updateState(any(DeploymentEntity.class), any(DeploymentState.class));
-    }
-
-    @Test
-    public void testEntitySet() throws Throwable {
-      DeploymentEntity entity = new DeploymentEntity();
-      command.setDeploymentEntity(entity);
-
-      command.markAsFailed(new Throwable());
-      verify(deploymentBackend).updateState(entity, DeploymentState.ERROR);
+      when(deployerClient.getRemoveDeploymentStatus(any(String.class))).thenReturn(state);
     }
   }
 }

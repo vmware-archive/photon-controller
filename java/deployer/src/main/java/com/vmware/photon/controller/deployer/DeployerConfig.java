@@ -94,11 +94,11 @@ public class DeployerConfig {
     return checkNotNull(containersConfig);
   }
 
-  public String getManagementImageFile() {
+  public static String getManagementImageFile() {
     return getImageFile(managementImageFile);
   }
 
-  private String getImageFile(String imageFile) {
+  private static String getImageFile(String imageFile) {
     checkNotNull(imageFile);
     String fileName = null;
     for (String fileEnding : FILE_ENDINGS) {

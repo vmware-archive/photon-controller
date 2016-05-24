@@ -88,10 +88,4 @@ public class HostDeprovisionStepCmd extends StepCommand {
       }
     }
   }
-
-  @Override
-  protected void markAsDone() throws Throwable {
-    super.markAsDone();
-    hostBackend.updateState(hostEntity, HostState.NOT_PROVISIONED);
-  }
 }
