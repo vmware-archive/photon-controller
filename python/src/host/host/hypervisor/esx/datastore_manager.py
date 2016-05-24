@@ -132,40 +132,28 @@ class EsxDatastoreManager(DatastoreManager, UpdateListener):
         return self._hypervisor.system.datastore_info(self._datastore_id_to_name_map[datastore_id])
 
     def _to_thrift_datastore(self, ds):
-        """ From vim.Datastore to gen.resource.ttypes.Datastore
+        """ From VimDatastore to gen.resource.ttypes.Datastore
         """
-        # Ignore this datastore if it has no url
-        if not ds.info.url:
-            self.logger.critical("Ignoring %s because info.url of this datastore is empty" % ds.name)
+        if not ds.id:
             return None
 
-        uuid = ds.info.url.rsplit("/", 1)[1]
-        name = ds.name
-        type = ds.summary.type
         system_tag = None
         tags = []
 
-        if type == "VMFS":
-            # if 'local' property is not available then we fall back to old
-            # way of getting to know local/shared access which was used in API versions before 5.5.
-            if hasattr(ds.info.vmfs, 'local'):
-                shared = not ds.info.vmfs.local
-            else:
-                shared = ds.summary.multipleHostAccess
-
-            if not shared:
+        if ds.type == "VMFS":
+            if ds.local:
                 thrift_type = DatastoreType.LOCAL_VMFS
                 system_tag = LOCAL_VMFS_TAG
             else:
                 thrift_type = DatastoreType.SHARED_VMFS
                 system_tag = SHARED_VMFS_TAG
-        elif type == "NFS":
+        elif ds.type == "NFS":
             thrift_type = DatastoreType.NFS_3
             system_tag = NFS_TAG
-        elif type == "NFSV41":
+        elif ds.type == "NFSV41":
             thrift_type = DatastoreType.NFS_41
             system_tag = NFS_TAG
-        elif type == "vsan":
+        elif ds.type == "vsan":
             thrift_type = DatastoreType.VSAN
             system_tag = VSAN_TAG
         else:
@@ -175,7 +163,7 @@ class EsxDatastoreManager(DatastoreManager, UpdateListener):
         if system_tag:
             tags.append(system_tag)
 
-        return Datastore(uuid, name, thrift_type, frozenset(tags))
+        return Datastore(ds.id, ds.name, thrift_type, frozenset(tags))
 
     def datastores_updated(self):
         """vim client callback for datastore change"""

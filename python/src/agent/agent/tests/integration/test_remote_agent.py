@@ -526,10 +526,9 @@ class TestRemoteAgent(unittest.TestCase, AgentCommonTests):
         datastores = self.vim_client.get_all_datastores()
         image_datastore = [ds for ds in datastores
                            if ds.name == self.get_image_datastore()][0]
-        datastore_id = image_datastore.info.url.rsplit("/", 1)[1]
 
         request = ServiceTicketRequest(service_type=ServiceType.NFC,
-                                       datastore_name=datastore_id)
+                                       datastore_name=image_datastore.id)
         response = self.host_client.get_service_ticket(request)
         assert_that(response.result, is_(ServiceTicketResultCode.OK))
 
@@ -828,7 +827,7 @@ class TestRemoteAgent(unittest.TestCase, AgentCommonTests):
         dest_datastore = None
 
         for ds in host_datastores:
-            if ds.info.url.rsplit("/", 1)[1] != image_datastore.id:
+            if ds.id != image_datastore.id:
                 dest_datastore = ds
                 break
 

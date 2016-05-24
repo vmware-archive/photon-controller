@@ -90,6 +90,22 @@ class AcquireCredentialsException(Exception):
     pass
 
 
+class VimDatastore(object):
+    def __init__(self, datastore):
+        self.name = datastore.name
+        self.capacity = datastore.summary.capacity
+        self.free = datastore.summary.freeSpace
+        self.type = datastore.summary.type
+
+        self.id = None
+        if datastore.info.url:
+            self.id = datastore.info.url.rsplit("/", 1)[1]
+
+        self.local = False
+        if self.type == "VMFS":
+            self.local = datastore.info.vmfs.local
+
+
 def hostd_error_handler(func):
 
     def nested(self, *args, **kwargs):
@@ -336,7 +352,7 @@ class VimClient(HostClient):
         :param datastore: str, datastore name
         :rtype: vim.HostServiceTicket
         """
-        ds = self.get_datastore(datastore)
+        ds = self._find_by_inventory_path(DATASTORE_FOLDER_NAME, datastore)
         if not ds:
             raise DatastoreNotFound('Datastore %s not found' % datastore)
         nfc_service = vim.NfcService('ha-nfc-service', self._si._stub)
@@ -384,14 +400,18 @@ class VimClient(HostClient):
         :type name: str
         :rtype: vim.Datastore
         """
-        return self._find_by_inventory_path(DATASTORE_FOLDER_NAME, name)
+        ds = self._find_by_inventory_path(DATASTORE_FOLDER_NAME, name)
+        return VimDatastore(ds)
 
     @hostd_error_handler
     def get_all_datastores(self):
         """Get all datastores for this host.
         :rtype: list of vim.Datastore
         """
-        return self._find_by_inventory_path(DATASTORE_FOLDER_NAME).childEntity
+        datastores = []
+        for ds in self._find_by_inventory_path(DATASTORE_FOLDER_NAME).childEntity:
+            datastores.append(VimDatastore(ds))
+        return datastores
 
     @hostd_error_handler
     def get_vms(self):
