@@ -55,10 +55,8 @@ class EsxHypervisor(object):
 
     @staticmethod
     def create_host_client(auto_sync=True, errback=None):
-        import imp
         try:
             # check whether attache is installed. If not, find_module will throw ImportError.
-            imp.find_module("attache")
             from host.hypervisor.esx.attache_client import AttacheClient
             return AttacheClient(auto_sync)
         except ImportError:

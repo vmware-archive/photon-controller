@@ -74,14 +74,6 @@ class VmManager(object):
         pass
 
     @abc.abstractmethod
-    def resume_vm(self, vm_id):
-        """Resume VM
-
-        :type vm_id: str
-        """
-        pass
-
-    @abc.abstractmethod
     def delete_vm(self, vm_id, force):
         """Delete a VM. If there are persistent disks attached to the VM, this
         operation will fail with an OperationNotAllowedException exception,

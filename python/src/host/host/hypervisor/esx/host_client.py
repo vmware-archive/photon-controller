@@ -63,6 +63,10 @@ class HostClient(object):
     """ Vm operations
     """
     @abc.abstractmethod
+    def create_vm_spec(self, vm_id, datastore, memoryMB, nCPU, metadata, env):
+        pass
+
+    @abc.abstractmethod
     def create_vm(self, vm_id, create_spec):
         pass
 
@@ -72,10 +76,6 @@ class HostClient(object):
 
     @abc.abstractmethod
     def import_vm(self, spec):
-        pass
-
-    @abc.abstractmethod
-    def get_vms(self):
         pass
 
     @abc.abstractmethod
@@ -107,10 +107,6 @@ class HostClient(object):
         pass
 
     @abc.abstractmethod
-    def resume_vm(self, vm_id):
-        pass
-
-    @abc.abstractmethod
     def attach_disk(self, vm_id, vmdk_file):
         pass
 
@@ -128,6 +124,10 @@ class HostClient(object):
 
     @abc.abstractmethod
     def get_mks_ticket(self, vm_id):
+        pass
+
+    @abc.abstractmethod
+    def get_vm_networks(self, vm_id):
         pass
 
     @abc.abstractmethod
@@ -191,7 +191,7 @@ class HostClient(object):
         pass
 
     @abc.abstractmethod
-    def about(self):
+    def host_version(self):
         pass
 
     @abc.abstractmethod
@@ -222,10 +222,6 @@ class HostClient(object):
     def get_networks(self):
         pass
 
-    @abc.abstractmethod
-    def get_vm_networks(self, vm_id):
-        pass
-
     """ Stats
     """
     @abc.abstractmethod
@@ -234,11 +230,6 @@ class HostClient(object):
 
 
 class VmConfigSpec(object):
-
-    @abc.abstractmethod
-    def init_for_create(self, vm_id, datastore, memory, cpus, metadata=None, env=None):
-        pass
-
     @abc.abstractmethod
     def create_empty_disk(self, disk_id, size_mb):
         pass
