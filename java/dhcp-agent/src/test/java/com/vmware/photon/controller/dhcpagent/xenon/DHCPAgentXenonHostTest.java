@@ -91,6 +91,7 @@ public class DHCPAgentXenonHostTest {
       injector = TestHelper.createInjector(configFilePath, new DnsmasqDriver(
               DHCPAgentXenonHostTest.class.getResource("/dnsmasq.leases").getPath(),
               "/usr/local/bin/dhcp_release",
+              DHCPAgentXenonHostTest.class.getResource("/scripts/release-ip.sh").getPath(),
               DHCPAgentXenonHostTest.class.getResource("/scripts/dhcp-status.sh").getPath()));
     }
 
@@ -137,6 +138,7 @@ public class DHCPAgentXenonHostTest {
       injector = TestHelper.createInjector(configFilePath, new DnsmasqDriver(
               DHCPAgentXenonHostTest.class.getResource("/dnsmasq.leases").getPath(),
               "/usr/local/bin/dhcp_release",
+              DHCPAgentXenonHostTest.class.getResource("/scripts/release-ip.sh").getPath(),
               DHCPAgentXenonHostTest.class.getResource("/scripts/dhcp-status.sh").getPath()));
       host = injector.getInstance(DHCPAgentXenonHost.class);
     }
@@ -185,6 +187,7 @@ public class DHCPAgentXenonHostTest {
       injector = TestHelper.createInjector(configFilePath, new DnsmasqDriver(
               DHCPAgentXenonHostTest.class.getResource("/dnsmasq.leases").getPath(),
               "/usr/local/bin/dhcp_release",
+              DHCPAgentXenonHostTest.class.getResource("/scripts/release-ip.sh").getPath(),
               DHCPAgentXenonHostTest.class.getResource("/scripts/dhcp-status.sh").getPath()));
       host = injector.getInstance(DHCPAgentXenonHost.class);
       host.start();
