@@ -23,6 +23,7 @@ import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
+import com.google.inject.name.Names;
 
 import java.net.InetSocketAddress;
 import java.net.URISyntaxException;
@@ -52,6 +53,12 @@ public class DcpBackendTestModule extends AbstractModule {
     bind(HostBackend.class).to(HostDcpBackend.class);
     bind(DeploymentBackend.class).to(DeploymentDcpBackend.class);
     bind(AvailabilityZoneBackend.class).to(AvailabilityZoneDcpBackend.class);
+
+    customConfigure();
+  }
+
+  protected void customConfigure() {
+    bindConstant().annotatedWith(Names.named("useVirtualNetwork")).to(false);
   }
 
   @Provides
