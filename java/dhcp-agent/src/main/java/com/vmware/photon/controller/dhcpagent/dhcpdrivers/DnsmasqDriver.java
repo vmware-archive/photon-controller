@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.dhcpagent.dhcpdrivers;
 
 import java.io.BufferedReader;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
@@ -21,12 +22,13 @@ import java.io.InputStreamReader;
  * Class implements Driver interface for Dnsmasq DHCP server.
  */
 public class DnsmasqDriver implements DHCPDriver {
+    private String dhcpLeaseFilePath = "/var/lib/misc/dnsmasq.leases";
     private String releaseIPUtilityPath = "/usr/local/bin/dhcp_release";
     private String dhcpStatusPath = "/script/dhcp-status";
 
-    public DnsmasqDriver(String utilityPath,
-                         String dhcpStatusPath) {
-
+    public DnsmasqDriver(String dhcpLeaseFilePath,
+            String utilityPath, String dhcpStatusPath) {
+        this.dhcpLeaseFilePath = dhcpLeaseFilePath;
         this.releaseIPUtilityPath = utilityPath;
         this.dhcpStatusPath = dhcpStatusPath;
     }
@@ -74,5 +76,28 @@ public class DnsmasqDriver implements DHCPDriver {
         } finally {
             return response;
         }
+    }
+
+    public String findIP(String macAddress) throws Throwable {
+        String ipAddress = "";
+
+        try (BufferedReader br = new BufferedReader(new FileReader(dhcpLeaseFilePath))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                String [] leaseInfo = line.split("\\s+");
+                boolean foundMacAddress = false;
+                for (String field : leaseInfo) {
+                    if (foundMacAddress) {
+                        return field;
+                    }
+
+                    if (macAddress.equalsIgnoreCase(field)) {
+                        foundMacAddress = true;
+                    }
+                }
+            }
+        }
+
+        return ipAddress;
     }
 }
