@@ -14,11 +14,14 @@
 package com.vmware.photon.controller.apife.commands.steps;
 
 import com.vmware.photon.controller.api.Host;
+import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.Operation;
 import com.vmware.photon.controller.api.common.exceptions.ApiFeException;
 import com.vmware.photon.controller.apife.backends.HostDcpBackend;
 import com.vmware.photon.controller.apife.backends.TaskBackend;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
+import com.vmware.photon.controller.apife.entities.HostEntity;
+import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.exceptions.external.DuplicateHostException;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidLoginException;
@@ -27,19 +30,35 @@ import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundExce
 import com.vmware.photon.controller.deployer.dcp.task.ValidateHostTaskService;
 import com.vmware.xenon.common.TaskState;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.List;
+
 /**
  * Polls host task status.
  */
-public class HostTaskStatusPoller implements XenonTaskStatusStepCmd.XenonTaskStatusPoller {
+public class HostCreateTaskStatusPoller implements XenonTaskStatusStepCmd.XenonTaskStatusPoller {
+  private static final Logger logger = LoggerFactory.getLogger(HostCreateTaskStatusPoller.class);
+
   private final TaskCommand taskCommand;
   private final HostDcpBackend hostBackend;
   private final TaskBackend taskBackend;
+  private final HostEntity entity;
 
-  public HostTaskStatusPoller(TaskCommand taskCommand, HostDcpBackend hostBackend,
+  public HostCreateTaskStatusPoller(TaskCommand taskCommand, HostDcpBackend hostBackend,
                                     TaskBackend taskBackend) {
     this.taskCommand = taskCommand;
     this.hostBackend = hostBackend;
     this.taskBackend = taskBackend;
+    List<HostEntity> entityList = null;
+    for (StepEntity step : taskCommand.getTask().getSteps()) {
+      entityList = step.getTransientResourceEntities(Host.KIND);
+      if (!entityList.isEmpty()) {
+        break;
+      }
+    }
+    this.entity = entityList.get(0);
   }
 
   @Override
@@ -67,6 +86,11 @@ public class HostTaskStatusPoller implements XenonTaskStatusStepCmd.XenonTaskSta
       default:
         break;
     }
+
+    if (this.entity != null) {
+      logger.info("Host create failed, mark entity {} state as ERROR", this.entity.getId());
+      this.hostBackend.updateState(this.entity, HostState.ERROR);
+    }
   }
 
 
@@ -81,7 +105,10 @@ public class HostTaskStatusPoller implements XenonTaskStatusStepCmd.XenonTaskSta
   }
 
   @Override
-  public void handleDone(TaskState taskState) {
-
+  public void handleDone(TaskState taskState) throws ApiFeException {
+    if (this.entity != null) {
+      logger.info("handleDone for HostCreateTaskPoller Host: {}", entity);
+      hostBackend.updateState(entity, HostState.NOT_PROVISIONED);
+    }
   }
 }
