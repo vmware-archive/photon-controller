@@ -14,17 +14,22 @@
 package com.vmware.photon.controller.apife.commands.steps;
 
 import com.vmware.photon.controller.api.Deployment;
+import com.vmware.photon.controller.api.Operation;
 import com.vmware.photon.controller.api.common.exceptions.ApiFeException;
 import com.vmware.photon.controller.api.common.exceptions.external.TaskNotFoundException;
+import com.vmware.photon.controller.apife.backends.DeploymentDcpBackend;
 import com.vmware.photon.controller.apife.backends.StepBackend;
+import com.vmware.photon.controller.apife.backends.TaskBackend;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.DeploymentEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
+import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.exceptions.external.DeploymentMigrationFailedException;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
-import com.vmware.photon.controller.common.clients.exceptions.ServiceUnavailableException;
-import com.vmware.photon.controller.deployer.gen.FinalizeMigrateDeploymentStatus;
-import com.vmware.photon.controller.deployer.gen.FinalizeMigrateDeploymentStatusResponse;
+import com.vmware.photon.controller.common.xenon.ServiceUtils;
+import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
+import com.vmware.photon.controller.deployer.dcp.workflow.FinalizeDeploymentMigrationWorkflowService;
+import com.vmware.xenon.common.TaskState;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
@@ -37,7 +42,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * StepCommand that monitors the status of upgrade warm-up or finalize migration of a deployment.
  */
-public class DeploymentFinalizeMigrationStatusStepCmd extends StepCommand {
+public class DeploymentFinalizeMigrationStatusStepCmd extends XenonTaskStatusStepCmd {
 
   private static final Logger logger = LoggerFactory.getLogger(DeploymentFinalizeMigrationStatusStepCmd.class);
 
@@ -45,28 +50,12 @@ public class DeploymentFinalizeMigrationStatusStepCmd extends StepCommand {
   private static final long FINALIZE_MIGRATE_DEPLOYMENT_STATUS_POLL_INTERVAL = TimeUnit.SECONDS.toMillis(10);
   private static final long DEFAULT_MAX_SERVICE_UNAVAILABLE_COUNT = 100;
 
-  private DeploymentEntity deploymentEntity;
-  private long operationTimeout;
-  private long statusPollInterval;
-  private long maxServiceUnavailableCount;
-
-  public DeploymentFinalizeMigrationStatusStepCmd(TaskCommand taskCommand, StepBackend stepBackend, StepEntity step) {
-    super(taskCommand, stepBackend, step);
-    this.operationTimeout = DEFAULT_FINALIZE_MIGRATE_DEPLOYMENT_TIMEOUT;
-    this.statusPollInterval = FINALIZE_MIGRATE_DEPLOYMENT_STATUS_POLL_INTERVAL;
-    this.maxServiceUnavailableCount = DEFAULT_MAX_SERVICE_UNAVAILABLE_COUNT;
-  }
-
-  @Override
-  protected void execute() throws ApiFeException, RpcException, InterruptedException {
-    // get the deploymentEntity
-    List<DeploymentEntity> deploymentEntityList =
-        step.getTransientResourceEntities(Deployment.KIND);
-    Preconditions.checkArgument(deploymentEntityList.size() == 1);
-    deploymentEntity = deploymentEntityList.get(0);
-
-    // check status for finalize deployment
-    pollFinalizeDeploymentMigration(deploymentEntity.getOperationId());
+  public DeploymentFinalizeMigrationStatusStepCmd(TaskCommand taskCommand, StepBackend stepBackend, StepEntity step,
+                                                  XenonTaskStatusPoller xenonTaskStatusPoller) {
+    super(taskCommand, stepBackend, step, xenonTaskStatusPoller);
+    this.setOperationTimeout(DEFAULT_FINALIZE_MIGRATE_DEPLOYMENT_TIMEOUT);
+    this.setPollInterval(FINALIZE_MIGRATE_DEPLOYMENT_STATUS_POLL_INTERVAL);
+    this.setMaxServiceUnavailableCount(DEFAULT_MAX_SERVICE_UNAVAILABLE_COUNT);
   }
 
   @Override
@@ -79,94 +68,104 @@ public class DeploymentFinalizeMigrationStatusStepCmd extends StepCommand {
   }
 
   @VisibleForTesting
-  protected void setDeploymentEntity(DeploymentEntity deploymentEntity) {
-    this.deploymentEntity = deploymentEntity;
-  }
-
-  @VisibleForTesting
   protected void setOperationTimeout(long timeout) {
-    this.operationTimeout = timeout;
+    super.setTimeout(timeout);
   }
 
   @VisibleForTesting
   protected void setStatusPollInterval(long interval) {
-    this.statusPollInterval = interval;
+    super.setPollInterval(interval);
   }
 
   @VisibleForTesting
   protected void setMaxServiceUnavailableCount(long count) {
-    this.maxServiceUnavailableCount = count;
+    super.setDocumentNotFoundMaxCount(count);
+  }
+
+  @Override
+  protected void execute() throws ApiFeException, RpcException, InterruptedException {
+    // get the entity
+    List<DeploymentEntity> deploymentEntityList =
+        step.getTransientResourceEntities(Deployment.KIND);
+    Preconditions.checkArgument(deploymentEntityList.size() == 1);
+    DeploymentEntity entity = deploymentEntityList.get(0);
+    step.createOrUpdateTransientResource(XenonTaskStatusStepCmd.REMOTE_TASK_LINK_RESOURCE_KEY,
+        entity.getOperationId());
+    setRemoteTaskLink(entity.getOperationId());
+    super.execute();
   }
 
   /**
-   * Polls for status of finalize the deployment migration until there is a status indicating success or failure
-   * or a timeout marker is reached.
-   *
-   * @param operationId
-   * @throws InterruptedException
-   * @throws RpcException
+   * Polls task status.
    */
-  private void pollFinalizeDeploymentMigration(String operationId)
-      throws ApiFeException, InterruptedException, RpcException {
-    long startTime = System.currentTimeMillis();
-    int serviceUnavailableOccurrence = 0;
+  public static class DeploymentFinalizeMigrationStatusStepPoller implements XenonTaskStatusStepCmd
+      .XenonTaskStatusPoller {
+    private final DeploymentDcpBackend deploymentBackend;
 
-    // Check if replication is done.
-    while (true) {
-      FinalizeMigrateDeploymentStatusResponse response = null;
-      try {
-        response = this.taskCommand.getDeployerClient().finalizeMigrateStatus(operationId);
-        if (this.isMigrateDeploymentDone(response.getStatus())) {
-          return;
-        }
+    private DeploymentEntity entity;
+    private TaskCommand taskCommand;
+    private TaskBackend taskBackend;
 
-        serviceUnavailableOccurrence = 0;
-      } catch (ServiceUnavailableException e) {
-        serviceUnavailableOccurrence++;
-        if (serviceUnavailableOccurrence >= this.maxServiceUnavailableCount) {
-          logger.error("checking finalize migrate deployment status failed {}", response);
-          throw e;
+    public DeploymentFinalizeMigrationStatusStepPoller(TaskCommand taskCommand,
+                                      TaskBackend taskBackend,
+                                      DeploymentDcpBackend deploymentBackend) {
+      this.taskCommand = taskCommand;
+      this.deploymentBackend = deploymentBackend;
+      this.taskBackend = taskBackend;
+    }
+
+
+    @Override
+    public int getTargetSubStage(Operation op) {
+      return 0;
+    }
+
+    @Override
+    public TaskState poll(String remoteTaskLink) throws DocumentNotFoundException, ApiFeException {
+      List<DeploymentEntity> deploymentEntityList = null;
+      for (StepEntity step : taskCommand.getTask().getSteps()) {
+        deploymentEntityList = step.getTransientResourceEntities(Deployment.KIND);
+        if (!deploymentEntityList.isEmpty()) {
+          break;
         }
       }
+      this.entity = deploymentEntityList.get(0);
 
-      this.checkReplicationTimeout(startTime);
-      Thread.sleep(this.statusPollInterval);
+      FinalizeDeploymentMigrationWorkflowService.State serviceDocument = deploymentBackend.getDeployerClient()
+          .getFinalizeMigrateDeploymentStatus(remoteTaskLink);
+      if (serviceDocument.taskState.stage == TaskState.TaskStage.FINISHED) {
+        TaskEntity taskEntity = taskCommand.getTask();
+        taskEntity.setEntityId(ServiceUtils.getIDFromDocumentSelfLink(serviceDocument.destinationDeploymentId));
+        taskEntity.setEntityKind(Deployment.KIND);
+        taskBackend.update(taskEntity);
+      } else if (serviceDocument.taskState.stage != TaskState.TaskStage.STARTED){
+        handleTaskFailure(serviceDocument.taskState);
+      }
+      return serviceDocument.taskState;
     }
-  }
 
-  /**
-   * Check if the replication has been taking too long.
-   *
-   * @param startTimeMs
-   * @return
-   */
-  protected void checkReplicationTimeout(long startTimeMs) {
-    if (System.currentTimeMillis() - startTimeMs >= this.operationTimeout) {
-      throw new RuntimeException("Timeout waiting for finalize migrate deployment to complete.");
+    private void handleTaskFailure(TaskState state) throws ApiFeException {
+      if (this.entity != null) {
+        logger.info("Deployment finalize migration failed, mark entity");
+      }
+      throw new DeploymentMigrationFailedException(this.entity == null ? "" : this.entity.getId()
+          , state.failure.message);
     }
-  }
 
-  /**
-   * Determines if the status passed as parameters indicates the finalize migrate deployment is done.
-   *
-   * @param status
-   * @return
-   */
-  private boolean isMigrateDeploymentDone(FinalizeMigrateDeploymentStatus status) throws ApiFeException {
-    switch (status.getCode()) {
-      case IN_PROGRESS:
-        return false;
-
-      case FINISHED:
-        return true;
-
-      case FAILED:
-        logger.error("deployment failed {}", status);
-        throw new DeploymentMigrationFailedException(this.deploymentEntity.getOperationId(), status.getError());
-
-      default:
-        logger.error("unexpected finalize migrate deployment status {}", status);
-        throw new RuntimeException(status.getError());
+    @Override
+    public void handleDone(TaskState taskState) throws ApiFeException {
     }
+
+    @Override
+    public int getSubStage(TaskState taskState) {
+      return ((FinalizeDeploymentMigrationWorkflowService.TaskState) taskState).subStage.ordinal();
+    }
+
+    @VisibleForTesting
+    protected void setEntity(DeploymentEntity entity) {
+      this.entity = entity;
+    }
+
+
   }
 }

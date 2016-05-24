@@ -20,11 +20,15 @@ import com.vmware.photon.controller.api.common.exceptions.ApiFeException;
 import com.vmware.photon.controller.apife.backends.HostDcpBackend;
 import com.vmware.photon.controller.apife.backends.TaskBackend;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
+import com.vmware.photon.controller.apife.entities.HostEntity;
+import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.exceptions.external.HostStateChangeException;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
 import com.vmware.photon.controller.deployer.dcp.task.ChangeHostModeTaskService;
 import com.vmware.xenon.common.TaskState;
+
+import java.util.List;
 
 /**
  * Polls host task status.
@@ -33,6 +37,7 @@ public class HostChangeModeTaskStatusPoller implements XenonTaskStatusStepCmd.Xe
   private final TaskCommand taskCommand;
   private final HostDcpBackend hostBackend;
   private final TaskBackend taskBackend;
+  private HostState targetHostState;
 
   public HostChangeModeTaskStatusPoller(TaskCommand taskCommand, HostDcpBackend hostBackend,
                                         TaskBackend taskBackend) {
@@ -43,8 +48,9 @@ public class HostChangeModeTaskStatusPoller implements XenonTaskStatusStepCmd.Xe
 
   @Override
   public TaskState poll(String remoteTaskLink) throws DocumentNotFoundException, ApiFeException {
-    ChangeHostModeTaskService.State serviceDocument = hostBackend.getDeployerClient()
+    ChangeHostModeTaskService.State serviceDocument = taskCommand.getDeployerXenonClient()
         .getHostChangeModeStatus(remoteTaskLink);
+    setHostState(serviceDocument);
     if (serviceDocument.taskState.stage == TaskState.TaskStage.FINISHED) {
       TaskEntity taskEntity = taskCommand.getTask();
       taskEntity.setEntityKind(Host.KIND);
@@ -55,28 +61,29 @@ public class HostChangeModeTaskStatusPoller implements XenonTaskStatusStepCmd.Xe
     return serviceDocument.taskState;
   }
 
-  private void handleTaskFailure(ChangeHostModeTaskService.State state) throws ApiFeException {
-    HostState hostState;
+  private void setHostState(ChangeHostModeTaskService.State state) {
     switch (state.hostMode) {
       case NORMAL:
-        hostState = HostState.READY;
+        this.targetHostState = HostState.READY;
         break;
       case ENTERING_MAINTENANCE:
-        hostState = HostState.SUSPENDED;
+        this.targetHostState = HostState.SUSPENDED;
         break;
       case MAINTENANCE:
-        hostState = HostState.MAINTENANCE;
+        this.targetHostState = HostState.MAINTENANCE;
         break;
       case DEPROVISIONED:
-        hostState = HostState.NOT_PROVISIONED;
+        this.targetHostState = HostState.NOT_PROVISIONED;
         break;
       default:
-        hostState = HostState.ERROR;
+        this.targetHostState = HostState.ERROR;
         break;
     }
+  }
 
+  private void handleTaskFailure(ChangeHostModeTaskService.State state) throws ApiFeException {
     throw new HostStateChangeException(state.hostServiceLink,
-        hostState, new Exception(state.taskState.failure.message));
+        this.targetHostState, new Exception(state.taskState.failure.message));
   }
 
 
@@ -92,5 +99,16 @@ public class HostChangeModeTaskStatusPoller implements XenonTaskStatusStepCmd.Xe
 
   @Override
   public void handleDone(TaskState taskState) throws ApiFeException {
+    HostEntity hostEntity;
+    List<HostEntity> hostEntityList = null;
+    for (StepEntity step : taskCommand.getTask().getSteps()) {
+      hostEntityList = step.getTransientResourceEntities(Host.KIND);
+      if (!hostEntityList.isEmpty()) {
+        break;
+      }
+    }
+    hostEntity = hostEntityList.get(0);
+
+    hostBackend.updateState(hostEntity, this.targetHostState);
   }
 }

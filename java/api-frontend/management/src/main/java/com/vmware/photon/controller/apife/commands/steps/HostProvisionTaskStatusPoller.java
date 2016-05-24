@@ -28,7 +28,8 @@ import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundExce
 import com.vmware.photon.controller.deployer.dcp.util.Pair;
 import com.vmware.xenon.common.TaskState;
 
-import com.google.common.base.Preconditions;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
@@ -36,9 +37,12 @@ import java.util.List;
  * Polls host task status.
  */
 public class HostProvisionTaskStatusPoller implements XenonTaskStatusStepCmd.XenonTaskStatusPoller {
+  private static final Logger logger = LoggerFactory.getLogger(HostProvisionTaskStatusPoller.class);
+
   private final TaskCommand taskCommand;
   private final HostDcpBackend hostBackend;
   private final TaskBackend taskBackend;
+  private HostEntity hostEntity;
 
   public HostProvisionTaskStatusPoller(TaskCommand taskCommand, HostDcpBackend hostBackend,
                                        TaskBackend taskBackend) {
@@ -49,6 +53,15 @@ public class HostProvisionTaskStatusPoller implements XenonTaskStatusStepCmd.Xen
 
   @Override
   public TaskState poll(String remoteTaskLink) throws DocumentNotFoundException, ApiFeException {
+    List<HostEntity> entityList = null;
+    for (StepEntity step : taskCommand.getTask().getSteps()) {
+      entityList = step.getTransientResourceEntities(Host.KIND);
+      if (!entityList.isEmpty()) {
+        break;
+      }
+    }
+    this.hostEntity = entityList.get(0);
+
     Pair<TaskState, String> pair = hostBackend.getDeployerClient()
         .getHostProvisionStatus(remoteTaskLink);
     TaskState taskState = pair.getFirst();
@@ -64,6 +77,10 @@ public class HostProvisionTaskStatusPoller implements XenonTaskStatusStepCmd.Xen
   }
 
   private void handleTaskFailure(TaskState state) throws ApiFeException {
+    logger.info("Host create failed, mark entity {} state as ERROR", this.hostEntity);
+    if (this.hostEntity != null) {
+      hostBackend.updateState(this.hostEntity, HostState.READY);
+    }
     throw new HostProvisionFailedException(state.toString(), state.failure.message);
   }
 
@@ -79,18 +96,9 @@ public class HostProvisionTaskStatusPoller implements XenonTaskStatusStepCmd.Xen
 
   @Override
   public void handleDone(TaskState taskState) throws ApiFeException {
-    List<HostEntity> hostList = null;
-    for (StepEntity step : taskCommand.getTask().getSteps()) {
-      hostList = step.getTransientResourceEntities(Host.KIND);
-      if (!hostList.isEmpty()) {
-        break;
-      }
+    logger.info("handleDone, mark entity {} state as READY", this.hostEntity);
+    if (this.hostEntity != null) {
+      hostBackend.updateState(this.hostEntity, HostState.READY);
     }
-    if (hostList == null) {
-      return;
-    }
-    Preconditions.checkArgument(hostList.size() == 1);
-    HostEntity hostEntity = hostList.get(0);
-    hostBackend.updateState(hostEntity, HostState.READY);
   }
 }

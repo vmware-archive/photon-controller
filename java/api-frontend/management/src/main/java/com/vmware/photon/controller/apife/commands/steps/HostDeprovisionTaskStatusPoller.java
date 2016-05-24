@@ -14,16 +14,21 @@
 package com.vmware.photon.controller.apife.commands.steps;
 
 import com.vmware.photon.controller.api.Host;
+import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.Operation;
 import com.vmware.photon.controller.api.common.exceptions.ApiFeException;
 import com.vmware.photon.controller.apife.backends.HostDcpBackend;
 import com.vmware.photon.controller.apife.backends.TaskBackend;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
+import com.vmware.photon.controller.apife.entities.HostEntity;
+import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.exceptions.external.HostDeprovisionFailedException;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
 import com.vmware.photon.controller.deployer.dcp.workflow.DeprovisionHostWorkflowService;
 import com.vmware.xenon.common.TaskState;
+
+import java.util.List;
 
 /**
  * Polls host task status.
@@ -32,12 +37,21 @@ public class HostDeprovisionTaskStatusPoller implements XenonTaskStatusStepCmd.X
   private final TaskCommand taskCommand;
   private final HostDcpBackend hostBackend;
   private final TaskBackend taskBackend;
+  private final HostEntity entity;
 
   public HostDeprovisionTaskStatusPoller(TaskCommand taskCommand, HostDcpBackend hostBackend,
                                          TaskBackend taskBackend) {
     this.taskCommand = taskCommand;
     this.hostBackend = hostBackend;
     this.taskBackend = taskBackend;
+    List<HostEntity> hostEntityList = null;
+    for (StepEntity step : taskCommand.getTask().getSteps()) {
+      hostEntityList = step.getTransientResourceEntities(Host.KIND);
+      if (!hostEntityList.isEmpty()) {
+        break;
+      }
+    }
+    this.entity = hostEntityList.get(0);
   }
 
   @Override
@@ -55,6 +69,9 @@ public class HostDeprovisionTaskStatusPoller implements XenonTaskStatusStepCmd.X
   }
 
   private void handleTaskFailure(DeprovisionHostWorkflowService.State state) throws ApiFeException {
+    if (this.entity != null) {
+      this.hostBackend.updateState(this.entity, HostState.ERROR);
+    }
     throw new HostDeprovisionFailedException(state.uniqueId, state.taskState.failure.message);
   }
 
@@ -69,7 +86,9 @@ public class HostDeprovisionTaskStatusPoller implements XenonTaskStatusStepCmd.X
   }
 
   @Override
-  public void handleDone(TaskState taskState) {
-
+  public void handleDone(TaskState taskState) throws ApiFeException {
+    if (this.entity != null) {
+      hostBackend.updateState(this.entity, HostState.NOT_PROVISIONED);
+    }
   }
 }

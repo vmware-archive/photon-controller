@@ -21,13 +21,17 @@ import com.vmware.photon.controller.api.Deployment;
 import com.vmware.photon.controller.api.DeploymentCreateSpec;
 import com.vmware.photon.controller.api.DeploymentDeployOperation;
 import com.vmware.photon.controller.api.DeploymentState;
+import com.vmware.photon.controller.api.Host;
 import com.vmware.photon.controller.api.MigrationStatus;
 import com.vmware.photon.controller.api.NetworkConfiguration;
 import com.vmware.photon.controller.api.Operation;
+import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.StatsInfo;
+import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
+import com.vmware.photon.controller.apife.backends.clients.DeployerClient;
 import com.vmware.photon.controller.apife.commands.steps.DeploymentCreateStepCmd;
 import com.vmware.photon.controller.apife.commands.steps.DeploymentInitializeMigrationStepCmd;
 import com.vmware.photon.controller.apife.entities.DeploymentEntity;
@@ -41,6 +45,7 @@ import com.vmware.photon.controller.apife.exceptions.external.DeploymentAlreadyE
 import com.vmware.photon.controller.apife.exceptions.external.DeploymentNotFoundException;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidAuthConfigException;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidImageDatastoreSetException;
+import com.vmware.photon.controller.apife.exceptions.external.NoManagementHostException;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ClusterConfigurationService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ClusterConfigurationServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
@@ -49,6 +54,8 @@ import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
@@ -75,6 +82,7 @@ public class DeploymentDcpBackend implements DeploymentBackend {
   private final TaskBackend taskBackend;
   private final TenantBackend tenantBackend;
   private final TombstoneBackend tombstoneBackend;
+  private final HostDcpBackend hostBackend;
 
   private final ServiceConfig serviceConfig;
 
@@ -83,7 +91,8 @@ public class DeploymentDcpBackend implements DeploymentBackend {
                               ServiceConfig serviceConfig,
                               TaskBackend taskBackend,
                               TombstoneBackend tombstoneBackend,
-                              TenantBackend tenantBackend) {
+                              TenantBackend tenantBackend,
+                              HostDcpBackend hostBackend) {
     this.dcpClient = dcpClient;
     dcpClient.start();
 
@@ -92,6 +101,11 @@ public class DeploymentDcpBackend implements DeploymentBackend {
     this.taskBackend = taskBackend;
     this.tenantBackend = tenantBackend;
     this.tombstoneBackend = tombstoneBackend;
+    this.hostBackend = hostBackend;
+  }
+
+  public DeployerClient getDeployerClient() {
+    return hostBackend.getDeployerClient();
   }
 
   @Override
@@ -544,6 +558,7 @@ public class DeploymentDcpBackend implements DeploymentBackend {
 
   private TaskEntity createDeployTask(DeploymentEntity deploymentEntity, DeploymentDeployOperation config) throws
       ExternalException {
+    validateDeploy();
     TaskEntity taskEntity = this.taskBackend.createQueuedTask(deploymentEntity, Operation.PERFORM_DEPLOYMENT);
 
     // create the steps
@@ -627,5 +642,21 @@ public class DeploymentDcpBackend implements DeploymentBackend {
 
   private String getClusterConfigurationLink(ClusterType clusterType) {
     return ClusterConfigurationServiceFactory.SELF_LINK + "/" + clusterType.toString().toLowerCase();
+  }
+
+  private void validateDeploy() throws ExternalException {
+    if (isNoManagementHost(Optional.absent())){
+      throw new NoManagementHostException("No management hosts are found for deployment");
+    }
+  }
+
+  @VisibleForTesting
+  public boolean isNoManagementHost(Optional optional) {
+    ResourceList<Host> hostList = null;
+    hostList = this.hostBackend.filterByUsage(UsageTag.MGMT, optional);
+    if (hostList == null || 0 == hostList.getItems().size()){
+      return true;
+    }
+    return false;
   }
 }
