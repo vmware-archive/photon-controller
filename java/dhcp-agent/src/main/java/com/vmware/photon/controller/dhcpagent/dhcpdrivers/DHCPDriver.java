@@ -18,7 +18,7 @@ package com.vmware.photon.controller.dhcpagent.dhcpdrivers;
  */
 public interface DHCPDriver {
 
-    Response releaseIP(String networkInterface, String ipAddress, String macAddress);
+    Response releaseIP(String networkInterface, String macAddress);
 
     /**
      * Class to hold the response for Driver operations.

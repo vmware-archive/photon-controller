@@ -155,8 +155,7 @@ public class ReleaseIPService extends StatefulService {
                         @Override
                         public DHCPDriver.Response call() throws Exception {
                             return ((DHCPAgentXenonHost) getHost()).getDHCPDriver().releaseIP(
-                                    currentState.networkInterface,
-                                    currentState.ipAddress, currentState.macAddress);
+                                    currentState.networkInterface, currentState.macAddress);
                         }
                     });
             ((ListeningExecutorServiceProvider) getHost()).getListeningExecutorService().submit(futureTask);

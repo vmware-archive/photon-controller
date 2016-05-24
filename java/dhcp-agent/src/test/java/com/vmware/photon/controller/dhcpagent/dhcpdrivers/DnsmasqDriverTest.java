@@ -48,6 +48,7 @@ public class DnsmasqDriverTest {
 
         dnsmasqDriver = new DnsmasqDriver(
                 DnsmasqDriverTest.class.getResource("/dnsmasq.leases").getPath(),
+                "/usr/local/bin/dhcp_release",
                 DnsmasqDriverTest.class.getResource("/scripts/release-ip.sh").getPath(),
                 DnsmasqDriverTest.class.getResource("/scripts/dhcp-status.sh").getPath());
     }
@@ -63,7 +64,7 @@ public class DnsmasqDriverTest {
     public void testReleaseIPSuccess() {
         setupDHCPConfig("none");
 
-        DHCPDriver.Response response = dnsmasqDriver.releaseIP("VMLAN", "192.0.0.1", "01:23:45:67:89:ab");
+        DHCPDriver.Response response = dnsmasqDriver.releaseIP("VMLAN", "01:23:45:67:89:ab");
 
         assertThat(response.stdError, isEmptyOrNullString());
         assertThat(response.exitCode, is(0));
@@ -74,7 +75,7 @@ public class DnsmasqDriverTest {
     public void testReleaseIPFailure() {
         setupDHCPConfig("error");
 
-        DHCPDriver.Response response = dnsmasqDriver.releaseIP("VMLAN", "192.0.0.1", "01:23:45:67:89:ab");
+        DHCPDriver.Response response = dnsmasqDriver.releaseIP("VMLAN", "01:23:45:67:89:ab");
 
         assertThat(response.exitCode, is(113));
         assertThat(response.stdError, is("error"));
@@ -121,6 +122,7 @@ public class DnsmasqDriverTest {
     public void testFindIPFailureWithLeaseFileNotFound() {
         try {
             DnsmasqDriver newDnsmasqDriver = new DnsmasqDriver("/var/lib/misc/dnsmasq.leases",
+                    "/usr/local/bin/dhcp_release",
                     DnsmasqDriverTest.class.getResource("/scripts/release-ip.sh").getPath(),
                     DnsmasqDriverTest.class.getResource("/scripts/dhcp-status.sh").getPath());
 

@@ -270,6 +270,7 @@ public class ReleaseIPServiceTest {
             }
 
             dnsmasqDriver = new DnsmasqDriver(ReleaseIPServiceTest.class.getResource("/dnsmasq.leases").getPath(),
+                    "/usr/local/bin/dhcp_release",
                     ReleaseIPServiceTest.class.getResource("/scripts/release-ip.sh").getPath(),
                     ReleaseIPServiceTest.class.getResource("/scripts/dhcp-status.sh").getPath());
         }
