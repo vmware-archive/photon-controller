@@ -14,11 +14,14 @@
 package com.vmware.photon.controller.apife.commands.steps;
 
 import com.vmware.photon.controller.api.Host;
+import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.Operation;
 import com.vmware.photon.controller.api.common.exceptions.ApiFeException;
 import com.vmware.photon.controller.apife.backends.HostDcpBackend;
 import com.vmware.photon.controller.apife.backends.TaskBackend;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
+import com.vmware.photon.controller.apife.entities.HostEntity;
+import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.exceptions.external.DuplicateHostException;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidLoginException;
@@ -27,15 +30,17 @@ import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundExce
 import com.vmware.photon.controller.deployer.dcp.task.ValidateHostTaskService;
 import com.vmware.xenon.common.TaskState;
 
+import java.util.List;
+
 /**
  * Polls host task status.
  */
-public class HostTaskStatusPoller implements XenonTaskStatusStepCmd.XenonTaskStatusPoller {
+public class HostCreateTaskStatusPoller implements XenonTaskStatusStepCmd.XenonTaskStatusPoller {
   private final TaskCommand taskCommand;
   private final HostDcpBackend hostBackend;
   private final TaskBackend taskBackend;
 
-  public HostTaskStatusPoller(TaskCommand taskCommand, HostDcpBackend hostBackend,
+  public HostCreateTaskStatusPoller(TaskCommand taskCommand, HostDcpBackend hostBackend,
                                     TaskBackend taskBackend) {
     this.taskCommand = taskCommand;
     this.hostBackend = hostBackend;
@@ -81,7 +86,17 @@ public class HostTaskStatusPoller implements XenonTaskStatusStepCmd.XenonTaskSta
   }
 
   @Override
-  public void handleDone(TaskState taskState) {
+  public void handleDone(TaskState taskState) throws ApiFeException {
+    HostEntity hostEntity;
+    List<HostEntity> hostEntityList = null;
+    for (StepEntity step : taskCommand.getTask().getSteps()) {
+      hostEntityList = step.getTransientResourceEntities(Host.KIND);
+      if (!hostEntityList.isEmpty()) {
+        break;
+      }
+    }
+    hostEntity = hostEntityList.get(0);
 
+    hostBackend.updateState(hostEntity, HostState.NOT_PROVISIONED);
   }
 }

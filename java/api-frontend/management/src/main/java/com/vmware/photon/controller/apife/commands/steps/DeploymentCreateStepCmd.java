@@ -22,11 +22,8 @@ import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.DeploymentEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.exceptions.external.DeploymentNotFoundException;
-import com.vmware.photon.controller.apife.exceptions.external.InvalidAuthConfigException;
-import com.vmware.photon.controller.apife.exceptions.external.NoManagementHostException;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
-import com.vmware.photon.controller.deployer.gen.DeployResponse;
-import com.vmware.photon.controller.deployer.gen.Deployment;
+import com.vmware.photon.controller.deployer.dcp.workflow.DeploymentWorkflowService;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
@@ -61,18 +58,12 @@ public class DeploymentCreateStepCmd extends StepCommand {
 
     // build the deployment object
     this.entity = deploymentEntityList.get(0);
-    Deployment deployment = buildDeployment(this.entity);
 
     // call deployer
-    try {
-      String desiredState = (String) step.getTransientResource(DEPLOYMENT_DESIRED_STATE_RESOURCE_KEY);
-      DeployResponse response = taskCommand.getDeployerClient().deploy(deployment, desiredState);
-      this.entity.setOperationId(response.getOperation_id());
-    } catch (com.vmware.photon.controller.common.clients.exceptions.NoManagementHostException e) {
-      throw new NoManagementHostException(deployment.getId());
-    } catch (com.vmware.photon.controller.common.clients.exceptions.InvalidAuthConfigException e) {
-      throw new InvalidAuthConfigException(e.getMessage());
-    }
+    String desiredState = (String) step.getTransientResource(DEPLOYMENT_DESIRED_STATE_RESOURCE_KEY);
+    DeploymentWorkflowService.State serviceDocument = taskCommand.getDeployerXenonClient().deploy(this.entity,
+        desiredState);
+    this.entity.setOperationId(serviceDocument.documentSelfLink);
   }
 
   @Override
@@ -96,24 +87,5 @@ public class DeploymentCreateStepCmd extends StepCommand {
   @VisibleForTesting
   protected void setEntity(DeploymentEntity entity) {
     this.entity = entity;
-  }
-
-  private Deployment buildDeployment(DeploymentEntity entity) {
-    Deployment deployment = new Deployment();
-    deployment.setId(entity.getId());
-    if (entity.getImageDatastores() != null && !entity.getImageDatastores().isEmpty()) {
-      deployment.setImageDatastore(entity.getImageDatastores().iterator().next());
-    }
-    deployment.setUseImageDatastoreForVms(entity.getUseImageDatastoreForVms());
-    deployment.setNtpEndpoint(entity.getNtpEndpoint());
-    deployment.setSyslogEndpoint(entity.getSyslogEndpoint());
-    deployment.setAuthEnabled(entity.getAuthEnabled());
-    deployment.setOauthEndpoint(entity.getOauthEndpoint());
-    deployment.setOauthTenant(entity.getOauthTenant());
-    deployment.setOauthUsername(entity.getOauthUsername());
-    deployment.setOauthPassword(entity.getOauthPassword());
-    deployment.setLoadBalancerEnabled(entity.getLoadBalancerEnabled());
-
-    return deployment;
   }
 }

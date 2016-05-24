@@ -15,7 +15,7 @@ package com.vmware.photon.controller.apife.commands.steps;
 
 import com.vmware.photon.controller.apife.backends.AttachedDiskBackend;
 import com.vmware.photon.controller.apife.backends.ClusterBackend;
-import com.vmware.photon.controller.apife.backends.DeploymentBackend;
+import com.vmware.photon.controller.apife.backends.DeploymentDcpBackend;
 import com.vmware.photon.controller.apife.backends.DiskBackend;
 import com.vmware.photon.controller.apife.backends.EntityLockBackend;
 import com.vmware.photon.controller.apife.backends.FlavorBackend;
@@ -53,7 +53,7 @@ public class StepCommandFactory {
   private final AttachedDiskBackend attachedDiskBackend;
   private final ImageBackend imageBackend;
   private final TaskBackend taskBackend;
-  private final DeploymentBackend deploymentBackend;
+  private final DeploymentDcpBackend deploymentBackend;
   private final HostDcpBackend hostBackend;
   private final ImageConfig imageConfig;
   private final ImageStoreFactory imageStoreFactory;
@@ -74,7 +74,7 @@ public class StepCommandFactory {
                             AttachedDiskBackend attachedDiskBackend,
                             ImageBackend imageBackend,
                             TaskBackend taskBackend,
-                            DeploymentBackend deploymentBackend,
+                            DeploymentDcpBackend deploymentBackend,
                             HostDcpBackend hostBackend,
                             ImageConfig imageConfig,
                             ImageStoreFactory imageStoreFactory,
@@ -173,7 +173,7 @@ public class StepCommandFactory {
             new HostChangeModeTaskStatusPoller(taskCommand, hostBackend, taskBackend));
       case QUERY_HOST_TASK_RESULT:
         return new XenonTaskStatusStepCmd(taskCommand, stepBackend, stepEntity,
-            new HostTaskStatusPoller(taskCommand, hostBackend, taskBackend));
+            new HostCreateTaskStatusPoller(taskCommand, hostBackend, taskBackend));
       case ENTER_MAINTENANCE_MODE:
         return new HostEnterMaintenanceModeStepCmd(taskCommand, stepBackend, stepEntity, hostBackend, vmBackend);
       case EXIT_MAINTENANCE_MODE:
@@ -185,21 +185,27 @@ public class StepCommandFactory {
       case SCHEDULE_INITIALIZE_MIGRATE_DEPLOYMENT:
         return new DeploymentInitializeMigrationStepCmd(taskCommand, stepBackend, stepEntity, deploymentBackend);
       case PERFORM_INITIALIZE_MIGRATE_DEPLOYMENT:
-        return new DeploymentInitializeMigrationStatusStepCmd(taskCommand, stepBackend, stepEntity);
+        return new DeploymentInitializeMigrationStatusStepCmd(taskCommand, stepBackend, stepEntity,
+            new DeploymentInitializeMigrationStatusStepCmd.DeploymentInitializeMigrationStatusStepPoller(taskCommand,
+             taskBackend, deploymentBackend));
       case SCHEDULE_FINALIZE_MIGRATE_DEPLOYMENT:
         return new DeploymentFinalizeMigrationStepCmd(taskCommand, stepBackend, stepEntity, deploymentBackend);
       case PERFORM_FINALIZE_MIGRATE_DEPLOYMENT:
-        return new DeploymentFinalizeMigrationStatusStepCmd(taskCommand, stepBackend, stepEntity);
+        return new DeploymentFinalizeMigrationStatusStepCmd(taskCommand, stepBackend, stepEntity,
+            new DeploymentFinalizeMigrationStatusStepCmd.DeploymentFinalizeMigrationStatusStepPoller(taskCommand,
+                taskBackend, deploymentBackend));
       case PROVISION_CONTROL_PLANE_HOSTS:
       case PROVISION_CONTROL_PLANE_VMS:
       case PROVISION_CLOUD_HOSTS:
       case PROVISION_CLUSTER_MANAGER:
       case MIGRATE_DEPLOYMENT_DATA:
-        return new DeploymentStatusStepCmd(taskCommand, stepBackend, stepEntity, deploymentBackend);
+        return new DeploymentStatusStepCmd(taskCommand, stepBackend, stepEntity,
+            new DeploymentStatusStepCmd.DeploymentStatusStepPoller(taskCommand, taskBackend, deploymentBackend));
       case SCHEDULE_DELETE_DEPLOYMENT:
         return new DeploymentDeleteStepCmd(taskCommand, stepBackend, stepEntity, deploymentBackend);
       case PERFORM_DELETE_DEPLOYMENT:
-        return new DeploymentDeleteStatusStepCmd(taskCommand, stepBackend, stepEntity, deploymentBackend);
+        return new DeploymentDeleteStatusStepCmd(taskCommand, stepBackend, stepEntity,
+            new DeploymentDeleteStatusStepCmd.DeploymentDeleteStepPoller(taskCommand, taskBackend, deploymentBackend));
       case PUSH_DEPLOYMENT_SECURITY_GROUPS:
         return new DeploymentPushSecurityGroupsStepCmd(taskCommand, stepBackend, stepEntity, tenantBackend);
       case CREATE_KUBERNETES_CLUSTER_INITIATE:

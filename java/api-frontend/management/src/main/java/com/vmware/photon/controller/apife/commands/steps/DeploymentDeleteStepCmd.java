@@ -23,7 +23,7 @@ import com.vmware.photon.controller.apife.entities.DeploymentEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.exceptions.external.DeploymentNotFoundException;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
-import com.vmware.photon.controller.deployer.gen.RemoveDeploymentResponse;
+import com.vmware.photon.controller.deployer.dcp.workflow.RemoveDeploymentWorkflowService;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
@@ -55,11 +55,16 @@ public class DeploymentDeleteStepCmd extends StepCommand {
     Preconditions.checkArgument(deploymentEntityList.size() == 1);
 
     deploymentEntity = deploymentEntityList.get(0);
-
     // call deployer
-    RemoveDeploymentResponse response = taskCommand.getDeployerClient().removeDeployment(deploymentEntity.getId());
-
-    deploymentEntity.setOperationId(response.getOperation_id());
+    logger.info("Calling delete deployment  {}", deploymentEntity);
+    RemoveDeploymentWorkflowService.State serviceDocument = taskCommand.getDeployerXenonClient()
+        .removeDeployment(deploymentEntity.getId());
+    // pass remoteTaskId to XenonTaskStatusStepCmd
+    for (StepEntity nextStep : taskCommand.getTask().getSteps()) {
+      nextStep.createOrUpdateTransientResource(XenonTaskStatusStepCmd.REMOTE_TASK_LINK_RESOURCE_KEY,
+          serviceDocument.documentSelfLink);
+    }
+    this.deploymentEntity.setOperationId(serviceDocument.documentSelfLink);
   }
 
   @Override

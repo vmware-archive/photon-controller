@@ -13,17 +13,23 @@
 
 package com.vmware.photon.controller.apife.commands.steps;
 
+import com.vmware.photon.controller.api.Deployment;
 import com.vmware.photon.controller.api.Host;
+import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.Operation;
 import com.vmware.photon.controller.api.common.exceptions.ApiFeException;
 import com.vmware.photon.controller.apife.backends.HostDcpBackend;
 import com.vmware.photon.controller.apife.backends.TaskBackend;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
+import com.vmware.photon.controller.apife.entities.HostEntity;
+import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.exceptions.external.HostDeprovisionFailedException;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
 import com.vmware.photon.controller.deployer.dcp.workflow.DeprovisionHostWorkflowService;
 import com.vmware.xenon.common.TaskState;
+
+import java.util.List;
 
 /**
  * Polls host task status.
@@ -69,7 +75,17 @@ public class HostDeprovisionTaskStatusPoller implements XenonTaskStatusStepCmd.X
   }
 
   @Override
-  public void handleDone(TaskState taskState) {
+  public void handleDone(TaskState taskState) throws ApiFeException {
+    HostEntity hostEntity;
+    List<HostEntity> hostEntityList = null;
+    for (StepEntity step : taskCommand.getTask().getSteps()) {
+      hostEntityList = step.getTransientResourceEntities(Deployment.KIND);
+      if (!hostEntityList.isEmpty()) {
+        break;
+      }
+    }
+    hostEntity = hostEntityList.get(0);
 
+    hostBackend.updateState(hostEntity, HostState.NOT_PROVISIONED);
   }
 }
