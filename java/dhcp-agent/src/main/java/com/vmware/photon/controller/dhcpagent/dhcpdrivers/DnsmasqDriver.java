@@ -23,21 +23,24 @@ import java.io.InputStreamReader;
  */
 public class DnsmasqDriver implements DHCPDriver {
     private String dhcpLeaseFilePath = "/var/lib/misc/dnsmasq.leases";
-    private String releaseIPUtilityPath = "/usr/local/bin/dhcp_release";
-    private String dhcpStatusPath = "/script/dhcp-status";
+    private String dhcpReleaseUtilityPath = "/usr/local/bin/dhcp_release";
+    private String releaseIPPath = "/script/release-ip.sh";
+    private String dhcpStatusPath = "/script/dhcp-status.sh";
 
     public DnsmasqDriver(String dhcpLeaseFilePath,
-            String utilityPath, String dhcpStatusPath) {
+            String dhcpReleaseUtilityPath, String releaseIPPath, String dhcpStatusPath) {
         this.dhcpLeaseFilePath = dhcpLeaseFilePath;
-        this.releaseIPUtilityPath = utilityPath;
+        this.dhcpReleaseUtilityPath = dhcpReleaseUtilityPath;
+        this.releaseIPPath = releaseIPPath;
         this.dhcpStatusPath = dhcpStatusPath;
     }
 
-    public Response releaseIP(String networkInterface, String ipAddress, String macAddress) {
+    public Response releaseIP(String networkInterface, String macAddress) {
         Response response = new Response();
 
         try {
-            String command = String.format("%s %s %s %s", releaseIPUtilityPath, networkInterface,
+            String ipAddress = findIP(macAddress);
+            String command = String.format("%s %s %s %s %s", releaseIPPath, dhcpReleaseUtilityPath, networkInterface,
                     ipAddress, macAddress);
             Process p = Runtime.getRuntime().exec(command);
             int exitVal = p.waitFor();
@@ -53,7 +56,7 @@ public class DnsmasqDriver implements DHCPDriver {
                    response.stdError += s;
                }
             }
-        } catch (IOException e) {
+        } catch (Exception e) {
             response.exitCode = -1;
             response.stdError = e.toString();
         } finally {
