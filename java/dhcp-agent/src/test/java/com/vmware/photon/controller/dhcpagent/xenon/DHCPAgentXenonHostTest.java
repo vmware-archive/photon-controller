@@ -88,7 +88,9 @@ public class DHCPAgentXenonHostTest {
 
     @BeforeMethod
     public void setUp() throws Exception {
-      injector = TestHelper.createInjector(configFilePath, new DnsmasqDriver("/usr/local/bin/dhcp_release",
+      injector = TestHelper.createInjector(configFilePath, new DnsmasqDriver(
+              DHCPAgentXenonHostTest.class.getResource("/dnsmasq.leases").getPath(),
+              "/usr/local/bin/dhcp_release",
               DHCPAgentXenonHostTest.class.getResource("/scripts/dhcp-status.sh").getPath()));
     }
 
@@ -132,7 +134,9 @@ public class DHCPAgentXenonHostTest {
   public class StartTest {
     @BeforeMethod
     private void setUp() throws Throwable {
-      injector = TestHelper.createInjector(configFilePath, new DnsmasqDriver("/usr/local/bin/dhcp_release",
+      injector = TestHelper.createInjector(configFilePath, new DnsmasqDriver(
+              DHCPAgentXenonHostTest.class.getResource("/dnsmasq.leases").getPath(),
+              "/usr/local/bin/dhcp_release",
               DHCPAgentXenonHostTest.class.getResource("/scripts/dhcp-status.sh").getPath()));
       host = injector.getInstance(DHCPAgentXenonHost.class);
     }
@@ -178,7 +182,9 @@ public class DHCPAgentXenonHostTest {
 
     @BeforeMethod
     private void setUp() throws Throwable {
-      injector = TestHelper.createInjector(configFilePath, new DnsmasqDriver("/usr/local/bin/dhcp_release",
+      injector = TestHelper.createInjector(configFilePath, new DnsmasqDriver(
+              DHCPAgentXenonHostTest.class.getResource("/dnsmasq.leases").getPath(),
+              "/usr/local/bin/dhcp_release",
               DHCPAgentXenonHostTest.class.getResource("/scripts/dhcp-status.sh").getPath()));
       host = injector.getInstance(DHCPAgentXenonHost.class);
       host.start();

@@ -25,7 +25,8 @@ import java.util.logging.LogManager;
  */
 public class TestHost extends BasicServiceHost {
 
-    private DHCPDriver dhcpDriver = new DnsmasqDriver("/usr/local/bin/dhcp_release",
+    private DHCPDriver dhcpDriver = new DnsmasqDriver(TestHost.class.getResource("/dnsmasq.leases").getPath(),
+            "/usr/local/bin/dhcp_release",
             TestHost.class.getResource("/scripts/dhcp-status.sh").getPath());
 
     public TestHost() {
