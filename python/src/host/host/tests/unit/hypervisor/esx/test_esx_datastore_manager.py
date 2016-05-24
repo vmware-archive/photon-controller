@@ -37,12 +37,12 @@ class TestEsxDatastoreManager(unittest.TestCase):
 
         host_client.get_all_datastores.return_value = self.get_datastore_mock([
             # name, url, type, local
-            ["datastore1", "/vmfs/volumes/id-1", "VMFS", True],
-            ["datastore2", "/vmfs/volumes/id-2", "VMFS", False],
-            ["datastore3", "/vmfs/volumes/id-3", "NFS", None],
-            ["datastore4", "/vmfs/volumes/id-4", "NFSV41", None],
-            ["datastore5", "/vmfs/volumes/id-5", "vsan", None],
-            ["datastore6", "/vmfs/volumes/id-6", "VFFS", None],
+            ["datastore1", "id-1", "VMFS", True],
+            ["datastore2", "id-2", "VMFS", False],
+            ["datastore3", "id-3", "NFS", None],
+            ["datastore4", "id-4", "NFSV41", None],
+            ["datastore5", "id-5", "vsan", None],
+            ["datastore6", "id-6", "VFFS", None],
         ])
 
         hypervisor.host_client = host_client
@@ -99,7 +99,7 @@ class TestEsxDatastoreManager(unittest.TestCase):
 
         host_client.get_all_datastores.return_value = self.get_datastore_mock([
             # name, url, type, local
-            ["datastore1", "/vmfs/volumes/id-1", "VMFS", True],
+            ["datastore1", "id-1", "VMFS", True],
         ])
         hypervisor.host_client = host_client
 
@@ -123,9 +123,9 @@ class TestEsxDatastoreManager(unittest.TestCase):
         """Test that datastore manager works with multiple image datastores."""
         host_client = MagicMock()
         host_client.get_all_datastores.return_value = self.get_datastore_mock([
-            ["datastore1", "/vmfs/volumes/id-1", "VMFS", True],
-            ["datastore2", "/vmfs/volumes/id-2", "VMFS", True],
-            ["datastore3", "/vmfs/volumes/id-3", "VMFS", True],
+            ["datastore1", "id-1", "VMFS", True],
+            ["datastore2", "id-2", "VMFS", True],
+            ["datastore3", "id-3", "VMFS", True],
         ])
         hypervisor = MagicMock()
         hypervisor.host_client = host_client
@@ -148,9 +148,9 @@ class TestEsxDatastoreManager(unittest.TestCase):
         """Test that non-existent datastore get filtered out."""
         host_client = MagicMock()
         host_client.get_all_datastores.return_value = self.get_datastore_mock([
-            ["datastore1", "/vmfs/volumes/id-1", "VMFS", True],
-            ["datastore2", "/vmfs/volumes/id-2", "VMFS", True],
-            ["datastore3", "/vmfs/volumes/id-3", "VMFS", True],
+            ["datastore1", "id-1", "VMFS", True],
+            ["datastore2", "id-2", "VMFS", True],
+            ["datastore3", "id-3", "VMFS", True],
         ])
         hypervisor = MagicMock()
         hypervisor.host_client = host_client
@@ -176,7 +176,7 @@ class TestEsxDatastoreManager(unittest.TestCase):
         host_client.get_all_datastores.return_value = self.get_datastore_mock([
             ["datastore1", "", "VMFS", True],
             ["datastore2", None, "VMFS", True],
-            ["datastore3", "/vmfs/volumes/id-3", "VMFS", True],
+            ["datastore3", "id-3", "VMFS", True],
             ])
         hypervisor = MagicMock()
         hypervisor.host_client = host_client
@@ -184,15 +184,15 @@ class TestEsxDatastoreManager(unittest.TestCase):
         ds_list = ["datastore1", "datastore2", "datastore3"]
         image_ds = [{"name": "datastore3", "used_for_vms": True}]
         manager = EsxDatastoreManager(hypervisor, ds_list, image_ds)
-        assert_that(manager.get_datastore_ids(), contains_inanyorder("id-3"))
+        assert_that(manager.get_datastore_ids(), contains("id-3"))
 
     def get_datastore_mock(self, datastores):
         result = []
         for datastore in datastores:
             mock = MagicMock()
             mock.name = datastore[0]
-            mock.info.url = datastore[1]
-            mock.summary.type = datastore[2]
-            mock.info.vmfs.local = datastore[3]
+            mock.id = datastore[1]
+            mock.type = datastore[2]
+            mock.local = datastore[3]
             result.append(mock)
         return result
