@@ -63,21 +63,19 @@ public class HostCreateStepCmd extends StepCommand {
 
     logger.info("Create host initiated: address={}, link={}",
         hostEntity.getAddress(), serviceDocument.documentSelfLink);
-    hostBackend.updateState(hostEntity, HostState.NOT_PROVISIONED);
   }
 
   @Override
   protected void markAsFailed(Throwable t) throws TaskNotFoundException {
-    super.markAsFailed(t);
-
+    logger.info("Host create failed, mark entity {} state as ERROR", this.hostEntity);
     if (this.hostEntity != null) {
-      logger.info("Host create failed, mark entity {} state as ERROR", this.hostEntity.getId());
       try {
         this.hostBackend.updateState(this.hostEntity, HostState.ERROR);
       } catch (HostNotFoundException e) {
         logger.warn("Could not find host to mark as error, HostAddress=" + hostEntity.getAddress(), e);
       }
     }
+    super.markAsFailed(t);
   }
 
   @Override

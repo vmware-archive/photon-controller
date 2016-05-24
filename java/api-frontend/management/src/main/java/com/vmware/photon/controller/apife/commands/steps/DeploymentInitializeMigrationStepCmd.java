@@ -22,7 +22,7 @@ import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.DeploymentEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
-import com.vmware.photon.controller.deployer.gen.InitializeMigrateDeploymentResponse;
+import com.vmware.photon.controller.deployer.dcp.workflow.InitializeDeploymentMigrationWorkflowService;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
@@ -58,10 +58,15 @@ public class DeploymentInitializeMigrationStepCmd extends StepCommand {
 
     destinationDeploymentEntity = deploymentEntityList.get(0);
     // call deployer
-    InitializeMigrateDeploymentResponse response = taskCommand.getDeployerClient().initializeMigrateDeployment(
-        sourceLoadbalancerAddress, destinationDeploymentEntity.getId());
-
-    destinationDeploymentEntity.setOperationId(response.getOperation_id());
+    logger.info("Calling initialize deployment migration {}", deploymentEntityList);
+    InitializeDeploymentMigrationWorkflowService.State serviceDocument = taskCommand.getDeployerXenonClient()
+        .initializeMigrateDeployment(sourceLoadbalancerAddress, destinationDeploymentEntity.getId());
+    // pass remoteTaskId to XenonTaskStatusStepCmd
+    for (StepEntity nextStep : taskCommand.getTask().getSteps()) {
+      nextStep.createOrUpdateTransientResource(XenonTaskStatusStepCmd.REMOTE_TASK_LINK_RESOURCE_KEY,
+          serviceDocument.documentSelfLink);
+    }
+    this.destinationDeploymentEntity.setOperationId(serviceDocument.documentSelfLink);
   }
 
   @Override

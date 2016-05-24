@@ -15,22 +15,20 @@ package com.vmware.photon.controller.apife.commands.steps;
 
 import com.vmware.photon.controller.api.DeploymentState;
 import com.vmware.photon.controller.api.Operation;
-import com.vmware.photon.controller.api.common.exceptions.external.ErrorCode;
-import com.vmware.photon.controller.apife.backends.DeploymentBackend;
+import com.vmware.photon.controller.apife.backends.DeploymentDcpBackend;
 import com.vmware.photon.controller.apife.backends.StepBackend;
+import com.vmware.photon.controller.apife.backends.TaskBackend;
+import com.vmware.photon.controller.apife.backends.clients.DeployerClient;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.DeploymentEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
+import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.exceptions.external.DeploymentFailedException;
-import com.vmware.photon.controller.common.clients.DeployerClient;
-import com.vmware.photon.controller.common.clients.exceptions.RpcException;
-import com.vmware.photon.controller.common.clients.exceptions.ServiceUnavailableException;
-import com.vmware.photon.controller.deployer.gen.DeployResult;
-import com.vmware.photon.controller.deployer.gen.DeployResultCode;
-import com.vmware.photon.controller.deployer.gen.DeployStageStatus;
-import com.vmware.photon.controller.deployer.gen.DeployStatus;
-import com.vmware.photon.controller.deployer.gen.DeployStatusCode;
-import com.vmware.photon.controller.deployer.gen.DeployStatusResponse;
+import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentServiceFactory;
+import com.vmware.photon.controller.deployer.dcp.workflow.DeploymentWorkflowFactoryService;
+import com.vmware.photon.controller.deployer.dcp.workflow.DeploymentWorkflowService;
+import com.vmware.xenon.common.ServiceErrorResponse;
+import com.vmware.xenon.common.TaskState;
 
 import com.google.common.collect.ImmutableList;
 import org.testng.annotations.BeforeMethod;
@@ -45,6 +43,8 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.UUID;
+
 /**
  * Tests {@link DeploymentStatusStepCmdTest}.
  */
@@ -52,29 +52,49 @@ public class DeploymentStatusStepCmdTest {
 
   DeploymentStatusStepCmd command;
   DeploymentEntity entity;
-  StepEntity step;
 
   private StepBackend stepBackend;
   private TaskCommand taskCommand;
-  private DeploymentBackend deploymentBackend;
+  private DeploymentDcpBackend deploymentBackend;
+  private TaskBackend taskBackend;
   private DeployerClient deployerClient;
+  private DeploymentStatusStepCmd.DeploymentStatusStepPoller poller;
+
+  private DeploymentWorkflowService.State serviceDocument;
+  private String remoteTaskLink;
+  private TaskEntity taskEntity;
+  private StepEntity currentStep;
 
   public void setUpCommon() {
     deployerClient = mock(DeployerClient.class);
     taskCommand = mock(TaskCommand.class);
-    when(taskCommand.getDeployerClient()).thenReturn(deployerClient);
+    when(taskCommand.getDeployerXenonClient()).thenReturn(deployerClient);
 
     stepBackend = mock(StepBackend.class);
-    deploymentBackend = mock(DeploymentBackend.class);
+    deploymentBackend = mock(DeploymentDcpBackend.class);
+    when(deploymentBackend.getDeployerClient()).thenReturn(deployerClient);
+    taskBackend = mock(TaskBackend.class);
 
     entity = new DeploymentEntity();
-    entity.setOperationId("opid");
-    step = new StepEntity();
-    step.setId("id");
-    step.setOperation(Operation.PROVISION_CLOUD_HOSTS);
-    step.addResource(entity);
-    command = spy(new DeploymentStatusStepCmd(taskCommand, stepBackend, step, deploymentBackend));
+    currentStep = new StepEntity();
+    currentStep.setId("id");
+    currentStep.setOperation(Operation.PROVISION_CLOUD_HOSTS);
+    currentStep.addResource(entity);
 
+    taskEntity = new TaskEntity();
+    taskEntity.setSteps(ImmutableList.of(currentStep));
+    when(taskCommand.getTask()).thenReturn(taskEntity);
+
+    poller = new DeploymentStatusStepCmd.DeploymentStatusStepPoller(taskCommand, taskBackend, deploymentBackend);
+    command = spy(new DeploymentStatusStepCmd(taskCommand, stepBackend, currentStep, poller));
+
+    serviceDocument = new DeploymentWorkflowService.State();
+    serviceDocument.taskState = new DeploymentWorkflowService.TaskState();
+    serviceDocument.taskState.stage = DeploymentWorkflowService.TaskState.TaskStage.STARTED;
+    remoteTaskLink = "http://deployer" + DeploymentWorkflowFactoryService.SELF_LINK
+        + "/00000000-0000-0000-0000-000000000001";
+    serviceDocument.documentSelfLink = remoteTaskLink;
+    entity.setOperationId(remoteTaskLink);
   }
 
   /**
@@ -97,125 +117,53 @@ public class DeploymentStatusStepCmdTest {
 
     @Test
     public void testSuccessfulDeploymentAndStep() throws Throwable {
-      configureClient(DeployStatusCode.FINISHED, DeployStatusCode.FINISHED);
+      configureClient(TaskState.TaskStage.FINISHED);
 
       command.execute();
-      verify(deployerClient).deployStatus(entity.getOperationId());
+      verify(deployerClient).getDeploymentStatus(remoteTaskLink);
       verify(deploymentBackend).updateState(entity, DeploymentState.READY);
-      assertThat(step.getWarnings().size(), is(0));
+      assertThat(currentStep.getWarnings().size(), is(0));
     }
 
     @Test
-    public void testSuccessfulDeploymentAndStepNotCompleted() throws Throwable {
-      configureClient(DeployStatusCode.FINISHED);
+    public void testRunningDeployment() throws Throwable {
+      command.setDefaultDeploymentTimeout(10);
+      configureClient(TaskState.TaskStage.STARTED);
 
-      command.execute();
-      verify(deployerClient).deployStatus(entity.getOperationId());
-      verify(deploymentBackend).updateState(entity, DeploymentState.READY);
-      assertThat(step.getWarnings().size(), is(1));
-      assertThat(step.getWarnings().get(0).getCode(), is(ErrorCode.STEP_NOT_COMPLETED.getCode()));
-    }
+      try {
+        command.execute();
+        fail("Should have timed out");
+      } catch (RuntimeException ex) {
 
-    @Test
-    public void testRunningDeploymentAndStepCompleted() throws Throwable {
-      configureClient(DeployStatusCode.IN_PROGRESS, DeployStatusCode.FINISHED);
-
-      command.execute();
-      verify(deployerClient).deployStatus(entity.getOperationId());
+      }
       verify(deploymentBackend, never()).updateState(any(DeploymentEntity.class), any(DeploymentState.class));
-      assertThat(step.getWarnings().size(), is(0));
     }
 
-    @Test(expectedExceptions = DeploymentFailedException.class,
-        expectedExceptionsMessageRegExp = "^Deployment #opid failed: deployment failed$")
-    public void testFailedDeployment() throws Throwable {
-      configureClient(DeployStatusCode.FAILED);
-
-      try {
-        command.execute();
-      } catch (Throwable e) {
-        verify(deployerClient).deployStatus(entity.getOperationId());
-        throw e;
-      }
-    }
-
-    @Test(expectedExceptions = DeploymentFailedException.class,
-        expectedExceptionsMessageRegExp = "^Deployment #opid failed: null$")
-    public void testFailedStep() throws Throwable {
-      configureClient(DeployStatusCode.IN_PROGRESS, DeployStatusCode.FAILED);
-
-      try {
-        command.execute();
-        fail("deploy should fail");
-      } catch (Throwable e) {
-        verify(deployerClient).deployStatus(entity.getOperationId());
-        throw e;
-      }
-    }
-
-    @Test(expectedExceptions = DeploymentFailedException.class,
-        expectedExceptionsMessageRegExp = "^Deployment #opid failed: deployment failed$")
+    @Test
     public void testFailedDeploymentAndStep() throws Throwable {
-      configureClient(DeployStatusCode.FAILED, DeployStatusCode.FAILED);
+      configureClient(DeploymentWorkflowService.TaskState.TaskStage.FAILED);
 
       try {
         command.execute();
         fail("deploy should fail");
-      } catch (Throwable e) {
-        verify(deployerClient).deployStatus(entity.getOperationId());
-        throw e;
+      } catch (DeploymentFailedException e) {
+
       }
     }
 
-    @Test(expectedExceptions = RuntimeException.class,
-        expectedExceptionsMessageRegExp = "^Timeout waiting for deployment to complete.$")
-    public void testTimeoutDeployment() throws Throwable {
-      command.setDeploymentTimeout(10);
-      configureClient(DeployStatusCode.IN_PROGRESS);
-
-      command.execute();
-    }
-
-    @Test(expectedExceptions = ServiceUnavailableException.class,
-        expectedExceptionsMessageRegExp = "^Service sue is unavailable$")
-    public void testServiceUnavailableError() throws Throwable {
-      command.setMaxServiceUnavailableCount(5);
-      when(deployerClient.deployStatus(any(String.class))).thenThrow(new ServiceUnavailableException("sue"));
-
-      command.execute();
-    }
-
-    @Test(expectedExceptions = RpcException.class, expectedExceptionsMessageRegExp = "^failed to get status$")
-    public void testErrorGettingStatus() throws Exception {
-      when(deployerClient.deployStatus(any(String.class))).thenThrow(new RpcException("failed to get status"));
-
-      try {
-        command.execute();
-        fail("calling deployStatus shoudl fail");
-      } catch (Throwable e) {
-        verify(deployerClient).deployStatus(entity.getOperationId());
-        throw e;
+    private void configureClient(DeploymentWorkflowService.TaskState.TaskStage stage)
+        throws Throwable {
+      DeploymentWorkflowService.State state = new DeploymentWorkflowService.State();
+      state.taskState = new DeploymentWorkflowService.TaskState();
+      state.taskState.stage = stage;
+      state.taskState.subStage = DeploymentWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE;
+      state.deploymentServiceLink = DeploymentServiceFactory.SELF_LINK + "/" + UUID.randomUUID();
+      if (stage == DeploymentWorkflowService.TaskState.TaskStage.FAILED) {
+        state.taskState.failure = new ServiceErrorResponse();
+        state.taskState.failure.message = "deployment failed";
       }
-    }
-
-    private void configureClient(DeployStatusCode code) throws Throwable {
-      configureClient(code, null);
-    }
-
-    private void configureClient(DeployStatusCode code, DeployStatusCode stageCode) throws Throwable {
-      DeployStatus status = new DeployStatus(code);
-      if (code == DeployStatusCode.FAILED) {
-        status.setError("deployment failed");
-      }
-
-      DeployStageStatus stage = new DeployStageStatus("PROVISION_CLOUD_HOSTS");
-      stage.setCode(stageCode);
-      status.setStages(ImmutableList.of(stage));
-
-      DeployStatusResponse response = new DeployStatusResponse(new DeployResult(DeployResultCode.OK));
-      response.setStatus(status);
-
-      when(deployerClient.deployStatus(any(String.class))).thenReturn(response);
+      state.taskState.subStage = DeploymentWorkflowService.TaskState.SubStage.PROVISION_CLOUD_HOSTS;
+      when(deployerClient.getDeploymentStatus(any(String.class))).thenReturn(state);
     }
   }
 
@@ -232,15 +180,6 @@ public class DeploymentStatusStepCmdTest {
     public void testEntityNotSet() throws Throwable {
       command.markAsFailed(new Throwable());
       verify(deploymentBackend, never()).updateState(any(DeploymentEntity.class), any(DeploymentState.class));
-    }
-
-    @Test
-    public void testEntitySet() throws Throwable {
-      DeploymentEntity entity = new DeploymentEntity();
-      command.setEntity(entity);
-
-      command.markAsFailed(new Throwable());
-      verify(deploymentBackend).updateState(entity, DeploymentState.ERROR);
     }
   }
 }

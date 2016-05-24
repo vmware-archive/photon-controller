@@ -89,10 +89,8 @@ public class HostProvisionStepCmd extends StepCommand {
 
   @Override
   protected void markAsFailed(Throwable t) throws TaskNotFoundException {
-    super.markAsFailed(t);
-
+    logger.info("Host provision failed, mark {} state as ERROR", this.hostEntity);
     if (this.hostEntity != null) {
-      logger.info("Host provision failed, mark {} state as ERROR", this.hostEntity.getId());
       try {
         if (hostEntity.getState() == HostState.ERROR) {
           return;
@@ -102,5 +100,6 @@ public class HostProvisionStepCmd extends StepCommand {
         logger.warn("Could not find host to mark as error, HostAddress=" + hostEntity.getAddress(), e);
       }
     }
+    super.markAsFailed(t);
   }
 }
