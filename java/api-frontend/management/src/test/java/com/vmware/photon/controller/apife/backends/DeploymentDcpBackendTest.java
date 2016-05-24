@@ -42,6 +42,7 @@ import com.vmware.photon.controller.apife.exceptions.external.DeploymentAlreadyE
 import com.vmware.photon.controller.apife.exceptions.external.DeploymentNotFoundException;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidAuthConfigException;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidImageDatastoreSetException;
+import com.vmware.photon.controller.apife.exceptions.external.NoManagementHostException;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ClusterConfigurationService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ClusterConfigurationServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
@@ -51,6 +52,7 @@ import com.vmware.photon.controller.common.xenon.BasicServiceHost;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
 
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import org.apache.commons.collections.CollectionUtils;
@@ -71,6 +73,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.spy;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -263,7 +266,9 @@ public class DeploymentDcpBackendTest {
     private ApiFeXenonRestClient apiFeXenonRestClient;
 
     @Inject
-    private DeploymentBackend deploymentBackend;
+    private DeploymentDcpBackend deploymentBackend;
+
+    private DeploymentDcpBackend deploymentBackendSpy;
 
     private DeploymentEntity entity;
 
@@ -277,6 +282,7 @@ public class DeploymentDcpBackendTest {
 
       TaskEntity task = deploymentBackend.prepareCreateDeployment(deploymentCreateSpec);
       entity = deploymentBackend.findById(task.getEntityId());
+      deploymentBackendSpy = spy(deploymentBackend);
     }
 
     @AfterMethod
@@ -292,7 +298,9 @@ public class DeploymentDcpBackendTest {
     @Test(dataProvider = "DeploySuccess")
     public void testPrepareDeploySuccess(DeploymentState state) throws Throwable {
       deploymentBackend.updateState(entity, state);
-      TaskEntity taskEntity = deploymentBackend.prepareDeploy(entity.getId(), config);
+      doReturn(false).when(deploymentBackendSpy).isNoManagementHost(Optional.absent());
+
+      TaskEntity taskEntity = deploymentBackendSpy.prepareDeploy(entity.getId(), config);
 
       assertThat(taskEntity, is(notNullValue()));
       assertThat(taskEntity.getId(), is(notNullValue()));
@@ -313,6 +321,18 @@ public class DeploymentDcpBackendTest {
       Assert.assertEquals(taskEntity.getSteps().get(3).getOperation(), Operation.PROVISION_CLOUD_HOSTS);
       Assert.assertEquals(taskEntity.getSteps().get(4).getOperation(), Operation.PROVISION_CLUSTER_MANAGER);
       Assert.assertEquals(taskEntity.getSteps().get(5).getOperation(), Operation.MIGRATE_DEPLOYMENT_DATA);
+    }
+
+    @Test
+    public void testFailedDeployOnManagementHostNotCreated() throws Throwable{
+      doReturn(true).when(deploymentBackendSpy).isNoManagementHost(Optional.absent());
+
+      try {
+        deploymentBackendSpy.prepareDeploy(entity.getId(), config);
+        fail("should have failed with NoManagementHostException.");
+      } catch (NoManagementHostException ex) {
+
+      }
     }
 
     @DataProvider(name = "DeploySuccess")
@@ -999,9 +1019,11 @@ public class DeploymentDcpBackendTest {
       assertThat(taskEntity.getEntityKind(), is(Deployment.KIND));
 
       // verify that task steps are created successfully
-      assertThat(taskEntity.getSteps().size(), is(2));
+      assertThat(taskEntity.getSteps().size(), is(4));
       assertThat(taskEntity.getSteps().get(0).getOperation(), is(Operation.SCHEDULE_DELETE_DEPLOYMENT));
       assertThat(taskEntity.getSteps().get(1).getOperation(), is(Operation.PERFORM_DELETE_DEPLOYMENT));
+      assertThat(taskEntity.getSteps().get(2).getOperation(), is(Operation.DEPROVISION_HOSTS));
+      assertThat(taskEntity.getSteps().get(3).getOperation(), is(Operation.DEPROVISION_NETWORK));
     }
 
     @DataProvider(name = "DestroySuccess")

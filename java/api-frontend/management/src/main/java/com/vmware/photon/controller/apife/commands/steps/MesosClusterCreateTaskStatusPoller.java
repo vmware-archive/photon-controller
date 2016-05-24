@@ -83,6 +83,5 @@ public class MesosClusterCreateTaskStatusPoller implements XenonTaskStatusStepCm
 
   @Override
   public void handleDone(TaskState taskState) {
-
   }
 }

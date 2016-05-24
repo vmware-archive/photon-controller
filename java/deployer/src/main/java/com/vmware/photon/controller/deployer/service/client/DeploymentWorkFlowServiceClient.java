@@ -87,7 +87,6 @@ public class DeploymentWorkFlowServiceClient {
 
     DeploymentWorkflowService.State state = new DeploymentWorkflowService.State();
     state.deploymentServiceLink = DeploymentServiceFactory.SELF_LINK + "/" + request.getDeployment().getId();
-    state.managementVmImageFile = deployerConfig.getManagementImageFile();
     state.desiredState = parseDesiredState(request.getDesired_state());
 
     Operation post = Operation
