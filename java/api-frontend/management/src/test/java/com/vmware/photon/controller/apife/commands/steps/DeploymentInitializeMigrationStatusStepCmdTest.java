@@ -13,19 +13,22 @@
 
 package com.vmware.photon.controller.apife.commands.steps;
 
+import com.vmware.photon.controller.apife.backends.DeploymentDcpBackend;
 import com.vmware.photon.controller.apife.backends.StepBackend;
+import com.vmware.photon.controller.apife.backends.TaskBackend;
+import com.vmware.photon.controller.apife.backends.clients.DeployerClient;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.DeploymentEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
+import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.exceptions.external.DeploymentMigrationFailedException;
-import com.vmware.photon.controller.common.clients.DeployerClient;
-import com.vmware.photon.controller.common.clients.exceptions.RpcException;
-import com.vmware.photon.controller.common.clients.exceptions.ServiceUnavailableException;
-import com.vmware.photon.controller.deployer.gen.InitializeMigrateDeploymentResult;
-import com.vmware.photon.controller.deployer.gen.InitializeMigrateDeploymentStatus;
-import com.vmware.photon.controller.deployer.gen.InitializeMigrateDeploymentStatusCode;
-import com.vmware.photon.controller.deployer.gen.InitializeMigrateDeploymentStatusResponse;
+import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentServiceFactory;
+import com.vmware.photon.controller.deployer.dcp.workflow.InitializeDeploymentMigrationWorkflowFactoryService;
+import com.vmware.photon.controller.deployer.dcp.workflow.InitializeDeploymentMigrationWorkflowService;
+import com.vmware.xenon.common.ServiceErrorResponse;
+import com.vmware.xenon.common.TaskState;
 
+import com.google.common.collect.ImmutableList;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import static org.mockito.Matchers.any;
@@ -33,6 +36,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
+import java.util.UUID;
 
 /**
  * Tests {@link DeploymentInitializeMigrationStatusStepCmd}.
@@ -44,21 +49,48 @@ public class DeploymentInitializeMigrationStatusStepCmdTest {
 
   private StepBackend stepBackend;
   private TaskCommand taskCommand;
+  private TaskBackend taskBackend;
+  private DeploymentDcpBackend deploymentBackend;
+
   private DeployerClient deployerClient;
+  private DeploymentInitializeMigrationStatusStepCmd.DeploymentInitializeMigrationStatusStepPoller poller;
+
+  private InitializeDeploymentMigrationWorkflowService.State serviceDocument;
+  private String remoteTaskLink;
+  private TaskEntity taskEntity;
+  private StepEntity currentStep;
+  private StepEntity nextStep;
 
   public void setUpCommon() {
     deployerClient = mock(DeployerClient.class);
     taskCommand = mock(TaskCommand.class);
-    when(taskCommand.getDeployerClient()).thenReturn(deployerClient);
-
+    taskBackend = mock(TaskBackend.class);
+    deploymentBackend = mock(DeploymentDcpBackend.class);
+    when(taskCommand.getDeployerXenonClient()).thenReturn(deployerClient);
+    when(deploymentBackend.getDeployerClient()).thenReturn(deployerClient);
     stepBackend = mock(StepBackend.class);
 
     entity = new DeploymentEntity();
-    entity.setOperationId("opid");
-    StepEntity step = new StepEntity();
-    step.setId("id");
-    step.addResource(entity);
-    command = spy(new DeploymentInitializeMigrationStatusStepCmd(taskCommand, stepBackend, step));
+
+    currentStep = new StepEntity();
+    currentStep.setId("id");
+    currentStep.addResource(entity);
+
+    taskEntity = new TaskEntity();
+    taskEntity.setSteps(ImmutableList.of(currentStep));
+    when(taskCommand.getTask()).thenReturn(taskEntity);
+
+    poller = new DeploymentInitializeMigrationStatusStepCmd.DeploymentInitializeMigrationStatusStepPoller(taskCommand,
+        taskBackend, deploymentBackend);
+    command = spy(new DeploymentInitializeMigrationStatusStepCmd(taskCommand, stepBackend, currentStep, poller));
+
+    serviceDocument = new InitializeDeploymentMigrationWorkflowService.State();
+    serviceDocument.taskState = new InitializeDeploymentMigrationWorkflowService.TaskState();
+    serviceDocument.taskState.stage = InitializeDeploymentMigrationWorkflowService.TaskState.TaskStage.STARTED;
+    remoteTaskLink = "http://deployer" + InitializeDeploymentMigrationWorkflowFactoryService.SELF_LINK
+        + "/00000000-0000-0000-0000-000000000001";
+    serviceDocument.documentSelfLink = remoteTaskLink;
+    entity.setOperationId(remoteTaskLink);
   }
 
   /**
@@ -81,61 +113,42 @@ public class DeploymentInitializeMigrationStatusStepCmdTest {
 
     @Test
     public void testSuccessfulInitializeMigrationDeployment() throws Throwable {
-      configureClient(InitializeMigrateDeploymentStatusCode.FINISHED);
+      configureClient(InitializeDeploymentMigrationWorkflowService.TaskState.TaskStage.FINISHED);
 
       command.execute();
-      verify(deployerClient).initializeMigrateStatus(entity.getOperationId());
+      verify(deployerClient).getInitializeMigrateDeploymentStatus(entity.getOperationId());
     }
 
     @Test(expectedExceptions = DeploymentMigrationFailedException.class)
     public void testFailedInitializeMigrationDeployment() throws Throwable {
-      configureClient(InitializeMigrateDeploymentStatusCode.FAILED);
+      configureClient(InitializeDeploymentMigrationWorkflowService.TaskState.TaskStage.FAILED);
 
       command.execute();
-      verify(deployerClient).initializeMigrateStatus(entity.getOperationId());
+      verify(deployerClient).getInitializeMigrateDeploymentStatus(entity.getOperationId());
     }
 
     @Test(expectedExceptions = RuntimeException.class)
     public void testTimeout() throws Throwable {
       command.setOperationTimeout(10);
-      configureClient(InitializeMigrateDeploymentStatusCode.IN_PROGRESS);
+      configureClient(TaskState.TaskStage.STARTED);
 
       command.execute();
-      verify(deployerClient).initializeMigrateStatus(entity.getOperationId());
+      verify(deployerClient).getInitializeMigrateDeploymentStatus(entity.getOperationId());
     }
 
-    @Test(expectedExceptions = ServiceUnavailableException.class)
-    public void testServiceUnavailableError() throws Throwable {
-      command.setMaxServiceUnavailableCount(5);
-      when(deployerClient.initializeMigrateStatus(any(String.class))).thenThrow(new
-          ServiceUnavailableException
-          ("exception"));
-
-      command.execute();
-      verify(deployerClient).initializeMigrateStatus(entity.getOperationId());
-    }
-
-    @Test(expectedExceptions = RpcException.class)
-    public void testErrorGettingStatus() throws Exception {
-      when(deployerClient.initializeMigrateStatus(any(String.class)))
-          .thenThrow(new RpcException("failed to get status"));
-
-      command.execute();
-      verify(deployerClient).initializeMigrateStatus(entity.getOperationId());
-    }
-
-    private void configureClient(InitializeMigrateDeploymentStatusCode code) throws Throwable {
-      InitializeMigrateDeploymentStatus status = new InitializeMigrateDeploymentStatus(code);
-      if (code == InitializeMigrateDeploymentStatusCode.FAILED) {
-        status.setError("Migrate deployment failed");
+    private void configureClient(InitializeDeploymentMigrationWorkflowService.TaskState.TaskStage stage)
+        throws Throwable {
+      InitializeDeploymentMigrationWorkflowService.State state =
+          new InitializeDeploymentMigrationWorkflowService.State();
+      state.taskState = new InitializeDeploymentMigrationWorkflowService.TaskState();
+      state.taskState.stage = stage;
+      state.destinationDeploymentId = DeploymentServiceFactory.SELF_LINK + "/" + UUID.randomUUID();
+      if (stage == TaskState.TaskStage.FAILED) {
+        state.taskState.failure = new ServiceErrorResponse();
+        state.taskState.failure.message = "";
       }
 
-      InitializeMigrateDeploymentStatusResponse response = new InitializeMigrateDeploymentStatusResponse(
-          new InitializeMigrateDeploymentResult(
-              com.vmware.photon.controller.deployer.gen.InitializeMigrateDeploymentResultCode.OK));
-      response.setStatus(status);
-
-      when(deployerClient.initializeMigrateStatus(any(String.class))).thenReturn(response);
+      when(deployerClient.getInitializeMigrateDeploymentStatus(any(String.class))).thenReturn(state);
     }
   }
 }

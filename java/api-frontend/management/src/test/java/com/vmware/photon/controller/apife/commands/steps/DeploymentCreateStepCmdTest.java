@@ -14,35 +14,33 @@
 package com.vmware.photon.controller.apife.commands.steps;
 
 import com.vmware.photon.controller.api.DeploymentState;
-import com.vmware.photon.controller.apife.backends.DeploymentBackend;
+import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
+import com.vmware.photon.controller.apife.backends.DeploymentDcpBackend;
+import com.vmware.photon.controller.apife.backends.HostDcpBackend;
 import com.vmware.photon.controller.apife.backends.StepBackend;
+import com.vmware.photon.controller.apife.backends.clients.DeployerClient;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.DeploymentEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
-import com.vmware.photon.controller.apife.exceptions.external.InvalidAuthConfigException;
-import com.vmware.photon.controller.apife.exceptions.external.NoManagementHostException;
-import com.vmware.photon.controller.common.clients.DeployerClient;
-import com.vmware.photon.controller.common.clients.exceptions.RpcException;
-import com.vmware.photon.controller.deployer.gen.DeployResponse;
-import com.vmware.photon.controller.deployer.gen.DeployResult;
-import com.vmware.photon.controller.deployer.gen.DeployResultCode;
-import com.vmware.photon.controller.deployer.gen.Deployment;
+import com.vmware.photon.controller.apife.entities.TaskEntity;
+import com.vmware.photon.controller.deployer.dcp.workflow.DeploymentWorkflowFactoryService;
+import com.vmware.photon.controller.deployer.dcp.workflow.DeploymentWorkflowService;
 
-import org.mockito.ArgumentCaptor;
+import com.google.common.collect.ImmutableList;
+import org.mockito.InOrder;
 import org.powermock.modules.testng.PowerMockTestCase;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 /**
@@ -53,19 +51,25 @@ public class DeploymentCreateStepCmdTest extends PowerMockTestCase {
 
   DeploymentCreateStepCmd command;
 
-  private ArgumentCaptor<Deployment> deploymentArgumentCaptor;
   private DeployerClient deployerClient;
   private StepBackend stepBackend;
   private TaskCommand taskCommand;
-  private DeploymentBackend deploymentBackend;
+  private DeploymentDcpBackend deploymentBackend;
   private DeploymentEntity deploymentEntity;
+  private HostDcpBackend hostDcpBackend;
+
+  private DeploymentWorkflowService.State serviceDocument;
+  private String remoteTaskLink;
+  private TaskEntity taskEntity;
+  private StepEntity currentStep;
+  private StepEntity nextStep;
 
   public void setUpCommon() {
-    deploymentArgumentCaptor = ArgumentCaptor.forClass(Deployment.class);
     deployerClient = mock(DeployerClient.class);
     stepBackend = mock(StepBackend.class);
     taskCommand = mock(TaskCommand.class);
-    deploymentBackend = mock(DeploymentBackend.class);
+    deploymentBackend = mock(DeploymentDcpBackend.class);
+    hostDcpBackend = mock(HostDcpBackend.class);
 
     deploymentEntity = new DeploymentEntity();
     StepEntity step = new StepEntity();
@@ -74,7 +78,22 @@ public class DeploymentCreateStepCmdTest extends PowerMockTestCase {
     step.createOrUpdateTransientResource(DeploymentCreateStepCmd.DEPLOYMENT_DESIRED_STATE_RESOURCE_KEY, desiredState);
 
     command = spy(new DeploymentCreateStepCmd(taskCommand, stepBackend, step, deploymentBackend));
-    when(taskCommand.getDeployerClient()).thenReturn(deployerClient);
+    when(taskCommand.getDeployerXenonClient()).thenReturn(deployerClient);
+
+    currentStep = new StepEntity();
+    currentStep.setId("id");
+    nextStep = new StepEntity();
+
+    taskEntity = new TaskEntity();
+    taskEntity.setSteps(ImmutableList.of(currentStep, nextStep));
+    when(taskCommand.getTask()).thenReturn(taskEntity);
+
+    serviceDocument = new DeploymentWorkflowService.State();
+    serviceDocument.taskState = new DeploymentWorkflowService.TaskState();
+    serviceDocument.taskState.stage = DeploymentWorkflowService.TaskState.TaskStage.STARTED;
+    remoteTaskLink = DeploymentWorkflowFactoryService.SELF_LINK
+        + "/00000000-0000-0000-0000-000000000001";
+    serviceDocument.documentSelfLink = remoteTaskLink;
   }
 
   /**
@@ -95,62 +114,27 @@ public class DeploymentCreateStepCmdTest extends PowerMockTestCase {
     }
 
     @Test
-    public void testSuccessfulDeploy() throws Exception {
-      DeployResponse response = new DeployResponse(new DeployResult(DeployResultCode.OK));
-      response.setOperation_id("operation-id");
-      when(deployerClient.deploy(any(Deployment.class), any(String.class))).thenReturn(response);
-
+    public void testSuccessfulDeploy() throws Throwable {
+      when(deployerClient.deploy(deploymentEntity, desiredState)).thenReturn(serviceDocument);
       command.execute();
-      assertThat(deploymentEntity.getOperationId(), is(response.getOperation_id()));
 
-      verify(deployerClient).deploy(deploymentArgumentCaptor.capture(), eq(desiredState));
-      Deployment deployment = deploymentArgumentCaptor.getValue();
-      assertThat(deployment.getId(), is(deploymentEntity.getId()));
-      if (deploymentEntity.getImageDatastores() != null) {
-        assertTrue(deploymentEntity.getImageDatastores().contains(deployment.getImageDatastore()));
-      }
-      assertThat(deployment.getNtpEndpoint(), is(deploymentEntity.getNtpEndpoint()));
-      assertThat(deployment.getSyslogEndpoint(), is(deploymentEntity.getSyslogEndpoint()));
-      assertThat(deployment.isAuthEnabled(), is(deploymentEntity.getAuthEnabled()));
-      assertThat(deployment.getOauthEndpoint(), is(deploymentEntity.getOauthEndpoint()));
-      assertThat(deployment.getOauthTenant(), is(deploymentEntity.getOauthTenant()));
-      assertThat(deployment.getOauthUsername(), is(deploymentEntity.getOauthUsername()));
-      assertThat(deployment.getOauthPassword(), is(deploymentEntity.getOauthPassword()));
-      verifyNoMoreInteractions(deployerClient);
+      deployerClient.getDeploymentStatus(remoteTaskLink);
+      verify(deployerClient, times(1)).deploy(deploymentEntity, desiredState);
+      assertEquals(deploymentEntity.getOperationId(),
+          remoteTaskLink);
+      InOrder inOrder = inOrder(deployerClient, deploymentBackend);
+      inOrder.verify(deployerClient).deploy(deploymentEntity, desiredState);
     }
 
     @Test
-    public void testFailedDeploy() throws Exception {
-      when(deployerClient.deploy(any(Deployment.class), any(String.class))).thenThrow(new RpcException());
+    public void testFailedDeployOnAlreadyRunning() throws Throwable {
+      when(deployerClient.deploy(any(), anyString()))
+          .thenThrow(new ExternalException("running"));
 
       try {
         command.execute();
-        fail("should have failed with RpcException.");
-      } catch (RpcException e) {
-      }
-    }
-
-    @Test
-    public void testFailedDeployOnManagementHostNotCreated() throws Exception {
-      when(deployerClient.deploy(any(Deployment.class), any(String.class)))
-          .thenThrow(new com.vmware.photon.controller.common.clients.exceptions.NoManagementHostException("error"));
-
-      try {
-        command.execute();
-        fail("should have failed with NoManagementHostException.");
-      } catch (NoManagementHostException e) {
-      }
-    }
-
-    @Test
-    public void testFailedDeployOnInvalidAuthConfig() throws Exception {
-      when(deployerClient.deploy(any(Deployment.class), any(String.class)))
-          .thenThrow(new com.vmware.photon.controller.common.clients.exceptions.InvalidAuthConfigException("error"));
-
-      try {
-        command.execute();
-        fail("should have failed with NoManagementHostException.");
-      } catch (InvalidAuthConfigException e) {
+        fail("should have failed with Already running exception.");
+      } catch (ExternalException e) {
       }
     }
   }

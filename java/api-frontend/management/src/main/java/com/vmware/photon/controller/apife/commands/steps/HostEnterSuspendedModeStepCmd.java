@@ -13,7 +13,6 @@
 
 package com.vmware.photon.controller.apife.commands.steps;
 
-import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.backends.HostBackend;
@@ -73,11 +72,5 @@ public class HostEnterSuspendedModeStepCmd extends StepCommand {
   @Override
   protected void cleanup() {
 
-  }
-
-  @Override
-  protected void markAsDone() throws Throwable {
-    super.markAsDone();
-    hostBackend.updateState(hostEntity, HostState.SUSPENDED);
   }
 }

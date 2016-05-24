@@ -16,28 +16,29 @@ package com.vmware.photon.controller.apife.commands.steps;
 import com.vmware.photon.controller.api.DeploymentState;
 import com.vmware.photon.controller.apife.backends.DeploymentBackend;
 import com.vmware.photon.controller.apife.backends.StepBackend;
+import com.vmware.photon.controller.apife.backends.clients.DeployerClient;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.DeploymentEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
-import com.vmware.photon.controller.common.clients.DeployerClient;
-import com.vmware.photon.controller.common.clients.exceptions.RpcException;
-import com.vmware.photon.controller.deployer.gen.RemoveDeploymentResponse;
-import com.vmware.photon.controller.deployer.gen.RemoveDeploymentResult;
-import com.vmware.photon.controller.deployer.gen.RemoveDeploymentResultCode;
+import com.vmware.photon.controller.apife.entities.TaskEntity;
+import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
+import com.vmware.photon.controller.deployer.dcp.workflow.RemoveDeploymentWorkflowFactoryService;
+import com.vmware.photon.controller.deployer.dcp.workflow.RemoveDeploymentWorkflowService;
 
+import com.google.common.collect.ImmutableList;
 import org.mockito.InOrder;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-import static org.hamcrest.CoreMatchers.isA;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 /**
@@ -53,6 +54,12 @@ public class DeploymentDeleteStepCmdTest {
   private DeploymentBackend deploymentBackend;
   private DeploymentEntity deploymentEntity;
 
+  private RemoveDeploymentWorkflowService.State serviceDocument;
+  private String remoteTaskLink;
+  private TaskEntity taskEntity;
+  private StepEntity currentStep;
+  private StepEntity nextStep;
+
   public void setUpCommon() {
     deploymentEntity = new DeploymentEntity();
     deploymentEntity.setId("deployment");
@@ -67,7 +74,22 @@ public class DeploymentDeleteStepCmdTest {
     step.addResource(deploymentEntity);
 
     command = spy(new DeploymentDeleteStepCmd(taskCommand, stepBackend, step, deploymentBackend));
-    when(taskCommand.getDeployerClient()).thenReturn(deployerClient);
+    when(taskCommand.getDeployerXenonClient()).thenReturn(deployerClient);
+
+    currentStep = new StepEntity();
+    currentStep.setId("id");
+    nextStep = new StepEntity();
+
+    taskEntity = new TaskEntity();
+    taskEntity.setSteps(ImmutableList.of(currentStep, nextStep));
+    when(taskCommand.getTask()).thenReturn(taskEntity);
+
+    serviceDocument = new RemoveDeploymentWorkflowService.State();
+    serviceDocument.taskState = new RemoveDeploymentWorkflowService.TaskState();
+    serviceDocument.taskState.stage = RemoveDeploymentWorkflowService.TaskState.TaskStage.STARTED;
+    remoteTaskLink = "http://deployer" + RemoveDeploymentWorkflowFactoryService.SELF_LINK
+        + "/00000000-0000-0000-0000-000000000001";
+    serviceDocument.documentSelfLink = remoteTaskLink;
   }
 
   /**
@@ -87,32 +109,27 @@ public class DeploymentDeleteStepCmdTest {
     }
 
     @Test
-    public void testSuccessfulDeleteDeployment() throws Exception {
-      RemoveDeploymentResponse response = new RemoveDeploymentResponse(
-          new RemoveDeploymentResult(RemoveDeploymentResultCode.OK));
-      when(deployerClient.removeDeployment(deploymentEntity.getId())).thenReturn(response);
-
+    public void testSuccessfulDeleteDeployment() throws Throwable {
+      when(deployerClient.removeDeployment(anyString())).thenReturn(serviceDocument);
       command.execute();
-      verify(deployerClient).removeDeployment(any(String.class));
+
+      deployerClient.getRemoveDeploymentStatus(remoteTaskLink);
+      verify(deployerClient, times(1)).removeDeployment(deploymentEntity.getId());
+      assertEquals(nextStep.getTransientResource(XenonTaskStatusStepCmd.REMOTE_TASK_LINK_RESOURCE_KEY),
+          remoteTaskLink);
       InOrder inOrder = inOrder(deployerClient, deploymentBackend);
       inOrder.verify(deployerClient).removeDeployment(deploymentEntity.getId());
-      verifyNoMoreInteractions(deployerClient, deploymentBackend);
     }
 
-    @Test
-    public void testFailedDeleteDeployment() throws Exception {
-      when(deployerClient.removeDeployment(any(String.class))).thenThrow(new RpcException());
+    @Test(expectedExceptions = DocumentNotFoundException.class)
+    public void testFailedDeleteDeployment() throws Throwable {
+      when(deployerClient.removeDeployment(any(String.class))).thenReturn(serviceDocument);
+      command.execute();
 
-      try {
-        command.execute();
-        fail("should have failed with RpcException.");
-      } catch (RpcException e) {
-        assertThat(e, isA(RpcException.class));
-      }
-
-      InOrder inOrder = inOrder(deployerClient, deploymentBackend);
-      inOrder.verify(deployerClient).removeDeployment(deploymentEntity.getId());
-      verifyNoMoreInteractions(deployerClient, deploymentBackend);
+      when(deployerClient.getRemoveDeploymentStatus(remoteTaskLink))
+          .thenThrow(new DocumentNotFoundException(null, null));
+      deployerClient.getRemoveDeploymentStatus(remoteTaskLink);
+      fail("Should have failed with DocumentNotFoundException");
     }
   }
 
