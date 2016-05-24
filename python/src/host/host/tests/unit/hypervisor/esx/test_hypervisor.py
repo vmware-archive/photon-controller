@@ -50,7 +50,6 @@ class TestUnitEsxHypervisor(unittest.TestCase):
         about_mock.version = "5.5.99"
         about_mock.build = "999"
         content_mock = MagicMock(name="content")
-        content_mock.about = about_mock
         return content_mock
 
     @patch("host.hypervisor.esx.image_manager.EsxImageManager.monitor_for_cleanup")

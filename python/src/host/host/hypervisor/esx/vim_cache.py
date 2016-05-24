@@ -237,9 +237,16 @@ class VimCache:
     """ Accessors
     """
     @lock_with("_lock")
+    def get_vm_ids_in_cache(self):
+        """ Get information of all VMs from cache.
+        :return: list of VmId strings
+        """
+        return [vm.id for vm in self._vm_cache.values()
+                if self._validate_vm(vm)]
+
+    @lock_with("_lock")
     def get_vms_in_cache(self):
         """ Get information of all VMs from cache.
-
         :return: list of VmCache
         """
         return [copy.copy(vm) for vm in self._vm_cache.values()
@@ -318,7 +325,7 @@ class SyncVimCacheThread(threading.Thread):
                 break
             client = self.vim_client()
             if not client:
-                self._logger.info("Exit vmcache sync thread. vim client is " + "None")
+                self._logger.info("Exit vmcache sync thread. vim client is None")
                 break
 
             try:

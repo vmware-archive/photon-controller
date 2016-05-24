@@ -58,7 +58,7 @@ class EsxHypervisor(object):
         import imp
         try:
             # check whether attache is installed. If not, find_module will throw ImportError.
-            imp.find_module("attache")
+            imp.find_module("vmware.attache")
             from host.hypervisor.esx.attache_client import AttacheClient
             return AttacheClient(auto_sync)
         except ImportError:

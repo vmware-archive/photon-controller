@@ -110,8 +110,7 @@ class EsxVmManager(VmManager):
         # the hypervisor sizing meta
         cpus = int(flavor.cost["vm.cpu"].convert(Unit.COUNT))
         memory = int(flavor.cost["vm.memory"].convert(Unit.MB))
-        spec = EsxVmConfigSpec(self.vim_client.query_config())
-        spec.init_for_create(vm_id, datastore, memory, cpus, metadata, env)
+        spec = self.vim_client.create_vm_spec(vm_id, datastore, memory, cpus, metadata, env)
 
         extra_config_map = self._get_extra_config_map(spec._metadata)
         # our one vm-identifying extra config
