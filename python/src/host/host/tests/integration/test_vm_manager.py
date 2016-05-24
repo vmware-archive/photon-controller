@@ -41,7 +41,7 @@ class TestVmManager(unittest.TestCase):
         self.vim_client = VimClient()
         self.vim_client.connect_userpwd(self.host, "root", self.pwd)
         self.vm_manager = EsxVmManager(self.vim_client, None)
-        for vm in self.vim_client.get_vms():
+        for vm in self.vim_client._get_vms():
             vm.Destroy()
 
     def tearDown(self):
