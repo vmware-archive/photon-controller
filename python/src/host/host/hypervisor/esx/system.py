@@ -87,9 +87,9 @@ class EsxSystem(System):
         # XXX: datastore_id is a misnomer, the parameter is expected
         # to be a datastore name
         self._logger.debug("Fetching fresh datastore info: %s" % datastore_id)
-        ds = self._vim_client.get_datastore(datastore_id).summary
+        ds = self._vim_client.get_datastore(datastore_id)
         total = float(ds.capacity) / (1024 ** 3)
-        free = float(ds.freeSpace) / (1024 ** 3)
+        free = float(ds.free) / (1024 ** 3)
         result = DatastoreInfo(total, total - free)
         with self._lock:
             self._datastore_info_cache[datastore_id] = CacheEntry(result)

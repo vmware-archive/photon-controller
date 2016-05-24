@@ -279,10 +279,6 @@ class HostHandler(Host.Iface):
         except:
             self._logger.warning("Failed to delete stale vm %s" % vm_id)
 
-    def _datastore_freespace(self, datastore):
-        datastore_info = self.hypervisor.datastore_manager.datastore_info(datastore)
-        return datastore_info.total - datastore_info.used
-
     def _datastores_for_image(self, vm):
         image_id = self.hypervisor.image_manager.get_image_id_from_disks(vm.disks)
         return self.hypervisor.image_manager.datastores_with_image(

@@ -241,11 +241,11 @@ class TestVimClient(unittest.TestCase):
     @patch("pysdk.connect.Connect")
     def test_get_nfc_ticket(self, connect_mock):
         vim_client = VimClient(auto_sync=False)
-        vim_client.get_datastore = MagicMock(return_value=None)
+        vim_client._find_by_inventory_path = MagicMock(return_value=None)
         self.assertRaises(DatastoreNotFound, vim_client.get_nfc_ticket_by_ds_name, "no_exist")
 
         ds_mock = MagicMock()
-        vim_client.get_datastore = MagicMock(return_value=ds_mock)
+        vim_client._find_by_inventory_path = MagicMock(return_value=ds_mock)
         nfc_service = MagicMock()
         type(vim).NfcService = MagicMock()
         type(vim).NfcService.return_value = nfc_service
