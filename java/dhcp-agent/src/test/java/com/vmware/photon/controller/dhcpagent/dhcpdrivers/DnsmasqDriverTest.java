@@ -19,6 +19,7 @@ import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyOrNullString;
+import static org.hamcrest.Matchers.not;
 import static org.testng.Assert.fail;
 
 import java.io.FileNotFoundException;
@@ -45,7 +46,9 @@ public class DnsmasqDriverTest {
             fail(String.format("Failed with IOException: %s", e.toString()));
         }
 
-        dnsmasqDriver = new DnsmasqDriver(DnsmasqDriverTest.class.getResource("/scripts/release-ip.sh").getPath(),
+        dnsmasqDriver = new DnsmasqDriver(
+                DnsmasqDriverTest.class.getResource("/dnsmasq.leases").getPath(),
+                DnsmasqDriverTest.class.getResource("/scripts/release-ip.sh").getPath(),
                 DnsmasqDriverTest.class.getResource("/scripts/dhcp-status.sh").getPath());
     }
 
@@ -91,6 +94,29 @@ public class DnsmasqDriverTest {
 
         boolean status = dnsmasqDriver.isRunning();
         assertThat(status, is(false));
+    }
+
+    @Test
+    public void testFindIPSuccess() {
+        String ipAddress = dnsmasqDriver.findIP("08:00:27:d8:7d:8e");
+        assertThat(ipAddress, not(isEmptyOrNullString()));
+        assertThat(ipAddress, is("192.168.0.2"));
+    }
+
+    @Test
+    public void testFindIPFailureWithMacAddressNotFound() {
+        String ipAddress = dnsmasqDriver.findIP("08:00:27:d8:7d:8d");
+        assertThat(ipAddress, isEmptyOrNullString());
+    }
+
+    @Test
+    public void testFindIPFailureWithLeaseFileNotFound() {
+        DnsmasqDriver newDnsmasqDriver = new DnsmasqDriver("/var/lib/misc/dnsmasq.leases",
+                DnsmasqDriverTest.class.getResource("/scripts/release-ip.sh").getPath(),
+                DnsmasqDriverTest.class.getResource("/scripts/dhcp-status.sh").getPath());
+
+        String ipAddress = newDnsmasqDriver.findIP("08:00:27:d8:7d:8e");
+        assertThat(ipAddress, isEmptyOrNullString());
     }
 
     private void setupDHCPConfig(String inputConfig) {
