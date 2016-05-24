@@ -269,7 +269,7 @@ public class ReleaseIPServiceTest {
                 fail(String.format("Failed with IOException: %s", e.toString()));
             }
 
-            dnsmasqDriver = new DnsmasqDriver(
+            dnsmasqDriver = new DnsmasqDriver(ReleaseIPServiceTest.class.getResource("/dnsmasq.leases").getPath(),
                     ReleaseIPServiceTest.class.getResource("/scripts/release-ip.sh").getPath(),
                     ReleaseIPServiceTest.class.getResource("/scripts/dhcp-status.sh").getPath());
         }
