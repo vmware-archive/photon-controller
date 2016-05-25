@@ -16,21 +16,19 @@ package com.vmware.photon.controller.deployer.healthcheck;
 import com.vmware.photon.controller.deployer.dcp.ContainersConfig;
 import com.vmware.xenon.common.Service;
 
-import com.google.inject.assistedinject.Assisted;
-
 /**
  * Factory to create a {@link HealthChecker} for specified component.
  */
 public interface HealthCheckHelperFactory {
 
   public HealthCheckHelper create(
-      @Assisted final Service service,
-      @Assisted final ContainersConfig.ContainerType containerType,
-      @Assisted final String ipAddress);
+      final Service service,
+      final ContainersConfig.ContainerType containerType,
+      final String ipAddress);
 
   public XenonBasedHealthChecker create(
-      @Assisted final Service service,
-      @Assisted final Integer port,
-      @Assisted final String ipAddress);
+      final Service service,
+      final Integer port,
+      final String ipAddress);
 
 }

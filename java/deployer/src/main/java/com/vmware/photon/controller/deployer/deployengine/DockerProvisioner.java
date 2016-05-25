@@ -30,8 +30,6 @@ import com.github.dockerjava.api.model.VolumesFrom;
 import com.github.dockerjava.core.DockerClientBuilder;
 import com.github.dockerjava.jaxrs.DockerCmdExecFactoryImpl;
 import com.google.common.annotations.VisibleForTesting;
-import com.google.inject.Inject;
-import com.google.inject.assistedinject.Assisted;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
@@ -61,8 +59,7 @@ public class DockerProvisioner {
   private final String dockerEndpoint;
   private DockerClient dockerClient;
 
-  @Inject
-  public DockerProvisioner(@Assisted String dockerEndpoint) {
+  public DockerProvisioner(String dockerEndpoint) {
     if (StringUtils.isBlank(dockerEndpoint)) {
       throw new IllegalArgumentException("dockerEndpoint field cannot be null or blank");
     }
