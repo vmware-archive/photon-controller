@@ -15,9 +15,6 @@ package com.vmware.photon.controller.deployer.deployengine;
 
 import com.vmware.photon.controller.deployer.service.exceptions.ManagementVmAddressAlreadyInUseException;
 
-import com.google.inject.Inject;
-import com.google.inject.assistedinject.Assisted;
-
 import java.io.IOException;
 import java.net.InetAddress;
 import java.util.concurrent.Callable;
@@ -32,8 +29,7 @@ public class HostManagementVmAddressValidator implements Callable<Boolean> {
 
   private final String address;
 
-  @Inject
-  public HostManagementVmAddressValidator(@Assisted String address) {
+  public HostManagementVmAddressValidator(String address) {
     this.address = address;
   }
 

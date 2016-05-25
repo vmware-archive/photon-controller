@@ -16,8 +16,6 @@ package com.vmware.photon.controller.deployer.deployengine;
 import com.vmware.photon.controller.deployer.service.exceptions.InvalidLoginException;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.inject.Inject;
-import com.google.inject.assistedinject.Assisted;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.protocol.HTTP;
@@ -54,10 +52,9 @@ public class HttpFileServiceClient {
   private String password;
   private String userName;
 
-  @Inject
-  public HttpFileServiceClient(@Assisted("hostAddress") String hostAddress,
-                               @Assisted("userName") String userName,
-                               @Assisted("password") String password) {
+  public HttpFileServiceClient(String hostAddress,
+                               String userName,
+                               String password) {
     this.hostAddress = hostAddress;
     this.password = password;
     this.userName = userName;

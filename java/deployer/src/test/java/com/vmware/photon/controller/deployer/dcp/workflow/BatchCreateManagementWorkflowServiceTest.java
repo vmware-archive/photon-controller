@@ -31,6 +31,7 @@ import com.vmware.photon.controller.client.resource.VmApi;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ResourceTicketService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.TenantService;
+import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
@@ -40,7 +41,6 @@ import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
 import com.vmware.photon.controller.deployer.DeployerConfig;
-import com.vmware.photon.controller.deployer.DeployerModule;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfigurator;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfiguratorFactory;
 import com.vmware.photon.controller.deployer.dcp.ContainersConfig;
@@ -882,12 +882,12 @@ public class BatchCreateManagementWorkflowServiceTest {
 
       InetSocketAddress address = cloudStoreMachine.getServerSet().getServers().iterator().next();
       doReturn(Collections.singleton(address))
-          .when(zkBuilder).getServers(anyString(), eq(DeployerModule.CLOUDSTORE_SERVICE_NAME));
+          .when(zkBuilder).getServers(anyString(), eq(Constants.CLOUDSTORE_SERVICE_NAME));
       InetSocketAddress adjustedAddress = new InetSocketAddress(address.getHostName(), address.getPort() - 1);
       doReturn(Collections.singleton(adjustedAddress))
-          .when(zkBuilder).getServers(anyString(), eq(DeployerModule.DEPLOYER_SERVICE_NAME));
+          .when(zkBuilder).getServers(anyString(), eq(Constants.DEPLOYER_SERVICE_NAME));
       doReturn(Collections.singleton(adjustedAddress))
-          .when(zkBuilder).getServers(anyString(), eq(DeployerModule.HOUSEKEEPER_SERVICE_NAME));
+          .when(zkBuilder).getServers(anyString(), eq(Constants.HOUSEKEEPER_SERVICE_NAME));
 
       return new TestEnvironment.Builder()
           .deployerContext(deployerContext)

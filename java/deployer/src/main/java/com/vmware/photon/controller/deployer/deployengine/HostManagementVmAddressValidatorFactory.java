@@ -13,12 +13,10 @@
 
 package com.vmware.photon.controller.deployer.deployengine;
 
-import com.google.inject.assistedinject.Assisted;
-
 /**
  * This class defines an interface for factory objects which create
  * {@link HostManagementVmAddressValidator} instances.
  */
 public interface HostManagementVmAddressValidatorFactory {
-  HostManagementVmAddressValidator create(@Assisted String hostAddress);
+  HostManagementVmAddressValidator create(String hostAddress);
 }
