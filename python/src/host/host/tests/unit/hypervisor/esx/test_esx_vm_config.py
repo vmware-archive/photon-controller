@@ -14,7 +14,7 @@ import uuid
 
 from mock import MagicMock
 from nose_parameterized import parameterized
-from hamcrest import assert_that, equal_to
+from hamcrest import assert_that, equal_to, not_none
 from pyVmomi import vim
 
 from host.hypervisor.esx.host_client import DeviceNotFoundException
@@ -87,6 +87,24 @@ class TestEsxVmConfig(unittest.TestCase):
                     equal_to(backing))
         assert_that(spec.deviceChange[0].device.backing.deviceName,
                     equal_to(net_name))
+
+    def test_add_virtual_nic(self):
+        spec = self._update_spec()
+        assert_that(len(spec.get_spec().deviceChange), equal_to(0))
+        network_id = "logical_switch_id"
+        vm_location_id = "location_id"
+        nsx_logical_switch = "nsx.LogicalSwitch"
+        backing = vim.vm.device.VirtualEthernetCard.OpaqueNetworkBackingInfo
+        spec.add_virtual_nic(network_id, vm_location_id)
+        assert_that(len(spec.get_spec().deviceChange), equal_to(1))
+        assert_that(spec.get_spec().deviceChange[0].device, not_none())
+        device = spec.get_spec().deviceChange[0].device
+        assert_that(device.externalId, equal_to(vm_location_id))
+        assert_that(device.backing.__class__, equal_to(backing))
+        assert_that(device.backing.opaqueNetworkId, equal_to(network_id))
+        assert_that(device.backing.opaqueNetworkType, equal_to(nsx_logical_switch))
+        assert_that(device.connectable.connected, equal_to(True))
+        assert_that(device.connectable.startConnected, equal_to(True))
 
     def test_find_disk_controller(self):
         devices = self.dummy_devices()

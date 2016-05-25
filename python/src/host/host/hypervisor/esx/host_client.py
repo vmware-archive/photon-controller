@@ -123,6 +123,10 @@ class HostClient(object):
         pass
 
     @abc.abstractmethod
+    def attach_virtual_network(self, vm_id, network_id):
+        pass
+
+    @abc.abstractmethod
     def get_mks_ticket(self, vm_id):
         pass
 
@@ -240,6 +244,10 @@ class VmConfigSpec(object):
 
     @abc.abstractmethod
     def add_nic(self, network):
+        pass
+
+    @abc.abstractmethod
+    def add_virtual_nic(self, network_id, vm_location_id):
         pass
 
     @abc.abstractmethod
