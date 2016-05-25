@@ -39,6 +39,7 @@ import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.common.xenon.validation.WriteOnce;
 import com.vmware.photon.controller.deployer.dcp.DeployerContext;
+import com.vmware.photon.controller.deployer.dcp.DeployerXenonServiceHost;
 import com.vmware.photon.controller.deployer.dcp.constant.ServicePortConstants;
 import com.vmware.photon.controller.deployer.dcp.entity.VibFactoryService;
 import com.vmware.photon.controller.deployer.dcp.entity.VibService;
@@ -298,17 +299,6 @@ public class ProvisionHostTaskService extends StatefulService {
 
   public ProvisionHostTaskService() {
     super(State.class);
-
-    /**
-     * These attributes are required because the {@link UploadVibTaskService} task is scheduled by
-     * the task scheduler. If and when this is not the case -- either these attributes are no
-     * longer required, or this task is not scheduled by the task scheduler -- then they should be
-     * removed, along with the same attributes in higher-level task services which create instances
-     * of this task.
-     */
-    super.toggleOption(ServiceOption.OWNER_SELECTION, true);
-    super.toggleOption(ServiceOption.PERSISTENCE, true);
-    super.toggleOption(ServiceOption.REPLICATION, true);
   }
 
   @Override
@@ -1083,12 +1073,14 @@ public class ProvisionHostTaskService extends StatefulService {
 
   private void createUploadVibTasks(Collection<Operation> vibStartOps, String aggregatorServiceLink) {
 
-    Stream<Operation> taskStartOps = vibStartOps.stream().map((vibStartOp) -> {
-      UploadVibTaskService.State startState = new UploadVibTaskService.State();
-      startState.parentTaskServiceLink = aggregatorServiceLink;
-      startState.vibServiceLink = vibStartOp.getBody(ServiceDocument.class).documentSelfLink;
-      return Operation.createPost(this, UploadVibTaskFactoryService.SELF_LINK).setBody(startState);
-    });
+    Stream<Operation> taskStartOps = vibStartOps.stream().map(
+        (vibStartOp) -> {
+          UploadVibTaskService.State startState = new UploadVibTaskService.State();
+          startState.parentTaskServiceLink = aggregatorServiceLink;
+          startState.workQueueServiceLink = DeployerXenonServiceHost.UPLOAD_VIB_WORK_QUEUE_SELF_LINK;
+          startState.vibServiceLink = vibStartOp.getBody(ServiceDocument.class).documentSelfLink;
+          return Operation.createPost(this, UploadVibTaskFactoryService.SELF_LINK).setBody(startState);
+        });
 
     OperationJoin
         .create(taskStartOps)
