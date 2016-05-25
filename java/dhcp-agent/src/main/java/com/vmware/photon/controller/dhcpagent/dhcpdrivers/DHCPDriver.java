@@ -18,7 +18,24 @@ package com.vmware.photon.controller.dhcpagent.dhcpdrivers;
  */
 public interface DHCPDriver {
 
+    /**
+     * This method calls DHCP driver to release IP
+     * for cleanup of network resources.
+     *
+     * @param networkInterface
+     * @param macAddress
+     *
+     * @return
+     */
     Response releaseIP(String networkInterface, String macAddress);
+
+    /**
+     * This method returns true with DHCP server
+     * is up and running.
+     *
+     * @return
+     */
+    boolean isRunning();
 
     /**
      * Class to hold the response for Driver operations.
