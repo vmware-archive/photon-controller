@@ -21,7 +21,6 @@ import com.vmware.photon.controller.api.ClusterType;
 import com.vmware.photon.controller.api.Deployment;
 import com.vmware.photon.controller.api.DeploymentCreateSpec;
 import com.vmware.photon.controller.api.DeploymentDeployOperation;
-import com.vmware.photon.controller.api.DeploymentState;
 import com.vmware.photon.controller.api.Project;
 import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
@@ -95,7 +94,7 @@ public class DeploymentFeClientTest {
 
     feClient = new DeploymentFeClient(
         taskBackend, deploymentBackend, vmBackend, hostBackend, tenantBackend, projectBackend, authConfig,
-        serviceConfig, commandFactory, executorService);
+        commandFactory, executorService);
   }
 
   /**
@@ -406,52 +405,6 @@ public class DeploymentFeClientTest {
 
       assertThat(config.getType(), is(ClusterType.KUBERNETES));
       assertThat(config.getImageId(), is("imageId"));
-    }
-  }
-
-  /**
-   * Tests the pause from serviceConfig.
-   */
-  public class PauseTest {
-    String deploymentId;
-    ClusterConfiguration configuration;
-
-    @BeforeMethod
-    public void setUp() throws Throwable {
-      setUpCommon();
-    }
-
-    @Test
-    public void testSystemPausedSuccess() throws Throwable {
-      doReturn(true).when(serviceConfig).isPaused();
-      Deployment deployment = new Deployment();
-      deployment.setState(DeploymentState.READY);
-      deploymentId = "deployment-id";
-      doReturn(deployment).when(deploymentBackend).toApiRepresentation(deploymentId);
-
-      assertThat(feClient.get(deploymentId).getState(), is(DeploymentState.PAUSED));
-    }
-
-    @Test
-    public void testBackgroundPausedSuccess() throws Throwable {
-      doReturn(true).when(serviceConfig).isBackgroundPaused();
-      Deployment deployment = new Deployment();
-      deployment.setState(DeploymentState.READY);
-      deploymentId = "deployment-id";
-      doReturn(deployment).when(deploymentBackend).toApiRepresentation(deploymentId);
-
-      assertThat(feClient.get(deploymentId).getState(), is(DeploymentState.BACKGROUND_PAUSED));
-    }
-
-    @Test
-    public void testSystemError() throws Throwable {
-      doReturn(true).when(serviceConfig).isPaused();
-      Deployment deployment = new Deployment();
-      deployment.setState(DeploymentState.ERROR);
-      deploymentId = "deployment-id";
-      doReturn(deployment).when(deploymentBackend).toApiRepresentation(deploymentId);
-
-      assertThat(feClient.get(deploymentId).getState(), is(DeploymentState.ERROR));
     }
   }
 
