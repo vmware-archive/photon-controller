@@ -14,12 +14,9 @@
 package com.vmware.photon.controller.deployer.deployengine;
 
 import com.vmware.photon.controller.client.ApiClient;
-import com.vmware.photon.controller.client.SharedSecret;
 import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
-import com.vmware.photon.controller.deployer.ApiFeServerSet;
 
-import com.google.inject.Inject;
 import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
 
 /**
@@ -32,10 +29,9 @@ public class ApiClientFactory {
   private CloseableHttpAsyncClient httpClient;
   private String sharedSecret;
 
-  @Inject
-  public ApiClientFactory(@ApiFeServerSet ServerSet serverSet,
+  public ApiClientFactory(ServerSet serverSet,
                           CloseableHttpAsyncClient httpClient,
-                          @SharedSecret String sharedSecret) {
+                          String sharedSecret) {
 
     this.serverSet = serverSet;
     this.httpClient = httpClient;

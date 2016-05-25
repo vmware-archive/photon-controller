@@ -16,6 +16,7 @@ package com.vmware.photon.controller.deployer.dcp.workflow;
 import com.vmware.photon.controller.api.DeploymentState;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
+import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
@@ -32,7 +33,6 @@ import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.common.xenon.validation.Positive;
 import com.vmware.photon.controller.common.xenon.validation.WriteOnce;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
-import com.vmware.photon.controller.deployer.DeployerModule;
 import com.vmware.photon.controller.deployer.dcp.DeployerXenonServiceHost;
 import com.vmware.photon.controller.deployer.dcp.task.AllocateClusterManagerResourcesTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.AllocateClusterManagerResourcesTaskService;
@@ -53,7 +53,6 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.FutureCallback;
 import org.eclipse.jetty.util.BlockingArrayQueue;
-
 import static com.google.common.base.Preconditions.checkState;
 
 import javax.annotation.Nullable;
@@ -589,7 +588,7 @@ public class DeploymentWorkflowService extends StatefulService {
   }
 
   private void migrateData(State currentState, String destinationZookeeperQuorum) {
-    Map<String, Integer> portAdjustment = ImmutableMap.of(DeployerModule.DEPLOYER_SERVICE_NAME, 1);
+    Map<String, Integer> portAdjustment = ImmutableMap.of(Constants.DEPLOYER_SERVICE_NAME, 1);
 
     Map<String, Pair<Set<InetSocketAddress>, Set<InetSocketAddress>>> serviceSourceDestinationAddressCache
       = new HashMap<>();
@@ -673,7 +672,7 @@ public class DeploymentWorkflowService extends StatefulService {
                   failTask(errors);
                 } else {
                   updateDeploymentServiceState(
-                      serviceSourceDestinationAddressCache.get(DeployerModule.CLOUDSTORE_SERVICE_NAME).getSecond(),
+                      serviceSourceDestinationAddressCache.get(Constants.CLOUDSTORE_SERVICE_NAME).getSecond(),
                       currentState);
                 }
               }
@@ -771,7 +770,7 @@ public class DeploymentWorkflowService extends StatefulService {
         DeploymentService.State deployment = o.getBody(DeploymentService.State.class);
         ZookeeperClient zookeeperClient = HostUtils.getZookeeperClient(this);
         ServiceConfig serviceConfig
-          = zookeeperClient.getServiceConfig(deployment.zookeeperQuorum, DeployerModule.APIFE_SERVICE_NAME);
+          = zookeeperClient.getServiceConfig(deployment.zookeeperQuorum, Constants.APIFE_SERVICE_NAME);
 
         try {
           switch (currentState.desiredState) {

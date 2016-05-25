@@ -14,7 +14,6 @@
 package com.vmware.photon.controller.deployer;
 
 
-import com.vmware.photon.controller.agent.gen.AgentControl;
 import com.vmware.photon.controller.clustermanager.ClusterManagerFactory;
 import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.clients.AgentControlClientFactory;
@@ -24,7 +23,6 @@ import com.vmware.photon.controller.common.logging.LoggingFactory;
 import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.photon.controller.common.thrift.ThriftFactory;
 import com.vmware.photon.controller.common.thrift.ThriftModule;
-import com.vmware.photon.controller.common.thrift.ThriftServiceModule;
 import com.vmware.photon.controller.common.zookeeper.ServiceNodeFactory;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperModule;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperServerSetFactory;
@@ -42,6 +40,7 @@ import com.vmware.photon.controller.deployer.deployengine.HostManagementVmAddres
 import com.vmware.photon.controller.deployer.deployengine.HttpFileServiceClient;
 import com.vmware.photon.controller.deployer.deployengine.HttpFileServiceClientFactory;
 import com.vmware.photon.controller.deployer.deployengine.NsxClientFactory;
+import com.vmware.photon.controller.deployer.deployengine.ZookeeperClient;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClientFactory;
 import com.vmware.photon.controller.deployer.healthcheck.HealthCheckHelper;
 import com.vmware.photon.controller.deployer.healthcheck.HealthCheckHelperFactory;
@@ -53,27 +52,38 @@ import com.vmware.photon.controller.deployer.service.client.DeploymentWorkflowSe
 import com.vmware.photon.controller.deployer.service.client.DeprovisionHostWorkflowServiceClientFactory;
 import com.vmware.photon.controller.deployer.service.client.HostServiceClientFactory;
 import com.vmware.photon.controller.deployer.service.client.ValidateHostTaskServiceClientFactory;
-import com.vmware.photon.controller.host.gen.Host;
 import com.vmware.xenon.common.Service;
 
 import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.MoreExecutors;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import com.google.inject.TypeLiteral;
-import com.google.inject.assistedinject.Assisted;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.Namespace;
 import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
+import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
+import org.apache.http.nio.conn.ssl.SSLIOSessionStrategy;
+import org.apache.http.ssl.SSLContexts;
 import org.apache.thrift.protocol.TProtocolFactory;
 import org.apache.thrift.transport.TTransportFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.net.ssl.SSLContext;
+
+import java.nio.file.Paths;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+
 /**
  * This class implements the entry point for the deployer service.
  */
 public class Main {
+
+  public static final String CLUSTER_SCRIPTS_DIRECTORY = "clusters";
 
   private static final Logger logger = LoggerFactory.getLogger(Main.class);
 
@@ -107,27 +117,37 @@ public class Main {
       Injector injector = Guice.createInjector(
           new DeployerModule(deployerConfig),
           new ZookeeperModule(deployerConfig.getZookeeper()),
-          new ThriftModule(),
-          new ThriftServiceModule<>(
-              new TypeLiteral<AgentControl.AsyncClient>() {
-              }
-          ),
-          new ThriftServiceModule<>(
-              new TypeLiteral<Host.AsyncClient>() {
-              }
-          ));
+          new ThriftModule()
+      );
 
       ZookeeperServerSetFactory serverSetFactory = injector.getInstance(ZookeeperServerSetFactory.class);
       ServerSet deployerServerSet = serverSetFactory.createServiceServerSet(Constants.DEPLOYER_SERVICE_NAME, true);
       ServerSet cloudStoreServerSet = serverSetFactory.createServiceServerSet(Constants.CLOUDSTORE_SERVICE_NAME, true);
+      ServerSet apiFeServerSet = serverSetFactory.createServiceServerSet(Constants.APIFE_SERVICE_NAME, true);
 
-      final DeployerXenonServiceHost deployerXenonServiceHost = createDeployerXenonServiceHost(injector,
-          deployerConfig, cloudStoreServerSet);
+      final CloseableHttpAsyncClient httpClient;
+      try {
+        SSLContext sslcontext = SSLContexts.custom()
+            .loadTrustMaterial((chain, authtype) -> true)
+            .build();
+        httpClient = HttpAsyncClientBuilder.create()
+            .setHostnameVerifier(SSLIOSessionStrategy.ALLOW_ALL_HOSTNAME_VERIFIER)
+            .setSSLContext(sslcontext)
+            .build();
+        httpClient.start();
+      } catch (Throwable e) {
+        throw new RuntimeException(e);
+      }
+
+      final ThriftModule thriftModule = injector.getInstance(ThriftModule.class);
+
+      final DeployerXenonServiceHost deployerXenonServiceHost = createDeployerXenonServiceHost(thriftModule,
+          deployerConfig, apiFeServerSet, cloudStoreServerSet, httpClient);
 
       final DeployerService deployerService = createDeployerService(injector, deployerXenonServiceHost,
           deployerServerSet);
 
-      final DeployerServer thriftServer = createDeployerServer(injector, deployerService, deployerConfig);
+      final DeployerServer thriftServer = createDeployerServer(injector, deployerService, deployerConfig, httpClient);
 
       logger.info("Adding shutdown hook");
       Runtime.getRuntime().addShutdownHook(new Thread() {
@@ -157,17 +177,19 @@ public class Main {
   /**
    * Creates a new DeployerXenonServiceHost.
    *
-   * @param injector
+   * @param thriftModule
    * @param deployerConfig
    * @param cloudStoreServerSet
    * @return
    * @throws Throwable
    */
-  private static DeployerXenonServiceHost createDeployerXenonServiceHost(Injector injector,
+  private static DeployerXenonServiceHost createDeployerXenonServiceHost(ThriftModule thriftModule,
                                                                          DeployerConfig deployerConfig,
-                                                                         ServerSet cloudStoreServerSet)
+                                                                         ServerSet apiFeServerSet,
+                                                                         ServerSet cloudStoreServerSet,
+                                                                         CloseableHttpAsyncClient httpClient)
       throws Throwable {
-    logger.info("Creating Xenon host instance");
+    logger.info("Creating Deployer Xenon host instance");
     // Set deployer context zookeeper quorum
     deployerConfig.getDeployerContext().setZookeeperQuorum(deployerConfig.getZookeeper().getQuorum());
 
@@ -179,8 +201,23 @@ public class Main {
       throw new RuntimeException(e);
     }
 
-    final AgentControlClientFactory agentControlClientFactory = injector.getInstance(AgentControlClientFactory.class);
-    final HostClientFactory hostClientFactory = injector.getInstance(HostClientFactory.class);
+    /**
+     * The blocking queue associated with the thread pool executor service
+     * controls the rejection policy for new work items: a bounded queue, such as
+     * an ArrayBlockingQueue, will cause new work items to be rejected (and thus
+     * failed) when the queue length is reached. A LinkedBlockingQueue, which is
+     * unbounded, is used here in order to enable the submission of an arbitrary
+     * number of work items since this is the pattern expected for the deployer
+     * (a large number of work items arrive all at once, and then no more).
+     */
+    final BlockingQueue<Runnable> blockingQueue = new LinkedBlockingDeque<>();
+    final ListeningExecutorService listeningExecutorService = MoreExecutors.listeningDecorator(
+        new ThreadPoolExecutor(
+            deployerConfig.getDeployerContext().getCorePoolSize(),
+            deployerConfig.getDeployerContext().getMaximumPoolSize(),
+            deployerConfig.getDeployerContext().getKeepAliveTime(),
+            TimeUnit.SECONDS,
+            blockingQueue));
 
     final DockerProvisionerFactory dockerProvisionerFactory = new DockerProvisionerFactoryImpl();
     final AuthHelperFactory authHelperFactory = new AuthHelperFactoryImpl();
@@ -191,20 +228,24 @@ public class Main {
     final HttpFileServiceClientFactory httpFileServiceClientFactory = new HttpFileServiceClientFactoryImpl();
     final NsxClientFactory nsxClientFactory = new NsxClientFactory();
 
-    // Guice Injection to create DeployerXenonServiceHost
-    final ApiClientFactory apiClientFactory = injector.getInstance(ApiClientFactory.class);
-    final ZookeeperClientFactory zookeeperServerSetBuilderFactory = injector.getInstance(ZookeeperClientFactory
-        .class);
-    final ClusterManagerFactory clusterManagerFactory = injector.getInstance(ClusterManagerFactory.class);
-    final ListeningExecutorService listeningExecutorService = injector.getInstance(ListeningExecutorService.class);
+    final ZookeeperClientFactory zookeeperServerSetBuilderFactory = new ZookeeperClientFactoryImpl(deployerConfig);
 
-    return new DeployerXenonServiceHost(
-        deployerConfig.getXenonConfig(), cloudStoreServerSet, deployerConfig.getDeployerContext(),
-        deployerConfig.getContainersConfig(),
-        agentControlClientFactory, hostClientFactory, httpFileServiceClientFactory, listeningExecutorService,
-        apiClientFactory, dockerProvisionerFactory, authHelperFactory, healthCheckHelperFactory,
-        serviceConfiguratorFactory, zookeeperServerSetBuilderFactory, hostManagementVmAddressValidatorFactory,
-        clusterManagerFactory, nsxClientFactory);
+    final ApiClientFactory apiClientFactory = new ApiClientFactory(apiFeServerSet, httpClient,
+        deployerConfig.getDeployerContext().getSharedSecret());
+
+    final ClusterManagerFactory clusterManagerFactory = new ClusterManagerFactory(listeningExecutorService,
+        httpClient, apiFeServerSet, deployerConfig.getDeployerContext().getSharedSecret(), cloudStoreServerSet,
+        Paths.get(deployerConfig.getDeployerContext().getScriptDirectory(), CLUSTER_SCRIPTS_DIRECTORY).toString());
+
+    final AgentControlClientFactory agentControlClientFactory = thriftModule.getAgentControlClientFactory();
+    final HostClientFactory hostClientFactory = thriftModule.getHostClientFactory();
+
+    return new DeployerXenonServiceHost(deployerConfig.getXenonConfig(), cloudStoreServerSet,
+        deployerConfig.getDeployerContext(), deployerConfig.getContainersConfig(), agentControlClientFactory,
+        hostClientFactory, httpFileServiceClientFactory, listeningExecutorService, apiClientFactory,
+        dockerProvisionerFactory, authHelperFactory, healthCheckHelperFactory, serviceConfiguratorFactory,
+        zookeeperServerSetBuilderFactory, hostManagementVmAddressValidatorFactory, clusterManagerFactory,
+        nsxClientFactory);
   }
 
   /**
@@ -244,13 +285,13 @@ public class Main {
    * @return
    */
   private static DeployerServer createDeployerServer(Injector injector, DeployerService deployerService,
-                                                     DeployerConfig deployerConfig) {
+                                                     DeployerConfig deployerConfig,
+                                                     CloseableHttpAsyncClient httpClient) {
     logger.info("Creating Thrift server instance");
     final ServiceNodeFactory serviceNodeFactory = injector.getInstance(ServiceNodeFactory.class);
     final TProtocolFactory protocolFactory = injector.getInstance(TProtocolFactory.class);
     final TTransportFactory transportFactory = injector.getInstance(TTransportFactory.class);
     final ThriftFactory thriftFactory = injector.getInstance(ThriftFactory.class);
-    final CloseableHttpAsyncClient httpClient = injector.getInstance(CloseableHttpAsyncClient.class);
 
     return new DeployerServer(serviceNodeFactory, protocolFactory, transportFactory,
         thriftFactory, deployerService, deployerConfig.getThriftConfig(), httpClient);
@@ -284,13 +325,14 @@ public class Main {
   private static class HealthCheckHelperFactoryImpl implements HealthCheckHelperFactory {
 
     @Override
-    public HealthCheckHelper create(Service service, ContainersConfig.ContainerType containerType, String ipAddress) {
+    public HealthCheckHelper create(final Service service, final ContainersConfig.ContainerType containerType,
+                                    final String ipAddress) {
       return new HealthCheckHelper(service, containerType, ipAddress);
     }
 
     @Override
-    public XenonBasedHealthChecker create(Service service, Integer port, String ipAddress) {
-      return null;
+    public XenonBasedHealthChecker create(final Service service, final Integer port, final String ipAddress) {
+      return new XenonBasedHealthChecker(service, ipAddress, port);
     }
   }
 
@@ -322,10 +364,27 @@ public class Main {
   private static class HttpFileServiceClientFactoryImpl implements HttpFileServiceClientFactory {
 
     @Override
-    public HttpFileServiceClient create(@Assisted("hostAddress") String hostAddress,
-                                        @Assisted("userName") String userName,
-                                        @Assisted("password") String password) {
+    public HttpFileServiceClient create(String hostAddress,
+                                        String userName,
+                                        String password) {
       return new HttpFileServiceClient(hostAddress, userName, password);
+    }
+  }
+
+  /**
+   * Implementation of ZookeeperClientFactory.
+   */
+  private static class ZookeeperClientFactoryImpl implements ZookeeperClientFactory {
+    private final DeployerConfig deployerConfig;
+
+    private ZookeeperClientFactoryImpl(final DeployerConfig deployerConfig) {
+      this.deployerConfig = deployerConfig;
+    }
+
+    @Override
+    public ZookeeperClient create() {
+      /*deployerConfig.getZookeeper().getNamespace()*/
+      return new ZookeeperClient(deployerConfig.getZookeeper().getNamespace());
     }
   }
 }

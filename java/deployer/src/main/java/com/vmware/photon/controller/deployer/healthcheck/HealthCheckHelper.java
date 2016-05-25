@@ -19,9 +19,6 @@ import com.vmware.photon.controller.deployer.dcp.constant.ServicePortConstants;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
 import com.vmware.xenon.common.Service;
 
-import com.google.inject.Inject;
-import com.google.inject.assistedinject.Assisted;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,11 +29,10 @@ public class HealthCheckHelper {
 
   private final HealthChecker healthChecker;
 
-  @Inject
   public HealthCheckHelper(
-      @Assisted final Service service,
-      @Assisted final ContainersConfig.ContainerType containerType,
-      @Assisted final String ipAddress) {
+      final Service service,
+      final ContainersConfig.ContainerType containerType,
+      final String ipAddress) {
 
     switch (containerType) {
       case Zookeeper:

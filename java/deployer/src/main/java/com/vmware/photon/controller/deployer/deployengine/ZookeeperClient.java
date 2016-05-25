@@ -18,7 +18,6 @@ import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperServiceReader;
 
 import com.google.common.util.concurrent.FutureCallback;
-import com.google.inject.Inject;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.BoundedExponentialBackoffRetry;
@@ -49,8 +48,8 @@ public class ZookeeperClient {
   public static final int MAX_RETRIES = 1;
   private String namespace;
 
-  @Inject
-  public ZookeeperClient(@Nullable @ZookeeperNameSpace String namespace) {
+  public ZookeeperClient(@Nullable String namespace) {
+    logger.info("ZkClient Deployer namespace {}", namespace);
     this.namespace = namespace;
   }
 

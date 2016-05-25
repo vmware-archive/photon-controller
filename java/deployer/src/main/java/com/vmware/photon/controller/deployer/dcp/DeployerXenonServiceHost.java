@@ -16,7 +16,6 @@ package com.vmware.photon.controller.deployer.dcp;
 import com.vmware.photon.controller.cloudstore.xenon.upgrade.HostTransformationService;
 import com.vmware.photon.controller.clustermanager.ClusterManagerFactory;
 import com.vmware.photon.controller.clustermanager.ClusterManagerFactoryProvider;
-import com.vmware.photon.controller.common.CloudStoreServerSet;
 import com.vmware.photon.controller.common.clients.AgentControlClient;
 import com.vmware.photon.controller.common.clients.AgentControlClientFactory;
 import com.vmware.photon.controller.common.clients.AgentControlClientProvider;
@@ -108,7 +107,6 @@ import com.vmware.xenon.services.common.RootNamespaceService;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ObjectArrays;
 import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -118,7 +116,6 @@ import java.util.Map;
 /**
  * This class implements the Xenon service host object for the deployer service.
  */
-@Singleton
 public class DeployerXenonServiceHost
     extends AbstractServiceHost
     implements XenonHostInfoProvider,
@@ -247,7 +244,7 @@ public class DeployerXenonServiceHost
 
   public DeployerXenonServiceHost(
       XenonConfig xenonConfig,
-      @CloudStoreServerSet ServerSet cloudStoreServerSet,
+      ServerSet cloudStoreServerSet,
       DeployerContext deployerContext,
       ContainersConfig containersConfig,
       AgentControlClientFactory agentControlClientFactory,
