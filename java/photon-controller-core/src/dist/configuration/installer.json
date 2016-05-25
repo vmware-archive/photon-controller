@@ -1,0 +1,7 @@
+{
+    "CLOUD-STORE_DCP_STORAGE_PATH": "/etc/esxcloud/cloud-store/sandbox_19000",
+    "ROOT-SCHEDULER_DCP_STORAGE_PATH": "/etc/esxcloud/root-scheduler/sandbox_13010",
+    "LOG_DIRECTORY": "/var/log/esxcloud",
+    "REGISTRATION_ADDRESS": "127.0.0.1",
+    "ZOOKEEPER_QUORUM": "127.0.0.1:2181"
+}
