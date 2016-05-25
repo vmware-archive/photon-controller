@@ -29,7 +29,6 @@ from host.hypervisor.esx.host_client import DeviceNotFoundException
 from host.hypervisor.esx.path_util import datastore_to_os_path
 from host.hypervisor.esx.path_util import SHADOW_VM_NAME_PREFIX
 from host.hypervisor.esx.path_util import get_root_disk
-from host.hypervisor.esx.vm_config import EsxVmConfigSpec
 
 from common.log import log_duration
 
@@ -82,9 +81,6 @@ class EsxVmManager(VmManager):
     def suspend_vm(self, vm_id):
         self.vim_client.suspend_vm(vm_id)
 
-    def resume_vm(self, vm_id):
-        self.vim_client.resume_vm(vm_id)
-
     def _get_extra_config_map(self, metadata):
         # this can be simplified if the metadata dictionary follows some
         # convention in describing extra config properties
@@ -110,8 +106,7 @@ class EsxVmManager(VmManager):
         # the hypervisor sizing meta
         cpus = int(flavor.cost["vm.cpu"].convert(Unit.COUNT))
         memory = int(flavor.cost["vm.memory"].convert(Unit.MB))
-        spec = EsxVmConfigSpec(self.vim_client.query_config())
-        spec.init_for_create(vm_id, datastore, memory, cpus, metadata, env)
+        spec = self.vim_client.create_vm_spec(vm_id, datastore, memory, cpus, metadata, env)
 
         extra_config_map = self._get_extra_config_map(spec._metadata)
         # our one vm-identifying extra config

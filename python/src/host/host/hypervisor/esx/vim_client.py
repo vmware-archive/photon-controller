@@ -338,14 +338,6 @@ class VimClient(HostClient):
         """
         return self.host_system.summary.hardware.numCpuThreads
 
-    @property
-    @hostd_error_handler
-    def about(self):
-        """
-        :rtype: vim.AboutInfo
-        """
-        return self._content.about
-
     @hostd_error_handler
     def get_nfc_ticket_by_ds_name(self, datastore):
         """
@@ -414,7 +406,7 @@ class VimClient(HostClient):
         return datastores
 
     @hostd_error_handler
-    def get_vms(self):
+    def _get_vms(self):
         """ Get VirtualMachine from hostd. Use get_vms_in_cache to have a
         better performance unless you want Vim Object.
 
@@ -449,11 +441,12 @@ class VimClient(HostClient):
 
     @hostd_error_handler
     def get_vm_resource_ids(self):
-        ids = []
-        vm_folder = self._vm_folder()
-        for vm in vm_folder.GetChildEntity():
-            ids.append(vm.name)
-        return ids
+        return self._vim_cache.get_vm_ids_in_cache()
+
+    def create_vm_spec(self, vm_id, datastore, memoryMB, cpus, metadata, env):
+        spec = EsxVmConfigSpec(self.query_config())
+        spec.init_for_create(vm_id, datastore, memoryMB, cpus, metadata, env)
+        return spec
 
     @log_duration
     @hostd_error_handler
@@ -649,10 +642,6 @@ class VimClient(HostClient):
     @hostd_error_handler
     def suspend_vm(self, vm_id):
         self._power_vm(vm_id, "Suspend")
-
-    @hostd_error_handler
-    def resume_vm(self, vm_id):
-        self._power_vm(vm_id, "PowerOn")
 
     def _reconfigure_vm(self, vm, spec):
         self._invoke_vm(vm, "ReconfigVM_Task", spec)
