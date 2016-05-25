@@ -54,6 +54,7 @@ _ethernet_virtual_dev_to_vim_adapter_map = {
 
 _BOOT_SCSI_DEVICE = "scsi0"
 _FIRST_NIC_DEVICE = "ethernet0"
+_NSX_LOGICAL_SWITCH = "nsx.LogicalSwitch"
 
 
 class EsxVmConfigSpec(VmConfigSpec):
@@ -284,6 +285,31 @@ class EsxVmConfigSpec(VmConfigSpec):
                 self._metadata[device_key], controller_type)
 
         device = controller_type(key=-1, backing=backing)
+        self._add_device(device)
+
+    def add_virtual_nic(self, cfg_info, network_id):
+        """Add a virtual nic to this create spec.
+
+        :param cfg_info: The VM's ConfigInfo object
+        :param network_id: logical switch id
+        """
+        backing = vim.vm.device.VirtualEthernetCard.OpaqueNetworkBackingInfo(
+            opaqueNetworkId=network_id,
+            opaqueNetworkType=_NSX_LOGICAL_SWITCH
+        )
+
+        conInfo = vim.vm.device.VirtualDevice.ConnectInfo(
+            connected=True,
+            startConnected=True
+        )
+
+        controller_type = vim.vm.device.VirtualVmxnet3
+        device = controller_type(
+            externalId=cfg_info.locationId,
+            backing=backing,
+            connectable=conInfo
+        )
+
         self._add_device(device)
 
     def attach_iso(self, cfg_info, iso_file):
