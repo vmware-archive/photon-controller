@@ -33,7 +33,6 @@ import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.BadRequestException;
 import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
-import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
 import com.vmware.photon.controller.host.gen.GetMonitoredImagesResultCode;
 import com.vmware.photon.controller.host.gen.StartImageOperationResultCode;
 import com.vmware.photon.controller.housekeeper.dcp.mock.CloudStoreHelperMock;
@@ -44,7 +43,6 @@ import com.vmware.photon.controller.housekeeper.dcp.mock.hostclient.ErrorMockSta
 import com.vmware.photon.controller.housekeeper.dcp.mock.hostclient.ErrorMockStartImageSweep;
 import com.vmware.photon.controller.housekeeper.helpers.dcp.TestEnvironment;
 import com.vmware.photon.controller.housekeeper.helpers.dcp.TestHost;
-import com.vmware.photon.controller.nsxclient.NsxClientFactory;
 import com.vmware.photon.controller.resource.gen.InactiveImageDescriptor;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
@@ -855,20 +853,22 @@ public class ImageDatastoreSweeperServiceTest {
     private static final String PARENT_LINK = "/image-cleaner/id1";
 
     private TestEnvironment machine;
-    private ImageDatastoreSweeperService.State request;
+    private TestEnvironment.Builder machineBuilder;
 
     private HostClientFactory hostClientFactory;
-    private ServiceConfigFactory serviceConfigFactory;
     private CloudStoreHelper cloudStoreHelper;
-    private NsxClientFactory nsxClientFactory;
+
+    private ImageDatastoreSweeperService.State request;
 
     @BeforeMethod
     public void setUp() throws Throwable {
       hostClientFactory = mock(HostClientFactory.class);
       doReturn(new HostClientMock()).when(hostClientFactory).create();
-      serviceConfigFactory = mock(ServiceConfigFactory.class);
       cloudStoreHelper = new CloudStoreHelper();
-      nsxClientFactory = mock(NsxClientFactory.class);
+
+      machineBuilder = new TestEnvironment.Builder()
+          .cloudStoreHelper(cloudStoreHelper)
+          .hostClientFactory(hostClientFactory);
 
       // Build input.
       request = buildValidStartupState();
@@ -912,8 +912,9 @@ public class ImageDatastoreSweeperServiceTest {
                             int deletedImages,
                             int deletedCloudStoreImages) throws Throwable {
 
-      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, serviceConfigFactory, nsxClientFactory,
-          hostCount);
+      machine = machineBuilder
+          .hostCount(hostCount)
+          .build();
       ServiceHost host = machine.getHosts()[0];
 
       machine.startFactoryServiceSynchronously(
@@ -1006,7 +1007,7 @@ public class ImageDatastoreSweeperServiceTest {
         datastoreClause = new QueryTask.Query()
             .setTermPropertyName("replicatedImageDatastore")
             .setNumericRange(QueryTask.NumericRange.createEqualRange(0L));
-       kindClause = new QueryTask.Query()
+        kindClause = new QueryTask.Query()
             .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
             .setTermMatchValue(Utils.buildKind(ImageService.State.class));
 
@@ -1093,8 +1094,10 @@ public class ImageDatastoreSweeperServiceTest {
     @Test(dataProvider = "HostClientErrors")
     public void testHostClientErrors(int hostCount, double patchCount, String reason, HostClientMock hostClient)
         throws Throwable {
-      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, serviceConfigFactory, nsxClientFactory,
-          hostCount);
+      machine = machineBuilder
+          .hostCount(hostCount)
+          .build();
+
       machine.startFactoryServiceSynchronously(
           ImageServiceFactory.class, ImageServiceFactory.SELF_LINK);
 

@@ -19,11 +19,9 @@ import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.BadRequestException;
-import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
 import com.vmware.photon.controller.housekeeper.dcp.mock.HostClientMock;
 import com.vmware.photon.controller.housekeeper.helpers.dcp.TestEnvironment;
 import com.vmware.photon.controller.housekeeper.helpers.dcp.TestHost;
-import com.vmware.photon.controller.nsxclient.NsxClientFactory;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceDocument;
@@ -292,21 +290,22 @@ public class ImageCleanerTriggerServiceTest {
    */
   public class EndToEndTest {
     private TestEnvironment machine;
+    private TestEnvironment.Builder machineBuilder;
+
     private HostClientFactory hostClientFactory;
     private CloudStoreHelper cloudStoreHelper;
-    private ServiceConfigFactory serviceConfigFactory;
-    private NsxClientFactory nsxClientFactory;
 
     private ImageCleanerTriggerService.State request;
 
     @BeforeMethod
     public void setup() throws Throwable {
       hostClientFactory = mock(HostClientFactory.class);
-      serviceConfigFactory = mock(ServiceConfigFactory.class);
-      cloudStoreHelper = mock(CloudStoreHelper.class);
       doReturn(new HostClientMock()).when(hostClientFactory).create();
-      serviceConfigFactory = mock(ServiceConfigFactory.class);
-      nsxClientFactory = mock(NsxClientFactory.class);
+      cloudStoreHelper = mock(CloudStoreHelper.class);
+
+      machineBuilder = new TestEnvironment.Builder()
+          .cloudStoreHelper(cloudStoreHelper)
+          .hostClientFactory(hostClientFactory);
 
       // Build input.
       request = buildValidStartupState();
@@ -329,8 +328,9 @@ public class ImageCleanerTriggerServiceTest {
 
     @Test(dataProvider = "hostCount")
     public void testTriggerActivationSuccess(int hostCount) throws Throwable {
-      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory,
-          serviceConfigFactory, nsxClientFactory, hostCount);
+      machine = machineBuilder
+          .hostCount(hostCount)
+          .build();
 
       //Call Service.
       ImageCleanerTriggerService.State response = machine.checkServiceIsResponding(
@@ -351,8 +351,9 @@ public class ImageCleanerTriggerServiceTest {
       request.executionState = ImageCleanerTriggerService.ExecutionState.RUNNING;
       request.shouldTriggerTasks = true;
 
-      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory,
-          serviceConfigFactory, nsxClientFactory, hostCount);
+      machine = machineBuilder
+          .hostCount(hostCount)
+          .build();
 
       // Send a patch to the trigger service to simulate a maintenance interval kicking in
       machine.sendPatchAndWait(machine.getTriggerCleanerServiceUri(), request);
@@ -364,7 +365,8 @@ public class ImageCleanerTriggerServiceTest {
               TaskState.TaskStage.STARTED,
               TaskState.TaskStage.FINISHED,
               TaskState.TaskStage.FAILED);
-      spec.options.add(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);;
+      spec.options.add(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
+      ;
 
       QueryTask query = QueryTask.create(spec)
           .setDirect(true);
