@@ -42,6 +42,7 @@ import com.vmware.photon.controller.deployer.deployengine.HostManagementVmAddres
 import com.vmware.photon.controller.deployer.deployengine.HttpFileServiceClient;
 import com.vmware.photon.controller.deployer.deployengine.HttpFileServiceClientFactory;
 import com.vmware.photon.controller.deployer.deployengine.NsxClientFactory;
+import com.vmware.photon.controller.deployer.deployengine.ZookeeperClient;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClientFactory;
 import com.vmware.photon.controller.deployer.healthcheck.HealthCheckHelper;
 import com.vmware.photon.controller.deployer.healthcheck.HealthCheckHelperFactory;
@@ -57,10 +58,10 @@ import com.vmware.photon.controller.host.gen.Host;
 import com.vmware.xenon.common.Service;
 
 import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.MoreExecutors;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.TypeLiteral;
-import com.google.inject.assistedinject.Assisted;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.Namespace;
@@ -70,10 +71,18 @@ import org.apache.thrift.transport.TTransportFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.file.Paths;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingDeque;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+
 /**
  * This class implements the entry point for the deployer service.
  */
 public class Main {
+
+  public static final String CLUSTER_SCRIPTS_DIRECTORY = "clusters";
 
   private static final Logger logger = LoggerFactory.getLogger(Main.class);
 
@@ -120,14 +129,17 @@ public class Main {
       ZookeeperServerSetFactory serverSetFactory = injector.getInstance(ZookeeperServerSetFactory.class);
       ServerSet deployerServerSet = serverSetFactory.createServiceServerSet(Constants.DEPLOYER_SERVICE_NAME, true);
       ServerSet cloudStoreServerSet = serverSetFactory.createServiceServerSet(Constants.CLOUDSTORE_SERVICE_NAME, true);
+      ServerSet apiFeServerSet = serverSetFactory.createServiceServerSet(Constants.APIFE_SERVICE_NAME, true);
+
+      final CloseableHttpAsyncClient httpClient = injector.getInstance(CloseableHttpAsyncClient.class);
 
       final DeployerXenonServiceHost deployerXenonServiceHost = createDeployerXenonServiceHost(injector,
-          deployerConfig, cloudStoreServerSet);
+          deployerConfig, apiFeServerSet, cloudStoreServerSet, httpClient);
 
       final DeployerService deployerService = createDeployerService(injector, deployerXenonServiceHost,
           deployerServerSet);
 
-      final DeployerServer thriftServer = createDeployerServer(injector, deployerService, deployerConfig);
+      final DeployerServer thriftServer = createDeployerServer(injector, deployerService, deployerConfig, httpClient);
 
       logger.info("Adding shutdown hook");
       Runtime.getRuntime().addShutdownHook(new Thread() {
@@ -165,9 +177,11 @@ public class Main {
    */
   private static DeployerXenonServiceHost createDeployerXenonServiceHost(Injector injector,
                                                                          DeployerConfig deployerConfig,
-                                                                         ServerSet cloudStoreServerSet)
+                                                                         ServerSet apiFeServerSet,
+                                                                         ServerSet cloudStoreServerSet,
+                                                                         CloseableHttpAsyncClient httpClient)
       throws Throwable {
-    logger.info("Creating Xenon host instance");
+    logger.info("Creating Deployer Xenon host instance");
     // Set deployer context zookeeper quorum
     deployerConfig.getDeployerContext().setZookeeperQuorum(deployerConfig.getZookeeper().getQuorum());
 
@@ -179,8 +193,23 @@ public class Main {
       throw new RuntimeException(e);
     }
 
-    final AgentControlClientFactory agentControlClientFactory = injector.getInstance(AgentControlClientFactory.class);
-    final HostClientFactory hostClientFactory = injector.getInstance(HostClientFactory.class);
+    /**
+     * The blocking queue associated with the thread pool executor service
+     * controls the rejection policy for new work items: a bounded queue, such as
+     * an ArrayBlockingQueue, will cause new work items to be rejected (and thus
+     * failed) when the queue length is reached. A LinkedBlockingQueue, which is
+     * unbounded, is used here in order to enable the submission of an arbitrary
+     * number of work items since this is the pattern expected for the deployer
+     * (a large number of work items arrive all at once, and then no more).
+     */
+    final BlockingQueue<Runnable> blockingQueue = new LinkedBlockingDeque<>();
+    final ListeningExecutorService listeningExecutorService = MoreExecutors.listeningDecorator(
+        new ThreadPoolExecutor(
+            deployerConfig.getDeployerContext().getCorePoolSize(),
+            deployerConfig.getDeployerContext().getMaximumPoolSize(),
+            deployerConfig.getDeployerContext().getKeepAliveTime(),
+            TimeUnit.SECONDS,
+            blockingQueue));
 
     final DockerProvisionerFactory dockerProvisionerFactory = new DockerProvisionerFactoryImpl();
     final AuthHelperFactory authHelperFactory = new AuthHelperFactoryImpl();
@@ -190,13 +219,18 @@ public class Main {
         HostManagementVmAddressValidatorFactoryImpl();
     final HttpFileServiceClientFactory httpFileServiceClientFactory = new HttpFileServiceClientFactoryImpl();
     final NsxClientFactory nsxClientFactory = new NsxClientFactory();
+    final ZookeeperClientFactory zookeeperServerSetBuilderFactory = new ZookeeperClientFactoryImpl();
 
-    // Guice Injection to create DeployerXenonServiceHost
-    final ApiClientFactory apiClientFactory = injector.getInstance(ApiClientFactory.class);
-    final ZookeeperClientFactory zookeeperServerSetBuilderFactory = injector.getInstance(ZookeeperClientFactory
-        .class);
-    final ClusterManagerFactory clusterManagerFactory = injector.getInstance(ClusterManagerFactory.class);
-    final ListeningExecutorService listeningExecutorService = injector.getInstance(ListeningExecutorService.class);
+    final ApiClientFactory apiClientFactory = new ApiClientFactory(apiFeServerSet, httpClient,
+        deployerConfig.getDeployerContext().getSharedSecret());
+
+    final ClusterManagerFactory clusterManagerFactory = new ClusterManagerFactory(listeningExecutorService,
+        httpClient, apiFeServerSet, deployerConfig.getDeployerContext().getSharedSecret(), cloudStoreServerSet,
+        Paths.get(deployerConfig.getDeployerContext().getScriptDirectory(), CLUSTER_SCRIPTS_DIRECTORY).toString());
+
+    // Guice injection
+    final AgentControlClientFactory agentControlClientFactory = injector.getInstance(AgentControlClientFactory.class);
+    final HostClientFactory hostClientFactory = injector.getInstance(HostClientFactory.class);
 
     return new DeployerXenonServiceHost(
         deployerConfig.getXenonConfig(), cloudStoreServerSet, deployerConfig.getDeployerContext(),
@@ -244,13 +278,13 @@ public class Main {
    * @return
    */
   private static DeployerServer createDeployerServer(Injector injector, DeployerService deployerService,
-                                                     DeployerConfig deployerConfig) {
+                                                     DeployerConfig deployerConfig,
+                                                     CloseableHttpAsyncClient httpClient) {
     logger.info("Creating Thrift server instance");
     final ServiceNodeFactory serviceNodeFactory = injector.getInstance(ServiceNodeFactory.class);
     final TProtocolFactory protocolFactory = injector.getInstance(TProtocolFactory.class);
     final TTransportFactory transportFactory = injector.getInstance(TTransportFactory.class);
     final ThriftFactory thriftFactory = injector.getInstance(ThriftFactory.class);
-    final CloseableHttpAsyncClient httpClient = injector.getInstance(CloseableHttpAsyncClient.class);
 
     return new DeployerServer(serviceNodeFactory, protocolFactory, transportFactory,
         thriftFactory, deployerService, deployerConfig.getThriftConfig(), httpClient);
@@ -284,12 +318,13 @@ public class Main {
   private static class HealthCheckHelperFactoryImpl implements HealthCheckHelperFactory {
 
     @Override
-    public HealthCheckHelper create(Service service, ContainersConfig.ContainerType containerType, String ipAddress) {
+    public HealthCheckHelper create(final Service service, final ContainersConfig.ContainerType containerType,
+                                    final String ipAddress) {
       return new HealthCheckHelper(service, containerType, ipAddress);
     }
 
     @Override
-    public XenonBasedHealthChecker create(Service service, Integer port, String ipAddress) {
+    public XenonBasedHealthChecker create(final Service service, final Integer port, final String ipAddress) {
       return null;
     }
   }
@@ -322,10 +357,21 @@ public class Main {
   private static class HttpFileServiceClientFactoryImpl implements HttpFileServiceClientFactory {
 
     @Override
-    public HttpFileServiceClient create(@Assisted("hostAddress") String hostAddress,
-                                        @Assisted("userName") String userName,
-                                        @Assisted("password") String password) {
+    public HttpFileServiceClient create(String hostAddress,
+                                        String userName,
+                                        String password) {
       return new HttpFileServiceClient(hostAddress, userName, password);
+    }
+  }
+
+  /**
+   * Implementation of ZookeeperClientFactory.
+   */
+  private static class ZookeeperClientFactoryImpl implements  ZookeeperClientFactory {
+
+    @Override
+    public ZookeeperClient create() {
+      return new ZookeeperClient(null);
     }
   }
 }
