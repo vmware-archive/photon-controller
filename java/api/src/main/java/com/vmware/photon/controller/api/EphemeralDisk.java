@@ -24,6 +24,8 @@ import com.wordnik.swagger.annotations.ApiModelProperty;
 public class EphemeralDisk extends BaseDisk {
 
   public static final String KIND = "ephemeral-disk";
+  public static final String KIND_SHORT_FORM = "ephemeral";
+
   @JsonProperty
   @ApiModelProperty(value = "kind=\"ephemeral-disk\"", required = true)
   private String kind = KIND;
