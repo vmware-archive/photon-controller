@@ -60,7 +60,7 @@ public class AttachedDiskCreateSpec implements Flavorful, Named {
   @ApiModelProperty(value = "This property specifies the desired kind of the Disk: ephemeral is the only one " +
       "currently supported",
       required = true)
-  @Pattern(regexp = "ephemeral-disk|ephemeral")
+  @Pattern(regexp = EphemeralDisk.KIND + "|" + EphemeralDisk.KIND_SHORT_FORM)
   private String kind;
 
   @JsonProperty
@@ -83,10 +83,10 @@ public class AttachedDiskCreateSpec implements Flavorful, Named {
 
   public void setKind(String kind) {
     switch (kind) {
-      case "persistent":
+      case PersistentDisk.KIND_SHORT_FORM:
         this.kind = PersistentDisk.KIND;
         break;
-      case "ephemeral":
+      case EphemeralDisk.KIND_SHORT_FORM:
         this.kind = EphemeralDisk.KIND;
         break;
       default:
