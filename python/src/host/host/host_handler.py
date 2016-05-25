@@ -572,7 +572,7 @@ class HostHandler(Host.Iface):
             elif request.op is PowerVmOp.SUSPEND:
                 self.hypervisor.vm_manager.suspend_vm(request.vm_id)
             elif request.op is PowerVmOp.RESUME:
-                self.hypervisor.vm_manager.resume_vm(request.vm_id)
+                self.hypervisor.vm_manager.power_on_vm(request.vm_id)
             else:
                 raise ValueError("Unknown power op: %s" % request.op)
 

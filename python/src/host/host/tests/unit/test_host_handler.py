@@ -396,7 +396,6 @@ class HostHandlerTestCase(unittest.TestCase):
         vmm.power_off_vm.side_effect = _slow_op
         vmm.reset_vm.side_effect = _slow_op
         vmm.suspend_vm.side_effect = _slow_op
-        vmm.resume_vm.side_effect = _slow_op
 
         def _test_thread(op):
             request = PowerVmOpRequest(vm_id='vm_id', op=op)
@@ -405,10 +404,10 @@ class HostHandlerTestCase(unittest.TestCase):
                 result[response.result] += 1
 
         threads = []
-        # Issue 5 operations, 40 each
+        # Issue 4 operations, 50 each
         for op in range(200):
-            # poweron, poweroff, reset, suspend, resume are 1-5
-            thread = threading.Thread(target=_test_thread, args=(op % 5 + 1,))
+            # poweron, poweroff, reset, suspend are 1-4
+            thread = threading.Thread(target=_test_thread, args=(op % 4 + 1,))
             threads.append(thread)
             thread.start()
 
