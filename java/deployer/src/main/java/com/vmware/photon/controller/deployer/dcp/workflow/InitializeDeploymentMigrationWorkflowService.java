@@ -37,6 +37,7 @@ import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.common.xenon.validation.Positive;
 import com.vmware.photon.controller.common.xenon.validation.WriteOnce;
+import com.vmware.photon.controller.deployer.dcp.DeployerXenonServiceHost;
 import com.vmware.photon.controller.deployer.dcp.constant.ServicePortConstants;
 import com.vmware.photon.controller.deployer.dcp.entity.VibFactoryService;
 import com.vmware.photon.controller.deployer.dcp.entity.VibService;
@@ -530,6 +531,7 @@ public class InitializeDeploymentMigrationWorkflowService extends StatefulServic
     Stream<Operation> taskStartOps = vibStartOps.stream().map((vibStartOp) -> {
       UploadVibTaskService.State startState = new UploadVibTaskService.State();
       startState.parentTaskServiceLink = aggregatorServiceLink;
+      startState.workQueueServiceLink = DeployerXenonServiceHost.UPLOAD_VIB_WORK_QUEUE_SELF_LINK;
       startState.vibServiceLink = vibStartOp.getBody(ServiceDocument.class).documentSelfLink;
       return Operation.createPost(this, UploadVibTaskFactoryService.SELF_LINK).setBody(startState);
     });

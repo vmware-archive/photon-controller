@@ -40,8 +40,7 @@ public class ProvisionHostTaskFactoryServiceTest {
     assertThat(provisionHostTaskFactoryService.getOptions(), is(EnumSet.of(
         Service.ServiceOption.CONCURRENT_GET_HANDLING,
         Service.ServiceOption.CONCURRENT_UPDATE_HANDLING,
-        Service.ServiceOption.FACTORY,
-        Service.ServiceOption.REPLICATION)));
+        Service.ServiceOption.FACTORY)));
   }
 
   @Test
