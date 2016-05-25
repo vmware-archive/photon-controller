@@ -47,6 +47,7 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentServiceFactory;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
+import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
@@ -72,21 +73,23 @@ public class DeploymentDcpBackend implements DeploymentBackend {
 
   private final ApiFeXenonRestClient dcpClient;
   private final TaskBackend taskBackend;
-  private final EntityLockBackend entityLockBackend;
   private final TenantBackend tenantBackend;
   private final TombstoneBackend tombstoneBackend;
 
+  private final ServiceConfig serviceConfig;
+
   @Inject
   public DeploymentDcpBackend(ApiFeXenonRestClient dcpClient,
+                              ServiceConfig serviceConfig,
                               TaskBackend taskBackend,
-                              EntityLockBackend entityLockBackend,
                               TombstoneBackend tombstoneBackend,
                               TenantBackend tenantBackend) {
     this.dcpClient = dcpClient;
     dcpClient.start();
 
+    this.serviceConfig = serviceConfig;
+
     this.taskBackend = taskBackend;
-    this.entityLockBackend = entityLockBackend;
     this.tenantBackend = tenantBackend;
     this.tombstoneBackend = tombstoneBackend;
   }
@@ -243,7 +246,7 @@ public class DeploymentDcpBackend implements DeploymentBackend {
     Deployment deployment = new Deployment();
 
     deployment.setId(deploymentEntity.getId());
-    deployment.setState(deploymentEntity.getState());
+    deployment.setState(this.generateState(deploymentEntity));
     deployment.setImageDatastores(deploymentEntity.getImageDatastores());
     deployment.setSyslogEndpoint(deploymentEntity.getSyslogEndpoint());
 
@@ -277,6 +280,26 @@ public class DeploymentDcpBackend implements DeploymentBackend {
     deployment.setMigrationStatus(generateMigrationStatus(deploymentEntity));
 
     return deployment;
+  }
+
+  private DeploymentState generateState(DeploymentEntity deploymentEntity) {
+    if (deploymentEntity.getState() != DeploymentState.READY) {
+      return deploymentEntity.getState();
+    }
+
+    try {
+      if (serviceConfig.isPaused()) {
+        return DeploymentState.PAUSED;
+      } else if (serviceConfig.isBackgroundPaused()) {
+        return DeploymentState.BACKGROUND_PAUSED;
+      } else {
+
+      }
+    } catch (Exception ex) {
+      logger.warn("Getting serviceConfig isBackgroundPaused() or isPaused() throws error %s, ignoring...", ex);
+    }
+
+    return deploymentEntity.getState();
   }
 
   private MigrationStatus generateMigrationStatus(DeploymentEntity entity) {
