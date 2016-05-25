@@ -49,11 +49,13 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentServiceFacto
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.common.xenon.BasicServiceHost;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
+import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
 
 import com.google.common.collect.ImmutableList;
 import com.google.inject.Inject;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.ListUtils;
+import org.hamcrest.MatcherAssert;
 import org.junit.AfterClass;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
@@ -69,6 +71,7 @@ import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.doReturn;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -649,6 +652,9 @@ public class DeploymentDcpBackendTest {
     @Inject
     private DeploymentBackend deploymentBackend;
 
+    @Inject
+    private ServiceConfig serviceConfig;
+
     private DeploymentEntity entity;
 
     @BeforeMethod
@@ -701,6 +707,57 @@ public class DeploymentDcpBackendTest {
     @Test(expectedExceptions = DeploymentNotFoundException.class)
     public void testDeploymentNotFoundException() throws Throwable {
       deploymentBackend.toApiRepresentation("foo");
+    }
+
+    @Test
+    public void testSystemPaused() throws Throwable {
+      doReturn(true).when(serviceConfig).isPaused();
+      setDeploymentState(DeploymentState.READY);
+
+      Deployment deployment = deploymentBackend.toApiRepresentation(entity.getId());
+      assertThat(deployment, is(notNullValue()));
+      assertThat(deployment.getState(), is(DeploymentState.PAUSED));
+    }
+
+    @Test
+    public void testBackgroundPausedSuccess() throws Throwable {
+      doReturn(true).when(serviceConfig).isBackgroundPaused();
+      setDeploymentState(DeploymentState.READY);
+
+      Deployment deployment = deploymentBackend.toApiRepresentation(entity.getId());
+      assertThat(deployment, is(notNullValue()));
+      assertThat(deployment.getState(), is(DeploymentState.BACKGROUND_PAUSED));
+    }
+
+    @Test(dataProvider = "NotReadyState")
+    public void testNonReadyState(DeploymentState state) throws Throwable {
+      doReturn(true).when(serviceConfig).isPaused();
+      setDeploymentState(state);
+
+      Deployment deployment = deploymentBackend.toApiRepresentation(entity.getId());
+      assertThat(deployment, is(notNullValue()));
+      assertThat(deployment.getState(), is(state));
+
+    }
+
+    @DataProvider(name = "NotReadyState")
+    private Object[][] getNotReadyStateData() {
+      return new Object[][] {
+          { DeploymentState.CREATING },
+          { DeploymentState.NOT_DEPLOYED },
+          { DeploymentState.ERROR },
+          { DeploymentState.DELETED },
+          { DeploymentState.BACKGROUND_PAUSED },
+          { DeploymentState.PAUSED }
+      };
+    }
+
+    private void setDeploymentState(DeploymentState state) throws Throwable {
+      DeploymentService.State patch = new DeploymentService.State();
+      patch.state = state;
+      dcpClient.patch(DeploymentServiceFactory.SELF_LINK + "/" + entity.getId(), patch);
+
+      entity = deploymentBackend.findById(entity.getId());
     }
   }
 
