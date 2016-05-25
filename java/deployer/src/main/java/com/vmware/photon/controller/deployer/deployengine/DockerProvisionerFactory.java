@@ -13,12 +13,10 @@
 
 package com.vmware.photon.controller.deployer.deployengine;
 
-import com.google.inject.assistedinject.Assisted;
-
 /**
  * This class defines an interface for factory objects which create
  * {@link DockerProvisioner} instances.
  */
 public interface DockerProvisionerFactory {
-  DockerProvisioner create(@Assisted String dockerEndpoint);
+  DockerProvisioner create(String dockerEndpoint);
 }

@@ -20,6 +20,7 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.ResourceTicketService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.TenantService;
+import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.auth.AuthClientHandler;
 import com.vmware.photon.controller.common.clients.AgentControlClientFactory;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
@@ -33,7 +34,6 @@ import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
 import com.vmware.photon.controller.deployer.DeployerConfig;
-import com.vmware.photon.controller.deployer.DeployerModule;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfiguratorFactory;
 import com.vmware.photon.controller.deployer.dcp.ContainersConfig;
 import com.vmware.photon.controller.deployer.dcp.DeployerContext;
@@ -709,7 +709,7 @@ public class DeploymentWorkflowServiceTest {
       InetSocketAddress address = remoteStore.getServerSet().getServers().iterator().next();
       InetSocketAddress adjustedAddress = new InetSocketAddress(address.getHostName(), address.getPort() - 1);
       doReturn(Collections.singleton(adjustedAddress))
-          .when(zkBuilder).getServers(anyString(), eq(DeployerModule.HOUSEKEEPER_SERVICE_NAME));
+          .when(zkBuilder).getServers(anyString(), eq(Constants.HOUSEKEEPER_SERVICE_NAME));
     }
 
     @AfterMethod

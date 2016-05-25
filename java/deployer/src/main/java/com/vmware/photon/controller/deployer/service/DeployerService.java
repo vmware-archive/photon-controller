@@ -19,7 +19,6 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
 import com.vmware.photon.controller.common.logging.LoggingUtils;
 import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.photon.controller.common.zookeeper.ServiceNodeEventHandler;
-import com.vmware.photon.controller.deployer.DeployerServerSet;
 import com.vmware.photon.controller.deployer.dcp.DeployerXenonServiceHost;
 import com.vmware.photon.controller.deployer.dcp.task.ValidateHostTaskService;
 import com.vmware.photon.controller.deployer.gen.CreateHostRequest;
@@ -121,7 +120,6 @@ import com.vmware.xenon.common.ServiceHost;
 import com.vmware.xenon.common.TaskState;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.inject.Singleton;
 import org.apache.thrift.TException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -135,7 +133,6 @@ import java.util.UUID;
 /**
  * This class implements the methods required by the deployer Thrift interface.
  */
-@Singleton
 public class DeployerService implements Deployer.Iface, ServerSet.ChangeListener, ServiceNodeEventHandler {
 
   private static final Logger logger = LoggerFactory.getLogger(DeployerService.class);
@@ -151,7 +148,7 @@ public class DeployerService implements Deployer.Iface, ServerSet.ChangeListener
   private final ChangeHostModeTaskServiceClientFactory changeHostModeTaskServiceClientFactory;
 
   public DeployerService(
-      @DeployerServerSet ServerSet serverSet,
+      ServerSet serverSet,
       DeployerXenonServiceHost host,
       HostServiceClientFactory hostServiceClientFactory,
       ChangeHostModeTaskServiceClientFactory changeHostModeTaskServiceClientFactory,
