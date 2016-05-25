@@ -21,8 +21,6 @@ import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.UriUtils;
 
-import com.google.inject.Inject;
-import com.google.inject.assistedinject.Assisted;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,8 +38,7 @@ public class XenonBasedHealthChecker implements HealthChecker {
   private final String address;
   private final List<Integer> ports;
 
-  @Inject
-  public XenonBasedHealthChecker(@Assisted Service service, @Assisted String address, @Assisted int port) {
+  public XenonBasedHealthChecker(Service service, String address, int port) {
     this.service = service;
     this.address = address;
     this.ports = new ArrayList<>();

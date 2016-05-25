@@ -15,6 +15,7 @@ package com.vmware.photon.controller.deployer.dcp.workflow;
 
 import com.vmware.photon.controller.api.QuotaLineItem;
 import com.vmware.photon.controller.api.QuotaUnit;
+import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
@@ -29,7 +30,6 @@ import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.common.xenon.validation.Positive;
-import com.vmware.photon.controller.deployer.DeployerModule;
 import com.vmware.photon.controller.deployer.dcp.ContainersConfig.ContainerType;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerService;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateService;
@@ -506,9 +506,9 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
       List<ContainerTemplateService.State> templates) {
 
     Map<ContainerType, String> xenonServices = ImmutableMap.<ContainerType, String>builder()
-        .put(ContainerType.PhotonControllerCore, DeployerModule.CLOUDSTORE_SERVICE_NAME)
-        .put(ContainerType.Deployer, DeployerModule.DEPLOYER_SERVICE_NAME)
-        .put(ContainerType.Housekeeper, DeployerModule.HOUSEKEEPER_SERVICE_NAME)
+        .put(ContainerType.PhotonControllerCore, Constants.CLOUDSTORE_SERVICE_NAME)
+        .put(ContainerType.Deployer, Constants.DEPLOYER_SERVICE_NAME)
+        .put(ContainerType.Housekeeper, Constants.HOUSEKEEPER_SERVICE_NAME)
         .build();
     Map<ContainerType, List<Pair<String, Integer>>> map = new HashMap<>();
 

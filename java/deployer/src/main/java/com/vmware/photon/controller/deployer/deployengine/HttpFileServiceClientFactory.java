@@ -13,13 +13,11 @@
 
 package com.vmware.photon.controller.deployer.deployengine;
 
-import com.google.inject.assistedinject.Assisted;
-
 /**
  * This class defines an interface for factory objects which create {@link HttpFileServiceClient} instances.
  */
 public interface HttpFileServiceClientFactory {
-  HttpFileServiceClient create(@Assisted("hostAddress") String hostAddress,
-                               @Assisted("userName") String userName,
-                               @Assisted("password") String password);
+  HttpFileServiceClient create(String hostAddress,
+                               String userName,
+                               String password);
 }
