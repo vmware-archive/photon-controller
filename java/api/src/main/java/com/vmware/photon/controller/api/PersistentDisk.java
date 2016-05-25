@@ -29,6 +29,8 @@ import java.util.Objects;
 public class PersistentDisk extends BaseDisk {
 
   public static final String KIND = "persistent-disk";
+  public static final String KIND_SHORT_FORM = "persistent";
+
   @JsonProperty
   @ApiModelProperty(value = "kind=\"persistent-disk\"", required = true)
   private String kind = KIND;
