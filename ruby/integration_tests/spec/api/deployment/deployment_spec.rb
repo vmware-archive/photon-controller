@@ -12,7 +12,7 @@
 require "spec_helper"
 require_relative "../../../lib/dcp/cloud_store/deployment_factory"
 
-describe "deployment", management: true, devbox: true do
+describe "deployment", management: true do
   before(:all) do
     @seeder = EsxCloud::SystemSeeder.new([create_limit("vm", 100.0, "COUNT")])
   end

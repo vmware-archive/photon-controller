@@ -12,7 +12,7 @@
 require "spec_helper"
 require "ipaddr"
 
-describe "host", management: true, devbox: true do
+describe "host", management: true do
   before(:all) do
     @seeder = EsxCloud::SystemSeeder.new(create_small_limits, [5.0])
     @deployment = @seeder.deployment!
