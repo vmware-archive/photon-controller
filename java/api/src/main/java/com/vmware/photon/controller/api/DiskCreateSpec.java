@@ -40,12 +40,17 @@ import java.util.Set;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class DiskCreateSpec implements Flavorful, Named {
 
+  public static final int MIN_NAME_LENGTH = 1;
+  public static final int MAX_NAME_LENGTH = 63;
+
+  public static final int MIN_CAPACITY_IN_GB = 1;
+
   @JsonProperty
   @ApiModelProperty(value = "This property specifies the name of the Disk. Disk names must be unique within their " +
       "project.",
       required = true)
   @NotNull
-  @Size(min = 1, max = 63)
+  @Size(min = MIN_NAME_LENGTH, max = MAX_NAME_LENGTH)
   @Pattern(regexp = Named.PATTERN, message = ": The specified disk name does not match pattern: " + Named.PATTERN)
   private String name;
 
@@ -53,20 +58,21 @@ public class DiskCreateSpec implements Flavorful, Named {
   @ApiModelProperty(value = "This property specifies the desired kind of the Disk: persistent is the only one " +
       "currently supported",
       required = true)
-  @Pattern(regexp = "persistent-disk|persistent",
-      message = ": The specified kind does not match : persistent-disk|persistent")
+  @Pattern(regexp = PersistentDisk.KIND + "|" + PersistentDisk.KIND_SHORT_FORM,
+      message = ": The specified kind does not match : " + PersistentDisk.KIND + "|" + PersistentDisk.KIND_SHORT_FORM)
   private String kind;
 
   @JsonProperty
   @ApiModelProperty(value = "This property specifies the desired flavor of the Disk.",
       required = true)
+  @NotNull
   private String flavor;
 
   @JsonProperty
   @ApiModelProperty(value = "This property is the capacity of the disk in GB units. When used in the context of " +
       "attaching an existing disk, this property, if specified, must be valid, but is otherwise ignored.",
       required = true)
-  @Min(1)
+  @Min(MIN_CAPACITY_IN_GB)
   private int capacityGb;
 
   @JsonProperty
@@ -87,10 +93,10 @@ public class DiskCreateSpec implements Flavorful, Named {
 
   public void setKind(String kind) {
     switch (kind) {
-      case "persistent":
+      case PersistentDisk.KIND_SHORT_FORM:
         this.kind = PersistentDisk.KIND;
         break;
-      case "ephemeral":
+      case EphemeralDisk.KIND_SHORT_FORM:
         this.kind = EphemeralDisk.KIND;
         break;
       default:

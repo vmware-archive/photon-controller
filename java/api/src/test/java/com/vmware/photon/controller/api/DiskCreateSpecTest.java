@@ -13,14 +13,18 @@
 
 package com.vmware.photon.controller.api;
 
+import com.vmware.photon.controller.api.builders.DiskCreateSpecBuilder;
 import com.vmware.photon.controller.api.helpers.JsonHelpers;
+import com.vmware.photon.controller.api.helpers.Validator;
 
 import static com.vmware.photon.controller.api.helpers.JsonHelpers.asJson;
 import static com.vmware.photon.controller.api.helpers.JsonHelpers.fromJson;
 import static com.vmware.photon.controller.api.helpers.JsonHelpers.jsonFixture;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -36,6 +40,65 @@ public class DiskCreateSpecTest {
 
   @Test(enabled = false)
   private void dummy() {}
+
+  /**
+   * Tests for validations.
+   */
+  public class ValidationTest {
+
+    private Validator validator = new Validator();
+
+    @Test(dataProvider = "validDiskCreateSpecs")
+    public void testValidDiskCreateSpecs(DiskCreateSpec spec) {
+      ImmutableList<String> violations = validator.validate(spec);
+      assertThat(violations.isEmpty(), is(true));
+    }
+
+    @DataProvider(name = "validDiskCreateSpecs")
+    private Object[][] getValidDiskCreateSpecs() {
+      return new Object[][]{
+          {new DiskCreateSpecBuilder().name("d").kind("persistent").flavor("f").capacityGb(2).build()},
+          {new DiskCreateSpecBuilder().name("d").kind("persistent-disk").flavor("f").capacityGb(2).build()},
+          {new DiskCreateSpecBuilder().name("d").kind("persistent").flavor("f").capacityGb(2).build()}
+      };
+    }
+
+    @Test(dataProvider = "invalidDiskCreateSpecs")
+    public void testInvalidDiskCreateSpecs(DiskCreateSpec spec, String errorMsg) {
+      ImmutableList<String> violations = validator.validate(spec);
+
+      assertThat(violations.size(), is(1));
+      assertThat(violations.get(0), is(errorMsg));
+    }
+
+    @DataProvider(name = "invalidDiskCreateSpecs")
+    private Object[][] getInvalidDiskCreateSpecs() {
+      String longName = new String();
+      for (int i = 0; i < DiskCreateSpec.MAX_NAME_LENGTH + 1; i++) {
+        longName += "d";
+      }
+
+      return new Object[][]{
+          {new DiskCreateSpecBuilder().kind("persistent").flavor("f").capacityGb(2).build(),
+              "name may not be null (was null)"},
+          {new DiskCreateSpecBuilder().name("name!").kind("persistent").flavor("f").capacityGb(2).build(),
+              "name : The specified disk name does not match pattern: ^[a-zA-Z][a-zA-Z0-9-]* (was name!)"},
+          {new DiskCreateSpecBuilder().name(longName).kind("persistent").flavor("f").capacityGb(2).build(),
+              "name size must be between 1 and 63 (was " + longName + ")"},
+
+          {new DiskCreateSpecBuilder().name("d").kind("persistent").flavor("f").capacityGb(-2).build(),
+              "capacityGb must be greater than or equal to 1 (was -2)"},
+          {new DiskCreateSpecBuilder()
+              .name("d").kind("persistent").flavor("f").capacityGb(DiskCreateSpec.MIN_CAPACITY_IN_GB - 1).build(),
+              "capacityGb must be greater than or equal to 1 (was 0)"},
+
+          {new DiskCreateSpecBuilder().name("d").kind("ephemeral").flavor("f").capacityGb(2).build(),
+              "kind : The specified kind does not match : persistent-disk|persistent (was ephemeral-disk)"},
+          {new DiskCreateSpecBuilder().name("d").kind("other-kind").flavor("f").capacityGb(2).build(),
+              "kind : The specified kind does not match : persistent-disk|persistent (was other-kind)"}
+      };
+    }
+  }
 
   /**
    * Tests JSON serialization.
