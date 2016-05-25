@@ -31,6 +31,8 @@ import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.XenonHostInfoProvider;
 import com.vmware.photon.controller.common.xenon.host.AbstractServiceHost;
 import com.vmware.photon.controller.common.xenon.host.XenonConfig;
+import com.vmware.photon.controller.common.xenon.scheduler.RateLimitedWorkQueueFactoryService;
+import com.vmware.photon.controller.common.xenon.scheduler.RateLimitedWorkQueueService;
 import com.vmware.photon.controller.common.xenon.scheduler.TaskSchedulerService;
 import com.vmware.photon.controller.common.xenon.scheduler.TaskSchedulerServiceFactory;
 import com.vmware.photon.controller.common.xenon.scheduler.TaskSchedulerServiceStateBuilder;
@@ -101,17 +103,19 @@ import com.vmware.photon.controller.deployer.healthcheck.HealthCheckHelperFactor
 import com.vmware.photon.controller.deployer.healthcheck.HealthCheckHelperFactoryProvider;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceHost;
+import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
+import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.QueryTask;
 import com.vmware.xenon.services.common.RootNamespaceService;
 
-import com.google.common.collect.ImmutableMap;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ObjectArrays;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.URI;
-import java.util.Map;
 
 /**
  * This class implements the Xenon service host object for the deployer service.
@@ -148,6 +152,10 @@ public class DeployerXenonServiceHost
 
   public static final Class<?>[] FACTORY_SERVICES = {
 
+      // Infrastructure Services
+      RateLimitedWorkQueueFactoryService.class,
+      RootNamespaceService.class,
+
       // Entity Services
       ContainerFactoryService.class,
       ContainerTemplateFactoryService.class,
@@ -182,7 +190,6 @@ public class DeployerXenonServiceHost
       UploadImageTaskFactoryService.class,
       UploadVibTaskFactoryService.class,
       ValidateHostTaskFactoryService.class,
-      TaskSchedulerServiceFactory.class,
 
       // Workflow services
       AddCloudHostWorkflowFactoryService.class,
@@ -198,9 +205,6 @@ public class DeployerXenonServiceHost
       InitializeDeploymentMigrationWorkflowFactoryService.class,
       RemoveDeploymentWorkflowFactoryService.class,
 
-      // Discovery
-      RootNamespaceService.class,
-
       // Transformation
       HostTransformationService.class,
       ReflectionTransformationService.class,
@@ -209,16 +213,11 @@ public class DeployerXenonServiceHost
       UpgradeInformationService.class,
   };
 
-  private static final int DEFAULT_TASK_LIMIT = 8;
+  private static final String UPLOAD_VIB_WORK_QUEUE_NAME = "vib-uploads";
 
-  protected static final String UPLOAD_VIB_SCHEDULER_SERVICE =
-      TaskSchedulerServiceFactory.SELF_LINK + "/vib-uploads";
-
-  private static final Map<String, TaskSchedulerServiceStateBuilder> TASK_SCHEDULERS =
-      ImmutableMap.<String, TaskSchedulerServiceStateBuilder>builder()
-          .put(UPLOAD_VIB_SCHEDULER_SERVICE,
-              new TaskSchedulerServiceStateBuilder(UploadVibTaskService.class, DEFAULT_TASK_LIMIT))
-          .build();
+  @VisibleForTesting
+  public static final String UPLOAD_VIB_WORK_QUEUE_SELF_LINK = UriUtils.buildUriPath(
+      RateLimitedWorkQueueFactoryService.SELF_LINK, UPLOAD_VIB_WORK_QUEUE_NAME);
 
   private static final String DEPLOYER_URI = "deployer";
 
@@ -293,13 +292,9 @@ public class DeployerXenonServiceHost
   public ServiceHost start() throws Throwable {
     super.start();
     startDefaultCoreServicesSynchronously();
-
-    // Start all the factories
     ServiceHostUtils.startServices(this, getFactoryServices());
     this.addPrivilegedService(CopyStateTaskService.class);
-
-    startTaskSchedulerServices();
-
+    startWorkQueueServices();
     ServiceHostUtils.startService(this, StatusService.class);
     return this;
   }
@@ -472,11 +467,9 @@ public class DeployerXenonServiceHost
    */
   @Override
   public boolean isReady() {
-    // schedulers
-    for (String selfLink : TASK_SCHEDULERS.keySet()) {
-      if (!checkServiceAvailable(selfLink)) {
-        return false;
-      }
+
+    if (!checkServiceAvailable(UPLOAD_VIB_WORK_QUEUE_SELF_LINK)) {
+      return false;
     }
 
     try {
@@ -495,22 +488,34 @@ public class DeployerXenonServiceHost
         Class.class);
   }
 
-  private void startTaskSchedulerServices() {
-    registerForServiceAvailability(new Operation.CompletionHandler() {
-      @Override
-      public void handle(Operation operation, Throwable throwable) {
-        for (String link : TASK_SCHEDULERS.keySet()) {
-          try {
-            startTaskSchedulerService(link, TASK_SCHEDULERS.get(link));
-          } catch (Exception ex) {
-            // This method gets executed on a background thread so since we cannot make return the
-            // error to the caller, we swallow the exception here to allow the other the other schedulers
-            // to start
-            logger.warn("Could not register %s", link, ex);
+  private void startWorkQueueServices() {
+
+    registerForServiceAvailability(
+        (o, e) -> {
+          if (e != null) {
+            logger.error("Failed to start work queue factory service: " + Utils.toString(e));
+            return;
           }
-        }
-      }
-    }, TaskSchedulerServiceFactory.SELF_LINK);
+
+          QueryTask.Query pendingTaskServiceQuery = QueryTask.Query.Builder.create()
+              .addKindFieldClause(UploadVibTaskService.State.class)
+              .addCompositeFieldClause("taskState", "stage",
+                  QueryTask.QuerySpecification.toMatchValue(TaskState.TaskStage.CREATED))
+              .build();
+
+          RateLimitedWorkQueueService.State startState = new RateLimitedWorkQueueService.State();
+          startState.documentSelfLink = UPLOAD_VIB_WORK_QUEUE_NAME;
+          startState.pendingTaskServiceQuery = pendingTaskServiceQuery;
+          startState.startPatchBody = Utils.toJson(UploadVibTaskService.buildPatch(TaskState.TaskStage.STARTED,
+              UploadVibTaskService.TaskState.SubStage.BEGIN_EXECUTION));
+          startState.concurrencyLimit = 4;
+
+          sendRequest(Operation
+              .createPost(this, RateLimitedWorkQueueFactoryService.SELF_LINK)
+              .setBody(startState)
+              .setReferer(UriUtils.buildUri(this, DEPLOYER_URI)));
+        },
+        RateLimitedWorkQueueFactoryService.SELF_LINK);
   }
 
   private void startTaskSchedulerService(final String selfLink, TaskSchedulerServiceStateBuilder builder)
