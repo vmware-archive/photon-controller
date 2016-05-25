@@ -11,7 +11,7 @@
 
 require "spec_helper"
 
-describe "deployment pause/pause_background/resume" do
+describe "deployment pause/pause_background/resume",  management: true do
   let(:zkClient) { ApiClientHelper.zookeeper }
   let(:deployment) do
     client.find_all_api_deployments.items.first
@@ -33,9 +33,12 @@ describe "deployment pause/pause_background/resume" do
   context "when deployment exists" do
     it "should pause/resume system successfully" do
       expect(client.find_all_api_deployments.items.size).to eq 1
+      expect(client.find_deployment_by_id(deployment.id).state).to eq "READY"
+      expect(client.find_all_api_deployments.items[0].state).to eq "READY"
 
       2.times do
         client.pause_system(deployment.id)
+        expect(client.find_deployment_by_id(deployment.id).state).to eq "PAUSED"
 
         # tests that while system is paused no POSTs are accepted
         5.times do
@@ -53,6 +56,7 @@ describe "deployment pause/pause_background/resume" do
         end
 
         client.resume_system(deployment.id)
+        expect(client.find_deployment_by_id(deployment.id).state).to eq "READY"
 
         # testing that after resuming the system we accept posts again
         tenant_name = random_name("tenant-")
@@ -65,8 +69,11 @@ describe "deployment pause/pause_background/resume" do
 
     it "should pause_background/resume system successfully" do
       expect(client.find_all_api_deployments.items.size).to eq 1
+      expect(client.find_deployment_by_id(deployment.id).state).to eq "READY"
+      expect(client.find_all_api_deployments.items[0].state).to eq "READY"
 
       client.pause_background_tasks(deployment.id)
+      expect(client.find_deployment_by_id(deployment.id).state).to eq "BACKGROUND_PAUSED"
 
       # tests that POSTs are accepted while system is pause_background_tasks
       tenant_name = random_name("tenant-")
@@ -75,14 +82,9 @@ describe "deployment pause/pause_background/resume" do
       validate_tenant(tenant_name)
       items_to_cleanup << tenant
 
-      value = zkClient.get(path: "/config/apife/status")
-      expect(value).to_not be_nil
-      expect(value[:data]).to eq "PAUSED_BACKGROUND"
-
-      expect(client.find_deployment_by_id(deployment.id).state).to eq "BACKGROUND_PAUSED"
-
       # resume system
       client.resume_system(deployment.id)
+      expect(client.find_deployment_by_id(deployment.id).state).to eq "READY"
 
       # testing that after resuming the system we accept posts again
       tenant_name = random_name("tenant-")
@@ -90,64 +92,32 @@ describe "deployment pause/pause_background/resume" do
       expect(tenant.name).to eq tenant_name
       validate_tenant(tenant_name)
       items_to_cleanup << tenant
-
-      value = zkClient.get(path: "/config/apife/status")
-      expect(value).to_not be_nil
-      expect(value[:data]).to be_nil
-      expect(client.find_deployment_by_id(deployment.id).state).to eq "READY"
-
     end
 
     it "should pause/pause_background/resume system successfully" do
       expect(client.find_all_api_deployments.items.size).to eq 1
+      expect(client.find_deployment_by_id(deployment.id).state).to eq "READY"
+      expect(client.find_all_api_deployments.items[0].state).to eq "READY"
 
+      # pause system
       client.pause_system(deployment.id)
-      begin
-        items_to_cleanup << create_tenant(name: random_name("tenant-"))
-        fail("pause_system should fail")
-      rescue EsxCloud::ApiError => e
-        expect(e.response_code).to eq 403
-        expect(e.errors.size).to eq 1
-        expect(e.errors[0].code).to eq "SystemPaused"
-        expect(e.errors[0].message).to match /System is paused/
-      rescue EsxCloud::CliError => e
-        expect(e.output).to match("System is paused")
-      end
-
-      value = zkClient.get(path: "/config/apife/status")
-      expect(value).to_not be_nil
-      expect(value[:data]).to eq "PAUSED"
-
-      client.pause_background_tasks(deployment.id)
       expect(client.find_deployment_by_id(deployment.id).state).to eq "PAUSED"
+      expect(client.find_all_api_deployments.items[0].state).to eq "PAUSED"
 
-      # testing that after pause_background_tasks the system we accept posts
-      tenant_name = random_name("tenant-")
-      tenant = create_tenant(:name => tenant_name)
-      expect(tenant.name).to eq tenant_name
-      validate_tenant(tenant_name)
-      items_to_cleanup << tenant
+      # backgound pause system
+      client.pause_background_tasks(deployment.id)
+      expect(client.find_deployment_by_id(deployment.id).state).to eq "BACKGROUND_PAUSED"
+      expect(client.find_all_api_deployments.items[0].state).to eq "BACKGROUND_PAUSED"
 
-      value = zkClient.get(path: "/config/apife/status")
-      expect(value).to_not be_nil
-      expect(value[:data]).to eq "PAUSED_BACKGROUND"
+      # pause system
+      client.pause_system(deployment.id)
+      expect(client.find_deployment_by_id(deployment.id).state).to eq "PAUSED"
+      expect(client.find_all_api_deployments.items[0].state).to eq "PAUSED"
 
       # resume system
       client.resume_system(deployment.id)
-
-      # testing that after resuming the system we accept posts again
-      tenant_name = random_name("tenant-")
-      tenant = create_tenant(:name => tenant_name)
-      expect(tenant.name).to eq tenant_name
-      validate_tenant(tenant_name)
-      items_to_cleanup << tenant
-
-      value = zkClient.get(path: "/config/apife/status")
-      expect(value).to_not be_nil
-      expect(value[:data]).to be_nil
-
       expect(client.find_deployment_by_id(deployment.id).state).to eq "READY"
-
+      expect(client.find_all_api_deployments.items[0].state).to eq "READY"
     end
   end
 
