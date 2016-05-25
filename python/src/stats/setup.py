@@ -34,7 +34,7 @@ setup(name='photon.controller.stats',
       ],
       extras_require={
           'esx': [
-              'pyvmomi==5.5.0',
+              'pyvmomi==6.0.0',
           ],
           'test': [
               'matchers==0.22',
