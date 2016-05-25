@@ -61,7 +61,30 @@ public class ValidationUtils {
     }
   }
 
+  public static void validateTaskStage(TaskState taskState, Enum<?> taskSubStage) {
+    checkNotNull(taskState);
+    checkNotNull(taskState.stage);
+    switch (taskState.stage) {
+      case CREATED:
+      case FINISHED:
+      case FAILED:
+      case CANCELLED:
+        checkState(taskSubStage == null);
+        break;
+      case STARTED:
+        checkState(taskSubStage != null);
+        break;
+      default:
+        throw new IllegalStateException("Unknown task stage " + taskState.stage);
+    }
+  }
+
   public static <T extends TaskState> void validateTaskStageProgression(T startState, T patchState) {
+    validateTaskStageProgression(startState, null, patchState, null);
+  }
+
+  public static void validateTaskStageProgression(TaskState startState, Enum<?> startSubStage,
+                                                  TaskState patchState, Enum<?> patchSubStage) {
     checkNotNull(startState.stage);
     checkNotNull(patchState.stage);
 
@@ -73,6 +96,11 @@ public class ValidationUtils {
 
     // Patches cannot transition the document to an earlier state
     checkState(patchState.stage.ordinal() >= startState.stage.ordinal());
+
+    // Patches cannot transition the document to an earlier sub-stage.
+    if (startSubStage != null && patchSubStage != null) {
+      checkState(patchSubStage.ordinal() >= startSubStage.ordinal());
+    }
   }
 
   public static void validateEntitySelfLink(StatefulService entity, String id) {

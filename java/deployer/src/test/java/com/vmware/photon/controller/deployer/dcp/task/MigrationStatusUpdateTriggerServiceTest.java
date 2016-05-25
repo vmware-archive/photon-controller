@@ -42,7 +42,6 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 
@@ -268,9 +267,15 @@ public class MigrationStatusUpdateTriggerServiceTest {
 
     private ServiceDocument buildUploadVibState(TaskStage stage) {
       UploadVibTaskService.State startState = new UploadVibTaskService.State();
-      startState.taskState = new TaskState();
+      startState.taskState = new UploadVibTaskService.TaskState();
       startState.taskState.stage = stage;
-      startState.controlFlags = ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED;
+
+      if (stage == TaskStage.STARTED) {
+        startState.taskState.subStage = UploadVibTaskService.TaskState.SubStage.UPLOAD_VIB;
+      }
+
+      startState.taskControlFlags = ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED;
+      startState.workQueueServiceLink = "link";
       startState.vibServiceLink = "link";
       return startState;
     }
