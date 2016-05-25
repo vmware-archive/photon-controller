@@ -356,30 +356,33 @@ class HostHandler(Host.Iface):
         spec = self.hypervisor.vm_manager.create_vm_spec(vm.id, datastore_id, vm.flavor, vm_meta, request.environment)
         self._logger.debug("VM create, done creating vm spec, vm-id: %s" % vm.id)
 
-        # Step 2: Add the nics to the create spec of the VM.
-        networks = self._hypervisor.network_manager.get_vm_networks()
-        placement_networks = self._get_network_ids_by_type(vm.networks, NetworkInfoType.NETWORK)
-        if placement_networks and networks:
-            host_networks = set(networks)
+        # Step 2: Add the nics to the create spec of the VM if no virtual network specified.
+        # In case of virtual network, add nic after vm creation.
+        placement_virtual_network = self._get_network_ids_by_type(vm.networks, NetworkInfoType.VIRTUAL_NETWORK)
+        if not placement_virtual_network:
+            networks = self._hypervisor.network_manager.get_vm_networks()
+            placement_networks = self._get_network_ids_by_type(vm.networks, NetworkInfoType.NETWORK)
+            if placement_networks and networks:
+                host_networks = set(networks)
 
-            if not placement_networks.issubset(host_networks):
-                intersected_networks = placement_networks & host_networks
-                missing_networks = placement_networks - intersected_networks
+                if not placement_networks.issubset(host_networks):
+                    intersected_networks = placement_networks & host_networks
+                    missing_networks = placement_networks - intersected_networks
 
-                return CreateVmResponse(CreateVmResultCode.NETWORK_NOT_FOUND,
-                                        "Unknown non provisioned networks: {0}".format(missing_networks))
+                    return CreateVmResponse(CreateVmResultCode.NETWORK_NOT_FOUND,
+                                            "Unknown non provisioned networks: {0}".format(missing_networks))
+                else:
+                    self._logger.debug("Using the placement networks: {0}".format(placement_networks))
+                    for network_name in placement_networks:
+                        spec.add_nic(network_name)
+            elif networks:
+                # Pick a default network.
+                self._logger.debug("Using the default network: %s" % networks[0])
+                spec.add_nic(networks[0])
             else:
-                self._logger.debug("Using the placement networks: {0}".format(placement_networks))
-                for network_name in placement_networks:
-                    spec.add_nic(network_name)
-        elif networks:
-            # Pick a default network.
-            self._logger.debug("Using the default network: %s" % networks[0])
-            spec.add_nic(networks[0])
-        else:
-            self._logger.warning("VM %s created without a NIC" % vm.id)
+                self._logger.warning("VM %s created without a NIC" % vm.id)
 
-        self._logger.debug("VM create, done creating nics, vm-id: %s" % vm.id)
+            self._logger.debug("VM create, done creating nics, vm-id: %s" % vm.id)
 
         # Step 4: Add created_disk to create spec of the VM.
         for disk in vm.disks:
@@ -408,7 +411,19 @@ class HostHandler(Host.Iface):
 
         self._logger.debug("VM create, done creating vm, vm-id: %s" % vm.id)
 
-        # Step 6: touch the timestamp file for the image
+        # Step 6: Attach the virtual nic to the VM
+        if placement_virtual_network:
+            virtual_network = placement_virtual_network.pop()
+            try:
+                self.hypervisor.vm_manager.attach_virtual_network(vm.id, virtual_network)
+            except Exception:
+                self._logger.exception("error adding virtual network %s to vm %s" % (virtual_network, vm.id))
+                return CreateVmResponse(CreateVmResultCode.SYSTEM_ERROR,
+                                        "Failed to attach virtual network during create VM")
+
+            self._logger.debug("VM create, done creating virtual nic, vm-id: %s" % vm.id)
+
+        # Step 7: touch the timestamp file for the image
         if image_id is not None:
             try:
                 response = self._touch_image_timestamp(uuid.UUID(vm.id), datastore_id, image_id)
@@ -420,7 +435,7 @@ class HostHandler(Host.Iface):
 
         self._logger.debug("VM create, done touching timestamp file, vm-id: %s" % vm.id)
 
-        # Step 7: get VM network information
+        # Step 8: get VM network information
         try:
             network_info = self.hypervisor.vm_manager.get_vm_networks(vm.id)
         except VmNotFoundException as e:

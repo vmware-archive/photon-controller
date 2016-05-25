@@ -724,6 +724,21 @@ class HostHandlerTestCase(unittest.TestCase):
         pm.remove_vm_reservation.assert_called_once_with(mock_reservation)
         assert_that(response.result, equal_to(CreateVmResultCode.NETWORK_NOT_FOUND))
 
+        # Test create_vm honors vm.networks information (virtual network)
+        # should succeed.
+        vm.networks = [NetworkInfo(NetworkInfoType.VIRTUAL_NETWORK, "vnet")]
+
+        handler.hypervisor.vm_manager.create_vm_spec.reset_mock()
+        pm.remove_vm_reservation.reset_mock()
+        req = CreateVmRequest(reservation=mock_reservation)
+        response = handler.create_vm(req)
+
+        called_virtual_network = handler.hypervisor.vm_manager.attach_virtual_network.call_args_list
+        expected_virtual_network = [call(vm.id, 'vnet')]
+        assert_that(called_virtual_network == expected_virtual_network, is_(True))
+        pm.remove_vm_reservation.assert_called_once_with(mock_reservation)
+        assert_that(response.result, equal_to(CreateVmResultCode.OK))
+
     def test_delete_vm_wrong_state(self):
         handler = HostHandler(MagicMock())
         dm = handler.hypervisor.datastore_manager

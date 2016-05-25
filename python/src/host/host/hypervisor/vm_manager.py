@@ -172,6 +172,17 @@ class VmManager(object):
         pass
 
     @abc.abstractmethod
+    def attach_virtual_network(self, vm_id, network_id):
+        """Attach virtual network to a VM.
+
+        :param vm_id: vm id
+        :type vm_id: str
+        :param network_id: virtual switch id
+        :type network_id: str
+        """
+        pass
+
+    @abc.abstractmethod
     def attach_iso(self, vm_id, iso_file):
         """ Attach an iso file to the VM
 

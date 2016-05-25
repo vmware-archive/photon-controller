@@ -330,6 +330,16 @@ class EsxVmManager(VmManager):
                 # The iso may not exist, so just catch and move on.
                 pass
 
+    def attach_virtual_network(self, vm_id, network_id):
+        """Attach virtual network to VM.
+
+        :param vm_id: vm id
+        :type vm_id: str
+        :param network_id: virtual switch id
+        :type network_id: str
+        """
+        return self.vim_client.attach_virtual_network(vm_id, network_id)
+
     @log_duration
     def get_linked_clone_path(self, vm_id):
         """Get the absolute path of a VM linked clone disk

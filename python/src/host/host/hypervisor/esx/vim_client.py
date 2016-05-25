@@ -682,6 +682,14 @@ class VimClient(HostClient):
         return iso_path
 
     @hostd_error_handler
+    def attach_virtual_network(self, vm_id, network_id):
+        cfg_spec = EsxVmConfigSpec(self.query_config())
+        cfg_spec.init_for_update()
+        vm = self.get_vm(vm_id)
+        cfg_spec.add_virtual_nic(vm.config, network_id)
+        self._reconfigure_vm(vm, cfg_spec.get_spec())
+
+    @hostd_error_handler
     def get_mks_ticket(self, vm_id):
         vm = self.get_vm(vm_id)
         if vm.runtime.powerState != 'poweredOn':
