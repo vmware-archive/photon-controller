@@ -29,13 +29,11 @@ import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.BadRequestException;
 import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
-import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
 import com.vmware.photon.controller.host.gen.StartImageOperationResultCode;
 import com.vmware.photon.controller.housekeeper.dcp.mock.HostClientMock;
 import com.vmware.photon.controller.housekeeper.dcp.mock.hostclient.ErrorMockStartImageScan;
 import com.vmware.photon.controller.housekeeper.helpers.dcp.TestEnvironment;
 import com.vmware.photon.controller.housekeeper.helpers.dcp.TestHost;
-import com.vmware.photon.controller.nsxclient.NsxClientFactory;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceErrorResponse;
@@ -1125,23 +1123,26 @@ public class ImageCleanerServiceTest {
    */
   public class EndToEndTest {
     private TestEnvironment machine;
+    private TestEnvironment.Builder machineBuilder;
+
     private HostClientFactory hostClientFactory;
-    private ServiceConfigFactory serviceConfigFactory;
-    private NsxClientFactory nsxClientFactory;
     private CloudStoreHelper cloudStoreHelper;
+
     private ImageCleanerService.State request;
     private int dataStoreCount;
     private int imageDataStoresCount;
 
     @BeforeMethod
     public void setup() throws Throwable {
-      // setup defaults
+      hostClientFactory = mock(HostClientFactory.class);
+      cloudStoreHelper = new CloudStoreHelper();
+
+      machineBuilder = new TestEnvironment.Builder()
+          .cloudStoreHelper(cloudStoreHelper)
+          .hostClientFactory(hostClientFactory);
+
       dataStoreCount = 3;
       imageDataStoresCount = 1;
-      hostClientFactory = mock(HostClientFactory.class);
-      serviceConfigFactory = mock(ServiceConfigFactory.class);
-      nsxClientFactory = mock(NsxClientFactory.class);
-      cloudStoreHelper = new CloudStoreHelper();
 
       // Build input.
       request = buildValidStartupState();
@@ -1171,8 +1172,10 @@ public class ImageCleanerServiceTest {
      */
     @Test(dataProvider = "testSuccessParams")
     public void testSuccess(int hostCount, int referenceImagesCount) throws Throwable {
-      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, serviceConfigFactory, nsxClientFactory,
-          hostCount);
+      machine = machineBuilder
+          .hostCount(hostCount)
+          .build();
+
       machine.startFactoryServiceSynchronously(ImageServiceFactory.class, ImageServiceFactory.SELF_LINK);
       machine.startFactoryServiceSynchronously(
           ImageDatastoreSweeperServiceFactory.class, ImageDatastoreSweeperServiceFactory.SELF_LINK);
@@ -1239,8 +1242,10 @@ public class ImageCleanerServiceTest {
     @Test(dataProvider = "testImageSweepFailParams")
     public void testImageSweepFail(int hostCount, HostClientMock hostClient) throws Throwable {
       doReturn(hostClient).when(hostClientFactory).create();
-      machine = TestEnvironment.create(cloudStoreHelper, hostClientFactory, serviceConfigFactory, nsxClientFactory,
-          hostCount);
+      machine = machineBuilder
+          .hostCount(hostCount)
+          .build();
+
       machine.startFactoryServiceSynchronously(ImageServiceFactory.class, ImageServiceFactory.SELF_LINK);
       machine.startFactoryServiceSynchronously(
           ImageDatastoreSweeperServiceFactory.class, ImageDatastoreSweeperServiceFactory.SELF_LINK);
