@@ -34,7 +34,8 @@ public class StatusService extends StatelessService {
     BuildInfo buildInfo = ((DHCPAgentXenonHost) getHost()).getBuildInfo();
     status.setBuild_info(buildInfo.toString());
 
-    if (((DHCPAgentXenonHost) getHost()).isReady()) {
+    if (((DHCPAgentXenonHost) getHost()).isReady()
+            && ((DHCPAgentXenonHost) getHost()).getDHCPDriver().isRunning()) {
       status.setType(StatusType.READY);
     }
     get.setBody(status).complete();

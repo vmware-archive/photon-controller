@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.dhcpagent.xenon.service;
 
+import com.vmware.photon.controller.dhcpagent.dhcpdrivers.DnsmasqDriver;
 import com.vmware.photon.controller.dhcpagent.xenon.helpers.TestEnvironment;
 import com.vmware.photon.controller.status.gen.Status;
 import com.vmware.photon.controller.status.gen.StatusType;
@@ -56,7 +57,13 @@ public class StatusServiceTest {
     @BeforeMethod
     public void setUp() throws Throwable {
       listeningExecutorService = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(1));
-      testEnvironment = TestEnvironment.create(null, 1, listeningExecutorService);
+      testEnvironment = TestEnvironment.create(
+              new DnsmasqDriver(ReleaseIPServiceTest.class.getResource("/dnsmasq.leases").getPath(),
+                      "/usr/local/bin/dhcp_release",
+                      ReleaseIPServiceTest.class.getResource("/scripts/release-ip.sh").getPath(),
+                      ReleaseIPServiceTest.class.getResource("/scripts/dhcp-status.sh").getPath()),
+              1,
+              listeningExecutorService);
     }
 
     @AfterMethod

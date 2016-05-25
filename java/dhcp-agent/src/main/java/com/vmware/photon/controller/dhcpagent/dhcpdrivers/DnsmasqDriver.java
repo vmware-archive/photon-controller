@@ -35,6 +35,15 @@ public class DnsmasqDriver implements DHCPDriver {
         this.dhcpStatusPath = dhcpStatusPath;
     }
 
+    /**
+     * This method calls DHCP driver to release IP
+     * for cleanup of network resources.
+     *
+     * @param networkInterface
+     * @param macAddress
+     *
+     * @return
+     */
     public Response releaseIP(String networkInterface, String macAddress) {
         Response response = new Response();
 
@@ -64,6 +73,12 @@ public class DnsmasqDriver implements DHCPDriver {
         }
     }
 
+    /**
+     * This method returns true with DHCP server
+     * is up and running.
+     *
+     * @return
+     */
     public boolean isRunning() {
         boolean response = false;
         try {
@@ -81,6 +96,14 @@ public class DnsmasqDriver implements DHCPDriver {
         }
     }
 
+    /**
+     * This method parses Dnsmasq lease file to
+     * get IP for the macaddress provided.
+     *
+     * @param macAddress
+     *
+     * @return
+     */
     public String findIP(String macAddress) throws Throwable {
         String ipAddress = "";
 
