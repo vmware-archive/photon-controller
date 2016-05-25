@@ -15,21 +15,14 @@ package com.vmware.photon.controller.apife.commands;
 
 import com.vmware.photon.controller.apife.BackendTaskExecutor;
 import com.vmware.photon.controller.apife.DeployerServerSet;
-import com.vmware.photon.controller.apife.config.ApiFeConfiguration;
-import com.vmware.photon.controller.apife.config.ConfigurationUtils;
 import com.vmware.photon.controller.apife.lib.ImageStoreFactory;
 import com.vmware.photon.controller.apife.lib.VsphereIsoStore;
 import com.vmware.photon.controller.common.CloudStoreServerSet;
 import com.vmware.photon.controller.common.thrift.ServerSet;
-import com.vmware.photon.controller.common.zookeeper.PathChildrenCacheFactory;
-import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
-import com.vmware.photon.controller.common.zookeeper.ServicePathCacheFactory;
-import com.vmware.photon.controller.common.zookeeper.ZookeeperModule;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
-import org.apache.curator.framework.CuratorFramework;
 import static org.powermock.api.mockito.PowerMockito.mock;
 
 import java.util.concurrent.ExecutorService;
@@ -40,22 +33,6 @@ import java.util.concurrent.ExecutorService;
 public class CommandTestModule extends AbstractModule {
   @Override
   protected void configure() {
-    try {
-      ApiFeConfiguration config = ConfigurationUtils.parseConfiguration(CommandTestModule.class.getResource("/config" +
-          ".yml").getPath());
-      install(new ZookeeperModule(config.getZookeeper()));
-    } catch (Exception ex) {
-      throw new RuntimeException(ex);
-    }
-  }
-
-  @Provides
-  @Singleton
-  public ServiceConfig getServiceConfig(
-      CuratorFramework zkClient,
-      @ServicePathCacheFactory PathChildrenCacheFactory childrenCacheFactory)
-      throws Exception {
-    return new ServiceConfig(zkClient, childrenCacheFactory, "apife");
   }
 
   @Provides
