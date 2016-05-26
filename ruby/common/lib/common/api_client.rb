@@ -41,6 +41,7 @@ module EsxCloud
     include EsxCloud::ApiClient::VmApi
     include EsxCloud::ApiClient::DiskApi
     include EsxCloud::ApiClient::NetworkApi
+    include EsxCloud::ApiClient::VirtualNetworkApi
     include EsxCloud::ApiClient::StorageApi
     include EsxCloud::ApiClient::HostApi
     include EsxCloud::ApiClient::ImportApi
