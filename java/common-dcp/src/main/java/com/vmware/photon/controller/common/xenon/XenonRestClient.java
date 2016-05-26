@@ -119,20 +119,24 @@ public class XenonRestClient implements XenonClient {
   @Override
   public Operation post(String serviceSelfLink, ServiceDocument body)
       throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException {
-    return post(false, serviceSelfLink, body);
+    return post(false, serviceSelfLink, body, null);
   }
 
   @Override
-  public Operation post(Boolean forceIndexUpdate, String serviceSelfLink, ServiceDocument body)
+  public Operation post(Boolean forceIndexUpdate, String serviceSelfLink, ServiceDocument body, URI referrerURI)
       throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException {
     URI serviceUri = getServiceUri(serviceSelfLink);
+
+    if (referrerURI == null) {
+      referrerURI = this.localHostUri;
+    }
 
     Operation postOperation = Operation
         .createPost(serviceUri)
         .setUri(serviceUri)
         .setExpiration(Utils.getNowMicrosUtc() + getPostOperationExpirationMicros())
         .setBody(body)
-        .setReferer(this.localHostUri)
+        .setReferer(referrerURI)
         .setContextId(LoggingUtils.getRequestId());
 
     if (forceIndexUpdate) {
@@ -286,10 +290,21 @@ public class XenonRestClient implements XenonClient {
     return send(queryOperation);
   }
 
+
   @Override
   public Operation patch(String serviceSelfLink, ServiceDocument body)
       throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException {
+    return patch(serviceSelfLink, body, null);
+  }
+
+  @Override
+  public Operation patch(String serviceSelfLink, ServiceDocument body, URI referrerURI)
+      throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException {
     URI serviceUri = getServiceUri(serviceSelfLink);
+
+    if (referrerURI == null) {
+      referrerURI = this.localHostUri;
+    }
 
     Operation patchOperation = Operation
         .createPatch(serviceUri)
@@ -297,7 +312,7 @@ public class XenonRestClient implements XenonClient {
         .addPragmaDirective(Operation.PRAGMA_DIRECTIVE_NO_QUEUING)
         .setExpiration(Utils.getNowMicrosUtc() + getPatchOperationExpirationMicros())
         .setBody(body)
-        .setReferer(this.localHostUri)
+        .setReferer(referrerURI)
         .setContextId(LoggingUtils.getRequestId());
 
     return send(patchOperation);
