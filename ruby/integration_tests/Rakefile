@@ -242,6 +242,14 @@ namespace "agent" do
   end
 end
 
+namespace "nsx" do
+  desc "Virtual network integration tests"
+  RSpec::Core::RakeTask.new(:virtual_network) do |task|
+    task.pattern = FileList['spec/nsx/**/*_spec.rb']
+    task.rspec_opts = "--tag nsx --tag virtual_network --format RspecJunitformatter --out reports/rspec-virtual-network.xml --tag ~slow"
+  end
+end
+
 desc 'Download esx logs'
 task :download_esx_logs do
   EsxCloud::LogBackUpHelpers.download_esx_logs
