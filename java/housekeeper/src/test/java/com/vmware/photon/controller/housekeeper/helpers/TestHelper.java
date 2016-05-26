@@ -44,8 +44,8 @@ public class TestHelper {
 
   public static Injector createInjector() {
     return Guice.createInjector(
-        new ThriftModule(),
-        new TestHousekeeperModule());
+        new ThriftModule()
+    );
   }
 
   public static Housekeeper.Client createLocalThriftClient(Config config)

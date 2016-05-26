@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.housekeeper;
 
+import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.config.BadConfigException;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
@@ -42,8 +43,6 @@ import org.slf4j.LoggerFactory;
  * Housekeeper entry point.
  */
 public class Main {
-  public static final String CLOUDSTORE_SERVICE_NAME = "cloudstore";
-  public static final String HOUSEKEEPER_SERVICE_NAME = "housekeeper";
 
   private static final Logger logger = LoggerFactory.getLogger(Main.class);
 
@@ -62,14 +61,13 @@ public class Main {
     new LoggingFactory(config.getLogging(), "housekeeper").configure();
 
     Injector injector = Guice.createInjector(
-        new HousekeeperModule(),
         new ThriftModule()
     );
 
     final ZookeeperModule zkModule = new ZookeeperModule(config.getZookeeper());
     final CuratorFramework zkClient = zkModule.getCuratorFramework();
     final ServiceConfigFactory serviceConfigFactory = zkModule.getServiceConfigFactory(zkClient);
-    ServerSet cloudStoreServerSet = zkModule.getZookeeperServerSet(zkClient, CLOUDSTORE_SERVICE_NAME, true);
+    ServerSet cloudStoreServerSet = zkModule.getZookeeperServerSet(zkClient, Constants.CLOUDSTORE_SERVICE_NAME, true);
 
     final ThriftModule thriftModule = injector.getInstance(ThriftModule.class);
     final HostClientFactory hostClientFactory = thriftModule.getHostClientFactory();
@@ -83,7 +81,7 @@ public class Main {
     final HousekeeperXenonServiceHost housekeeperXenonServiceHost = new HousekeeperXenonServiceHost(
         config.getXenonConfig(), cloudStoreHelper, hostClientFactory, serviceConfigFactory, nsxClientFactory);
 
-    ServerSet housekeeperServerSet = zkModule.getZookeeperServerSet(zkClient, HOUSEKEEPER_SERVICE_NAME, true);
+    ServerSet housekeeperServerSet = zkModule.getZookeeperServerSet(zkClient, Constants.HOUSEKEEPER_SERVICE_NAME, true);
     final HousekeeperService housekeeperService = new HousekeeperService(housekeeperServerSet,
         housekeeperXenonServiceHost);
 
