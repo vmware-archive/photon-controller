@@ -67,7 +67,8 @@ public class EntityLockCleanerService extends StatefulService {
   public void handleStart(Operation start) {
     ServiceUtils.logInfo(this, "Starting service %s", getSelfLink());
     State s = start.getBody(State.class);
-    initializeState(start, s);
+    start.complete();
+    initializeState(s);
   }
 
   @Override
@@ -89,7 +90,7 @@ public class EntityLockCleanerService extends StatefulService {
    *
    * @param current
    */
-  private void initializeState(Operation start, State current) {
+  private void initializeState(State current) {
     InitializationUtils.initialize(current);
 
     if (current.documentExpirationTimeMicros <= 0) {
@@ -115,10 +116,7 @@ public class EntityLockCleanerService extends StatefulService {
             }
 
             validateState(current);
-            start.setBody(current).complete();
-
             processStart(current);
-
           })).sendWith(this);
     }
   }
@@ -140,6 +138,9 @@ public class EntityLockCleanerService extends StatefulService {
    */
   private State applyPatch(State current, State patch) {
     ServiceUtils.logInfo(this, "Moving to stage %s", patch.taskState.stage);
+    if (patch.nextPageLink == null) {
+      current.nextPageLink = null;
+    }
     PatchUtils.patchState(current, patch);
     return current;
   }
@@ -163,7 +164,7 @@ public class EntityLockCleanerService extends StatefulService {
   private void processStart(final State current) {
     try {
       if (!isFinalStage(current)) {
-        sendStageProgressPatch(current, current.taskState.stage);
+        sendSelfPatch(current);
       }
     } catch (Throwable e) {
       failTask(e);
@@ -225,8 +226,8 @@ public class EntityLockCleanerService extends StatefulService {
               parseEntityLockQueryResults(op.getBody(QueryTask.class));
 
           if (entityLockList.size() == 0) {
-            ServiceUtils.logInfo(EntityLockCleanerService.this, "No entityLocks found.");
-            finishTask(current);
+            ServiceUtils.logInfo(EntityLockCleanerService.this, "No entityLocks found any more.");
+            sendSelfPatch(current);
             return;
           }
 
@@ -296,9 +297,8 @@ public class EntityLockCleanerService extends StatefulService {
 
       current.danglingEntityLocksWithInactiveTasks += releaseLockOperations.size();
       if (releaseLockOperations.size() == 0) {
-        ServiceUtils.logInfo(this, "No unreleased entityLocks found.");
-        current.releasedEntityLocks = 0;
-        finishTask(current);
+        ServiceUtils.logInfo(this, "No unreleased entityLocks found for this patch.");
+        sendSelfPatch(current);
         return;
       }
 
