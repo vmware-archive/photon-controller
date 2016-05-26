@@ -323,7 +323,7 @@ public class VmDcpBackend implements VmBackend {
     Stopwatch resourceTicketWatch = Stopwatch.createStarted();
     resourceTicketBackend.returnQuota(resourceTickedId, new QuotaCost(vm.getCost()));
     resourceTicketWatch.stop();
-    logger.info("VmSqlBackend.tombstone for Vm Id: {}, resourceTicket {}, returnQuota in {} milliseconds",
+    logger.info("VmDcpBackend.tombstone for Vm Id: {}, resourceTicket {}, returnQuota in {} milliseconds",
         vm.getId(),
         resourceTickedId,
         resourceTicketWatch.elapsed(TimeUnit.MILLISECONDS));
