@@ -30,6 +30,7 @@ require_relative "api_client/task_api"
 require_relative "api_client/cluster_api"
 require_relative "api_client/availability_zone_api"
 require_relative "api_client/available_api"
+require_relative "api_client/virtual_network_api"
 
 module EsxCloud
   class ApiClient
@@ -41,6 +42,7 @@ module EsxCloud
     include EsxCloud::ApiClient::VmApi
     include EsxCloud::ApiClient::DiskApi
     include EsxCloud::ApiClient::NetworkApi
+    include EsxCloud::ApiClient::VirtualNetworkApi
     include EsxCloud::ApiClient::StorageApi
     include EsxCloud::ApiClient::HostApi
     include EsxCloud::ApiClient::ImportApi
