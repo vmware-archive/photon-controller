@@ -27,6 +27,7 @@ import static org.hamcrest.Matchers.is;
  * Test {@link DHCPAgentModule}.
  */
 public class DHCPAgentModuleTest {
+  private static final String successScript = "/scripts/success.sh";
 
   /**
    * Dummy test case to make Intellij recognize this as a test class.
@@ -46,8 +47,8 @@ public class DHCPAgentModuleTest {
       injector = TestHelper.createInjector("/config.yml", new DnsmasqDriver(
               DHCPAgentModuleTest.class.getResource("/dnsmasq.leases").getPath(),
               "/usr/local/bin/dhcp_release",
-              DHCPAgentModuleTest.class.getResource("/scripts/release-ip.sh").getPath(),
-              DHCPAgentModuleTest.class.getResource("/scripts/dhcp-status.sh").getPath()));
+              DHCPAgentModuleTest.class.getResource(successScript).getPath(),
+              DHCPAgentModuleTest.class.getResource(successScript).getPath()));
     }
 
     @Test
