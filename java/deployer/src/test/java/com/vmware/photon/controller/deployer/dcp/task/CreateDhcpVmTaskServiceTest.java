@@ -214,7 +214,7 @@ public class CreateDhcpVmTaskServiceTest {
 
       assertThat(serviceState.taskState.stage, is(TaskState.TaskStage.STARTED));
       assertThat(serviceState.taskState.subStage,
-          is(CreateDhcpVmTaskService.TaskState.SubStage.CREATE_VM_FLAVOR));
+          is(CreateDhcpVmTaskService.TaskState.SubStage.CREATE_VM));
     }
 
     @DataProvider(name = "TransitionalStartStages")
@@ -222,7 +222,7 @@ public class CreateDhcpVmTaskServiceTest {
       return new Object[][]{
           {null, null},
           {TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.STARTED, CreateDhcpVmTaskService.TaskState.SubStage.CREATE_VM_FLAVOR},
+          {TaskState.TaskStage.STARTED, CreateDhcpVmTaskService.TaskState.SubStage.CREATE_VM},
       };
     }
 
@@ -483,26 +483,6 @@ public class CreateDhcpVmTaskServiceTest {
       doReturn(vmApi).when(apiClient).getVmApi();
       vmId = UUID.randomUUID().toString();
 
-      doAnswer(MockHelper.mockCreateFlavorAsync("CREATE_VM_FLAVOR_TASK_ID", "VM_FLAVOR_ID", "QUEUED"))
-          .when(flavorApi)
-          .createAsync(argThat(vmFlavorCreateSpecMatcher), Matchers.<FutureCallback<Task>>any());
-
-      doAnswer(MockHelper.mockGetTaskAsync("CREATE_VM_FLAVOR_TASK_ID", "VM_FLAVOR_ID", "QUEUED"))
-          .doAnswer(MockHelper.mockGetTaskAsync("CREATE_VM_FLAVOR_TASK_ID", "VM_FLAVOR_ID", "STARTED"))
-          .doAnswer(MockHelper.mockGetTaskAsync("CREATE_VM_FLAVOR_TASK_ID", "VM_FLAVOR_ID", "COMPLETED"))
-          .when(tasksApi)
-          .getTaskAsync(eq("CREATE_VM_FLAVOR_TASK_ID"), Matchers.<FutureCallback<Task>>any());
-
-      doAnswer(MockHelper.mockCreateFlavorAsync("CREATE_DISK_FLAVOR_TASK_ID", "DISK_FLAVOR_ID", "QUEUED"))
-          .when(flavorApi)
-          .createAsync(argThat(diskFlavorCreateSpecMatcher), Matchers.<FutureCallback<Task>>any());
-
-      doAnswer(MockHelper.mockGetTaskAsync("CREATE_DISK_FLAVOR_TASK_ID", "DISK_FLAVOR_ID", "QUEUED"))
-          .doAnswer(MockHelper.mockGetTaskAsync("CREATE_DISK_FLAVOR_TASK_ID", "DISK_FLAVOR_ID", "STARTED"))
-          .doAnswer(MockHelper.mockGetTaskAsync("CREATE_DISK_FLAVOR_TASK_ID", "DISK_FLAVOR_ID", "COMPLETED"))
-          .when(tasksApi)
-          .getTaskAsync(eq("CREATE_DISK_FLAVOR_TASK_ID"), Matchers.<FutureCallback<Task>>any());
-
       doAnswer(MockHelper.mockCreateVmAsync("CREATE_VM_TASK_ID", vmId, "QUEUED"))
           .when(projectApi)
           .createVmAsync(anyString(), any(VmCreateSpec.class), Matchers.<FutureCallback<Task>>any());
@@ -652,12 +632,6 @@ public class CreateDhcpVmTaskServiceTest {
 
       TestHelper.assertTaskStateFinished(finalState.taskState);
       assertThat(finalState.taskState.subStage, nullValue());
-      assertThat(finalState.createVmFlavorTaskId, is("CREATE_VM_FLAVOR_TASK_ID"));
-      assertThat(finalState.createVmFlavorPollCount, is(3));
-      assertThat(finalState.vmFlavorId, is("VM_FLAVOR_ID"));
-      assertThat(finalState.createDiskFlavorTaskId, is("CREATE_DISK_FLAVOR_TASK_ID"));
-      assertThat(finalState.createDiskFlavorPollCount, is(3));
-      assertThat(finalState.diskFlavorId, is("DISK_FLAVOR_ID"));
       assertThat(finalState.createVmTaskId, is("CREATE_VM_TASK_ID"));
       assertThat(finalState.createVmPollCount, is(3));
       assertThat(finalState.vmId, is(vmId));
@@ -671,22 +645,6 @@ public class CreateDhcpVmTaskServiceTest {
       assertThat(finalState.startVmPollCount, is(3));
       assertThat(finalState.dhcpAgentPollIterations, is(1));
 
-      verify(flavorApi).createAsync(
-          eq(getExpectedVmFlavorCreateSpec(expectedCpuCount, expectedMemoryMb)),
-          Matchers.<FutureCallback<Task>>any());
-
-      verify(tasksApi, times(3)).getTaskAsync(
-          eq("CREATE_VM_FLAVOR_TASK_ID"),
-          Matchers.<FutureCallback<Task>>any());
-
-      verify(flavorApi).createAsync(
-          eq(getExpectedDiskFlavorCreateSpec()),
-          Matchers.<FutureCallback<Task>>any());
-
-      verify(tasksApi, times(3)).getTaskAsync(
-          eq("CREATE_DISK_FLAVOR_TASK_ID"),
-          Matchers.<FutureCallback<Task>>any());
-
       verify(projectApi).createVmAsync(
           eq("PROJECT_ID"),
           eq(getExpectedVmCreateSpec()),
@@ -699,8 +657,6 @@ public class CreateDhcpVmTaskServiceTest {
       ArgumentCaptor<VmMetadata> metadataCaptor = ArgumentCaptor.forClass(VmMetadata.class);
 
       VmService.State finalVmState = testEnvironment.getServiceState(startState.vmServiceLink, VmService.State.class);
-      assertThat(finalVmState.vmFlavorId, is("VM_FLAVOR_ID"));
-      assertThat(finalVmState.diskFlavorId, is("DISK_FLAVOR_ID"));
       assertThat(finalVmState.vmId, is(vmId));
 
       verify(vmApi).setMetadataAsync(
@@ -775,12 +731,6 @@ public class CreateDhcpVmTaskServiceTest {
 
       TestHelper.assertTaskStateFinished(finalState.taskState);
       assertThat(finalState.taskState.subStage, nullValue());
-      assertThat(finalState.createVmFlavorTaskId, nullValue());
-      assertThat(finalState.createVmFlavorPollCount, is(0));
-      assertThat(finalState.vmFlavorId, is("VM_FLAVOR_ID"));
-      assertThat(finalState.createDiskFlavorTaskId, nullValue());
-      assertThat(finalState.createDiskFlavorPollCount, is(0));
-      assertThat(finalState.diskFlavorId, is("DISK_FLAVOR_ID"));
       assertThat(finalState.createVmTaskId, nullValue());
       assertThat(finalState.createVmPollCount, is(0));
       assertThat(finalState.vmId, is(vmId));
@@ -792,22 +742,12 @@ public class CreateDhcpVmTaskServiceTest {
       assertThat(finalState.startVmPollCount, is(0));
       assertThat(finalState.dhcpAgentPollIterations, is(1));
 
-      verify(flavorApi).createAsync(
-          eq(getExpectedVmFlavorCreateSpec(1, 1636L)),
-          Matchers.<FutureCallback<Task>>any());
-
-      verify(flavorApi).createAsync(
-          eq(getExpectedDiskFlavorCreateSpec()),
-          Matchers.<FutureCallback<Task>>any());
-
       verify(projectApi).createVmAsync(
           eq("PROJECT_ID"),
           eq(getExpectedVmCreateSpec()),
           Matchers.<FutureCallback<Task>>any());
 
       VmService.State finalVmState = testEnvironment.getServiceState(startState.vmServiceLink, VmService.State.class);
-      assertThat(finalVmState.vmFlavorId, is("VM_FLAVOR_ID"));
-      assertThat(finalVmState.diskFlavorId, is("DISK_FLAVOR_ID"));
       assertThat(finalVmState.vmId, is(vmId));
 
       ArgumentCaptor<VmMetadata> captor = ArgumentCaptor.forClass(VmMetadata.class);
@@ -931,236 +871,6 @@ public class CreateDhcpVmTaskServiceTest {
     }
 
     @Test
-    public void testCreateVmFlavorFailureNullHostResources() throws Throwable {
-
-      HostService.State hostStartState = TestHelper.getHostServiceStartState(UsageTag.MGMT, HostState.READY);
-      hostStartState.cpuCount = null;
-      hostStartState.memoryMb = null;
-      HostService.State hostState = TestHelper.createHostService(cloudStoreEnvironment, hostStartState);
-
-      VmService.State vmStartState = TestHelper.getVmServiceStartState(hostState);
-      vmStartState.imageId = "IMAGE_ID";
-      vmStartState.projectId = "PROJECT_ID";
-      VmService.State vmState = TestHelper.createVmService(testEnvironment, vmStartState);
-      startState.vmServiceLink = vmState.documentSelfLink;
-
-      CreateDhcpVmTaskService.State finalState =
-          testEnvironment.callServiceAndWaitForState(
-              CreateDhcpVmTaskFactoryService.SELF_LINK,
-              startState,
-              CreateDhcpVmTaskService.State.class,
-              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
-
-      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
-      assertThat(finalState.taskState.subStage, nullValue());
-      assertThat(finalState.taskState.failure.statusCode, is(400));
-      assertThat(finalState.taskState.failure.message, containsString(
-          "Failed to calculate host resources for host hostAddress"));
-    }
-
-    @Test
-    public void testCreateVmFlavorFailure() throws Throwable {
-
-      doAnswer(MockHelper.mockGetTaskAsync("CREATE_VM_FLAVOR_TASK_ID", "VM_FLAVOR_ID", "QUEUED"))
-          .doAnswer(MockHelper.mockGetTaskAsync("CREATE_VM_FLAVOR_TASK_ID", "VM_FLAVOR_ID", "STARTED"))
-          .doAnswer(MockHelper.mockGetTaskAsync(failedTask))
-          .when(tasksApi)
-          .getTaskAsync(eq("CREATE_VM_FLAVOR_TASK_ID"), Matchers.<FutureCallback<Task>>any());
-
-      CreateDhcpVmTaskService.State finalState =
-          testEnvironment.callServiceAndWaitForState(
-              CreateDhcpVmTaskFactoryService.SELF_LINK,
-              startState,
-              CreateDhcpVmTaskService.State.class,
-              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
-
-      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
-      assertThat(finalState.taskState.subStage, nullValue());
-      assertThat(finalState.taskState.failure.statusCode, is(400));
-      assertThat(finalState.taskState.failure.message, containsString(ApiUtils.getErrors(failedTask)));
-      assertThat(finalState.createVmFlavorTaskId, is("CREATE_VM_FLAVOR_TASK_ID"));
-      assertThat(finalState.createVmFlavorPollCount, is(3));
-      assertThat(finalState.vmFlavorId, nullValue());
-    }
-
-    @Test
-    public void testCreateVmFlavorFailureNoTaskPolling() throws Throwable {
-
-      doAnswer(MockHelper.mockCreateFlavorAsync(failedTask))
-          .when(flavorApi)
-          .createAsync(argThat(vmFlavorCreateSpecMatcher), Matchers.<FutureCallback<Task>>any());
-
-      CreateDhcpVmTaskService.State finalState =
-          testEnvironment.callServiceAndWaitForState(
-              CreateDhcpVmTaskFactoryService.SELF_LINK,
-              startState,
-              CreateDhcpVmTaskService.State.class,
-              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
-
-      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
-      assertThat(finalState.taskState.subStage, nullValue());
-      assertThat(finalState.taskState.failure.statusCode, is(400));
-      assertThat(finalState.taskState.failure.message, containsString(ApiUtils.getErrors(failedTask)));
-      assertThat(finalState.createVmFlavorTaskId, nullValue());
-      assertThat(finalState.createVmFlavorPollCount, is(0));
-      assertThat(finalState.vmFlavorId, nullValue());
-    }
-
-    @Test
-    public void testCreateVmFlavorFailureExceptionInCreateFlavorCall() throws Throwable {
-
-      doThrow(new IOException("I/O exception during flavor API createAsync call"))
-          .when(flavorApi)
-          .createAsync(argThat(vmFlavorCreateSpecMatcher), Matchers.<FutureCallback<Task>>any());
-
-      CreateDhcpVmTaskService.State finalState =
-          testEnvironment.callServiceAndWaitForState(
-              CreateDhcpVmTaskFactoryService.SELF_LINK,
-              startState,
-              CreateDhcpVmTaskService.State.class,
-              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
-
-      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
-      assertThat(finalState.taskState.subStage, nullValue());
-      assertThat(finalState.taskState.failure.statusCode, is(400));
-      assertThat(finalState.taskState.failure.message,
-          containsString("I/O exception during flavor API createAsync call"));
-      assertThat(finalState.createVmFlavorTaskId, nullValue());
-      assertThat(finalState.createVmFlavorPollCount, is(0));
-      assertThat(finalState.vmFlavorId, nullValue());
-    }
-
-    @Test
-    public void testCreateVmFlavorFailureExceptionInGetTaskCall() throws Throwable {
-
-      doThrow(new IOException("I/O exception during getTaskAsync call"))
-          .when(tasksApi)
-          .getTaskAsync(eq("CREATE_VM_FLAVOR_TASK_ID"), Matchers.<FutureCallback<Task>>any());
-
-      CreateDhcpVmTaskService.State finalState =
-          testEnvironment.callServiceAndWaitForState(
-              CreateDhcpVmTaskFactoryService.SELF_LINK,
-              startState,
-              CreateDhcpVmTaskService.State.class,
-              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
-
-      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
-      assertThat(finalState.taskState.subStage, nullValue());
-      assertThat(finalState.taskState.failure.statusCode, is(400));
-      assertThat(finalState.taskState.failure.message, containsString("I/O exception during getTaskAsync call"));
-      assertThat(finalState.createVmFlavorTaskId, is("CREATE_VM_FLAVOR_TASK_ID"));
-      assertThat(finalState.createVmFlavorPollCount, is(1));
-      assertThat(finalState.vmFlavorId, nullValue());
-    }
-
-    @Test
-    public void testCreateDiskFlavorFailure() throws Throwable {
-
-      doAnswer(MockHelper.mockCreateFlavorAsync("CREATE_DISK_FLAVOR_TASK_ID", "DISK_FLAVOR_ID", "QUEUED"))
-          .doAnswer(MockHelper.mockCreateFlavorAsync("CREATE_DISK_FLAVOR_TASK_ID", "DISK_FLAVOR_ID", "STARTED"))
-          .doAnswer(MockHelper.mockCreateFlavorAsync(failedTask))
-          .when(tasksApi)
-          .getTaskAsync(eq("CREATE_DISK_FLAVOR_TASK_ID"), Matchers.<FutureCallback<Task>>any());
-
-      CreateDhcpVmTaskService.State finalState =
-          testEnvironment.callServiceAndWaitForState(
-              CreateDhcpVmTaskFactoryService.SELF_LINK,
-              startState,
-              CreateDhcpVmTaskService.State.class,
-              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
-
-      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
-      assertThat(finalState.taskState.subStage, nullValue());
-      assertThat(finalState.taskState.failure.statusCode, is(400));
-      assertThat(finalState.taskState.failure.message, containsString(ApiUtils.getErrors(failedTask)));
-      assertThat(finalState.createVmFlavorTaskId, is("CREATE_VM_FLAVOR_TASK_ID"));
-      assertThat(finalState.createVmFlavorPollCount, is(3));
-      assertThat(finalState.vmFlavorId, is("VM_FLAVOR_ID"));
-      assertThat(finalState.createDiskFlavorTaskId, is("CREATE_DISK_FLAVOR_TASK_ID"));
-      assertThat(finalState.createDiskFlavorPollCount, is(3));
-      assertThat(finalState.diskFlavorId, nullValue());
-    }
-
-    @Test
-    public void testCreateDiskFlavorFailureNoTaskPolling() throws Throwable {
-
-      doAnswer(MockHelper.mockCreateFlavorAsync(failedTask))
-          .when(flavorApi)
-          .createAsync(argThat(diskFlavorCreateSpecMatcher), Matchers.<FutureCallback<Task>>any());
-
-      CreateDhcpVmTaskService.State finalState =
-          testEnvironment.callServiceAndWaitForState(
-              CreateDhcpVmTaskFactoryService.SELF_LINK,
-              startState,
-              CreateDhcpVmTaskService.State.class,
-              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
-
-      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
-      assertThat(finalState.taskState.subStage, nullValue());
-      assertThat(finalState.taskState.failure.statusCode, is(400));
-      assertThat(finalState.taskState.failure.message, containsString(ApiUtils.getErrors(failedTask)));
-      assertThat(finalState.createVmFlavorTaskId, is("CREATE_VM_FLAVOR_TASK_ID"));
-      assertThat(finalState.createVmFlavorPollCount, is(3));
-      assertThat(finalState.vmFlavorId, is("VM_FLAVOR_ID"));
-      assertThat(finalState.createDiskFlavorTaskId, nullValue());
-      assertThat(finalState.createDiskFlavorPollCount, is(0));
-      assertThat(finalState.diskFlavorId, nullValue());
-    }
-
-    @Test
-    public void testCreateDiskFlavorFailureExceptionInCreateFlavorCall() throws Throwable {
-
-      doThrow(new IOException("I/O exception during flavor API createAsync call"))
-          .when(flavorApi)
-          .createAsync(argThat(diskFlavorCreateSpecMatcher), Matchers.<FutureCallback<Task>>any());
-
-      CreateDhcpVmTaskService.State finalState =
-          testEnvironment.callServiceAndWaitForState(
-              CreateDhcpVmTaskFactoryService.SELF_LINK,
-              startState,
-              CreateDhcpVmTaskService.State.class,
-              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
-
-      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
-      assertThat(finalState.taskState.subStage, nullValue());
-      assertThat(finalState.taskState.failure.statusCode, is(400));
-      assertThat(finalState.taskState.failure.message,
-          containsString("I/O exception during flavor API createAsync call"));
-      assertThat(finalState.createVmFlavorTaskId, is("CREATE_VM_FLAVOR_TASK_ID"));
-      assertThat(finalState.createVmFlavorPollCount, is(3));
-      assertThat(finalState.vmFlavorId, is("VM_FLAVOR_ID"));
-      assertThat(finalState.createDiskFlavorTaskId, nullValue());
-      assertThat(finalState.createDiskFlavorPollCount, is(0));
-      assertThat(finalState.diskFlavorId, nullValue());
-    }
-
-    @Test
-    public void testCreateDiskFlavorFailureExceptionDuringGetTaskCall() throws Throwable {
-
-      doThrow(new IOException("I/O exception during getTaskAsync call"))
-          .when(tasksApi)
-          .getTaskAsync(eq("CREATE_DISK_FLAVOR_TASK_ID"), Matchers.<FutureCallback<Task>>any());
-
-      CreateDhcpVmTaskService.State finalState =
-          testEnvironment.callServiceAndWaitForState(
-              CreateDhcpVmTaskFactoryService.SELF_LINK,
-              startState,
-              CreateDhcpVmTaskService.State.class,
-              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
-
-      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
-      assertThat(finalState.taskState.subStage, nullValue());
-      assertThat(finalState.taskState.failure.statusCode, is(400));
-      assertThat(finalState.taskState.failure.message, containsString("I/O exception during getTaskAsync call"));
-      assertThat(finalState.createVmFlavorTaskId, is("CREATE_VM_FLAVOR_TASK_ID"));
-      assertThat(finalState.createVmFlavorPollCount, is(3));
-      assertThat(finalState.vmFlavorId, is("VM_FLAVOR_ID"));
-      assertThat(finalState.createDiskFlavorTaskId, is("CREATE_DISK_FLAVOR_TASK_ID"));
-      assertThat(finalState.createDiskFlavorPollCount, is(1));
-      assertThat(finalState.diskFlavorId, nullValue());
-    }
-
-    @Test
     public void testCreateVmFailure() throws Throwable {
 
       doAnswer(MockHelper.mockGetTaskAsync("CREATE_VM_TASK_ID", vmId, "QUEUED"))
@@ -1180,12 +890,6 @@ public class CreateDhcpVmTaskServiceTest {
       assertThat(finalState.taskState.subStage, nullValue());
       assertThat(finalState.taskState.failure.statusCode, is(400));
       assertThat(finalState.taskState.failure.message, containsString(ApiUtils.getErrors(failedTask)));
-      assertThat(finalState.createVmFlavorTaskId, is("CREATE_VM_FLAVOR_TASK_ID"));
-      assertThat(finalState.createVmFlavorPollCount, is(3));
-      assertThat(finalState.vmFlavorId, is("VM_FLAVOR_ID"));
-      assertThat(finalState.createDiskFlavorTaskId, is("CREATE_DISK_FLAVOR_TASK_ID"));
-      assertThat(finalState.createDiskFlavorPollCount, is(3));
-      assertThat(finalState.diskFlavorId, is("DISK_FLAVOR_ID"));
       assertThat(finalState.createVmTaskId, is("CREATE_VM_TASK_ID"));
       assertThat(finalState.createVmPollCount, is(3));
     }
@@ -1208,12 +912,6 @@ public class CreateDhcpVmTaskServiceTest {
       assertThat(finalState.taskState.subStage, nullValue());
       assertThat(finalState.taskState.failure.statusCode, is(400));
       assertThat(finalState.taskState.failure.message, containsString(ApiUtils.getErrors(failedTask)));
-      assertThat(finalState.createVmFlavorTaskId, is("CREATE_VM_FLAVOR_TASK_ID"));
-      assertThat(finalState.createVmFlavorPollCount, is(3));
-      assertThat(finalState.vmFlavorId, is("VM_FLAVOR_ID"));
-      assertThat(finalState.createDiskFlavorTaskId, is("CREATE_DISK_FLAVOR_TASK_ID"));
-      assertThat(finalState.createDiskFlavorPollCount, is(3));
-      assertThat(finalState.diskFlavorId, is("DISK_FLAVOR_ID"));
       assertThat(finalState.createVmTaskId, nullValue());
       assertThat(finalState.createVmPollCount, is(0));
     }
@@ -1236,12 +934,6 @@ public class CreateDhcpVmTaskServiceTest {
       assertThat(finalState.taskState.subStage, nullValue());
       assertThat(finalState.taskState.failure.statusCode, is(400));
       assertThat(finalState.taskState.failure.message, containsString("I/O exception during createVmAsync call"));
-      assertThat(finalState.createVmFlavorTaskId, is("CREATE_VM_FLAVOR_TASK_ID"));
-      assertThat(finalState.createVmFlavorPollCount, is(3));
-      assertThat(finalState.vmFlavorId, is("VM_FLAVOR_ID"));
-      assertThat(finalState.createDiskFlavorTaskId, is("CREATE_DISK_FLAVOR_TASK_ID"));
-      assertThat(finalState.createDiskFlavorPollCount, is(3));
-      assertThat(finalState.diskFlavorId, is("DISK_FLAVOR_ID"));
       assertThat(finalState.createVmTaskId, nullValue());
       assertThat(finalState.createVmPollCount, is(0));
     }
@@ -1264,12 +956,6 @@ public class CreateDhcpVmTaskServiceTest {
       assertThat(finalState.taskState.subStage, nullValue());
       assertThat(finalState.taskState.failure.statusCode, is(400));
       assertThat(finalState.taskState.failure.message, containsString("I/O exception during getTaskAsync call"));
-      assertThat(finalState.createVmFlavorTaskId, is("CREATE_VM_FLAVOR_TASK_ID"));
-      assertThat(finalState.createVmFlavorPollCount, is(3));
-      assertThat(finalState.vmFlavorId, is("VM_FLAVOR_ID"));
-      assertThat(finalState.createDiskFlavorTaskId, is("CREATE_DISK_FLAVOR_TASK_ID"));
-      assertThat(finalState.createDiskFlavorPollCount, is(3));
-      assertThat(finalState.diskFlavorId, is("DISK_FLAVOR_ID"));
       assertThat(finalState.createVmTaskId, is("CREATE_VM_TASK_ID"));
       assertThat(finalState.createVmPollCount, is(1));
     }
@@ -1294,12 +980,6 @@ public class CreateDhcpVmTaskServiceTest {
       assertThat(finalState.taskState.subStage, nullValue());
       assertThat(finalState.taskState.failure.statusCode, is(400));
       assertThat(finalState.taskState.failure.message, containsString(ApiUtils.getErrors(failedTask)));
-      assertThat(finalState.createVmFlavorTaskId, is("CREATE_VM_FLAVOR_TASK_ID"));
-      assertThat(finalState.createVmFlavorPollCount, is(3));
-      assertThat(finalState.vmFlavorId, is("VM_FLAVOR_ID"));
-      assertThat(finalState.createDiskFlavorTaskId, is("CREATE_DISK_FLAVOR_TASK_ID"));
-      assertThat(finalState.createDiskFlavorPollCount, is(3));
-      assertThat(finalState.diskFlavorId, is("DISK_FLAVOR_ID"));
       assertThat(finalState.createVmTaskId, is("CREATE_VM_TASK_ID"));
       assertThat(finalState.createVmPollCount, is(3));
       assertThat(finalState.vmId, is(vmId));
@@ -1325,12 +1005,6 @@ public class CreateDhcpVmTaskServiceTest {
       assertThat(finalState.taskState.subStage, nullValue());
       assertThat(finalState.taskState.failure.statusCode, is(400));
       assertThat(finalState.taskState.failure.message, containsString(ApiUtils.getErrors(failedTask)));
-      assertThat(finalState.createVmFlavorTaskId, is("CREATE_VM_FLAVOR_TASK_ID"));
-      assertThat(finalState.createVmFlavorPollCount, is(3));
-      assertThat(finalState.vmFlavorId, is("VM_FLAVOR_ID"));
-      assertThat(finalState.createDiskFlavorTaskId, is("CREATE_DISK_FLAVOR_TASK_ID"));
-      assertThat(finalState.createDiskFlavorPollCount, is(3));
-      assertThat(finalState.diskFlavorId, is("DISK_FLAVOR_ID"));
       assertThat(finalState.createVmTaskId, is("CREATE_VM_TASK_ID"));
       assertThat(finalState.createVmPollCount, is(3));
       assertThat(finalState.vmId, is(vmId));
@@ -1356,12 +1030,6 @@ public class CreateDhcpVmTaskServiceTest {
       assertThat(finalState.taskState.subStage, nullValue());
       assertThat(finalState.taskState.failure.statusCode, is(400));
       assertThat(finalState.taskState.failure.message, containsString("I/O exception during setMetadataAsync call"));
-      assertThat(finalState.createVmFlavorTaskId, is("CREATE_VM_FLAVOR_TASK_ID"));
-      assertThat(finalState.createVmFlavorPollCount, is(3));
-      assertThat(finalState.vmFlavorId, is("VM_FLAVOR_ID"));
-      assertThat(finalState.createDiskFlavorTaskId, is("CREATE_DISK_FLAVOR_TASK_ID"));
-      assertThat(finalState.createDiskFlavorPollCount, is(3));
-      assertThat(finalState.diskFlavorId, is("DISK_FLAVOR_ID"));
       assertThat(finalState.createVmTaskId, is("CREATE_VM_TASK_ID"));
       assertThat(finalState.createVmPollCount, is(3));
       assertThat(finalState.vmId, is(vmId));
@@ -1387,12 +1055,6 @@ public class CreateDhcpVmTaskServiceTest {
       assertThat(finalState.taskState.subStage, nullValue());
       assertThat(finalState.taskState.failure.statusCode, is(400));
       assertThat(finalState.taskState.failure.message, containsString("I/O exception during getTaskAsync call"));
-      assertThat(finalState.createVmFlavorTaskId, is("CREATE_VM_FLAVOR_TASK_ID"));
-      assertThat(finalState.createVmFlavorPollCount, is(3));
-      assertThat(finalState.vmFlavorId, is("VM_FLAVOR_ID"));
-      assertThat(finalState.createDiskFlavorTaskId, is("CREATE_DISK_FLAVOR_TASK_ID"));
-      assertThat(finalState.createDiskFlavorPollCount, is(3));
-      assertThat(finalState.diskFlavorId, is("DISK_FLAVOR_ID"));
       assertThat(finalState.createVmTaskId, is("CREATE_VM_TASK_ID"));
       assertThat(finalState.createVmPollCount, is(3));
       assertThat(finalState.vmId, is(vmId));
@@ -1422,12 +1084,6 @@ public class CreateDhcpVmTaskServiceTest {
       assertThat(finalState.taskState.failure.statusCode, is(400));
       assertThat(finalState.taskState.failure.message,
           containsString("Runtime exception during config directory copy"));
-      assertThat(finalState.createVmFlavorTaskId, is("CREATE_VM_FLAVOR_TASK_ID"));
-      assertThat(finalState.createVmFlavorPollCount, is(3));
-      assertThat(finalState.vmFlavorId, is("VM_FLAVOR_ID"));
-      assertThat(finalState.createDiskFlavorTaskId, is("CREATE_DISK_FLAVOR_TASK_ID"));
-      assertThat(finalState.createDiskFlavorPollCount, is(3));
-      assertThat(finalState.diskFlavorId, is("DISK_FLAVOR_ID"));
       assertThat(finalState.createVmTaskId, is("CREATE_VM_TASK_ID"));
       assertThat(finalState.createVmPollCount, is(3));
       assertThat(finalState.vmId, is(vmId));
@@ -1452,12 +1108,6 @@ public class CreateDhcpVmTaskServiceTest {
       assertThat(finalState.taskState.failure.statusCode, is(400));
       assertThat(finalState.taskState.failure.message, containsString("Creating the configuration ISO for VM " +
           vmId + " failed with exit code 1"));
-      assertThat(finalState.createVmFlavorTaskId, is("CREATE_VM_FLAVOR_TASK_ID"));
-      assertThat(finalState.createVmFlavorPollCount, is(3));
-      assertThat(finalState.vmFlavorId, is("VM_FLAVOR_ID"));
-      assertThat(finalState.createDiskFlavorTaskId, is("CREATE_DISK_FLAVOR_TASK_ID"));
-      assertThat(finalState.createDiskFlavorPollCount, is(3));
-      assertThat(finalState.diskFlavorId, is("DISK_FLAVOR_ID"));
       assertThat(finalState.createVmTaskId, is("CREATE_VM_TASK_ID"));
       assertThat(finalState.createVmPollCount, is(3));
       assertThat(finalState.vmId, is(vmId));
@@ -1486,12 +1136,6 @@ public class CreateDhcpVmTaskServiceTest {
       assertThat(finalState.taskState.subStage, nullValue());
       assertThat(finalState.taskState.failure.statusCode, is(400));
       assertThat(finalState.taskState.failure.message, containsString(ApiUtils.getErrors(failedTask)));
-      assertThat(finalState.createVmFlavorTaskId, is("CREATE_VM_FLAVOR_TASK_ID"));
-      assertThat(finalState.createVmFlavorPollCount, is(3));
-      assertThat(finalState.vmFlavorId, is("VM_FLAVOR_ID"));
-      assertThat(finalState.createDiskFlavorTaskId, is("CREATE_DISK_FLAVOR_TASK_ID"));
-      assertThat(finalState.createDiskFlavorPollCount, is(3));
-      assertThat(finalState.diskFlavorId, is("DISK_FLAVOR_ID"));
       assertThat(finalState.createVmTaskId, is("CREATE_VM_TASK_ID"));
       assertThat(finalState.createVmPollCount, is(3));
       assertThat(finalState.vmId, is(vmId));
@@ -1521,12 +1165,6 @@ public class CreateDhcpVmTaskServiceTest {
       assertThat(finalState.taskState.subStage, nullValue());
       assertThat(finalState.taskState.failure.statusCode, is(400));
       assertThat(finalState.taskState.failure.message, containsString(ApiUtils.getErrors(failedTask)));
-      assertThat(finalState.createVmFlavorTaskId, is("CREATE_VM_FLAVOR_TASK_ID"));
-      assertThat(finalState.createVmFlavorPollCount, is(3));
-      assertThat(finalState.vmFlavorId, is("VM_FLAVOR_ID"));
-      assertThat(finalState.createDiskFlavorTaskId, is("CREATE_DISK_FLAVOR_TASK_ID"));
-      assertThat(finalState.createDiskFlavorPollCount, is(3));
-      assertThat(finalState.diskFlavorId, is("DISK_FLAVOR_ID"));
       assertThat(finalState.createVmTaskId, is("CREATE_VM_TASK_ID"));
       assertThat(finalState.createVmPollCount, is(3));
       assertThat(finalState.vmId, is(vmId));
@@ -1556,12 +1194,6 @@ public class CreateDhcpVmTaskServiceTest {
       assertThat(finalState.taskState.subStage, nullValue());
       assertThat(finalState.taskState.failure.statusCode, is(400));
       assertThat(finalState.taskState.failure.message, containsString(ApiUtils.getErrors(failedTask)));
-      assertThat(finalState.createVmFlavorTaskId, is("CREATE_VM_FLAVOR_TASK_ID"));
-      assertThat(finalState.createVmFlavorPollCount, is(3));
-      assertThat(finalState.vmFlavorId, is("VM_FLAVOR_ID"));
-      assertThat(finalState.createDiskFlavorTaskId, is("CREATE_DISK_FLAVOR_TASK_ID"));
-      assertThat(finalState.createDiskFlavorPollCount, is(3));
-      assertThat(finalState.diskFlavorId, is("DISK_FLAVOR_ID"));
       assertThat(finalState.createVmTaskId, is("CREATE_VM_TASK_ID"));
       assertThat(finalState.createVmPollCount, is(3));
       assertThat(finalState.vmId, is(vmId));
@@ -1591,12 +1223,6 @@ public class CreateDhcpVmTaskServiceTest {
       assertThat(finalState.taskState.subStage, nullValue());
       assertThat(finalState.taskState.failure.statusCode, is(400));
       assertThat(finalState.taskState.failure.message, containsString(ApiUtils.getErrors(failedTask)));
-      assertThat(finalState.createVmFlavorTaskId, is("CREATE_VM_FLAVOR_TASK_ID"));
-      assertThat(finalState.createVmFlavorPollCount, is(3));
-      assertThat(finalState.vmFlavorId, is("VM_FLAVOR_ID"));
-      assertThat(finalState.createDiskFlavorTaskId, is("CREATE_DISK_FLAVOR_TASK_ID"));
-      assertThat(finalState.createDiskFlavorPollCount, is(3));
-      assertThat(finalState.diskFlavorId, is("DISK_FLAVOR_ID"));
       assertThat(finalState.createVmTaskId, is("CREATE_VM_TASK_ID"));
       assertThat(finalState.createVmPollCount, is(3));
       assertThat(finalState.vmId, is(vmId));
@@ -1627,12 +1253,6 @@ public class CreateDhcpVmTaskServiceTest {
       assertThat(finalState.taskState.failure.statusCode, is(400));
       assertThat(finalState.taskState.failure.message,
           containsString("I/O exception during performStartOperationAsync call"));
-      assertThat(finalState.createVmFlavorTaskId, is("CREATE_VM_FLAVOR_TASK_ID"));
-      assertThat(finalState.createVmFlavorPollCount, is(3));
-      assertThat(finalState.vmFlavorId, is("VM_FLAVOR_ID"));
-      assertThat(finalState.createDiskFlavorTaskId, is("CREATE_DISK_FLAVOR_TASK_ID"));
-      assertThat(finalState.createDiskFlavorPollCount, is(3));
-      assertThat(finalState.diskFlavorId, is("DISK_FLAVOR_ID"));
       assertThat(finalState.createVmTaskId, is("CREATE_VM_TASK_ID"));
       assertThat(finalState.createVmPollCount, is(3));
       assertThat(finalState.vmId, is(vmId));
@@ -1662,12 +1282,6 @@ public class CreateDhcpVmTaskServiceTest {
       assertThat(finalState.taskState.subStage, nullValue());
       assertThat(finalState.taskState.failure.statusCode, is(400));
       assertThat(finalState.taskState.failure.message, containsString("I/O exception during getTaskAsync call"));
-      assertThat(finalState.createVmFlavorTaskId, is("CREATE_VM_FLAVOR_TASK_ID"));
-      assertThat(finalState.createVmFlavorPollCount, is(3));
-      assertThat(finalState.vmFlavorId, is("VM_FLAVOR_ID"));
-      assertThat(finalState.createDiskFlavorTaskId, is("CREATE_DISK_FLAVOR_TASK_ID"));
-      assertThat(finalState.createDiskFlavorPollCount, is(3));
-      assertThat(finalState.diskFlavorId, is("DISK_FLAVOR_ID"));
       assertThat(finalState.createVmTaskId, is("CREATE_VM_TASK_ID"));
       assertThat(finalState.createVmPollCount, is(3));
       assertThat(finalState.vmId, is(vmId));
@@ -1696,12 +1310,6 @@ public class CreateDhcpVmTaskServiceTest {
       assertThat(finalState.taskState.failure.statusCode, is(400));
       assertThat(finalState.taskState.failure.message,
           containsString("The DHCP Agent endpoint on VM ipAddress failed to become ready after 3 polling iterations"));
-      assertThat(finalState.createVmFlavorTaskId, is("CREATE_VM_FLAVOR_TASK_ID"));
-      assertThat(finalState.createVmFlavorPollCount, is(3));
-      assertThat(finalState.vmFlavorId, is("VM_FLAVOR_ID"));
-      assertThat(finalState.createDiskFlavorTaskId, is("CREATE_DISK_FLAVOR_TASK_ID"));
-      assertThat(finalState.createDiskFlavorPollCount, is(3));
-      assertThat(finalState.diskFlavorId, is("DISK_FLAVOR_ID"));
       assertThat(finalState.createVmTaskId, is("CREATE_VM_TASK_ID"));
       assertThat(finalState.createVmPollCount, is(3));
       assertThat(finalState.vmId, is(vmId));
