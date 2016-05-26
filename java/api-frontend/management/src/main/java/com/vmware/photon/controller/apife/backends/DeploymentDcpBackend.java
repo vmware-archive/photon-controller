@@ -374,7 +374,7 @@ public class DeploymentDcpBackend implements DeploymentBackend {
     state.documentSelfLink = spec.getType().toString().toLowerCase();
 
     com.vmware.xenon.common.Operation operation =
-        dcpClient.post(true, ClusterConfigurationServiceFactory.SELF_LINK, state);
+        dcpClient.post(true, ClusterConfigurationServiceFactory.SELF_LINK, state, null);
 
     state = operation.getBody(ClusterConfigurationService.State.class);
 

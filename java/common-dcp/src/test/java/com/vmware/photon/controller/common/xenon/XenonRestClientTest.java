@@ -259,7 +259,7 @@ public class XenonRestClientTest {
 
       xenonRestClient.delete(exampleServiceState.documentSelfLink, new ExampleService.ExampleServiceState());
 
-      result = xenonRestClient.post(true, ExampleService.FACTORY_LINK, exampleServiceState);
+      result = xenonRestClient.post(true, ExampleService.FACTORY_LINK, exampleServiceState, null);
 
       assertThat(result.getStatusCode(), is(200));
       createdState = result.getBody(ExampleService.ExampleServiceState.class);
