@@ -91,7 +91,7 @@ require "common/create_specs/cluster_create_spec"
 require "common/create_specs/cluster_configuration_spec"
 require "common/create_specs/availability_zone_create_spec.rb"
 require "common/create_specs/host_set_availability_zone_spec.rb"
-
+require "common/create_specs/virtual_network_create_spec.rb"
 
 require "common/importers/ip_range"
 require "common/importers/deployment_importer"
