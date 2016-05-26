@@ -22,9 +22,7 @@ import static org.hamcrest.Matchers.isEmptyOrNullString;
 import static org.hamcrest.Matchers.not;
 import static org.testng.Assert.fail;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.PrintWriter;
 
 /**
  * Class implements tests for Dnsmasq driver.
@@ -32,25 +30,29 @@ import java.io.PrintWriter;
 public class DnsmasqDriverTest {
 
     private DnsmasqDriver dnsmasqDriver;
+    private static final String successScript = "/scripts/success.sh";
+    private static final String failureScript = "/scripts/failure.sh";
 
     @BeforeClass
     public void setUpClass() {
         try {
             String command = String.format("chmod +x %s",
-                    DnsmasqDriverTest.class.getResource("/scripts/release-ip.sh").getPath());
+                    DnsmasqDriverTest.class.getResource(successScript).getPath());
             Runtime.getRuntime().exec(command);
             command = String.format("chmod +x %s",
-                    DnsmasqDriverTest.class.getResource("/scripts/dhcp-status.sh").getPath());
+                    DnsmasqDriverTest.class.getResource(failureScript).getPath());
             Runtime.getRuntime().exec(command);
         } catch (IOException e) {
             fail(String.format("Failed with IOException: %s", e.toString()));
         }
+    }
 
+    public void setUpDriver(String scriptPath, String leaseFilePath) {
         dnsmasqDriver = new DnsmasqDriver(
-                DnsmasqDriverTest.class.getResource("/dnsmasq.leases").getPath(),
+                leaseFilePath,
                 "/usr/local/bin/dhcp_release",
-                DnsmasqDriverTest.class.getResource("/scripts/release-ip.sh").getPath(),
-                DnsmasqDriverTest.class.getResource("/scripts/dhcp-status.sh").getPath());
+                DnsmasqDriverTest.class.getResource(scriptPath).getPath(),
+                DnsmasqDriverTest.class.getResource(scriptPath).getPath());
     }
 
     /**
@@ -62,7 +64,7 @@ public class DnsmasqDriverTest {
 
     @Test
     public void testReleaseIPSuccess() {
-        setupDHCPConfig("none");
+        setUpDriver(successScript, DnsmasqDriverTest.class.getResource("/dnsmasq.leases").getPath());
 
         DHCPDriver.Response response = dnsmasqDriver.releaseIP("VMLAN", "01:23:45:67:89:ab");
 
@@ -73,7 +75,7 @@ public class DnsmasqDriverTest {
 
     @Test
     public void testReleaseIPFailure() {
-        setupDHCPConfig("error");
+        setUpDriver(failureScript, DnsmasqDriverTest.class.getResource("/dnsmasq.leases").getPath());
 
         DHCPDriver.Response response = dnsmasqDriver.releaseIP("VMLAN", "01:23:45:67:89:ab");
 
@@ -83,7 +85,7 @@ public class DnsmasqDriverTest {
 
     @Test
     public void testDHCPStatusSuccess() {
-        setupDHCPConfig("none");
+        setUpDriver(successScript, DnsmasqDriverTest.class.getResource("/dnsmasq.leases").getPath());
 
         boolean status = dnsmasqDriver.isRunning();
         assertThat(status, is(true));
@@ -91,7 +93,7 @@ public class DnsmasqDriverTest {
 
     @Test
     public void testDHCPStatusFailure() {
-        setupDHCPConfig("error");
+        setUpDriver(failureScript, DnsmasqDriverTest.class.getResource("/dnsmasq.leases").getPath());
 
         boolean status = dnsmasqDriver.isRunning();
         assertThat(status, is(false));
@@ -100,6 +102,7 @@ public class DnsmasqDriverTest {
     @Test
     public void testFindIPSuccess() {
         try {
+            setUpDriver(successScript, DnsmasqDriverTest.class.getResource("/dnsmasq.leases").getPath());
             String ipAddress = dnsmasqDriver.findIP("08:00:27:d8:7d:8e");
             assertThat(ipAddress, not(isEmptyOrNullString()));
             assertThat(ipAddress, is("192.168.0.2"));
@@ -111,6 +114,7 @@ public class DnsmasqDriverTest {
     @Test
     public void testFindIPFailureWithIPNotFound() {
         try {
+            setUpDriver(successScript, DnsmasqDriverTest.class.getResource("/dnsmasq.leases").getPath());
             String ipAddress = dnsmasqDriver.findIP("08:00:27:d8:7d:8d");
             assertThat(ipAddress, isEmptyOrNullString());
         } catch (Throwable e) {
@@ -121,25 +125,11 @@ public class DnsmasqDriverTest {
     @Test
     public void testFindIPFailureWithLeaseFileNotFound() {
         try {
-            DnsmasqDriver newDnsmasqDriver = new DnsmasqDriver("/var/lib/misc/dnsmasq.leases",
-                    "/usr/local/bin/dhcp_release",
-                    DnsmasqDriverTest.class.getResource("/scripts/release-ip.sh").getPath(),
-                    DnsmasqDriverTest.class.getResource("/scripts/dhcp-status.sh").getPath());
+            setUpDriver(successScript, "/var/lib/misc/dnsmasq.leases");
 
-            newDnsmasqDriver.findIP("08:00:27:d8:7d:8e");
+            dnsmasqDriver.findIP("08:00:27:d8:7d:8e");
             fail("Failed to get file not found exception.");
         } catch (Throwable e) {
-        }
-    }
-
-    private void setupDHCPConfig(String inputConfig) {
-        try {
-            PrintWriter writer = new PrintWriter(
-                    DnsmasqDriverTest.class.getResource("/scripts/dhcpServerTestConfig").getPath());
-            writer.println(inputConfig);
-            writer.close();
-        } catch (FileNotFoundException e) {
-            fail(String.format("Failed with file not found exception: %s", e.toString()));
         }
     }
 }

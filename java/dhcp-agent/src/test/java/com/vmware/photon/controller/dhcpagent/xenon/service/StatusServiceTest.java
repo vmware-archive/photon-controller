@@ -54,14 +54,16 @@ public class StatusServiceTest {
 
     private ListeningExecutorService listeningExecutorService;
 
+    private static final String successScript = "/scripts/success.sh";
+
     @BeforeMethod
     public void setUp() throws Throwable {
       listeningExecutorService = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(1));
       testEnvironment = TestEnvironment.create(
               new DnsmasqDriver(StatusServiceTest.class.getResource("/dnsmasq.leases").getPath(),
                       "/usr/local/bin/dhcp_release",
-                      StatusServiceTest.class.getResource("/scripts/release-ip.sh").getPath(),
-                      StatusServiceTest.class.getResource("/scripts/dhcp-status.sh").getPath()),
+                      StatusServiceTest.class.getResource(successScript).getPath(),
+                      StatusServiceTest.class.getResource(successScript).getPath()),
               1,
               listeningExecutorService);
     }
