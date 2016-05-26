@@ -10,6 +10,8 @@
 # warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
 # License for then specific language governing permissions and limitations
 # under the License.
+import select
+import socket
 
 import site
 import os
@@ -143,9 +145,15 @@ class Agent:
         self._server = server
 
     def _start_thrift_service(self):
-        self._logger.info("Listening on port %s..."
-                          % self._config.host_port)
-        self._server.serve()
+        while not self._config.reboot_required:
+            self._logger.info("Listening on port %s..." % self._config.host_port)
+            try:
+                self._server.serve()
+            except select.error as ex:
+                if ex[0] == socket.EINTR:
+                    self._logger.info("Ignore Interrupted System Call")
+                else:
+                    raise
 
     def _signal_handler(self, signum, frame):
         self._logger.info("Exiting with %s" % signum)
@@ -190,7 +198,7 @@ class BootstrapPoller(threading.Thread):
 
     def run(self):
         while True:
-            if (self._config.reboot_required):
+            if self._config.reboot_required:
                 self._logger.info("Shutting down agent to update config")
                 os.kill(os.getpid(), signal.SIGINT)
             time.sleep(self._config.bootstrap_poll_frequency)
@@ -215,13 +223,7 @@ def main():
 
     thread = threading.Thread(target=start_wrapper)
     thread.start()
-
-    # Here we can't simply join the thread because calling join() blocks the
-    # main thread and signals get ignored. This is not a problem with the real
-    # agent because we use SIGKILL to stop the agent. However, it is a problem
-    # with the fake agent because runit sends SIGTERM to stop the agent.
-    while thread.isAlive():
-        time.sleep(1)
+    thread.join()
 
 
 if __name__ == "__main__":
