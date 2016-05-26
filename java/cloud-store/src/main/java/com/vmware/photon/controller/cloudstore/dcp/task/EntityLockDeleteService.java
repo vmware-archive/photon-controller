@@ -116,7 +116,6 @@ public class EntityLockDeleteService extends StatefulService {
             start.setBody(current).complete();
 
             processStart(current);
-
           })).sendWith(this);
     }
   }
@@ -138,6 +137,9 @@ public class EntityLockDeleteService extends StatefulService {
    */
   private State applyPatch(State current, State patch) {
     ServiceUtils.logInfo(this, "Moving to stage %s", patch.taskState.stage);
+    if (patch.nextPageLink == null) {
+      current.nextPageLink = null;
+    }
     PatchUtils.patchState(current, patch);
     return current;
   }
@@ -161,7 +163,7 @@ public class EntityLockDeleteService extends StatefulService {
   private void processStart(final State current) {
     try {
       if (!isFinalStage(current)) {
-        sendStageProgressPatch(current, current.taskState.stage);
+        sendSelfPatch(current);
       }
     } catch (Throwable e) {
       failTask(e);
@@ -223,8 +225,8 @@ public class EntityLockDeleteService extends StatefulService {
               parseEntityLockQueryResults(op.getBody(QueryTask.class));
 
           if (entityLockList.size() == 0) {
-            ServiceUtils.logInfo(EntityLockDeleteService.this, "No entityLocks found.");
-            finishTask(current);
+            ServiceUtils.logInfo(EntityLockDeleteService.this, "No entityLocks found any more.");
+            sendSelfPatch(current);
             return;
           }
 
@@ -261,8 +263,9 @@ public class EntityLockDeleteService extends StatefulService {
     Collection<Operation> getEntityOperations = getEntitiesAssociateWithDeletedEntities(entityLockList);
 
     if (getEntityOperations.isEmpty()) {
-      ServiceUtils.logInfo(EntityLockDeleteService.this, "No entityLocks found associate with deleted entities.");
-      finishTask(current);
+      ServiceUtils.logInfo(EntityLockDeleteService.this, "No entityLocks found associate with deleted entities with " +
+          "this page.");
+      sendSelfPatch(current);
       return;
     }
     OperationJoin join = OperationJoin.create(getEntityOperations);
@@ -292,14 +295,13 @@ public class EntityLockDeleteService extends StatefulService {
     return (ops, failures) -> {
       Collection<Operation> deleteLockOperations = getDeleteLockOperationsForEntityLocks(ops);
 
-      current.danglingEntityLocksWithDeletedEntities += deleteLockOperations.size();
       if (deleteLockOperations.size() == 0) {
-        ServiceUtils.logInfo(this, "No unreleased entityLocks found.");
-        current.danglingEntityLocksWithDeletedEntities = 0;
-        finishTask(current);
+        ServiceUtils.logInfo(this, "No unreleased entityLocks found with this page.");
+        sendSelfPatch(current);
         return;
       }
 
+      current.danglingEntityLocksWithDeletedEntities += deleteLockOperations.size();
       OperationJoin join = OperationJoin.create(deleteLockOperations);
       join.setCompletion(getEntityLockDeleteResponseHandler(current));
       join.sendWith(this);

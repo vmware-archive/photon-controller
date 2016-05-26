@@ -370,17 +370,16 @@ public class EntityLockCleanerServiceTest {
     @DataProvider(name = "Success")
     public Object[][] getSuccessData() {
       return new Object[][]{
-          {0, 0, 1},
-          {2, 0, 1},
-          {2, 0, TestEnvironment.DEFAULT_MULTI_HOST_COUNT},
+//          {0, 0, 1},
+//          {2, 0, 1},
+//          {2, 0, TestEnvironment.DEFAULT_MULTI_HOST_COUNT},
           {5, 5, 1},
           {7, 5, 1},
           {7, 5, TestEnvironment.DEFAULT_MULTI_HOST_COUNT},
           // Test cases with entity locks greater than the default page limit.
           {EntityLockCleanerService.DEFAULT_PAGE_LIMIT + 100, EntityLockCleanerService
               .DEFAULT_PAGE_LIMIT + 100, 1},
-          {EntityLockCleanerService.DEFAULT_PAGE_LIMIT + 100, EntityLockCleanerService
-              .DEFAULT_PAGE_LIMIT + 1, 1},
+          {EntityLockCleanerService.DEFAULT_PAGE_LIMIT + 100, 1, 1},
       };
     }
 
@@ -394,7 +393,7 @@ public class EntityLockCleanerServiceTest {
         newTask.entityKind = Vm.KIND;
         newTask.state = (i % 2 == 0) ? STARTED : QUEUED;
 
-        if (i < danglingEntityLocks) {
+        if (i >= (totalEntityLocks - danglingEntityLocks)) {
           newTask.state = (i % 2 == 0) ? COMPLETED : ERROR;
         }
 
@@ -427,7 +426,7 @@ public class EntityLockCleanerServiceTest {
         assertThat(entityLock, is(notNullValue()));
         assertThat(entityLock.lockOperation, is(nullValue()));
 
-        if (i < danglingEntityLocks) {
+        if (i >= (totalEntityLocks - danglingEntityLocks)) {
           assertThat(entityLock.ownerTaskId, is(nullValue()));
         } else {
           assertThat(entityLock.ownerTaskId, is(Matchers.notNullValue()));

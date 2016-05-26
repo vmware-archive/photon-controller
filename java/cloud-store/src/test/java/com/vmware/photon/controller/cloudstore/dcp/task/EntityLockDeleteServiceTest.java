@@ -378,8 +378,7 @@ public class EntityLockDeleteServiceTest {
           // Test cases with entity locks greater than the default page limit.
           {EntityLockDeleteService.DEFAULT_PAGE_LIMIT + 100, EntityLockDeleteService
               .DEFAULT_PAGE_LIMIT + 100, 1},
-          {EntityLockDeleteService.DEFAULT_PAGE_LIMIT + 100, EntityLockDeleteService
-              .DEFAULT_PAGE_LIMIT + 1, 1},
+          {EntityLockDeleteService.DEFAULT_PAGE_LIMIT + 100, 1, 1},
       };
     }
 
@@ -405,7 +404,7 @@ public class EntityLockDeleteServiceTest {
         entityLock.documentSelfLink = EntityLockServiceFactory.SELF_LINK + "/" + entityLock.entityId;
         env.sendPostAndWait(EntityLockServiceFactory.SELF_LINK, entityLock);
 
-        if (i >= danglingEntityLocks) {
+        if (i < (totalEntityLocks - danglingEntityLocks)) {
           VmService.State vm = new VmService.State();
           vm.name = UUID.randomUUID().toString();
           vm.flavorId = UUID.randomUUID().toString();
