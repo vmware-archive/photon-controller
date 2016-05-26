@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.cloudstore.dcp.entity;
 
+import com.vmware.photon.controller.api.DatastoreState;
 import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
@@ -29,14 +30,20 @@ import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
 import com.vmware.xenon.services.common.QueryTask;
 
+import org.apache.commons.lang3.StringUtils;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
+import java.util.HashSet;
 import java.util.Set;
 
 /**
  * This class implements a DCP micro-service which provides a plain data object
  * representing a datastore.
+ *
+ * The datastore document is currently created and updated only by the host
+ * service. To create or mark the datastore as active, a POST has to be done.
+ * To mark the datastore as missing, a PATCH has to be done.
  */
 public class DatastoreService extends StatefulService {
 
@@ -56,6 +63,19 @@ public class DatastoreService extends StatefulService {
     ServiceUtils.logInfo(this, "Starting service %s", getSelfLink());
     try {
       State startState = startOperation.getBody(State.class);
+
+      if (startState.state == null) {
+        startState.state = DatastoreState.ACTIVE;
+      }
+
+      // If the datastore document is being created by the host service, then find the host ID and add it to the
+      // reference list
+      String hostId = getHostIdFromReferrer(startOperation);
+      if (StringUtils.isNotBlank(hostId)) {
+        startState.referenceList = new HashSet<>();
+        startState.referenceList.add(hostId);
+      }
+
       InitializationUtils.initialize(startState);
       validateState(startState);
       startOperation.complete();
@@ -77,6 +97,25 @@ public class DatastoreService extends StatefulService {
 
     State currentState = getState(putOperation);
     State newState = putOperation.getBody(State.class);
+
+    if (newState.state == null) {
+      newState.state = DatastoreState.ACTIVE;
+    }
+
+    // On put, if the referrer is a host,
+    // - If the datastore state is ACTIVE -> mark datastore as ACTIVE and add the host ID to the reference list
+    String hostId = getHostIdFromReferrer(putOperation);
+    if (StringUtils.isNotBlank(hostId)) {
+      if (newState.referenceList == null) {
+        newState.referenceList = new HashSet<>();
+        newState.referenceList.addAll(currentState.referenceList);
+      }
+
+      if (newState.state == DatastoreState.ACTIVE) {
+        newState.referenceList.add(hostId);
+      }
+    }
+
     if (ServiceDocument.equals(getDocumentTemplate().documentDescription, currentState, newState)) {
       putOperation.setStatusCode(Operation.STATUS_CODE_NOT_MODIFIED);
       putOperation.complete();
@@ -108,6 +147,27 @@ public class DatastoreService extends StatefulService {
       State currentState = getState(patchOperation);
       validateState(currentState);
       State patchState = patchOperation.getBody(State.class);
+
+      // If the patch operation comes from a host service,
+      // - If the datastore state is marked as missing, remove the host id from the reference list
+      // - If the reference list has no more hosts, mark the datastore as missing
+      String hostId = getHostIdFromReferrer(patchOperation);
+      if (StringUtils.isNotBlank(hostId)) {
+        if (patchState.referenceList == null) {
+          patchState.referenceList = new HashSet<>();
+          patchState.referenceList.addAll(currentState.referenceList);
+        }
+
+        if (patchState.state == DatastoreState.MISSING && patchState.referenceList.contains(hostId)) {
+          patchState.referenceList.remove(hostId);
+          if (patchState.referenceList.size() == 0) {
+            patchState.state = DatastoreState.MISSING;
+          } else {
+            patchState.state = DatastoreState.ACTIVE;
+          }
+        }
+      }
+
       validatePatchState(currentState, patchState);
       applyPatch(currentState, patchState);
       validateState(currentState);
@@ -144,6 +204,14 @@ public class DatastoreService extends StatefulService {
 
   private void applyPatch(State currentState, State patchState) {
     PatchUtils.patchState(currentState, patchState);
+  }
+
+  private String getHostIdFromReferrer(Operation operation) {
+    if (operation.getReferer().getPath().contains(HostServiceFactory.SELF_LINK)) {
+      String[] components = operation.getReferer().getPath().split("/");
+      return components[components.length - 1];
+    }
+    return null;
   }
 
   /**
@@ -202,5 +270,17 @@ public class DatastoreService extends StatefulService {
     @NotNull
     @DefaultBoolean(value = false)
     public Boolean isImageDatastore;
+
+    /**
+     * This value reperesents the set of active hosts through which this datastore
+     * can be accessed.
+     */
+    public Set<String> referenceList;
+
+    /**
+     * This value represents the current state of the datastore.
+     */
+    @NotNull
+    public DatastoreState state;
   }
 }
