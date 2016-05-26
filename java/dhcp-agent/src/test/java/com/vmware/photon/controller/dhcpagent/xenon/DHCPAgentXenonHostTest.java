@@ -52,6 +52,7 @@ public class DHCPAgentXenonHostTest {
   private static File storageDir;
 
   private static final String configFilePath = "/config.yml";
+  private static final String successScript = "/scripts/success.sh";
 
   /**
    * Maximum time to wait for all factories to become available.
@@ -91,8 +92,8 @@ public class DHCPAgentXenonHostTest {
       injector = TestHelper.createInjector(configFilePath, new DnsmasqDriver(
               DHCPAgentXenonHostTest.class.getResource("/dnsmasq.leases").getPath(),
               "/usr/local/bin/dhcp_release",
-              DHCPAgentXenonHostTest.class.getResource("/scripts/release-ip.sh").getPath(),
-              DHCPAgentXenonHostTest.class.getResource("/scripts/dhcp-status.sh").getPath()));
+              DHCPAgentXenonHostTest.class.getResource(successScript).getPath(),
+              DHCPAgentXenonHostTest.class.getResource(successScript).getPath()));
     }
 
     @AfterMethod
@@ -138,8 +139,8 @@ public class DHCPAgentXenonHostTest {
       injector = TestHelper.createInjector(configFilePath, new DnsmasqDriver(
               DHCPAgentXenonHostTest.class.getResource("/dnsmasq.leases").getPath(),
               "/usr/local/bin/dhcp_release",
-              DHCPAgentXenonHostTest.class.getResource("/scripts/release-ip.sh").getPath(),
-              DHCPAgentXenonHostTest.class.getResource("/scripts/dhcp-status.sh").getPath()));
+              DHCPAgentXenonHostTest.class.getResource(successScript).getPath(),
+              DHCPAgentXenonHostTest.class.getResource(successScript).getPath()));
       host = injector.getInstance(DHCPAgentXenonHost.class);
     }
 
@@ -187,8 +188,8 @@ public class DHCPAgentXenonHostTest {
       injector = TestHelper.createInjector(configFilePath, new DnsmasqDriver(
               DHCPAgentXenonHostTest.class.getResource("/dnsmasq.leases").getPath(),
               "/usr/local/bin/dhcp_release",
-              DHCPAgentXenonHostTest.class.getResource("/scripts/release-ip.sh").getPath(),
-              DHCPAgentXenonHostTest.class.getResource("/scripts/dhcp-status.sh").getPath()));
+              DHCPAgentXenonHostTest.class.getResource(successScript).getPath(),
+              DHCPAgentXenonHostTest.class.getResource(successScript).getPath()));
       host = injector.getInstance(DHCPAgentXenonHost.class);
       host.start();
       ServiceHostUtils.waitForServiceAvailability(host, SERVICES_STARTUP_TIMEOUT, serviceSelfLinks.clone());

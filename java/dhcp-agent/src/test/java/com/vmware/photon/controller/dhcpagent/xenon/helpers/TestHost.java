@@ -24,11 +24,12 @@ import java.util.logging.LogManager;
  * This class implements helper routines used to test service hosts in isolation.
  */
 public class TestHost extends BasicServiceHost {
+    private static final String successScript = "/scripts/success.sh";
 
     private DHCPDriver dhcpDriver = new DnsmasqDriver(TestHost.class.getResource("/dnsmasq.leases").getPath(),
             "/usr/local/bin/dhcp_release",
-            TestHost.class.getResource("/scripts/release-ip.sh").getPath(),
-            TestHost.class.getResource("/scripts/dhcp-status.sh").getPath());
+            TestHost.class.getResource(successScript).getPath(),
+            TestHost.class.getResource(successScript).getPath());
 
     public TestHost() {
         super();

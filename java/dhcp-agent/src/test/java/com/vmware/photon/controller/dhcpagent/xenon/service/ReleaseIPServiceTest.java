@@ -42,9 +42,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isEmptyOrNullString;
 import static org.testng.Assert.fail;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.PrintWriter;
 import java.util.concurrent.Executors;
 
 
@@ -55,6 +53,8 @@ public class ReleaseIPServiceTest {
 
     private TestHost testHost;
     private ReleaseIPService taskService;
+    private static final String successScript = "/scripts/success.sh";
+    private static final String failureScript = "/scripts/failure.sh";
 
     /**
      * Dummy test case to make IntelliJ recognize this as a test class.
@@ -260,26 +260,20 @@ public class ReleaseIPServiceTest {
         public void setUpClass() {
             try {
                 String command = String.format("chmod +x %s",
-                        ReleaseIPServiceTest.class.getResource("/scripts/release-ip.sh").getPath());
+                        ReleaseIPServiceTest.class.getResource(successScript).getPath());
                 Runtime.getRuntime().exec(command);
                 command = String.format("chmod +x %s",
-                        ReleaseIPServiceTest.class.getResource("/scripts/dhcp-status.sh").getPath());
+                        ReleaseIPServiceTest.class.getResource(failureScript).getPath());
                 Runtime.getRuntime().exec(command);
             } catch (IOException e) {
                 fail(String.format("Failed with IOException: %s", e.toString()));
             }
-
-            dnsmasqDriver = new DnsmasqDriver(ReleaseIPServiceTest.class.getResource("/dnsmasq.leases").getPath(),
-                    "/usr/local/bin/dhcp_release",
-                    ReleaseIPServiceTest.class.getResource("/scripts/release-ip.sh").getPath(),
-                    ReleaseIPServiceTest.class.getResource("/scripts/dhcp-status.sh").getPath());
         }
 
         @BeforeMethod
         public void setUpTest() throws Throwable {
             MockitoAnnotations.initMocks(this);
             listeningExecutorService = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(1));
-            testEnvironment = TestEnvironment.create(dnsmasqDriver, 1, listeningExecutorService);
         }
 
         @AfterMethod
@@ -295,12 +289,20 @@ public class ReleaseIPServiceTest {
             listeningExecutorService.shutdown();
         }
 
+        public void setUpEnvironment(String scriptPath) throws Throwable {
+            dnsmasqDriver = new DnsmasqDriver(ReleaseIPServiceTest.class.getResource("/dnsmasq.leases").getPath(),
+                    "/usr/local/bin/dhcp_release",
+                    ReleaseIPServiceTest.class.getResource(scriptPath).getPath(),
+                    ReleaseIPServiceTest.class.getResource(scriptPath).getPath());
+            testEnvironment = TestEnvironment.create(dnsmasqDriver, 1, listeningExecutorService);
+        }
+
         /**
          * Test release IP success.
          */
         @Test
         public void testReleaseIPSuccess() throws Throwable {
-            setupDHCPConfig("none");
+            setUpEnvironment(successScript);
 
             ReleaseIPTask releaseIPTask = new ReleaseIPTask();
             releaseIPTask.networkInterface = "VMLAN";
@@ -326,7 +328,7 @@ public class ReleaseIPServiceTest {
          */
         @Test
         public void testReleaseIPFailure() throws Throwable {
-            setupDHCPConfig("error");
+            setUpEnvironment(failureScript);
 
             ReleaseIPTask releaseIPTask = new ReleaseIPTask();
             releaseIPTask.networkInterface = "VMLAN";
@@ -352,7 +354,7 @@ public class ReleaseIPServiceTest {
          */
         @Test
         public void testReleaseIPNotDirect() throws Throwable {
-            setupDHCPConfig("none");
+            setUpEnvironment(successScript);
 
             ReleaseIPTask releaseIPTask = new ReleaseIPTask();
             releaseIPTask.networkInterface = "VMLAN";
@@ -387,16 +389,5 @@ public class ReleaseIPServiceTest {
         }
 
         return releaseIPTask;
-    }
-
-    private void setupDHCPConfig(String inputConfig) {
-        try {
-            PrintWriter writer = new PrintWriter(
-                    ReleaseIPServiceTest.class.getResource("/scripts/dhcpServerTestConfig").getPath());
-            writer.println(inputConfig);
-            writer.close();
-        } catch (FileNotFoundException e) {
-            fail(String.format("Failed with file not found exception: %s", e.toString()));
-        }
     }
 }
