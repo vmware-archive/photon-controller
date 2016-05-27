@@ -185,7 +185,7 @@ public class RateLimitedWorkQueueService extends StatefulService {
       return;
     }
 
-    if (currentState.runningTaskServiceCount >= currentState.concurrencyLimit) {
+    if (currentState.runningTaskServiceCount == currentState.concurrencyLimit) {
       ServiceUtils.logTrace(this, "Concurrency limit reached");
       patchOp.complete();
       return;
