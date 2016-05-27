@@ -166,6 +166,10 @@ class AttacheClient(HostClient):
         return self._client.DetachIso(self._session, vm_id)
 
     @attache_error_handler
+    def attach_virtual_network(self, vm_id, network_id):
+        pass
+
+    @attache_error_handler
     def get_mks_ticket(self, vm_id):
         pass
 
@@ -236,25 +240,29 @@ class AttacheClient(HostClient):
 
     """ Host management
     """
+    @property
     @attache_error_handler
     def memory_usage_mb(self):
         return self._client.GetMemoryUsage(self._session)
 
+    @property
     @attache_error_handler
     def total_vmusable_memory_mb(self):
         return self._client.GetTotalMemory(self._session)
 
+    @property
     @attache_error_handler
     def num_physical_cpus(self):
         return self._client.GetCpuCount(self._session)
 
+    @property
     @attache_error_handler
     def host_version(self):
         return self._client.GetEsxVersion(self._session)
 
     @attache_error_handler
     def get_nfc_ticket_by_ds_name(self, datastore):
-        pass
+        return self._client.GetNfcTicket(self._session, datastore)
 
     @attache_error_handler
     def acquire_clone_ticket(self):
@@ -318,6 +326,10 @@ class AttacheVmConfigSpec(VmConfigSpec):
     @attache_error_handler
     def set_extra_config(self, options):
         pass
+
+    @attache_error_handler
+    def get_metadata(self):
+        return {}
 
 
 class SyncAttacheCacheThread(threading.Thread):

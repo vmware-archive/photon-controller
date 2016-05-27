@@ -108,7 +108,7 @@ class EsxVmManager(VmManager):
         memory = int(flavor.cost["vm.memory"].convert(Unit.MB))
         spec = self.vim_client.create_vm_spec(vm_id, datastore, memory, cpus, metadata, env)
 
-        extra_config_map = self._get_extra_config_map(spec._metadata)
+        extra_config_map = self._get_extra_config_map(spec.get_metadata())
         # our one vm-identifying extra config
         extra_config_map[self.GUESTINFO_PREFIX + "vm.id"] = vm_id
         spec.set_extra_config(extra_config_map)
