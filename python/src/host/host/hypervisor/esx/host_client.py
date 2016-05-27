@@ -249,3 +249,7 @@ class VmConfigSpec(object):
     @abc.abstractmethod
     def set_extra_config(self, options):
         pass
+
+    @abc.abstractmethod
+    def get_metadata(self):
+        pass

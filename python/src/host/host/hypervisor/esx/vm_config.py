@@ -445,3 +445,6 @@ class EsxVmConfigSpec(VmConfigSpec):
         for k, v in options.iteritems():
             extraConfig.append(vim.option.OptionValue(key=k, value=v))
         self._cfg_spec.extraConfig = extraConfig
+
+    def get_metadata(self):
+        return self._metadata
