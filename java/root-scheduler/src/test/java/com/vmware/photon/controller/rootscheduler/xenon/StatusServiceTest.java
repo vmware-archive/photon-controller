@@ -17,6 +17,7 @@ import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.XenonRestClient;
+import com.vmware.photon.controller.common.xenon.host.StatusService;
 import com.vmware.photon.controller.rootscheduler.RootSchedulerConfig;
 import com.vmware.photon.controller.rootscheduler.helpers.xenon.SchedulerTestEnvironment;
 import com.vmware.photon.controller.rootscheduler.service.ConstraintChecker;
