@@ -15,7 +15,7 @@ package com.vmware.photon.controller.cloudstore.dcp.entity;
 
 import com.vmware.photon.controller.api.NetworkState;
 import com.vmware.photon.controller.api.RoutingType;
-import com.vmware.photon.controller.cloudstore.dcp.CloudStoreXenonHost;
+import com.vmware.photon.controller.cloudstore.dcp.CloudStoreServiceGroup;
 import com.vmware.photon.controller.cloudstore.dcp.helpers.TestHelper;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.common.xenon.BasicServiceHost;
@@ -49,7 +49,7 @@ public class VirtualNetworkServiceTest {
   @BeforeSuite
   public void beforeSuite() throws Throwable {
     host = BasicServiceHost.create();
-    ServiceHostUtils.startFactoryServices(host, CloudStoreXenonHost.FACTORY_SERVICES_MAP);
+    ServiceHostUtils.startFactoryServices(host, CloudStoreServiceGroup.FACTORY_SERVICES_MAP);
 
     StaticServerSet serverSet = new StaticServerSet(new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
     xenonClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(128));

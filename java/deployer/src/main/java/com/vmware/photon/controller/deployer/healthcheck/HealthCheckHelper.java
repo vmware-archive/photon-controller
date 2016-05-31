@@ -56,7 +56,6 @@ public class HealthCheckHelper {
 
       case PhotonControllerCore:
         ports.add(ServicePortConstants.CLOUD_STORE_PORT);
-        ports.add(ServicePortConstants.ROOT_SCHEDULER_PORT);
         ports.add(ServicePortConstants.HOUSEKEEPER_PORT + 1);
         this.healthChecker = new XenonBasedHealthChecker(service, ipAddress, ports);
         break;
