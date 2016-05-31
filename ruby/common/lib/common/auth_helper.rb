@@ -20,15 +20,7 @@ module EsxCloud
     # @param [String] absolute path to the auth-token tool.
     # @return [String] access_token
     def self.get_access_token(username, password, service_locator_url, auth_tool_path)
-      if auth_tool_path.nil? || !File.exists?(auth_tool_path)
-        raise EsxCloud::Error, "Could not find Auth-Token tool under #{auth_tool_path}"
-      end
-
-      tenant = extract_tenant username
-      command = "java -jar #{auth_tool_path} get-access-token -t #{tenant} -a #{service_locator_url} -u " +
-          Shellwords.escape(username) + " -p "  + Shellwords.escape(password)
-
-      EsxCloud::CmdRunner.run(command, true, /.*Exception:.*/)
+      run_cli("auth login -u #{username} -p #{password}")
     end
 
     private
