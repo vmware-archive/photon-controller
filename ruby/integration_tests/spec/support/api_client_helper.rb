@@ -59,21 +59,16 @@ class ApiClientHelper
     end
 
     def access_token(user_suffix = "ADMIN")
-      auth_tool_path = nil
-      if ENV["PHOTON_AUTH_TOOL_PATH"].nil? || (ENV["PHOTON_AUTH_TOOL_PATH"]).strip.empty?
-        auth_tool_path = Dir.glob(File.join(File.dirname(File.expand_path(__FILE__)),
-                                            "../../../cli/assets/auth-tool-runnable*.jar"))[0]
-      else
-        auth_tool_path = ENV["PHOTON_AUTH_TOOL_PATH"].strip
-      end
-
       service_locator_url = ENV["PHOTON_AUTH_LS_ENDPOINT"].strip
 
       username = ENV["PHOTON_USERNAME_#{user_suffix}"].strip
+      puts "username: #{username}"
       password = ENV["PHOTON_PASSWORD_#{user_suffix}"].strip
+      puts "password: #{password}"
 
+      https_header = "https://"
       EsxCloud::AuthHelper.get_access_token(
-        username, password, service_locator_url, auth_tool_path)
+          username, password, "#{https_header}#{service_locator_url}")
     end
 
     private
