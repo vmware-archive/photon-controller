@@ -15,7 +15,7 @@ package com.vmware.photon.controller.deployer.dcp.workflow;
 
 import com.vmware.photon.controller.api.DeploymentState;
 import com.vmware.photon.controller.api.UsageTag;
-import com.vmware.photon.controller.cloudstore.dcp.CloudStoreXenonHost;
+import com.vmware.photon.controller.cloudstore.dcp.CloudStoreServiceGroup;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
@@ -653,7 +653,7 @@ public class DeploymentWorkflowService extends StatefulService {
         = zookeeperClient.getServers(zookeeperQuorum, DeployerModule.CLOUDSTORE_SERVICE_NAME);
 
     Set<Class<?>> servicesToMigrate
-        = new HashSet<Class<?>>(Arrays.<Class<?>>asList(CloudStoreXenonHost.FACTORY_SERVICES));
+        = new HashSet<Class<?>>(Arrays.<Class<?>>asList(CloudStoreServiceGroup.FACTORY_SERVICES));
     servicesToMigrate.removeAll(HostUtils.getDeployerContext(this).getMigrationExcludedServices());
 
     final AtomicInteger latch = new AtomicInteger(servicesToMigrate.size());

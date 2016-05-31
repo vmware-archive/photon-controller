@@ -16,15 +16,15 @@ package com.vmware.photon.controller.rootscheduler.xenon;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.config.BadConfigException;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
-import com.vmware.photon.controller.common.thrift.ServerSet;
-import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
+import com.vmware.photon.controller.common.thrift.ThriftModule;
 import com.vmware.photon.controller.common.xenon.MultiHostEnvironment;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
+import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
 import com.vmware.photon.controller.common.xenon.host.XenonConfig;
+import com.vmware.photon.controller.common.zookeeper.ZookeeperModule;
 import com.vmware.photon.controller.rootscheduler.ConfigTest;
 import com.vmware.photon.controller.rootscheduler.RootSchedulerConfig;
 import com.vmware.photon.controller.rootscheduler.service.CloudStoreConstraintChecker;
-import com.vmware.photon.controller.rootscheduler.service.ConstraintChecker;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.services.common.LuceneDocumentIndexService;
 import com.vmware.xenon.services.common.ServiceUriPaths;
@@ -41,7 +41,6 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 
 import java.io.File;
@@ -54,29 +53,26 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 /**
- * This class implements tests for the {@link SchedulerXenonHost} class.
+ * This class implements tests for the {@link SchedulerServiceGroup} class.
  */
-public class SchedulerXenonHostTest {
+public class SchedulerServiceGroupTest {
 
   private static File storageDir;
 
   private static final String configFilePath = "/config.yml";
 
-  private SchedulerXenonHost host;
+  private PhotonControllerXenonHost host;
   private Collection<String> serviceSelfLinks;
   private RootSchedulerConfig config;
-  private ConstraintChecker checker;
-  private CloudStoreHelper cloudStoreHelper;
-  private ServerSet cloudStoreServerSet;
   @Mock
   private HostClientFactory hostClientFactory;
 
-  private void waitForServicesStartup(SchedulerXenonHost host)
+  private void waitForServicesStartup(PhotonControllerXenonHost host)
       throws TimeoutException, InterruptedException, NoSuchFieldException, IllegalAccessException {
 
     serviceSelfLinks = ServiceHostUtils.getServiceSelfLinks(
-        SchedulerXenonHost.FACTORY_SERVICE_FIELD_NAME_SELF_LINK,
-        SchedulerXenonHost.FACTORY_SERVICES);
+        SchedulerServiceGroup.FACTORY_SERVICE_FIELD_NAME_SELF_LINK,
+        SchedulerServiceGroup.FACTORY_SERVICES);
 
     final CountDownLatch latch = new CountDownLatch(serviceSelfLinks.size());
     Operation.CompletionHandler handler = (operation, throwable) -> {
@@ -101,7 +97,7 @@ public class SchedulerXenonHostTest {
    * Tests for the constructors.
    */
   public class InitializationTest {
-    private SchedulerXenonHost host;
+    private PhotonControllerXenonHost host;
 
     @BeforeClass
     public void setUpClass() throws IOException, BadConfigException {
@@ -109,9 +105,6 @@ public class SchedulerXenonHostTest {
           ConfigTest.class.getResource(configFilePath).getPath());
 
       MockitoAnnotations.initMocks(this);
-      cloudStoreServerSet = mock(ServerSet.class);
-      cloudStoreHelper = new CloudStoreHelper(cloudStoreServerSet);
-      checker = new CloudStoreConstraintChecker(cloudStoreHelper);
 
       storageDir = new File(config.getXenonConfig().getStoragePath());
       FileUtils.deleteDirectory(storageDir);
@@ -119,8 +112,10 @@ public class SchedulerXenonHostTest {
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      host = new SchedulerXenonHost(config.getXenonConfig(),
-          hostClientFactory, config, checker, cloudStoreHelper);
+      host = new PhotonControllerXenonHost(config.getXenonConfig(),
+              new ZookeeperModule(config.getZookeeper()), new ThriftModule());
+      SchedulerServiceGroup schedulerServiceGroup = new SchedulerServiceGroup(config);
+      host.addXenonServiceGroup(schedulerServiceGroup);
     }
 
     @AfterMethod
@@ -141,8 +136,10 @@ public class SchedulerXenonHostTest {
       assertThat(storageDir.exists(), is(false));
 
       // Check that the host will create the storage directory.
-      host = new SchedulerXenonHost(config.getXenonConfig(),
-          hostClientFactory, config, checker, cloudStoreHelper);
+      host = new PhotonControllerXenonHost(config.getXenonConfig(),
+              new ZookeeperModule(config.getZookeeper()), new ThriftModule());
+      SchedulerServiceGroup schedulerServiceGroup = new SchedulerServiceGroup(config);
+      host.addXenonServiceGroup(schedulerServiceGroup);
 
       assertThat(storageDir.exists(), is(true));
       assertThat(host, is(notNullValue()));
@@ -167,9 +164,6 @@ public class SchedulerXenonHostTest {
           ConfigTest.class.getResource(configFilePath).getPath());
 
       MockitoAnnotations.initMocks(this);
-      cloudStoreServerSet = mock(ServerSet.class);
-      cloudStoreHelper = new CloudStoreHelper(cloudStoreServerSet);
-      checker = new CloudStoreConstraintChecker(cloudStoreHelper);
 
       storageDir = new File(config.getXenonConfig().getStoragePath());
       FileUtils.deleteDirectory(storageDir);
@@ -177,8 +171,10 @@ public class SchedulerXenonHostTest {
 
     @BeforeMethod
     private void setUp() throws Throwable {
-      host = new SchedulerXenonHost(config.getXenonConfig(),
-          hostClientFactory, config, checker, cloudStoreHelper);
+      host = new PhotonControllerXenonHost(config.getXenonConfig(),
+              new ZookeeperModule(config.getZookeeper()), new ThriftModule());
+      SchedulerServiceGroup schedulerServiceGroup = new SchedulerServiceGroup(config);
+      host.addXenonServiceGroup(schedulerServiceGroup);
     }
 
     @AfterMethod
@@ -224,9 +220,6 @@ public class SchedulerXenonHostTest {
           ConfigTest.class.getResource(configFilePath).getPath());
 
       MockitoAnnotations.initMocks(this);
-      cloudStoreServerSet = mock(ServerSet.class);
-      cloudStoreHelper = new CloudStoreHelper(cloudStoreServerSet);
-      checker = new CloudStoreConstraintChecker(cloudStoreHelper);
 
       storageDir = new File(config.getXenonConfig().getStoragePath());
       FileUtils.deleteDirectory(storageDir);
@@ -234,8 +227,10 @@ public class SchedulerXenonHostTest {
 
     @BeforeMethod
     private void setUp() throws Throwable {
-      host = new SchedulerXenonHost(config.getXenonConfig(),
-          hostClientFactory, config, checker, cloudStoreHelper);
+      host = new PhotonControllerXenonHost(config.getXenonConfig(),
+              new ZookeeperModule(config.getZookeeper()), new ThriftModule());
+      SchedulerServiceGroup schedulerServiceGroup = new SchedulerServiceGroup(config);
+      host.addXenonServiceGroup(schedulerServiceGroup);
     }
 
     @AfterMethod
@@ -260,12 +255,12 @@ public class SchedulerXenonHostTest {
       // host maintenance. (Making
       // the spy makes an extra object, and the original isn't initialized
       // properly)
-      SchedulerXenonHost spyHost = spy(host);
+      PhotonControllerXenonHost spyHost = spy(host);
       doReturn(false).when(spyHost).checkServiceAvailable(anyString());
       assertThat(spyHost.isReady(), is(false));
     }
 
-    private void startHost(SchedulerXenonHost host) throws Throwable {
+    private void startHost(PhotonControllerXenonHost host) throws Throwable {
       host.start();
       waitForServicesStartup(host);
     }
@@ -278,7 +273,7 @@ public class SchedulerXenonHostTest {
 
     private final File storageDir2 = new File("/tmp/dcp/18002/");
     private final long maintenanceInterval = TimeUnit.MILLISECONDS.toMicros(500);
-    private SchedulerXenonHost host2;
+    private PhotonControllerXenonHost host2;
 
     @BeforeClass
     private void setUpClass() throws IOException {
@@ -292,7 +287,10 @@ public class SchedulerXenonHostTest {
       xenonConfig.setPort(18000);
       xenonConfig.setStoragePath(storageDir.getAbsolutePath());
       CloudStoreConstraintChecker checker = new CloudStoreConstraintChecker(null);
-      host = new SchedulerXenonHost(xenonConfig, () -> null, null, checker, null);
+      host = new PhotonControllerXenonHost(xenonConfig,
+              new ZookeeperModule(config.getZookeeper()), new ThriftModule());
+      SchedulerServiceGroup schedulerServiceGroup = new SchedulerServiceGroup(config);
+      host.addXenonServiceGroup(schedulerServiceGroup);
       host.setMaintenanceIntervalMicros(maintenanceInterval);
       host.start();
       waitForServicesStartup(host);
@@ -302,7 +300,10 @@ public class SchedulerXenonHostTest {
       xenonConfig2.setPort(18002);
       xenonConfig2.setStoragePath(storageDir2.getAbsolutePath());
 
-      host2 = new SchedulerXenonHost(xenonConfig2, () -> null, null, checker, null);
+      host = new PhotonControllerXenonHost(xenonConfig2,
+              new ZookeeperModule(config.getZookeeper()), new ThriftModule());
+      SchedulerServiceGroup schedulerServiceGroup2 = new SchedulerServiceGroup(config);
+      host.addXenonServiceGroup(schedulerServiceGroup2);
       host2.setMaintenanceIntervalMicros(maintenanceInterval);
       host2.start();
       waitForServicesStartup(host2);
@@ -326,7 +327,7 @@ public class SchedulerXenonHostTest {
       ServiceHostUtils.joinNodeGroup(host2, host.getUri().getHost(), host.getPort());
 
       ServiceHostUtils.waitForNodeGroupConvergence(
-          new SchedulerXenonHost[]{host, host2},
+          new PhotonControllerXenonHost[]{host, host2},
           ServiceUriPaths.DEFAULT_NODE_GROUP,
           ServiceHostUtils.DEFAULT_NODE_GROUP_CONVERGENCE_MAX_RETRIES,
           MultiHostEnvironment.TEST_NODE_GROUP_CONVERGENCE_SLEEP);

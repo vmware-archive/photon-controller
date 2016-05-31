@@ -459,6 +459,7 @@ public class DeployerXenonServiceHost
    * Getter for BuildInfo.
    * @return
    */
+  @Override
   public BuildInfo getBuildInfo() {
     return this.buildInfo;
   }

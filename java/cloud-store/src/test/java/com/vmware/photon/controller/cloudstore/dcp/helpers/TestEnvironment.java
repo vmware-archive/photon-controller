@@ -13,13 +13,19 @@
 
 package com.vmware.photon.controller.cloudstore.dcp.helpers;
 
-import com.vmware.photon.controller.cloudstore.dcp.CloudStoreXenonHost;
+import com.vmware.photon.controller.cloudstore.CloudStoreConfig;
+import com.vmware.photon.controller.cloudstore.CloudStoreConfigTest;
+import com.vmware.photon.controller.cloudstore.dcp.CloudStoreServiceGroup;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.common.clients.AgentControlClientFactory;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
+import com.vmware.photon.controller.common.config.ConfigBuilder;
+import com.vmware.photon.controller.common.thrift.ThriftModule;
 import com.vmware.photon.controller.common.xenon.MultiHostEnvironment;
+import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
 import com.vmware.photon.controller.common.xenon.host.XenonConfig;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
+import com.vmware.photon.controller.common.zookeeper.ZookeeperModule;
 
 import org.apache.commons.io.FileUtils;
 import static org.mockito.Mockito.mock;
@@ -30,13 +36,17 @@ import java.io.File;
 /**
  * TestMachine class hosting a DCP host.
  */
-public class TestEnvironment extends MultiHostEnvironment<CloudStoreXenonHost> {
+public class TestEnvironment extends MultiHostEnvironment<PhotonControllerXenonHost> {
+
+  private static final String configFilePath = "/config.yml";
+
   private TestEnvironment(
-      int hostCount, HostClientFactory hostClientFactory, AgentControlClientFactory agentControlClientFactory,
+      int hostCount, CloudStoreConfig cloudStoreConfig,
+      HostClientFactory hostClientFactory, AgentControlClientFactory agentControlClientFactory,
       ServiceConfigFactory serviceConfigFactory) throws Throwable {
 
     assertTrue(hostCount > 0);
-    hosts = new CloudStoreXenonHost[hostCount];
+    hosts = new PhotonControllerXenonHost[hostCount];
     for (int i = 0; i < hosts.length; i++) {
 
       String sandbox = generateStorageSandboxPath();
@@ -47,8 +57,11 @@ public class TestEnvironment extends MultiHostEnvironment<CloudStoreXenonHost> {
       xenonConfig.setPort(0);
       xenonConfig.setStoragePath(sandbox);
 
-      hosts[i] = new CloudStoreXenonHost(xenonConfig, hostClientFactory,
-          agentControlClientFactory, serviceConfigFactory);
+      hosts[i] = new PhotonControllerXenonHost(
+              cloudStoreConfig.getXenonConfig(),
+              new ZookeeperModule(cloudStoreConfig.getZookeeper()), new ThriftModule());
+      CloudStoreServiceGroup cloudStoreServiceGroup = new CloudStoreServiceGroup();
+      hosts[i].addXenonServiceGroup(cloudStoreServiceGroup);
     }
     // Disable host ping: we have fake hosts and don't want them to be marked as missing
     HostService.setInUnitTests(true);
@@ -65,12 +78,18 @@ public class TestEnvironment extends MultiHostEnvironment<CloudStoreXenonHost> {
    */
   public static class Builder {
     private int hostCount;
+    private CloudStoreConfig cloudStoreConfig;
     private HostClientFactory hostClientFactory;
     private AgentControlClientFactory agentControlClientFactory;
     private ServiceConfigFactory serviceConfigFactory;
 
     public Builder hostCount(int hostCount) {
       this.hostCount = hostCount;
+      return this;
+    }
+
+    public Builder cloudStoreConfig(CloudStoreConfig cloudStoreConfig) {
+      this.cloudStoreConfig = cloudStoreConfig;
       return this;
     }
 
@@ -95,6 +114,12 @@ public class TestEnvironment extends MultiHostEnvironment<CloudStoreXenonHost> {
         hostCount = 1;
       }
 
+      CloudStoreConfig cloudStoreConfig = this.cloudStoreConfig;
+      if (this.cloudStoreConfig == null) {
+        cloudStoreConfig = ConfigBuilder.build(CloudStoreConfig.class,
+                        CloudStoreConfigTest.class.getResource(configFilePath).getPath());
+      }
+
       ServiceConfigFactory serviceConfigFactory = this.serviceConfigFactory;
       if (this.serviceConfigFactory == null) {
         serviceConfigFactory = mock(ServiceConfigFactory.class);
@@ -111,7 +136,7 @@ public class TestEnvironment extends MultiHostEnvironment<CloudStoreXenonHost> {
       }
 
       TestEnvironment testEnvironment = new TestEnvironment(
-          hostCount, hostClientFactory, agentControlClientFactory, serviceConfigFactory);
+          hostCount, cloudStoreConfig, hostClientFactory, agentControlClientFactory, serviceConfigFactory);
       testEnvironment.start();
       return testEnvironment;
     }

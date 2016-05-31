@@ -19,7 +19,6 @@ import com.vmware.photon.controller.common.clients.HostClientProvider;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
 import com.vmware.photon.controller.common.clients.exceptions.SystemErrorException;
 import com.vmware.photon.controller.common.logging.LoggingUtils;
-import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
@@ -39,7 +38,6 @@ import com.vmware.photon.controller.rootscheduler.exceptions.NoSuchResourceExcep
 import com.vmware.photon.controller.rootscheduler.service.ConstraintChecker;
 import com.vmware.photon.controller.rootscheduler.service.ScoreCalculator;
 import com.vmware.photon.controller.rootscheduler.xenon.ConstraintCheckerProvider;
-import com.vmware.photon.controller.rootscheduler.xenon.SchedulerXenonHost;
 import com.vmware.photon.controller.rootscheduler.xenon.ScoreCalculatorProvider;
 import com.vmware.photon.controller.scheduler.gen.PlaceResponse;
 import com.vmware.photon.controller.scheduler.gen.PlaceResultCode;
@@ -48,6 +46,7 @@ import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocumentQueryResult;
 import com.vmware.xenon.common.StatefulService;
 import com.vmware.xenon.common.TaskState;
+import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.QueryTask;
 
@@ -328,7 +327,7 @@ public class PlacementTaskService extends StatefulService {
    * - The set of "okResponses", from hosts that could accept the resource. This will include the score.
    * - All responses. These are used when there's an error, to summarize what went wrong
    *
-   * @param currentState Contains the
+   * @param resource     Contains the
    * @param candidates   the hosts to send place requests
    * @param completion   the completion that will be called when the scoring completes
    */
@@ -412,7 +411,8 @@ public class PlacementTaskService extends StatefulService {
    * this returns a result from the host responses.
    *
    * @param okResponses
-   * @param returnCodes
+   * @param allResponses
+   * @param currentState
    * @param watch
    * @return
    */
@@ -594,8 +594,7 @@ public class PlacementTaskService extends StatefulService {
       final ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
       termsBuilder.put("imageId", imageId);
 
-      CloudStoreHelper cloudStoreHelper = ((SchedulerXenonHost) getHost()).getCloudStoreHelper();
-      URI queryUri = cloudStoreHelper.selectLocalCloudStoreIfAvailable(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS);
+      URI queryUri = UriUtils.buildUri(getHost(), ServiceUriPaths.CORE_LOCAL_QUERY_TASKS);
       QueryTask.QuerySpecification spec =
           QueryTaskUtils.buildQuerySpec(ImageToImageDatastoreMappingService.State.class, termsBuilder.build());
       spec.options.add(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);

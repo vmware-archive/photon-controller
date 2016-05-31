@@ -14,12 +14,15 @@
 package com.vmware.photon.controller.rootscheduler.helpers.xenon;
 
 import com.vmware.photon.controller.common.clients.HostClientFactory;
+import com.vmware.photon.controller.common.thrift.ThriftModule;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.MultiHostEnvironment;
+import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
 import com.vmware.photon.controller.common.xenon.host.XenonConfig;
+import com.vmware.photon.controller.common.zookeeper.ZookeeperModule;
 import com.vmware.photon.controller.rootscheduler.RootSchedulerConfig;
 import com.vmware.photon.controller.rootscheduler.service.ConstraintChecker;
-import com.vmware.photon.controller.rootscheduler.xenon.SchedulerXenonHost;
+import com.vmware.photon.controller.rootscheduler.xenon.SchedulerServiceGroup;
 
 import org.apache.commons.io.FileUtils;
 import static org.testng.Assert.assertTrue;
@@ -29,17 +32,16 @@ import java.io.File;
 /**
  * This class implements a test host for Xenon micro-services.
  */
-public class SchedulerTestEnvironment extends MultiHostEnvironment<SchedulerXenonHost> {
+public class SchedulerTestEnvironment extends MultiHostEnvironment<PhotonControllerXenonHost> {
   /**
    * Constructs a test environment object.
    *
    * @throws Throwable Throws an exception if any error is encountered.
    */
-  private SchedulerTestEnvironment(HostClientFactory hostClientFactory, RootSchedulerConfig config,
-                                   ConstraintChecker checker, CloudStoreHelper cloudStoreHelper,
+  private SchedulerTestEnvironment(RootSchedulerConfig config,
                                    int hostCount) throws Throwable {
     assertTrue(hostCount > 0);
-    hosts = new SchedulerXenonHost[hostCount];
+    hosts = new PhotonControllerXenonHost[hostCount];
     for (int i = 0; i < hosts.length; i++) {
       String sandbox = generateStorageSandboxPath();
       FileUtils.forceMkdir(new File(sandbox));
@@ -49,9 +51,10 @@ public class SchedulerTestEnvironment extends MultiHostEnvironment<SchedulerXeno
       xenonConfig.setPort(0);
       xenonConfig.setStoragePath(sandbox);
 
-      hosts[i] = new SchedulerXenonHost(xenonConfig, hostClientFactory, config, checker,
-          cloudStoreHelper);
-
+      hosts[i] = new PhotonControllerXenonHost(config.getXenonConfig(),
+              new ZookeeperModule(config.getZookeeper()), new ThriftModule());
+      SchedulerServiceGroup schedulerServiceGroup = new SchedulerServiceGroup(config);
+      hosts[i].addXenonServiceGroup(schedulerServiceGroup);
     }
   }
 
@@ -65,7 +68,7 @@ public class SchedulerTestEnvironment extends MultiHostEnvironment<SchedulerXeno
                                                 ConstraintChecker checker,
                                                 CloudStoreHelper cloudStoreHelper, int hostCount) throws Throwable {
     SchedulerTestEnvironment schedulerTestEnvironment = new SchedulerTestEnvironment(
-        hostClientFactory, config, checker, cloudStoreHelper, hostCount);
+        config, hostCount);
     schedulerTestEnvironment.start();
     return schedulerTestEnvironment;
   }

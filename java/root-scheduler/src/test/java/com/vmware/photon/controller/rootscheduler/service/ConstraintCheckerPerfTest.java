@@ -138,7 +138,7 @@ public class ConstraintCheckerPerfTest {
     CloudStoreHelper cloudStoreHelper = new CloudStoreHelper(cloudStoreTestEnvironment.getServerSet());
     // This tests does tens of thousands of operation. We only log failures, so we can see what's happening.
     xenonRestClient.start();
-    ConstraintChecker cloudStore = new CloudStoreConstraintChecker(cloudStoreHelper);
+    ConstraintChecker cloudStore = new CloudStoreConstraintChecker(cloudStoreTestEnvironment.getHosts()[0]);
 
     return new Object[][] {
       { cloudStore, 1 },

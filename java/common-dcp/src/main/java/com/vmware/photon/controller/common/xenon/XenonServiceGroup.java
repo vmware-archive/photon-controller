@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 VMware, Inc. All Rights Reserved.
+ * Copyright 2016 VMware, Inc. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License.  You may obtain a copy of
@@ -10,19 +10,19 @@
  * conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the License for the
  * specific language governing permissions and limitations under the License.
  */
-
 package com.vmware.photon.controller.common.xenon;
 
-import com.vmware.photon.controller.common.manifest.BuildInfo;
+import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
 
 /**
- * Common methods for Xenon service hosts.
+ * Represents a logical group of Photon Controller Xenon services.
  */
-public interface XenonHostInfoProvider {
+public interface XenonServiceGroup {
+    String getName();
 
-  boolean isReady();
+    void start() throws Throwable;
 
-  public Class[] getFactoryServices();
+    boolean isReady();
 
-  BuildInfo getBuildInfo();
+    void setPhotonControllerXenonHost(PhotonControllerXenonHost photonControllerXenonHost);
 }

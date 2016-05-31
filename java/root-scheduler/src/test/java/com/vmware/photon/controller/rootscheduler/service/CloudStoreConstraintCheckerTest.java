@@ -126,14 +126,14 @@ public class CloudStoreConstraintCheckerTest {
         new XenonRestClient(cloudStoreTestEnvironmentSmall.getServerSet(), Executors.newFixedThreadPool(1));
     this.cloudstoreHelperSmall = new CloudStoreHelper(cloudStoreTestEnvironmentSmall.getServerSet());
     cloudstoreClientSmall.start();
-    this.checkerSmall = new CloudStoreConstraintChecker(this.cloudstoreHelperSmall);
+    this.checkerSmall = new CloudStoreConstraintChecker(this.cloudStoreTestEnvironmentSmall.getHosts()[0]);
 
     this.cloudStoreTestEnvironmentLarge = TestEnvironment.create(LARGE_NUMBER_OF_CS_HOSTS);
     this.cloudstoreClientLarge =
         new XenonRestClient(cloudStoreTestEnvironmentLarge.getServerSet(), Executors.newFixedThreadPool(1));
     this.cloudstoreHelperLarge = new CloudStoreHelper(cloudStoreTestEnvironmentLarge.getServerSet());
     cloudstoreClientLarge.start();
-    this.checkerLarge = new CloudStoreConstraintChecker(this.cloudstoreHelperLarge);
+    this.checkerLarge = new CloudStoreConstraintChecker(this.cloudStoreTestEnvironmentLarge.getHosts()[0]);
   }
 
   @AfterTest

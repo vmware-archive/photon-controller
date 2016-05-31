@@ -13,7 +13,7 @@
 package com.vmware.photon.controller.apibackend.helpers;
 
 import com.vmware.photon.controller.apibackend.ApiBackendFactory;
-import com.vmware.photon.controller.cloudstore.dcp.CloudStoreXenonHost;
+import com.vmware.photon.controller.cloudstore.dcp.CloudStoreServiceGroup;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.common.xenon.BasicServiceHost;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
@@ -61,8 +61,8 @@ public class TestHost extends BasicServiceHost
 
     this.startWithCoreServices();
     ServiceHostUtils.startFactoryServices(this, ApiBackendFactory.FACTORY_SERVICES_MAP);
-    ServiceHostUtils.startFactoryServices(this, CloudStoreXenonHost.FACTORY_SERVICES_MAP);
-    ServiceHostUtils.startServices(this, CloudStoreXenonHost.FACTORY_SERVICES);
+    ServiceHostUtils.startFactoryServices(this, CloudStoreServiceGroup.FACTORY_SERVICES_MAP);
+    ServiceHostUtils.startServices(this, CloudStoreServiceGroup.FACTORY_SERVICES);
 
     if (this.testFactoryServiceMap != null && !this.testFactoryServiceMap.isEmpty()) {
       ServiceHostUtils.startFactoryServices(this, this.testFactoryServiceMap);
