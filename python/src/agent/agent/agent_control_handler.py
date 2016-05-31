@@ -13,6 +13,7 @@
 import logging
 
 import common
+from common.file_util import rm_rf
 
 from . import version
 from .agent_config import InvalidConfig
@@ -55,6 +56,10 @@ class AgentControlHandler(AgentControl.Iface):
         try:
             agent_config = common.services.get(ServiceName.AGENT_CONFIG)
             agent_config.update_config(request)
+
+            # cleanup vibs uploaded by deployer.
+            # in multi-vibs scenario, provision is called after all vibs are successfully installed.
+            rm_rf("/tmp/photon-controller-vibs")
         except InvalidConfig as e:
             return ProvisionResponse(ProvisionResultCode.INVALID_CONFIG,
                                      str(e))
