@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.common.xenon;
 
+import com.vmware.photon.controller.common.manifest.BuildInfo;
 import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
@@ -118,6 +119,11 @@ public class BasicServiceHost
   @Override
   public Class[] getFactoryServices() {
     return new Class[0];
+  }
+
+  @Override
+  public BuildInfo getBuildInfo() {
+    return BuildInfo.get(this.getClass());
   }
 
   protected synchronized void initialize() throws Throwable {
