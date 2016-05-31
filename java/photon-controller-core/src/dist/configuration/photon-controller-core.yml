@@ -80,6 +80,6 @@ logging:
     enabled: {{{ENABLE_SYSLOG}}}
 {{#ENABLE_SYSLOG}}
     host: "{{{SYSLOG_ENDPOINT}}}"
-    logFormat: "%-5p [%d{ISO8601}] [core] [%property{instance}]%X{request}%X{task} %c: %m\n%ex"
+    logFormat: "%-5p [%d{ISO8601}] [photon-controller] [%property{instance}]%X{request}%X{task} %c: %m\n%ex"
     facility: LOCAL0
 {{/ENABLE_SYSLOG}}

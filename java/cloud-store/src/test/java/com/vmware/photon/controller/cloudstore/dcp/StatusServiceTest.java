@@ -16,6 +16,8 @@ package com.vmware.photon.controller.cloudstore.dcp;
 import com.vmware.photon.controller.cloudstore.dcp.entity.FlavorServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
+import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
+import com.vmware.photon.controller.common.xenon.host.StatusService;
 import com.vmware.photon.controller.status.gen.Status;
 import com.vmware.photon.controller.status.gen.StatusType;
 import com.vmware.xenon.common.Operation;
@@ -28,7 +30,7 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
 /**
- * Tests {@link StatusService}.
+ * Tests {@link com.vmware.photon.controller.common.xenon.host.StatusService}.
  */
 public class StatusServiceTest {
 
@@ -65,7 +67,7 @@ public class StatusServiceTest {
 
     @Test
     public void testInitializing() throws Throwable {
-      CloudStoreXenonHost host = testEnvironment.getHosts()[0];
+      PhotonControllerXenonHost host = testEnvironment.getHosts()[0];
       Operation delete = Operation
           .createDelete(UriUtils.buildUri(host, FlavorServiceFactory.SELF_LINK))
           .setBody("{}");

@@ -145,6 +145,7 @@ public class HousekeeperXenonServiceHost
    * Getter for BuildInfo.
    * @return
    */
+  @Override
   public BuildInfo getBuildInfo() {
     return this.buildInfo;
   }
