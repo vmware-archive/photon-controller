@@ -25,7 +25,9 @@ from host.hypervisor.esx.host_client import HostClient
 from host.hypervisor.esx.host_client import VmConfigSpec
 from host.hypervisor.esx.path_util import os_to_datastore_path
 
-from vmware.attache import attache
+from vmware.envoy import attache
+
+from thrift.server import TNonblockingServer
 
 
 def attache_error_handler(func):
@@ -74,8 +76,8 @@ class AttacheClient(HostClient):
         self._logger.info("Start attache sync vm cache thread")
         self._client.EnablePropertyCache(self._session)
         self.update_cache()
-        # self._sync_thread = SyncAttacheCacheThread(self)
-        # self._sync_thread.start()
+        self._sync_thread = SyncAttacheCacheThread(self)
+        self._sync_thread.start()
 
     def _stop_syncing_cache(self, wait=False):
         if self._sync_thread:
@@ -346,6 +348,7 @@ class SyncAttacheCacheThread(threading.Thread):
         self.last_updated = time.time()
 
     def run(self):
+        attache.EnlistThisThread()
         while True:
             if not self.active:
                 self._logger.info("Exit vmcache sync thread.")
@@ -363,6 +366,7 @@ class SyncAttacheCacheThread(threading.Thread):
                 self._logger.exception("Failed to poll update %d" % self.fail_count)
                 self.fail_count += 1
                 self._wait_between_failures()
+        attache.DelistThisThread()
 
     def stop(self):
         self._logger.info("Stop syncing vm cache thread")
@@ -381,3 +385,18 @@ class SyncAttacheCacheThread(threading.Thread):
         wait_seconds = 1 << (self.fail_count - 1)
         self._logger.info("Wait %d second(s) to retry update cache" % wait_seconds)
         time.sleep(wait_seconds)
+
+
+class ThriftWorker(TNonblockingServer.Worker):
+    _logger = logging.getLogger(__name__)
+
+    def run(self):
+        # attache and vmacore require caller to enlist its threads brefore
+        # calling its APIs, and delist before threads exit.
+        self._logger.info("attache.EnlistThisThread %s" % threading.current_thread().name)
+        attache.EnlistThisThread()
+
+        super(TNonblockingServer.Worker, self).run()
+
+        self._logger.info("attache.DelistThisThread %s" % threading.current_thread().name)
+        attache.DelistThisThread()

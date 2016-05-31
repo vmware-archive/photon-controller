@@ -49,6 +49,14 @@ from common.service_name import ServiceName
 from common.state import State
 
 
+try:
+    # monkey patch to allow special thread init/shutdown handling by Attache client
+    from host.hypervisor.esx.attache_client import ThriftWorker
+    TNonblockingServer.Worker = ThriftWorker
+except ImportError:
+    pass
+
+
 class Agent:
     def __init__(self):
         self._logger = logging.getLogger(__name__)
