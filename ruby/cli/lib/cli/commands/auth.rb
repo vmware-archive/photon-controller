@@ -64,10 +64,10 @@ module EsxCloud::Cli
         if access_token.blank?
           # Get the access_token for the provided user credentials.
           puts "Logging in #{username} ..."
-          auth_tool_path = get_auth_tool_path
 
+          https_header = "https://"
           access_token = EsxCloud::AuthHelper.get_access_token(
-              username, password, auth_info.endpoint, auth_tool_path)
+              username, password, "#{https_header}#{auth_info.endpoint}")
         end
 
         # Write the token in the Config and save it for future use. 
