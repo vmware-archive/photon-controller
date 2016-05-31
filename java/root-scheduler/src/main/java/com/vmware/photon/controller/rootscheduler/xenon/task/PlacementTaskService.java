@@ -29,6 +29,7 @@ import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
+import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
 import com.vmware.photon.controller.common.zookeeper.gen.ServerAddress;
 import com.vmware.photon.controller.host.gen.Host;
 import com.vmware.photon.controller.resource.gen.Disk;
@@ -38,9 +39,7 @@ import com.vmware.photon.controller.resource.gen.ResourceConstraintType;
 import com.vmware.photon.controller.resource.gen.Vm;
 import com.vmware.photon.controller.rootscheduler.service.ConstraintChecker;
 import com.vmware.photon.controller.rootscheduler.service.ScoreCalculator;
-import com.vmware.photon.controller.rootscheduler.xenon.ConstraintCheckerProvider;
-import com.vmware.photon.controller.rootscheduler.xenon.SchedulerXenonHost;
-import com.vmware.photon.controller.rootscheduler.xenon.ScoreCalculatorProvider;
+import com.vmware.photon.controller.rootscheduler.xenon.SchedulerServiceGroup;
 import com.vmware.photon.controller.scheduler.gen.PlaceResponse;
 import com.vmware.photon.controller.scheduler.gen.PlaceResultCode;
 import com.vmware.xenon.common.FactoryService;
@@ -310,8 +309,8 @@ public class PlacementTaskService extends StatefulService {
       PlacementTask currentState,
       List<ResourceConstraint> constraints,
       ConstraintChecker.GetCandidatesCompletion completion) {
-
-    ConstraintChecker checker = ((ConstraintCheckerProvider) getHost()).getConstraintChecker();
+    SchedulerServiceGroup scheduler = (SchedulerServiceGroup) ((PhotonControllerXenonHost) getHost()).getScheduler();
+    ConstraintChecker checker = scheduler.getConstraintChecker();
     try {
       checker.getCandidates(constraints, currentState.sampleHostCount, completion);
     } catch (Exception ex) {
@@ -422,7 +421,8 @@ public class PlacementTaskService extends StatefulService {
       Set<PlaceResponse> allResponses,
       PlacementTask currentState,
       Stopwatch watch) {
-    ScoreCalculator scoreCalculator = ((ScoreCalculatorProvider) getHost()).getScoreCalculator();
+    SchedulerServiceGroup scheduler = (SchedulerServiceGroup) ((PhotonControllerXenonHost) getHost()).getScheduler();
+    ScoreCalculator scoreCalculator = scheduler.getScoreCalculator();
     PlaceResponse response = scoreCalculator.pickBestResponse(okResponses);
     watch.stop();
 
@@ -595,7 +595,7 @@ public class PlacementTaskService extends StatefulService {
       final ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
       termsBuilder.put("imageId", imageId);
 
-      CloudStoreHelper cloudStoreHelper = ((SchedulerXenonHost) getHost()).getCloudStoreHelper();
+      CloudStoreHelper cloudStoreHelper = ((PhotonControllerXenonHost) getHost()).getCloudStoreHelper();
       URI queryUri = cloudStoreHelper.selectLocalCloudStoreIfAvailable(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS);
       QueryTask.QuerySpecification spec =
           QueryTaskUtils.buildQuerySpec(ImageToImageDatastoreMappingService.State.class, termsBuilder.build());

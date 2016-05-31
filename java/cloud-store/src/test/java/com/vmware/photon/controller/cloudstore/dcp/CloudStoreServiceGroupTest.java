@@ -50,6 +50,7 @@ import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.config.BadConfigException;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
+import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
 import com.vmware.photon.controller.common.xenon.scheduler.TaskTriggerFactoryService;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
 import com.vmware.xenon.services.common.LuceneDocumentIndexService;
@@ -76,9 +77,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 /**
- * This class implements tests for the {@link CloudStoreXenonHost} class.
+ * This class implements tests for the {@link CloudStoreServiceGroup} class.
  */
-public class CloudStoreXenonHostTest {
+public class CloudStoreServiceGroupTest {
 
   private static File storageDir;
 
@@ -88,7 +89,8 @@ public class CloudStoreXenonHostTest {
    * Maximum time to wait for all factories to become available.
    */
   private static final long SERVICES_STARTUP_TIMEOUT = TimeUnit.SECONDS.toMillis(30);
-  private CloudStoreXenonHost host;
+  private PhotonControllerXenonHost host;
+  private CloudStoreServiceGroup cloudStoreServiceGroup;
   private String[] serviceSelfLinks = new String[]{
       FlavorServiceFactory.SELF_LINK,
       ImageServiceFactory.SELF_LINK,
@@ -103,7 +105,6 @@ public class CloudStoreXenonHostTest {
       ProjectServiceFactory.SELF_LINK,
       TenantServiceFactory.SELF_LINK,
       ResourceTicketServiceFactory.SELF_LINK,
-      StatusService.SELF_LINK,
       VmServiceFactory.SELF_LINK,
       DiskServiceFactory.SELF_LINK,
       AttachedDiskServiceFactory.SELF_LINK,
@@ -145,7 +146,7 @@ public class CloudStoreXenonHostTest {
    * Tests for the constructors.
    */
   public class InitializationTest {
-    private CloudStoreXenonHost host;
+    private PhotonControllerXenonHost host;
 
     @BeforeClass
     public void setUpClass() throws IOException, BadConfigException {
@@ -162,8 +163,10 @@ public class CloudStoreXenonHostTest {
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      host = new CloudStoreXenonHost(config.getXenonConfig(), hostClientFactory, agentControlClientFactory,
-          serviceConfigFactory);
+      host = new PhotonControllerXenonHost(
+              config.getXenonConfig(), hostClientFactory, agentControlClientFactory, serviceConfigFactory, null);
+      cloudStoreServiceGroup = new CloudStoreServiceGroup();
+      host.registerCloudStore(cloudStoreServiceGroup);
     }
 
     @AfterMethod
@@ -186,8 +189,10 @@ public class CloudStoreXenonHostTest {
       FileUtils.deleteDirectory(storageDir);
       assertThat(storageDir.exists(), is(false));
 
-      host = new CloudStoreXenonHost(config.getXenonConfig(), hostClientFactory, agentControlClientFactory,
-          serviceConfigFactory);
+      host = new PhotonControllerXenonHost(
+              config.getXenonConfig(), hostClientFactory, agentControlClientFactory, serviceConfigFactory, null);
+      cloudStoreServiceGroup = new CloudStoreServiceGroup();
+      host.registerCloudStore(cloudStoreServiceGroup);
       assertThat(storageDir.exists(), is(true));
       assertThat(host, is(notNullValue()));
     }
@@ -219,8 +224,10 @@ public class CloudStoreXenonHostTest {
 
     @BeforeMethod
     private void setUp() throws Throwable {
-      host = new CloudStoreXenonHost(config.getXenonConfig(), hostClientFactory, agentControlClientFactory,
-          serviceConfigFactory);
+      host = new PhotonControllerXenonHost(
+              config.getXenonConfig(), hostClientFactory, agentControlClientFactory, serviceConfigFactory, null);
+      cloudStoreServiceGroup = new CloudStoreServiceGroup();
+      host.registerCloudStore(cloudStoreServiceGroup);
     }
 
     @AfterMethod
@@ -254,7 +261,7 @@ public class CloudStoreXenonHostTest {
       }
 
       assertThat(host.getClient().getConnectionLimitPerHost(),
-          is(CloudStoreXenonHost.DEFAULT_CONNECTION_LIMIT_PER_HOST));
+          is(PhotonControllerXenonHost.DEFAULT_CONNECTION_LIMIT_PER_HOST));
     }
   }
 
@@ -275,8 +282,10 @@ public class CloudStoreXenonHostTest {
 
     @BeforeMethod
     private void setUp() throws Throwable {
-      host = new CloudStoreXenonHost(config.getXenonConfig(), hostClientFactory, agentControlClientFactory,
-          serviceConfigFactory);
+      host = new PhotonControllerXenonHost(
+              config.getXenonConfig(), hostClientFactory, agentControlClientFactory, serviceConfigFactory, null);
+      cloudStoreServiceGroup = new CloudStoreServiceGroup();
+      host.registerCloudStore(cloudStoreServiceGroup);
       host.start();
       ServiceHostUtils.waitForServiceAvailability(host, SERVICES_STARTUP_TIMEOUT, serviceSelfLinks.clone());
     }

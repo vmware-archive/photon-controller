@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.deployer.migration;
 
-import com.vmware.photon.controller.cloudstore.dcp.CloudStoreXenonHost;
+import com.vmware.photon.controller.cloudstore.dcp.CloudStoreServiceGroup;
 import com.vmware.photon.controller.common.xenon.deployment.MigrateDuringDeployment;
 import com.vmware.photon.controller.common.xenon.deployment.NoMigrationDuringDeployment;
 import com.vmware.photon.controller.common.xenon.migration.MigrateDuringUpgrade;
@@ -247,12 +247,12 @@ public class AnnotationUsageTest {
 
   private Set<String> loadCloudStoreFactoryLinks() throws Throwable {
     Set<String> factoryPaths = new HashSet<>();
-    for (Class<?> type : CloudStoreXenonHost.FACTORY_SERVICES) {
+    for (Class<?> type : CloudStoreServiceGroup.FACTORY_SERVICES) {
       Field f = type.getField(UriUtils.FIELD_NAME_SELF_LINK);
       String path = (String) f.get(null);
       factoryPaths.add(path);
     }
-    for (Class<?> type : CloudStoreXenonHost.FACTORY_SERVICES_MAP.keySet()) {
+    for (Class<?> type : CloudStoreServiceGroup.FACTORY_SERVICES_MAP.keySet()) {
       Field f = type.getField(UriUtils.FIELD_NAME_FACTORY_LINK);
       String path = (String) f.get(null);
       factoryPaths.add(path);

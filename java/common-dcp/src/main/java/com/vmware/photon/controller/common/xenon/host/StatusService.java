@@ -11,10 +11,11 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package com.vmware.photon.controller.cloudstore.dcp;
+package com.vmware.photon.controller.common.xenon.host;
 
 import com.vmware.photon.controller.common.manifest.BuildInfo;
 import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
+import com.vmware.photon.controller.common.xenon.XenonHostInfoProvider;
 import com.vmware.photon.controller.status.gen.Status;
 import com.vmware.photon.controller.status.gen.StatusType;
 import com.vmware.xenon.common.Operation;
@@ -30,10 +31,10 @@ public class StatusService extends StatelessService {
   @Override
   public void handleGet(Operation get) {
     Status status = new Status(StatusType.INITIALIZING);
-    BuildInfo buildInfo = ((CloudStoreXenonHost) getHost()).getBuildInfo();
+    BuildInfo buildInfo = ((XenonHostInfoProvider) getHost()).getBuildInfo();
     status.setBuild_info(buildInfo.toString());
 
-    if (((CloudStoreXenonHost) getHost()).isReady()) {
+    if (((PhotonControllerXenonHost) getHost()).isReady()) {
       status.setType(StatusType.READY);
     }
     get.setBody(status).complete();

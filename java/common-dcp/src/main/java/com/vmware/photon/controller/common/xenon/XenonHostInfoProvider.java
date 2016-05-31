@@ -13,6 +13,8 @@
 
 package com.vmware.photon.controller.common.xenon;
 
+import com.vmware.photon.controller.common.manifest.BuildInfo;
+
 /**
  * Common methods for Xenon service hosts.
  */
@@ -21,4 +23,6 @@ public interface XenonHostInfoProvider {
   boolean isReady();
 
   public Class[] getFactoryServices();
+
+  BuildInfo getBuildInfo();
 }

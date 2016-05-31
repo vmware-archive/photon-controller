@@ -51,7 +51,7 @@ public class ScoreCalculatorTest {
    */
   @Test
   void testEmptyResponse() {
-    ScoreCalculator calculator = new ScoreCalculator(config);
+    ScoreCalculator calculator = new ScoreCalculator(config.getRoot());
     assertThat(calculator.pickBestResponse(null), is(nullValue()));
     assertThat(calculator.pickBestResponse(new HashSet<>()), is(nullValue()));
   }
@@ -60,7 +60,7 @@ public class ScoreCalculatorTest {
   void testPickBestResponse() {
     SchedulerConfig schedulerConfig = mock(SchedulerConfig.class);
     doReturn(schedulerConfig).when(config).getRoot();
-    ScoreCalculator calculator = new ScoreCalculator(config);
+    ScoreCalculator calculator = new ScoreCalculator(config.getRoot());
     PlaceResponse better = new PlaceResponse(PlaceResultCode.OK);
     PlaceResponse worse = new PlaceResponse(PlaceResultCode.OK);
 
