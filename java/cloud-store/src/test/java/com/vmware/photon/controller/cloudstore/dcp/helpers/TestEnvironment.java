@@ -13,11 +13,12 @@
 
 package com.vmware.photon.controller.cloudstore.dcp.helpers;
 
-import com.vmware.photon.controller.cloudstore.dcp.CloudStoreXenonHost;
+import com.vmware.photon.controller.cloudstore.dcp.CloudStoreServiceGroup;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.common.clients.AgentControlClientFactory;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.xenon.MultiHostEnvironment;
+import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
 import com.vmware.photon.controller.common.xenon.host.XenonConfig;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
 
@@ -30,13 +31,15 @@ import java.io.File;
 /**
  * TestMachine class hosting a DCP host.
  */
-public class TestEnvironment extends MultiHostEnvironment<CloudStoreXenonHost> {
+public class TestEnvironment extends MultiHostEnvironment<PhotonControllerXenonHost> {
+
   private TestEnvironment(
-      int hostCount, HostClientFactory hostClientFactory, AgentControlClientFactory agentControlClientFactory,
+      int hostCount,
+      HostClientFactory hostClientFactory, AgentControlClientFactory agentControlClientFactory,
       ServiceConfigFactory serviceConfigFactory) throws Throwable {
 
     assertTrue(hostCount > 0);
-    hosts = new CloudStoreXenonHost[hostCount];
+    hosts = new PhotonControllerXenonHost[hostCount];
     for (int i = 0; i < hosts.length; i++) {
 
       String sandbox = generateStorageSandboxPath();
@@ -47,8 +50,10 @@ public class TestEnvironment extends MultiHostEnvironment<CloudStoreXenonHost> {
       xenonConfig.setPort(0);
       xenonConfig.setStoragePath(sandbox);
 
-      hosts[i] = new CloudStoreXenonHost(xenonConfig, hostClientFactory,
-          agentControlClientFactory, serviceConfigFactory);
+      hosts[i] = new PhotonControllerXenonHost(xenonConfig,
+              hostClientFactory, agentControlClientFactory, serviceConfigFactory, null);
+      CloudStoreServiceGroup cloudStoreServiceGroup = new CloudStoreServiceGroup();
+      hosts[i].registerCloudStore(cloudStoreServiceGroup);
     }
     // Disable host ping: we have fake hosts and don't want them to be marked as missing
     HostService.setInUnitTests(true);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 VMware, Inc. All Rights Reserved.
+ * Copyright 2016 VMware, Inc. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License.  You may obtain a copy of
@@ -11,18 +11,11 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package com.vmware.photon.controller.common.xenon;
-
-import com.vmware.photon.controller.common.manifest.BuildInfo;
+package com.vmware.photon.controller.cloudstore.dcp;
 
 /**
- * Common methods for Xenon service hosts.
+ * Cloud Store accessor interface.
  */
-public interface XenonHostInfoProvider {
-
-  boolean isReady();
-
-  public Class[] getFactoryServices();
-
-  BuildInfo getBuildInfo();
+public interface CloudStoreProvider {
+    CloudStoreServiceGroup getCloudStore();
 }
