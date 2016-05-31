@@ -44,6 +44,7 @@ public class NetworkTest {
   private Network createValidNetwork() {
     Network network = new Network();
     network.setId("id");
+
     network.setName("network1");
     network.setDescription("VM Network");
     network.setState(NetworkState.READY);

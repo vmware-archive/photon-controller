@@ -460,6 +460,7 @@ public class DeployerXenonServiceHost
    *
    * @return
    */
+  @Override
   public BuildInfo getBuildInfo() {
     return this.buildInfo;
   }

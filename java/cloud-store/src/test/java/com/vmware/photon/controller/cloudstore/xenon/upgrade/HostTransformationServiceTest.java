@@ -14,9 +14,9 @@
 package com.vmware.photon.controller.cloudstore.xenon.upgrade;
 
 import com.vmware.photon.controller.api.UsageTag;
-import com.vmware.photon.controller.cloudstore.dcp.CloudStoreXenonHost;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment;
+import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
@@ -44,7 +44,7 @@ public class HostTransformationServiceTest {
   @BeforeMethod
   public void setUp() throws Throwable {
     env = TestEnvironment.create(1);
-    for (CloudStoreXenonHost host : env.getHosts()) {
+    for (PhotonControllerXenonHost host : env.getHosts()) {
       host.startService(new HostTransformationService());
     }
   }

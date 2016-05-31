@@ -14,7 +14,7 @@
 package com.vmware.photon.controller.core;
 
 import com.vmware.photon.controller.cloudstore.CloudStoreConfig;
-import com.vmware.photon.controller.cloudstore.dcp.CloudStoreXenonHost;
+import com.vmware.photon.controller.cloudstore.dcp.CloudStoreServiceGroup;
 import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.clients.AgentControlClientFactory;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
@@ -25,6 +25,7 @@ import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.photon.controller.common.thrift.ThriftFactory;
 import com.vmware.photon.controller.common.thrift.ThriftModule;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
+import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperModule;
 import com.vmware.photon.controller.housekeeper.HousekeeperConfig;
@@ -35,7 +36,7 @@ import com.vmware.photon.controller.nsxclient.NsxClientFactory;
 import com.vmware.photon.controller.rootscheduler.RootSchedulerConfig;
 import com.vmware.photon.controller.rootscheduler.service.CloudStoreConstraintChecker;
 import com.vmware.photon.controller.rootscheduler.service.ConstraintChecker;
-import com.vmware.photon.controller.rootscheduler.xenon.SchedulerXenonHost;
+import com.vmware.photon.controller.rootscheduler.xenon.SchedulerServiceGroup;
 import com.vmware.xenon.common.ServiceHost;
 
 import com.google.inject.Guice;
@@ -49,9 +50,7 @@ import org.apache.thrift.transport.TTransportFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -76,64 +75,98 @@ public class Main {
 
     PhotonControllerConfig photonControllerConfig = getPhotonControllerConfig(namespace);
     CloudStoreConfig cloudStoreConfig = photonControllerConfig.getCloudStoreConfig();
-    RootSchedulerConfig schedulerConfig = photonControllerConfig.getSchedulerConfig();
     HousekeeperConfig housekeeperConfig = photonControllerConfig.getHousekeeperConfig();
 
     new LoggingFactory(photonControllerConfig.getLogging(), "photon-controller-core").configure();
 
+    // the zk config info is currently taken from the cloud store config but this is temporary as
+    // zookeeper usage is going away so this will all be removed.
     final ZookeeperModule zkModule = new ZookeeperModule(cloudStoreConfig.getZookeeper());
-    final CuratorFramework zkClient = zkModule.getCuratorFramework();
     ThriftModule thriftModule = new ThriftModule();
 
-    List<ServiceHost> serviceHosts = new ArrayList<>();
-    ServiceHost cloudStoreHost = startCloudStore(cloudStoreConfig, zkModule, zkClient, thriftModule);
-    serviceHosts.add(cloudStoreHost);
-    ServiceHost schedulerHost = startScheduler(schedulerConfig, zkModule, zkClient, thriftModule);
-    serviceHosts.add(schedulerHost);
-    ServiceHost housekeeperHost = startHousekeeper(housekeeperConfig, zkModule, zkClient);
-    serviceHosts.add(housekeeperHost);
+    ServiceHost xenonHost = startXenonHost(photonControllerConfig, zkModule, thriftModule);
+
+    // Housekeeper holds on to the thread on start (for thrift) so start it last
+    ServiceHost housekeeperHost = startHousekeeper(housekeeperConfig, zkModule);
 
     Runtime.getRuntime().addShutdownHook(new Thread() {
       @Override
       public void run() {
         logger.info("Shutting down");
-        for (ServiceHost serviceHost : serviceHosts) {
-          serviceHost.stop();
-        }
+        housekeeperHost.stop();
+        xenonHost.stop();
         logger.info("Done");
         LoggingFactory.detachAndStop();
       }
     });
   }
 
-  private static ServiceHost startCloudStore(CloudStoreConfig cloudStoreConfig, ZookeeperModule zkModule,
-                                             CuratorFramework zkClient, ThriftModule thriftModule) throws Throwable {
+  private static ServiceHost startXenonHost(PhotonControllerConfig photonControllerConfig, ZookeeperModule zkModule,
+                                            ThriftModule thriftModule) throws Throwable {
+    final CuratorFramework zkClient = zkModule.getCuratorFramework();
+
+    // Values for CloudStore
     final ServiceConfigFactory serviceConfigFactory = zkModule.getServiceConfigFactory(zkClient);
     final HostClientFactory hostClientFactory = thriftModule.getHostClientFactory();
     final AgentControlClientFactory agentControlClientFactory = thriftModule.getAgentControlClientFactory();
 
-    logger.info("Creating CloudStore Xenon Host");
-    final CloudStoreXenonHost cloudStoreXenonHost = new CloudStoreXenonHost(cloudStoreConfig.getXenonConfig(),
-            hostClientFactory, agentControlClientFactory, serviceConfigFactory);
-    logger.info("Created CloudStore Xenon Host");
+    // Values for Scheduler
+    final ServerSet cloudStoreServerSet = zkModule.getZookeeperServerSet(zkClient,
+            Constants.CLOUDSTORE_SERVICE_NAME, true);
+    final CloudStoreHelper cloudStoreHelper = new CloudStoreHelper(cloudStoreServerSet);
+    final ConstraintChecker checker = new CloudStoreConstraintChecker(cloudStoreHelper);
 
-    logger.info("Starting CloudStore Xenon Host");
-    cloudStoreXenonHost.start();
-    logger.info("Started CloudStore Xenon Host");
+    logger.info("Creating PhotonController Xenon Host");
+    final PhotonControllerXenonHost photonControllerXenonHost =
+            new PhotonControllerXenonHost(photonControllerConfig.getCloudStoreConfig().getXenonConfig(),
+                    hostClientFactory, agentControlClientFactory, serviceConfigFactory, cloudStoreHelper);
+    logger.info("Created PhotonController Xenon Host");
 
-    String cloudStoreXenonAddress = cloudStoreConfig.getXenonConfig().getRegistrationAddress();
-    Integer cloudStoreXenonPort = cloudStoreConfig.getXenonConfig().getPort();
+    logger.info("Creating Cloud Store Xenon Service Group");
+    CloudStoreServiceGroup cloudStoreServiceGroup = createCloudStoreServiceGroup();
+    logger.info("Created Cloud Store Xenon Service Group");
+
+    logger.info("Registering Cloud Store Xenon Service Group");
+    photonControllerXenonHost.registerCloudStore(cloudStoreServiceGroup);
+    logger.info("Registered Cloud Store Xenon Service Group");
+
+    logger.info("Creating Scheduler Xenon Service Group");
+    SchedulerServiceGroup schedulerServiceGroup =
+            createSchedulerServiceGroup(photonControllerConfig.getSchedulerConfig(), checker);
+    logger.info("Created Scheduler Xenon Service Group");
+
+    logger.info("Registering Scheduler Xenon Service Group");
+    photonControllerXenonHost.registerScheduler(schedulerServiceGroup);
+    logger.info("Registered Scheduler Xenon Service Group");
+
+    logger.info("Starting PhotonController Xenon Host");
+    photonControllerXenonHost.start();
+    logger.info("Started PhotonController Xenon Host");
+
+    // For now we register both cloud store and scheduler services with zookeeper so that users of
+    // the services don't need to change their lookup / usage behavior but now we use the same
+    // address / port for both (for now the cloudstore address / port)
+    String cloudStoreXenonAddress =
+            photonControllerConfig.getCloudStoreConfig().getXenonConfig().getRegistrationAddress();
+    Integer cloudStoreXenonPort = photonControllerConfig.getCloudStoreConfig().getXenonConfig().getPort();
     logger.info("Registering CloudStore Xenon Host with Zookeeper at {}:{}",
             cloudStoreXenonAddress, cloudStoreXenonPort);
     registerServiceWithZookeeper(Constants.CLOUDSTORE_SERVICE_NAME, zkModule, zkClient,
             cloudStoreXenonAddress, cloudStoreXenonPort);
     logger.info("Registered CloudStore Xenon Host with Zookeeper");
 
-    return cloudStoreXenonHost;
+    logger.info("Registering Scheduler Xenon Host with Zookeeper at {}:{}",
+            cloudStoreXenonAddress, cloudStoreXenonPort);
+    registerServiceWithZookeeper(Constants.SCHEDULER_SERVICE_NAME, zkModule, zkClient,
+            cloudStoreXenonAddress, cloudStoreXenonPort);
+    logger.info("Registered Scheduler Xenon Host with Zookeeper");
+
+    return photonControllerXenonHost;
   }
 
-  private static ServiceHost startHousekeeper(HousekeeperConfig housekeeperConfig, ZookeeperModule zkModule,
-                                              CuratorFramework zkClient) throws Throwable {
+  private static ServiceHost startHousekeeper(HousekeeperConfig housekeeperConfig, ZookeeperModule zkModule)
+          throws Throwable {
+    final CuratorFramework zkClient = zkModule.getCuratorFramework();
     ServerSet cloudStoreServerSet = zkModule.getZookeeperServerSet(zkClient, Constants.CLOUDSTORE_SERVICE_NAME, true);
     final ServiceConfigFactory serviceConfigFactory = zkModule.getServiceConfigFactory(zkClient);
 
@@ -148,9 +181,6 @@ public class Main {
 
     final CloudStoreHelper cloudStoreHelper = new CloudStoreHelper(cloudStoreServerSet);
     final NsxClientFactory nsxClientFactory = new NsxClientFactory();
-
-
-
 
     logger.info("Creating Housekeeper Xenon Host");
     final HousekeeperXenonServiceHost housekeeperXenonHost = new HousekeeperXenonServiceHost(
@@ -173,32 +203,13 @@ public class Main {
     return housekeeperXenonHost;
   }
 
-  private static ServiceHost startScheduler(RootSchedulerConfig schedulerConfig, ZookeeperModule zkModule,
-                                            CuratorFramework zkClient, ThriftModule thriftModule) throws Throwable {
-    ServerSet cloudStoreServerSet = zkModule.getZookeeperServerSet(zkClient, Constants.CLOUDSTORE_SERVICE_NAME, true);
-    HostClientFactory hostClientFactory = thriftModule.getHostClientFactory();
+  private static CloudStoreServiceGroup createCloudStoreServiceGroup() throws Throwable {
+    return new CloudStoreServiceGroup();
+  }
 
-    final CloudStoreHelper cloudStoreHelper = new CloudStoreHelper(cloudStoreServerSet);
-    final ConstraintChecker checker = new CloudStoreConstraintChecker(cloudStoreHelper);
-
-    logger.info("Creating Scheduler Xenon Host");
-    final SchedulerXenonHost schedulerXenonHost = new SchedulerXenonHost(schedulerConfig.getXenonConfig(),
-            hostClientFactory, schedulerConfig, checker, cloudStoreHelper);
-    logger.info("Created Scheduler Xenon Host");
-
-    logger.info("Starting Scheduler Xenon Host");
-    schedulerXenonHost.start();
-    logger.info("Started Scheduler Xenon Host");
-
-
-    String schedulerXenonAddress = schedulerConfig.getXenonConfig().getRegistrationAddress();
-    Integer schedulerXenonPort = schedulerConfig.getXenonConfig().getPort();
-    logger.info("Registering Scheduler Xenon Host with Zookeeper at {}:{}", schedulerXenonAddress, schedulerXenonPort);
-    registerServiceWithZookeeper(Constants.SCHEDULER_SERVICE_NAME, zkModule, zkClient, schedulerXenonAddress,
-        schedulerXenonPort);
-    logger.info("Registered Scheduler Xenon Host with Zookeeper");
-
-    return schedulerXenonHost;
+  private static SchedulerServiceGroup createSchedulerServiceGroup(RootSchedulerConfig rootSchedulerConfig,
+          ConstraintChecker constraintChecker) throws Throwable {
+    return  new SchedulerServiceGroup(rootSchedulerConfig.getRoot(), constraintChecker);
   }
 
   private static PhotonControllerConfig getPhotonControllerConfig(Namespace namespace) {
