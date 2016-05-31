@@ -252,7 +252,7 @@ public class UploadVibTaskService extends StatefulService {
 
     HttpFileServiceClient httpFileServiceClient = HostUtils.getHttpFileServiceClientFactory(this)
         .create(hostState.hostAddress, hostState.userName, hostState.password);
-    String uploadPath = UriUtils.buildUriPath("tmp", "photon-controller-vibs",
+    String uploadPath = UriUtils.buildUriPath("tmp",
         ServiceUtils.getIDFromDocumentSelfLink(vibState.documentSelfLink), sourceFile.getName());
     ListenableFutureTask<Integer> futureTask = ListenableFutureTask.create(
         httpFileServiceClient.uploadFile(sourceFile.getAbsolutePath(), uploadPath, false));

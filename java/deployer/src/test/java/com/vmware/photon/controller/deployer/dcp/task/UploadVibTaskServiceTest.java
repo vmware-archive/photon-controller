@@ -386,15 +386,14 @@ public class UploadVibTaskServiceTest {
 
       Mockito.verify(httpFileServiceClient).uploadFile(
           eq(sourceFile.getAbsolutePath()),
-          eq("/tmp/photon-controller-vibs/" + ServiceUtils.getIDFromDocumentSelfLink(vibStartState.documentSelfLink) +
-              "/source.vib"),
+          eq("/tmp/" + ServiceUtils.getIDFromDocumentSelfLink(vibStartState.documentSelfLink) + "/source.vib"),
           eq(false));
 
       Mockito.verifyNoMoreInteractions(httpFileServiceClient);
 
       VibService.State vibState = testEnvironment.getServiceState(vibStartState.documentSelfLink,
           VibService.State.class);
-      assertThat(vibState.uploadPath, is("/tmp/photon-controller-vibs/" +
+      assertThat(vibState.uploadPath, is("/tmp/" +
           ServiceUtils.getIDFromDocumentSelfLink(vibStartState.documentSelfLink) + "/source.vib"));
     }
 
@@ -416,15 +415,14 @@ public class UploadVibTaskServiceTest {
 
       Mockito.verify(httpFileServiceClient).uploadFile(
           eq(sourceFile.getAbsolutePath()),
-          eq("/tmp/photon-controller-vibs/" + ServiceUtils.getIDFromDocumentSelfLink(vibStartState.documentSelfLink) +
-              "/source.vib"),
+          eq("/tmp/" + ServiceUtils.getIDFromDocumentSelfLink(vibStartState.documentSelfLink) + "/source.vib"),
           eq(false));
 
       Mockito.verifyNoMoreInteractions(httpFileServiceClient);
 
       VibService.State vibState = testEnvironment.getServiceState(vibStartState.documentSelfLink,
           VibService.State.class);
-      assertThat(vibState.uploadPath, is("/tmp/photon-controller-vibs/" +
+      assertThat(vibState.uploadPath, is("/tmp/" +
           ServiceUtils.getIDFromDocumentSelfLink(vibStartState.documentSelfLink) + "/source.vib"));
     }
 
