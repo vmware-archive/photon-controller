@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.rootscheduler.service;
 
-import com.vmware.photon.controller.rootscheduler.RootSchedulerConfig;
+import com.vmware.photon.controller.rootscheduler.SchedulerConfig;
 import com.vmware.photon.controller.scheduler.gen.PlaceResponse;
 import com.vmware.photon.controller.scheduler.gen.Score;
 
@@ -26,10 +26,10 @@ import java.util.Set;
  * This class is responsible for picking the best placement response.
  */
 public class ScoreCalculator {
-  private final RootSchedulerConfig config;
+  private final SchedulerConfig config;
 
 
-  public ScoreCalculator(RootSchedulerConfig config) {
+  public ScoreCalculator(SchedulerConfig config) {
     this.config = config;
   }
 
@@ -47,7 +47,7 @@ public class ScoreCalculator {
   }
 
   private double score(PlaceResponse placeResponse) {
-    double ratio = this.config.getRoot().getUtilizationTransferRatio();
+    double ratio = this.config.getUtilizationTransferRatio();
     Score score = placeResponse.getScore();
     return (ratio * score.getUtilization() + score.getTransfer()) / (ratio + 1);
   }
