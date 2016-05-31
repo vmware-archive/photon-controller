@@ -35,8 +35,8 @@ import traceback
 from concurrent.futures import ThreadPoolExecutor
 from thrift import TMultiplexedProcessor
 from thrift.protocol import TCompactProtocol
-from thrift.server import TNonblockingServer
 from thrift.transport import TSocket
+from common.photon_thrift.thriftserver import ThriftServer
 
 from .agent_config import AgentConfig
 import common
@@ -137,14 +137,12 @@ class Agent:
         transport = TSocket.TServerSocket(port=self._config.host_port)
         protocol_factory = TCompactProtocol.TCompactProtocolFactory()
 
-        server = TNonblockingServer.TNonblockingServer(
-            mux_processor, transport, protocol_factory, protocol_factory,
-            self._config.host_service_threads)
+        server = ThriftServer(mux_processor, transport, protocol_factory, protocol_factory,
+                              self._config.host_service_threads)
         self._server = server
 
     def _start_thrift_service(self):
-        self._logger.info("Listening on port %s..."
-                          % self._config.host_port)
+        self._logger.info("Listening on port %s..." % self._config.host_port)
         self._server.serve()
 
     def _signal_handler(self, signum, frame):
@@ -173,8 +171,7 @@ class Agent:
         result = []
         for thread_id, stack in sys._current_frames().items():
             result.append("\n* Thread: %s" % thread_id)
-            for file_name, line_number, function_name, text in \
-                    traceback.extract_stack(stack):
+            for file_name, line_number, function_name, text in traceback.extract_stack(stack):
                 text = text.strip() if text else ""
                 result.append("  - File: %s, line %d, in %s  %s" % (
                     file_name, line_number, function_name, text))
