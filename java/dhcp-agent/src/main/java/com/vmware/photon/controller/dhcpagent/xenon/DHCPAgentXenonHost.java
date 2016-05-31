@@ -104,6 +104,7 @@ public class DHCPAgentXenonHost
     return FACTORY_SERVICES;
   }
 
+  @Override
   public BuildInfo getBuildInfo() {
     return this.buildInfo;
   }
