@@ -58,9 +58,6 @@ start() {
     fi
   done
 
-  # Clean up the vib directory
-  rm -rf /tmp/photon-controller-vibs
-
   # Workaround for ESXi 6.0.0 build-3029758, in which python fails to load
   # setuptools by .pth. Add it directly to PYTHONPATH.
   PYTHONPATH=/lib/python$PYVER/site-packages/setuptools-0.6c11-py$PYVER.egg:$PYTHONPATH
