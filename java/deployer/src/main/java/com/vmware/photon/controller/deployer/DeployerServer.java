@@ -18,11 +18,12 @@ import com.vmware.photon.controller.common.thrift.ThriftConfig;
 import com.vmware.photon.controller.common.thrift.ThriftEventHandler;
 import com.vmware.photon.controller.common.thrift.ThriftFactory;
 import com.vmware.photon.controller.common.zookeeper.ServiceNode;
-import com.vmware.photon.controller.common.zookeeper.ServiceNodeFactory;
+import com.vmware.photon.controller.common.zookeeper.ZookeeperModule;
 import com.vmware.photon.controller.deployer.gen.Deployer;
 import com.vmware.photon.controller.deployer.service.DeployerService;
 
 import com.google.common.annotations.VisibleForTesting;
+import org.apache.curator.framework.CuratorFramework;
 import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
 import org.apache.thrift.TMultiplexedProcessor;
 import org.apache.thrift.protocol.TProtocolFactory;
@@ -47,7 +48,8 @@ public class DeployerServer {
 
   private static final Logger logger = LoggerFactory.getLogger(DeployerServer.class);
 
-  private final ServiceNodeFactory serviceNodeFactory;
+  private final ZookeeperModule zkModule;
+  private final CuratorFramework zkClient;
   private final TTransportFactory transportFactory;
   private final TProtocolFactory protocolFactory;
   private final ThriftFactory thriftFactory;
@@ -60,14 +62,16 @@ public class DeployerServer {
   private TServer server;
   private ServiceNode serviceNode;
 
-  public DeployerServer(ServiceNodeFactory serviceNodeFactory,
+  public DeployerServer(ZookeeperModule zkModule,
+                        CuratorFramework zkClient,
                         TProtocolFactory protocolFactory,
                         TTransportFactory transportFactory,
                         ThriftFactory thriftFactory,
                         DeployerService deployerService,
                         ThriftConfig thriftConfig,
                         CloseableHttpAsyncClient httpClient) {
-    this.serviceNodeFactory = serviceNodeFactory;
+    this.zkModule = zkModule;
+    this.zkClient = zkClient;
     this.transportFactory = transportFactory;
     this.protocolFactory = protocolFactory;
     this.thriftFactory = thriftFactory;
@@ -104,7 +108,7 @@ public class DeployerServer {
     // Need to re-fetch local port in case it was 0
     InetSocketAddress registrationSocketAddress = new InetSocketAddress(registrationIpAddress,
         transport.getServerSocket().getLocalPort());
-    serviceNode = serviceNodeFactory.createSimple(Constants.DEPLOYER_SERVICE_NAME, registrationSocketAddress);
+    serviceNode = zkModule.getSimpleServiceNode(zkClient, Constants.DEPLOYER_SERVICE_NAME, registrationSocketAddress);
 
     server.setServerEventHandler(getThriftEventHandler());
 

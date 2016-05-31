@@ -16,15 +16,12 @@ package com.vmware.photon.controller.deployer.service.client;
 import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.dcp.DeployerXenonServiceHost;
 
-import com.google.inject.Inject;
-
 /**
  * Implements a factory for {@link DeploymentWorkFlowServiceClient}.
  */
 public class DeploymentWorkflowServiceClientFactory {
   private DeployerConfig deployerConfig;
 
-  @Inject
   public DeploymentWorkflowServiceClientFactory(DeployerConfig deployerConfig) {
     this.deployerConfig = deployerConfig;
   }

@@ -23,9 +23,7 @@ import com.vmware.photon.controller.common.logging.LoggingFactory;
 import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.photon.controller.common.thrift.ThriftFactory;
 import com.vmware.photon.controller.common.thrift.ThriftModule;
-import com.vmware.photon.controller.common.zookeeper.ServiceNodeFactory;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperModule;
-import com.vmware.photon.controller.common.zookeeper.ZookeeperServerSetFactory;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfigurator;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfiguratorFactory;
 import com.vmware.photon.controller.deployer.dcp.ContainersConfig;
@@ -61,6 +59,7 @@ import com.google.inject.Injector;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.Namespace;
+import org.apache.curator.framework.CuratorFramework;
 import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
 import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
 import org.apache.http.nio.conn.ssl.SSLIOSessionStrategy;
@@ -115,15 +114,8 @@ public class Main {
 
       logger.info("Creating Guice injector");
       Injector injector = Guice.createInjector(
-          new DeployerModule(deployerConfig),
-          new ZookeeperModule(deployerConfig.getZookeeper()),
           new ThriftModule()
       );
-
-      ZookeeperServerSetFactory serverSetFactory = injector.getInstance(ZookeeperServerSetFactory.class);
-      ServerSet deployerServerSet = serverSetFactory.createServiceServerSet(Constants.DEPLOYER_SERVICE_NAME, true);
-      ServerSet cloudStoreServerSet = serverSetFactory.createServiceServerSet(Constants.CLOUDSTORE_SERVICE_NAME, true);
-      ServerSet apiFeServerSet = serverSetFactory.createServiceServerSet(Constants.APIFE_SERVICE_NAME, true);
 
       final CloseableHttpAsyncClient httpClient;
       try {
@@ -139,15 +131,22 @@ public class Main {
         throw new RuntimeException(e);
       }
 
+      final ZookeeperModule zkModule = new ZookeeperModule(deployerConfig.getZookeeper());
+      final CuratorFramework zkClient = zkModule.getCuratorFramework();
+      ServerSet deployerServerSet = zkModule.getZookeeperServerSet(zkClient, Constants.DEPLOYER_SERVICE_NAME, true);
+      ServerSet cloudStoreServerSet = zkModule.getZookeeperServerSet(zkClient, Constants.CLOUDSTORE_SERVICE_NAME, true);
+      ServerSet apiFeServerSet = zkModule.getZookeeperServerSet(zkClient, Constants.APIFE_SERVICE_NAME, true);
+
       final ThriftModule thriftModule = injector.getInstance(ThriftModule.class);
 
       final DeployerXenonServiceHost deployerXenonServiceHost = createDeployerXenonServiceHost(thriftModule,
           deployerConfig, apiFeServerSet, cloudStoreServerSet, httpClient);
 
-      final DeployerService deployerService = createDeployerService(injector, deployerXenonServiceHost,
-          deployerServerSet);
+      final DeployerService deployerService = createDeployerService(deployerConfig, cloudStoreServerSet,
+          deployerXenonServiceHost, deployerServerSet);
 
-      final DeployerServer thriftServer = createDeployerServer(injector, deployerService, deployerConfig, httpClient);
+      final DeployerServer thriftServer = createDeployerServer(injector, zkModule, zkClient, deployerService,
+          deployerConfig, httpClient);
 
       logger.info("Adding shutdown hook");
       Runtime.getRuntime().addShutdownHook(new Thread() {
@@ -251,25 +250,27 @@ public class Main {
   /**
    * Creates a new DeployerService.
    *
-   * @param injector
+   * @param deployerConfig
+   * @param cloudStoreServerSet
    * @param deployerXenonServiceHost
    * @param deployerServerSet
    * @return
    */
-  private static DeployerService createDeployerService(Injector injector,
+  private static DeployerService createDeployerService(DeployerConfig deployerConfig,
+                                                       ServerSet cloudStoreServerSet,
                                                        DeployerXenonServiceHost deployerXenonServiceHost,
                                                        ServerSet deployerServerSet) {
-    final HostServiceClientFactory hostServiceClientFactory = injector.getInstance(HostServiceClientFactory.class);
-    final ChangeHostModeTaskServiceClientFactory changeHostModeTaskServiceClientFactory = injector.getInstance
-        (ChangeHostModeTaskServiceClientFactory.class);
-    final DeploymentWorkflowServiceClientFactory deploymentWorkflowServiceClientFactory = injector.getInstance
-        (DeploymentWorkflowServiceClientFactory.class);
-    final AddHostWorkflowServiceClientFactory addHostWorkflowServiceClientFactory = injector.getInstance
-        (AddHostWorkflowServiceClientFactory.class);
-    final ValidateHostTaskServiceClientFactory validateHostTaskServiceClientFactory = injector.getInstance
-        (ValidateHostTaskServiceClientFactory.class);
-    final DeprovisionHostWorkflowServiceClientFactory deprovisionHostClientFactory = injector
-        .getInstance(DeprovisionHostWorkflowServiceClientFactory.class);
+    final HostServiceClientFactory hostServiceClientFactory = new HostServiceClientFactory(cloudStoreServerSet);
+    final ChangeHostModeTaskServiceClientFactory changeHostModeTaskServiceClientFactory =
+        new ChangeHostModeTaskServiceClientFactory();
+    final DeploymentWorkflowServiceClientFactory deploymentWorkflowServiceClientFactory =
+        new DeploymentWorkflowServiceClientFactory(deployerConfig);
+    final AddHostWorkflowServiceClientFactory addHostWorkflowServiceClientFactory =
+        new AddHostWorkflowServiceClientFactory();
+    final ValidateHostTaskServiceClientFactory validateHostTaskServiceClientFactory =
+        new ValidateHostTaskServiceClientFactory();
+    final DeprovisionHostWorkflowServiceClientFactory deprovisionHostClientFactory =
+        new DeprovisionHostWorkflowServiceClientFactory();
 
     return new DeployerService(deployerServerSet, deployerXenonServiceHost,
         hostServiceClientFactory, changeHostModeTaskServiceClientFactory, deploymentWorkflowServiceClientFactory,
@@ -284,16 +285,18 @@ public class Main {
    * @param deployerConfig
    * @return
    */
-  private static DeployerServer createDeployerServer(Injector injector, DeployerService deployerService,
+  private static DeployerServer createDeployerServer(Injector injector,
+                                                     ZookeeperModule zkModule,
+                                                     CuratorFramework zkClient,
+                                                     DeployerService deployerService,
                                                      DeployerConfig deployerConfig,
                                                      CloseableHttpAsyncClient httpClient) {
     logger.info("Creating Thrift server instance");
-    final ServiceNodeFactory serviceNodeFactory = injector.getInstance(ServiceNodeFactory.class);
     final TProtocolFactory protocolFactory = injector.getInstance(TProtocolFactory.class);
     final TTransportFactory transportFactory = injector.getInstance(TTransportFactory.class);
     final ThriftFactory thriftFactory = injector.getInstance(ThriftFactory.class);
 
-    return new DeployerServer(serviceNodeFactory, protocolFactory, transportFactory,
+    return new DeployerServer(zkModule, zkClient, protocolFactory, transportFactory,
         thriftFactory, deployerService, deployerConfig.getThriftConfig(), httpClient);
   }
 
