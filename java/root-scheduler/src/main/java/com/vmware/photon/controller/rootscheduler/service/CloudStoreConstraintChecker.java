@@ -494,6 +494,16 @@ public class CloudStoreConstraintChecker implements ConstraintChecker {
     // to pings and are marked as active.
     queryBuilder.addFieldClause(HostService.State.FIELD_NAME_AGENT_STATE, AgentState.ACTIVE);
 
+    // Check if management only constraint is present. If not query for only the cloud hosts. This is needed to make
+    // sure that we place all VMs which do not have a MANAGEMENT_ONLY constraint only on the hosts which are tagged
+    // with CLOUD usage tag.
+    if (state.resourceConstraints == null || !(state.resourceConstraints.stream()
+        .filter(rc -> rc.getType() == ResourceConstraintType.MANAGEMENT_ONLY)
+        .findFirst()).isPresent()) {
+      queryBuilder.addCollectionItemClause(HostService.State.FIELD_NAME_USAGE_TAGS, UsageTag.CLOUD.name());
+    }
+
+
     if (state.resourceConstraints != null) {
       for (ResourceConstraint constraint : state.resourceConstraints) {
 
