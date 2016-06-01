@@ -46,4 +46,6 @@ public interface NetworkBackend {
   TaskEntity prepareNetworkDelete(String id) throws ExternalException;
 
   TaskEntity updatePortGroups(String id, List<String> portGroups) throws ExternalException;
+
+  TaskEntity setDefault(String id) throws ExternalException;
 }

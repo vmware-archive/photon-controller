@@ -179,6 +179,11 @@ public class NetworkDcpBackend implements NetworkBackend {
   }
 
   @Override
+  public TaskEntity setDefault(String networkId) throws ExternalException {
+    return null;
+  }
+
+  @Override
   public ResourceList<Network> getPage(String pageLink) throws ExternalException {
     ServiceDocumentQueryResult queryResult = null;
     try {
