@@ -17,6 +17,9 @@ module EsxCloud
       seeder = ManagementPlaneSeeder.new
       image_file = ENV["ESXCLOUD_DISK_BOOTABLE_OVA_IMAGE"] || fail("ESXCLOUD_DISK_BOOTABLE_OVA_IMAGE is not defined")
       image_id = EsxCloud::Image.create(image_file, seeder.random_name("image-"), "EAGER").id
+      network = seeder.create_network
+      network2 = seeder.create_network2
+      availibility_zone = seeder.create_availablity_zone
       2.times do
         tenant = seeder.create_random_tenant
         2.times do
@@ -25,20 +28,21 @@ module EsxCloud
             project = tenant.create_project name: seeder.random_name("project-"), resource_ticket_name: resource_ticket.name, limits: [seeder.create_limit("vm", 10.0, "COUNT"), seeder.create_limit("vm.memory", 50.0, "GB")]
             # create vms
             3.times do
-              seeder.create_vm project, seeder.random_name("vm-"), image_id
+              seeder.create_vm project, seeder.random_name("vm-"), image_id, network
             end
           end
         end
       end
     end
 
-    def create_vm(project, vm_name, image_id)
+    def create_vm(project, vm_name, image_id, network)
       ephemeral_disk = create_ephemeral_disk(random_name("#{vm_name}-disk-e-"))
       persistent_disk = create_persistent_disk(project, random_name("#{vm_name}-disk-"))
       create_vm_spec = { image_id: image_id,
                          name: vm_name,
                          flavor: create_vm_flavor.name,
-                         disks: [ephemeral_disk] }
+                         disks: [ephemeral_disk],
+                         networks: [network.id] }
       vm = project.create_vm create_vm_spec
       vm.attach_disk(persistent_disk.id)
       vm
@@ -95,6 +99,31 @@ module EsxCloud
 
       spec = EsxCloud::FlavorCreateSpec.new name, kind, cost
       EsxCloud::Flavor.create spec
+    end
+
+    def create_network
+      portgroup = get_port_group
+      network_spec = EsxCloud::NetworkCreateSpec.new(random_name("network-"), "VLAN", [portgroup])
+      EsxCloud::Network.create(network_spec)
+    end
+
+    def create_network2
+      portgroup2 = get_port_group2
+      network_spec2 = EsxCloud::NetworkCreateSpec.new(random_name("network-"), "VLAN", [portgroup2])
+      EsxCloud::Network.create(network_spec2)
+    end
+
+    def create_availablity_zone
+      availability_zone_spec = EsxCloud::AvailabilityZoneCreateSpec.new(random_name("availability-zone-"))
+      EsxCloud::AvailabilityZone.create(availability_zone_spec)
+    end
+
+    def get_port_group
+      ENV["ESX_VM_PORT_GROUP"] || "VM Network"
+    end
+
+    def get_port_group2
+      ENV["ESX_VM_PORT_GROUP2"] || "VM Network2"
     end
 
     def create_small_limits
