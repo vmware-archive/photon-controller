@@ -148,8 +148,9 @@ task :clean_hosts, [:dc_yml] do |t, args|
   host_specs = EsxCloud::HostsImporter.import_file  args[:dc_yml]
   host_specs.each do |host|
     puts EsxCloud::HostCleaner.remove_vms host.address, host.username, host.password
-    EsxCloud::HostCleaner.uninstall_vib host.address, host.username, host.password, "esxcloud"
     EsxCloud::HostCleaner.uninstall_vib host.address, host.username, host.password, "photon-controller-agent"
+    EsxCloud::HostCleaner.uninstall_vib host.address, host.username, host.password, "photon-controller-agent-ext"
+    EsxCloud::HostCleaner.uninstall_vib host.address, host.username, host.password, "envoy"
   end
   host_specs.each do |host|
     EsxCloud::HostCleaner.clean_datastores host.address, host.username, host.password
