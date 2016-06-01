@@ -176,8 +176,8 @@ class TestVimClient(unittest.TestCase):
         # listener always gets updated once on add
         assert_that(listener._ds_update_count, is_(1))
 
-        mock_apply = MagicMock(wraps=self.vim_client._vim_cache._apply_ds_update)
-        self.vim_client._vim_cache._apply_ds_update = mock_apply
+        mock_apply = MagicMock(wraps=self.vim_client._vim_cache._update_ds_cache)
+        self.vim_client._vim_cache._update_ds_cache = mock_apply
 
         _, vm, _, _ = self._create_test_vm("ds-update-test")
         task = vm.Destroy()
