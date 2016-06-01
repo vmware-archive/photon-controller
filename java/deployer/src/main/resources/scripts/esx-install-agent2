@@ -39,19 +39,6 @@ do
   esac
 done
 
-function remove_vib() {
-  sshpass -p "$password" ssh -o StrictHostKeyChecking=no ${username}@${host_address} esxcli software vib remove -f -n $1
-  if [[ $? -ne 0 ]]
-  then
-    echo "retrying remove vib"
-    sshpass -p "$password" ssh -o StrictHostKeyChecking=no ${username}@${host_address} esxcli software vib remove -f -n $1
-	  if [[ $? -ne 0 ]]
-	  then
-	    exit 1
-	  fi
-	fi
-}
-
 function install_vib() {
   sshpass -p "$password" ssh -o StrictHostKeyChecking=no ${username}@${host_address} esxcli software vib install -f -v $vib_path
   if [[ $? -ne 0 ]]
@@ -65,13 +52,5 @@ function install_vib() {
 	  fi
 	fi
 }
-
-# Remove agent if existed
-agent_existing=`sshpass -p "$password" ssh -o StrictHostKeyChecking=no ${username}@${host_address} esxcli software vib list | grep photon-controller-agent | wc -l`
-if [ $agent_existing -ne 0 ]
-then
-  sshpass -p "$password" ssh -o StrictHostKeyChecking=no ${username}@${host_address} /etc/init.d/photon-controller-agent stop
-  remove_vib photon-controller-agent
-fi
 
 install_vib
