@@ -213,7 +213,7 @@ class HostClient(object):
     """ Datastore
     """
     @abc.abstractmethod
-    def get_datastore(self, name):
+    def get_datastore_in_cache(self, name):
         pass
 
     @abc.abstractmethod

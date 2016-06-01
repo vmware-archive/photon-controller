@@ -19,10 +19,35 @@ import sys
 from common.lock import lock_with
 from common.blocking_dict import BlockingDict
 from gen.agent.ttypes import VmCache, TaskCache, PowerState, TaskState
+from host.hypervisor.datastore_manager import DatastoreNotFoundException
 from host.hypervisor.vm_manager import VmNotFoundException
 
 from pyVmomi import vim
 from pyVmomi import vmodl
+
+
+class VimDatastore(object):
+    def __init__(self, datastore=None):
+        if datastore:
+            self.name = datastore.name
+            self.capacity = datastore.summary.capacity
+            self.free = datastore.summary.freeSpace
+            self.type = datastore.summary.type
+
+            self.id = None
+            if datastore.info.url:
+                self.id = datastore.info.url.rsplit("/", 1)[1]
+
+            self.local = False
+            if self.type == "VMFS":
+                self.local = datastore.info.vmfs.local
+        else:
+            self.name = None
+            self.capacity = None
+            self.free = 0
+            self.type = None
+            self.id = None
+            self.local = False
 
 
 class VimCache:
@@ -35,7 +60,7 @@ class VimCache:
         self._current_version = None
         self._vm_cache = {}
         self._vm_name_to_ref = BlockingDict()
-        self._ds_name_properties = {}
+        self._ds_cache = {}
         self._lock = threading.RLock()
         self._task_cache = BlockingDict()
 
@@ -44,7 +69,8 @@ class VimCache:
     def _datastore_filter_spec(self, vim_client):
         PC = vmodl.query.PropertyCollector
         traversal_spec = PC.TraversalSpec(name="folderTraversalSpec", type=vim.Folder, path="childEntity", skip=False)
-        property_spec = PC.PropertySpec(type=vim.Datastore, pathSet=["name"])
+        property_spec = PC.PropertySpec(type=vim.Datastore,
+                                        pathSet=["name", "summary.capacity", "summary.freeSpace", "summary.type"])
         from host.hypervisor.esx.vim_client import DATASTORE_FOLDER_NAME
         object_spec = PC.ObjectSpec(obj=vim_client._find_by_inventory_path(DATASTORE_FOLDER_NAME),
                                     selectSet=[traversal_spec])
@@ -93,24 +119,6 @@ class VimCache:
             self._current_version = update.version
         return update
 
-    def _apply_ds_update(self, obj_update):
-        ds_key = str(obj_update.obj)
-        updated = False
-        if obj_update.kind == "enter" or obj_update.kind == "modify":
-            for change in obj_update.changeSet:
-                if change.name == "name":
-                    ds_name = change.val
-                    self._logger.debug("cache update: %s ds name %s" % (obj_update.kind, ds_name))
-                    if ds_key not in self._ds_name_properties or self._ds_name_properties[ds_key] != ds_name:
-                        updated = True
-                    self._ds_name_properties[ds_key] = ds_name
-        elif obj_update.kind == "leave":
-            self._logger.debug("cache update: remove ds ref %s" % ds_key)
-            if ds_key in self._ds_name_properties:
-                del self._ds_name_properties[ds_key]
-                updated = True
-        return updated
-
     @lock_with("_lock")
     def _update_cache(self, vim_client, update):
         if not update or not update.filterSet:
@@ -121,27 +129,23 @@ class VimCache:
             for object in filter.objectSet:
                 # Update Vm cache
                 if isinstance(object.obj, vim.VirtualMachine):
-                    if object.kind == "enter":
-                        # Possible to have 2 enters for one object
-                        self._add_or_modify_vm_cache(object)
+                    if object.kind == "enter" or object.kind == "modify":
+                        self._update_vm_cache(object)
                     elif object.kind == "leave":
-                        assert str(object.obj) in self._vm_cache, "%s not in cache for kind leave" % object.obj
                         self._remove_vm_cache(object)
-                    elif object.kind == "modify":
-                        assert str(object.obj) in self._vm_cache, "%s not in cache for kind modify" % object.obj
-                        self._add_or_modify_vm_cache(object)
                 # Update task cache
                 elif isinstance(object.obj, vim.Task):
-                    if object.kind == "enter":
+                    if object.kind == "enter" or object.kind == "modify":
                         self._update_task_cache(object)
                     elif object.kind == "leave":
                         self._remove_task_cache(object)
-                    elif object.kind == "modify":
-                        self._update_task_cache(object)
                 elif isinstance(object.obj, vim.Datastore):
-                    self._logger.debug("Datastore update: %s" % object)
-                    updated = self._apply_ds_update(object)
-                    ds_updated = ds_updated or updated
+                    if object.kind == "enter" or object.kind == "modify":
+                        if self._update_ds_cache(object):
+                            ds_updated = True
+                    elif object.kind == "leave":
+                        self._remove_ds_cache(object)
+                        ds_updated = True
 
         # Notify listeners.
         if ds_updated:
@@ -149,7 +153,7 @@ class VimCache:
                 self._logger.debug("datastores updated for listener: %s" % listener.__class__.__name__)
                 listener.datastores_updated()
 
-    def _add_or_modify_vm_cache(self, object):
+    def _update_vm_cache(self, object):
         # Type of object.obj is vim.VirtualMachine. str(object.obj) is moref
         # id, something like 'vim.VirtualMachine:1227'. moref id is the unique
         # representation of all objects in esx.
@@ -208,6 +212,45 @@ class VimCache:
             # created with the same name, which cannot be deleted.
             if self._vm_name_to_ref[vm_cache.name] == ref_id:
                 del self._vm_name_to_ref[vm_cache.name]
+
+    def _update_ds_cache(self, object):
+        updated = False
+        key = str(object.obj)
+        if key not in self._ds_cache:
+            ds = VimDatastore()
+        else:
+            ds = self._ds_cache[key]
+
+        for change in object.changeSet:
+            if change.op != "assign":
+                continue
+
+            if change.val is None:
+                continue
+
+            if change.name == "name":
+                self._logger.debug("cache update: %s ds name %s" % (object.kind, change.val))
+                if key not in self._ds_cache or self._ds_cache[key] != change.val:
+                    ds.name = change.val
+                    updated = True
+            elif change.name == "summary.capacity":
+                ds.capacity = change.val
+            elif change.name == "summary.freeSpace":
+                ds.free = change.val
+            elif change.name == "summary.type":
+                ds.type = change.val
+
+        self._logger.debug("cache update: update ds [%s] => %s" % (key, str(ds)))
+        if key not in self._ds_cache:
+            self._ds_cache[key] = ds
+
+        return updated
+
+    def _remove_ds_cache(self, object):
+        key = str(object.obj)
+        self._logger.debug("cache update: remove ds %s" % key)
+        if key in self._ds_cache:
+            del self._ds_cache[key]
 
     def _update_task_cache(self, object):
         task_cache = TaskCache()
@@ -270,6 +313,13 @@ class VimCache:
             return copy.copy(vm)
         else:
             raise VmNotFoundException("VM '%s' not found on host." % vm_id)
+
+    @lock_with("_lock")
+    def get_ds_in_cache(self, ds_name):
+        for ds in self._ds_cache:
+            if ds.name == ds_name:
+                return ds
+        raise DatastoreNotFoundException("Datastore '%s' not found on host." % ds_name)
 
     def wait_for_task(self, vim_task, timeout):
         return self._task_cache.wait_until(str(vim_task), self._verify_task_done, timeout=timeout)
