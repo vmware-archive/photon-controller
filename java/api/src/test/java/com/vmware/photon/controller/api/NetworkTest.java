@@ -48,6 +48,7 @@ public class NetworkTest {
     network.setDescription("VM Network");
     network.setState(NetworkState.READY);
     network.setPortGroups(ImmutableList.of("PG1", "PG2"));
+    network.setIsDefault(false);
     return network;
   }
 
@@ -99,7 +100,7 @@ public class NetworkTest {
     @Test
     public void testCorrectString() {
       String expectedString =
-          "Network{id=id, Kind=network, state=READY, description=VM Network, portGroups=[PG1, PG2]}";
+          "Network{id=id, Kind=network, state=READY, description=VM Network, portGroups=[PG1, PG2], isDefault=false}";
       Network network = createValidNetwork();
       assertThat(network.toString(), is(expectedString));
     }

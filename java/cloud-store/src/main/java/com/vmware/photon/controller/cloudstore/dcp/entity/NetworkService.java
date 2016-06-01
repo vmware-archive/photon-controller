@@ -22,6 +22,7 @@ import com.vmware.photon.controller.common.xenon.ValidationUtils;
 import com.vmware.photon.controller.common.xenon.deployment.MigrateDuringDeployment;
 import com.vmware.photon.controller.common.xenon.migration.MigrateDuringUpgrade;
 import com.vmware.photon.controller.common.xenon.migration.MigrationUtils;
+import com.vmware.photon.controller.common.xenon.validation.DefaultBoolean;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotBlank;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
@@ -143,5 +144,8 @@ public class NetworkService extends StatefulService {
 
     @NotNull
     public List<String> portGroups;
+
+    @DefaultBoolean(false)
+    public Boolean isDefault;
   }
 }
