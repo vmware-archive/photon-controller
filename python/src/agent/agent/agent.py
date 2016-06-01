@@ -32,7 +32,6 @@ import threading
 import time
 import traceback
 
-from concurrent.futures import ThreadPoolExecutor
 from thrift import TMultiplexedProcessor
 from thrift.protocol import TCompactProtocol
 from thrift.server import TNonblockingServer
@@ -44,7 +43,6 @@ import common.file_util
 from common.exclusive_set import ExclusiveSet
 from common.mode import Mode
 from common.plugin import load_plugins, thrift_services
-from common.request_id import RequestIdExecutor
 from common.service_name import ServiceName
 from common.state import State
 
@@ -156,10 +154,6 @@ class Agent:
     def _register_services(self):
         common.services.register(ServiceName.AGENT_CONFIG, self._config)
         common.services.register(ServiceName.LOCKED_VMS, ExclusiveSet())
-
-        threadpool = RequestIdExecutor(
-            ThreadPoolExecutor(self._config.workers))
-        common.services.register(ThreadPoolExecutor, threadpool)
 
         state_json_file = os.path.join(
             self._config.options.config_path,

@@ -21,7 +21,8 @@ from logging.handlers import RotatingFileHandler
 from logging.handlers import SysLogHandler
 
 import common.excepthook
-from common.request_id import RequestIdFilter
+from common import services
+from common.service_name import ServiceName
 from common.thread import ThreadIdFilter
 from common.thread import WorkerThreadNameFilter
 
@@ -64,6 +65,21 @@ class GzipRotatingFileHandler(RotatingFileHandler):
 
         self.mode = 'w'
         self.stream = self._open()
+
+
+class RequestIdFilter(object):
+    """Request id context log filter."""
+
+    def __init__(self):
+        self._request_id = services.get(ServiceName.REQUEST_ID)
+
+    def filter(self, record):
+        if ((hasattr(self._request_id, "value") and
+             len(self._request_id.value) > 0)):
+            record.request_id = " [Request:%s]" % self._request_id.value[-1]
+        else:
+            record.request_id = ""
+        return True
 
 
 # TODO(vspivak): replace with logging.config

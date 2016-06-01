@@ -11,7 +11,6 @@
 # under the License.
 import os
 import tempfile
-from concurrent.futures import ThreadPoolExecutor
 from mock import MagicMock
 
 import common
@@ -27,9 +26,7 @@ class ServicesHelper:
         self.setup()
 
     def setup(self):
-        self._threadpool = ThreadPoolExecutor(16)
         self.state_file = tempfile.mktemp()
-        common.services.register(ThreadPoolExecutor, self._threadpool)
         self._host_handler = MagicMock()
         common.services.register(Host.Iface, self._host_handler)
         common.services.register(ServiceName.MODE,
