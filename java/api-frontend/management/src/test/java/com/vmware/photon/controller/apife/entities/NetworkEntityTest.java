@@ -39,10 +39,12 @@ public class NetworkEntityTest {
     networkEntity.setName("network1");
     networkEntity.setDescription("VLAN");
     networkEntity.setPortGroups("[\"PG1\",\"PG2\"]");
+    networkEntity.setIsDefault(false);
 
     assertThat(networkEntity.getName(), is("network1"));
     assertThat(networkEntity.getDescription(), is("VLAN"));
     assertThat(networkEntity.getPortGroups(), is("[\"PG1\",\"PG2\"]"));
+    assertThat(networkEntity.getIsDefault(), is(false));
   }
 
   @DataProvider(name = "getSetValidStateParams")

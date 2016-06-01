@@ -108,6 +108,7 @@ public class NetworkServiceTest {
       testNetwork.portGroups = new ArrayList<>();
       testNetwork.portGroups.add("PG1");
       testNetwork.portGroups.add("PG2");
+      testNetwork.isDefault = false;
     }
 
     @AfterMethod
@@ -193,6 +194,7 @@ public class NetworkServiceTest {
       testNetwork.portGroups = new ArrayList<>();
       testNetwork.portGroups.add("PG1");
       testNetwork.portGroups.add("PG2");
+      testNetwork.isDefault = false;
     }
 
     @AfterMethod
@@ -236,6 +238,7 @@ public class NetworkServiceTest {
       patchState.portGroups = new ArrayList<>();
       patchState.state = NetworkState.PENDING_DELETE;
       patchState.deleteRequestTime = System.currentTimeMillis();
+      patchState.isDefault = true;
 
       Operation patch = Operation
           .createPatch(UriUtils.buildUri(host, BasicServiceHost.SERVICE_URI, null))
@@ -249,6 +252,7 @@ public class NetworkServiceTest {
       assertThat(savedState.name, is(testNetwork.name));
       assertThat(savedState.state, is(NetworkState.PENDING_DELETE));
       assertThat(savedState.deleteRequestTime, is(patchState.deleteRequestTime));
+      assertThat(savedState.isDefault, is(patchState.isDefault));
     }
 
   }

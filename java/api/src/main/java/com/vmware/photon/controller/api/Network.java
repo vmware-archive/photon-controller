@@ -60,6 +60,10 @@ public class Network extends VisibleModel {
   @NotNull
   private List<String> portGroups;
 
+  @JsonProperty
+  @ApiModelProperty(value = "Indicates whether the network is default for VM creation", required = false)
+  private Boolean isDefault;
+
   @Override
   public String getKind() {
     return kind;
@@ -89,6 +93,14 @@ public class Network extends VisibleModel {
     this.portGroups = portGroups;
   }
 
+  public Boolean getIsDefault() {
+    return isDefault;
+  }
+
+  public void setIsDefault(Boolean isDefault) {
+    this.isDefault = isDefault;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -103,7 +115,8 @@ public class Network extends VisibleModel {
     return super.equals(other) &&
         Objects.equals(this.getDescription(), other.getDescription()) &&
         Objects.equals(this.getState(), other.getState()) &&
-        Objects.equals(this.getPortGroups(), other.getPortGroups());
+        Objects.equals(this.getPortGroups(), other.getPortGroups()) &&
+        Objects.equals(this.getIsDefault(), other.getIsDefault());
   }
 
   @Override
@@ -116,6 +129,7 @@ public class Network extends VisibleModel {
     return super.toStringHelper()
         .add("state", getState())
         .add("description", getDescription())
-        .add("portGroups", getPortGroups());
+        .add("portGroups", getPortGroups())
+        .add("isDefault", getIsDefault());
   }
 }

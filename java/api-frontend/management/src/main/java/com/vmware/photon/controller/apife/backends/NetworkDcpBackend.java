@@ -252,6 +252,7 @@ public class NetworkDcpBackend implements NetworkBackend {
     networkEntity.setDescription(network.description);
     networkEntity.setState(network.state);
     networkEntity.setPortGroups(getPortGroupsJSONString(network.portGroups));
+    networkEntity.setIsDefault(network.isDefault);
     networkEntity.setId(ServiceUtils.getIDFromDocumentSelfLink(network.documentSelfLink));
 
     return networkEntity;
@@ -264,6 +265,7 @@ public class NetworkDcpBackend implements NetworkBackend {
     network.setState(entity.getState());
     network.setDescription(entity.getDescription());
     network.setPortGroups(getPortGroupsFromJSONString(entity.getPortGroups()));
+    network.setIsDefault(entity.getIsDefault());
 
     return network;
   }

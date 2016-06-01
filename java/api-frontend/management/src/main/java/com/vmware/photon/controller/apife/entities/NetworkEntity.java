@@ -31,13 +31,7 @@ public class NetworkEntity extends BaseEntity implements Named {
 
   private String portGroups;
 
-  public NetworkEntity() {
-  }
-
-  public NetworkEntity(String name, String portGroups) {
-    this.name = name;
-    this.portGroups = portGroups;
-  }
+  private Boolean isDefault;
 
   @Override
   public String getKind() {
@@ -78,5 +72,13 @@ public class NetworkEntity extends BaseEntity implements Named {
 
   public void setPortGroups(String portGroups) {
     this.portGroups = portGroups;
+  }
+
+  public Boolean getIsDefault() {
+    return isDefault;
+  }
+
+  public void setIsDefault(Boolean isDefault) {
+    this.isDefault = isDefault;
   }
 }
