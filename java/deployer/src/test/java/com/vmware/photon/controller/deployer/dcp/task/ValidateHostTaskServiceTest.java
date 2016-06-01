@@ -13,8 +13,10 @@
 
 package com.vmware.photon.controller.deployer.dcp.task;
 
+import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
+import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
@@ -502,6 +504,26 @@ public class ValidateHostTaskServiceTest {
       assertThat(finalState.taskState.resultCode,
           is(ValidateHostTaskService.TaskState.ResultCode.ManagementVmAddressAlreadyInUse));
     }
+
+    @Test
+    public void testEndToEndFailureValdidateUniqueMgmtVmAddress() throws Throwable {
+      cloudStoreMachine.sendPostAndWait(HostServiceFactory.SELF_LINK, buildValidHost());
+
+      MockHelper.mockHttpFileServiceClient(httpFileServiceClientFactory, true);
+      doReturn(true).when(hostManagementVmAddressValidator).call();
+
+      ValidateHostTaskService.State finalState =
+          testEnvironment.callServiceAndWaitForState(
+              ValidateHostTaskFactoryService.SELF_LINK,
+              startState,
+              ValidateHostTaskService.State.class,
+              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
+
+      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
+      String expectedMessage
+        = "The managementIp [differentHostAddress] is already assign to host [managementNetworkIp].";
+      assertThat(finalState.taskState.failure.message, is(expectedMessage));
+    }
   }
 
   private ValidateHostTaskService.State buildValidStartupState() {
@@ -535,6 +557,25 @@ public class ValidateHostTaskServiceTest {
     state.dataStores.add("datastore1");
     state.dataStores.add("datastore2");
     return state;
+  }
+
+  private HostService.State buildValidHost() {
+    HostService.State host = new HostService.State();
+    host.hostAddress = "differentHostAddress";
+    host.userName = "userName";
+    host.password = "password";
+    host.usageTags = new HashSet<>(Arrays.asList(UsageTag.CLOUD.name(), UsageTag.MGMT.name()));
+    host.metadata = new HashMap<>();
+    host.metadata.put(HostService.State.METADATA_KEY_NAME_MANAGEMENT_DATASTORE, "managementDatastore");
+    host.metadata.put(HostService.State.METADATA_KEY_NAME_MANAGEMENT_NETWORK_DNS_SERVER, "managementNetworkDnsServer");
+    host.metadata.put(HostService.State.METADATA_KEY_NAME_MANAGEMENT_NETWORK_GATEWAY, "managementNetworkGateway");
+    host.metadata.put(HostService.State.METADATA_KEY_NAME_MANAGEMENT_PORTGROUP, "managementPortGroup");
+    host.metadata.put(HostService.State.METADATA_KEY_NAME_MANAGEMENT_NETWORK_IP, "managementNetworkIp");
+    host.metadata.put(HostService.State.METADATA_KEY_NAME_MANAGEMENT_NETWORK_NETMASK, "managementNetworkNetmask");
+    host.metadata.put(HostService.State.METADATA_KEY_NAME_ALLOWED_DATASTORES, "datastore1, datastore2");
+    host.metadata.put(HostService.State.METADATA_KEY_NAME_ALLOWED_NETWORKS, "VM Network, Management VLan");
+    host.state = HostState.CREATING;
+    return host;
   }
 
   private ValidateHostTaskService.State buildValidPatchState() {
