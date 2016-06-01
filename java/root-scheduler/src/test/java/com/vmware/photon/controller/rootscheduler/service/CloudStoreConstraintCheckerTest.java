@@ -296,6 +296,24 @@ public class CloudStoreConstraintCheckerTest {
       assertThat(hostId, startsWith(CLOUD_HOST_PREFIX));
     }
 
+    // Verify we can find only cloud hosts when the resource constraint list is null
+    selectedHosts = checker.getCandidatesSync(null, 2);
+    assertThat(selectedHosts.size(), equalTo(2));
+    for (String hostId : selectedHosts.keySet()) {
+      assertThat(hostId, startsWith(CLOUD_HOST_PREFIX));
+    }
+
+    // Verify we can find just the cloud host which has the datastore and not the management host which has the same
+    // datastore when MANAGEMENT_ONLY constraint is not set
+    List<String> datastoreList = new ArrayList<>();
+    datastoreList.addAll(cloudHosts.get(0).reportedDatastores);
+    constraint = new ResourceConstraint(ResourceConstraintType.DATASTORE, datastoreList);
+    selectedHosts = checker.getCandidatesSync(Arrays.asList(constraint), 1);
+    assertThat(selectedHosts.size(), equalTo(1));
+    for (String hostId : selectedHosts.keySet()) {
+      assertThat(hostId, startsWith(CLOUD_HOST_PREFIX));
+    }
+
     deleteDatastores(cloudStoreEnvironment, datastores);
     deleteHosts(cloudStoreEnvironment, cloudHosts);
     deleteHosts(cloudStoreEnvironment, managementHosts);

@@ -55,6 +55,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
 /**
  * Test the Constraint Checkers.
@@ -191,7 +192,6 @@ public class ConstraintCheckerTest {
     // This tests does tens of thousands of operation. We only log failures, so we can see what's happening.
     xenonRestClient.start();
     return new Object[][]{
-        {new InMemoryConstraintChecker(xenonRestClient)},
         { new CloudStoreConstraintChecker(cloudStoreHelper) },
     };
   }
@@ -202,10 +202,10 @@ public class ConstraintCheckerTest {
     Set<String> hosts = getManagementHosts(checker, 5);
     assertThat(hosts, containsInAnyOrder("host0", "host2", "host4", "host6", "host8"));
 
-    hosts = getHosts(checker, expectedHosts.size());
-    assertEquals(hosts, expectedHosts.keySet());
+    hosts = getHosts(checker, 5);
+    assertThat(hosts, containsInAnyOrder("host1", "host3", "host5", "host7", "host9"));
 
-    for (int i = 0; i < expectedHosts.size(); i++) {
+    for (int i = 1; i < expectedHosts.size(); i += 2) {
       String hostName = "host" + i;
       String dsName = "ds" + i;
       String dsTag = "dstag" + i;
@@ -222,12 +222,12 @@ public class ConstraintCheckerTest {
         assertThat(hosts, containsInAnyOrder(hostName));
         hosts = getHostsNotInAvailabilityZone(checker, azName, expectedHosts.size());
         assertEquals(hosts,
-            Sets.filter(expectedHosts.keySet(), Predicates.not(Predicates.equalTo(hostName))));
+            Sets.filter(getCloudHosts().keySet(), Predicates.not(Predicates.equalTo(hostName))));
       } else {
         hosts = getHostsInAvailabilityZone(checker, azName, expectedHosts.size());
         assertThat(hosts.size(), is(0));
         hosts = getHostsNotInAvailabilityZone(checker, azName, expectedHosts.size());
-        assertEquals(hosts, expectedHosts.keySet());
+        assertEquals(hosts, getCloudHosts().keySet());
       }
     }
   }
@@ -235,13 +235,13 @@ public class ConstraintCheckerTest {
   public void testSingleConstraint(ConstraintChecker checker) {
     logger.info("Testing that {} can find candidates for single constraints...", checker.getClass().getSimpleName());
     Map<String, ServerAddress> allHosts = checker.getCandidatesSync(Collections.emptyList(), expectedHosts.size());
-    assertEquals(allHosts.keySet(), expectedHosts.keySet());
+    assertEquals(allHosts.keySet(), getCloudHosts().keySet());
     for (Map.Entry<String, ServerAddress> entry: allHosts.entrySet()) {
       assertThat(entry.getKey(), is(entry.getValue().getHost()));
       assertThat(entry.getValue().getPort(), is(ConstraintChecker.DEFAULT_AGENT_PORT));
     }
 
-    for (int i = 0; i < expectedHosts.size(); i++) {
+    for (int i = 1; i < expectedHosts.size(); i += 2) {
       String hostName = "host" + i;
       ServerAddress address = new ServerAddress(hostName, ConstraintChecker.DEFAULT_AGENT_PORT);
 
@@ -257,7 +257,7 @@ public class ConstraintCheckerTest {
       constraints = new LinkedList<>();
       constraints.add(constraint);
       candidates = checker.getCandidatesSync(constraints, expectedHosts.size());
-      assertThat(candidates.size(), is(expectedHosts.size() - 1));
+      assertThat(candidates.size(), is(getCloudHosts().size() - 1));
       assertEquals(candidates,
           Maps.filterKeys(candidates, Predicates.not(Predicates.equalTo(hostName))));
 
@@ -303,12 +303,12 @@ public class ConstraintCheckerTest {
       constraints.add(constraint);
       candidates = checker.getCandidatesSync(constraints, expectedHosts.size());
       if (i != 9) {
-        assertThat(candidates.size(), is(expectedHosts.size() - 1));
+        assertThat(candidates.size(), is(getCloudHosts().size() - 1));
         assertEquals(candidates,
             Maps.filterKeys(candidates, Predicates.not(Predicates.equalTo(hostName))));
       } else {
-        assertThat(candidates.size(), is(expectedHosts.size()));
-        assertThat(candidates.keySet(), is(expectedHosts.keySet()));
+        assertThat(candidates.size(), is(getCloudHosts().size()));
+        assertThat(candidates.keySet(), is(getCloudHosts().keySet()));
       }
     }
   }
@@ -368,6 +368,12 @@ public class ConstraintCheckerTest {
     constraints.add(new ResourceConstraint(ResourceConstraintType.DATASTORE, Arrays.asList("ds1")));
     constraints.add(new ResourceConstraint(ResourceConstraintType.NETWORK, Arrays.asList("nw2")));
     assertTrue(checker.getCandidatesSync(constraints, 2).isEmpty());
+  }
+
+  private Map<String, HostService.State> getCloudHosts() {
+    return expectedHosts.entrySet().stream()
+        .filter(map -> map.getValue().usageTags.contains(UsageTag.CLOUD.name()))
+        .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
   }
 
   private Set<String> getManagementHosts(ConstraintChecker checker, int numCandidates) {
