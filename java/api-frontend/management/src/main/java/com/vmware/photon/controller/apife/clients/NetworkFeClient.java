@@ -69,6 +69,11 @@ public class NetworkFeClient {
     return taskBackend.getApiRepresentation(taskEntity);
   }
 
+  public Task setDefault(String networkId) throws ExternalException {
+    TaskEntity taskEntity = networkBackend.setDefault(networkId);
+    return taskBackend.getApiRepresentation(taskEntity);
+  }
+
   public ResourceList<Network> getPage(String pageLink) throws ExternalException {
     return networkBackend.getPage(pageLink);
   }

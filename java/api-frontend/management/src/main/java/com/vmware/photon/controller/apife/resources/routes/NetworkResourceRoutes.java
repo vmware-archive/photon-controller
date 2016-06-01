@@ -23,4 +23,6 @@ public class NetworkResourceRoutes {
   public static final String NETWORK_PATH = "/networks/{id}";
 
   public static final String NETWORK_SET_PORTGROUPS_PATH = "/networks/{id}/set_portgroups";
+
+  public static final String NETWORK_SET_DEFAULT_PATH = "/networks/{id}/set_default";
 }
