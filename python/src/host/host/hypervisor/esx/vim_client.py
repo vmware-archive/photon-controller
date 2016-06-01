@@ -44,6 +44,7 @@ from host.hypervisor.esx.path_util import os_to_datastore_path
 from host.hypervisor.esx.path_util import datastore_to_os_path
 from host.hypervisor.esx.path_util import is_persistent_disk
 from host.hypervisor.esx.vim_cache import SyncVimCacheThread
+from host.hypervisor.esx.vim_cache import VimDatastore
 from host.hypervisor.esx.vim_cache import VimCache
 from host.hypervisor.esx.vm_config import uuid_to_vmdk_uuid
 from host.hypervisor.esx.vm_config import EsxVmConfigSpec
@@ -88,22 +89,6 @@ class DatastoreNotFound(Exception):
 
 class AcquireCredentialsException(Exception):
     pass
-
-
-class VimDatastore(object):
-    def __init__(self, datastore):
-        self.name = datastore.name
-        self.capacity = datastore.summary.capacity
-        self.free = datastore.summary.freeSpace
-        self.type = datastore.summary.type
-
-        self.id = None
-        if datastore.info.url:
-            self.id = datastore.info.url.rsplit("/", 1)[1]
-
-        self.local = False
-        if self.type == "VMFS":
-            self.local = datastore.info.vmfs.local
 
 
 def hostd_error_handler(func):
@@ -386,7 +371,7 @@ class VimClient(HostClient):
         return vm
 
     @hostd_error_handler
-    def get_datastore(self, name):
+    def get_datastore_in_cache(self, name):
         """Get a datastore network for this host.
         :param name: datastore name
         :type name: str

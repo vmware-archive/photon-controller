@@ -275,7 +275,7 @@ class AttacheClient(HostClient):
     """ Datastore
     """
     @attache_error_handler
-    def get_datastore(self, name):
+    def get_datastore_in_cache(self, name):
         for ds in self._client.GetDatastores(self._session):
             if ds.name == name:
                 return ds
