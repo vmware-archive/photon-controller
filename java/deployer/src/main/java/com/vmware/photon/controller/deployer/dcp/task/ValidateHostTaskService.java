@@ -37,12 +37,15 @@ import com.vmware.photon.controller.deployer.deployengine.HttpFileServiceClient;
 import com.vmware.photon.controller.deployer.service.exceptions.ExistHostWithSameAddressException;
 import com.vmware.photon.controller.deployer.service.exceptions.InvalidLoginException;
 import com.vmware.photon.controller.deployer.service.exceptions.ManagementVmAddressAlreadyInUseException;
+import com.vmware.photon.controller.deployer.service.exceptions.ManagementVmAddressAlreadyAssignedToHost;
 import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.OperationSequence;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.QueryTask;
+import com.vmware.xenon.services.common.QueryTask.QuerySpecification.QueryOption;
 import com.vmware.xenon.services.common.ServiceUriPaths;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -53,9 +56,12 @@ import com.google.common.util.concurrent.ListenableFutureTask;
 import javax.annotation.Nullable;
 
 import java.net.URI;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * This class implements a DCP micro-service which validates and adds ESX host.
@@ -78,7 +84,8 @@ public class ValidateHostTaskService extends StatefulService {
     public enum ResultCode {
       ExistHostWithSameAddress,
       InvalidLogin,
-      ManagementVmAddressAlreadyInUse
+      ManagementVmAddressAlreadyInUse,
+      ManagementVmAddressAlreadyAssigned
     }
   }
 
@@ -235,6 +242,82 @@ public class ValidateHostTaskService extends StatefulService {
    * @throws Throwable
    */
   private void validateHost(State state) throws Throwable {
+    CloudStoreHelper cloudStoreHelper = ((DeployerXenonServiceHost) getHost()).getCloudStoreHelper();
+    URI cloudStoreUri = cloudStoreHelper.getCloudStoreURI(null);
+
+    Operation uniqueHostIpQuery = buildUniqueHostIpQuery(state, cloudStoreUri);
+    Operation allMgmtHostsQuery = buildAllMgmtHostsQuery(cloudStoreUri);
+
+    OperationSequence.create(uniqueHostIpQuery, allMgmtHostsQuery)
+      .setCompletion((os, ts) -> {
+        if (null != ts && !ts.isEmpty()) {
+          failTask(ts.values());
+          return;
+        }
+
+        try {
+          if (!QueryTaskUtils.getBroadcastQueryDocumentLinks(os.get(uniqueHostIpQuery.getId())).isEmpty()) {
+            throw new ExistHostWithSameAddressException(
+                String.format("Found existing HostService entity with the same hostAddress %s", state.hostAddress));
+          }
+          validateMgmtVmIpNotAssigned(state, allMgmtHostsQuery, os);
+          // validateHostCredentials needs to go last because it is switching thread context and sending self patches.
+          validateHostCredentials(state);
+        } catch (ExistHostWithSameAddressException t) {
+          failTask(t, TaskState.ResultCode.ExistHostWithSameAddress);
+        } catch (ManagementVmAddressAlreadyAssignedToHost t) {
+          failTask(t, TaskState.ResultCode.ManagementVmAddressAlreadyAssigned);
+        } catch (Throwable t) {
+          failTask(t);
+        }
+      })
+      .sendWith(this);
+  }
+
+  private void validateMgmtVmIpNotAssigned(State state, Operation allMgmtHostsQuery, Map<Long, Operation> os)
+      throws ManagementVmAddressAlreadyAssignedToHost {
+    List<HostService.State> mgmtHosts =
+        QueryTaskUtils.getBroadcastQueryDocuments(HostService.State.class, os.get(allMgmtHostsQuery.getId()));
+    List<HostService.State> mgmtHostsWithSameMgmtVmIp = mgmtHosts.stream()
+        .filter(host -> host.metadata.get(HostService.State.METADATA_KEY_NAME_MANAGEMENT_NETWORK_IP)
+            .equals(state.metadata.get(HostService.State.METADATA_KEY_NAME_MANAGEMENT_NETWORK_IP)))
+        .collect(Collectors.toList());
+    if (!mgmtHostsWithSameMgmtVmIp.isEmpty()) {
+      throw new ManagementVmAddressAlreadyAssignedToHost(
+          String.format("The managementIp [%s] is already assign to host [%s].",
+              state.metadata.get(HostService.State.METADATA_KEY_NAME_MANAGEMENT_NETWORK_IP),
+              mgmtHostsWithSameMgmtVmIp.iterator().next().hostAddress));
+    }
+  }
+
+  private Operation buildAllMgmtHostsQuery(URI cloudStoreUri) {
+    QueryTask.Query kindClause = new QueryTask.Query()
+        .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
+        .setTermMatchValue(Utils.buildKind(HostService.State.class));
+
+    String usageTagsKey = QueryTask.QuerySpecification.buildCollectionItemName(
+        HostService.State.FIELD_NAME_USAGE_TAGS);
+
+    QueryTask.Query mgmtUsageTagClause = new QueryTask.Query()
+        .setTermPropertyName(usageTagsKey)
+        .setTermMatchValue(UsageTag.MGMT.name());
+
+    QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
+    querySpecification.query.addBooleanClause(kindClause);
+    querySpecification.query.addBooleanClause(mgmtUsageTagClause);
+    querySpecification.options.add(QueryOption.EXPAND_CONTENT);
+
+    QueryTask queryTask = QueryTask.create(querySpecification).setDirect(true);
+
+    return Operation
+        .createPost(UriUtils.buildBroadcastRequestUri(
+            UriUtils.buildUri(cloudStoreUri, ServiceUriPaths.CORE_LOCAL_QUERY_TASKS),
+            ServiceUriPaths.DEFAULT_NODE_SELECTOR))
+        .setBody(queryTask)
+        .setReferer(UriUtils.buildUri(getHost(), getSelfLink()));
+  }
+
+  private Operation buildUniqueHostIpQuery(State state, URI cloudStoreUri) {
     Map<String, String> criteria = new HashMap<>();
     criteria.put(HostService.State.FIELD_NAME_HOST_ADDRESS, state.hostAddress);
 
@@ -257,40 +340,13 @@ public class ValidateHostTaskService extends StatefulService {
     buildQuerySpecification(querySpecification, exclusionCriteria, true);
 
     QueryTask queryTask = QueryTask.create(querySpecification).setDirect(true);
-    CloudStoreHelper cloudStoreHelper = ((DeployerXenonServiceHost) getHost()).getCloudStoreHelper();
-    URI uri = cloudStoreHelper.getCloudStoreURI(null);
 
-    Operation.CompletionHandler completionHandler = new Operation.CompletionHandler() {
-      @Override
-      public void handle(Operation operation, Throwable throwable) {
-        if (null != throwable) {
-          failTask(throwable);
-          return;
-        }
-
-        try {
-          if (!QueryTaskUtils.getBroadcastQueryDocumentLinks(operation).isEmpty()) {
-            throw new ExistHostWithSameAddressException(
-                String.format("Find existing HostService entity with the same hostAddress %s", state.hostAddress));
-          }
-          validateHostCredentials(state);
-        } catch (ExistHostWithSameAddressException t) {
-          failTask(t, TaskState.ResultCode.ExistHostWithSameAddress);
-        } catch (Throwable t) {
-          failTask(t);
-        }
-      }
-    };
-
-    Operation queryOperation = Operation
+    return Operation
         .createPost(UriUtils.buildBroadcastRequestUri(
-            UriUtils.buildUri(uri, ServiceUriPaths.CORE_LOCAL_QUERY_TASKS),
+            UriUtils.buildUri(cloudStoreUri, ServiceUriPaths.CORE_LOCAL_QUERY_TASKS),
             ServiceUriPaths.DEFAULT_NODE_SELECTOR))
         .setBody(queryTask)
-        .setReferer(UriUtils.buildUri(getHost(), getSelfLink()))
-        .setCompletion(completionHandler);
-
-    sendRequest(queryOperation);
+        .setReferer(UriUtils.buildUri(getHost(), getSelfLink()));
   }
 
   private QueryTask.QuerySpecification buildQuerySpecification(
@@ -439,6 +495,17 @@ public class ValidateHostTaskService extends StatefulService {
   private void failTask(Throwable e) {
     ServiceUtils.logSevere(this, e);
     TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, e));
+  }
+
+  /**
+   * This method sends a patch operation to the current service instance
+   * to moved to the FAILED state in response to the specified exception.
+   *
+   * @param e
+   */
+  private void failTask(Collection<Throwable> es) {
+    ServiceUtils.logSevere(this, es);
+    TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, es.iterator().next()));
   }
 
   /**
