@@ -24,7 +24,6 @@ from common.mode import MODE, Mode
 from common.service_name import ServiceName
 from common.state import State as CommonState
 from common.task_runner import TaskAlreadyRunning
-from concurrent.futures import ThreadPoolExecutor
 from gen.common.ttypes import ServerAddress
 from gen.flavors.ttypes import Flavor
 from gen.flavors.ttypes import QuotaLineItem
@@ -105,11 +104,8 @@ class HostHandlerTestCase(unittest.TestCase):
     REGEX_TIME = "^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)*$"
 
     def setUp(self):
-        self._threadpool = ThreadPoolExecutor(16)
         self.state_file = tempfile.mktemp()
         self.state = CommonState(self.state_file)
-
-        common.services.register(ThreadPoolExecutor, self._threadpool)
 
         common.services.register(ServiceName.REQUEST_ID, threading.local())
         common.services.register(ServiceName.LOCKED_VMS, ExclusiveSet())
