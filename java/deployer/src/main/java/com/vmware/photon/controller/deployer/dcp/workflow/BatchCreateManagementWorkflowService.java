@@ -13,8 +13,6 @@
 
 package com.vmware.photon.controller.deployer.dcp.workflow;
 
-import com.vmware.photon.controller.api.QuotaLineItem;
-import com.vmware.photon.controller.api.QuotaUnit;
 import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
@@ -67,6 +65,7 @@ import com.vmware.xenon.services.common.ServiceUriPaths;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.FutureCallback;
+
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
@@ -75,7 +74,6 @@ import javax.annotation.Nullable;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
@@ -582,8 +580,7 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
     startState.parentPatchBody = Utils.toJson(buildPatch(TaskStage.STARTED, TaskState.SubStage.CREATE_VMS));
     startState.taskPollDelay = currentState.taskPollDelay;
     startState.deploymentServiceLink = currentState.deploymentServiceLink;
-    startState.quotaLineItems = Collections.singletonList(
-        new QuotaLineItem("vm.count", Integer.MAX_VALUE, QuotaUnit.COUNT));
+    startState.quotaLineItems = new ArrayList<>();
 
     sendRequest(Operation
         .createPost(this, AllocateTenantResourcesTaskFactoryService.SELF_LINK)
