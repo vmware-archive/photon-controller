@@ -33,7 +33,6 @@ task removeServicebase(type: DockerRemoveImage) {
 task photon() {
   dependsOn(
     ":deployer:container",
-    ":housekeeper:container",
     ":api-frontend:management:container",
     ":photon-controller-core:container"
   )
@@ -50,8 +49,10 @@ task all() {
 task cleanAll() {
   dependsOn(
     ":api-frontend:management:clean",
+    ":cloud-store:clean",
     ":deployer:clean",
     ":housekeeper:clean",
-    ":photon-controller-core:clean"
+    ":photon-controller-core:clean",
+    ":root-scheduler:clean"
   )
 }

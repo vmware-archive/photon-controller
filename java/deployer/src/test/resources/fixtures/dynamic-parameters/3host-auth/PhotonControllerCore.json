@@ -4,8 +4,11 @@
   "ENABLE_AUTH": "true",
   "CLOUD-STORE_INSTALL_DIRECTORY": "/usr/lib/esxcloud/cloud-store",
   "CLOUD-STORE_DCP_STORAGE_PATH": "/etc/esxcloud/cloud-store/sandbox_19000",
-  "LOG_DIRECTORY": "/var/log/esxcloud",
   "CLOUDSTORE_PEER_NODES": "[{\"peerAddress\":\"0.0.0.0\",\"peerPort\":\"19000\"},{\"peerAddress\":\"0.0.0.1\",\"peerPort\":\"19000\"},{\"peerAddress\":\"0.0.0.2\",\"peerPort\":\"19000\"}]",
+  "HOUSEKEEPER_DCP_STORAGE_PATH": "/etc/esxcloud/housekeeper/sandbox_16000",
+  "HOUSEKEEPER_INSTALL_DIRECTORY": "/usr/lib/esxcloud/housekeeper",
+  "HOUSEKEEPER_PEER_NODES": "[{\"peerAddress\":\"0.0.0.0\",\"peerPort\":\"16001\"},{\"peerAddress\":\"0.0.0.1\",\"peerPort\":\"16001\"},{\"peerAddress\":\"0.0.0.2\",\"peerPort\":\"16001\"}]",
+  "LOG_DIRECTORY": "/var/log/esxcloud",
   "PHOTON-CONTROLLER-CORE_INSTALL_DIRECTORY": "/usr/lib/esxcloud/photon-controller-core",
   "REGISTRATION_ADDRESS": "0.0.0.2",
   "ROOT-SCHEDULER_DCP_STORAGE_PATH": "/etc/esxcloud/root-scheduler/sandbox_13010",
@@ -14,7 +17,7 @@
   "SCHEDULER_PEER_NODES": "[{\"peerAddress\":\"0.0.0.0\",\"peerPort\":\"13010\"},{\"peerAddress\":\"0.0.0.1\",\"peerPort\":\"13010\"},{\"peerAddress\":\"0.0.0.2\",\"peerPort\":\"13010\"}]",
   "SYSLOG_ENDPOINT": "SYSLOG_ENDPOINT",
   "ZOOKEEPER_QUORUM": "0.0.0.0:2181,0.0.0.1:2181,0.0.0.2:2181",
-  "memoryMb": "5120",
-  "diskGb": "10",
+  "memoryMb": "7168",
+  "diskGb": "18",
   "cpuCount": "4"
 }

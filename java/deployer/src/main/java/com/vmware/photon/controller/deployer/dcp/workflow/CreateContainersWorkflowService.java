@@ -287,7 +287,6 @@ public class CreateContainersWorkflowService extends StatefulService {
       case CREATE_SERVICE_CONTAINERS:
         createContainers(currentState,
             Arrays.asList(ContainersConfig.ContainerType.Deployer,
-                ContainersConfig.ContainerType.Housekeeper,
                 ContainersConfig.ContainerType.ManagementApi,
                 ContainersConfig.ContainerType.ManagementUi),
             TaskState.TaskStage.STARTED,

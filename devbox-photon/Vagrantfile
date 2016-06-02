@@ -33,14 +33,12 @@ Vagrant.configure("2") do |config|
 
   SERVICE_NAME_MAP = {
     :management_api => "management-api",
-    :housekeeper    => "housekeeper",
     :deployer       => "deployer",
     :photon_controller_core => "photon-controller-core",
   }
 
   SERVICE_CONFIG_MAP = {
     :management_api => "api-frontend/management",
-    :housekeeper    => "housekeeper",
     :deployer       => "deployer",
     :photon_controller_core => "photon-controller-core",
   }
