@@ -20,6 +20,7 @@ import com.vmware.photon.controller.api.common.exceptions.external.TaskNotFoundE
 import com.vmware.photon.controller.apife.backends.EntityLockBackend;
 import com.vmware.photon.controller.apife.backends.TaskBackend;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
+import com.vmware.photon.controller.apife.backends.clients.DeployerClient;
 import com.vmware.photon.controller.apife.backends.clients.HousekeeperXenonRestClient;
 import com.vmware.photon.controller.apife.backends.clients.SchedulerXenonRestClient;
 import com.vmware.photon.controller.apife.commands.BaseCommand;
@@ -34,7 +35,6 @@ import com.vmware.photon.controller.apife.exceptions.external.TaskNotCompletedEx
 import com.vmware.photon.controller.apife.exceptions.external.VmNotFoundException;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
-import com.vmware.photon.controller.common.clients.DeployerClient;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HousekeeperClient;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;

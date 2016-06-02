@@ -216,8 +216,8 @@ public class DeployerXenonServiceHostTest {
 
     @Test
     public void testParams() {
-      assertThat(host.getPort(), is(18001));
-      Path storagePath = Paths.get(storageDir.getPath()).resolve(Integer.toString(18001));
+      assertThat(host.getPort(), is(18000));
+      Path storagePath = Paths.get(storageDir.getPath()).resolve(Integer.toString(18000));
       assertThat(host.getStorageSandbox().getPath(), is(storagePath.toString()));
     }
   }
@@ -416,7 +416,7 @@ public class DeployerXenonServiceHostTest {
     private void setUp() throws Throwable {
       XenonConfig xenonConfig = new XenonConfig();
       xenonConfig.setBindAddress("0.0.0.0");
-      xenonConfig.setPort(18001);
+      xenonConfig.setPort(18000);
       xenonConfig.setStoragePath(storageDir.getAbsolutePath());
 
       host = new DeployerXenonServiceHost(

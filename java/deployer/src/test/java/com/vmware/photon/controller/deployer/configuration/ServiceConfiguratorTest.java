@@ -54,7 +54,7 @@ public class ServiceConfiguratorTest {
 
     Spec spec = containersConfig.getContainerSpecs().get(ContainersConfig.ContainerType.Deployer.name());
     assertThat(spec.getContainerImage(), is("esxcloud/deployer"));
-    assertThat(spec.getPortBindings().size(), is(2));
+    assertThat(spec.getPortBindings().size(), is(1));
     assertThat(spec.getVolumeBindings().size(), is(4));
     assertThat(spec.getDynamicParameters().size(), is(9));
   }
