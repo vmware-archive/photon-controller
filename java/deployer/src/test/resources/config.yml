@@ -27,15 +27,10 @@ deployer:
 xenon:
   bindAddress: localhost
   registrationAddress: localhost
-  port: 18001
+  port: 18000
   storagePath: "/tmp/dcp/deployer/"
   peerNodes:
-  - http://localhost:18001
-
-thrift:
-  bindAddress: localhost
-  registrationAddress: localhost
-  port: 18000
+  - http://localhost:18000
 
 zookeeper:
   quorum: localhost:2181

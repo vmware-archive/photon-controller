@@ -75,7 +75,7 @@ public class DeployerDefaults {
   /**
    * Port number on which deployer listens.
    */
-  public static final int DEPLOYER_PORT_NUMBER = 18001;
+  public static final int DEPLOYER_PORT_NUMBER = 18000;
 
   /**
    * Max number of retries for dcp queries.

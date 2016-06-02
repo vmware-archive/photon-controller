@@ -41,8 +41,7 @@ public class HealthCheckHelper {
         break;
 
       case Deployer:
-        this.healthChecker = new ThriftBasedHealthChecker(containerType, ipAddress,
-            ServicePortConstants.DEPLOYER_PORT);
+        this.healthChecker = new HttpBasedHealthChecker(HostUtils.getApiClient(service));
         break;
 
       case ManagementApi:
