@@ -14,11 +14,11 @@ module EsxCloud
     module VirtualNetworkApi
       def create_virtual_network(project_id, payload)
         url = "/projects/#{project_id}/networks"
-        puts "network url is #{url}"
         response = @http_client.post_json(url, payload)
         check_response("Create virtual network #{payload}", response, 201)
 
-        poll_response(response)
+        task = poll_response(response)
+        puts "virtual network id is " + task.entity_id
       end
     end
   end
