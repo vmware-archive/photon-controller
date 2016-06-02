@@ -85,6 +85,7 @@ import com.vmware.photon.controller.apife.resources.vm.VmMksTicketResource;
 import com.vmware.photon.controller.apife.resources.vm.VmNetworksResource;
 import com.vmware.photon.controller.apife.resources.vm.VmResource;
 import com.vmware.photon.controller.apife.resources.vm.VmTagsResource;
+import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.metrics.GraphiteConfig;
 import com.vmware.photon.controller.common.zookeeper.ServiceNode;
 import com.vmware.photon.controller.common.zookeeper.ServiceNodeFactory;
@@ -160,12 +161,9 @@ public class ApiFeService extends Application<ApiFeStaticConfiguration> {
     bootstrap.addBundle(new AssetsBundle("/assets", "/api/", "index.html"));
 
     apiModule = new ApiFeModule();
-    zookeeperModule = new ZookeeperModule();
+    zookeeperModule = new ZookeeperModule(apiFeConfiguration.getZookeeper());
 
     apiModule.setConfiguration(apiFeConfiguration);
-    zookeeperModule.setConfig(apiFeConfiguration.getZookeeper());
-
-    zookeeperModule.setConfig(apiFeConfiguration.getZookeeper());
 
     GuiceBundle<ApiFeStaticConfiguration> guiceBundle = getGuiceBundle();
     bootstrap.addBundle(guiceBundle);
@@ -200,11 +198,11 @@ public class ApiFeService extends Application<ApiFeStaticConfiguration> {
     environment.setValidator(validatorFactory.getValidator());
 
     environment.getObjectMapper().registerModule(injector.getInstance(GuiceModule.class));
-    environment.jersey().register(injector.getInstance(ExternalExceptionMapper.class));
-    environment.jersey().register(injector.getInstance(ConstraintViolationExceptionMapper.class));
-    environment.jersey().register(injector.getInstance(JsonProcessingExceptionMapper.class));
-    environment.jersey().register(injector.getInstance(LoggingExceptionMapper.class));
-    environment.jersey().register(injector.getInstance(WebApplicationExceptionMapper.class));
+    environment.jersey().register(new ExternalExceptionMapper());
+    environment.jersey().register(new ConstraintViolationExceptionMapper());
+    environment.jersey().register(new JsonProcessingExceptionMapper());
+    environment.jersey().register(new LoggingExceptionMapper());
+    environment.jersey().register(new WebApplicationExceptionMapper());
 
     environment.servlets().addFilter("LoggingFilter", injector.getInstance(LoggingFilter.class))
         .addMappingForUrlPatterns(EnumSet.allOf(DispatcherType.class), true, "/*");
@@ -227,7 +225,7 @@ public class ApiFeService extends Application<ApiFeStaticConfiguration> {
   private void registerWithZookeeper(ServiceNodeFactory serviceNodeFactory, String registrationIpAddress,
                                      int port) {
     InetSocketAddress registrationSocketAddress = new InetSocketAddress(registrationIpAddress, port);
-    ServiceNode serviceNode = serviceNodeFactory.createSimple("apife", registrationSocketAddress);
+    ServiceNode serviceNode = serviceNodeFactory.createSimple(Constants.APIFE_SERVICE_NAME, registrationSocketAddress);
     ServiceNodeUtils.joinService(serviceNode, retryIntervalMsec);
   }
 

@@ -39,7 +39,6 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.ImageToImageDatastoreM
 import com.vmware.photon.controller.common.xenon.BasicServiceHost;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
-import com.vmware.photon.controller.common.xenon.XenonClient;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
@@ -146,7 +145,7 @@ public class ImageDcpBackendTest {
     return imageEntity;
   }
 
-  private static String createImageDocument(XenonClient dcpClient,
+  private static String createImageDocument(ApiFeXenonRestClient dcpClient,
                                             String imageName,
                                             ImageState imageState,
                                             Long imageSize,

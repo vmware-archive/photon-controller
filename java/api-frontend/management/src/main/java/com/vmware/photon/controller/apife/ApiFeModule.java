@@ -69,7 +69,6 @@ import com.vmware.photon.controller.apife.backends.TombstoneBackend;
 import com.vmware.photon.controller.apife.backends.TombstoneDcpBackend;
 import com.vmware.photon.controller.apife.backends.VmBackend;
 import com.vmware.photon.controller.apife.backends.VmDcpBackend;
-import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommandFactory;
 import com.vmware.photon.controller.apife.config.ApiFeConfiguration;
@@ -92,7 +91,6 @@ import com.vmware.photon.controller.common.thrift.ClientProxyFactory;
 import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.photon.controller.common.thrift.ThriftModule;
 import com.vmware.photon.controller.common.thrift.ThriftServiceModule;
-import com.vmware.photon.controller.common.xenon.XenonClient;
 import com.vmware.photon.controller.common.zookeeper.PathChildrenCacheFactory;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
 import com.vmware.photon.controller.common.zookeeper.ServicePathCacheFactory;
@@ -149,7 +147,7 @@ public class ApiFeModule extends AbstractModule {
       CuratorFramework zkClient,
       @ServicePathCacheFactory PathChildrenCacheFactory childrenCacheFactory)
       throws Exception {
-    return new ServiceConfig(zkClient, childrenCacheFactory, "apife");
+    return new ServiceConfig(zkClient, childrenCacheFactory, Constants.APIFE_SERVICE_NAME);
   }
 
   @Provides
@@ -323,7 +321,7 @@ public class ApiFeModule extends AbstractModule {
 
   private void bindBackends() {
     logger.info("Using cloud store DCP backend");
-    bind(XenonClient.class).to(ApiFeXenonRestClient.class);
+
     bind(FlavorBackend.class).to(FlavorDcpBackend.class);
     bind(AvailabilityZoneBackend.class).to(AvailabilityZoneDcpBackend.class);
     bind(ImageBackend.class).to(ImageDcpBackend.class);
