@@ -8,8 +8,7 @@
   "useHostNetwork": true,
   "containerImage": "esxcloud/deployer",
   "portBindings": {
-    "18000": 18000,
-    "18001": 18001
+    "18000": 18000
   },
   "volumeBindings": {
     "/var/log": "/var/log",

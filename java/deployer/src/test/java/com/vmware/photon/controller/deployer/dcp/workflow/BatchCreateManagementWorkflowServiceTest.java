@@ -883,9 +883,9 @@ public class BatchCreateManagementWorkflowServiceTest {
       InetSocketAddress address = cloudStoreMachine.getServerSet().getServers().iterator().next();
       doReturn(Collections.singleton(address))
           .when(zkBuilder).getServers(anyString(), eq(Constants.CLOUDSTORE_SERVICE_NAME));
-      InetSocketAddress adjustedAddress = new InetSocketAddress(address.getHostName(), address.getPort() - 1);
-      doReturn(Collections.singleton(adjustedAddress))
+      doReturn(Collections.singleton(address))
           .when(zkBuilder).getServers(anyString(), eq(Constants.DEPLOYER_SERVICE_NAME));
+      InetSocketAddress adjustedAddress = new InetSocketAddress(address.getHostName(), address.getPort() - 1);
       doReturn(Collections.singleton(adjustedAddress))
           .when(zkBuilder).getServers(anyString(), eq(Constants.HOUSEKEEPER_SERVICE_NAME));
 

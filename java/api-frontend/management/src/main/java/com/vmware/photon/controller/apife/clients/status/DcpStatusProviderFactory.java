@@ -13,8 +13,6 @@
 
 package com.vmware.photon.controller.apife.clients.status;
 
-import com.vmware.photon.controller.apife.HousekeeperServerSet;
-import com.vmware.photon.controller.apife.backends.clients.DeployerXenonRestClient;
 import com.vmware.photon.controller.apife.backends.clients.HousekeeperXenonRestClient;
 import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
 import com.vmware.photon.controller.common.clients.StatusProvider;
@@ -56,10 +54,7 @@ public class DcpStatusProviderFactory implements StatusProviderFactory {
     //TODO(adev): Remove this after thrift removal
     try {
       logger.info("*******Creating DcpRestClient as StatusProvider {}", server.getPort());
-      if (server.getPort() == 18000 || server.getPort() == 16000) {
-        dcpRestClient = new DeployerXenonRestClient(new StaticServerSet(server), this.executor);
-        logger.info("Creating DcpRestClient as StatusProvider on deployer");
-      } else if (HousekeeperServerSet.class.isAssignableFrom(serverSet.getClass())) {
+      if (server.getPort() == 16000) {
         dcpRestClient = new HousekeeperXenonRestClient(new StaticServerSet(server), this.executor);
         logger.info("Creating DcpRestClient as StatusProvider on housekeeper");
       }

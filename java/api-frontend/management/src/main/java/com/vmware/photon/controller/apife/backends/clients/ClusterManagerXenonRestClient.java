@@ -31,7 +31,6 @@ import com.google.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.InetSocketAddress;
 import java.net.URISyntaxException;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -49,12 +48,6 @@ public class ClusterManagerXenonRestClient extends XenonRestClient {
   public ClusterManagerXenonRestClient(@DeployerServerSet ServerSet serverSet,
                                        @BackendTaskExecutor ExecutorService executor) throws URISyntaxException {
     super(serverSet, executor);
-  }
-
-  @Override
-  protected int getPort(InetSocketAddress inetSocketAddress) {
-    // Calculate DCP port from Thrift port
-    return inetSocketAddress.getPort() + 1;
   }
 
   @Override

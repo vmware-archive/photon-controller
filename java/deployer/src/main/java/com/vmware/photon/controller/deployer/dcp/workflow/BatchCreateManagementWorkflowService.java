@@ -521,7 +521,8 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
       List<Pair<String, Integer>> serverAddresses = remoteServers.stream()
           .map(s -> {
             int adjustment = 1;
-            if (serviceName == Constants.CLOUDSTORE_SERVICE_NAME) {
+            if (serviceName.equals(Constants.CLOUDSTORE_SERVICE_NAME) ||
+                serviceName.equals(Constants.DEPLOYER_SERVICE_NAME)) {
               adjustment = 0;
             }
             return new Pair<String, Integer>(s.getAddress().getHostAddress(), s.getPort() + adjustment);

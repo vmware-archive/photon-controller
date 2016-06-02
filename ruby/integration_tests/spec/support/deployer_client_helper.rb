@@ -17,7 +17,7 @@ class DeployerClientHelper
   end
 
   def self.dcp
-    setup_client((ENV["DEPLOYER_DCP_PORT"] || "18001").strip)
+    setup_client((ENV["DEPLOYER_DCP_PORT"] || "18000").strip)
   end
 
   private

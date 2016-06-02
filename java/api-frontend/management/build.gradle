@@ -46,7 +46,6 @@ dependencies {
       '../../../thrift/flavors.thrift',
       '../../../thrift/housekeeper.thrift',
       '../../../thrift/tracing.thrift',
-      '../../../thrift/deployer.thrift',
       '../../../thrift/status.thrift')
 
   testCompile(project(path: ':api', configuration: 'tests'))
