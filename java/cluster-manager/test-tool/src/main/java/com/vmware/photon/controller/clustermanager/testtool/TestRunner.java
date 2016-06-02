@@ -50,7 +50,7 @@ public class TestRunner {
   private static final Logger logger = LoggerFactory.getLogger(Main.class);
 
   private static final String API_FE_PORT = "9000";
-  private static final String DEPLOYER_PORT = "18001";
+  private static final String DEPLOYER_PORT = "18000";
 
   private static final long CLUSTER_POLL_INTERVAL_SECONDS = 15;
   private static final long CLUSTER_POLL_RETRIES = 240;

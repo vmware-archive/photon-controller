@@ -15,7 +15,6 @@ package com.vmware.photon.controller.deployer;
 
 import com.vmware.photon.controller.common.config.BadConfigException;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
-import com.vmware.photon.controller.common.thrift.ThriftConfig;
 import com.vmware.photon.controller.common.xenon.host.XenonConfig;
 
 import org.testng.annotations.BeforeClass;
@@ -28,7 +27,7 @@ import static org.hamcrest.Matchers.is;
  */
 public class DeployerConfigTest {
 
-  private static final String[] PEER_NODES = {"http://localhost:18001"};
+  private static final String[] PEER_NODES = {"http://localhost:18000"};
 
   /**
    * This class implements tests for the default configuration.
@@ -43,19 +42,11 @@ public class DeployerConfigTest {
     }
 
     @Test
-    public void testThriftConfig() {
-      ThriftConfig thriftConfig = deployerConfig.getThriftConfig();
-      assertThat(thriftConfig.getBindAddress(), is("localhost"));
-      assertThat(thriftConfig.getPort(), is(18000));
-      assertThat(thriftConfig.getRegistrationAddress(), is("localhost"));
-    }
-
-    @Test
     public void testXenonConfig() {
       XenonConfig xenonConfig = deployerConfig.getXenonConfig();
       assertThat(xenonConfig.getBindAddress(), is("localhost"));
       assertThat(xenonConfig.getPeerNodes(), is(PEER_NODES));
-      assertThat(xenonConfig.getPort(), is(18001));
+      assertThat(xenonConfig.getPort(), is(18000));
       assertThat(xenonConfig.getRegistrationAddress(), is("localhost"));
       assertThat(xenonConfig.getStoragePath(), is("/tmp/dcp/deployer/"));
     }
@@ -75,21 +66,13 @@ public class DeployerConfigTest {
     }
 
     @Test
-    public void testThriftConfig() {
-      ThriftConfig thriftConfig = deployerConfig.getThriftConfig();
-      assertThat(thriftConfig.getBindAddress(), is("localhost"));
-      assertThat(thriftConfig.getPort(), is(18000));
-      assertThat(thriftConfig.getRegistrationAddress(), is("localhost"));
-    }
-
-    @Test
     public void testXenonConfig() {
       XenonConfig xenonConfig = deployerConfig.getXenonConfig();
       assertThat(xenonConfig.getBindAddress(), is("localhost"));
       assertThat(xenonConfig.getPeerNodes(), is(PEER_NODES));
-      assertThat(xenonConfig.getPort(), is(18001));
+      assertThat(xenonConfig.getPort(), is(18000));
       assertThat(xenonConfig.getRegistrationAddress(), is("localhost"));
-      assertThat(xenonConfig.getStoragePath(), is("/tmp/dcp/18001"));
+      assertThat(xenonConfig.getStoragePath(), is("/tmp/dcp/18000"));
     }
   }
 }

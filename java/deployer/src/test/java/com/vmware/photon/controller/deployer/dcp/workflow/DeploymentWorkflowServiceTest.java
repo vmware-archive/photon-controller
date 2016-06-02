@@ -691,10 +691,10 @@ public class DeploymentWorkflowServiceTest {
       ZookeeperClient zkBuilder = mock(ZookeeperClient.class);
       doReturn(zkBuilder).when(zkFactory).create();
       doReturn(Collections.singleton(
-          new InetSocketAddress("127.0.0.1", localDeployer.getHosts()[0].getState().httpPort - 1)))
+          new InetSocketAddress("127.0.0.1", localDeployer.getHosts()[0].getState().httpPort)))
           .when(zkBuilder).getServers(eq(quorum), eq("deployer"));
       doReturn(Collections.singleton(
-          new InetSocketAddress("127.0.0.1", remoteDeployer.getHosts()[0].getState().httpPort - 1)))
+          new InetSocketAddress("127.0.0.1", remoteDeployer.getHosts()[0].getState().httpPort)))
           .when(zkBuilder)
           .getServers(Matchers.startsWith("0.0.0"), eq("deployer"));
       doReturn(Collections.singleton(new InetSocketAddress("127.0.0.1", localStore.getHosts()[0].getState().httpPort)))

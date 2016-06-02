@@ -591,7 +591,7 @@ public class DeploymentWorkflowService extends StatefulService {
   }
 
   private void migrateData(State currentState, String destinationZookeeperQuorum) {
-    Map<String, Integer> portAdjustment = ImmutableMap.of(Constants.DEPLOYER_SERVICE_NAME, 1);
+    Map<String, Integer> portAdjustment = ImmutableMap.of(Constants.DEPLOYER_SERVICE_NAME, 0);
 
     Map<String, Pair<Set<InetSocketAddress>, Set<InetSocketAddress>>> serviceSourceDestinationAddressCache
       = new HashMap<>();

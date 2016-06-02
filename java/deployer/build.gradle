@@ -32,7 +32,6 @@ dependencies {
   compile 'com.github.spullara.mustache.java:compiler:0.9.0'
 
   thrift files(
-      '../../thrift/deployer.thrift',
       '../../thrift/tracing.thrift',
       '../../thrift/status.thrift')
 

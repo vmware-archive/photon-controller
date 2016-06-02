@@ -14,15 +14,10 @@ deployer:
 xenon:
   bindAddress: localhost
   registrationAddress: localhost
-  port: 18001
-  storagePath: "/tmp/dcp/18001"
-  peerNodes:
-  - http://localhost:18001
-
-thrift:
-  bindAddress: localhost
-  registrationAddress: localhost
   port: 18000
+  storagePath: "/tmp/dcp/18000"
+  peerNodes:
+  - http://localhost:18000
 
 logging:
   loggers:
