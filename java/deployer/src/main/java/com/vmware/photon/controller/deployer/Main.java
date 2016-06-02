@@ -21,7 +21,6 @@ import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.logging.LoggingFactory;
 import com.vmware.photon.controller.common.thrift.ServerSet;
-import com.vmware.photon.controller.common.thrift.ThriftFactory;
 import com.vmware.photon.controller.common.thrift.ThriftModule;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperModule;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfigurator;
@@ -43,13 +42,6 @@ import com.vmware.photon.controller.deployer.deployengine.ZookeeperClientFactory
 import com.vmware.photon.controller.deployer.healthcheck.HealthCheckHelper;
 import com.vmware.photon.controller.deployer.healthcheck.HealthCheckHelperFactory;
 import com.vmware.photon.controller.deployer.healthcheck.XenonBasedHealthChecker;
-import com.vmware.photon.controller.deployer.service.DeployerService;
-import com.vmware.photon.controller.deployer.service.client.AddHostWorkflowServiceClientFactory;
-import com.vmware.photon.controller.deployer.service.client.ChangeHostModeTaskServiceClientFactory;
-import com.vmware.photon.controller.deployer.service.client.DeploymentWorkflowServiceClientFactory;
-import com.vmware.photon.controller.deployer.service.client.DeprovisionHostWorkflowServiceClientFactory;
-import com.vmware.photon.controller.deployer.service.client.HostServiceClientFactory;
-import com.vmware.photon.controller.deployer.service.client.ValidateHostTaskServiceClientFactory;
 import com.vmware.xenon.common.Service;
 
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -64,8 +56,6 @@ import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
 import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
 import org.apache.http.nio.conn.ssl.SSLIOSessionStrategy;
 import org.apache.http.ssl.SSLContexts;
-import org.apache.thrift.protocol.TProtocolFactory;
-import org.apache.thrift.transport.TTransportFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -142,18 +132,12 @@ public class Main {
       final DeployerXenonServiceHost deployerXenonServiceHost = createDeployerXenonServiceHost(thriftModule,
           deployerConfig, apiFeServerSet, cloudStoreServerSet, httpClient);
 
-      final DeployerService deployerService = createDeployerService(deployerConfig, cloudStoreServerSet,
-          deployerXenonServiceHost, deployerServerSet);
-
-      final DeployerServer thriftServer = createDeployerServer(injector, zkModule, zkClient, deployerService,
-          deployerConfig, httpClient);
 
       logger.info("Adding shutdown hook");
       Runtime.getRuntime().addShutdownHook(new Thread() {
         @Override
         public void run() {
           logger.info("Shutting down");
-          thriftServer.stop();
           deployerXenonServiceHost.stop();
           logger.info("Done");
           LoggingFactory.detachAndStop();
@@ -162,9 +146,6 @@ public class Main {
 
       logger.info("Starting Deployer Xenon host service");
       deployerXenonServiceHost.start();
-
-      logger.info("Starting Thrift service");
-      thriftServer.serve();
 
     } catch (Throwable t) {
       t.printStackTrace();
@@ -245,59 +226,6 @@ public class Main {
         dockerProvisionerFactory, authHelperFactory, healthCheckHelperFactory, serviceConfiguratorFactory,
         zookeeperServerSetBuilderFactory, hostManagementVmAddressValidatorFactory, clusterManagerFactory,
         nsxClientFactory);
-  }
-
-  /**
-   * Creates a new DeployerService.
-   *
-   * @param deployerConfig
-   * @param cloudStoreServerSet
-   * @param deployerXenonServiceHost
-   * @param deployerServerSet
-   * @return
-   */
-  private static DeployerService createDeployerService(DeployerConfig deployerConfig,
-                                                       ServerSet cloudStoreServerSet,
-                                                       DeployerXenonServiceHost deployerXenonServiceHost,
-                                                       ServerSet deployerServerSet) {
-    final HostServiceClientFactory hostServiceClientFactory = new HostServiceClientFactory(cloudStoreServerSet);
-    final ChangeHostModeTaskServiceClientFactory changeHostModeTaskServiceClientFactory =
-        new ChangeHostModeTaskServiceClientFactory();
-    final DeploymentWorkflowServiceClientFactory deploymentWorkflowServiceClientFactory =
-        new DeploymentWorkflowServiceClientFactory(deployerConfig);
-    final AddHostWorkflowServiceClientFactory addHostWorkflowServiceClientFactory =
-        new AddHostWorkflowServiceClientFactory();
-    final ValidateHostTaskServiceClientFactory validateHostTaskServiceClientFactory =
-        new ValidateHostTaskServiceClientFactory();
-    final DeprovisionHostWorkflowServiceClientFactory deprovisionHostClientFactory =
-        new DeprovisionHostWorkflowServiceClientFactory();
-
-    return new DeployerService(deployerServerSet, deployerXenonServiceHost,
-        hostServiceClientFactory, changeHostModeTaskServiceClientFactory, deploymentWorkflowServiceClientFactory,
-        addHostWorkflowServiceClientFactory, validateHostTaskServiceClientFactory, deprovisionHostClientFactory);
-  }
-
-  /**
-   * Creates a new DeployerServer.
-   *
-   * @param injector
-   * @param deployerService
-   * @param deployerConfig
-   * @return
-   */
-  private static DeployerServer createDeployerServer(Injector injector,
-                                                     ZookeeperModule zkModule,
-                                                     CuratorFramework zkClient,
-                                                     DeployerService deployerService,
-                                                     DeployerConfig deployerConfig,
-                                                     CloseableHttpAsyncClient httpClient) {
-    logger.info("Creating Thrift server instance");
-    final TProtocolFactory protocolFactory = injector.getInstance(TProtocolFactory.class);
-    final TTransportFactory transportFactory = injector.getInstance(TTransportFactory.class);
-    final ThriftFactory thriftFactory = injector.getInstance(ThriftFactory.class);
-
-    return new DeployerServer(zkModule, zkClient, protocolFactory, transportFactory,
-        thriftFactory, deployerService, deployerConfig.getThriftConfig(), httpClient);
   }
 
   /**

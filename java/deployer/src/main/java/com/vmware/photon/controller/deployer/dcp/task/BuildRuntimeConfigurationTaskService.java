@@ -503,7 +503,7 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
         case Deployer:
           getIpsForContainerType(currentState.containerType,
               (vmIpAddresses) -> patchDynamicParameter(currentState, MUSTACHE_KEY_COMMON_PEER_NODES,
-                  generatePeerNodeList(vmIpAddresses, String.valueOf(ServicePortConstants.DEPLOYER_PORT + 1))));
+                  generatePeerNodeList(vmIpAddresses, String.valueOf(ServicePortConstants.DEPLOYER_PORT))));
           return;
         case Housekeeper:
           getIpsForContainerType(currentState.containerType,

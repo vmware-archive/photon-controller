@@ -97,7 +97,6 @@ import com.vmware.photon.controller.common.zookeeper.PathChildrenCacheFactory;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
 import com.vmware.photon.controller.common.zookeeper.ServicePathCacheFactory;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperServerSetFactory;
-import com.vmware.photon.controller.deployer.gen.Deployer;
 import com.vmware.photon.controller.host.gen.Host;
 import com.vmware.photon.controller.housekeeper.gen.Housekeeper;
 
@@ -271,28 +270,6 @@ public class ApiFeModule extends AbstractModule {
     return serverSetFactory.createServiceServerSet(Constants.DEPLOYER_SERVICE_NAME, true);
   }
 
-  @Provides
-  @Singleton
-  public ClientPool<Deployer.AsyncClient> getDeployerClientPool(
-      @DeployerServerSet ServerSet serverSet,
-      ClientPoolFactory<Deployer.AsyncClient> clientPoolFactory) {
-
-    ClientPoolOptions options = new ClientPoolOptions()
-        .setMaxClients(10)
-        .setMaxWaiters(10)
-        .setTimeout(10, TimeUnit.SECONDS)
-        .setServiceName("Deployer");
-
-    return clientPoolFactory.create(serverSet, options);
-  }
-
-  @Provides
-  @Singleton
-  public ClientProxy<Deployer.AsyncClient> getDeployerClientProxy(
-      ClientProxyFactory<Deployer.AsyncClient> factory,
-      ClientPool<Deployer.AsyncClient> clientPool) {
-    return factory.create(clientPool);
-  }
 
   @Override
   protected void configure() {
@@ -312,8 +289,6 @@ public class ApiFeModule extends AbstractModule {
     install(new ThriftServiceModule<>(new TypeLiteral<Host.AsyncClient>() {
     }));
     install(new ThriftServiceModule<>(new TypeLiteral<Housekeeper.AsyncClient>() {
-    }));
-    install(new ThriftServiceModule<>(new TypeLiteral<Deployer.AsyncClient>() {
     }));
 
     install(new FactoryModuleBuilder()

@@ -13,14 +13,11 @@
 
 package com.vmware.photon.controller.deployer.healthcheck;
 
-import com.vmware.photon.controller.common.clients.DeployerClient;
 import com.vmware.photon.controller.common.clients.HousekeeperClient;
 import com.vmware.photon.controller.common.clients.StatusProvider;
 import com.vmware.photon.controller.common.thrift.ClientProxy;
 import com.vmware.photon.controller.common.thrift.MultiplexedProtocolFactory;
-import com.vmware.photon.controller.deployer.DeployerServer;
 import com.vmware.photon.controller.deployer.dcp.ContainersConfig;
-import com.vmware.photon.controller.deployer.gen.Deployer;
 import com.vmware.photon.controller.housekeeper.gen.Housekeeper;
 import com.vmware.photon.controller.status.gen.Status;
 import com.vmware.photon.controller.status.gen.StatusType;
@@ -68,10 +65,7 @@ public class ThriftBasedHealthChecker implements HealthChecker {
     //TODO(adev): Remove after thrift removal. We need to keep this otherwise no interaction with these services works
     // until we convert all
     switch (this.containerType) {
-      case Deployer:
-        return getThriftClient(DeployerClient.class, Deployer.AsyncClient.class, DeployerServer.SERVICE_NAME);
-
-      case Housekeeper:
+           case Housekeeper:
         return getThriftClient(HousekeeperClient.class, Housekeeper.AsyncClient.class, HOUSEKEEPER_SERVICE_NAME);
     }
     throw new RuntimeException(String.format("%s does not support thrift health check", containerType));
