@@ -70,6 +70,7 @@ public enum Operation {
   CREATE_VIRTUAL_NETWORK("CreateVirtualNetwork"),
   DELETE_NETWORK("DeleteNetwork"),
   SET_PORT_GROUPS("SetPortGroups"),
+  SET_DEFAULT_NETWORK("SetDefaultNetwork"),
   CREATE_PORT_GROUP("CreatePortGroup"),
   DELETE_PORT_GROUP("DeletePortGroup"),
   CREATE_CONFIGURATION("CreateConfiguration"),

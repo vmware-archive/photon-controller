@@ -39,6 +39,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
@@ -180,7 +181,33 @@ public class NetworkDcpBackend implements NetworkBackend {
 
   @Override
   public TaskEntity setDefault(String networkId) throws ExternalException {
-    return null;
+    NetworkService.State currentDefaultNetwork = getDefaultNetwork();
+
+    if (currentDefaultNetwork != null) {
+      NetworkService.State currentDefaultNetworkPatch = new NetworkService.State();
+      currentDefaultNetworkPatch.isDefault = false;
+
+      try {
+        dcpClient.patch(currentDefaultNetwork.documentSelfLink,
+            currentDefaultNetworkPatch);
+      } catch (DocumentNotFoundException ex) {
+        throw new NetworkNotFoundException(
+            "Failed to patch current default network " + currentDefaultNetwork.documentSelfLink);
+      }
+    }
+
+    NetworkService.State newDefaultNetwork = getById(networkId);
+    NetworkService.State newDefaultNetworkPatch = new NetworkService.State();
+    newDefaultNetworkPatch.isDefault = true;
+    try {
+      newDefaultNetwork = dcpClient.patch(newDefaultNetwork.documentSelfLink,
+          newDefaultNetworkPatch).getBody(NetworkService.State.class);
+    } catch (DocumentNotFoundException ex) {
+      throw new NetworkNotFoundException(
+          "Failed to patch new default network " + newDefaultNetwork.documentSelfLink);
+    }
+
+    return taskBackend.createCompletedTask(convertToEntity(newDefaultNetwork), Operation.SET_DEFAULT_NETWORK);
   }
 
   @Override
@@ -248,6 +275,20 @@ public class NetworkDcpBackend implements NetworkBackend {
       return result.getBody(NetworkService.State.class);
     } catch (DocumentNotFoundException exception) {
       throw new NetworkNotFoundException(id);
+    }
+  }
+
+  private NetworkService.State getDefaultNetwork() {
+    ImmutableMap.Builder<String, String> termsBuilder = new ImmutableBiMap.Builder<>();
+    termsBuilder.put("isDefault", Boolean.TRUE.toString());
+
+    List<NetworkService.State> defaultNetworks =
+        dcpClient.queryDocuments(NetworkService.State.class, termsBuilder.build());
+
+    if (defaultNetworks != null && !defaultNetworks.isEmpty()) {
+      return defaultNetworks.iterator().next();
+    } else {
+      return null;
     }
   }
 

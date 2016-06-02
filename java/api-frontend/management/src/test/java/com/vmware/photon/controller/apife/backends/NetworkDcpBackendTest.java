@@ -618,4 +618,74 @@ public class NetworkDcpBackendTest {
       networkBackend.updatePortGroups(UUID.randomUUID().toString(), null);
     }
   }
+
+  /**
+   * Tests {@link NetworkDcpBackend#setDefault(String)}}.
+   */
+  @Guice(modules = {DcpBackendTestModule.class, TestModule.class})
+  public static class SetDefaultTest {
+
+    @Inject
+    private BasicServiceHost basicServiceHost;
+
+    @Inject
+    private ApiFeXenonRestClient apiFeXenonRestClient;
+
+    @Inject
+    private NetworkBackend networkBackend;
+
+    @BeforeMethod
+    public void setUp() throws Throwable {
+      commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
+    }
+
+    @AfterMethod
+    public void tearDown() throws Throwable {
+      commonHostDocumentsCleanup();
+    }
+
+    @AfterClass
+    public static void afterClassCleanup() throws Throwable {
+      commonHostAndClientTeardown();
+    }
+
+    @Test
+    public void testSuccessWithoutExistingDefaultNetwork() throws Throwable {
+      String documentSelfLink = createAndSetDefaultNetwork("PG1");
+      NetworkService.State savedState = dcpClient.get(documentSelfLink).getBody(NetworkService.State.class);
+      assertThat(savedState.isDefault, is(true));
+    }
+
+    @Test
+    public void testSuccessWithExistingDefaultNetwork() throws Throwable {
+      String documentSelfLink1 = createAndSetDefaultNetwork("PG1");
+      String documentSelfLink2 = createAndSetDefaultNetwork("PG2");
+
+      NetworkService.State savedState1 = dcpClient.get(documentSelfLink1).getBody(NetworkService.State.class);
+      NetworkService.State savedState2 = dcpClient.get(documentSelfLink2).getBody(NetworkService.State.class);
+
+      assertThat(savedState1.isDefault, is(false));
+      assertThat(savedState2.isDefault, is(true));
+    }
+
+    private String createAndSetDefaultNetwork(String portGroup) throws Throwable {
+      NetworkCreateSpec spec = createNetworkCreateSpec();
+      // This is to avoid port group conflict between multiple networks, since the createNetworkCreateSpec utility
+      // function uses static port group setting.
+      List<String> portGroups = new ArrayList<>();
+      portGroups.add(portGroup);
+      spec.setPortGroups(portGroups);
+
+      TaskEntity taskEntity = networkBackend.createNetwork(spec);
+      String networkId = taskEntity.getEntityId();
+      String documentSelfLink = NetworkServiceFactory.SELF_LINK + "/" + networkId;
+
+      NetworkService.State savedState = dcpClient.get(documentSelfLink).getBody(NetworkService.State.class);
+      assertThat(savedState.isDefault, is(false));
+
+      networkBackend.setDefault(networkId);
+
+      return documentSelfLink;
+    }
+  }
 }
