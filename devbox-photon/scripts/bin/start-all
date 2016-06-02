@@ -3,7 +3,6 @@
 start-zookeeper
 start-haproxy
 start-photon-controller-core
-start-housekeeper
 start-deployer
 start-management-api
 check-services

@@ -14,7 +14,7 @@
 package com.vmware.photon.controller.housekeeper.helpers;
 
 import com.vmware.photon.controller.common.thrift.ThriftModule;
-import com.vmware.photon.controller.housekeeper.Config;
+import com.vmware.photon.controller.housekeeper.HousekeeperConfig;
 import com.vmware.photon.controller.housekeeper.HousekeeperServer;
 import com.vmware.photon.controller.housekeeper.gen.Housekeeper;
 import com.vmware.xenon.common.Operation;
@@ -48,12 +48,12 @@ public class TestHelper {
     );
   }
 
-  public static Housekeeper.Client createLocalThriftClient(Config config)
+  public static Housekeeper.Client createLocalThriftClient(HousekeeperConfig housekeeperConfig)
       throws TTransportException, InterruptedException, TimeoutException {
 
     long timeLeft = CONNECTION_TIMEOUT_IN_MS;
-    TSocket socket = new TSocket(config.getThriftConfig().getBindAddress(),
-        config.getThriftConfig().getPort());
+    TSocket socket = new TSocket(housekeeperConfig.getThriftConfig().getBindAddress(),
+        housekeeperConfig.getThriftConfig().getPort());
     while (true) {
       if (timeLeft <= 0) {
         throw new TimeoutException();

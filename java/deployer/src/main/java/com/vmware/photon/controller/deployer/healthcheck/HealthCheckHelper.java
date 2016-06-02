@@ -45,11 +45,6 @@ public class HealthCheckHelper {
             ServicePortConstants.DEPLOYER_PORT);
         break;
 
-      case Housekeeper:
-        this.healthChecker = new ThriftBasedHealthChecker(containerType, ipAddress,
-            ServicePortConstants.HOUSEKEEPER_PORT);
-        break;
-
       case ManagementApi:
         this.healthChecker = new HttpBasedHealthChecker(HostUtils.getApiClient(service));
         break;
@@ -62,6 +57,7 @@ public class HealthCheckHelper {
         List<Integer> ports = new ArrayList<>();
         ports.add(ServicePortConstants.CLOUD_STORE_PORT);
         ports.add(ServicePortConstants.ROOT_SCHEDULER_PORT);
+        ports.add(ServicePortConstants.HOUSEKEEPER_PORT);
         this.healthChecker = new XenonBasedHealthChecker(service, ipAddress, ports);
         break;
 

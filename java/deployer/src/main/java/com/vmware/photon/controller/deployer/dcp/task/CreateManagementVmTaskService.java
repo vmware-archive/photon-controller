@@ -1272,11 +1272,14 @@ public class CreateManagementVmTaskService extends StatefulService {
           BuildRuntimeConfigurationTaskService.MUSTACHE_KEY_COMMON_PEER_NODES,
           (k, v) -> new Gson().fromJson(v.toString(), peerNodeTypeToken.getType()));
       dynamicParameters.computeIfPresent(
-              BuildRuntimeConfigurationTaskService.MUSTACHE_KEY_CLOUDSTORE_PEER_NODES,
-              (k, v) -> new Gson().fromJson(v.toString(), peerNodeTypeToken.getType()));
+          BuildRuntimeConfigurationTaskService.MUSTACHE_KEY_CLOUDSTORE_PEER_NODES,
+          (k, v) -> new Gson().fromJson(v.toString(), peerNodeTypeToken.getType()));
       dynamicParameters.computeIfPresent(
-              BuildRuntimeConfigurationTaskService.MUSTACHE_KEY_SCHEDULER_PEER_NODES,
-              (k, v) -> new Gson().fromJson(v.toString(), peerNodeTypeToken.getType()));
+          BuildRuntimeConfigurationTaskService.MUSTACHE_KEY_HOUSEKEEPER_PEER_NODES,
+          (k, v) -> new Gson().fromJson(v.toString(), peerNodeTypeToken.getType()));
+      dynamicParameters.computeIfPresent(
+          BuildRuntimeConfigurationTaskService.MUSTACHE_KEY_SCHEDULER_PEER_NODES,
+          (k, v) -> new Gson().fromJson(v.toString(), peerNodeTypeToken.getType()));
       dynamicParameters.computeIfPresent(
           BuildContainersConfigurationWorkflowService.MUSTACHE_KEY_ZOOKEEPER_INSTANCES,
           (k, v) -> new Gson().fromJson(v.toString(), zookeeperTypeToken.getType()));

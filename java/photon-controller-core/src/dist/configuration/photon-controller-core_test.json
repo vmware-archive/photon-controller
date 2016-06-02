@@ -1,14 +1,16 @@
 {
   "serviceName": "PhotonControllerCore",
   "cpuCount": 4,
-  "memoryMb": 5120,
-  "diskGb": 10,
+  "memoryMb": 7168,
+  "diskGb": 18,
   "isReplicated": true,
   "isPrivileged": false,
   "containerImage": "photon/photon-controller-core",
   "containerName": "photon-controller-core",
   "portBindings": {
     "13010": 13010,
+    "16000": 16000,
+    "16001": 16001,
     "19000": 19000,
     "19001": 19001
   },
@@ -23,6 +25,8 @@
     "CLOUD-STORE_DCP_STORAGE_PATH": "/etc/esxcloud/cloud-store/sandbox_19000",
     "CLOUD-STORE_INSTALL_DIRECTORY": "/usr/lib/esxcloud/cloud-store",
     "CLOUD-STORE_PORT": 19000,
+    "HOUSEKEEPER_DCP_STORAGE_PATH": "/etc/esxcloud/housekeeper/sandbox_16000",
+    "HOUSEKEEPER_INSTALL_DIRECTORY": "/usr/lib/esxcloud/housekeeper",
     "JAVA_DEBUG": "-agentlib:jdwp=transport=dt_socket,server=y,address=29000,suspend=n",
     "LOG_DIRECTORY": "/vagrant/log",
     "PHOTON-CONTROLLER-CORE_INSTALL_DIRECTORY": "/usr/lib/esxcloud/photon-controller-core",

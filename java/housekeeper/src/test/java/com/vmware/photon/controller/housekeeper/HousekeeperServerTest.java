@@ -57,7 +57,7 @@ public class HousekeeperServerTest {
     private Injector injector;
     private ZookeeperModule zkModule;
     private CuratorFramework zkClient;
-    private Config config;
+    private HousekeeperConfig housekeeperConfig;
     private HousekeeperServer server;
     private TProtocolFactory tProtocolFactory;
     private TTransportFactory tTransportFactory;
@@ -68,7 +68,7 @@ public class HousekeeperServerTest {
 
     @BeforeMethod
     public void setUp() throws Exception {
-      config = ConfigBuilder.build(Config.class,
+      housekeeperConfig = ConfigBuilder.build(HousekeeperConfig.class,
           ConfigTest.class.getResource("/config.yml").getPath());
       injector = TestHelper.createInjector();
 
@@ -83,7 +83,7 @@ public class HousekeeperServerTest {
 
       // start the server
       server = spy(new HousekeeperServer(zkModule, zkClient, tProtocolFactory,
-          tTransportFactory, thriftFactory, housekeeperService, config.getThriftConfig()));
+          tTransportFactory, thriftFactory, housekeeperService, housekeeperConfig.getThriftConfig()));
 
       ThriftEventHandler thriftEventHandler = mock(ThriftEventHandler.class);
       doReturn(thriftEventHandler).when(server).getThriftEventHandler();
@@ -116,7 +116,7 @@ public class HousekeeperServerTest {
     @Test
     public void testThriftEndpoint() throws Throwable {
       Housekeeper.Client client =
-          TestHelper.createLocalThriftClient(config);
+          TestHelper.createLocalThriftClient(housekeeperConfig);
 
       assertThat(client.get_status().getType(), is(StatusType.INITIALIZING));
     }

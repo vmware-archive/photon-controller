@@ -27,8 +27,7 @@ import javax.validation.constraints.NotNull;
 /**
  * Housekeeper configuration.
  */
-public class Config {
-
+public class HousekeeperConfig {
   @NotNull
   @Range(min = 0, max = 100)
   @JsonProperty("image_copy_batch_size")
