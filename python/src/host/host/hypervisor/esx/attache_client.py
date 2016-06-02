@@ -34,6 +34,9 @@ from host.hypervisor.esx.host_client import HostdConnectionFailure
 from host.hypervisor.esx.host_client import VmConfigSpec
 from host.hypervisor.esx.host_client import DatastoreNotFound
 from host.hypervisor.esx.path_util import os_to_datastore_path
+from host.hypervisor.esx.path_util import compond_path_join
+from host.hypervisor.esx.path_util import datastore_path
+from host.hypervisor.esx.path_util import VM_FOLDER_NAME_PREFIX
 
 from vmware.envoy import attache
 
@@ -130,7 +133,8 @@ class AttacheClient(HostClient):
     """
     @attache_error_handler
     def create_vm_spec(self, vm_id, datastore, memoryMB, cpus, metadata, env):
-        spec = self._client.CreateVMSpec(vm_id, datastore, memoryMB, cpus)
+        vm_path = datastore_path(datastore, compond_path_join(VM_FOLDER_NAME_PREFIX, vm_id))
+        spec = self._client.CreateVMSpec(vm_id, vm_path, memoryMB, cpus)
         return AttacheVmConfigSpec(self._client, spec)
 
     @attache_error_handler
