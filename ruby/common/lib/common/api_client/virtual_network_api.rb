@@ -14,9 +14,20 @@ module EsxCloud
     module VirtualNetworkApi
       def create_virtual_network(project_id, payload)
         url = "/projects/#{project_id}/networks"
-        puts "network url is #{url}"
         response = @http_client.post_json(url, payload)
         check_response("Create virtual network #{payload}", response, 201)
+
+        poll_response(response)
+      end
+
+      def get_virtual_network(network_id)
+        response = @http_client.get("/networks/#{network_id}")
+        check_response("Get virtual network #{network_id}", response, 200)
+      end
+
+      def delete_virtual_network(network_id)
+        response = @http_client.delete("/networks/#{network_id}")
+        check_response("Delete virtual network #{network_id}", response, 201)
 
         poll_response(response)
       end
