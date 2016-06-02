@@ -14,7 +14,6 @@
 package com.vmware.photon.controller.deployer;
 
 import com.vmware.photon.controller.common.logging.LoggingConfiguration;
-import com.vmware.photon.controller.common.thrift.ThriftConfig;
 import com.vmware.photon.controller.common.xenon.host.XenonConfig;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperConfig;
 import com.vmware.photon.controller.deployer.dcp.ContainersConfig;
@@ -48,10 +47,6 @@ public class DeployerConfig {
   @JsonProperty("xenon")
   private XenonConfig xenonConfig;
 
-  @Valid
-  @NotNull
-  @JsonProperty("thrift")
-  private ThriftConfig thriftConfig;
 
   @Valid
   @NotNull
@@ -72,10 +67,6 @@ public class DeployerConfig {
 
   public XenonConfig getXenonConfig() {
     return xenonConfig;
-  }
-
-  public ThriftConfig getThriftConfig() {
-    return this.thriftConfig;
   }
 
   public DeployerContext getDeployerContext() {
