@@ -72,6 +72,7 @@ import com.vmware.photon.controller.apife.resources.tasks.VmTasksResource;
 import com.vmware.photon.controller.apife.resources.tenant.TenantResource;
 import com.vmware.photon.controller.apife.resources.tenant.TenantSecurityGroupsResource;
 import com.vmware.photon.controller.apife.resources.tenant.TenantsResource;
+import com.vmware.photon.controller.apife.resources.virtualnetwork.ProjectNetworksResource;
 import com.vmware.photon.controller.apife.resources.vm.ClusterVmsResource;
 import com.vmware.photon.controller.apife.resources.vm.DeploymentVmsResource;
 import com.vmware.photon.controller.apife.resources.vm.HostVmsResource;
@@ -291,6 +292,9 @@ public class ApiFeService extends Application<ApiFeStaticConfiguration> {
       resources.add(NetworkPortGroupsSetResource.class);
       resources.add(NetworkResource.class);
       resources.add(NetworksResource.class);
+    } else {
+      resources.add(com.vmware.photon.controller.apife.resources.virtualnetwork.NetworkResource.class);
+      resources.add(ProjectNetworksResource.class);
     }
 
     environment.jersey().register(new SwaggerJsonListing(resources, SWAGGER_VERSION, "v1"));
