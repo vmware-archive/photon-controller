@@ -18,5 +18,15 @@ module EsxCloud
     def self.create(project_id, spec)
       Config.client.create_virtual_network(project_id, spec.to_hash)
     end
+
+    # @param[String] network_id
+    def self.get(network_id)
+      Config.client.get_virtual_network(network_id)
+    end
+
+    # @param[String] network_id
+    def self.delete(network_id)
+      Config.client.delete_virtual_network(network_id)
+    end
   end
 end
