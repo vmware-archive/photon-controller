@@ -224,7 +224,7 @@ public class DeleteVirtualNetworkWorkflowService extends BaseWorkflowService<Del
               case FAILED:
               case CANCELLED:
                 fail(state, new IllegalStateException(
-                    String.format("Failed to delete logical ports: %s", result.taskState.failure.toString())));
+                    String.format("Failed to delete logical ports: %s", result.taskState.failure.message)));
                 break;
             }
           }
@@ -294,8 +294,7 @@ public class DeleteVirtualNetworkWorkflowService extends BaseWorkflowService<Del
               case FAILED:
               case CANCELLED:
                 fail(state, new IllegalStateException(
-                    String.format("Failed to delete logical Tier-1 router: %s", result.taskState.failure.toString()
-                    )));
+                    String.format("Failed to delete logical Tier-1 router: %s", result.taskState.failure.message)));
                 break;
             }
           }
@@ -339,7 +338,7 @@ public class DeleteVirtualNetworkWorkflowService extends BaseWorkflowService<Del
               case FAILED:
               case CANCELLED:
                 fail(state, new IllegalStateException(
-                    String.format("Failed to delete logical switch: %s", result.taskState.failure.toString())));
+                    String.format("Failed to delete logical switch: %s", result.taskState.failure.message)));
                 break;
             }
           }
