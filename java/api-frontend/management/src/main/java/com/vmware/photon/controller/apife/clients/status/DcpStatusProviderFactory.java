@@ -56,10 +56,7 @@ public class DcpStatusProviderFactory implements StatusProviderFactory {
     //TODO(adev): Remove this after thrift removal
     try {
       logger.info("*******Creating DcpRestClient as StatusProvider {}", server.getPort());
-      if (server.getPort() == 18000 || server.getPort() == 16000) {
-        dcpRestClient = new DeployerXenonRestClient(new StaticServerSet(server), this.executor);
-        logger.info("Creating DcpRestClient as StatusProvider on deployer");
-      } else if (HousekeeperServerSet.class.isAssignableFrom(serverSet.getClass())) {
+      if (server.getPort() == 16000) {
         dcpRestClient = new HousekeeperXenonRestClient(new StaticServerSet(server), this.executor);
         logger.info("Creating DcpRestClient as StatusProvider on housekeeper");
       }

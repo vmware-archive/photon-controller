@@ -10,7 +10,7 @@
   "PROJECT_NAME": "mgmt-project",
   "DEPLOYER_DCP_STORAGE_PATH": "/etc/esxcloud/deployer/sandbox_18000",
   "memoryMb": "2048",
-  "PEER_NODES": "[{\"peerAddress\":\"0.0.0.0\",\"peerPort\":\"18001\"},{\"peerAddress\":\"0.0.0.1\",\"peerPort\":\"18001\"},{\"peerAddress\":\"0.0.0.2\",\"peerPort\":\"18001\"}]",
+  "PEER_NODES": "[{\"peerAddress\":\"0.0.0.0\",\"peerPort\":\"18000\"},{\"peerAddress\":\"0.0.0.1\",\"peerPort\":\"18000\"},{\"peerAddress\":\"0.0.0.2\",\"peerPort\":\"18000\"}]",
   "RESOURCE_TICKET_NAME": "mgmt-res-ticket",
   "APIFE_PORT": "28080",
   "REGISTRATION_ADDRESS": "0.0.0.2",
