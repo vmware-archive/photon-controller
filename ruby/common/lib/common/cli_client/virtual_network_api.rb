@@ -10,39 +10,27 @@
 # specific language governing permissions and limitations under the License.
 
 module EsxCloud
-  class ApiClient
+  class CliClient
     module VirtualNetworkApi
 
       # @param [String] project_id
       # @param [VirtualNetworkCreateSpec] payload
       # @return [VirtualNetwork]
       def create_virtual_network(project_id, payload)
-        url = "/projects/#{project_id}/networks"
-        response = @http_client.post_json(url, payload)
-        check_response("Create virtual network #{payload}", response, 201)
-
-        task = poll_response(response)
-        find_virtual_network_by_id(task.entity_id)
+        @api_client.create_virtual_network(project_id, payload)
+      end
       end
 
       # @param [String] network_id
       # @return [Boolean]
       def delete_virtual_network(network_id)
-        response = @http_client.delete("/networks/#{network_id}")
-        check_response("Delete virtual network #{network_id}", response, 201)
-
-        poll_response(response)
-        true
+        @api_client.delete_virtual_network(network_id)
       end
 
       # @param [String] network_id
       # @return [VirtualNetwork]
       def find_virtual_network_by_id(network_id)
-        response = @http_client.get("/networks/#{network_id}")
-        check_response("Get virtual network #{network_id}", response, 200)
-
-        VirtualNetwork.create_from_json(response.body)
+        @api_client.find_virtual_network_by_id(network_id)
       end
-    end
   end
 end

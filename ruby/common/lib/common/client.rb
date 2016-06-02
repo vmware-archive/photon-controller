@@ -534,5 +534,20 @@ module EsxCloud
     def get_availability_zone_tasks(id, state = nil)
     end
 
+    # @param [String] project_id
+    # @param [VirtualNetworkCreateSpec] payload
+    # @return [VirtualNetwork]
+    def create_virtual_network(project_id, payload)
+    end
+
+    # @param [String] network_id
+    # @return [Boolean]
+    def delete_virtual_network(network_id)
+    end
+
+    # @param [String] network_id
+    # @return [VirtualNetwork]
+    def find_virtual_network_by_id(network_id)
+    end
   end
 end
