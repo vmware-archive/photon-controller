@@ -6,7 +6,6 @@ dependencies {
   compile 'org.apache.httpcomponents:httpclient:4.3.3'
   compile 'org.apache.httpcomponents:httpasyncclient:4.0.1'
   compile 'org.apache.commons:commons-lang3:3.1'
-  compile 'org.postgresql:postgresql:9.2-1003-jdbc4'
   compile 'com.fasterxml.jackson.core:jackson-databind:2.5.1'
   compile 'org.apache.httpcomponents:httpmime:4.2.3'
   compile 'com.google.code.findbugs:jsr305:2.0.1'
@@ -30,6 +29,10 @@ jar {
         'Built-JDK': System.getProperty('java.version'),
         'Built-Gradle': gradle.gradleVersion,
         'Git-Commit': "git rev-parse --short HEAD".execute().text.trim()
+  }
+  into("META-INF/maven/$project.group/$project.name") {
+      from "$buildDir/pom.xml"
+      rename ".*", "pom.xml"
   }
 }
 

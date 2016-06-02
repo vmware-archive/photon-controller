@@ -35,6 +35,10 @@ jar {
   manifest = project.manifest {
     from sharedManifest
   }
+  into("META-INF/maven/$project.group/$project.name") {
+      from "$buildDir/pom.xml"
+      rename ".*", "pom.xml"
+  }
 }
 
 task fatJar(type: Jar) {
