@@ -243,11 +243,11 @@ namespace "agent" do
   end
 end
 
-namespace "nsx" do
+namespace "virtual_network" do
   desc "Virtual network integration tests"
   RSpec::Core::RakeTask.new(:virtual_network) do |task|
     task.pattern = FileList['spec/nsx/**/*_spec.rb']
-    task.rspec_opts = "--tag nsx --tag virtual_network --out reports/rspec-virtual-network.xml --tag ~slow"
+    task.rspec_opts = "--tag virtual_network --out reports/rspec-virtual-network.xml --tag ~slow"
   end
 end
 
