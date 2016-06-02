@@ -56,15 +56,15 @@ public class Main {
 
     Namespace namespace = parser.parseArgsOrFail(args);
 
-    Config config = getConfig(namespace);
+    HousekeeperConfig housekeeperConfig = getConfig(namespace);
 
-    new LoggingFactory(config.getLogging(), "housekeeper").configure();
+    new LoggingFactory(housekeeperConfig.getLogging(), "housekeeper").configure();
 
     Injector injector = Guice.createInjector(
         new ThriftModule()
     );
 
-    final ZookeeperModule zkModule = new ZookeeperModule(config.getZookeeper());
+    final ZookeeperModule zkModule = new ZookeeperModule(housekeeperConfig.getZookeeper());
     final CuratorFramework zkClient = zkModule.getCuratorFramework();
     final ServiceConfigFactory serviceConfigFactory = zkModule.getServiceConfigFactory(zkClient);
     ServerSet cloudStoreServerSet = zkModule.getZookeeperServerSet(zkClient, Constants.CLOUDSTORE_SERVICE_NAME, true);
@@ -79,14 +79,15 @@ public class Main {
     final NsxClientFactory nsxClientFactory = new NsxClientFactory();
 
     final HousekeeperXenonServiceHost housekeeperXenonServiceHost = new HousekeeperXenonServiceHost(
-        config.getXenonConfig(), cloudStoreHelper, hostClientFactory, serviceConfigFactory, nsxClientFactory);
+        housekeeperConfig.getXenonConfig(), cloudStoreHelper, hostClientFactory,
+            serviceConfigFactory, nsxClientFactory);
 
     ServerSet housekeeperServerSet = zkModule.getZookeeperServerSet(zkClient, Constants.HOUSEKEEPER_SERVICE_NAME, true);
     final HousekeeperService housekeeperService = new HousekeeperService(housekeeperServerSet,
         housekeeperXenonServiceHost);
 
     final HousekeeperServer thriftServer = new HousekeeperServer(zkModule, zkClient, tProtocolFactory,
-        tTransportFactory, thriftFactory, housekeeperService, config.getThriftConfig());
+        tTransportFactory, thriftFactory, housekeeperService, housekeeperConfig.getThriftConfig());
 
     Runtime.getRuntime().addShutdownHook(new Thread() {
       @Override
@@ -103,15 +104,15 @@ public class Main {
     thriftServer.serve();
   }
 
-  private static Config getConfig(Namespace namespace) {
-    Config config = null;
+  private static HousekeeperConfig getConfig(Namespace namespace) {
+    HousekeeperConfig housekeeperConfig = null;
     try {
-      config = ConfigBuilder.build(Config.class, namespace.getString("file"));
+      housekeeperConfig = ConfigBuilder.build(HousekeeperConfig.class, namespace.getString("file"));
     } catch (BadConfigException e) {
       logger.error(e.getMessage());
       System.exit(1);
     }
-    return config;
+    return housekeeperConfig;
   }
 
 }

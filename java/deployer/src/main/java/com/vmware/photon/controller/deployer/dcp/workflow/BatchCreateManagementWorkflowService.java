@@ -30,7 +30,6 @@ import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.common.xenon.validation.Positive;
-import com.vmware.photon.controller.deployer.dcp.ContainersConfig.ContainerType;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerService;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateService;
 import com.vmware.photon.controller.deployer.dcp.entity.VmService;
@@ -65,7 +64,7 @@ import com.vmware.xenon.services.common.QueryTask.Query;
 import com.vmware.xenon.services.common.ServiceUriPaths;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.FutureCallback;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
@@ -369,7 +368,7 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
             .getBroadcastQueryDocuments(VmService.State.class, os.get(queryVmsOp.getId()));
 
         // Update Quorum on services
-        Map<ContainerType, List<Pair<String, Integer>>> xenonServiceToIp = mapXenonServices(vms, containers, templates);
+        Map<String, List<Pair<String, Integer>>> xenonServiceToIp = mapXenonServices(vms);
         List<Operation> quorumUpdates = getQuroumUpdateOperations(xenonServiceToIp, x -> x);
         OperationJoin.create(quorumUpdates)
           .setCompletion((os2, ts2) -> {
@@ -389,7 +388,7 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
 
   private void checkNodeGroupStatus(
       List<Operation> nodeGroupStatusChecks,
-      Map<ContainerType, List<Pair<String, Integer>>> xenonServiceToIp,
+      Map<String, List<Pair<String, Integer>>> xenonServiceToIp,
       int conssecutiveSuccesses,
       int tries) {
     OperationJoin.create(nodeGroupStatusChecks)
@@ -422,7 +421,7 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
       .sendWith(this);
   }
 
-  private void resetQuorum(Map<ContainerType, List<Pair<String, Integer>>> xenonServiceToIp) {
+  private void resetQuorum(Map<String, List<Pair<String, Integer>>> xenonServiceToIp) {
     OperationJoin.create(getQuroumUpdateOperations(xenonServiceToIp, x -> x / 2 + 1))
       .setCompletion((os, ts) -> {
         if (ts != null && !ts.isEmpty()) {
@@ -465,10 +464,10 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
   }
 
   private List<Operation> getNodeGroupStateOperations(
-      Map<ContainerType, List<Pair<String, Integer>>> xenonServiceToIp) {
+      Map<String, List<Pair<String, Integer>>> xenonServiceToIp) {
 
     List<Operation> ops = new ArrayList<>();
-    for (Entry<ContainerType, List<Pair<String, Integer>>> e : xenonServiceToIp.entrySet()) {
+    for (Entry<String, List<Pair<String, Integer>>> e : xenonServiceToIp.entrySet()) {
       for (Pair<String, Integer> address : e.getValue()) {
         Operation op = Operation
             .createGet(
@@ -480,11 +479,11 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
   }
 
   private List<Operation> getQuroumUpdateOperations(
-      Map<ContainerType, List<Pair<String, Integer>>> xenonServiceToIp,
+      Map<String, List<Pair<String, Integer>>> xenonServiceToIp,
       IntUnaryOperator computeQuorum) {
 
     List<Operation> quorumUpdates = new ArrayList<>();
-    for (Entry<ContainerType, List<Pair<String, Integer>>> entry : xenonServiceToIp.entrySet()) {
+    for (Entry<String, List<Pair<String, Integer>>> entry : xenonServiceToIp.entrySet()) {
       UpdateQuorumRequest patch = new UpdateQuorumRequest();
       patch.kind = UpdateQuorumRequest.KIND;
       patch.membershipQuorum = computeQuorum.applyAsInt(entry.getValue().size());
@@ -500,17 +499,15 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
     return quorumUpdates;
   }
 
-  private Map<ContainerType, List<Pair<String, Integer>>> mapXenonServices(
-      List<VmService.State> vms,
-      List<ContainerService.State> containers,
-      List<ContainerTemplateService.State> templates) {
+  private Map<String, List<Pair<String, Integer>>> mapXenonServices(
+      List<VmService.State> vms) {
 
-    Map<ContainerType, String> xenonServices = ImmutableMap.<ContainerType, String>builder()
-        .put(ContainerType.PhotonControllerCore, Constants.CLOUDSTORE_SERVICE_NAME)
-        .put(ContainerType.Deployer, Constants.DEPLOYER_SERVICE_NAME)
-        .put(ContainerType.Housekeeper, Constants.HOUSEKEEPER_SERVICE_NAME)
+    List<String> xenonServices = ImmutableList.<String>builder()
+        .add(Constants.CLOUDSTORE_SERVICE_NAME)
+        .add(Constants.DEPLOYER_SERVICE_NAME)
+        .add(Constants.HOUSEKEEPER_SERVICE_NAME)
         .build();
-    Map<ContainerType, List<Pair<String, Integer>>> map = new HashMap<>();
+    Map<String, List<Pair<String, Integer>>> map = new HashMap<>();
 
     String zookeeperQuorum = MiscUtils.generateReplicaList(
         vms.stream()
@@ -519,18 +516,18 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
 
     ZookeeperClient zookeeperClient
       = ((ZookeeperClientFactoryProvider) getHost()).getZookeeperServerSetFactoryBuilder().create();
-    for (Map.Entry<ContainerType, String> entry : xenonServices.entrySet()) {
-      Set<InetSocketAddress> remoteServers = zookeeperClient.getServers(zookeeperQuorum, entry.getValue());
+    for (String serviceName : xenonServices) {
+      Set<InetSocketAddress> remoteServers = zookeeperClient.getServers(zookeeperQuorum, serviceName);
       List<Pair<String, Integer>> serverAddresses = remoteServers.stream()
           .map(s -> {
             int adjustment = 1;
-            if (entry.getKey() == ContainerType.PhotonControllerCore) {
+            if (serviceName == Constants.CLOUDSTORE_SERVICE_NAME) {
               adjustment = 0;
             }
             return new Pair<String, Integer>(s.getAddress().getHostAddress(), s.getPort() + adjustment);
           })
           .collect(Collectors.toList());
-      map.put(entry.getKey(), serverAddresses);
+      map.put(serviceName, serverAddresses);
     }
     return map;
   }

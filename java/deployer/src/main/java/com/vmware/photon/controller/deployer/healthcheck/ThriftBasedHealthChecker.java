@@ -71,7 +71,7 @@ public class ThriftBasedHealthChecker implements HealthChecker {
       case Deployer:
         return getThriftClient(DeployerClient.class, Deployer.AsyncClient.class, DeployerServer.SERVICE_NAME);
 
-      case Housekeeper:
+      case PhotonControllerCore:
         return getThriftClient(HousekeeperClient.class, Housekeeper.AsyncClient.class, HOUSEKEEPER_SERVICE_NAME);
     }
     throw new RuntimeException(String.format("%s does not support thrift health check", containerType));

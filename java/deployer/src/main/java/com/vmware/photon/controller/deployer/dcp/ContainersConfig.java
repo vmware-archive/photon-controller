@@ -34,7 +34,6 @@ public class ContainersConfig {
    */
   public enum ContainerType {
     Deployer,
-    Housekeeper,
     Lightwave,
     LoadBalancer,
     ManagementApi,

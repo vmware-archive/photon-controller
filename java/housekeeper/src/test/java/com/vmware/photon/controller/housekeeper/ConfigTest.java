@@ -28,25 +28,26 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 
 /**
- * Tests {@link Config}.
+ * Tests {@link HousekeeperConfig}.
  */
 public class ConfigTest {
 
   /**
    * This class implements tests for the default test configuration file.
    */
-  public class DefaultConfigTest {
+  public class DefaultHousekeeperConfigTest {
 
-    private Config config;
+    private HousekeeperConfig housekeeperConfig;
 
     @BeforeClass
     public void setUp() throws BadConfigException {
-      config = ConfigBuilder.build(Config.class, ConfigTest.class.getResource("/config.yml").getPath());
+      housekeeperConfig = ConfigBuilder.build(HousekeeperConfig.class,
+              ConfigTest.class.getResource("/config.yml").getPath());
     }
 
     @Test
     public void testThriftConfig() {
-      ThriftConfig thriftConfig = config.getThriftConfig();
+      ThriftConfig thriftConfig = housekeeperConfig.getThriftConfig();
       assertThat(thriftConfig.getBindAddress(), is("0.0.0.0"));
       assertThat(thriftConfig.getPort(), is(16000));
       assertThat(thriftConfig.getRegistrationAddress(), is("127.0.0.1"));
@@ -54,7 +55,7 @@ public class ConfigTest {
 
     @Test
     public void testXenonConfig() {
-      com.vmware.photon.controller.common.xenon.host.XenonConfig xenonConfig = config.getXenonConfig();
+      com.vmware.photon.controller.common.xenon.host.XenonConfig xenonConfig = housekeeperConfig.getXenonConfig();
       assertThat(xenonConfig.getBindAddress(), is("0.0.0.0"));
       assertThat(xenonConfig.getPeerNodes(), arrayContaining("http://127.0.0.1:16001"));
       assertThat(xenonConfig.getPort(), is(16001));
@@ -64,30 +65,31 @@ public class ConfigTest {
 
     @Test
     public void testZookeeperConfig() {
-      assertThat(config.getZookeeper(), instanceOf(ZookeeperConfig.class));
+      assertThat(housekeeperConfig.getZookeeper(), instanceOf(ZookeeperConfig.class));
     }
 
     @Test
     public void testLoggingConfig() {
-      assertThat(config.getLogging(), instanceOf(LoggingConfiguration.class));
+      assertThat(housekeeperConfig.getLogging(), instanceOf(LoggingConfiguration.class));
     }
   }
 
   /**
-   * Tests that a minimal config file can be loaded.
+   * Tests that a minimal housekeeperConfig file can be loaded.
    */
   protected class Minimal {
 
-    private Config config;
+    private HousekeeperConfig housekeeperConfig;
 
     @BeforeMethod
     public void setUp() throws BadConfigException {
-      config = ConfigBuilder.build(Config.class, ConfigTest.class.getResource("/config_min.yml").getPath());
+      housekeeperConfig = ConfigBuilder.build(HousekeeperConfig.class,
+              ConfigTest.class.getResource("/config_min.yml").getPath());
     }
 
     @Test
     public void testThriftConfig() {
-      ThriftConfig thriftConfig = config.getThriftConfig();
+      ThriftConfig thriftConfig = housekeeperConfig.getThriftConfig();
       assertThat(thriftConfig.getBindAddress(), is("0.0.0.0"));
       assertThat(thriftConfig.getPort(), is(16000));
       assertThat(thriftConfig.getRegistrationAddress(), is("127.0.0.1"));
@@ -95,7 +97,7 @@ public class ConfigTest {
 
     @Test
     public void testXenonConfig() {
-      com.vmware.photon.controller.common.xenon.host.XenonConfig xenonConfig = config.getXenonConfig();
+      com.vmware.photon.controller.common.xenon.host.XenonConfig xenonConfig = housekeeperConfig.getXenonConfig();
       assertThat(xenonConfig.getBindAddress(), is("0.0.0.0"));
       assertThat(xenonConfig.getPeerNodes(), arrayContaining("http://127.0.0.1:16001"));
       assertThat(xenonConfig.getPort(), is(16001));

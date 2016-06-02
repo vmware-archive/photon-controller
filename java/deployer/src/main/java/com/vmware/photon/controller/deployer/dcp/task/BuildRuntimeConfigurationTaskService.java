@@ -72,6 +72,7 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
    */
   public static final String MUSTACHE_KEY_COMMON_PEER_NODES = "PEER_NODES";
   public static final String MUSTACHE_KEY_CLOUDSTORE_PEER_NODES = "CLOUDSTORE_PEER_NODES";
+  public static final String MUSTACHE_KEY_HOUSEKEEPER_PEER_NODES = "HOUSEKEEPER_PEER_NODES";
   public static final String MUSTACHE_KEY_SCHEDULER_PEER_NODES = "SCHEDULER_PEER_NODES";
   public static final String MUSTACHE_KEY_HAPROXY_MGMT_API_HTTP_SERVERS = "MGMT_API_HTTP_SERVERS";
   public static final String MUSTACHE_KEY_HAPROXY_MGMT_UI_HTTP_SERVERS = "MGMT_UI_HTTP_SERVERS";
@@ -478,7 +479,6 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
 
     switch (currentState.containerType) {
       case Deployer:
-      case Housekeeper:
       case ManagementApi:
       case PhotonControllerCore:
         if (!currentState.dynamicParameters.containsKey(MUSTACHE_KEY_COMMON_ZOOKEEPER_QUORUM)) {
@@ -505,16 +505,11 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
               (vmIpAddresses) -> patchDynamicParameter(currentState, MUSTACHE_KEY_COMMON_PEER_NODES,
                   generatePeerNodeList(vmIpAddresses, String.valueOf(ServicePortConstants.DEPLOYER_PORT + 1))));
           return;
-        case Housekeeper:
-          getIpsForContainerType(currentState.containerType,
-              (vmIpAddresses) -> patchDynamicParameter(currentState, MUSTACHE_KEY_COMMON_PEER_NODES,
-                  generatePeerNodeList(vmIpAddresses, String.valueOf(ServicePortConstants.HOUSEKEEPER_PORT + 1))));
-          return;
       }
     }
 
     //
-    // Populate peer node information for cloudstore and scheduler services
+    // Populate peer node information for cloudstore, housekeeper and scheduler services
     //
 
     if (!currentState.dynamicParameters.containsKey(MUSTACHE_KEY_CLOUDSTORE_PEER_NODES)) {
@@ -523,6 +518,17 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
           getIpsForContainerType(currentState.containerType,
                   (vmIpAddresses) -> patchDynamicParameter(currentState, MUSTACHE_KEY_CLOUDSTORE_PEER_NODES,
                           generatePeerNodeList(vmIpAddresses, String.valueOf(ServicePortConstants.CLOUD_STORE_PORT))));
+          return;
+      }
+    }
+
+    if (!currentState.dynamicParameters.containsKey(MUSTACHE_KEY_HOUSEKEEPER_PEER_NODES)) {
+      switch (currentState.containerType) {
+        case PhotonControllerCore:
+          getIpsForContainerType(currentState.containerType,
+                  (vmIpAddresses) -> patchDynamicParameter(currentState, MUSTACHE_KEY_HOUSEKEEPER_PEER_NODES,
+                          generatePeerNodeList(vmIpAddresses,
+                                  String.valueOf(ServicePortConstants.HOUSEKEEPER_PORT + 1))));
           return;
       }
     }
