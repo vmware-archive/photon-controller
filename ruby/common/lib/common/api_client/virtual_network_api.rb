@@ -12,13 +12,36 @@
 module EsxCloud
   class ApiClient
     module VirtualNetworkApi
+
+      # @param [String] project_id
+      # @param [VirtualNetworkCreateSpec] payload
+      # @return [VirtualNetwork]
       def create_virtual_network(project_id, payload)
         url = "/projects/#{project_id}/networks"
-        puts "network url is #{url}"
         response = @http_client.post_json(url, payload)
         check_response("Create virtual network #{payload}", response, 201)
 
+        task = poll_response(response)
+        find_virtual_network_by_id(task.entity_id)
+      end
+
+      # @param [String] network_id
+      # @return [Boolean]
+      def delete_virtual_network(network_id)
+        response = @http_client.delete("/networks/#{network_id}")
+        check_response("Delete virtual network #{network_id}", response, 201)
+
         poll_response(response)
+        true
+      end
+
+      # @param [String] network_id
+      # @return [VirtualNetwork]
+      def find_virtual_network_by_id(network_id)
+        response = @http_client.get("/networks/#{network_id}")
+        check_response("Get virtual network #{network_id}", response, 200)
+
+        VirtualNetwork.create_from_json(response.body)
       end
     end
   end
