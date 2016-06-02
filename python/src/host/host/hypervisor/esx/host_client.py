@@ -13,6 +13,14 @@
 import abc
 
 
+class HostdConnectionFailure(Exception):
+    pass
+
+
+class DatastoreNotFound(Exception):
+    pass
+
+
 class DeviceNotFoundException(Exception):
     pass
 

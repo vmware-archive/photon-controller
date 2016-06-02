@@ -38,6 +38,8 @@ from host.hypervisor.disk_manager import DiskPathException
 from host.hypervisor.disk_manager import DiskFileException
 from host.hypervisor.esx import logging_wrappers
 from host.hypervisor.esx.host_client import HostClient
+from host.hypervisor.esx.host_client import DatastoreNotFound
+from host.hypervisor.esx.host_client import HostdConnectionFailure
 from host.hypervisor.esx.host_client import NfcLeaseInitiatizationTimeout
 from host.hypervisor.esx.host_client import NfcLeaseInitiatizationError
 from host.hypervisor.esx.path_util import os_to_datastore_path
@@ -77,14 +79,6 @@ DEFAULT_TASK_TIMEOUT = 60 * 60  # one hour timeout
 # monkey patch to enable request logging
 if connect.SoapStubAdapter.__name__ == "SoapStubAdapter":
     connect.SoapStubAdapter = logging_wrappers.SoapStubAdapterWrapper
-
-
-class HostdConnectionFailure(Exception):
-    pass
-
-
-class DatastoreNotFound(Exception):
-    pass
 
 
 class AcquireCredentialsException(Exception):
