@@ -30,8 +30,8 @@ from pyVmomi import vmodl
 
 from gen.agent.ttypes import PowerState
 from host.hypervisor.esx.vim_client import VimClient
-from host.hypervisor.esx.vim_client import DatastoreNotFound
-from host.hypervisor.esx.vim_client import HostdConnectionFailure
+from host.hypervisor.esx.host_client import DatastoreNotFound
+from host.hypervisor.esx.host_client import HostdConnectionFailure
 from host.hypervisor.esx.vim_client import AcquireCredentialsException
 
 

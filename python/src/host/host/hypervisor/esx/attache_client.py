@@ -23,23 +23,51 @@ from common.photon_thrift.thriftserver import IThriftWorkerCallback
 from gen.agent.ttypes import VmCache
 from gen.host.ttypes import VmNetworkInfo
 from gen.host.ttypes import Ipv4Address
+from host.hypervisor.disk_manager import DiskFileException
+from host.hypervisor.disk_manager import DiskPathException
+from host.hypervisor.disk_manager import DiskAlreadyExistException
+from host.hypervisor.vm_manager import VmNotFoundException
+from host.hypervisor.vm_manager import VmPowerStateException
 from host.hypervisor.esx.host_client import HostClient
+from host.hypervisor.esx.host_client import DeviceNotFoundException
+from host.hypervisor.esx.host_client import HostdConnectionFailure
 from host.hypervisor.esx.host_client import VmConfigSpec
+from host.hypervisor.esx.host_client import DatastoreNotFound
 from host.hypervisor.esx.path_util import os_to_datastore_path
 
 from vmware.envoy import attache
+
+ATTACHE_ERROR_MAP = {
+    60011: HostdConnectionFailure,      # ERROR_ATTACHE_CONNECT_FAILED
+    60032: VmNotFoundException,         # ERROR_ATTACHE_VM_NOT_FOUND
+    60033: DeviceNotFoundException,     # ERROR_ATTACHE_DEVICE_NOT_FOUND
+    60035: DatastoreNotFound,           # ERROR_ATTACHE_DATASTORE_NOT_FOUND
+
+    60100: DiskPathException,           # ERROR_ATTACHE_VIM_FAULT_INVALID_DATASTORE
+    60101: DiskFileException,           # ERROR_ATTACHE_VIM_FAULT_FILE_FAULT
+    60103: DiskAlreadyExistException,   # ERROR_ATTACHE_VIM_FAULT_FILE_ALREADY_EXISTS
+    60104: VmPowerStateException        # ERROR_ATTACHE_VIM_FAULT_FILE_INVALID_POWER_STATE
+}
 
 
 def attache_error_handler(func):
     def nested(self, *args, **kwargs):
         try:
-            self._logger.info("Enter AttacheClient.%s", func.__name__)
+            self._logger.info("Enter %s.%s", self.__class__.__name__, func.__name__)
             return func(self, *args, **kwargs)
+        except attache.attache_exception as e:
+            msg = "%s.%s failed with attache_exception: code=%d, msg=%s" %\
+                  (self.__class__.__name__, func.__name__, e.errorcode, e.message)
+            self._logger.exception(msg)
+            if e.errorcode in ATTACHE_ERROR_MAP:
+                raise ATTACHE_ERROR_MAP.get(e.errorcode)(msg)
+            else:
+                raise Exception(msg)
         except:
-            self._logger.exception("AttacheClient.%s failed with exception", func.__name__)
+            self._logger.exception("%s.%s failed with exception", self.__class__.__name__, func.__name__)
             raise
         finally:
-            self._logger.info("Leave AttacheClient.%s", func.__name__)
+            self._logger.info("Leave %s.%s", self.__class__.__name__, func.__name__)
     return nested
 
 
