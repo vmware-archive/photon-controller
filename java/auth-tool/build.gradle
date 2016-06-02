@@ -39,6 +39,10 @@ jar {
         'Built-JDK': System.getProperty('java.version'),
         'Built-Gradle': gradle.gradleVersion
   }
+  into("META-INF/maven/$project.group/$project.name") {
+      from "$buildDir/pom.xml"
+      rename ".*", "pom.xml"
+  }
   exclude 'META-INF/*.RSA', 'META-INF/*.SF','META-INF/*.DSA'
   from configurations.compile.collect {it.directory ? it : zipTree(it)}
   from files(compileJava)

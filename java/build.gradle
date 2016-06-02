@@ -46,6 +46,7 @@ subprojects {
   apply plugin: 'checkstyle'
   apply plugin: 'idea'
   apply plugin: 'java'
+  apply plugin: 'maven'
   apply plugin: 'com.bmuschko.docker-remote-api'
   apply plugin: 'com.bmuschko.vagrant-base'
 
@@ -111,7 +112,23 @@ subprojects {
     }
   }
 
+  task createPom << {
+    pom {
+      project {
+        inceptionYear '2015'
+        licenses {
+          license {
+            name 'The Apache Software License, Version 2.0'
+            url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+            distribution 'repo'
+          }
+        }
+      }
+    }.writeTo("$buildDir/pom.xml")
+  }
+
   compileJava.dependsOn(checkJavaVersion);
+  compileJava.dependsOn(createPom);
 
   test {
     useTestNG()
@@ -135,4 +152,3 @@ idea {
 
 ext.gitRoot = "git rev-parse --show-toplevel".execute().text.trim()
 ext.devboxDir = file("${gitRoot}/devbox-photon")
-

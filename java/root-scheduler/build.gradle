@@ -49,6 +49,10 @@ jar {
         'Built-Gradle': gradle.gradleVersion,
         'Git-Commit': "git rev-parse --short HEAD".execute().text.trim()
   }
+  into("META-INF/maven/$project.group/$project.name") {
+      from "$buildDir/pom.xml"
+      rename ".*", "pom.xml"
+  }
 }
 
 run {

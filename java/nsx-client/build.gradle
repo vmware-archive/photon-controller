@@ -29,6 +29,10 @@ jar {
         'Built-JDK': System.getProperty('java.version'),
         'Built-Gradle': gradle.gradleVersion
   }
+  into("META-INF/maven/$project.group/$project.name") {
+      from "$buildDir/pom.xml"
+      rename ".*", "pom.xml"
+  }
 }
 
 tasks.withType(Test) {
