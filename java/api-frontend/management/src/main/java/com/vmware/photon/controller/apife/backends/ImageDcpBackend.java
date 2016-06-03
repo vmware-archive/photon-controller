@@ -398,8 +398,12 @@ public class ImageDcpBackend implements ImageBackend {
     step.addResources(entityList);
     step.setOperation(Operation.REPLICATE_IMAGE);
 
-    TaskEntity task = taskBackend.createTaskWithSteps(image, Operation.CREATE_IMAGE, false, stepEntities);
+    step = new StepEntity();
+    stepEntities.add(step);
+    step.addResources(entityList);
+    step.setOperation(Operation.QUERY_REPLICATE_IMAGE_TASK_RESULT);
 
+    TaskEntity task = taskBackend.createTaskWithSteps(image, Operation.CREATE_IMAGE, false, stepEntities);
     task.getToBeLockedEntities().add(image);
 
     return task;

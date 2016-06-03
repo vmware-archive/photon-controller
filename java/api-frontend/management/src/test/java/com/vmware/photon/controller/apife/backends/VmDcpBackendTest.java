@@ -1014,7 +1014,7 @@ public class VmDcpBackendTest {
 
       assertThat(task, is(notNullValue()));
       assertThat(task.getState(), is(TaskEntity.State.QUEUED));
-      assertThat(task.getSteps().size(), is(2));
+      assertThat(task.getSteps().size(), is(3));
       StepEntity step = task.getSteps().get(0);
       assertThat(step.getOperation(), is(com.vmware.photon.controller.api.Operation.CREATE_VM_IMAGE));
       assertThat(step.getTransientResourceEntities().size(), is(3));
@@ -1035,6 +1035,9 @@ public class VmDcpBackendTest {
 
       step = task.getSteps().get(1);
       assertThat(step.getOperation(), is(com.vmware.photon.controller.api.Operation.REPLICATE_IMAGE));
+
+      step = task.getSteps().get(2);
+      assertThat(step.getOperation(), is(com.vmware.photon.controller.api.Operation.QUERY_REPLICATE_IMAGE_TASK_RESULT));
     }
 
     @DataProvider(name = "vmCreateImageReplicationType")

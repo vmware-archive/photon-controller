@@ -39,7 +39,7 @@ module EsxCloud
       end
 
       def self.port
-        ENV["DEPLOYER_DCP_PORT"] || "18001"
+        ENV["DEPLOYER_DCP_PORT"] || "18000"
       end
     end
   end
