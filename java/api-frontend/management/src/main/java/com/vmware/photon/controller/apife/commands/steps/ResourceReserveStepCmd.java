@@ -295,6 +295,8 @@ public class ResourceReserveStepCmd extends StepCommand {
             "constraints", localityEntity.getKind());
         return null;
 
+      // This is a special routine only for Deployer. At deployment time there is no network entity in cloud-store.
+      // Therefore we use PortGroup locality as network constraint for management VM creation.
       case PORT_GROUP_KIND:
         resourceConstraint.setType(ResourceConstraintType.NETWORK);
         constraintValues.add(localityEntity.getResourceId());
@@ -580,30 +582,54 @@ public class ResourceReserveStepCmd extends StepCommand {
       VmEntity entity,
       com.vmware.photon.controller.resource.gen.Vm vm)
       throws NetworkNotFoundException, StepNotFoundException {
-    if (entity.getNetworks() != null && !entity.getNetworks().isEmpty()) {
-      for (String network : entity.getNetworks()) {
-        ResourceConstraint resourceConstraint = new ResourceConstraint();
-        if (!this.useVirtualNetwork) {
-          resourceConstraint.setType(ResourceConstraintType.NETWORK);
-          for (String portGroup : networkBackend.toApiRepresentation(network).getPortGroups()) {
-            resourceConstraint.addToValues(portGroup);
-          }
-        } else {
-          resourceConstraint.setType(ResourceConstraintType.VIRTUAL_NETWORK);
 
-          String logicalSwitchId = getLogicalSwitchId(network);
-          resourceConstraint.addToValues(logicalSwitchId);
+    // This is for the special routine of Deployer where network constraint for the management VM
+    // is set via locality instead of the normal network constraint. Since the locality constraint
+    // is processed before normal network constraint, if we detect that there exists a network
+    // constraint for the VM, we skip this normal network constraint processing.
+    if (vm.getResource_constraints() != null &&
+        vm.getResource_constraints().stream().anyMatch(r -> r.getType() == ResourceConstraintType.NETWORK)) {
+      return;
+    }
 
-          // Need to pass the logical switch id to further steps if virtual network is being used.
-          // Only one logical switch is supported at this time.
-          if (this.useVirtualNetwork) {
-            taskCommand.getTask().findStep(com.vmware.photon.controller.api.Operation.CONNECT_VM_SWITCH)
-                .createOrUpdateTransientResource(ResourceReserveStepCmd.LOGICAL_SWITCH_ID, logicalSwitchId);
-          }
+    List<String> networks = entity.getNetworks();
+    if (networks == null) {
+      networks = new ArrayList<>();
+    }
+
+    if (networks.isEmpty()) {
+      if (!this.useVirtualNetwork) {
+        try {
+          networks.add(networkBackend.getDefault().getId());
+        } catch (NetworkNotFoundException ex) {
+          // TODO(ysheng): we temporarily relax the default network constraint.
+          // We need to fix integration tests as well as unit tests such
+          // that we guarantee that there exists a default network.
+          logger.debug("Temporarily relax default network constraint");
         }
-
-        vm.addToResource_constraints(resourceConstraint);
       }
+    }
+
+    for (String network : networks) {
+      ResourceConstraint resourceConstraint = new ResourceConstraint();
+      if (!this.useVirtualNetwork) {
+        resourceConstraint.setType(ResourceConstraintType.NETWORK);
+        for (String portGroup : networkBackend.toApiRepresentation(network).getPortGroups()) {
+          resourceConstraint.addToValues(portGroup);
+        }
+      } else {
+        resourceConstraint.setType(ResourceConstraintType.VIRTUAL_NETWORK);
+
+        String logicalSwitchId = getLogicalSwitchId(network);
+        resourceConstraint.addToValues(logicalSwitchId);
+
+        // Need to pass the logical switch id to further steps if virtual network is being used.
+        // Only one logical switch is supported at this time.
+        taskCommand.getTask().findStep(com.vmware.photon.controller.api.Operation.CONNECT_VM_SWITCH)
+            .createOrUpdateTransientResource(ResourceReserveStepCmd.LOGICAL_SWITCH_ID, logicalSwitchId);
+      }
+
+      vm.addToResource_constraints(resourceConstraint);
     }
   }
 

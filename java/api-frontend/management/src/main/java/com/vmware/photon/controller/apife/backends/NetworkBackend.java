@@ -47,5 +47,7 @@ public interface NetworkBackend {
 
   TaskEntity updatePortGroups(String id, List<String> portGroups) throws ExternalException;
 
+  NetworkEntity getDefault() throws NetworkNotFoundException;
+
   TaskEntity setDefault(String id) throws ExternalException;
 }
