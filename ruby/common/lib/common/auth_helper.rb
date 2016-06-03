@@ -28,7 +28,9 @@ module EsxCloud
       command = "java -jar #{auth_tool_path} get-access-token -t #{tenant} -a #{service_locator_url} -u " +
           Shellwords.escape(username) + " -p "  + Shellwords.escape(password)
 
-      EsxCloud::CmdRunner.run(command, true, /.*Exception:.*/)
+      token = EsxCloud::CmdRunner.run(command, true, /.*Exception:.*/)
+      puts "token: #{}"
+      token
     end
 
     private
