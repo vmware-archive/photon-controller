@@ -42,10 +42,11 @@ def normalize_datastore(host, datastore):
     client = get_client(host)
     ticket = get_ticket(client, datastore)
     # create vim_client using ticket
-    vim_client = VimClient(host=host, ticket=ticket, auto_sync=False)
+    vim_client = VimClient(auto_sync=False)
+    vim_client.connect_ticket(host, ticket)
     for ds in vim_client.get_all_datastores():
-        if ds.name == datastore and ds.info.url:
-            return ds.info.url.rsplit("/", 1)[1]
+        if ds.name == datastore:
+            return ds.id
     return datastore
 
 
