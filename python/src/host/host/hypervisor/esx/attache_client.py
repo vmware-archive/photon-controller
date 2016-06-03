@@ -10,6 +10,7 @@
 # License for then specific language governing permissions and limitations
 # under the License.
 import logging
+import os
 import socket
 import struct
 import threading
@@ -107,8 +108,8 @@ class AttacheClient(HostClient):
         self._logger.info("Start attache sync vm cache thread")
         self._client.EnablePropertyCache(self._session)
         self.update_cache()
-        # self._sync_thread = SyncAttacheCacheThread(self)
-        # self._sync_thread.start()
+        self._sync_thread = SyncAttacheCacheThread(self)
+        self._sync_thread.start()
 
     def _stop_syncing_cache(self, wait=False):
         if self._sync_thread:
@@ -140,6 +141,7 @@ class AttacheClient(HostClient):
     @attache_error_handler
     def create_vm(self, vm_id, create_spec):
         self._client.CreateVM(self._session, create_spec.get_spec())
+        self.wait_for_vm_create(vm_id)
 
     @attache_error_handler
     def export_vm(self, vm_id):
@@ -152,7 +154,8 @@ class AttacheClient(HostClient):
     @attache_error_handler
     def get_vms_in_cache(self):
         vms = []
-        for vm in self._client.GetCachedVMs(self._session):
+        for vm_id in self._client.GetCachedVMs(self._session):
+            vm = self._client.GetCachedVm(self._session, vm_id)
             vms.append(VmCache(name=vm.name, path=vm.path, disks=vm.disks, location_id=vm.location_id,
                                power_state=vm.power_state, memory_mb=vm.memoryMB, num_cpu=vm.nCPU))
         return vms
@@ -166,6 +169,14 @@ class AttacheClient(HostClient):
     @attache_error_handler
     def get_vm_resource_ids(self):
         self._client.GetCachedVMs(self._session)
+
+    @attache_error_handler
+    def wait_for_vm_create(self, vm_id):
+        for i in range(0, 60):
+            vms = self._client.GetCachedVMs(self._session)
+            if vm_id in vms:
+                break
+            time.sleep(1)
 
     @attache_error_handler
     def power_on_vm(self, vm_id):
@@ -228,11 +239,15 @@ class AttacheClient(HostClient):
 
     @attache_error_handler
     def unregister_vm(self, vm_id):
-        self._client.UnregisterVM(self._session, vm_id)
+        vmPath = self._client.UnregisterVM(self._session, vm_id)
+        vm_dir = os.path.dirname(vmPath)
+        return vm_dir
 
     @attache_error_handler
     def delete_vm(self, vm_id, force):
-        self._client.DeleteVM(self._session, vm_id)
+        vmPath = self._client.DeleteVM(self._session, vm_id)
+        vm_dir = os.path.dirname(vmPath)
+        return vm_dir
 
     """ Disk and file operations
     """
@@ -310,10 +325,7 @@ class AttacheClient(HostClient):
     """
     @attache_error_handler
     def get_datastore_in_cache(self, name):
-        for ds in self._client.GetDatastores(self._session):
-            if ds.name == name:
-                return ds
-        return None
+        return self._client.GetCachedDatastore(self._session, name)
 
     @attache_error_handler
     def get_all_datastores(self):
@@ -331,9 +343,15 @@ class AttacheClient(HostClient):
     def query_stats(self, entity, metric_names, sampling_interval, start_time, end_time=None):
         pass
 
+    @lock_with("_lock")
     @attache_error_handler
     def update_cache(self):
-        self._client.UpdatePropertyCache(self._session)
+        ds_updated = self._client.UpdatePropertyCache(self._session)
+
+        if ds_updated:
+            for listener in self._update_listeners:
+                self._logger.debug("datastores updated for listener: %s" % listener.__class__.__name__)
+                listener.datastores_updated()
 
 
 class AttacheVmConfigSpec(VmConfigSpec):
@@ -369,7 +387,7 @@ class AttacheVmConfigSpec(VmConfigSpec):
 class SyncAttacheCacheThread(threading.Thread):
     """ Periodically sync vm cache with remote esx server
     """
-    def __init__(self, attache_client, min_interval=1):
+    def __init__(self, attache_client, min_interval=20):
         super(SyncAttacheCacheThread, self).__init__()
         self._logger = logging.getLogger(__name__)
         self.setDaemon(True)
