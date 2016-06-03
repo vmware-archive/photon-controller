@@ -13,18 +13,21 @@
 
 package com.vmware.photon.controller.apife.commands.steps;
 
+import com.vmware.photon.controller.api.ImageReplicationType;
 import com.vmware.photon.controller.api.ImageState;
-import com.vmware.photon.controller.api.common.exceptions.ApiFeException;
 import com.vmware.photon.controller.apife.backends.ImageBackend;
 import com.vmware.photon.controller.apife.backends.StepBackend;
+import com.vmware.photon.controller.apife.backends.TaskBackend;
+import com.vmware.photon.controller.apife.backends.clients.HousekeeperClient;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.ImageEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
+import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.lib.Image;
 import com.vmware.photon.controller.apife.lib.ImageStore;
-import com.vmware.photon.controller.common.clients.HousekeeperClient;
-import com.vmware.photon.controller.common.clients.exceptions.RpcException;
-import com.vmware.photon.controller.resource.gen.ImageReplication;
+import com.vmware.photon.controller.housekeeper.dcp.ImageSeederService;
+import com.vmware.photon.controller.housekeeper.dcp.ImageSeederServiceFactory;
+import com.vmware.xenon.common.TaskState;
 
 import com.google.common.collect.ImmutableList;
 import org.mockito.InOrder;
@@ -33,14 +36,18 @@ import org.powermock.modules.testng.PowerMockTestCase;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 import static org.testng.Assert.fail;
 
 import java.util.ArrayList;
@@ -67,45 +74,96 @@ public class ImageReplicateStepCmdTest extends PowerMockTestCase {
   @Mock
   private HousekeeperClient housekeeperClient;
 
+  @Mock
+  private TaskBackend taskBackend;
+
+  @Mock
+  private StepEntity stepEntityMock;
+
+  private XenonTaskStatusStepCmd commandStatus;
+
   private StepEntity step;
+  private StepEntity nextStep;
+  private TaskEntity taskEntity;
   private ImageEntity imageEntity;
   private ImageReplicateStepCmd command;
   private String imageId = "image-1";
-  private ImageReplication replicationType = ImageReplication.EAGER;
-
+  private String remoteTaskLink;
+  ImageSeederService.State serviceDocument;
 
   @BeforeMethod
   public void beforeMethod() throws Throwable {
     imageEntity = new ImageEntity();
     imageEntity.setId(imageId);
     imageEntity.setName("image-name");
+    imageEntity.setReplicationType(ImageReplicationType.EAGER);
 
     step = new StepEntity();
     step.setId("step-1");
     step.addResource(imageEntity);
+    nextStep = new StepEntity();
+
+    taskEntity = new TaskEntity();
+    taskEntity.setSteps(jersey.repackaged.com.google.common.collect.ImmutableList.of(step, nextStep));
+    when(taskCommand.getTask()).thenReturn(taskEntity);
 
     command = new ImageReplicateStepCmd(taskCommand, stepBackend, step, imageBackend, imageStore);
 
     doReturn(true).when(imageStore).isReplicationNeeded();
     doReturn("datastore1").when(imageStore).getDatastore();
 
-    doReturn(housekeeperClient).when(taskCommand).getHousekeeperClient();
-    doNothing().when(housekeeperClient).replicateImage("datastore1", imageId, replicationType);
+    doReturn(housekeeperClient).when(taskCommand).getHousekeeperXenonClient();
 
     doReturn(ImmutableList.of("datastore1-id")).when(imageBackend).getSeededImageDatastores(imageEntity.getId());
     doNothing().when(imageBackend).updateState(eq(imageEntity), any(ImageState.class));
+
+    serviceDocument = new ImageSeederService.State();
+    serviceDocument.taskInfo = new ImageSeederService.TaskState();
+    serviceDocument.taskInfo.stage = ImageSeederService.TaskState.TaskStage.STARTED;
+    remoteTaskLink = "http://housekeeper" + ImageSeederServiceFactory.SELF_LINK
+        + "/00000000-0000-0000-0000-000000000001";
+    serviceDocument.documentSelfLink = remoteTaskLink;
+    doReturn(serviceDocument).when(housekeeperClient).replicateImage("datastore1", imageEntity);
+
+    when(stepEntityMock.getTransientResource(XenonTaskStatusStepCmd.REMOTE_TASK_LINK_RESOURCE_KEY)).thenReturn
+        (remoteTaskLink);
+    commandStatus =  new XenonTaskStatusStepCmd(taskCommand, stepBackend, stepEntityMock,
+        new ImageReplicateTaskStatusPoller(taskCommand, imageBackend, taskBackend));
   }
 
   @Test
-  public void testSuccessfulReplication() throws Exception {
+  public void testSuccessfulReplication() throws Throwable {
+    when(housekeeperClient.replicateImage("datastore1-id", imageEntity)).thenReturn(serviceDocument);
     command.execute();
 
     InOrder inOrder = inOrder(imageStore, imageBackend, housekeeperClient);
     inOrder.verify(imageStore).isReplicationNeeded();
     inOrder.verify(imageBackend).getSeededImageDatastores(imageEntity.getId());
-    inOrder.verify(housekeeperClient).replicateImage("datastore1-id", imageId, replicationType);
-    inOrder.verify(imageBackend).updateState(imageEntity, ImageState.READY);
-    verifyNoMoreInteractions(imageStore, imageBackend, housekeeperClient);
+    inOrder.verify(housekeeperClient).replicateImage("datastore1-id", imageEntity);
+    assertEquals(nextStep.getTransientResource(XenonTaskStatusStepCmd.REMOTE_TASK_LINK_RESOURCE_KEY),
+        remoteTaskLink);
+  }
+
+  @Test
+  public void testImageStatusChangeReady() throws Throwable{
+    ImageSeederService.State readyState = new ImageSeederService.State();
+    readyState.taskInfo = new ImageSeederService.TaskState();
+    readyState.taskInfo.stage = ImageSeederService.TaskState.TaskStage.FINISHED;
+    when(housekeeperClient.getReplicateImageStatus(anyString())).thenReturn(readyState);
+
+    commandStatus.run();
+    verify(imageBackend).updateState(imageEntity, ImageState.READY);
+  }
+
+  @Test
+  public void testImageStatusChangeError() throws Throwable{
+    ImageSeederService.State readyState = new ImageSeederService.State();
+    readyState.taskInfo = new ImageSeederService.TaskState();
+    readyState.taskInfo.stage = TaskState.TaskStage.FAILED;
+    when(housekeeperClient.getReplicateImageStatus(anyString())).thenReturn(readyState);
+
+    commandStatus.run();
+    verify(imageBackend).updateState(imageEntity, ImageState.ERROR);
   }
 
   @Test
@@ -116,8 +174,6 @@ public class ImageReplicateStepCmdTest extends PowerMockTestCase {
 
     InOrder inOrder = inOrder(imageStore, imageBackend, housekeeperClient);
     inOrder.verify(imageStore).isReplicationNeeded();
-    inOrder.verify(imageBackend).updateState(imageEntity, ImageState.READY);
-    verifyNoMoreInteractions(imageStore, imageBackend);
   }
 
   @Test
@@ -127,7 +183,8 @@ public class ImageReplicateStepCmdTest extends PowerMockTestCase {
     try {
       command.execute();
       fail("Exception expected.");
-    } catch (ApiFeException e) {
+    } catch (Exception e) {
+      command.markAsFailed(e);
       assertThat(e.getCause().getMessage(), is("The image should be present on at least one image datastore."));
     }
 
@@ -140,18 +197,19 @@ public class ImageReplicateStepCmdTest extends PowerMockTestCase {
 
   @Test
   public void testReplicateImageError() throws Exception {
-    doThrow(new RpcException()).when(housekeeperClient).replicateImage("datastore1-id", imageId, replicationType);
+    doThrow(new IllegalArgumentException("err")).when(housekeeperClient).replicateImage("datastore1-id", imageEntity);
 
     try {
       command.execute();
       fail("Exception expected.");
-    } catch (ApiFeException e) {
+    } catch (IllegalArgumentException e) {
+      command.markAsFailed(e);
     }
 
     InOrder inOrder = inOrder(imageStore, housekeeperClient, imageBackend);
     inOrder.verify(imageStore).isReplicationNeeded();
     inOrder.verify(imageBackend).getSeededImageDatastores(imageEntity.getId());
-    inOrder.verify(housekeeperClient).replicateImage("datastore1-id", imageId, replicationType);
+    inOrder.verify(housekeeperClient).replicateImage("datastore1-id", imageEntity);
     inOrder.verify(imageBackend).updateState(imageEntity, ImageState.ERROR);
     verifyNoMoreInteractions(imageStore, imageBackend);
   }
