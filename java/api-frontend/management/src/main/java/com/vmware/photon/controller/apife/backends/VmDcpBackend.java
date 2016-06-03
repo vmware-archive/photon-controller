@@ -1083,6 +1083,11 @@ public class VmDcpBackend implements VmBackend {
     step.addResource(image);
     step.setOperation(Operation.REPLICATE_IMAGE);
 
+    step = new StepEntity();
+    stepEntities.add(step);
+    step.addResource(image);
+    step.setOperation(Operation.QUERY_REPLICATE_IMAGE_TASK_RESULT);
+
     TaskEntity task = taskBackend.createTaskWithSteps(image, Operation.CREATE_VM_IMAGE, false, stepEntities);
     task.getToBeLockedEntities().add(vm);
 
