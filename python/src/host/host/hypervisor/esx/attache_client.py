@@ -107,8 +107,8 @@ class AttacheClient(HostClient):
         self._logger.info("Start attache sync vm cache thread")
         self._client.EnablePropertyCache(self._session)
         self.update_cache()
-        # self._sync_thread = SyncAttacheCacheThread(self)
-        # self._sync_thread.start()
+        self._sync_thread = SyncAttacheCacheThread(self)
+        self._sync_thread.start()
 
     def _stop_syncing_cache(self, wait=False):
         if self._sync_thread:
@@ -140,6 +140,7 @@ class AttacheClient(HostClient):
     @attache_error_handler
     def create_vm(self, vm_id, create_spec):
         self._client.CreateVM(self._session, create_spec.get_spec())
+        self.wait_for_vm_create(vm_id)
 
     @attache_error_handler
     def export_vm(self, vm_id):
@@ -152,7 +153,8 @@ class AttacheClient(HostClient):
     @attache_error_handler
     def get_vms_in_cache(self):
         vms = []
-        for vm in self._client.GetCachedVMs(self._session):
+        for vm_id in self._client.GetCachedVMs(self._session):
+            vm = self._client.GetCachedVm(self._session, vm_id)
             vms.append(VmCache(name=vm.name, path=vm.path, disks=vm.disks, location_id=vm.location_id,
                                power_state=vm.power_state, memory_mb=vm.memoryMB, num_cpu=vm.nCPU))
         return vms
@@ -166,6 +168,14 @@ class AttacheClient(HostClient):
     @attache_error_handler
     def get_vm_resource_ids(self):
         self._client.GetCachedVMs(self._session)
+
+    @attache_error_handler
+    def wait_for_vm_create(self, vm_id):
+        for i in range(0, 60):
+            vms = self._client.GetCachedVMs(self._session)
+            if vm_id in vms:
+                break
+            time.sleep(1)
 
     @attache_error_handler
     def power_on_vm(self, vm_id):
@@ -310,10 +320,7 @@ class AttacheClient(HostClient):
     """
     @attache_error_handler
     def get_datastore_in_cache(self, name):
-        for ds in self._client.GetDatastores(self._session):
-            if ds.name == name:
-                return ds
-        return None
+        return self._client.GetCachedDatastore(self._session, name)
 
     @attache_error_handler
     def get_all_datastores(self):
