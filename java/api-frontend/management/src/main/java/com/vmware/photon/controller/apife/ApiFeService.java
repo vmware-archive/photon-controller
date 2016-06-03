@@ -197,7 +197,6 @@ public class ApiFeService extends Application<ApiFeStaticConfiguration> {
         }).buildValidatorFactory();
     environment.setValidator(validatorFactory.getValidator());
 
-    environment.getObjectMapper().registerModule(injector.getInstance(GuiceModule.class));
     environment.jersey().register(new ExternalExceptionMapper());
     environment.jersey().register(new ConstraintViolationExceptionMapper());
     environment.jersey().register(new JsonProcessingExceptionMapper());
