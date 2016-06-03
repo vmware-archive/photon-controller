@@ -103,6 +103,9 @@ public class VmGetNetworksStepCmdTest extends PowerMockTestCase {
   private com.vmware.photon.controller.apife.backends.clients.DeployerClient deployerXenonClient;
 
   @Mock
+  private com.vmware.photon.controller.apife.backends.clients.HousekeeperClient housekeeperXenonClient;
+
+  @Mock
   private EntityLockBackend entityLockBackend;
 
   @Mock
@@ -143,7 +146,8 @@ public class VmGetNetworksStepCmdTest extends PowerMockTestCase {
     datastore.setId("datastore-id");
 
     taskCommand = spy(new TaskCommand(dcpClient, schedulerXenonRestClient, hostClient,
-        housekeeperClient, housekeeperXenonRestClient, deployerClient, deployerXenonClient, entityLockBackend, task));
+        housekeeperClient, housekeeperXenonRestClient, deployerClient, deployerXenonClient, housekeeperXenonClient,
+        entityLockBackend, task));
     when(taskCommand.getHostClient()).thenReturn(hostClient);
     when(taskCommand.getSchedulerXenonRestClient()).thenReturn(schedulerXenonRestClient);
     HostService.State hostServiceState = new HostService.State();
