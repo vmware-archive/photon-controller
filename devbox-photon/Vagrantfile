@@ -214,11 +214,6 @@ Vagrant.configure("2") do |config|
   dynamic_params = %Q(
   {
     "REGISTRATION_ADDRESS" : "#{network_ip}",
-    "DEPLOYER_REGISTRATION_ADDRESS": "#{network_ip}",
-    "CLOUD-STORE_REGISTRATION_ADDRESS": "#{network_ip}",
-    "ROOT-SCHEDULER_REGISTRATION_ADDRESS": "#{network_ip}",
-    "HOUSEKEEPER_REGISTRATION_ADDRESS": "#{network_ip}",
-    "MANAGEMENT-API_REGISTRATION_ADDRESS": "#{network_ip}",
     "TASK_EXPIRATION_THRESHOLD": "3 minutes",
     "TASK_EXPIRATION_SCAN_INTERVAL": "3 minutes",
     "SHARED_SECRET": "#{API_SHARED_SECRET}",

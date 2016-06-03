@@ -1,7 +1,0 @@
-{
-  "HOUSEKEEPER_DCP_STORAGE_PATH": "/etc/esxcloud/housekeeper/sandbox_16000",
-  "HOUSEKEEPER_INSTALL_DIRECTORY": "/usr/lib/esxcloud/housekeeper",
-  "LOG_DIRECTORY": "/var/log/esxcloud",
-  "REGISTRATION_ADDRESS": "127.0.0.1",
-  "ZOOKEEPER_QUORUM": "127.0.0.1:2181"
-}
