@@ -35,6 +35,7 @@ import com.vmware.photon.controller.apife.entities.BaseDiskEntity;
 import com.vmware.photon.controller.apife.entities.EphemeralDiskEntity;
 import com.vmware.photon.controller.apife.entities.FlavorEntity;
 import com.vmware.photon.controller.apife.entities.LocalityEntity;
+import com.vmware.photon.controller.apife.entities.NetworkEntity;
 import com.vmware.photon.controller.apife.entities.PersistentDiskEntity;
 import com.vmware.photon.controller.apife.entities.ProjectEntity;
 import com.vmware.photon.controller.apife.entities.QuotaLineItemEntity;
@@ -42,6 +43,7 @@ import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.entities.VmEntity;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidLocalitySpecException;
+import com.vmware.photon.controller.apife.exceptions.external.NetworkNotFoundException;
 import com.vmware.photon.controller.apife.exceptions.external.NotEnoughCpuResourceException;
 import com.vmware.photon.controller.apife.exceptions.external.NotEnoughDatastoreCapacityException;
 import com.vmware.photon.controller.apife.exceptions.external.NotEnoughMemoryResourceException;
@@ -215,6 +217,7 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
     when(flavorBackend.getEntityById(vmFlavorEntity.getId())).thenReturn(vmFlavorEntity);
     when(flavorBackend.getEntityById(diskFlavorEntity.getId())).thenReturn(diskFlavorEntity);
     when(taskCommand.getApiFeXenonRestClient()).thenReturn(apiFeXenonRestClient);
+    when(networkBackend.getDefault()).thenThrow(new NetworkNotFoundException("No default network"));
   }
 
   @Test
@@ -639,6 +642,52 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
     when(networkBackend.toApiRepresentation(networkId)).thenReturn(network);
 
     vm.setNetworks(ImmutableList.of(networkId));
+
+    PlacementTask placementTask = generateResourcePlacementList();
+    placementTask.resource.getPlacement_list().addToPlacements(
+        generateResourcePlacement(ResourcePlacementType.NETWORK, networkId));
+    Operation placementOperation = new Operation().setBody(placementTask);
+
+    when(schedulerXenonRestClient.post(any(), placementTaskCaptor.capture())).thenReturn(placementOperation);
+    when(hostClient.reserve(any(Resource.class), eq(SUCCESSFUL_GENERATION))).thenReturn(SUCCESSFUL_RESERVE_RESPONSE);
+
+    TaskEntity task = mock(TaskEntity.class);
+    StepEntity connectVmSwitchStep = new StepEntity();
+    doReturn(task).when(taskCommand).getTask();
+    doReturn(connectVmSwitchStep).when(task).findStep(com.vmware.photon.controller.api.Operation.CONNECT_VM_SWITCH);
+
+    ResourceReserveStepCmd command = getVmReservationCommand();
+    command.setInfrastructureEntity(vm);
+    command.execute();
+
+    List<ResourceConstraint> resourceConstraints = placementTaskCaptor.getValue().resource.getVm()
+        .getResource_constraints();
+    assertThat(resourceConstraints.size(), is(1));
+    ResourceConstraint resourceConstraint = resourceConstraints.get(0);
+    assertThat(resourceConstraint.getType(), is(ResourceConstraintType.NETWORK));
+    assertThat(resourceConstraint.getValues().size(), is(2));
+    assertThat(resourceConstraint.getValues().get(0), is("P1"));
+    assertThat(resourceConstraint.getValues().get(1), is("P2"));
+
+    String logicalSwitchId =
+        (String) connectVmSwitchStep.getTransientResource(ResourceReserveStepCmd.LOGICAL_SWITCH_ID);
+    assertThat(logicalSwitchId, nullValue());
+  }
+
+  @Test
+  public void testCreateDefaultNetworkConstraints() throws Throwable {
+    String networkId = "n1";
+    NetworkEntity networkEntity = new NetworkEntity();
+    networkEntity.setId(networkId);
+    networkBackend = mock(NetworkBackend.class);
+    when(networkBackend.getDefault()).thenReturn(networkEntity);
+
+    Network network = new Network();
+    network.setId(networkId);
+    network.setPortGroups(ImmutableList.of("P1", "P2"));
+    network.setState(NetworkState.READY);
+    network.setName("public");
+    when(networkBackend.toApiRepresentation(networkId)).thenReturn(network);
 
     PlacementTask placementTask = generateResourcePlacementList();
     placementTask.resource.getPlacement_list().addToPlacements(

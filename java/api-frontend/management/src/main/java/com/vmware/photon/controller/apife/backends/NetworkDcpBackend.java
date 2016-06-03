@@ -211,6 +211,16 @@ public class NetworkDcpBackend implements NetworkBackend {
   }
 
   @Override
+  public NetworkEntity getDefault() throws NetworkNotFoundException {
+    NetworkService.State networkState = getDefaultNetwork();
+    if (networkState == null) {
+      throw new NetworkNotFoundException("No default network is found");
+    }
+
+    return convertToEntity(networkState);
+  }
+
+  @Override
   public ResourceList<Network> getPage(String pageLink) throws ExternalException {
     ServiceDocumentQueryResult queryResult = null;
     try {
