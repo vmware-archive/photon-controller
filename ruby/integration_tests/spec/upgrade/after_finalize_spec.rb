@@ -79,6 +79,7 @@ describe "migrate finalize", upgrade: true do
       source_services = source_map.keys
       destination_services = destination_map.keys
       expect(destination_services).to include(*source_services)
+      puts (destination_services - source_services - expected_new_services_at_destination)
       expect((destination_services - source_services - expected_new_services_at_destination).size).to be 0
     end
 
@@ -147,7 +148,8 @@ describe "migrate finalize", upgrade: true do
                           "/photon/cloudstore/groomers/entity-lock-cleaners",
                           "/photon/cloudstore/groomers/tombstone-entity-cleaners",
                           "/photon/cloudstore/cluster-configurations",
-                          "/photon/cloudstore/clusters"]
+                          "/photon/cloudstore/clusters",
+                          "/photon/cloudstore/virtual-networks"]
         if !exclusion_list.include?(k)
           begin
             source_json = source_cloud_store.get k
