@@ -13,18 +13,13 @@
 
 package com.vmware.photon.controller.apife.backends.clients;
 
-import com.vmware.photon.controller.apife.entities.HostEntity;
-import com.vmware.photon.controller.apife.exceptions.external.SpecInvalidException;
-import com.vmware.photon.controller.apife.lib.UsageTagHelper;
-import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
-import com.vmware.photon.controller.common.logging.LoggingUtils;
-import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
+import com.vmware.photon.controller.apife.entities.ImageEntity;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
-import com.vmware.photon.controller.deployer.dcp.task.ValidateHostTaskFactoryService;
-import com.vmware.photon.controller.deployer.dcp.task.ValidateHostTaskService;
+import com.vmware.photon.controller.housekeeper.dcp.ImageReplicatorService;
+import com.vmware.photon.controller.housekeeper.dcp.ImageReplicatorServiceFactory;
+import com.vmware.photon.controller.housekeeper.dcp.ImageSeederService;
+import com.vmware.photon.controller.housekeeper.dcp.ImageSeederServiceFactory;
 import com.vmware.xenon.common.Operation;
-import com.vmware.xenon.common.UriUtils;
-import com.vmware.xenon.common.Utils;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
@@ -32,8 +27,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.URISyntaxException;
-import java.util.Collections;
-import java.util.HashSet;
 
 /**
  * Housekeeper Client Facade that exposes housekeeper functionality via high-level methods,
@@ -57,62 +50,45 @@ public class HousekeeperClient {
         this.apiFeXenonRestClient.start();
     }
 
-    public ValidateHostTaskService.State replicateImage(String datastore, String image, ImageReplication replicationType)
-            throws SpecInvalidException {
+    public ImageSeederService.State replicateImage(String datastoreId, ImageEntity image) {
         ImageSeederService.State postReq = new ImageSeederService.State();
-        postReq.image = image;
+        postReq.image = image.getId();
         postReq.sourceImageDatastore = datastoreId;
 
         // Create the operation and call for seeding.
-        Operation postOperation = Operation
-            .createPost(UriUtils.buildUri(dcpHost, ImageSeederServiceFactory.class))
-            .setBody(postReq)
-            .setReferer(UriUtils.buildUri(dcpHost, REFERRER_PATH))
-            .setExpiration(Utils.getNowMicrosUtc() + dcpOperationTimeoutMicros)
-            .setContextId(LoggingUtils.getRequestId());
+        Operation op = dcpClient.post(
+            ImageSeederServiceFactory.SELF_LINK, postReq);
 
-        Operation op = ServiceHostUtils.sendRequestAndWait(dcpHost, postOperation, REFERRER_PATH);
-
-        // Return operation id.
-        return op.getBody(ImageSeederService.State.class).documentSelfLink;
-
-
-
-        ValidateHostTaskService.State state = new ValidateHostTaskService.State();
-        state.hostAddress = host.getAddress();
-        state.userName = host.getUsername();
-        state.password = host.getPassword();
-        state.metadata = host.getMetadata();
-        state.usageTags = UsageTagHelper.deserializeToStringSet(host.getUsageTags());
-        if (state.metadata.containsKey(HostService.State.METADATA_KEY_NAME_ALLOWED_DATASTORES)) {
-            String[] allowedDataStores =
-                    state.metadata.get(HostService.State.METADATA_KEY_NAME_ALLOWED_DATASTORES).
-                            trim().split(COMMA_DELIMITED_REGEX);
-            state.dataStores = new HashSet<>();
-            Collections.addAll(state.dataStores, allowedDataStores);
+        switch (image.getReplicationType()) {
+            case ON_DEMAND:
+                break;
+            case EAGER:
+                triggerReplication(datastoreId, image);
+                break;
+            default:
+                throw new IllegalArgumentException("ImageReplicationType unknown: " + image.getReplicationType());
         }
 
-        if (state.metadata.containsKey(HostService.State.METADATA_KEY_NAME_ALLOWED_NETWORKS)) {
-            String[] allowedNetworks =
-                    state.metadata.get(HostService.State.METADATA_KEY_NAME_ALLOWED_NETWORKS).
-                            trim().split(COMMA_DELIMITED_REGEX);
-            state.networks = new HashSet<>();
-            Collections.addAll(state.networks, allowedNetworks);
-        }
-
-        // Persist the database ID of the host to the DCP entity so we have a unified ID across the system
-        state.documentSelfLink = host.getId();
-
-        Operation operation = dcpClient.post(
-            ValidateHostTaskFactoryService.SELF_LINK, state);
-
-        return operation.getBody(ValidateHostTaskService.State.class);
+        return op.getBody(ImageSeederService.State.class);
     }
 
-    public ValidateHostTaskService.State getHostCreationStatus(String creationTaskLink)
+    public ImageSeederService.State getReplicateImageStatus(String creationTaskLink)
         throws DocumentNotFoundException {
         Operation operation = dcpClient.get(creationTaskLink);
-        return operation.getBody(ValidateHostTaskService.State.class);
+        return operation.getBody(ImageSeederService.State.class);
+    }
+
+    private ImageReplicatorService.State triggerReplication(String datastoreId, ImageEntity image) {
+        // Prepare replication service call.
+        ImageReplicatorService.State postReq = new ImageReplicatorService.State();
+        postReq.image = image.getId();
+        postReq.datastore = datastoreId;
+
+        // Create the operation and call for replication.
+        Operation op = dcpClient.post(
+            ImageReplicatorServiceFactory.SELF_LINK, postReq);
+
+        return op.getBody(ImageReplicatorService.State.class);
     }
 
 }

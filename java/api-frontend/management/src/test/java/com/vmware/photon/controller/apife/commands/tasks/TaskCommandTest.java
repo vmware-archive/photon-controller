@@ -153,6 +153,8 @@ public class TaskCommandTest {
 
   com.vmware.photon.controller.apife.backends.clients.DeployerClient deployerXenonClient;
 
+  com.vmware.photon.controller.apife.backends.clients.HousekeeperClient housekeeperXenonClient;
+
   @Inject
   private EntityLockBackend entityLockBackend;
 
@@ -198,6 +200,7 @@ public class TaskCommandTest {
     stepCommandFactory = mock(StepCommandFactory.class);
     hostClient = mock(HostClient.class);
     deployerXenonClient = mock(com.vmware.photon.controller.apife.backends.clients.DeployerClient.class);
+    housekeeperXenonClient = mock(com.vmware.photon.controller.apife.backends.clients.HousekeeperClient.class);
 
     commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
 
@@ -238,7 +241,7 @@ public class TaskCommandTest {
     task.setSteps(new ArrayList<StepEntity>());
     TestTaskCommand command = new TestTaskCommand(apiFeXenonRestClient, schedulerXenonRestClient, hostClient,
         housekeeperClient, housekeeperXenonRestClient, taskBackend, stepCommandFactory, task, deployerClient,
-        deployerXenonClient);
+        deployerXenonClient, housekeeperXenonClient);
 
     Datastore datastore = new Datastore();
     datastore.setId("datastore-id");
@@ -296,6 +299,7 @@ public class TaskCommandTest {
           mock(HousekeeperXenonRestClient.class),
           mock(DeployerClient.class),
           mock(com.vmware.photon.controller.apife.backends.clients.DeployerClient.class),
+          mock(com.vmware.photon.controller.apife.backends.clients.HousekeeperClient.class),
           entityLockBackend,
           task1));
       command1.setTaskBackend(taskBackend);
@@ -308,6 +312,7 @@ public class TaskCommandTest {
           mock(HousekeeperXenonRestClient.class),
           mock(DeployerClient.class),
           mock(com.vmware.photon.controller.apife.backends.clients.DeployerClient.class),
+          mock(com.vmware.photon.controller.apife.backends.clients.HousekeeperClient.class),
           entityLockBackend,
           task2));
       command2.setTaskBackend(taskBackend);
@@ -374,7 +379,7 @@ public class TaskCommandTest {
   public void testMarkAsStarted() throws Exception {
     TestTaskCommand command = new TestTaskCommand(apiFeXenonRestClient, schedulerXenonRestClient, hostClient,
         housekeeperClient, housekeeperXenonRestClient, taskBackend, stepCommandFactory, task, deployerClient,
-        deployerXenonClient);
+        deployerXenonClient, housekeeperXenonClient);
 
     command.markAsStarted();
 
@@ -415,7 +420,7 @@ public class TaskCommandTest {
   public void testMarkAsDone(StepEntity[] steps, TaskEntity.State state) throws Exception {
     TestTaskCommand command = new TestTaskCommand(apiFeXenonRestClient, schedulerXenonRestClient, hostClient,
         housekeeperClient, housekeeperXenonRestClient, taskBackend, stepCommandFactory, task, deployerClient,
-        deployerXenonClient);
+        deployerXenonClient, housekeeperXenonClient);
     for (StepEntity step : steps) {
       task.addStep(step);
       doReturn(new TestStepCommand(command, stepBackend, step))
@@ -433,7 +438,7 @@ public class TaskCommandTest {
   public void testMarkAsFailed() throws Exception {
     TestTaskCommand command = new TestTaskCommand(apiFeXenonRestClient, schedulerXenonRestClient, hostClient,
         housekeeperClient, housekeeperXenonRestClient, taskBackend, stepCommandFactory, task, deployerClient,
-        deployerXenonClient);
+        deployerXenonClient, housekeeperXenonClient);
 
     command.markAsFailed(new ApiFeException("Something happened"));
 
@@ -453,7 +458,7 @@ public class TaskCommandTest {
     TestStepCommand[] stepCommands = new TestStepCommand[steps.length];
     TestTaskCommand command = new TestTaskCommand(apiFeXenonRestClient, schedulerXenonRestClient, hostClient,
         housekeeperClient, housekeeperXenonRestClient, taskBackend, stepCommandFactory, task, deployerClient,
-        deployerXenonClient);
+        deployerXenonClient, housekeeperXenonClient);
 
     for (int i = 0; i < steps.length; i++) {
       StepEntity step = steps[i];
@@ -474,7 +479,7 @@ public class TaskCommandTest {
   public void testCleanup() {
     TestTaskCommand command = new TestTaskCommand(apiFeXenonRestClient, schedulerXenonRestClient, hostClient,
         housekeeperClient, housekeeperXenonRestClient, taskBackend, stepCommandFactory, task, deployerClient,
-        deployerXenonClient);
+        deployerXenonClient, housekeeperXenonClient);
 
     command.cleanup();
     verify(hostClient).close();
@@ -484,7 +489,7 @@ public class TaskCommandTest {
   public void testFindVmHostWithVmNotFoundException() throws Exception {
     TestTaskCommand command = new TestTaskCommand(apiFeXenonRestClient, schedulerXenonRestClient, hostClient,
         housekeeperClient, housekeeperXenonRestClient, taskBackend, stepCommandFactory, task, deployerClient,
-        deployerXenonClient);
+        deployerXenonClient, housekeeperXenonClient);
 
     VmEntity vm = new VmEntity();
     vm.setId("vm-1");
@@ -503,7 +508,7 @@ public class TaskCommandTest {
   public void testFindVmHostWithAgentId() throws Exception {
     TestTaskCommand command = new TestTaskCommand(apiFeXenonRestClient, schedulerXenonRestClient, hostClient,
         housekeeperClient, housekeeperXenonRestClient, taskBackend, stepCommandFactory, task, deployerClient,
-        deployerXenonClient);
+        deployerXenonClient, housekeeperXenonClient);
 
     VmEntity vm = new VmEntity();
     vm.setId("vm-1");
@@ -519,7 +524,7 @@ public class TaskCommandTest {
   public void testVmGetHostclientWithVmNotFoundException() throws Exception {
     TestTaskCommand command = new TestTaskCommand(apiFeXenonRestClient, schedulerXenonRestClient, hostClient,
         housekeeperClient, housekeeperXenonRestClient, taskBackend, stepCommandFactory, task, deployerClient,
-        deployerXenonClient);
+        deployerXenonClient, housekeeperXenonClient);
 
     VmEntity vm = new VmEntity();
     vm.setId("vm-1");
@@ -538,7 +543,7 @@ public class TaskCommandTest {
   public void testVmGetHostclientWithAgentId() throws Exception {
     TestTaskCommand command = new TestTaskCommand(apiFeXenonRestClient, schedulerXenonRestClient, hostClient,
         housekeeperClient, housekeeperXenonRestClient, taskBackend, stepCommandFactory, task, deployerClient,
-        deployerXenonClient);
+        deployerXenonClient, housekeeperXenonClient);
 
     VmEntity vm = new VmEntity();
     vm.setId("vm-1");
@@ -554,7 +559,7 @@ public class TaskCommandTest {
   public void testVmGetHostclientWithHostIp() throws Exception {
     TestTaskCommand command = new TestTaskCommand(apiFeXenonRestClient, schedulerXenonRestClient, hostClient,
         housekeeperClient, housekeeperXenonRestClient, taskBackend, stepCommandFactory, task, deployerClient,
-        deployerXenonClient);
+        deployerXenonClient, housekeeperXenonClient);
 
     VmEntity vm = new VmEntity();
     vm.setId("vm-1");
@@ -571,7 +576,7 @@ public class TaskCommandTest {
   public void testVmGetHostClientWithAgentIdAndHostIp() throws Exception {
     TestTaskCommand command = new TestTaskCommand(apiFeXenonRestClient, schedulerXenonRestClient, hostClient,
         housekeeperClient, housekeeperXenonRestClient, taskBackend, stepCommandFactory, task, deployerClient,
-        deployerXenonClient);
+        deployerXenonClient, housekeeperXenonClient);
 
     VmEntity vm = new VmEntity();
     vm.setId("vm-1");
@@ -595,7 +600,7 @@ public class TaskCommandTest {
   public void testFindDiskHostWithDiskNotFoundException(BaseDiskEntity disk) throws Exception {
     TestTaskCommand command = new TestTaskCommand(apiFeXenonRestClient, schedulerXenonRestClient, hostClient,
         housekeeperClient, housekeeperXenonRestClient, taskBackend, stepCommandFactory, task, deployerClient,
-        deployerXenonClient);
+        deployerXenonClient, housekeeperXenonClient);
     disk.setId("disk-1");
 
     try {
@@ -611,7 +616,7 @@ public class TaskCommandTest {
   public void testFindDiskHostWithAgentId(BaseDiskEntity disk) throws Exception {
     TestTaskCommand command = new TestTaskCommand(apiFeXenonRestClient, schedulerXenonRestClient, hostClient,
         housekeeperClient, housekeeperXenonRestClient, taskBackend, stepCommandFactory, task, deployerClient,
-        deployerXenonClient);
+        deployerXenonClient, housekeeperXenonClient);
 
     disk.setId("disk-1");
     disk.setAgent(agentId);
@@ -625,7 +630,7 @@ public class TaskCommandTest {
   public void testLookupAgentIdSuccess() {
     TestTaskCommand command = new TestTaskCommand(apiFeXenonRestClient, schedulerXenonRestClient, hostClient,
         housekeeperClient, housekeeperXenonRestClient, taskBackend, stepCommandFactory, task, deployerClient,
-        deployerXenonClient);
+        deployerXenonClient, housekeeperXenonClient);
     String agentId = command.lookupAgentId("host-ip");
     assertEquals(this.agentId, agentId);
   }
@@ -634,7 +639,7 @@ public class TaskCommandTest {
   public void testLookupAgentIdNotFound() {
     TestTaskCommand command = new TestTaskCommand(apiFeXenonRestClient, schedulerXenonRestClient, hostClient,
         housekeeperClient, housekeeperXenonRestClient, taskBackend, stepCommandFactory, task, deployerClient,
-        deployerXenonClient);
+        deployerXenonClient, housekeeperXenonClient);
     try {
       command.lookupAgentId("unknown-ip");
       fail();
@@ -669,9 +674,11 @@ public class TaskCommandTest {
                            HostClient hostClient, HousekeeperClient housekeeperClient,
                            HousekeeperXenonRestClient housekeeperXenonRestClient, TaskBackend taskBackend,
                            StepCommandFactory stepCommandFactory, TaskEntity task, DeployerClient deployerClient,
-                           com.vmware.photon.controller.apife.backends.clients.DeployerClient deployerXenonClient) {
+                           com.vmware.photon.controller.apife.backends.clients.DeployerClient deployerXenonClient,
+                           com.vmware.photon.controller.apife.backends.clients.HousekeeperClient
+                               housekeeperXenonClient) {
       super(apiFeXenonRestClient, schedulerXenonRestClient, hostClient, housekeeperClient, housekeeperXenonRestClient,
-          deployerClient, deployerXenonClient, entityLockBackend, task);
+          deployerClient, deployerXenonClient, housekeeperXenonClient, entityLockBackend, task);
       setReservation("reservation-id");
       setTaskBackend(taskBackend);
       setStepCommandFactory(stepCommandFactory);
