@@ -15,14 +15,15 @@ package com.vmware.photon.controller.apife.commands.steps;
 
 import com.vmware.photon.controller.api.ImageState;
 import com.vmware.photon.controller.api.common.exceptions.ApiFeException;
+import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
+import com.vmware.photon.controller.api.common.exceptions.external.TaskNotFoundException;
 import com.vmware.photon.controller.apife.backends.ImageBackend;
 import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.ImageEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.lib.ImageStore;
-import com.vmware.photon.controller.common.clients.exceptions.RpcException;
-import com.vmware.photon.controller.resource.gen.ImageReplication;
+import com.vmware.photon.controller.housekeeper.dcp.ImageSeederService;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,6 +43,8 @@ public class ImageReplicateStepCmd extends StepCommand {
 
   private final ImageStore imageStore;
 
+  private ImageEntity imageEntity;
+
   public ImageReplicateStepCmd(TaskCommand taskCommand, StepBackend stepBackend, StepEntity step,
                                ImageBackend imageBackend, ImageStore imageStore) {
     super(taskCommand, stepBackend, step);
@@ -55,40 +58,50 @@ public class ImageReplicateStepCmd extends StepCommand {
     checkArgument(entityList.size() == 1,
         "There should be only 1 image referenced by step %s", step.getId());
 
-    ImageEntity imageEntity = entityList.get(0);
-    ImageReplication replicationType;
-    switch (imageEntity.getReplicationType()) {
-      case ON_DEMAND:
-        replicationType = ImageReplication.ON_DEMAND;
-        break;
-      case EAGER:
-        replicationType = ImageReplication.EAGER;
-        break;
-      default:
-        throw new IllegalArgumentException("ImageReplicationType unknown: " + imageEntity.getReplicationType());
-    }
+    this.imageEntity = entityList.get(0);
 
     if (imageStore.isReplicationNeeded()) {
+      List<String> dataStoreIdList = imageBackend.getSeededImageDatastores(imageEntity.getId());
       try {
-        List<String> dataStoreIdList = imageBackend.getSeededImageDatastores(imageEntity.getId());
         checkState(dataStoreIdList.size() >= 1, "The image should be present on at least one image datastore.");
-        logger.info("Start replicating image {} in datastore {}", imageEntity.getId(), dataStoreIdList.get(0));
+      } catch (IllegalStateException ex) {
+        throw new ApiFeException(ex);
+      }
+      logger.info("Start replicating image {} in datastore {}", imageEntity.getId(), dataStoreIdList.get(0));
 
-        taskCommand.getHousekeeperClient().replicateImage(
-            dataStoreIdList.get(0), imageEntity.getId(), replicationType);
-      } catch (RpcException | InterruptedException | IllegalStateException e) {
-        imageBackend.updateState(imageEntity, ImageState.ERROR);
-        throw new ApiFeException(e);
+      ImageSeederService.State serviceDocument = taskCommand.getHousekeeperXenonClient()
+          .replicateImage(dataStoreIdList.get(0), imageEntity);
+
+      // pass remoteTaskId to XenonTaskStatusStepCmd
+      for (StepEntity nextStep : taskCommand.getTask().getSteps()) {
+        nextStep.createOrUpdateTransientResource(XenonTaskStatusStepCmd.REMOTE_TASK_LINK_RESOURCE_KEY,
+            serviceDocument.documentSelfLink);
       }
     } else {
       logger.info("Skip replicating image");
+      this.imageBackend.updateState(this.imageEntity, ImageState.READY);
     }
-
-    imageBackend.updateState(imageEntity, ImageState.READY);
   }
 
   @Override
   protected void cleanup() {
   }
 
+  @Override
+  protected void markAsFailed(Throwable t) throws TaskNotFoundException {
+    super.markAsFailed(t);
+
+    if (this.imageEntity != null) {
+      logger.info("Image replicate failed, mark {} state as ERROR", this.imageEntity.getId());
+
+      if (imageEntity.getState() == ImageState.ERROR) {
+        return;
+      }
+      try {
+        this.imageBackend.updateState(this.imageEntity, ImageState.ERROR);
+      } catch (ExternalException e) {
+        logger.warn("Marking image to error is failed" + this.imageEntity, e);
+      }
+    }
+  }
 }
