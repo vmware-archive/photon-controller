@@ -63,7 +63,7 @@ public abstract class BaseWorkflowService <S extends ServiceDocument, T extends 
 
     ServiceDocument taskServiceEntity = ServiceDocumentUtils.getTaskServiceEntity(state);
     if (taskServiceEntity != null) {
-      taskServiceStartState.entityId = taskServiceEntity.documentSelfLink;
+      taskServiceStartState.entityId = ServiceUtils.getIDFromDocumentSelfLink(taskServiceEntity.documentSelfLink);
       taskServiceStartState.entityKind = taskServiceEntity.getClass().getName();
     }
 
