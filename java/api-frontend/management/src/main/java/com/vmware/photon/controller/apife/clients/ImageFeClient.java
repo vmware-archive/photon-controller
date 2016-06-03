@@ -104,6 +104,7 @@ public class ImageFeClient {
       throws ExternalException {
     if (hasReplicateImageStep) {
       taskEntity.findStep(Operation.REPLICATE_IMAGE).setDisabled(true);
+      taskEntity.findStep(Operation.QUERY_REPLICATE_IMAGE_TASK_RESULT).setDisabled(true);
     }
     TaskCommand command = commandFactory.create(taskEntity);
     logger.info("Run synchronous task steps for task: {} {}", taskEntity.getId(), taskEntity.getOperation());

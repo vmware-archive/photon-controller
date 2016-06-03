@@ -161,6 +161,9 @@ public class VmDiskOpStepCmdTest extends PowerMockTestCase {
   private com.vmware.photon.controller.apife.backends.clients.DeployerClient deployerXenonClient;
 
   @Mock
+  private com.vmware.photon.controller.apife.backends.clients.HousekeeperClient housekeeperXenonClient;
+
+  @Mock
   private com.vmware.xenon.common.Operation hostServiceOp;
 
   private TaskCommand taskCommand;
@@ -242,7 +245,8 @@ public class VmDiskOpStepCmdTest extends PowerMockTestCase {
     when(diskBackend.find(PersistentDisk.KIND, diskId2)).thenReturn(disk2);
 
     taskCommand = spy(new TaskCommand(dcpClient, schedulerXenonRestClient, hostClient,
-        housekeeperClient, housekeeperXenonRestClient, deployerClient, deployerXenonClient, entityLockBackend, task));
+        housekeeperClient, housekeeperXenonRestClient, deployerClient, deployerXenonClient, housekeeperXenonClient,
+        entityLockBackend, task));
     when(taskCommand.getHostClient()).thenReturn(hostClient);
     when(taskCommand.getSchedulerXenonRestClient()).thenReturn(schedulerXenonRestClient);
     when(vmBackend.findById(vmId)).thenReturn(vm);
