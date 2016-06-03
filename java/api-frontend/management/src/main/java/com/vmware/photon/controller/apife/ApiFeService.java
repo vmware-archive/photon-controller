@@ -15,7 +15,6 @@ package com.vmware.photon.controller.apife;
 
 import com.vmware.photon.controller.api.common.filters.LoggingFilter;
 import com.vmware.photon.controller.api.common.filters.UrlTrailingSlashFilter;
-import com.vmware.photon.controller.api.common.jackson.GuiceModule;
 import com.vmware.photon.controller.api.common.providers.ConstraintViolationExceptionMapper;
 import com.vmware.photon.controller.api.common.providers.ExternalExceptionMapper;
 import com.vmware.photon.controller.api.common.providers.JsonProcessingExceptionMapper;
@@ -197,7 +196,6 @@ public class ApiFeService extends Application<ApiFeStaticConfiguration> {
         }).buildValidatorFactory();
     environment.setValidator(validatorFactory.getValidator());
 
-    environment.getObjectMapper().registerModule(injector.getInstance(GuiceModule.class));
     environment.jersey().register(new ExternalExceptionMapper());
     environment.jersey().register(new ConstraintViolationExceptionMapper());
     environment.jersey().register(new JsonProcessingExceptionMapper());
