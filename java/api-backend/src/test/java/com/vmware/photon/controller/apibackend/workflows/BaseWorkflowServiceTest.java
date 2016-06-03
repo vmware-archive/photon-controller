@@ -183,6 +183,7 @@ public class BaseWorkflowServiceTest {
       assertThat(actualTaskServiceState.queuedTime, notNullValue());
       assertEquals(actualTaskServiceState.queuedTime.toString(), expectedTaskServiceState.queuedTime.toString());
       assertThat(actualTaskServiceState.entityId, notNullValue());
+      assertThat(actualTaskServiceState.entityId.contains("/"), is(false));
       assertEquals(actualTaskServiceState.entityId, expectedTaskServiceState.entityId);
       assertThat(actualTaskServiceState.entityKind, notNullValue());
       assertEquals(actualTaskServiceState.entityKind, expectedTaskServiceState.entityKind);
