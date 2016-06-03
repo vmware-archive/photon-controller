@@ -51,6 +51,7 @@ public enum Operation {
   CREATE_IMAGE("CreateImage"),
   UPLOAD_IMAGE("UploadImage"),
   REPLICATE_IMAGE("ReplicateImage"),
+  QUERY_REPLICATE_IMAGE_TASK_RESULT("QueryReplicateImage"),
   DELETE_IMAGE("DeleteImage"),
 
   ATTACH_ISO("AttachIso"),

@@ -52,6 +52,8 @@ public class TaskCommandExecutorServiceTest {
   private SchedulerXenonRestClient schedulerXenonRestClient = mock(SchedulerXenonRestClient.class);
   private com.vmware.photon.controller.apife.backends.clients.DeployerClient deployerXenonClient =
       mock(com.vmware.photon.controller.apife.backends.clients.DeployerClient.class);
+  private com.vmware.photon.controller.apife.backends.clients.HousekeeperClient housekeeperXenonClient =
+      mock(com.vmware.photon.controller.apife.backends.clients.HousekeeperClient.class);
 
   @DataProvider(name = "getSubmitParams")
   public Object[][] getSubmitParams() {
@@ -120,7 +122,8 @@ public class TaskCommandExecutorServiceTest {
       TaskEntity task = new TaskEntity();
       task.setId("t" + i);
       commands[i] = new TestTaskCommand(dcpClient, schedulerXenonRestClient, hostClient,
-          housekeeperClient, housekeeperXenonRestClient, deployerClient, deployerXenonClient, task, countDownLatch);
+          housekeeperClient, housekeeperXenonRestClient, deployerClient, deployerXenonClient,
+          housekeeperXenonClient, task, countDownLatch);
       try {
         service.submit(commands[i]);
       } catch (ExternalException ex) {
@@ -145,10 +148,11 @@ public class TaskCommandExecutorServiceTest {
                            HousekeeperXenonRestClient housekeeperXenonRestClient,
                            DeployerClient deployerClient,
                            com.vmware.photon.controller.apife.backends.clients.DeployerClient deployerXenonClient,
+                           com.vmware.photon.controller.apife.backends.clients.HousekeeperClient housekeeperXenonClient,
                            TaskEntity task,
                            CountDownLatch countDownLatch) {
       super(dcpClient, schedulerXenonRestClient, hostClient, housekeeperClient, housekeeperXenonRestClient,
-          deployerClient, deployerXenonClient, entityLockBackend, task);
+          deployerClient, deployerXenonClient, housekeeperXenonClient, entityLockBackend, task);
       this.countDownLatch = countDownLatch;
     }
 

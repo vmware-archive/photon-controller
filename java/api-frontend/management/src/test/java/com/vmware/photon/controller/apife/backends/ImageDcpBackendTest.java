@@ -117,7 +117,7 @@ public class ImageDcpBackendTest {
                                                 ImageReplicationType replicationType)
       throws ExternalException {
     TaskEntity task = imageBackend.prepareImageUpload(inputStream, imageFileName, replicationType);
-    assertThat(task.getSteps().size(), is(2));
+    assertThat(task.getSteps().size(), is(3));
 
     StepEntity step = task.getSteps().get(0);
     assertThat(step.getTransientResourceEntities().size(), is(1));
