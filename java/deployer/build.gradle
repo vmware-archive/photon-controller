@@ -64,6 +64,12 @@ jar {
   }
 }
 
+task fatJar(type: Jar) {
+    baseName = project.name + '-with-dependencies'
+    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+    with jar
+}
+
 tasks.withType(Test) {
   scanForTestClasses = false
   include "**/*Test.class"
