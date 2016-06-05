@@ -68,15 +68,28 @@ dependencies {
   testCompile 'uk.co.datumedge:hamcrest-json:0.2'
 }
 
+ext.sharedManifest = manifest {
+  attributes 'Specification-Title': 'Photon Controller Management API Frontend',
+          'Specification-Version': version,
+          'Built-By': System.getProperty('user.name'),
+          'Built-Date': new Date(),
+          'Built-JDK': System.getProperty('java.version'),
+          'Built-Gradle': gradle.gradleVersion
+}
+
 jar {
-  manifest {
-    attributes 'Specification-Title': 'Photon Controller Management API Frontend',
-        'Specification-Version': version,
-        'Built-By': System.getProperty('user.name'),
-        'Built-Date': new Date(),
-        'Built-JDK': System.getProperty('java.version'),
-        'Built-Gradle': gradle.gradleVersion
+  manifest = project.manifest {
+    from sharedManifest
   }
+}
+
+task fatJar(type: Jar) {
+  manifest = project.manifest {
+    from sharedManifest
+  }
+  baseName = project.name + '-with-dependencies'
+  from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+  with jar
 }
 
 test {
