@@ -21,16 +21,29 @@ dependencies {
   compile 'net.sourceforge.argparse4j:argparse4j:0.4.0'
 }
 
+ext.sharedManifest = manifest {
+  attributes 'Specification-Title': 'Photon Controller Core',
+          'Specification-Version': version,
+          'Built-By': System.getProperty('user.name'),
+          'Built-Date': new Date(),
+          'Built-JDK': System.getProperty('java.version'),
+          'Built-Gradle': gradle.gradleVersion,
+          'Git-Commit': "git rev-parse --short HEAD".execute().text.trim()
+}
+
 jar {
-  manifest {
-    attributes 'Specification-Title': 'Photon Controller Core',
-        'Specification-Version': version,
-        'Built-By': System.getProperty('user.name'),
-        'Built-Date': new Date(),
-        'Built-JDK': System.getProperty('java.version'),
-        'Built-Gradle': gradle.gradleVersion,
-        'Git-Commit': "git rev-parse --short HEAD".execute().text.trim()
+  manifest = project.manifest {
+    from sharedManifest
   }
+}
+
+task fatJar(type: Jar) {
+  manifest = project.manifest {
+    from sharedManifest
+  }
+  baseName = project.name + '-with-dependencies'
+  from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+  with jar
 }
 
 distTar << extractRelease(this, 'photon-controller-core')
