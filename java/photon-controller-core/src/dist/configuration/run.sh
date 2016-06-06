@@ -27,8 +27,8 @@ then
   echo "$container_ip     $myhostname" >> /etc/hosts
 fi
 
-# jvm heap size will be set to by default is 128m
-jvm_mem=128
+# jvm heap size will be set to by default is 384m
+jvm_mem=384
 
 {{#memoryMb}}
 jvm_mem=$(({{{memoryMb}}}/2))
