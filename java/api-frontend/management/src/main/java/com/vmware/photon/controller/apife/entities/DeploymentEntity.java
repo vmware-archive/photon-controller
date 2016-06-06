@@ -349,6 +349,7 @@ public class DeploymentEntity extends BaseEntity {
 
   @Override
   protected ToStringHelper toStringHelper() {
+    // NOTE: Do not include oauthPassword or networkManagerPassword, to avoid having passwords in log files
     return super.toStringHelper()
         .add("state", this.getState())
         .add("syslogEndpoint", this.getSyslogEndpoint())
@@ -361,12 +362,10 @@ public class DeploymentEntity extends BaseEntity {
         .add("oauthPort", this.getOauthPort())
         .add("oauthTenant", this.getOauthTenant())
         .add("oauthUsername", this.getOauthUsername())
-        .add("oauthPassword", this.getOauthPassword())
         .add("oauthSecurityGroups", StringUtils.join(this.getOauthSecurityGroups(), ','))
         .add("virtualNetworkEnabled", this.getVirtualNetworkEnabled())
         .add("networkManagerAddress", this.getNetworkManagerAddress())
         .add("networkManagerUsername", this.getNetworkManagerUsername())
-        .add("networkManagerPassword", this.getNetworkManagerPassword())
         .add("networkTopRouterId", this.getNetworkTopRouterId())
         .add("ntpEndpoint", this.getNtpEndpoint())
         .add("imageDatastores", StringUtils.join(this.getImageDatastores(), ','))
