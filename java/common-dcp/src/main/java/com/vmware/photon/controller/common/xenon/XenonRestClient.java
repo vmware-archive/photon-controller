@@ -542,7 +542,7 @@ public class XenonRestClient implements XenonClient {
   protected void handleInterruptedException(Operation operation, InterruptedException interruptedException)
       throws InterruptedException {
     logger.warn("send: INTERRUPTED {}, Exception={}",
-        OperationUtils.createLogMessageWithStatusAndBody(operation),
+        OperationUtils.createLogMessageWithStatus(operation),
         interruptedException);
     throw interruptedException;
   }
@@ -560,7 +560,7 @@ public class XenonRestClient implements XenonClient {
   @VisibleForTesting
   protected Operation send(Operation requestedOperation)
       throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException {
-    logger.info("send: STARTED {}", OperationUtils.createLogMessageWithBody(requestedOperation));
+    logger.info("send: STARTED {}", OperationUtils.createLogMessageWithoutStatusAndBody(requestedOperation));
     OperationLatch operationLatch = createOperationLatch(requestedOperation);
 
     client.send(requestedOperation);
@@ -586,7 +586,7 @@ public class XenonRestClient implements XenonClient {
       throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException {
 
     for (Operation requestedOperation : requestedOperations.values()) {
-      logger.info("send: STARTED {}", OperationUtils.createLogMessageWithBody(requestedOperation));
+      logger.info("send: STARTED {}", OperationUtils.createLogMessageWithoutStatusAndBody(requestedOperation));
     }
 
     OperationJoin operationJoin = OperationJoin.create(requestedOperations.values());
@@ -694,31 +694,13 @@ public class XenonRestClient implements XenonClient {
 
   private void logCompletedOperation(Operation completedOperation) {
     if (completedOperation.getStatusCode() == Operation.STATUS_CODE_OK) {
-      switch (completedOperation.getAction()) {
-        case DELETE:
-          // fall through
-        case PATCH:
-          // fall through
-        case PUT:
-          // for successful DELETE, PATCH and PUT we do not need to log the status and body.
-          logger.info("send: SUCCESS {}",
-              OperationUtils.createLogMessageWithoutStatusAndBody(completedOperation));
-          break;
-        case POST:
-          // fall through
-        case GET:
-          // fall through
-        default:
-          // for successful POST and GET we do not need to log the status,
-          // but we need need to log the body to see what was returned for the posted query or get.
-          logger.info("send: SUCCESS {}",
-              OperationUtils.createLogMessageWithBody(completedOperation));
-      }
+      logger.info("send: SUCCESS {}",
+          OperationUtils.createLogMessageWithoutStatusAndBody(completedOperation));
     } else {
       if (completedOperation.getStatusCode() == Operation.STATUS_CODE_NOT_FOUND) {
         logger.info("send: COMPLETED {}", OperationUtils.createLogMessageWithStatus(completedOperation));
       } else {
-        logger.warn("send: WARN {}", OperationUtils.createLogMessageWithStatusAndBody(completedOperation));
+        logger.warn("send: WARN {}", OperationUtils.createLogMessageWithStatus(completedOperation));
       }
     }
   }

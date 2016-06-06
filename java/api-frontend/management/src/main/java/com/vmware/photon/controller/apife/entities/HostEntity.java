@@ -130,7 +130,6 @@ public class HostEntity extends BaseEntity {
     return super.toStringHelper()
         .add("address", address)
         .add("username", username)
-        .add("password", password)
         .add("availabilityZone", availabilityZone)
         .add("esxVersion", esxVersion)
         .add("usageTags", usageTags)
