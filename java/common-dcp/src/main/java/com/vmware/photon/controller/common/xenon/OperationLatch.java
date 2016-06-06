@@ -75,7 +75,7 @@ public class OperationLatch {
           "TIMEOUT:{%s}, TimeUnit:{%s}, Operation:{%s}",
           timeout,
           unit,
-          OperationUtils.createLogMessageWithStatusAndBody(this.operation));
+          OperationUtils.createLogMessageWithStatus(this.operation));
       throw new TimeoutException(timeOutMessage);
     }
   }
