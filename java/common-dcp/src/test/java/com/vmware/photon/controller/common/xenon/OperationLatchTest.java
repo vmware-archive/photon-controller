@@ -130,7 +130,7 @@ public class OperationLatchTest {
       } catch (TimeoutException e) {
         assertThat(e.getMessage(),
             containsString(String.format("TIMEOUT:{%s}, TimeUnit:{%s}, Operation:{%s}",
-                1, TimeUnit.MICROSECONDS, OperationUtils.createLogMessageWithStatusAndBody(operation))));
+                1, TimeUnit.MICROSECONDS, OperationUtils.createLogMessageWithStatus(operation))));
       }
     }
 

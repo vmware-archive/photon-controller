@@ -16,6 +16,7 @@ package com.vmware.photon.controller.apife.backends.clients;
 import com.vmware.photon.controller.apife.BackendTaskExecutor;
 import com.vmware.photon.controller.apife.DeployerServerSet;
 import com.vmware.photon.controller.common.thrift.ServerSet;
+import com.vmware.photon.controller.common.xenon.OperationUtils;
 import com.vmware.photon.controller.common.xenon.XenonRestClient;
 import com.vmware.photon.controller.common.xenon.exceptions.BadRequestException;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
@@ -159,7 +160,7 @@ public class DeployerXenonRestClient extends XenonRestClient {
     // Deployer Client does not handle timeout exception currently hence converting it to RuntimeException
 
     logger.warn("DeployerXenonRestClient.send: TIMEOUT Operation={}, Message={}",
-        operation,
+        OperationUtils.createLogMessageWithStatus(operation),
         timeoutException.getMessage());
     throw new RuntimeException(timeoutException);
   }
@@ -168,7 +169,7 @@ public class DeployerXenonRestClient extends XenonRestClient {
   @Override
   protected void handleInterruptedException(Operation operation, InterruptedException interruptedException) {
     logger.warn("DeployerXenonRestClient.send: INTERRUPTED Operation={}, Exception={}",
-        operation,
+        OperationUtils.createLogMessageWithStatus(operation),
         interruptedException);
 
     // Deployer Client does not support task cancellation at this time

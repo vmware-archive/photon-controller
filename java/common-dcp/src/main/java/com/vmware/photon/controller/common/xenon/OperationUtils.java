@@ -125,7 +125,7 @@ public class OperationUtils {
         Utils.toJson(operation.getBodyRaw()));
   }
 
-  public static String createLogMessageWithoutStatusAndBody(Operation operation) {
+  public static String createLogMessage(Operation operation) {
     return String.format(
         "Action={%s}, OperationId={%s}, Uri={%s}, Referer={%s}, jsonBody={NOT LOGGED}",
         operation.getAction(),
