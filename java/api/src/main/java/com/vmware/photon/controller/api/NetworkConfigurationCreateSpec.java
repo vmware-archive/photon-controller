@@ -127,11 +127,11 @@ public class NetworkConfigurationCreateSpec {
   }
 
   protected com.google.common.base.Objects.ToStringHelper toStringHelper() {
+    // NOTE: Do not include networkManagerUsername or networkManagerPassword,
+    // to avoid having usernames or passwords in log files
     return com.google.common.base.Objects.toStringHelper(this)
         .add("virtualNetworkEnabled", this.getVirtualNetworkEnabled())
         .add("networkManagerAddress", this.getNetworkManagerAddress())
-        .add("networkManagerUsername", this.getNetworkManagerUsername())
-        .add("networkManagerPassword", this.getNetworkManagerPassword())
         .add("networkTopRouterId", this.getNetworkTopRouterId());
   }
 

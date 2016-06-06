@@ -16,6 +16,7 @@ package com.vmware.photon.controller.apife.backends.clients;
 import com.vmware.photon.controller.apife.BackendTaskExecutor;
 import com.vmware.photon.controller.common.CloudStoreServerSet;
 import com.vmware.photon.controller.common.thrift.ServerSet;
+import com.vmware.photon.controller.common.xenon.OperationUtils;
 import com.vmware.photon.controller.common.xenon.XenonRestClient;
 import com.vmware.photon.controller.common.xenon.exceptions.BadRequestException;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
@@ -206,7 +207,7 @@ public class ApiFeXenonRestClient extends XenonRestClient {
     //API-FE does not handle timeout exception currently hence converting it to RuntimeException
 
     logger.warn("ApiFeDcpRestClient.send: TIMEOUT Operation={}, Message={}",
-        operation,
+        OperationUtils.createLogMessageWithStatus(operation),
         timeoutException.getMessage());
     throw new RuntimeException(timeoutException);
   }
@@ -215,7 +216,7 @@ public class ApiFeXenonRestClient extends XenonRestClient {
   @Override
   protected void handleInterruptedException(Operation operation, InterruptedException interruptedException) {
     logger.warn("ApiFeDcpRestClient.send: INTERRUPTED Operation={}, Exception={}",
-        operation,
+        OperationUtils.createLogMessageWithStatus(operation),
         interruptedException);
 
     //API-FE does not support task cancellation at this time

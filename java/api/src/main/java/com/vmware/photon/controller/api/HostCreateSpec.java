@@ -165,10 +165,9 @@ public class HostCreateSpec {
 
   @Override
   public String toString() {
+    // NOTE: Do not include username or password, to avoid having usernames or passwords in log files
     return com.google.common.base.Objects.toStringHelper(HostCreateSpec.class)
         .add("address", address)
-        .add("username", username)
-        .add("password", password)
         .add("availabilityZone", availabilityZone)
         .add("usageTags", usageTags)
         .add("metadata", metadata)

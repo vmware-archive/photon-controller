@@ -129,10 +129,10 @@ public class AuthConfigurationSpec {
   }
 
   protected com.google.common.base.Objects.ToStringHelper toStringHelper() {
+    // NOTE: Do not include password, to avoid having usernames or passwords in log files
     return com.google.common.base.Objects.toStringHelper(this)
         .add("enabled", this.getEnabled())
         .add("tenant", this.getTenant())
-        .add("password", this.getPassword())
         .add("securityGroups", StringUtils.join(this.getSecurityGroups(), ','));
   }
 

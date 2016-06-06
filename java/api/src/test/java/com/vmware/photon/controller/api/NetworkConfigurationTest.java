@@ -89,8 +89,6 @@ public class NetworkConfigurationTest {
     public void testCorrectString() {
       String expectedString =
           "NetworkConfiguration{virtualNetworkEnabled=true, networkManagerAddress=1.2.3.4, " +
-          "networkManagerUsername=networkManagerUsername, " +
-          "networkManagerPassword=networkManagerPassword, " +
           "networkTopRouterId=networkTopRouterId}";
       assertThat(sampleNetworkConfiguration.toString(), is(expectedString));
     }
