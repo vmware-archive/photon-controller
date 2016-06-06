@@ -167,7 +167,7 @@ public class AuthInfoTest {
     public void testCorrectString() {
       String expectedString =
           "AuthInfo{enabled=true, endpoint=10.146.64.236, port=443, " +
-              "tenant=t, username=u, password=p, securityGroups=adminGroup1,adminGroup2}";
+              "tenant=t, securityGroups=adminGroup1,adminGroup2}";
       assertThat(sampleEnabledAuthInfo.toString(), is(expectedString));
     }
   }

@@ -140,6 +140,8 @@ public class CreateVirtualNetworkWorkflowDocument extends ServiceDocument{
 
   @Override
   public String toString() {
+    // NOTE: Do not include username or password,
+    // to avoid having usernames or passwords in log files
     return com.google.common.base.Objects.toStringHelper(this)
         .add("stage", taskState.stage)
         .add("subStage", taskState.subStage)
@@ -149,8 +151,6 @@ public class CreateVirtualNetworkWorkflowDocument extends ServiceDocument{
         .add("description", description)
         .add("routingType", routingType)
         .add("nsxManagerEndpoint", nsxManagerEndpoint)
-        .add("username", username)
-        .add("password", password)
         .add("transportZoneId", transportZoneId)
         .add("tier0RouterId", tier0RouterId)
         .add("taskServiceEntity", taskServiceEntity.toString())

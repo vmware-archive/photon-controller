@@ -128,10 +128,9 @@ public class AuthInfo extends Auth {
 
   @Override
   protected com.google.common.base.Objects.ToStringHelper toStringHelper() {
+    // NOTE: Do not include username or password, to avoid having usernames or passwords in log files
     return super.toStringHelper()
         .add("tenant", this.getTenant())
-        .add("username", this.getUsername())
-        .add("password", this.getPassword())
         .add("securityGroups", StringUtils.join(this.getSecurityGroups(), ','));
   }
 }

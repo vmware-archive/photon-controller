@@ -91,8 +91,6 @@ public class NetworkConfigurationCreateSpecTest {
     public void testCorrectString() {
       String expectedString =
           "NetworkConfigurationCreateSpec{virtualNetworkEnabled=true, networkManagerAddress=1.2.3.4, " +
-          "networkManagerUsername=networkManagerUsername, " +
-          "networkManagerPassword=networkManagerPassword, " +
           "networkTopRouterId=networkTopRouterId}";
       assertThat(sampleNetworkConfigurationCreateSpec.toString(), is(expectedString));
     }

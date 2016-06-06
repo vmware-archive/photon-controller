@@ -161,7 +161,7 @@ public class AuthConfigurationSpecTest {
     @Test
     public void testCorrectString() {
       String expectedString =
-          "AuthConfigurationSpec{enabled=true, tenant=t, password=p, securityGroups=adminGroup1,adminGroup2}";
+          "AuthConfigurationSpec{enabled=true, tenant=t, securityGroups=adminGroup1,adminGroup2}";
       assertThat(sampleEnabledAuthConfig.toString(), is(expectedString));
     }
   }

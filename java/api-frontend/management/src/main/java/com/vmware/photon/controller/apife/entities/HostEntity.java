@@ -127,10 +127,9 @@ public class HostEntity extends BaseEntity {
 
   @Override
   protected com.google.common.base.Objects.ToStringHelper toStringHelper() {
+    // NOTE: Do not include username or password, to avoid having usernames or passwords in log files
     return super.toStringHelper()
         .add("address", address)
-        .add("username", username)
-        .add("password", password)
         .add("availabilityZone", availabilityZone)
         .add("esxVersion", esxVersion)
         .add("usageTags", usageTags)
