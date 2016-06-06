@@ -74,6 +74,7 @@ require "common/resources/availability_zone"
 require "common/resources/availability_zone_list"
 require "common/resources/available"
 require "common/resources/virtual_network"
+require "common/resources/virtual_network_list"
 
 require "common/create_specs/auth_configuration_spec"
 require "common/create_specs/deployment_create_spec"

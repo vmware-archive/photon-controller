@@ -549,5 +549,10 @@ module EsxCloud
     # @return [VirtualNetwork]
     def find_virtual_network_by_id(network_id)
     end
+
+    # @param [String] name
+    # @return [VirtualNetwork]
+    def find_virtual_networks_by_name(name)
+    end
   end
 end
