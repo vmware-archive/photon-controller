@@ -19,5 +19,5 @@ cd "$TESTS"
 
 # Run the virtual network tests only if it is enabled
 if [ -n "$DISABLE_PHYSICAL_NETWORK" ]; then
-  bundle exec rake nsx:virtual_network
+  bundle exec rake virtual_network
 fi
