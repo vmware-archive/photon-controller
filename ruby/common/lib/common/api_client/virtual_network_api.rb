@@ -43,6 +43,16 @@ module EsxCloud
 
         VirtualNetwork.create_from_json(response.body)
       end
+
+      # @param [String] name
+      # return [VirtualNetworkList]
+      def find_virtual_networks_by_name(name)
+        response = @http_client.get("/networks/?name=#{name}")
+        check_response("Find Networks by name '#{name}'", response, 200)
+
+        VirtualNetworkList.create_from_json(response.body)
+      end
+
     end
   end
 end
