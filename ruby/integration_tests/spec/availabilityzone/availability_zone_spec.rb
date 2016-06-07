@@ -38,20 +38,22 @@ describe "Availability Zone", availabilityzone: true do
     expect(host).to_not be_nil
     expect(host.address).to_not be_nil
 
-    # To be on safe side, wait few sec and let agent register with chairman for updated availability zone
-    sleep_time = 5
-    sleep(sleep_time)
+      # create VMs in specific availability zone
+      for i in 1..3
+        vm_name = random_name("vm-#{i}-")
+        begin
+          vm = create_vm(@seeder.project!, name: vm_name, affinities: [{id: availability_zone.id, kind: "availabilityZone"}])
+        rescue EsxCloud::Error => e
+          host_service = EsxCloud::Dcp::CloudStore::HostFactory.get_host host.id
+          fail "Create VM failed. Host: #{host.id} HostState: #{host_service["agentState"]} Error: #{e}"
+        end
 
-    # create VMs in specific availability zone
-    for i in 1..3
-      vm_name = random_name("vm-#{i}-")
-      vm = create_vm(@seeder.project!, name: vm_name, affinities: [{id: availability_zone.id, kind: "availabilityZone"}])
-      expect(vm).to_not be_nil
-      expect(vm.name).to eq(vm_name)
-      expect(vm.host).to eq(host.address)
+        expect(vm).to_not be_nil
+        expect(vm.name).to eq(vm_name)
+        expect(vm.host).to eq(host.address)
 
-      vm.delete
-    end
+        vm.delete
+      end
   end
 
   it "set host's availability zone again should fail" do
