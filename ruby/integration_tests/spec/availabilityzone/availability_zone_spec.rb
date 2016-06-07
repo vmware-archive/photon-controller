@@ -38,10 +38,6 @@ describe "Availability Zone", availabilityzone: true do
     expect(host).to_not be_nil
     expect(host.address).to_not be_nil
 
-    # To be on safe side, wait few sec and let agent register with chairman for updated availability zone
-    sleep_time = 5
-    sleep(sleep_time)
-
     # create VMs in specific availability zone
     for i in 1..3
       vm_name = random_name("vm-#{i}-")
