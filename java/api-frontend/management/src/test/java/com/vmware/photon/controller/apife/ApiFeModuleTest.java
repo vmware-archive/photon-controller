@@ -64,7 +64,6 @@ import com.vmware.photon.controller.apife.config.AuthConfig;
 import com.vmware.photon.controller.apife.config.ConfigurationUtils;
 import com.vmware.photon.controller.apife.config.ImageConfig;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
-import com.vmware.photon.controller.common.clients.HousekeeperClientConfig;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperModule;
 
 import com.google.inject.AbstractModule;
@@ -80,8 +79,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
-
-import java.util.concurrent.TimeUnit;
 
 /**
  * Tests {@link ApiFeModule}.
@@ -115,18 +112,6 @@ public class ApiFeModuleTest {
 
     @Inject
     public TestAuthConfigInjection(AuthConfig config) {
-      this.config = config;
-    }
-  }
-
-  /**
-   * Helper class used to test HousekeeperClientConfig injection.
-   */
-  public static class TestHousekeeperClientConfigInjection {
-    public HousekeeperClientConfig config;
-
-    @Inject
-    public TestHousekeeperClientConfigInjection(HousekeeperClientConfig config) {
       this.config = config;
     }
   }
@@ -321,47 +306,6 @@ public class ApiFeModuleTest {
       assertThat(configWrapper.config, notNullValue());
       assertThat(configWrapper.config, instanceOf(AuthConfig.class));
       assertThat(configWrapper.config.isAuthEnabled(), is(true));
-    }
-  }
-
-  /**
-   * Tests ImageConfig injection.
-   */
-  public class TestHousekeeperClientConfig {
-
-    private Injector injector;
-
-    @BeforeTest
-    public void setUp() throws Throwable {
-      ApiFeModule apiFeModule = new ApiFeModule();
-      apiFeModule.setConfiguration(
-          ConfigurationUtils.parseConfiguration(
-              ApiFeConfigurationTest.class.getResource("/config_valid_image_replication_timeout.yml").getPath()
-          )
-      );
-
-      injector = Guice.createInjector(
-          apiFeModule,
-          new ZookeeperModule(),
-          new AbstractModule() {
-            @Override
-            protected void configure() {
-              bindScope(RequestScoped.class, Scopes.NO_SCOPE);
-            }
-          });
-    }
-
-    /**
-     * Test that ImageConfig can be injected successfully.
-     *
-     * @throws Throwable
-     */
-    @Test
-    public void testHousekeeperClientConfigIsInjected() throws Throwable {
-      TestHousekeeperClientConfigInjection configWrapper =
-          injector.getInstance(TestHousekeeperClientConfigInjection.class);
-      assertThat(configWrapper.config, notNullValue());
-      assertThat(configWrapper.config.getImageReplicationTimeout(), is(TimeUnit.SECONDS.toMillis(600)));
     }
   }
 
