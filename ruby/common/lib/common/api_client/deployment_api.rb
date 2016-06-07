@@ -37,7 +37,8 @@ module EsxCloud
       # @param [String] source_deployment_address
       # @param [String] destination_deployment_id
       def initialize_deployment_migration(source_deployment_address, id)
-        response = @http_client.post("#{DEPLOYMENTS_ROOT}/#{id}/initialize_migration", source_deployment_address)
+        payload = {sourceLoadBalancerAddress: source_deployment_address}
+        response = @http_client.post("#{DEPLOYMENTS_ROOT}/#{id}/initialize_migration", payload)
         check_response("Initialize Deployment Migration '#{id}'", response, 201)
 
         poll_response(response)
@@ -46,7 +47,8 @@ module EsxCloud
       # @param [String] source_deployment_address
       # @param [String] destination_deployment_id
       def finalize_deployment_migration(source_deployment_address, id)
-        response = @http_client.post("#{DEPLOYMENTS_ROOT}/#{id}/finalize_migration", source_deployment_address)
+        payload = {sourceLoadBalancerAddress: source_deployment_address}
+        response = @http_client.post("#{DEPLOYMENTS_ROOT}/#{id}/finalize_migration", payload)
         check_response("Finalize Deployment Migration '#{id}'", response, 201)
 
         poll_response(response)

@@ -17,6 +17,8 @@ import com.vmware.photon.controller.api.ClusterConfiguration;
 import com.vmware.photon.controller.api.ClusterConfigurationSpec;
 import com.vmware.photon.controller.api.Deployment;
 import com.vmware.photon.controller.api.DeploymentDeployOperation;
+import com.vmware.photon.controller.api.FinalizeMigrationOperation;
+import com.vmware.photon.controller.api.InitializeMigrationOperation;
 import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
@@ -124,11 +126,11 @@ public class DeploymentResource {
   })
   public Response initializeMigration(@Context Request request,
                                       @PathParam("id") String destinationDeploymentId,
-                                      @Validated String sourceLoadBalancerAddress)
+                                      @Validated InitializeMigrationOperation initializeMigrationOperation)
       throws InternalException, ExternalException {
     return generateCustomResponse(
         Response.Status.CREATED,
-        client.initializeDeploymentMigration(sourceLoadBalancerAddress, destinationDeploymentId),
+        client.initializeDeploymentMigration(initializeMigrationOperation, destinationDeploymentId),
         (ContainerRequest) request,
         TaskResourceRoutes.TASK_PATH);
   }
@@ -141,11 +143,11 @@ public class DeploymentResource {
   })
   public Response finalizeMigration(@Context Request request,
                                     @PathParam("id") String destinationDeploymentId,
-                                    @Validated String sourceLoadBalancerAddress)
+                                    @Validated FinalizeMigrationOperation finalizeMigrationOperation)
       throws InternalException, ExternalException {
     return generateCustomResponse(
         Response.Status.CREATED,
-        client.finalizeDeploymentMigration(sourceLoadBalancerAddress, destinationDeploymentId),
+        client.finalizeDeploymentMigration(finalizeMigrationOperation, destinationDeploymentId),
         (ContainerRequest) request,
         TaskResourceRoutes.TASK_PATH);
   }
