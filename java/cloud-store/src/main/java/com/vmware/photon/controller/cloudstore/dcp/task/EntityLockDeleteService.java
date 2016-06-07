@@ -206,7 +206,7 @@ public class EntityLockDeleteService extends StatefulService {
    */
   private void processEntityLocksWithDeletedEntities(final State current) {
     if (current.nextPageLink == null) {
-      finishTask(current);
+      sendStageProgressPatch(current, TaskState.TaskStage.FINISHED);
       return;
     }
 
