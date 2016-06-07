@@ -147,8 +147,8 @@ public class HousekeeperXenonServiceHostTest {
 
     @Test
     public void testParams() {
-      assertThat(host.getPort(), is(16001));
-      Path storagePath = Paths.get(storageDir.getPath()).resolve(Integer.toString(16001));
+      assertThat(host.getPort(), is(16000));
+      Path storagePath = Paths.get(storageDir.getPath()).resolve(Integer.toString(16000));
       assertThat(host.getStorageSandbox().getPath(), is(storagePath.toString()));
     }
 
@@ -280,7 +280,7 @@ public class HousekeeperXenonServiceHostTest {
   public class JoinNodeGroupTest {
 
     private final long maintenanceInterval = TimeUnit.MILLISECONDS.toMicros(500);
-    private final File storageDir2 = new File("/tmp/dcp/16002/");
+    private final File storageDir2 = new File("/tmp/dcp/16001/");
     private HousekeeperXenonServiceHost host2;
 
     @BeforeClass
@@ -302,7 +302,7 @@ public class HousekeeperXenonServiceHostTest {
     private void setUp() throws Throwable {
       XenonConfig xenonConfig = new XenonConfig();
       xenonConfig.setBindAddress("0.0.0.0");
-      xenonConfig.setPort(16001);
+      xenonConfig.setPort(16000);
       xenonConfig.setStoragePath(storageDir.getAbsolutePath());
 
       host = new HousekeeperXenonServiceHost(xenonConfig, cloudStoreHelper, hostClientFactory,
@@ -314,7 +314,7 @@ public class HousekeeperXenonServiceHostTest {
 
       XenonConfig xenonConfig2 = new XenonConfig();
       xenonConfig2.setBindAddress("0.0.0.0");
-      xenonConfig2.setPort(16002);
+      xenonConfig2.setPort(16001);
       xenonConfig2.setStoragePath(storageDir2.getAbsolutePath());
 
       host2 = new HousekeeperXenonServiceHost(xenonConfig2, cloudStoreHelper, hostClientFactory,
