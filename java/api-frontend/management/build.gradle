@@ -45,7 +45,6 @@ dependencies {
       '../../../thrift/scheduler.thrift',
       '../../../thrift/roles.thrift',
       '../../../thrift/flavors.thrift',
-      '../../../thrift/housekeeper.thrift',
       '../../../thrift/tracing.thrift',
       '../../../thrift/status.thrift')
 

@@ -32,7 +32,7 @@ module EsxCloud
       end
 
       def self.port
-        ENV["HOUSEKEEPER_DCP_PORT"] || "16001"
+        ENV["HOUSEKEEPER_DCP_PORT"] || "16000"
       end
     end
   end
