@@ -27,7 +27,6 @@ dependencies {
       '../../thrift/aggregator.thrift',
       '../../thrift/flavors.thrift',
       '../../thrift/host.thrift',
-      '../../thrift/housekeeper.thrift',
       '../../thrift/resource.thrift',
       '../../thrift/roles.thrift',
       '../../thrift/scheduler.thrift',
