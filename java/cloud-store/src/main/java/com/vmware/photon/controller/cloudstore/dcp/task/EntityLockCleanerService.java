@@ -66,8 +66,11 @@ public class EntityLockCleanerService extends StatefulService {
   @Override
   public void handleStart(Operation start) {
     ServiceUtils.logInfo(this, "Starting service %s", getSelfLink());
-    State s = start.getBody(State.class);
-    initializeState(start, s);
+    State state = start.getBody(State.class);
+    initializeState(state);
+    validateState(state);
+    start.setBody(state).complete();
+    processStart(state);
   }
 
   @Override
@@ -89,36 +92,12 @@ public class EntityLockCleanerService extends StatefulService {
    *
    * @param current
    */
-  private void initializeState(Operation start, State current) {
+  private void initializeState(State current) {
     InitializationUtils.initialize(current);
 
     if (current.documentExpirationTimeMicros <= 0) {
       current.documentExpirationTimeMicros =
           ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME_MICROS);
-    }
-
-    if (current.nextPageLink == null) {
-      Operation queryEntityLocksPagination = Operation
-          .createPost(UriUtils.buildUri(getHost(), ServiceUriPaths.CORE_LOCAL_QUERY_TASKS))
-          .setBody(buildEntityLockQuery(current));
-      queryEntityLocksPagination
-          .setCompletion(((op, failure) -> {
-            if (failure != null) {
-              failTask(failure);
-              return;
-            }
-            ServiceDocumentQueryResult results = op.getBody(QueryTask.class).results;
-            if (results.nextPageLink != null) {
-              current.nextPageLink = results.nextPageLink;
-            } else {
-              ServiceUtils.logInfo(this, "No entityLocks found.");
-            }
-
-            validateState(current);
-            start.setBody(current).complete();
-
-            processStart(current);
-          })).sendWith(this);
     }
   }
 
@@ -163,9 +142,34 @@ public class EntityLockCleanerService extends StatefulService {
    * @param current
    */
   private void processStart(final State current) {
+    if (current.isSelfProgressionDisabled) {
+      ServiceUtils.logInfo(this, "Skipping start operation processing (disabled)");
+      return;
+    }
+
     try {
       if (!isFinalStage(current)) {
-        sendSelfPatch(current);
+        if (current.nextPageLink == null) {
+          Operation queryEntityLocksPagination = Operation
+              .createPost(UriUtils.buildUri(getHost(), ServiceUriPaths.CORE_LOCAL_QUERY_TASKS))
+              .setBody(buildEntityLockQuery(current));
+          queryEntityLocksPagination
+              .setCompletion(((op, failure) -> {
+                if (failure != null) {
+                  failTask(failure);
+                  return;
+                }
+                ServiceDocumentQueryResult results = op.getBody(QueryTask.class).results;
+                if (results.nextPageLink != null) {
+                  current.nextPageLink = results.nextPageLink;
+                } else {
+                  ServiceUtils.logInfo(this, "No entityLocks found.");
+                }
+
+                sendStageProgressPatch(current);
+
+              })).sendWith(this);
+        }
       }
     } catch (Throwable e) {
       failTask(e);
@@ -228,7 +232,7 @@ public class EntityLockCleanerService extends StatefulService {
 
           if (entityLockList.size() == 0) {
             ServiceUtils.logInfo(EntityLockCleanerService.this, "No entityLocks found any more.");
-            sendSelfPatch(current);
+            sendStageProgressPatch(current);
             return;
           }
 
@@ -299,7 +303,7 @@ public class EntityLockCleanerService extends StatefulService {
       current.danglingEntityLocksWithInactiveTasks += releaseLockOperations.size();
       if (releaseLockOperations.size() == 0) {
         ServiceUtils.logInfo(this, "No unreleased entityLocks found for this patch.");
-        sendSelfPatch(current);
+        sendStageProgressPatch(current);
         return;
       }
 
@@ -345,7 +349,7 @@ public class EntityLockCleanerService extends StatefulService {
         return;
       }
       current.releasedEntityLocks += ops.size();
-      this.sendSelfPatch(current);
+      this.sendStageProgressPatch(current);
     };
   }
 
@@ -382,7 +386,7 @@ public class EntityLockCleanerService extends StatefulService {
     }
     patch.taskState.stage = TaskState.TaskStage.FINISHED;
 
-    this.sendSelfPatch(patch);
+    this.sendStageProgressPatch(patch);
   }
 
   /**
@@ -392,32 +396,23 @@ public class EntityLockCleanerService extends StatefulService {
    */
   private void failTask(Throwable e) {
     ServiceUtils.logSevere(this, e);
-    this.sendSelfPatch(buildPatch(TaskState.TaskStage.FAILED, e));
+    this.sendStageProgressPatch(buildPatch(TaskState.TaskStage.FAILED, e));
   }
 
   /**
    * Send a patch message to ourselves to update the execution stage.
    *
-   * @param stage
+   * @param current
    */
-  private void sendStageProgressPatch(final State current, TaskState.TaskStage stage) {
+  private void sendStageProgressPatch(final State current) {
     if (current.isSelfProgressionDisabled) {
       ServiceUtils.logInfo(this, "Skipping patch handling (disabled)");
       return;
     }
 
-    this.sendSelfPatch(buildPatch(stage, null));
-  }
-
-  /**
-   * Send a patch message to ourselves to update the execution stage.
-   *
-   * @param state
-   */
-  private void sendSelfPatch(State state) {
     Operation patch = Operation
         .createPatch(UriUtils.buildUri(getHost(), getSelfLink()))
-        .setBody(state);
+        .setBody(current);
     this.sendRequest(patch);
   }
 
