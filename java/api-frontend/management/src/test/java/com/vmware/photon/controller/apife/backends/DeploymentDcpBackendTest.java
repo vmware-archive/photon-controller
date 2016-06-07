@@ -21,6 +21,8 @@ import com.vmware.photon.controller.api.Deployment;
 import com.vmware.photon.controller.api.DeploymentCreateSpec;
 import com.vmware.photon.controller.api.DeploymentDeployOperation;
 import com.vmware.photon.controller.api.DeploymentState;
+import com.vmware.photon.controller.api.FinalizeMigrationOperation;
+import com.vmware.photon.controller.api.InitializeMigrationOperation;
 import com.vmware.photon.controller.api.NetworkConfiguration;
 import com.vmware.photon.controller.api.Operation;
 import com.vmware.photon.controller.api.StatsInfo;
@@ -1138,8 +1140,10 @@ public class DeploymentDcpBackendTest {
 
     @Test
     public void testInitializeMigrateDeploymentSuccess() throws Throwable {
-      String sourceDeploymentAddress = host2.getPreferredAddress();
-      TaskEntity taskEntity = deploymentBackend.prepareInitializeMigrateDeployment(sourceDeploymentAddress, entity
+      InitializeMigrationOperation op = new InitializeMigrationOperation();
+      op.setSourceLoadBalancerAddress(host2.getPreferredAddress());
+
+      TaskEntity taskEntity = deploymentBackend.prepareInitializeMigrateDeployment(op, entity
           .getId());
       assertThat(taskEntity, is(notNullValue()));
       assertThat(taskEntity.getId(), is(notNullValue()));
@@ -1161,8 +1165,10 @@ public class DeploymentDcpBackendTest {
 
     @Test
     public void testFinalizeMigrateDeploymentSuccess() throws Throwable {
-      String sourceDeploymentAddress = host2.getPreferredAddress();
-      TaskEntity taskEntity = deploymentBackend.prepareFinalizeMigrateDeployment(sourceDeploymentAddress, entity
+      FinalizeMigrationOperation op = new FinalizeMigrationOperation();
+      op.setSourceLoadBalancerAddress(host2.getPreferredAddress());
+
+      TaskEntity taskEntity = deploymentBackend.prepareFinalizeMigrateDeployment(op, entity
           .getId());
       assertThat(taskEntity, is(notNullValue()));
       assertThat(taskEntity.getId(), is(notNullValue()));

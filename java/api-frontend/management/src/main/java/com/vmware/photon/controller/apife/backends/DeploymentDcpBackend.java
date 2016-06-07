@@ -21,7 +21,9 @@ import com.vmware.photon.controller.api.Deployment;
 import com.vmware.photon.controller.api.DeploymentCreateSpec;
 import com.vmware.photon.controller.api.DeploymentDeployOperation;
 import com.vmware.photon.controller.api.DeploymentState;
+import com.vmware.photon.controller.api.FinalizeMigrationOperation;
 import com.vmware.photon.controller.api.Host;
+import com.vmware.photon.controller.api.InitializeMigrationOperation;
 import com.vmware.photon.controller.api.MigrationStatus;
 import com.vmware.photon.controller.api.NetworkConfiguration;
 import com.vmware.photon.controller.api.Operation;
@@ -135,28 +137,29 @@ public class DeploymentDcpBackend implements DeploymentBackend {
   }
 
   @Override
-  public TaskEntity prepareInitializeMigrateDeployment(String sourceLoadbalancerAddress, String
-      destinationDeploymentId) throws
-      ExternalException {
+  public TaskEntity prepareInitializeMigrateDeployment(InitializeMigrationOperation  initializeMigrationOperation,
+                                                       String destinationDeploymentId) throws ExternalException {
     DeploymentEntity deploymentEntity = findById(destinationDeploymentId);
     EntityStateValidator.validateOperationState(deploymentEntity, deploymentEntity.getState(),
         Operation.INITIALIZE_MIGRATE_DEPLOYMENT, DeploymentState.OPERATION_PREREQ_STATE);
 
     logger.info("Initialize migrate  {}", deploymentEntity);
-    TaskEntity taskEntity = createInitializeMigrateDeploymentTask(sourceLoadbalancerAddress, deploymentEntity);
+    TaskEntity taskEntity = createInitializeMigrateDeploymentTask(
+            initializeMigrationOperation.getSourceLoadBalancerAddress(), deploymentEntity);
     taskEntity.getToBeLockedEntities().add(deploymentEntity);
     return taskEntity;
   }
 
   @Override
-  public TaskEntity prepareFinalizeMigrateDeployment(String sourceLoadbalancerAddress, String destinationDeploymentId)
-      throws ExternalException {
+  public TaskEntity prepareFinalizeMigrateDeployment(FinalizeMigrationOperation finalizeMigrationOperation,
+                                                     String destinationDeploymentId) throws ExternalException {
     DeploymentEntity deploymentEntity = findById(destinationDeploymentId);
     EntityStateValidator.validateOperationState(deploymentEntity, deploymentEntity.getState(),
         Operation.FINALIZE_MIGRATE_DEPLOYMENT, DeploymentState.OPERATION_PREREQ_STATE);
 
     logger.info("Finalize migrate  {}", deploymentEntity);
-    TaskEntity taskEntity = createFinalizeMigrateDeploymentTask(sourceLoadbalancerAddress, deploymentEntity);
+    TaskEntity taskEntity = createFinalizeMigrateDeploymentTask(
+            finalizeMigrationOperation.getSourceLoadBalancerAddress(), deploymentEntity);
     taskEntity.getToBeLockedEntities().add(deploymentEntity);
     return taskEntity;
   }

@@ -20,6 +20,8 @@ import com.vmware.photon.controller.api.Deployment;
 import com.vmware.photon.controller.api.DeploymentCreateSpec;
 import com.vmware.photon.controller.api.DeploymentDeployOperation;
 import com.vmware.photon.controller.api.DeploymentState;
+import com.vmware.photon.controller.api.FinalizeMigrationOperation;
+import com.vmware.photon.controller.api.InitializeMigrationOperation;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.entities.DeploymentEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
@@ -48,11 +50,11 @@ public interface DeploymentBackend {
 
   TaskEntity resumeSystem(String deploymentId) throws ExternalException;
 
-  TaskEntity prepareInitializeMigrateDeployment(String sourceLoadbalancerAddress, String destinationDeploymentId)
-      throws ExternalException;
+  TaskEntity prepareInitializeMigrateDeployment(InitializeMigrationOperation initializeMigrationOperation,
+                                                String destinationDeploymentId) throws ExternalException;
 
-  TaskEntity prepareFinalizeMigrateDeployment(String sourceLoadbalancerAddress, String destinationDeploymentId)
-      throws ExternalException;
+  TaskEntity prepareFinalizeMigrateDeployment(FinalizeMigrationOperation finalizeMigrationOperation,
+                                              String destinationDeploymentId) throws ExternalException;
 
   Deployment toApiRepresentation(String id) throws DeploymentNotFoundException;
 
