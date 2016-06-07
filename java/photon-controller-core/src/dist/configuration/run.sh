@@ -16,6 +16,10 @@ container_ip=$(ifconfig $en_name | grep 'inet addr:' | cut -d: -f2 | awk '{ prin
 CONFIG_PATH="/etc/esxcloud"
 PHOTON_CONTROLLER_CORE_BIN="{{{PHOTON-CONTROLLER-CORE_INSTALL_DIRECTORY}}}/bin"
 PHOTON_CONTROLLER_CORE_CONFIG="$CONFIG_PATH/photon-controller-core.yml"
+SCRIPT_LOG_DIRECTORY="{{{LOG_DIRECTORY}}}/script_logs"
+
+# Create script log directory
+mkdir -p $SCRIPT_LOG_DIRECTORY
 
 #
 # Add hosts entry to allow InetAddress.getLocalHost() to
@@ -28,7 +32,7 @@ then
 fi
 
 # jvm heap size will be set to by default is 384m
-jvm_mem=384
+jvm_mem=512
 
 {{#memoryMb}}
 jvm_mem=$(({{{memoryMb}}}/2))
