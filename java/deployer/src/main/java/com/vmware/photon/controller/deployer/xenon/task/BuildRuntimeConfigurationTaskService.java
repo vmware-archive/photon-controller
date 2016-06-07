@@ -72,6 +72,7 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
    */
   public static final String MUSTACHE_KEY_COMMON_PEER_NODES = "PEER_NODES";
   public static final String MUSTACHE_KEY_CLOUDSTORE_PEER_NODES = "CLOUDSTORE_PEER_NODES";
+  public static final String MUSTACHE_KEY_DEPLOYER_PEER_NODES = "DEPLOYER_PEER_NODES";
   public static final String MUSTACHE_KEY_HOUSEKEEPER_PEER_NODES = "HOUSEKEEPER_PEER_NODES";
   public static final String MUSTACHE_KEY_SCHEDULER_PEER_NODES = "SCHEDULER_PEER_NODES";
   public static final String MUSTACHE_KEY_HAPROXY_MGMT_API_HTTP_SERVERS = "MGMT_API_HTTP_SERVERS";
@@ -478,7 +479,6 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
     //
 
     switch (currentState.containerType) {
-      case Deployer:
       case ManagementApi:
       case PhotonControllerCore:
         if (!currentState.dynamicParameters.containsKey(MUSTACHE_KEY_COMMON_ZOOKEEPER_QUORUM)) {
@@ -497,19 +497,8 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
     // container types will no longer be necessary -- each service will be part of a single default
     // group, regardless of its type.
     //
-
-    if (!currentState.dynamicParameters.containsKey(MUSTACHE_KEY_COMMON_PEER_NODES)) {
-      switch (currentState.containerType) {
-        case Deployer:
-          getIpsForContainerType(currentState.containerType,
-              (vmIpAddresses) -> patchDynamicParameter(currentState, MUSTACHE_KEY_COMMON_PEER_NODES,
-                  generatePeerNodeList(vmIpAddresses, String.valueOf(ServicePortConstants.DEPLOYER_PORT))));
-          return;
-      }
-    }
-
     //
-    // Populate peer node information for cloudstore, housekeeper and scheduler services
+    // Populate peer node information for cloudstore, deployer, housekeeper and scheduler services
     //
 
     if (!currentState.dynamicParameters.containsKey(MUSTACHE_KEY_CLOUDSTORE_PEER_NODES)) {
@@ -521,6 +510,18 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
           return;
       }
     }
+
+    if (!currentState.dynamicParameters.containsKey(MUSTACHE_KEY_DEPLOYER_PEER_NODES)) {
+      switch (currentState.containerType) {
+        case PhotonControllerCore:
+          getIpsForContainerType(currentState.containerType,
+              (vmIpAddresses) -> patchDynamicParameter(currentState, MUSTACHE_KEY_DEPLOYER_PEER_NODES,
+                  generatePeerNodeList(vmIpAddresses,
+                      String.valueOf(ServicePortConstants.DEPLOYER_PORT))));
+          return;
+      }
+    }
+
 
     if (!currentState.dynamicParameters.containsKey(MUSTACHE_KEY_HOUSEKEEPER_PEER_NODES)) {
       switch (currentState.containerType) {
@@ -551,11 +552,11 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
     switch (currentState.containerType) {
 
       //
-      // The deployer and the management UI service (incorrectly) require knowledge of the load
+      // The deployer service and the management UI service (incorrectly) require knowledge of the load
       // balancer IP address in order to communicate with API-FE.
       //
 
-      case Deployer:
+      case PhotonControllerCore:
       case ManagementUi:
         if (!currentState.dynamicParameters.containsKey(MUSTACHE_KEY_COMMON_LOAD_BALANCER_IP)) {
           getIpsForContainerType(ContainersConfig.ContainerType.LoadBalancer,

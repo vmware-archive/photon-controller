@@ -15,7 +15,6 @@ package com.vmware.photon.controller.housekeeper;
 
 import com.vmware.photon.controller.common.config.BadConfigException;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
-import com.vmware.photon.controller.common.logging.LoggingConfiguration;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperConfig;
 
 import org.testng.annotations.BeforeClass;
@@ -57,11 +56,6 @@ public class ConfigTest {
     @Test
     public void testZookeeperConfig() {
       assertThat(housekeeperConfig.getZookeeper(), instanceOf(ZookeeperConfig.class));
-    }
-
-    @Test
-    public void testLoggingConfig() {
-      assertThat(housekeeperConfig.getLogging(), instanceOf(LoggingConfiguration.class));
     }
   }
 
