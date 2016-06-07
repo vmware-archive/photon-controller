@@ -18,8 +18,8 @@ import logging
 from common.util import suicide
 from host.hypervisor.esx.datastore_manager import EsxDatastoreManager
 from host.hypervisor.esx.disk_manager import EsxDiskManager
-from host.hypervisor.esx.http_disk_transfer import HttpNfcTransferer
 from host.hypervisor.esx.network_manager import EsxNetworkManager
+from host.hypervisor.esx.nfc_image_transfer import NfcImageTransferer
 from host.hypervisor.esx.vm_manager import EsxVmManager
 from host.hypervisor.esx.image_manager import EsxImageManager
 from host.hypervisor.esx.system import EsxSystem
@@ -48,9 +48,7 @@ class EsxHypervisor(object):
         self.network_manager = EsxNetworkManager(self.host_client, agent_config.networks)
         self.system = EsxSystem(self.host_client)
         self.image_manager.monitor_for_cleanup()
-        self.image_transferer = HttpNfcTransferer(
-                self.host_client,
-                self.datastore_manager.image_datastores())
+        self.image_transferer = NfcImageTransferer(self.host_client)
         atexit.register(self.image_manager.cleanup)
 
     @staticmethod
