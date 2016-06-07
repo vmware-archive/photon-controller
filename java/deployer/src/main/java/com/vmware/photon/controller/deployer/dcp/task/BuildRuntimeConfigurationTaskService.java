@@ -528,7 +528,7 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
           getIpsForContainerType(currentState.containerType,
                   (vmIpAddresses) -> patchDynamicParameter(currentState, MUSTACHE_KEY_HOUSEKEEPER_PEER_NODES,
                           generatePeerNodeList(vmIpAddresses,
-                                  String.valueOf(ServicePortConstants.HOUSEKEEPER_PORT + 1))));
+                                  String.valueOf(ServicePortConstants.HOUSEKEEPER_PORT))));
           return;
       }
     }

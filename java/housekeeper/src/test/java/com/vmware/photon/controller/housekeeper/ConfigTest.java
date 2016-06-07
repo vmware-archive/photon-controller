@@ -16,7 +16,6 @@ package com.vmware.photon.controller.housekeeper;
 import com.vmware.photon.controller.common.config.BadConfigException;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.logging.LoggingConfiguration;
-import com.vmware.photon.controller.common.thrift.ThriftConfig;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperConfig;
 
 import org.testng.annotations.BeforeClass;
@@ -46,19 +45,11 @@ public class ConfigTest {
     }
 
     @Test
-    public void testThriftConfig() {
-      ThriftConfig thriftConfig = housekeeperConfig.getThriftConfig();
-      assertThat(thriftConfig.getBindAddress(), is("0.0.0.0"));
-      assertThat(thriftConfig.getPort(), is(16000));
-      assertThat(thriftConfig.getRegistrationAddress(), is("127.0.0.1"));
-    }
-
-    @Test
     public void testXenonConfig() {
       com.vmware.photon.controller.common.xenon.host.XenonConfig xenonConfig = housekeeperConfig.getXenonConfig();
       assertThat(xenonConfig.getBindAddress(), is("0.0.0.0"));
-      assertThat(xenonConfig.getPeerNodes(), arrayContaining("http://127.0.0.1:16001"));
-      assertThat(xenonConfig.getPort(), is(16001));
+      assertThat(xenonConfig.getPeerNodes(), arrayContaining("http://127.0.0.1:16000"));
+      assertThat(xenonConfig.getPort(), is(16000));
       assertThat(xenonConfig.getRegistrationAddress(), is("127.0.0.1"));
       assertThat(xenonConfig.getStoragePath(), is("/tmp/dcp/housekeeper/"));
     }
@@ -88,21 +79,13 @@ public class ConfigTest {
     }
 
     @Test
-    public void testThriftConfig() {
-      ThriftConfig thriftConfig = housekeeperConfig.getThriftConfig();
-      assertThat(thriftConfig.getBindAddress(), is("0.0.0.0"));
-      assertThat(thriftConfig.getPort(), is(16000));
-      assertThat(thriftConfig.getRegistrationAddress(), is("127.0.0.1"));
-    }
-
-    @Test
     public void testXenonConfig() {
       com.vmware.photon.controller.common.xenon.host.XenonConfig xenonConfig = housekeeperConfig.getXenonConfig();
       assertThat(xenonConfig.getBindAddress(), is("0.0.0.0"));
-      assertThat(xenonConfig.getPeerNodes(), arrayContaining("http://127.0.0.1:16001"));
-      assertThat(xenonConfig.getPort(), is(16001));
+      assertThat(xenonConfig.getPeerNodes(), arrayContaining("http://127.0.0.1:16000"));
+      assertThat(xenonConfig.getPort(), is(16000));
       assertThat(xenonConfig.getRegistrationAddress(), is("127.0.0.1"));
-      assertThat(xenonConfig.getStoragePath(), is("/tmp/dcp/16001"));
+      assertThat(xenonConfig.getStoragePath(), is("/tmp/dcp/16000"));
     }
   }
 }
