@@ -207,6 +207,7 @@ Vagrant.configure("2") do |config|
 
   # Install jsonlint, useful for catching errors in dynamic_params early
   config.vm.provision :shell, :inline  => <<-EOM
+    tdnf makecache
     tdnf install -y gmp-devel
     gem install jsonlint --no-rdoc --no-ri
   EOM

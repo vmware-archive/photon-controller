@@ -1,6 +1,7 @@
 FROM photon/servicebase
 
-RUN tdnf install -y haproxy && \
+RUN tdnf makecache && \
+    tdnf install -y haproxy && \
     groupadd haproxy && \
     useradd -g haproxy haproxy && \
     mkdir /var/lib/haproxy
