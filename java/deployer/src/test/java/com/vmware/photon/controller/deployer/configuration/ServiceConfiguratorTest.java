@@ -13,12 +13,9 @@
 
 package com.vmware.photon.controller.deployer.configuration;
 
-import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.xenon.ContainersConfig;
 import com.vmware.photon.controller.deployer.xenon.ContainersConfig.Spec;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.apache.commons.io.FileUtils;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -52,11 +49,11 @@ public class ServiceConfiguratorTest {
     ContainersConfig containersConfig = serviceConfigurator.generateContainersConfig(configPath);
     assertThat(containersConfig.getContainerSpecs().size(), is(ContainersConfig.ContainerType.values().length));
 
-    Spec spec = containersConfig.getContainerSpecs().get(ContainersConfig.ContainerType.Deployer.name());
-    assertThat(spec.getContainerImage(), is("esxcloud/deployer"));
-    assertThat(spec.getPortBindings().size(), is(1));
+    Spec spec = containersConfig.getContainerSpecs().get(ContainersConfig.ContainerType.PhotonControllerCore.name());
+    assertThat(spec.getContainerImage(), is("esxcloud/photon-controller-core"));
+    assertThat(spec.getPortBindings().size(), is(3));
     assertThat(spec.getVolumeBindings().size(), is(4));
-    assertThat(spec.getDynamicParameters().size(), is(9));
+    assertThat(spec.getDynamicParameters().size(), is(16));
   }
 
   @Test
@@ -64,11 +61,9 @@ public class ServiceConfiguratorTest {
     FileUtils.copyDirectory(new File(configPath), new File(TMP_DIR));
     ServiceConfigurator serviceConfigurator = new ServiceConfigurator();
     ContainersConfig containersConfig = serviceConfigurator.generateContainersConfig(configPath);
-    serviceConfigurator.applyDynamicParameters(TMP_DIR, ContainersConfig.ContainerType.Deployer, containersConfig
-        .getContainerSpecs().get(ContainersConfig.ContainerType.Deployer.name()).getDynamicParameters());
-    ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
-    DeployerConfig deployerConfig = mapper.readValue(new File(TMP_DIR + "deployer/deployer.yml"), DeployerConfig.class);
-    assertThat(deployerConfig.getXenonConfig().getBindAddress(), is("0.0.0.0"));
+    serviceConfigurator.applyDynamicParameters(TMP_DIR, ContainersConfig.ContainerType.PhotonControllerCore,
+        containersConfig.getContainerSpecs().get(
+            ContainersConfig.ContainerType.PhotonControllerCore.name()).getDynamicParameters());
 
     Map<String, Object> dynamicParameters = new HashMap<>();
     List<LoadBalancerServer> list = new ArrayList<>();
