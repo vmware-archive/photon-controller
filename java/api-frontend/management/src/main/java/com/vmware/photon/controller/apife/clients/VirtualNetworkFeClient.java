@@ -13,6 +13,8 @@
 
 package com.vmware.photon.controller.apife.clients;
 
+import com.vmware.photon.controller.api.Operation;
+import com.vmware.photon.controller.api.Project;
 import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.VirtualNetwork;
@@ -23,6 +25,7 @@ import com.vmware.photon.controller.apibackend.servicedocuments.CreateVirtualNet
 import com.vmware.photon.controller.apibackend.servicedocuments.DeleteVirtualNetworkWorkflowDocument;
 import com.vmware.photon.controller.apibackend.workflows.CreateVirtualNetworkWorkflowService;
 import com.vmware.photon.controller.apibackend.workflows.DeleteVirtualNetworkWorkflowService;
+import com.vmware.photon.controller.apife.backends.TaskBackend;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.backends.clients.HousekeeperXenonRestClient;
 import com.vmware.photon.controller.apife.backends.utils.TaskUtils;
@@ -30,12 +33,16 @@ import com.vmware.photon.controller.apife.backends.utils.VirtualNetworkUtils;
 import com.vmware.photon.controller.apife.exceptions.external.NetworkNotFoundException;
 import com.vmware.photon.controller.apife.utils.PaginationUtils;
 import com.vmware.photon.controller.cloudstore.dcp.entity.VirtualNetworkService;
+import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
 import com.vmware.xenon.common.ServiceDocumentQueryResult;
 
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
+
+import java.util.List;
 
 /**
  * Frontend client for virtual network related operations.
@@ -45,15 +52,19 @@ public class VirtualNetworkFeClient {
   // We host api-backend in the Housekeeper service.
   private final HousekeeperXenonRestClient backendClient;
   private final ApiFeXenonRestClient cloudStoreClient;
+  private final TaskBackend taskBackend;
 
   @Inject
   public VirtualNetworkFeClient(HousekeeperXenonRestClient housekeeperClient,
-                                ApiFeXenonRestClient cloudStoreClient) {
+                                ApiFeXenonRestClient cloudStoreClient,
+                                TaskBackend taskBackend) {
     this.backendClient = housekeeperClient;
     this.backendClient.start();
 
     this.cloudStoreClient = cloudStoreClient;
     this.cloudStoreClient.start();
+
+    this.taskBackend = taskBackend;
   }
 
   /**
@@ -95,15 +106,13 @@ public class VirtualNetworkFeClient {
   /**
    * Gets the virtual network by ID.
    */
-  public VirtualNetwork get(String id) throws ExternalException {
-    String documentLink = VirtualNetworkService.FACTORY_LINK + "/" + id;
-
-    try {
-      return VirtualNetworkUtils.convert(
-          cloudStoreClient.get(documentLink).getBody(VirtualNetworkService.State.class));
-    } catch (DocumentNotFoundException ex) {
-      throw new NetworkNotFoundException(id);
+  public VirtualNetwork get(String networkId) throws ExternalException {
+    VirtualNetworkService.State virtualNetworkState = getNetworkById(networkId);
+    if (virtualNetworkState == null) {
+      throw new NetworkNotFoundException(networkId);
     }
+
+    return VirtualNetworkUtils.convert(virtualNetworkState);
   }
 
   /**
@@ -157,5 +166,80 @@ public class VirtualNetworkFeClient {
         VirtualNetworkService.State.class,
         queryResult,
         VirtualNetworkUtils::convert);
+  }
+
+  /**
+   * Sets the default virtual network by ID.
+   */
+  public Task setDefault(String networkId) throws ExternalException {
+    VirtualNetworkService.State newDefaultNetwork = getNetworkById(networkId);
+    if (newDefaultNetwork == null) {
+      throw new NetworkNotFoundException(networkId);
+    }
+
+    String projectId = newDefaultNetwork.parentKind != null && newDefaultNetwork.parentKind.equals(Project.KIND) ?
+        newDefaultNetwork.parentId : null;
+
+    VirtualNetworkService.State currentDefaultNetwork = getDefaultNetwork(
+        newDefaultNetwork.parentKind,
+        newDefaultNetwork.parentId);
+    if (currentDefaultNetwork != null) {
+      VirtualNetworkService.State currentDefaultNetworkPatch = new VirtualNetworkService.State();
+      currentDefaultNetworkPatch.isDefault = false;
+      try {
+        cloudStoreClient.patch(currentDefaultNetwork.documentSelfLink, currentDefaultNetworkPatch);
+      } catch (DocumentNotFoundException ex) {
+        throw new NetworkNotFoundException(
+            "Failed to patch current default network " + currentDefaultNetwork.documentSelfLink);
+      }
+    }
+
+    VirtualNetworkService.State newDefaultNetworkPatch = new VirtualNetworkService.State();
+    newDefaultNetworkPatch.isDefault = true;
+    try {
+      newDefaultNetwork = cloudStoreClient.patch(newDefaultNetwork.documentSelfLink,
+          newDefaultNetworkPatch).getBody(VirtualNetworkService.State.class);
+    } catch (DocumentNotFoundException ex) {
+      throw new NetworkNotFoundException(
+          "Failed to patch new default network " + newDefaultNetwork.documentSelfLink);
+    }
+
+    return taskBackend.createCompletedTask(
+        ServiceUtils.getIDFromDocumentSelfLink(newDefaultNetwork.documentSelfLink),
+        VirtualNetwork.KIND,
+        projectId,
+        Operation.SET_DEFAULT_NETWORK.toString());
+  }
+
+  private VirtualNetworkService.State getNetworkById(String networkId) {
+    String documentLink = VirtualNetworkService.FACTORY_LINK + "/" + networkId;
+
+    try {
+      return cloudStoreClient.get(documentLink).getBody(VirtualNetworkService.State.class);
+    } catch (DocumentNotFoundException ex) {
+      return null;
+    }
+  }
+
+  private VirtualNetworkService.State getDefaultNetwork(String parentKind, String parentId) {
+    ImmutableMap.Builder<String, String> termsBuilder = new ImmutableBiMap.Builder<>();
+    termsBuilder.put("isDefault", Boolean.TRUE.toString());
+
+    if (parentKind != null) {
+      termsBuilder.put("parentKind", parentKind);
+    }
+
+    if (parentId != null) {
+      termsBuilder.put("parentId", parentId);
+    }
+
+    List<VirtualNetworkService.State> defaultNetworks =
+        cloudStoreClient.queryDocuments(VirtualNetworkService.State.class, termsBuilder.build());
+
+    if (defaultNetworks != null && !defaultNetworks.isEmpty()) {
+      return defaultNetworks.iterator().next();
+    } else {
+      return null;
+    }
   }
 }
