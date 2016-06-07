@@ -370,6 +370,8 @@ docker commit $container devbox/agent
 sudo mkdir -p /var/esxcloud/packages
 sudo rm -f /var/esxcloud/packages/*.vib
 sudo cp /mirror/devbox_data/python/dist/*.vib /var/esxcloud/packages/
+ENVOY_VIB_URL=http://build-squid.eng.vmware.com/build/mts/release/sb-7251768/publish/vmware-envoy-6.0.2-7251768.vib
+sudo wget $ENVOY_VIB_URL -P /var/esxcloud/packages/
 EOM
 chmod +x $out
   EOS
