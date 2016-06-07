@@ -520,12 +520,7 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
       Set<InetSocketAddress> remoteServers = zookeeperClient.getServers(zookeeperQuorum, serviceName);
       List<Pair<String, Integer>> serverAddresses = remoteServers.stream()
           .map(s -> {
-            int adjustment = 1;
-            if (serviceName.equals(Constants.CLOUDSTORE_SERVICE_NAME) ||
-                serviceName.equals(Constants.DEPLOYER_SERVICE_NAME)) {
-              adjustment = 0;
-            }
-            return new Pair<String, Integer>(s.getAddress().getHostAddress(), s.getPort() + adjustment);
+            return new Pair<String, Integer>(s.getAddress().getHostAddress(), s.getPort());
           })
           .collect(Collectors.toList());
       map.put(serviceName, serverAddresses);
