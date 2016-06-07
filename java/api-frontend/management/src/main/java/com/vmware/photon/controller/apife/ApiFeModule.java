@@ -80,14 +80,8 @@ import com.vmware.photon.controller.common.CloudStoreServerSet;
 import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
-import com.vmware.photon.controller.common.clients.HousekeeperClientConfig;
 import com.vmware.photon.controller.common.metrics.DefaultMetricRegistry;
 import com.vmware.photon.controller.common.metrics.RpcMetricListener;
-import com.vmware.photon.controller.common.thrift.ClientPool;
-import com.vmware.photon.controller.common.thrift.ClientPoolFactory;
-import com.vmware.photon.controller.common.thrift.ClientPoolOptions;
-import com.vmware.photon.controller.common.thrift.ClientProxy;
-import com.vmware.photon.controller.common.thrift.ClientProxyFactory;
 import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.photon.controller.common.thrift.ThriftModule;
 import com.vmware.photon.controller.common.thrift.ThriftServiceModule;
@@ -96,7 +90,6 @@ import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
 import com.vmware.photon.controller.common.zookeeper.ServicePathCacheFactory;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperServerSetFactory;
 import com.vmware.photon.controller.host.gen.Host;
-import com.vmware.photon.controller.housekeeper.gen.Housekeeper;
 
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
@@ -223,42 +216,9 @@ public class ApiFeModule extends AbstractModule {
 
   @Provides
   @Singleton
-  public ClientPool<Housekeeper.AsyncClient> getHousekeeperClientPool(
-      @HousekeeperServerSet ServerSet serverSet,
-      ClientPoolFactory<Housekeeper.AsyncClient> clientPoolFactory) {
-
-    ClientPoolOptions options = new ClientPoolOptions()
-        .setMaxClients(10)
-        .setMaxWaiters(10)
-        .setTimeout(10, TimeUnit.SECONDS)
-        .setServiceName("Housekeeper");
-
-    return clientPoolFactory.create(serverSet, options);
-  }
-
-  @Provides
-  @Singleton
   @CloudStoreServerSet
   public ServerSet getCloudStoreServerSet(ZookeeperServerSetFactory serverSetFactory) {
     return serverSetFactory.createServiceServerSet(Constants.CLOUDSTORE_SERVICE_NAME, true);
-  }
-
-  @Provides
-  @Singleton
-  public HousekeeperClientConfig getHousekeeperClientConfig() {
-    HousekeeperClientConfig config = new HousekeeperClientConfig();
-    config.setImageReplicationTimeout(
-        this.configuration.getImage().getReplicationTimeout().toMilliseconds());
-
-    return config;
-  }
-
-  @Provides
-  @Singleton
-  public ClientProxy<Housekeeper.AsyncClient> getHousekeeperClientProxy(
-      ClientProxyFactory<Housekeeper.AsyncClient> factory,
-      ClientPool<Housekeeper.AsyncClient> clientPool) {
-    return factory.create(clientPool);
   }
 
   @Provides
@@ -285,8 +245,6 @@ public class ApiFeModule extends AbstractModule {
 
     install(new ThriftModule());
     install(new ThriftServiceModule<>(new TypeLiteral<Host.AsyncClient>() {
-    }));
-    install(new ThriftServiceModule<>(new TypeLiteral<Housekeeper.AsyncClient>() {
     }));
 
     install(new FactoryModuleBuilder()
