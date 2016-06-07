@@ -203,10 +203,6 @@ class HostClient(object):
         pass
 
     @abc.abstractmethod
-    def get_nfc_ticket_by_ds_name(self, datastore):
-        pass
-
-    @abc.abstractmethod
     def acquire_clone_ticket(self):
         pass
 
@@ -228,6 +224,16 @@ class HostClient(object):
     """
     @abc.abstractmethod
     def get_networks(self):
+        pass
+
+    """ Nfc
+    """
+    @abc.abstractmethod
+    def get_nfc_ticket_by_ds_name(self, datastore):
+        pass
+
+    @abc.abstractmethod
+    def nfc_copy(self, src_file_path, dst_host, dst_file_path, ssl_thumbprint, ticket):
         pass
 
     """ Stats

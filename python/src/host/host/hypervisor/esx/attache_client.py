@@ -311,10 +311,6 @@ class AttacheClient(HostClient):
         return self._client.GetEsxVersion(self._session)
 
     @attache_error_handler
-    def get_nfc_ticket_by_ds_name(self, datastore):
-        return self._client.GetNfcTicket(self._session, datastore)
-
-    @attache_error_handler
     def acquire_clone_ticket(self):
         pass
 
@@ -337,6 +333,16 @@ class AttacheClient(HostClient):
     @attache_error_handler
     def get_networks(self):
         return self._client.GetNetworks(self._session)
+
+    """ Nfc
+    """
+    @attache_error_handler
+    def get_nfc_ticket_by_ds_name(self, datastore):
+        return self._client.GetNfcTicket(self._session, datastore)
+
+    @attache_error_handler
+    def nfc_copy(self, src_file_path, dst_host, dst_file_path, ssl_thumbprint, ticket):
+        self._client.NfcCopyWithTicket(self._session, src_file_path, dst_host, dst_file_path, ssl_thumbprint, ticket)
 
     """ Stats
     """

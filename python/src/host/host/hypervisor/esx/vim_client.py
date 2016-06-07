@@ -58,6 +58,7 @@ from host.hypervisor.vm_manager import VmNotFoundException
 from pysdk import connect
 from pysdk import host
 from pysdk import invt
+from pysdk import task
 from pyVmomi import vim
 from pyVmomi import vmodl
 
@@ -71,8 +72,10 @@ VM_FOLDER_NAME = "vm"
 NETWORK_FOLDER_NAME = "network"
 VIM_VERSION = "vim.version.version9"
 VIM_NAMESPACE = "vim25/5.5"
+NFC_VERSION = "nfc.version.version2"
 
 HOSTD_PORT = 443
+NFC_PORT = 902
 DEFAULT_TASK_TIMEOUT = 60 * 60  # one hour timeout
 
 
@@ -872,3 +875,40 @@ class VimClient(HostClient):
         mask = (1L << 32) - (1L << 32 >> prefix_len)
 
         return socket.inet_ntoa(struct.pack('>L', mask))
+
+    def nfc_copy(self, src_file_path, dst_host, dst_file_path, ssl_thumbprint, ticket):
+        from pyVmomi import nfc
+
+        (local_user, local_pwd) = VimClient()._acquire_local_credentials()
+        si = connect.Connect(host="localhost", user=local_user, pwd=local_pwd, version=NFC_VERSION)
+        nfc_manager = nfc.NfcManager('ha-nfc-manager', si._stub)
+
+        copy_spec = nfc.CopySpec()
+        copy_spec.source = nfc.CopySpec.Location()
+        copy_spec.source.filePath = src_file_path
+
+        copy_spec.destination = nfc.CopySpec.Location()
+        copy_spec.destination.filePath = dst_file_path
+        copy_spec.destination.cnxSpec = nfc.CopySpec.CnxSpec()
+        copy_spec.destination.cnxSpec.useSSL = False
+        copy_spec.destination.cnxSpec.host = dst_host
+        copy_spec.destination.cnxSpec.port = NFC_PORT
+        copy_spec.destination.cnxSpec.authData = nfc.CopySpec.TicketAuthData()
+        copy_spec.destination.cnxSpec.authData.ticket = ticket
+        copy_spec.destination.cnxSpec.authData.sslThumbprint = ssl_thumbprint
+
+        copy_spec.opType = "copy"
+        copy_spec.fileSpec = nfc.VmfsFlatDiskSpec()
+        copy_spec.fileSpec.adapterType = "lsiLogic"
+        copy_spec.fileSpec.preserveIdentity = True
+        copy_spec.fileSpec.allocateType = "thick"
+        copy_spec.option = nfc.CopySpec.CopyOptions()
+        copy_spec.option.failOnError = True
+        copy_spec.option.overwriteDestination = True
+        copy_spec.option.useRawModeForChildDisk = False
+
+        self._logger.info("transfer_image: copy_spec %s", str(copy_spec))
+        nfc_task = nfc_manager.Copy([copy_spec, ])
+        task.WaitForTask(nfc_task, raiseOnError=True, si=si,
+                         pc=None,  # use default si prop collector
+                         onProgressUpdate=None)
