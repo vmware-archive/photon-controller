@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.apife.clients;
 
 import com.vmware.photon.controller.api.NetworkState;
+import com.vmware.photon.controller.api.Project;
 import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.RoutingType;
 import com.vmware.photon.controller.api.Task;
@@ -23,6 +24,7 @@ import com.vmware.photon.controller.apibackend.servicedocuments.CreateVirtualNet
 import com.vmware.photon.controller.apibackend.servicedocuments.DeleteVirtualNetworkWorkflowDocument;
 import com.vmware.photon.controller.apibackend.workflows.CreateVirtualNetworkWorkflowService;
 import com.vmware.photon.controller.apibackend.workflows.DeleteVirtualNetworkWorkflowService;
+import com.vmware.photon.controller.apife.backends.TaskBackend;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.backends.clients.HousekeeperXenonRestClient;
 import com.vmware.photon.controller.apife.exceptions.external.NetworkNotFoundException;
@@ -52,6 +54,7 @@ import static org.mockito.Mockito.verify;
 import static org.testng.Assert.assertEquals;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.UUID;
 
@@ -63,6 +66,7 @@ public class VirtualNetworkFeClientTest {
   private ObjectMapper objectMapper;
   private HousekeeperXenonRestClient backendClient;
   private ApiFeXenonRestClient cloudStoreClient;
+  private TaskBackend taskBackend;
   private VirtualNetworkFeClient frontendClient;
 
   @BeforeMethod
@@ -75,7 +79,9 @@ public class VirtualNetworkFeClientTest {
     cloudStoreClient = mock(ApiFeXenonRestClient.class);
     doNothing().when(cloudStoreClient).start();
 
-    frontendClient = new VirtualNetworkFeClient(backendClient, cloudStoreClient);
+    taskBackend = mock(TaskBackend.class);
+
+    frontendClient = new VirtualNetworkFeClient(backendClient, cloudStoreClient, taskBackend);
   }
 
   @Test
@@ -236,6 +242,158 @@ public class VirtualNetworkFeClientTest {
             Optional.of("name"),
             ImmutableMap.of("parentId", "parentId", "parentKind", "parentKind", "name", "name")
         }
+    };
+  }
+
+  @Test(dataProvider = "setDefaultTestData")
+  public void succeedsToSetDefaultWithoutExistingDefault(
+      String parentId,
+      String parentKind,
+      ImmutableMap<String, String> existingDefaultNetworksQueryTerms) throws Throwable {
+    String newDefaultNetworkId = UUID.randomUUID().toString();
+
+    doReturn(null).when(cloudStoreClient).queryDocuments(
+        eq(VirtualNetworkService.State.class),
+        refEq(existingDefaultNetworksQueryTerms));
+
+    VirtualNetworkService.State newDefaultNetwork = new VirtualNetworkService.State();
+    newDefaultNetwork.documentSelfLink = VirtualNetworkService.FACTORY_LINK + "/" + newDefaultNetworkId;
+    newDefaultNetwork.parentId = parentId;
+    newDefaultNetwork.parentKind = parentKind;
+    Operation getOperation = new Operation();
+    getOperation.setBody(newDefaultNetwork);
+    doReturn(getOperation).when(cloudStoreClient).get(eq(newDefaultNetwork.documentSelfLink));
+
+    VirtualNetworkService.State newDefaultNetworkPatch = new VirtualNetworkService.State();
+    newDefaultNetworkPatch.isDefault = true;
+    VirtualNetworkService.State newDefaultNetworkPatchResult = new VirtualNetworkService.State();
+    newDefaultNetworkPatchResult.documentSelfLink = VirtualNetworkService.FACTORY_LINK + "/" + newDefaultNetworkId;
+    Operation patchOperation = new Operation();
+    patchOperation.setBody(newDefaultNetworkPatchResult);
+    doReturn(patchOperation).when(cloudStoreClient).patch(
+        eq(newDefaultNetwork.documentSelfLink),
+        refEq(newDefaultNetworkPatch));
+
+    Task expectedTask = new Task();
+    doReturn(expectedTask).when(taskBackend).createCompletedTask(
+        eq(newDefaultNetworkId),
+        eq(VirtualNetwork.KIND),
+        eq(parentId),
+        eq(com.vmware.photon.controller.api.Operation.SET_DEFAULT_NETWORK.toString()));
+
+    Task actualTask = frontendClient.setDefault(newDefaultNetworkId);
+    assertEquals(actualTask, expectedTask);
+  }
+
+  @Test(dataProvider = "setDefaultTestData")
+  public void succeedsToSetDefaultWithExistingDefault(
+      String parentId,
+      String parentKind,
+      ImmutableMap<String, String> existingDefaultNetworksQueryTerms) throws Throwable {
+    String newDefaultNetworkId = UUID.randomUUID().toString();
+
+    VirtualNetworkService.State existingDefaultNetwork = new VirtualNetworkService.State();
+    existingDefaultNetwork.documentSelfLink = VirtualNetworkService.FACTORY_LINK + "/" +  UUID.randomUUID().toString();
+    doReturn(Arrays.asList(existingDefaultNetwork)).when(cloudStoreClient).queryDocuments(
+        eq(VirtualNetworkService.State.class),
+        refEq(existingDefaultNetworksQueryTerms));
+
+    VirtualNetworkService.State existingDefaultNetworkPatch = new VirtualNetworkService.State();
+    existingDefaultNetworkPatch.isDefault = false;
+    doReturn(null).when(cloudStoreClient).patch(
+        eq(existingDefaultNetwork.documentSelfLink),
+        refEq(existingDefaultNetworkPatch));
+
+    VirtualNetworkService.State newDefaultNetwork = new VirtualNetworkService.State();
+    newDefaultNetwork.documentSelfLink = VirtualNetworkService.FACTORY_LINK + "/" + newDefaultNetworkId;
+    newDefaultNetwork.parentId = parentId;
+    newDefaultNetwork.parentKind = parentKind;
+    Operation getOperation = new Operation();
+    getOperation.setBody(newDefaultNetwork);
+    doReturn(getOperation).when(cloudStoreClient).get(eq(newDefaultNetwork.documentSelfLink));
+
+    VirtualNetworkService.State newDefaultNetworkPatch = new VirtualNetworkService.State();
+    newDefaultNetworkPatch.isDefault = true;
+    VirtualNetworkService.State newDefaultNetworkPatchResult = new VirtualNetworkService.State();
+    newDefaultNetworkPatchResult.documentSelfLink = VirtualNetworkService.FACTORY_LINK + "/" + newDefaultNetworkId;
+    Operation patchOperation = new Operation();
+    patchOperation.setBody(newDefaultNetworkPatchResult);
+    doReturn(patchOperation).when(cloudStoreClient).patch(
+        eq(newDefaultNetwork.documentSelfLink),
+        refEq(newDefaultNetworkPatch));
+
+    Task expectedTask = new Task();
+    doReturn(expectedTask).when(taskBackend).createCompletedTask(
+        eq(newDefaultNetworkId),
+        eq(VirtualNetwork.KIND),
+        eq(parentId),
+        eq(com.vmware.photon.controller.api.Operation.SET_DEFAULT_NETWORK.toString()));
+
+    Task actualTask = frontendClient.setDefault(newDefaultNetworkId);
+    assertEquals(actualTask, expectedTask);
+  }
+
+  @Test(expectedExceptions = NetworkNotFoundException.class)
+  public void failsToSetDefaultWithInvalidNewDefaultNetworkId() throws Throwable {
+    doThrow(new DocumentNotFoundException(new Operation(), null))
+        .when(cloudStoreClient).get(anyString());
+
+    frontendClient.setDefault("networkId");
+  }
+
+  @Test(expectedExceptions = NetworkNotFoundException.class)
+  public void failsToSetDefaultWithPatchingExistingDefaultNetworkFailure() throws Throwable {
+    VirtualNetworkService.State existingDefaultNetwork = new VirtualNetworkService.State();
+    existingDefaultNetwork.documentSelfLink = VirtualNetworkService.FACTORY_LINK + "/" +  UUID.randomUUID().toString();
+    doReturn(Arrays.asList(existingDefaultNetwork)).when(cloudStoreClient).queryDocuments(
+        eq(VirtualNetworkService.State.class),
+        any(ImmutableMap.class));
+
+    VirtualNetworkService.State newDefaultNetwork = new VirtualNetworkService.State();
+    Operation getOperation = new Operation();
+    getOperation.setBody(newDefaultNetwork);
+    doReturn(getOperation).when(cloudStoreClient).get(anyString());
+
+    doThrow(new DocumentNotFoundException(new Operation(), null))
+        .when(cloudStoreClient)
+        .patch(eq(existingDefaultNetwork.documentSelfLink), any(VirtualNetworkService.State.class));
+
+    frontendClient.setDefault("networkId");
+  }
+
+  @Test(expectedExceptions = NetworkNotFoundException.class)
+  public void failsToSetDefaultWithPatchingNewDefaultNetworkFailure() throws Throwable {
+    doReturn(null).when(cloudStoreClient).queryDocuments(
+        eq(VirtualNetworkService.State.class),
+        any(ImmutableMap.class));
+
+    VirtualNetworkService.State newDefaultNetwork = new VirtualNetworkService.State();
+    newDefaultNetwork.documentSelfLink = VirtualNetworkService.FACTORY_LINK + "/" +  UUID.randomUUID().toString();
+    Operation getOperation = new Operation();
+    getOperation.setBody(newDefaultNetwork);
+    doReturn(getOperation).when(cloudStoreClient).get(anyString());
+
+    doThrow(new DocumentNotFoundException(new Operation(), null))
+        .when(cloudStoreClient)
+        .patch(eq(newDefaultNetwork.documentSelfLink), any(VirtualNetworkService.State.class));
+
+    frontendClient.setDefault("networkId");
+  }
+
+  @DataProvider(name = "setDefaultTestData")
+  private Object[][] getSetDefaultTestData() {
+    return new Object[][] {
+        // parentId, parentKind, existingDefaultNetworksQueryTerms
+        {
+            null,
+            null,
+            ImmutableMap.of()
+        },
+        {
+            "parentId",
+            Project.KIND,
+            ImmutableMap.of("parentId", "parentId", "parentKind", "parentKind")
+        },
     };
   }
 }

@@ -109,26 +109,31 @@ public class TaskDcpBackend implements TaskBackend, StepBackend {
 
   @Override
   public TaskEntity createQueuedTask(BaseEntity entity, Operation operation) {
-
-    TaskService.State taskServiceState = new TaskService.State();
+    String entityId = null;
+    String entityKind = null;
+    String projectId = null;
 
     //currently creation of kubernetes and mesos cluster, their resize and delete pass null entity
     //putting this null check temporarily to allow the switch to dcp backend to work
     if (entity != null) {
-      taskServiceState.entityId = entity.getId();
-      taskServiceState.entityKind = entity.getKind();
+      entityId = entity.getId();
+      entityKind = entity.getKind();
 
       // auto-link infrastructure tasks to their project
       if (entity instanceof InfrastructureEntity) {
         InfrastructureEntity infrastructureEntity = (InfrastructureEntity) entity;
-        String projectId = infrastructureEntity.getProjectId();
-        taskServiceState.projectId = projectId;
+        projectId = infrastructureEntity.getProjectId();
       }
     }
 
-    taskServiceState.state = TaskService.State.TaskState.QUEUED;
-    taskServiceState.operation = operation.toString();
-    taskServiceState.queuedTime = DateTime.now().toDate();
+    TaskService.State taskServiceState = TaskUtils.assembleBackEndTask(
+        DateTime.now().toDate(),
+        TaskService.State.TaskState.QUEUED,
+        operation.toString(),
+        entityId,
+        entityKind,
+        projectId,
+        null);
 
     com.vmware.xenon.common.Operation result = dcpClient.post(TaskServiceFactory.SELF_LINK, taskServiceState);
     TaskService.State createdState = result.getBody(TaskService.State.class);
@@ -139,24 +144,31 @@ public class TaskDcpBackend implements TaskBackend, StepBackend {
 
   @Override
   public TaskEntity createCompletedTask(BaseEntity entity, Operation operation) {
-    TaskService.State taskServiceState = new TaskService.State();
+    String entityId = null;
+    String entityKind = null;
+    String projectId = null;
+
+    //currently creation of kubernetes and mesos cluster, their resize and delete pass null entity
+    //putting this null check temporarily to allow the switch to dcp backend to work
     if (entity != null) {
-      taskServiceState.entityId = entity.getId();
-      taskServiceState.entityKind = entity.getKind();
+      entityId = entity.getId();
+      entityKind = entity.getKind();
 
       // auto-link infrastructure tasks to their project
       if (entity instanceof InfrastructureEntity) {
         InfrastructureEntity infrastructureEntity = (InfrastructureEntity) entity;
-        String projectId = infrastructureEntity.getProjectId();
-        taskServiceState.projectId = projectId;
+        projectId = infrastructureEntity.getProjectId();
       }
     }
 
-    taskServiceState.state = TaskService.State.TaskState.COMPLETED;
-    taskServiceState.operation = operation.toString();
-    taskServiceState.startedTime = DateTime.now().toDate();
-    taskServiceState.endTime = taskServiceState.startedTime;
-    taskServiceState.queuedTime = taskServiceState.startedTime;
+    TaskService.State taskServiceState = TaskUtils.assembleBackEndTask(
+        DateTime.now().toDate(),
+        TaskService.State.TaskState.COMPLETED,
+        operation.toString(),
+        entityId,
+        entityKind,
+        projectId,
+        null);
 
     com.vmware.xenon.common.Operation result = dcpClient.post(TaskServiceFactory.SELF_LINK, taskServiceState);
     TaskService.State createdState = result.getBody(TaskService.State.class);
@@ -166,41 +178,51 @@ public class TaskDcpBackend implements TaskBackend, StepBackend {
   }
 
   @Override
+  public Task createCompletedTask(String entityId, String entityKind, String projectId, String operation) {
+    TaskService.State taskServiceState = TaskUtils.assembleBackEndTask(
+        DateTime.now().toDate(),
+        TaskService.State.TaskState.COMPLETED,
+        operation,
+        entityId,
+        entityKind,
+        projectId,
+        null);
+
+    com.vmware.xenon.common.Operation result = dcpClient.post(TaskServiceFactory.SELF_LINK, taskServiceState);
+    TaskService.State createdState = result.getBody(TaskService.State.class);
+
+    return TaskUtils.convertBackEndToFrontEnd(createdState);
+  }
+
+  @Override
   public TaskEntity createTaskWithSteps(BaseEntity entity,
                                         Operation operation,
                                         Boolean isCompleted,
                                         List<StepEntity> stepEntities) {
     Date currentTime = DateTime.now().toDate();
-    TaskService.State taskServiceState = new TaskService.State();
+    String entityId = null;
+    String entityKind = null;
+    String projectId = null;
+    TaskService.State.TaskState taskState;
+    List<TaskService.State.Step> taskSteps = null;
 
     //currently creation of kubernetes and mesos cluster, their resize and delete pass null entity
     //putting this null check temporarily to allow the switch to dcp backend to work
     if (entity != null) {
-      taskServiceState.entityId = entity.getId();
-      taskServiceState.entityKind = entity.getKind();
+      entityId = entity.getId();
+      entityKind = entity.getKind();
 
       // auto-link infrastructure tasks to their project
       if (entity instanceof InfrastructureEntity) {
         InfrastructureEntity infrastructureEntity = (InfrastructureEntity) entity;
-        String projectId = infrastructureEntity.getProjectId();
-        taskServiceState.projectId = projectId;
+        projectId = infrastructureEntity.getProjectId();
       }
     }
 
-    if (isCompleted) {
-      taskServiceState.state = TaskService.State.TaskState.COMPLETED;
-      taskServiceState.startedTime = currentTime;
-      taskServiceState.endTime = currentTime;
-      taskServiceState.queuedTime = currentTime;
-    } else {
-      taskServiceState.state = TaskService.State.TaskState.QUEUED;
-      taskServiceState.queuedTime = currentTime;
-    }
-
-    taskServiceState.operation = operation.toString();
+    taskState = isCompleted ? TaskService.State.TaskState.COMPLETED : TaskService.State.TaskState.QUEUED;
 
     if (stepEntities != null) {
-      taskServiceState.steps = new ArrayList<>();
+      taskSteps = new ArrayList<>();
       Integer nextStepSequence = 0;
       for (StepEntity stepEntity : stepEntities) {
         stepEntity.setQueuedTime(currentTime);
@@ -214,9 +236,18 @@ public class TaskDcpBackend implements TaskBackend, StepBackend {
         stepEntity.setSequence(nextStepSequence);
         nextStepSequence++;
         TaskService.State.Step step = StepUtils.convertMiddleEndToBackEnd(stepEntity);
-        taskServiceState.steps.add(step);
+        taskSteps.add(step);
       }
     }
+
+    TaskService.State taskServiceState = TaskUtils.assembleBackEndTask(
+        currentTime,
+        taskState,
+        operation.toString(),
+        entityId,
+        entityKind,
+        projectId,
+        taskSteps);
 
     com.vmware.xenon.common.Operation result = dcpClient.post(TaskServiceFactory.SELF_LINK, taskServiceState);
     TaskService.State createdState = result.getBody(TaskService.State.class);

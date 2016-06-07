@@ -27,6 +27,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -44,6 +45,35 @@ import java.util.stream.Collectors;
 public class TaskUtils {
 
   private static final ObjectMapper objectMapper = new ObjectMapper();
+
+  /**
+   * Creates a task object in back-end representation.
+   */
+  public static TaskService.State assembleBackEndTask(
+      Date currentTime,
+      TaskService.State.TaskState taskState,
+      String taskOperation,
+      String taskEntityId,
+      String taskEntityKind,
+      String taskProjectId,
+      List<TaskService.State.Step> taskSteps) {
+    TaskService.State taskServiceState = new TaskService.State();
+
+    taskServiceState.entityId = taskEntityId;
+    taskServiceState.entityKind = taskEntityKind;
+    taskServiceState.projectId = taskProjectId;
+    taskServiceState.state = taskState;
+    taskServiceState.operation = taskOperation;
+    taskServiceState.steps = taskSteps;
+    taskServiceState.queuedTime = currentTime;
+
+    if (taskState == TaskService.State.TaskState.COMPLETED) {
+      taskServiceState.startedTime = currentTime;
+      taskServiceState.endTime = currentTime;
+    }
+
+    return taskServiceState;
+  }
 
   /**
    * Converts task from back-end representation to front-end representation.

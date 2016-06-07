@@ -164,7 +164,7 @@ public class TaskDcpBackendTest {
     }
 
     @Test
-    public void testCreateCompletedTask() {
+    public void testCreateCompletedTaskByBaseEntity() {
       TaskEntity createdTask = taskBackend.createCompletedTask(vmEntity, Operation.CREATE_VM);
 
       assertThat(createdTask, is(notNullValue()));
@@ -173,6 +173,23 @@ public class TaskDcpBackendTest {
       assertThat(createdTask.getOperation(), is(Operation.CREATE_VM));
       assertThat(createdTask.getState(), is(TaskEntity.State.COMPLETED));
       assertThat(createdTask.getProjectId(), is(projectEntity.getId()));
+      assertThat(createdTask.getStartedTime(), is(notNullValue()));
+      assertThat(createdTask.getStartedTime().getTime(), is(greaterThan(0L)));
+      assertThat(createdTask.getStartedTime().getTime(), is(lessThanOrEqualTo(DateTime.now().toDate().getTime())));
+      assertThat(createdTask.getEndTime(), is(createdTask.getStartedTime()));
+      assertThat(createdTask.getQueuedTime(), is(createdTask.getStartedTime()));
+    }
+
+    @Test
+    public void testCreateCompletedTaskByEntityId() {
+      Task createdTask = taskBackend.createCompletedTask(
+          vmEntity.getId(), vmEntity.getKind(), projectEntity.getId(), Operation.CREATE_VM.toString());
+
+      assertThat(createdTask, is(notNullValue()));
+      assertThat(createdTask.getEntity().getId(), is(vmEntity.getId()));
+      assertThat(createdTask.getEntity().getKind(), is(vmEntity.getKind()));
+      assertThat(createdTask.getOperation(), is(Operation.CREATE_VM.toString()));
+      assertThat(createdTask.getState(), is(TaskEntity.State.COMPLETED.toString()));
       assertThat(createdTask.getStartedTime(), is(notNullValue()));
       assertThat(createdTask.getStartedTime().getTime(), is(greaterThan(0L)));
       assertThat(createdTask.getStartedTime().getTime(), is(lessThanOrEqualTo(DateTime.now().toDate().getTime())));
