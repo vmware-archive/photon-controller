@@ -1,4 +1,5 @@
 #!/bin/bash -xe
+echo "Running copy-deployer-config"
 dir=/etc/esxcloud-deployer/configurations/haproxy
 sudo mkdir -p $dir
 sudo cp -a /devbox_data/java/containers/haproxy/config/* $dir
@@ -14,4 +15,3 @@ sudo cp -a /devbox_data/java/deployer/src/dist/configuration-lightwave/* $dir
 dir=/etc/esxcloud-deployer/configurations/management-ui
 sudo mkdir -p $dir
 sudo cp -a /devbox_data/java/deployer/src/dist/configuration-management-ui/* $dir
-
