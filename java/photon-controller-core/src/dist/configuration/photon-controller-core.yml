@@ -35,7 +35,7 @@ scheduler:
 housekeeper:
   xenon:
     bindAddress: "0.0.0.0"
-    port: 16001
+    port: 16000
     registrationAddress: "{{{REGISTRATION_ADDRESS}}}"
     storagePath: "{{{HOUSEKEEPER_DCP_STORAGE_PATH}}}"
     peerNodes:
@@ -43,13 +43,8 @@ housekeeper:
     - http://{{peerAddress}}:{{peerPort}}
 {{/HOUSEKEEPER_PEER_NODES}}
 {{^HOUSEKEEPER_PEER_NODES}}
-    - http://{{{REGISTRATION_ADDRESS}}}:16001
+    - http://{{{REGISTRATION_ADDRESS}}}:16000
 {{/HOUSEKEEPER_PEER_NODES}}
-
-  thrift:
-    bindAddress: "0.0.0.0"
-    port: 16000
-    registrationAddress: "{{{REGISTRATION_ADDRESS}}}"
 
   zookeeper:
     quorum: "{{{ZOOKEEPER_QUORUM}}}"

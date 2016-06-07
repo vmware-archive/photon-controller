@@ -14,7 +14,6 @@
 package com.vmware.photon.controller.housekeeper;
 
 import com.vmware.photon.controller.common.logging.LoggingConfiguration;
-import com.vmware.photon.controller.common.thrift.ThriftConfig;
 import com.vmware.photon.controller.common.xenon.host.XenonConfig;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperConfig;
 
@@ -40,11 +39,6 @@ public class HousekeeperConfig {
 
   @Valid
   @NotNull
-  @JsonProperty("thrift")
-  private ThriftConfig thriftConfig;
-
-  @Valid
-  @NotNull
   private LoggingConfiguration logging;
 
   @Valid
@@ -53,10 +47,6 @@ public class HousekeeperConfig {
 
   public LoggingConfiguration getLogging() {
     return this.logging;
-  }
-
-  public ThriftConfig getThriftConfig() {
-    return this.thriftConfig;
   }
 
   public XenonConfig getXenonConfig() {
