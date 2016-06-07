@@ -31,6 +31,8 @@ import org.apache.http.HttpException;
 import org.apache.http.conn.ssl.DefaultHostnameVerifier;
 import org.apache.http.ssl.SSLContextBuilder;
 import org.apache.http.ssl.TrustStrategy;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManagerFactory;
@@ -48,6 +50,8 @@ import java.util.List;
  * General OIDC client metadata.
  */
 public class AuthOIDCClient {
+  private static final Logger logger = LoggerFactory.getLogger(AuthOIDCClient.class);
+
   private String domainControllerFQDN;
   private int domainControllerPort;
   private String tenant;
@@ -77,7 +81,8 @@ public class AuthOIDCClient {
       this.providerPublicKey = metadataHelper.getProviderRSAPublicKey(providerMetadata);
 
     } catch (AuthException | SSLConnectionException | OIDCClientException | OIDCServerException e) {
-      throw new AuthException("Failed to build client metadata.", e);
+      logger.warn(String.format("Provider Metadata: %s, Exception: %s", this.providerMetadata, e.getMessage());
+      throw new AuthException("Failed to build client metadata." + e.getMessage(), e);
     }
   }
 
