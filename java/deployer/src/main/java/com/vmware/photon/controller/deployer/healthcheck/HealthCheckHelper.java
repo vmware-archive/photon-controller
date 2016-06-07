@@ -41,7 +41,9 @@ public class HealthCheckHelper {
         break;
 
       case Deployer:
-        this.healthChecker = new HttpBasedHealthChecker(HostUtils.getApiClient(service));
+        List<Integer> ports = new ArrayList<>();
+        ports.add(ServicePortConstants.DEPLOYER_PORT);
+        this.healthChecker = new XenonBasedHealthChecker(service, ipAddress, ports);
         break;
 
       case ManagementApi:
