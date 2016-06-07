@@ -19,7 +19,6 @@ export NO_RESTART_ALWAYS=1
 
 vagrant ssh -c "docker tag photon/zookeeper esxcloud/zookeeper"
 vagrant ssh -c "docker tag photon/haproxy esxcloud/haproxy"
-vagrant ssh -c "docker tag photon/deployer esxcloud/deployer"
 vagrant ssh -c "docker tag photon/photon-controller-core esxcloud/photon-controller-core"
 vagrant ssh -c "docker tag photon/management-api esxcloud/management-api"
 
@@ -32,9 +31,9 @@ vagrant ssh -c "rm -f \"$container_tar\""
 #
 # Copy the config files and scripts
 #
-vagrant ssh -c "sudo docker cp deployer:/etc/esxcloud-deployer/ /etc/"
-vagrant ssh -c "sudo mkdir -p /usr/lib/esxcloud/deployer/"
-vagrant ssh -c "sudo docker cp deployer:/usr/lib/esxcloud/deployer/scripts/ /usr/lib/esxcloud/deployer/"
+vagrant ssh -c "sudo docker cp photon-controller-core:/etc/esxcloud-deployer/ /etc/"
+vagrant ssh -c "sudo mkdir -p /usr/lib/esxcloud/photon-controller-core/"
+vagrant ssh -c "sudo docker cp photon-controller-core:/usr/lib/esxcloud/photon-controller-core/scripts/ /usr/lib/esxcloud/photon-controller-core/"
 
 photon_vm=$(VBoxManage list runningvms | grep devbox-photon_photon | sed 's/"\(.*\)".*/\1/')
 #
