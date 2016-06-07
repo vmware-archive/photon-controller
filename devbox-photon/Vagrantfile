@@ -371,6 +371,9 @@ docker commit $container devbox/agent
 sudo mkdir -p /var/esxcloud/packages
 sudo rm -f /var/esxcloud/packages/*.vib
 sudo cp /mirror/devbox_data/python/dist/*.vib /var/esxcloud/packages/
+if #{ENV["ENVOY_VIB_URL"]}
+  sudo wget #{ENV["ENVOY_VIB_URL"]} -P /var/esxcloud/packages/
+end
 EOM
 chmod +x $out
   EOS
