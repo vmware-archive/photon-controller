@@ -172,11 +172,12 @@ class AttacheClient(HostClient):
 
     @attache_error_handler
     def wait_for_vm_create(self, vm_id):
-        for i in range(0, 60):
+        # wait for up to 1 minute for cache to pick up the new vm
+        for i in range(0, 600):
             vms = self._client.GetCachedVMs(self._session)
             if vm_id in vms:
                 break
-            time.sleep(1)
+            time.sleep(0.1)
 
     @attache_error_handler
     def power_on_vm(self, vm_id):
@@ -387,7 +388,7 @@ class AttacheVmConfigSpec(VmConfigSpec):
 class SyncAttacheCacheThread(threading.Thread):
     """ Periodically sync vm cache with remote esx server
     """
-    def __init__(self, attache_client, min_interval=20):
+    def __init__(self, attache_client, min_interval=1):
         super(SyncAttacheCacheThread, self).__init__()
         self._logger = logging.getLogger(__name__)
         self.setDaemon(True)
