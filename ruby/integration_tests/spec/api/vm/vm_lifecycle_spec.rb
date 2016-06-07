@@ -49,7 +49,7 @@ describe "VM lifecycle", life_cycle: true do
   private
 
   def vm_lifecycle(project, disk_flavor)
-    vm = create_vm(project)
+    vm = create_vm(project, { networks: [@seeder.network!.id] })
     vm.state.should eq("STOPPED"), "VM #{vm.id} state was #{vm.state} instead of STOPPED"
     existing_persistent_disks = vm.get_attached_disk_names("persistent-disk")
     existing_persistent_disks.size.should eq(0), "VM #{vm.id} should have 0 disks but has: #{existing_persistent_disks}"
