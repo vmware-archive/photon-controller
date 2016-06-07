@@ -46,8 +46,6 @@ import com.vmware.xenon.common.Service;
 
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
-import com.google.inject.Guice;
-import com.google.inject.Injector;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.Namespace;
@@ -102,11 +100,6 @@ public class Main {
       logger.info("Configuring logging");
       new LoggingFactory(deployerConfig.getLogging(), "deployer").configure();
 
-      logger.info("Creating Guice injector");
-      Injector injector = Guice.createInjector(
-          new ThriftModule()
-      );
-
       Integer deployerXenonPort = deployerConfig.getXenonConfig().getPort();
       String deployerXenonAddress = deployerConfig.getXenonConfig().getRegistrationAddress();
 
@@ -133,11 +126,10 @@ public class Main {
           deployerXenonAddress, deployerXenonPort);
       logger.info("Registered Deployer Xenon Host with Zookeeper");
 
-      ServerSet deployerServerSet = zkModule.getZookeeperServerSet(zkClient, Constants.DEPLOYER_SERVICE_NAME, true);
       ServerSet cloudStoreServerSet = zkModule.getZookeeperServerSet(zkClient, Constants.CLOUDSTORE_SERVICE_NAME, true);
       ServerSet apiFeServerSet = zkModule.getZookeeperServerSet(zkClient, Constants.APIFE_SERVICE_NAME, true);
 
-      final ThriftModule thriftModule = injector.getInstance(ThriftModule.class);
+      final ThriftModule thriftModule = new ThriftModule();
 
       final DeployerXenonServiceHost deployerXenonServiceHost = createDeployerXenonServiceHost(thriftModule,
           deployerConfig, apiFeServerSet, cloudStoreServerSet, httpClient);
