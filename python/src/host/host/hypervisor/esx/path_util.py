@@ -34,8 +34,8 @@ def os_datastore_path(datastore, folder1, folder2=None):
     return path
 
 
-def datastore_path(datastore, folder):
-    return "[] %s" % os_datastore_path(datastore, folder)
+def datastore_path(datastore, folder1, folder2=None):
+    return "[] %s" % os_datastore_path(datastore, folder1, folder2)
 
 
 def datastore_to_os_path(datastore_path):
