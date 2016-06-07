@@ -15,6 +15,7 @@ package com.vmware.photon.controller.apife.backends.utils;
 
 import com.vmware.photon.controller.api.VirtualNetwork;
 import com.vmware.photon.controller.cloudstore.dcp.entity.VirtualNetworkService;
+import com.vmware.photon.controller.common.xenon.ServiceUtils;
 
 /**
  * Utility class related to virtual network.
@@ -26,6 +27,7 @@ public class VirtualNetworkUtils {
    */
   public static VirtualNetwork convert(VirtualNetworkService.State virtualNetworkState) {
     VirtualNetwork virtualNetwork = new VirtualNetwork();
+    virtualNetwork.setId(ServiceUtils.getIDFromDocumentSelfLink(virtualNetworkState.documentSelfLink));
     virtualNetwork.setName(virtualNetworkState.name);
     virtualNetwork.setDescription(virtualNetworkState.description);
     virtualNetwork.setState(virtualNetworkState.state);

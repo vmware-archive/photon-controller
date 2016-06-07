@@ -140,16 +140,16 @@ public class VirtualNetworkFeClientTest {
 
   @Test
   public void succeedsToGet() throws Throwable {
+    String networkId = UUID.randomUUID().toString();
+
     VirtualNetworkService.State virtualNetworkState = new VirtualNetworkService.State();
     virtualNetworkState.name = "virtualNetwork";
+    virtualNetworkState.documentSelfLink = VirtualNetworkService.FACTORY_LINK + "/" + networkId;
 
     Operation operation = new Operation();
     operation.setBody(virtualNetworkState);
 
-    String networkId = UUID.randomUUID().toString();
-
-    doReturn(operation).when(cloudStoreClient).get(
-        eq(VirtualNetworkService.FACTORY_LINK + "/" + networkId));
+    doReturn(operation).when(cloudStoreClient).get(virtualNetworkState.documentSelfLink);
 
 
     VirtualNetwork virtualNetwork = frontendClient.get(networkId);
@@ -169,11 +169,13 @@ public class VirtualNetworkFeClientTest {
                                 String parentKind,
                                 Optional<String> name,
                                 ImmutableMap<String, String> terms) throws Throwable {
+    String documentLink = VirtualNetworkService.FACTORY_LINK + "/" + UUID.randomUUID().toString();
+
     VirtualNetworkService.State expectedVirtualNetworkState = new VirtualNetworkService.State();
     expectedVirtualNetworkState.state = NetworkState.READY;
+    expectedVirtualNetworkState.documentSelfLink = documentLink;
 
     ServiceDocumentQueryResult expectedQueryResult = new ServiceDocumentQueryResult();
-    String documentLink = UUID.randomUUID().toString();
     String nextPageLink = "nextPageLink" + UUID.randomUUID().toString();
     String prevPageLink = "prevPageLink" + UUID.randomUUID().toString();
     expectedQueryResult.documentLinks = new ArrayList<>();
