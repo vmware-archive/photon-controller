@@ -50,6 +50,8 @@ public interface TaskBackend {
 
   TaskEntity createCompletedTask(BaseEntity entity, Operation operation);
 
+  Task createCompletedTask(String entityId, String entityKind, String projectId, String operation);
+
   TaskEntity createTaskWithSteps(BaseEntity entity,
                                  Operation operation,
                                  Boolean isCompleted,
