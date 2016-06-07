@@ -13,7 +13,6 @@
 
 package com.vmware.photon.controller.housekeeper;
 
-import com.vmware.photon.controller.common.logging.LoggingConfiguration;
 import com.vmware.photon.controller.common.xenon.host.XenonConfig;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperConfig;
 
@@ -39,15 +38,7 @@ public class HousekeeperConfig {
 
   @Valid
   @NotNull
-  private LoggingConfiguration logging;
-
-  @Valid
-  @NotNull
   private ZookeeperConfig zookeeper;
-
-  public LoggingConfiguration getLogging() {
-    return this.logging;
-  }
 
   public XenonConfig getXenonConfig() {
     return this.xenonConfig;

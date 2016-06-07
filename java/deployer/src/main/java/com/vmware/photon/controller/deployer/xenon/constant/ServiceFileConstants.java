@@ -29,7 +29,6 @@ public class ServiceFileConstants {
 
   public static final Map<ContainersConfig.ContainerType, String> CONTAINER_CONFIG_FILES =
       ImmutableMap.<ContainersConfig.ContainerType, String>builder()
-      .put(ContainersConfig.ContainerType.Deployer, "deployer_release.json")
       .put(ContainersConfig.ContainerType.ManagementApi, "management-api_release.json")
       .put(ContainersConfig.ContainerType.LoadBalancer, "haproxy_release.json")
       .put(ContainersConfig.ContainerType.Zookeeper, "zookeeper_release.json")
@@ -40,7 +39,6 @@ public class ServiceFileConstants {
 
   public static final Map<ContainersConfig.ContainerType, String> CONTAINER_CONFIG_ROOT_DIRS =
       ImmutableMap.<ContainersConfig.ContainerType, String>builder()
-      .put(ContainersConfig.ContainerType.Deployer, "deployer/")
       .put(ContainersConfig.ContainerType.ManagementApi, "management-api/")
       .put(ContainersConfig.ContainerType.LoadBalancer, "haproxy/")
       .put(ContainersConfig.ContainerType.Zookeeper, "zookeeper/")

@@ -1,29 +1,40 @@
 {
   "serviceName": "PhotonControllerCore",
   "cpuCount": 4,
-  "memoryMb": 7168,
-  "diskGb": 18,
+  "memoryMb": 9216,
+  "diskGb": 26,
   "isReplicated": true,
   "isPrivileged": false,
   "useHostNetwork": true,
   "containerImage": "esxcloud/photon-controller-core",
   "portBindings": {
-    "13010": 13010,
     "16000": 16000,
-    "19000": 19000,
-    "19001": 19001
+    "18000": 18000,
+    "19000": 19000
   },
   "volumeBindings": {
-    "/var/log": "/var/log"
+    "/var/log": "/var/log",
+    "/var/esxcloud/packages":"/var/esxcloud/packages",
+    "/etc/esxcloud-deployer":"/etc/esxcloud-deployer",
+    "/usr/lib/esxcloud/deployer/scripts":"/usr/lib/esxcloud/deployer/scripts"
   },
   "dynamicParameters": {
     "CLOUD-STORE_DCP_STORAGE_PATH": "/etc/esxcloud/cloud-store/sandbox_19000",
     "CLOUD-STORE_INSTALL_DIRECTORY": "/usr/lib/esxcloud/cloud-store",
+    "DEPLOYER_DCP_STORAGE_PATH": "/etc/esxcloud/deployer/sandbox_18000",
+    "DEPLOYER_INSTALL_DIRECTORY": "/usr/lib/esxcloud/deployer",
     "HOUSEKEEPER_DCP_STORAGE_PATH": "/etc/esxcloud/housekeeper/sandbox_16000",
     "HOUSEKEEPER_INSTALL_DIRECTORY": "/usr/lib/esxcloud/housekeeper",
     "LOG_DIRECTORY": "/var/log/esxcloud",
     "PHOTON-CONTROLLER-CORE_INSTALL_DIRECTORY": "/usr/lib/esxcloud/photon-controller-core",
     "ROOT-SCHEDULER_DCP_STORAGE_PATH": "/etc/esxcloud/root-scheduler/sandbox_13010",
-    "ROOT-SCHEDULER_INSTALL_DIRECTORY": "/usr/lib/esxcloud/root-scheduler"
+    "ROOT-SCHEDULER_INSTALL_DIRECTORY": "/usr/lib/esxcloud/root-scheduler",
+    "TENANT_NAME": "mgmt-tenant",
+    "PROJECT_NAME": "mgmt-project",
+    "RESOURCE_TICKET_NAME": "mgmt-res-ticket",
+    "MAX_MEMORY_GB": 64,
+    "MAX_VM_COUNT": 20,
+    "DEPLOYER_INSTALL_DIRECTORY": "/usr/lib/esxcloud/deployer",
+    "VIB_DIRECTORY": "/var/esxcloud/packages"
   }
 }

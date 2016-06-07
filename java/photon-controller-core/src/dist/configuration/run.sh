@@ -28,7 +28,7 @@ then
 fi
 
 # jvm heap size will be set to by default is 384m
-jvm_mem=384
+jvm_mem=512
 
 {{#memoryMb}}
 jvm_mem=$(({{{memoryMb}}}/2))
