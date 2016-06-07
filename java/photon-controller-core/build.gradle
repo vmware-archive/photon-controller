@@ -13,6 +13,7 @@ dependencies {
   compile project(':common-dcp')
   compile project(':api')
   compile project(':cloud-store')
+  compile project(':deployer')
   compile project(':housekeeper')
   compile project(':nsx-client')
   compile project(':root-scheduler')
@@ -57,6 +58,7 @@ task dockerfile(type: Dockerfile) {
   destFile = file('build/container/Dockerfile')
   from 'photon/servicebase'
   copyFile('release/', '/usr/lib/esxcloud/photon-controller-core/')
+  runCommand "tdnf install -y openssh && tdnf install -y sshpass"
 }
 
 task container(type: DockerBuildImage) {
