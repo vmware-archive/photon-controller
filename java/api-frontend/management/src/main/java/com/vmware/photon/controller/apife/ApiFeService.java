@@ -79,6 +79,7 @@ import com.vmware.photon.controller.apife.resources.vm.HostVmsResource;
 import com.vmware.photon.controller.apife.resources.vm.ProjectVmsResource;
 import com.vmware.photon.controller.apife.resources.vm.VmDiskAttachResource;
 import com.vmware.photon.controller.apife.resources.vm.VmDiskDetachResource;
+import com.vmware.photon.controller.apife.resources.vm.VmImageCreateResource;
 import com.vmware.photon.controller.apife.resources.vm.VmIsoAttachResource;
 import com.vmware.photon.controller.apife.resources.vm.VmIsoDetachResource;
 import com.vmware.photon.controller.apife.resources.vm.VmMetadataSetResource;
@@ -279,6 +280,7 @@ public class ApiFeService extends Application<ApiFeStaticConfiguration> {
     resources.add(TenantSecurityGroupsResource.class);
     resources.add(VmDiskAttachResource.class);
     resources.add(VmDiskDetachResource.class);
+    resources.add(VmImageCreateResource.class);
     resources.add(VmIsoAttachResource.class);
     resources.add(VmIsoDetachResource.class);
     resources.add(VmMetadataSetResource.class);
