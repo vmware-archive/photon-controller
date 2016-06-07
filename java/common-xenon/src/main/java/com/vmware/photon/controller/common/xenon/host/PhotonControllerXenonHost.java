@@ -64,7 +64,6 @@ public class PhotonControllerXenonHost
     private static final Logger logger = LoggerFactory.getLogger(PhotonControllerXenonHost.class);
     public static final String FACTORY_SERVICE_FIELD_NAME_SELF_LINK = "SELF_LINK";
 
-    private final XenonConfig xenonConfig;
     private final AgentControlClientFactory agentControlClientFactory;
     private final HostClientFactory hostClientFactory;
     private final ServiceConfigFactory serviceConfigFactory;
@@ -100,7 +99,6 @@ public class PhotonControllerXenonHost
                                      NsxClientFactory nsxClientFactory,
                                      CloudStoreHelper cloudStoreHelper) throws Throwable {
         super(xenonConfig);
-        this.xenonConfig = xenonConfig;
         this.buildInfo = BuildInfo.get(this.getClass());
 
         if (hostClientFactory == null || agentControlClientFactory == null) {

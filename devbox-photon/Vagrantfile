@@ -33,13 +33,11 @@ Vagrant.configure("2") do |config|
 
   SERVICE_NAME_MAP = {
     :management_api => "management-api",
-    :deployer       => "deployer",
     :photon_controller_core => "photon-controller-core",
   }
 
   SERVICE_CONFIG_MAP = {
     :management_api => "api-frontend/management",
-    :deployer       => "deployer",
     :photon_controller_core => "photon-controller-core",
   }
 
@@ -511,7 +509,7 @@ cat > $out <<-'EOM'
 EOM
 
 cat >> $out <<-EOM
-  #{service == "deployer" ? "copy-deployer-config" : ""}
+  #{service == "photon-controller-core" ? "copy-deployer-config" : ""}
 
   $(gen-docker-stop #{config_file}) &> /dev/null || true
   $(gen-docker-rm #{config_file}) &> /dev/null || true

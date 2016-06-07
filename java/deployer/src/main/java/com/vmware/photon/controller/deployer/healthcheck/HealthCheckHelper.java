@@ -41,11 +41,6 @@ public class HealthCheckHelper {
             ServicePortConstants.ZOOKEEPER_PORT);
         break;
 
-      case Deployer:
-        ports.add(ServicePortConstants.DEPLOYER_PORT);
-        this.healthChecker = new XenonBasedHealthChecker(service, ipAddress, ports);
-        break;
-
       case ManagementApi:
         this.healthChecker = new HttpBasedHealthChecker(HostUtils.getApiClient(service));
         break;
@@ -56,6 +51,7 @@ public class HealthCheckHelper {
 
       case PhotonControllerCore:
         ports.add(ServicePortConstants.CLOUD_STORE_PORT);
+        ports.add(ServicePortConstants.DEPLOYER_PORT);
         this.healthChecker = new XenonBasedHealthChecker(service, ipAddress, ports);
         break;
 

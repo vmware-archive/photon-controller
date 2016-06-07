@@ -15,6 +15,7 @@ package com.vmware.photon.controller.core;
 
 import com.vmware.photon.controller.cloudstore.CloudStoreConfig;
 import com.vmware.photon.controller.common.logging.LoggingConfiguration;
+import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.housekeeper.HousekeeperConfig;
 import com.vmware.photon.controller.rootscheduler.RootSchedulerConfig;
 
@@ -46,10 +47,19 @@ public class PhotonControllerConfig {
 
   @Valid
   @NotNull
+  @JsonProperty("deployer")
+  private DeployerConfig deployerConfig;
+
+  @Valid
+  @NotNull
   private LoggingConfiguration logging = new LoggingConfiguration();
 
   public CloudStoreConfig getCloudStoreConfig() {
     return cloudStoreConfig;
+  }
+
+  public DeployerConfig getDeployerConfig() {
+    return this.deployerConfig;
   }
 
   public HousekeeperConfig getHousekeeperConfig() {

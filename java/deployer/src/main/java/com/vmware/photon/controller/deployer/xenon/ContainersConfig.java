@@ -33,7 +33,6 @@ public class ContainersConfig {
    * List of known container types.
    */
   public enum ContainerType {
-    Deployer,
     Lightwave,
     LoadBalancer,
     ManagementApi,
