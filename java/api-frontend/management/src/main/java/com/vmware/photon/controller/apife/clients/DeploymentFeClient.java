@@ -21,7 +21,9 @@ import com.vmware.photon.controller.api.ClusterType;
 import com.vmware.photon.controller.api.Deployment;
 import com.vmware.photon.controller.api.DeploymentCreateSpec;
 import com.vmware.photon.controller.api.DeploymentDeployOperation;
+import com.vmware.photon.controller.api.FinalizeMigrationOperation;
 import com.vmware.photon.controller.api.Host;
+import com.vmware.photon.controller.api.InitializeMigrationOperation;
 import com.vmware.photon.controller.api.Project;
 import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
@@ -185,9 +187,9 @@ public class DeploymentFeClient {
     return task;
   }
 
-  public Task initializeDeploymentMigration(String sourceLoadBalancerAddress, String destinationDeploymentId)
-      throws ExternalException {
-    TaskEntity taskEntity = deploymentBackend.prepareInitializeMigrateDeployment(sourceLoadBalancerAddress,
+  public Task initializeDeploymentMigration(InitializeMigrationOperation initializeMigrationOperation,
+                                            String destinationDeploymentId) throws ExternalException {
+    TaskEntity taskEntity = deploymentBackend.prepareInitializeMigrateDeployment(initializeMigrationOperation,
         destinationDeploymentId);
     Task task = taskBackend.getApiRepresentation(taskEntity);
 
@@ -196,9 +198,9 @@ public class DeploymentFeClient {
     return task;
   }
 
-  public Task finalizeDeploymentMigration(String sourceLoadBalancerAddress, String destinationDeploymentId)
-      throws ExternalException {
-    TaskEntity taskEntity = deploymentBackend.prepareFinalizeMigrateDeployment(sourceLoadBalancerAddress,
+  public Task finalizeDeploymentMigration(FinalizeMigrationOperation finalizeMigrationOperation,
+                                          String destinationDeploymentId) throws ExternalException {
+    TaskEntity taskEntity = deploymentBackend.prepareFinalizeMigrateDeployment(finalizeMigrationOperation,
         destinationDeploymentId);
     Task task = taskBackend.getApiRepresentation(taskEntity);
 

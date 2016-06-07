@@ -19,6 +19,8 @@ import com.vmware.photon.controller.api.ClusterConfigurationSpec;
 import com.vmware.photon.controller.api.ClusterType;
 import com.vmware.photon.controller.api.Deployment;
 import com.vmware.photon.controller.api.DeploymentDeployOperation;
+import com.vmware.photon.controller.api.FinalizeMigrationOperation;
+import com.vmware.photon.controller.api.InitializeMigrationOperation;
 import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.builders.AuthInfoBuilder;
@@ -170,9 +172,12 @@ public class DeploymentResourceTest extends ResourceTest {
 
   @Test
   public void testInitializeDeploymentMigration() throws Exception {
+    InitializeMigrationOperation op = new InitializeMigrationOperation();
+    op.setSourceLoadBalancerAddress("address");
+
     Task task = new Task();
     task.setId(taskId);
-    when(feClient.initializeDeploymentMigration("address", deploymentId)).thenReturn(task);
+    when(feClient.initializeDeploymentMigration(op, deploymentId)).thenReturn(task);
 
     String uri = UriBuilder
         .fromPath(DeploymentResourceRoutes.DEPLOYMENT_PATH +
@@ -194,9 +199,12 @@ public class DeploymentResourceTest extends ResourceTest {
 
   @Test
   public void testFinalizeDeploymentMigration() throws Exception {
+    FinalizeMigrationOperation op = new FinalizeMigrationOperation();
+    op.setSourceLoadBalancerAddress("address");
+
     Task task = new Task();
     task.setId(taskId);
-    when(feClient.finalizeDeploymentMigration("address", deploymentId)).thenReturn(task);
+    when(feClient.finalizeDeploymentMigration(op, deploymentId)).thenReturn(task);
 
     String uri = UriBuilder
         .fromPath(DeploymentResourceRoutes.DEPLOYMENT_PATH +

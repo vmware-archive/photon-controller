@@ -21,6 +21,8 @@ import com.vmware.photon.controller.api.ClusterType;
 import com.vmware.photon.controller.api.Deployment;
 import com.vmware.photon.controller.api.DeploymentCreateSpec;
 import com.vmware.photon.controller.api.DeploymentDeployOperation;
+import com.vmware.photon.controller.api.FinalizeMigrationOperation;
+import com.vmware.photon.controller.api.InitializeMigrationOperation;
 import com.vmware.photon.controller.api.Project;
 import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
@@ -343,10 +345,12 @@ public class DeploymentFeClientTest {
 
     @Test
     public void testInitializeMigrationTaskIsCreated() throws Throwable {
+      InitializeMigrationOperation op = new InitializeMigrationOperation();
+      op.setSourceLoadBalancerAddress("sourceAddress");
+
       String deploymentId = "deployment-id";
-      String sourceAddress = "sourceAddress";
       TaskEntity taskEntity = new TaskEntity();
-      doReturn(taskEntity).when(deploymentBackend).prepareInitializeMigrateDeployment(sourceAddress, deploymentId);
+      doReturn(taskEntity).when(deploymentBackend).prepareInitializeMigrateDeployment(op, deploymentId);
 
       Task task = new Task();
       doReturn(task).when(taskBackend).getApiRepresentation(taskEntity);
@@ -354,17 +358,19 @@ public class DeploymentFeClientTest {
       TaskCommand command = mock(TaskCommand.class);
       doReturn(command).when(commandFactory).create(taskEntity);
 
-      Task resp = feClient.initializeDeploymentMigration(sourceAddress, deploymentId);
+      Task resp = feClient.initializeDeploymentMigration(op, deploymentId);
       assertThat(resp, is(task));
       verify(executorService).submit(command);
     }
 
     @Test
     public void testFinalizeMigrationTaskIsCreated() throws Throwable {
+      FinalizeMigrationOperation op = new FinalizeMigrationOperation();
+      op.setSourceLoadBalancerAddress("address");
+
       String deploymentId = "deployment-id";
-      String sourceAddress = "sourceAddress";
       TaskEntity taskEntity = new TaskEntity();
-      doReturn(taskEntity).when(deploymentBackend).prepareFinalizeMigrateDeployment(sourceAddress, deploymentId);
+      doReturn(taskEntity).when(deploymentBackend).prepareFinalizeMigrateDeployment(op, deploymentId);
 
       Task task = new Task();
       doReturn(task).when(taskBackend).getApiRepresentation(taskEntity);
@@ -372,7 +378,7 @@ public class DeploymentFeClientTest {
       TaskCommand command = mock(TaskCommand.class);
       doReturn(command).when(commandFactory).create(taskEntity);
 
-      Task resp = feClient.finalizeDeploymentMigration(sourceAddress, deploymentId);
+      Task resp = feClient.finalizeDeploymentMigration(op, deploymentId);
       assertThat(resp, is(task));
       verify(executorService).submit(command);
     }
