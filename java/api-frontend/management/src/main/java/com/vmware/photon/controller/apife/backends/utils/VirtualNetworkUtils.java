@@ -27,6 +27,7 @@ public class VirtualNetworkUtils {
    */
   public static VirtualNetwork convert(VirtualNetworkService.State virtualNetworkState) {
     VirtualNetwork virtualNetwork = new VirtualNetwork();
+    System.out.println("document self link is " + virtualNetworkState.documentSelfLink);
     virtualNetwork.setId(ServiceUtils.getIDFromDocumentSelfLink(virtualNetworkState.documentSelfLink));
     virtualNetwork.setName(virtualNetworkState.name);
     virtualNetwork.setDescription(virtualNetworkState.description);
@@ -34,6 +35,7 @@ public class VirtualNetworkUtils {
     virtualNetwork.setRoutingType(virtualNetworkState.routingType);
     virtualNetwork.setIsDefault(virtualNetworkState.isDefault);
 
+    System.out.println("network id becomes " + virtualNetwork.getId());
     return virtualNetwork;
   }
 }

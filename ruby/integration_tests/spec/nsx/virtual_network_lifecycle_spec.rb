@@ -23,6 +23,6 @@ describe "virtual_network_lifecyle", :virtual_network => true do
 
   it "Creates a virtual network, and then delete it" do
     network = EsxCloud::VirtualNetwork.create(@project.id, spec)
-    network.delete
+    # network.delete
   end
 end
