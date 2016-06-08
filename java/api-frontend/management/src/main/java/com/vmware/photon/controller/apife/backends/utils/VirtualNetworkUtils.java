@@ -17,16 +17,22 @@ import com.vmware.photon.controller.api.VirtualNetwork;
 import com.vmware.photon.controller.cloudstore.dcp.entity.VirtualNetworkService;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * Utility class related to virtual network.
  */
 public class VirtualNetworkUtils {
+
+  private static final Logger logger = LoggerFactory.getLogger(VirtualNetworkUtils.class);
 
   /**
    * Converts virtual network from back-end representation to front-end representation.
    */
   public static VirtualNetwork convert(VirtualNetworkService.State virtualNetworkState) {
     VirtualNetwork virtualNetwork = new VirtualNetwork();
+    logger.debug("document self link is {}", virtualNetworkState.documentSelfLink);
     virtualNetwork.setId(ServiceUtils.getIDFromDocumentSelfLink(virtualNetworkState.documentSelfLink));
     virtualNetwork.setName(virtualNetworkState.name);
     virtualNetwork.setDescription(virtualNetworkState.description);
@@ -34,6 +40,7 @@ public class VirtualNetworkUtils {
     virtualNetwork.setRoutingType(virtualNetworkState.routingType);
     virtualNetwork.setIsDefault(virtualNetworkState.isDefault);
 
+    logger.debug("virtual network becomes {}", virtualNetwork.getId());
     return virtualNetwork;
   }
 }
