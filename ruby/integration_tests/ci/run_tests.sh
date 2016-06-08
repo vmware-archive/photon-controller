@@ -17,6 +17,9 @@ else
     echo No CUSTOM_TEST_CONFIG to override default test behavior
 fi
 
+# TODO(adev): remove this after checkin and change the jenkins repo to update the port
+export API_FE_PORT=9000
+
 env
 
 cd "$TESTS"

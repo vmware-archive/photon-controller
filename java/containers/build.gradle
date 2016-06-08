@@ -18,6 +18,12 @@ task zookeeper(type: DockerBuildImage) {
   tag = "photon/zookeeper"
 }
 
+task lightwave(type: DockerBuildImage) {
+  dependsOn servicebase
+  inputDir = file("lightwave")
+  tag = "vmware/lightwave-sts"
+}
+
 task removeZookeeper(type: DockerRemoveImage) {
   targetImageId { zookeeper.tag }
 }
@@ -38,10 +44,18 @@ task photon() {
   )
 }
 
+task photonAndLightwave() {
+  dependsOn(
+      photon,
+      lightwave
+  )
+}
+
 task all() {
   dependsOn(
     zookeeper,
     haproxy,
+    lightwave,
     photon
   )
 }

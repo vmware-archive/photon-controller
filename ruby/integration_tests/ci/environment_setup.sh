@@ -6,7 +6,7 @@ export REAL_AGENT=1
 # The network address of the load balancer
 export API_ADDRESS=
 # The listening port of the API-FE service on load balancer
-export API_FE_PORT=443
+export API_FE_PORT=9000
 # The IP of the host where the integration tests are going to run on.
 # For example, creating vms on it.
 export ESX_IP=
