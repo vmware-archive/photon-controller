@@ -22,6 +22,7 @@ import com.vmware.photon.controller.common.clients.HostClientProvider;
 import com.vmware.photon.controller.common.clients.exceptions.ImageNotFoundException;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
 import com.vmware.photon.controller.common.clients.exceptions.SystemErrorException;
+import com.vmware.photon.controller.common.logging.LoggingUtils;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelperProvider;
 import com.vmware.photon.controller.common.xenon.OperationUtils;
 import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
@@ -35,6 +36,7 @@ import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.common.UtilsHelper;
 import com.vmware.xenon.services.common.NodeGroupBroadcastResponse;
 import com.vmware.xenon.services.common.QueryTask;
 
@@ -270,6 +272,13 @@ public class ImageCopyService extends StatefulService {
       ServiceUtils.logInfo(this, "Skip copying image to source itself");
       sendStageProgressPatch(current, TaskState.TaskStage.FINISHED, null);
       return;
+    }
+
+    // The request ID is in the Xenon thread context
+    // We need to put it in the MDC for use by calling agent Thrift
+    String requestId = UtilsHelper.getThreadContextId();
+    if (requestId != null) {
+      LoggingUtils.setRequestId(requestId);
     }
 
     AsyncMethodCallback callback = new AsyncMethodCallback() {
