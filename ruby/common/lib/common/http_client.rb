@@ -26,7 +26,7 @@ module EsxCloud
       fail "endpoint must specify the protocol, i.e., https or http" unless endpoint.start_with?("https") || endpoint.start_with?("http")
 
       @endpoint = endpoint.chomp("/")
-
+      puts @endpoint
       proxy = ENV["http_proxy"] || ENV["HTTP_PROXY"]
       proxy = nil if host_matches_no_proxy?
 

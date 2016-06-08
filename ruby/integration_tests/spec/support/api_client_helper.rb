@@ -26,11 +26,11 @@ class ApiClientHelper
 
       if ENV["ENABLE_AUTH"] && ENV["ENABLE_AUTH"] == "true"
          protocol ||= "https"
-         port ||= "443"
       else
          protocol ||= "http"
-         port ||= "28080"
       end
+      puts port
+      port = "9000"
 
       setup_client(protocol, address, port)
     end
