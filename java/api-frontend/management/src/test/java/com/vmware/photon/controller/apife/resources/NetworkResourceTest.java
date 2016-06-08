@@ -23,6 +23,7 @@ import com.vmware.photon.controller.apife.resources.routes.NetworkResourceRoutes
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
 
 import com.google.common.collect.ImmutableList;
+import org.hamcrest.CoreMatchers;
 import org.hamcrest.Matchers;
 import org.mockito.Mock;
 import org.testng.annotations.Test;
@@ -32,6 +33,8 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.Mockito.when;
 
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 
@@ -51,6 +54,12 @@ public class NetworkResourceTest extends ResourceTest {
 
   private String taskRoutePath =
       UriBuilder.fromPath(TaskResourceRoutes.TASK_PATH).build(taskId).toString();
+
+  private String networkSetDefaultRoute =
+      UriBuilder.fromPath(NetworkResourceRoutes.NETWORK_PATH)
+          .path(NetworkResourceRoutes.NETWORK_SET_DEFAULT_ACTION)
+          .build(networkId)
+          .toString();
 
   @Mock
   private NetworkFeClient networkFeClient;
@@ -108,6 +117,26 @@ public class NetworkResourceTest extends ResourceTest {
     ApiError errors = response.readEntity(ApiError.class);
     assertThat(errors.getCode(), equalTo("NetworkNotFound"));
     assertThat(errors.getMessage(), containsString("Network " + networkId + " not found"));
+  }
+
+  @Test
+  public void testSuccessfulSetDefault() throws Throwable {
+    Task task = new Task();
+    task.setId(taskId);
+
+    when(networkFeClient.setDefault(networkId)).thenReturn(task);
+
+    Response response = client()
+        .target(networkSetDefaultRoute)
+        .request()
+        .post(Entity.entity(null, MediaType.APPLICATION_JSON_TYPE));
+
+    assertThat(response.getStatus(), CoreMatchers.is(Response.Status.CREATED.getStatusCode()));
+
+    Task responseTask = response.readEntity(Task.class);
+    assertThat(responseTask, CoreMatchers.is(task));
+    assertThat(new URI(responseTask.getSelfLink()).isAbsolute(), CoreMatchers.is(true));
+    assertThat(responseTask.getSelfLink().endsWith(taskRoutePath), CoreMatchers.is(true));
   }
 
 }
