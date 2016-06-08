@@ -31,6 +31,7 @@ import org.glassfish.jersey.server.ContainerRequest;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
@@ -83,5 +84,20 @@ public class NetworkResource {
         TaskResourceRoutes.TASK_PATH
     );
     return response;
+  }
+
+  @POST
+  @Path(NetworkResourceRoutes.NETWORK_SET_DEFAULT_ACTION)
+  @ApiOperation(value = "Set Network Default", response = Task.class)
+  @ApiResponses(value = {
+      @ApiResponse(code = 201, message = "Setting Network default, progress communicated via the task")
+  })
+  public Response setDefault(@Context Request request,
+                             @PathParam("id") String id) throws ExternalException {
+    return generateCustomResponse(
+        Response.Status.CREATED,
+        virtualNetworkFeClient.setDefault(id),
+        (ContainerRequest) request,
+        TaskResourceRoutes.TASK_PATH);
   }
 }

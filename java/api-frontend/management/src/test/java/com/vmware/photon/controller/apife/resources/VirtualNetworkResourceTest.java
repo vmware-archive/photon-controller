@@ -28,7 +28,10 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.when;
 
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 
@@ -43,6 +46,11 @@ public class VirtualNetworkResourceTest extends ResourceTest {
   private String networkId = "network1";
   private String networkRoute = UriBuilder.fromPath(NetworkResourceRoutes.NETWORK_PATH).build(networkId).toString();
   private String taskRoutePath = UriBuilder.fromPath(TaskResourceRoutes.TASK_PATH).build(taskId).toString();
+  private String networkSetDefaultRoute =
+      UriBuilder.fromPath(NetworkResourceRoutes.NETWORK_PATH)
+          .path(NetworkResourceRoutes.NETWORK_SET_DEFAULT_ACTION)
+          .build(networkId)
+          .toString();
 
   @Mock
   private VirtualNetworkFeClient frontendClient;
@@ -96,5 +104,25 @@ public class VirtualNetworkResourceTest extends ResourceTest {
 
     Response response = client().target(networkRoute).request().delete();
     assertThat(response.getStatus(), is(HttpStatus.SC_INTERNAL_SERVER_ERROR));
+  }
+
+  @Test
+  public void testSuccessfulSetDefault() throws Throwable {
+    Task task = new Task();
+    task.setId(taskId);
+
+    when(frontendClient.setDefault(networkId)).thenReturn(task);
+
+    Response response = client()
+        .target(networkSetDefaultRoute)
+        .request()
+        .post(Entity.entity(null, MediaType.APPLICATION_JSON_TYPE));
+
+    assertThat(response.getStatus(), is(Response.Status.CREATED.getStatusCode()));
+
+    Task responseTask = response.readEntity(Task.class);
+    assertThat(responseTask, is(task));
+    assertThat(new URI(responseTask.getSelfLink()).isAbsolute(), is(true));
+    assertThat(responseTask.getSelfLink().endsWith(taskRoutePath), is(true));
   }
 }
