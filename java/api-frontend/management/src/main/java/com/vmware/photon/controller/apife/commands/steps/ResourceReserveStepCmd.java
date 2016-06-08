@@ -209,14 +209,12 @@ public class ResourceReserveStepCmd extends StepCommand {
   private Resource createResource(VmEntity entity) throws ExternalException, InternalException,
       ResourceConstraintException {
     List<Disk> attachedDisks = new ArrayList<>();
-
-    List<ResourceConstraint> dataStoreResourceConstraintList = getDatastoreAffinityConstraintsFromVm(entity);
+    com.vmware.photon.controller.resource.gen.Vm vm = new com.vmware.photon.controller.resource.gen.Vm();
 
     for (AttachedDiskEntity attachedDisk : entity.getAttachedDisks()) {
       BaseDiskEntity underlyingDisk = attachedDisk.getUnderlyingTransientDisk();
       boolean newDisk = underlyingDisk.getState() == DiskState.CREATING;
-      boolean persistent = attachedDisk.getKind().equals(PersistentDisk.KIND);
-      Disk disk = new Disk(underlyingDisk.getId(), underlyingDisk.getFlavorId(), persistent, newDisk,
+      Disk disk = new Disk(underlyingDisk.getId(), underlyingDisk.getFlavorId(), false, newDisk,
           underlyingDisk.getCapacityGb());
       disk.setFlavor_info(getFlavor(underlyingDisk));
 
@@ -230,20 +228,13 @@ public class ResourceReserveStepCmd extends StepCommand {
       List<ResourceConstraint> datastoreTagConstraints = createDatastoreTagConstraint(disk.getFlavor_info());
       if (datastoreTagConstraints != null && !datastoreTagConstraints.isEmpty()) {
         for (ResourceConstraint resourceConstraint : datastoreTagConstraints) {
-          disk.addToResource_constraints(resourceConstraint);
-        }
-      }
-
-      if (dataStoreResourceConstraintList != null && !dataStoreResourceConstraintList.isEmpty()) {
-        for (ResourceConstraint resourceConstraint : dataStoreResourceConstraintList) {
-          disk.addToResource_constraints(resourceConstraint);
+          vm.addToResource_constraints(resourceConstraint);
         }
       }
 
       attachedDisks.add(disk);
     }
 
-    com.vmware.photon.controller.resource.gen.Vm vm = new com.vmware.photon.controller.resource.gen.Vm();
     FlavorEntity flavorEntity = flavorBackend.getEntityById(entity.getFlavorId());
     vm.setFlavor(flavorEntity.getName());
 
@@ -555,27 +546,6 @@ public class ResourceReserveStepCmd extends StepCommand {
         }
       }
     }
-  }
-
-  private List<ResourceConstraint> getDatastoreAffinityConstraintsFromVm(
-      VmEntity vmEntity)
-      throws DiskNotFoundException, InvalidLocalitySpecException {
-    List<ResourceConstraint> resourceConstraints = new ArrayList<>();
-    if (vmEntity.getAffinities() != null && !vmEntity.getAffinities().isEmpty()) {
-      for (LocalityEntity localityEntity : vmEntity.getAffinities()) {
-        if (localityEntity.getKind().equals(DATASTORE_KIND)) {
-          ResourceConstraint resourceConstraint = new ResourceConstraint();
-          resourceConstraint.setType(ResourceConstraintType.DATASTORE);
-          ArrayList<String> constraintValues = new ArrayList<String>();
-          constraintValues.add(localityEntity.getResourceId());
-          resourceConstraint.setValues(constraintValues);
-          logger.info("Found datastore resource constraint for vm {}, with id {}, and type {}",
-              vmEntity.getId(), resourceConstraint.getValues(), resourceConstraint.getType());
-          resourceConstraints.add(resourceConstraint);
-        }
-      }
-    }
-    return resourceConstraints;
   }
 
   private void createNetworkConstraints(
