@@ -401,6 +401,9 @@ Vagrant.configure("2") do |config|
     fi
     cp /esxcloud/python/dist/*.vib /var/esxcloud/packages/
 
+    if #{ENV["ENVOY_VIB_URL"]}
+      sudo wget #{ENV["ENVOY_VIB_URL"]} -P /var/esxcloud/packages/
+    fi
   EOS
 
   if !(ENV["PUBLIC_NETWORK_IP"] || ENV["REAL_AGENT"])
