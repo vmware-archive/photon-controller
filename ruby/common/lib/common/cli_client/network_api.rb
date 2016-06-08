@@ -63,6 +63,15 @@ module EsxCloud
         find_network_by_id(id)
       end
 
+      # @param [String] id
+      # @return [Boolean]
+      def set_default(id)
+        cmd = "network set_default #{id}"
+        run_cli(cmd)
+
+        true
+      end
+
     end
   end
 end

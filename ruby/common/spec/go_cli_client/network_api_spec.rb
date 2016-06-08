@@ -55,16 +55,22 @@ describe EsxCloud::GoCliClient do
     expect(client.set_portgroups(network_id, portgroups)).to eq network
   end
 
+  it "sets default network" do
+    expect(client).to receive(:run_cli).with("network setDefault 'network1'")
+    expect(client.set_default("network1")).to be_true
+  end
+
   it "finds network by id" do
     network_id = double("n1", id: network_id)
     network_hash ={"id" => network_id,
                    "name" => "network1",
                    "state" => "READY",
                    "portGroups" => ["P1", "P2"],
-                   "description" => "VLAN"}
+                   "description" => "VLAN",
+                   "isDefault" => false }
     network = EsxCloud::Network.create_from_hash(network_hash)
 
-    result = "#{network_id} network1  READY P1,P2 VLAN"
+    result = "#{network_id} network1  READY P1,P2 VLAN false"
     expect(client).to receive(:run_cli).with("network show #{network_id}").and_return(result)
     expect(client).to receive(:get_network_from_response).with(result).and_return(network)
     expect(client.find_network_by_id(network_id)).to eq network

@@ -14,7 +14,7 @@ require_relative "../spec_helper"
 describe EsxCloud::Network do
 
   let(:client) { double(EsxCloud::ApiClient) }
-  let(:network) { EsxCloud::Network.new "id", "name", "description", "READY", ["P1"] }
+  let(:network) { EsxCloud::Network.new "id", "name", "description", "READY", ["P1"], false }
   let(:network_list) { EsxCloud::NetworkList.new [network] }
 
   let(:create_spec) { EsxCloud::NetworkCreateSpec.new("network1", "VLAN", ["P1", "P2"]) }

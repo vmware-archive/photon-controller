@@ -55,6 +55,15 @@ describe EsxCloud::ApiClient do
     expect(client.set_portgroups("network-id", portgroups)).to eq network
   end
 
+  it "sets default network" do
+    expect(http_client).to receive(:post)
+                           .with("/networks/network-id/set_default")
+                           .and_return(task_created("aaa"))
+    expect(http_client).to receive(:get).with(URL_HOST + "/tasks/aaa").and_return(task_done("aaa", "network-id"))
+
+    expect(client.set_default("network-id")).to be_true
+  end
+
   it "finds network by id" do
     network = double(EsxCloud::Network)
 
