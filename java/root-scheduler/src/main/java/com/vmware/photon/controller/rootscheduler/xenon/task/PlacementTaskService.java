@@ -49,6 +49,7 @@ import com.vmware.xenon.common.ServiceDocumentQueryResult;
 import com.vmware.xenon.common.StatefulService;
 import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.common.UtilsHelper;
 import com.vmware.xenon.services.common.QueryTask;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -129,6 +130,13 @@ public class PlacementTaskService extends StatefulService {
   @Override
   public void handleStart(Operation start) {
     ServiceUtils.logInfo(this, "Starting service %s", getSelfLink());
+
+    // The request ID is in the Xenon thread context
+    // We need to put it in the MDC for use by Thrift
+    String requestId = UtilsHelper.getThreadContextId();
+    if (requestId != null) {
+      LoggingUtils.setRequestId(requestId);
+    }
 
     PlacementTask startState = start.getBody(PlacementTask.class);
     InitializationUtils.initialize(startState);
@@ -342,6 +350,7 @@ public class PlacementTaskService extends StatefulService {
     final Set<PlaceResponse> allResponses = Sets.newConcurrentHashSet();
     final AtomicInteger resultCount = new AtomicInteger(0);
 
+    final String requestId = LoggingUtils.getRequestId();
     for (Map.Entry<String, ServerAddress> entry : candidates.entrySet()) {
       ServerAddress address = entry.getValue();
       try {
@@ -354,6 +363,14 @@ public class PlacementTaskService extends StatefulService {
         hostClient.place(resource, new AsyncMethodCallback<Host.AsyncClient.place_call>() {
           @Override
           public void onComplete(Host.AsyncClient.place_call call) {
+            if (requestId != null) {
+              // We have to do more work here than normal: the PlaceResponse
+              // doesn't have the request ID and we're in a new thread, so we
+              // need to set it correctly for both Xenon (ServiceUtils.log*) and regular
+              // logging.
+              LoggingUtils.setRequestId(requestId);
+              UtilsHelper.setThreadContextId(requestId);
+            }
             PlaceResponse response;
             try {
               response = call.getResult();
@@ -376,6 +393,11 @@ public class PlacementTaskService extends StatefulService {
 
           @Override
           public void onError(Exception ex) {
+            if (requestId != null) {
+              // See comments above in onComplete()
+              LoggingUtils.setRequestId(requestId);
+              UtilsHelper.setThreadContextId(requestId);
+            }
             ServiceUtils.logWarning(PlacementTaskService.this, "Failed to get a placement response from %s: %s",
                 entry, ex);
             PlaceResponse errorResponse = new PlaceResponse();
@@ -605,9 +627,12 @@ public class PlacementTaskService extends StatefulService {
           .setBody(queryTask)
           .setReferer(this.getHost().getPublicUri())
           .setContextId(LoggingUtils.getRequestId())
-          .setCompletion((op, ex) -> {
+          .setCompletion((response, ex) -> {
             try {
-              handleImageDatastoreResponse(op, ex, imageId, completion);
+              // We're in a new thread, so ensure we set the request ID
+              // in the MDC for future use.
+              LoggingUtils.setRequestId(response.getContextId());
+              handleImageDatastoreResponse(response, ex, imageId, completion);
             } catch (Throwable t) {
               String error = "Internal error in image datastore query response handling.";
               ServiceUtils.logSevere(this, error, t);

@@ -78,7 +78,7 @@ import java.util.concurrent.Executors;
  *
  * There are two entry points into this class that are used:
  *
- * getCandicates(): This is the entry point for all production code. It runs asynchronously and returns
+ * getCandidates(): This is the entry point for all production code. It runs asynchronously and returns
  * the results via a completion routine.
  *
  * getCandidatesSync(): This is meant for tests. It exists because originally all of the code was synchronous
