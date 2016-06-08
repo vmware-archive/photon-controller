@@ -406,6 +406,17 @@ Vagrant.configure("2") do |config|
     fi
   EOS
 
+  if ENV["ENVOY_VIB_URL"]
+    config.vm.provision :shell, :inline => <<-EOS
+      set -ex
+
+      #
+      # Download the Envoy VIB
+      #
+      sudo wget #{ENV["ENVOY_VIB_URL"]} -P /var/esxcloud/packages/
+    EOS
+  end
+
   if !(ENV["PUBLIC_NETWORK_IP"] || ENV["REAL_AGENT"])
     agent_parameters = "{\n"
     agent_parameters += "  \"AGENT_BIND_ADDRESS\": \"#{network_ip}\",\n"
