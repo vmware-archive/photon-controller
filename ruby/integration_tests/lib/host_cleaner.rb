@@ -64,6 +64,20 @@ module EsxCloud
         end
       end
 
+      def clean_commonhosts(hosts)
+        hosts.each do |host|
+         puts "VERBOSE: Starting cleaning vms #{host.address}" if $VERBOSE
+         puts EsxCloud::HostCleaner.remove_vms host.address, host.username, host.password
+         EsxCloud::HostCleaner.uninstall_vib host.address, host.username, host.password, "photon-controller-agent"
+         EsxCloud::HostCleaner.uninstall_vib host.address, host.username, host.password, "photon-controller-agent-ext"
+         EsxCloud::HostCleaner.uninstall_vib host.address, host.username, host.password, "envoy"
+       end
+       hosts.each do |host|
+         puts "VERBOSE: Starting cleaning datastores #{host.address}" if $VERBOSE
+         EsxCloud::HostCleaner.clean_datastores host.address, host.username, host.password
+        end
+      end
+
       DATASTORE_DIRS_TO_DELETE = ["deleted_image", "disk", "image", "tmp_image", "vm", "tmp_upload"]
       def clean_datastore(ssh, datastore)
         puts "cleaning datastore #{datastore}"
