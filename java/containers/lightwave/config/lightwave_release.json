@@ -1,0 +1,18 @@
+{
+  "serviceName": "Lightwave",
+  "cpuCount": 1,
+  "memoryMb": 4096,
+  "diskGb": 8,
+  "isReplicated": false,
+  "isPrivileged": true,
+  "useHostNetwork": true,
+  "containerImage": "vmware/lightwave-sts",
+  "portBindings": {
+    "443":443
+  },
+  "volumeBindings": {
+    "/var/log/esxcloud": "/var/log/vmware"
+  },
+  "dynamicParameters": {
+  }
+}

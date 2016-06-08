@@ -26,10 +26,10 @@ class ApiClientHelper
 
       if ENV["ENABLE_AUTH"] && ENV["ENABLE_AUTH"] == "true"
          protocol ||= "https"
-         port ||= "443"
+         port ||= (ENV["API_FE_PORT"] || "443").strip
       else
          protocol ||= "http"
-         port ||= "28080"
+         port ||= (ENV["API_FE_PORT"] || "28080").strip
       end
 
       setup_client(protocol, address, port)
