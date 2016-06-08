@@ -12,7 +12,7 @@
 module EsxCloud
   class Network
 
-    attr_accessor :id, :name, :description, :state, :portgroups
+    attr_accessor :id, :name, :description, :state, :portgroups, :is_default
 
     # @param[NetworkCreateSpec] spec
     # @return [Network]
@@ -55,7 +55,7 @@ module EsxCloud
         fail UnexpectedFormat, "Invalid Network hash: #{hash}"
       end
 
-      new(hash["id"], hash["name"], hash["description"], hash["state"], hash["portGroups"])
+      new(hash["id"], hash["name"], hash["description"], hash["state"], hash["portGroups"], hash["isDefault"])
     end
 
     # @return [Boolean]
@@ -68,12 +68,14 @@ module EsxCloud
     # @param [String] description
     # @param [String] state
     # @param [Array<String>] portgroups
-    def initialize(id, name, description, state, portgroups)
+    # @param [Boolean] is_default
+    def initialize(id, name, description, state, portgroups, is_default)
       @id = id
       @name = name
       @description = description
       @state = state
       @portgroups = portgroups
+      @is_default = is_default
     end
 
     def ==(other)
@@ -81,7 +83,8 @@ module EsxCloud
         @name == other.name &&
         @description == other.description &&
         @state == other.state &&
-        @portgroups == other.portgroups
+        @portgroups == other.portgroups &&
+        @is_default = other.is_default
     end
 
   end
