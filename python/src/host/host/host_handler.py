@@ -364,7 +364,7 @@ class HostHandler(Host.Iface):
                 # Check if this esx has that network.
                 if (nic_spec.network_name and nic_spec.network_name not in networks):
                     self._logger.info("Unknown a non provisioned network %s" % nic_spec.network_name)
-                self.hypervisor.vm_manager.add_nic(spec, nic_spec.network_name)
+                spec.add_nic(nic_spec.network_name)
         elif len(vm.networks) != 0 and networks:
             placement_networks = set(vm.networks)
             host_networks = set(networks)
