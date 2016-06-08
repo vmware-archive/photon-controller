@@ -139,7 +139,7 @@ class DiskPlaceEngine(object):
     """
 
     @abc.abstractmethod
-    def place(self, disks_placement):
+    def place(self, disks_placement, constraints):
         """
         :rtype PlaceResult: Result of place
         """
@@ -172,14 +172,12 @@ class BaseDiskPlacementEngine(DiskPlaceEngine):
                            (datastores, self._option.image_datastores))
         return datastores
 
-    def get_datastore_constraint(self, disk):
+    def get_datastore_constraint(self, constraints):
         """Place a disk in datastore based on the datastore constraints
         specified in disk.
         :return: datastore
         :raise ConflictedConstraintException when constraints conflicts
         """
-        constraints = disk.constraints
-
         # Get all datastores that meet ResourceConstraintType.DATASTORE
 
         # Temporary change to allow datastore names to be passed in.
@@ -238,7 +236,7 @@ class OptimalPlaceEngine(BaseDiskPlacementEngine):
         super(OptimalPlaceEngine, self).__init__(datastore_manager, option)
 
     @log_duration
-    def place(self, disks_placement):
+    def place(self, disks_placement, constraints):
         disks_total_size = self.disk_util.disks_capacity_gb(
             disks_placement.disks)
 
@@ -273,7 +271,7 @@ class BestEffortPlaceEngine(BaseDiskPlacementEngine):
     def __init__(self, datastore_manager, option):
         super(BestEffortPlaceEngine, self).__init__(datastore_manager, option)
 
-    def place(self, disks_placement):
+    def place(self, disks_placement, constraints):
         disks_placement = copy.deepcopy(disks_placement)
         selector = disks_placement.selector
 
@@ -306,23 +304,21 @@ class ConstraintDiskPlaceEngine(BaseDiskPlacementEngine):
     """Place disks with constraints
     """
     def __init__(self, datastore_manager, option):
-        super(ConstraintDiskPlaceEngine, self).__init__(datastore_manager,
-                                                        option)
+        super(ConstraintDiskPlaceEngine, self).__init__(datastore_manager, option)
 
-    def place(self, disks_placement):
+    def place(self, disks_placement, constraints):
         disks_placement = copy.deepcopy(disks_placement)
 
         unplaced_disks = []
         for disk in disks_placement.disks:
-            if not disk.constraints:
+            if not constraints:
                 unplaced_disks.append(disk)
                 continue
 
             try:
-                datastore_id = self.get_datastore_constraint(disk)
+                datastore_id = self.get_datastore_constraint(constraints)
             except DatastoreNotFoundException:
-                self._logger.warning(
-                    "Data store constraint failed: %s" % disk)
+                self._logger.warning("Data store constraint failed: %s" % disk)
                 return DiskPlaceResult(PlaceResultCode.NO_SUCH_RESOURCE)
             except ConflictedConstraintException:
                 self._logger.info("Conflicted constraints", exc_info=True)
@@ -331,28 +327,21 @@ class ConstraintDiskPlaceEngine(BaseDiskPlacementEngine):
             # if the datastore_id is not visible by this host throw an
             # exception
             if datastore_id not in self.placeable_datastores():
-                self._logger.warning(
-                    "Data store constraint failed: %s" %
-                    datastore_id)
+                self._logger.warning("Data store constraint failed: %s" % datastore_id)
                 return DiskPlaceResult(PlaceResultCode.NO_SUCH_RESOURCE)
 
             disk_capacity_gb = self.disk_util.disk_capacity(disk)
             try:
-                disks_placement.selector.consume_datastore_space(
-                    datastore_id, disk_capacity_gb)
+                disks_placement.selector.consume_datastore_space(datastore_id, disk_capacity_gb)
             except NotEnoughSpaceException:
-                return DiskPlaceResult(
-                    PlaceResultCode.NOT_ENOUGH_DATASTORE_CAPACITY)
+                return DiskPlaceResult(PlaceResultCode.NOT_ENOUGH_DATASTORE_CAPACITY)
 
             # Append in placement list
             disks_placement.placement_list.append(
-                AgentResourcePlacement(AgentResourcePlacement.DISK,
-                                       disk.id,
-                                       datastore_id))
+                AgentResourcePlacement(AgentResourcePlacement.DISK, disk.id, datastore_id))
 
         disks_placement.disks = unplaced_disks
-        return DiskPlaceResult(result=PlaceResultCode.OK,
-                               disks_placement=disks_placement)
+        return DiskPlaceResult(result=PlaceResultCode.OK, disks_placement=disks_placement)
 
 
 class DiskUtil(object):
