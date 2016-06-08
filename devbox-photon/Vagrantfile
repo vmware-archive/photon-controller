@@ -13,6 +13,7 @@
 # specific language governing permissions and limitations under the License.
 
 Vagrant.configure("2") do |config|
+
   # ================ VARIABLES ================
   ESXCLOUD_DIR="/var/esxcloud"
   DATASTORE_DIR="/tmp/devbox_datastore"
@@ -61,8 +62,7 @@ Vagrant.configure("2") do |config|
     photon.vm.guest = :photon
     photon.vm.box = ENV['DEVBOX_NAME'] || "photon-devbox-60"
     photon.vm.box_url = ENV['DEVBOX_URL'] ||
-      "https://bintray.com/artifact/download/photon-controller/public/60/photon-devbox.box"
-
+        "https://bintray.com/artifact/download/photon-controller/public/60/photon-devbox.box"
     unless ENV["NO_PORT_FORWARDING"]
       # Load Balancer
       photon.vm.network :forwarded_port, guest: 8080, host: 9180,
@@ -84,12 +84,28 @@ Vagrant.configure("2") do |config|
       # Deployer
       photon.vm.network :forwarded_port, guest: 18000, host: 9088,
         auto_correct: true
-      photon.vm.network :forwarded_port, guest: 18001, host: 9089,
-        auto_correct: true
       # Load Balancer
       photon.vm.network :forwarded_port, guest: 443, host: 9089,
         auto_correct: true
       photon.vm.network :forwarded_port, guest: 28080, host: 9090,
+          auto_correct: true
+
+      #Lightwave
+      photon.vm.network :forwarded_port, guest: 22, host: 9022,
+          auto_correct: true
+      photon.vm.network :forwarded_port, guest: 53, host: 9053,
+          auto_correct: true
+      photon.vm.network :forwarded_port, guest: 88, host: 9188,
+          auto_correct: true
+      photon.vm.network :forwarded_port, guest: 389, host: 9389,
+          auto_correct: true
+      photon.vm.network :forwarded_port, guest: 636, host: 9636,
+          auto_correct: true
+      photon.vm.network :forwarded_port, guest: 2012, host: 2012,
+          auto_correct: true
+      photon.vm.network :forwarded_port, guest: 2014, host: 2014,
+          auto_correct: true
+      photon.vm.network :forwarded_port, guest: 2020, host: 2020,
           auto_correct: true
 
       # Graphite web interface port
@@ -106,6 +122,11 @@ Vagrant.configure("2") do |config|
   if ENV["NO_RESTART_ALWAYS"]
     restart_always = ""
   end
+
+  # config.vm.provision :shell, :privileged => false, :inline => <<-EOS
+  #   set -xe
+  #   ln -s /opt/VBoxGuestAdditions-5.0.20/lib/VBoxGuestAdditions /usr/lib/VBoxGuestAdditions
+  # EOS
 
   config.vm.provision :shell, :privileged => false, :inline => <<-EOS
     set -xe
@@ -473,6 +494,7 @@ chmod +x $out
   config.vm.provision :shell, :privileged => false, :inline => <<-EOS
     set -ex
     mkdir -p /vagrant/log/zookeeper
+    mkdir -p /vagrant/log/lightwave
     mkdir -p /vagrant/log/haproxy
   EOS
 
@@ -588,6 +610,37 @@ cat >> $out <<-EOM
 EOM
 chmod +x $out
   EOS
+
+
+  #
+  # Generate Lightwave container start script
+  #
+  lightwave_config_file="/devbox_data/java/containers/lightwave/config/lightwave_test.json"
+  config.vm.provision :shell, :privileged => false, :inline => <<-EOS
+out="#{SCRIPT_DIR}/start-lightwave"
+cat > $out <<-'EOM'
+  #!/bin/bash
+  config_build_dir="/devbox_data/java/containers/lightwave/build/config"
+  mkdir -p $config_build_dir
+  combined_params=$(jq -s '.[0] * (.[1]#{CONFIG_JQ_FILTER})' #{dynamic_params_file} #{lightwave_config_file})
+
+  cd $(dirname #{lightwave_config_file})
+  for file in ./*.#{CONFIG_EXTS}
+  do
+    if [ -f $file ]; then
+      mustache - $file <<< "$combined_params" > "$config_build_dir/$file"
+    fi
+  done
+EOM
+cat >> $out <<-EOM
+  $(gen-docker-stop #{lightwave_config_file}) &> /dev/null || true
+  $(gen-docker-rm #{lightwave_config_file}) &> /dev/null || true
+  $(gen-docker-run #{lightwave_config_file} /usr/sbin/init)
+  echo "Start lightwave"
+EOM
+chmod +x $out
+  EOS
+
 
   #
   # Set up Graphite container for integration tests
