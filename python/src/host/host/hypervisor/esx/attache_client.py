@@ -206,6 +206,7 @@ class AttacheClient(HostClient):
     @attache_error_handler
     def attach_iso(self, vm_id, iso_file):
         self._client.AttachIso(self._session, vm_id, iso_file)
+        return True
 
     @attache_error_handler
     def detach_iso(self, vm_id):
@@ -266,7 +267,7 @@ class AttacheClient(HostClient):
 
     @attache_error_handler
     def delete_disk(self, path):
-        self._client.MoveDisk(self._session, os_to_datastore_path(path))
+        self._client.DeleteDisk(self._session, os_to_datastore_path(path))
 
     @attache_error_handler
     def set_disk_uuid(self, path, uuid):
@@ -380,7 +381,7 @@ class AttacheVmConfigSpec(VmConfigSpec):
 
     @attache_error_handler
     def add_nic(self, network):
-        self._client.AddNicToVMSpec(self._spec, network)
+        self._client.AddNicToVMSpec(self._spec, str(network))
 
     @attache_error_handler
     def set_extra_config(self, options):
@@ -394,7 +395,7 @@ class AttacheVmConfigSpec(VmConfigSpec):
 class SyncAttacheCacheThread(threading.Thread):
     """ Periodically sync vm cache with remote esx server
     """
-    def __init__(self, attache_client, min_interval=1):
+    def __init__(self, attache_client, min_interval=20):
         super(SyncAttacheCacheThread, self).__init__()
         self._logger = logging.getLogger(__name__)
         self.setDaemon(True)
