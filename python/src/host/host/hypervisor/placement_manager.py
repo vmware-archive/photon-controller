@@ -115,12 +115,9 @@ class PlacementManager(object):
         self._image_manager = hypervisor.image_manager
         self._datastore_manager = hypervisor.datastore_manager
         self._system = hypervisor.system
-        self._optimal_placement = OptimalPlaceEngine(
-            self._datastore_manager, option)
-        self._best_effort_placement = BestEffortPlaceEngine(
-            self._datastore_manager, option)
-        self._constrainted_placement = ConstraintDiskPlaceEngine(
-            self._datastore_manager, option)
+        self._optimal_placement = OptimalPlaceEngine(self._datastore_manager, option)
+        self._best_effort_placement = BestEffortPlaceEngine(self._datastore_manager, option)
+        self._constrainted_placement = ConstraintDiskPlaceEngine(self._datastore_manager, option)
 
     def reserve(self, vm, disks):
         """Reserve room for specified resources.
@@ -176,13 +173,15 @@ class PlacementManager(object):
 
         """Check if there are datastores for placing vm or disks """
         if len(self._placeable_datastores()) == 0:
-            raise NoSuchResourceException(ResourceType.DATASTORE,
-                                          "No placeable datastores.")
+            raise NoSuchResourceException(ResourceType.DATASTORE, "No placeable datastores.")
 
         if vm:
             return self._place_vm(vm)
         elif disks:
-            return self._place_disks(disks)
+            # API-FE only place one disk per request. We should modify thrift Resource.disks to singular.
+            if len(disks) != 1:
+                raise NoSuchResourceException(ResourceType.DISK, "Only one disk allowed in disk place request.")
+            return self._place_disk(disks[0])
 
     def _extract_resource_constraints(self, constraints, resource_types):
         """ Extract ResourceConstraint with same resource_type
@@ -222,8 +221,7 @@ class PlacementManager(object):
             :raise: NoSuchResourceException
             """
             def prepare_exception(resource_type):
-                resource_type_str = \
-                    ResourceConstraintType._VALUES_TO_NAMES[resource_type]
+                resource_type_str = ResourceConstraintType._VALUES_TO_NAMES[resource_type]
                 return NoSuchResourceException(
                     resource_type_str,
                     "Host has no {0} resource.".format(resource_type_str))
@@ -255,11 +253,9 @@ class PlacementManager(object):
         return matched_resource
 
     def _place_vm(self, vm):
-        utilization_score, placement_list = \
-            self._compute_vm_utilization_score(vm)
+        utilization_score, placement_list = self._compute_vm_utilization_score(vm)
         transfer_score = self._transfer_score(vm, placement_list)
-        placement_score = AgentPlacementScore(utilization_score,
-                                              transfer_score)
+        placement_score = AgentPlacementScore(utilization_score, transfer_score)
 
         resource_placement_list = self._pick_available_resources(vm)
         placement_list.extend(resource_placement_list)
@@ -268,12 +264,10 @@ class PlacementManager(object):
 
         return placement_score, placement_list
 
-    def _place_disks(self, disks):
-        utilization_score, placement_list = \
-            self._compute_disks_utilization_score(disks)
+    def _place_disk(self, disk):
+        utilization_score, placement_list = self._compute_disk_utilization_score(disk)
         transfer_score = self._score(0, False, ResourceType.TRANSFER)
-        placement_score = AgentPlacementScore(utilization_score,
-                                              transfer_score)
+        placement_score = AgentPlacementScore(utilization_score, transfer_score)
         self._logger.debug("placement score: %s" % placement_score)
         return placement_score, placement_list
 
@@ -393,8 +387,7 @@ class PlacementManager(object):
     def _compute_vm_utilization_score(self, vm):
         memory_score = self._compute_memory_score(vm)
         cpu_score = self._compute_cpu_score(vm)
-        storage_score, placement_list = \
-            self._compute_storage_score(vm.disks)
+        storage_score, placement_list = self._compute_storage_score(vm.disks, vm.resource_constraints)
 
         # If vm is not None, need to put vm placement in placement list
         if vm:
@@ -412,21 +405,18 @@ class PlacementManager(object):
         return min(memory_score, cpu_score, storage_score), placement_list
 
     """
-    Compute utilization score when creating
-    independent disks (outside a vm creation call)
+    Compute utilization score when creating independent disks (outside a vm creation call)
     """
-    def _compute_disks_utilization_score(self, disks):
-        return self._compute_storage_score(disks)
+    def _compute_disk_utilization_score(self, disk):
+        return self._compute_storage_score([disk], disk.constraints)
 
     """
-    This method computes the memory score for this
-    host. Used during VM creation.
+    This method computes the memory score for this host. Used during VM creation.
     """
     @log_duration
     def _compute_memory_score(self, vm):
         total_memory = self._system.total_vmusable_memory_mb()
-        total_overcommited_memory = total_memory * \
-            self._option.memory_overcommit
+        total_overcommited_memory = total_memory * self._option.memory_overcommit
         consumed_memory = self._system.host_consumed_memory_mb()
 
         try:
@@ -439,8 +429,7 @@ class PlacementManager(object):
         self._logger.debug("memory: %d, used_memory: %d, "
                            "total_overcommited_memory: %d" %
                            (memory, used_memory, total_overcommited_memory))
-        score = self._score((float(used_memory) + memory) /
-                            total_overcommited_memory,
+        score = self._score((float(used_memory) + memory) / total_overcommited_memory,
                             True, ResourceType.MEMORY)
 
         if consumed_memory:
@@ -465,10 +454,8 @@ class PlacementManager(object):
         return score
 
     """
-    This method computes the CPU score for this
-    host. The score is calculated by considering
-    total available number of pCpus*overcommit
-    and the total number of vCpus across all VMs on the
+    This method computes the CPU score for this host. The score is calculated by considering
+    total available number of pCpus*overcommit and the total number of vCpus across all VMs on the
     host and finding their ratio.
     """
     @log_duration
@@ -486,22 +473,17 @@ class PlacementManager(object):
 
         configured_cpu += self._cpu_reserved()
         cpu = self._vm_cpu_count(vm)
-        score = self._score((float(configured_cpu) + cpu) /
-                            total_cpu_count, True, ResourceType.CPU)
+        score = self._score((float(configured_cpu) + cpu) / total_cpu_count, True, ResourceType.CPU)
         return score
 
     """
-    The method computes the storage score for this
-    host. The score is based on the ratio of two sums:
-    used and total. The sums are computed over all the
-    datastores available on the host.
-    If an image id is requested the code checks if there
-    is a copy of that image on at least one of the datastores
-    connected to the host. If there is none, the score
-    is drastically reduced.
+    The method computes the storage score for this host. The score is based on the ratio of two sums:
+    used and total. The sums are computed over all the datastores available on the host.
+    If an image id is requested the code checks if there is a copy of that image on at least one of the datastores
+    connected to the host. If there is none, the score is drastically reduced.
     """
 
-    def _compute_storage_score(self, disks):
+    def _compute_storage_score(self, disks, constraints):
         best_effort = False
 
         if not disks:
@@ -512,29 +494,23 @@ class PlacementManager(object):
 
         disks_placement = DisksPlacement(disks, selector)
         # Place constraint disks first
-        place_result = self._constrainted_placement.place(disks_placement)
+        place_result = self._constrainted_placement.place(disks_placement, constraints)
         if place_result.result == PlaceResultCode.NO_SUCH_RESOURCE:
-            raise NoSuchResourceException(
-                ResourceType.DISK,
-                "Disk placement failed.")
-        elif place_result.result == \
-                PlaceResultCode.NOT_ENOUGH_DATASTORE_CAPACITY:
+            raise NoSuchResourceException(ResourceType.DISK, "Disk placement failed.")
+        elif place_result.result == PlaceResultCode.NOT_ENOUGH_DATASTORE_CAPACITY:
             raise NotEnoughDatastoreCapacityException()
 
         # Try optimal for unconstrainted disks first
         place_result = self._optimal_placement.place(
-            place_result.disks_placement)
+            place_result.disks_placement, constraints)
 
-        if place_result.result == \
-                PlaceResultCode.NOT_ENOUGH_DATASTORE_CAPACITY:
+        if place_result.result == PlaceResultCode.NOT_ENOUGH_DATASTORE_CAPACITY:
             # If it doesn't work then try best effort
-            place_result = self._best_effort_placement.place(
-                place_result.disks_placement)
+            place_result = self._best_effort_placement.place(place_result.disks_placement, constraints)
             best_effort = True
 
         # Still NOT_ENOUGH_SYSTEM_RESOURCE then have to give up.
-        if place_result.result == \
-                PlaceResultCode.NOT_ENOUGH_DATASTORE_CAPACITY:
+        if place_result.result == PlaceResultCode.NOT_ENOUGH_DATASTORE_CAPACITY:
             raise NotEnoughDatastoreCapacityException()
 
         # Congrat! Successful placement.
@@ -612,8 +588,7 @@ class PlacementManager(object):
         free = 0
         optimal = None
         for datastore_id in self._placeable_datastores():
-            datastore_info = \
-                self._datastore_manager.datastore_info(datastore_id)
+            datastore_info = self._datastore_manager.datastore_info(datastore_id)
             if datastore_info.total - datastore_info.used > free:
                 optimal = datastore_id
         return optimal
