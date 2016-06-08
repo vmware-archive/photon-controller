@@ -1,7 +1,7 @@
 #!/bin/bash -xe
 # Run all start service scripts
 start-zookeeper
-start-haproxy
+start-lightwave
 start-photon-controller-core
 start-deployer
 start-management-api

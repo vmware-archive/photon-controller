@@ -19,6 +19,7 @@ export NO_RESTART_ALWAYS=1
 
 vagrant ssh -c "docker tag photon/zookeeper esxcloud/zookeeper"
 vagrant ssh -c "docker tag photon/haproxy esxcloud/haproxy"
+vagrant ssh -c "docker tag vmware/lightwave-sts esxcloud/lightwave"
 vagrant ssh -c "docker tag photon/deployer esxcloud/deployer"
 vagrant ssh -c "docker tag photon/photon-controller-core esxcloud/photon-controller-core"
 vagrant ssh -c "docker tag photon/management-api esxcloud/management-api"
