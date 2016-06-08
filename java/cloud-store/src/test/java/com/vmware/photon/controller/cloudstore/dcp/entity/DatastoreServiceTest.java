@@ -13,7 +13,6 @@
 
 package com.vmware.photon.controller.cloudstore.dcp.entity;
 
-import com.vmware.photon.controller.api.DatastoreState;
 import com.vmware.photon.controller.cloudstore.dcp.helpers.TestHelper;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.common.xenon.BasicServiceHost;
@@ -33,8 +32,6 @@ import static org.hamcrest.Matchers.is;
 
 import java.lang.reflect.Field;
 import java.net.InetSocketAddress;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -79,20 +76,6 @@ public class DatastoreServiceTest {
     assertThat(actual.name, is(expected.name));
     assertThat(actual.type, is(expected.type));
     assertThat(actual.tags, is(expected.tags));
-    assertThat(actual.state, is(DatastoreState.ACTIVE));
-  }
-
-  private void verifyDatastoreCreatedByHost(DatastoreService.State actual, DatastoreService.State expected) {
-    assertThat(actual.id, is(expected.id));
-    assertThat(actual.name, is(expected.name));
-    assertThat(actual.type, is(expected.type));
-    assertThat(actual.tags, is(expected.tags));
-    assertThat(actual.state, is(expected.state));
-    assertThat(actual.referenceList, is(expected.referenceList));
-  }
-
-  private URI getHostUri(String hostId) throws URISyntaxException {
-    return new URI(host.getUri().toString() + HostServiceFactory.SELF_LINK + "/" + hostId);
   }
 
   /**
@@ -159,28 +142,6 @@ public class DatastoreServiceTest {
       DatastoreService.State savedState = host.getServiceState(DatastoreService.State.class,
           createdState.documentSelfLink);
       verifyDatastore(savedState, testState);
-    }
-
-    /**
-     * Test that the service starts correctly with a valid state.
-     */
-    @Test
-    public void testStartStateFromHost() throws Throwable {
-      // Create a document and verify the result.
-      // Create a document.
-      host.startServiceSynchronously(new DatastoreServiceFactory(), null);
-      Operation result = dcpRestClient.post(false, DatastoreServiceFactory.SELF_LINK, testState, getHostUri("id"));
-      assertThat(result.getStatusCode(), is(200));
-      DatastoreService.State createdState = result.getBody(DatastoreService.State.class);
-      testState.state = DatastoreState.ACTIVE;
-      testState.referenceList = new HashSet<>();
-      testState.referenceList.add("id");
-      verifyDatastoreCreatedByHost(createdState, testState);
-
-      // Get the created document and verify the result again.
-      DatastoreService.State savedState = host.getServiceState(DatastoreService.State.class,
-          createdState.documentSelfLink);
-      verifyDatastoreCreatedByHost(savedState, testState);
     }
 
     /**
@@ -256,71 +217,6 @@ public class DatastoreServiceTest {
       // Get the created document and verify the result again.
       savedState = host.getServiceState(DatastoreService.State.class, createdState.documentSelfLink);
       verifyDatastore(savedState, newState);
-    }
-
-    @Test
-    public void testDatastoreUpdatesFromHost() throws Throwable {
-      // Create a datastore document for the first time and make sure that the datastore is marked as active and that
-      // the host id is present in the reference list.
-      host.startServiceSynchronously(new DatastoreServiceFactory(), null);
-      Operation result = dcpRestClient.post(false, DatastoreServiceFactory.SELF_LINK, testState, getHostUri("id"));
-      assertThat(result.getStatusCode(), is(200));
-      DatastoreService.State createdState = result.getBody(DatastoreService.State.class);
-      testState.state = DatastoreState.ACTIVE;
-      testState.referenceList = new HashSet<>();
-      testState.referenceList.add("id");
-      verifyDatastoreCreatedByHost(createdState, testState);
-
-      // Get the created document and verify the result again.
-      DatastoreService.State savedState = host.getServiceState(DatastoreService.State.class,
-          createdState.documentSelfLink);
-      verifyDatastoreCreatedByHost(savedState, testState);
-
-      // Post the document again from a different host referrer and verify that the document gets converted to a PUT
-      // and that new host id gets added to the reference list and the datastore state is still active.
-      Operation putOperation = dcpRestClient.post(false, DatastoreServiceFactory.SELF_LINK, createdState, getHostUri
-          ("id1"));
-      assertThat(putOperation.getStatusCode(), is(200));
-
-      // Get the created document and verify the result again.
-      savedState = host.getServiceState(DatastoreService.State.class, createdState.documentSelfLink);
-      testState.referenceList.add("id1");
-      verifyDatastoreCreatedByHost(savedState, testState);
-
-      // Patch the datastore document to missing state from one host id and make sure that the host id gets removed
-      // from the reference list but the datastore state is still active.
-      DatastoreService.State newState = new DatastoreService.State();
-      newState.state = DatastoreState.MISSING;
-      Operation patchOperation = dcpRestClient.patch(createdState.documentSelfLink, newState, getHostUri("id1"));
-      assertThat(patchOperation.getStatusCode(), is(200));
-
-      // Get the created document and verify the result again.
-      savedState = host.getServiceState(DatastoreService.State.class, createdState.documentSelfLink);
-      testState.referenceList.remove("id1");
-      verifyDatastoreCreatedByHost(savedState, testState);
-
-      // Patch the datastore document again to missing state from the other host id and make sure that all the host
-      // ids get removed from the reference list and the datastore state is marked as missing.
-      patchOperation = dcpRestClient.patch(createdState.documentSelfLink, newState, getHostUri("id"));
-      assertThat(patchOperation.getStatusCode(), is(200));
-
-      // Get the created document and verify the result again.
-      savedState = host.getServiceState(DatastoreService.State.class, createdState.documentSelfLink);
-      testState.referenceList.remove("id");
-      testState.state = DatastoreState.MISSING;
-      verifyDatastoreCreatedByHost(savedState, testState);
-
-      // Post the document again with one of the host ids to make sure that the datastore marked with missing state
-      // now becomes active and the host gets added to the reference list.
-      putOperation = dcpRestClient.post(false, DatastoreServiceFactory.SELF_LINK, createdState, getHostUri
-          ("id"));
-      assertThat(putOperation.getStatusCode(), is(200));
-
-      // Get the created document and verify the result again.
-      savedState = host.getServiceState(DatastoreService.State.class, createdState.documentSelfLink);
-      testState.referenceList.add("id");
-      testState.state = DatastoreState.ACTIVE;
-      verifyDatastoreCreatedByHost(savedState, testState);
     }
   }
 
@@ -639,4 +535,5 @@ public class DatastoreServiceTest {
           ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_ON_DELETE_DOC_EXPIRATION_TIME_MICROS));
     }
   }
+
 }

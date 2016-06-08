@@ -40,7 +40,7 @@ public interface XenonClient {
   Operation post(String serviceSelfLink, ServiceDocument body)
       throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException;
 
-  Operation post(Boolean forceIndexUpdate, String serviceSelfLink, ServiceDocument body, URI referrerURI)
+  Operation post(Boolean forceIndexUpdate, String serviceSelfLink, ServiceDocument body)
       throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException;
 
   Operation put(String serviceSelfLink, ServiceDocument body)
@@ -62,9 +62,6 @@ public interface XenonClient {
       throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException;
 
   Operation patch(String serviceSelfLink, ServiceDocument body)
-      throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException;
-
-  Operation patch(String serviceSelfLink, ServiceDocument body, URI referrerURI)
       throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException;
 
   Operation query(QueryTask.QuerySpecification spec, boolean isDirect)

@@ -423,7 +423,6 @@ public class HostService extends StatefulService {
           Operation post = Operation
               .createPost(UriUtils.buildUri(getHost(), DatastoreServiceFactory.SELF_LINK))
               .setBody(datastoreState)
-              .setReferer(this.getUri())
               .setCompletion((op, ex) -> {
                 if (ex != null) {
                   ServiceUtils.logWarning(this, "Set datastore state failed " + ex.getMessage());

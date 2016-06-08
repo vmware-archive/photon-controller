@@ -1260,7 +1260,7 @@ public class DeploymentDcpBackendTest {
       state.imageId = "imageId";
       state.documentSelfLink = ClusterType.KUBERNETES.toString().toLowerCase();
 
-      dcpClient.post(true, ClusterConfigurationServiceFactory.SELF_LINK, state, null);
+      dcpClient.post(true, ClusterConfigurationServiceFactory.SELF_LINK, state);
 
       TaskEntity taskEntity = deploymentBackend.deleteClusterConfiguration(ClusterType.KUBERNETES);
       assertThat(taskEntity.getState(), is(TaskEntity.State.COMPLETED));
