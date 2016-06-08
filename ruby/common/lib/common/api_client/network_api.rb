@@ -72,6 +72,16 @@ module EsxCloud
         find_network_by_id(task.entity_id)
       end
 
+      # @param [String] id
+      # @return [Boolean]
+      def set_default(id)
+        response = @http_client.post("#{NETWORKS_ROOT}/#{id}/set_default")
+        check_response("Set Default Network #{id}", response, 201)
+
+        poll_response(response)
+        true
+      end
+
     end
   end
 end
