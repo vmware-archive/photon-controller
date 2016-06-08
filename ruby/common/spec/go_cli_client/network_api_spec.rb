@@ -55,6 +55,11 @@ describe EsxCloud::GoCliClient do
     expect(client.set_portgroups(network_id, portgroups)).to eq network
   end
 
+  it "sets default network" do
+    expect(@api_client).to receive(:run_cli).with("network setDefault 'network-id'")
+    expect(client.set_default("network-id")).to be_true
+  end
+
   it "finds network by id" do
     network_id = double("n1", id: network_id)
     network_hash ={"id" => network_id,
