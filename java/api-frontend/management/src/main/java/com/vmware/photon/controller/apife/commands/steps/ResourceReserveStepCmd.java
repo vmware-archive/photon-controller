@@ -209,6 +209,7 @@ public class ResourceReserveStepCmd extends StepCommand {
   private Resource createResource(VmEntity entity) throws ExternalException, InternalException,
       ResourceConstraintException {
     List<Disk> attachedDisks = new ArrayList<>();
+    com.vmware.photon.controller.resource.gen.Vm vm = new com.vmware.photon.controller.resource.gen.Vm();
 
     List<ResourceConstraint> dataStoreResourceConstraintList = getDatastoreAffinityConstraintsFromVm(entity);
 
@@ -230,20 +231,25 @@ public class ResourceReserveStepCmd extends StepCommand {
       List<ResourceConstraint> datastoreTagConstraints = createDatastoreTagConstraint(disk.getFlavor_info());
       if (datastoreTagConstraints != null && !datastoreTagConstraints.isEmpty()) {
         for (ResourceConstraint resourceConstraint : datastoreTagConstraints) {
-          disk.addToResource_constraints(resourceConstraint);
+          if (persistent) {
+            disk.addToResource_constraints(resourceConstraint);
+          } else {
+            vm.addToResource_constraints(resourceConstraint);
+          }
         }
       }
 
       if (dataStoreResourceConstraintList != null && !dataStoreResourceConstraintList.isEmpty()) {
         for (ResourceConstraint resourceConstraint : dataStoreResourceConstraintList) {
-          disk.addToResource_constraints(resourceConstraint);
+          if (persistent) {
+            disk.addToResource_constraints(resourceConstraint);
+          }
         }
       }
 
       attachedDisks.add(disk);
     }
 
-    com.vmware.photon.controller.resource.gen.Vm vm = new com.vmware.photon.controller.resource.gen.Vm();
     FlavorEntity flavorEntity = flavorBackend.getEntityById(entity.getFlavorId());
     vm.setFlavor(flavorEntity.getName());
 

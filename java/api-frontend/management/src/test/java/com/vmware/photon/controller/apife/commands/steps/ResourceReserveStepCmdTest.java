@@ -382,15 +382,15 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
 
     verify(schedulerXenonRestClient).post(any(), placementTaskCaptor.capture());
     Resource resource = placementTaskCaptor.getValue().resource;
-    assertThat(resource.getVm().isSetResource_constraints(), is(false));
+    assertThat(resource.getVm().isSetResource_constraints(), is(true));
+    assertThat(resource.getVm().getResource_constraints().size(), is(1));
+    assertThat(resource.getVm().getResource_constraints().get(0).getType(), is(ResourceConstraintType.DATASTORE_TAG));
+    assertThat(resource.getVm().getResource_constraints().get(0).getValues().equals(ImmutableList.of("SHARED_VMFS")),
+        is(true));
     assertThat(resource.getVm().getDisks().size(), is(vm.getAttachedDisks().size()));
     assertThat(resource.getVm().getDisks().get(0).getId(), is("disk1"));
     assertThat(resource.getVm().getDisks().get(0).getFlavor_info(), is(expectedDiskFlavor));
-    assertThat(resource.getVm().getDisks().get(0).getResource_constraints().size(), is(1));
-    assertThat(resource.getVm().getDisks().get(0).getResource_constraints().get(0).getType(), is(ResourceConstraintType
-        .DATASTORE_TAG));
-    assertThat(resource.getVm().getDisks().get(0).getResource_constraints().get(0).getValues().equals(ImmutableList.of
-        ("SHARED_VMFS")), is(true));
+    assertThat(resource.getVm().getDisks().get(0).isSetResource_constraints(), is(false));
 
     assertThat(resource.getPlacement_list().getPlacements().size(), is(1 + vm.getAttachedDisks().size()));
     assertThat(resource.getPlacement_list().getPlacements().get(0).getType(), is(ResourcePlacementType.VM));
@@ -440,15 +440,14 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
     assertThat(resource.getVm().getDisks().size(), is(vm.getAttachedDisks().size()));
     assertThat(resource.getVm().getDisks().get(0).getId(), is("disk1"));
     assertThat(resource.getVm().getDisks().get(0).getFlavor_info(), is(expectedDiskFlavor));
-    assertThat(resource.getVm().getDisks().get(0).getResource_constraints().size(), is(2));
-    assertThat(resource.getVm().getDisks().get(0).getResource_constraints().get(0).getType(), is(ResourceConstraintType
-        .DATASTORE_TAG));
-    assertThat(resource.getVm().getDisks().get(0).getResource_constraints().get(0).getValues().equals(ImmutableList.of
-        ("SHARED_VMFS")), is(true));
-    assertThat(resource.getVm().getDisks().get(0).getResource_constraints().get(1).getType(), is(ResourceConstraintType
-        .DATASTORE));
-    assertThat(resource.getVm().getDisks().get(0).getResource_constraints().get(1).getValues().equals(ImmutableList.of
-        ("datastore-id")), is(true));
+    assertThat(resource.getVm().getDisks().get(0).isSetResource_constraints(), is(false));
+    assertThat(resource.getVm().getResource_constraintsSize(), is(2));
+    assertThat(resource.getVm().getResource_constraints().get(0).getType(), is(ResourceConstraintType.DATASTORE_TAG));
+    assertThat(resource.getVm().getResource_constraints().get(0).getValues().equals(ImmutableList.of("SHARED_VMFS")),
+        is(true));
+    assertThat(resource.getVm().getResource_constraints().get(1).getType(), is(ResourceConstraintType.DATASTORE));
+    assertThat(resource.getVm().getResource_constraints().get(1).getValues().equals(ImmutableList.of("datastore-id")),
+        is(true));
 
     assertThat(resource.getPlacement_list().getPlacements().size(), is(1 + vm.getAttachedDisks().size()));
     assertThat(resource.getPlacement_list().getPlacements().get(0).getType(), is(ResourcePlacementType.VM));
