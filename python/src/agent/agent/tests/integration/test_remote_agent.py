@@ -125,9 +125,7 @@ class TestRemoteAgent(unittest.TestCase, AgentCommonTests):
 
     def client_connections(self):
         self.host_client = self.create_client()
-        self.control_client = self.connect_client("AgentControl",
-                                                  AgentControl.Client,
-                                                  self.server)
+        self.control_client = self.connect_client("AgentControl", AgentControl.Client, self.server)
 
     def provision_hosts(self, mem_overcommit=2.0,
                         vm_networks=None, datastores=None, used_for_vms=True,
@@ -188,8 +186,7 @@ class TestRemoteAgent(unittest.TestCase, AgentCommonTests):
             # Reconnect the clients
             self._close_agent_connections()
             self.client_connections()
-        self.fail("Cannot connect to agent %s after provisioning" %
-                  self.server)
+        self.fail("Cannot connect to agent %s after provisioning" % self.server)
         return host_id
 
     def setUp(self):
@@ -215,12 +212,10 @@ class TestRemoteAgent(unittest.TestCase, AgentCommonTests):
         self._remote_iso_file = None
         self._second_remote_iso_file = None
         if ("iso_file" in config["agent_remote_test"]):
-            self._remote_iso_file = \
-                config["agent_remote_test"]["iso_file"]
+            self._remote_iso_file = config["agent_remote_test"]["iso_file"]
 
         if ("second_iso_file" in config["agent_remote_test"]):
-            self._second_remote_iso_file = \
-                config["agent_remote_test"]["second_iso_file"]
+            self._second_remote_iso_file = config["agent_remote_test"]["second_iso_file"]
 
         server = config["agent_remote_test"]["server"]
         self.server = server
@@ -279,8 +274,7 @@ class TestRemoteAgent(unittest.TestCase, AgentCommonTests):
         response = rpc_call(self.host_client.get_resources, request)
         assert_that(response.result, is_(GetResourcesResultCode.OK))
         for resource in response.resources:
-            delete_request = Host.DeleteVmRequest(vm_id=resource.vm.id,
-                                                  force=True)
+            delete_request = Host.DeleteVmRequest(vm_id=resource.vm.id, force=True)
             response = rpc_call(self.host_client.delete_vm, delete_request)
 
             if response.result == DeleteVmResultCode.VM_NOT_POWERED_OFF:
@@ -292,8 +286,7 @@ class TestRemoteAgent(unittest.TestCase, AgentCommonTests):
                 response = rpc_call(self.host_client.delete_vm, delete_request)
 
             if response.result != DeleteVmResultCode.OK:
-                logger.info("Cannot delete vm %s trying vim_client"
-                            % resource.vm.id)
+                logger.info("Cannot delete vm %s trying vim_client" % resource.vm.id)
                 self.vim_delete_vm(resource.vm.id)
         self.clean_images()
 
@@ -705,8 +698,9 @@ class TestRemoteAgent(unittest.TestCase, AgentCommonTests):
                  capacity_gb=1, flavor_info=self.DEFAULT_DISK_FLAVOR)
         ]
 
-        reservation = vm_wrapper.place_and_reserve(disks=disks).reservation
-        vm_wrapper.create_disks(disks, reservation, validate=True)
+        for disk in disks:
+            reservation = vm_wrapper.place_and_reserve(disk=disk).reservation
+            vm_wrapper.create_disk(disk, reservation, validate=True)
 
         # attach disks
         disk_ids = [disk.id for disk in disks]
@@ -741,18 +735,15 @@ class TestRemoteAgent(unittest.TestCase, AgentCommonTests):
                  capacity_gb=1, flavor_info=self.DEFAULT_DISK_FLAVOR),
         ]
 
-        reservation = \
-            vm_wrapper.place_and_reserve(vm_disks=disks).reservation
+        reservation = vm_wrapper.place_and_reserve(vm_disks=disks).reservation
         request = vm_wrapper.create_request(res_id=reservation)
         vm_id = vm_wrapper.create(request=request).vm.id
 
         # create one persistent disk
-        disks = [
-            Disk(disk_id_persistent, self.DEFAULT_DISK_FLAVOR.name, True, True,
-                 capacity_gb=1, flavor_info=self.DEFAULT_DISK_FLAVOR),
-        ]
-        reservation = vm_wrapper.place_and_reserve(disks=disks).reservation
-        vm_wrapper.create_disks(disks, reservation, validate=True)
+        disk = Disk(disk_id_persistent, self.DEFAULT_DISK_FLAVOR.name, True, True,
+                    capacity_gb=1, flavor_info=self.DEFAULT_DISK_FLAVOR)
+        reservation = vm_wrapper.place_and_reserve(disk=disk).reservation
+        vm_wrapper.create_disk(disk, reservation, validate=True)
         vm_wrapper.attach_disks(vm_id, [disk_id_persistent])
 
         vim_vm = self.vim_client.get_vm(vm_id)
@@ -791,8 +782,7 @@ class TestRemoteAgent(unittest.TestCase, AgentCommonTests):
         ]
 
         # create disk
-        reservation = \
-            vm_wrapper.place_and_reserve(vm_disks=disks).reservation
+        reservation = vm_wrapper.place_and_reserve(vm_disks=disks).reservation
 
         # create vm without network info specified
         request = vm_wrapper.create_request(res_id=reservation)
@@ -809,8 +799,7 @@ class TestRemoteAgent(unittest.TestCase, AgentCommonTests):
         # Make client connections again
         self.client_connections()
         vm_wrapper = VmWrapper(self.host_client)
-        reservation = \
-            vm_wrapper.place_and_reserve(vm_disks=disks).reservation
+        reservation = vm_wrapper.place_and_reserve(vm_disks=disks).reservation
 
         request = vm_wrapper.create_request(res_id=reservation)
         vm_id = vm_wrapper.create(request=request).vm.id
@@ -892,30 +881,20 @@ class TestRemoteAgent(unittest.TestCase, AgentCommonTests):
             vm_wrapper = VmWrapper(self.host_client)
 
             # Test place disks with only datastore constraint
-            disk = Disk(new_id(), self.DEFAULT_DISK_FLAVOR.name, False, True,
-                        capacity_gb=0,
-                        resource_constraints=self._create_constraints(
-                            [datastore.id],
-                            []))
-            vm_wrapper.place(vm_disks=[disk])
+            disk = Disk(new_id(), self.DEFAULT_DISK_FLAVOR.name, False, True, capacity_gb=0)
+            resource_constraints = self._create_constraints([datastore.id], [])
+            vm_wrapper.place(vm_disks=[disk], vm_constraints=resource_constraints)
 
             # Test place disks with datastore and datastore tag constraint
-            disk = Disk(new_id(), self.DEFAULT_DISK_FLAVOR.name, False, True,
-                        capacity_gb=0,
-                        resource_constraints=self._create_constraints(
-                            [datastore.id],
-                            [tag]))
-            vm_wrapper.place(vm_disks=[disk], expect=PlaceResultCode.OK)
+            disk = Disk(new_id(), self.DEFAULT_DISK_FLAVOR.name, False, True, capacity_gb=0)
+            resource_constraints = self._create_constraints([datastore.id], [tag])
+            vm_wrapper.place(vm_disks=[disk], vm_constraints=resource_constraints, expect=PlaceResultCode.OK)
 
             # Test place disks with the wrong datastore tag
             for other_tag in self._other_tags(tag):
-                disk = Disk(
-                    new_id(), self.DEFAULT_DISK_FLAVOR.name, False, True,
-                    capacity_gb=0,
-                    resource_constraints=self._create_constraints(
-                        [datastore.id],
-                        [other_tag]))
-                vm_wrapper.place(vm_disks=[disk],
+                disk = Disk(new_id(), self.DEFAULT_DISK_FLAVOR.name, False, True, capacity_gb=0)
+                resource_constraints = self._create_constraints([datastore.id], [other_tag])
+                vm_wrapper.place(vm_disks=[disk], vm_constraints=resource_constraints,
                                  expect=PlaceResultCode.NO_SUCH_RESOURCE)
 
     def test_provision_without_datastores(self):
@@ -940,8 +919,7 @@ class TestRemoteAgent(unittest.TestCase, AgentCommonTests):
     def _gen_vd_spec(self):
         spec = vim.VirtualDiskManager.VirtualDiskSpec()
         spec.disk_type = str(vim.VirtualDiskManager.VirtualDiskType.thin)
-        spec.adapterType = \
-            str(vim.VirtualDiskManager.VirtualDiskAdapterType.lsiLogic)
+        spec.adapterType = str(vim.VirtualDiskManager.VirtualDiskAdapterType.lsiLogic)
         return spec
 
     def test_finalize_image(self):
@@ -1154,8 +1132,7 @@ class TestRemoteAgent(unittest.TestCase, AgentCommonTests):
             Disk(new_id(), self.DEFAULT_DISK_FLAVOR.name, True, True,
                  capacity_gb=2, flavor_info=self.DEFAULT_DISK_FLAVOR)
         ]
-        reservation = \
-            vm_wrapper.place_and_reserve(vm_disks=disks).reservation
+        reservation = vm_wrapper.place_and_reserve(vm_disks=disks).reservation
         request = vm_wrapper.create_request(res_id=reservation)
         vm_wrapper.create(request=request)
 
@@ -1215,8 +1192,7 @@ class TestRemoteAgent(unittest.TestCase, AgentCommonTests):
                  image=image,
                  capacity_gb=0, flavor_info=self.DEFAULT_DISK_FLAVOR),
         ]
-        reservation = \
-            vm_wrapper2.place_and_reserve(vm_disks=disks).reservation
+        reservation = vm_wrapper2.place_and_reserve(vm_disks=disks).reservation
         request = vm_wrapper2.create_request(res_id=reservation)
         vm_wrapper2.create(request=request)
         vm_wrapper2.power(Host.PowerVmOp.ON, Host.PowerVmOpResultCode.OK)
