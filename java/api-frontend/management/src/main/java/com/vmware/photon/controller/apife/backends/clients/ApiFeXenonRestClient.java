@@ -34,7 +34,6 @@ import com.google.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.URI;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeoutException;
@@ -56,14 +55,14 @@ public class ApiFeXenonRestClient extends XenonRestClient {
 
   @Override
   public Operation post(String serviceSelfLink, ServiceDocument body) {
-      return this.post(false, serviceSelfLink, body, null);
+      return this.post(false, serviceSelfLink, body);
   }
 
   @Override
-  public Operation post(Boolean forceIndexUpdate, String serviceSelfLink, ServiceDocument body, URI referrerURI) {
+  public Operation post(Boolean forceIndexUpdate, String serviceSelfLink, ServiceDocument body) {
 
     try {
-      return super.post(forceIndexUpdate, serviceSelfLink, body, referrerURI);
+      return super.post(forceIndexUpdate, serviceSelfLink, body);
     } catch (DocumentNotFoundException documentNotFoundException) {
       throw new XenonRuntimeException(documentNotFoundException);
     } catch (BadRequestException badRequestException) {
