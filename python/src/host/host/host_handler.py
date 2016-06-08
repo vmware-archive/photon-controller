@@ -356,6 +356,21 @@ class HostHandler(Host.Iface):
         spec = self.hypervisor.vm_manager.create_vm_spec(vm.id, datastore_id, vm.flavor, vm_meta, request.environment)
         self._logger.debug("VM create, done creating vm spec, vm-id: %s" % vm.id)
 
+        # Step 4: Add created_disk to create spec of the VM.
+        for disk in vm.disks:
+            if disk.image is None:
+                spec.create_empty_disk(disk.id, disk.capacity_gb * 1024)
+            else:
+                if disk.image.id is None:
+                    return CreateVmResponse(CreateVmResultCode.IMAGE_NOT_FOUND, "Invalid image id")
+                if disk.image.clone_type != CloneType.COPY_ON_WRITE:
+                    return CreateVmResponse(CreateVmResultCode.SYSTEM_ERROR, "Unexpected disk clone type")
+
+                parent_vmdk = vmdk_path(datastore_id, disk.image.id, IMAGE_FOLDER_NAME_PREFIX)
+                spec.create_child_disk(disk.id, parent_vmdk)
+
+        self._logger.debug("VM create, done creating disks, vm-id: %s" % vm.id)
+
         # Step 2: Add the nics to the create spec of the VM if no virtual network specified.
         # In case of virtual network, add nic after vm creation.
         placement_virtual_network = self._get_network_ids_by_type(vm.networks, NetworkInfoType.VIRTUAL_NETWORK)
@@ -383,21 +398,6 @@ class HostHandler(Host.Iface):
                 self._logger.warning("VM %s created without a NIC" % vm.id)
 
             self._logger.debug("VM create, done creating nics, vm-id: %s" % vm.id)
-
-        # Step 4: Add created_disk to create spec of the VM.
-        for disk in vm.disks:
-            if disk.image is None:
-                spec.create_empty_disk(disk.id, disk.capacity_gb * 1024)
-            else:
-                if disk.image.id is None:
-                    return CreateVmResponse(CreateVmResultCode.IMAGE_NOT_FOUND, "Invalid image id")
-                if disk.image.clone_type != CloneType.COPY_ON_WRITE:
-                    return CreateVmResponse(CreateVmResultCode.SYSTEM_ERROR, "Unexpected disk clone type")
-
-                parent_vmdk = vmdk_path(datastore_id, disk.image.id, IMAGE_FOLDER_NAME_PREFIX)
-                spec.create_child_disk(disk.id, parent_vmdk)
-
-        self._logger.debug("VM create, done creating disks, vm-id: %s" % vm.id)
 
         # Step 5: Actually create the VM
         try:
