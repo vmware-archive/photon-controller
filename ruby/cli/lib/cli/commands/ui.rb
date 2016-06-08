@@ -106,11 +106,11 @@ module EsxCloud::Cli
       # @param [Array<EsxCloud::Network>]
       def render_networks(networks)
         table = Terminal::Table.new
-        table.headings = ["ID", "Name", "Port Groups", "Description", "State"]
+        table.headings = ["ID", "Name", "Port Groups", "Description", "State", "Default"]
 
         networks.each do |network|
           table.add_row([network.id, network.name,
-                         network.portgroups.join(", "), network.description, network.state])
+                         network.portgroups.join(", "), network.description, network.state, network.is_default])
           table.add_separator unless network == networks[-1]
         end
 

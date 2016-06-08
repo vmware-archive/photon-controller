@@ -60,6 +60,13 @@ module EsxCloud
         @api_client.set_portgroups(id, portgroups)
       end
 
+      # @param [String] id
+      # @return [Boolean]
+      def set_default(id)
+        run_cli("network setDefault '#{id}'")
+        true
+      end
+
       private
 
       def get_network_from_response(result)

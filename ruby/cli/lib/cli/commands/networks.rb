@@ -55,6 +55,7 @@ module EsxCloud::Cli
         puts "  State:       #{network.state}"
         puts "  Description: #{network.description}" if network.description
         puts "  Port Groups: #{network.portgroups.join(", ")}"
+        puts "  Default: #{network.is_default}"
       end
 
       usage "network list [<options>]"
@@ -111,6 +112,16 @@ module EsxCloud::Cli
 
         client.set_portgroups(id, portgroups)
         puts green("Updated Network '#{id}' port groups")
+      end
+
+      usage "network set_default <id>"
+      desc "Set Default Network"
+      def set_default(args = [])
+        id = shift_keyword_arg(args)
+        usage_error("Please provide Network id") if id.blank?
+
+        client.set_default(id)
+        puts green ("Set Default Network '#{id}'")
       end
     end
   end

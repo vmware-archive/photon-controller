@@ -51,6 +51,13 @@ describe EsxCloud::CliClient do
     expect(client.set_portgroups("network-id", portgroups)).to eq network
   end
 
+  it "sets default network" do
+    expect(client).to receive(:run_cli)
+                      .with("network set_default network-id")
+
+    expect(client.set_default("network-id")).to be_true
+  end
+
   it "finds network by id" do
     network = double(EsxCloud::Network)
 
