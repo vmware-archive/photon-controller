@@ -30,8 +30,7 @@ from host.hypervisor.placement_manager import PlacementManager
 from host.hypervisor.placement_manager import PlacementOption
 from host.hypervisor.placement_manager import NoSuchResourceException
 from host.hypervisor.placement_manager import NotEnoughCpuResourceException
-from host.hypervisor.placement_manager import \
-    NotEnoughDatastoreCapacityException
+from host.hypervisor.placement_manager import NotEnoughDatastoreCapacityException
 from host.hypervisor.placement_manager import NotEnoughMemoryResourceException
 from host.hypervisor.resources import Disk
 from host.hypervisor.resources import DiskImage
@@ -372,7 +371,11 @@ class TestPlacementManager(unittest.TestCase):
         assert_that(placement_list[base_index + 1].
                     container_id, is_("datastore_id_2"))
 
-    def test_place_with_disks_constraints(self):
+    @parameterized.expand([
+        ("datastore_id_1", "datastore_id_1"),
+        ("ds2", "datastore_id_2"),
+    ])
+    def test_place_with_disk_constraints(self, ds_constraint, expected):
         ds_map = {"datastore_id_1": (DatastoreInfo(8 * 1024, 0), set([])),
                   "datastore_id_2": (DatastoreInfo(16 * 1024, 0), set([])),
                   "datastore_id_3": (DatastoreInfo(16 * 1024, 0), set([]))}
@@ -386,39 +389,18 @@ class TestPlacementManager(unittest.TestCase):
         # Disable freespace based admission control.
         manager.FREESPACE_THRESHOLD = 0
 
-        image = DiskImage("disk_image",
-                          DiskImage.COPY_ON_WRITE)
-        constraint1 = ResourceConstraint(
-            ResourceConstraintType.DATASTORE, ["datastore_id_1"])
-        constraint2 = ResourceConstraint(
-            ResourceConstraintType.DATASTORE, ["ds2"])
-        disk1 = Disk(new_id(), DISK_FLAVOR, False,
-                     True, total_storage / 100, image,
-                     constraints=[constraint1])
-        disk2 = Disk(new_id(), DISK_FLAVOR, False,
-                     True, total_storage / 100, image,
-                     constraints=[constraint2])
-        disks = [disk1, disk2]
+        image = DiskImage("disk_image", DiskImage.COPY_ON_WRITE)
+        constraint = ResourceConstraint(ResourceConstraintType.DATASTORE, [ds_constraint])
+        disk = Disk(new_id(), DISK_FLAVOR, False, True, total_storage / 100, image, constraints=[constraint])
 
-        score, placement_list = manager.place(None, disks)
+        score, placement_list = manager.place(None, [disk])
         # Image disks doesn't count in utilization score
         assert_that(score, is_(AgentPlacementScore(100, 100)))
 
-        base_index = 0
-        assert_that(placement_list[base_index].
-                    resource_id, is_(disk1.id))
-        assert_that(placement_list[base_index + 1].
-                    resource_id, is_(disk2.id))
-        assert_that(placement_list[base_index].
-                    container_id, is_("datastore_id_1"))
-        assert_that(placement_list[base_index + 1].
-                    container_id, is_("datastore_id_2"))
+        assert_that(placement_list[0].resource_id, is_(disk.id))
+        assert_that(placement_list[0].container_id, is_(expected))
 
-    @parameterized.expand([
-        [True],
-        [False]
-    ])
-    def test_place_large_disks(self, use_vm):
+    def test_place_large_disks(self):
         ds_map = {"datastore_id_1": (DatastoreInfo(1 * 1024, 0), set([])),
                   "datastore_id_2": (DatastoreInfo(2 * 1024, 0), set([])),
                   "datastore_id_3": (DatastoreInfo(3 * 1024, 0), set([]))}
@@ -426,26 +408,16 @@ class TestPlacementManager(unittest.TestCase):
         total_storage = sum(t[0].total for t in ds_map.values())
         manager = PMBuilder(ds_map=ds_map, ds_with_image=ds_with_image).build()
 
-        image = DiskImage("disk_image",
-                          DiskImage.FULL_COPY)
-        disk1 = Disk(new_id(), DISK_FLAVOR, False,
-                     True, 1024, image)
-        disk2 = Disk(new_id(), DISK_FLAVOR, False,
-                     True, 1024, image)
-        disk3 = Disk(new_id(), DISK_FLAVOR, False,
-                     True, 1024, image)
-        disk4 = Disk(new_id(), DISK_FLAVOR, False,
-                     True, 1024, image)
+        image = DiskImage("disk_image", DiskImage.FULL_COPY)
+        disk1 = Disk(new_id(), DISK_FLAVOR, False, True, 1024, image)
+        disk2 = Disk(new_id(), DISK_FLAVOR, False, True, 1024, image)
+        disk3 = Disk(new_id(), DISK_FLAVOR, False, True, 1024, image)
+        disk4 = Disk(new_id(), DISK_FLAVOR, False, True, 1024, image)
         disk_list = [disk1, disk2, disk3, disk4]
         used_storage = sum(disk.capacity_gb for disk in disk_list)
 
-        if use_vm:
-            vm = Vm(new_id(), VM_FLAVOR,
-                    State.STOPPED, None, None, disk_list)
-            disks = None
-        else:
-            vm = None
-            disks = disk_list
+        vm = Vm(new_id(), VM_FLAVOR, State.STOPPED, None, None, disk_list)
+        disks = None
         score, placement_list = manager.place(vm, disks)
 
         # optimal placement cannot be achieved,
@@ -455,35 +427,20 @@ class TestPlacementManager(unittest.TestCase):
         assert_that(score, is_(AgentPlacementScore(expected_score, 100)))
         base_index = 0
 
-        if vm:
-            assert_that(placement_list[base_index].
-                        resource_id, is_(vm.id))
-            assert_that(placement_list[base_index].
-                        container_id, is_("datastore_id_3"))
-            base_index += 1
+        assert_that(placement_list[base_index].resource_id, is_(vm.id))
+        assert_that(placement_list[base_index].container_id, is_("datastore_id_3"))
+        base_index += 1
 
-        assert_that(placement_list[base_index].
-                    resource_id, is_(disk1.id))
-        assert_that(placement_list[base_index + 1].
-                    resource_id, is_(disk2.id))
-        assert_that(placement_list[base_index + 2].
-                    resource_id, is_(disk3.id))
-        assert_that(placement_list[base_index + 3].
-                    resource_id, is_(disk4.id))
-        assert_that(placement_list[base_index].
-                    container_id, is_("datastore_id_3"))
-        assert_that(placement_list[base_index + 1].
-                    container_id, is_("datastore_id_3"))
-        assert_that(placement_list[base_index + 2].
-                    container_id, is_("datastore_id_3"))
-        assert_that(placement_list[base_index + 3].
-                    container_id, is_("datastore_id_2"))
+        assert_that(placement_list[base_index].resource_id, is_(disk1.id))
+        assert_that(placement_list[base_index + 1].resource_id, is_(disk2.id))
+        assert_that(placement_list[base_index + 2].resource_id, is_(disk3.id))
+        assert_that(placement_list[base_index + 3].resource_id, is_(disk4.id))
+        assert_that(placement_list[base_index].container_id, is_("datastore_id_3"))
+        assert_that(placement_list[base_index + 1].container_id, is_("datastore_id_3"))
+        assert_that(placement_list[base_index + 2].container_id, is_("datastore_id_3"))
+        assert_that(placement_list[base_index + 3].container_id, is_("datastore_id_2"))
 
-    @parameterized.expand([
-        [True],
-        [False]
-    ])
-    def test_place_large_disks_image_datastore(self, use_vm):
+    def test_place_large_disks_image_datastore(self):
         ds_map = {"datastore_id_1": (DatastoreInfo(3 * 1024, 0), set([]))}
         ds_with_image = ["datastore_id_1", "datastore_id_2"]
         total_storage = sum(t[0].total for t in ds_map.values())
@@ -491,78 +448,49 @@ class TestPlacementManager(unittest.TestCase):
         # Disable freespace based admission control.
         manager.FREESPACE_THRESHOLD = 0
 
-        disk1 = Disk(new_id(), DISK_FLAVOR, False,
-                     True, 1024)
-        disk2 = Disk(new_id(), DISK_FLAVOR, False,
-                     True, 1024)
+        disk1 = Disk(new_id(), DISK_FLAVOR, False, True, 1024)
+        disk2 = Disk(new_id(), DISK_FLAVOR, False, True, 1024)
         disk_list = [disk1, disk2]
         used_storage = sum(disk.capacity_gb for disk in disk_list)
-        if use_vm:
-            vm = Vm(new_id(), VM_FLAVOR,
-                    State.STOPPED, None, None, disk_list)
-            disks = None
-        else:
-            vm = None
-            disks = disk_list
+        vm = Vm(new_id(), VM_FLAVOR, State.STOPPED, None, None, disk_list)
+        disks = None
         score, placement_list = manager.place(vm, disks)
         expected_score = 100 * (total_storage - used_storage) / total_storage
         assert_that(score, is_(AgentPlacementScore(expected_score, 100)))
         base_index = 0
 
-        if vm:
-            assert_that(placement_list[base_index].
-                        resource_id, is_(vm.id))
-            assert_that(placement_list[base_index].
-                        container_id, is_("datastore_id_1"))
-            base_index += 1
+        assert_that(placement_list[base_index].resource_id, is_(vm.id))
+        assert_that(placement_list[base_index].container_id, is_("datastore_id_1"))
+        base_index += 1
 
-        assert_that(placement_list[base_index].
-                    resource_id, is_(disk1.id))
-        assert_that(placement_list[base_index + 1].
-                    resource_id, is_(disk2.id))
+        assert_that(placement_list[base_index].resource_id, is_(disk1.id))
+        assert_that(placement_list[base_index + 1].resource_id, is_(disk2.id))
 
-        assert_that(placement_list[base_index].
-                    container_id, is_("datastore_id_1"))
-        assert_that(placement_list[base_index + 1].
-                    container_id, is_("datastore_id_1"))
+        assert_that(placement_list[base_index].container_id, is_("datastore_id_1"))
+        assert_that(placement_list[base_index + 1].container_id, is_("datastore_id_1"))
 
-    @parameterized.expand([
-        (True, None),
-        (False, None)
-    ])
     @raises(NotEnoughDatastoreCapacityException)
-    def test_place_vm_fail_disk_too_large(self, use_vm, expected):
+    def test_place_vm_fail_disk_too_large(self):
         ds_map = {"datastore_id_1": (DatastoreInfo(1 * 1024, 0), set([])),
                   "datastore_id_2": (DatastoreInfo(2 * 1024, 0), set([])),
                   "datastore_id_3": (DatastoreInfo(3 * 1024, 0), set([]))}
         ds_with_image = ["datastore_id_1", "datastore_id_2"]
         manager = PMBuilder(ds_map=ds_map, ds_with_image=ds_with_image).build()
 
-        disk1 = Disk(new_id(), DISK_FLAVOR, False,
-                     True, 2 * 1024)
-        disk2 = Disk(new_id(), DISK_FLAVOR, False,
-                     True, 2 * 1024)
-        disk3 = Disk(new_id(), DISK_FLAVOR, False,
-                     True, 2 * 1024)
-        disk4 = Disk(new_id(), DISK_FLAVOR, False,
-                     True, 2 * 1024)
+        disk1 = Disk(new_id(), DISK_FLAVOR, False, True, 2 * 1024)
+        disk2 = Disk(new_id(), DISK_FLAVOR, False, True, 2 * 1024)
+        disk3 = Disk(new_id(), DISK_FLAVOR, False, True, 2 * 1024)
+        disk4 = Disk(new_id(), DISK_FLAVOR, False, True, 2 * 1024)
         disk_list = [disk1, disk2, disk3, disk4]
-        if use_vm:
-            vm = Vm(new_id(), VM_FLAVOR,
-                    State.STOPPED, None, None, disk_list)
-            disks = None
-        else:
-            vm = None
-            disks = disk_list
+        vm = Vm(new_id(), VM_FLAVOR, State.STOPPED, None, None, disk_list)
+        disks = None
         manager.place(vm, disks)
 
     @parameterized.expand([
-        (True, True),
-        (True, False),
-        (False, True),
-        (False, False)
+        (True, ),
+        (False,),
     ])
-    def test_placement_vm_on_image_datastore(self, use_image_ds, use_vm):
+    def test_placement_vm_on_image_datastore(self, use_image_ds):
         ds_map = {"datastore_id_1": (DatastoreInfo(7 * 1024, 0), set([])),
                   "datastore_id_2": (DatastoreInfo(8 * 1024, 0), set([])),
                   "image_datastore": (DatastoreInfo(16 * 1024, 0), set([]))}
@@ -575,25 +503,15 @@ class TestPlacementManager(unittest.TestCase):
                             image_ds=image_ds,
                             ds_map=ds_map).build()
 
-        image = DiskImage("disk_image",
-                          DiskImage.FULL_COPY)
-        disk1 = Disk(new_id(), DISK_FLAVOR, False,
-                     True, 7 * 1024, image)
-        disk2 = Disk(new_id(), DISK_FLAVOR, False,
-                     True, 7 * 1024, image)
-        disk3 = Disk(new_id(), DISK_FLAVOR, False,
-                     True, 7 * 1024, image)
-        disk4 = Disk(new_id(), DISK_FLAVOR, False,
-                     True, 7 * 1024, image)
+        image = DiskImage("disk_image", DiskImage.FULL_COPY)
+        disk1 = Disk(new_id(), DISK_FLAVOR, False, True, 7 * 1024, image)
+        disk2 = Disk(new_id(), DISK_FLAVOR, False, True, 7 * 1024, image)
+        disk3 = Disk(new_id(), DISK_FLAVOR, False, True, 7 * 1024, image)
+        disk4 = Disk(new_id(), DISK_FLAVOR, False, True, 7 * 1024, image)
         disk_list = [disk1, disk2, disk3, disk4]
 
-        if use_vm:
-            vm = Vm(new_id(), VM_FLAVOR,
-                    State.STOPPED, None, None, disk_list)
-            disks = None
-        else:
-            vm = None
-            disks = disk_list
+        vm = Vm(new_id(), VM_FLAVOR, State.STOPPED, None, None, disk_list)
+        disks = None
 
         if not use_image_ds:
             self.assertRaises(
@@ -605,47 +523,28 @@ class TestPlacementManager(unittest.TestCase):
             container_ids = [item.container_id for item in placement_list]
             resource_ids = [item.resource_id for item in placement_list]
 
-            if use_vm:
-                assert_that(container_ids, contains(
-                    "image_datastore",  # vm
-                    "image_datastore",  # 16T, 8T, 7T
-                    "image_datastore",  # 9T,  8T, 7T
-                    "datastore_id_2",   # 2T,  8T, 7T
-                    "datastore_id_1"))  # 2T,  1T, 7T
-                assert_that(resource_ids, contains(vm.id, disk1.id, disk2.id,
-                                                   disk3.id, disk4.id))
-            else:
-                assert_that(container_ids, contains(
-                    "image_datastore",  # 16T, 8T, 7T
-                    "image_datastore",  # 9T,  8T, 7T
-                    "datastore_id_2",   # 2T,  8T, 7T
-                    "datastore_id_1"))  # 2T,  1T, 7T
-                assert_that(resource_ids,
-                            contains(disk1.id, disk2.id, disk3.id,
-                                     disk4.id))
+            assert_that(container_ids, contains(
+                "image_datastore",  # vm
+                "image_datastore",  # 16T, 8T, 7T
+                "image_datastore",  # 9T,  8T, 7T
+                "datastore_id_2",   # 2T,  8T, 7T
+                "datastore_id_1"))  # 2T,  1T, 7T
+            assert_that(resource_ids, contains(vm.id, disk1.id, disk2.id, disk3.id, disk4.id))
 
     @parameterized.expand([
-        (True, 0.8, 97),    # Disk score is not used
-        (True, 0.2, 50),    # disk score is used and wins
-        (False, 0.8, 100),  # Disk score is 100 as util below threshold
-        (False, 0.2, 50)    # Disk score is computed, as util above threshold
+        (0.8, 97),    # Disk score is not used
+        (0.2, 50),    # disk score is used and wins
     ])
-    def test_place_disks_with_threshold(self, use_vm, threshold, expected):
+    def test_place_disks_with_threshold(self, threshold, expected):
         ds_map = {"datastore_id_1": (DatastoreInfo(1 * 1024, 0), set([]))}
         manager = PMBuilder(ds_map=ds_map).build()
         manager.FREESPACE_THRESHOLD = threshold
 
-        disk1 = Disk(new_id(), DISK_FLAVOR, False,
-                     True, 512, None)
+        disk1 = Disk(new_id(), DISK_FLAVOR, False, True, 512, None)
         disk_list = [disk1]
 
-        if use_vm:
-            vm = Vm(new_id(), VM_FLAVOR,
-                    State.STOPPED, None, None, disk_list)
-            disks = None
-        else:
-            vm = None
-            disks = disk_list
+        vm = Vm(new_id(), VM_FLAVOR, State.STOPPED, None, None, disk_list)
+        disks = None
         score, placement_list = manager.place(vm, disks)
 
         # optimal placement cannot be achieved,
@@ -672,11 +571,9 @@ class TestPlacementManager(unittest.TestCase):
         assert_that(placement_list[1].resource_id, equal_to(disk.id))
 
         # Try the same place with constraints
-        constraint = ResourceConstraint(
-            ResourceConstraintType.DATASTORE, ["datastore_id_1"])
-        disk = Disk(new_id(), DISK_FLAVOR, False, True, 2048, image,
-                    constraints=[constraint])
-        vm = Vm(new_id(), VM_FLAVOR, State.STOPPED, None, None, [disk])
+        constraint = ResourceConstraint(ResourceConstraintType.DATASTORE, ["datastore_id_1"])
+        disk = Disk(new_id(), DISK_FLAVOR, False, True, 2048, image)
+        vm = Vm(new_id(), VM_FLAVOR, State.STOPPED, None, None, [disk], resource_constraints=[constraint])
         score, placement_list = manager.place(vm, None)
         assert_that(score.utilization, equal_to(97))
         assert_that(score.transfer, equal_to(100))
@@ -697,10 +594,7 @@ class TestPlacementManager(unittest.TestCase):
         disk1 = Disk(new_id(), DISK_FLAVOR, False, True, 512, image)
         disk2 = Disk(new_id(), DISK_FLAVOR, False, True, 2048)
         disk3 = Disk(new_id(), DISK_FLAVOR, False, True, 512)
-        vm = Vm(new_id(), VM_FLAVOR, State.STOPPED, None, None, [disk1,
-                                                                 disk2,
-                                                                 disk3])
-
+        vm = Vm(new_id(), VM_FLAVOR, State.STOPPED, None, None, [disk1, disk2, disk3])
         score, placement_list = manager.place(vm, None)
         # storage score is 1. 17/10. divided by 10 which is not optimal penalty
         assert_that(score.utilization, equal_to(1))
@@ -715,46 +609,29 @@ class TestPlacementManager(unittest.TestCase):
         assert_that(placement_list[3].container_id, equal_to("datastore_id_1"))
         assert_that(placement_list[3].resource_id, equal_to(disk1.id))
 
-    def test_place_with_disks_tagging_constraints(self):
-        ds_map = {"datastore_id_1": (DatastoreInfo(8 * 1024, 0),
-                                     set(["tag1", "tag2"])),
-                  "datastore_id_2": (DatastoreInfo(16 * 1024, 0),
-                                     set(["tag3", "tag2"])),
-                  "datastore_id_3": (DatastoreInfo(16 * 1024, 0),
-                                     set([]))}
+    @parameterized.expand([
+        (["tag1", "tag2"], "datastore_id_1"),
+        (["tag3"], "datastore_id_2"),
+    ])
+    def test_place_with_disks_tagging_constraints(self, tags, expected):
+        ds_map = {"datastore_id_1": (DatastoreInfo(8 * 1024, 0), set(["tag1", "tag2"])),
+                  "datastore_id_2": (DatastoreInfo(16 * 1024, 0), set(["tag3", "tag2"])),
+                  "datastore_id_3": (DatastoreInfo(16 * 1024, 0), set([]))}
         ds_with_image = ["datastore_id_1", "datastore_id_2"]
         total_storage = sum(t[0].total for t in ds_map.values())
         manager = PMBuilder(ds_map=ds_map, ds_with_image=ds_with_image).build()
         # Disable freespace based admission control.
         manager.FREESPACE_THRESHOLD = 0
 
-        image = DiskImage("disk_image",
-                          DiskImage.COPY_ON_WRITE)
-        constraint1 = ResourceConstraint(
-            ResourceConstraintType.DATASTORE_TAG, ["tag1"])
-        constraint2 = ResourceConstraint(
-            ResourceConstraintType.DATASTORE_TAG, ["tag2"])
-        constraint3 = ResourceConstraint(
-            ResourceConstraintType.DATASTORE_TAG, ["tag3"])
-        disk1 = Disk(new_id(), DISK_FLAVOR, False,
-                     True, total_storage / 100, image,
-                     constraints=[constraint1, constraint2])
-        disk2 = Disk(new_id(), DISK_FLAVOR, False,
-                     True, total_storage / 100, image,
-                     constraints=[constraint3])
-        disks = [disk1, disk2]
+        image = DiskImage("disk_image", DiskImage.COPY_ON_WRITE)
+        constraints = [ResourceConstraint(ResourceConstraintType.DATASTORE_TAG, [t]) for t in tags]
+        disk = Disk(new_id(), DISK_FLAVOR, False, True, total_storage / 100, image, constraints=constraints)
 
-        score, placement_list = manager.place(None, disks)
+        score, placement_list = manager.place(None, [disk])
 
         base_index = 0
-        assert_that(placement_list[base_index].
-                    resource_id, is_(disk1.id))
-        assert_that(placement_list[base_index + 1].
-                    resource_id, is_(disk2.id))
-        assert_that(placement_list[base_index].
-                    container_id, is_("datastore_id_1"))
-        assert_that(placement_list[base_index + 1].
-                    container_id, is_("datastore_id_2"))
+        assert_that(placement_list[base_index].resource_id, is_(disk.id))
+        assert_that(placement_list[base_index].container_id, is_(expected))
 
     @raises(NoSuchResourceException)
     def test_place_with_conflicting_constraints(self):
