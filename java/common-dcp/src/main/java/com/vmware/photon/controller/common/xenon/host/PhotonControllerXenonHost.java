@@ -19,6 +19,7 @@ import com.vmware.photon.controller.common.clients.AgentControlClientProvider;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.clients.HostClientProvider;
+import com.vmware.photon.controller.common.logging.LoggingUtils;
 import com.vmware.photon.controller.common.manifest.BuildInfo;
 import com.vmware.photon.controller.common.thrift.ThriftModule;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
@@ -29,6 +30,7 @@ import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfigProvider;
 import com.vmware.xenon.common.ServiceHost;
+import com.vmware.xenon.common.UtilsHelper;
 import com.vmware.xenon.services.common.LuceneDocumentIndexService;
 import com.vmware.xenon.services.common.RootNamespaceService;
 
@@ -113,7 +115,14 @@ public class PhotonControllerXenonHost
 
     @Override
     public HostClient getHostClient() {
-        return hostClientFactory.create();
+      // The request ID is in the Xenon thread context
+      // We need to put it in the MDC for use by calling agent Thrift
+      String requestId = UtilsHelper.getThreadContextId();
+      if (requestId != null) {
+        LoggingUtils.setRequestId(requestId);
+      }
+
+      return hostClientFactory.create();
     }
 
     /**
