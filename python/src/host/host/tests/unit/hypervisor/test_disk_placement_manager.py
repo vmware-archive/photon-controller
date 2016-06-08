@@ -60,8 +60,7 @@ class TestDiskPlacementManager(unittest.TestCase):
     def create_datastore_manager(self, ds_map, image_ds):
         ds_mgr = MagicMock()
         ds_mgr.get_datastore_ids.return_value = ds_map.keys()
-        ds_mgr.vm_datastores.return_value = [ds for ds in ds_map.keys() if
-                                             ds != image_ds]
+        ds_mgr.vm_datastores.return_value = [ds for ds in ds_map.keys() if ds != image_ds]
         ds_mgr.normalize.side_effect = lambda x: x
 
         def fake_datastore_info(datastore_id):
@@ -88,8 +87,7 @@ class TestDiskPlacementManager(unittest.TestCase):
                                   use_image_ds):
         # Create optimal place engine
         image_datastore = "datastore_id_1"
-        image_datastores = [{"name": image_datastore,
-                             "used_for_vms": use_image_ds}]
+        image_datastores = [{"name": image_datastore, "used_for_vms": use_image_ds}]
         option = PlacementOption(1, 1, image_datastores)
         ds_map = {"datastore_id_1": DatastoreInfo(1 * 1024, 0),
                   "datastore_id_2": DatastoreInfo(2 * 1024, 0),
@@ -99,11 +97,10 @@ class TestDiskPlacementManager(unittest.TestCase):
         engine = OptimalPlaceEngine(ds_mgr, option)
         ds = engine.placeable_datastores()
         selector = DatastoreSelector.init_datastore_selector(ds_mgr, ds)
-        disks_placement = DisksPlacement(self.create_disks(disk_sizes),
-                                         selector)
+        disks_placement = DisksPlacement(self.create_disks(disk_sizes), selector)
 
         # Verify place result
-        place_result = engine.place(disks_placement)
+        place_result = engine.place(disks_placement, [])
         assert_that(place_result.result, equal_to(result))
         assert_that(place_result.disks_placement.selector.ratio(),
                     equal_to(ratio))
@@ -114,8 +111,7 @@ class TestDiskPlacementManager(unittest.TestCase):
             assert_that(placement_list, has_length(1))
             assert_that(placement_list[0].type,
                         equal_to(AgentResourcePlacement.DISK))
-            assert_that(placement_list[0].container_id,
-                        equal_to("datastore_id_3"))
+            assert_that(placement_list[0].container_id, equal_to("datastore_id_3"))
 
     @parameterized.expand([
         (PlaceResultCode.OK, 0.0, [], [], False),
@@ -130,12 +126,10 @@ class TestDiskPlacementManager(unittest.TestCase):
         (PlaceResultCode.OK, 0.75, [21, 14, 10], ["ds3", "ds2", "ds1"], True),
         (PlaceResultCode.NOT_ENOUGH_DATASTORE_CAPACITY,
             0.0, [21, 22], [], True)])
-    def test_best_effort_place_engine(self, result, ratio, disk_sizes, places,
-                                      use_image_ds):
+    def test_best_effort_place_engine(self, result, ratio, disk_sizes, places, use_image_ds):
         # Create best effort place engine
         image_datastore = "ds1"
-        image_datastores = [{"name": image_datastore,
-                             "used_for_vms": use_image_ds}]
+        image_datastores = [{"name": image_datastore, "used_for_vms": use_image_ds}]
         option = PlacementOption(1, 1, image_datastores)
         ds_map = {image_datastore: DatastoreInfo(10, 0),
                   "ds2": DatastoreInfo(20, 0),
@@ -144,31 +138,68 @@ class TestDiskPlacementManager(unittest.TestCase):
         engine = BestEffortPlaceEngine(ds_mgr, option)
         ds = engine.placeable_datastores()
         selector = DatastoreSelector.init_datastore_selector(ds_mgr, ds)
-        disks_placement = DisksPlacement(self.create_disks(disk_sizes),
-                                         selector)
+        disks_placement = DisksPlacement(self.create_disks(disk_sizes), selector)
 
         # Try place
-        place_result = engine.place(disks_placement)
+        place_result = engine.place(disks_placement, [])
 
         # Verify place result
         assert_that(place_result.result, equal_to(result))
 
         # Verify placements
         if disk_sizes and place_result.result == PlaceResultCode.OK:
-            assert_that(place_result.disks_placement.selector.ratio(),
-                        equal_to(ratio))
+            assert_that(place_result.disks_placement.selector.ratio(), equal_to(ratio))
             for i, place in enumerate(places):
                 placement_list = place_result.disks_placement.placement_list
-                assert_that(placement_list[0].type,
-                            equal_to(AgentResourcePlacement.DISK))
-                assert_that(placement_list[i].container_id,
-                            equal_to(place))
+                assert_that(placement_list[0].type, equal_to(AgentResourcePlacement.DISK))
+                assert_that(placement_list[i].container_id, equal_to(place))
 
-    def test_constraint_place_engine(self):
+    @parameterized.expand([
+        ("ds1", ),
+        ("ds2",),
+    ])
+    def test_constraint_place_engine(self, ds_constraint):
         # Create constraint place engine
         image_datastore = "ds1"
-        image_datastores = [{"name": image_datastore,
-                             "used_for_vms": True}]
+        image_datastores = [{"name": image_datastore, "used_for_vms": True}]
+        option = PlacementOption(1, 1, image_datastores)
+        ds_map = {image_datastore: DatastoreInfo(10, 0),
+                  "ds2": DatastoreInfo(20, 0),
+                  "ds3": DatastoreInfo(30, 0)}
+        ds_mgr = self.create_datastore_manager(ds_map, image_datastore)
+        engine = ConstraintDiskPlaceEngine(ds_mgr, option)
+        ds = engine.placeable_datastores()
+        selector = DatastoreSelector.init_datastore_selector(ds_mgr, ds)
+
+        # Try place
+        constraint = ResourceConstraint(ResourceConstraintType.DATASTORE, [ds_constraint])
+        disks = [
+            Disk(disk_id="disk1", capacity_gb=1),
+            Disk(disk_id="disk2", capacity_gb=1),
+            Disk(capacity_gb=1),
+        ]
+        disks_placement = DisksPlacement(disks, selector)
+        place_result = engine.place(disks_placement, [constraint])
+
+        # Verify place result
+        assert_that(place_result.result, equal_to(PlaceResultCode.OK))
+
+        # Verify placement list and unplaced list
+        disks_placement = place_result.disks_placement
+        assert_that(disks_placement.placement_list, has_length(3))
+        assert_that(disks_placement.disks, has_length(0))
+        assert_that([d.resource_id for d in disks_placement.placement_list if d.resource_id],
+                    contains_inanyorder("disk1", "disk2"))
+        for placement in disks_placement.placement_list:
+            assert_that(placement.type, equal_to(AgentResourcePlacement.DISK))
+            assert_that(placement.container_id, equal_to(constraint.values[0]))
+
+    def test_constraint_place_engine_no_constraints(self):
+        """ constraint place engine should not handle placement with no constraints
+        """
+        # Create constraint place engine
+        image_datastore = "ds1"
+        image_datastores = [{"name": image_datastore, "used_for_vms": True}]
         option = PlacementOption(1, 1, image_datastores)
         ds_map = {image_datastore: DatastoreInfo(10, 0),
                   "ds2": DatastoreInfo(20, 0),
@@ -180,42 +211,25 @@ class TestDiskPlacementManager(unittest.TestCase):
 
         # Try place
         disks = [
-            Disk(disk_id="disk", capacity_gb=5, constraints=[]),
-            Disk(disk_id="disk-in-ds1", capacity_gb=5, constraints=[
-                ResourceConstraint(
-                    ResourceConstraintType.DATASTORE, ["ds1"])]),
-            Disk(disk_id="disk-in-ds2", capacity_gb=5, constraints=[
-                ResourceConstraint(
-                    ResourceConstraintType.DATASTORE, ["ds2"])]),
-            Disk(disk_id="disk-in-ds3", capacity_gb=5, constraints=[
-                ResourceConstraint(
-                    ResourceConstraintType.DATASTORE, ["ds3"])]),
-            Disk(capacity_gb=5, constraints=[]),
+            Disk(disk_id="disk1", capacity_gb=1),
+            Disk(disk_id="disk2", capacity_gb=1),
+            Disk(capacity_gb=1),
         ]
         disks_placement = DisksPlacement(disks, selector)
-        place_result = engine.place(disks_placement)
+        place_result = engine.place(disks_placement, [])
 
         # Verify place result
         assert_that(place_result.result, equal_to(PlaceResultCode.OK))
 
-        # Verify placement list and unplaced list
+        # Verify unplaced list
         disks_placement = place_result.disks_placement
-        assert_that(disks_placement.placement_list, has_length(3))
-        assert_that(disks_placement.disks, has_length(2))
-        assert_that([d.resource_id for d in disks_placement.placement_list],
-                    contains_inanyorder("disk-in-ds1", "disk-in-ds2",
-                                        "disk-in-ds3"))
-        for placement in disks_placement.placement_list:
-            assert_that(placement.type,
-                        equal_to(AgentResourcePlacement.DISK))
-            assert_that("disk-in-" + placement.container_id,
-                        equal_to(placement.resource_id))
+        assert_that(disks_placement.placement_list, has_length(0))
+        assert_that(disks_placement.disks, has_length(3))
 
     def test_constraint_place_engine_cannot_fit(self):
         # Create constraint place engine
         image_datastore = "ds1"
-        image_datastores = [{"name": image_datastore,
-                             "used_for_vms": True}]
+        image_datastores = [{"name": image_datastore, "used_for_vms": True}]
         option = PlacementOption(1, 1, image_datastores)
         ds_map = {image_datastore: DatastoreInfo(5, 0)}
         ds_mgr = self.create_datastore_manager(ds_map, image_datastore)
@@ -224,11 +238,9 @@ class TestDiskPlacementManager(unittest.TestCase):
         selector = DatastoreSelector.init_datastore_selector(ds_mgr, ds)
 
         # Try place
-        disks = [
-            Disk(disk_id="ds1", capacity_gb=6, constraints=[ResourceConstraint(
-                 ResourceConstraintType.DATASTORE, ["ds1"])]),
-        ]
-        place_result = engine.place(DisksPlacement(disks, selector))
+        constraint = ResourceConstraint(ResourceConstraintType.DATASTORE, ["ds1"])
+        disk = Disk(disk_id="ds1", capacity_gb=6)
+        place_result = engine.place(DisksPlacement([disk], selector), [constraint])
 
         # Verify place result
         assert_that(place_result.result,
@@ -237,8 +249,7 @@ class TestDiskPlacementManager(unittest.TestCase):
     def test_constraint_place_engine_constraint_violated(self):
         # Create constraint place engine
         image_datastore = "ds1"
-        image_datastores = [{"name": image_datastore,
-                             "used_for_vms": True}]
+        image_datastores = [{"name": image_datastore, "used_for_vms": True}]
         option = PlacementOption(1, 1, image_datastores)
         ds_map = {image_datastore: DatastoreInfo(5, 0)}
         ds_mgr = self.create_datastore_manager(ds_map, image_datastores)
@@ -247,15 +258,35 @@ class TestDiskPlacementManager(unittest.TestCase):
         selector = DatastoreSelector.init_datastore_selector(ds_mgr, ds)
 
         # Try place
-        disks = [
-            Disk(disk_id="ds1", capacity_gb=1, constraints=[ResourceConstraint(
-                 ResourceConstraintType.DATASTORE, ["ds2"])]),
-        ]
-        place_result = engine.place(DisksPlacement(disks, selector))
+        constraint = ResourceConstraint(ResourceConstraintType.DATASTORE, ["ds2"])
+        disk = Disk(disk_id="ds1", capacity_gb=1)
+        place_result = engine.place(DisksPlacement([disk], selector), [constraint])
 
         # Verify place result
-        assert_that(place_result.result,
-                    equal_to(PlaceResultCode.NO_SUCH_RESOURCE))
+        assert_that(place_result.result, equal_to(PlaceResultCode.NO_SUCH_RESOURCE))
+
+    def test_constraint_place_engine_conflicting_constraints(self):
+        """ constraint place engine should fail if multiple constraints conflict
+        """
+        # Create constraint place engine
+        image_datastore = "ds1"
+        image_datastores = [{"name": image_datastore, "used_for_vms": True}]
+        option = PlacementOption(1, 1, image_datastores)
+        ds_map = {image_datastore: DatastoreInfo(10, 0),
+                  "ds2": DatastoreInfo(20, 0)}
+        ds_mgr = self.create_datastore_manager(ds_map, image_datastores)
+        engine = ConstraintDiskPlaceEngine(ds_mgr, option)
+        ds = engine.placeable_datastores()
+        selector = DatastoreSelector.init_datastore_selector(ds_mgr, ds)
+
+        # Try place
+        constraints = [ResourceConstraint(ResourceConstraintType.DATASTORE, ["ds1"]),
+                       ResourceConstraint(ResourceConstraintType.DATASTORE, ["ds2"])]
+        disk = Disk(disk_id="ds1", capacity_gb=1)
+        place_result = engine.place(DisksPlacement([disk], selector), constraints)
+
+        # Verify place result
+        assert_that(place_result.result, equal_to(PlaceResultCode.NO_SUCH_RESOURCE))
 
     def test_disks_capacity_gb(self):
         """Linked-cloned image disks are excluded from capacity calculation."""

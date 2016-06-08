@@ -148,13 +148,14 @@ class VmWrapper(object):
     def power_request(self, op):
         return Host.PowerVmOpRequest(vm_id=self.id, op=op)
 
-    def resource_request(self, disks=None, vm_disks=None):
-        assert(disks is None or vm_disks is None)
-        if disks is not None:
-            return Resource(None, disks)
+    def resource_request(self, disk=None, vm_disks=None, vm_constraints=[]):
+        assert(disk is None or vm_disks is None)
+        if disk is not None:
+            return Resource(None, [disk])
 
         resource = Resource(self._vm, None)
         resource.vm.disks = vm_disks
+        resource.vm.resource_constraints = vm_constraints
 
         return resource
 
@@ -174,22 +175,18 @@ class VmWrapper(object):
             assert_that(len(response.resources), is_(0))
             return None
 
-    def place_and_reserve(self, disks=None, vm_disks=None,
-                          expect=PlaceResultCode.OK):
-        place_response = self.place(disks, vm_disks, expect)
-        return self.reserve(disks, vm_disks, place_response, expect)
+    def place_and_reserve(self, disk=None, vm_disks=None, expect=PlaceResultCode.OK):
+        place_response = self.place(disk, vm_disks, expect)
+        return self.reserve(disk, vm_disks, place_response, expect)
 
-    def place(self, disks=None, vm_disks=None,
-              expect=PlaceResultCode.OK):
-        resource = self.resource_request(disks, vm_disks)
+    def place(self, disk=None, vm_disks=None, expect=PlaceResultCode.OK, vm_constraints=[]):
+        resource = self.resource_request(disk, vm_disks, vm_constraints)
         response = rpc_call(self.host_client.place, PlaceRequest(resource))
         assert_that(response.result, equal_to(expect))
         return response
 
-    def reserve(self, disks=None, vm_disks=None,
-                place_response=PlaceResponse(),
-                expect=Host.ReserveResultCode.OK):
-        resource = self.resource_request(disks, vm_disks)
+    def reserve(self, disk=None, vm_disks=None, place_response=PlaceResponse(), expect=Host.ReserveResultCode.OK):
+        resource = self.resource_request(disk, vm_disks)
         resource.placement_list = place_response.placementList
         request = Host.ReserveRequest(resource, place_response.generation)
         response = rpc_call(self.host_client.reserve, request)
@@ -210,25 +207,22 @@ class VmWrapper(object):
         response = rpc_call(self.host_client.delete_vm, request)
         assert_that(response.result, equal_to(expect))
 
-    def create_disks(self, disks, res_id,
-                     expect=Host.CreateDisksResultCode.OK, validate=False):
+    def create_disk(self, disk, res_id, expect=Host.CreateDisksResultCode.OK, validate=False):
         request = Host.CreateDisksRequest(reservation=res_id)
         response = rpc_call(self.host_client.create_disks, request)
         assert_that(response.result, equal_to(expect))
 
         if validate:
-            assert_that(response.disk_errors, has_len(len(disks)))
-            assert_that(response.disks, has_len(len(disks)))
+            assert_that(response.disk_errors, has_len(1))
+            assert_that(response.disks, has_len(1))
 
-            for disk in disks:
-                disk_error = response.disk_errors[disk.id]
-                assert_that(disk_error, is_not(none()))
-                assert_that(disk_error.result, is_(CreateDiskResultCode.OK))
+            disk_error = response.disk_errors[disk.id]
+            assert_that(disk_error, is_not(none()))
+            assert_that(disk_error.result, is_(CreateDiskResultCode.OK))
 
-                assert_that(disk.id,
-                            is_in([disk.id for disk in response.disks]))
-                assert_that(disk.datastore.id, not_none())
-                assert_that(disk.datastore.name, not_none())
+            assert_that(response.disks[0].id, is_(disk.id))
+            assert_that(response.disks[0].datastore.id, not_none())
+            assert_that(response.disks[0].datastore.name, not_none())
 
         return response
 
@@ -424,8 +418,7 @@ class AgentCommonTests(object):
                  capacity_gb=1, flavor_info=self.DEFAULT_DISK_FLAVOR)
         ]
 
-        reservation = \
-            vm_wrapper.place_and_reserve(vm_disks=disks).reservation
+        reservation = vm_wrapper.place_and_reserve(vm_disks=disks).reservation
         request = vm_wrapper.create_request(res_id=reservation)
         response = vm_wrapper.create(request=request)
         assert_that(response.vm, not_none())
@@ -446,8 +439,7 @@ class AgentCommonTests(object):
         if not concurrent:
             # create the VM with new VM_ID
             vm_wrapper = VmWrapper(client)
-            reservation = vm_wrapper.place_and_reserve(
-                vm_disks=disks).reservation
+            reservation = vm_wrapper.place_and_reserve(vm_disks=disks).reservation
             request = vm_wrapper.create_request(res_id=reservation)
             vm_wrapper.create(request=request)
             vm_wrapper.delete(request=vm_wrapper.delete_request(disk_ids=[]))
@@ -465,8 +457,7 @@ class AgentCommonTests(object):
                      flavor_info=self.DEFAULT_DISK_FLAVOR)
             ]
 
-            reservation = \
-                vm.place_and_reserve(vm_disks=disks).reservation
+            reservation = vm.place_and_reserve(vm_disks=disks).reservation
 
             request = vm.create_request(reservation)
             vm.create(request=request)
@@ -487,7 +478,7 @@ class AgentCommonTests(object):
 
     def test_create_delete_disks(self):
         """Test that the agent can create and delete disks."""
-        vm = VmWrapper(self.host_client)
+        vm_wrapper = VmWrapper(self.host_client)
 
         rc = Host.CreateDisksResultCode
 
@@ -502,21 +493,19 @@ class AgentCommonTests(object):
         ]
 
         # Invalid reservation id
-        vm.create_disks(disks, new_id(), expect=rc.INVALID_RESERVATION)
+        vm_wrapper.create_disk(disks[0], new_id(), expect=rc.INVALID_RESERVATION)
 
         # Valid disk flavor
-        response = vm.place_and_reserve(disks=disks)
-        reservation = response.reservation
-
-        # Create 2 disks
-        vm.create_disks(disks, reservation, validate=True)
+        for disk in disks:
+            reservation = vm_wrapper.place_and_reserve(disk=disk).reservation
+            vm_wrapper.create_disk(disk, reservation, validate=True)
 
         # Delete 2 disks: 1 - valid, 2 - valid
         disk_ids = [disk_1, disk_2]
-        vm.delete_disks(disk_ids, validate=True)
+        vm_wrapper.delete_disks(disk_ids, validate=True)
 
         # Delete 2 disks: 1 - invalid (deleted), 2 - invalid (deleted)
-        response = vm.delete_disks(disk_ids)
+        response = vm_wrapper.delete_disks(disk_ids)
         assert_that(len(response.disk_errors), equal_to(2))
         assert_that(response.disk_errors, has_key(disk_1))
         assert_that(response.disk_errors[disk_1].result,
@@ -544,9 +533,9 @@ class AgentCommonTests(object):
             else:
                 disk.capacity_gb = 0
 
-            reservation = vm.place_and_reserve(disks=[disk]).reservation
+            reservation = vm.place_and_reserve(disk=disk).reservation
 
-            response = vm.create_disks([disk], reservation)
+            response = vm.create_disk(disk, reservation)
 
             if test["rc"] == CreateDiskResultCode.OK:
                 assert_that(response.disk_errors, has_len(1))
@@ -664,8 +653,7 @@ class AgentCommonTests(object):
                  capacity_gb=0, flavor_info=self.DEFAULT_DISK_FLAVOR),
         ]
         vm_wrapper = VmWrapper(self.host_client)
-        reservation = \
-            vm_wrapper.place_and_reserve(vm_disks=disks).reservation
+        reservation = vm_wrapper.place_and_reserve(vm_disks=disks).reservation
         request = vm_wrapper.create_request(res_id=reservation)
         response = vm_wrapper.create(request=request)
         assert_that(response.vm, not_none())
@@ -836,8 +824,9 @@ class AgentCommonTests(object):
                  capacity_gb=1, flavor_info=self.DEFAULT_DISK_FLAVOR)
         ]
 
-        reservation = vm_wrapper.place_and_reserve(disks=disks).reservation
-        vm_wrapper.create_disks(disks, reservation, validate=True)
+        for disk in disks:
+            reservation = vm_wrapper.place_and_reserve(disk=disk).reservation
+            vm_wrapper.create_disk(disk, reservation, validate=True)
 
         # attach disks
         disk_ids = [disk.id for disk in disks]
