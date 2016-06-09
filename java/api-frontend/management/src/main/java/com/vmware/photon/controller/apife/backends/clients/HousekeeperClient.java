@@ -14,7 +14,6 @@
 package com.vmware.photon.controller.apife.backends.clients;
 
 import com.vmware.photon.controller.apife.entities.ImageEntity;
-import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
 import com.vmware.photon.controller.housekeeper.dcp.ImageReplicatorService;
 import com.vmware.photon.controller.housekeeper.dcp.ImageReplicatorServiceFactory;
 import com.vmware.photon.controller.housekeeper.dcp.ImageSeederService;
@@ -38,14 +37,14 @@ public class HousekeeperClient {
 
     private static final String COMMA_DELIMITED_REGEX = "\\s*,\\s*";
 
-    private HousekeeperXenonRestClient dcpClient;
+    private HousekeeperXenonRestClient housekeeperXenonClient;
     private ApiFeXenonRestClient apiFeXenonRestClient;
 
     @Inject
-    public HousekeeperClient(HousekeeperXenonRestClient dcpClient, ApiFeXenonRestClient apiFeXenonClient)
+    public HousekeeperClient(HousekeeperXenonRestClient housekeeperXenonClient, ApiFeXenonRestClient apiFeXenonClient)
             throws URISyntaxException {
-        this.dcpClient = dcpClient;
-        this.dcpClient.start();
+        this.housekeeperXenonClient = housekeeperXenonClient;
+        this.housekeeperXenonClient.start();
         this.apiFeXenonRestClient = apiFeXenonClient;
         this.apiFeXenonRestClient.start();
     }
@@ -56,7 +55,7 @@ public class HousekeeperClient {
         postReq.sourceImageDatastore = datastoreId;
 
         // Create the operation and call for seeding.
-        Operation op = dcpClient.post(
+        Operation op = housekeeperXenonClient.post(
             ImageSeederServiceFactory.SELF_LINK, postReq);
 
         switch (image.getReplicationType()) {
@@ -72,14 +71,6 @@ public class HousekeeperClient {
         return op.getBody(ImageSeederService.State.class);
     }
 
-    public ImageSeederService.State getReplicateImageStatus(String creationTaskLink)
-        throws DocumentNotFoundException {
-        Operation operation = dcpClient.get(creationTaskLink);
-        ImageSeederService.State result =  operation.getBody(ImageSeederService.State.class);
-        logger.info("Got replicate image status {}", result);
-        return result;
-    }
-
     private ImageReplicatorService.State triggerReplication(String datastoreId, ImageEntity image) {
         // Prepare replication service call.
         ImageReplicatorService.State postReq = new ImageReplicatorService.State();
@@ -87,7 +78,7 @@ public class HousekeeperClient {
         postReq.datastore = datastoreId;
 
         // Create the operation and call for replication.
-        Operation op = dcpClient.post(
+        Operation op = housekeeperXenonClient.post(
             ImageReplicatorServiceFactory.SELF_LINK, postReq);
 
         return op.getBody(ImageReplicatorService.State.class);
