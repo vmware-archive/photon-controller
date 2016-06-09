@@ -267,7 +267,7 @@ class AttacheClient(HostClient):
 
     @attache_error_handler
     def delete_disk(self, path):
-        self._client.MoveDisk(self._session, os_to_datastore_path(path))
+        self._client.DeleteDisk(self._session, os_to_datastore_path(path))
 
     @attache_error_handler
     def set_disk_uuid(self, path, uuid):
@@ -381,7 +381,7 @@ class AttacheVmConfigSpec(VmConfigSpec):
 
     @attache_error_handler
     def add_nic(self, network):
-        self._client.AddNicToVMSpec(self._spec, network)
+        self._client.AddNicToVMSpec(self._spec, str(network))
 
     @attache_error_handler
     def set_extra_config(self, options):
