@@ -27,7 +27,6 @@ import com.vmware.photon.controller.apife.lib.Image;
 import com.vmware.photon.controller.apife.lib.ImageStore;
 import com.vmware.photon.controller.housekeeper.dcp.ImageSeederService;
 import com.vmware.photon.controller.housekeeper.dcp.ImageSeederServiceFactory;
-import com.vmware.xenon.common.TaskState;
 
 import com.google.common.collect.ImmutableList;
 import org.mockito.InOrder;
@@ -39,7 +38,6 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
@@ -79,8 +77,6 @@ public class ImageReplicateStepCmdTest extends PowerMockTestCase {
 
   @Mock
   private StepEntity stepEntityMock;
-
-  private XenonTaskStatusStepCmd commandStatus;
 
   private StepEntity step;
   private StepEntity nextStep;
@@ -124,11 +120,6 @@ public class ImageReplicateStepCmdTest extends PowerMockTestCase {
         + "/00000000-0000-0000-0000-000000000001";
     serviceDocument.documentSelfLink = remoteTaskLink;
     doReturn(serviceDocument).when(housekeeperClient).replicateImage("datastore1", imageEntity);
-
-    when(stepEntityMock.getTransientResource(XenonTaskStatusStepCmd.REMOTE_TASK_LINK_RESOURCE_KEY)).thenReturn
-        (remoteTaskLink);
-    commandStatus =  new XenonTaskStatusStepCmd(taskCommand, stepBackend, stepEntityMock,
-        new ImageReplicateTaskStatusPoller(taskCommand, imageBackend, taskBackend));
   }
 
   @Test
@@ -140,30 +131,7 @@ public class ImageReplicateStepCmdTest extends PowerMockTestCase {
     inOrder.verify(imageStore).isReplicationNeeded();
     inOrder.verify(imageBackend).getSeededImageDatastores(imageEntity.getId());
     inOrder.verify(housekeeperClient).replicateImage("datastore1-id", imageEntity);
-    assertEquals(nextStep.getTransientResource(XenonTaskStatusStepCmd.REMOTE_TASK_LINK_RESOURCE_KEY),
-        remoteTaskLink);
-  }
-
-  @Test
-  public void testImageStatusChangeReady() throws Throwable{
-    ImageSeederService.State readyState = new ImageSeederService.State();
-    readyState.taskInfo = new ImageSeederService.TaskState();
-    readyState.taskInfo.stage = ImageSeederService.TaskState.TaskStage.FINISHED;
-    when(housekeeperClient.getReplicateImageStatus(anyString())).thenReturn(readyState);
-
-    commandStatus.run();
     verify(imageBackend).updateState(imageEntity, ImageState.READY);
-  }
-
-  @Test
-  public void testImageStatusChangeError() throws Throwable{
-    ImageSeederService.State readyState = new ImageSeederService.State();
-    readyState.taskInfo = new ImageSeederService.TaskState();
-    readyState.taskInfo.stage = TaskState.TaskStage.FAILED;
-    when(housekeeperClient.getReplicateImageStatus(anyString())).thenReturn(readyState);
-
-    commandStatus.run();
-    verify(imageBackend).updateState(imageEntity, ImageState.ERROR);
   }
 
   @Test

@@ -148,9 +148,6 @@ public class StepCommandFactory {
       case REPLICATE_IMAGE:
         return new ImageReplicateStepCmd(
             taskCommand, stepBackend, stepEntity, imageBackend, imageStoreFactory.create());
-      case QUERY_REPLICATE_IMAGE_TASK_RESULT:
-        return new XenonTaskStatusStepCmd(taskCommand, stepBackend, stepEntity,
-            new ImageReplicateTaskStatusPoller(taskCommand, imageBackend, taskBackend));
       case DELETE_IMAGE:
         return new ImageDeleteStepCmd(taskCommand, stepBackend, stepEntity, imageBackend);
       case CREATE_HOST:
