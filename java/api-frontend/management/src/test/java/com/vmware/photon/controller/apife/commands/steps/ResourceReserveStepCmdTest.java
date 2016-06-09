@@ -78,6 +78,7 @@ import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.TaskState;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InOrder;
@@ -729,7 +730,50 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
     virtualNetworkState.logicalSwitchId = logicalSwitchId;
     Operation operation = new Operation().setBody(virtualNetworkState);
 
-    doReturn(operation).when(apiFeXenonRestClient).get(VirtualNetworkService.FACTORY_LINK + "/n1");
+    doReturn(operation).when(apiFeXenonRestClient).get(VirtualNetworkService.FACTORY_LINK + "/" + networkId);
+
+    PlacementTask placementTask = generateResourcePlacementList();
+    placementTask.resource.getPlacement_list().addToPlacements(
+        generateResourcePlacement(ResourcePlacementType.NETWORK, networkId));
+    Operation placementOperation = new Operation().setBody(placementTask);
+
+    when(schedulerXenonRestClient.post(any(), placementTaskCaptor.capture())).thenReturn(placementOperation);
+    when(hostClient.reserve(any(Resource.class), eq(SUCCESSFUL_GENERATION))).thenReturn(SUCCESSFUL_RESERVE_RESPONSE);
+
+    TaskEntity task = mock(TaskEntity.class);
+    StepEntity connectVmSwitchStep = new StepEntity();
+    doReturn(task).when(taskCommand).getTask();
+    doReturn(connectVmSwitchStep).when(task).findStep(com.vmware.photon.controller.api.Operation.CONNECT_VM_SWITCH);
+
+    ResourceReserveStepCmd command = getVmReservationCommand(true);
+    command.setInfrastructureEntity(vm);
+    command.execute();
+
+    List<ResourceConstraint> resourceConstraints = placementTaskCaptor.getValue().resource.getVm()
+        .getResource_constraints();
+    assertThat(resourceConstraints.size(), is(1));
+    ResourceConstraint resourceConstraint = resourceConstraints.get(0);
+    assertThat(resourceConstraint.getType(), is(ResourceConstraintType.VIRTUAL_NETWORK));
+    assertThat(resourceConstraint.getValues().size(), is(1));
+    assertThat(resourceConstraint.getValues().get(0), is(logicalSwitchId));
+
+    String savedLogicalSwitchId = (String) connectVmSwitchStep
+        .getTransientResource(ResourceReserveStepCmd.LOGICAL_SWITCH_ID);
+    assertThat(savedLogicalSwitchId, is(logicalSwitchId));
+  }
+
+  @Test
+  public void testCreateDefaultVirtualNetworkConstraints() throws Throwable {
+    String networkId = "n1";
+    String logicalSwitchId = UUID.randomUUID().toString();
+    VirtualNetworkService.State virtualNetworkState = new VirtualNetworkService.State();
+    virtualNetworkState.documentSelfLink = VirtualNetworkService.FACTORY_LINK + "/" + networkId;
+    virtualNetworkState.logicalSwitchId = logicalSwitchId;
+    Operation operation = new Operation().setBody(virtualNetworkState);
+
+    doReturn(operation).when(apiFeXenonRestClient).get(VirtualNetworkService.FACTORY_LINK + "/" + networkId);
+    doReturn(Arrays.asList(virtualNetworkState)).when(apiFeXenonRestClient).queryDocuments(
+        eq(VirtualNetworkService.State.class), any(ImmutableMap.class));
 
     PlacementTask placementTask = generateResourcePlacementList();
     placementTask.resource.getPlacement_list().addToPlacements(
