@@ -51,7 +51,7 @@ public class HostTransformationService extends StatelessService {
           // for future place requests.
           convertedServiceDocument.usageTags = new HashSet<>(Arrays.asList(UsageTag.CLOUD.name()));
 
-          results.put(Utils.toJson(convertedServiceDocument), factoryPath);
+          results.put(Utils.toJson(false, false, convertedServiceDocument), factoryPath);
         }
       }
 

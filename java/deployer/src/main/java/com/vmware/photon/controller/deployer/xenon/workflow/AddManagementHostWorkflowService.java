@@ -480,7 +480,7 @@ public class AddManagementHostWorkflowService extends StatefulService {
 
     BuildRuntimeConfigurationTaskService.State startState = new BuildRuntimeConfigurationTaskService.State();
     startState.parentTaskServiceLink = getSelfLink();
-    startState.parentPatchBody = Utils.toJson(buildPatch(TaskState.TaskStage.STARTED,
+    startState.parentPatchBody = Utils.toJson(false, false, buildPatch(TaskState.TaskStage.STARTED,
         TaskState.SubStage.SET_QUORUM_ON_DEPLOYMENT_ENTITY, null));
     startState.deploymentServiceLink = currentState.deploymentServiceLink;
     startState.hostServiceLink = currentState.hostServiceLink;
@@ -882,7 +882,7 @@ public class AddManagementHostWorkflowService extends StatefulService {
 
     CreateManagementVmTaskService.State startState = new CreateManagementVmTaskService.State();
     startState.parentTaskServiceLink = getSelfLink();
-    startState.parentPatchBody = Utils.toJson(selfPatchBody);
+    startState.parentPatchBody = Utils.toJson(false, false, selfPatchBody);
     startState.vmServiceLink = vmServiceLink;
     startState.ntpEndpoint = deploymentState.ntpEndpoint;
     startState.taskPollDelay = currentState.taskPollDelay;

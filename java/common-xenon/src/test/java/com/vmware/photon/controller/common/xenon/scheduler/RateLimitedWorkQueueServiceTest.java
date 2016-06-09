@@ -394,7 +394,8 @@ public class RateLimitedWorkQueueServiceTest {
     RateLimitedWorkQueueService.State startState = new RateLimitedWorkQueueService.State();
     startState.controlFlags = ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED;
     startState.pendingTaskServiceQuery = pendingTaskServiceQuery;
-    startState.startPatchBody = Utils.toJson(TestServiceWithWorkQueue.buildPatch(TaskState.TaskStage.STARTED));
+    startState.startPatchBody = Utils.toJson(false, false,
+        TestServiceWithWorkQueue.buildPatch(TaskState.TaskStage.STARTED));
     startState.concurrencyLimit = 2;
     return startState;
   }

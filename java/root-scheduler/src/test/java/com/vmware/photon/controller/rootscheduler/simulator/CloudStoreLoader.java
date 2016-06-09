@@ -110,7 +110,7 @@ public class CloudStoreLoader {
       // TODO(mmutsuzaki) Support availability zones.
       Operation result = cloudstore.sendPostAndWait(HostServiceFactory.SELF_LINK, host);
       assertThat(result.getStatusCode(), is(200));
-      logger.debug("Created a host document: {}", Utils.toJson(host));
+      logger.debug("Created a host document: {}", Utils.toJson(true, false, host));
     }
   }
 
@@ -134,7 +134,7 @@ public class CloudStoreLoader {
       datastore.tags = new HashSet<>();
       Operation result = cloudstore.sendPostAndWait(DatastoreServiceFactory.SELF_LINK, datastore);
       assertThat(result.getStatusCode(), is(200));
-      logger.debug("Created a datastore document: {}", Utils.toJson(datastore));
+      logger.debug("Created a datastore document: {}", Utils.toJson(false, false, datastore));
     }
   }
 }

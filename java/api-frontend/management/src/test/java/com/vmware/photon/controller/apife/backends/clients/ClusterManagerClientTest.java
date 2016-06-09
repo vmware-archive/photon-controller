@@ -432,7 +432,7 @@ public class ClusterManagerClientTest {
       queryResponse.jsonResponses = new HashMap<>();
       queryResponse.jsonResponses.put(
           new URI("FooLink"),
-          Utils.toJson(queryTaskResult));
+          Utils.toJson(false, false, queryTaskResult));
 
       Operation queryResult = new Operation();
       queryResult.setBody(queryResponse);

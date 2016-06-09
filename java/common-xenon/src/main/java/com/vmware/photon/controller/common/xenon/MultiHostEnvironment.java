@@ -338,7 +338,8 @@ public abstract class MultiHostEnvironment<H extends ServiceHost & XenonHostInfo
       assert (r != null);
       logger.info("host " + host.getState().id + " has owner " + r.documentOwner);
       if (result != null && !ServiceUtils.documentEquals(type, result, r)) {
-        logger.info(String.format("current %s last %s", Utils.toJson(r), Utils.toJson(result)));
+        logger.info(String.format("current %s last %s", Utils.toJson(true, false, r),
+            Utils.toJson(true, false, result)));
         throw new IllegalStateException("response is not consistent across node group");
       }
       result = r;
