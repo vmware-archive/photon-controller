@@ -501,7 +501,7 @@ public class VmApi extends ApiBase {
     String path = String.format("%s/%s/networks", getBasePath(), vmId);
 
     HttpResponse httpResponse = this.restClient.perform(RestClient.Method.GET, path, null);
-    this.restClient.checkResponse(httpResponse, HttpStatus.SC_OK);
+    this.restClient.checkResponse(httpResponse, HttpStatus.SC_CREATED);
 
     return parseTaskFromHttpResponse(httpResponse);
   }
