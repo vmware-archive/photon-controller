@@ -508,7 +508,7 @@ public class PlacementTaskService extends StatefulService {
           return new PlaceSummary(r.getAddress().getHost(), r.getResult());
         })
         .collect(Collectors.toList());
-    return Utils.toJson(summary);
+    return Utils.toJson(false, false, summary);
   }
 
   /**

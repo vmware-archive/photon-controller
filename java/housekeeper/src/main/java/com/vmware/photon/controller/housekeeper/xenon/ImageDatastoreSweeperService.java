@@ -181,7 +181,8 @@ public class ImageDatastoreSweeperService extends StatefulService {
     ValidationUtils.validateTaskStage(current.taskState);
     switch (current.taskState.stage) {
       case STARTED:
-        checkState(current.taskState.subStage != null, "Invalid subStage " + Utils.toJson(current.taskState));
+        checkState(current.taskState.subStage != null, "Invalid subStage " +
+            Utils.toJson(false, false, current.taskState));
         switch (current.taskState.subStage) {
           case TRIGGER_SCAN:
             checkNotNull(current.host, "host cannot be null");
@@ -190,7 +191,8 @@ public class ImageDatastoreSweeperService extends StatefulService {
 
       default:
         // only STARTED can have sub stages
-        checkState(current.taskState.subStage == null, "Invalid subStage " + Utils.toJson(current.taskState));
+        checkState(current.taskState.subStage == null, "Invalid subStage " +
+            Utils.toJson(false, false, current.taskState));
     }
   }
 
@@ -323,7 +325,7 @@ public class ImageDatastoreSweeperService extends StatefulService {
 
                 Operation op = operations.get(queryHostSet.getId());
                 NodeGroupBroadcastResponse queryResponse = op.getBody(NodeGroupBroadcastResponse.class);
-                ServiceUtils.logInfo(this, "Host query result: %s", Utils.toJsonHtml(queryResponse));
+                ServiceUtils.logInfo(this, "Host query result: %s", Utils.toJson(true, true, queryResponse));
                 List<HostService.State> documentLinks = QueryTaskUtils
                     .getBroadcastQueryDocuments(HostService.State.class, queryResponse);
 
@@ -336,7 +338,7 @@ public class ImageDatastoreSweeperService extends StatefulService {
                           String.format("Could not find any hosts for datastore %s.", current.datastore)));
                 }
                 ServiceUtils.logInfo(this, "GetHostsForDatastore '%s' returned '%s'", current.datastore,
-                    Utils.toJson(hostSet));
+                    Utils.toJson(false, false, hostSet));
 
                 if (current.isSelfProgressionDisabled) {
                   // not sending patch to move to next stage
@@ -707,7 +709,7 @@ public class ImageDatastoreSweeperService extends StatefulService {
     List<InactiveImageDescriptor> imagesToDelete = new LinkedList<>();
     for (InactiveImageDescriptor image : inactiveImages) {
       ImageService.State referenceImage = referenceImages.get(image.getImage_id());
-      ServiceUtils.logInfo(this, Utils.toJson(referenceImage));
+      ServiceUtils.logInfo(this, Utils.toJson(false, false, referenceImage));
 
       if (image.getTimestamp() > current.imageCreateWatermarkTime ||
           image.getTimestamp() > current.imageDeleteWatermarkTime) {

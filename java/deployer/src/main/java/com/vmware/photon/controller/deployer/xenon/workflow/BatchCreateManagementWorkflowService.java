@@ -551,7 +551,8 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
 
     UploadImageTaskService.State startState = new UploadImageTaskService.State();
     startState.parentTaskServiceLink = getSelfLink();
-    startState.parentPatchBody = Utils.toJson(buildPatch(TaskStage.STARTED, TaskState.SubStage.ALLOCATE_RESOURCES));
+    startState.parentPatchBody = Utils.toJson(false, false,
+        buildPatch(TaskStage.STARTED, TaskState.SubStage.ALLOCATE_RESOURCES));
     startState.taskPollDelay = currentState.childPollInterval;
     startState.deploymentServiceLink = currentState.deploymentServiceLink;
     startState.imageName = "management-vm-image";
@@ -572,7 +573,8 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
 
     AllocateTenantResourcesTaskService.State startState = new AllocateTenantResourcesTaskService.State();
     startState.parentTaskServiceLink = getSelfLink();
-    startState.parentPatchBody = Utils.toJson(buildPatch(TaskStage.STARTED, TaskState.SubStage.CREATE_VMS));
+    startState.parentPatchBody = Utils.toJson(false, false,
+        buildPatch(TaskStage.STARTED, TaskState.SubStage.CREATE_VMS));
     startState.taskPollDelay = currentState.taskPollDelay;
     startState.deploymentServiceLink = currentState.deploymentServiceLink;
     startState.quotaLineItems = Collections.singletonList(
@@ -620,7 +622,8 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
 
     ChildTaskAggregatorService.State startState = new ChildTaskAggregatorService.State();
     startState.parentTaskLink = getSelfLink();
-    startState.parentPatchBody = Utils.toJson(buildPatch(TaskStage.STARTED, TaskState.SubStage.CREATE_CONTAINERS));
+    startState.parentPatchBody = Utils.toJson(false, false,
+        buildPatch(TaskStage.STARTED, TaskState.SubStage.CREATE_CONTAINERS));
     startState.pendingCompletionCount = vmServiceLinks.size();
     startState.errorThreshold = 0.0;
 

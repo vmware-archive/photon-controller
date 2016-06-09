@@ -214,7 +214,7 @@ public class CopyStateTriggerTaskService extends StatefulService {
         if (!getHost().getId().equals(rsp.ownerNodeId)) {
           ServiceUtils.logInfo(CopyStateTriggerTaskService.this,
               "Host[%s]: Not owner of scheduler [%s] (Owner Info [%s])",
-              getHost().getId(), getSelfLink(), Utils.toJson(rsp));
+              getHost().getId(), getSelfLink(), Utils.toJson(true, false, rsp));
           return;
         }
         sendSelfPatch(new State());

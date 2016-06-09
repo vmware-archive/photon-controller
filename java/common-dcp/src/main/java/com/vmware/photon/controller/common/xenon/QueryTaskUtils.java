@@ -163,7 +163,8 @@ public class QueryTaskUtils {
   public static Set<String> getBroadcastQueryDocumentLinks(NodeGroupBroadcastResponse response) {
 
     if (!response.failures.isEmpty()) {
-      throw new XenonRuntimeException("Failures detected in query task response: " + Utils.toJsonHtml(response));
+      throw new XenonRuntimeException("Failures detected in query task response: " +
+          Utils.toJson(true, true, response));
     }
 
     Set<String> documentLinks = new HashSet<>();
@@ -204,7 +205,8 @@ public class QueryTaskUtils {
       Class<T> documentType, NodeGroupBroadcastResponse response) {
 
     if (!response.failures.isEmpty()) {
-      throw new XenonRuntimeException("Failures detected in query task response: " + Utils.toJsonHtml(response));
+      throw new XenonRuntimeException("Failures detected in query task response: " +
+          Utils.toJson(true, true, response));
     }
 
     List<T> documents = new ArrayList<>();

@@ -55,7 +55,7 @@ public class TaskTriggerServiceTest {
 
     TaskTriggerService.State state = new TaskTriggerService.State();
     state.factoryServiceLink = TestServiceWithStageFactory.SELF_LINK;
-    state.serializedTriggerState = Utils.toJson(nestedState);
+    state.serializedTriggerState = Utils.toJson(false, false, nestedState);
     state.triggerStateClassName = nestedState.getClass().getTypeName();
     state.taskExpirationAgeMillis = 5 * 60 * 60 * 1000;
 
@@ -126,7 +126,7 @@ public class TaskTriggerServiceTest {
 
       TaskTriggerService.State savedState = host.getServiceState(TaskTriggerService.State.class, selfLink);
       assertThat(savedState.documentSelfLink, is(selfLink));
-      assertThat(Utils.toJson(savedState.serializedTriggerState), is(Utils.toJson(startState.serializedTriggerState)));
+      assertThat(savedState.serializedTriggerState, is(startState.serializedTriggerState));
       assertThat(savedState.factoryServiceLink, is(startState.factoryServiceLink));
       assertThat(savedState.taskExpirationAgeMillis, is(startState.taskExpirationAgeMillis));
 

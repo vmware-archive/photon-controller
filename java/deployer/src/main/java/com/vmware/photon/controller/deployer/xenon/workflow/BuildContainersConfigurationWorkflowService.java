@@ -341,8 +341,8 @@ public class BuildContainersConfigurationWorkflowService extends StatefulService
 
     ChildTaskAggregatorService.State startState = new ChildTaskAggregatorService.State();
     startState.parentTaskLink = getSelfLink();
-    startState.parentPatchBody = Utils.toJson(buildPatch(TaskState.TaskStage.STARTED,
-        TaskState.SubStage.SET_ZOOKEEPER_INSTANCES));
+    startState.parentPatchBody = Utils.toJson(false, false,
+        buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.SET_ZOOKEEPER_INSTANCES));
     startState.pendingCompletionCount = containerServiceLinks.size();
     startState.errorThreshold = 0.0;
 

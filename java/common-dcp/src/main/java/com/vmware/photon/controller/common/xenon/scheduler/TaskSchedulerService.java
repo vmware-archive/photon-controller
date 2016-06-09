@@ -111,7 +111,7 @@ public class TaskSchedulerService extends StatefulService {
       if (!getHost().getId().equals(rsp.ownerNodeId)) {
         ServiceUtils.logInfo(TaskSchedulerService.this,
             "Host[%s]: Not owner of scheduler [%s] (Owner Info [%s])",
-            getHost().getId(), getSelfLink(), Utils.toJson(rsp));
+            getHost().getId(), getSelfLink(), Utils.toJson(true, false, rsp));
         return;
       }
 
@@ -212,7 +212,7 @@ public class TaskSchedulerService extends StatefulService {
         }
 
         ServiceUtils.logInfo(TaskSchedulerService.this,
-            "Host[%s]: Services to start: %s", getHost().getId(), Utils.toJson(results.documentLinks));
+            "Host[%s]: Services to start: %s", getHost().getId(), Utils.toJson(true, false, results.documentLinks));
         for (int count = 0; count < Math.min(servicesToStartCount, results.documentLinks.size()); count++) {
           String docLink = results.documentLinks.get(count);
           sendStartPatch(current, docLink);

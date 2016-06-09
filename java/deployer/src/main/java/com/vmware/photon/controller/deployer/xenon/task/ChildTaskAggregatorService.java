@@ -115,8 +115,8 @@ public class ChildTaskAggregatorService extends StatefulService {
             (currentState.finishedCount + currentState.failureCount + currentState.pendingCompletionCount);
         if (failureRatio > currentState.errorThreshold) {
           ServiceUtils.logInfo(this, "Notifying parent task %s of failure: %s", currentState.parentTaskLink,
-              Utils.toJsonHtml(patchState.taskState.failure));
-          currentState.parentPatchBody = Utils.toJson(patchState);
+              Utils.toJson(true, true, patchState.taskState.failure));
+          currentState.parentPatchBody = Utils.toJson(false, false, patchState);
           currentState.pendingCompletionCount = 0;
         }
         break;
@@ -127,7 +127,8 @@ public class ChildTaskAggregatorService extends StatefulService {
         break;
 
       default:
-        throw new IllegalStateException("Unexpected patch from child task: " + Utils.toJsonHtml(patchState));
+        throw new IllegalStateException("Unexpected patch from child task: " +
+            Utils.toJson(true, true, patchState));
     }
 
     operation.complete();
