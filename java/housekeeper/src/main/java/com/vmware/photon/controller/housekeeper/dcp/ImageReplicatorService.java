@@ -299,7 +299,7 @@ public class ImageReplicatorService extends StatefulService {
 
                 imageReplicatorServiceState.dataStoreCount = datastoreSet.size();
                 patchOperation.setBody(imageReplicatorServiceState);
-                ServiceUtils.logInfo(this, "All target datastores: %s", Utils.toJson(datastoreSet));
+                ServiceUtils.logInfo(this, "All target datastores: %s", Utils.toJson(false, false, datastoreSet));
                 triggerCopyServices(datastoreSet, current);
               }
           );
@@ -459,7 +459,8 @@ public class ImageReplicatorService extends StatefulService {
         QueryTask rsp = completedOp.getBody(QueryTask.class);
 
         State s = buildPatch(current.taskInfo.stage, current.taskInfo.subStage, null);
-        ServiceUtils.logInfo(ImageReplicatorService.this, "Finished %s", Utils.toJson(rsp.results.documentLinks));
+        ServiceUtils.logInfo(ImageReplicatorService.this, "Finished %s",
+            Utils.toJson(false, false, rsp.results.documentLinks));
         s.finishedCopies = rsp.results.documentLinks.size();
 
         sendSelfPatch(s);
@@ -494,7 +495,8 @@ public class ImageReplicatorService extends StatefulService {
         QueryTask rsp = completedOp.getBody(QueryTask.class);
 
         State s = buildPatch(current.taskInfo.stage, current.taskInfo.subStage, null);
-        ServiceUtils.logInfo(ImageReplicatorService.this, "Failed %s", Utils.toJson(rsp.results.documentLinks));
+        ServiceUtils.logInfo(ImageReplicatorService.this, "Failed %s",
+            Utils.toJson(false, false, rsp.results.documentLinks));
         s.failedOrCanceledCopies = rsp.results.documentLinks.size();
 
         sendSelfPatch(s);

@@ -49,7 +49,7 @@ public class ReflectionTransformationService extends StatelessService {
         ServiceDocument convertedServiceDocument = Utils.fromJson(entry.getKey(), documentType);
         MigrationUtils.handleRenamedField(entry.getKey(), convertedServiceDocument);
 
-        results.put(Utils.toJson(convertedServiceDocument), factoryPath);
+        results.put(Utils.toJson(false, false, convertedServiceDocument), factoryPath);
       }
     }
 

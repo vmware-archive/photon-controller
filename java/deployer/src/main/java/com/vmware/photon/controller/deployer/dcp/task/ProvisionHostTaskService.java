@@ -1059,7 +1059,7 @@ public class ProvisionHostTaskService extends StatefulService {
 
     ChildTaskAggregatorService.State startState = new ChildTaskAggregatorService.State();
     startState.parentTaskLink = getSelfLink();
-    startState.parentPatchBody = Utils.toJson(buildPatch(TaskState.TaskStage.STARTED,
+    startState.parentPatchBody = Utils.toJson(false, false, buildPatch(TaskState.TaskStage.STARTED,
         TaskState.SubStage.INSTALL_VIBS));
     startState.pendingCompletionCount = vibStartOps.size();
     startState.errorThreshold = 0.0;

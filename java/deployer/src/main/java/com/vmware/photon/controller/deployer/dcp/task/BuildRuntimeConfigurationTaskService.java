@@ -632,7 +632,7 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
         .map((peerNodeIp) -> new PeerNode(peerNodeIp, port))
         .collect(Collectors.toList());
 
-    return Utils.toJson(peerNodeList);
+    return Utils.toJson(false, false, peerNodeList);
   }
 
   private void patchLoadBalancerParameters(State currentState, List<String> vmIpAddresses) {

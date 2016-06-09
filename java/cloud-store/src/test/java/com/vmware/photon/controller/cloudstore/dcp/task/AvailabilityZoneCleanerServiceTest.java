@@ -156,7 +156,7 @@ public class AvailabilityZoneCleanerServiceTest {
       AvailabilityZoneCleanerService.State savedState =
                      host.getServiceState(AvailabilityZoneCleanerService.State.class);
       if (fieldObj.getType().equals(TaskState.class)) {
-        assertThat(Utils.toJson(fieldObj.get(savedState)), is(Utils.toJson(value)));
+        assertThat(Utils.toJson(false, false, fieldObj.get(savedState)), is(Utils.toJson(false, false, value)));
       } else {
         assertThat(fieldObj.get(savedState), is(value));
       }

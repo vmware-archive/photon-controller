@@ -79,6 +79,6 @@ public class AvailabilityZoneCleanerTriggerBuilder implements TaskStateBuilder {
 
   private String buildStartState() {
     AvailabilityZoneCleanerService.State state = new AvailabilityZoneCleanerService.State();
-    return Utils.toJson(state);
+    return Utils.toJson(false, false, state);
   }
 }

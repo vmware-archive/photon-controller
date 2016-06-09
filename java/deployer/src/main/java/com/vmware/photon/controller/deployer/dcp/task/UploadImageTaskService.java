@@ -624,10 +624,10 @@ public class UploadImageTaskService extends StatefulService {
             currentState.taskPollDelay, TimeUnit.MILLISECONDS);
         break;
       case ERROR:
-        ServiceUtils.logSevere(this, "Image reached ERROR state: " + Utils.toJsonHtml(image));
+        ServiceUtils.logSevere(this, "Image reached ERROR state: " + Utils.toJson(false, true, image));
         throw new IllegalStateException("Image " + image.getId() + " reached ERROR state");
       default:
-        ServiceUtils.logSevere(this, "Image reached unexpected state: " + Utils.toJsonHtml(image));
+        ServiceUtils.logSevere(this, "Image reached unexpected state: " + Utils.toJson(false, true, image));
         throw new IllegalStateException("Image " + image.getId() + " reached unexpected state " + image.getState());
     }
   }

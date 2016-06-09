@@ -502,8 +502,8 @@ public class InitializeDeploymentMigrationWorkflowService extends StatefulServic
 
     ChildTaskAggregatorService.State startState = new ChildTaskAggregatorService.State();
     startState.parentTaskLink = getSelfLink();
-    startState.parentPatchBody = Utils.toJson(buildPatch(TaskStage.STARTED, TaskState.SubStage.CONTINOUS_MIGRATE_DATA,
-        null));
+    startState.parentPatchBody = Utils.toJson(false, false,
+        buildPatch(TaskStage.STARTED, TaskState.SubStage.CONTINOUS_MIGRATE_DATA, null));
     startState.pendingCompletionCount = vibStartOps.size();
     startState.errorThreshold = 1.0;
 

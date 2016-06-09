@@ -62,7 +62,7 @@ public class HostTransformationServiceTest {
     HostService.State[] newState = new HostService.State[1];
 
     Map<String, String> map = new HashMap<>();
-    map.put(Utils.toJson(oldState), "/some/path");
+    map.put(Utils.toJson(false, false, oldState), "/some/path");
     CountDownLatch l = new CountDownLatch(1);
 
     Operation operation = Operation
@@ -76,7 +76,7 @@ public class HostTransformationServiceTest {
         }
         Map<?, ?> body = o.getBody(Map.class);
         newState[0] = Utils.fromJson(body.entrySet().iterator().next().getKey(), HostService.State.class);
-        System.out.println(Utils.toJsonHtml(newState[0]));
+        System.out.println(Utils.toJson(true, true, newState[0]));
         l.countDown();
       })
       .setReferer(env.getHosts()[0].getPublicUri());
@@ -95,7 +95,7 @@ public class HostTransformationServiceTest {
     HostService.State[] newState = new HostService.State[1];
 
     Map<String, String> map = new HashMap<>();
-    map.put(Utils.toJson(oldState), "/some/path");
+    map.put(Utils.toJson(false, false, oldState), "/some/path");
     CountDownLatch l = new CountDownLatch(1);
 
     Operation operation = Operation
@@ -109,7 +109,7 @@ public class HostTransformationServiceTest {
         }
         Map<?, ?> body = o.getBody(Map.class);
         newState[0] = Utils.fromJson(body.entrySet().iterator().next().getKey(), HostService.State.class);
-        System.out.println(Utils.toJsonHtml(newState[0]));
+        System.out.println(Utils.toJson(true, true, newState[0]));
         l.countDown();
       })
       .setReferer(env.getHosts()[0].getPublicUri());
@@ -128,7 +128,7 @@ public class HostTransformationServiceTest {
     HostService.State[] newState = new HostService.State[1];
 
     Map<String, String> map = new HashMap<>();
-    map.put(Utils.toJson(oldState), "/some/path");
+    map.put(Utils.toJson(false, false, oldState), "/some/path");
     CountDownLatch l = new CountDownLatch(1);
 
     Operation operation = Operation
@@ -142,7 +142,7 @@ public class HostTransformationServiceTest {
         }
         Map<?, ?> body = o.getBody(Map.class);
         newState[0] = Utils.fromJson(body.entrySet().iterator().next().getKey(), HostService.State.class);
-        System.out.println(Utils.toJsonHtml(newState[0]));
+        System.out.println(Utils.toJson(true, true, newState[0]));
         l.countDown();
       })
       .setReferer(env.getHosts()[0].getPublicUri());

@@ -279,12 +279,13 @@ public class ImageDcpBackend implements ImageBackend {
       try {
         com.vmware.xenon.common.Operation result = dcpClient.get(DatastoreServiceFactory.SELF_LINK);
         QueryTask queryTask = result.getBody(QueryTask.class);
-        logger.info("Found datastores: " + Utils.toJson(queryTask));
+        logger.info("Found datastores: " + Utils.toJson(true, false, queryTask));
       } catch (DocumentNotFoundException | XenonRuntimeException e) {
         // Ignore failures -- this is just for logging purposes
       }
 
-      logger.error("expected exactly 1 imageDatastore found {} [{}]", datastores.size(), Utils.toJson(datastores));
+      logger.error("expected exactly 1 imageDatastore found {} [{}]", datastores.size(),
+          Utils.toJson(false, false, datastores));
       throw new ExternalException("expected exactly 1 imageDatastore found [" + datastores.size() + "]");
     }
 

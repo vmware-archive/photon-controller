@@ -469,7 +469,8 @@ public class CopyStateTaskService extends StatefulService {
         HostService.State fromJson = (HostService.State) convertedServiceDocument;
         fromJson.usageTags = new HashSet<>(Arrays.asList(UsageTag.CLOUD.name()));
       }
-      result = Utils.toJson(convertedServiceDocument);
+
+      result = Utils.toJson(false, false, convertedServiceDocument);
     }
 
     return result;
@@ -507,7 +508,7 @@ public class CopyStateTaskService extends StatefulService {
 
   private Object removeFactoryPathFromSelfLink(Object jsonObject, String factoryPath) {
     String selfLink = extractId(jsonObject, factoryPath);
-    return Utils.toJson(
+    return Utils.toJson(false, false,
         Utils.setJsonProperty(jsonObject, ServiceDocument.FIELD_NAME_SELF_LINK, selfLink));
   }
 

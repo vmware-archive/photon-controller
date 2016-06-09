@@ -472,7 +472,7 @@ public class CreateContainersWorkflowService extends StatefulService {
 
     ChildTaskAggregatorService.State startState = new ChildTaskAggregatorService.State();
     startState.parentTaskLink = getSelfLink();
-    startState.parentPatchBody = Utils.toJson(buildPatch(nextStage, nextSubStage, null));
+    startState.parentPatchBody = Utils.toJson(false, false, buildPatch(nextStage, nextSubStage, null));
     startState.pendingCompletionCount = containerServiceLinks.size();
     startState.errorThreshold = 0.0;
 

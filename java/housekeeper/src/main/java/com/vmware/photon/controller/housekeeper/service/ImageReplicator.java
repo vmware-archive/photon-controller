@@ -201,13 +201,13 @@ public class ImageReplicator {
     ReplicateImageStatus result;
     switch (state.taskInfo.stage) {
       case CANCELLED:
-        logger.error("Image replication failed: {}", Utils.toJson(state));
+        logger.error("Image replication failed: {}", Utils.toJson(false, false, state));
         result = new ReplicateImageStatus(ReplicateImageStatusCode.CANCELLED);
         result.setError("Image replication was cancelled.");
         break;
 
       case FAILED:
-        logger.error("Image replication failed: {}", Utils.toJson(state));
+        logger.error("Image replication failed: {}", Utils.toJson(false, false, state));
         result = new ReplicateImageStatus(ReplicateImageStatusCode.FAILED);
         if (state.taskInfo != null && state.taskInfo.failure != null) {
           result.setError(String.format("Image replication failed. Error details: %s",

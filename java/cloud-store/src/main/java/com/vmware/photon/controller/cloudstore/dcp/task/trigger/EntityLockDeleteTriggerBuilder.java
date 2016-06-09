@@ -69,7 +69,7 @@ public class EntityLockDeleteTriggerBuilder implements TaskStateBuilder {
 
     state.taskExpirationAgeMillis = this.taskExpirationAgeMillis.intValue();
     state.triggerIntervalMillis = this.triggerIntervalMillis.intValue();
-    state.serializedTriggerState = Utils.toJson(new EntityLockDeleteService.State());
+    state.serializedTriggerState = Utils.toJson(false, false, new EntityLockDeleteService.State());
     state.triggerStateClassName = EntityLockDeleteService.State.class.getName();
     state.factoryServiceLink = EntityLockDeleteFactoryService.SELF_LINK;
     state.documentSelfLink = TRIGGER_SELF_LINK;

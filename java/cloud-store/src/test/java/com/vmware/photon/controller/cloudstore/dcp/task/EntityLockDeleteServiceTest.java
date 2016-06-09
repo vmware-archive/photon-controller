@@ -157,7 +157,7 @@ public class EntityLockDeleteServiceTest {
 
       EntityLockDeleteService.State savedState = host.getServiceState(EntityLockDeleteService.State.class);
       if (fieldObj.getType().equals(TaskState.class)) {
-        assertThat(Utils.toJson(fieldObj.get(savedState)), is(Utils.toJson(value)));
+        assertThat(Utils.toJson(false, false, fieldObj.get(savedState)), is(Utils.toJson(false, false, value)));
       } else {
         assertThat(fieldObj.get(savedState), is(value));
       }

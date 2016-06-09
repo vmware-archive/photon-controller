@@ -122,7 +122,7 @@ public class OperationUtils {
         operation.getId(),
         operation.getUri(),
         operation.getReferer(),
-        Utils.toJson(operation.getBodyRaw()));
+        Utils.toJson(true, false, operation.getBodyRaw()));
   }
 
   public static String createLogMessage(Operation operation) {
@@ -153,6 +153,6 @@ public class OperationUtils {
         operation.getId(),
         operation.getUri(),
         operation.getReferer(),
-        Utils.toJson(operation.getBodyRaw()));
+        Utils.toJson(true, false, operation.getBodyRaw()));
   }
 }

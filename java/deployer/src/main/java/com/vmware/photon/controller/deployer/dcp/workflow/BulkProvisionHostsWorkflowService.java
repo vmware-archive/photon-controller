@@ -472,7 +472,7 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
     } else {
       ChildTaskAggregatorService.State startState = new ChildTaskAggregatorService.State();
       startState.parentTaskLink = getSelfLink();
-      startState.parentPatchBody = Utils.toJson(buildPatch(TaskState.TaskStage.FINISHED, null, null));
+      startState.parentPatchBody = Utils.toJson(false, false, buildPatch(TaskState.TaskStage.FINISHED, null, null));
       startState.pendingCompletionCount = hostServiceLinks.size();
       startState.errorThreshold = 1.0;
 
