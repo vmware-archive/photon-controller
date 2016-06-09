@@ -65,6 +65,8 @@ module EsxCloud::Cli
           # Get the access_token for the provided user credentials.
           puts "Logging in #{username} ..."
 
+          username = ENV["PHOTON_USERNAME_#{user_suffix}"].strip
+          password = ENV["PHOTON_PASSWORD_#{user_suffix}"].strip
           https_header = "https://"
           access_token = EsxCloud::AuthHelper.get_access_token(
               username, password, "#{https_header}#{auth_info.endpoint}")
