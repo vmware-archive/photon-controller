@@ -63,7 +63,7 @@ class EsxHypervisor(object):
         try:
             # check whether attache is installed. If not, find_module will throw ImportError.
             from host.hypervisor.esx.attache_client import AttacheClient
-            return AttacheClient(auto_sync)
+            return AttacheClient(auto_sync, errback)
         except ImportError:
             from host.hypervisor.esx.vim_client import VimClient
             return VimClient(auto_sync, errback)
