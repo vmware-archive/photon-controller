@@ -19,6 +19,7 @@ import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotBlank;
 import com.vmware.photon.controller.common.xenon.validation.WriteOnce;
 import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.ServiceDocumentDescription;
 import com.vmware.xenon.common.TaskState;
 
 /**
@@ -44,6 +45,7 @@ public class ConnectVmToSwitchTask extends ServiceDocument {
    */
   @NotBlank
   @Immutable
+  @ServiceDocument.UsageOption(option = ServiceDocumentDescription.PropertyUsageOption.SENSITIVE)
   public String username;
 
   /**
@@ -51,6 +53,7 @@ public class ConnectVmToSwitchTask extends ServiceDocument {
    */
   @NotBlank
   @Immutable
+  @ServiceDocument.UsageOption(option = ServiceDocumentDescription.PropertyUsageOption.SENSITIVE)
   public String password;
 
   /**

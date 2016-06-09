@@ -311,8 +311,8 @@ public class ImageCleanerService extends StatefulService {
               datastoreSet.add(state);
             }
 
-            ServiceUtils.logInfo(this,
-                "getAllDatastores returned %s. [count=%s]", Utils.toJson(datastoreSet), datastoreSet.size());
+            ServiceUtils.logInfo(this, "getAllDatastores returned %s. [count=%s]",
+                Utils.toJson(false, false, datastoreSet), datastoreSet.size());
 
             // create the ImageDatastoreSweeperService instances
             int dataStoreSweeperCount = 0;
@@ -440,7 +440,8 @@ public class ImageCleanerService extends StatefulService {
       QueryTask rsp = completedOp.getBody(QueryTask.class);
 
       State s = buildPatch(current.taskInfo.stage, current.taskInfo.subStage, null);
-      ServiceUtils.logInfo(ImageCleanerService.this, "Finished %s", Utils.toJson(rsp.results.documentLinks));
+      ServiceUtils.logInfo(ImageCleanerService.this, "Finished %s", Utils.toJson(false, false,
+          rsp.results.documentLinks));
 
       s.finishedDeletes = rsp.results.documentLinks.size();
       sendSelfPatch(s);
@@ -473,7 +474,7 @@ public class ImageCleanerService extends StatefulService {
 
       State s = buildPatch(current.taskInfo.stage, current.taskInfo.subStage, null);
       ServiceUtils.logInfo(ImageCleanerService.this, "Failed or Cancelled %s",
-          Utils.toJson(rsp.results.documentLinks));
+          Utils.toJson(false, false, rsp.results.documentLinks));
 
       s.failedOrCanceledDeletes = rsp.results.documentLinks.size();
       sendSelfPatch(s);

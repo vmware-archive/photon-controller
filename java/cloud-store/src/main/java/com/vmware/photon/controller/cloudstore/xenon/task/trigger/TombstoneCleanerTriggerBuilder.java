@@ -92,6 +92,6 @@ public class TombstoneCleanerTriggerBuilder implements TaskStateBuilder {
     TombstoneCleanerService.State state = new TombstoneCleanerService.State();
     state.tombstoneExpirationAgeMillis = this.tombstoneExpirationAgeMillis;
 
-    return Utils.toJson(state);
+    return Utils.toJson(false, false, state);
   }
 }

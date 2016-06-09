@@ -376,7 +376,8 @@ public class AvailabilityZoneCleanerService extends StatefulService {
   }
 
   private List<AvailabilityZoneService.State> parseAvailabilityZoneQueryResults(QueryTask result) {
-    ServiceUtils.logInfo(AvailabilityZoneCleanerService.this, "AvailabilityZone query: %s", Utils.toJson(result));
+    ServiceUtils.logInfo(AvailabilityZoneCleanerService.this, "AvailabilityZone query: %s",
+        Utils.toJson(false, false, result));
 
     List<AvailabilityZoneService.State> availabilityZoneList = new LinkedList<>();
     for (Map.Entry<String, Object> doc : result.results.documents.entrySet()) {
