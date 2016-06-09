@@ -29,9 +29,12 @@ import com.vmware.photon.controller.apife.entities.VmEntity;
 import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
 import com.vmware.photon.controller.host.gen.CreateVmResponse;
+import com.vmware.photon.controller.host.gen.NetworkConnectionSpec;
+import com.vmware.photon.controller.host.gen.NicConnectionSpec;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -74,7 +77,7 @@ public class VmCreateStepCmd extends StepCommand {
       vm = vmEntityList.get(0);
 
       CreateVmResponse response = taskCommand.getHostClient().createVm(
-          taskCommand.getReservation(), vm.getEnvironment());
+          taskCommand.getReservation(), createNetworkConnectionSpec(vm), vm.getEnvironment());
 
       vmBackend.updateState(vm, VmState.STOPPED,
           taskCommand.lookupAgentId(taskCommand.getHostClient().getHostIp()),
@@ -102,5 +105,25 @@ public class VmCreateStepCmd extends StepCommand {
       diskBackend.updateState(disk, DiskState.ATTACHED, vm.getAgent(), vm.getDatastore());
       logger.info("attached Disk: {}", disk);
     }
+  }
+
+  @VisibleForTesting
+  protected NetworkConnectionSpec createNetworkConnectionSpec(VmEntity vm) {
+    List<String> portGroups = vm.getAffinities(PORT_GROUP_KIND);
+    if (portGroups.isEmpty()) {
+      return null;
+    }
+
+    NetworkConnectionSpec spec = new NetworkConnectionSpec();
+
+    for (String portGroup : portGroups) {
+      spec.addToNic_spec(new NicConnectionSpec(portGroup));
+    }
+
+    if (!StringUtils.isBlank(vm.getDefaultGateway())) {
+      spec.setDefault_gateway(vm.getDefaultGateway());
+    }
+
+    return spec;
   }
 }

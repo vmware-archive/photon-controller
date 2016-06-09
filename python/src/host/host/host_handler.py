@@ -358,7 +358,14 @@ class HostHandler(Host.Iface):
         # Step 2: Add the nics to the create spec of the VM.
         networks = self._hypervisor.network_manager.get_vm_networks()
 
-        if len(vm.networks) != 0 and networks:
+        # TODO(shchang): request.network_connection_spec will be obsolete.
+        if request.network_connection_spec:
+            for nic_spec in request.network_connection_spec.nic_spec:
+                # Check if this esx has that network.
+                if (nic_spec.network_name and nic_spec.network_name not in networks):
+                    self._logger.info("Unknown a non provisioned network %s" % nic_spec.network_name)
+                self.hypervisor.vm_manager.add_nic(spec, nic_spec.network_name)
+        elif len(vm.networks) != 0 and networks:
             placement_networks = set(vm.networks)
             host_networks = set(networks)
 
@@ -407,6 +414,24 @@ class HostHandler(Host.Iface):
             return CreateVmResponse(CreateVmResultCode.SYSTEM_ERROR, "Failed to create VM")
 
         self._logger.debug("VM create, done creating vm, vm-id: %s" % vm.id)
+
+        # Set the guest properties for ip address.
+        # We have to do this as a separate reconfigure call as we need to know
+        # the device to network mapping and the vm uuid for mac address
+        # generation.
+        if request.network_connection_spec:
+            try:
+                spec = self.hypervisor.vm_manager.update_vm_spec()
+                info = self.hypervisor.vm_manager.get_vm_config(vm.id)
+                if self.hypervisor.vm_manager.set_guestinfo_ip(spec, info, request.network_connection_spec):
+                    self.hypervisor.vm_manager.update_vm(vm.id, spec)
+            except Exception:
+                self._logger.exception("error to set the ip/mac address of vm with id %s" % vm.id)
+                self.try_delete_vm(vm.id)
+                return CreateVmResponse(CreateVmResultCode.SYSTEM_ERROR,
+                                        "Failed to set the ip/mac address of the VM %s" % sys.exc_info()[1])
+
+        self._logger.debug("VM create, done updating network spec vm, vm-id: %s" % vm.id)
 
         # Step 6: touch the timestamp file for the image
         if image_id is not None:

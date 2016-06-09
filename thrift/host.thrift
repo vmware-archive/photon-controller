@@ -132,6 +132,16 @@ struct Ipv4Address {
   2: required string netmask
 }
 
+struct NicConnectionSpec {
+  1: required string network_name
+  2: optional Ipv4Address ip_address
+}
+
+struct NetworkConnectionSpec {
+  1: required list<NicConnectionSpec> nic_spec
+  2: optional string default_gateway
+}
+
 // Create VM
 struct CreateVmRequest {
   // Reservation returned by ReserveResponse#reservation
@@ -139,6 +149,9 @@ struct CreateVmRequest {
 
   // VM environment
   2: optional map<string,string> environment
+
+  // VM Nic and IP adddress specification
+  3: optional NetworkConnectionSpec network_connection_spec
 
   99: optional tracing.TracingInfo tracing_info
 }
