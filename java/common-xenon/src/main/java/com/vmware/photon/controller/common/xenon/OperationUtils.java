@@ -18,7 +18,6 @@ import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundExce
 import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceErrorResponse;
-import com.vmware.xenon.common.Utils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -115,16 +114,6 @@ public class OperationUtils {
     }
   }
 
-  public static String createLogMessageWithBody(Operation operation) {
-    return String.format(
-        "Action={%s}, OperationId={%s}, Uri={%s}, Referer={%s}, jsonBody={%s}",
-        operation.getAction(),
-        operation.getId(),
-        operation.getUri(),
-        operation.getReferer(),
-        Utils.toJson(operation.getBodyRaw()));
-  }
-
   public static String createLogMessage(Operation operation) {
     return String.format(
         "Action={%s}, OperationId={%s}, Uri={%s}, Referer={%s}, jsonBody={NOT LOGGED}",
@@ -143,16 +132,5 @@ public class OperationUtils {
         operation.getId(),
         operation.getUri(),
         operation.getReferer());
-  }
-
-  public static String createLogMessageWithStatusAndBody(Operation operation) {
-    return String.format(
-        "Action={%s}, StatusCode={%s}, OperationId={%s}, Uri={%s}, Referer={%s}, jsonBody={%s}",
-        operation.getAction(),
-        operation.getStatusCode(),
-        operation.getId(),
-        operation.getUri(),
-        operation.getReferer(),
-        Utils.toJson(operation.getBodyRaw()));
   }
 }

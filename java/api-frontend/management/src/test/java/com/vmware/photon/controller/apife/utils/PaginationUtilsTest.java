@@ -87,7 +87,7 @@ public class PaginationUtilsTest {
         exampleData.name = "document" + i;
 
         queryResult.documentLinks.add(documentLink);
-        queryResult.documents.put(documentLink, Utils.toJson(exampleData));
+        queryResult.documents.put(documentLink, Utils.toJson(false, false, exampleData));
       }
 
       queryResult.nextPageLink = UUID.randomUUID().toString();

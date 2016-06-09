@@ -107,7 +107,7 @@ public class ReflectionTransformationServiceTest {
     hostState = TestHelper.createHostService(env, hostState);
 
     Map<String, String> map = new HashMap<>();
-    map.put(Utils.toJson(hostState), "/some/path");
+    map.put(Utils.toJson(false, false, hostState), "/some/path");
     CountDownLatch l = new CountDownLatch(1);
     SampleService.State[] newState = new SampleService.State[1];
 
@@ -122,7 +122,7 @@ public class ReflectionTransformationServiceTest {
           }
           Map<?, ?> body = o.getBody(Map.class);
           newState[0] = Utils.fromJson(body.entrySet().iterator().next().getKey(), SampleService.State.class);
-          System.out.println(Utils.toJsonHtml(newState[0]));
+          System.out.println(Utils.toJson(false, true, newState[0]));
           l.countDown();
         })
         .setReferer(env.getHosts()[0].getPublicUri())

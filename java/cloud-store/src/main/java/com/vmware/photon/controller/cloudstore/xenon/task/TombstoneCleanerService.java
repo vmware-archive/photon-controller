@@ -248,7 +248,8 @@ public class TombstoneCleanerService extends StatefulService {
           Set<String> taskSet = new HashSet<>();
           for (Operation op : ops.values()) {
             NodeGroupBroadcastResponse query = op.getBody(NodeGroupBroadcastResponse.class);
-            ServiceUtils.logInfo(TombstoneCleanerService.this, "Task broadcast query: %s", Utils.toJson(query));
+            ServiceUtils.logInfo(TombstoneCleanerService.this, "Task broadcast query: %s",
+                Utils.toJson(false, false, query));
             if (!query.failures.isEmpty()) {
               failTask(new RuntimeException("Failures in broadcast query for stale tasks."));
               return;
@@ -368,7 +369,7 @@ public class TombstoneCleanerService extends StatefulService {
   }
 
   private List<TombstoneService.State> parseTombstoneQueryResults(QueryTask result) {
-    ServiceUtils.logInfo(TombstoneCleanerService.this, "Tombstone query: %s", Utils.toJson(result));
+    ServiceUtils.logInfo(TombstoneCleanerService.this, "Tombstone query: %s", Utils.toJson(false, false, result));
 
     List<TombstoneService.State> tombstoneList = new LinkedList<>();
     for (Map.Entry<String, Object> doc : result.results.documents.entrySet()) {

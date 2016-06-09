@@ -349,7 +349,7 @@ public class ImageSeederService extends StatefulService {
             return;
           }
 
-          ServiceUtils.logInfo(this, "All target image datastores: %s", Utils.toJson(datastoreSet));
+          ServiceUtils.logInfo(this, "All target image datastores: %s", Utils.toJson(false, false, datastoreSet));
           this.triggerHostToHostCopyServices(current, datastoreSet);
 
           // Patch self with the new subStage and the count of triggered ImageHostToHostCopyService instances
@@ -466,11 +466,12 @@ public class ImageSeederService extends StatefulService {
 
         State s = buildPatch(current.taskInfo.stage, current.taskInfo.subStage, null);
         s.finishedCopies = finishedRsp.results.documentLinks.size();
-        ServiceUtils.logInfo(ImageSeederService.this, "Finished %s", Utils.toJson(finishedRsp.results.documentLinks));
+        ServiceUtils.logInfo(ImageSeederService.this, "Finished %s",
+            Utils.toJson(false, false, finishedRsp.results.documentLinks));
 
         s.failedOrCancelledCopies = failedOrCanceledRsp.results.documentLinks.size();
         ServiceUtils.logInfo(ImageSeederService.this, "FailedOrCanceledRsp %s",
-            Utils.toJson(failedOrCanceledRsp.results.documentLinks));
+            Utils.toJson(false, false, failedOrCanceledRsp.results.documentLinks));
 
         sendSelfPatch(s);
       } catch (Throwable e) {

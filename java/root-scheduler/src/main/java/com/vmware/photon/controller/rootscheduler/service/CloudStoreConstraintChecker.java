@@ -415,7 +415,7 @@ public class CloudStoreConstraintChecker implements ConstraintChecker {
     }
     state.extraDatastoreConstraints.add(datastoreConstraint);
     logger.info("Adding datastore constraint to fulfill datastore tag constraint: {}",
-        Utils.toJson(datastoreConstraint));
+        Utils.toJson(false, false, datastoreConstraint));
 
     // Remove the datastore tag constraint we just considered
     state.dsTagConstraints.remove(0);
@@ -645,7 +645,8 @@ public class CloudStoreConstraintChecker implements ConstraintChecker {
    * be zero candidates.
    */
   private void getCandidates_Success(State state) {
-    logger.info("Found {} candidate(s): {}", state.candidates.size(), Utils.toJson(state.candidates.values()));
+    logger.info("Found {} candidate(s): {}", state.candidates.size(),
+        Utils.toJson(false, false, state.candidates.values()));
     state.completion.handle(state.candidates, null);
     return;
   }
