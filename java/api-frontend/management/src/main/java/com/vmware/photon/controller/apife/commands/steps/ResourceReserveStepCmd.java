@@ -16,6 +16,7 @@ package com.vmware.photon.controller.apife.commands.steps;
 import com.vmware.photon.controller.api.DiskState;
 import com.vmware.photon.controller.api.EphemeralDisk;
 import com.vmware.photon.controller.api.PersistentDisk;
+import com.vmware.photon.controller.api.Project;
 import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.api.VmState;
 import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
@@ -58,6 +59,7 @@ import com.vmware.photon.controller.common.clients.exceptions.NotEnoughMemoryRes
 import com.vmware.photon.controller.common.clients.exceptions.ResourceConstraintException;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
 import com.vmware.photon.controller.common.clients.exceptions.StaleGenerationException;
+import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
 import com.vmware.photon.controller.common.zookeeper.gen.ServerAddress;
 import com.vmware.photon.controller.flavors.gen.Flavor;
@@ -79,6 +81,8 @@ import com.vmware.xenon.common.TaskState;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableBiMap;
+import com.google.common.collect.ImmutableMap;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -568,15 +572,17 @@ public class ResourceReserveStepCmd extends StepCommand {
     }
 
     if (networks.isEmpty()) {
-      if (!this.useVirtualNetwork) {
-        try {
+      try {
+        if (!this.useVirtualNetwork) {
           networks.add(networkBackend.getDefault().getId());
-        } catch (NetworkNotFoundException ex) {
-          // TODO(ysheng): we temporarily relax the default network constraint.
-          // We need to fix integration tests as well as unit tests such
-          // that we guarantee that there exists a default network.
-          logger.debug("Temporarily relax default network constraint");
+        } else {
+          networks.add(getDefaultVirtualNetwork(entity.getProjectId()));
         }
+      } catch (NetworkNotFoundException ex) {
+        // TODO(ysheng): we temporarily relax the default network constraint.
+        // We need to fix integration tests as well as unit tests such
+        // that we guarantee that there exists a default network.
+        logger.debug("Temporarily relax default network constraint");
       }
     }
 
@@ -612,6 +618,27 @@ public class ResourceReserveStepCmd extends StepCommand {
       return virtualNetwork.logicalSwitchId;
     } catch (DocumentNotFoundException e) {
       throw new NetworkNotFoundException(id);
+    }
+  }
+
+  private String getDefaultVirtualNetwork(String projectId) throws NetworkNotFoundException {
+    ApiFeXenonRestClient apiFeXenonRestClient = taskCommand.getApiFeXenonRestClient();
+    ImmutableMap.Builder<String, String> termsBuilder = new ImmutableBiMap.Builder<>();
+    termsBuilder.put("isDefault", Boolean.TRUE.toString());
+
+    if (projectId != null) {
+      termsBuilder.put("parentId", projectId);
+      termsBuilder.put("parentKind", Project.KIND);
+    }
+
+    List<VirtualNetworkService.State> defaultNetworks =
+        apiFeXenonRestClient.queryDocuments(VirtualNetworkService.State.class, termsBuilder.build());
+
+    if (defaultNetworks != null && !defaultNetworks.isEmpty()) {
+      VirtualNetworkService.State defaultNetwork = defaultNetworks.iterator().next();
+      return ServiceUtils.getIDFromDocumentSelfLink(defaultNetwork.documentSelfLink);
+    } else {
+      throw new NetworkNotFoundException("Cannot find default network for project " + projectId);
     }
   }
 }
