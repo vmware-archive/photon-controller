@@ -482,12 +482,30 @@ public class DatastoreServiceTest {
     }
 
     /**
-     * Test default expiration is not applied if it is already specified in current state.
+     * Test that default expiration is not applied.
      *
      * @throws Throwable
      */
     @Test
-    public void testDefaultExpirationIsNotAppliedIfItIsAlreadySpecifiedInCurrentState() throws Throwable {
+    public void testDefaultExpirationIsNotApplied() throws Throwable {
+      TestHelper.testExpirationOnDelete(
+          dcpRestClient,
+          host,
+          DatastoreServiceFactory.SELF_LINK,
+          testState,
+          DatastoreService.State.class,
+          0L,
+          0L,
+          ServiceUtils.computeExpirationTime(TimeUnit.MINUTES.toMicros(1)));
+    }
+
+    /**
+     * Test that expiration specified in current state is ignored.
+     *
+     * @throws Throwable
+     */
+    @Test
+    public void testCurrentStateExpirationIsNotApplied() throws Throwable {
       TestHelper.testExpirationOnDelete(
           dcpRestClient,
           host,
@@ -496,43 +514,25 @@ public class DatastoreServiceTest {
           DatastoreService.State.class,
           ServiceUtils.computeExpirationTime(Integer.MAX_VALUE),
           0L,
-          ServiceUtils.computeExpirationTime(Integer.MAX_VALUE));
+          ServiceUtils.computeExpirationTime(TimeUnit.MINUTES.toMicros(1)));
     }
 
     /**
-     * Test default expiration is not applied if it is already specified in delete operation state.
+     * Test that expiration specified in the delete operation gets applied over others.
      *
      * @throws Throwable
      */
     @Test
-    public void testDefaultExpirationIsNotAppliedIfItIsAlreadySpecifiedInDeleteOperation() throws Throwable {
+    public void testDeleteOperationExpirationIsApplied() throws Throwable {
       TestHelper.testExpirationOnDelete(
           dcpRestClient,
           host,
           DatastoreServiceFactory.SELF_LINK,
           testState,
           DatastoreService.State.class,
-          ServiceUtils.computeExpirationTime(TimeUnit.MINUTES.toMicros(1)),
+          ServiceUtils.computeExpirationTime(TimeUnit.MINUTES.toMicros(2)),
           ServiceUtils.computeExpirationTime(Integer.MAX_VALUE),
           ServiceUtils.computeExpirationTime(Integer.MAX_VALUE));
-    }
-
-    /**
-     * Test expiration of deleted document using default value.
-     *
-     * @throws Throwable
-     */
-    @Test
-    public void testDeleteWithDefaultExpiration() throws Throwable {
-      TestHelper.testExpirationOnDelete(
-          dcpRestClient,
-          host,
-          DatastoreServiceFactory.SELF_LINK,
-          testState,
-          DatastoreService.State.class,
-          0L,
-          0L,
-          ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_ON_DELETE_DOC_EXPIRATION_TIME_MICROS));
     }
   }
 
