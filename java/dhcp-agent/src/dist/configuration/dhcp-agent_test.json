@@ -1,6 +1,6 @@
 {
   "DHCP-AGENT_BIND_ADDRESS": "0.0.0.0",
-  "DHCP-AGENT_DCP_STORAGE_PATH": "/etc/esxcloud/dhcp-agent/sandbox_17000",
+  "DHCP-AGENT_XENON_STORAGE_PATH": "/etc/esxcloud/dhcp-agent/sandbox_17000",
   "LOG_DIRECTORY": "/vagrant/log",
   "DHCP-AGENT_PORT": 17000,
   "DHCP-AGENT_INSTALL_DIRECTORY": "/usr/lib/esxcloud/dhcp-agent",
