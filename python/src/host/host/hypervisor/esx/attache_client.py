@@ -54,6 +54,16 @@ ATTACHE_ERROR_MAP = {
 }
 
 
+ATTACHE_FATAL_ERRORS = [
+    60010,  # ERROR_ATTACHE_LIBINIT_FAILED
+    60011,  # ERROR_ATTACHE_CONNECT_FAILED
+    60012,  # ERROR_ATTACHE_LOGIN_FAILED
+    60013,  # ERROR_ATTACHE_SESSION_FAILED
+    60014,  # ERROR_ATTACHE_ACCESS_DENIED
+    60105   # ERROR_ATTACHE_VIM_FAULT_NOT_AUTHENTICATED
+]
+
+
 def attache_error_handler(func):
     def nested(self, *args, **kwargs):
         try:
@@ -65,6 +75,10 @@ def attache_error_handler(func):
             self._logger.exception(msg)
             if e.errorcode in ATTACHE_ERROR_MAP:
                 raise ATTACHE_ERROR_MAP.get(e.errorcode)(msg)
+            elif e.errorcode in ATTACHE_FATAL_ERRORS:
+                self._logger.error("Lost connection to hostd. Commit suicide.", exc_info=True)
+                if self._errback:
+                    self._errback()
             else:
                 raise Exception(msg)
         except:
@@ -76,11 +90,12 @@ def attache_error_handler(func):
 
 
 class AttacheClient(HostClient):
-    def __init__(self, auto_sync):
+    def __init__(self, auto_sync, errback=None):
         self._logger = logging.getLogger(__name__)
         self._logger.info("AttacheClient init")
         self._sync_thread = None
         self._auto_sync = auto_sync
+        self._errback = errback
         self._client = attache.client()
         self._session = None
         self._update_listeners = set()
@@ -108,7 +123,7 @@ class AttacheClient(HostClient):
         self._logger.info("Start attache sync vm cache thread")
         self._client.EnablePropertyCache(self._session)
         self.update_cache()
-        self._sync_thread = SyncAttacheCacheThread(self)
+        self._sync_thread = SyncAttacheCacheThread(self, errback=self._errback)
         self._sync_thread.start()
 
     def _stop_syncing_cache(self, wait=False):
@@ -395,10 +410,11 @@ class AttacheVmConfigSpec(VmConfigSpec):
 class SyncAttacheCacheThread(threading.Thread):
     """ Periodically sync vm cache with remote esx server
     """
-    def __init__(self, attache_client, min_interval=20):
+    def __init__(self, attache_client, min_interval=20, errback=None):
         super(SyncAttacheCacheThread, self).__init__()
         self._logger = logging.getLogger(__name__)
         self.setDaemon(True)
+        self.errback = errback
         self.attache_client = weakref.ref(attache_client)
         self.min_interval = min_interval
         self.active = True
@@ -423,6 +439,10 @@ class SyncAttacheCacheThread(threading.Thread):
             except:
                 self._logger.exception("Failed to poll update %d" % self.fail_count)
                 self.fail_count += 1
+                if self.fail_count == 5:
+                    self._logger.error("Failed to poll update 5 times")
+                    if self.errback:
+                        self.errback()
                 self._wait_between_failures()
         attache.DelistThisThread()
 
