@@ -2,7 +2,7 @@ xenon:
   bindAddress: "0.0.0.0"
   port: 17000
   registrationAddress: "{{{REGISTRATION_ADDRESS}}}"
-  storagePath: "{{{DHCP-AGENT_DCP_STORAGE_PATH}}}"
+  storagePath: "{{{DHCP-AGENT_XENON_STORAGE_PATH}}}"
   peerNodes:
 {{#PEER_NODES}}
   - http://{{peerAddress}}:{{peerPort}}

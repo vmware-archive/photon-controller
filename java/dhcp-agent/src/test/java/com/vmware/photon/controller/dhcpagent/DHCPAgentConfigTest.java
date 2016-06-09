@@ -50,6 +50,6 @@ public class DHCPAgentConfigTest {
     assertThat(xenonConfig.getPeerNodes(), arrayContaining("http://127.0.0.1:17000"));
     assertThat(xenonConfig.getPort(), is(17000));
     assertThat(xenonConfig.getRegistrationAddress(), is("127.0.0.1"));
-    assertThat(xenonConfig.getStoragePath(), is("/tmp/dcp/dhcp-agent/"));
+    assertThat(xenonConfig.getStoragePath(), is("/tmp/xenon/dhcp-agent/"));
   }
 }
