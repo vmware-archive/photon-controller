@@ -153,7 +153,7 @@ public class DeploymentResourceTest extends ResourceTest {
         .target(uri)
         .request()
         .post(Entity.entity(buildConfig(key, value), MediaType.APPLICATION_JSON_TYPE));
-    assertThat(response.getStatus(), is(500));
+    assertThat(response.getStatus(), is(400));
 
   }
 
@@ -415,14 +415,10 @@ public class DeploymentResourceTest extends ResourceTest {
 
   private String buildConfig(String key, String value) {
     StringBuilder builder = new StringBuilder();
-    if (key == null) {
-      return builder.toString();
-    }
-
-    if (!key.isEmpty()) {
-      builder.append("{\"" + key + "\":\"" + value + "\"}");
+    if (key == null || key.isEmpty()) {
+        builder.append("{}");
     } else {
-      builder.append("{}");
+        builder.append("{\"" + key + "\":\"" + value + "\"}");
     }
 
     return builder.toString();
