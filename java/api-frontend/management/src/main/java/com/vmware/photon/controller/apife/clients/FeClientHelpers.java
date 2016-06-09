@@ -48,7 +48,6 @@ public class FeClientHelpers {
       TaskBackend taskBackend, TaskEntity taskEntity)
       throws ExternalException {
     taskEntity.findStep(Operation.REPLICATE_IMAGE).setDisabled(false);
-    taskEntity.findStep(Operation.QUERY_REPLICATE_IMAGE_TASK_RESULT).setDisabled(false);
 
     TaskCommand command = commandFactory.create(taskEntity);
     logger.info("Run asynchronous task steps for task: {} {}", taskEntity.getId(), taskEntity.getOperation());

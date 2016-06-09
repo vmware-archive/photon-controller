@@ -71,16 +71,10 @@ public class ImageReplicateStepCmd extends StepCommand {
 
       ImageSeederService.State serviceDocument = taskCommand.getHousekeeperXenonClient()
           .replicateImage(dataStoreIdList.get(0), imageEntity);
-
-      // pass remoteTaskId to XenonTaskStatusStepCmd
-      for (StepEntity nextStep : taskCommand.getTask().getSteps()) {
-        nextStep.createOrUpdateTransientResource(XenonTaskStatusStepCmd.REMOTE_TASK_LINK_RESOURCE_KEY,
-            serviceDocument.documentSelfLink);
-      }
     } else {
       logger.info("Skip replicating image");
-      this.imageBackend.updateState(this.imageEntity, ImageState.READY);
     }
+    this.imageBackend.updateState(this.imageEntity, ImageState.READY);
   }
 
   @Override
@@ -100,7 +94,7 @@ public class ImageReplicateStepCmd extends StepCommand {
       try {
         this.imageBackend.updateState(this.imageEntity, ImageState.ERROR);
       } catch (ExternalException e) {
-        logger.warn("Marking image to error is failed" + this.imageEntity, e);
+        logger.warn("Marking image state to ERROR is failed. ImageEntity: {} Error: {}", this.imageEntity, e);
       }
     }
   }
