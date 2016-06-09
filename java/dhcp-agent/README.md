@@ -32,6 +32,6 @@ For unit test failures, Gradle will produce a nice HTML report on the test failu
 cases, which are usually sufficient to diagnose the failure.
 
 For debugging issues with real service instances, you can take a look at the component logs. Inside the DHCP agent
-container, component logs are written to `/var/log/esxcloud/dhcp-agent.log`. In devbox scenarios, this directory is
+container, component logs are written to `/var/log/photoncontroller/dhcp-agent.log`. In devbox scenarios, this directory is
 mapped to `log/dhcp-agent` under the devbox directory; in production scenarios, this directory is mapped to
-`/var/log/esxcloud/dhcp-agent` in the underlying VM.
+`/var/log/photoncontroller/dhcp-agent` in the underlying VM.

@@ -57,7 +57,7 @@ public class DHCPAgentModuleTest {
       assertThat(test.getBind(), is("0.0.0.0"));
       assertThat(test.getRegistrationAddress(), is("127.0.0.1"));
       assertThat(test.getPort(), is(17000));
-      assertThat(test.getPath(), is("/tmp/dcp/dhcp-agent/"));
+      assertThat(test.getPath(), is("/tmp/xenon/dhcp-agent/"));
     }
   }
 }
