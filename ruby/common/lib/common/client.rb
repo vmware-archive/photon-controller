@@ -322,8 +322,9 @@ module EsxCloud
     end
 
     # @param [String] id
+    # @param [Hash] payload
     # @return [Deployment]
-    def deploy_deployment(id)
+    def deploy_deployment(id, payload)
     end
 
     # @return [DeploymentList]
