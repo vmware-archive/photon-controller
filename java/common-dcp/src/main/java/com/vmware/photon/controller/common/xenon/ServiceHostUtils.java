@@ -233,7 +233,7 @@ public class ServiceHostUtils {
 
     if (!latch.await(timeout, TimeUnit.MILLISECONDS)) {
       throw new TimeoutException(
-          String.format("One or several of service(s) %s not available", Utils.toJson(serviceLinks)));
+          String.format("One or several of service(s) %s not available", Utils.toJson(false, false, serviceLinks)));
     }
 
     if (error.getSuppressed().length > 0) {
@@ -585,7 +585,7 @@ public class ServiceHostUtils {
                 UriUtils.buildUri(host, factory)));
         Operation result = sendRequestAndWait(host, op, referrer);
         logger.info(String.format("%s: %s: %s", host.getPort(), factory.getSimpleName(),
-            Utils.toJson(result.getBodyRaw())));
+            Utils.toJson(true, false, result.getBodyRaw())));
       } catch (Throwable ex) {
         logger.info(String.format("Could not get service: %s", factory.getCanonicalName()));
       }

@@ -49,7 +49,7 @@ public class UpgradeInformationService extends StatelessService {
           .filter(i -> factories.contains(i.destinationFactoryServicePath))
           .map(i -> new UpgradeInfo(i))
           .collect(Collectors.toList());
-      getOperation.setBody(Utils.toJsonHtml(new UpgradeList(info))).complete();
+      getOperation.setBody(Utils.toJson(false, true, new UpgradeList(info))).complete();
     });
 
     getHost().queryServiceUris(options, false, op);

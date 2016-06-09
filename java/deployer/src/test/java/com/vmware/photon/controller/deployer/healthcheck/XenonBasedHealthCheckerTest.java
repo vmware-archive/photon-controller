@@ -70,7 +70,7 @@ public class XenonBasedHealthCheckerTest {
   private void mockSendRequest(StatusType statusType) {
     doAnswer(invocation -> {
       Operation op = (Operation) invocation.getArguments()[0];
-      op.setBody(Utils.toJson(new Status(statusType)));
+      op.setBody(Utils.toJson(false, false, new Status(statusType)));
       op.complete();
       return null;
     }).when(service).sendRequest(any(Operation.class));
