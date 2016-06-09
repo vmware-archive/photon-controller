@@ -82,7 +82,7 @@ public class TombstoneDcpBackend implements TombstoneBackend {
         return toEntity(tombstoneDocs.get(0));
 
       default:
-        logger.error("Entity ({}) has more than one tombstone ({}).", id, Utils.toJson(tombstoneDocs));
+        logger.error("Entity ({}) has more than one tombstone ({}).", id, Utils.toJson(false, false, tombstoneDocs));
         throw new RuntimeException("Multiple tombstones for entity: " + id);
     }
   }
