@@ -121,7 +121,8 @@ public enum ErrorCode {
   CLUSTER_TYPE_NOT_CONFIGURED("ClusterTypeNotConfigured", Response.Status.NOT_FOUND),
   PAGE_EXPIRED("PageExpired", Response.Status.NOT_FOUND),
   INVALID_PAGE_SIZE("InvalidPageSize", Response.Status.BAD_REQUEST),
-  INVALID_IMAGE_DATASTORE_SET("InvalidImageDatastoreSet", Response.Status.BAD_REQUEST);
+  INVALID_IMAGE_DATASTORE_SET("InvalidImageDatastoreSet", Response.Status.BAD_REQUEST),
+  INVALID_DEPLOYMENT_DESIRED_STATE("", Response.Status.BAD_REQUEST);
 
   private final String code;
   private final int httpStatus;
