@@ -822,7 +822,7 @@ class AgentCommonTests(object):
 
     def test_network(self):
         vm_wrapper = VmWrapper(self.host_client)
-        image = DiskImage("ttylinux", CloneType.FULL_COPY)
+        image = DiskImage("ttylinux", CloneType.COPY_ON_WRITE)
         disks = [
             Disk(new_id(), self.DEFAULT_DISK_FLAVOR.name, False, True,
                  image=image, capacity_gb=1,
@@ -854,7 +854,7 @@ class AgentCommonTests(object):
     def test_port_group(self):
         # create vm with network_name (port_group) but without ip
         vm_wrapper = VmWrapper(self.host_client)
-        image = DiskImage("ttylinux", CloneType.FULL_COPY)
+        image = DiskImage("ttylinux", CloneType.COPY_ON_WRITE)
         disks = [
             Disk(new_id(), self.DEFAULT_DISK_FLAVOR.name, False, True,
                  image=image, capacity_gb=1,
