@@ -62,9 +62,7 @@ class ApiClientHelper
       service_locator_url = ENV["PHOTON_AUTH_LS_ENDPOINT"].strip
 
       username = ENV["PHOTON_USERNAME_#{user_suffix}"].strip
-      puts "username: #{username}"
       password = ENV["PHOTON_PASSWORD_#{user_suffix}"].strip
-      puts "password: #{password}"
 
       https_header = "https://"
       EsxCloud::AuthHelper.get_access_token(
