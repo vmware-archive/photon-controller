@@ -13,7 +13,7 @@
 en_name=$(ip addr show label "en*" | head -n 1 | sed 's/^[0-9]*: \(en.*\): .*/\1/')
 container_ip=$(ifconfig $en_name | grep 'inet addr:' | cut -d: -f2 | awk '{ print $1 }')
 
-CONFIG_PATH="/etc/esxcloud"
+CONFIG_PATH="/etc/photon"
 DHCP_AGENT_BIN="{{{DHCP-AGENT_INSTALL_DIRECTORY}}}/bin"
 DHCP_AGENT_CONFIG="$CONFIG_PATH/dhcp-agent.yml"
 

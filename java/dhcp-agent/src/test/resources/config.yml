@@ -2,6 +2,6 @@ xenon:
   bindAddress: "0.0.0.0"
   port: 17000
   registrationAddress: "127.0.0.1"
-  storagePath: "/tmp/dcp/dhcp-agent/"
+  storagePath: "/tmp/xenon/dhcp-agent/"
   peerNodes:
   - http://127.0.0.1:17000
