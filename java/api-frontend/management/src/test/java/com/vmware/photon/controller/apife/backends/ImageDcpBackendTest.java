@@ -424,8 +424,8 @@ public class ImageDcpBackendTest {
       String id = createImageDocument(dcpClient, imageName, ImageState.READY, 1L, 10, 8, 5, 2);
 
       TaskEntity taskDelete = imageBackend.prepareImageDelete(id);
-      assertThat(taskDelete.getSteps().size(), is(1));
-      assertThat(taskDelete.getSteps().get(0).getOperation(), is(Operation.DELETE_IMAGE));
+      assertThat(taskDelete.getState(), is(TaskEntity.State.COMPLETED));
+      assertThat(taskDelete.getSteps().size(), is(0));
     }
 
     @Test(expectedExceptions = InvalidImageStateException.class)
