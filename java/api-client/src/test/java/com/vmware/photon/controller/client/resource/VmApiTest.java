@@ -770,7 +770,7 @@ public class VmApiTest extends ApiTestBase {
     ObjectMapper mapper = new ObjectMapper();
     String serializedTask = mapper.writeValueAsString(responseTask);
 
-    setupMocks(serializedTask, HttpStatus.SC_OK);
+    setupMocks(serializedTask, HttpStatus.SC_CREATED);
 
     VmApi vmApi = new VmApi(restClient);
 
