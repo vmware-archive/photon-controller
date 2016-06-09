@@ -40,12 +40,12 @@
     },
     {
       "type": "file",
-      "source": "../../java/dhcp-agent/build/distributions/dhcp-agent-0.1.0-SNAPSHOT.tar",
-      "destination": "/usr/local/dhcp-agent/dhcp-agent-0.1.0-SNAPSHOT.tar"
+      "source": "{{ user `dhcpAgentTarPath` }}",
+      "destination": "/usr/local/dhcp-agent/dhcp-agent.tar"
     },
     {
       "type": "shell",
-      "inline": "tar xf /usr/local/dhcp-agent/dhcp-agent-0.1.0-SNAPSHOT.tar --strip-components=1 -C /usr/local/dhcp-agent && rm /usr/local/dhcp-agent/dhcp-agent-0.1.0-SNAPSHOT.tar"
+      "inline": "tar xf /usr/local/dhcp-agent/dhcp-agent.tar --strip-components=1 -C /usr/local/dhcp-agent && rm /usr/local/dhcp-agent/dhcp-agent.tar"
     },
     {
       "type": "shell",
