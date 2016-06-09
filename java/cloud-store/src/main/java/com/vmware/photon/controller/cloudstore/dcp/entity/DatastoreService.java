@@ -36,6 +36,7 @@ import static com.google.common.base.Preconditions.checkState;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 /**
  * This class implements a DCP micro-service which provides a plain data object
@@ -183,6 +184,11 @@ public class DatastoreService extends StatefulService {
 
   @Override
   public void handleDelete(Operation deleteOperation) {
+    State currentState = getState(deleteOperation);
+    // Expire the document in a minute as we might recreate the document and we do not want to fail with document
+    // deleted already exception. We are doing 1 minute instead of immediate because the delete to be replicated across
+    // all the nodes.
+    currentState.documentExpirationTimeMicros = ServiceUtils.computeExpirationTime(TimeUnit.MINUTES.toMicros(1));
     ServiceUtils.expireDocumentOnDelete(this, State.class, deleteOperation);
   }
 

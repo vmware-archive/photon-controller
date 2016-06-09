@@ -38,6 +38,7 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.VirtualNetworkService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.VmServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.helpers.UpgradeHelper;
 import com.vmware.photon.controller.cloudstore.dcp.task.AvailabilityZoneCleanerFactoryService;
+import com.vmware.photon.controller.cloudstore.dcp.task.DatastoreDeleteFactoryService;
 import com.vmware.photon.controller.cloudstore.dcp.task.EntityLockCleanerFactoryService;
 import com.vmware.photon.controller.cloudstore.dcp.task.EntityLockDeleteFactoryService;
 import com.vmware.photon.controller.cloudstore.dcp.task.TombstoneCleanerFactoryService;
@@ -125,6 +126,7 @@ public class CloudStoreXenonHostTest {
       EntityLockDeleteFactoryService.SELF_LINK,
       TombstoneCleanerFactoryService.SELF_LINK,
       AvailabilityZoneCleanerFactoryService.SELF_LINK,
+      DatastoreDeleteFactoryService.SELF_LINK,
 
       // discovery
       RootNamespaceService.SELF_LINK,
