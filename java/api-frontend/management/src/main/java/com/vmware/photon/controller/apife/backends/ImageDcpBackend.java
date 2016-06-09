@@ -166,8 +166,8 @@ public class ImageDcpBackend implements ImageBackend {
           String.format("Invalid operation to delete image %s in state PENDING_DELETE", image.getId()));
     }
 
-    TaskEntity task = deleteTask(image);
-    return task;
+    tombstone(image);
+    return taskBackend.createCompletedTask(image, Operation.DELETE_IMAGE);
   }
 
   @Override
@@ -420,23 +420,6 @@ public class ImageDcpBackend implements ImageBackend {
     ServiceDocumentQueryResult queryResult = findDocumentsByName(name, pageSize);
     return PaginationUtils.xenonQueryResultToResourceList(ImageService.State.class, queryResult,
         state -> convertToEntity(state));
-  }
-
-
-  private TaskEntity deleteTask(ImageEntity image) throws ExternalException {
-    List<StepEntity> stepEntities = new ArrayList<>();
-    List<BaseEntity> entityList = new ArrayList<>();
-    entityList.add(image);
-
-    StepEntity step = new StepEntity();
-    stepEntities.add(step);
-    step.addResources(entityList);
-    step.setOperation(Operation.DELETE_IMAGE);
-
-    TaskEntity task = taskBackend.createTaskWithSteps(image, Operation.DELETE_IMAGE, false, stepEntities);
-    task.getToBeLockedEntities().add(image);
-
-    return task;
   }
 
   private Image toApiRepresentation(ImageEntity imageEntity) {
