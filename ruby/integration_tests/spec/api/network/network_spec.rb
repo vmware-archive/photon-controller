@@ -183,6 +183,43 @@ describe "network", management: true do
     end
   end
 
+  describe "#set_default", dcp: true do
+    it "sets default network successfully without existing default network" do
+      network = create_network(spec)
+      expect(network.is_default).to be_false
+
+      expect(client.set_default(network.id)).to be_true
+      network = client.find_network_by_id(network.id)
+      expect(network.is_default).to be_true
+    end
+
+    it "sets default network successfully with existing default network" do
+      network1 = create_network(spec)
+      expect(client.set_default(network1.id)).to be_true
+
+      network2 = create_network(spec)
+      expect(client.set_default(network2.id)).to be_true
+
+      network1 = client.find_network_by_id(network1.id)
+      network2 = client.find_network_by_id(network2.id)
+      expect(network1.is_default).to be_false
+      expect(network2.is_default).to be_true
+    end
+
+    it "sets same default network multiple times" do
+      network = create_network(spec)
+      expect(network.is_default).to be_false
+
+      expect(client.set_default(network.id)).to be_true
+      network = client.find_network_by_id(network.id)
+      expect(network.is_default).to be_true
+
+      expect(client.set_default(network.id)).to be_true
+      network = client.find_network_by_id(network.id)
+      expect(network.is_default).to be_true
+    end
+  end
+
   private
 
   def create_network(spec)
