@@ -173,7 +173,8 @@ describe "migrate finalize", upgrade: true do
         req = VersionRequest.new
         res = agent_client.get_version req
         puts host.address
-        expect(res.version).to eq "0.9.1"
+        expected_version = ENV["AGENT_VERSION"] || "#{`git rev-parse --abbrev-ref HEAD`}-#{`git rev-parse --short HEAD`}"
+        expect(res.version).to eq expected_version
       end
     end
   end
