@@ -3,7 +3,6 @@
 # unset PYTHONPATH to prevent polluting the pip installer
 unset PYTHONPATH
 
-ESX_VERSION=${ESX_VERSION:-5.5.0}
 TOPLEVEL=${GIT_ROOT:-$(git rev-parse --show-toplevel)}
 REVISION=${GIT_REVISION:-$(git rev-parse HEAD)}
 
@@ -116,17 +115,14 @@ build_for_py_ver() {
      > $DEST_VIB_LAYOUT/$FIREWALL_STATS_CONF
 
 
-   AGENT_VERSION=$(cat ../src/agent/VERSION)
    if [ -n "$PROMOTE_NUMBER" ]; then
-     AGENT_VERSION="$AGENT_VERSION.$PROMOTE_NUMBER"
+     AGENT_VERSION="$GERRIT_BRANCH.$PROMOTE_NUMBER"
    else
-     AGENT_VERSION="$AGENT_VERSION.dev"
+     AGENT_VERSION="$GERRIT_BRANCH.dev"
    fi
    ../misc/fill_template $SRC_VIB_LAYOUT/descriptor.xml \
-     ESX_VERSION $esx_version \
-     AGENT_VERSION $AGENT_VERSION \
+		 AGENT_VERSION  $AGENT_VERSION\
      > $DEST_VIB_LAYOUT/descriptor.xml
-
    # Need to deactivate virtualenv before running vibauthor(python app)
    deactivate
 }
@@ -140,4 +136,4 @@ for esxver in 6.0.0 5.5.0; do
    ESX_VERSION=$esxver
    build_for_py_ver $esxver
 done
-./vibauthor.sh -C -t $DEST_VIB_LAYOUT -v $DIST_DIR/photon-controller-agent-$AGENT_VERSION-$ESX_VERSION.vib -f
+./vibauthor.sh -C -t $DEST_VIB_LAYOUT -v $DIST_DIR/photon-controller-agent-$AGENT_VERSION.vib -f

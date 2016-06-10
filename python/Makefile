@@ -14,6 +14,23 @@ ifdef DISABLE_HYPERVISOR_LOGGING
 	TEST_OPTS += --logging-filter=-__hypervisor__
 endif
 
+ifndef BRANCH
+	BRANCH=$(shell git rev-parse --abbrev-ref HEAD)
+endif
+
+# we are using this variable to set the version within the vib descriptor.xml
+ifndef GERRIT_BRANCH
+	GERRIT_BRANCH=$(BRANCH)
+endif
+
+# this is the version the agent reports through thrift
+ifndef VERSION
+  VERSION=$(GERRIT_BRANCH)-$(shell git rev-parse --short HEAD)
+endif
+
+export VERSION
+export GERRIT_BRANCH
+
 export TEST_OPTS
 export PROMOTE_NUMBER
 
@@ -88,7 +105,7 @@ endif
 
 .PHONY: deploy
 
-vib: deploy
+vib: version deploy
 
 .PHONY: vib
 
