@@ -573,6 +573,24 @@ public class HostServiceTest {
       assertThat(savedState.cpuCount, is(hostCpuCount));
       assertThat(savedState.memoryMb, is(hostMemoryMb));
       assertThat(savedState.esxVersion, is(esxVersion));
+
+      retryCount = 0;
+      do {
+        Thread.sleep(500);
+      } while (getTotalDatastoreCount(testEnvironment) < 10 && retryCount++ < 10);
+      assertThat(getTotalDatastoreCount(testEnvironment), is(10L));
+
+      patchState = new HostService.State();
+      patchState.agentState = AgentState.MISSING;
+      testEnvironment.sendPatchAndWait(createdState.documentSelfLink, patchState);
+      savedState = testEnvironment.getServiceState(createdState.documentSelfLink, HostService.State.class);
+      assertThat(savedState.agentState, is(AgentState.MISSING));
+
+      retryCount = 0;
+      do {
+        Thread.sleep(500);
+      } while (getTotalDatastoreCount(testEnvironment) > 0 && retryCount++ < 10);
+      assertThat(getTotalDatastoreCount(testEnvironment), is(0L));
     }
 
     @Test
@@ -664,6 +682,16 @@ public class HostServiceTest {
         returnValue.add(datastore);
       }
       return returnValue;
+    }
+
+    private Long getTotalDatastoreCount(TestEnvironment environment) throws Throwable {
+      QueryTask queryTask = QueryTask.Builder.createDirectTask()
+          .setQuery(QueryTask.Query.Builder.create()
+              .addKindFieldClause(DatastoreService.State.class)
+              .build())
+          .build();
+      QueryTask result = environment.sendQueryAndWait(queryTask);
+      return result.results.documentCount;
     }
   }
 

@@ -17,6 +17,8 @@ import com.vmware.photon.controller.agent.gen.AgentControl;
 import com.vmware.photon.controller.api.AgentState;
 import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.UsageTag;
+import com.vmware.photon.controller.cloudstore.xenon.task.DatastoreDeleteFactoryService;
+import com.vmware.photon.controller.cloudstore.xenon.task.DatastoreDeleteService;
 import com.vmware.photon.controller.cloudstore.xenon.upgrade.HostTransformationService;
 import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.clients.AgentControlClient;
@@ -67,6 +69,7 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * This class implements a DCP micro-service which provides a plain data object
@@ -174,21 +177,38 @@ public class HostService extends StatefulService {
 
       boolean stateChangedToReady =
           startState.state != HostState.READY && patchState.state == HostState.READY;
+      boolean agentStateChangedToActive =
+          startState.agentState != AgentState.ACTIVE && patchState.agentState == AgentState.ACTIVE;
+      boolean agentStateChangedToMissing =
+          startState.agentState != AgentState.MISSING && patchState.agentState == AgentState.MISSING;
+
 
       PatchUtils.patchState(startState, patchState);
       validateState(startState);
 
       patchOperation.complete();
 
-      // If the host state changed to READY, the host service
-      // proactively calls the agent to get host configuration
-      // and update the host document. This is done as an
-      // optimization for host provisioning.
-      // In-general, host configuration is updated as part of
-      // handleMaintenance of the Host Service.
-      if (stateChangedToReady) {
+      // If the host state changed to READY, the host service proactively calls the agent to get host configuration
+      // and update the host document. This gets exercised during host provisioning and also when a host is moved
+      // back to READY state from MAINTENANCE, NOT_PROVISIONED, etc.
+      // If the agent state changed to ACTIVE from null or MISSING, then also the host service proactively calls the
+      // agent to get host configuration and update the host document. This is needed to make sure that when an agent
+      // which was temporarily unavailable came back online, we make sure that the host config has not changed.
+      // Apart from these two cases, host configuration is updated as part of handleMaintenance of the Host Service
+      // at periodic intervals.
+      if (stateChangedToReady || agentStateChangedToActive) {
         getHostConfig(null, startState);
       }
+
+      // If the agent state changed to MISSING, then the hosts' reported datastores may be eligible for deletion. So
+      // we call the delete datastore task on all the datastores which were previously reported by this host. The
+      // delete datastore task decides if the datastore needs to be deleted or not. To make sure that the deleted
+      // documents are recreated when the agent becomes active, we get the host config everytime the agent becomes
+      // active.
+      if (agentStateChangedToMissing) {
+        deleteDatastores(startState.reportedDatastores);
+      }
+
     } catch (IllegalStateException t) {
       ServiceUtils.failOperationAsBadRequest(this, patchOperation, t);
     } catch (Throwable t) {
@@ -346,6 +366,15 @@ public class HostService extends StatefulService {
     List<Network> networks = hostConfig.getNetworks();
     Set<String> imageDatastoreIds = hostConfig.getImage_datastore_ids();
 
+    // Get the list of datastores which became inactive and call the datastore delete task on them
+    if (hostState.reportedDatastores != null && datastores != null) {
+      List<String> datastoreIds = datastores.stream().map(datastore -> datastore.getId()).collect(Collectors.toList());
+      Set<String> inactiveDatastoreIds = hostState.reportedDatastores.stream()
+          .filter(id -> !datastoreIds.contains(id))
+          .collect(Collectors.toSet());
+      deleteDatastores(inactiveDatastoreIds);
+    }
+
     try {
       HostService.State patchState = new HostService.State();
       patchState.agentState = AgentState.ACTIVE;
@@ -466,6 +495,20 @@ public class HostService extends StatefulService {
     }
   }
 
+  private void deleteDatastores(Set<String> datastoreIds) {
+    if (datastoreIds != null) {
+      for (String id : datastoreIds) {
+        DatastoreDeleteService.State startState = new DatastoreDeleteService.State();
+        startState.parentServiceLink = getSelfLink();
+        startState.datastoreId = id;
+
+        sendRequest(Operation
+            .createPost(this, DatastoreDeleteFactoryService.SELF_LINK)
+            .setBody(startState));
+      }
+    }
+  }
+
   @Override
   public ServiceDocument getDocumentTemplate() {
     ServiceDocument template = super.getDocumentTemplate();
@@ -580,7 +623,7 @@ public class HostService extends StatefulService {
      * and hence cannot share the same default port number. We implemented a test hook in {@link VmService} entity,
      * but since DeploymentWorkflowService automatically creates the VmService entities, we cannot set that test hook
      * directly. So we use this metadata as an additional test hook, and we will assign the test port number to the
-     * VmService entity in {@link com.vmware.photon.controller.deployer.dcp.task.CreateVmSpecTaskService}
+     * VmService entity in CreateVmSpecTaskService.
      */
     public static final String METADATA_KEY_NAME_DEPLOYER_DCP_PORT = "DEPLOYER_DCP_PORT";
 
