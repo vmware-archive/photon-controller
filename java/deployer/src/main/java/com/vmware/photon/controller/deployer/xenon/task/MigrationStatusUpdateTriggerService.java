@@ -84,7 +84,6 @@ public class MigrationStatusUpdateTriggerService extends StatefulService {
     QueryTask queryTask = QueryTask.Builder.createDirectTask()
         .setQuery(QueryTask.Query.Builder.create()
             .addKindFieldClause(CopyStateTaskService.State.class, QueryTask.Query.Occurance.SHOULD_OCCUR)
-            .addKindFieldClause(UploadVibTaskService.State.class, QueryTask.Query.Occurance.SHOULD_OCCUR)
             .build())
         .addOptions(EnumSet.of(
             QueryTask.QuerySpecification.QueryOption.BROADCAST,
@@ -134,23 +133,8 @@ public class MigrationStatusUpdateTriggerService extends StatefulService {
                     state.taskState.stage == TaskStage.FINISHED)
                 .count()));
 
-    List<UploadVibTaskService.State> uploadVibTaskStates = documents.entrySet().stream()
-        .filter((entry) -> entry.getKey().startsWith(UploadVibTaskFactoryService.SELF_LINK))
-        .map((entry) -> Utils.fromJson(entry.getValue(), UploadVibTaskService.State.class))
-        .collect(Collectors.toList());
-
-    long vibsUploaded = uploadVibTaskStates.stream()
-        .filter((state) -> state.taskState.stage == TaskStage.FINISHED)
-        .count();
-
-    long vibsUploading = uploadVibTaskStates.stream()
-        .filter((state) -> state.taskState.stage == TaskStage.CREATED || state.taskState.stage == TaskStage.STARTED)
-        .count();
-
     DeploymentService.State patchState = new DeploymentService.State();
     patchState.dataMigrationProgress = dataMigrationProgress;
-    patchState.vibsUploaded = vibsUploaded;
-    patchState.vibsUploading = vibsUploading;
 
     sendRequest(HostUtils
         .getCloudStoreHelper(this)

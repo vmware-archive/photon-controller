@@ -29,6 +29,7 @@ import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
 import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
+import com.vmware.photon.controller.deployer.xenon.DeployerServiceGroup;
 import com.vmware.photon.controller.deployer.xenon.task.ChildTaskAggregatorFactoryService;
 import com.vmware.photon.controller.deployer.xenon.task.ChildTaskAggregatorService;
 import com.vmware.photon.controller.deployer.xenon.task.ProvisionHostTaskFactoryService;
@@ -500,6 +501,7 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
       ProvisionHostTaskService.State startState = new ProvisionHostTaskService.State();
       startState.deploymentServiceLink = currentState.deploymentServiceLink;
       startState.hostServiceLink = hostServiceLink.next();
+      startState.workQueueServiceLink = DeployerServiceGroup.PROVISION_HOST_WORK_QUEUE_SELF_LINK;
 
       TaskUtils.startTaskAsync(
           this,
@@ -533,6 +535,7 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
       ProvisionHostTaskService.State startState = new ProvisionHostTaskService.State();
       startState.parentTaskServiceLink = aggregatorServiceLink;
       startState.deploymentServiceLink = currentState.deploymentServiceLink;
+      startState.workQueueServiceLink = DeployerServiceGroup.PROVISION_HOST_WORK_QUEUE_SELF_LINK;
       startState.hostServiceLink = hostServiceLink;
       return Operation.createPost(this, ProvisionHostTaskFactoryService.SELF_LINK).setBody(startState);
     });

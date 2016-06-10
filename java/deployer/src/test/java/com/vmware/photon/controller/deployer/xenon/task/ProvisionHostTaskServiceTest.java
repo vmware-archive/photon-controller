@@ -40,6 +40,7 @@ import com.vmware.photon.controller.deployer.helpers.xenon.MockHelper;
 import com.vmware.photon.controller.deployer.helpers.xenon.TestEnvironment;
 import com.vmware.photon.controller.deployer.helpers.xenon.TestHost;
 import com.vmware.photon.controller.deployer.xenon.DeployerContext;
+import com.vmware.photon.controller.deployer.xenon.DeployerServiceGroup;
 import com.vmware.photon.controller.host.gen.GetConfigResultCode;
 import com.vmware.photon.controller.nsxclient.NsxClient;
 import com.vmware.photon.controller.nsxclient.NsxClientFactory;
@@ -48,7 +49,7 @@ import com.vmware.photon.controller.nsxclient.datatypes.FabricNodeState;
 import com.vmware.photon.controller.nsxclient.datatypes.TransportNodeState;
 import com.vmware.photon.controller.stats.plugin.gen.StatsPluginConfig;
 import com.vmware.xenon.common.Operation;
-import com.vmware.xenon.common.Service;
+import com.vmware.xenon.common.Service.ServiceOption;
 import com.vmware.xenon.common.ServiceHost;
 import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
@@ -99,8 +100,6 @@ import java.util.concurrent.Executors;
  */
 public class ProvisionHostTaskServiceTest {
 
-  private final String configFilePath = "/config.yml";
-
   /**
    * Dummy test case to make IntelliJ recognize this as a test class.
    */
@@ -122,7 +121,8 @@ public class ProvisionHostTaskServiceTest {
 
     @Test
     public void testServiceOptions() {
-      assertThat(provisionHostTaskService.getOptions(), is(EnumSet.noneOf(Service.ServiceOption.class)));
+      assertThat(provisionHostTaskService.getOptions(),
+          is(EnumSet.of(ServiceOption.CONCURRENT_GET_HANDLING, ServiceOption.PERSISTENCE)));
     }
   }
 
@@ -542,14 +542,6 @@ public class ProvisionHostTaskServiceTest {
       verify(fabricApi, times(3)).getTransportNodeState(eq("TRANSPORT_NODE_ID"), any());
       verifyNoMoreInteractions(fabricApi);
 
-      verify(httpFileServiceClient)
-          .uploadFile(eq(vibDirectory.getAbsolutePath() + "/vib1.vib"), anyString(), eq(false));
-      verify(httpFileServiceClient)
-          .uploadFile(eq(vibDirectory.getAbsolutePath() + "/vib2.vib"), anyString(), eq(false));
-      verify(httpFileServiceClient)
-          .uploadFile(eq(vibDirectory.getAbsolutePath() + "/vib3.vib"), anyString(), eq(false));
-      verifyNoMoreInteractions(httpFileServiceClient);
-
       verify(agentControlClient, times(7))
           .setIpAndPort(eq(hostState.hostAddress), eq(hostState.agentPort));
 
@@ -601,14 +593,6 @@ public class ProvisionHostTaskServiceTest {
 
       verifyNoMoreInteractions(fabricApi);
 
-      verify(httpFileServiceClient)
-          .uploadFile(eq(vibDirectory.getAbsolutePath() + "/vib1.vib"), anyString(), eq(false));
-      verify(httpFileServiceClient)
-          .uploadFile(eq(vibDirectory.getAbsolutePath() + "/vib2.vib"), anyString(), eq(false));
-      verify(httpFileServiceClient)
-          .uploadFile(eq(vibDirectory.getAbsolutePath() + "/vib3.vib"), anyString(), eq(false));
-      verifyNoMoreInteractions(httpFileServiceClient);
-
       verify(agentControlClient, times(7))
           .setIpAndPort(eq(hostState.hostAddress), eq(hostState.agentPort));
 
@@ -658,11 +642,6 @@ public class ProvisionHostTaskServiceTest {
               (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
 
       TestHelper.assertTaskStateFinished(finalState.taskState);
-
-      verify(httpFileServiceClient)
-          .uploadFile(eq(vibDirectory.getAbsolutePath() + "/vib1.vib"), anyString(), eq(false));
-
-      verifyNoMoreInteractions(httpFileServiceClient);
     }
 
     @Test
@@ -828,47 +807,6 @@ public class ProvisionHostTaskServiceTest {
     }
 
     @Test
-    public void testUploadVibFailure() throws Throwable {
-
-      doReturn(MockHelper.mockUploadFile(HttpsURLConnection.HTTP_UNAUTHORIZED))
-          .when(httpFileServiceClient)
-          .uploadFile(anyString(), anyString(), anyBoolean());
-
-      ProvisionHostTaskService.State finalState =
-          testEnvironment.callServiceAndWaitForState(
-              ProvisionHostTaskFactoryService.SELF_LINK,
-              startState,
-              ProvisionHostTaskService.State.class,
-              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
-
-      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
-      assertThat(finalState.taskState.subStage, nullValue());
-      assertThat(finalState.taskState.failure.statusCode, is(400));
-      assertThat(finalState.taskState.failure.message,
-          containsString("Unexpected HTTP result 401 when uploading VIB file"));
-      assertThat(finalState.taskState.failure.message, containsString("to host hostAddress"));
-    }
-
-    @Test
-    public void testInstallVibFailure() throws Throwable {
-
-      TestHelper.createFailScriptFile(deployerContext, ProvisionHostTaskService.INSTALL_VIB_SCRIPT_NAME);
-
-      ProvisionHostTaskService.State finalState =
-          testEnvironment.callServiceAndWaitForState(
-              ProvisionHostTaskFactoryService.SELF_LINK,
-              startState,
-              ProvisionHostTaskService.State.class,
-              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
-
-      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
-      assertThat(finalState.taskState.subStage, nullValue());
-      assertThat(finalState.taskState.failure.statusCode, is(400));
-      assertThat(finalState.taskState.failure.message, containsString("Installing VIB file"));
-      assertThat(finalState.taskState.failure.message, containsString("to host hostAddress failed with exit code 1"));
-    }
-
-    @Test
     public void testWaitForAgentFailure() throws Throwable {
 
       doAnswer(MockHelper.mockGetAgentStatus(AgentStatusCode.RESTARTING))
@@ -985,6 +923,7 @@ public class ProvisionHostTaskServiceTest {
     startState.deploymentServiceLink = "DEPLOYMENT_SERVICE_LINK";
     startState.hostServiceLink = "HOST_SERVICE_LINK";
     startState.controlFlags = ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED;
+    startState.workQueueServiceLink = DeployerServiceGroup.PROVISION_HOST_WORK_QUEUE_SELF_LINK;
 
     if (stage != null) {
       startState.taskState = new ProvisionHostTaskService.TaskState();
