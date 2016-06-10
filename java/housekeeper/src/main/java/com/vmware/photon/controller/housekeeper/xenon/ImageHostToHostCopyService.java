@@ -575,7 +575,7 @@ public class ImageHostToHostCopyService extends StatefulService {
    */
   private void sendTaskSchedulerServicePatch() {
     TaskSchedulerService.State s = new TaskSchedulerService.State();
-    TaskSchedulerServiceHelper.sendPatchToOwner(this, getHost(), HousekeeperXenonServiceHost
+    TaskSchedulerServiceHelper.sendPatchToOwner(this, getHost(), HousekeeperServiceGroup
         .getTaskSchedulerImageHostToHostServiceUri(), s, UriUtils.buildUri(getHost(), getSelfLink()));
   }
 

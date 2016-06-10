@@ -20,6 +20,7 @@ import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
+import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
 import com.vmware.photon.controller.common.xenon.host.XenonConfig;
 import com.vmware.photon.controller.common.xenon.scheduler.TaskSchedulerServiceFactory;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
@@ -58,9 +59,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 /**
- * Tests {@link HousekeeperXenonServiceHost}.
+ * Tests {@link HousekeeperServiceGroup}.
  */
-public class HousekeeperXenonServiceHostTest {
+public class HousekeeperServiceGroupTest {
 
   private static File storageDir;
   private static final String configFilePath = "/config.yml";
@@ -70,8 +71,9 @@ public class HousekeeperXenonServiceHostTest {
    */
   private static final long SERVICES_STARTUP_TIMEOUT = TimeUnit.SECONDS.toMillis(30);
 
-  private HousekeeperXenonServiceHost host;
-  private HousekeeperConfig housekeeperConfig;
+  private PhotonControllerXenonHost host;
+  private HousekeeperServiceGroup housekeeperServiceGroup;
+  private HousekeeperConfig config;
   private CloudStoreHelper cloudStoreHelper;
   private HostClientFactory hostClientFactory;
   private ServiceConfigFactory serviceConfigFactory;
@@ -94,7 +96,7 @@ public class HousekeeperXenonServiceHostTest {
 
     @BeforeClass
     public void setUpClass() throws Exception {
-      housekeeperConfig = ConfigBuilder.build(HousekeeperConfig.class,
+      config = ConfigBuilder.build(HousekeeperConfig.class,
           ConfigTest.class.getResource(configFilePath).getPath());
 
       cloudStoreServerSet = mock(ServerSet.class);
@@ -107,14 +109,16 @@ public class HousekeeperXenonServiceHostTest {
       when(serviceConfigFactory.create(anyString())).thenReturn(serviceConfig);
       nsxClientFactory = new NsxClientFactory();
 
-      storageDir = new File(housekeeperConfig.getXenonConfig().getStoragePath());
+      storageDir = new File(config.getXenonConfig().getStoragePath());
       FileUtils.deleteDirectory(storageDir);
     }
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      host = new HousekeeperXenonServiceHost(housekeeperConfig.getXenonConfig(), cloudStoreHelper, hostClientFactory,
-          serviceConfigFactory, nsxClientFactory);
+      host = new PhotonControllerXenonHost(config.getXenonConfig(), hostClientFactory, null,
+          serviceConfigFactory, nsxClientFactory, cloudStoreHelper);
+      housekeeperServiceGroup = new HousekeeperServiceGroup();
+      host.registerHousekeeper(housekeeperServiceGroup);
     }
 
     @AfterMethod
@@ -138,8 +142,10 @@ public class HousekeeperXenonServiceHostTest {
       assertThat(storageDir.exists(), is(false));
 
       // Check that the host will create the storage directory.
-      host = new HousekeeperXenonServiceHost(housekeeperConfig.getXenonConfig(), cloudStoreHelper, hostClientFactory,
-          serviceConfigFactory, nsxClientFactory);
+      host = new PhotonControllerXenonHost(config.getXenonConfig(), hostClientFactory, null,
+          serviceConfigFactory, nsxClientFactory, cloudStoreHelper);
+      housekeeperServiceGroup = new HousekeeperServiceGroup();
+      host.registerHousekeeper(housekeeperServiceGroup);
 
       assertThat(storageDir.exists(), is(true));
       assertThat(host, is(notNullValue()));
@@ -175,7 +181,7 @@ public class HousekeeperXenonServiceHostTest {
 
     @BeforeClass
     private void setUpClass() throws Throwable {
-      housekeeperConfig = ConfigBuilder.build(HousekeeperConfig.class,
+      config = ConfigBuilder.build(HousekeeperConfig.class,
           ConfigTest.class.getResource(configFilePath).getPath());
 
       cloudStoreServerSet = mock(ServerSet.class);
@@ -184,14 +190,16 @@ public class HousekeeperXenonServiceHostTest {
       serviceConfigFactory = mock(ServiceConfigFactory.class);
       nsxClientFactory = new NsxClientFactory();
 
-      storageDir = new File(housekeeperConfig.getXenonConfig().getStoragePath());
+      storageDir = new File(config.getXenonConfig().getStoragePath());
       FileUtils.deleteDirectory(storageDir);
     }
 
     @BeforeMethod
     private void setUp() throws Throwable {
-      host = new HousekeeperXenonServiceHost(housekeeperConfig.getXenonConfig(), cloudStoreHelper, hostClientFactory,
-          serviceConfigFactory, nsxClientFactory);
+      host = new PhotonControllerXenonHost(config.getXenonConfig(), hostClientFactory, null,
+          serviceConfigFactory, nsxClientFactory, cloudStoreHelper);
+      housekeeperServiceGroup = new HousekeeperServiceGroup();
+      host.registerHousekeeper(housekeeperServiceGroup);
     }
 
     @AfterMethod
@@ -233,7 +241,7 @@ public class HousekeeperXenonServiceHostTest {
 
     @BeforeClass
     private void setUpClass() throws Throwable {
-      housekeeperConfig = ConfigBuilder.build(HousekeeperConfig.class,
+      config = ConfigBuilder.build(HousekeeperConfig.class,
           ConfigTest.class.getResource(configFilePath).getPath());
 
       cloudStoreServerSet = mock(ServerSet.class);
@@ -242,14 +250,16 @@ public class HousekeeperXenonServiceHostTest {
       serviceConfigFactory = mock(ServiceConfigFactory.class);
       nsxClientFactory = new NsxClientFactory();
 
-      storageDir = new File(housekeeperConfig.getXenonConfig().getStoragePath());
+      storageDir = new File(config.getXenonConfig().getStoragePath());
       FileUtils.deleteDirectory(storageDir);
     }
 
     @BeforeMethod
     private void setUp() throws Throwable {
-      host = new HousekeeperXenonServiceHost(housekeeperConfig.getXenonConfig(), cloudStoreHelper, hostClientFactory,
-          serviceConfigFactory, nsxClientFactory);
+      host = new PhotonControllerXenonHost(config.getXenonConfig(), hostClientFactory, null,
+          serviceConfigFactory, nsxClientFactory, cloudStoreHelper);
+      housekeeperServiceGroup = new HousekeeperServiceGroup();
+      host.registerHousekeeper(housekeeperServiceGroup);
       host.start();
       ServiceHostUtils.waitForServiceAvailability(host, SERVICES_STARTUP_TIMEOUT, serviceSelfLinks.clone());
     }
@@ -281,11 +291,11 @@ public class HousekeeperXenonServiceHostTest {
 
     private final long maintenanceInterval = TimeUnit.MILLISECONDS.toMicros(500);
     private final File storageDir2 = new File("/tmp/dcp/16001/");
-    private HousekeeperXenonServiceHost host2;
+    private PhotonControllerXenonHost host2;
 
     @BeforeClass
     private void setUpClass() throws Throwable {
-      housekeeperConfig = ConfigBuilder.build(HousekeeperConfig.class,
+      config = ConfigBuilder.build(HousekeeperConfig.class,
           ConfigTest.class.getResource(configFilePath).getPath());
 
       cloudStoreServerSet = mock(ServerSet.class);
@@ -294,7 +304,7 @@ public class HousekeeperXenonServiceHostTest {
       serviceConfigFactory = mock(ServiceConfigFactory.class);
       nsxClientFactory = new NsxClientFactory();
 
-      storageDir = new File(housekeeperConfig.getXenonConfig().getStoragePath());
+      storageDir = new File(config.getXenonConfig().getStoragePath());
       FileUtils.deleteDirectory(storageDir);
     }
 
@@ -305,8 +315,10 @@ public class HousekeeperXenonServiceHostTest {
       xenonConfig.setPort(16000);
       xenonConfig.setStoragePath(storageDir.getAbsolutePath());
 
-      host = new HousekeeperXenonServiceHost(xenonConfig, cloudStoreHelper, hostClientFactory,
-          serviceConfigFactory, nsxClientFactory);
+      host = new PhotonControllerXenonHost(xenonConfig, hostClientFactory, null,
+          serviceConfigFactory, nsxClientFactory, cloudStoreHelper);
+      housekeeperServiceGroup = new HousekeeperServiceGroup();
+      host.registerHousekeeper(housekeeperServiceGroup);
 
       host.setMaintenanceIntervalMicros(maintenanceInterval);
       host.start();
@@ -317,8 +329,10 @@ public class HousekeeperXenonServiceHostTest {
       xenonConfig2.setPort(16001);
       xenonConfig2.setStoragePath(storageDir2.getAbsolutePath());
 
-      host2 = new HousekeeperXenonServiceHost(xenonConfig2, cloudStoreHelper, hostClientFactory,
-          serviceConfigFactory, nsxClientFactory);
+      host2 = new PhotonControllerXenonHost(xenonConfig2, hostClientFactory, null,
+          serviceConfigFactory, nsxClientFactory, cloudStoreHelper);
+      HousekeeperServiceGroup housekeeperServiceGroup2 = new HousekeeperServiceGroup();
+      host2.registerHousekeeper(housekeeperServiceGroup2);
       host2.setMaintenanceIntervalMicros(maintenanceInterval);
       host2.start();
       ServiceHostUtils.waitForServiceAvailability(host2, SERVICES_STARTUP_TIMEOUT, serviceSelfLinks.clone());
@@ -342,7 +356,7 @@ public class HousekeeperXenonServiceHostTest {
       ServiceHostUtils.joinNodeGroup(host2, host.getUri().getHost(), host.getPort());
 
       ServiceHostUtils.waitForNodeGroupConvergence(
-          new HousekeeperXenonServiceHost[]{host, host2},
+          new PhotonControllerXenonHost[]{host, host2},
           ServiceUriPaths.DEFAULT_NODE_GROUP,
           ServiceHostUtils.DEFAULT_NODE_GROUP_CONVERGENCE_MAX_RETRIES,
           ServiceHostUtils.DEFAULT_NODE_GROUP_CONVERGENCE_SLEEP);
@@ -371,8 +385,8 @@ public class HousekeeperXenonServiceHostTest {
         ImageCleanerTriggerServiceFactory.SELF_LINK,
         ImageSeederSyncTriggerServiceFactory.SELF_LINK,
         TaskSchedulerServiceFactory.SELF_LINK,
-        HousekeeperXenonServiceHost.getTriggerCleanerServiceUri(),
-        HousekeeperXenonServiceHost.getImageSeederSyncServiceUri(),
-        HousekeeperXenonServiceHost.IMAGE_COPY_SCHEDULER_SERVICE);
+        HousekeeperServiceGroup.getTriggerCleanerServiceUri(),
+        HousekeeperServiceGroup.getImageSeederSyncServiceUri(),
+        HousekeeperServiceGroup.IMAGE_COPY_SCHEDULER_SERVICE);
   }
 }
