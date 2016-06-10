@@ -42,7 +42,7 @@ import javax.ws.rs.core.Response;
 /**
  * This resource is for network set port group API.
  */
-@Path(NetworkResourceRoutes.NETWORK_SET_PORTGROUPS_PATH)
+@Path(NetworkResourceRoutes.SUBNET_SET_PORTGROUPS_PATH)
 @Api(value = NetworkResourceRoutes.API)
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)

@@ -45,7 +45,7 @@ public class NetworkPortGroupsSetResourceTest extends ResourceTest {
   private String networkId = "network1";
 
   private String networkSetPortGroupsRoute =
-      UriBuilder.fromPath(NetworkResourceRoutes.NETWORK_SET_PORTGROUPS_PATH).build(networkId).toString();
+      UriBuilder.fromPath(NetworkResourceRoutes.SUBNET_SET_PORTGROUPS_PATH).build(networkId).toString();
 
   private String taskId = "task1";
 

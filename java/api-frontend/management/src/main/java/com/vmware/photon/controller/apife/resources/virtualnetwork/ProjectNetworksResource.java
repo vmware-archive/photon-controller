@@ -77,7 +77,7 @@ public class ProjectNetworksResource {
   public Response create(@Context Request request,
                          @PathParam("id") String projectId,
                          @Validated VirtualNetworkCreateSpec spec)
-    throws ExternalException {
+      throws ExternalException {
     return generateCustomResponse(
         Response.Status.CREATED,
         virtualNetworkFeClient.create(projectId, Project.KIND, spec),
@@ -96,7 +96,7 @@ public class ProjectNetworksResource {
                        @QueryParam("name") Optional<String> name,
                        @QueryParam("pageSize") Optional<Integer> pageSize,
                        @QueryParam("pageLink") Optional<String> pageLink)
-    throws ExternalException {
+      throws ExternalException {
     ResourceList<VirtualNetwork> resourceList;
     if (pageLink.isPresent()) {
       resourceList = virtualNetworkFeClient.nextList(pageLink.get());
@@ -114,6 +114,6 @@ public class ProjectNetworksResource {
         Response.Status.OK,
         PaginationUtils.formalizePageLinks(resourceList, apiRoute),
         (ContainerRequest) request,
-        NetworkResourceRoutes.NETWORK_PATH);
+        NetworkResourceRoutes.SUBNET_PATH);
   }
 }
