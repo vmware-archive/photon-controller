@@ -16,6 +16,10 @@
   "provisioners": [
     {
       "type": "shell",
+      "inline": "tdnf makecache"
+    },
+    {
+      "type": "shell",
       "script": "../scripts/install-java.sh"
     },
     {
