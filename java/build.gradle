@@ -50,6 +50,8 @@ subprojects {
   apply plugin: 'com.bmuschko.docker-remote-api'
   apply plugin: 'com.bmuschko.vagrant-base'
 
+  version = 'git rev-parse --abbrev-ref HEAD'.execute().text.trim() + "-" + 'git rev-parse --short HEAD'.execute().text.trim()
+
   def requiredJavaVersion = JavaVersion.VERSION_1_8;
   sourceCompatibility = requiredJavaVersion
   targetCompatibility = requiredJavaVersion
@@ -115,6 +117,7 @@ subprojects {
   task createPom << {
     pom {
       project {
+        version = 'git rev-parse --abbrev-ref HEAD'.execute().text.trim() + "-SNAPSHOT"
         inceptionYear '2015'
         licenses {
           license {
