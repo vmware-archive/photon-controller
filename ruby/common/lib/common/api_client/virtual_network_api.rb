@@ -28,8 +28,8 @@ module EsxCloud
       # @param [String] network_id
       # @return [Boolean]
       def delete_virtual_network(network_id)
-        response = @http_client.delete("/networks/#{network_id}")
-        check_response("Delete virtual network #{network_id}", response, 201)
+        response = @http_client.delete("/subnets/#{network_id}")
+        check_response("Delete virtual subnet #{network_id}", response, 201)
 
         poll_response(response)
         true
@@ -38,8 +38,8 @@ module EsxCloud
       # @param [String] network_id
       # @return [VirtualNetwork]
       def find_virtual_network_by_id(network_id)
-        response = @http_client.get("/networks/#{network_id}")
-        check_response("Get virtual network #{network_id}", response, 200)
+        response = @http_client.get("/subnets/#{network_id}")
+        check_response("Get virtual subnet #{network_id}", response, 200)
 
         VirtualNetwork.create_from_json(response.body)
       end

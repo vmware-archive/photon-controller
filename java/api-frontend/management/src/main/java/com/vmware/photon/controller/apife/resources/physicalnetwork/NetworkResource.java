@@ -43,7 +43,7 @@ import javax.ws.rs.core.Response;
 /**
  * This resource is for network related API.
  */
-@Path(NetworkResourceRoutes.NETWORK_PATH)
+@Path(NetworkResourceRoutes.SUBNET_PATH)
 @Api(value = NetworkResourceRoutes.API)
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
@@ -63,7 +63,7 @@ public class NetworkResource {
         Response.Status.OK,
         networkFeClient.get(id),
         (ContainerRequest) request,
-        NetworkResourceRoutes.NETWORK_PATH);
+        NetworkResourceRoutes.SUBNET_PATH);
   }
 
   @DELETE
@@ -82,7 +82,7 @@ public class NetworkResource {
   }
 
   @POST
-  @Path(NetworkResourceRoutes.NETWORK_SET_DEFAULT_ACTION)
+  @Path(NetworkResourceRoutes.SUBNET_SET_DEFAULT_ACTION)
   @ApiOperation(value = "Set Network Default", response = Task.class)
   @ApiResponses(value = {
       @ApiResponse(code = 201, message = "Setting Network default, progress communicated via the task")

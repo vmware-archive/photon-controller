@@ -13,7 +13,7 @@ module EsxCloud
   class ApiClient
     module NetworkApi
 
-      NETWORKS_ROOT = "/networks"
+      NETWORKS_ROOT = "/subnets"
 
       # @param [Hash] payload
       # @return [Network]
