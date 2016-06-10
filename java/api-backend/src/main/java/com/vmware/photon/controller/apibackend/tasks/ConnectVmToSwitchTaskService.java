@@ -89,10 +89,10 @@ public class ConnectVmToSwitchTaskService extends StatefulService {
         TaskUtils.sendSelfPatch(this, buildPatch(startState.taskState.stage));
       }
     } catch (Throwable t) {
+      ServiceUtils.logSevere(this, t);
       if (!OperationUtils.isCompleted(startOperation)) {
         startOperation.fail(t);
       }
-      failTask(t);
     }
   }
 
@@ -116,47 +116,51 @@ public class ConnectVmToSwitchTaskService extends StatefulService {
         connectVmToSwitch(currentState);
       }
     } catch (Throwable t) {
+      ServiceUtils.logSevere(this, t);
       if (!OperationUtils.isCompleted(patchOperation)) {
         patchOperation.fail(t);
       }
-      failTask(t);
     }
   }
 
-  private void connectVmToSwitch(ConnectVmToSwitchTask currentState) throws Throwable {
+  private void connectVmToSwitch(ConnectVmToSwitchTask currentState) {
     ServiceUtils.logInfo(this, "Connecting VM %s to logical switch %s", currentState.vmLocationId,
         currentState.logicalSwitchId);
 
-    LogicalSwitchApi logicalSwitchApi = ServiceHostUtils.getNsxClient(getHost(), currentState.nsxManagerEndpoint,
-        currentState.username, currentState.password).getLogicalSwitchApi();
+    try {
+      LogicalSwitchApi logicalSwitchApi = ServiceHostUtils.getNsxClient(getHost(), currentState.nsxManagerEndpoint,
+          currentState.username, currentState.password).getLogicalSwitchApi();
 
-    LogicalPortAttachment logicalPortAttachment = new LogicalPortAttachment();
-    logicalPortAttachment.setId(currentState.vmLocationId);
-    logicalPortAttachment.setAttachmentType(NsxSwitch.AttachmentType.VIF);
+      LogicalPortAttachment logicalPortAttachment = new LogicalPortAttachment();
+      logicalPortAttachment.setId(currentState.vmLocationId);
+      logicalPortAttachment.setAttachmentType(NsxSwitch.AttachmentType.VIF);
 
-    LogicalPortCreateSpec spec =  new LogicalPortCreateSpecBuilder()
-        .logicalSwitchId(currentState.logicalSwitchId)
-        .displayName(currentState.toVmPortDisplayName)
-        .adminState(NsxSwitch.AdminState.UP)
-        .attachment(logicalPortAttachment)
-        .build();
+      LogicalPortCreateSpec spec = new LogicalPortCreateSpecBuilder()
+          .logicalSwitchId(currentState.logicalSwitchId)
+          .displayName(currentState.toVmPortDisplayName)
+          .adminState(NsxSwitch.AdminState.UP)
+          .attachment(logicalPortAttachment)
+          .build();
 
-    logicalSwitchApi.createLogicalPort(spec,
-        new FutureCallback<LogicalPort>() {
-          @Override
-          public void onSuccess(@Nullable LogicalPort result) {
-            ConnectVmToSwitchTask patch = buildPatch(TaskState.TaskStage.FINISHED, null);
-            patch.toVmPortId = result.getId();
+      logicalSwitchApi.createLogicalPort(spec,
+          new FutureCallback<LogicalPort>() {
+            @Override
+            public void onSuccess(@Nullable LogicalPort result) {
+              ConnectVmToSwitchTask patch = buildPatch(TaskState.TaskStage.FINISHED, null);
+              patch.toVmPortId = result.getId();
 
-            TaskUtils.sendSelfPatch(ConnectVmToSwitchTaskService.this, patch);
+              TaskUtils.sendSelfPatch(ConnectVmToSwitchTaskService.this, patch);
+            }
+
+            @Override
+            public void onFailure(Throwable t) {
+              failTask(t);
+            }
           }
-
-          @Override
-          public void onFailure(Throwable t) {
-            failTask(t);
-          }
-        }
-    );
+      );
+    } catch (Throwable t) {
+      failTask(t);
+    }
   }
 
   private void validateStartState(ConnectVmToSwitchTask state) {

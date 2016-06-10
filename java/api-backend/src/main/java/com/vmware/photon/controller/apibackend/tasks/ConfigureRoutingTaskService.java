@@ -104,10 +104,10 @@ public class ConfigureRoutingTaskService extends StatefulService {
         TaskUtils.sendSelfPatch(this, buildPatch(startState.taskState.stage, startState.taskState.subStage));
       }
     } catch (Throwable t) {
+      ServiceUtils.logSevere(this, t);
       if (!OperationUtils.isCompleted(startOperation)) {
         startOperation.fail(t);
       }
-      failTask(t);
     }
   }
 
@@ -128,31 +128,39 @@ public class ConfigureRoutingTaskService extends StatefulService {
       if (ControlFlags.isOperationProcessingDisabled(currentState.controlFlags)) {
         ServiceUtils.logInfo(this, "Skipping start operation processing (disabled)");
       } else if (TaskState.TaskStage.STARTED == currentState.taskState.stage) {
-        switch (currentState.taskState.subStage) {
-          case CREATE_SWITCH_PORT:
-            createLogicalSwitchPort(currentState);
-            break;
-
-          case CONNECT_TIER1_ROUTER_TO_SWITCH:
-            connectTier1RouterToSwitch(currentState);
-            break;
-
-          case CREATE_TIER0_ROUTER_PORT:
-            createTier0RouterPort(currentState);
-            break;
-
-          case CONNECT_TIER1_ROUTER_TO_TIER0_ROUTER:
-            connectTier1RouterToTier0Router(currentState);
-            break;
-
-          default:
-            throw new ConfigureRoutingException("Invalid task substage " + currentState.taskState.stage);
-        }
+        processPatch(currentState);
       }
     } catch (Throwable t) {
+      ServiceUtils.logSevere(this, t);
       if (!OperationUtils.isCompleted(patchOperation)) {
         patchOperation.fail(t);
       }
+    }
+  }
+
+  private void processPatch(ConfigureRoutingTask currentState) {
+    try {
+      switch (currentState.taskState.subStage) {
+        case CREATE_SWITCH_PORT:
+          createLogicalSwitchPort(currentState);
+          break;
+
+        case CONNECT_TIER1_ROUTER_TO_SWITCH:
+          connectTier1RouterToSwitch(currentState);
+          break;
+
+        case CREATE_TIER0_ROUTER_PORT:
+          createTier0RouterPort(currentState);
+          break;
+
+        case CONNECT_TIER1_ROUTER_TO_TIER0_ROUTER:
+          connectTier1RouterToTier0Router(currentState);
+          break;
+
+        default:
+          throw new ConfigureRoutingException("Invalid task substage " + currentState.taskState.subStage);
+      }
+    } catch (Throwable t) {
       failTask(t);
     }
   }

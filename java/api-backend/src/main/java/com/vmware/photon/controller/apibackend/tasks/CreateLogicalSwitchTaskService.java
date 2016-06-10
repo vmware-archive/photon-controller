@@ -18,6 +18,7 @@ import com.vmware.photon.controller.apibackend.servicedocuments.CreateLogicalSwi
 import com.vmware.photon.controller.apibackend.utils.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
+import com.vmware.photon.controller.common.xenon.OperationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
@@ -67,35 +68,33 @@ public class CreateLogicalSwitchTaskService extends StatefulService {
   public void handleStart(Operation start) {
     ServiceUtils.logInfo(this, "Starting service %s", getSelfLink());
 
-    CreateLogicalSwitchTask startState = start.getBody(CreateLogicalSwitchTask.class);
-    InitializationUtils.initialize(startState);
-
     try {
+      CreateLogicalSwitchTask startState = start.getBody(CreateLogicalSwitchTask.class);
+      InitializationUtils.initialize(startState);
+
       validateStartState(startState);
-    } catch (IllegalStateException e) {
-      ServiceUtils.failOperationAsBadRequest(this, start, e);
-      return;
-    }
 
-    if (startState.taskState.stage == TaskState.TaskStage.CREATED) {
-      startState.taskState.stage = TaskState.TaskStage.STARTED;
-    }
+      if (startState.taskState.stage == TaskState.TaskStage.CREATED) {
+        startState.taskState.stage = TaskState.TaskStage.STARTED;
+      }
 
-    if (startState.documentExpirationTimeMicros <= 0) {
-      startState.documentExpirationTimeMicros =
-          ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME_MICROS);
-    }
+      if (startState.documentExpirationTimeMicros <= 0) {
+        startState.documentExpirationTimeMicros =
+            ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME_MICROS);
+      }
 
-    start.setBody(startState).complete();
+      start.setBody(startState).complete();
 
-    try {
       if (ControlFlags.isOperationProcessingDisabled(startState.controlFlags)) {
         ServiceUtils.logInfo(this, "Skipping start operation processing (disabled)");
       } else if (TaskState.TaskStage.STARTED == startState.taskState.stage) {
         TaskUtils.sendSelfPatch(this, buildPatch(startState.taskState.stage));
       }
     } catch (Throwable t) {
-      failTask(t);
+      ServiceUtils.logSevere(this, t);
+      if (!OperationUtils.isCompleted(start)) {
+        start.fail(t);
+      }
     }
   }
 
@@ -103,28 +102,26 @@ public class CreateLogicalSwitchTaskService extends StatefulService {
   public void handlePatch(Operation patch) {
     ServiceUtils.logInfo(this, "Handling patch for service %s", getSelfLink());
 
-    CreateLogicalSwitchTask currentState = getState(patch);
-    CreateLogicalSwitchTask patchState = patch.getBody(CreateLogicalSwitchTask.class);
-
     try {
+      CreateLogicalSwitchTask currentState = getState(patch);
+      CreateLogicalSwitchTask patchState = patch.getBody(CreateLogicalSwitchTask.class);
+
       validatePatchState(currentState, patchState);
       PatchUtils.patchState(currentState, patchState);
       validateState(currentState);
-    } catch (IllegalStateException e) {
-      ServiceUtils.failOperationAsBadRequest(this, patch, e);
-      return;
-    }
 
-    patch.complete();
+      patch.complete();
 
-    try {
       if (ControlFlags.isOperationProcessingDisabled(currentState.controlFlags)) {
         ServiceUtils.logInfo(this, "Skipping patch handling (disabled)");
       } else if (TaskState.TaskStage.STARTED == currentState.taskState.stage) {
         createLogicalSwitch(currentState);
       }
     } catch (Throwable t) {
-      failTask(t);
+      ServiceUtils.logSevere(this, t);
+      if (!OperationUtils.isCompleted(patch)) {
+        patch.fail(t);
+      }
     }
   }
 
