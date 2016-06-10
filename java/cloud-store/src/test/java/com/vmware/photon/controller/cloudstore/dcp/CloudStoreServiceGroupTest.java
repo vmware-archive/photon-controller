@@ -38,11 +38,13 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.VirtualNetworkService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.VmServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.helpers.UpgradeHelper;
 import com.vmware.photon.controller.cloudstore.dcp.task.AvailabilityZoneCleanerFactoryService;
+import com.vmware.photon.controller.cloudstore.dcp.task.DatastoreCleanerFactoryService;
 import com.vmware.photon.controller.cloudstore.dcp.task.DatastoreDeleteFactoryService;
 import com.vmware.photon.controller.cloudstore.dcp.task.EntityLockCleanerFactoryService;
 import com.vmware.photon.controller.cloudstore.dcp.task.EntityLockDeleteFactoryService;
 import com.vmware.photon.controller.cloudstore.dcp.task.TombstoneCleanerFactoryService;
 import com.vmware.photon.controller.cloudstore.dcp.task.trigger.AvailabilityZoneCleanerTriggerBuilder;
+import com.vmware.photon.controller.cloudstore.dcp.task.trigger.DatastoreCleanerTriggerBuilder;
 import com.vmware.photon.controller.cloudstore.dcp.task.trigger.EntityLockCleanerTriggerBuilder;
 import com.vmware.photon.controller.cloudstore.dcp.task.trigger.EntityLockDeleteTriggerBuilder;
 import com.vmware.photon.controller.cloudstore.dcp.task.trigger.TombstoneCleanerTriggerBuilder;
@@ -121,6 +123,7 @@ public class CloudStoreServiceGroupTest {
       TaskTriggerFactoryService.SELF_LINK + EntityLockDeleteTriggerBuilder.TRIGGER_SELF_LINK,
       TaskTriggerFactoryService.SELF_LINK + TombstoneCleanerTriggerBuilder.TRIGGER_SELF_LINK,
       TaskTriggerFactoryService.SELF_LINK + AvailabilityZoneCleanerTriggerBuilder.TRIGGER_SELF_LINK,
+      TaskTriggerFactoryService.SELF_LINK + DatastoreCleanerTriggerBuilder.TRIGGER_SELF_LINK,
 
       // tasks
       EntityLockCleanerFactoryService.SELF_LINK,
@@ -128,6 +131,7 @@ public class CloudStoreServiceGroupTest {
       TombstoneCleanerFactoryService.SELF_LINK,
       AvailabilityZoneCleanerFactoryService.SELF_LINK,
       DatastoreDeleteFactoryService.SELF_LINK,
+      DatastoreCleanerFactoryService.SELF_LINK,
 
       // discovery
       RootNamespaceService.SELF_LINK,
