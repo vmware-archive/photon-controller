@@ -33,16 +33,7 @@ cd $WORKSPACE/ruby/rubocop-photon
 bundle install
 bundle exec rspec --format RspecJunitFormatter --out reports/rspec.xml
 
-# run vagrant-guests-photon spec
-# cd $WORKSPACE/ruby/vagrant-guests-photon
-# bundle install
-# bundle exec rspec --format RspecJunitFormatter --out reports/rspec.xml
-
 # Run the ruby rspecs
 cd $WORKSPACE/ruby/common
 bundle install
 bundle exec rspec --format RspecJunitFormatter --out reports/rspec.xml
-
-# build the cli tools gem.
-cd $WORKSPACE/ruby/ci
-bash ./build_cli_gem.sh
