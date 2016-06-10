@@ -74,7 +74,6 @@ class ApiClientHelper
     def setup_client(protocol, address, port)
       # Extract environment variable information and retrieve access token.
       if get_env_var("ENABLE_AUTH", false) == "true"
-        username = ENV["PHOTON_USERNAME_ADMIN"].strip
         token = access_token
       end
 
@@ -82,18 +81,14 @@ class ApiClientHelper
       api_address = endpoint(protocol, address, port)
       client = nil
 
-      if driver == "cli" # CLI driver
-        cli_path = File.expand_path(File.join(File.dirname(__FILE__), "../../../cli/bin/photon"))
-        client = EsxCloud::CliClient.new(cli_path, api_address, token)
-        client.run_cli("auth login -u #{username} -a #{token}") if token
-      elsif driver == "api" # API driver
+      if driver == "api" # API driver
         client = EsxCloud::ApiClient.new(api_address, nil, token)
       elsif driver == "gocli" # Go CLI driver
         go_cli_path = ENV["GO_CLI_PATH"].strip
         client = EsxCloud::GoCliClient.new(go_cli_path, api_address, token)
         client.run_cli("target login -t #{token}") if token
       else # Unknown driver.
-        fail "Unknown driver '#{driver}'. Only 'cli', 'gocli' and 'api' drivers are supported."
+        fail "Unknown driver '#{driver}'. Only 'gocli' and 'api' drivers are supported."
       end
 
       client

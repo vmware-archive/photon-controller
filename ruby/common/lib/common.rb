@@ -18,7 +18,6 @@ require "thread"
 
 require "common/client"
 require "common/api_client"
-require "common/cli_client"
 require "common/cmd_runner"
 require "common/config"
 require "common/go_cli_client"

@@ -16,8 +16,8 @@ cd $WORKSPACE/ruby
 
 cd $TESTS
 
-export DRIVER=cli
-bundle exec rake esxcloud:cli
+export DRIVER=gocli
+bundle exec rake esxcloud:gocli
 error=$?
 unset DRIVER
 
