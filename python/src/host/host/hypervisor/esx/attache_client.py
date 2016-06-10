@@ -24,6 +24,7 @@ from common.photon_thrift.thriftserver import IThriftWorkerCallback
 from gen.agent.ttypes import VmCache
 from gen.host.ttypes import VmNetworkInfo
 from gen.host.ttypes import Ipv4Address
+from gen.resource.ttypes import MksTicket
 from host.hypervisor.disk_manager import DiskFileException
 from host.hypervisor.disk_manager import DiskPathException
 from host.hypervisor.disk_manager import DiskAlreadyExistException
@@ -52,7 +53,7 @@ ATTACHE_ERROR_MAP = {
     60100: DiskPathException,           # ERROR_ATTACHE_VIM_FAULT_INVALID_DATASTORE
     60101: DiskFileException,           # ERROR_ATTACHE_VIM_FAULT_FILE_FAULT
     60103: DiskAlreadyExistException,   # ERROR_ATTACHE_VIM_FAULT_FILE_ALREADY_EXISTS
-    60104: VmPowerStateException        # ERROR_ATTACHE_VIM_FAULT_FILE_INVALID_POWER_STATE
+    60104: VmPowerStateException        # ERROR_ATTACHE_VIM_FAULT_INVALID_POWER_STATE
 }
 
 
@@ -234,7 +235,8 @@ class AttacheClient(HostClient):
 
     @attache_error_handler
     def get_mks_ticket(self, vm_id):
-        pass
+        mks = self._client.GetVmMksTicket(self._session, vm_id)
+        return MksTicket(mks.host, mks.port, mks.cfgFile, mks.ticket, mks.sslThumbprint)
 
     @staticmethod
     def _prefix_len_to_mask(prefix_len):
