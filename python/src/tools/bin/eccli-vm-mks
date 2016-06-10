@@ -1,0 +1,27 @@
+#!/usr/bin/env python
+# Copyright (c) 2016 VMware, Inc. All Rights Reserved.
+
+from eccli.format import print_request
+from eccli.format import print_response
+from eccli.optparser import default_parser
+from eccli.thrift import get_client
+
+from gen.host.ttypes import MksTicketRequest
+
+parser = default_parser(usage="eccli-vm-mks [options]", add_help=True)
+parser.add_option("-v", "--vm_id",
+                  action="store", type="string", dest="vm_id",
+                  help="VM id")
+(options, args) = parser.parse_args()
+
+if not options.host or not options.vm_id:
+    parser.print_help()
+    exit(1)
+
+request = MksTicketRequest()
+request.vm_id = options.vm_id
+
+print_request(request)
+client = get_client(options.host)
+response = client.get_mks_ticket(request)
+print_response(response)

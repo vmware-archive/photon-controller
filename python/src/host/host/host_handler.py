@@ -1241,7 +1241,7 @@ class HostHandler(Host.Iface):
             return MksTicketResponse(result=MksTicketResultCode.OK, ticket=ticket)
         except VmNotFoundException as e:
             return MksTicketResponse(result=MksTicketResultCode.VM_NOT_FOUND, error=str(e))
-        except OperationNotAllowedException as e:
+        except VmPowerStateException as e:
             return MksTicketResponse(result=MksTicketResultCode.INVALID_VM_POWER_STATE, error=str(e))
 
     @log_request

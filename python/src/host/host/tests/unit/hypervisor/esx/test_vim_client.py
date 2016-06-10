@@ -116,7 +116,7 @@ class TestVimClient(unittest.TestCase):
         vim_client = VimClient(auto_sync=False)
         vim_client.connect_userpwd("esx.local", "root", "password")
         vim_client._property_collector.WaitForUpdatesEx.return_value = {}
-        vim_client._vim_cache = VimCache(vim_client)
+        vim_client._vim_cache = VimCache()
 
         # Test enter
         update = vmodl.query.PropertyCollector.UpdateSet(version="1")

@@ -342,7 +342,7 @@ class EsxVmConfigSpec(VmConfigSpec):
 
             # if mounted, return False
             if dev.connectable.connected:
-                raise DeviceBusyException("Existing virtual CD devices found and connected, abort adding new one.")
+                raise DeviceBusyException("CD device found, but is already connected to other media.")
 
             # if not mounted, use this device to mount the iso
             else:
