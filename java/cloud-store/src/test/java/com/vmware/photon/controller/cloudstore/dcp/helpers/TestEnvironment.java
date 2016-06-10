@@ -51,7 +51,7 @@ public class TestEnvironment extends MultiHostEnvironment<PhotonControllerXenonH
       xenonConfig.setStoragePath(sandbox);
 
       hosts[i] = new PhotonControllerXenonHost(xenonConfig,
-              hostClientFactory, agentControlClientFactory, serviceConfigFactory, null);
+              hostClientFactory, agentControlClientFactory, serviceConfigFactory, null, null);
       CloudStoreServiceGroup cloudStoreServiceGroup = new CloudStoreServiceGroup();
       hosts[i].registerCloudStore(cloudStoreServiceGroup);
     }

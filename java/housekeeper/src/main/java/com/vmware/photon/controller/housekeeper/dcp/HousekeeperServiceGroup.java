@@ -14,47 +14,30 @@
 package com.vmware.photon.controller.housekeeper.dcp;
 
 import com.vmware.photon.controller.apibackend.ApiBackendFactory;
-import com.vmware.photon.controller.common.clients.HostClient;
-import com.vmware.photon.controller.common.clients.HostClientFactory;
-import com.vmware.photon.controller.common.clients.HostClientProvider;
-import com.vmware.photon.controller.common.manifest.BuildInfo;
-import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
-import com.vmware.photon.controller.common.xenon.CloudStoreHelperProvider;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
-import com.vmware.photon.controller.common.xenon.XenonHostInfoProvider;
-import com.vmware.photon.controller.common.xenon.host.AbstractServiceHost;
-import com.vmware.photon.controller.common.xenon.host.XenonConfig;
+import com.vmware.photon.controller.common.xenon.XenonServiceGroup;
+import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
 import com.vmware.photon.controller.common.xenon.scheduler.TaskSchedulerService;
 import com.vmware.photon.controller.common.xenon.scheduler.TaskSchedulerServiceFactory;
 import com.vmware.photon.controller.common.xenon.scheduler.TaskSchedulerServiceStateBuilder;
-import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
-import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
-import com.vmware.photon.controller.common.zookeeper.ServiceConfigProvider;
-import com.vmware.photon.controller.nsxclient.NsxClientFactory;
-import com.vmware.photon.controller.nsxclient.NsxClientFactoryProvider;
 import com.vmware.xenon.common.Operation;
-import com.vmware.xenon.common.ServiceHost;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.services.common.RootNamespaceService;
 
 import com.google.common.collect.ImmutableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.net.URI;
 import java.util.Map;
 
 /**
- * Class to initialize a Xenon host.
+ * Class to initialize the Housekeeper Xenon services.
  */
-public class HousekeeperXenonServiceHost
-    extends AbstractServiceHost
-    implements XenonHostInfoProvider,
-    HostClientProvider,
-    CloudStoreHelperProvider,
-    ServiceConfigProvider,
-    NsxClientFactoryProvider {
+public class HousekeeperServiceGroup
+    implements XenonServiceGroup {
+
+  private static final Logger logger = LoggerFactory.getLogger(HousekeeperServiceGroup.class);
 
   protected static final String IMAGE_COPY_SCHEDULER_SERVICE =
       TaskSchedulerServiceFactory.SELF_LINK + "/image-copy";
@@ -83,41 +66,14 @@ public class HousekeeperXenonServiceHost
       RootNamespaceService.class,
   };
 
-  private static final Logger logger = LoggerFactory.getLogger(HousekeeperXenonServiceHost.class);
+  private PhotonControllerXenonHost photonControllerXenonHost;
 
-  private final HostClientFactory hostClientFactory;
-  private final CloudStoreHelper cloudStoreHelper;
-  private final ServiceConfigFactory serviceConfigFactory;
-  private final NsxClientFactory nsxClientFactory;
-
-  private BuildInfo buildInfo;
-
-  public HousekeeperXenonServiceHost(
-      XenonConfig xenonConfig,
-      CloudStoreHelper cloudStoreHelper,
-      HostClientFactory hostClientFactory,
-      ServiceConfigFactory serviceConfigFactory,
-      NsxClientFactory nsxClientFactory) throws Throwable {
-
-    super(xenonConfig);
-    this.hostClientFactory = checkNotNull(hostClientFactory);
-    this.serviceConfigFactory = checkNotNull(serviceConfigFactory);
-    this.cloudStoreHelper = checkNotNull(cloudStoreHelper);
-    this.nsxClientFactory = checkNotNull(nsxClientFactory);
-    this.buildInfo = BuildInfo.get(this.getClass());
+  public HousekeeperServiceGroup() {
   }
 
   @Override
-  public CloudStoreHelper getCloudStoreHelper() {
-    return cloudStoreHelper;
-  }
-
-  /**
-   * Returns service config.
-   */
-  @Override
-  public ServiceConfig getServiceConfig() {
-    return serviceConfigFactory.create("apife");
+  public void setPhotonControllerXenonHost(PhotonControllerXenonHost photonControllerXenonHost) {
+    this.photonControllerXenonHost = photonControllerXenonHost;
   }
 
   /**
@@ -141,102 +97,78 @@ public class HousekeeperXenonServiceHost
     return ImageSeederSyncTriggerServiceFactory.SELF_LINK + TRIGGER_SERVICE_SUFFIX;
   }
 
-  /**
-   * Getter for BuildInfo.
-   * @return
-   */
   @Override
-  public BuildInfo getBuildInfo() {
-    return this.buildInfo;
+  public String getName() {
+    return "housekeeper";
   }
 
   @Override
-  public ServiceHost start() throws Throwable {
-    super.start();
-    startDefaultCoreServicesSynchronously();
+  public void start() throws Throwable {
+    //Start all the factories
+    ServiceHostUtils.startServices(photonControllerXenonHost, FACTORY_SERVICES);
 
-    // Start all the factories
-    ServiceHostUtils.startServices(this, FACTORY_SERVICES);
+    //Start all factory services from api-backend
+    ServiceHostUtils.startFactoryServices(photonControllerXenonHost, ApiBackendFactory.FACTORY_SERVICES_MAP);
 
-    // Start all factory services from api-backend
-    ServiceHostUtils.startFactoryServices(this, ApiBackendFactory.FACTORY_SERVICES_MAP);
-
-    // Kick start the special services
+    //Start the special services
     startImageCleanerTriggerService();
     startImageSeederSyncTriggerService();
     startTaskSchedulerServices();
-    ServiceHostUtils.startService(this, StatusService.class);
-    return this;
-  }
-
-  @Override
-  public HostClient getHostClient() {
-    return hostClientFactory.create();
   }
 
   @Override
   public boolean isReady() {
     // schedulers
     for (String selfLink : TASK_SCHEDULERS.keySet()) {
-      if (!checkServiceAvailable(selfLink)) {
+      if (!photonControllerXenonHost.checkServiceAvailable(selfLink)) {
         return false;
       }
     }
 
-    return checkServiceAvailable(RootNamespaceService.SELF_LINK)
-        && checkServiceAvailable(ImageReplicatorServiceFactory.SELF_LINK)
-        && checkServiceAvailable(ImageCopyServiceFactory.SELF_LINK)
-        && checkServiceAvailable(ImageHostToHostCopyServiceFactory.SELF_LINK)
-        && checkServiceAvailable(ImageCleanerTriggerServiceFactory.SELF_LINK)
-        && checkServiceAvailable(ImageSeederSyncTriggerServiceFactory.SELF_LINK)
-        && checkServiceAvailable(ImageCleanerServiceFactory.SELF_LINK)
-        && checkServiceAvailable(ImageDatastoreSweeperServiceFactory.SELF_LINK)
+    return photonControllerXenonHost.checkServiceAvailable(RootNamespaceService.SELF_LINK)
+        && photonControllerXenonHost.checkServiceAvailable(ImageReplicatorServiceFactory.SELF_LINK)
+        && photonControllerXenonHost.checkServiceAvailable(ImageCopyServiceFactory.SELF_LINK)
+        && photonControllerXenonHost.checkServiceAvailable(ImageHostToHostCopyServiceFactory.SELF_LINK)
+        && photonControllerXenonHost.checkServiceAvailable(ImageCleanerTriggerServiceFactory.SELF_LINK)
+        && photonControllerXenonHost.checkServiceAvailable(ImageSeederSyncTriggerServiceFactory.SELF_LINK)
+        && photonControllerXenonHost.checkServiceAvailable(ImageCleanerServiceFactory.SELF_LINK)
+        && photonControllerXenonHost.checkServiceAvailable(ImageDatastoreSweeperServiceFactory.SELF_LINK)
 
-        && checkServiceAvailable(getTriggerCleanerServiceUri())
-        && checkServiceAvailable(getImageSeederSyncServiceUri())
-        && checkServiceAvailable(TaskSchedulerServiceFactory.SELF_LINK);
-  }
-
-  @Override
-  public Class[] getFactoryServices() {
-    return FACTORY_SERVICES;
-  }
-
-  @Override
-  public NsxClientFactory getNsxClientFactory() {
-    return nsxClientFactory;
+        && photonControllerXenonHost.checkServiceAvailable(getTriggerCleanerServiceUri())
+        && photonControllerXenonHost.checkServiceAvailable(getImageSeederSyncServiceUri())
+        && photonControllerXenonHost.checkServiceAvailable(TaskSchedulerServiceFactory.SELF_LINK);
   }
 
   private void startImageCleanerTriggerService() {
-    registerForServiceAvailability(
+    photonControllerXenonHost.registerForServiceAvailability(
         (Operation operation, Throwable throwable) -> {
           ImageCleanerTriggerService.State state = new ImageCleanerTriggerService.State();
           state.documentSelfLink = TRIGGER_SERVICE_SUFFIX;
 
-          URI uri = UriUtils.buildUri(HousekeeperXenonServiceHost.this,
+          URI uri = UriUtils.buildUri(photonControllerXenonHost,
               ImageCleanerTriggerServiceFactory.SELF_LINK, null);
           Operation post = Operation.createPost(uri).setBody(state);
-          post.setReferer(UriUtils.buildUri(HousekeeperXenonServiceHost.this, HOUSEKEEPER_URI));
-          sendRequest(post);
+          post.setReferer(UriUtils.buildUri(photonControllerXenonHost, HOUSEKEEPER_URI));
+          photonControllerXenonHost.sendRequest(post);
         }, ImageCleanerTriggerServiceFactory.SELF_LINK);
   }
 
   private void startImageSeederSyncTriggerService() {
-    registerForServiceAvailability(
+    photonControllerXenonHost.registerForServiceAvailability(
         (Operation operation, Throwable throwable) -> {
           ImageSeederSyncTriggerService.State state = new ImageSeederSyncTriggerService.State();
           state.documentSelfLink = TRIGGER_SERVICE_SUFFIX;
 
-          URI uri = UriUtils.buildUri(HousekeeperXenonServiceHost.this,
+          URI uri = UriUtils.buildUri(photonControllerXenonHost,
               ImageSeederSyncTriggerServiceFactory.SELF_LINK, null);
           Operation post = Operation.createPost(uri).setBody(state);
-          post.setReferer(UriUtils.buildUri(HousekeeperXenonServiceHost.this, HOUSEKEEPER_URI));
-          sendRequest(post);
+          post.setReferer(UriUtils.buildUri(photonControllerXenonHost, HOUSEKEEPER_URI));
+          photonControllerXenonHost.sendRequest(post);
         }, ImageSeederSyncTriggerServiceFactory.SELF_LINK);
   }
 
   private void startTaskSchedulerServices() {
-    registerForServiceAvailability(
+    photonControllerXenonHost.registerForServiceAvailability(
         (Operation operation, Throwable throwable) -> {
           for (String link : TASK_SCHEDULERS.keySet()) {
             try {
@@ -256,9 +188,11 @@ public class HousekeeperXenonServiceHost
     TaskSchedulerService.State state = builder.build();
     state.documentSelfLink = TaskSchedulerServiceStateBuilder.getSuffixFromSelfLink(selfLink);
 
-    URI uri = UriUtils.buildUri(HousekeeperXenonServiceHost.this, TaskSchedulerServiceFactory.SELF_LINK, null);
+    URI uri = UriUtils.buildUri(photonControllerXenonHost, TaskSchedulerServiceFactory.SELF_LINK, null);
     Operation post = Operation.createPost(uri).setBody(state);
-    post.setReferer(UriUtils.buildUri(HousekeeperXenonServiceHost.this, HOUSEKEEPER_URI));
-    sendRequest(post);
+    post.setReferer(UriUtils.buildUri(photonControllerXenonHost, HOUSEKEEPER_URI));
+    photonControllerXenonHost.sendRequest(post);
   }
+
+
 }

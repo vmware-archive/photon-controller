@@ -16,10 +16,11 @@ package com.vmware.photon.controller.housekeeper.helpers.dcp;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.MultiHostEnvironment;
+import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
 import com.vmware.photon.controller.common.xenon.host.XenonConfig;
 import com.vmware.photon.controller.common.xenon.scheduler.TaskSchedulerServiceStateBuilder;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
-import com.vmware.photon.controller.housekeeper.dcp.HousekeeperXenonServiceHost;
+import com.vmware.photon.controller.housekeeper.dcp.HousekeeperServiceGroup;
 import com.vmware.photon.controller.nsxclient.NsxClientFactory;
 
 import org.apache.commons.io.FileUtils;
@@ -32,7 +33,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * TestMachine class hosting a DCP host.
  */
-public class TestEnvironment extends MultiHostEnvironment<HousekeeperXenonServiceHost> {
+public class TestEnvironment extends MultiHostEnvironment<PhotonControllerXenonHost> {
 
   public TestEnvironment(CloudStoreHelper cloudStoreHelper,
                          HostClientFactory hostClientFactory,
@@ -41,7 +42,7 @@ public class TestEnvironment extends MultiHostEnvironment<HousekeeperXenonServic
                          int hostCount) throws Throwable {
 
     assertTrue(hostCount > 0);
-    hosts = new HousekeeperXenonServiceHost[hostCount];
+    hosts = new PhotonControllerXenonHost[hostCount];
     for (int i = 0; i < hosts.length; i++) {
       String sandbox = generateStorageSandboxPath();
       FileUtils.forceMkdir(new File(sandbox));
@@ -51,12 +52,15 @@ public class TestEnvironment extends MultiHostEnvironment<HousekeeperXenonServic
       xenonConfig.setPort(0);
       xenonConfig.setStoragePath(sandbox);
 
-      hosts[i] = new HousekeeperXenonServiceHost(
+      hosts[i] = new PhotonControllerXenonHost(
           xenonConfig,
-          cloudStoreHelper,
           hostClientFactory,
+          null,
           serviceConfigFactory,
-          nsxClientFactory);
+          nsxClientFactory,
+          cloudStoreHelper);
+      HousekeeperServiceGroup housekeeperServiceGroup = new HousekeeperServiceGroup();
+      hosts[i].registerHousekeeper(housekeeperServiceGroup);
     }
 
     TaskSchedulerServiceStateBuilder.triggerInterval = TimeUnit.MILLISECONDS.toMicros(500);
@@ -66,14 +70,14 @@ public class TestEnvironment extends MultiHostEnvironment<HousekeeperXenonServic
    * Get cleaner trigger service uri.
    */
   public String getTriggerCleanerServiceUri() {
-    return hosts[0].getTriggerCleanerServiceUri();
+    return HousekeeperServiceGroup.getTriggerCleanerServiceUri();
   }
 
   /**
    * Get ImageSeederService Sync trigger service uri.
    */
   public String getImageSeederSyncServiceUri() {
-    return hosts[0].getImageSeederSyncServiceUri();
+    return HousekeeperServiceGroup.getImageSeederSyncServiceUri();
   }
 
   /**
