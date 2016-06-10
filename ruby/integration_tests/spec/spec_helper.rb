@@ -105,7 +105,7 @@ RSpec.configure do |config|
   config.filter_run_excluding auth_project_user: true unless ENV["PHOTON_USERNAME_PROJECT_USER"] && ENV["PHOTON_PASSWORD_PROJECT_USER"]
   config.filter_run_excluding auth_non_admin: true unless ENV["PHOTON_USERNAME_NON_ADMIN"] && ENV["PHOTON_PASSWORD_NON_ADMIN"]
 
-  config.filter_run_excluding disable_for_cli_test: true if ENV["DRIVER"] == "cli" || ENV["DRIVER"] == "gocli"
+  config.filter_run_excluding disable_for_cli_test: true if ENV["DRIVER"] == "gocli"
 
   config.filter_run_excluding image: true unless ENV["ESXCLOUD_DISK_IMAGE"] && ENV["ESXCLOUD_BAD_DISK_IMAGE"] &&
     ENV["ESXCLOUD_DISK_OVA_IMAGE"] && ENV["ESXCLOUD_DISK_BOOTABLE_OVA_IMAGE"]
