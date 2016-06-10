@@ -43,6 +43,7 @@ import com.vmware.photon.controller.deployer.dcp.DeployerXenonServiceHost;
 import com.vmware.photon.controller.deployer.dcp.constant.ServicePortConstants;
 import com.vmware.photon.controller.deployer.dcp.entity.VibFactoryService;
 import com.vmware.photon.controller.deployer.dcp.entity.VibService;
+import com.vmware.photon.controller.deployer.dcp.stateless.FileService;
 import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
 import com.vmware.photon.controller.deployer.deployengine.ScriptRunner;
 import com.vmware.photon.controller.nsxclient.NsxClient;
@@ -75,6 +76,7 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFutureTask;
 import org.apache.commons.io.FileUtils;
 import org.apache.thrift.async.AsyncMethodCallback;
+
 import static com.google.common.base.Preconditions.checkState;
 
 import javax.annotation.Nullable;
@@ -1183,13 +1185,15 @@ public class ProvisionHostTaskService extends StatefulService {
   }
 
   private void processInstallVibsSubStage(VibService.State vibState, HostService.State hostState) {
+    String vibUri = UriUtils.buildUri(getHost(), FileService.SELF_LINK, vibState.vibName).toString();
 
     List<String> command = Arrays.asList(
         "./" + INSTALL_VIB_SCRIPT_NAME,
         hostState.hostAddress,
         hostState.userName,
         hostState.password,
-        vibState.uploadPath);
+        vibUri
+        );
 
     DeployerContext deployerContext = HostUtils.getDeployerContext(this);
 

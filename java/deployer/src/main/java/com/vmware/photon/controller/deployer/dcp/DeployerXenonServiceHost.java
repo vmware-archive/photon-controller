@@ -43,6 +43,7 @@ import com.vmware.photon.controller.deployer.dcp.entity.ContainerFactoryService;
 import com.vmware.photon.controller.deployer.dcp.entity.ContainerTemplateFactoryService;
 import com.vmware.photon.controller.deployer.dcp.entity.VibFactoryService;
 import com.vmware.photon.controller.deployer.dcp.entity.VmFactoryService;
+import com.vmware.photon.controller.deployer.dcp.stateless.FileService;
 import com.vmware.photon.controller.deployer.dcp.task.AllocateClusterManagerResourcesTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.AllocateDhcpVmResourcesTaskFactoryService;
 import com.vmware.photon.controller.deployer.dcp.task.AllocateHostResourceTaskFactoryService;
@@ -204,6 +205,8 @@ public class DeployerXenonServiceHost
       FinalizeDeploymentMigrationWorkflowFactoryService.class,
       InitializeDeploymentMigrationWorkflowFactoryService.class,
       RemoveDeploymentWorkflowFactoryService.class,
+
+      FileService.class,
 
       // Transformation
       HostTransformationService.class,
