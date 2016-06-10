@@ -39,6 +39,7 @@ import com.vmware.photon.controller.deployer.service.exceptions.InvalidLoginExce
 import com.vmware.photon.controller.deployer.service.exceptions.ManagementVmAddressAlreadyInUseException;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.ServiceDocumentDescription;
 import com.vmware.xenon.common.StatefulService;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
@@ -117,6 +118,7 @@ public class ValidateHostTaskService extends StatefulService {
      */
     @NotNull
     @Immutable
+    @ServiceDocument.UsageOption(option = ServiceDocumentDescription.PropertyUsageOption.SENSITIVE)
     public String userName;
 
     /**
@@ -125,6 +127,7 @@ public class ValidateHostTaskService extends StatefulService {
      */
     @NotNull
     @Immutable
+    @ServiceDocument.UsageOption(option = ServiceDocumentDescription.PropertyUsageOption.SENSITIVE)
     public String password;
 
     /**

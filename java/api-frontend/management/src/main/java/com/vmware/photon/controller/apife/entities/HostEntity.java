@@ -17,6 +17,8 @@ import com.vmware.photon.controller.api.Host;
 import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
 import com.vmware.photon.controller.api.constraints.DomainOrIP;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.ServiceDocumentDescription;
 
 import java.util.HashMap;
 import java.util.List;
@@ -34,8 +36,10 @@ public class HostEntity extends BaseEntity {
   @DomainOrIP
   private String address;
 
+  @ServiceDocument.UsageOption(option = ServiceDocumentDescription.PropertyUsageOption.SENSITIVE)
   private String username;
 
+  @ServiceDocument.UsageOption(option = ServiceDocumentDescription.PropertyUsageOption.SENSITIVE)
   private String password;
 
   private String availabilityZone;

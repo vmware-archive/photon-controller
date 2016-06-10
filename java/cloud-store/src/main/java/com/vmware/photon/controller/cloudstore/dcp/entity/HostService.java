@@ -47,6 +47,7 @@ import com.vmware.photon.controller.resource.gen.NetworkType;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.ServiceDocumentDescription;
 import com.vmware.xenon.common.ServiceMaintenanceRequest;
 import com.vmware.xenon.common.StatefulService;
 import com.vmware.xenon.common.UriUtils;
@@ -611,6 +612,7 @@ public class HostService extends StatefulService {
      */
     @NotNull
     @Immutable
+    @ServiceDocument.UsageOption(option = ServiceDocumentDescription.PropertyUsageOption.SENSITIVE)
     public String userName;
 
     /**
@@ -619,6 +621,7 @@ public class HostService extends StatefulService {
      */
     @NotNull
     @Immutable
+    @ServiceDocument.UsageOption(option = ServiceDocumentDescription.PropertyUsageOption.SENSITIVE)
     public String password;
 
     /**

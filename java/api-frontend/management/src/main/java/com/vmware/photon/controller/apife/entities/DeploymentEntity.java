@@ -17,6 +17,8 @@ import com.vmware.photon.controller.api.Deployment;
 import com.vmware.photon.controller.api.DeploymentState;
 import com.vmware.photon.controller.api.StatsStoreType;
 import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
+import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.ServiceDocumentDescription;
 
 import com.google.common.base.Objects.ToStringHelper;
 import org.apache.commons.collections.ListUtils;
@@ -52,8 +54,10 @@ public class DeploymentEntity extends BaseEntity {
 
   private String oauthTenant;
 
+  @ServiceDocument.UsageOption(option = ServiceDocumentDescription.PropertyUsageOption.SENSITIVE)
   private String oauthUsername;
 
+  @ServiceDocument.UsageOption(option = ServiceDocumentDescription.PropertyUsageOption.SENSITIVE)
   private String oauthPassword;
 
   private List<String> oauthSecurityGroups;
@@ -62,8 +66,10 @@ public class DeploymentEntity extends BaseEntity {
 
   private String networkManagerAddress;
 
+  @ServiceDocument.UsageOption(option = ServiceDocumentDescription.PropertyUsageOption.SENSITIVE)
   private String networkManagerUsername;
 
+  @ServiceDocument.UsageOption(option = ServiceDocumentDescription.PropertyUsageOption.SENSITIVE)
   private String networkManagerPassword;
 
   private String networkTopRouterId;

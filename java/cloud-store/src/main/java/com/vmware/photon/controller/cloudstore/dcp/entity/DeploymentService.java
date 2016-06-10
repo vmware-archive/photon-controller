@@ -30,6 +30,7 @@ import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.OperationProcessingChain;
 import com.vmware.xenon.common.RequestRouter;
 import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.ServiceDocumentDescription;
 import com.vmware.xenon.common.StatefulService;
 
 import org.apache.commons.lang3.StringUtils;
@@ -306,12 +307,14 @@ public class DeploymentService extends StatefulService {
      * LightWave user name.
      */
     @Immutable
+    @ServiceDocument.UsageOption(option = ServiceDocumentDescription.PropertyUsageOption.SENSITIVE)
     public String oAuthUserName;
 
     /**
      * Password for the given LightWave user.
      */
     @Immutable
+    @ServiceDocument.UsageOption(option = ServiceDocumentDescription.PropertyUsageOption.SENSITIVE)
     public String oAuthPassword;
 
     /**
@@ -362,11 +365,13 @@ public class DeploymentService extends StatefulService {
     /**
      * This value represents the username for accessing the network manager.
      */
+    @ServiceDocument.UsageOption(option = ServiceDocumentDescription.PropertyUsageOption.SENSITIVE)
     public String networkManagerUsername;
 
     /**
      * This value represents the password for accessing the network manager.
      */
+    @ServiceDocument.UsageOption(option = ServiceDocumentDescription.PropertyUsageOption.SENSITIVE)
     public String networkManagerPassword;
 
     /**
