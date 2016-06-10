@@ -23,12 +23,15 @@ import com.vmware.photon.controller.common.logging.LoggingUtils;
 import com.vmware.photon.controller.common.manifest.BuildInfo;
 import com.vmware.photon.controller.common.thrift.ThriftModule;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
+import com.vmware.photon.controller.common.xenon.CloudStoreHelperProvider;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.XenonHostInfoProvider;
 import com.vmware.photon.controller.common.xenon.XenonServiceGroup;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfigProvider;
+import com.vmware.photon.controller.nsxclient.NsxClientFactory;
+import com.vmware.photon.controller.nsxclient.NsxClientFactoryProvider;
 import com.vmware.xenon.common.ServiceHost;
 import com.vmware.xenon.common.UtilsHelper;
 import com.vmware.xenon.services.common.LuceneDocumentIndexService;
@@ -50,7 +53,9 @@ public class PhotonControllerXenonHost
         implements AgentControlClientProvider,
         HostClientProvider,
         ServiceConfigProvider,
-        XenonHostInfoProvider {
+        NsxClientFactoryProvider,
+        XenonHostInfoProvider,
+        CloudStoreHelperProvider {
 
     public static final int DEFAULT_CONNECTION_LIMIT_PER_HOST = 1024;
 
@@ -63,11 +68,13 @@ public class PhotonControllerXenonHost
     private final AgentControlClientFactory agentControlClientFactory;
     private final HostClientFactory hostClientFactory;
     private final ServiceConfigFactory serviceConfigFactory;
+    private final NsxClientFactory nsxClientFactory;
     private CloudStoreHelper cloudStoreHelper;
     private BuildInfo buildInfo;
     private final List<XenonServiceGroup> xenonServiceGroups = Collections.synchronizedList(new ArrayList<>());
     private XenonServiceGroup cloudStore;
     private XenonServiceGroup scheduler;
+    private XenonServiceGroup housekeeper;
 
     @SuppressWarnings("rawtypes")
     public static final Class[] FACTORY_SERVICES = {
@@ -90,6 +97,7 @@ public class PhotonControllerXenonHost
                                      HostClientFactory hostClientFactory,
                                      AgentControlClientFactory agentControlClientFactory,
                                      ServiceConfigFactory serviceConfigFactory,
+                                     NsxClientFactory nsxClientFactory,
                                      CloudStoreHelper cloudStoreHelper) throws Throwable {
         super(xenonConfig);
         this.xenonConfig = xenonConfig;
@@ -104,12 +112,12 @@ public class PhotonControllerXenonHost
             if (agentControlClientFactory == null) {
                 agentControlClientFactory = thriftModule.getAgentControlClientFactory();
             }
-
         }
 
         this.hostClientFactory = hostClientFactory;
         this.agentControlClientFactory = agentControlClientFactory;
         this.serviceConfigFactory = serviceConfigFactory;
+        this.nsxClientFactory = nsxClientFactory;
         this.cloudStoreHelper = cloudStoreHelper;
     }
 
@@ -211,6 +219,12 @@ public class PhotonControllerXenonHost
     public AgentControlClient getAgentControlClient() {
         return this.agentControlClientFactory.create();
     }
+
+    @Override
+    public NsxClientFactory getNsxClientFactory() {
+      return this.nsxClientFactory;
+    }
+
     public void registerCloudStore(XenonServiceGroup cloudStore) {
         this.cloudStore = cloudStore;
         addXenonServiceGroup(cloudStore);
@@ -229,6 +243,15 @@ public class PhotonControllerXenonHost
         return this.scheduler;
     }
 
+    public void registerHousekeeper(XenonServiceGroup housekeeper) {
+        this.housekeeper = housekeeper;
+        addXenonServiceGroup(housekeeper);
+    }
+
+    public XenonServiceGroup getHousekeeper() {
+      return this.housekeeper;
+    }
+
     private void addXenonServiceGroup(XenonServiceGroup xenonServiceGroup) {
         xenonServiceGroups.add(xenonServiceGroup);
         xenonServiceGroup.setPhotonControllerXenonHost(this);
@@ -242,6 +265,7 @@ public class PhotonControllerXenonHost
         this.cloudStoreHelper = cloudStoreHelper;
     }
 
+    @Override
     public CloudStoreHelper getCloudStoreHelper() {
         return cloudStoreHelper;
     }
