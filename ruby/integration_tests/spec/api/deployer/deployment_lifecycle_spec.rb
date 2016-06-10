@@ -155,10 +155,10 @@ describe "deployment lifecycle", order: :defined, deployer: true do
 
   def verify_deployment_destroyed_successfuly(deployment_id)
     # Verify there are no cloud store services
-    verify_cloud_store_servies_do_not_exist
+    verify_cloud_store_services_do_not_exist
 
     # Verify there are no deployer services
-    verify_deployer_servies_do_not_exist
+    verify_deployer_services_do_not_exist
 
     # Verify there are no agent on the host
     verify_agent_do_not_exist_on_host
@@ -195,7 +195,7 @@ describe "deployment lifecycle", order: :defined, deployer: true do
     expect(delete_deployment_task.warnings).to be_empty
   end
 
-  def verify_cloud_store_servies_do_not_exist
+  def verify_cloud_store_services_do_not_exist
     cloud_store = EsxCloud::Dcp::CloudStore::CloudStoreClient.connect_to_endpoint(nil, nil)
 
     exclusion_list = ["/photon/cloudstore/availabilityzones",
@@ -205,18 +205,20 @@ describe "deployment lifecycle", order: :defined, deployer: true do
                       "/photon/cloudstore/tasks",
                       "/photon/cloudstore/tombstones",
                       "/photon/task-triggers",
+                      "/photon/task-schedulers",
                       "/photon/cloudstore/datastores",
                       "/photon/cloudstore/images-to-image-datastore-mapping",
                       "/photon/cloudstore/entity-locks",]
 
     get_cloudstore_services(cloud_store).each do |service_factory|
-      if !exclusion_list.include?(service_factory)
+      if (!exclusion_list.include?(service_factory) and !service_factory.include?("/photon/housekeeper") and
+          !service_factory.include?("/photon/scheduler"))
         checkNoServiceExist(service_factory, cloud_store)
       end
     end
   end
 
-  def verify_deployer_servies_do_not_exist
+  def verify_deployer_services_do_not_exist
     deployer_store = EsxCloud::Dcp::DeployerClient.connect_to_endpoint(nil, nil)
     # Verify there are no container services
     checkNoServiceExist("/photon/containers", deployer_store)

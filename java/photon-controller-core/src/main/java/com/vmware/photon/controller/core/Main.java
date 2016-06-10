@@ -28,7 +28,7 @@ import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperModule;
 import com.vmware.photon.controller.housekeeper.HousekeeperConfig;
-import com.vmware.photon.controller.housekeeper.xenon.HousekeeperXenonServiceHost;
+import com.vmware.photon.controller.housekeeper.xenon.HousekeeperServiceGroup;
 import com.vmware.photon.controller.nsxclient.NsxClientFactory;
 import com.vmware.photon.controller.rootscheduler.RootSchedulerConfig;
 import com.vmware.photon.controller.rootscheduler.service.CloudStoreConstraintChecker;
@@ -80,14 +80,10 @@ public class Main {
 
     ServiceHost xenonHost = startXenonHost(photonControllerConfig, zkModule, thriftModule);
 
-    // Housekeeper holds on to the thread on start (for thrift) so start it last
-    ServiceHost housekeeperHost = startHousekeeper(housekeeperConfig, zkModule, thriftModule);
-
     Runtime.getRuntime().addShutdownHook(new Thread() {
       @Override
       public void run() {
         logger.info("Shutting down");
-        housekeeperHost.stop();
         xenonHost.stop();
         logger.info("Done");
         LoggingFactory.detachAndStop();
@@ -103,6 +99,7 @@ public class Main {
     final ServiceConfigFactory serviceConfigFactory = zkModule.getServiceConfigFactory(zkClient);
     final HostClientFactory hostClientFactory = thriftModule.getHostClientFactory();
     final AgentControlClientFactory agentControlClientFactory = thriftModule.getAgentControlClientFactory();
+    final NsxClientFactory nsxClientFactory = new NsxClientFactory();
 
     // Values for Scheduler
     final ServerSet cloudStoreServerSet = zkModule.getZookeeperServerSet(zkClient,
@@ -113,7 +110,8 @@ public class Main {
     logger.info("Creating PhotonController Xenon Host");
     final PhotonControllerXenonHost photonControllerXenonHost =
             new PhotonControllerXenonHost(photonControllerConfig.getCloudStoreConfig().getXenonConfig(),
-                    hostClientFactory, agentControlClientFactory, serviceConfigFactory, cloudStoreHelper);
+                hostClientFactory, agentControlClientFactory, serviceConfigFactory, nsxClientFactory,
+                cloudStoreHelper);
     logger.info("Created PhotonController Xenon Host");
 
     logger.info("Creating Cloud Store Xenon Service Group");
@@ -133,13 +131,21 @@ public class Main {
     photonControllerXenonHost.registerScheduler(schedulerServiceGroup);
     logger.info("Registered Scheduler Xenon Service Group");
 
+    logger.info("Creating Housekeeper Xenon Service Group");
+    HousekeeperServiceGroup housekeeperServiceGroup = createHousekeeperServiceGroup();
+    logger.info("Created Housekeeper Xenon Service Group");
+
+    logger.info("Registering Housekeeper Xenon Service Group");
+    photonControllerXenonHost.registerHousekeeper(housekeeperServiceGroup);
+    logger.info("Registered Housekeeper Xenon Service Group");
+
     logger.info("Starting PhotonController Xenon Host");
     photonControllerXenonHost.start();
     logger.info("Started PhotonController Xenon Host");
 
-    // For now we register both cloud store and scheduler services with zookeeper so that users of
+    // For now we register cloudstore, scheduler and housekeeper services with zookeeper so that users of
     // the services don't need to change their lookup / usage behavior but now we use the same
-    // address / port for both (for now the cloudstore address / port)
+    // address / port for all these(for now the cloudstore address / port)
     String cloudStoreXenonAddress =
             photonControllerConfig.getCloudStoreConfig().getXenonConfig().getRegistrationAddress();
     Integer cloudStoreXenonPort = photonControllerConfig.getCloudStoreConfig().getXenonConfig().getPort();
@@ -155,40 +161,13 @@ public class Main {
             cloudStoreXenonAddress, cloudStoreXenonPort);
     logger.info("Registered Scheduler Xenon Host with Zookeeper");
 
-    return photonControllerXenonHost;
-  }
-
-  private static ServiceHost startHousekeeper(HousekeeperConfig housekeeperConfig, ZookeeperModule zkModule,
-                                              ThriftModule thriftModule) throws Throwable {
-    final CuratorFramework zkClient = zkModule.getCuratorFramework();
-    ServerSet cloudStoreServerSet = zkModule.getZookeeperServerSet(zkClient, Constants.CLOUDSTORE_SERVICE_NAME, true);
-    final ServiceConfigFactory serviceConfigFactory = zkModule.getServiceConfigFactory(zkClient);
-
-    final HostClientFactory hostClientFactory = thriftModule.getHostClientFactory();
-
-    final CloudStoreHelper cloudStoreHelper = new CloudStoreHelper(cloudStoreServerSet);
-    final NsxClientFactory nsxClientFactory = new NsxClientFactory();
-
-    logger.info("Creating Housekeeper Xenon Host");
-    final HousekeeperXenonServiceHost housekeeperXenonHost = new HousekeeperXenonServiceHost(
-            housekeeperConfig.getXenonConfig(), cloudStoreHelper, hostClientFactory, serviceConfigFactory,
-            nsxClientFactory);
-    logger.info("Created Housekeeper Xenon Host");
-
-    String housekeeperXenonAddress = housekeeperConfig.getXenonConfig().getRegistrationAddress();
-    Integer housekeeperXenonPort = housekeeperConfig.getXenonConfig().getPort();
-
     logger.info("Registering Housekeeper Xenon Host with Zookeeper at {}:{}",
-        housekeeperXenonAddress, housekeeperXenonPort);
+            cloudStoreXenonAddress, cloudStoreXenonPort);
     registerServiceWithZookeeper(Constants.HOUSEKEEPER_SERVICE_NAME, zkModule, zkClient,
-        housekeeperXenonAddress, housekeeperXenonPort);
+            cloudStoreXenonAddress, cloudStoreXenonPort);
     logger.info("Registered Housekeeper Xenon Host with Zookeeper");
 
-    logger.info("Starting Housekeeper Xenon Host");
-    housekeeperXenonHost.start();
-    logger.info("Started Housekeeper Xenon Host");
-
-    return housekeeperXenonHost;
+    return photonControllerXenonHost;
   }
 
   private static CloudStoreServiceGroup createCloudStoreServiceGroup() throws Throwable {
@@ -198,6 +177,10 @@ public class Main {
   private static SchedulerServiceGroup createSchedulerServiceGroup(RootSchedulerConfig rootSchedulerConfig,
           ConstraintChecker constraintChecker) throws Throwable {
     return  new SchedulerServiceGroup(rootSchedulerConfig.getRoot(), constraintChecker);
+  }
+
+  private static HousekeeperServiceGroup createHousekeeperServiceGroup() throws Throwable {
+    return new HousekeeperServiceGroup();
   }
 
   private static PhotonControllerConfig getPhotonControllerConfig(Namespace namespace) {
