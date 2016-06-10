@@ -102,6 +102,7 @@ from gen.scheduler.ttypes import PlaceResultCode
 from gen.scheduler.ttypes import Score
 from host.hypervisor.datastore_manager import DatastoreNotFoundException
 from host.hypervisor.esx.host_client import DeviceBusyException
+from host.hypervisor.esx.host_client import UnexpectedVmPowerStateException
 from host.hypervisor.esx.path_util import vmdk_path
 from host.hypervisor.esx.path_util import IMAGE_FOLDER_NAME_PREFIX
 from host.hypervisor.image_manager import DirectoryNotFound
@@ -1241,7 +1242,7 @@ class HostHandler(Host.Iface):
             return MksTicketResponse(result=MksTicketResultCode.OK, ticket=ticket)
         except VmNotFoundException as e:
             return MksTicketResponse(result=MksTicketResultCode.VM_NOT_FOUND, error=str(e))
-        except OperationNotAllowedException as e:
+        except UnexpectedVmPowerStateException as e:
             return MksTicketResponse(result=MksTicketResultCode.INVALID_VM_POWER_STATE, error=str(e))
 
     @log_request

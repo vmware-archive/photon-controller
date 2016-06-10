@@ -39,6 +39,7 @@ from host.hypervisor.disk_manager import DiskFileException
 from host.hypervisor.esx import logging_wrappers
 from host.hypervisor.esx.host_client import HostClient
 from host.hypervisor.esx.host_client import DatastoreNotFound
+from host.hypervisor.esx.host_client import UnexpectedVmPowerStateException
 from host.hypervisor.esx.host_client import HostdConnectionFailure
 from host.hypervisor.esx.host_client import NfcLeaseInitiatizationTimeout
 from host.hypervisor.esx.host_client import NfcLeaseInitiatizationError
@@ -673,7 +674,7 @@ class VimClient(HostClient):
     def get_mks_ticket(self, vm_id):
         vm = self.get_vm(vm_id)
         if vm.runtime.powerState != 'poweredOn':
-            raise OperationNotAllowedException('Not allowed on vm that is not powered on.')
+            raise UnexpectedVmPowerStateException('Not allowed on vm that is not powered on.')
         mks = vm.AcquireMksTicket()
         return MksTicket(mks.host, mks.port, mks.cfgFile, mks.ticket, mks.sslThumbprint)
 

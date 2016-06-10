@@ -29,6 +29,10 @@ class DeviceBusyException(Exception):
     pass
 
 
+class UnexpectedVmPowerStateException(Exception):
+    pass
+
+
 class NfcLeaseInitiatizationTimeout(Exception):
     """ Timed out waiting for the HTTP NFC lease to initialize. """
     pass
