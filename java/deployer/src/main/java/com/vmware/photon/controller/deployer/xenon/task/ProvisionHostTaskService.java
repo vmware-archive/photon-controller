@@ -33,16 +33,16 @@ import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
 import com.vmware.photon.controller.common.xenon.deployment.NoMigrationDuringDeployment;
 import com.vmware.photon.controller.common.xenon.migration.NoMigrationDuringUpgrade;
+import com.vmware.photon.controller.common.xenon.scheduler.RateLimitedWorkQueueService;
 import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
 import com.vmware.photon.controller.common.xenon.validation.DefaultString;
 import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.common.xenon.validation.WriteOnce;
+import com.vmware.photon.controller.deployer.dcp.stateless.FileService;
 import com.vmware.photon.controller.deployer.deployengine.ScriptRunner;
 import com.vmware.photon.controller.deployer.xenon.DeployerContext;
-import com.vmware.photon.controller.deployer.xenon.DeployerServiceGroup;
-import com.vmware.photon.controller.deployer.xenon.entity.VibFactoryService;
 import com.vmware.photon.controller.deployer.xenon.entity.VibService;
 import com.vmware.photon.controller.deployer.xenon.util.HostUtils;
 import com.vmware.photon.controller.nsxclient.NsxClient;
@@ -75,6 +75,7 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFutureTask;
 import org.apache.commons.io.FileUtils;
 import org.apache.thrift.async.AsyncMethodCallback;
+
 import static com.google.common.base.Preconditions.checkState;
 
 import javax.annotation.Nullable;
@@ -84,11 +85,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.EnumSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -116,13 +115,13 @@ public class ProvisionHostTaskService extends StatefulService {
      * This type defines the possible sub-stages of a {@link ProvisionHostTaskService} task.
      */
     public enum SubStage {
+      BEGIN_EXECUTION,
       GET_NETWORK_MANAGER_INFO,
       CREATE_FABRIC_NODE,
       WAIT_FOR_FABRIC_NODE,
       CREATE_TRANSPORT_NODE,
       WAIT_FOR_TRANSPORT_NODE,
       CONFIGURE_SYSLOG,
-      UPLOAD_VIBS,
       INSTALL_VIBS,
       WAIT_FOR_AGENT_START,
       PROVISION_AGENT,
@@ -295,10 +294,44 @@ public class ProvisionHostTaskService extends StatefulService {
      */
     @DefaultInteger(value = 0)
     public Integer hostStatusPollCount;
+
+    // scheduled queue entries
+
+    /**
+     * This value represents the timeout interval, in microseconds, of the current task (e.g. the
+     * interval after which the task should enter the {@link TaskState.TaskStage#FAILED} state).
+     * <p>
+     * N.B. An initial value of 0 indicates that no timeout should be enforced.
+     */
+    @WriteOnce
+    public Long taskTimeoutMicros;
+
+    /**
+     * This value represents the optional patch body, serialized to JSON, to be sent to the parent
+     * task service on successful completion.
+     */
+    @Immutable
+    public String parentTaskPatchBody;
+
+    /**
+     * This value represents the start time, in microseconds since the Unix epoch, of the current
+     * task (e.g. when the task entered the {@link TaskState.TaskStage#STARTED} state).
+     */
+    @WriteOnce
+    public Long taskStartTimeMicros;
+
+    /**
+     * This value represents the document self-link of the {@link RateLimitedWorkQueueService}
+     * which will schedule instances of the current task.
+     */
+    @NotNull
+    @Immutable
+    public String workQueueServiceLink;
   }
 
   public ProvisionHostTaskService() {
     super(State.class);
+    super.toggleOption(ServiceOption.PERSISTENCE, true);
   }
 
   @Override
@@ -324,6 +357,15 @@ public class ProvisionHostTaskService extends StatefulService {
       startState.hostStatusPollDelay = HostUtils.getDeployerContext(this).getTaskPollDelay();
     }
 
+    if (startState.taskTimeoutMicros == null) {
+      startState.taskTimeoutMicros = TimeUnit.MINUTES.toMicros(10);
+    }
+
+    if (startState.documentExpirationTimeMicros <= 0) {
+      startState.documentExpirationTimeMicros = ServiceUtils.computeExpirationTime(
+          ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME_MICROS);
+    }
+
     try {
       validateState(startState);
     } catch (Throwable t) {
@@ -342,13 +384,22 @@ public class ProvisionHostTaskService extends StatefulService {
       if (ControlFlags.isOperationProcessingDisabled(startState.controlFlags)) {
         ServiceUtils.logInfo(this, "Skipping start operation processing (disabled)");
       } else if (startState.taskState.stage == TaskState.TaskStage.CREATED) {
-        sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.GET_NETWORK_MANAGER_INFO);
+        notifyWorkQueueService(startState);
       } else {
         throw new IllegalStateException("Task is not restartable");
       }
     } catch (Throwable t) {
       failTask(t);
     }
+  }
+
+  private void notifyWorkQueueService(State initialState) {
+    RateLimitedWorkQueueService.PatchState patchState = new RateLimitedWorkQueueService.PatchState();
+    patchState.pendingTaskServiceDelta = 1;
+    patchState.taskServiceLink = getSelfLink();
+    Operation.createPatch(this, initialState.workQueueServiceLink)
+      .setBody(patchState)
+      .sendWith(this);
   }
 
   @Override
@@ -378,13 +429,42 @@ public class ProvisionHostTaskService extends StatefulService {
         ServiceUtils.logInfo(this, "Skipping patch operation processing (disabled)");
       } else if (currentState.taskState.stage == TaskState.TaskStage.STARTED) {
         processStartedStage(currentState);
-      } else if (currentState.parentTaskServiceLink != null) {
-        TaskUtils.notifyParentTask(this, currentState.taskState, currentState.parentTaskServiceLink,
-            currentState.parentPatchBody);
+      } else {
+        processTerminalStage(currentState);
       }
     } catch (Throwable t) {
       failTask(t);
     }
+  }
+
+  private void processTerminalStage(State currentState) {
+
+    //
+    // Since the task has reached a terminal state, its state no longer needs to be monitored for
+    // timeout enforcement. Disable periodic maintenance.
+    //
+
+    super.toggleOption(ServiceOption.PERIODIC_MAINTENANCE, false);
+
+    //
+    // Notify the work queue service that the current task has ceased execution.
+    //
+
+    RateLimitedWorkQueueService.PatchState workQueuePatchState = new RateLimitedWorkQueueService.PatchState();
+    workQueuePatchState.runningTaskServiceDelta = -1;
+
+    sendRequest(Operation
+        .createPatch(this, currentState.workQueueServiceLink)
+        .setBody(workQueuePatchState)
+        .setCompletion(
+            (o, e) -> {
+              if (e != null) {
+                ServiceUtils.logSevere(this, "Failed to notify work queue service: " + e);
+              } else if (currentState.parentTaskServiceLink != null) {
+                TaskUtils.notifyParentTask(this, currentState.taskState, currentState.parentTaskServiceLink,
+                    currentState.parentTaskPatchBody);
+              }
+            }));
   }
 
   private void validateState(State currentState) {
@@ -409,13 +489,13 @@ public class ProvisionHostTaskService extends StatefulService {
       case STARTED:
         checkState(taskState.subStage != null);
         switch (taskState.subStage) {
+          case BEGIN_EXECUTION:
           case GET_NETWORK_MANAGER_INFO:
           case CREATE_FABRIC_NODE:
           case WAIT_FOR_FABRIC_NODE:
           case CREATE_TRANSPORT_NODE:
           case WAIT_FOR_TRANSPORT_NODE:
           case CONFIGURE_SYSLOG:
-          case UPLOAD_VIBS:
           case INSTALL_VIBS:
           case WAIT_FOR_AGENT_START:
           case PROVISION_AGENT:
@@ -437,6 +517,8 @@ public class ProvisionHostTaskService extends StatefulService {
 
   private void processStartedStage(State currentState) throws Throwable {
     switch (currentState.taskState.subStage) {
+      case BEGIN_EXECUTION:
+        throw new IllegalStateException("Unexpected task sub-stage " + currentState.taskState.subStage);
       case GET_NETWORK_MANAGER_INFO:
         processGetNetworkManagerInfoSubStage(currentState);
         break;
@@ -454,9 +536,6 @@ public class ProvisionHostTaskService extends StatefulService {
         break;
       case CONFIGURE_SYSLOG:
         processConfigureSyslogSubStage(currentState);
-        break;
-      case UPLOAD_VIBS:
-        processUploadVibsSubStage(currentState);
         break;
       case INSTALL_VIBS:
         processInstallVibsSubStage(currentState);
@@ -885,7 +964,7 @@ public class ProvisionHostTaskService extends StatefulService {
 
     if (deploymentState.syslogEndpoint == null) {
       ServiceUtils.logInfo(this, "Skipping syslog endpoint configuration (disabled)");
-      sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.UPLOAD_VIBS);
+      sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.INSTALL_VIBS);
       return;
     }
 
@@ -937,7 +1016,7 @@ public class ProvisionHostTaskService extends StatefulService {
               if (result != 0) {
                 logSyslogConfigurationErrorAndFail(hostState, result, scriptLogFile);
               } else {
-                sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.UPLOAD_VIBS);
+                sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.INSTALL_VIBS);
               }
             } catch (Throwable t) {
               failTask(t);
@@ -961,143 +1040,6 @@ public class ProvisionHostTaskService extends StatefulService {
         result);
   }
 
-  //
-  // UPLOAD_VIBS sub-stage routines
-  //
-
-  private void processUploadVibsSubStage(State currentState) {
-
-    QueryTask queryTask = QueryTask.Builder.createDirectTask()
-        .setQuery(QueryTask.Query.Builder.create()
-            .addKindFieldClause(VibService.State.class)
-            .addFieldClause(VibService.State.FIELD_NAME_HOST_SERVICE_LINK, currentState.hostServiceLink)
-            .build())
-        .addOptions(EnumSet.of(
-            QueryTask.QuerySpecification.QueryOption.BROADCAST,
-            QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT))
-        .build();
-
-    sendRequest(Operation
-        .createPost(this, ServiceUriPaths.CORE_QUERY_TASKS)
-        .setBody(queryTask)
-        .setCompletion(
-            (o, e) -> {
-              try {
-                if (e != null) {
-                  failTask(e);
-                } else {
-                  processUploadVibsSubStage(currentState, o.getBody(QueryTask.class).results.documents);
-                }
-              } catch (Throwable t) {
-                failTask(t);
-              }
-            }));
-  }
-
-  private void processUploadVibsSubStage(State currentState, Map<String, Object> vibDocuments) {
-
-    Set<String> existingVibNames = vibDocuments.values().stream()
-        .map((vibDocument) -> Utils.fromJson(vibDocument, VibService.State.class))
-        .map((vibState) -> vibState.vibName)
-        .collect(Collectors.toSet());
-
-    File sourceDirectory = new File(HostUtils.getDeployerContext(this).getVibDirectory());
-    if (!sourceDirectory.exists() || !sourceDirectory.isDirectory()) {
-      throw new IllegalStateException("Invalid VIB source directory " + sourceDirectory);
-    }
-
-    File[] vibFiles = sourceDirectory.listFiles((file) -> file.getName().toUpperCase().endsWith(".VIB"));
-    if (vibFiles.length == 0) {
-      throw new IllegalStateException("No VIB files were found in source directory " + sourceDirectory);
-    }
-
-    Set<File> vibFilesToUpload = Stream.of(vibFiles)
-        .filter((vibFile) -> !existingVibNames.contains(vibFile.getName()))
-        .collect(Collectors.toSet());
-
-    if (vibFilesToUpload.isEmpty()) {
-      ServiceUtils.logInfo(this, "Found no VIB files to upload");
-      sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.INSTALL_VIBS);
-      return;
-    }
-
-    Stream<Operation> vibStartOps = vibFilesToUpload.stream().map((vibFile) -> {
-      VibService.State startState = new VibService.State();
-      startState.vibName = vibFile.getName();
-      startState.hostServiceLink = currentState.hostServiceLink;
-      return Operation.createPost(this, VibFactoryService.SELF_LINK).setBody(startState);
-    });
-
-    OperationJoin
-        .create(vibStartOps)
-        .setCompletion(
-            (ops, exs) -> {
-              try {
-                if (exs != null && !exs.isEmpty()) {
-                  failTask(exs.values());
-                } else {
-                  createUploadVibTasks(ops.values());
-                }
-              } catch (Throwable t) {
-                failTask(t);
-              }
-            })
-        .sendWith(this);
-  }
-
-  private void createUploadVibTasks(Collection<Operation> vibStartOps) {
-
-    ChildTaskAggregatorService.State startState = new ChildTaskAggregatorService.State();
-    startState.parentTaskLink = getSelfLink();
-    startState.parentPatchBody = Utils.toJson(false, false, buildPatch(TaskState.TaskStage.STARTED,
-        TaskState.SubStage.INSTALL_VIBS));
-    startState.pendingCompletionCount = vibStartOps.size();
-    startState.errorThreshold = 0.0;
-
-    sendRequest(Operation
-        .createPost(this, ChildTaskAggregatorFactoryService.SELF_LINK)
-        .setBody(startState)
-        .setCompletion(
-            (o, e) -> {
-              try {
-                if (e != null) {
-                  failTask(e);
-                } else {
-                  createUploadVibTasks(vibStartOps, o.getBody(ServiceDocument.class).documentSelfLink);
-                }
-              } catch (Throwable t) {
-                failTask(t);
-              }
-            }));
-  }
-
-  private void createUploadVibTasks(Collection<Operation> vibStartOps, String aggregatorServiceLink) {
-
-    Stream<Operation> taskStartOps = vibStartOps.stream().map(
-        (vibStartOp) -> {
-          UploadVibTaskService.State startState = new UploadVibTaskService.State();
-          startState.parentTaskServiceLink = aggregatorServiceLink;
-          startState.workQueueServiceLink = DeployerServiceGroup.UPLOAD_VIB_WORK_QUEUE_SELF_LINK;
-          startState.vibServiceLink = vibStartOp.getBody(ServiceDocument.class).documentSelfLink;
-          return Operation.createPost(this, UploadVibTaskFactoryService.SELF_LINK).setBody(startState);
-        });
-
-    OperationJoin
-        .create(taskStartOps)
-        .setCompletion(
-            (ops, exs) -> {
-              try {
-                if (exs != null && !exs.isEmpty()) {
-                  failTask(exs.values());
-                }
-              } catch (Throwable t) {
-                failTask(t);
-              }
-            })
-        .sendWith(this);
-  }
-
-  //
   // INSTALL_VIBS sub-stage routines
   //
   // N.B. Multiple VIBs may have been uploaded to the host -- either by this task, or previously
@@ -1175,13 +1117,15 @@ public class ProvisionHostTaskService extends StatefulService {
   }
 
   private void processInstallVibsSubStage(VibService.State vibState, HostService.State hostState) {
+    String vibUri = UriUtils.buildUri(getHost(), FileService.SELF_LINK + "/" + vibState.vibName).toString();
 
     List<String> command = Arrays.asList(
         "./" + INSTALL_VIB_SCRIPT_NAME,
         hostState.hostAddress,
         hostState.userName,
         hostState.password,
-        vibState.uploadPath);
+        vibUri
+        );
 
     DeployerContext deployerContext = HostUtils.getDeployerContext(this);
 
@@ -1594,9 +1538,43 @@ public class ProvisionHostTaskService extends StatefulService {
   }
 
   //
+  // Maintenance routines
+  //
+  @Override
+  public void handlePeriodicMaintenance(Operation maintenanceOp) {
+    ServiceUtils.logInfo(this, "Handling maintenance operation");
+    maintenanceOp.complete();
+
+    sendRequest(Operation
+        .createGet(this, getSelfLink())
+        .setCompletion(
+            (o, e) -> {
+              if (e != null) {
+                ServiceUtils.logWarning(this, "Failed to get state during maintenance: " + e);
+              } else {
+                handlePeriodicMaintenance(o.getBody(State.class));
+              }
+            }));
+  }
+
+  private void handlePeriodicMaintenance(State currentState) {
+
+    checkState(currentState.taskTimeoutMicros != 0);
+
+    boolean failTask = (currentState.taskState.stage == TaskState.TaskStage.STARTED &&
+        currentState.taskStartTimeMicros != null &&
+        currentState.taskStartTimeMicros < Utils.getNowMicrosUtc() + currentState.taskTimeoutMicros);
+
+    if (failTask) {
+      State patchState = buildPatch(TaskState.TaskStage.FAILED, null, new TimeoutException());
+      patchState.taskState.failure.statusCode = Operation.STATUS_CODE_TIMEOUT;
+      TaskUtils.sendSelfPatch(this, patchState);
+    }
+  }
+
+  //
   // Utility routines
   //
-
   private void sendStageProgressPatch(TaskState.TaskStage taskStage, TaskState.SubStage subStage) {
     sendStageProgressPatch(buildPatch(taskStage, subStage, null));
   }
@@ -1617,8 +1595,7 @@ public class ProvisionHostTaskService extends StatefulService {
     TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, null, failures.iterator().next()));
   }
 
-  @VisibleForTesting
-  protected static State buildPatch(TaskState.TaskStage taskStage, TaskState.SubStage subStage) {
+  public static State buildPatch(TaskState.TaskStage taskStage, TaskState.SubStage subStage) {
     return buildPatch(taskStage, subStage, null);
   }
 

@@ -45,6 +45,7 @@ import com.vmware.photon.controller.cloudstore.xenon.task.trigger.DatastoreClean
 import com.vmware.photon.controller.cloudstore.xenon.task.trigger.EntityLockCleanerTriggerBuilder;
 import com.vmware.photon.controller.cloudstore.xenon.task.trigger.EntityLockDeleteTriggerBuilder;
 import com.vmware.photon.controller.cloudstore.xenon.task.trigger.TombstoneCleanerTriggerBuilder;
+import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.XenonServiceGroup;
@@ -136,7 +137,7 @@ public class CloudStoreServiceGroup
 
   @Override
   public String getName() {
-    return "cloudstore";
+    return Constants.CLOUDSTORE_SERVICE_NAME;
   }
 
   @Override

@@ -328,13 +328,11 @@ public class BulkProvisionHostsWorkflowServiceTest {
     private BulkProvisionHostsWorkflowService.State startState;
     private TestEnvironment testEnvironment;
     private com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment cloudStoreMachine;
-    private File vibSourceFile;
 
     @BeforeClass
     public void setUpClass() throws Throwable {
       FileUtils.deleteDirectory(storageDirectory);
       vibDirectory.mkdirs();
-      vibSourceFile = TestHelper.createSourceFile(null, vibDirectory);
 
       deployerConfig = ConfigBuilder.build(DeployerConfig.class,
           this.getClass().getResource(configFilePath).getPath());
@@ -486,8 +484,7 @@ public class BulkProvisionHostsWorkflowServiceTest {
                 startState,
                 BulkProvisionHostsWorkflowService.State.class,
                 (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
-
-        TestHelper.assertTaskStateFinished(finalState.taskState);
+          TestHelper.assertTaskStateFinished(finalState.taskState);
       }
     }
 

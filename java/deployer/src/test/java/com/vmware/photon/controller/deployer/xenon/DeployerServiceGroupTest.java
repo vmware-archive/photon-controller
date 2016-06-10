@@ -98,7 +98,7 @@ public class DeployerServiceGroupTest {
     serviceSelfLinks = ServiceHostUtils.getServiceSelfLinks(
         DeployerServiceGroup.FACTORY_SERVICE_FIELD_NAME_SELF_LINK,
         DeployerServiceGroup.FACTORY_SERVICES);
-    serviceSelfLinks.add(DeployerServiceGroup.UPLOAD_VIB_WORK_QUEUE_SELF_LINK);
+    serviceSelfLinks.add(DeployerServiceGroup.PROVISION_HOST_WORK_QUEUE_SELF_LINK);
 
     final CountDownLatch latch = new CountDownLatch(serviceSelfLinks.size());
     Operation.CompletionHandler handler = new Operation.CompletionHandler() {
