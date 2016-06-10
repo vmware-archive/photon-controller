@@ -35,11 +35,13 @@ import com.vmware.photon.controller.cloudstore.dcp.entity.TombstoneServiceFactor
 import com.vmware.photon.controller.cloudstore.dcp.entity.VirtualNetworkService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.VmServiceFactory;
 import com.vmware.photon.controller.cloudstore.dcp.task.AvailabilityZoneCleanerFactoryService;
+import com.vmware.photon.controller.cloudstore.dcp.task.DatastoreCleanerFactoryService;
 import com.vmware.photon.controller.cloudstore.dcp.task.DatastoreDeleteFactoryService;
 import com.vmware.photon.controller.cloudstore.dcp.task.EntityLockCleanerFactoryService;
 import com.vmware.photon.controller.cloudstore.dcp.task.EntityLockDeleteFactoryService;
 import com.vmware.photon.controller.cloudstore.dcp.task.TombstoneCleanerFactoryService;
 import com.vmware.photon.controller.cloudstore.dcp.task.trigger.AvailabilityZoneCleanerTriggerBuilder;
+import com.vmware.photon.controller.cloudstore.dcp.task.trigger.DatastoreCleanerTriggerBuilder;
 import com.vmware.photon.controller.cloudstore.dcp.task.trigger.EntityLockCleanerTriggerBuilder;
 import com.vmware.photon.controller.cloudstore.dcp.task.trigger.EntityLockDeleteTriggerBuilder;
 import com.vmware.photon.controller.cloudstore.dcp.task.trigger.TombstoneCleanerTriggerBuilder;
@@ -83,7 +85,10 @@ public class CloudStoreServiceGroup
           EntityLockDeleteTriggerBuilder.DEFAULT_TASK_EXPIRATION_AGE_MILLIS),
       new AvailabilityZoneCleanerTriggerBuilder(
           AvailabilityZoneCleanerTriggerBuilder.DEFAULT_TRIGGER_INTERVAL_MILLIS,
-          AvailabilityZoneCleanerTriggerBuilder.DEFAULT_TASK_EXPIRATION_AGE_MILLIS)
+          AvailabilityZoneCleanerTriggerBuilder.DEFAULT_TASK_EXPIRATION_AGE_MILLIS),
+      new DatastoreCleanerTriggerBuilder(
+          DatastoreCleanerTriggerBuilder.DEFAULT_TRIGGER_INTERVAL_MILLIS,
+          DatastoreCleanerTriggerBuilder.DEFAULT_TASK_EXPIRATION_AGE_MILLIS)
   };
 
   public static final Class[] FACTORY_SERVICES = {
@@ -115,6 +120,7 @@ public class CloudStoreServiceGroup
       TombstoneCleanerFactoryService.class,
       AvailabilityZoneCleanerFactoryService.class,
       DatastoreDeleteFactoryService.class,
+      DatastoreCleanerFactoryService.class,
 
       // Upgrade
       UpgradeInformationService.class,
@@ -182,6 +188,7 @@ public class CloudStoreServiceGroup
             && photonControllerXenonHost.checkServiceAvailable(TombstoneCleanerFactoryService.SELF_LINK)
             && photonControllerXenonHost.checkServiceAvailable(AvailabilityZoneCleanerFactoryService.SELF_LINK)
             && photonControllerXenonHost.checkServiceAvailable(DatastoreDeleteFactoryService.SELF_LINK)
+            && photonControllerXenonHost.checkServiceAvailable(DatastoreCleanerFactoryService.SELF_LINK)
 
             // triggers
             && photonControllerXenonHost.checkServiceAvailable(TaskTriggerFactoryService.SELF_LINK)
@@ -192,7 +199,9 @@ public class CloudStoreServiceGroup
             && photonControllerXenonHost.checkServiceAvailable(
             TaskTriggerFactoryService.SELF_LINK + EntityLockDeleteTriggerBuilder.TRIGGER_SELF_LINK)
             && photonControllerXenonHost.checkServiceAvailable(
-            TaskTriggerFactoryService.SELF_LINK + AvailabilityZoneCleanerTriggerBuilder.TRIGGER_SELF_LINK);
+            TaskTriggerFactoryService.SELF_LINK + AvailabilityZoneCleanerTriggerBuilder.TRIGGER_SELF_LINK)
+            && photonControllerXenonHost.checkServiceAvailable(
+            TaskTriggerFactoryService.SELF_LINK + DatastoreCleanerTriggerBuilder.TRIGGER_SELF_LINK);
   }
 
   @Override
