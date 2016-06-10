@@ -181,7 +181,7 @@ class VimClient(HostClient):
 
     def _start_syncing_cache(self):
         self._logger.info("Start vim client sync vm cache thread")
-        self._vim_cache = VimCache(self)
+        self._vim_cache = VimCache()
         self._vim_cache.poll_updates(self)
         self._sync_thread = SyncVimCacheThread(self, self._vim_cache, self._wait_timeout,
                                                self._min_interval, self._errback)
@@ -665,7 +665,7 @@ class VimClient(HostClient):
     def get_mks_ticket(self, vm_id):
         vm = self.get_vm(vm_id)
         if vm.runtime.powerState != 'poweredOn':
-            raise OperationNotAllowedException('Not allowed on vm that is not powered on.')
+            raise VmPowerStateException('Not allowed on vm that is not powered on.')
         mks = vm.AcquireMksTicket()
         return MksTicket(mks.host, mks.port, mks.cfgFile, mks.ticket, mks.sslThumbprint)
 

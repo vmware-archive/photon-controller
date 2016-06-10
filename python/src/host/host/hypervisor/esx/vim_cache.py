@@ -53,7 +53,7 @@ class VimDatastore(object):
 class VimCache:
     """ Initialization
     """
-    def __init__(self, vim_client):
+    def __init__(self):
         self._logger = logging.getLogger(__name__)
 
         self._filter = None
