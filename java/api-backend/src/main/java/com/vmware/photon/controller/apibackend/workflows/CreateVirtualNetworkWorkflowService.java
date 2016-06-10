@@ -121,11 +121,11 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
   @Override
   public void handlePatch(Operation patchOperation) {
     ServiceUtils.logInfo(this, "Handling patch for service %s", getSelfLink());
-    CreateVirtualNetworkWorkflowDocument currentState = getState(patchOperation);
-
-    ServiceUtils.logInfo(this, "Service document before patching %s", currentState.toString());
 
     try {
+      CreateVirtualNetworkWorkflowDocument currentState = getState(patchOperation);
+      ServiceUtils.logInfo(this, "Service document before patching %s", currentState.toString());
+
       CreateVirtualNetworkWorkflowDocument patchState =
           patchOperation.getBody(CreateVirtualNetworkWorkflowDocument.class);
       validatePatchState(currentState, patchState);
@@ -144,30 +144,34 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
 
       processPatch(currentState);
     } catch (Throwable t) {
+      ServiceUtils.logSevere(this, t);
       if (!OperationUtils.isCompleted(patchOperation)) {
         patchOperation.fail(t);
       }
-      fail(currentState, t);
     }
   }
 
   /**
    * Processes the sub-stages of the workflow.
    */
-  private void processPatch(CreateVirtualNetworkWorkflowDocument state) throws Throwable {
-    switch(state.taskState.subStage) {
-      case GET_NSX_CONFIGURATION:
-        getNsxConfiguration(state);
-        break;
-      case CREATE_LOGICAL_SWITCH:
-        createLogicalSwitch(state);
-        break;
-      case CREATE_LOGICAL_ROUTER:
-        createLogicalRouter(state);
-        break;
-      case SET_UP_LOGICAL_ROUTER:
-        setUpLogicalRouter(state);
-        break;
+  private void processPatch(CreateVirtualNetworkWorkflowDocument state) {
+    try {
+      switch (state.taskState.subStage) {
+        case GET_NSX_CONFIGURATION:
+          getNsxConfiguration(state);
+          break;
+        case CREATE_LOGICAL_SWITCH:
+          createLogicalSwitch(state);
+          break;
+        case CREATE_LOGICAL_ROUTER:
+          createLogicalRouter(state);
+          break;
+        case SET_UP_LOGICAL_ROUTER:
+          setUpLogicalRouter(state);
+          break;
+      }
+    } catch (Throwable t) {
+      fail(state, t);
     }
   }
 
