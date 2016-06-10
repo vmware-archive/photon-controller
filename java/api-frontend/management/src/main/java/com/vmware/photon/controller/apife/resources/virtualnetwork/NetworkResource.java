@@ -43,7 +43,7 @@ import javax.ws.rs.core.Response;
 /**
  * Resource for virtual network related API.
  */
-@Path(NetworkResourceRoutes.NETWORK_PATH)
+@Path(NetworkResourceRoutes.SUBNET_PATH)
 @Api(value = NetworkResourceRoutes.API)
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
@@ -63,12 +63,12 @@ public class NetworkResource {
   })
   public Response get(@Context Request request,
                       @PathParam("id") String id)
-    throws ExternalException {
+      throws ExternalException {
     return generateCustomResponse(
         Response.Status.OK,
         virtualNetworkFeClient.get(id),
         (ContainerRequest) request,
-        NetworkResourceRoutes.NETWORK_PATH);
+        NetworkResourceRoutes.SUBNET_PATH);
   }
 
   @DELETE
@@ -87,7 +87,7 @@ public class NetworkResource {
   }
 
   @POST
-  @Path(NetworkResourceRoutes.NETWORK_SET_DEFAULT_ACTION)
+  @Path(NetworkResourceRoutes.SUBNET_SET_DEFAULT_ACTION)
   @ApiOperation(value = "Set Network Default", response = Task.class)
   @ApiResponses(value = {
       @ApiResponse(code = 201, message = "Setting Network default, progress communicated via the task")

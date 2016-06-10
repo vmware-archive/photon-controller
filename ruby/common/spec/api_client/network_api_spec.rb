@@ -24,18 +24,18 @@ describe EsxCloud::ApiClient do
     network = double(EsxCloud::Network)
 
     expect(http_client).to receive(:post_json)
-                            .with("/networks", "payload")
-                            .and_return(task_created("aaa"))
+    .with("/subnets", "payload")
+    .and_return(task_created("aaa"))
 
     expect(http_client).to receive(:get).with(URL_HOST + "/tasks/aaa").and_return(task_done("aaa", "network-id"))
-    expect(http_client).to receive(:get).with("/networks/network-id").and_return(ok_response("network"))
+    expect(http_client).to receive(:get).with("/subnets/network-id").and_return(ok_response("network"))
     expect(EsxCloud::Network).to receive(:create_from_json).with("network").and_return(network)
 
     expect(client.create_network("payload")).to eq network
   end
 
   it "deletes a network" do
-    expect(http_client).to receive(:delete).with("/networks/foo").and_return(task_created("aaa"))
+    expect(http_client).to receive(:delete).with("/subnets/foo").and_return(task_created("aaa"))
     expect(http_client).to receive(:get).with(URL_HOST + "/tasks/aaa").and_return(task_done("aaa", "foo"))
 
     expect(client.delete_network("foo")).to be_true
@@ -46,10 +46,10 @@ describe EsxCloud::ApiClient do
     network = double(EsxCloud::Network)
 
     expect(http_client).to receive(:post_json)
-                           .with("/networks/network-id/set_portgroups", {items: portgroups})
-                           .and_return(task_created("aaa"))
+    .with("/subnets/network-id/set_portgroups", {items : portgroups})
+    .and_return(task_created("aaa"))
     expect(http_client).to receive(:get).with(URL_HOST + "/tasks/aaa").and_return(task_done("aaa", "network-id"))
-    expect(http_client).to receive(:get).with("/networks/network-id").and_return(ok_response("network"))
+    expect(http_client).to receive(:get).with("/subnets/network-id").and_return(ok_response("network"))
     expect(EsxCloud::Network).to receive(:create_from_json).with("network").and_return(network)
 
     expect(client.set_portgroups("network-id", portgroups)).to eq network
@@ -57,8 +57,8 @@ describe EsxCloud::ApiClient do
 
   it "sets default network" do
     expect(http_client).to receive(:post)
-                           .with("/networks/network-id/set_default")
-                           .and_return(task_created("aaa"))
+    .with("/subnets/network-id/set_default")
+    .and_return(task_created("aaa"))
     expect(http_client).to receive(:get).with(URL_HOST + "/tasks/aaa").and_return(task_done("aaa", "network-id"))
 
     expect(client.set_default("network-id")).to be_true
@@ -67,10 +67,11 @@ describe EsxCloud::ApiClient do
   it "finds network by id" do
     network = double(EsxCloud::Network)
 
-    expect(http_client).to receive(:get).with("/networks/n1")
-                            .and_return(ok_response("network"))
+    expect(http_client).to receive(:get).with("/subnets/n1")
+    .and_return(ok_response("network"))
+
     expect(EsxCloud::Network).to receive(:create_from_json).with("network")
-                                 .and_return(network)
+    .and_return(network)
 
     expect(client.find_network_by_id("n1")).to eq network
   end
@@ -78,10 +79,10 @@ describe EsxCloud::ApiClient do
   it "finds networks by name" do
     networks = double(EsxCloud::NetworkList)
 
-    expect(http_client).to receive(:get).with("/networks?name=n1")
-                            .and_return(ok_response("networks"))
+    expect(http_client).to receive(:get).with("/subnets?name=n1")
+    .and_return(ok_response("networks"))
     expect(EsxCloud::NetworkList).to receive(:create_from_json).with("networks")
-                                     .and_return(networks)
+    .and_return(networks)
 
     expect(client.find_networks_by_name("n1")).to eq networks
   end
@@ -89,7 +90,7 @@ describe EsxCloud::ApiClient do
   it "finds all networks" do
     networks = double(EsxCloud::NetworkList)
 
-    expect(http_client).to receive(:get).with("/networks").and_return(ok_response("networks"))
+    expect(http_client).to receive(:get).with("/subnets").and_return(ok_response("networks"))
     expect(EsxCloud::NetworkList).to receive(:create_from_json).with("networks").and_return(networks)
 
     expect(client.find_all_networks).to eq networks
