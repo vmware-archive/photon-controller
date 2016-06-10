@@ -27,6 +27,7 @@ import com.vmware.photon.controller.apife.entities.NetworkEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidNetworkStateException;
 import com.vmware.photon.controller.apife.exceptions.external.NetworkNotFoundException;
+import com.vmware.photon.controller.apife.exceptions.external.PortGroupRepeatedInMultipleNetworksException;
 import com.vmware.photon.controller.apife.exceptions.external.PortGroupsAlreadyAddedToNetworkException;
 import com.vmware.photon.controller.apife.utils.PaginationUtils;
 import com.vmware.photon.controller.cloudstore.xenon.entity.NetworkService;
@@ -105,23 +106,29 @@ public class NetworkDcpBackend implements NetworkBackend {
 
   @Override
   public ResourceList<Network> filter(Optional<String> name, Optional<String> portGroup, Optional<Integer> pageSize) {
-    final ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
-    if (name.isPresent()) {
-      termsBuilder.put("name", name.get());
-    }
-
-    if (portGroup.isPresent()) {
-      termsBuilder.put(NetworkService.PORT_GROUPS_KEY, portGroup.get().toString());
-    }
-
-    ImmutableMap<String, String> terms = termsBuilder.build();
-    logger.info("Filtering Port Groups using terms {}", terms);
-
-    ServiceDocumentQueryResult queryResult = dcpClient.queryDocuments(NetworkService.State.class,
-        terms, pageSize, true);
+    ServiceDocumentQueryResult queryResult = filterServiceDocuments(name, portGroup, pageSize);
 
     return PaginationUtils.xenonQueryResultToResourceList(NetworkService.State.class, queryResult,
         state -> toApiRepresentation(convertToEntity(state)));
+  }
+
+  @Override
+  public NetworkService.State filterNetworkByPortGroup(Optional<String> portGroup)
+          throws PortGroupRepeatedInMultipleNetworksException {
+    ServiceDocumentQueryResult queryResult = filterServiceDocuments(Optional.absent(), portGroup, Optional.absent());
+
+    ResourceList<NetworkService.State> networksList =
+            PaginationUtils.xenonQueryResultToResourceList(NetworkService.State.class, queryResult);
+
+    if (networksList == null || networksList.getItems() == null || networksList.getItems().size() == 0) {
+      return null;
+    } else if (networksList.getItems().size() > 1) {
+      Map<String, List<NetworkService.State>> violations = new HashMap<>();
+      violations.put(portGroup.toString(), networksList.getItems());
+      throw new PortGroupRepeatedInMultipleNetworksException(violations);
+    } else {
+      return networksList.getItems().get(0);
+    }
   }
 
   @Override
@@ -325,4 +332,22 @@ public class NetworkDcpBackend implements NetworkBackend {
 
     return network;
   }
+
+  private ServiceDocumentQueryResult filterServiceDocuments(Optional<String> name, Optional<String> portGroup,
+                                                     Optional<Integer> pageSize) {
+    final ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
+    if (name.isPresent()) {
+      termsBuilder.put("name", name.get());
+    }
+
+    if (portGroup.isPresent()) {
+      termsBuilder.put(NetworkService.PORT_GROUPS_KEY, portGroup.get().toString());
+    }
+
+    ImmutableMap<String, String> terms = termsBuilder.build();
+    logger.info("Filtering Port Groups using terms {}", terms);
+
+    return dcpClient.queryDocuments(NetworkService.State.class, terms, pageSize, true);
+  }
+
 }

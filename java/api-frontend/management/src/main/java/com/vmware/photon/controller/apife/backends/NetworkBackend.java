@@ -20,7 +20,9 @@ import com.vmware.photon.controller.api.common.exceptions.external.ExternalExcep
 import com.vmware.photon.controller.apife.entities.NetworkEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.exceptions.external.NetworkNotFoundException;
+import com.vmware.photon.controller.apife.exceptions.external.PortGroupRepeatedInMultipleNetworksException;
 import com.vmware.photon.controller.apife.exceptions.external.PortGroupsAlreadyAddedToNetworkException;
+import com.vmware.photon.controller.cloudstore.dcp.entity.NetworkService;
 
 import com.google.common.base.Optional;
 
@@ -34,6 +36,9 @@ public interface NetworkBackend {
   TaskEntity createNetwork(NetworkCreateSpec network) throws PortGroupsAlreadyAddedToNetworkException;
 
   ResourceList<Network> filter(Optional<String> name, Optional<String> portGroup, Optional<Integer> pageSize);
+
+  NetworkService.State filterNetworkByPortGroup(Optional<String> portGroup)
+          throws PortGroupRepeatedInMultipleNetworksException;
 
   ResourceList<Network> getPage(String pageLink) throws ExternalException;
 
