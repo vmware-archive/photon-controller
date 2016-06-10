@@ -18,6 +18,7 @@ from hamcrest import assert_that, equal_to, not_none
 from pyVmomi import vim
 
 from host.hypervisor.esx.host_client import DeviceNotFoundException
+from host.hypervisor.esx.host_client import DeviceBusyException
 from host.hypervisor.esx.vim_client import VimClient
 from host.hypervisor.esx.path_util import datastore_to_os_path
 from host.hypervisor.esx.path_util import vmdk_path
@@ -251,37 +252,26 @@ class TestEsxVmConfig(unittest.TestCase):
         cspec = self._update_spec()
         cspec._cfg_opts = cfgOption
 
-        result = cspec.attach_iso(cfg_info, fake_iso_ds_path)
-
-        assert_that(result.__class__,
-                    equal_to(bool))
-        assert_that(result, equal_to(True))
+        cspec.attach_iso(cfg_info, fake_iso_ds_path)
 
         dev = cspec.get_spec().deviceChange[0].device
         assert_that(len(cspec.get_spec().deviceChange), equal_to(1))
         assert_that(dev.connectable.connected, equal_to(True))
         assert_that(dev.connectable.startConnected, equal_to(True))
-        assert_that(dev.backing.__class__,
-                    equal_to(vim.vm.device.VirtualCdrom.IsoBackingInfo))
+        assert_that(dev.backing.__class__, equal_to(vim.vm.device.VirtualCdrom.IsoBackingInfo))
 
         # test if virtual cdrom exist and ISO already attached to the VM
         cspec = self._update_spec()
         cfg_info = self._get_config_info_with_iso(fake_iso_ds_path)
 
-        result = cspec.attach_iso(cfg_info, fake_iso_ds_path)
-
-        assert_that(result.__class__, equal_to(bool))
-        assert_that(result, equal_to(False))
+        self.assertRaises(DeviceBusyException, cspec.attach_iso, cfg_info, fake_iso_ds_path)
 
         # test if virtual cdrom exist and it's iso_backing
         # and ISO is not attached to the VM
         cspec = self._update_spec()
         cfg_info = self._get_config_info_without_connected(is_iso_backing=True)
 
-        result = cspec.attach_iso(cfg_info, fake_iso_ds_path)
-
-        assert_that(result.__class__, equal_to(bool))
-        assert_that(result, equal_to(True))
+        cspec.attach_iso(cfg_info, fake_iso_ds_path)
 
         dev = cspec.get_spec().deviceChange[0].device
         assert_that(len(cspec.get_spec().deviceChange), equal_to(1))
@@ -294,7 +284,7 @@ class TestEsxVmConfig(unittest.TestCase):
         cspec = self._update_spec()
         cfg_info = self._get_config_info_without_connected(is_iso_backing=False)
 
-        self.assertRaises(TypeError, cspec.attach_iso, cfg_info, fake_iso_ds_path)
+        self.assertRaises(Exception, cspec.attach_iso, cfg_info, fake_iso_ds_path)
 
     def test_disconnect_iso(self):
         # on vm config with no cdrom devices

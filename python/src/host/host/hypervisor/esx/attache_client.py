@@ -31,6 +31,7 @@ from host.hypervisor.vm_manager import VmNotFoundException
 from host.hypervisor.vm_manager import VmPowerStateException
 from host.hypervisor.esx.host_client import HostClient
 from host.hypervisor.esx.host_client import DeviceNotFoundException
+from host.hypervisor.esx.host_client import DeviceBusyException
 from host.hypervisor.esx.host_client import HostdConnectionFailure
 from host.hypervisor.esx.host_client import VmConfigSpec
 from host.hypervisor.esx.host_client import DatastoreNotFound
@@ -46,6 +47,7 @@ ATTACHE_ERROR_MAP = {
     60032: VmNotFoundException,         # ERROR_ATTACHE_VM_NOT_FOUND
     60033: DeviceNotFoundException,     # ERROR_ATTACHE_DEVICE_NOT_FOUND
     60035: DatastoreNotFound,           # ERROR_ATTACHE_DATASTORE_NOT_FOUND
+    60036: DeviceBusyException,         # ERROR_ATTACHE_DEVICE_BUSY
 
     60100: DiskPathException,           # ERROR_ATTACHE_VIM_FAULT_INVALID_DATASTORE
     60101: DiskFileException,           # ERROR_ATTACHE_VIM_FAULT_FILE_FAULT
@@ -206,7 +208,6 @@ class AttacheClient(HostClient):
     @attache_error_handler
     def attach_iso(self, vm_id, iso_file):
         self._client.AttachIso(self._session, vm_id, iso_file)
-        return True
 
     @attache_error_handler
     def detach_iso(self, vm_id):

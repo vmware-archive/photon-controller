@@ -25,6 +25,10 @@ class DeviceNotFoundException(Exception):
     pass
 
 
+class DeviceBusyException(Exception):
+    pass
+
+
 class NfcLeaseInitiatizationTimeout(Exception):
     """ Timed out waiting for the HTTP NFC lease to initialize. """
     pass

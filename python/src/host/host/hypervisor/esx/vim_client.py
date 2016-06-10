@@ -649,10 +649,8 @@ class VimClient(HostClient):
         cfg_spec = EsxVmConfigSpec(self.query_config())
         cfg_spec.init_for_update()
         vm = self.get_vm(vm_id)
-        result = cfg_spec.attach_iso(vm.config, iso_file)
-        if result:
-            self._reconfigure_vm(vm, cfg_spec.get_spec())
-        return result
+        cfg_spec.attach_iso(vm.config, iso_file)
+        self._reconfigure_vm(vm, cfg_spec.get_spec())
 
     @hostd_error_handler
     def detach_iso(self, vm_id):

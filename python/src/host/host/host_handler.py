@@ -101,6 +101,7 @@ from gen.scheduler.ttypes import PlaceResponse
 from gen.scheduler.ttypes import PlaceResultCode
 from gen.scheduler.ttypes import Score
 from host.hypervisor.datastore_manager import DatastoreNotFoundException
+from host.hypervisor.esx.host_client import DeviceBusyException
 from host.hypervisor.esx.path_util import vmdk_path
 from host.hypervisor.esx.path_util import IMAGE_FOLDER_NAME_PREFIX
 from host.hypervisor.image_manager import DirectoryNotFound
@@ -1146,25 +1147,20 @@ class HostHandler(Host.Iface):
         :type request: AttachISORequest
         :rtype AttachISORespose
         """
+        response = AttachISOResponse()
+
         try:
-            response = AttachISOResponse()
+            self.hypervisor.vm_manager.attach_iso(request.vm_id, request.iso_file_path)
+            response.result = AttachISOResultCode.OK
 
-            # callee will modify spec
-            # result: True if success, or False if fail
-            result = self.hypervisor.vm_manager.attach_iso(request.vm_id, request.iso_file_path)
-            if result:
-                response.result = AttachISOResultCode.OK
-            else:
-                response.result = AttachISOResultCode.ISO_ATTACHED_ERROR
-
-        except VmNotFoundException:
+        except VmNotFoundException as e:
             response.result = AttachISOResultCode.VM_NOT_FOUND
-        except TypeError:
-            self._logger.info(sys.exc_info()[1])
-            response.result = AttachISOResultCode.SYSTEM_ERROR
-            response.error = str(sys.exc_info()[1])
+            response.error = e.message
+        except DeviceBusyException as e:
+            response.result = AttachISOResultCode.ISO_ATTACHED_ERROR
+            response.error = e.message
         except Exception:
-            self._logger.info(sys.exc_info()[1])
+            self._logger.exception("attach_iso failed")
             response.result = AttachISOResultCode.SYSTEM_ERROR
             response.error = str(sys.exc_info()[1])
 
