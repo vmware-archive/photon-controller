@@ -16,6 +16,7 @@ import com.vmware.photon.controller.apibackend.servicedocuments.CreateLogicalRou
 import com.vmware.photon.controller.apibackend.utils.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
+import com.vmware.photon.controller.common.xenon.OperationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
@@ -59,50 +60,60 @@ public class CreateLogicalRouterTaskService extends StatefulService {
   @Override
   public void handleStart(Operation start) {
     ServiceUtils.logInfo(this, "Starting service %s", getSelfLink());
-    CreateLogicalRouterTask startState = start.getBody(CreateLogicalRouterTask.class);
-    InitializationUtils.initialize(startState);
-    validateStartState(startState);
-
-    if (startState.taskState.stage == TaskState.TaskStage.CREATED) {
-      startState.taskState.stage = TaskState.TaskStage.STARTED;
-    }
-
-    if (startState.documentExpirationTimeMicros <= 0) {
-      startState.documentExpirationTimeMicros =
-          ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME_MICROS);
-    }
-
-    start.setBody(startState).complete();
 
     try {
+      CreateLogicalRouterTask startState = start.getBody(CreateLogicalRouterTask.class);
+      InitializationUtils.initialize(startState);
+      validateStartState(startState);
+
+      if (startState.taskState.stage == TaskState.TaskStage.CREATED) {
+        startState.taskState.stage = TaskState.TaskStage.STARTED;
+      }
+
+      if (startState.documentExpirationTimeMicros <= 0) {
+        startState.documentExpirationTimeMicros =
+            ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_DOC_EXPIRATION_TIME_MICROS);
+      }
+
+      start.setBody(startState).complete();
+
       if (ControlFlags.isOperationProcessingDisabled(startState.controlFlags)) {
         ServiceUtils.logInfo(this, "Skipping start operation processing (disabled)");
       } else if (TaskState.TaskStage.STARTED == startState.taskState.stage) {
         TaskUtils.sendSelfPatch(this, buildPatch(startState.taskState.stage));
       }
     } catch (Throwable t) {
-      failTask(t);
+      ServiceUtils.logSevere(this, t);
+      if (!OperationUtils.isCompleted(start)) {
+        start.fail(t);
+      }
     }
   }
 
   @Override
   public void handlePatch(Operation patch) {
     ServiceUtils.logInfo(this, "Handling patch for service %s", getSelfLink());
-    CreateLogicalRouterTask currentState = getState(patch);
-    CreateLogicalRouterTask patchState = patch.getBody(CreateLogicalRouterTask.class);
-    validatePatchState(currentState, patchState);
-    PatchUtils.patchState(currentState, patchState);
-    validateState(currentState);
-    patch.complete();
-
     try {
+      CreateLogicalRouterTask currentState = getState(patch);
+      CreateLogicalRouterTask patchState = patch.getBody(CreateLogicalRouterTask.class);
+
+      validatePatchState(currentState, patchState);
+      PatchUtils.patchState(currentState, patchState);
+
+      validateState(currentState);
+
+      patch.complete();
+
       if (ControlFlags.isOperationProcessingDisabled(currentState.controlFlags)) {
         ServiceUtils.logInfo(this, "Skipping patch handling (disabled)");
       } else if (TaskState.TaskStage.STARTED == currentState.taskState.stage) {
         createLogicalRouter(currentState);
       }
     } catch (Throwable t) {
-      failTask(t);
+      ServiceUtils.logSevere(this, t);
+      if (!OperationUtils.isCompleted(patch)) {
+        patch.fail(t);
+      }
     }
   }
 

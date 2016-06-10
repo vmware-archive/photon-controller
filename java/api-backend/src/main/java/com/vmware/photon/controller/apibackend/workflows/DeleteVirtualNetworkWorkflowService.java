@@ -79,10 +79,10 @@ public class DeleteVirtualNetworkWorkflowService extends BaseWorkflowService<Del
 
       getVirtualNetwork(state, createOperation);
     } catch (Throwable t) {
+      ServiceUtils.logSevere(this, t);
       if (!OperationUtils.isCompleted(createOperation)) {
         createOperation.fail(t);
       }
-      fail(state, t);
     }
   }
 
@@ -105,19 +105,19 @@ public class DeleteVirtualNetworkWorkflowService extends BaseWorkflowService<Del
 
       start(state);
     } catch (Throwable t) {
+      ServiceUtils.logSevere(this, t);
       if (!OperationUtils.isCompleted(startOperation)) {
         startOperation.fail(t);
       }
-      fail(state, t);
     }
   }
 
   @Override
   public void handlePatch(Operation patchOperation) {
     ServiceUtils.logInfo(this, "Handling patch %s", getSelfLink());
-    DeleteVirtualNetworkWorkflowDocument currentState = getState(patchOperation);
 
     try {
+      DeleteVirtualNetworkWorkflowDocument currentState = getState(patchOperation);
       DeleteVirtualNetworkWorkflowDocument patchState =
           patchOperation.getBody(DeleteVirtualNetworkWorkflowDocument.class);
       validatePatchState(currentState, patchState);
@@ -134,30 +134,34 @@ public class DeleteVirtualNetworkWorkflowService extends BaseWorkflowService<Del
 
       processPatch(currentState);
     } catch (Throwable t) {
+      ServiceUtils.logSevere(this, t);
       if (!OperationUtils.isCompleted(patchOperation)) {
         patchOperation.fail(t);
       }
-      fail(currentState, t);
     }
   }
 
   /**
    * Processes the sub-stages of the workflow.
    */
-  private void processPatch(DeleteVirtualNetworkWorkflowDocument state) throws Throwable {
-    switch(state.taskState.subStage) {
-      case GET_NSX_CONFIGURATION:
-        getNsxConfiguration(state);
-        break;
-      case DELETE_LOGICAL_PORTS:
-        deleteLogicalPorts(state);
-        break;
-      case DELETE_LOGICAL_ROUTER:
-        deleteLogicalRouter(state);
-        break;
-      case DELETE_LOGICAL_SWITCH:
-        deleteLogicalSwitch(state);
-        break;
+  private void processPatch(DeleteVirtualNetworkWorkflowDocument state) {
+    try {
+      switch (state.taskState.subStage) {
+        case GET_NSX_CONFIGURATION:
+          getNsxConfiguration(state);
+          break;
+        case DELETE_LOGICAL_PORTS:
+          deleteLogicalPorts(state);
+          break;
+        case DELETE_LOGICAL_ROUTER:
+          deleteLogicalRouter(state);
+          break;
+        case DELETE_LOGICAL_SWITCH:
+          deleteLogicalSwitch(state);
+          break;
+      }
+    } catch (Throwable t) {
+      fail(state, t);
     }
   }
 
@@ -360,6 +364,7 @@ public class DeleteVirtualNetworkWorkflowService extends BaseWorkflowService<Del
         .createGet(VirtualNetworkService.FACTORY_LINK + "/" + state.virtualNetworkId)
         .setCompletion((op, ex) -> {
           if (ex != null) {
+            operation.fail(ex);
             fail(state, ex);
             return;
           }

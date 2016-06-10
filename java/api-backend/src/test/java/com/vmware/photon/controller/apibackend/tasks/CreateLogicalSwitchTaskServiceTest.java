@@ -20,7 +20,7 @@ import com.vmware.photon.controller.apibackend.servicedocuments.CreateLogicalSwi
 import com.vmware.photon.controller.common.tests.nsx.NsxClientMock;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
-import com.vmware.photon.controller.common.xenon.exceptions.BadRequestException;
+import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.nsxclient.NsxClientFactory;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
@@ -117,7 +117,7 @@ public class CreateLogicalSwitchTaskServiceTest {
       assertThat(savedState.documentExpirationTimeMicros > 0, is(true));
     }
 
-    @Test(expectedExceptions = BadRequestException.class)
+    @Test(expectedExceptions = XenonRuntimeException.class)
     public void testRestartDisabled() throws Throwable {
       createLogicalSwitchTaskService(host, createLogicalSwitchTaskService, TaskState.TaskStage.STARTED, 0);
     }
@@ -135,7 +135,7 @@ public class CreateLogicalSwitchTaskServiceTest {
       try {
         host.startServiceSynchronously(createLogicalSwitchTaskService, startState);
         fail("should have failed due to violation of not empty restraint");
-      } catch (BadRequestException e) {
+      } catch (XenonRuntimeException e) {
         assertThat(e.getMessage(), is(expectedErrorMessage));
       }
     }
@@ -232,7 +232,7 @@ public class CreateLogicalSwitchTaskServiceTest {
       try {
         host.sendRequestAndWait(patch);
         fail("Should have failed due to invalid stage transition");
-      } catch (BadRequestException e) {
+      } catch (XenonRuntimeException e) {
       }
     }
 
@@ -257,7 +257,7 @@ public class CreateLogicalSwitchTaskServiceTest {
       try {
         host.sendRequestAndWait(patch);
         fail("Should have failed due to changing immutable fields");
-      } catch (BadRequestException e) {
+      } catch (XenonRuntimeException e) {
         assertThat(e.getMessage(), is(expectedErrorMessage));
       }
     }
@@ -287,7 +287,7 @@ public class CreateLogicalSwitchTaskServiceTest {
       try {
         host.sendRequestAndWait(patch);
         fail("Should have failed due to changing a writeonce field multiple times");
-      } catch (BadRequestException e) {
+      } catch (XenonRuntimeException e) {
         assertThat(e.getMessage(), is(expectedErrorMessage));
       }
     }

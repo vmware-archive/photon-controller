@@ -88,10 +88,10 @@ public class DeleteLogicalPortsTaskService extends StatefulService {
         TaskUtils.sendSelfPatch(this, buildPatch(startState.taskState.stage, startState.taskState.subStage));
       }
     } catch (Throwable t) {
+      ServiceUtils.logSevere(this, t);
       if (!OperationUtils.isCompleted(startOperation)) {
         startOperation.fail(t);
       }
-      failTask(t);
     }
   }
 
@@ -115,35 +115,43 @@ public class DeleteLogicalPortsTaskService extends StatefulService {
       }
 
       if (TaskState.TaskStage.STARTED == currentState.taskState.stage) {
-        switch (currentState.taskState.subStage) {
-          case GET_LINK_PORTS:
-            getTier1RouterPorts(currentState);
-            break;
-
-          case DELETE_TIER1_ROUTER_LINK_PORT:
-            deleteTier1RouterLinkPort(currentState);
-            break;
-
-          case DELETE_TIER0_ROUTER_LINK_PORT:
-            deleteTier0RouterLinkPort(currentState);
-            break;
-
-          case DELETE_TIER1_ROUTER_DOWN_LINK_PORT:
-            deleteTier1RouterDownLinkPort(currentState);
-            break;
-
-          case DELETE_SWITCH_PORT:
-            deleteSwitchPort(currentState);
-            break;
-
-          default:
-            throw new ConfigureRoutingException("Invalid task sub-stage " + currentState.taskState.stage);
-        }
+        processPatch(currentState);
       }
     } catch (Throwable t) {
+      ServiceUtils.logSevere(this, t);
       if (!OperationUtils.isCompleted(patchOperation)) {
         patchOperation.fail(t);
       }
+    }
+  }
+
+  private void processPatch(DeleteLogicalPortsTask currentState) {
+    try {
+      switch (currentState.taskState.subStage) {
+        case GET_LINK_PORTS:
+          getTier1RouterPorts(currentState);
+          break;
+
+        case DELETE_TIER1_ROUTER_LINK_PORT:
+          deleteTier1RouterLinkPort(currentState);
+          break;
+
+        case DELETE_TIER0_ROUTER_LINK_PORT:
+          deleteTier0RouterLinkPort(currentState);
+          break;
+
+        case DELETE_TIER1_ROUTER_DOWN_LINK_PORT:
+          deleteTier1RouterDownLinkPort(currentState);
+          break;
+
+        case DELETE_SWITCH_PORT:
+          deleteSwitchPort(currentState);
+          break;
+
+        default:
+          throw new ConfigureRoutingException("Invalid task sub-stage " + currentState.taskState.stage);
+      }
+    } catch (Throwable t) {
       failTask(t);
     }
   }

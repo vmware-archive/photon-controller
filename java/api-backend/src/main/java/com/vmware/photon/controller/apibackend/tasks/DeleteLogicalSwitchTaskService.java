@@ -80,10 +80,10 @@ public class DeleteLogicalSwitchTaskService extends StatefulService {
         TaskUtils.sendSelfPatch(this, buildPatch(startState.taskState.stage));
       }
     } catch (Throwable t) {
+      ServiceUtils.logSevere(this, t);
       if (!OperationUtils.isCompleted(startOperation)) {
         startOperation.fail(t);
       }
-      failTask(t);
     }
   }
 
@@ -107,10 +107,10 @@ public class DeleteLogicalSwitchTaskService extends StatefulService {
         deleteLogicalSwitch(currentState);
       }
     } catch (Throwable t) {
+      ServiceUtils.logSevere(this, t);
       if (!OperationUtils.isCompleted(patchOperation)) {
         patchOperation.fail(t);
       }
-      failTask(t);
     }
   }
 

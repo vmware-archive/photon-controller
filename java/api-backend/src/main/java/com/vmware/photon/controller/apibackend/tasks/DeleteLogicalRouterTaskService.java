@@ -80,10 +80,10 @@ public class DeleteLogicalRouterTaskService extends StatefulService {
         TaskUtils.sendSelfPatch(this, buildPatch(startState.taskState.stage));
       }
     } catch (Throwable t) {
+      ServiceUtils.logSevere(this, t);
       if (!OperationUtils.isCompleted(startOperation)) {
         startOperation.fail(t);
       }
-      failTask(t);
     }
   }
 
@@ -91,10 +91,10 @@ public class DeleteLogicalRouterTaskService extends StatefulService {
   public void handlePatch(Operation patchOperation) {
     ServiceUtils.logInfo(this, "Handling patch for service %s", getSelfLink());
 
-    DeleteLogicalRouterTask currentState = getState(patchOperation);
-    DeleteLogicalRouterTask patchState = patchOperation.getBody(DeleteLogicalRouterTask.class);
-
     try {
+      DeleteLogicalRouterTask currentState = getState(patchOperation);
+      DeleteLogicalRouterTask patchState = patchOperation.getBody(DeleteLogicalRouterTask.class);
+
       validatePatchState(currentState, patchState);
       PatchUtils.patchState(currentState, patchState);
       validateState(currentState);
@@ -107,10 +107,10 @@ public class DeleteLogicalRouterTaskService extends StatefulService {
         deleteLogicalRouter(currentState);
       }
     } catch (Throwable t) {
+      ServiceUtils.logSevere(this, t);
       if (!OperationUtils.isCompleted(patchOperation)) {
         patchOperation.fail(t);
       }
-      failTask(t);
     }
   }
 
