@@ -14,6 +14,12 @@ ifdef DISABLE_HYPERVISOR_LOGGING
 	TEST_OPTS += --logging-filter=-__hypervisor__
 endif
 
+ifndef VERSION
+  VERSION=$(shell git rev-parse --abbrev-ref HEAD)-$(shell git rev-parse --short HEAD)
+endif
+
+export VERSION
+
 export TEST_OPTS
 export PROMOTE_NUMBER
 
@@ -88,7 +94,7 @@ endif
 
 .PHONY: deploy
 
-vib: deploy
+vib: version deploy
 
 .PHONY: vib
 
