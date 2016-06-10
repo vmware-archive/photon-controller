@@ -1,6 +1,7 @@
 dependencies {
   compile project(':common')
   compile project(':common-logging')
+  compile project(':nsx-client')
 
   compile "com.vmware.xenon:xenon-common:${versions.xenon_common}"
   compile "commons-io:commons-io:2.4"
