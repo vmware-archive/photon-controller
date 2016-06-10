@@ -18,6 +18,7 @@ import os.path
 
 from common.log import log_duration
 from host.hypervisor.esx.host_client import DeviceNotFoundException
+from host.hypervisor.esx.host_client import DeviceBusyException
 from host.hypervisor.esx.host_client import VmConfigSpec
 from host.hypervisor.esx.path_util import VM_FOLDER_NAME_PREFIX
 from host.hypervisor.esx.path_util import compond_path_join
@@ -304,7 +305,6 @@ class EsxVmConfigSpec(VmConfigSpec):
         if not cd_devs:
             # callee will modify cspec.
             AddIsoCdrom(self._cfg_spec, iso_file, self._cfg_opts, conInfo)
-            return True
 
         # having virtual devices
         else:
@@ -312,12 +312,11 @@ class EsxVmConfigSpec(VmConfigSpec):
             dev = cd_devs[0]
 
             if not isinstance(dev.backing, vim.vm.device.VirtualCdrom.IsoBackingInfo):
-                raise TypeError("device is not ISO-backed")
+                raise Exception("device is not ISO-backed")
 
             # if mounted, return False
             if dev.connectable.connected:
-                self._logger.warning("Existing virtual CD devices found and connected, abort adding new one.")
-                return False
+                raise DeviceBusyException("Existing virtual CD devices found and connected, abort adding new one.")
 
             # if not mounted, use this device to mount the iso
             else:
@@ -327,7 +326,6 @@ class EsxVmConfigSpec(VmConfigSpec):
                 dev.backing = devBacking
 
                 self._update_device(dev)
-                return True
 
     def detach_iso(self, cfg_info):
         """Updates the config spec to detach an iso from the VM.
