@@ -545,19 +545,36 @@ public class HostServiceTest {
       }
     }
 
+    // Test that the host config gets updated successfully when the host becomes READY and that the reported
+    // datastores are deleted when the agent becomes missing.
     @Test
     public void updateHostConfigSuccess() throws Throwable {
-      HostClientFactory hostClient = mockHostClient(true);
+      HostClientFactory hostClientFactory = mock(HostClientFactory.class);
+      HostClient hostClient = mock(HostClient.class);
+      doReturn(hostClient).when(hostClientFactory).create();
+
+      // Return OK response with host config which has datastores.
+      GetConfigResponse response = getConfigResponse(true, getHostConfig(true));
+      Host.AsyncClient.get_host_config_call call = mock(Host.AsyncClient.get_host_config_call.class);
+      doReturn(response).when(call).getResult();
+
+      doAnswer(invocation -> {
+        ((AsyncMethodCallback<Host.AsyncClient.get_host_config_call>) invocation.getArguments()[0]).onComplete(call);
+        return null;
+      }).when(hostClient).getHostConfig(any(AsyncMethodCallback.class));
+
       testEnvironment = new TestEnvironment.Builder()
-          .hostClientFactory(hostClient)
+          .hostClientFactory(hostClientFactory)
           .hostCount(1)
           .build();
 
+      // Start host service with default state.
       Operation result = testEnvironment.sendPostAndWait(HostServiceFactory.SELF_LINK,
           TestHelper.getHostServiceStartState());
       assertThat(result.getStatusCode(), is(Operation.STATUS_CODE_OK));
       HostService.State createdState = result.getBody(HostService.State.class);
 
+      // Patch it to READY state and test that getHostConfig() got initiated.
       HostService.State patchState = new HostService.State();
       patchState.state = HostState.READY;
       testEnvironment.sendPatchAndWait(createdState.documentSelfLink, patchState);
@@ -573,25 +590,142 @@ public class HostServiceTest {
       assertThat(savedState.cpuCount, is(hostCpuCount));
       assertThat(savedState.memoryMb, is(hostMemoryMb));
       assertThat(savedState.esxVersion, is(esxVersion));
+
+      // Validate that the datastore documents are created.
+      retryCount = 0;
+      do {
+        Thread.sleep(500);
+      } while (getTotalDatastoreCount(testEnvironment) < 10 && retryCount++ < 10);
+      assertThat(getTotalDatastoreCount(testEnvironment), is(10L));
+
+      // Patch the host to MISSING state to trigger datastore delete tasks.
+      patchState = new HostService.State();
+      patchState.agentState = AgentState.MISSING;
+      testEnvironment.sendPatchAndWait(createdState.documentSelfLink, patchState);
+      savedState = testEnvironment.getServiceState(createdState.documentSelfLink, HostService.State.class);
+      assertThat(savedState.agentState, is(AgentState.MISSING));
+
+      // Validate that when an agent becomes missing, its datastores are removed from CloudStore.
+      retryCount = 0;
+      do {
+        Thread.sleep(500);
+      } while (getTotalDatastoreCount(testEnvironment) > 0 && retryCount++ < 10);
+      assertThat(getTotalDatastoreCount(testEnvironment), is(0L));
     }
 
+    // Test that the host config gets updated successfully and that the previously reported datastores are deleted
+    // when the newly reported datastores no longer contain them.
     @Test
-    public void updateHostConfigOnFailure() throws Throwable {
-      HostClientFactory hostClient = mockHostClient(false);
+    public void updateHostConfigSuccessWhenDatastoresBecomeInactive() throws Throwable {
+      HostClientFactory hostClientFactory = mock(HostClientFactory.class);
+      HostClient hostClient = mock(HostClient.class);
+      doReturn(hostClient).when(hostClientFactory).create();
+
+      // Return OK response with host config which has datastores.
+      GetConfigResponse response = getConfigResponse(true, getHostConfig(true));
+      Host.AsyncClient.get_host_config_call call = mock(Host.AsyncClient.get_host_config_call.class);
+      doReturn(response).when(call).getResult();
+
+      doAnswer(invocation -> {
+        ((AsyncMethodCallback<Host.AsyncClient.get_host_config_call>) invocation.getArguments()[0]).onComplete(call);
+        return null;
+      }).when(hostClient).getHostConfig(any(AsyncMethodCallback.class));
+
       testEnvironment = new TestEnvironment.Builder()
-          .hostClientFactory(hostClient)
+          .hostClientFactory(hostClientFactory)
           .hostCount(1)
           .build();
 
+      // Start host service with default state.
       Operation result = testEnvironment.sendPostAndWait(HostServiceFactory.SELF_LINK,
           TestHelper.getHostServiceStartState());
       assertThat(result.getStatusCode(), is(Operation.STATUS_CODE_OK));
       HostService.State createdState = result.getBody(HostService.State.class);
 
+      // Patch it to READY state and test that getHostConfig() got initiated.
       HostService.State patchState = new HostService.State();
       patchState.state = HostState.READY;
       testEnvironment.sendPatchAndWait(createdState.documentSelfLink, patchState);
 
+      int retryCount = 0;
+      HostService.State savedState;
+      do {
+        savedState = testEnvironment.getServiceState(createdState.documentSelfLink, HostService.State.class);
+        Thread.sleep(500);
+      } while (savedState.cpuCount == null && retryCount++ < 10);
+      assertNotNull(savedState.cpuCount, "Failed to update Host configuration");
+
+      assertThat(savedState.cpuCount, is(hostCpuCount));
+      assertThat(savedState.memoryMb, is(hostMemoryMb));
+      assertThat(savedState.esxVersion, is(esxVersion));
+
+      // Validate that the datastore documents are created.
+      retryCount = 0;
+      do {
+        Thread.sleep(500);
+      } while (getTotalDatastoreCount(testEnvironment) < 10 && retryCount++ < 10);
+      assertThat(getTotalDatastoreCount(testEnvironment), is(10L));
+
+      // Patch the host to maintenance state, so that we can simulate a state change to READY state.
+      patchState = new HostService.State();
+      patchState.state = HostState.MAINTENANCE;
+      testEnvironment.sendPatchAndWait(createdState.documentSelfLink, patchState);
+      savedState = testEnvironment.getServiceState(createdState.documentSelfLink, HostService.State.class);
+      assertThat(savedState.state, is(HostState.MAINTENANCE));
+
+      // Return OK response with host config which does not have datastores.
+      response = getConfigResponse(true, getHostConfig(false));
+      doReturn(response).when(call).getResult();
+
+      // Put host in READY state. This will trigger the deletion of datastores which were previously reported, but
+      // are no longer reported.
+      patchState = new HostService.State();
+      patchState.state = HostState.READY;
+      testEnvironment.sendPatchAndWait(createdState.documentSelfLink, patchState);
+      savedState = testEnvironment.getServiceState(createdState.documentSelfLink, HostService.State.class);
+      assertThat(savedState.state, is(HostState.READY));
+
+      // Validate that the previously reported datastores are removed from CloudStore.
+      retryCount = 0;
+      do {
+        Thread.sleep(500);
+      } while (getTotalDatastoreCount(testEnvironment) > 0 && retryCount++ < 10);
+      assertThat(getTotalDatastoreCount(testEnvironment), is(0L));
+    }
+
+    @Test
+    public void updateHostConfigOnFailure() throws Throwable {
+      HostClientFactory hostClientFactory = mock(HostClientFactory.class);
+      HostClient hostClient = mock(HostClient.class);
+      doReturn(hostClient).when(hostClientFactory).create();
+
+      // Return ERROR response.
+      GetConfigResponse response = getConfigResponse(false, null);
+      Host.AsyncClient.get_host_config_call call = mock(Host.AsyncClient.get_host_config_call.class);
+      doReturn(response).when(call).getResult();
+
+      doAnswer(invocation -> {
+        ((AsyncMethodCallback<Host.AsyncClient.get_host_config_call>) invocation.getArguments()[0]).onComplete(call);
+        return null;
+      }).when(hostClient).getHostConfig(any(AsyncMethodCallback.class));
+
+      testEnvironment = new TestEnvironment.Builder()
+          .hostClientFactory(hostClientFactory)
+          .hostCount(1)
+          .build();
+
+      // Start host service with default state.
+      Operation result = testEnvironment.sendPostAndWait(HostServiceFactory.SELF_LINK,
+          TestHelper.getHostServiceStartState());
+      assertThat(result.getStatusCode(), is(Operation.STATUS_CODE_OK));
+      HostService.State createdState = result.getBody(HostService.State.class);
+
+      // Patch it to READY state and test that getHostConfig() got initiated.
+      HostService.State patchState = new HostService.State();
+      patchState.state = HostState.READY;
+      testEnvironment.sendPatchAndWait(createdState.documentSelfLink, patchState);
+
+      // Validate that the host config update failed and the agent is marked as MISSING.
       int retryCount = 0;
       HostService.State savedState;
       do {
@@ -603,26 +737,9 @@ public class HostServiceTest {
       assertThat(savedState.agentState, is(AgentState.MISSING));
     }
 
-    private HostClientFactory mockHostClient(boolean success) throws Throwable {
-      HostClientFactory hostClientFactory = mock(HostClientFactory.class);
-      HostClient hostClient = mock(HostClient.class);
-      doReturn(hostClient).when(hostClientFactory).create();
-
+    private GetConfigResponse getConfigResponse(boolean success, HostConfig hostConfig) throws Throwable {
       GetConfigResponse response;
       if (success) {
-        datastoreList = buildDatastoreList(10);
-        imageDatastoreIds = datastoreList.stream()
-            .limit(3)
-            .map((datastore) -> datastore.getId())
-            .collect(Collectors.toSet());
-
-        HostConfig hostConfig = new HostConfig();
-        hostConfig.setDatastores(datastoreList);
-        hostConfig.setImage_datastore_ids(imageDatastoreIds);
-        hostConfig.setCpu_count(hostCpuCount);
-        hostConfig.setMemory_mb(hostMemoryMb);
-        hostConfig.setEsx_version(esxVersion);
-
         response = new GetConfigResponse(GetConfigResultCode.OK);
         response.setHostConfig(hostConfig);
 
@@ -630,15 +747,25 @@ public class HostServiceTest {
         response = new GetConfigResponse(GetConfigResultCode.SYSTEM_ERROR);
       }
 
-      Host.AsyncClient.get_host_config_call call = mock(Host.AsyncClient.get_host_config_call.class);
-      doReturn(response).when(call).getResult();
+      return response;
+    }
 
-      doAnswer(invocation -> {
-        ((AsyncMethodCallback<Host.AsyncClient.get_host_config_call>) invocation.getArguments()[0]).onComplete(call);
-        return null;
-      }).when(hostClient).getHostConfig(any(AsyncMethodCallback.class));
+    private HostConfig getHostConfig(boolean shouldReportDatastores) {
+      datastoreList = buildDatastoreList(10);
+      imageDatastoreIds = datastoreList.stream()
+          .limit(3)
+          .map((datastore) -> datastore.getId())
+          .collect(Collectors.toSet());
 
-      return hostClientFactory;
+      HostConfig hostConfig = new HostConfig();
+      if (shouldReportDatastores) {
+        hostConfig.setDatastores(datastoreList);
+        hostConfig.setImage_datastore_ids(imageDatastoreIds);
+      }
+      hostConfig.setCpu_count(hostCpuCount);
+      hostConfig.setMemory_mb(hostMemoryMb);
+      hostConfig.setEsx_version(esxVersion);
+      return hostConfig;
     }
 
     private List<Datastore> buildDatastoreList(int count) {
@@ -664,6 +791,16 @@ public class HostServiceTest {
         returnValue.add(datastore);
       }
       return returnValue;
+    }
+
+    private Long getTotalDatastoreCount(TestEnvironment environment) throws Throwable {
+      QueryTask queryTask = QueryTask.Builder.createDirectTask()
+          .setQuery(QueryTask.Query.Builder.create()
+              .addKindFieldClause(DatastoreService.State.class)
+              .build())
+          .build();
+      QueryTask result = environment.sendQueryAndWait(queryTask);
+      return result.results.documentCount;
     }
   }
 

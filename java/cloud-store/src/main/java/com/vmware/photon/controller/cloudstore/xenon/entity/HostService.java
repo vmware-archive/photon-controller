@@ -17,6 +17,8 @@ import com.vmware.photon.controller.agent.gen.AgentControl;
 import com.vmware.photon.controller.api.AgentState;
 import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.UsageTag;
+import com.vmware.photon.controller.cloudstore.xenon.task.DatastoreDeleteFactoryService;
+import com.vmware.photon.controller.cloudstore.xenon.task.DatastoreDeleteService;
 import com.vmware.photon.controller.cloudstore.xenon.upgrade.HostTransformationService;
 import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.clients.AgentControlClient;
@@ -68,6 +70,7 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * This class implements a Xenon micro-service which provides a plain data object
@@ -175,21 +178,51 @@ public class HostService extends StatefulService {
 
       boolean stateChangedToReady =
           startState.state != HostState.READY && patchState.state == HostState.READY;
+      boolean agentStateChangedToActive =
+          startState.agentState != AgentState.ACTIVE && patchState.agentState == AgentState.ACTIVE;
+      boolean agentStateChangedToMissing =
+          startState.agentState != AgentState.MISSING && patchState.agentState == AgentState.MISSING;
+
+      String newEsxVersion = patchState.esxVersion;
+      Set<String> previouslyReportedDatastores = startState.reportedDatastores;
+      Set<String> newlyReportedDatastores = patchState.reportedDatastores;
 
       PatchUtils.patchState(startState, patchState);
       validateState(startState);
 
       patchOperation.complete();
 
-      // If the host state changed to READY, the host service
-      // proactively calls the agent to get host configuration
-      // and update the host document. This is done as an
-      // optimization for host provisioning.
-      // In-general, host configuration is updated as part of
-      // handleMaintenance of the Host Service.
-      if (stateChangedToReady) {
+      // If the host state changed to READY, the host service proactively calls the agent to get host configuration
+      // and update the host document. This gets exercised during host provisioning and also when a host is moved
+      // back to READY state from MAINTENANCE, NOT_PROVISIONED, etc.
+      // If the agent state changed to ACTIVE from null or MISSING and the esxVersion is null (to make sure that the
+      // patch is not from a getHostConfig() call), then also the host service proactively calls the agent to get
+      // host configuration and update the host document. This is needed to make sure that when an agent which was
+      // temporarily unavailable came back online, we make sure that the host config has not changed.
+      // Apart from these two cases, host configuration is updated as part of handleMaintenance of the Host Service
+      // at periodic intervals.
+      if (stateChangedToReady || (agentStateChangedToActive && newEsxVersion == null)) {
         getHostConfig(null, startState);
       }
+
+      // If the agent state changed to MISSING, then the hosts' reported datastores may be eligible for deletion. So
+      // we call the delete datastore task on all the datastores which were previously reported by this host. The
+      // delete datastore task decides if the datastore needs to be deleted or not. To make sure that the deleted
+      // documents are recreated when the agent becomes active, we get the host config everytime the agent becomes
+      // active.
+      // If not, get the list of datastores which became inactive since the last update and call the datastore delete
+      // task on them as they might be eligible for deletion.
+      if (agentStateChangedToMissing) {
+        triggerDatastoreDeleteTasks(previouslyReportedDatastores);
+      } else {
+        if (previouslyReportedDatastores != null && newlyReportedDatastores != null) {
+          Set<String> inactiveDatastoreIds = previouslyReportedDatastores.stream()
+              .filter(id -> !newlyReportedDatastores.contains(id))
+              .collect(Collectors.toSet());
+          triggerDatastoreDeleteTasks(inactiveDatastoreIds);
+        }
+      }
+
     } catch (IllegalStateException t) {
       ServiceUtils.failOperationAsBadRequest(this, patchOperation, t);
     } catch (Throwable t) {
@@ -467,6 +500,27 @@ public class HostService extends StatefulService {
     }
   }
 
+  /**
+   * Trigger DatastoreDeleteService for each of the inactive datastores. The DatastoreDeleteService checks if a
+   * datastore is eligible for deletion based on the hosts which are referring to it and deletes them if they are
+   * eligible.
+   *
+   * @param datastoreIds
+   */
+  private void triggerDatastoreDeleteTasks(Set<String> datastoreIds) {
+    if (datastoreIds != null) {
+      for (String id : datastoreIds) {
+        DatastoreDeleteService.State startState = new DatastoreDeleteService.State();
+        startState.parentServiceLink = getSelfLink();
+        startState.datastoreId = id;
+
+        sendRequest(Operation
+            .createPost(this, DatastoreDeleteFactoryService.SELF_LINK)
+            .setBody(startState));
+      }
+    }
+  }
+
   @Override
   public ServiceDocument getDocumentTemplate() {
     ServiceDocument template = super.getDocumentTemplate();
@@ -581,7 +635,7 @@ public class HostService extends StatefulService {
      * and hence cannot share the same default port number. We implemented a test hook in {@link VmService} entity,
      * but since DeploymentWorkflowService automatically creates the VmService entities, we cannot set that test hook
      * directly. So we use this metadata as an additional test hook, and we will assign the test port number to the
-     * VmService entity in {@link com.vmware.photon.controller.deployer.xenon.task.CreateVmSpecTaskService}
+     * VmService entity in CreateVmSpecTaskService.
      */
     public static final String METADATA_KEY_NAME_DEPLOYER_XENON_PORT = "DEPLOYER_XENON_PORT";
 
