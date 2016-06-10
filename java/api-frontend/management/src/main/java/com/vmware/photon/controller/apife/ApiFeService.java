@@ -26,6 +26,7 @@ import com.vmware.photon.controller.apife.config.ApiFeConfiguration;
 import com.vmware.photon.controller.apife.config.ApiFeStaticConfiguration;
 import com.vmware.photon.controller.apife.config.AuthConfig;
 import com.vmware.photon.controller.apife.config.ConfigurationUtils;
+import com.vmware.photon.controller.apife.filter.NetworkToSubnetRedirectionFilter;
 import com.vmware.photon.controller.apife.filter.PauseFilter;
 import com.vmware.photon.controller.apife.resources.auth.AuthResource;
 import com.vmware.photon.controller.apife.resources.availabilityzone.AvailabilityZoneResource;
@@ -175,6 +176,7 @@ public class ApiFeService extends Application<ApiFeStaticConfiguration> {
 
   @Override
   public void run(ApiFeStaticConfiguration configuration, Environment environment) throws Exception {
+    environment.jersey().register(NetworkToSubnetRedirectionFilter.class);
     environment.jersey().register(PauseFilter.class);
 
     final AuthConfig authConfig = configuration.getAuth();

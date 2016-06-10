@@ -34,7 +34,7 @@ describe EsxCloud::ApiClient do
                            .with(URL_HOST + "/tasks/task1")
                            .and_return(task_done("task1", "network1"))
     expect(http_client).to receive(:get)
-                           .with("/networks/network1")
+                           .with("/subnets/network1")
                            .and_return(ok_response("network"))
     expect(EsxCloud::VirtualNetwork).to receive(:create_from_json)
                                         .with("network")
@@ -45,7 +45,7 @@ describe EsxCloud::ApiClient do
 
   it "deletes a virtual network" do
     expect(http_client).to receive(:delete)
-                           .with("/networks/network1")
+                           .with("/subnets/network1")
                            .and_return(task_created("task1"))
     expect(http_client).to receive(:get)
                            .with(URL_HOST + "/tasks/task1")
@@ -58,7 +58,7 @@ describe EsxCloud::ApiClient do
     virtual_network = double(EsxCloud::VirtualNetwork)
 
     expect(http_client).to receive(:get)
-                           .with("/networks/network1")
+                           .with("/subnets/network1")
                            .and_return(ok_response("network"))
     expect(EsxCloud::VirtualNetwork).to receive(:create_from_json)
                                         .with("network")

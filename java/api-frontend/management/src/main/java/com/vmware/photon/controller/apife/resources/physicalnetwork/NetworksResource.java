@@ -103,6 +103,6 @@ public class NetworksResource {
         Response.Status.OK,
         PaginationUtils.formalizePageLinks(resourceList, NetworkResourceRoutes.API),
         (ContainerRequest) request,
-        NetworkResourceRoutes.NETWORK_PATH);
+        NetworkResourceRoutes.SUBNET_PATH);
   }
 }
