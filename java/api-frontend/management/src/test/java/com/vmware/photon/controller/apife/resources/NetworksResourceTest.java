@@ -142,7 +142,7 @@ public class NetworksResourceTest extends ResourceTest {
       Network network = networks.getItems().get(i);
       assertThat(network, is(expectedNetworks.get(i)));
       assertThat(new URI(network.getSelfLink()).isAbsolute(), is(true));
-      assertThat(network.getSelfLink().endsWith(UriBuilder.fromPath(NetworkResourceRoutes.NETWORK_PATH)
+      assertThat(network.getSelfLink().endsWith(UriBuilder.fromPath(NetworkResourceRoutes.SUBNET_PATH)
           .build(network.getId()).toString()), is(true));
     }
   }
@@ -192,7 +192,7 @@ public class NetworksResourceTest extends ResourceTest {
     Network network = networks.getItems().get(0);
     assertThat(network, is(n1));
     assertThat(new URI(network.getSelfLink()).isAbsolute(), is(true));
-    assertThat(network.getSelfLink().endsWith(UriBuilder.fromPath(NetworkResourceRoutes.NETWORK_PATH)
+    assertThat(network.getSelfLink().endsWith(UriBuilder.fromPath(NetworkResourceRoutes.SUBNET_PATH)
         .build(network.getId()).toString()), is(true));
   }
 

@@ -44,11 +44,11 @@ public class VirtualNetworkResourceTest extends ResourceTest {
 
   private String taskId = "task1";
   private String networkId = "network1";
-  private String networkRoute = UriBuilder.fromPath(NetworkResourceRoutes.NETWORK_PATH).build(networkId).toString();
+  private String networkRoute = UriBuilder.fromPath(NetworkResourceRoutes.SUBNET_PATH).build(networkId).toString();
   private String taskRoutePath = UriBuilder.fromPath(TaskResourceRoutes.TASK_PATH).build(taskId).toString();
   private String networkSetDefaultRoute =
-      UriBuilder.fromPath(NetworkResourceRoutes.NETWORK_PATH)
-          .path(NetworkResourceRoutes.NETWORK_SET_DEFAULT_ACTION)
+      UriBuilder.fromPath(NetworkResourceRoutes.SUBNET_PATH)
+          .path(NetworkResourceRoutes.SUBNET_SET_DEFAULT_ACTION)
           .build(networkId)
           .toString();
 

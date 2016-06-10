@@ -124,11 +124,11 @@ module EsxCloud
 
     def self.networks_routes(id = SecureRandom.uuid)
       [
-        EsxCloud::ApiRoute.new(:get, "/networks", 200, 200, 200, 200, 200),
-        EsxCloud::ApiRoute.new(:post, "/networks", 400, 400, 403, 403, 403),
-        EsxCloud::ApiRoute.new(:get, "/networks/#{id}", 404, 404, 404, 404, 404),
-        EsxCloud::ApiRoute.new(:post, "/networks/#{id}/set_portgroups", 400, 400, 403, 403, 403),
-        EsxCloud::ApiRoute.new(:delete, "/networks/#{SecureRandom.uuid}", 404, 404, 403, 403, 403)
+        EsxCloud::ApiRoute.new(:get, "/subnets", 200, 200, 200, 200, 200),
+        EsxCloud::ApiRoute.new(:post, "/subnets", 400, 400, 403, 403, 403),
+        EsxCloud::ApiRoute.new(:get, "/subnets/#{id}", 404, 404, 404, 404, 404),
+        EsxCloud::ApiRoute.new(:post, "/subnets/#{id}/set_portgroups", 400, 400, 403, 403, 403),
+        EsxCloud::ApiRoute.new(:delete, "/subnets/#{SecureRandom.uuid}", 404, 404, 403, 403, 403)
       ]
     end
 

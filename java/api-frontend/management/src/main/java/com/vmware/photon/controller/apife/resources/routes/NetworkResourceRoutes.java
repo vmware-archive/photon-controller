@@ -18,11 +18,11 @@ package com.vmware.photon.controller.apife.resources.routes;
  */
 public class NetworkResourceRoutes {
 
-  public static final String API = "/networks";
+  public static final String API = "/subnets";
 
-  public static final String NETWORK_PATH = "/networks/{id}";
+  public static final String SUBNET_PATH = "/subnets/{id}";
 
-  public static final String NETWORK_SET_PORTGROUPS_PATH = "/networks/{id}/set_portgroups";
+  public static final String SUBNET_SET_PORTGROUPS_PATH = "/subnets/{id}/set_portgroups";
 
-  public static final String NETWORK_SET_DEFAULT_ACTION = "/set_default";
+  public static final String SUBNET_SET_DEFAULT_ACTION = "/set_default";
 }

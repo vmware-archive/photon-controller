@@ -138,7 +138,8 @@ public class ProjectNetworksResourceTest extends ResourceTest {
     assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
 
     ResourceList<VirtualNetwork> virtualNetworks =
-        response.readEntity(new GenericType<ResourceList<VirtualNetwork>>(){});
+        response.readEntity(new GenericType<ResourceList<VirtualNetwork>>() {
+        });
     assertThat(virtualNetworks.getItems().size(), is(virtualNetworkNumber));
     for (int i = 0; i < virtualNetworkNumber; ++i) {
       VirtualNetwork expectedVirtualNetwork = expectedVirtualNetworks.get(i);
@@ -146,7 +147,7 @@ public class ProjectNetworksResourceTest extends ResourceTest {
       assertThat(actualVirtualNetwork, is(expectedVirtualNetwork));
 
       String apiRoutePath = UriBuilder
-          .fromPath(NetworkResourceRoutes.NETWORK_PATH)
+          .fromPath(NetworkResourceRoutes.SUBNET_PATH)
           .build(expectedVirtualNetwork.getId())
           .toString();
       assertThat(actualVirtualNetwork.getSelfLink().endsWith(apiRoutePath), is(true));
@@ -174,7 +175,8 @@ public class ProjectNetworksResourceTest extends ResourceTest {
     assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
 
     ResourceList<VirtualNetwork> virtualNetworks =
-        response.readEntity(new GenericType<ResourceList<VirtualNetwork>>(){});
+        response.readEntity(new GenericType<ResourceList<VirtualNetwork>>() {
+        });
     assertThat(virtualNetworks.getItems().size(), is(expectedVirtualNetworks.size()));
     for (int i = 0; i < virtualNetworks.getItems().size(); ++i) {
       VirtualNetwork expectedVirtualNetwork = expectedVirtualNetworks.get(i);
@@ -182,7 +184,7 @@ public class ProjectNetworksResourceTest extends ResourceTest {
       assertThat(actualVirtualNetwork, is(expectedVirtualNetwork));
 
       String apiRoutePath = UriBuilder
-          .fromPath(NetworkResourceRoutes.NETWORK_PATH)
+          .fromPath(NetworkResourceRoutes.SUBNET_PATH)
           .build(expectedVirtualNetwork.getId())
           .toString();
       assertThat(actualVirtualNetwork.getSelfLink().endsWith(apiRoutePath), is(true));
@@ -202,7 +204,7 @@ public class ProjectNetworksResourceTest extends ResourceTest {
       expectedVirtualNetworks.add(expectedVirtualNetwork);
     }
 
-    return new Object[][] {
+    return new Object[][]{
         {
             Optional.absent(),
             expectedVirtualNetworks
@@ -236,14 +238,15 @@ public class ProjectNetworksResourceTest extends ResourceTest {
     assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
 
     ResourceList<VirtualNetwork> virtualNetworks =
-        response.readEntity(new GenericType<ResourceList<VirtualNetwork>>(){});
+        response.readEntity(new GenericType<ResourceList<VirtualNetwork>>() {
+        });
     assertThat(virtualNetworks.getItems().size(), is(1));
 
     VirtualNetwork actualVirtualNetwork = virtualNetworks.getItems().get(0);
     assertThat(actualVirtualNetwork, is(expectedVirtualNetwork));
 
     String apiRoutePath = UriBuilder
-        .fromPath(NetworkResourceRoutes.NETWORK_PATH)
+        .fromPath(NetworkResourceRoutes.SUBNET_PATH)
         .build(expectedVirtualNetwork.getId())
         .toString();
     assertThat(actualVirtualNetwork.getSelfLink().endsWith(apiRoutePath), is(true));
@@ -263,14 +266,15 @@ public class ProjectNetworksResourceTest extends ResourceTest {
     assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
 
     ResourceList<VirtualNetwork> virtualNetworks =
-        response.readEntity(new GenericType<ResourceList<VirtualNetwork>>(){});
+        response.readEntity(new GenericType<ResourceList<VirtualNetwork>>() {
+        });
     assertThat(virtualNetworks.getItems().size(), is(1));
 
     VirtualNetwork actualVirtualNetwork = virtualNetworks.getItems().get(0);
     assertThat(actualVirtualNetwork, is(expectedVirtualNetwork));
 
     String apiRoutePath = UriBuilder
-        .fromPath(NetworkResourceRoutes.NETWORK_PATH)
+        .fromPath(NetworkResourceRoutes.SUBNET_PATH)
         .build(expectedVirtualNetwork.getId())
         .toString();
     assertThat(actualVirtualNetwork.getSelfLink().endsWith(apiRoutePath), is(true));

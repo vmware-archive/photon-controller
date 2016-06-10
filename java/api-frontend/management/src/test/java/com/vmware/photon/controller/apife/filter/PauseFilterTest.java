@@ -11,11 +11,10 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package com.vmware.photon.controller.apife.config;
+package com.vmware.photon.controller.apife.filter;
 
 import com.vmware.photon.controller.api.ApiError;
 import com.vmware.photon.controller.api.common.exceptions.external.ErrorCode;
-import com.vmware.photon.controller.apife.filter.PauseFilter;
 import com.vmware.photon.controller.apife.helpers.JerseyPropertiesDelegate;
 import com.vmware.photon.controller.apife.helpers.JerseySecurityContext;
 import com.vmware.photon.controller.apife.resources.routes.DeploymentResourceRoutes;
