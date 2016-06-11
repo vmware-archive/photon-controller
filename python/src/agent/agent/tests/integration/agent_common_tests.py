@@ -914,29 +914,47 @@ class AgentCommonTests(object):
         vm_wrapper.delete_disks([disk.id for disk in disks], validate=True)
 
     def test_attach_disks_vm_suspended(self):
-        vm = VmWrapper(self.host_client)
-        vm_id = vm.create().vm.id
-        vm.power(Host.PowerVmOp.ON, Host.PowerVmOpResultCode.OK)
-        vm.power(Host.PowerVmOp.SUSPEND, Host.PowerVmOpResultCode.OK)
+        vm_wrapper = VmWrapper(self.host_client)
 
-        vm.attach_disks(vm_id, ["disk-1"],
-                        expect=Host.VmDiskOpResultCode.INVALID_VM_POWER_STATE)
-        vm.power(Host.PowerVmOp.RESUME, Host.PowerVmOpResultCode.OK)
-        vm.power(Host.PowerVmOp.OFF, Host.PowerVmOpResultCode.OK)
-        vm.delete()
+        # create a vm and put into suspended state
+        vm_id = vm_wrapper.create().vm.id
+        vm_wrapper.power(Host.PowerVmOp.ON, Host.PowerVmOpResultCode.OK)
+        vm_wrapper.power(Host.PowerVmOp.SUSPEND, Host.PowerVmOpResultCode.OK)
+
+        # create a disk
+        disk = Disk(new_id(), self.DEFAULT_DISK_FLAVOR.name, True, True,
+                    capacity_gb=1, flavor_info=self.DEFAULT_DISK_FLAVOR)
+        reservation = vm_wrapper.place_and_reserve(disks=[disk]).reservation
+        vm_wrapper.create_disks([disk], reservation, validate=True)
+
+        # attach disk should fail
+        vm_wrapper.attach_disks(vm_id, [disk.id], expect=Host.VmDiskOpResultCode.INVALID_VM_POWER_STATE)
+
+        # clean up
+        vm_wrapper.power(Host.PowerVmOp.RESUME, Host.PowerVmOpResultCode.OK)
+        vm_wrapper.power(Host.PowerVmOp.OFF, Host.PowerVmOpResultCode.OK)
+        vm_wrapper.delete()
 
     def test_detach_disks_vm_suspended(self):
-        vm = VmWrapper(self.host_client)
-        vm_id = vm.create().vm.id
-        vm.power(Host.PowerVmOp.ON, Host.PowerVmOpResultCode.OK)
-        vm.power(Host.PowerVmOp.SUSPEND, Host.PowerVmOpResultCode.OK)
+        vm_wrapper = VmWrapper(self.host_client)
+        # create a vm with a disk
+        disk = Disk(new_id(), self.DEFAULT_DISK_FLAVOR.name, True, True,
+                    capacity_gb=1, flavor_info=self.DEFAULT_DISK_FLAVOR)
+        reservation = vm_wrapper.place_and_reserve(vm_disks=[disk]).reservation
+        request = vm_wrapper.create_request(res_id=reservation)
+        vm_id = vm_wrapper.create(request=request).vm.id
 
-        vm.detach_disks(vm_id, ["disk-1"],
-                        expect=Host.VmDiskOpResultCode.INVALID_VM_POWER_STATE)
-        vm.power(Host.PowerVmOp.RESUME, Host.PowerVmOpResultCode.OK)
-        vm.power(Host.PowerVmOp.OFF, Host.PowerVmOpResultCode.OK)
+        # put vm into suspended state
+        vm_wrapper.power(Host.PowerVmOp.ON, Host.PowerVmOpResultCode.OK)
+        vm_wrapper.power(Host.PowerVmOp.SUSPEND, Host.PowerVmOpResultCode.OK)
 
-        vm.delete()
+        # detach disk should fail
+        vm_wrapper.detach_disks(vm_id, [disk.id], expect=Host.VmDiskOpResultCode.INVALID_VM_POWER_STATE)
+
+        # clean up
+        vm_wrapper.power(Host.PowerVmOp.RESUME, Host.PowerVmOpResultCode.OK)
+        vm_wrapper.power(Host.PowerVmOp.OFF, Host.PowerVmOpResultCode.OK)
+        vm_wrapper.delete()
 
     def test_create_vm_with_ephemeral_disks(self):
         self._test_create_vm_with_ephemeral_disks("ttylinux")
