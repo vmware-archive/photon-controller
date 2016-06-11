@@ -691,27 +691,11 @@ class HostHandler(Host.Iface):
         if disks is None:
             return
 
-        try:
-            vm = self.hypervisor.vm_manager.get_resource(vm_id)
-            if vm.state == State.SUSPENDED:
-                response.result = VmDiskOpResultCode.INVALID_VM_POWER_STATE
-                response.error = "Vm in suspended state"
-                return
-
-        except VmNotFoundException, e:
-            self._logger.warning(
-                "_update_disks_with_response: %s" % (e),
-                exc_info=True)
-            response.result = VmDiskOpResultCode.VM_NOT_FOUND
-            response.error = str(e)
-            return
-
         for disk in disks:
-            try:
-                disk_id = disk.id if hasattr(disk, "id") else disk
+            disk_id = disk.id if hasattr(disk, "id") else disk
+            disk_error = CreateDiskError()
 
-                disk_error = CreateDiskError()
-                response.disk_errors[disk_id] = disk_error
+            try:
                 # get resource
                 disk_resource = self.hypervisor.disk_manager.get_resource(disk_id)
                 thrift_disk = disk_resource.to_thrift()
@@ -724,12 +708,20 @@ class HostHandler(Host.Iface):
                     self.hypervisor.vm_manager.detach_disk(vm_id, disk_id)
 
                 disk_error.result = VmDiskOpResultCode.OK
+            except VmNotFoundException, e:
+                self._logger.warning("_update_disks_with_response: %s" % (e), exc_info=True)
+                response.result = VmDiskOpResultCode.VM_NOT_FOUND
+                response.error = str(e)
+                return
+            except VmPowerStateException, e:
+                response.result = VmDiskOpResultCode.INVALID_VM_POWER_STATE
+                response.error = "Vm in suspended state"
+                return
             except DiskNotFoundException, e:
                 self._logger.warning("_update_disks_with_response %s" % e, exc_info=True)
                 response.result = VmDiskOpResultCode.DISK_NOT_FOUND
                 disk_error.result = VmDiskOpResultCode.DISK_NOT_FOUND
                 disk_error.error = str(e)
-                continue
             except ValueError, e:
                 self._logger.warning("_update_disks_with_response %s" % e, exc_info=True)
                 if not is_attach and str(e) == 'ENOENT':
@@ -740,13 +732,13 @@ class HostHandler(Host.Iface):
                     response.result = VmDiskOpResultCode.SYSTEM_ERROR
                     disk_error.result = VmDiskOpResultCode.SYSTEM_ERROR
                     disk_error.error = str(e)
-                continue
             except Exception, e:
                 self._logger.warning("_update_disks_with_response %s" % e, exc_info=True)
                 response.result = VmDiskOpResultCode.SYSTEM_ERROR
                 disk_error.result = VmDiskOpResultCode.SYSTEM_ERROR
                 disk_error.error = str(e)
-                continue
+
+            response.disk_errors[disk_id] = disk_error
 
     @log_request
     @error_handler(CopyImageResponse, CopyImageResultCode)
