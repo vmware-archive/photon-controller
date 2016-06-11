@@ -48,6 +48,9 @@ enum PlaceResultCode {
 
   // Resources are not placed due to resource constraints
   RESOURCE_CONSTRAINT = 7
+
+  // No datastore found that matches the constraints
+  NO_CONSTRAINT_MATCHING_DATASTORE = 8
 }
 
 struct Score {

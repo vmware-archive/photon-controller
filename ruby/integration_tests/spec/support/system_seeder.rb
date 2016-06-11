@@ -44,6 +44,14 @@ module EsxCloud
       @ephemeral_disk_flavor ||= create_ephemeral_disk_flavor
     end
 
+    def ephemeral_disk_flavor_with_local_tag!
+      @ephemeral_disk_flavor_with_local_tag ||= create_ephemeral_disk_flavor_with_local_tag
+    end
+
+    def ephemeral_disk_flavor_with_shared_tag!
+      @ephemeral_disk_flavor_with_shared_tag ||= create_ephemeral_disk_flavor_with_shared_tag
+    end
+
     def persistent_disk_flavor!
       @persistent_disk_flavor ||= create_persistent_disk_flavor
     end
@@ -166,6 +174,22 @@ module EsxCloud
     def create_ephemeral_disk_flavor(cost = 1.0)
       cost = [
         EsxCloud::QuotaLineItem.new("ephemeral-disk.cost", cost, "COUNT")
+      ]
+
+      create_flavor "ephemeral-disk", cost
+    end
+
+    def create_ephemeral_disk_flavor_with_local_tag()
+      cost = [
+          EsxCloud::QuotaLineItem.new("storage.LOCAL_VMFS", 1.0, "COUNT")
+      ]
+
+      create_flavor "ephemeral-disk", cost
+    end
+
+    def create_ephemeral_disk_flavor_with_shared_tag()
+      cost = [
+          EsxCloud::QuotaLineItem.new("storage.SHARED_VMFS", 1.0, "COUNT")
       ]
 
       create_flavor "ephemeral-disk", cost
