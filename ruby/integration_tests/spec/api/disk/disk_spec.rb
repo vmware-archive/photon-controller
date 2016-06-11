@@ -211,10 +211,10 @@ describe "disk", management: true do
           expect(e.errors.size).to eq(1)
           expect(e.errors.first.size).to eq(1)
           step_error = e.errors.first.first
-          expect(step_error.code).to eq("NoSuchResource")
+          expect(step_error.code).to eq("UnfullfillableDiskAffinities")
           expect(step_error.step["operation"]).to eq("RESERVE_RESOURCE")
         rescue EsxCloud::CliError => e
-          expect(e.output).to match("NoSuchResource")
+          expect(e.output).to include("UnfullfillableDiskAffinities")
         end
       end
     end

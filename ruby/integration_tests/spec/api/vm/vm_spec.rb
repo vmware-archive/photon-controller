@@ -35,7 +35,33 @@ describe "vm", management: true, image: true do
     vm.delete
   end
 
-  # Test disabled for cli as cli always creates the disk of kind "ephemeral-disk" while creating VM
+  it "should fail to create one vm with two ephemeral disks on two datastores" do
+    vm_name = random_name("vm-")
+    edisk_flavor_local = @seeder.ephemeral_disk_flavor_with_local_tag!
+    edisk_flavor_shared = @seeder.ephemeral_disk_flavor_with_shared_tag!
+    disks = [EsxCloud::VmDisk.new("#{vm_name}-disk1", "ephemeral-disk", edisk_flavor_local.name, nil, true),
+             EsxCloud::VmDisk.new("#{vm_name}-disk2", "ephemeral-disk", edisk_flavor_shared.name, 1, false)]
+
+    err_msg = "Check disk(s) affinity. In case of more than one disk affinities, disk flavors may be incompatible."
+    begin
+      create_vm(@project, name: vm_name, disks: disks)
+      fail("Create VM with two ephemeral disks on two datastores should fail")
+    rescue EsxCloud::ApiError => e
+      puts e
+      expect(e.response_code).to eq(200)
+      expect(e.errors.size).to eq(1)
+      expect(e.errors.first.size).to eq(1)
+      step_error = e.errors.first.first
+      expect(step_error.code).to eq("UnfullfillableDiskAffinities")
+      expect(step_error.step["operation"]).to eq("RESERVE_RESOURCE")
+      expect(step_error.message).to eq(err_msg)
+    rescue EsxCloud::CliError => e
+      expect(e.output).to include("UnfullfillableDiskAffinities")
+      expect(e.output).to include(err_msg)
+    end
+  end
+
+# Test disabled for cli as cli always creates the disk of kind "ephemeral-disk" while creating VM
   it "should fail to create one vm with one ephemeral disk and one persistent disk", disable_for_cli_test: true do
     vm_name = random_name("vm-")
     edisk_flavor = @seeder.ephemeral_disk_flavor!
