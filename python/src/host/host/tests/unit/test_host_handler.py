@@ -84,7 +84,6 @@ from host.hypervisor.resources import AgentResourcePlacement
 from host.hypervisor.resources import Disk as HostDisk
 from host.hypervisor.resources import NetworkInfo
 from host.hypervisor.resources import NetworkInfoType
-from host.hypervisor.resources import State as VmState
 from host.hypervisor.system import DatastoreInfo
 from host.hypervisor.vm_manager import DiskNotFoundException
 from host.hypervisor.vm_manager import IsoNotAttachedException
@@ -784,9 +783,8 @@ class HostHandlerTestCase(unittest.TestCase):
 
         handler = HostHandler(MagicMock())
         handler.hypervisor = MagicMock()
-        handler.hypervisor.disk_manager.get_resource = MagicMock()
-        handler.hypervisor.vm_manager._get_vm_config.side_effect = VmNotFoundException
-        handler.hypervisor.vm_manager.get_resource.side_effect = VmNotFoundException
+        handler.hypervisor.vm_manager.attach_disk.side_effect = VmNotFoundException
+        handler.hypervisor.vm_manager.detach_disk.side_effect = VmNotFoundException
 
         response = handler.attach_disks(req)
         assert_that(response.result, equal_to(VmDiskOpResultCode.VM_NOT_FOUND))
@@ -800,8 +798,8 @@ class HostHandlerTestCase(unittest.TestCase):
 
         handler = HostHandler(MagicMock())
         handler.hypervisor = MagicMock()
-        vm = Vm(id="vm.id", state=VmState.SUSPENDED)
-        handler.hypervisor.vm_manager.get_resource.return_value = vm
+        handler.hypervisor.vm_manager.attach_disk.side_effect = VmPowerStateException
+        handler.hypervisor.vm_manager.detach_disk.side_effect = VmPowerStateException
 
         response = handler.attach_disks(req)
         assert_that(response.result, equal_to(VmDiskOpResultCode.INVALID_VM_POWER_STATE))
