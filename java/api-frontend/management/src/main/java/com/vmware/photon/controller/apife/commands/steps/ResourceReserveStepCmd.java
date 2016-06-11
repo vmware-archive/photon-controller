@@ -46,9 +46,11 @@ import com.vmware.photon.controller.apife.exceptions.external.InvalidLocalitySpe
 import com.vmware.photon.controller.apife.exceptions.external.NetworkNotFoundException;
 import com.vmware.photon.controller.apife.exceptions.external.StepNotFoundException;
 import com.vmware.photon.controller.apife.exceptions.external.UnfulfillableAffinitiesException;
+import com.vmware.photon.controller.apife.exceptions.external.UnfulfillableDiskAffinitiesException;
 import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
 import com.vmware.photon.controller.cloudstore.dcp.entity.VirtualNetworkService;
 import com.vmware.photon.controller.common.clients.SchedulerErrorCodeToExceptionMapper;
+import com.vmware.photon.controller.common.clients.exceptions.ConstraintMatchingDatastoreNotFoundException;
 import com.vmware.photon.controller.common.clients.exceptions.InvalidAgentStateException;
 import com.vmware.photon.controller.common.clients.exceptions.InvalidSchedulerException;
 import com.vmware.photon.controller.common.clients.exceptions.NoSuchResourceException;
@@ -429,6 +431,9 @@ public class ResourceReserveStepCmd extends StepCommand {
       } catch (NoSuchResourceException e) {
         logger.error("reserve resource failed: {}, {}", ErrorCode.NO_SUCH_RESOURCE, e.getMessage());
         throw new com.vmware.photon.controller.apife.exceptions.external.NoSuchResourceException();
+      } catch (ConstraintMatchingDatastoreNotFoundException e) {
+        logger.error("reserve resource failed: {}, {}", ErrorCode.NO_CONSTRAINT_MATCHING_DATASTORE, e.getMessage());
+        throw new UnfulfillableDiskAffinitiesException();
       } catch (NotEnoughCpuResourceException e) {
         logger.error("reserve resource failed: {}, {}", ErrorCode.NOT_ENOUGH_CPU_RESOURCE, e.getMessage());
         throw new com.vmware.photon.controller.apife.exceptions.external.NotEnoughCpuResourceException();

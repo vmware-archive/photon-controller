@@ -19,7 +19,7 @@ import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
 import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
-import com.vmware.photon.controller.common.clients.exceptions.NoSuchResourceException;
+import com.vmware.photon.controller.common.clients.exceptions.ConstraintMatchingDatastoreNotFoundException;
 import com.vmware.photon.controller.common.logging.LoggingUtils;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
@@ -401,8 +401,8 @@ public class CloudStoreConstraintChecker implements ConstraintChecker {
 
     // No datastore which match the specified constraint is available
     if (datastoreIds.size() == 0) {
-      state.exception = new NoSuchResourceException("Cannot satisfy constraint for datastore tag(s) '" +
-              tagConstraint.getValues().toString() + "' found");
+      state.exception = new ConstraintMatchingDatastoreNotFoundException(
+          "Cannot satisfy constraint for datastore tag(s) '" + tagConstraint.getValues().toString() + "' found");
       state.currentStep = Step.FAIL;
       getCandidates_HandleStep(state);
       return;
