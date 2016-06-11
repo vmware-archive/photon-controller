@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.common.clients;
 
+import com.vmware.photon.controller.common.clients.exceptions.ConstraintMatchingDatastoreNotFoundException;
 import com.vmware.photon.controller.common.clients.exceptions.InvalidAgentStateException;
 import com.vmware.photon.controller.common.clients.exceptions.NoSuchResourceException;
 import com.vmware.photon.controller.common.clients.exceptions.NotEnoughCpuResourceException;
@@ -41,6 +42,8 @@ public class SchedulerErrorCodeToExceptionMapper {
         break;
       case NO_SUCH_RESOURCE:
         throw new NoSuchResourceException(error);
+      case NO_CONSTRAINT_MATCHING_DATASTORE:
+        throw new ConstraintMatchingDatastoreNotFoundException(error);
       case NOT_ENOUGH_CPU_RESOURCE:
         throw new NotEnoughCpuResourceException(error);
       case NOT_ENOUGH_MEMORY_RESOURCE:

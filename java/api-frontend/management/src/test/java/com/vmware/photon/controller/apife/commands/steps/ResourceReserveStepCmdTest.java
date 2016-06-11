@@ -44,10 +44,12 @@ import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.entities.VmEntity;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidLocalitySpecException;
 import com.vmware.photon.controller.apife.exceptions.external.NetworkNotFoundException;
+import com.vmware.photon.controller.apife.exceptions.external.NoSuchResourceException;
 import com.vmware.photon.controller.apife.exceptions.external.NotEnoughCpuResourceException;
 import com.vmware.photon.controller.apife.exceptions.external.NotEnoughDatastoreCapacityException;
 import com.vmware.photon.controller.apife.exceptions.external.NotEnoughMemoryResourceException;
 import com.vmware.photon.controller.apife.exceptions.external.UnfulfillableAffinitiesException;
+import com.vmware.photon.controller.apife.exceptions.external.UnfulfillableDiskAffinitiesException;
 import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VirtualNetworkService;
 import com.vmware.photon.controller.common.clients.HostClient;
@@ -564,6 +566,8 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
   @DataProvider(name = "PlaceFailureResultCodes")
   public Object[][] getPlaceFailureResultCodes() {
     return new Object[][]{
+        {PlaceResultCode.NO_SUCH_RESOURCE, NoSuchResourceException.class},
+        {PlaceResultCode.NO_CONSTRAINT_MATCHING_DATASTORE, UnfulfillableDiskAffinitiesException.class},
         {PlaceResultCode.RESOURCE_CONSTRAINT, UnfulfillableAffinitiesException.class},
         {PlaceResultCode.NOT_ENOUGH_DATASTORE_CAPACITY, NotEnoughDatastoreCapacityException.class},
         {PlaceResultCode.SYSTEM_ERROR, SystemErrorException.class},

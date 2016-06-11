@@ -16,6 +16,7 @@ package com.vmware.photon.controller.rootscheduler.xenon.task;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ImageToImageDatastoreMappingService;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientProvider;
+import com.vmware.photon.controller.common.clients.exceptions.ConstraintMatchingDatastoreNotFoundException;
 import com.vmware.photon.controller.common.clients.exceptions.NoSuchResourceException;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
 import com.vmware.photon.controller.common.clients.exceptions.SystemErrorException;
@@ -230,6 +231,8 @@ public class PlacementTaskService extends StatefulService {
     patchState.error = ex.getMessage();
     if (ex instanceof NoSuchResourceException) {
       patchState.resultCode = PlaceResultCode.NO_SUCH_RESOURCE;
+    } else if (ex instanceof ConstraintMatchingDatastoreNotFoundException) {
+        patchState.resultCode = PlaceResultCode.NO_CONSTRAINT_MATCHING_DATASTORE;
     } else {
       patchState.resultCode = PlaceResultCode.SYSTEM_ERROR;
     }
