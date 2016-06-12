@@ -38,6 +38,7 @@ from host.hypervisor.disk_manager import DiskPathException
 from host.hypervisor.disk_manager import DiskFileException
 from host.hypervisor.esx import logging_wrappers
 from host.hypervisor.esx.host_client import HostClient
+from host.hypervisor.esx.host_client import DeviceBusyException
 from host.hypervisor.esx.host_client import DatastoreNotFound
 from host.hypervisor.esx.host_client import HostdConnectionFailure
 from host.hypervisor.esx.host_client import NfcLeaseInitiatizationTimeout
@@ -500,6 +501,8 @@ class VimClient(HostClient):
             self.wait_for_task(vim_task)
         except vim.fault.FileAlreadyExists, e:
             raise DiskAlreadyExistException(e.msg)
+        except vim.fault.FileLocked, e:
+            raise DeviceBusyException(e.msg)
         except vim.fault.FileFault, e:
             raise DiskFileException(e.msg)
         except vim.fault.InvalidDatastore, e:

@@ -207,10 +207,6 @@ class EsxVmManager(VmManager):
                 resources.append(Resource(vm_resource, vm_resource.disks))
         return resources
 
-    def get_power_state(self, vm_id):
-        vm = self.vim_client.get_vm_in_cache(vm_id)
-        return self._power_state_to_resource_state(vm.power_state)
-
     @log_duration
     def get_resource(self, vm_id):
         vmcache = self.vim_client.get_vm_in_cache(vm_id)
@@ -232,8 +228,7 @@ class EsxVmManager(VmManager):
                                      False, -1, None, datastore_uuid)
                 vm_resource.disks.append(disk_resource)
 
-        vm_resource.state = self._power_state_to_resource_state(
-            vmcache.power_state)
+        vm_resource.state = self._power_state_to_resource_state(vmcache.power_state)
 
         datastore_name = self._get_datastore_name_from_ds_path(vmcache.path)
         vm_resource.datastore = self._get_datastore_uuid(datastore_name)
