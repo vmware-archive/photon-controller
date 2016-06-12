@@ -313,7 +313,10 @@ class AttacheClient(HostClient):
     @property
     @attache_error_handler
     def memory_usage_mb(self):
-        return self._client.GetMemoryUsage(self._session)
+        if hasattr(self._client, 'GetCachedMemoryUsage'):
+            return self._client.GetCachedMemoryUsage(self._session)
+        else:
+            return self._client.GetMemoryUsage(self._session)
 
     @property
     @attache_error_handler
