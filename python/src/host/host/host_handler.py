@@ -116,7 +116,6 @@ from host.hypervisor.placement_manager import NotEnoughDatastoreCapacityExceptio
 from host.hypervisor.placement_manager import NotEnoughMemoryResourceException
 from host.hypervisor.resources import AgentResourcePlacementList
 from host.hypervisor.resources import Disk
-from host.hypervisor.resources import State
 from host.hypervisor.resources import Vm
 
 from hypervisor.disk_manager import DiskAlreadyExistException
