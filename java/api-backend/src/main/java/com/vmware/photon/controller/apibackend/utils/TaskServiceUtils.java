@@ -13,8 +13,8 @@
 
 package com.vmware.photon.controller.apibackend.utils;
 
-import com.vmware.photon.controller.cloudstore.dcp.entity.TaskService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.TaskServiceFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.TaskService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.TaskServiceFactory;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
 

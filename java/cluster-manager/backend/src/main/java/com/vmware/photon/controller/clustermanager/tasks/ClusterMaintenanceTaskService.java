@@ -13,8 +13,8 @@
 package com.vmware.photon.controller.clustermanager.tasks;
 
 import com.vmware.photon.controller.api.ClusterState;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ClusterService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ClusterServiceFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ClusterService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ClusterServiceFactory;
 import com.vmware.photon.controller.clustermanager.servicedocuments.ClusterDeleteTask;
 import com.vmware.photon.controller.clustermanager.servicedocuments.ClusterManagerConstants;
 import com.vmware.photon.controller.clustermanager.utils.HostUtils;

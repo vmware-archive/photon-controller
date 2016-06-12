@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.rootscheduler.xenon.task;
 
-import com.vmware.photon.controller.cloudstore.dcp.entity.ImageToImageDatastoreMappingService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ImageToImageDatastoreMappingService;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientProvider;
 import com.vmware.photon.controller.common.clients.exceptions.NoSuchResourceException;

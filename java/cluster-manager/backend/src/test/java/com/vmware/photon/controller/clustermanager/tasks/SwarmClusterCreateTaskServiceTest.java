@@ -23,8 +23,8 @@ import com.vmware.photon.controller.client.ApiClient;
 import com.vmware.photon.controller.client.resource.ImagesApi;
 import com.vmware.photon.controller.client.resource.ProjectApi;
 import com.vmware.photon.controller.client.resource.VmApi;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ClusterService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ClusterServiceFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ClusterService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ClusterServiceFactory;
 import com.vmware.photon.controller.clustermanager.clients.EtcdClient;
 import com.vmware.photon.controller.clustermanager.clients.SwarmClient;
 import com.vmware.photon.controller.clustermanager.helpers.ReflectionUtils;
@@ -494,7 +494,7 @@ public class SwarmClusterCreateTaskServiceTest {
     private String leaderIp = "leaderIp";
 
     private TestEnvironment machine;
-    private com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment cloudStoreMachine;
+    private com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment cloudStoreMachine;
     private SwarmClusterCreateTask startState;
 
     @BeforeClass
@@ -518,7 +518,7 @@ public class SwarmClusterCreateTaskServiceTest {
     @BeforeMethod
     public void setUpTest() throws Throwable {
 
-      cloudStoreMachine = com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.create(1);
+      cloudStoreMachine = com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment.create(1);
 
       machine = new TestEnvironment.Builder()
           .apiClient(apiClient)

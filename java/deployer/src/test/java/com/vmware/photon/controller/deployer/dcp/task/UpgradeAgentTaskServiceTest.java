@@ -412,14 +412,14 @@ public class UpgradeAgentTaskServiceTest {
    */
   public class EndToEndTest {
 
-    private com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment cloudStoreEnvironment;
+    private com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment cloudStoreEnvironment;
     private AgentControlClientFactory agentControlClientFactory;
     private UpgradeAgentTaskService.State startState;
     private TestEnvironment testEnvironment;
 
     @BeforeClass
     public void setUpClass() throws Throwable {
-      cloudStoreEnvironment = com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.create(1);
+      cloudStoreEnvironment = com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment.create(1);
       agentControlClientFactory = mock(AgentControlClientFactory.class);
 
       testEnvironment = new TestEnvironment.Builder()

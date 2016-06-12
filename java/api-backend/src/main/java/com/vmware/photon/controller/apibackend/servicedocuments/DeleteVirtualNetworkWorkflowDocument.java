@@ -18,8 +18,8 @@ import com.vmware.photon.controller.apibackend.annotations.TaskServiceEntityFiel
 import com.vmware.photon.controller.apibackend.annotations.TaskServiceStateField;
 import com.vmware.photon.controller.apibackend.annotations.TaskStateField;
 import com.vmware.photon.controller.apibackend.annotations.TaskStateSubStageField;
-import com.vmware.photon.controller.cloudstore.dcp.entity.TaskService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.VirtualNetworkService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.TaskService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.VirtualNetworkService;
 import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
 import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;

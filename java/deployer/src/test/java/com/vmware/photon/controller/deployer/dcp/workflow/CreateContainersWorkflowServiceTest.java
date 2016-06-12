@@ -708,7 +708,7 @@ public class CreateContainersWorkflowServiceTest {
 
     private static final String configFilePath = "/config.yml";
     private TestEnvironment machine;
-    private com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment cloudStoreMachine;
+    private com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment cloudStoreMachine;
     private ListeningExecutorService listeningExecutorService;
     private DockerProvisionerFactory dockerProvisionerFactory;
     private HealthCheckHelperFactory healthCheckHelperFactory;
@@ -717,7 +717,7 @@ public class CreateContainersWorkflowServiceTest {
 
     @BeforeClass
     public void setUpClass() throws Throwable {
-      cloudStoreMachine = com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.create(1);
+      cloudStoreMachine = com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment.create(1);
       listeningExecutorService = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(1));
       dockerProvisionerFactory = mock(DockerProvisionerFactory.class);
       deployerConfig = ConfigBuilder.build(DeployerConfig.class,

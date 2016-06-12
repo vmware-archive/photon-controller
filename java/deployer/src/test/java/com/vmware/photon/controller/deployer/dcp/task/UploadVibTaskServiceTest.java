@@ -14,7 +14,7 @@
 package com.vmware.photon.controller.deployer.dcp.task;
 
 import com.vmware.photon.controller.api.UsageTag;
-import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.HostService;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
@@ -328,7 +328,7 @@ public class UploadVibTaskServiceTest {
 
     private final File sourceDirectory = new File("/tmp/deployAgent/vibs");
 
-    private com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment cloudStoreEnvironment;
+    private com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment cloudStoreEnvironment;
     private DeployerContext deployerContext;
     private HostService.State hostStartState;
     private HttpFileServiceClient httpFileServiceClient;
@@ -341,7 +341,7 @@ public class UploadVibTaskServiceTest {
 
     @BeforeClass
     public void setUpClass() throws Throwable {
-      cloudStoreEnvironment = com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.create(1);
+      cloudStoreEnvironment = com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment.create(1);
       deployerContext = ConfigBuilder.build(DeployerConfig.class,
           this.getClass().getResource("/config.yml").getPath()).getDeployerContext();
       httpFileServiceClientFactory = mock(HttpFileServiceClientFactory.class);

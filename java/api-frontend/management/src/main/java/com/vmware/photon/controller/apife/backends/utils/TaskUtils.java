@@ -19,7 +19,7 @@ import com.vmware.photon.controller.api.Step;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
-import com.vmware.photon.controller.cloudstore.dcp.entity.TaskService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.TaskService;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;

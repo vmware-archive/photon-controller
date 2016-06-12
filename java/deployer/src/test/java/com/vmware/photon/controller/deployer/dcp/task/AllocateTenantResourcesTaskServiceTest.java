@@ -22,7 +22,7 @@ import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.client.ApiClient;
 import com.vmware.photon.controller.client.resource.TasksApi;
 import com.vmware.photon.controller.client.resource.TenantsApi;
-import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
 import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
@@ -398,7 +398,7 @@ public class AllocateTenantResourcesTaskServiceTest {
     private final Task failedTask = ApiTestUtils.createFailingTask(2, 1, "errorCode", "errorMessage");
 
     private ApiClientFactory apiClientFactory;
-    private com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment cloudStoreEnvironment;
+    private com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment cloudStoreEnvironment;
     private DeployerContext deployerContext;
     private String projectId;
     private String resourceTicketId;
@@ -411,7 +411,7 @@ public class AllocateTenantResourcesTaskServiceTest {
     @BeforeClass
     public void setUpClass() throws Throwable {
       apiClientFactory = mock(ApiClientFactory.class);
-      cloudStoreEnvironment = com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.create(1);
+      cloudStoreEnvironment = com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment.create(1);
 
       deployerContext = ConfigBuilder.build(DeployerConfig.class,
           this.getClass().getResource("/config.yml").getPath()).getDeployerContext();

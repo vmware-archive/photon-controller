@@ -13,8 +13,8 @@
 
 package com.vmware.photon.controller.deployer.dcp.task;
 
-import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentServiceFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentServiceFactory;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
@@ -146,13 +146,13 @@ public class MigrationStatusUpdateTriggerServiceTest {
   public class EndToEndTest {
     private MigrationStatusUpdateTriggerService.State startState;
     private TestEnvironment testEnvironment = null;
-    private com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment cloudStoreMachine = null;
+    private com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment cloudStoreMachine = null;
     private DeployerContext deployerContext;
 
     @BeforeClass
     public void setUpClass() throws Throwable {
       startState = buildValidStartState();
-      cloudStoreMachine = com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.create(1);
+      cloudStoreMachine = com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment.create(1);
     }
 
     @BeforeMethod

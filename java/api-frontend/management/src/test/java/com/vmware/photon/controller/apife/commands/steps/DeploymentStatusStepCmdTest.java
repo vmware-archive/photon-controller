@@ -24,7 +24,7 @@ import com.vmware.photon.controller.apife.entities.DeploymentEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.exceptions.external.DeploymentFailedException;
-import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentServiceFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentServiceFactory;
 import com.vmware.photon.controller.deployer.dcp.workflow.DeploymentWorkflowFactoryService;
 import com.vmware.photon.controller.deployer.dcp.workflow.DeploymentWorkflowService;
 import com.vmware.xenon.common.ServiceErrorResponse;

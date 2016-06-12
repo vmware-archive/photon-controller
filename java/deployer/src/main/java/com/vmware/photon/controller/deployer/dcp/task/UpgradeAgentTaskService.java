@@ -15,7 +15,7 @@ package com.vmware.photon.controller.deployer.dcp.task;
 
 import com.vmware.photon.controller.agent.gen.AgentControl;
 import com.vmware.photon.controller.agent.gen.AgentStatusResponse;
-import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.HostService;
 import com.vmware.photon.controller.common.clients.AgentControlClient;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.ControlFlags;

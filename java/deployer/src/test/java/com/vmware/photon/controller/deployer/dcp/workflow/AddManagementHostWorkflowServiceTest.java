@@ -15,8 +15,8 @@ package com.vmware.photon.controller.deployer.dcp.workflow;
 
 import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.UsageTag;
-import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.HostService;
 import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.auth.AuthClientHandler;
 import com.vmware.photon.controller.common.clients.AgentControlClientFactory;
@@ -705,8 +705,8 @@ public class AddManagementHostWorkflowServiceTest {
     private TestEnvironment localDeployer;
     private TestEnvironment remoteDeployer;
     private AuthClientHandler.ImplicitClient implicitClient;
-    private com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment localStore;
-    private com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment remoteStore;
+    private com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment localStore;
+    private com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment remoteStore;
 
     @BeforeClass
     public void setUpClass() throws Throwable {
@@ -745,11 +745,11 @@ public class AddManagementHostWorkflowServiceTest {
 
     private void createCloudStore() throws Throwable {
 
-      localStore = new com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.Builder()
+      localStore = new com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment.Builder()
           .hostClientFactory(hostClientFactory)
           .build();
 
-      remoteStore = new com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.Builder()
+      remoteStore = new com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment.Builder()
           .hostClientFactory(hostClientFactory)
           .build();
     }
@@ -962,7 +962,7 @@ public class AddManagementHostWorkflowServiceTest {
     }
 
     private String createDeploymentServiceLink(
-        com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment cloudStore,
+        com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment cloudStore,
         boolean isAuthEnabled)
         throws Throwable {
       DeploymentService.State deploymentService = TestHelper.createDeploymentService(cloudStore,

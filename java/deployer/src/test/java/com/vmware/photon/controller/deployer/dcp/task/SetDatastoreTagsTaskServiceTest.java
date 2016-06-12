@@ -13,8 +13,8 @@
 
 package com.vmware.photon.controller.deployer.dcp.task;
 
-import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreServiceFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.DatastoreService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.DatastoreServiceFactory;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
@@ -323,7 +323,7 @@ public class SetDatastoreTagsTaskServiceTest {
   public class EndToEndTest {
 
     private TestEnvironment testEnvironment = null;
-    private com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment cloudStoreTestEnvironment;
+    private com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment cloudStoreTestEnvironment;
     private SetDatastoreTagsTaskService.State startState;
     private ListeningExecutorService listeningExecutorService;
 
@@ -334,7 +334,7 @@ public class SetDatastoreTagsTaskServiceTest {
 
     @BeforeMethod
     public void setUpTest() throws Throwable {
-      cloudStoreTestEnvironment = com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.create(1);
+      cloudStoreTestEnvironment = com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment.create(1);
 
       startTestEnvironment();
       setupDatastoreServiceDocuments();

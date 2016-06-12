@@ -17,14 +17,14 @@ import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.ImageReplicationType;
 import com.vmware.photon.controller.api.ImageState;
 import com.vmware.photon.controller.api.UsageTag;
-import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreServiceFactory;
-import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ImageToImageDatastoreMappingService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ImageToImageDatastoreMappingServiceFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.DatastoreService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.DatastoreServiceFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.HostService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.HostServiceFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ImageService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ImageServiceFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ImageToImageDatastoreMappingService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ImageToImageDatastoreMappingServiceFactory;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
@@ -1292,7 +1292,7 @@ public class ImageDatastoreSweeperServiceTest {
         throws Throwable {
       List<ImageService.State> images = new ArrayList<>();
       for (int i = 0; i < count; i++) {
-        com.vmware.photon.controller.cloudstore.dcp.entity.ImageService.State state
+        com.vmware.photon.controller.cloudstore.xenon.entity.ImageService.State state
             = new ImageService.State();
         state.name = "image-" + i;
         state.replicationType = ImageReplicationType.EAGER;

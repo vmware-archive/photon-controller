@@ -22,8 +22,8 @@ import com.vmware.photon.controller.api.common.exceptions.external.ExternalExcep
 import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.exceptions.external.ClusterNotFoundException;
 import com.vmware.photon.controller.apife.exceptions.external.SpecInvalidException;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ClusterConfigurationService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ClusterService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ClusterConfigurationService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ClusterService;
 import com.vmware.photon.controller.clustermanager.servicedocuments.ClusterManagerConstants;
 import com.vmware.photon.controller.clustermanager.servicedocuments.KubernetesClusterCreateTask;
 import com.vmware.photon.controller.clustermanager.servicedocuments.MesosClusterCreateTask;

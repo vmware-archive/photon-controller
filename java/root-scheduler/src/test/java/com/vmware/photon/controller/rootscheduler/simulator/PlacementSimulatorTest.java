@@ -13,9 +13,10 @@
 
 package com.vmware.photon.controller.rootscheduler.simulator;
 
-import com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment;
+import com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment;
 
 import com.google.common.collect.ImmutableMap;
+
 import org.apache.commons.math3.distribution.IntegerDistribution;
 import org.apache.commons.math3.distribution.UniformIntegerDistribution;
 import org.testng.annotations.AfterClass;

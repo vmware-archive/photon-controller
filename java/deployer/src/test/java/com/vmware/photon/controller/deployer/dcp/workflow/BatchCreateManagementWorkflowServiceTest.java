@@ -28,9 +28,9 @@ import com.vmware.photon.controller.client.resource.ProjectApi;
 import com.vmware.photon.controller.client.resource.TasksApi;
 import com.vmware.photon.controller.client.resource.TenantsApi;
 import com.vmware.photon.controller.client.resource.VmApi;
-import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ResourceTicketService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.TenantService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.HostService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ResourceTicketService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.TenantService;
 import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
@@ -457,7 +457,7 @@ public class BatchCreateManagementWorkflowServiceTest {
     private static final String scriptFileName = "untar-image";
 
     private TestEnvironment machine;
-    private com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment cloudStoreMachine;
+    private com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment cloudStoreMachine;
     private ListeningExecutorService listeningExecutorService;
     private DockerProvisionerFactory dockerProvisionerFactory;
     private HealthCheckHelperFactory healthCheckHelperFactory;
@@ -497,7 +497,7 @@ public class BatchCreateManagementWorkflowServiceTest {
     public void setUpClass() throws Throwable {
       FileUtils.deleteDirectory(storageDirectory);
       listeningExecutorService = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(1));
-      cloudStoreMachine = com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.create(1);
+      cloudStoreMachine = com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment.create(1);
 
       dockerProvisionerFactory = mock(DockerProvisionerFactory.class);
       healthCheckHelperFactory = mock(HealthCheckHelperFactory.class);

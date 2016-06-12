@@ -46,8 +46,8 @@ import com.vmware.photon.controller.apife.exceptions.external.DiskNotFoundExcept
 import com.vmware.photon.controller.apife.exceptions.external.InvalidFlavorStateException;
 import com.vmware.photon.controller.apife.lib.QuotaCost;
 import com.vmware.photon.controller.apife.utils.PaginationUtils;
-import com.vmware.photon.controller.cloudstore.dcp.entity.DiskService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.DiskServiceFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.DiskService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.DiskServiceFactory;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
 import com.vmware.xenon.common.ServiceDocumentQueryResult;

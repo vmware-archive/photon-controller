@@ -21,8 +21,8 @@ import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredEx
 import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.exceptions.external.PortGroupNotFoundException;
 import com.vmware.photon.controller.apife.utils.PaginationUtils;
-import com.vmware.photon.controller.cloudstore.dcp.entity.PortGroupService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.PortGroupServiceFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.PortGroupService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.PortGroupServiceFactory;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
 import com.vmware.xenon.common.ServiceDocumentQueryResult;
