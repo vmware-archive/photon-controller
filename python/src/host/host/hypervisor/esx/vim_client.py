@@ -304,7 +304,7 @@ class VimClient(HostClient):
     @property
     @hostd_error_handler
     def memory_usage_mb(self):
-        return self.host_system.summary.quickStats.overallMemoryUsage
+        return self._vim_cache.get_memory_usage()
 
     @property
     @hostd_error_handler

@@ -63,6 +63,7 @@ class VimCache:
         self._ds_cache = {}
         self._lock = threading.RLock()
         self._task_cache = BlockingDict()
+        self._memory_usage = 0
 
     """ Create filter
     """
@@ -91,13 +92,21 @@ class VimCache:
         task_object_spec = PC.ObjectSpec(obj=vim_client._content.taskManager, selectSet=[task_traversal_spec])
         return PC.FilterSpec(propSet=[task_property_spec], objectSet=[task_object_spec])
 
+    def _host_system_filter_spec(self, vim_client):
+        PC = vmodl.query.PropertyCollector
+        host_property_spec = PC.PropertySpec(type=vim.HostSystem, pathSet=["summary.quickStats.overallMemoryUsage"])
+        host_traversal_spec = PC.TraversalSpec(name="hostSpec", type=vim.ComputeResource, path="host", skip=False)
+        host_object_spec = PC.ObjectSpec(obj=vim_client.host_system, selectSet=[host_traversal_spec])
+        return PC.FilterSpec(propSet=[host_property_spec], objectSet=[host_object_spec])
+
     def _build_filter_spec(self, vim_client):
         PC = vmodl.query.PropertyCollector
         ds_spec = self._datastore_filter_spec(vim_client)
         task_spec = self._task_filter_spec(vim_client)
         vm_spec = self._vm_filter_spec(vim_client)
-        propSet = ds_spec.propSet + task_spec.propSet + vm_spec.propSet
-        objectSet = ds_spec.objectSet + task_spec.objectSet + vm_spec.objectSet
+        host_spec = self._host_system_filter_spec(vim_client)
+        propSet = ds_spec.propSet + task_spec.propSet + vm_spec.propSet + host_spec.propSet
+        objectSet = ds_spec.objectSet + task_spec.objectSet + vm_spec.objectSet + host_spec.objectSet
         return PC.FilterSpec(propSet=propSet, objectSet=objectSet)
 
     """ Poll updates
@@ -146,6 +155,9 @@ class VimCache:
                     elif object.kind == "leave":
                         self._remove_ds_cache(object)
                         ds_updated = True
+                elif isinstance(object.obj, vim.HostSystem):
+                    if object.kind == "enter" or object.kind == "modify":
+                        self._update_host_system_cache(object)
 
         # Notify listeners.
         if ds_updated:
@@ -279,6 +291,12 @@ class VimCache:
 
         del self._task_cache[str(object.obj)]
 
+    def _update_host_system_cache(self, object):
+        for change in object.changeSet:
+            if change.name == "summary.quickStats.overallMemoryUsage":
+                self._memory_usage = change.val
+        self._logger.debug("host_system cache update: memoryUsage=%d" % self._memory_usage)
+
     """ Accessors
     """
     @lock_with("_lock")
@@ -322,6 +340,10 @@ class VimCache:
             if ds.name == ds_name:
                 return ds
         raise DatastoreNotFoundException("Datastore '%s' not found on host." % ds_name)
+
+    @lock_with("_lock")
+    def get_memory_usage(self):
+        return self._memory_usage
 
     def wait_for_task(self, vim_task, timeout):
         return self._task_cache.wait_until(str(vim_task), self._verify_task_done, timeout=timeout)
