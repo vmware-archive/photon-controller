@@ -31,10 +31,10 @@ import com.vmware.photon.controller.apife.entities.TombstoneEntity;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidNetworkStateException;
 import com.vmware.photon.controller.apife.exceptions.external.NetworkNotFoundException;
 import com.vmware.photon.controller.apife.exceptions.external.PortGroupsAlreadyAddedToNetworkException;
-import com.vmware.photon.controller.cloudstore.dcp.entity.NetworkService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.NetworkServiceFactory;
-import com.vmware.photon.controller.cloudstore.dcp.entity.VmService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.VmServiceFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.NetworkService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.NetworkServiceFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.VmService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.VmServiceFactory;
 import com.vmware.photon.controller.common.xenon.BasicServiceHost;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 

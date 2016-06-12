@@ -21,7 +21,7 @@ import com.vmware.photon.controller.apife.entities.StepErrorEntity;
 import com.vmware.photon.controller.apife.entities.StepResourceEntity;
 import com.vmware.photon.controller.apife.entities.StepWarningEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
-import com.vmware.photon.controller.cloudstore.dcp.entity.TaskService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.TaskService;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;

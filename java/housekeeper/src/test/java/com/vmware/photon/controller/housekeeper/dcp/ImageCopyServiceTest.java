@@ -17,11 +17,11 @@ import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.ImageReplicationType;
 import com.vmware.photon.controller.api.ImageState;
 import com.vmware.photon.controller.api.UsageTag;
-import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreServiceFactory;
-import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.DatastoreService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.DatastoreServiceFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.HostService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.HostServiceFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ImageService;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.clients.exceptions.ImageNotFoundException;
@@ -1028,7 +1028,7 @@ public class
           ));
     }
 
-    private com.vmware.photon.controller.cloudstore.dcp.entity.ImageService.State createNewImageEntity()
+    private com.vmware.photon.controller.cloudstore.xenon.entity.ImageService.State createNewImageEntity()
         throws Throwable {
       ServiceHost host = machine.getHosts()[0];
       StaticServerSet serverSet = new StaticServerSet(
@@ -1036,18 +1036,18 @@ public class
       cloudStoreHelper.setServerSet(serverSet);
 
       machine.startFactoryServiceSynchronously(
-          com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory.class,
-          com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory.SELF_LINK);
+          com.vmware.photon.controller.cloudstore.xenon.entity.ImageServiceFactory.class,
+          com.vmware.photon.controller.cloudstore.xenon.entity.ImageServiceFactory.SELF_LINK);
 
-      com.vmware.photon.controller.cloudstore.dcp.entity.ImageService.State state
-          = new com.vmware.photon.controller.cloudstore.dcp.entity.ImageService.State();
+      com.vmware.photon.controller.cloudstore.xenon.entity.ImageService.State state
+          = new com.vmware.photon.controller.cloudstore.xenon.entity.ImageService.State();
       state.name = "image-1";
       state.replicationType = ImageReplicationType.EAGER;
       state.state = ImageState.READY;
       state.totalDatastore = 1;
 
       Operation op = cloudStoreHelper
-          .createPost(com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory.SELF_LINK)
+          .createPost(com.vmware.photon.controller.cloudstore.xenon.entity.ImageServiceFactory.SELF_LINK)
           .setBody(state)
           .setCompletion((operation, throwable) -> {
             if (null != throwable) {

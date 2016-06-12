@@ -15,9 +15,9 @@ package com.vmware.photon.controller.deployer.dcp.task;
 
 import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.UsageTag;
-import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.HostService.State;
-import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.HostService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.HostService.State;
+import com.vmware.photon.controller.cloudstore.xenon.entity.HostServiceFactory;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
@@ -359,8 +359,8 @@ public class CopyStateTaskServiceTest {
     public static final int DOCUMENT_COUNT = 10;
     TestEnvironment sourceCluster;
     TestEnvironment destinationCluster;
-    private com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment sourceCloudStore;
-    private com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment destinationCloudStore;
+    private com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment sourceCloudStore;
+    private com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment destinationCloudStore;
     private CopyStateTaskService.State copyStateTaskServiceState;
 
     @BeforeMethod
@@ -516,8 +516,8 @@ public class CopyStateTaskServiceTest {
 
     @Test(dataProvider = "hostCounts")
     public void testRenamedFieldHandling(Integer sourceHostCount, Integer destinationHostCount) throws Throwable {
-      sourceCloudStore = com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.create(sourceHostCount);
-      destinationCloudStore = com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.
+      sourceCloudStore = com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment.create(sourceHostCount);
+      destinationCloudStore = com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment.
           create(destinationHostCount);
       sourceCluster = new TestEnvironment.Builder().hostCount(sourceHostCount)
           .cloudServerSet(sourceCloudStore.getServerSet()).build();

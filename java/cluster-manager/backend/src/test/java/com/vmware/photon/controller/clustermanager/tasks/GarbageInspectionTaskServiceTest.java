@@ -22,8 +22,8 @@ import com.vmware.photon.controller.api.VmNetworks;
 import com.vmware.photon.controller.client.ApiClient;
 import com.vmware.photon.controller.client.resource.ClusterApi;
 import com.vmware.photon.controller.client.resource.VmApi;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ClusterService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ClusterServiceFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ClusterService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ClusterServiceFactory;
 import com.vmware.photon.controller.clustermanager.clients.KubernetesClient;
 import com.vmware.photon.controller.clustermanager.entities.InactiveVmService;
 import com.vmware.photon.controller.clustermanager.helpers.ReflectionUtils;
@@ -311,7 +311,7 @@ public class GarbageInspectionTaskServiceTest {
     private ClusterApi clusterApi;
     private VmApi vmApi;
     private TestEnvironment machine;
-    private com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment cloudStoreMachine;
+    private com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment cloudStoreMachine;
     private GarbageInspectionTaskService.State startState;
 
     @BeforeClass
@@ -330,7 +330,7 @@ public class GarbageInspectionTaskServiceTest {
       vmApi = mock(VmApi.class);
       doReturn(vmApi).when(apiClient).getVmApi();
 
-      cloudStoreMachine = com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.create(1);
+      cloudStoreMachine = com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment.create(1);
       CloudStoreHelper cloudStoreHelper = new CloudStoreHelper(cloudStoreMachine.getServerSet());
 
       machine = new TestEnvironment.Builder()

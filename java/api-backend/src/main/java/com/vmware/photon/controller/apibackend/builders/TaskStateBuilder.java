@@ -13,13 +13,13 @@
 
 package com.vmware.photon.controller.apibackend.builders;
 
-import com.vmware.photon.controller.cloudstore.dcp.entity.TaskService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.TaskService;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * This implements a builder for {@link com.vmware.photon.controller.cloudstore.dcp.entity.TaskService.State} object.
+ * This implements a builder for {@link com.vmware.photon.controller.cloudstore.xenon.entity.TaskService.State} object.
  */
 public class TaskStateBuilder {
 

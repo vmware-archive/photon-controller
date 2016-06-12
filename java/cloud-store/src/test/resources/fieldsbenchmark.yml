@@ -29,7 +29,7 @@ TaskService:
   queuedTime: java.util.Date
   resourceProperties: java.lang.String
   entityId: java.lang.String
-  state: com.vmware.esxcloud.cloudstore.dcp.entity.TaskService.State.TaskState
+  state: com.vmware.esxcloud.cloudstore.xenon.entity.TaskService.State.TaskState
   endTime: java.util.Date
   projectId: java.lang.String
   operation: java.lang.String

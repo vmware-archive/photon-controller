@@ -22,8 +22,8 @@ import com.vmware.photon.controller.apibackend.tasks.DeleteLogicalPortsTaskServi
 import com.vmware.photon.controller.apibackend.tasks.DeleteLogicalRouterTaskService;
 import com.vmware.photon.controller.apibackend.tasks.DeleteLogicalSwitchTaskService;
 import com.vmware.photon.controller.apibackend.utils.ServiceHostUtils;
-import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.VirtualNetworkService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.VirtualNetworkService;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.OperationUtils;
 import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
@@ -162,7 +162,7 @@ public class DeleteVirtualNetworkWorkflowService extends BaseWorkflowService<Del
   }
 
   /**
-   * Gets NSX configuration from {@link com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService.State}
+   * Gets NSX configuration from {@link com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService.State}
    * entity in cloud-store, and save the configuration in the document of the workflow service.
    */
   private void getNsxConfiguration(DeleteVirtualNetworkWorkflowDocument state) {
@@ -238,7 +238,7 @@ public class DeleteVirtualNetworkWorkflowService extends BaseWorkflowService<Del
   }
 
   /**
-   * Gets NSX configuration from {@link com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService.State}
+   * Gets NSX configuration from {@link com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService.State}
    * entity in cloud-store, and saves the configuration in the document of the workflow service.
    */
   private void getNsxConfiguration(DeleteVirtualNetworkWorkflowDocument state, String deploymentServiceStateLink) {
@@ -352,7 +352,7 @@ public class DeleteVirtualNetworkWorkflowService extends BaseWorkflowService<Del
   }
 
   /**
-   * Gets a VirtualNetworkService.State from {@link com.vmware.photon.controller.cloudstore.dcp.entity
+   * Gets a VirtualNetworkService.State from {@link com.vmware.photon.controller.cloudstore.xenon.entity
    * .VirtualNetworkService.State} entity in cloud-store.
    */
   private void getVirtualNetwork(DeleteVirtualNetworkWorkflowDocument state, Operation operation) {
@@ -371,7 +371,7 @@ public class DeleteVirtualNetworkWorkflowService extends BaseWorkflowService<Del
   }
 
   /**
-   * Updates a VirtualNetworkService.State from {@link com.vmware.photon.controller.cloudstore.dcp.entity
+   * Updates a VirtualNetworkService.State from {@link com.vmware.photon.controller.cloudstore.xenon.entity
    * .VirtualNetworkService.State} entity in cloud-store.
    */
   private void updateVirtualNetwork(DeleteVirtualNetworkWorkflowDocument state) {

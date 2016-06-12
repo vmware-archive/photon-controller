@@ -25,7 +25,7 @@ import com.vmware.photon.controller.client.ApiClient;
 import com.vmware.photon.controller.client.resource.DeploymentApi;
 import com.vmware.photon.controller.client.resource.TasksApi;
 import com.vmware.photon.controller.client.resource.VmApi;
-import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
@@ -526,8 +526,8 @@ public class InitializeDeploymentMigrationWorkflowServiceTest {
 
     private TestEnvironment sourceEnvironment;
     private TestEnvironment destinationEnvironment;
-    private com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment sourceCloudStore;
-    private com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment destinationCloudStore;
+    private com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment sourceCloudStore;
+    private com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment destinationCloudStore;
     private ListeningExecutorService listeningExecutorService;
     private ApiClientFactory apiClientFactory;
     private HttpFileServiceClientFactory httpFileServiceClientFactory;
@@ -543,8 +543,8 @@ public class InitializeDeploymentMigrationWorkflowServiceTest {
       startState.controlFlags = null;
       startState.taskPollDelay = 10;
 
-      sourceCloudStore = com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.create(1);
-      destinationCloudStore = com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.create(1);
+      sourceCloudStore = com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment.create(1);
+      destinationCloudStore = com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment.create(1);
 
       FileUtils.deleteDirectory(storageDirectory);
       vibDirectory.mkdirs();

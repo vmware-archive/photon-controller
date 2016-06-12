@@ -17,9 +17,9 @@ import com.vmware.photon.controller.agent.gen.AgentStatusCode;
 import com.vmware.photon.controller.agent.gen.ProvisionResultCode;
 import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.UsageTag;
-import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.DatastoreService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.HostService;
 import com.vmware.photon.controller.common.clients.AgentControlClient;
 import com.vmware.photon.controller.common.clients.AgentControlClientFactory;
 import com.vmware.photon.controller.common.clients.HostClient;
@@ -345,7 +345,7 @@ public class ProvisionHostTaskServiceTest {
 
     private AgentControlClient agentControlClient;
     private AgentControlClientFactory agentControlClientFactory;
-    private com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment cloudStoreEnvironment;
+    private com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment cloudStoreEnvironment;
     private DeployerContext deployerContext;
     private DeploymentService.State deploymentState;
     private FabricApi fabricApi;
@@ -378,7 +378,7 @@ public class ProvisionHostTaskServiceTest {
       listeningExecutorService = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(1));
       nsxClientFactory = mock(NsxClientFactory.class);
 
-      cloudStoreEnvironment = new com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.Builder()
+      cloudStoreEnvironment = new com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment.Builder()
           .hostClientFactory(hostClientFactory)
           .build();
 

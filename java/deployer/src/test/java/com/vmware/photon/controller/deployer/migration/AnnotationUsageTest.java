@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.deployer.migration;
 
-import com.vmware.photon.controller.cloudstore.dcp.CloudStoreServiceGroup;
+import com.vmware.photon.controller.cloudstore.xenon.CloudStoreServiceGroup;
 import com.vmware.photon.controller.common.xenon.deployment.MigrateDuringDeployment;
 import com.vmware.photon.controller.common.xenon.deployment.NoMigrationDuringDeployment;
 import com.vmware.photon.controller.common.xenon.migration.MigrateDuringUpgrade;

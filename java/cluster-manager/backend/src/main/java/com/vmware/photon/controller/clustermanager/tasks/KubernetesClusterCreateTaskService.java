@@ -13,8 +13,8 @@
 package com.vmware.photon.controller.clustermanager.tasks;
 
 import com.vmware.photon.controller.api.ClusterState;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ClusterService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ClusterServiceFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ClusterService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ClusterServiceFactory;
 import com.vmware.photon.controller.clustermanager.rolloutplans.BasicNodeRollout;
 import com.vmware.photon.controller.clustermanager.rolloutplans.NodeRollout;
 import com.vmware.photon.controller.clustermanager.rolloutplans.NodeRolloutInput;

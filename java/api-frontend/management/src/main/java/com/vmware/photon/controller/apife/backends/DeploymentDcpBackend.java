@@ -48,10 +48,10 @@ import com.vmware.photon.controller.apife.exceptions.external.DeploymentNotFound
 import com.vmware.photon.controller.apife.exceptions.external.InvalidAuthConfigException;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidImageDatastoreSetException;
 import com.vmware.photon.controller.apife.exceptions.external.NoManagementHostException;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ClusterConfigurationService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ClusterConfigurationServiceFactory;
-import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentServiceFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ClusterConfigurationService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ClusterConfigurationServiceFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentServiceFactory;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfig;

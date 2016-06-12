@@ -13,7 +13,7 @@
 package com.vmware.photon.controller.apibackend.helpers;
 
 import com.vmware.photon.controller.apibackend.ApiBackendFactory;
-import com.vmware.photon.controller.cloudstore.dcp.CloudStoreServiceGroup;
+import com.vmware.photon.controller.cloudstore.xenon.CloudStoreServiceGroup;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.common.xenon.BasicServiceHost;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelper;

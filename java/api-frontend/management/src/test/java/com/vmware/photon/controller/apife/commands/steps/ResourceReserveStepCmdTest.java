@@ -49,7 +49,7 @@ import com.vmware.photon.controller.apife.exceptions.external.NotEnoughDatastore
 import com.vmware.photon.controller.apife.exceptions.external.NotEnoughMemoryResourceException;
 import com.vmware.photon.controller.apife.exceptions.external.UnfulfillableAffinitiesException;
 import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
-import com.vmware.photon.controller.cloudstore.dcp.entity.VirtualNetworkService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.VirtualNetworkService;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.exceptions.InvalidAgentStateException;
 import com.vmware.photon.controller.common.clients.exceptions.StaleGenerationException;

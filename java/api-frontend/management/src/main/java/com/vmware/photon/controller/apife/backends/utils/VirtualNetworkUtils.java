@@ -14,7 +14,7 @@
 package com.vmware.photon.controller.apife.backends.utils;
 
 import com.vmware.photon.controller.api.VirtualNetwork;
-import com.vmware.photon.controller.cloudstore.dcp.entity.VirtualNetworkService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.VirtualNetworkService;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 
 /**

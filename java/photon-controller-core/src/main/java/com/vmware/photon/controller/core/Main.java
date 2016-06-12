@@ -14,7 +14,7 @@
 package com.vmware.photon.controller.core;
 
 import com.vmware.photon.controller.cloudstore.CloudStoreConfig;
-import com.vmware.photon.controller.cloudstore.dcp.CloudStoreServiceGroup;
+import com.vmware.photon.controller.cloudstore.xenon.CloudStoreServiceGroup;
 import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.clients.AgentControlClientFactory;
 import com.vmware.photon.controller.common.clients.HostClientFactory;

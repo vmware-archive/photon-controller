@@ -47,7 +47,7 @@ import com.vmware.photon.controller.apife.exceptions.external.NetworkNotFoundExc
 import com.vmware.photon.controller.apife.exceptions.external.StepNotFoundException;
 import com.vmware.photon.controller.apife.exceptions.external.UnfulfillableAffinitiesException;
 import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
-import com.vmware.photon.controller.cloudstore.dcp.entity.VirtualNetworkService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.VirtualNetworkService;
 import com.vmware.photon.controller.common.clients.SchedulerErrorCodeToExceptionMapper;
 import com.vmware.photon.controller.common.clients.exceptions.InvalidAgentStateException;
 import com.vmware.photon.controller.common.clients.exceptions.InvalidSchedulerException;

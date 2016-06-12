@@ -29,10 +29,10 @@ import com.vmware.photon.controller.apife.entities.FlavorEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.exceptions.external.FlavorNotFoundException;
 import com.vmware.photon.controller.apife.exceptions.external.NameTakenException;
-import com.vmware.photon.controller.cloudstore.dcp.entity.DiskService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.DiskServiceFactory;
-import com.vmware.photon.controller.cloudstore.dcp.entity.FlavorService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.FlavorServiceFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.DiskService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.DiskServiceFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.FlavorService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.FlavorServiceFactory;
 import com.vmware.photon.controller.common.xenon.BasicServiceHost;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 

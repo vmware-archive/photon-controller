@@ -26,13 +26,13 @@ import com.vmware.photon.controller.client.ApiClient;
 import com.vmware.photon.controller.client.resource.DeploymentApi;
 import com.vmware.photon.controller.client.resource.TasksApi;
 import com.vmware.photon.controller.client.resource.VmApi;
-import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.FlavorService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.NetworkService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.TaskService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.DatastoreService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.FlavorService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.HostService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ImageService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.NetworkService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.TaskService;
 import com.vmware.photon.controller.cloudstore.xenon.upgrade.HostTransformationService;
 import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.clients.AgentControlClientFactory;
@@ -732,8 +732,8 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
 
     private TestEnvironment sourceEnvironment;
     private TestEnvironment destinationEnvironment;
-    private com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment sourceCloudStore;
-    private com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment destinationCloudStore;
+    private com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment sourceCloudStore;
+    private com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment destinationCloudStore;
     private DeployerConfig deployerConfig;
     private DeployerContext deployerContext;
     private ListeningExecutorService listeningExecutorService;
@@ -805,8 +805,8 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
 
       ZookeeperClientFactory sourceZKFactory = mock(ZookeeperClientFactory.class);
       ZookeeperClientFactory destinationZKFactory = mock(ZookeeperClientFactory.class);
-      sourceCloudStore = com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.create(1);
-      destinationCloudStore = com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment.create(1);
+      sourceCloudStore = com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment.create(1);
+      destinationCloudStore = com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment.create(1);
 
       sourceEnvironment = new TestEnvironment.Builder()
           .deployerContext(deployerContext)
@@ -1040,7 +1040,7 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
     }
 
     private Set<String> getDocuments(Class<?> kindClass,
-                                     com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment cloudStore)
+                                     com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment cloudStore)
         throws Throwable {
 
       QueryTask.Query kindClause = new QueryTask.Query()

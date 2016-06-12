@@ -29,8 +29,8 @@ import com.vmware.photon.controller.apife.exceptions.external.InvalidNetworkStat
 import com.vmware.photon.controller.apife.exceptions.external.NetworkNotFoundException;
 import com.vmware.photon.controller.apife.exceptions.external.PortGroupsAlreadyAddedToNetworkException;
 import com.vmware.photon.controller.apife.utils.PaginationUtils;
-import com.vmware.photon.controller.cloudstore.dcp.entity.NetworkService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.NetworkServiceFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.NetworkService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.NetworkServiceFactory;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
 import com.vmware.xenon.common.ServiceDocumentQueryResult;

@@ -24,10 +24,10 @@ import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredEx
 import com.vmware.photon.controller.apife.exceptions.external.ClusterNotFoundException;
 import com.vmware.photon.controller.apife.exceptions.external.SpecInvalidException;
 import com.vmware.photon.controller.apife.utils.PaginationUtils;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ClusterConfigurationService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ClusterConfigurationServiceFactory;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ClusterService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ClusterServiceFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ClusterConfigurationService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ClusterConfigurationServiceFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ClusterService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ClusterServiceFactory;
 import com.vmware.photon.controller.clustermanager.servicedocuments.ClusterDeleteTask;
 import com.vmware.photon.controller.clustermanager.servicedocuments.ClusterManagerConstants;
 import com.vmware.photon.controller.clustermanager.servicedocuments.ClusterResizeTask;

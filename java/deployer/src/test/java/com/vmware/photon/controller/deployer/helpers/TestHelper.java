@@ -21,18 +21,18 @@ import com.vmware.photon.controller.api.ImageState;
 import com.vmware.photon.controller.api.StatsStoreType;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.UsageTag;
-import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.DatastoreServiceFactory;
-import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.DeploymentServiceFactory;
-import com.vmware.photon.controller.cloudstore.dcp.entity.HostService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.HostServiceFactory;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ImageService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ImageServiceFactory;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ResourceTicketService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.ResourceTicketServiceFactory;
-import com.vmware.photon.controller.cloudstore.dcp.entity.TenantService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.TenantServiceFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.DatastoreService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.DatastoreServiceFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentServiceFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.HostService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.HostServiceFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ImageService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ImageServiceFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ResourceTicketService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ResourceTicketServiceFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.TenantService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.TenantServiceFactory;
 import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.xenon.MultiHostEnvironment;
 import com.vmware.photon.controller.deployer.DeployerConfig;
@@ -303,13 +303,13 @@ public class TestHelper {
   }
 
   public static DeploymentService.State createDeploymentService(
-      com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment testEnvironment) throws
+      com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment testEnvironment) throws
       Throwable {
     return createDeploymentService(testEnvironment, false, false);
   }
 
   public static DeploymentService.State createDeploymentService(
-      com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment testEnvironment,
+      com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment testEnvironment,
       boolean isAuthEnabled,
       boolean isVirtualNetworkEnabled) throws Throwable {
     return createDeploymentService(testEnvironment,
@@ -317,7 +317,7 @@ public class TestHelper {
   }
 
   public static DeploymentService.State createDeploymentService(
-      com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment testEnvironment,
+      com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment testEnvironment,
       DeploymentService.State startState) throws Throwable {
 
     return testEnvironment.callServiceSynchronously(
@@ -327,7 +327,7 @@ public class TestHelper {
   }
 
   public static DatastoreService.State createDatastoreService(
-      com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment testEnvironment,
+      com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment testEnvironment,
       DatastoreService.State startState) throws Throwable {
 
     return testEnvironment.callServiceSynchronously(
@@ -337,19 +337,19 @@ public class TestHelper {
   }
 
   public static HostService.State createHostService(
-      com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment testEnvironment, UsageTag usageTag)
+      com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment testEnvironment, UsageTag usageTag)
       throws Throwable {
     return createHostService(testEnvironment, Collections.singleton(usageTag.name()));
   }
 
   public static HostService.State createHostService(
-      com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment testEnvironment, Set<String> usageTags)
+      com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment testEnvironment, Set<String> usageTags)
       throws Throwable {
     return createHostService(testEnvironment, usageTags, HostState.READY);
   }
 
   public static HostService.State createHostService(
-      com.vmware.photon.controller.cloudstore.dcp.helpers.TestEnvironment testEnvironment, Set<String> usageTags,
+      com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment testEnvironment, Set<String> usageTags,
       HostState state) throws Throwable {
     return createHostService(testEnvironment, getHostServiceStartState(usageTags, state));
   }

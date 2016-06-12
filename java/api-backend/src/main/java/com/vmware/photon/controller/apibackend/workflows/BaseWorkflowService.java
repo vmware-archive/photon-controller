@@ -15,7 +15,7 @@ package com.vmware.photon.controller.apibackend.workflows;
 
 import com.vmware.photon.controller.apibackend.utils.ServiceDocumentUtils;
 import com.vmware.photon.controller.apibackend.utils.TaskServiceUtils;
-import com.vmware.photon.controller.cloudstore.dcp.entity.TaskService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.TaskService;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;

@@ -15,8 +15,8 @@ package com.vmware.photon.controller.apife.backends;
 
 import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.entities.TombstoneEntity;
-import com.vmware.photon.controller.cloudstore.dcp.entity.TombstoneService;
-import com.vmware.photon.controller.cloudstore.dcp.entity.TombstoneServiceFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.TombstoneService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.TombstoneServiceFactory;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Utils;
