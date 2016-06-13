@@ -702,7 +702,7 @@ public class ImageSeederServiceTest {
     @BeforeMethod
     public void setup() throws Throwable {
       host = TestHost.create(mock(HostClient.class), null);
-      service = spy(new ImageSeederService());
+      service = new ImageSeederService();
 
       hostClientFactory = mock(HostClientFactory.class);
       cloudStoreHelper = new CloudStoreHelper();
