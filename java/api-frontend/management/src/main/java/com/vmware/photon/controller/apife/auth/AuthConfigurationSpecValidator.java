@@ -50,9 +50,9 @@ public class AuthConfigurationSpecValidator {
 
   private static String getErrorMessage(Set<ConstraintViolation<AuthConfigurationSpec>> violations) {
     List<String> errors = new ArrayList<>();
+    // NOTE: Does not print the invalid value as it could contain usernames or passwords.
     for (ConstraintViolation<AuthConfigurationSpec> violation : violations) {
-      String error = String.format("%s %s (was %s)", violation.getPropertyPath(), violation.getMessage(),
-          violation.getInvalidValue());
+      String error = String.format("%s %s", violation.getPropertyPath(), violation.getMessage());
       errors.add(error);
     }
     return errors.toString();

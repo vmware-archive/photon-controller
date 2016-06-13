@@ -68,8 +68,8 @@ public class AuthConfigurationSpecValidatorTest {
             .securityGroups(Arrays.asList(new String[]{"adminGroup1"}))
             .build(),
             Arrays.asList(
-                "tenant may not be null (was null)",
-                "password may not be null (was null)")
+                "tenant may not be null",
+                "password may not be null")
             },
         {new AuthConfigurationSpecBuilder()
             .enabled(false)
@@ -78,8 +78,8 @@ public class AuthConfigurationSpecValidatorTest {
             .securityGroups(null)
             .build(),
             Arrays.asList(
-                "tenant must be null (was t)",
-                "password must be null (was p)")
+                "tenant must be null",
+                "password must be null")
         }
     };
   }
@@ -104,7 +104,7 @@ public class AuthConfigurationSpecValidatorTest {
             .password("p")
             .securityGroups(Arrays.asList(new String[0]))
             .build(),
-            "securityGroups size must be between 1 and 2147483647 (was [])"},
+            "securityGroups size must be between 1 and 2147483647"},
         {new AuthConfigurationSpecBuilder()
             .enabled(true)
             .tenant("t")
