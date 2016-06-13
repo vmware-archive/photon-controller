@@ -36,8 +36,6 @@ import com.vmware.photon.controller.rootscheduler.service.ConstraintChecker;
 import com.vmware.photon.controller.rootscheduler.xenon.SchedulerServiceGroup;
 import com.vmware.xenon.common.ServiceHost;
 
-import com.google.inject.Guice;
-import com.google.inject.Injector;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.Namespace;
@@ -78,12 +76,12 @@ public class Main {
     // the zk config info is currently taken from the cloud store config but this is temporary as
     // zookeeper usage is going away so this will all be removed.
     final ZookeeperModule zkModule = new ZookeeperModule(cloudStoreConfig.getZookeeper());
-    ThriftModule thriftModule = new ThriftModule();
+    final ThriftModule thriftModule = new ThriftModule();
 
     ServiceHost xenonHost = startXenonHost(photonControllerConfig, zkModule, thriftModule);
 
     // Housekeeper holds on to the thread on start (for thrift) so start it last
-    ServiceHost housekeeperHost = startHousekeeper(housekeeperConfig, zkModule);
+    ServiceHost housekeeperHost = startHousekeeper(housekeeperConfig, zkModule, thriftModule);
 
     Runtime.getRuntime().addShutdownHook(new Thread() {
       @Override
@@ -160,16 +158,12 @@ public class Main {
     return photonControllerXenonHost;
   }
 
-  private static ServiceHost startHousekeeper(HousekeeperConfig housekeeperConfig, ZookeeperModule zkModule)
-          throws Throwable {
+  private static ServiceHost startHousekeeper(HousekeeperConfig housekeeperConfig, ZookeeperModule zkModule,
+                                              ThriftModule thriftModule) throws Throwable {
     final CuratorFramework zkClient = zkModule.getCuratorFramework();
     ServerSet cloudStoreServerSet = zkModule.getZookeeperServerSet(zkClient, Constants.CLOUDSTORE_SERVICE_NAME, true);
     final ServiceConfigFactory serviceConfigFactory = zkModule.getServiceConfigFactory(zkClient);
 
-    Injector injector = Guice.createInjector(
-        new ThriftModule()
-    );
-    final ThriftModule thriftModule = injector.getInstance(ThriftModule.class);
     final HostClientFactory hostClientFactory = thriftModule.getHostClientFactory();
 
     final CloudStoreHelper cloudStoreHelper = new CloudStoreHelper(cloudStoreServerSet);
@@ -179,6 +173,7 @@ public class Main {
     final HousekeeperXenonServiceHost housekeeperXenonHost = new HousekeeperXenonServiceHost(
             housekeeperConfig.getXenonConfig(), cloudStoreHelper, hostClientFactory, serviceConfigFactory,
             nsxClientFactory);
+    logger.info("Created Housekeeper Xenon Host");
 
     String housekeeperXenonAddress = housekeeperConfig.getXenonConfig().getRegistrationAddress();
     Integer housekeeperXenonPort = housekeeperConfig.getXenonConfig().getPort();
@@ -188,9 +183,6 @@ public class Main {
     registerServiceWithZookeeper(Constants.HOUSEKEEPER_SERVICE_NAME, zkModule, zkClient,
         housekeeperXenonAddress, housekeeperXenonPort);
     logger.info("Registered Housekeeper Xenon Host with Zookeeper");
-
-    ServerSet housekeeperServerSet = zkModule.getZookeeperServerSet(zkClient, Constants.HOUSEKEEPER_SERVICE_NAME, true);
-    logger.info("Created Housekeeper Xenon Host");
 
     logger.info("Starting Housekeeper Xenon Host");
     housekeeperXenonHost.start();
