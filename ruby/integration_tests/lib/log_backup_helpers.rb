@@ -64,6 +64,30 @@ module EsxCloud
          end
        end
 
+       def verify_logs
+         service_log_folder = File.join(ENV["WORKSPACE"], "devbox-photon", "log")
+
+         sensitive_info_regex = /username|password/i
+         white_list_regex = ["password must be null", "password may not be null"]
+         regex = /#{white_list_regex.map{ |w| Regexp.escape(w) }.join('|')}/i
+
+         matches = Array.new
+         Dir.glob("#{service_log_folder}/**/*.log") do |log_file|
+           # Checks each line in the file if it matches sensitive_info_regex, but not part of white_list_regex
+           File.foreach(log_file) do |line|
+             if line =~ sensitive_info_regex
+               if line !~ regex
+                 matches << line
+               end
+             end
+
+             if !matches.empty?
+               raise(log_file + " should not contain any usernames or passwords: \n" + matches.join())
+             end
+           end
+         end
+       end
+
        private
 
        # @param [String] host

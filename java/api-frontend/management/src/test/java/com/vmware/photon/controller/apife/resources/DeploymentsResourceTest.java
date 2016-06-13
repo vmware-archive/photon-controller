@@ -167,7 +167,7 @@ public class DeploymentsResourceTest extends ResourceTest {
     ApiError apiError = response.readEntity(ApiError.class);
     assertThat(apiError.getCode(), is("InvalidAuthConfig"));
     assertThat(apiError.getMessage(),
-        containsString("securityGroups size must be between 1 and 2147483647 (was [])"));
+        containsString("securityGroups size must be between 1 and 2147483647"));
   }
 
   @Test
