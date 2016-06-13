@@ -21,6 +21,7 @@ import com.vmware.photon.controller.api.FinalizeMigrationOperation;
 import com.vmware.photon.controller.api.InitializeMigrationOperation;
 import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
+import com.vmware.photon.controller.api.common.exceptions.external.ErrorCode;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.clients.DeploymentFeClient;
 import com.vmware.photon.controller.apife.exceptions.external.ClusterTypeNotConfiguredException;
@@ -29,7 +30,6 @@ import com.vmware.photon.controller.apife.resources.routes.DeploymentResourceRou
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
 import static com.vmware.photon.controller.api.common.Responses.generateCustomResponse;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Inject;
 import com.wordnik.swagger.annotations.Api;
@@ -108,11 +108,16 @@ public class DeploymentResource {
   })
   public Response performDeployment(@Context Request request,
                                     @PathParam("id") String id,
-                                    @Validated String config)
+                                    @Validated DeploymentDeployOperation config)
       throws InternalException, ExternalException {
+    if ( config == null ) {
+        config = new DeploymentDeployOperation();
+    } else {
+        validateDeploymentDeployOperation(config);
+    }
     return generateCustomResponse(
         Response.Status.CREATED,
-        client.perform(id, parseDeployConfig(config)),
+        client.perform(id, config),
         (ContainerRequest) request,
         TaskResourceRoutes.TASK_PATH);
   }
@@ -264,27 +269,22 @@ public class DeploymentResource {
         TaskResourceRoutes.TASK_PATH);
   }
 
-  private DeploymentDeployOperation parseDeployConfig(String operation) throws ExternalException {
-    if (operation.isEmpty()) {
-      return new DeploymentDeployOperation();
-    }
-
+  private void validateDeploymentDeployOperation(DeploymentDeployOperation operation) throws ExternalException {
     try {
-      DeploymentDeployOperation deploymentDeployOperation = objectMapper.readValue(operation,
-          new TypeReference<DeploymentDeployOperation>() {
-          });
-      switch (deploymentDeployOperation.getDesiredState()) {
+      switch (operation.getDesiredState()) {
         case PAUSED:
         case BACKGROUND_PAUSED:
         case READY:
-          return deploymentDeployOperation;
+          return;
         default:
           throw new IllegalArgumentException("Invalid desiredState value");
       }
     } catch (Exception ex) {
-      logger.error("Unexpected error desirializing {}", operation, ex);
-      throw new ExternalException(String.format("Desired state %s is invalid for performing deployment.",
-          operation));
+          logger.error("Unexpected error desirializing {}", operation, ex);
+          throw new ExternalException(
+                  ErrorCode.INVALID_DEPLOYMENT_DESIRED_STATE,
+                  String.format("Desired state %s is invalid for performing deployment.", operation),
+                  null);
     }
   }
 }
