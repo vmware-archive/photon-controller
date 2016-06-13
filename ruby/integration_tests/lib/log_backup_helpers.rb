@@ -64,6 +64,17 @@ module EsxCloud
          end
        end
 
+       def verify_logs
+         service_log_folder = File.join(ENV["WORKSPACE"], "devbox-photon", "log")
+         sensitive_info_regex = /username|password|ca\$hc0w/i
+         Dir.glob("#{service_log_folder}/**/*.log") do |log_file|
+           matches = File.foreach(log_file).grep sensitive_info_regex
+           if !matches.empty?
+             raise("Log file should not contain any usernames or passwords.")
+           end
+         end
+       end
+
        private
 
        # @param [String] host
