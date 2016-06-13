@@ -31,6 +31,7 @@ import org.apache.http.impl.DefaultHttpResponseFactory;
 import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
 import org.apache.http.protocol.BasicHttpContext;
 import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -522,6 +523,95 @@ public class NsxClientApiBaseTest extends NsxClientApi {
           }
       );
       latch.await();
+    }
+  }
+
+  /**
+   * Tests for methods of async check existence to NSX.
+   */
+  public static class AsyncCheckExistenceTest {
+    private CloseableHttpAsyncClient asyncClient;
+    private RestClient restClient;
+    private Future<HttpResponse> httpResponseFuture;
+    private CountDownLatch latch;
+
+    @BeforeMethod
+    public void setup() throws IOException {
+      httpResponseFuture = mock(FutureTask.class);
+      asyncClient = mock(CloseableHttpAsyncClient.class);
+      restClient = spy(new RestClient("target", "username", "password", asyncClient));
+      latch = new CountDownLatch(1);
+
+      doAnswer(invocation -> null).when(asyncClient).close();
+    }
+
+    @Test(dataProvider = "existenceData")
+    public void testAsyncCheckExistenceSuccessful(int httpStatus, Boolean expectedStatus) throws Exception {
+      HttpResponseFactory factory = new DefaultHttpResponseFactory();
+      HttpResponse httpResponse = factory.newHttpResponse(HttpVersion.HTTP_1_1, httpStatus, null);
+
+      doAnswer(invocation -> {
+        if (invocation.getArguments()[CALLBACK_ARG_INDEX] != null) {
+          ((FutureCallback<HttpResponse>) invocation.getArguments()[CALLBACK_ARG_INDEX]).completed(httpResponse);
+        }
+        return httpResponseFuture;
+      }).when(asyncClient).execute(any(HttpUriRequest.class), any(BasicHttpContext.class), any(FutureCallback.class));
+
+      NsxClientApiBaseTest nsxClientApi = new NsxClientApiBaseTest(restClient);
+      nsxClientApi.checkExistenceAsync("target",
+          new com.google.common.util.concurrent.FutureCallback<Boolean>() {
+            @Override
+            public void onSuccess(Boolean result) {
+              assertThat(result, is(expectedStatus));
+              latch.countDown();
+            }
+
+            @Override
+            public void onFailure(Throwable t) {
+              fail("Should not have failed");
+            }
+          }
+      );
+      latch.await();
+    }
+
+    @Test
+    public void testAsyncCheckExistenceFailed() throws Exception {
+      final String errorMsg = "Not Found";
+      doAnswer(invocation -> {
+        if (invocation.getArguments()[CALLBACK_ARG_INDEX] != null) {
+          ((FutureCallback<HttpResponse>) invocation.getArguments()[CALLBACK_ARG_INDEX])
+              .failed(new Exception(errorMsg));
+        }
+        return httpResponseFuture;
+      }).when(asyncClient).execute(any(HttpUriRequest.class), any(BasicHttpContext.class), any(FutureCallback.class));
+
+      NsxClientApiBaseTest nsxClientApi = new NsxClientApiBaseTest(restClient);
+      nsxClientApi.checkExistenceAsync("target",
+          new com.google.common.util.concurrent.FutureCallback<Boolean>() {
+            @Override
+            public void onSuccess(Boolean result) {
+              fail("Should not have succeeded");
+              latch.countDown();
+            }
+
+            @Override
+            public void onFailure(Throwable t) {
+              assertThat(t.getMessage(), is(errorMsg));
+              latch.countDown();
+            }
+          }
+      );
+      latch.await();
+    }
+
+    @DataProvider(name = "existenceData")
+    public Object[][] getExistenceData() {
+      return new Object[][]{
+        {HttpStatus.SC_OK, true},
+        {HttpStatus.SC_CREATED, true},
+        {HttpStatus.SC_NOT_FOUND, false}
+      };
     }
   }
 }
