@@ -24,8 +24,8 @@ import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.exceptions.external.DuplicateHostException;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
-import com.vmware.photon.controller.deployer.dcp.task.ValidateHostTaskFactoryService;
-import com.vmware.photon.controller.deployer.dcp.task.ValidateHostTaskService;
+import com.vmware.photon.controller.deployer.xenon.task.ValidateHostTaskFactoryService;
+import com.vmware.photon.controller.deployer.xenon.task.ValidateHostTaskService;
 import com.vmware.xenon.common.ServiceErrorResponse;
 import com.vmware.xenon.common.TaskState;
 

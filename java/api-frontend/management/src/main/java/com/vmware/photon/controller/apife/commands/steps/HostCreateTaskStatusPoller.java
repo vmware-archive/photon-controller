@@ -27,7 +27,7 @@ import com.vmware.photon.controller.apife.exceptions.external.DuplicateHostExcep
 import com.vmware.photon.controller.apife.exceptions.external.InvalidLoginException;
 import com.vmware.photon.controller.apife.exceptions.external.IpAddressInUseException;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
-import com.vmware.photon.controller.deployer.dcp.task.ValidateHostTaskService;
+import com.vmware.photon.controller.deployer.xenon.task.ValidateHostTaskService;
 import com.vmware.xenon.common.TaskState;
 
 import org.slf4j.Logger;

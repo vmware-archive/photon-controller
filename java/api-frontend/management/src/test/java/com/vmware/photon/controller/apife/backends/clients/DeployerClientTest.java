@@ -18,7 +18,7 @@ import com.vmware.photon.controller.apife.entities.HostEntity;
 import com.vmware.photon.controller.apife.exceptions.external.SpecInvalidException;
 import com.vmware.photon.controller.apife.lib.UsageTagHelper;
 import com.vmware.photon.controller.cloudstore.xenon.entity.HostService;
-import com.vmware.photon.controller.deployer.dcp.task.ValidateHostTaskService;
+import com.vmware.photon.controller.deployer.xenon.task.ValidateHostTaskService;
 import com.vmware.xenon.common.Operation;
 
 import org.mockito.Mock;

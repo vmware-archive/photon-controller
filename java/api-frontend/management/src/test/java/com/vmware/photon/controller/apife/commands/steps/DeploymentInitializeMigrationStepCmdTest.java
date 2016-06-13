@@ -20,8 +20,8 @@ import com.vmware.photon.controller.apife.entities.DeploymentEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
-import com.vmware.photon.controller.deployer.dcp.workflow.InitializeDeploymentMigrationWorkflowFactoryService;
-import com.vmware.photon.controller.deployer.dcp.workflow.InitializeDeploymentMigrationWorkflowService;
+import com.vmware.photon.controller.deployer.xenon.workflow.InitializeDeploymentMigrationWorkflowFactoryService;
+import com.vmware.photon.controller.deployer.xenon.workflow.InitializeDeploymentMigrationWorkflowService;
 
 import com.google.common.collect.ImmutableList;
 import org.mockito.InOrder;

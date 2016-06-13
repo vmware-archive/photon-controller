@@ -27,7 +27,7 @@ import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.exceptions.external.DeleteDeploymentFailedException;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
-import com.vmware.photon.controller.deployer.dcp.workflow.RemoveDeploymentWorkflowService;
+import com.vmware.photon.controller.deployer.xenon.workflow.RemoveDeploymentWorkflowService;
 import com.vmware.xenon.common.TaskState;
 
 import com.google.common.annotations.VisibleForTesting;

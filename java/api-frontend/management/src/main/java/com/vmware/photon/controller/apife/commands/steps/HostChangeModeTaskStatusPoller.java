@@ -25,7 +25,7 @@ import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.exceptions.external.HostStateChangeException;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
-import com.vmware.photon.controller.deployer.dcp.task.ChangeHostModeTaskService;
+import com.vmware.photon.controller.deployer.xenon.task.ChangeHostModeTaskService;
 import com.vmware.xenon.common.TaskState;
 
 import java.util.List;

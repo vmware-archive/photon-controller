@@ -23,7 +23,7 @@ import com.vmware.photon.controller.apife.entities.HostEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.exceptions.external.HostHasVmsException;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
-import com.vmware.photon.controller.deployer.dcp.task.ChangeHostModeTaskService;
+import com.vmware.photon.controller.deployer.xenon.task.ChangeHostModeTaskService;
 
 import com.google.common.collect.Iterables;
 import org.slf4j.Logger;

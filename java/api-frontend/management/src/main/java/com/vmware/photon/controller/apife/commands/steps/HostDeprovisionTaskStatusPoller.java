@@ -25,7 +25,7 @@ import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.exceptions.external.HostDeprovisionFailedException;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
-import com.vmware.photon.controller.deployer.dcp.workflow.DeprovisionHostWorkflowService;
+import com.vmware.photon.controller.deployer.xenon.workflow.DeprovisionHostWorkflowService;
 import com.vmware.xenon.common.TaskState;
 
 import java.util.List;

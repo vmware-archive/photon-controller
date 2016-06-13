@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.deployer.healthcheck;
 
-import com.vmware.photon.controller.deployer.dcp.ContainersConfig;
+import com.vmware.photon.controller.deployer.xenon.ContainersConfig;
 import com.vmware.xenon.common.Service;
 
 /**

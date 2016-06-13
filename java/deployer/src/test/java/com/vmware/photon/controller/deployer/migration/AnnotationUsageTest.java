@@ -18,7 +18,7 @@ import com.vmware.photon.controller.common.xenon.deployment.MigrateDuringDeploym
 import com.vmware.photon.controller.common.xenon.deployment.NoMigrationDuringDeployment;
 import com.vmware.photon.controller.common.xenon.migration.MigrateDuringUpgrade;
 import com.vmware.photon.controller.common.xenon.migration.NoMigrationDuringUpgrade;
-import com.vmware.photon.controller.deployer.dcp.DeployerXenonServiceHost;
+import com.vmware.photon.controller.deployer.xenon.DeployerXenonServiceHost;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.UriUtils;
 

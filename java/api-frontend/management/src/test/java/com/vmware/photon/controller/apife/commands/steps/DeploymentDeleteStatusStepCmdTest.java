@@ -24,8 +24,8 @@ import com.vmware.photon.controller.apife.entities.DeploymentEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.exceptions.external.DeleteDeploymentFailedException;
-import com.vmware.photon.controller.deployer.dcp.workflow.DeploymentWorkflowFactoryService;
-import com.vmware.photon.controller.deployer.dcp.workflow.RemoveDeploymentWorkflowService;
+import com.vmware.photon.controller.deployer.xenon.workflow.DeploymentWorkflowFactoryService;
+import com.vmware.photon.controller.deployer.xenon.workflow.RemoveDeploymentWorkflowService;
 import com.vmware.xenon.common.ServiceErrorResponse;
 import com.vmware.xenon.common.TaskState;
 

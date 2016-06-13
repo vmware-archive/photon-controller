@@ -16,7 +16,7 @@ package com.vmware.photon.controller.deployer.healthcheck;
 import com.vmware.photon.controller.common.clients.StatusProvider;
 import com.vmware.photon.controller.common.thrift.ClientProxy;
 import com.vmware.photon.controller.common.thrift.MultiplexedProtocolFactory;
-import com.vmware.photon.controller.deployer.dcp.ContainersConfig;
+import com.vmware.photon.controller.deployer.xenon.ContainersConfig;
 import com.vmware.photon.controller.status.gen.Status;
 import com.vmware.photon.controller.status.gen.StatusType;
 

@@ -25,8 +25,8 @@ import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.lib.UsageTagHelper;
 import com.vmware.photon.controller.cloudstore.xenon.entity.HostServiceFactory;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
-import com.vmware.photon.controller.deployer.dcp.workflow.AddCloudHostWorkflowFactoryService;
-import com.vmware.photon.controller.deployer.dcp.workflow.AddCloudHostWorkflowService;
+import com.vmware.photon.controller.deployer.xenon.workflow.AddCloudHostWorkflowFactoryService;
+import com.vmware.photon.controller.deployer.xenon.workflow.AddCloudHostWorkflowService;
 
 import com.google.common.collect.ImmutableList;
 import org.mockito.InOrder;

@@ -28,7 +28,7 @@ import com.vmware.photon.controller.apife.exceptions.external.DeploymentMigratio
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
-import com.vmware.photon.controller.deployer.dcp.workflow.FinalizeDeploymentMigrationWorkflowService;
+import com.vmware.photon.controller.deployer.xenon.workflow.FinalizeDeploymentMigrationWorkflowService;
 import com.vmware.xenon.common.TaskState;
 
 import com.google.common.annotations.VisibleForTesting;

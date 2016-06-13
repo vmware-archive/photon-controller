@@ -27,8 +27,8 @@ import com.vmware.photon.controller.apife.exceptions.external.HostNotFoundExcept
 import com.vmware.photon.controller.apife.lib.UsageTagHelper;
 import com.vmware.photon.controller.cloudstore.xenon.entity.HostServiceFactory;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
-import com.vmware.photon.controller.deployer.dcp.workflow.AddCloudHostWorkflowService;
-import com.vmware.photon.controller.deployer.dcp.workflow.AddManagementHostWorkflowService;
+import com.vmware.photon.controller.deployer.xenon.workflow.AddCloudHostWorkflowService;
+import com.vmware.photon.controller.deployer.xenon.workflow.AddManagementHostWorkflowService;
 
 import com.google.common.base.Preconditions;
 import org.slf4j.Logger;

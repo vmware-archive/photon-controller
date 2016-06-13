@@ -28,7 +28,7 @@ import com.vmware.photon.controller.apife.exceptions.external.DeploymentFailedEx
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
-import com.vmware.photon.controller.deployer.dcp.workflow.DeploymentWorkflowService;
+import com.vmware.photon.controller.deployer.xenon.workflow.DeploymentWorkflowService;
 import com.vmware.xenon.common.TaskState;
 
 import com.google.common.annotations.VisibleForTesting;

@@ -25,7 +25,7 @@ import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.exceptions.external.HostProvisionFailedException;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
-import com.vmware.photon.controller.deployer.dcp.util.Pair;
+import com.vmware.photon.controller.deployer.xenon.util.Pair;
 import com.vmware.xenon.common.TaskState;
 
 import org.slf4j.Logger;

@@ -14,9 +14,9 @@
 package com.vmware.photon.controller.deployer.healthcheck;
 
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
-import com.vmware.photon.controller.deployer.dcp.ContainersConfig;
-import com.vmware.photon.controller.deployer.dcp.constant.ServicePortConstants;
-import com.vmware.photon.controller.deployer.dcp.util.HostUtils;
+import com.vmware.photon.controller.deployer.xenon.ContainersConfig;
+import com.vmware.photon.controller.deployer.xenon.constant.ServicePortConstants;
+import com.vmware.photon.controller.deployer.xenon.util.HostUtils;
 import com.vmware.xenon.common.Service;
 
 import java.util.ArrayList;
