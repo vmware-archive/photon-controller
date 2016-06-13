@@ -417,7 +417,7 @@ class AttacheVmConfigSpec(VmConfigSpec):
 class SyncAttacheCacheThread(threading.Thread):
     """ Periodically sync vm cache with remote esx server
     """
-    def __init__(self, attache_client, min_interval=20, errback=None):
+    def __init__(self, attache_client, min_interval=1, errback=None):
         super(SyncAttacheCacheThread, self).__init__()
         self._logger = logging.getLogger(__name__)
         self.setDaemon(True)
