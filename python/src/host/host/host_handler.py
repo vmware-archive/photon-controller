@@ -13,6 +13,7 @@
 """ Implements the interfaces that are defined in the thrift Host service."""
 
 import logging
+import os
 import sys
 import threading
 import uuid
@@ -103,6 +104,7 @@ from gen.scheduler.ttypes import Score
 from host.hypervisor.datastore_manager import DatastoreNotFoundException
 from host.hypervisor.esx.host_client import DeviceBusyException
 from host.hypervisor.esx.path_util import vmdk_path
+from host.hypervisor.esx.path_util import os_vmdk_path
 from host.hypervisor.esx.path_util import IMAGE_FOLDER_NAME_PREFIX
 from host.hypervisor.image_manager import DirectoryNotFound
 from host.hypervisor.image_manager import ImageNotFoundException
@@ -398,6 +400,13 @@ class HostHandler(Host.Iface):
                 if disk.image.clone_type != CloneType.COPY_ON_WRITE:
                     return CreateVmResponse(CreateVmResultCode.SYSTEM_ERROR, "Unexpected disk clone type")
 
+                parent_vmdk_os_path = os_vmdk_path(datastore_id, disk.image.id, IMAGE_FOLDER_NAME_PREFIX)
+                if not os.path.exists(parent_vmdk_os_path):
+                    self._logger.debug("longz.longz parent vmdk %s for vm %s does not exist" %
+                                       (parent_vmdk_os_path, vm.id))
+                    self._logger.debug("longz.longz image folder %s exist? %s" %
+                                       (os.path.dirname(parent_vmdk_os_path),
+                                        os.path.exists(os.path.dirname(parent_vmdk_os_path))))
                 parent_vmdk = vmdk_path(datastore_id, disk.image.id, IMAGE_FOLDER_NAME_PREFIX)
                 spec.create_child_disk(disk.id, parent_vmdk)
 
