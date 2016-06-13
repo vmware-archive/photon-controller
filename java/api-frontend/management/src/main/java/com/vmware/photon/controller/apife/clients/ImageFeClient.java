@@ -73,8 +73,9 @@ public class ImageFeClient {
     if (!hasReplicateImageStep) {
       return task;
     }
+
     // Run REPLICATE_IMAGE step asynchronously.
-    task = FeClientHelpers.runImageReplicateAsyncSteps(commandFactory, executor, taskBackend, taskEntity);
+    task = runImageReplicateAsyncSteps(commandFactory, executor, taskBackend, taskEntity);
     return task;
   }
 
@@ -105,6 +106,20 @@ public class ImageFeClient {
     TaskCommand command = commandFactory.create(taskEntity);
     logger.info("Run synchronous task steps for task: {} {}", taskEntity.getId(), taskEntity.getOperation());
     command.run();
+
+    Task task = taskBackend.getApiRepresentation(taskEntity.getId());
+    return task;
+  }
+
+  private static Task runImageReplicateAsyncSteps(
+      TaskCommandFactory commandFactory, ExecutorService executor,
+      TaskBackend taskBackend, TaskEntity taskEntity)
+      throws ExternalException {
+    taskEntity.findStep(Operation.REPLICATE_IMAGE).setDisabled(false);
+
+    TaskCommand command = commandFactory.create(taskEntity);
+    logger.info("Run asynchronous task steps for task: {} {}", taskEntity.getId(), taskEntity.getOperation());
+    executor.submit(command);
 
     Task task = taskBackend.getApiRepresentation(taskEntity.getId());
     return task;
