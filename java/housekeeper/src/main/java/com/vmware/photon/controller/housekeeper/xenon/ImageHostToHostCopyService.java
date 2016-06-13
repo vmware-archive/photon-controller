@@ -57,6 +57,7 @@ import static com.google.common.base.Preconditions.checkState;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
@@ -695,21 +696,37 @@ public class ImageHostToHostCopyService extends StatefulService {
       }
 
       try {
-        String host = getHostFromResponse(ops.get(sourceHostOp.getId()));
-        if (host == null) {
-          failTask(new Exception("No host found for source image " +
-              "datastore " + current.sourceDatastore));
-          return;
-        }
-        current.host = host;
+        NodeGroupBroadcastResponse sourceQueryResponse =
+            ops.get(sourceHostOp.getId()).getBody(NodeGroupBroadcastResponse.class);
+        List<HostService.State> sourceHosts = QueryTaskUtils
+            .getBroadcastQueryDocuments(HostService.State.class, sourceQueryResponse);
 
-        ServerAddress destinationHost = getHostServerAddressFromResponse(ops.get(destinationHostOp.getId()));
-        if (destinationHost == null) {
-          failTask(new Exception("No host found for destination image " +
-              "datastore " + current.destinationDatastore));
-          return;
+        NodeGroupBroadcastResponse destinationQueryResponse =
+            ops.get(destinationHostOp.getId()).getBody(NodeGroupBroadcastResponse.class);
+        List<HostService.State> destinationHosts = QueryTaskUtils
+            .getBroadcastQueryDocuments(HostService.State.class, destinationQueryResponse);
+
+        ServerAddress commonHost = getCommonHost(sourceHosts, destinationHosts);
+        if (commonHost == null) {
+          String host = getHostFromResponse(sourceHosts);
+          if (host == null) {
+            failTask(new Exception("No host found for source image " +
+                "datastore " + current.sourceDatastore));
+            return;
+          }
+          current.host = host;
+
+          ServerAddress destinationHost = getHostServerAddressFromResponse(destinationHosts);
+          if (destinationHost == null) {
+            failTask(new Exception("No host found for destination image " +
+                "datastore " + current.destinationDatastore));
+            return;
+          }
+          current.destinationHost = destinationHost;
+        } else {
+          current.host = commonHost.getHost();
+          current.destinationHost = commonHost;
         }
-        current.destinationHost = destinationHost;
 
         // Patch self with the host and data store information.
         if (!current.isSelfProgressionDisabled) {
@@ -731,13 +748,21 @@ public class ImageHostToHostCopyService extends StatefulService {
         .sendWith(this);
   }
 
-  private String getHostFromResponse(Operation operation) {
-    Set<String> hostSet = new HashSet<>();
+  private ServerAddress getCommonHost(List<HostService.State> sourceHosts, List<HostService.State> destinationHosts) {
+    List<HostService.State> common = new ArrayList<>(sourceHosts);
+    common.retainAll(destinationHosts);
+    Set<HostService.State> commonSet = new HashSet<>(common);
+    if (!common.isEmpty()) {
+      HostService.State state = ServiceUtils.selectRandomItem(commonSet);
+      return new ServerAddress(state.hostAddress, state.agentPort);
+    } else {
+      return null;
+    }
+  }
 
-    NodeGroupBroadcastResponse queryResponse = operation.getBody(NodeGroupBroadcastResponse.class);
-    List<HostService.State> documentLinks = QueryTaskUtils
-        .getBroadcastQueryDocuments(HostService.State.class, queryResponse);
-    for (HostService.State state : documentLinks) {
+  private String getHostFromResponse(List<HostService.State> hosts) {
+    Set<String> hostSet = new HashSet<>();
+    for (HostService.State state : hosts) {
       hostSet.add(state.hostAddress);
     }
 
@@ -748,13 +773,9 @@ public class ImageHostToHostCopyService extends StatefulService {
     return ServiceUtils.selectRandomItem(hostSet);
   }
 
-  private ServerAddress getHostServerAddressFromResponse(Operation operation) {
+  private ServerAddress getHostServerAddressFromResponse(List<HostService.State> hosts) {
     Set<ServerAddress> hostSet = new HashSet<>();
-
-    NodeGroupBroadcastResponse queryResponse = operation.getBody(NodeGroupBroadcastResponse.class);
-    List<HostService.State> documentLinks = QueryTaskUtils
-        .getBroadcastQueryDocuments(HostService.State.class, queryResponse);
-    for (HostService.State state : documentLinks) {
+    for (HostService.State state : hosts) {
       hostSet.add(new ServerAddress(state.hostAddress, state.agentPort));
     }
 
