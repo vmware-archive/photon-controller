@@ -16,6 +16,7 @@ module EsxCloud
     module CloudStore
       class DeploymentFactory
         FACTORY_SERVICE_LINK = "/photon/cloudstore/deployments"
+        DEPLOYMENT_SERVICE_DOC_KIND = "com:vmware:photon:controller:cloudstore:xenon:entity:DeploymentService:State"
 
         def self.ensure_exists(overrides = {})
           factory = DeploymentFactory.new overrides
@@ -33,7 +34,17 @@ module EsxCloud
         end
 
         def instance_link
-          response = CloudStoreClient.instance.get FACTORY_SERVICE_LINK
+          terms = [
+            {
+                term: {
+                  matchValue: DEPLOYMENT_SERVICE_DOC_KIND,
+                  propertyName: "documentKind",
+                },
+                occurance: "MUST_OCCUR",
+            }
+          ]
+
+          response = CloudStoreClient.instance.query terms, true
           return nil if response["documentLinks"].size == 0
           fail "More than one deployment found" if response["documentLinks"].size > 1
 
