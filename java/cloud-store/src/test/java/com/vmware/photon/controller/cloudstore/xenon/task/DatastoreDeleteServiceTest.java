@@ -20,6 +20,8 @@ import com.vmware.photon.controller.cloudstore.xenon.entity.DatastoreService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DatastoreServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.HostService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.HostServiceFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ImageToImageDatastoreMappingService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ImageToImageDatastoreMappingServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment;
 import com.vmware.photon.controller.common.xenon.BasicServiceHost;
 import com.vmware.photon.controller.common.xenon.exceptions.BadRequestException;
@@ -214,6 +216,7 @@ public class DatastoreDeleteServiceTest {
     private DatastoreDeleteService.State request;
     private List<String> hostSelfLinks = new ArrayList<>();
     private String datastoreSelfLink;
+    private String mappingSelfLink;
 
     @BeforeMethod
     public void setUp() throws Throwable {
@@ -234,9 +237,11 @@ public class DatastoreDeleteServiceTest {
           machine.deleteService(selfLink);
         }
         machine.deleteService(datastoreSelfLink);
+        machine.deleteService(mappingSelfLink);
       } finally {
         hostSelfLinks.clear();
         datastoreSelfLink = null;
+        mappingSelfLink = null;
       }
     }
 
@@ -268,9 +273,11 @@ public class DatastoreDeleteServiceTest {
       assertThat(response.taskState.stage, is(TaskState.TaskStage.FINISHED));
       assertThat(response.activeHostCount, is(hostsWithDatastore));
       if (hostsWithDatastore > 0) {
-        assertThat(getTotalDatastoreCount(machine), is(1L));
+        assertThat(getTotalDocumentCount(machine, DatastoreService.State.class), is(1L));
+        assertThat(getTotalDocumentCount(machine, ImageToImageDatastoreMappingService.State.class), is(1L));
       } else {
-        assertThat(getTotalDatastoreCount(machine), is(0L));
+        assertThat(getTotalDocumentCount(machine, DatastoreService.State.class), is(0L));
+        assertThat(getTotalDocumentCount(machine, ImageToImageDatastoreMappingService.State.class), is(0L));
       }
 
       freeTestEnvironment(machine);
@@ -293,7 +300,7 @@ public class DatastoreDeleteServiceTest {
         throws Throwable {
       DatastoreService.State datastore = new DatastoreService.State();
       datastore.id = "datastoreId";
-      datastore.isImageDatastore = false;
+      datastore.isImageDatastore = true;
       datastore.name = "datastore";
       datastore.type = "SHARED_VMFS";
       datastore.documentSelfLink = "datastoreId";
@@ -301,6 +308,14 @@ public class DatastoreDeleteServiceTest {
       DatastoreService.State createdDatastore =
           operation.getBody(DatastoreService.State.class);
       datastoreSelfLink = createdDatastore.documentSelfLink;
+
+      ImageToImageDatastoreMappingService.State mapping = new ImageToImageDatastoreMappingService.State();
+      mapping.imageId = "image-id";
+      mapping.imageDatastoreId = datastore.id;
+      operation = env.sendPostAndWaitForReplication(ImageToImageDatastoreMappingServiceFactory.SELF_LINK, mapping);
+      ImageToImageDatastoreMappingService.State createdMapping =
+          operation.getBody(ImageToImageDatastoreMappingService.State.class);
+      mappingSelfLink = createdMapping.documentSelfLink;
 
       for (int i = 0; i < totalHosts; i++) {
         // create hosts
@@ -331,10 +346,10 @@ public class DatastoreDeleteServiceTest {
       }
     }
 
-    private Long getTotalDatastoreCount(TestEnvironment environment) throws Throwable {
+    private Long getTotalDocumentCount(TestEnvironment environment, Class kind) throws Throwable {
       QueryTask queryTask = QueryTask.Builder.createDirectTask()
           .setQuery(QueryTask.Query.Builder.create()
-              .addKindFieldClause(DatastoreService.State.class)
+              .addKindFieldClause(kind)
               .build())
           .build();
       QueryTask result = environment.sendQueryAndWait(queryTask);

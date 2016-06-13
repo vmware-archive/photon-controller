@@ -17,6 +17,7 @@ import com.vmware.photon.controller.api.AgentState;
 import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DatastoreServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.HostService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ImageToImageDatastoreMappingService;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
@@ -38,12 +39,17 @@ import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.QueryTask;
 
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * Class implementing service to check if a datastore is missing and then delete it.
  * Missing datastores are the datastores which are no longer reported by any hosts.
  */
 public class DatastoreDeleteService extends StatefulService {
+
+  public static final int DATASTORE_MAPPING_DELETE_TIMEOUT_IN_SECONDS = 60;
 
   public DatastoreDeleteService() {
     super(State.class);
@@ -126,7 +132,7 @@ public class DatastoreDeleteService extends StatefulService {
         TaskUtils.sendSelfPatch(this, buildPatch(current.taskState.stage, null, null));
       }
     } catch (Throwable e) {
-      failTask(e);
+      failTask(e, null);
     }
   }
 
@@ -148,13 +154,10 @@ public class DatastoreDeleteService extends StatefulService {
           break;
 
         default:
-          this.failTask(
-              new IllegalStateException(
-                  String.format("Un-expected stage: %s", current.taskState.stage))
-          );
+          throw new IllegalStateException(String.format("Un-expected stage: %s", current.taskState.stage));
       }
     } catch (Throwable e) {
-      failTask(e);
+      failTask(e, null);
     }
   }
 
@@ -164,14 +167,14 @@ public class DatastoreDeleteService extends StatefulService {
    * @param current
    */
   private void queryHostsForDatastore(final State current) {
-    Operation.CompletionHandler handler = (completedOp, failure) -> {
-      if (failure != null) {
-        failTask(failure);
+    Operation.CompletionHandler handler = (op, ex) -> {
+      if (ex != null) {
+        failTask(ex, null);
         return;
       }
 
       try {
-        List<String> documentLinks = completedOp.getBody(QueryTask.class).results.documentLinks;
+        List<String> documentLinks = op.getBody(QueryTask.class).results.documentLinks;
         if (documentLinks.size() == 0) {
           ServiceUtils.logInfo(this, "No active hosts found for datastore %s, will remove record of datastore",
               current.datastoreId);
@@ -179,8 +182,8 @@ public class DatastoreDeleteService extends StatefulService {
         } else {
           TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FINISHED, documentLinks.size(), null));
         }
-      } catch (Throwable ex) {
-        failTask(ex);
+      } catch (Throwable e) {
+        failTask(e, null);
       }
     };
 
@@ -218,26 +221,46 @@ public class DatastoreDeleteService extends StatefulService {
   }
 
   /**
+   * Builds the query to retrieve all the ImageToImageDatastoreMappings with the specific datastoreId.
+   *
+   * @param state
+   * @return
+   */
+  private QueryTask buildImageToImageDatastoreQuery(final State state) {
+    QueryTask.Query.Builder queryBuilder = QueryTask.Query.Builder.create()
+        .addKindFieldClause(ImageToImageDatastoreMappingService.State.class);
+
+    queryBuilder.addFieldClause(ImageToImageDatastoreMappingService.State.FIELD_NAME_IMAGE_DATASTORE_ID,
+        state.datastoreId);
+
+    QueryTask.Query query = queryBuilder.build();
+    QueryTask.Builder queryTaskBuilder = QueryTask.Builder.createDirectTask()
+        .setQuery(query);
+    QueryTask queryTask = queryTaskBuilder.build();
+    return queryTask;
+  }
+
+  /**
    * Deletes the datastore with the id datastoreId.
    *
    * @param current
    */
   private void deleteDatastore(final State current) {
-    Operation.CompletionHandler handler = (completedOp, failure) -> {
-      if (failure != null) {
-        failTask(failure);
+    Operation.CompletionHandler handler = (op, ex) -> {
+      if (ex != null) {
+        failTask(ex, 0);
         return;
       }
 
       try {
         ServiceUtils.logInfo(this, "Deleted datastore " + current.datastoreId);
-        TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FINISHED, 0, null));
-      } catch (Throwable ex) {
+        queryImageToImageDatastoreMappings(current);
+      } catch (Throwable e) {
         ServiceUtils.logWarning(this, "Attempted to delete datastore %s because no hosts refer to it, but delete " +
                 "failed. This may cause the datastore to be considered for image replication, VM placement, etc. " +
                 "incorrectly",
             current.datastoreId);
-        failTask(ex);
+        failTask(e, 0);
       }
     };
 
@@ -246,6 +269,73 @@ public class DatastoreDeleteService extends StatefulService {
         .setReferer(UriUtils.buildUri(getHost(), getSelfLink()))
         .setCompletion(handler);
     this.sendRequest(deleteOperation);
+  }
+
+  /**
+   * Queries the ImageToImageDatastoreMappings which have the specific datastore id.
+   *
+   * @param current
+   */
+  private void queryImageToImageDatastoreMappings(final State current) {
+    Operation.CompletionHandler handler = (op, ex) -> {
+      if (ex != null) {
+        failTask(ex, 0);
+        return;
+      }
+
+      try {
+        List<String> documentLinks = op.getBody(QueryTask.class).results.documentLinks;
+        deleteImageToImageDatastoreMappings(documentLinks);
+      } catch (Throwable e) {
+        failTask(e, 0);
+      }
+    };
+
+    Operation queryPost = Operation
+        .createPost(UriUtils.buildUri(getHost(),
+            com.vmware.photon.controller.common.xenon.ServiceUriPaths.CORE_QUERY_TASKS))
+        .setBody(buildImageToImageDatastoreQuery(current))
+        .setCompletion(handler);
+
+    this.sendRequest(queryPost);
+  }
+
+  /**
+   * Deletes all the ImageToImageDatastoreMappings for the specific datastore that got deleted.
+   *
+   * @param documentLinks
+   */
+  private void deleteImageToImageDatastoreMappings(List<String> documentLinks) {
+    if (documentLinks == null) {
+      TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FINISHED, 0, null));
+      return;
+    }
+
+    final CountDownLatch latch = new CountDownLatch(documentLinks.size());
+    for (String documentLink : documentLinks) {
+      Operation deleteOperation = Operation
+          .createDelete(UriUtils.buildUri(getHost(), documentLink))
+          .setReferer(UriUtils.buildUri(getHost(), getSelfLink()))
+          .setCompletion((op, ex) -> {
+            if (ex != null) {
+              ServiceUtils.logWarning(this, "Deleting %s failed, will retry in the next interval " + ex.getMessage());
+            } else {
+              latch.countDown();
+            }
+          });
+      this.sendRequest(deleteOperation);
+    }
+    try {
+      boolean isSuccess = latch.await(DATASTORE_MAPPING_DELETE_TIMEOUT_IN_SECONDS, TimeUnit.SECONDS);
+      if (isSuccess) {
+        TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FINISHED, 0, null));
+      } else {
+        failTask(new TimeoutException("Not all image to image datastore mappings for the deleted datastore were " +
+            "deleted"), 0);
+      }
+    } catch (InterruptedException ex) {
+      logWarning("Got interrupted waiting for image to datastore mapping delete operations to complete");
+    }
   }
 
   /**
@@ -265,9 +355,9 @@ public class DatastoreDeleteService extends StatefulService {
    *
    * @param e
    */
-  private void failTask(Throwable e) {
+  private void failTask(Throwable e, Integer activeHosts) {
     ServiceUtils.logSevere(this, e);
-    TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, null, e));
+    TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, activeHosts, e));
   }
 
   /**

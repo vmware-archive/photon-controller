@@ -82,6 +82,8 @@ public class ImageToImageDatastoreMappingService extends StatefulService {
       serviceName = Constants.CLOUDSTORE_SERVICE_NAME)
   public static class State extends ServiceDocument {
 
+    public static final String FIELD_NAME_IMAGE_DATASTORE_ID = "imageDatastoreId";
+
     @NotBlank
     @Immutable
     public String imageId;
