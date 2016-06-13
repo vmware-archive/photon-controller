@@ -25,9 +25,10 @@ module EsxCloud
       end
 
       # @param [String] id
+      # @param [Hash] payload
       # @return [Deployment]
-      def deploy_deployment(id)
-        response = @http_client.post("#{DEPLOYMENTS_ROOT}/#{id}/deploy")
+      def deploy_deployment(id, payload = {})
+        response = @http_client.post_json("#{DEPLOYMENTS_ROOT}/#{id}/deploy", payload)
         check_response("Deploy Deployment '#{id}'", response, 201)
 
         task = poll_response(response)

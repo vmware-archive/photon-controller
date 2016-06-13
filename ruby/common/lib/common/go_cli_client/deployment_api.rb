@@ -19,9 +19,10 @@ module EsxCloud
       end
 
       # @param [String] id
+      # @param [Hash] payload
       # @return [Deployment]
-      def deploy_deployment(id)
-        @api_client.deploy_deployment(id)
+      def deploy_deployment(id, payload = {})
+        @api_client.deploy_deployment(id, payload)
       end
 
       # @param [String] id
