@@ -95,3 +95,7 @@ if [ -z "$DISABLE_STATS_TESTS" ]; then
 fi
 # verify that no objects were left over at the end of the run
 bundle exec rake esxcloud:validate
+
+# Examines the service logs to verify no instances of usernames or passwords
+# Run after logging from tests and clean up have completed.
+bundle exec rake verify_logs
