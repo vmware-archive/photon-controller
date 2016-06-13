@@ -40,6 +40,7 @@ import org.testng.annotations.Test;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -518,6 +519,64 @@ public class LogicalRouterApiTest extends NsxClientApiTest {
             @Override
             public void onSuccess(Void result) {
               fail("Should not have failed");
+              latch.countDown();
+            }
+
+            @Override
+            public void onFailure(Throwable t) {
+              assertThat(t.getMessage(), is(errorMsg));
+              latch.countDown();
+            }
+          }
+      );
+      latch.await();
+    }
+
+    @Test
+    public void testCheckLogicalPortExisting() throws Exception {
+      Boolean existing = true;
+      doAnswer(invocation -> {
+        if (invocation.getArguments()[1] != null) {
+          ((FutureCallback<Boolean>) invocation.getArguments()[1]).onSuccess(existing);
+        }
+        return null;
+      }).when(logicalRouterApi)
+          .checkExistenceAsync(anyString(), any(FutureCallback.class));
+
+      logicalRouterApi.checkLogicalRouterPortExistence(UUID.randomUUID().toString(),
+          new FutureCallback<Boolean>() {
+            @Override
+            public void onSuccess(Boolean result) {
+              assertThat(result, is(existing));
+              latch.countDown();
+            }
+
+            @Override
+            public void onFailure(Throwable t) {
+              fail("Should not have failed");
+              latch.countDown();
+            }
+          }
+      );
+      latch.await();
+    }
+
+    @Test
+    public void testFailedToCheckLogicalPortExistence() throws Exception {
+      String errorMsg = "Not found";
+      doAnswer(invocation -> {
+        if (invocation.getArguments()[1] != null) {
+          ((FutureCallback<Boolean>) invocation.getArguments()[1]).onFailure(new Exception(errorMsg));
+        }
+        return null;
+      }).when(logicalRouterApi)
+          .checkExistenceAsync(anyString(), any(FutureCallback.class));
+
+      logicalRouterApi.checkLogicalRouterPortExistence(UUID.randomUUID().toString(),
+          new FutureCallback<Boolean>() {
+            @Override
+            public void onSuccess(Boolean result) {
+              fail("Should have failed");
               latch.countDown();
             }
 
