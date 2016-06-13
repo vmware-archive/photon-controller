@@ -23,7 +23,7 @@ import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.ImageEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.lib.ImageStore;
-import com.vmware.photon.controller.housekeeper.dcp.ImageSeederService;
+import com.vmware.photon.controller.housekeeper.xenon.ImageSeederService;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

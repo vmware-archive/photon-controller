@@ -25,8 +25,8 @@ import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.lib.Image;
 import com.vmware.photon.controller.apife.lib.ImageStore;
-import com.vmware.photon.controller.housekeeper.dcp.ImageSeederService;
-import com.vmware.photon.controller.housekeeper.dcp.ImageSeederServiceFactory;
+import com.vmware.photon.controller.housekeeper.xenon.ImageSeederService;
+import com.vmware.photon.controller.housekeeper.xenon.ImageSeederServiceFactory;
 
 import com.google.common.collect.ImmutableList;
 import org.mockito.InOrder;

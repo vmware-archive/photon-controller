@@ -14,10 +14,10 @@
 package com.vmware.photon.controller.apife.backends.clients;
 
 import com.vmware.photon.controller.apife.entities.ImageEntity;
-import com.vmware.photon.controller.housekeeper.dcp.ImageReplicatorService;
-import com.vmware.photon.controller.housekeeper.dcp.ImageReplicatorServiceFactory;
-import com.vmware.photon.controller.housekeeper.dcp.ImageSeederService;
-import com.vmware.photon.controller.housekeeper.dcp.ImageSeederServiceFactory;
+import com.vmware.photon.controller.housekeeper.xenon.ImageReplicatorService;
+import com.vmware.photon.controller.housekeeper.xenon.ImageReplicatorServiceFactory;
+import com.vmware.photon.controller.housekeeper.xenon.ImageSeederService;
+import com.vmware.photon.controller.housekeeper.xenon.ImageSeederServiceFactory;
 import com.vmware.xenon.common.Operation;
 
 import com.google.inject.Inject;
