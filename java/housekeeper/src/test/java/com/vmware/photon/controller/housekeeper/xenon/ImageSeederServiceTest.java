@@ -32,6 +32,7 @@ import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.BadRequestException;
 import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
+import com.vmware.photon.controller.host.gen.CopyImageResultCode;
 import com.vmware.photon.controller.host.gen.TransferImageResultCode;
 import com.vmware.photon.controller.housekeeper.helpers.xenon.TestEnvironment;
 import com.vmware.photon.controller.housekeeper.helpers.xenon.TestHost;
@@ -92,7 +93,7 @@ public class ImageSeederServiceTest {
     state.queryPollDelay = 50;
 
     state.image = "image-id";
-    state.sourceImageDatastore = "source-image-datastore-id-1";
+    state.sourceImageDatastore = "image-datastore-id-0";
 
     return state;
   }
@@ -487,7 +488,7 @@ public class ImageSeederServiceTest {
       }
 
       ImageSeederService.State savedState = host.getServiceState(ImageSeederService.State.class);
-      assertThat(savedState.sourceImageDatastore, is("source-image-datastore-id-1"));
+      assertThat(savedState.sourceImageDatastore, is("image-datastore-id-0"));
     }
 
     /**
@@ -699,11 +700,11 @@ public class ImageSeederServiceTest {
 
     private ImageSeederService.State newImageSeeder;
 
+    private String hostIp1 = "0.0.0.0";
+    private String hostIp2 = "0.0.0.1";
+
     @BeforeMethod
     public void setup() throws Throwable {
-      host = TestHost.create(mock(HostClient.class), null);
-      service = spy(new ImageSeederService());
-
       hostClientFactory = mock(HostClientFactory.class);
       cloudStoreHelper = new CloudStoreHelper();
 
@@ -743,6 +744,7 @@ public class ImageSeederServiceTest {
     public void testNewImageSeederSuccess(int hostCount, TransferImageResultCode code) throws Throwable {
       HostClientMock hostClient = new HostClientMock();
       hostClient.setTransferImageResultCode(code);
+      hostClient.setCopyImageResultCode(CopyImageResultCode.OK);
       doReturn(hostClient).when(hostClientFactory).create();
 
       machine = machineBuiler
@@ -750,14 +752,18 @@ public class ImageSeederServiceTest {
           .build();
       ImageService.State createdImageState = createNewImageEntity();
 
-      Set<Datastore> imageDatastores = buildImageDatastoreSet(3);
-      createHostService(imageDatastores);
-      createDatastoreService(imageDatastores);
+      Set<Datastore> sourceImageDatastore = buildImageDatastoreSet("0");
+      Set<Datastore> destinationImageDatastore = buildImageDatastoreSet("1", "2");
+      createHostService(hostIp1, sourceImageDatastore);
+      createHostService(hostIp2, destinationImageDatastore);
+      createDatastoreService(sourceImageDatastore);
+      createDatastoreService(destinationImageDatastore);
+
       machine.startFactoryServiceSynchronously(ImageToImageDatastoreMappingServiceFactory.class,
           ImageToImageDatastoreMappingServiceFactory.SELF_LINK);
 
       newImageSeeder.image = ServiceUtils.getIDFromDocumentSelfLink(createdImageState.documentSelfLink);
-      newImageSeeder.sourceImageDatastore = imageDatastores.iterator().next().getId();
+      newImageSeeder.sourceImageDatastore = sourceImageDatastore.iterator().next().getId();
 
       //Call Service.
       ImageSeederService.State response = machine.callServiceAndWaitForState(
@@ -796,8 +802,9 @@ public class ImageSeederServiceTest {
           .build();
 
       ImageService.State createdImageState = createNewImageEntity();
-      Set<Datastore> imageDatastores = buildImageDatastoreSet(1);
-      createHostService(imageDatastores);
+      Set<Datastore> imageDatastores = buildImageDatastoreSet("1");
+      createHostService(hostIp1, imageDatastores);
+      createHostService(hostIp2, imageDatastores);
       createDatastoreService(imageDatastores);
       machine.startFactoryServiceSynchronously(ImageToImageDatastoreMappingServiceFactory.class,
           ImageToImageDatastoreMappingServiceFactory.SELF_LINK);
@@ -839,9 +846,7 @@ public class ImageSeederServiceTest {
 
       ImageService.State createdImageState = createNewImageEntity();
 
-      Set<Datastore> imageDatastores = buildImageDatastoreSet(0);
-      createHostService(imageDatastores);
-      createDatastoreService(imageDatastores);
+      createHostService(hostIp1, new HashSet<>());
       newImageSeeder.image = ServiceUtils.getIDFromDocumentSelfLink(createdImageState.documentSelfLink);
       //Call Service.
       machine.callServiceAndWaitForState(ImageSeederServiceFactory
@@ -897,7 +902,7 @@ public class ImageSeederServiceTest {
       return result.getBody(ImageService.State.class);
     }
 
-    private void createHostService(Set<Datastore> imageDatastores) throws Throwable {
+    private void createHostService(String hostIp, Set<Datastore> imageDatastores) throws Throwable {
       ServiceHost host = machine.getHosts()[0];
       machine.startFactoryServiceSynchronously(
           HostServiceFactory.class,
@@ -906,7 +911,7 @@ public class ImageSeederServiceTest {
       for (Datastore datastore : imageDatastores) {
         HostService.State state = new HostService.State();
         state.state = HostState.READY;
-        state.hostAddress = "0.0.0.0";
+        state.hostAddress = hostIp;
         state.userName = "test-name";
         state.password = "test-password";
         state.usageTags = new HashSet<>();
@@ -954,17 +959,16 @@ public class ImageSeederServiceTest {
       }
     }
 
-    private Set<Datastore> buildImageDatastoreSet(int count) {
+    private Set<Datastore> buildImageDatastoreSet(String... datastoreNumber) {
       Set<Datastore> imageDatastoreSet = new HashSet<>();
-      if (count == 0) {
+      if (datastoreNumber.length == 0) {
         return imageDatastoreSet;
       }
 
-      int i = 0;
-      while (i++ < count) {
+      for (String datastoreSeq : datastoreNumber) {
         Datastore datastore = new Datastore();
-        datastore.setId("image-datastore-id-" + i);
-        datastore.setName("image-datastore-name-" + i);
+        datastore.setId("image-datastore-id-" + datastoreSeq);
+        datastore.setName("image-datastore-name-" + datastoreSeq);
         imageDatastoreSet.add(datastore);
       }
       return imageDatastoreSet;
