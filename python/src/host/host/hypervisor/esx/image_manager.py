@@ -60,7 +60,7 @@ GC_IMAGE_FOLDER = "deleted_images"
 class EsxImageManager(ImageManager):
     NUM_MAKEDIRS_ATTEMPTS = 10
     DEFAULT_TMP_IMAGES_CLEANUP_INTERVAL = 600.0
-    REAP_TMP_IMAGES_GRACE_PERIOD = 600.0
+    REAP_TMP_IMAGES_GRACE_PERIOD = 2 * 60.0 * 60.0  # 2 hrs
     DELETE_IMAGE_GRACE_PERIOD = 60
     UNUSED_IMAGE_MARKER_FILE_NAME = "unused_image_marker.txt"
     IMAGE_TIMESTAMP_FILE_NAME = "image_timestamp.txt"
