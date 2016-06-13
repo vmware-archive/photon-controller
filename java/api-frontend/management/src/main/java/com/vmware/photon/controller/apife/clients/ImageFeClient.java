@@ -82,9 +82,6 @@ public class ImageFeClient {
     TaskEntity taskEntity = imageBackend.prepareImageDelete(id);
     Task task = taskBackend.getApiRepresentation(taskEntity);
 
-    TaskCommand command = commandFactory.create(taskEntity);
-    logger.info("Submit task: {} {}", task.getId(), task.getOperation());
-    executor.submit(command);
     return task;
   }
 
