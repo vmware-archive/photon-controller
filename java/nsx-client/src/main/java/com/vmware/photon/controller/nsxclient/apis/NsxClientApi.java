@@ -22,6 +22,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.util.concurrent.FutureCallback;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
+import org.apache.http.HttpStatus;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -206,6 +207,48 @@ public class NsxClientApi {
           @Override
           public void cancelled() {
             responseCallback.onFailure(new RuntimeException(String.format("deleteAsync %s was cancelled",
+                path)));
+          }
+        }
+    );
+  }
+
+  /**
+   * Check if an NSX equipment is there.
+   * For example, NSX does not provide the function to check if a port has been deleted successfully.
+   * Adding this function to check if it is still there.
+   *
+   * @param path
+   * @return
+   */
+  protected void checkExistenceAsync(final String path,
+                                     final FutureCallback<Boolean> responseCallback) throws IOException {
+    restClient.sendAsync(
+        RestClient.Method.GET,
+        path,
+        null,
+        new org.apache.http.concurrent.FutureCallback<HttpResponse>() {
+          @Override
+          public void completed(HttpResponse result) {
+            Boolean ret = null;
+            try {
+              int statusCode = result.getStatusLine().getStatusCode();
+              ret = (statusCode == HttpStatus.SC_OK) || (statusCode == HttpStatus.SC_CREATED);
+            } catch (Throwable e) {
+              responseCallback.onFailure(e);
+            }
+
+            responseCallback.onSuccess(ret);
+          }
+
+          @Override
+          public void failed(Exception ex) {
+            responseCallback.onFailure(ex);
+          }
+
+          @Override
+          public void cancelled() {
+            responseCallback.onFailure(new RuntimeException(String.format("checkExistenceAsync %s was cancelled",
                 path)));
           }
         }

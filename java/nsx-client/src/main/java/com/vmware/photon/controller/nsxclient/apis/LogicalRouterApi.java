@@ -161,4 +161,14 @@ public class LogicalRouterApi extends NsxClientApi {
   public void deleteLogicalRouterPort(String id, FutureCallback<Void> responseCallback) throws IOException {
     deleteAsync(logicalRouterPortBasePath + "/" + id, HttpStatus.SC_OK, responseCallback);
   }
+
+  /**
+   * Check the existence of a logical router port.
+   * @param id
+   * @param responseCallback
+   * @throws IOException
+   */
+  public void checkLogicalRouterPortExisting(String id, FutureCallback<Boolean> responseCallback) throws IOException {
+    checkExistenceAsync(logicalRouterPortBasePath + "/" + id, responseCallback);
+  }
 }
