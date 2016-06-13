@@ -250,6 +250,11 @@ task :download_esx_logs do
   EsxCloud::LogBackUpHelpers.download_esx_logs
 end
 
+desc 'Verify no usernames or passwords in service logs'
+task :verify_logs do
+  EsxCloud::LogBackUpHelpers.verify_logs
+end
+
 desc 'Clean vms on real host'
 task :clean_vms_on_real_host do
   esx_ip = EsxCloud::TestHelpers.get_esx_ip
