@@ -270,7 +270,9 @@ module EsxCloud
 
     def create_network
       spec = EsxCloud::NetworkCreateSpec.new(random_name("network-"), "Seeder Network", [get_vm_port_group])
-      EsxCloud::Config.client.create_network(spec.to_hash)
+      network = EsxCloud::Config.client.create_network(spec.to_hash)
+      EsxCloud::Config.client.set_default(network.id)
+      network
     end
 
     def create_deployment
