@@ -12,6 +12,8 @@
 module EsxCloud
   module Dcp
     class Client
+      LOCAL_QUERY_TASK_LINK = "/core/query-tasks"
+
       def initialize(endpoint)
         @endpoint = endpoint.chomp("/")
         @http_client = EsxCloud::HttpClient.new(endpoint)
@@ -41,6 +43,28 @@ module EsxCloud
       def patch(service_link, payload)
         response = @http_client.patch_json(service_link, payload)
         check_response "patch", response, 200
+
+        JSON.parse response.body
+      end
+
+      def query(terms, broadcast = false)
+        optionsList = []
+        optionsList << "BROADCAST" if broadcast
+
+        payload = {
+            "taskInfo" => {
+              "isDirect" => true,
+            },
+            "querySpec" => {
+              "options" => optionsList,
+              "query" => {
+                "booleanClauses" => terms,
+              },
+            },
+        }
+
+        response = @http_client.post_json(LOCAL_QUERY_TASK_LINK, payload)
+        check_response "post", response, 200
 
         JSON.parse response.body
       end
