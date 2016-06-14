@@ -27,7 +27,6 @@ from host.hypervisor.vm_manager import IsoNotAttachedException
 from host.hypervisor.vm_manager import VmNotFoundException
 from host.hypervisor.esx.host_client import DeviceNotFoundException
 from host.hypervisor.esx.path_util import datastore_to_os_path
-from host.hypervisor.esx.path_util import SHADOW_VM_NAME_PREFIX
 from host.hypervisor.esx.path_util import get_root_disk
 
 from common.log import log_duration
@@ -248,10 +247,7 @@ class EsxVmManager(VmManager):
             # Vms in cache might include half updated record, e.g. with
             # None memory_mb, for a short time windows. Those Vms in cache
             # could be excluded from total used memory.
-            if vm.name and vm.name.startswith(SHADOW_VM_NAME_PREFIX):
-                # skip shadow vm, because we never power it on
-                self._logger.info("skip shadow vm: %s" % vm.name)
-            elif vm.memory_mb:
+            if vm.memory_mb:
                 memory += vm.memory_mb
 
         # This indicates that no values were retrieved from the cache.
@@ -271,10 +267,7 @@ class EsxVmManager(VmManager):
 
         cpu_count = 0
         for vm in vms:
-            if vm.name and vm.name.startswith(SHADOW_VM_NAME_PREFIX):
-                # skip shadow vm, because we never power it on
-                self._logger.info("skip shadow vm: %s" % vm.name)
-            elif vm.num_cpu:
+            if vm.num_cpu:
                 cpu_count += vm.num_cpu
 
         # This indicates that no values were retrieved from the cache.
