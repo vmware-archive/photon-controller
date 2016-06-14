@@ -166,14 +166,6 @@ class AttacheClient(HostClient):
         self.wait_for_vm_create(vm_id)
 
     @attache_error_handler
-    def export_vm(self, vm_id):
-        pass
-
-    @attache_error_handler
-    def import_vm(self, spec):
-        pass
-
-    @attache_error_handler
     def get_vms_in_cache(self):
         vms = []
         for vm_id in self._client.GetCachedVMs(self._session):
@@ -335,10 +327,6 @@ class AttacheClient(HostClient):
     @attache_error_handler
     def host_version(self):
         return self._client.GetEsxVersion(self._session)
-
-    @attache_error_handler
-    def acquire_clone_ticket(self):
-        pass
 
     @attache_error_handler
     def set_large_page_support(self, disable=False):
