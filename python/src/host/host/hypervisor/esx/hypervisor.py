@@ -18,7 +18,6 @@ import logging
 from common.util import suicide
 from host.hypervisor.esx.datastore_manager import EsxDatastoreManager
 from host.hypervisor.esx.disk_manager import EsxDiskManager
-from host.hypervisor.esx.http_disk_transfer import HttpNfcTransferer
 from host.hypervisor.esx.nfc_image_transfer import NfcImageTransferer
 from host.hypervisor.esx.network_manager import EsxNetworkManager
 from host.hypervisor.esx.vm_manager import EsxVmManager
@@ -49,13 +48,7 @@ class EsxHypervisor(object):
         self.network_manager = EsxNetworkManager(self.host_client, agent_config.networks)
         self.system = EsxSystem(self.host_client)
         self.image_manager.monitor_for_cleanup()
-        if self.host_client.host_version.startswith("5."):
-            # some CI hosts are not upgraded yet - use http transfer for ESX5 hosts.
-            self.image_transferer = HttpNfcTransferer(
-                    self.host_client,
-                    self.datastore_manager.image_datastores())
-        else:
-            self.image_transferer = NfcImageTransferer(self.host_client)
+        self.image_transferer = NfcImageTransferer(self.host_client)
         atexit.register(self.image_manager.cleanup)
 
     @staticmethod
@@ -73,9 +66,6 @@ class EsxHypervisor(object):
             image_id, self.datastore_manager.datastore_name(datastore_id)
         )
 
-    def acquire_vim_ticket(self):
-        return self.host_client.acquire_clone_ticket()
-
     def add_update_listener(self, listener):
         self.host_client.add_update_listener(listener)
 
@@ -88,12 +78,6 @@ class EsxHypervisor(object):
         return self.image_transferer.send_image_to_host(
             source_image_id, source_datastore,
             destination_image_id, destination_datastore, host, port)
-
-    def prepare_receive_image(self, image_id, datastore):
-        return self.image_manager.prepare_receive_image(image_id, datastore)
-
-    def receive_image(self, image_id, datastore, imported_vm_name, metadata):
-        self.image_manager.receive_image(image_id, datastore, imported_vm_name, metadata)
 
     def set_memory_overcommit(self, memory_overcommit):
         # Enable/Disable large page support. If this host is removed
