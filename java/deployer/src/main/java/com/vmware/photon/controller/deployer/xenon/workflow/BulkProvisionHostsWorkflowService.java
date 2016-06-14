@@ -43,7 +43,6 @@ import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.OperationJoin;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
-import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.QueryTask;
 import com.vmware.xenon.services.common.ServiceUriPaths;
@@ -474,7 +473,7 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
       startState.parentTaskLink = getSelfLink();
       startState.parentPatchBody = Utils.toJson(false, false, buildPatch(TaskState.TaskStage.FINISHED, null, null));
       startState.pendingCompletionCount = hostServiceLinks.size();
-      startState.errorThreshold = 1.0;
+      startState.errorThreshold = 0.0;
 
       sendRequest(Operation
           .createPost(this, ChildTaskAggregatorFactoryService.SELF_LINK)
