@@ -45,6 +45,15 @@ describe EsxCloud::ApiClient do
     EsxCloud::HttpResponse.new(http_code, JSON.generate(payload), header)
   end
 
+  it "should have all methods defined by client spec" do
+    base_client = EsxCloud::Client.new
+
+    base_client.public_methods(false).each do |method_name|
+      client.respond_to?(method_name).should be_true, "#{method_name} does not exist"
+      client.method(method_name).arity.should == base_client.method(method_name).arity
+    end
+  end
+
   it "supports injecting a task tracker" do
     expect {
       EsxCloud::ApiClient.new("localhost:9000", "foo")
@@ -163,15 +172,6 @@ describe EsxCloud::ApiClient do
     expect(@http_client).to receive(:get).with("/tasks/foo/context").and_return(ok_response(context.to_json))
     parsed_response = JSON.parse(client.find_task_context_by_id("foo"))
     parsed_response.should == context
-  end
-
-  it "should have all methods defined by client spec" do
-    base_client = EsxCloud::Client.new
-
-    base_client.public_methods(false).each do |method_name|
-      client.respond_to?(method_name).should be_true
-      client.method(method_name).arity.should == base_client.method(method_name).arity
-    end
   end
 
   it "should create httpClient with access_token" do

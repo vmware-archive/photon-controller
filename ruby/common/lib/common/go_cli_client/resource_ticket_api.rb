@@ -44,7 +44,7 @@ module EsxCloud
       # @param [String] tenant_id
       # @param [String] name
       # @return [ResourceTicket]
-      def find_resource_ticket_by_name(tenant_id, name)
+      def find_resource_tickets_by_name(tenant_id, name)
         tenant = find_tenant_by_id(tenant_id)
 
         cmd = "resource-ticket show '#{name}' -t '#{tenant.name}'"
