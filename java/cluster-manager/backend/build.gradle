@@ -4,7 +4,7 @@ dependencies {
     compile project(':api-client')
     compile project(':cloud-store')
     compile project(':common')
-    compile project(':common-dcp')
+    compile project(':common-xenon')
     compile project(':common-logging')
     compile project(':nfc-client')
     compile project(':common-auth')

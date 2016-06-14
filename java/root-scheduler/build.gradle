@@ -12,7 +12,7 @@ mainClassName = 'com.vmware.photon.controller.rootscheduler.Main'
 dependencies {
   compile project(':cloud-store')
   compile project(':common')
-  compile project(':common-dcp')
+  compile project(':common-xenon')
   compile project(':common-logging')
 
   compile "com.google.guava:guava:${versions.guava}"

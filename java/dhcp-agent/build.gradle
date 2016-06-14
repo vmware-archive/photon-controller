@@ -4,7 +4,7 @@ mainClassName = 'com.vmware.photon.controller.dhcpagent.Main'
 
 dependencies {
   compile project(':common')
-  compile project(':common-dcp')
+  compile project(':common-xenon')
   compile project(':common-logging')
 
   compile "org.apache.commons:commons-lang3:${versions.commons_lang3}"
