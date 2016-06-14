@@ -221,7 +221,7 @@ public class NetworkDcpBackend implements NetworkBackend {
   public NetworkEntity getDefault() throws NetworkNotFoundException {
     NetworkService.State networkState = getDefaultNetwork();
     if (networkState == null) {
-      throw new NetworkNotFoundException("No default network is found");
+      throw new NetworkNotFoundException("default (physical)");
     }
 
     return convertToEntity(networkState);
