@@ -17,10 +17,12 @@ describe "vm", management: true, image: true do
     @seeder = EsxCloud::SystemSeeder.new(create_small_limits, [5.0])
     @cleaner = EsxCloud::SystemCleaner.new(client)
     @project = @seeder.project!
+    @network = @seeder.network!
   end
 
   after(:all) do
     @cleaner.delete_tenant(@seeder.tenant)
+    @cleaner.delete_network(@seeder.network)
   end
 
   it "should create one vm with two ephemeral disks successfully" do
@@ -175,6 +177,27 @@ describe "vm", management: true, image: true do
     vms.each do |vm|
       vm.delete
     end
+  end
+
+  it "should fail to create vm without default network" do
+    @cleaner.delete_network(@seeder.network)
+
+    error_msg = "Network default (physical) not found"
+
+    begin
+      create_vm(@project)
+      fail("Create VM without specifying network and without default network should fail")
+    rescue EsxCloud::ApiError => e
+      e.response_code.should == 404
+      e.errors.size.should == 1
+      e.errors[0].code.should == "NetworkNotFound"
+      e.errors[0].message.should match(error_msg)
+    rescue EsxCloud::CliError => e
+      e.output.should match("NetworkNotFound")
+      e.output.should match(error_msg)
+    end
+
+    @network = @seeder.network!
   end
 
   context "when attributes are specified in VmCreateSpec" do

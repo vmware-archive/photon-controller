@@ -174,6 +174,17 @@ module EsxCloud
       stat
     end
 
+    # @param [Network] network
+    # @param [Hash] stat
+    # @return [Hash] stat
+    def delete_network(network, stat = {})
+      fail "delete network: network is nil!" unless network
+
+      update_stat stat, "network", network.id
+      network.delete
+      stat
+    end
+
     private
 
     # @param [Hash] stat

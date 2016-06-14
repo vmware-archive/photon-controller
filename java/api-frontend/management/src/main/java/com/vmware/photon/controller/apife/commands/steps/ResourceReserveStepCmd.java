@@ -572,17 +572,10 @@ public class ResourceReserveStepCmd extends StepCommand {
     }
 
     if (networks.isEmpty()) {
-      try {
-        if (!this.useVirtualNetwork) {
-          networks.add(networkBackend.getDefault().getId());
-        } else {
-          networks.add(getDefaultVirtualNetwork(entity.getProjectId()));
-        }
-      } catch (NetworkNotFoundException ex) {
-        // TODO(ysheng): we temporarily relax the default network constraint.
-        // We need to fix integration tests as well as unit tests such
-        // that we guarantee that there exists a default network.
-        logger.debug("Temporarily relax default network constraint");
+      if (!this.useVirtualNetwork) {
+        networks.add(networkBackend.getDefault().getId());
+      } else {
+        networks.add(getDefaultVirtualNetwork(entity.getProjectId()));
       }
     }
 
@@ -638,7 +631,7 @@ public class ResourceReserveStepCmd extends StepCommand {
       VirtualNetworkService.State defaultNetwork = defaultNetworks.iterator().next();
       return ServiceUtils.getIDFromDocumentSelfLink(defaultNetwork.documentSelfLink);
     } else {
-      throw new NetworkNotFoundException("Cannot find default network for project " + projectId);
+      throw new NetworkNotFoundException("default (virtual)");
     }
   }
 }
