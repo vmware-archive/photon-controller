@@ -649,6 +649,7 @@ public class CreateVirtualNetworkWorkflowServiceTest {
 
       // Verifies that one and only one virtual network entity is created in cloud-store.
       assertThat(finalState.taskServiceEntity, notNullValue());
+      assertEquals(finalState.taskServiceEntity.routingType, RoutingType.ROUTED);
       VirtualNetworkService.State expectedVirtualNetworkServiceState = finalState.taskServiceEntity;
       VirtualNetworkService.State actualVirtualNetworkServiceState = testEnvironment.getServiceState(
           finalState.taskServiceEntity.documentSelfLink,
@@ -751,6 +752,7 @@ public class CreateVirtualNetworkWorkflowServiceTest {
 
       // Verifies that one and only one virtual network entity is created in cloud-store.
       assertThat(finalState.taskServiceEntity, notNullValue());
+      assertEquals(finalState.taskServiceEntity.routingType, RoutingType.ISOLATED);
       VirtualNetworkService.State expectedVirtualNetworkServiceState = finalState.taskServiceEntity;
       VirtualNetworkService.State actualVirtualNetworkServiceState = testEnvironment.getServiceState(
           finalState.taskServiceEntity.documentSelfLink,
