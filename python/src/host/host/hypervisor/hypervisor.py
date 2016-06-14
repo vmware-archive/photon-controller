@@ -127,9 +127,3 @@ class Hypervisor(object):
         return self.hypervisor.transfer_image(
             source_image_id, source_datastore, destination_image_id,
             destination_datastore, host, port)
-
-    def prepare_receive_image(self, image_id, datastore):
-        return self.hypervisor.prepare_receive_image(image_id, datastore)
-
-    def receive_image(self, image_id, datastore, imported_vm_name, metadata):
-        return self.hypervisor.receive_image(image_id, datastore, imported_vm_name, metadata)

@@ -83,14 +83,6 @@ class HostClient(object):
         pass
 
     @abc.abstractmethod
-    def export_vm(self, vm_id):
-        pass
-
-    @abc.abstractmethod
-    def import_vm(self, spec):
-        pass
-
-    @abc.abstractmethod
     def get_vms_in_cache(self):
         pass
 
@@ -208,10 +200,6 @@ class HostClient(object):
 
     @abc.abstractmethod
     def host_version(self):
-        pass
-
-    @abc.abstractmethod
-    def acquire_clone_ticket(self):
         pass
 
     @abc.abstractmethod

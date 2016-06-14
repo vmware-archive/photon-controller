@@ -582,32 +582,6 @@ class VimClient(HostClient):
         vim_task = file_mgr.MoveFile(sourceName=os_to_datastore_path(src), destinationName=os_to_datastore_path(dest))
         self.wait_for_task(vim_task)
 
-    @hostd_error_handler
-    def export_vm(self, vm_id):
-        """Export vm.
-        :param vm_id:
-        :return: download lease, url
-        """
-        vm = self.get_vm(vm_id)
-        lease = vm.ExportVm()
-        self._wait_for_lease(lease)
-        dev_url = lease.info.deviceUrl[0]
-        self._logger.debug("%s -> %s" % (dev_url.key, dev_url.url))
-        return lease, dev_url.url
-
-    @hostd_error_handler
-    def import_vm(self, spec):
-        """Import vm.
-        :param spec: EsxVmConfigSpec
-        :rtype: upload lease, url
-        """
-        import_spec = vim.vm.VmImportSpec(configSpec=spec.get_spec())
-        lease = self._root_resource_pool().ImportVApp(import_spec, self._vm_folder())
-        self._wait_for_lease(lease)
-        dev_url = lease.info.deviceUrl[0]
-        self._logger.debug("%s -> %s" % (dev_url.key, dev_url.url))
-        return lease, dev_url.url
-
     def _power_vm(self, vm_id, op):
         vm = self.get_vm(vm_id)
         self._invoke_vm(vm, op)
