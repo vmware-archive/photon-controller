@@ -63,6 +63,12 @@ describe EsxCloud::GoCliClient do
     client.find_all_resource_tickets(tenant_id).should == tickets
   end
 
+  it "finds all tickets by name" do
+    tickets = double(EsxCloud::ResourceTicketList)
+    expect(@api_client).to receive(:find_resource_tickets_by_name).with("tenant", "foo").and_return(tickets)
+    expect(client.find_resource_tickets_by_name("tenant", "foo")).to be(tickets)
+  end
+
   it "finds ticket by name" do
     tenant_id = double("t1")
     tenant_name = double("t1_name")
