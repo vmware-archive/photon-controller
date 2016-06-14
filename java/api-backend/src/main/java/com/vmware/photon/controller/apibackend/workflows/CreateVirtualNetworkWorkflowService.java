@@ -14,7 +14,6 @@
 package com.vmware.photon.controller.apibackend.workflows;
 
 import com.vmware.photon.controller.api.NetworkState;
-import com.vmware.photon.controller.api.RoutingType;
 import com.vmware.photon.controller.apibackend.servicedocuments.ConfigureRoutingTask;
 import com.vmware.photon.controller.apibackend.servicedocuments.CreateLogicalRouterTask;
 import com.vmware.photon.controller.apibackend.servicedocuments.CreateLogicalSwitchTask;
@@ -461,7 +460,7 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
     postState.name = state.name;
     postState.description = state.description;
     postState.state = NetworkState.CREATING;
-    postState.routingType = RoutingType.ROUTED;
+    postState.routingType = state.routingType;
 
     ServiceHostUtils.getCloudStoreHelper(getHost())
         .createPost(VirtualNetworkService.FACTORY_LINK)
