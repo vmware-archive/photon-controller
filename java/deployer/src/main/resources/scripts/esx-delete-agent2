@@ -32,14 +32,14 @@ then
 fi
 
 agent_ext_existing=`sshpass -p "$password" ssh -o StrictHostKeyChecking=no ${username}@${host_address} esxcli software vib list | grep photon-controller-agent-ext | wc -l`
-if [ agent_ext_existing -ne 0 ]
+if [ $agent_ext_existing -ne 0 ]
 then
   sshpass -p "$password" ssh -o StrictHostKeyChecking=no ${username}@${host_address} esxcli software vib remove -f -n photon-controller-agent-ext
 fi
 
 # Remove agent before envoy so that envoy libraries are not busy/locked
 envoy_existing=`sshpass -p "$password" ssh -o StrictHostKeyChecking=no ${username}@${host_address} esxcli software vib list | grep envoy | wc -l`
-if [ envoy_existing -ne 0 ]
+if [ $envoy_existing -ne 0 ]
 then
   sshpass -p "$password" ssh -o StrictHostKeyChecking=no ${username}@${host_address} esxcli software vib remove -f -n envoy
 fi
