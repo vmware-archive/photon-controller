@@ -49,6 +49,7 @@ public class DeleteVirtualNetworkWorkflowService extends BaseWorkflowService<Del
     DeleteVirtualNetworkWorkflowDocument.TaskState, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage> {
 
   public static final String FACTORY_LINK = ServiceUriPaths.APIBACKEND_ROOT + "/delete-virtual-network";
+  private static final int EXECUTION_DELAY_CHECK_STATUS = 10;
 
   public static FactoryService createFactory() {
     return FactoryService.create(DeleteVirtualNetworkWorkflowService.class, DeleteVirtualNetworkWorkflowDocument.class);
@@ -210,6 +211,7 @@ public class DeleteVirtualNetworkWorkflowService extends BaseWorkflowService<Del
     deleteLogicalPortsTask.logicalTier1RouterId = state.taskServiceEntity.logicalRouterId;
     deleteLogicalPortsTask.logicalTier0RouterId = state.taskServiceEntity.tier0RouterId;
     deleteLogicalPortsTask.logicalSwitchId = state.taskServiceEntity.logicalSwitchId;
+    deleteLogicalPortsTask.executionDelay = EXECUTION_DELAY_CHECK_STATUS;
 
     TaskUtils.startTaskAsync(
         this,

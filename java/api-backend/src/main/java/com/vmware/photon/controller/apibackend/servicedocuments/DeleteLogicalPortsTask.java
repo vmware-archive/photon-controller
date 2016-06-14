@@ -17,6 +17,7 @@ import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
 import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotBlank;
+import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.common.xenon.validation.WriteOnce;
 import com.vmware.xenon.common.ServiceDocument;
 
@@ -106,6 +107,13 @@ public class DeleteLogicalPortsTask extends ServiceDocument {
   public Integer controlFlags;
 
   /**
+   * Execution delay time to verify a port has been deleted.
+   */
+  @NotNull
+  @Immutable
+  public Integer executionDelay;
+
+  /**
    * Customized task state. Defines the sub-stages.
    */
   public static class TaskState extends com.vmware.xenon.common.TaskState {
@@ -117,8 +125,11 @@ public class DeleteLogicalPortsTask extends ServiceDocument {
     public enum SubStage {
       GET_LINK_PORTS,
       DELETE_TIER1_ROUTER_LINK_PORT,
+      WAIT_DELETE_TIER1_ROUTER_LINK_PORT,
       DELETE_TIER0_ROUTER_LINK_PORT,
+      WAIT_DELETE_TIER0_ROUTER_LINK_PORT,
       DELETE_TIER1_ROUTER_DOWN_LINK_PORT,
+      WAIT_DELETE_TIER1_ROUTER_DOWN_LINK_PORT,
       DELETE_SWITCH_PORT,
     }
   }

@@ -46,6 +46,7 @@ import com.vmware.photon.controller.nsxclient.models.TransportZoneCreateSpec;
 
 import com.google.common.util.concurrent.FutureCallback;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 
@@ -489,21 +490,23 @@ public class NsxClientMock extends NsxClient {
       return this;
     }
 
-    public Builder deleteLogicalRouterPort(boolean isSuccess) throws Throwable {
+    public Builder deleteLogicalRouterPort(boolean... states) throws Throwable {
 
-      if (isSuccess) {
-        doAnswer(invocation -> {
-          ((FutureCallback<Void>) invocation.getArguments()[1])
-              .onSuccess(null);
-          return null;
-        }).when(mockLogicalRouterApi).deleteLogicalRouterPort(any(String.class), any(FutureCallback.class));
-      } else {
-        RuntimeException error = new RuntimeException("deleteLogicalRouterPort failed");
-        doAnswer(invocation -> {
-          ((FutureCallback<Void>) invocation.getArguments()[1])
-              .onFailure(error);
-          return null;
-        }).when(mockLogicalRouterApi).deleteLogicalRouterPort(any(String.class), any(FutureCallback.class));
+      for (boolean isSuccess : states) {
+        if (isSuccess) {
+          doAnswer(invocation -> {
+            ((FutureCallback<Void>) invocation.getArguments()[1])
+                .onSuccess(null);
+            return null;
+          }).when(mockLogicalRouterApi).deleteLogicalRouterPort(any(String.class), any(FutureCallback.class));
+        } else {
+          RuntimeException error = new RuntimeException("deleteLogicalRouterPort failed");
+          doAnswer(invocation -> {
+            ((FutureCallback<Void>) invocation.getArguments()[1])
+                .onFailure(error);
+            return null;
+          }).when(mockLogicalRouterApi).deleteLogicalRouterPort(any(String.class), any(FutureCallback.class));
+        }
       }
 
       return this;
@@ -524,6 +527,30 @@ public class NsxClientMock extends NsxClient {
               .onFailure(error);
           return null;
         }).when(mockLogicalSwitchApi).deleteLogicalPort(any(String.class), any(FutureCallback.class));
+      }
+
+      return this;
+    }
+
+    public Builder checkLogicalRouterPortExistence(boolean... states) throws Throwable {
+      for (boolean isSuccess : states) {
+        if (isSuccess) {
+          doAnswer(invocation -> {
+            ((FutureCallback<Boolean>) invocation.getArguments()[1]).onSuccess(false);
+            return null;
+          }).when(mockLogicalRouterApi).checkLogicalRouterPortExistence(anyString(), any(FutureCallback.class));
+
+          doAnswer(invocation -> {
+            ((FutureCallback<Boolean>) invocation.getArguments()[1]).onSuccess(true);
+            return null;
+          }).when(mockLogicalRouterApi).checkLogicalRouterPortExistence(anyString(), any(FutureCallback.class));
+        } else {
+          RuntimeException e = new RuntimeException("checkLogicalRouterPortExistence failed");
+          doAnswer(invocation -> {
+            ((FutureCallback<Boolean>) invocation.getArguments()[1]).onFailure(e);
+            return null;
+          }).when(mockLogicalRouterApi).checkLogicalRouterPortExistence(anyString(), any(FutureCallback.class));
+        }
       }
 
       return this;
