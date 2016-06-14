@@ -470,67 +470,6 @@ struct TransferImageResponse {
   2: optional string error
 }
 
-// Prepare Receive Image
-struct PrepareReceiveImageRequest {
-  // The ID of the Image.
-  1: required string image_id
-
-  // The datastore name or id.
-  2: required string datastore
-
-  99: optional tracing.TracingInfo tracing_info
-}
-
-enum PrepareReceiveImageResultCode {
-  /* The image was created successfully. */
-  OK = 0
-  /* Catch all error. */
-  SYSTEM_ERROR = 1
-  /* The datastore was not found. */
-  DATASTORE_NOT_FOUND = 2
-}
-
-struct PrepareReceiveImageResponse {
-  1: required PrepareReceiveImageResultCode result
-  // vm path and id to use for VmImportSpec
-  2: optional string import_vm_path
-  3: optional string import_vm_id
-  4: optional string error
-}
-
-// Receive Image
-struct ReceiveImageRequest {
-  // The ID of the Image.
-  1: required string image_id
-
-  // The datastore name or id.
-  2: required string datastore_id
-
-  // The id to lookup transferred image data at the receiving host
-  3: required string transferred_image_id
-
-  // Raw image metadata
-  4: optional string metadata
-
-  99: optional tracing.TracingInfo tracing_info
-}
-enum ReceiveImageResultCode {
-  // The image was created successfully.
-  OK = 0
-  // Catch all error.
-  SYSTEM_ERROR = 1
-  // The src image directory was not found.
-  IMAGE_NOT_FOUND = 2
-  // The destination image already exists.
-  DESTINATION_ALREADY_EXIST = 3
-  // The datastore was not found.
-  DATASTORE_NOT_FOUND = 4
-}
-struct ReceiveImageResponse {
-  1: required ReceiveImageResultCode result
-  2: optional string error
-}
-
 // Create Image
 struct CreateImageRequest {
   // The ID of the Image.
@@ -798,10 +737,6 @@ struct GetDeletedImagesResponse {
 enum ServiceType {
   # Ticket to authenticate against the NFC service on the host
   NFC = 0
-  # Ticket to authenticate against the Http service on the host
-  HTTP = 1
-  # Ticket to authenticate against the VIM endpoint (hostd)
-  VIM = 2
 }
 
 # Request structure for service tickets.
@@ -827,9 +762,6 @@ struct ServiceTicketResponse {
 
   // NFC ticket
   3: optional resource.HostServiceTicket ticket
-
-  // VIM ticket
-  4: optional string vim_ticket
 }
 
 struct MksTicketRequest {
@@ -875,8 +807,6 @@ service Host {
   GetImagesResponse get_images(1: GetImagesRequest request)
 
   TransferImageResponse transfer_image(1: TransferImageRequest request)
-  PrepareReceiveImageResponse prepare_receive_image(1: PrepareReceiveImageRequest request)
-  ReceiveImageResponse receive_image(1: ReceiveImageRequest request)
 
   /**
    * Image scan/sweep

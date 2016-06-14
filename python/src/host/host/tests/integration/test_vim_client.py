@@ -245,12 +245,6 @@ class TestVimClient(unittest.TestCase):
         remove_spec._remove_device(found_device)
         return remove_spec
 
-    def test_clone_ticket(self):
-        ticket = self.vim_client.acquire_clone_ticket()
-        vim_client2 = VimClient()
-        vim_client2.connect_ticket(self.host, ticket)
-        vim_client2.host_system
-
     def _wait_vm_has_disk(self, vm_id, disk_num):
         """Wait until the vm has disk number of the vm becomes disk_num
         """
