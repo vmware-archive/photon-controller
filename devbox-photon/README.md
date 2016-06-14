@@ -34,7 +34,7 @@ This will bring up Vagrant, build all service containers, then start them. Your 
 
 #### Setting Vagrant box name and location
 
-Devbox Vagrant box file is located at `https://bintray.com/artifact/download/photon-controller/public/<build #>/resource/photon-devbox.box`. It is downloaded on-demand and cached locally. It is also associated with a name. Both name and URL can be redirected by using environment variables (`DEVBOX_NAME` and `DEVBOX_URL`).
+Devbox Vagrant box file is located at `https://s3.amazonaws.com/photon-platform/artifacts/devbox/<build #>/photon-devbox.box`. It is downloaded on-demand and cached locally. It is also associated with a name. Both name and URL can be redirected by using environment variables (`DEVBOX_NAME` and `DEVBOX_URL`).
 
 ### Checking devbox status
 
@@ -178,10 +178,10 @@ The following enviroment variables need to be set in addition to the ones mentio
 * `OVFTOOL_FULL_PATH` to specify the path of the ovftool installation on your machine
 * `RUN_ON_MAC=true` if you are running devbox on Mac
 
-Then run the script `./prepare-devbox-deployment.sh`. On successful completion of the script you will be able to see 
+Then run the script `./prepare-devbox-deployment.sh`. On successful completion of the script you will be able to see
 that `devbox is ready for deployment`.
 
-Then you can point the CLI against the endpoint `http://PUBLIC_NETWORK_IP:9000` and do a deployment. To find out how 
+Then you can point the CLI against the endpoint `http://PUBLIC_NETWORK_IP:9000` and do a deployment. To find out how
 to use CLI, please refer to the Readme under ruby/cli.
 
 
