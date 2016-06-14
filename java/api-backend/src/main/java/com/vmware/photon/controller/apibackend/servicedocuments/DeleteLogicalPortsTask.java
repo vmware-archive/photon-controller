@@ -106,6 +106,13 @@ public class DeleteLogicalPortsTask extends ServiceDocument {
   public Integer controlFlags;
 
   /**
+   * Execution delay time to verify a port has been deleted.
+   */
+  @DefaultInteger(10)
+  @Immutable
+  public Integer executionDelay;
+
+  /**
    * Customized task state. Defines the sub-stages.
    */
   public static class TaskState extends com.vmware.xenon.common.TaskState {
@@ -117,8 +124,11 @@ public class DeleteLogicalPortsTask extends ServiceDocument {
     public enum SubStage {
       GET_LINK_PORTS,
       DELETE_TIER1_ROUTER_LINK_PORT,
+      WAIT_DELETE_TIER1_ROUTER_LINK_PORT,
       DELETE_TIER0_ROUTER_LINK_PORT,
+      WAIT_DELETE_TIER0_ROUTER_LINK_PORT,
       DELETE_TIER1_ROUTER_DOWN_LINK_PORT,
+      WAIT_DELETE_TIER1_ROUTER_DOWN_LINK_PORT,
       DELETE_SWITCH_PORT,
     }
   }
