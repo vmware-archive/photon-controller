@@ -227,7 +227,8 @@ module EsxCloud
       default_create_vm_spec = { image_id: EsxCloud::SystemSeeder.instance.image!.id,
                                  name: random_name("vm-"),
                                  flavor: EsxCloud::SystemSeeder.instance.vm_flavor!.name,
-                                 disks: create_ephemeral_disks([random_name("disk-")]) }
+                                 disks: create_ephemeral_disks([random_name("disk-")]),
+                                 networks: [EsxCloud::SystemSeeder.instance.network!.id] }
       project.create_vm(default_create_vm_spec.merge(override_options))
     end
 

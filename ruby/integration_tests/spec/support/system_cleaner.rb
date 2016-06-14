@@ -131,6 +131,10 @@ module EsxCloud
         delete_vm(vm, stat)
       end
 
+      client.find_all_networks().items.flatten.each do |network|
+        delete_network(network, stat)
+      end
+
       update_stat stat, "project", project.id
       project.delete
       stat

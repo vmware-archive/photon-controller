@@ -202,19 +202,25 @@ describe "image", management: true, image: true do
       image = EsxCloud::Image.create(test_image, image_name, "EAGER")
       image.id
     end
+    let(:network) do
+      network = @seeder.network!
+    end
     let(:vm) do
       project.create_vm(
         name: random_name("vm-"), flavor: vm_flavor.name,
-        image_id: image_id, disks: create_ephemeral_disks([random_name("disk-")]))
+        image_id: image_id, disks: create_ephemeral_disks([random_name("disk-")]),
+        networks: [network.id])
     end
 
     before do
+      network # call let(:network) for network to create vm
       vm # call let(:vm) for vm to use image
       image = EsxCloud::Image.find_by_id(image_id)
       image.delete
     end
 
     after do
+      network.delete
       vm.delete
     end
 
