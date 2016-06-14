@@ -123,6 +123,7 @@ public class MockHelper {
       HostConfig hostConfig = new HostConfig();
       hostConfig.setCpu_count(2);
       hostConfig.setMemory_mb(4096);
+      hostConfig.setEsx_version("ESX Version");
 
       agentControlClient = new AgentControlClientMock.Builder()
           .provisionResultCode(ProvisionResultCode.OK)
