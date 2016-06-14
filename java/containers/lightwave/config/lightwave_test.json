@@ -1,0 +1,20 @@
+{
+  "serviceName": "Lightwave",
+  "cpuCount": 1,
+  "memoryMb": 4096,
+  "diskGb": 8,
+  "isReplicated": false,
+  "isPrivileged": true,
+  "useHostNetwork": true,
+  "containerImage": "vmware/lightwave-sts",
+  "portBindings": {
+    "443":443
+  },
+  "volumeBindings": {
+    "/devbox_data/java/containers/lightwave/build/config": "/etc/lightwave",
+    "/vagrant/log/lightwave": "/var/log"
+  },
+  "dynamicParameters": {
+    "LOG_DIRECTORY": "/vagrant/log"
+  }
+}

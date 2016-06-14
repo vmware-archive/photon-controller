@@ -54,10 +54,182 @@ Vagrant.configure("2") do |config|
   #
   config.vm.provider "virtualbox"
 
+  restart_always = "--restart=always"
+  if ENV["NO_RESTART_ALWAYS"]
+    restart_always = ""
+  end
+
+  # Where to save dynamic parameters
+  dynamic_params_file = "/home/vagrant/dynamic-params.json"
+
+  # Prepare build directory
+  config.vm.provision :shell, :privileged => false, :inline => <<-EOS
+    set -ex
+    sudo mkdir -p #{DATASTORE_DIR}
+    sudo chown -R vagrant:vagrant $HOME
+  EOS
+
+  # ================ PARAMETERS AND SYNC DIRECTORIES ================
+
+  #
+  # Configure memory and nat dns
+  #
+  config.vm.provider "virtualbox" do |v|
+    v.customize ["modifyvm", :id, "--memory", ENV["DEVBOX_PHOTON_MEMORY"] || "3072"]
+    v.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
+    v.customize ["modifyvm", :id, "--cpus", ENV["DEVBOX_PHOTON_CPUS"] || "4"]
+    v.customize ['modifyvm', :id, '--acpi', 'off'] # needed to run PhotonOS RC1 in vagrant under stress
+  end
+
+  #
+  # Configure sync-ed directories
+  #
+  config.vm.synced_folder "..", "/devbox_data"
+  config.vm.synced_folder ".", "/vagrant", mount_options: ["dmode=777", "fmode=775"]
+  config.vm.synced_folder "#{Dir.home}/.gradle/#{ENV["JOB_NAME"] || "devbox-local"}", "/gradle", create: true
+  config.vm.synced_folder "stats_data", "/stats_data", mount_options: ["dmode=777,fmode=777"]
+
+  #
+  # Provided for convenience only; don't take a strong dependency on it
+  #
+  config.vm.synced_folder Dir.home, "/home_data"
+
+  # Clean utility scripts (file provision fails to do this)
+  config.vm.provision :shell, :inline => "rm -rf #{SCRIPT_DIR}/"
+  # Copy utility scripts
+  config.vm.provision "file", source: "scripts/bin/", destination: "#{SCRIPT_DIR}/"
+  # Copy profile scripts
+  config.vm.provision :shell, :inline => "cp -fa /vagrant/scripts/profile/* /etc/profile.d/"
+
+  # ================ PROXY CONFIGURATION ================
+
+  #
+  # Our environments need proxies to be set explicitly, we do it by
+  # adding /etc/profile.d/proxy.sh script. Vagrant VMs don't pick up
+  # those automatically, so we need to copy it to Vagrant VM.
+  #
+  if ENV["PROXY_PROFILE"]
+    proxy_script = "/etc/profile.d/proxy.sh"
+    if File.exists?(proxy_script)
+      FileUtils.cp(proxy_script, ".")
+      config.vm.provision :shell, :inline => <<-EOS
+          set -ex
+          cp /vagrant/proxy.sh /etc/profile.d
+          echo "\nexport no_proxy=#{network_ip},.sock,\\$no_proxy" >> /etc/profile.d/proxy.sh
+      EOS
+    else
+      abort("PROXY_PROFILE is set but '#{proxy_script}' doesn't exist")
+    end
+  end
+
+  # Install jsonlint, useful for catching errors in dynamic_params early
+  config.vm.provision :shell, :inline  => <<-EOM
+    tdnf makecache
+    tdnf install -y gmp-devel
+    gem install jsonlint --no-rdoc --no-ri
+  EOM
+
+  #
+  # VM definition for lightwave
+  #
+  config.vm.define "lightwave" do |lightwave|
+    lightwave.vm.guest = :photon
+    lightwave.vm.box = ENV['DEVBOX_NAME'] || "photon-devbox-60"
+    lightwave.vm.box_url = ENV['DEVBOX_URL'] ||
+        "https://s3.amazonaws.com/photon-platform/artifacts/devbox/60/photon-devbox.box"
+    unless ENV["NO_PORT_FORWARDING"]
+      #Lightwave
+      lightwave.vm.network :forwarded_port, guest: 22, host: 9022,
+          auto_correct: true
+      lightwave.vm.network :forwarded_port, guest: 53, host: 9053,
+          auto_correct: true
+      lightwave.vm.network :forwarded_port, guest: 88, host: 9188,
+          auto_correct: true
+      lightwave.vm.network :forwarded_port, guest: 389, host: 9389,
+          auto_correct: true
+      lightwave.vm.network :forwarded_port, guest: 636, host: 9636,
+          auto_correct: true
+      lightwave.vm.network :forwarded_port, guest: 2012, host: 2012,
+          auto_correct: true
+      lightwave.vm.network :forwarded_port, guest: 2014, host: 2014,
+          auto_correct: true
+      lightwave.vm.network :forwarded_port, guest: 2020, host: 2020,
+          auto_correct: true
+    end
+
+    # Configure network
+    if ENV["PUBLIC_NETWORK_IP"]
+      public_network_ip = ENV["PUBLIC_LW_NETWORK_IP"]
+      network_ip = public_network_ip
+      bridge_network = ENV["BRIDGE_NETWORK"]
+      public_network_netmask = ENV["PUBLIC_NETWORK_NETMASK"] || "255.255.255.128"
+      public_network_netmask = ENV["PUBLIC_NETWORK_NETMASK"]
+      lightwave.vm.network :public_network, bridge: bridge_network, ip: public_network_ip, netmask: public_network_netmask
+
+      public_network_gateway = ENV["PUBLIC_NETWORK_GATEWAY"]
+      # Assign correct default gateway to public network
+      lightwave.vm.provision :shell, :inline => <<-EOS
+        set -ex
+        ip route del default
+        ip route add default via #{public_network_gateway} dev enp0s8
+      EOS
+      ENV["DOCKER_URL"] = ENV["DOCKER_URL"] || "http://#{public_network_ip}:#{DOCKER_PORT}"
+    else
+      private_network_lw_ip = ENV["PRIVATE_NETWORK_LW_IP"] || "172.31.253.67"
+      lightwave.vm.network :private_network, ip: private_network_lw_ip
+    end
+
+    #
+    # Configure hostname
+    #
+    lightwave.vm.hostname = "lightwave"
+
+    lightwave.vm.provision :shell, :privileged => false, :inline => <<-EOS
+      set -xe
+      sleep 15 # docker takes longer to come up in RC1
+      docker tag devbox/compileservices photon/compileservices
+    EOS
+
+    #
+    # Generate Lightwave container start script
+    #
+    lightwave_config_file="/devbox_data/java/containers/lightwave/config/lightwave_test.json"
+    lightwave.vm.provision :shell, :privileged => true, :inline => <<-EOS
+    set -ex
+out="#{SCRIPT_DIR}/start-lightwave"
+cat > $out <<-'EOM'
+  #!/bin/bash
+
+  docker build -t vmware/lightwave-sts /devbox_data/java/containers/lightwave
+
+  config_build_dir="/devbox_data/java/containers/lightwave/build/config"
+  mkdir -p $config_build_dir
+  combined_params=$(jq -s '.[0] * (.[1]#{CONFIG_JQ_FILTER})' #{dynamic_params_file} #{lightwave_config_file})
+
+  cd $(dirname #{lightwave_config_file})
+  for file in ./*.#{CONFIG_EXTS}
+  do
+    if [ -f $file ]; then
+      mustache - $file <<< "$combined_params" > "$config_build_dir/$file"
+    fi
+  done
+EOM
+cat >> $out <<-EOM
+  $(gen-docker-stop #{lightwave_config_file}) &> /dev/null || true
+  $(gen-docker-rm #{lightwave_config_file}) &> /dev/null || true
+  $(gen-docker-run #{lightwave_config_file} /usr/sbin/init)
+  echo "Start lightwave"
+EOM
+chmod +x $out
+$out
+    EOS
+  end
+
+
   #
   # VM definition for photon
   #
-  config.vm.define "photon" do |photon|
+  config.vm.define "photon", primary: true do |photon|
     photon.vm.guest = :photon
     photon.vm.box = ENV['DEVBOX_NAME'] || "photon-devbox-60"
     photon.vm.box_url = ENV['DEVBOX_URL'] ||
@@ -100,214 +272,140 @@ Vagrant.configure("2") do |config|
       # Expose Docker for the Gradle build on the host
       photon.vm.network :forwarded_port, guest: 2375, host: DOCKER_PORT
     end
-  end
 
-  restart_always = "--restart=always"
-  if ENV["NO_RESTART_ALWAYS"]
-    restart_always = ""
-  end
-
-  config.vm.provision :shell, :privileged => false, :inline => <<-EOS
-    set -xe
-    sleep 15 # docker takes longer to come up in RC1
-    docker tag devbox/compileservices photon/compileservices
-  EOS
-
-  # Prepare build directory
-  config.vm.provision :shell, :privileged => false, :inline => <<-EOS
-    set -ex
-    sudo mkdir -p #{DATASTORE_DIR}
-    sudo chown -R vagrant:vagrant $HOME
-  EOS
-
-  # Clean utility scripts (file provision fails to do this)
-  config.vm.provision :shell, :inline => "rm -rf #{SCRIPT_DIR}/"
-  # Copy utility scripts
-  config.vm.provision "file", source: "scripts/bin/", destination: "#{SCRIPT_DIR}/"
-  # Copy profile scripts
-  config.vm.provision :shell, :inline => "cp -fa /vagrant/scripts/profile/* /etc/profile.d/"
-
-  # ================ NETWORK CONFIGURATION ================
-
-  #
-  # Configure network
-  #
-  if ENV["PUBLIC_NETWORK_IP"]
-    public_network_ip = ENV["PUBLIC_NETWORK_IP"]
-    network_ip = public_network_ip
-    bridge_network = ENV["BRIDGE_NETWORK"]
-    public_network_netmask = ENV["PUBLIC_NETWORK_NETMASK"] || "255.255.255.128"
-    public_network_netmask = ENV["PUBLIC_NETWORK_NETMASK"]
-    config.vm.network :public_network, bridge: bridge_network, ip: public_network_ip, netmask: public_network_netmask
-
-    public_network_gateway = ENV["PUBLIC_NETWORK_GATEWAY"]
-    # Assign correct default gateway to public network
-    config.vm.provision :shell, :inline => <<-EOS
-      set -ex
-      ip route del default
-      ip route add default via #{public_network_gateway} dev enp0s8
+    photon.vm.provision :shell, :privileged => false, :inline => <<-EOS
+      set -xe
+      sleep 15 # docker takes longer to come up in RC1
+      docker tag devbox/compileservices photon/compileservices
     EOS
-    ENV["DOCKER_URL"] = ENV["DOCKER_URL"] || "http://#{public_network_ip}:#{DOCKER_PORT}"
-  else
-    private_network_ip = ENV["PRIVATE_NETWORK_IP"] || "172.31.253.66"
-    network_ip = private_network_ip
-    config.vm.network :private_network, ip: private_network_ip
-  end
 
-  #
-  # Configure hostname
-  #
-  config.vm.hostname = "devbox"
 
-  # ================ PARAMETERS AND SYNC DIRECTORIES ================
+    # ================ NETWORK CONFIGURATION ================
 
-  #
-  # Configure memory and nat dns
-  #
-  config.vm.provider "virtualbox" do |v|
-    v.customize ["modifyvm", :id, "--memory", ENV["DEVBOX_PHOTON_MEMORY"] || "3072"]
-    v.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
-    v.customize ["modifyvm", :id, "--cpus", ENV["DEVBOX_PHOTON_CPUS"] || "4"]
-    v.customize ['modifyvm', :id, '--acpi', 'off'] # needed to run PhotonOS RC1 in vagrant under stress
-  end
+    #
+    # Configure network
+    #
+    if ENV["PUBLIC_NETWORK_IP"]
+      public_network_ip = ENV["PUBLIC_NETWORK_IP"]
+      network_ip = public_network_ip
+      bridge_network = ENV["BRIDGE_NETWORK"]
+      public_network_netmask = ENV["PUBLIC_NETWORK_NETMASK"] || "255.255.255.128"
+      public_network_netmask = ENV["PUBLIC_NETWORK_NETMASK"]
+      photon.vm.network :public_network, bridge: bridge_network, ip: public_network_ip, netmask: public_network_netmask
 
-  #
-  # Configure sync-ed directories
-  #
-  config.vm.synced_folder "..", "/devbox_data"
-  config.vm.synced_folder ".", "/vagrant", mount_options: ["dmode=777", "fmode=775"]
-  config.vm.synced_folder "#{Dir.home}/.gradle/#{ENV["JOB_NAME"] || "devbox-local"}", "/gradle", create: true
-  config.vm.synced_folder "stats_data", "/stats_data", mount_options: ["dmode=777,fmode=777"]
-
-  #
-  # Provided for convenience only; don't take a strong dependency on it
-  #
-  config.vm.synced_folder Dir.home, "/home_data"
-
-  # ================ PROXY CONFIGURATION ================
-
-  #
-  # Our environments need proxies to be set explicitly, we do it by
-  # adding /etc/profile.d/proxy.sh script. Vagrant VMs don't pick up
-  # those automatically, so we need to copy it to Vagrant VM.
-  #
-  if ENV["PROXY_PROFILE"]
-    proxy_script = "/etc/profile.d/proxy.sh"
-    if File.exists?(proxy_script)
-      FileUtils.cp(proxy_script, ".")
-      config.vm.provision :shell, :inline => <<-EOS
+      public_network_gateway = ENV["PUBLIC_NETWORK_GATEWAY"]
+      # Assign correct default gateway to public network
+      photon.vm.provision :shell, :inline => <<-EOS
         set -ex
-        cp /vagrant/proxy.sh /etc/profile.d
-        echo "\nexport no_proxy=#{network_ip},.sock,\\$no_proxy" >> /etc/profile.d/proxy.sh
+        ip route del default
+        ip route add default via #{public_network_gateway} dev enp0s8
       EOS
+      ENV["DOCKER_URL"] = ENV["DOCKER_URL"] || "http://#{public_network_ip}:#{DOCKER_PORT}"
     else
-      abort("PROXY_PROFILE is set but '#{proxy_script}' doesn't exist")
-    end
-  end
-
-  # Install jsonlint, useful for catching errors in dynamic_params early
-  config.vm.provision :shell, :inline  => <<-EOM
-    tdnf makecache
-    tdnf install -y gmp-devel
-    gem install jsonlint --no-rdoc --no-ri
-  EOM
-
-  dynamic_params = %Q(
-  {
-    "REGISTRATION_ADDRESS" : "#{network_ip}",
-    "TASK_EXPIRATION_THRESHOLD": "3 minutes",
-    "TASK_EXPIRATION_SCAN_INTERVAL": "3 minutes",
-    "SHARED_SECRET": "#{API_SHARED_SECRET}",
-    "DEPLOYMENT_ID": "#{DEPLOYMENT_ID}",
-    "LOAD_BALANCER_SERVERS": [ { "serverName": "devbox-management-api", "serverAddress": "#{network_ip}:9000" } ],
-    "ZOOKEEPER_INSTANCES": [ { "zookeeperInstance": "server.1=#{network_ip}:2888:3888" } ],
-    "APIFE_IP": "#{network_ip}",
-    "ZOOKEEPER_QUORUM": "#{network_ip}:2181",
-    "MGMT_API_HTTP_SERVERS": [ { "serverName": "devbox-management-api", "serverAddress": "#{network_ip}:9000" } ],
-    "MGMT_UI_HTTP_SERVERS": [ { "serverName": "devbox-management-ui-http", "serverAddress": "#{network_ip}:80" } ],
-    "MGMT_UI_HTTPS_SERVERS": [ { "serverName": "devbox-management-ui-https", "serverAddress": "#{network_ip}:443" } ])
-
-  # Auth parameters
-  if ENV['ENABLE_AUTH'] == 'true'
-    dynamic_params += %Q(,\n  "ENABLE_AUTH" : "true")
-    dynamic_params += %Q(,\n  "APIFE_PORT" : "443")
-    dynamic_params += %Q(,\n  "MGMT_API_PORT_SELECTOR" : "true")
-
-    if ENV['PHOTON_AUTH_LS_ENDPOINT']
-      dynamic_params += %Q(,\n  "AUTH_SERVER_ADDRESS" : "#{ENV['PHOTON_AUTH_LS_ENDPOINT']}")
-    else
-      abort("auth is enabled, but server address is not set")
+      private_network_ip = ENV["PRIVATE_NETWORK_IP"] || "172.31.253.66"
+      network_ip = private_network_ip
+      photon.vm.network :private_network, ip: private_network_ip
     end
 
-    if ENV['PHOTON_AUTH_SERVER_PORT']
-      dynamic_params += %Q(,\n  "AUTH_SERVER_PORT" : "#{ENV['PHOTON_AUTH_SERVER_PORT']}")
+    #
+    # Configure hostname
+    #
+    photon.vm.hostname = "devbox"
+
+
+    dynamic_params = %Q(
+    {
+      "REGISTRATION_ADDRESS" : "#{network_ip}",
+      "TASK_EXPIRATION_THRESHOLD": "3 minutes",
+      "TASK_EXPIRATION_SCAN_INTERVAL": "3 minutes",
+      "SHARED_SECRET": "#{API_SHARED_SECRET}",
+      "DEPLOYMENT_ID": "#{DEPLOYMENT_ID}",
+      "LOAD_BALANCER_SERVERS": [ { "serverName": "devbox-management-api", "serverAddress": "#{network_ip}:9000" } ],
+      "ZOOKEEPER_INSTANCES": [ { "zookeeperInstance": "server.1=#{network_ip}:2888:3888" } ],
+      "APIFE_IP": "#{network_ip}",
+      "ZOOKEEPER_QUORUM": "#{network_ip}:2181",
+      "MGMT_API_HTTP_SERVERS": [ { "serverName": "devbox-management-api", "serverAddress": "#{network_ip}:9000" } ],
+      "MGMT_UI_HTTP_SERVERS": [ { "serverName": "devbox-management-ui-http", "serverAddress": "#{network_ip}:80" } ],
+      "MGMT_UI_HTTPS_SERVERS": [ { "serverName": "devbox-management-ui-https", "serverAddress": "#{network_ip}:443" } ])
+
+    # Auth parameters
+    if ENV['ENABLE_AUTH'] == 'true'
+        dynamic_params += %Q(,\n  "ENABLE_AUTH" : "true")
+        dynamic_params += %Q(,\n  "APIFE_PORT" : "443")
+        dynamic_params += %Q(,\n  "MGMT_API_PORT_SELECTOR" : "true")
+
+        if ENV['PHOTON_AUTH_LS_ENDPOINT']
+          dynamic_params += %Q(,\n  "AUTH_SERVER_ADDRESS" : "#{ENV['PHOTON_AUTH_LS_ENDPOINT']}")
+        else
+          abort("auth is enabled, but server address is not set")
+        end
+
+        if ENV['PHOTON_AUTH_SERVER_PORT']
+          dynamic_params += %Q(,\n  "AUTH_SERVER_PORT" : "#{ENV['PHOTON_AUTH_SERVER_PORT']}")
+        else
+          abort("auth is enabled, but auth server port is not set")
+        end
+
+        if ENV['PHOTON_AUTH_SERVER_TENANT']
+          dynamic_params += %Q(,\n  "AUTH_SERVER_TENANT" : "#{ENV['PHOTON_AUTH_SERVER_TENANT']}")
+        else
+          abort("auth is enabled, but auth tenant is not set")
+        end
+
+        if ENV['PHOTON_SWAGGER_LOGIN_URL']
+          dynamic_params += %Q(,\n  "SWAGGER_LOGIN_URL" : "#{ENV['PHOTON_SWAGGER_LOGIN_URL']}")
+        else
+          abort("auth is enabled, but swagger login url is not set")
+        end
+
+      if ENV['PHOTON_SWAGGER_LOGOUT_URL']
+        dynamic_params += %Q(,\n  "SWAGGER_LOGOUT_URL" : "#{ENV['PHOTON_SWAGGER_LOGOUT_URL']}")
+      else
+        abort("auth is enabled, but swagger logout url is not set")
+      end
+
     else
-      abort("auth is enabled, but auth server port is not set")
+      dynamic_params += %Q(,\n  "ENABLE_AUTH" : "false")
+      dynamic_params += %Q(,\n  "APIFE_PORT" : "28080")
     end
 
-    if ENV['PHOTON_AUTH_SERVER_TENANT']
-      dynamic_params += %Q(,\n  "AUTH_SERVER_TENANT" : "#{ENV['PHOTON_AUTH_SERVER_TENANT']}")
+    # Virtual network parameters
+    if ENV.has_key?('USE_VIRTUAL_NETWORK')
+      dynamic_params += %Q(,\n  "USE_VIRTUAL_NETWORK" : "#{ENV['USE_VIRTUAL_NETWORK']}")
     else
-      abort("auth is enabled, but auth tenant is not set")
+      dynamic_params += %Q(,\n  "USE_VIRTUAL_NETWORK" : "false")
     end
 
-    if ENV['PHOTON_SWAGGER_LOGIN_URL']
-      dynamic_params += %Q(,\n  "SWAGGER_LOGIN_URL" : "#{ENV['PHOTON_SWAGGER_LOGIN_URL']}")
+    # Real agent parameters
+    if ENV['REAL_AGENT']
+      dynamic_params += %Q(,\n  "USE_ESX_STORE" : "true")
+
+      if ENV['ESX_IP'] && ENV['ESX_DATASTORE']
+        dynamic_params += %Q(,\n  "ESX_HOST" : "#{ENV['ESX_IP']}")
+        dynamic_params += %Q(,\n  "DATASTORE" : "#{ENV['ESX_DATASTORE']}")
+      else
+        abort("ESX_IP or ESX_DATASTORE not set")
+      end
     else
-      abort("auth is enabled, but swagger login url is not set")
+      dynamic_params += %Q(,\n  "USE_ESX_STORE" : "false")
+      dynamic_params += %Q(,\n  "DATASTORE" : "devbox_datastore")
     end
 
-    if ENV['PHOTON_SWAGGER_LOGOUT_URL']
-      dynamic_params += %Q(,\n  "SWAGGER_LOGOUT_URL" : "#{ENV['PHOTON_SWAGGER_LOGOUT_URL']}")
+    # Syslog parameters
+    if ENV['ENABLE_SYSLOG'] == 'true'
+      if ENV['SYSLOG_ENDPOINT']
+        dynamic_params += %Q(,\n  "SYSLOG_ENDPOINT" : "#{ENV['SYSLOG_ENDPOINT']}")
+        dynamic_params += %Q(,\n  "ENABLE_SYSLOG" : "true")
+      else
+        abort("ENABLE_SYSLOG is set, but SYSLOG_ENDPOINT is not")
+      end
     else
-      abort("auth is enabled, but swagger logout url is not set")
+      dynamic_params += %Q(,\n  "ENABLE_SYSLOG" : "false")
     end
+    dynamic_params += "\n}"
 
-  else
-    dynamic_params += %Q(,\n  "ENABLE_AUTH" : "false")
-    dynamic_params += %Q(,\n  "APIFE_PORT" : "28080")
-  end
-
-  # Virtual network parameters
-  if ENV.has_key?('USE_VIRTUAL_NETWORK')
-    dynamic_params += %Q(,\n  "USE_VIRTUAL_NETWORK" : "#{ENV['USE_VIRTUAL_NETWORK']}")
-  else
-    dynamic_params += %Q(,\n  "USE_VIRTUAL_NETWORK" : "false")
-  end
-
-  # Real agent parameters
-  if ENV['REAL_AGENT']
-    dynamic_params += %Q(,\n  "USE_ESX_STORE" : "true")
-
-    if ENV['ESX_IP'] && ENV['ESX_DATASTORE']
-      dynamic_params += %Q(,\n  "ESX_HOST" : "#{ENV['ESX_IP']}")
-      dynamic_params += %Q(,\n  "DATASTORE" : "#{ENV['ESX_DATASTORE']}")
-    else
-      abort("ESX_IP or ESX_DATASTORE not set")
-    end
-  else
-    dynamic_params += %Q(,\n  "USE_ESX_STORE" : "false")
-    dynamic_params += %Q(,\n  "DATASTORE" : "devbox_datastore")
-  end
-
-  # Syslog parameters
-  if ENV['ENABLE_SYSLOG'] == 'true'
-    if ENV['SYSLOG_ENDPOINT']
-      dynamic_params += %Q(,\n  "SYSLOG_ENDPOINT" : "#{ENV['SYSLOG_ENDPOINT']}")
-      dynamic_params += %Q(,\n  "ENABLE_SYSLOG" : "true")
-    else
-      abort("ENABLE_SYSLOG is set, but SYSLOG_ENDPOINT is not")
-    end
-  else
-    dynamic_params += %Q(,\n  "ENABLE_SYSLOG" : "false")
-  end
-  dynamic_params += "\n}"
-
-  # Where to save dynamic parameters
-  dynamic_params_file = "/home/vagrant/dynamic-params.json"
-
-  # Write dynamic_params file
-  config.vm.provision :shell, :privileged => false, :inline => <<-EOS
+    # Write dynamic_params file
+    config.vm.provision :shell, :privileged => false, :inline => <<-EOS
 cat > #{dynamic_params_file} <<'EOM'
   #{dynamic_params}
 EOM
@@ -327,7 +425,7 @@ EOM
   # ================ PROVISIONING ================
 
   # renaming esxcloud containers to zookeeper Containers
-  config.vm.provision :shell, :inline => <<-EOS
+  photon.vm.provision :shell, :inline => <<-EOS
     docker tag devbox/zookeeper photon/zookeeper
     docker tag devbox/haproxy photon/haproxy
   EOS
@@ -335,7 +433,7 @@ EOM
   #
   # Give access to zookeeper user inside container to write to log directory in host
   #
-  config.vm.provision :shell, :inline => <<-EOS
+  photon.vm.provision :shell, :inline => <<-EOS
     set -ex
     chmod -R 777 /var/log/
   EOS
@@ -345,7 +443,7 @@ EOM
   #
   agent_config_build_dir="/mirror/devbox_data/java/devbox/agent/build/configuration"
 
-  config.vm.provision :shell, :privileged => false, :inline => <<-EOS
+  photon.vm.provision :shell, :privileged => false, :inline => <<-EOS
 out="#{SCRIPT_DIR}/build-agent"
 cat > $out <<-'EOM'
 #!/bin/bash -xe
@@ -380,7 +478,7 @@ chmod +x $out
 
   agent_parameters_file = "/home/vagrant/agent-parameters.json"
   # Make sure agent params file exists so that mustache doesn't fail
-  config.vm.provision :shell, :privileged => false, :inline => "touch #{agent_parameters_file}"
+  photon.vm.provision :shell, :privileged => false, :inline => "touch #{agent_parameters_file}"
 
   if !(ENV["PUBLIC_NETWORK_IP"] || ENV["REAL_AGENT"])
     agent_parameters = %Q(
@@ -414,7 +512,7 @@ EOM
   #
   # Start agent script
   #
-  config.vm.provision :shell, :privileged => false, :inline => <<-EOS
+  photon.vm.provision :shell, :privileged => false, :inline => <<-EOS
 set -ex
 out=#{SCRIPT_DIR}/start-agent
 cat > $out <<-'EOM'
@@ -457,7 +555,7 @@ chmod +x $out
   #
   # Stop agent script
   #
-  config.vm.provision :shell, :privileged => false, :inline => <<-EOS
+  photon.vm.provision :shell, :privileged => false, :inline => <<-EOS
 set -ex
 out=#{SCRIPT_DIR}/stop-agent
 cat > $out <<-'EOM'
@@ -470,7 +568,7 @@ chmod +x $out
   #
   # Create log directories for mounting
   #
-  config.vm.provision :shell, :privileged => false, :inline => <<-EOS
+  photon.vm.provision :shell, :privileged => false, :inline => <<-EOS
     set -ex
     mkdir -p /vagrant/log/zookeeper
     mkdir -p /vagrant/log/haproxy
@@ -486,7 +584,7 @@ chmod +x $out
     config_file="#{config_dir}/#{service}_test.json"
 
     # Write service start script
-    config.vm.provision :shell, :privileged => false, :inline => <<-EOS
+    photon.vm.provision :shell, :privileged => false, :inline => <<-EOS
 out="#{SCRIPT_DIR}/start-#{service}"
 cat > $out <<-'EOM'
   #!/bin/bash -ex
@@ -520,7 +618,7 @@ EOM
 chmod +x $out
     EOS
 
-    config.vm.provision :shell, :privileged => false, :inline => <<-EOS
+    photon.vm.provision :shell, :privileged => false, :inline => <<-EOS
 out="#{SCRIPT_DIR}/copy-deployer-config"
 cat >> $out <<-'EOM'
   dir="/etc/esxcloud-deployer/configurations/#{service}/"
@@ -535,7 +633,7 @@ chmod +x $out
   # Generate Zookeeper container start script
   #
   zk_config_file="/devbox_data/java/containers/zookeeper/config/zookeeper_test.json"
-  config.vm.provision :shell, :privileged => false, :inline => <<-EOS
+  photon.vm.provision :shell, :privileged => false, :inline => <<-EOS
 out="#{SCRIPT_DIR}/start-zookeeper"
 cat > $out <<-'EOM'
   #!/bin/bash
@@ -565,7 +663,7 @@ chmod +x $out
   # Generate HAProxy container start script
   #
   haproxy_config_file="/devbox_data/java/containers/haproxy/config/haproxy_test.json"
-  config.vm.provision :shell, :privileged => false, :inline => <<-EOS
+  photon.vm.provision :shell, :privileged => false, :inline => <<-EOS
 out="#{SCRIPT_DIR}/start-haproxy"
 cat > $out <<-'EOM'
   #!/bin/bash
@@ -592,7 +690,7 @@ chmod +x $out
   #
   # Set up Graphite container for integration tests
   #
-  config.vm.provision :shell, :privileged => false, :inline => <<-EOS
+  photon.vm.provision :shell, :privileged => false, :inline => <<-EOS
     set -ex
     mkdir -p $HOME/graphite/conf
 
@@ -636,7 +734,7 @@ EOM
   #
   # Generate service check script, gets called by start-all script
   #
-  config.vm.provision :shell, :privileged => false, :inline => <<-EOS
+  photon.vm.provision :shell, :privileged => false, :inline => <<-EOS
 out="#{SCRIPT_DIR}/check-services"
 cat > $out <<-'EOM'
   #!/bin/bash -xe
@@ -677,8 +775,10 @@ cat > $out <<-'EOM'
 EOM
 chmod +x $out
   EOS
+end
 
-  #
+
+#
   # Clean log directory if selected
   #
   if ENV["DEVBOX_CLEAN_LOGS"]
