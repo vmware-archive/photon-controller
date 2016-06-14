@@ -572,7 +572,7 @@ public class HostService extends StatefulService {
         "MANAGEMENT_VM_MEMORY_MB_OVERWRITE";
     public static final String METADATA_KEY_NAME_MANAGEMENT_VM_DISK_GB_OVERWRITE =
         "MANAGEMENT_VM_DISK_GB_OVERWRITE";
-    public static final String METADATA_KEY_NAME_ALLOWED_SERVICES = "METADATA_KEY_NAME_ALLOWED_SERVICES";
+    public static final String METADATA_KEY_NAME_ALLOWED_SERVICES = "ALLOWED_SERVICES";
 
     /**
      * This metadata should only be used for testing purpose. In the DeploymentWorkflowServiceTest, we need
