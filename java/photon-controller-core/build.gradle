@@ -10,7 +10,7 @@ mainClassName = 'com.vmware.photon.controller.core.Main'
 
 dependencies {
   compile project(':common')
-  compile project(':common-dcp')
+  compile project(':common-xenon')
   compile project(':api')
   compile project(':cloud-store')
   compile project(':housekeeper')

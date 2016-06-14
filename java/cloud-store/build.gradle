@@ -10,7 +10,7 @@ mainClassName = 'com.vmware.photon.controller.cloudstore.Main'
 
 dependencies {
   compile project(':common')
-  compile project(':common-dcp')
+  compile project(':common-xenon')
   compile project(':api')
 
   compile "org.apache.commons:commons-lang3:${versions.commons_lang3}"

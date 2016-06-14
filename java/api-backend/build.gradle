@@ -2,7 +2,7 @@ apply plugin: 'java'
 
 dependencies {
   compile project(':common')
-  compile project(':common-dcp')
+  compile project(':common-xenon')
   compile project(':cloud-store')
   compile project(':nsx-client')
 

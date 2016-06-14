@@ -12,7 +12,7 @@ dependencies {
   compile(project(':api'))
   compile(project(':common'))
   compile(project(':common-auth'))
-  compile(project(':common-dcp'))
+  compile(project(':common-xenon'))
   compile(project(':cloud-store'))
   compile(project(':api-frontend:api-frontend-common'))
   compile(project(':api-backend'))
