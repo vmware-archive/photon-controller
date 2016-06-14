@@ -12,17 +12,37 @@
 require "spec_helper"
 
 describe "virtual_network_lifecyle", :virtual_network => true do
+  let(:networks_to_delete) { [] }
+  let(:spec) {
+    EsxCloud::VirtualNetworkCreateSpec.new(random_name("network-"), "virtual network", "ROUTED")
+  }
+
   before(:all) do
     @seeder = EsxCloud::SystemSeeder.instance
     @project = @seeder.project!
   end
 
-  let(:spec) {
-    EsxCloud::VirtualNetworkCreateSpec.new(random_name("network-"), "virtual network", "ROUTED")
-  }
+  after(:each) do
+    networks_to_delete.each do |network|
+      ignoring_all_errors { network.delete } unless network.nil?
+    end
+  end
 
   it "Creates a virtual network, and then delete it" do
-    network = EsxCloud::VirtualNetwork.create(@project.id, spec)
+    network = create_network(spec)
     network.delete
+  end
+
+  private
+
+  def create_network(spec)
+    begin
+      network = EsxCloud::VirtualNetwork.create(@project.id, spec)
+      networks_to_delete << network
+      network
+    rescue
+      EsxCloud::VirtualNetwork.find_by_name(spec.name).items.each { |net| networks_to_delete << net }
+      raise
+    end
   end
 end
