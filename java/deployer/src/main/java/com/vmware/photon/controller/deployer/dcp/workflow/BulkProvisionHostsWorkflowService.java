@@ -429,7 +429,7 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
     startState.parentTaskLink = getSelfLink();
     startState.parentPatchBody = Utils.toJson(buildPatch(TaskState.TaskStage.FINISHED, null, null));
     startState.pendingCompletionCount = hostServiceLinks.size();
-    startState.errorThreshold = 1.0;
+    startState.errorThreshold = 0.0;
 
     sendRequest(Operation
         .createPost(this, ChildTaskAggregatorFactoryService.SELF_LINK)
