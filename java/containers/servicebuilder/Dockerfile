@@ -46,3 +46,6 @@ RUN wget -nv http://archive.apache.org/dist/thrift/0.9.3/thrift-0.9.3.tar.gz \
 RUN mkdir -p /usr/java && ln -s /var/opt/OpenJDK* /usr/java/default
 ENV PATH $PATH:$JAVA_HOME/bin
 ENV JAVA_HOME /usr/java/default
+
+# Add user that has privilege to build a new rpm package
+RUN useradd -s /bin/bash -G adm,wheel,systemd-journal -m rpm
