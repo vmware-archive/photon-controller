@@ -317,7 +317,11 @@ public class VmXenonBackendTest {
       vm.metadata.put("key1", UUID.randomUUID().toString());
 
       vm.networks = new ArrayList<>();
-      vm.networks.add(UUID.randomUUID().toString());
+      vm.networks.add(new VmService.State.NetworkInfo() {
+        {
+          id = UUID.randomUUID().toString();
+        }
+      });
       vm.agent = UUID.randomUUID().toString();
       vm.host = UUID.randomUUID().toString();
       vm.datastore = UUID.randomUUID().toString();
@@ -457,7 +461,7 @@ public class VmXenonBackendTest {
 
     @Test
     public void testFilterByNetwork() throws Throwable {
-      List<Vm> foundVms = vmXenonBackend.filterByNetwork(vm.networks.get(0));
+      List<Vm> foundVms = vmXenonBackend.filterByNetwork(vm.networks.get(0).id);
       assertThat(foundVms, is(notNullValue()));
       assertThat(foundVms.size(), is(1));
       assertThat(foundVms.get(0).getName(), is(vm.name));

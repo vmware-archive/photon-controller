@@ -139,9 +139,9 @@ public class VmService extends StatefulService {
     public String imageId;
 
     /**
-     * ids of networks to place vm on.
+     * Networks to place vm on.
      */
-    public List<String> networks;
+    public List<NetworkInfo> networks;
 
     /**
      * Locality parameters provide a hint that may help the placement engine
@@ -200,5 +200,31 @@ public class VmService extends StatefulService {
      * The cost associated with the VM.
      */
     public List<QuotaLineItem> cost;
+
+    /**
+     * Network information for the VM.
+     * */
+    public static class NetworkInfo {
+
+      /**
+       * Network Id.
+       * */
+      public String id;
+
+      /**
+       * MAC address for the VM on this network.
+       * */
+      public String macAddress;
+
+      /**
+       * IP address for the DHCP agent on this network.
+       * */
+      public String dhcpAgentIP;
+
+      /**
+       * Port of DHCP agent on this network.
+       * */
+      public int dhcpAgentport;
+    }
   }
 }
