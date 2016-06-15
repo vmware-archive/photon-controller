@@ -22,15 +22,19 @@ import com.vmware.photon.controller.common.manifest.BuildInfo;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelperProvider;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
+import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.XenonHostInfoProvider;
 import com.vmware.photon.controller.common.xenon.host.AbstractServiceHost;
 import com.vmware.photon.controller.common.xenon.host.XenonConfig;
 import com.vmware.photon.controller.common.xenon.scheduler.TaskSchedulerService;
 import com.vmware.photon.controller.common.xenon.scheduler.TaskSchedulerServiceFactory;
 import com.vmware.photon.controller.common.xenon.scheduler.TaskSchedulerServiceStateBuilder;
+import com.vmware.photon.controller.common.xenon.scheduler.TaskStateBuilder;
+import com.vmware.photon.controller.common.xenon.scheduler.TaskTriggerFactoryService;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfigProvider;
+import com.vmware.photon.controller.housekeeper.xenon.trigger.ImageSeederSyncTriggerBuilder;
 import com.vmware.photon.controller.nsxclient.NsxClientFactory;
 import com.vmware.photon.controller.nsxclient.NsxClientFactoryProvider;
 import com.vmware.xenon.common.Operation;
@@ -68,6 +72,12 @@ public class HousekeeperXenonServiceHost
       IMAGE_TRANSFER_SCHEDULER_SERVICE, new TaskSchedulerServiceStateBuilder(ImageHostToHostCopyService.class, 1)
   );
 
+  private static final TaskStateBuilder[] TASK_TRIGGERS = new TaskStateBuilder[]{
+      new ImageSeederSyncTriggerBuilder(
+          ImageSeederSyncTriggerBuilder.DEFAULT_TRIGGER_INTERVAL_MILLIS,
+          ImageSeederSyncTriggerBuilder.DEFAULT_TASK_EXPIRATION_AGE_MILLIS)
+  };
+
   private static final String TRIGGER_SERVICE_SUFFIX = "/singleton";
   private static final String HOUSEKEEPER_URI = "housekeeper";
   private static final Class[] FACTORY_SERVICES = {
@@ -76,12 +86,12 @@ public class HousekeeperXenonServiceHost
       ImageHostToHostCopyServiceFactory.class,
       ImageSeederServiceFactory.class,
       ImageCleanerTriggerServiceFactory.class,
-      ImageSeederSyncTriggerServiceFactory.class,
+      ImageSeederSyncServiceFactory.class,
       ImageCleanerServiceFactory.class,
       ImageDatastoreSweeperServiceFactory.class,
 
       TaskSchedulerServiceFactory.class,
-
+      TaskTriggerFactoryService.class,
       RootNamespaceService.class,
   };
 
@@ -139,12 +149,13 @@ public class HousekeeperXenonServiceHost
   /**
    * Get ImageSeederService Sync trigger service uri.
    */
-  public static String getImageSeederSyncServiceUri() {
-    return ImageSeederSyncTriggerServiceFactory.SELF_LINK + TRIGGER_SERVICE_SUFFIX;
+  public static String getImageSeederSyncTriggerServiceUri() {
+    return TaskTriggerFactoryService.SELF_LINK + ImageSeederSyncTriggerBuilder.TRIGGER_SELF_LINK;
   }
 
   /**
    * Getter for BuildInfo.
+   *
    * @return
    */
   @Override
@@ -165,8 +176,9 @@ public class HousekeeperXenonServiceHost
 
     // Kick start the special services
     startImageCleanerTriggerService();
-    startImageSeederSyncTriggerService();
     startTaskSchedulerServices();
+    startTaskTriggerServices();
+
     ServiceHostUtils.startService(this, StatusService.class);
     return this;
   }
@@ -197,12 +209,13 @@ public class HousekeeperXenonServiceHost
         && checkServiceAvailable(ImageCopyServiceFactory.SELF_LINK)
         && checkServiceAvailable(ImageHostToHostCopyServiceFactory.SELF_LINK)
         && checkServiceAvailable(ImageCleanerTriggerServiceFactory.SELF_LINK)
-        && checkServiceAvailable(ImageSeederSyncTriggerServiceFactory.SELF_LINK)
+        && checkServiceAvailable(ImageSeederSyncServiceFactory.SELF_LINK)
         && checkServiceAvailable(ImageCleanerServiceFactory.SELF_LINK)
         && checkServiceAvailable(ImageDatastoreSweeperServiceFactory.SELF_LINK)
 
+        && checkServiceAvailable(TaskTriggerFactoryService.SELF_LINK)
         && checkServiceAvailable(getTriggerCleanerServiceUri())
-        && checkServiceAvailable(getImageSeederSyncServiceUri())
+        && checkServiceAvailable(getImageSeederSyncTriggerServiceUri())
         && checkServiceAvailable(TaskSchedulerServiceFactory.SELF_LINK);
   }
 
@@ -230,20 +243,6 @@ public class HousekeeperXenonServiceHost
         }, ImageCleanerTriggerServiceFactory.SELF_LINK);
   }
 
-  private void startImageSeederSyncTriggerService() {
-    registerForServiceAvailability(
-        (Operation operation, Throwable throwable) -> {
-          ImageSeederSyncTriggerService.State state = new ImageSeederSyncTriggerService.State();
-          state.documentSelfLink = TRIGGER_SERVICE_SUFFIX;
-
-          URI uri = UriUtils.buildUri(HousekeeperXenonServiceHost.this,
-              ImageSeederSyncTriggerServiceFactory.SELF_LINK, null);
-          Operation post = Operation.createPost(uri).setBody(state);
-          post.setReferer(UriUtils.buildUri(HousekeeperXenonServiceHost.this, HOUSEKEEPER_URI));
-          sendRequest(post);
-        }, ImageSeederSyncTriggerServiceFactory.SELF_LINK);
-  }
-
   private void startTaskSchedulerServices() {
     registerForServiceAvailability(
         (Operation operation, Throwable throwable) -> {
@@ -269,5 +268,17 @@ public class HousekeeperXenonServiceHost
     Operation post = Operation.createPost(uri).setBody(state);
     post.setReferer(UriUtils.buildUri(HousekeeperXenonServiceHost.this, HOUSEKEEPER_URI));
     sendRequest(post);
+  }
+
+  private void startTaskTriggerServices() {
+    registerForServiceAvailability((Operation operation, Throwable throwable) -> {
+      for (TaskStateBuilder builder : TASK_TRIGGERS) {
+        Operation post = Operation
+            .createPost(UriUtils.buildUri(HousekeeperXenonServiceHost.this, TaskTriggerFactoryService.SELF_LINK))
+            .setBody(builder.build())
+            .setReferer(UriUtils.buildUri(HousekeeperXenonServiceHost.this, ServiceUriPaths.HOUSEKEEPER_ROOT));
+        sendRequest(post);
+      }
+    }, TaskTriggerFactoryService.SELF_LINK);
   }
 }

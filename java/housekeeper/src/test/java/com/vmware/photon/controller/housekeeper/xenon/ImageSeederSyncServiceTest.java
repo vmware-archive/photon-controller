@@ -15,6 +15,8 @@ package com.vmware.photon.controller.housekeeper.xenon;
 
 import com.vmware.photon.controller.api.ImageReplicationType;
 import com.vmware.photon.controller.api.ImageState;
+import com.vmware.photon.controller.cloudstore.xenon.entity.HostService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.HostServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ImageService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ImageServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ImageToImageDatastoreMappingService;
@@ -57,15 +59,15 @@ import java.util.EnumSet;
 import java.util.Random;
 
 /**
- * Tests {@link com.vmware.photon.controller.housekeeper.xenon.ImageSeederSyncTriggerService}.
+ * Tests {@link ImageSeederSyncService}.
  */
-public class ImageSeederSyncTriggerServiceTest {
+public class ImageSeederSyncServiceTest {
 
   private TestHost host;
-  private ImageSeederSyncTriggerService service;
+  private ImageSeederSyncService service;
 
-  private ImageSeederSyncTriggerService.State buildValidStartupState() {
-    ImageSeederSyncTriggerService.State state = new ImageSeederSyncTriggerService.State();
+  private ImageSeederSyncService.State buildValidStartupState() {
+    ImageSeederSyncService.State state = new ImageSeederSyncService.State();
 
     return state;
   }
@@ -83,7 +85,7 @@ public class ImageSeederSyncTriggerServiceTest {
   public class InitializationTest {
     @BeforeMethod
     public void setUp() {
-      service = new ImageSeederSyncTriggerService();
+      service = new ImageSeederSyncService();
     }
 
     /**
@@ -106,7 +108,7 @@ public class ImageSeederSyncTriggerServiceTest {
   public class HandleStartTest {
     @BeforeMethod
     public void setUp() throws Throwable {
-      service = spy(new ImageSeederSyncTriggerService());
+      service = spy(new ImageSeederSyncService());
       host = TestHost.create(mock(HostClient.class));
     }
 
@@ -129,7 +131,7 @@ public class ImageSeederSyncTriggerServiceTest {
       Operation startOp = host.startServiceSynchronously(service, buildValidStartupState());
       assertThat(startOp.getStatusCode(), is(200));
 
-      ImageSeederSyncTriggerService.State savedState = host.getServiceState(ImageSeederSyncTriggerService.State.class);
+      ImageSeederSyncService.State savedState = host.getServiceState(ImageSeederSyncService.State.class);
       assertThat(savedState.triggersError, is(new Long(0)));
       assertThat(savedState.triggersSuccess, is(new Long(0)));
     }
@@ -141,7 +143,7 @@ public class ImageSeederSyncTriggerServiceTest {
   public class HandlePatchTest {
     @BeforeMethod
     public void setUp() throws Throwable {
-      service = spy(new ImageSeederSyncTriggerService());
+      service = spy(new ImageSeederSyncService());
       host = TestHost.create(mock(HostClient.class));
     }
 
@@ -187,7 +189,7 @@ public class ImageSeederSyncTriggerServiceTest {
     private HostClientFactory hostClientFactory;
     private CloudStoreHelper cloudStoreHelper;
 
-    private ImageSeederSyncTriggerService.State request;
+    private ImageSeederSyncService.State request;
 
     @BeforeMethod
     public void setup() throws Throwable {
@@ -238,10 +240,10 @@ public class ImageSeederSyncTriggerServiceTest {
       createImageToImageDatastoreDocument(newImageId);
 
       // Send a patch to the trigger service that just updates the stats
-      machine.sendPatchAndWait(machine.getImageSeederSyncServiceUri(), request);
-
-      ImageSeederSyncTriggerService.State state = machine.getServiceState(machine.getImageSeederSyncServiceUri(),
-          ImageSeederSyncTriggerService.State.class);
+      ImageSeederSyncService.State state = machine.callServiceSynchronously(
+          ImageSeederSyncServiceFactory.SELF_LINK,
+          request,
+          ImageSeederSyncService.State.class);
 
       assertThat(state.triggersError, is(request.triggersError));
       assertThat(state.triggersSuccess, is(request.triggersSuccess));
@@ -266,7 +268,6 @@ public class ImageSeederSyncTriggerServiceTest {
       machine = machineBuilder
           .hostCount(hostCount)
           .build();
-
       ServiceHost host = machine.getHosts()[0];
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
@@ -280,10 +281,13 @@ public class ImageSeederSyncTriggerServiceTest {
       String newImageId = ServiceUtils.getIDFromDocumentSelfLink(createdImageState.documentSelfLink);
       createImageToImageDatastoreDocument(newImageId);
 
-      // Send a patch to the trigger service to simulate a maintenance interval kicking in
-      machine.sendPatchAndWait(machine.getImageSeederSyncServiceUri(), request);
+      // Send a patch to the trigger service to simulate a trigger service patch kicking in
+      machine.callServiceSynchronously(
+          ImageSeederSyncServiceFactory.SELF_LINK,
+          request,
+          ImageSeederSyncService.State.class);
 
-      // Check that CleanerService was triggered.
+      // Check that ImageSeederService was triggered.
       QueryTask.QuerySpecification spec =
           QueryTaskUtils.buildTaskStatusQuerySpec(
               ImageSeederService.State.class,

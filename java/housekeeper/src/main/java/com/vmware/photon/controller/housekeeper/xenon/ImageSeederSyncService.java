@@ -40,10 +40,10 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Class ImageSeederSyncTriggerService: periodically starts a new ImageSeederService if there isn't a currently
+ * Class ImageSeederSyncService: starts new ImageSeederServices if there isn't a currently
  * running one.
  */
-public class ImageSeederSyncTriggerService extends StatefulService {
+public class ImageSeederSyncService extends StatefulService {
   private static final long OWNER_SELECTION_TIMEOUT = TimeUnit.SECONDS.toMillis(5);
   private static final long DEFAULT_TRIGGER_INTERVAL = TimeUnit.HOURS.toMicros(1);
   private static final long EXPIRATION_TIME_MULTIPLIER = 5;
@@ -51,7 +51,7 @@ public class ImageSeederSyncTriggerService extends StatefulService {
   /**
    * Default constructor.
    */
-  public ImageSeederSyncTriggerService() {
+  public ImageSeederSyncService() {
     super(State.class);
     super.toggleOption(ServiceOption.PERSISTENCE, true);
     super.toggleOption(ServiceOption.INSTRUMENTATION, true);
@@ -71,13 +71,11 @@ public class ImageSeederSyncTriggerService extends StatefulService {
     if (state.triggersError == null) {
       state.triggersError = 0L;
     }
-    if (state.shouldTriggerTasks != null) {
-      state.shouldTriggerTasks = null;
-    }
 
     try {
       validateState(state);
       start.setBody(state).complete();
+      sendSelfPatch(state);
     } catch (Throwable e) {
       ServiceUtils.logSevere(this, e);
       if (!OperationUtils.isCompleted(start)) {
@@ -112,58 +110,6 @@ public class ImageSeederSyncTriggerService extends StatefulService {
         patch.fail(e);
       }
     }
-  }
-
-  /**
-   * Checks if service's background processing is in pause state.
-   */
-  private boolean isBackgroundPaused() {
-    ServiceConfig serviceConfig = ((ServiceConfigProvider) getHost()).getServiceConfig();
-    boolean backgroundPaused = true;
-    try {
-      backgroundPaused = serviceConfig.isBackgroundPaused();
-    } catch (Exception ex) {
-      ServiceUtils.logSevere(this, ex);
-    }
-    return backgroundPaused;
-  }
-
-  /**
-   * Handle service periodic maintenance calls.
-   */
-  @Override
-  public void handleMaintenance(Operation post) {
-    post.complete();
-
-    if (isBackgroundPaused()) {
-      return;
-    }
-
-    Operation.CompletionHandler handler = (op, failure) -> {
-      if (null != failure) {
-        // query failed so abort and retry next time
-        logFailure(failure);
-        return;
-      }
-
-      NodeSelectorService.SelectOwnerResponse rsp = op.getBody(NodeSelectorService.SelectOwnerResponse.class);
-      if (!getHost().getId().equals(rsp.ownerNodeId)) {
-        ServiceUtils.logInfo(ImageSeederSyncTriggerService.this,
-            "Host[%s]: Not owner of scheduler [%s] (Owner Info [%s])",
-            getHost().getId(), getSelfLink(), Utils.toJson(rsp));
-        return;
-      }
-
-      State state = new State();
-      state.shouldTriggerTasks = true;
-      sendSelfPatch(state);
-    };
-
-    Operation selectOwnerOp = Operation
-        .createPost(null)
-        .setExpiration(ServiceUtils.computeExpirationTime(OWNER_SELECTION_TIMEOUT))
-        .setCompletion(handler);
-    getHost().selectOwner(null, getSelfLink(), selectOwnerOp);
   }
 
   /**
@@ -238,7 +184,7 @@ public class ImageSeederSyncTriggerService extends StatefulService {
       if (throwable == null) {
         newState.triggersSuccess = currentState.triggersSuccess + 1;
       } else {
-        ServiceUtils.logSevere(ImageSeederSyncTriggerService.this, throwable);
+        ServiceUtils.logSevere(ImageSeederSyncService.this, throwable);
         newState.triggersError = currentState.triggersError + 1;
       }
       //update stats only without setting the trigger tasks flag.
