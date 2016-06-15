@@ -78,7 +78,7 @@ module EsxCloud
 
     # @param [String] deployment_id
     # @param [ClusterConfigurationSpec] spec
-    # @return [ClusterConfiguration]
+    # @return [Boolean]
     def self.enable_cluster_type(deployment_id, spec)
       Config.client.enable_cluster_type(deployment_id, spec.to_hash)
     end

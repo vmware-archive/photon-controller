@@ -101,7 +101,7 @@ module EsxCloud
 
       # @param [String] deployment_id
       # @param [String] payload
-      # @return [ClusterConfiguration]
+      # @return [Boolean]
       def enable_cluster_type(deployment_id, payload)
         @api_client.enable_cluster_type(deployment_id, payload)
       end
