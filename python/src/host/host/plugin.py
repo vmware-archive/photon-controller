@@ -9,6 +9,7 @@
 # warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
 # License for then specific language governing permissions and limitations
 # under the License.
+import logging
 
 import common
 
@@ -23,6 +24,7 @@ class HostPlugin(common.plugin.Plugin):
 
     def __init__(self):
         super(HostPlugin, self).__init__("Host")
+        self.logger = logging.getLogger(__name__)
 
     def init(self):
         # Load agent config
@@ -30,24 +32,29 @@ class HostPlugin(common.plugin.Plugin):
 
         # Create the hypervisor object
         hv = hypervisor.Hypervisor(config)
+        self.logger.debug("longz.11")
 
         # When configuration changes, notify hypervisor
         config.on_config_change(config.CPU_OVERCOMMIT,
                                 hv.set_cpu_overcommit)
         config.on_config_change(config.MEMORY_OVERCOMMIT,
                                 hv.set_memory_overcommit)
+        self.logger.debug("longz.12")
 
         # Register hypervisor in services
         common.services.register(ServiceName.HYPERVISOR, hv)
+        self.logger.debug("longz.13")
 
         # Create the upgrade object
         upgrade = HostUpgrade(hv.datastore_manager)
         common.services.register(ServiceName.UPGRADE, upgrade)
+        self.logger.debug("longz.14")
 
         # Create host handler
         host_handler = HostHandler(hv)
         common.services.register(Host.Iface, host_handler)
         common.services.register(ServiceName.HOST_CLIENT, hv.hypervisor.host_client)
+        self.logger.debug("longz.15")
 
         # Load num_threads
         num_threads = config.host_service_threads
@@ -60,6 +67,7 @@ class HostPlugin(common.plugin.Plugin):
             num_threads=num_threads,
         )
         self.add_thrift_service(service)
+        self.logger.debug("longz.16")
 
     def start(self):
         hv = common.services.get(ServiceName.HYPERVISOR)

@@ -41,14 +41,22 @@ class EsxHypervisor(object):
 
         self.datastore_manager = EsxDatastoreManager(
             self, agent_config.datastores, agent_config.image_datastores)
+        self.logger.debug("longz.1")
         # datastore manager needs to update the cache when there is a change.
         self.host_client.add_update_listener(self.datastore_manager)
+        self.logger.debug("longz.2")
         self.vm_manager = EsxVmManager(self.host_client, self.datastore_manager)
+        self.logger.debug("longz.3")
         self.disk_manager = EsxDiskManager(self.host_client, self.datastore_manager)
+        self.logger.debug("longz.4")
         self.image_manager = EsxImageManager(self.host_client, self.datastore_manager)
+        self.logger.debug("longz.5")
         self.network_manager = EsxNetworkManager(self.host_client, agent_config.networks)
+        self.logger.debug("longz.6")
         self.system = EsxSystem(self.host_client)
+        self.logger.debug("longz.7")
         self.image_manager.monitor_for_cleanup()
+        self.logger.debug("longz.8")
         if self.host_client.host_version.startswith("5."):
             # some CI hosts are not upgraded yet - use http transfer for ESX5 hosts.
             self.image_transferer = HttpNfcTransferer(
@@ -56,7 +64,9 @@ class EsxHypervisor(object):
                     self.datastore_manager.image_datastores())
         else:
             self.image_transferer = NfcImageTransferer(self.host_client)
+        self.logger.debug("longz.9")
         atexit.register(self.image_manager.cleanup)
+        self.logger.debug("longz.10")
 
     @staticmethod
     def create_host_client(auto_sync=True, errback=None):

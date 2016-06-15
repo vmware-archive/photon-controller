@@ -31,6 +31,7 @@ class EsxDatastoreManager(DatastoreManager, UpdateListener):
         self._hypervisor = hypervisor
         self._configured_datastores = datastores
         self._configured_image_datastores = image_datastores
+        self.logger.debug("longz.100")
         self._initialize_datastores()
 
     @locked
@@ -39,7 +40,8 @@ class EsxDatastoreManager(DatastoreManager, UpdateListener):
 
         # host_datastores is the list of datastores reported by hostd
         host_datastores = set()
-        for ds in self._hypervisor.host_client.get_all_datastores():
+        all_datastores = self._hypervisor.host_client.get_all_datastores()
+        for ds in all_datastores:
             datastore = self._to_thrift_datastore(ds)
             if datastore:
                 host_datastores.add(datastore)
