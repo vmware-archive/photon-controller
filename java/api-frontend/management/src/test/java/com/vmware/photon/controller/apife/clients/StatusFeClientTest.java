@@ -16,9 +16,9 @@ package com.vmware.photon.controller.apife.clients;
 import com.vmware.photon.controller.api.Component;
 import com.vmware.photon.controller.api.ComponentStatus;
 import com.vmware.photon.controller.api.SystemStatus;
-import com.vmware.photon.controller.apife.clients.status.DcpStatusProvider;
-import com.vmware.photon.controller.apife.clients.status.DcpStatusProviderFactory;
 import com.vmware.photon.controller.apife.clients.status.StatusProviderFactory;
+import com.vmware.photon.controller.apife.clients.status.XenonStatusProvider;
+import com.vmware.photon.controller.apife.clients.status.XenonStatusProviderFactory;
 import com.vmware.photon.controller.apife.config.StatusConfig;
 import com.vmware.photon.controller.common.clients.StatusProvider;
 import com.vmware.photon.controller.common.thrift.ClientPool;
@@ -262,21 +262,21 @@ public class StatusFeClientTest {
         statusConfig);
 
     Map<Component, StatusProviderFactory> statusProviderFactories = client.getStatusProviderFactories();
-    StatusProviderFactory housekeeperClientFactory = spy(new DcpStatusProviderFactory(
+    StatusProviderFactory housekeeperClientFactory = spy(new XenonStatusProviderFactory(
         housekeeperServerSet, executor));
     setupStatusProviderFactory(housekeeperClientFactory, housekeeperClients);
     statusProviderFactories.put(Component.HOUSEKEEPER, housekeeperClientFactory);
 
-    StatusProviderFactory cloudStoreClientFactory = spy(new DcpStatusProviderFactory(cloudStoreServerSet, executor));
+    StatusProviderFactory cloudStoreClientFactory = spy(new XenonStatusProviderFactory(cloudStoreServerSet, executor));
     setupStatusProviderFactory(cloudStoreClientFactory, cloudStoreClients);
     statusProviderFactories.put(Component.CLOUD_STORE, cloudStoreClientFactory);
 
-    StatusProviderFactory deployerClientFactory = spy(new DcpStatusProviderFactory(deployerServerSet, executor));
+    StatusProviderFactory deployerClientFactory = spy(new XenonStatusProviderFactory(deployerServerSet, executor));
     setupStatusProviderFactory(deployerClientFactory, deployerClients);
     statusProviderFactories.put(Component.DEPLOYER, deployerClientFactory);
 
     StatusProviderFactory rootSchedulerClientFactory = spy(
-        new DcpStatusProviderFactory(rootSchedulerServerSet, executor));
+        new XenonStatusProviderFactory(rootSchedulerServerSet, executor));
     setupStatusProviderFactory(rootSchedulerClientFactory, rootSchedulerClients);
     statusProviderFactories.put(Component.ROOT_SCHEDULER, rootSchedulerClientFactory);
   }
@@ -332,10 +332,10 @@ public class StatusFeClientTest {
     deployerClients = new ArrayList<>();
     cloudStoreClients = new ArrayList<>();
     for (int i = 0; i < SERVER_COUNT; i++) {
-      housekeeperClients.add(mock(DcpStatusProvider.class));
-      deployerClients.add(mock(DcpStatusProvider.class));
-      cloudStoreClients.add(mock(DcpStatusProvider.class));
-      rootSchedulerClients.add(mock(DcpStatusProvider.class));
+      housekeeperClients.add(mock(XenonStatusProvider.class));
+      deployerClients.add(mock(XenonStatusProvider.class));
+      cloudStoreClients.add(mock(XenonStatusProvider.class));
+      rootSchedulerClients.add(mock(XenonStatusProvider.class));
     }
   }
 }

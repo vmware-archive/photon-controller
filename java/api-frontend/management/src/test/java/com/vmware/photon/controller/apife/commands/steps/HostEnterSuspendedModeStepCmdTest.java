@@ -15,7 +15,7 @@ package com.vmware.photon.controller.apife.commands.steps;
 
 import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.UsageTag;
-import com.vmware.photon.controller.apife.backends.HostDcpBackend;
+import com.vmware.photon.controller.apife.backends.HostXenonBackend;
 import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.backends.TaskBackend;
 import com.vmware.photon.controller.apife.backends.clients.DeployerClient;
@@ -52,7 +52,7 @@ public class HostEnterSuspendedModeStepCmdTest {
 
   private TaskCommand taskCommand;
   private StepBackend stepBackend;
-  private HostDcpBackend hostBackend;
+  private HostXenonBackend hostBackend;
   private DeployerClient deployerClient;
 
   private StepEntity step;
@@ -71,7 +71,7 @@ public class HostEnterSuspendedModeStepCmdTest {
   public void setUp() {
     taskCommand = mock(TaskCommand.class);
     stepBackend = mock(StepBackend.class);
-    hostBackend = mock(HostDcpBackend.class);
+    hostBackend = mock(HostXenonBackend.class);
     stepEntityMock = mock(StepEntity.class);
     stepEntityMock = mock(StepEntity.class);
     taskBackend = mock(TaskBackend.class);

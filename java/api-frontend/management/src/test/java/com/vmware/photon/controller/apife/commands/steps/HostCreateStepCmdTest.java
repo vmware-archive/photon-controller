@@ -14,7 +14,7 @@
 package com.vmware.photon.controller.apife.commands.steps;
 
 import com.vmware.photon.controller.api.HostState;
-import com.vmware.photon.controller.apife.backends.HostDcpBackend;
+import com.vmware.photon.controller.apife.backends.HostXenonBackend;
 import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.backends.TaskBackend;
 import com.vmware.photon.controller.apife.backends.clients.DeployerClient;
@@ -53,7 +53,7 @@ public class HostCreateStepCmdTest {
   private DeployerClient deployerClient;
   private StepBackend stepBackend;
   private TaskCommand taskCommand;
-  private HostDcpBackend hostBackend;
+  private HostXenonBackend hostBackend;
   private TaskBackend taskBackend;
   private HostEntity host;
 
@@ -69,7 +69,7 @@ public class HostCreateStepCmdTest {
     deployerClient = mock(DeployerClient.class);
     stepBackend = mock(StepBackend.class);
     taskCommand = mock(TaskCommand.class);
-    hostBackend = mock(HostDcpBackend.class);
+    hostBackend = mock(HostXenonBackend.class);
     poller = mock(HostCreateTaskStatusPoller.class);
     taskBackend = mock(TaskBackend.class);
     stepEntityMock = mock(StepEntity.class);

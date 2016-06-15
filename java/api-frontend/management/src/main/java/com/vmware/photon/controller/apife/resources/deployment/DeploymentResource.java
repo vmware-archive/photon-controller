@@ -110,7 +110,7 @@ public class DeploymentResource {
                                     @PathParam("id") String id,
                                     @Validated DeploymentDeployOperation config)
       throws InternalException, ExternalException {
-    if ( config == null ) {
+    if (config == null) {
         config = new DeploymentDeployOperation();
     } else {
         validateDeploymentDeployOperation(config);

@@ -23,9 +23,9 @@ import com.vmware.photon.controller.apife.BackendTaskExecutor;
 import com.vmware.photon.controller.apife.DeployerServerSet;
 import com.vmware.photon.controller.apife.HousekeeperServerSet;
 import com.vmware.photon.controller.apife.RootSchedulerServerSet;
-import com.vmware.photon.controller.apife.clients.status.DcpStatusProviderFactory;
 import com.vmware.photon.controller.apife.clients.status.StatusFeClientUtils;
 import com.vmware.photon.controller.apife.clients.status.StatusProviderFactory;
+import com.vmware.photon.controller.apife.clients.status.XenonStatusProviderFactory;
 import com.vmware.photon.controller.apife.config.StatusConfig;
 import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
 import com.vmware.photon.controller.common.CloudStoreServerSet;
@@ -85,13 +85,13 @@ public class StatusFeClient {
 
     statusProviderFactories = Maps.newEnumMap(Component.class);
     statusProviderFactories.put(Component.HOUSEKEEPER,
-            new DcpStatusProviderFactory(housekeeperServerSet, this.executor));
+            new XenonStatusProviderFactory(housekeeperServerSet, this.executor));
     statusProviderFactories.put(Component.CLOUD_STORE,
-        new DcpStatusProviderFactory(cloudStoreServerSet, this.executor));
+        new XenonStatusProviderFactory(cloudStoreServerSet, this.executor));
     statusProviderFactories.put(Component.DEPLOYER,
-            new DcpStatusProviderFactory(deployerServerSet, this.executor));
+            new XenonStatusProviderFactory(deployerServerSet, this.executor));
     statusProviderFactories.put(Component.ROOT_SCHEDULER,
-        new DcpStatusProviderFactory(rootSchedulerServerSet, this.executor));
+        new XenonStatusProviderFactory(rootSchedulerServerSet, this.executor));
   }
 
   public SystemStatus getSystemStatus() throws InternalException {

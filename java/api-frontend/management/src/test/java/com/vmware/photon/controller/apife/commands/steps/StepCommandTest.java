@@ -16,9 +16,9 @@ package com.vmware.photon.controller.apife.commands.steps;
 import com.vmware.photon.controller.api.Operation;
 import com.vmware.photon.controller.api.common.exceptions.ApiFeException;
 import com.vmware.photon.controller.apife.TestModule;
-import com.vmware.photon.controller.apife.backends.DcpBackendTestModule;
 import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.backends.TaskBackend;
+import com.vmware.photon.controller.apife.backends.XenonBackendTestModule;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.ProjectEntity;
@@ -44,7 +44,7 @@ import java.util.UUID;
 /**
  * Tests {@link StepCommand}.
  */
-@Guice(modules = {DcpBackendTestModule.class, TestModule.class})
+@Guice(modules = {XenonBackendTestModule.class, TestModule.class})
 public class StepCommandTest {
 
   private static ApiFeXenonRestClient dcpClient;

@@ -15,11 +15,11 @@ package com.vmware.photon.controller.apife.commands.steps;
 
 import com.vmware.photon.controller.apife.backends.AttachedDiskBackend;
 import com.vmware.photon.controller.apife.backends.ClusterBackend;
-import com.vmware.photon.controller.apife.backends.DeploymentDcpBackend;
+import com.vmware.photon.controller.apife.backends.DeploymentXenonBackend;
 import com.vmware.photon.controller.apife.backends.DiskBackend;
 import com.vmware.photon.controller.apife.backends.EntityLockBackend;
 import com.vmware.photon.controller.apife.backends.FlavorBackend;
-import com.vmware.photon.controller.apife.backends.HostDcpBackend;
+import com.vmware.photon.controller.apife.backends.HostXenonBackend;
 import com.vmware.photon.controller.apife.backends.ImageBackend;
 import com.vmware.photon.controller.apife.backends.NetworkBackend;
 import com.vmware.photon.controller.apife.backends.ProjectBackend;
@@ -53,8 +53,8 @@ public class StepCommandFactory {
   private final AttachedDiskBackend attachedDiskBackend;
   private final ImageBackend imageBackend;
   private final TaskBackend taskBackend;
-  private final DeploymentDcpBackend deploymentBackend;
-  private final HostDcpBackend hostBackend;
+  private final DeploymentXenonBackend deploymentBackend;
+  private final HostXenonBackend hostBackend;
   private final ImageConfig imageConfig;
   private final ImageStoreFactory imageStoreFactory;
   private final ServiceConfig serviceConfig;
@@ -74,8 +74,8 @@ public class StepCommandFactory {
                             AttachedDiskBackend attachedDiskBackend,
                             ImageBackend imageBackend,
                             TaskBackend taskBackend,
-                            DeploymentDcpBackend deploymentBackend,
-                            HostDcpBackend hostBackend,
+                            DeploymentXenonBackend deploymentBackend,
+                            HostXenonBackend hostBackend,
                             ImageConfig imageConfig,
                             ImageStoreFactory imageStoreFactory,
                             ServiceConfig serviceConfig,

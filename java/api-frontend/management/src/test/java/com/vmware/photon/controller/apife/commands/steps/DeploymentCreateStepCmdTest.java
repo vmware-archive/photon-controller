@@ -15,8 +15,8 @@ package com.vmware.photon.controller.apife.commands.steps;
 
 import com.vmware.photon.controller.api.DeploymentState;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
-import com.vmware.photon.controller.apife.backends.DeploymentDcpBackend;
-import com.vmware.photon.controller.apife.backends.HostDcpBackend;
+import com.vmware.photon.controller.apife.backends.DeploymentXenonBackend;
+import com.vmware.photon.controller.apife.backends.HostXenonBackend;
 import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.backends.clients.DeployerClient;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
@@ -54,9 +54,9 @@ public class DeploymentCreateStepCmdTest extends PowerMockTestCase {
   private DeployerClient deployerClient;
   private StepBackend stepBackend;
   private TaskCommand taskCommand;
-  private DeploymentDcpBackend deploymentBackend;
+  private DeploymentXenonBackend deploymentBackend;
   private DeploymentEntity deploymentEntity;
-  private HostDcpBackend hostDcpBackend;
+  private HostXenonBackend hostXenonBackend;
 
   private DeploymentWorkflowService.State serviceDocument;
   private String remoteTaskLink;
@@ -68,8 +68,8 @@ public class DeploymentCreateStepCmdTest extends PowerMockTestCase {
     deployerClient = mock(DeployerClient.class);
     stepBackend = mock(StepBackend.class);
     taskCommand = mock(TaskCommand.class);
-    deploymentBackend = mock(DeploymentDcpBackend.class);
-    hostDcpBackend = mock(HostDcpBackend.class);
+    deploymentBackend = mock(DeploymentXenonBackend.class);
+    hostXenonBackend = mock(HostXenonBackend.class);
 
     deploymentEntity = new DeploymentEntity();
     StepEntity step = new StepEntity();

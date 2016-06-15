@@ -75,22 +75,22 @@ import java.util.stream.Collectors;
  * Tests {@link ClusterBackend}.
  */
 public class ClusterBackendTest {
-  private static ApiFeXenonRestClient dcpClient;
+  private static ApiFeXenonRestClient xenonClient;
   private static BasicServiceHost host;
 
   private static void commonHostAndClientSetup(
       BasicServiceHost basicServiceHost, ApiFeXenonRestClient apiFeXenonRestClient) {
     host = basicServiceHost;
-    dcpClient = apiFeXenonRestClient;
+    xenonClient = apiFeXenonRestClient;
 
     if (host == null) {
       throw new IllegalStateException(
           "host is not expected to be null in this test setup");
     }
 
-    if (dcpClient == null) {
+    if (xenonClient == null) {
       throw new IllegalStateException(
-          "dcpClient is not expected to be null in this test setup");
+          "xenonClient is not expected to be null in this test setup");
     }
 
     if (!host.isReady()) {
@@ -106,9 +106,9 @@ public class ClusterBackendTest {
   }
 
   private static void commonHostAndClientTeardown() throws Throwable {
-    if (dcpClient != null) {
-      dcpClient.stop();
-      dcpClient = null;
+    if (xenonClient != null) {
+      xenonClient.stop();
+      xenonClient = null;
     }
 
     if (host != null) {
@@ -139,7 +139,7 @@ public class ClusterBackendTest {
   /**
    * Tests for the create method.
    */
-  @Guice(modules = {DcpBackendTestModule.class, TestModule.class})
+  @Guice(modules = {XenonBackendTestModule.class, TestModule.class})
   public static class CreateClusterTest {
     @Inject
     private BasicServiceHost basicServiceHost;
@@ -272,7 +272,7 @@ public class ClusterBackendTest {
   /**
    * Tests for the delete method.
    */
-  @Guice(modules = {DcpBackendTestModule.class, TestModule.class})
+  @Guice(modules = {XenonBackendTestModule.class, TestModule.class})
   public static class DeleteClusterTest {
     @Inject
     private BasicServiceHost basicServiceHost;
@@ -284,7 +284,7 @@ public class ClusterBackendTest {
     private TaskBackend taskBackend;
 
     @Inject
-    private VmDcpBackend vmDcpBackend;
+    private VmXenonBackend vmXenonBackend;
 
     private ClusterManagerClient clusterManagerClient;
     private ClusterBackend clusterBackend;
@@ -293,7 +293,7 @@ public class ClusterBackendTest {
     public void setUp() throws Throwable {
       commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
       clusterManagerClient = mock(ClusterManagerClient.class);
-      clusterBackend = new ClusterBackend(clusterManagerClient, taskBackend, vmDcpBackend);
+      clusterBackend = new ClusterBackend(clusterManagerClient, taskBackend, vmXenonBackend);
     }
 
     @AfterMethod
@@ -346,7 +346,7 @@ public class ClusterBackendTest {
   /**
    * Tests for the resize method.
    */
-  @Guice(modules = {DcpBackendTestModule.class, TestModule.class})
+  @Guice(modules = {XenonBackendTestModule.class, TestModule.class})
   public static class ResizeClusterTest {
     @Inject
     private BasicServiceHost basicServiceHost;
@@ -358,7 +358,7 @@ public class ClusterBackendTest {
     private TaskBackend taskBackend;
 
     @Inject
-    private VmDcpBackend vmDcpBackend;
+    private VmXenonBackend vmXenonBackend;
 
     private ClusterManagerClient clusterManagerClient;
     private ClusterBackend clusterBackend;
@@ -367,7 +367,7 @@ public class ClusterBackendTest {
     public void setUp() throws Throwable {
       commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
       clusterManagerClient = mock(ClusterManagerClient.class);
-      clusterBackend = new ClusterBackend(clusterManagerClient, taskBackend, vmDcpBackend);
+      clusterBackend = new ClusterBackend(clusterManagerClient, taskBackend, vmXenonBackend);
     }
 
     @AfterMethod
@@ -429,7 +429,7 @@ public class ClusterBackendTest {
   /**
    * Tests for the find method.
    */
-  @Guice(modules = {DcpBackendTestModule.class, TestModule.class, CommandTestModule.class})
+  @Guice(modules = {XenonBackendTestModule.class, TestModule.class, CommandTestModule.class})
   public static class FindTest {
     @Inject
     private BasicServiceHost basicServiceHost;
@@ -500,7 +500,7 @@ public class ClusterBackendTest {
   /**
    * Tests for the findVms method.
    */
-  @Guice(modules = {DcpBackendTestModule.class, TestModule.class, CommandTestModule.class})
+  @Guice(modules = {XenonBackendTestModule.class, TestModule.class, CommandTestModule.class})
   public static class FindVmTest {
 
     @Inject
@@ -512,22 +512,22 @@ public class ClusterBackendTest {
     private ClusterBackend clusterBackend;
 
     @Inject
-    private VmDcpBackend vmDcpBackend;
+    private VmXenonBackend vmXenonBackend;
 
     @Inject
     private TaskBackend taskBackend;
 
     @Inject
-    private TenantDcpBackend tenantDcpBackend;
+    private TenantXenonBackend tenantXenonBackend;
 
     @Inject
-    private ResourceTicketDcpBackend resourceTicketDcpBackend;
+    private ResourceTicketXenonBackend resourceTicketXenonBackend;
 
     @Inject
-    private ProjectDcpBackend projectDcpBackend;
+    private ProjectXenonBackend projectXenonBackend;
 
     @Inject
-    private FlavorDcpBackend flavorDcpBackend;
+    private FlavorXenonBackend flavorXenonBackend;
 
     @Inject
     private FlavorLoader flavorLoader;
@@ -541,17 +541,17 @@ public class ClusterBackendTest {
     @BeforeMethod()
     public void setUp() throws Throwable {
       commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
-      String tenantId = DcpBackendTestHelper.createTenant(tenantDcpBackend, "vmware");
+      String tenantId = XenonBackendTestHelper.createTenant(tenantXenonBackend, "vmware");
 
       QuotaLineItem ticketLimit = new QuotaLineItem("vm.cost", 100, QuotaUnit.COUNT);
-      DcpBackendTestHelper.createTenantResourceTicket(resourceTicketDcpBackend,
+      XenonBackendTestHelper.createTenantResourceTicket(resourceTicketXenonBackend,
           tenantId, "rt1", ImmutableList.of(ticketLimit));
 
       QuotaLineItem projectLimit = new QuotaLineItem("vm.cost", 10, QuotaUnit.COUNT);
-      projectId = DcpBackendTestHelper.createProject(projectDcpBackend,
+      projectId = XenonBackendTestHelper.createProject(projectXenonBackend,
           "staging", tenantId, "rt1", ImmutableList.of(projectLimit));
 
-      DcpBackendTestHelper.createFlavors(flavorDcpBackend, flavorLoader.getAllFlavors());
+      XenonBackendTestHelper.createFlavors(flavorXenonBackend, flavorLoader.getAllFlavors());
 
       ImageService.State imageServiceState = new ImageService.State();
       imageServiceState.name = "image-1";
@@ -568,14 +568,14 @@ public class ClusterBackendTest {
       imageSetting.defaultValue = "v2";
       imageServiceState.imageSettings.add(imageSetting);
 
-      com.vmware.xenon.common.Operation result = dcpClient.post(ImageServiceFactory.SELF_LINK, imageServiceState);
+      com.vmware.xenon.common.Operation result = xenonClient.post(ImageServiceFactory.SELF_LINK, imageServiceState);
 
       ImageService.State createdImageState = result.getBody(ImageService.State.class);
 
       imageId = ServiceUtils.getIDFromDocumentSelfLink(createdImageState.documentSelfLink);
 
       clusterManagerClient = mock(ClusterManagerClient.class);
-      clusterBackend = new ClusterBackend(clusterManagerClient, taskBackend, vmDcpBackend);
+      clusterBackend = new ClusterBackend(clusterManagerClient, taskBackend, vmXenonBackend);
     }
 
     @AfterMethod
@@ -648,7 +648,7 @@ public class ClusterBackendTest {
       spec.setAttachedDisks(ImmutableList.of(disk1));
       spec.setTags(ImmutableSet.of(ClusterUtil.createClusterTag(clusterId)));
 
-      TaskEntity createdVmTaskEntity = vmDcpBackend.prepareVmCreate(projectId, spec);
+      TaskEntity createdVmTaskEntity = vmXenonBackend.prepareVmCreate(projectId, spec);
       String vmId = createdVmTaskEntity.getEntityId();
       return vmId;
     }

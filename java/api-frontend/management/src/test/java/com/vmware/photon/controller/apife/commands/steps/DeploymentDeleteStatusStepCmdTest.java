@@ -15,7 +15,7 @@ package com.vmware.photon.controller.apife.commands.steps;
 
 import com.vmware.photon.controller.api.DeploymentState;
 import com.vmware.photon.controller.api.Operation;
-import com.vmware.photon.controller.apife.backends.DeploymentDcpBackend;
+import com.vmware.photon.controller.apife.backends.DeploymentXenonBackend;
 import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.backends.TaskBackend;
 import com.vmware.photon.controller.apife.backends.clients.DeployerClient;
@@ -51,7 +51,7 @@ public class DeploymentDeleteStatusStepCmdTest {
 
   private StepBackend stepBackend;
   private TaskCommand taskCommand;
-  private DeploymentDcpBackend deploymentBackend;
+  private DeploymentXenonBackend deploymentBackend;
   private DeployerClient deployerClient;
   private DeploymentDeleteStatusStepCmd.DeploymentDeleteStepPoller poller;
 
@@ -68,7 +68,7 @@ public class DeploymentDeleteStatusStepCmdTest {
     when(taskCommand.getDeployerXenonClient()).thenReturn(deployerClient);
 
     stepBackend = mock(StepBackend.class);
-    deploymentBackend = mock(DeploymentDcpBackend.class);
+    deploymentBackend = mock(DeploymentXenonBackend.class);
     when(deploymentBackend.getDeployerClient()).thenReturn(deployerClient);
 
     entity = new DeploymentEntity();

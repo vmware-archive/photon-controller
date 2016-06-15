@@ -17,7 +17,7 @@ import com.vmware.photon.controller.api.Host;
 import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.Operation;
 import com.vmware.photon.controller.api.common.exceptions.ApiFeException;
-import com.vmware.photon.controller.apife.backends.HostDcpBackend;
+import com.vmware.photon.controller.apife.backends.HostXenonBackend;
 import com.vmware.photon.controller.apife.backends.TaskBackend;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.HostEntity;
@@ -35,11 +35,11 @@ import java.util.List;
  */
 public class HostChangeModeTaskStatusPoller implements XenonTaskStatusStepCmd.XenonTaskStatusPoller {
   private final TaskCommand taskCommand;
-  private final HostDcpBackend hostBackend;
+  private final HostXenonBackend hostBackend;
   private final TaskBackend taskBackend;
   private HostState targetHostState;
 
-  public HostChangeModeTaskStatusPoller(TaskCommand taskCommand, HostDcpBackend hostBackend,
+  public HostChangeModeTaskStatusPoller(TaskCommand taskCommand, HostXenonBackend hostBackend,
                                         TaskBackend taskBackend) {
     this.taskCommand = taskCommand;
     this.hostBackend = hostBackend;

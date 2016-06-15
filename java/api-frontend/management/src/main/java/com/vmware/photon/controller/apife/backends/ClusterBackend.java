@@ -44,7 +44,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import java.net.URISyntaxException;
 
 /**
- * Call cluster manager DCP services to fulfill cluster operations.
+ * Call cluster manager Xenon services to fulfill cluster operations.
  */
 @Singleton
 public class ClusterBackend {

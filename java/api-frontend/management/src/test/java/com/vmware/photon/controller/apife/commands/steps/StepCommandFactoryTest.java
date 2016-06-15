@@ -15,7 +15,7 @@ package com.vmware.photon.controller.apife.commands.steps;
 
 import com.vmware.photon.controller.api.Operation;
 import com.vmware.photon.controller.apife.TestModule;
-import com.vmware.photon.controller.apife.backends.DcpBackendTestModule;
+import com.vmware.photon.controller.apife.backends.XenonBackendTestModule;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.commands.CommandTestModule;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
@@ -36,7 +36,7 @@ import static org.hamcrest.Matchers.is;
 /**
  * Tests {@link StepCommandFactory}.
  */
-@Guice(modules = {DcpBackendTestModule.class, TestModule.class, CommandTestModule.class})
+@Guice(modules = {XenonBackendTestModule.class, TestModule.class, CommandTestModule.class})
 public class StepCommandFactoryTest {
 
   private static ApiFeXenonRestClient dcpClient;

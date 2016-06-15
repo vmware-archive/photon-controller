@@ -14,7 +14,7 @@
 package com.vmware.photon.controller.apife.commands.steps;
 
 import com.vmware.photon.controller.api.HostState;
-import com.vmware.photon.controller.apife.backends.HostDcpBackend;
+import com.vmware.photon.controller.apife.backends.HostXenonBackend;
 import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.backends.clients.DeployerClient;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
@@ -50,7 +50,7 @@ public class HostDeprovisionStepCmdTest {
   HostDeprovisionStepCmd command;
   private DeployerClient deployerClient;
   private StepBackend stepBackend;
-  private HostDcpBackend hostBackend;
+  private HostXenonBackend hostBackend;
   private TaskCommand taskCommand;
   private HostEntity host;
   private String hostId = "host1";
@@ -66,7 +66,7 @@ public class HostDeprovisionStepCmdTest {
     deployerClient = mock(DeployerClient.class);
     stepBackend = mock(StepBackend.class);
     taskCommand = mock(TaskCommand.class);
-    hostBackend = mock(HostDcpBackend.class);
+    hostBackend = mock(HostXenonBackend.class);
 
     StepEntity step = new StepEntity();
     step.setId("step-1");

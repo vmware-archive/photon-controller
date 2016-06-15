@@ -17,7 +17,7 @@ import com.vmware.photon.controller.api.Deployment;
 import com.vmware.photon.controller.api.DeploymentState;
 import com.vmware.photon.controller.api.Operation;
 import com.vmware.photon.controller.api.common.exceptions.ApiFeException;
-import com.vmware.photon.controller.apife.backends.DeploymentDcpBackend;
+import com.vmware.photon.controller.apife.backends.DeploymentXenonBackend;
 import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.backends.TaskBackend;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
@@ -106,7 +106,7 @@ public class DeploymentStatusStepCmd extends XenonTaskStatusStepCmd {
    * Polls task status.
    */
   public static class DeploymentStatusStepPoller implements XenonTaskStatusStepCmd.XenonTaskStatusPoller {
-    private final DeploymentDcpBackend deploymentBackend;
+    private final DeploymentXenonBackend deploymentBackend;
 
     private DeploymentEntity entity;
     private TaskCommand taskCommand;
@@ -114,7 +114,7 @@ public class DeploymentStatusStepCmd extends XenonTaskStatusStepCmd {
 
     public DeploymentStatusStepPoller(TaskCommand taskCommand,
                                    TaskBackend taskBackend,
-                                   DeploymentDcpBackend deploymentBackend) {
+                                   DeploymentXenonBackend deploymentBackend) {
       this.taskCommand = taskCommand;
       this.deploymentBackend = deploymentBackend;
       this.taskBackend = taskBackend;
