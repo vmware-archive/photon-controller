@@ -13,7 +13,8 @@ module EsxCloud
   class Deployment
 
     attr_accessor :id, :state, :image_datastores, :auth, :syslog_endpoint, :ntp_endpoint, :stats,
-                  :use_image_datastore_for_vms, :loadbalancer_enabled, :migration, :cluster_configurations
+                  :use_image_datastore_for_vms, :loadbalancer_enabled, :migration, :cluster_configurations,
+                  :network_configuration
 
     # @param[DeploymentCreateSpec] spec
     # @return [Deployment]
@@ -44,7 +45,8 @@ module EsxCloud
           StatsInfo.create_from_hash(hash["stats"]),
           hash["syslogEndpoint"], hash["ntpEndpoint"], hash["useImageDatastoreForVms"],
           hash["loadBalancerEnabled"],
-          MigrationStatus.create_from_hash(hash["migrationStatus"]), cluster_configurations)
+          MigrationStatus.create_from_hash(hash["migrationStatus"]), cluster_configurations,
+          NetworkConfiguration.create_from_hash(hash["networkConfiguration"]))
     end
 
     # @param [String] deployment_id
@@ -116,9 +118,10 @@ module EsxCloud
     # @param [Boolean] use_image_datastore_for_vms
     # @param [Boolean] loadbalancer_enabled
     # @param [MigrationStatus] migration_status
+    # @param [NetworkConfiguration] network_configuration
     def initialize(id, state, image_datastores, auth, stats,
       syslog_endpoint = nil, ntp_endpoint = nil, use_image_datastore_for_vms = false, loadbalancer_enabled = true,
-      migration, cluster_configurations)
+      migration, cluster_configurations, network_configuration)
       @id = id
       @state = state
       @image_datastores = image_datastores
@@ -130,6 +133,7 @@ module EsxCloud
       @loadbalancer_enabled = loadbalancer_enabled
       @migration = migration
       @cluster_configurations = cluster_configurations
+      @network_configuration = network_configuration
     end
 
     def delete
@@ -148,7 +152,8 @@ module EsxCloud
         useImageDatastoreForVms: @use_image_datastore_for_vms,
         loadbalancer_enabled: @loadbalancer_enabled,
         migrationStatus: @migration,
-        clusterConfigurations: @cluster_configurations
+        clusterConfigurations: @cluster_configurations,
+        network_configuration: @network_configuration
       }
     end
 
@@ -162,7 +167,8 @@ module EsxCloud
       @ntp_endpoint == other.ntp_endpoint &&
       @use_image_datastore_for_vms == other.use_image_datastore_for_vms &&
       @migration == other.migration &&
-      @cluster_configurations == other.cluster_configurations
+      @cluster_configurations == other.cluster_configurations &&
+      @network_configuration == other.network_configuration
     end
   end
 end
