@@ -271,8 +271,8 @@ case "$REMOTE_VERSION" in
     populate_new_ids 0
     [ "$DRY_RUN" ] || printf '%s\n' "$NEW_IDS" | ssh "$@" "
         umask 077 ;
-        mkdir -p .ssh && cat >> .ssh/authorized_keys || exit 1 ;
-		if type restorecon >/dev/null 2>&1 ; then restorecon -F .ssh .ssh/authorized_keys ; fi" \
+        mkdir -p .ssh && cat >> /etc/ssh/keys-root/authorized_keys || exit 1 ;
+		if type restorecon >/dev/null 2>&1 ; then restorecon -F .ssh /etc/ssh/keys-root/authorized_keys ; fi" \
       || exit 1
     ADDED=$(printf '%s\n' "$NEW_IDS" | wc -l)
     ;;
