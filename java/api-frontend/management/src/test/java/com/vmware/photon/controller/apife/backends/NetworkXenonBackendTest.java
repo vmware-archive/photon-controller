@@ -397,7 +397,11 @@ public class NetworkXenonBackendTest {
       vm.projectId = projectId;
       vm.vmState = VmState.CREATING;
       vm.networks = new ArrayList<>();
-      vm.networks.add(networkId);
+      vm.networks.add(new VmService.State.NetworkInfo() {
+        {
+          id = networkId;
+        }
+      });
       xenonClient.post(VmServiceFactory.SELF_LINK, vm);
 
       networkBackend.prepareNetworkDelete(networkId);
@@ -444,7 +448,11 @@ public class NetworkXenonBackendTest {
       vm.projectId = projectId;
       vm.vmState = VmState.CREATING;
       vm.networks = new ArrayList<>();
-      vm.networks.add(networkId);
+      vm.networks.add(new VmService.State.NetworkInfo() {
+        {
+          id = networkId;
+        }
+      });
       xenonClient.post(VmServiceFactory.SELF_LINK, vm);
 
       networkBackend.prepareNetworkDelete(networkId);
@@ -545,7 +553,11 @@ public class NetworkXenonBackendTest {
       vm.projectId = projectId;
       vm.vmState = VmState.CREATING;
       vm.networks = new ArrayList<>();
-      vm.networks.add(entity.getId());
+      vm.networks.add(new VmService.State.NetworkInfo() {
+        {
+          id = entity.getId();
+        }
+      });
       xenonClient.post(VmServiceFactory.SELF_LINK, vm);
       networkBackend.tombstone(entity);
       assertThat(tombstoneBackend.getByEntityId(entity.getId()), nullValue());
