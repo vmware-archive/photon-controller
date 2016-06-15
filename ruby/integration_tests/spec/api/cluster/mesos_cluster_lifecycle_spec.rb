@@ -20,6 +20,7 @@ describe "Mesos cluster-service lifecycle", cluster: true do
 
     @deployment = @seeder.deployment!
     @mesos_image = EsxCloud::ClusterHelper.upload_mesos_image(client)
+    @default_network = @seeder.network!
     EsxCloud::ClusterHelper.enable_cluster_type(client, @deployment, @mesos_image, "MESOS")
   end
 
@@ -27,6 +28,7 @@ describe "Mesos cluster-service lifecycle", cluster: true do
     puts "Staring to clean up Mesos Cluster lifecycle tests Env"
     EsxCloud::ClusterHelper.disable_cluster_type(client, @deployment, "MESOS")
     @cleaner.delete_image(@mesos_image)
+    @cleaner.delete_network(@default_network)
   end
 
   it 'should create, delete and resize Mesos cluster successfully' do

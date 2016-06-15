@@ -20,6 +20,7 @@ describe "Kubernetes cluster-service lifecycle", cluster: true do
 
     @deployment = @seeder.deployment!
     @kubernetes_image = EsxCloud::ClusterHelper.upload_kubernetes_image(client)
+    @default_network = @seeder.network!
     EsxCloud::ClusterHelper.enable_cluster_type(client, @deployment, @kubernetes_image, "KUBERNETES")
   end
 
@@ -27,6 +28,7 @@ describe "Kubernetes cluster-service lifecycle", cluster: true do
     puts "Staring to clean up Kubernetes Cluster lifecycle tests Env"
     EsxCloud::ClusterHelper.disable_cluster_type(client, @deployment, "KUBERNETES")
     @cleaner.delete_image(@kubernetes_image)
+    @cleaner.delete_network(@default_network)
   end
 
   it 'should create/resize/delete Kubernetes cluster successfully' do

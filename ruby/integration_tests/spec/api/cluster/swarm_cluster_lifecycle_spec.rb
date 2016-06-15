@@ -20,6 +20,7 @@ describe "Swarm cluster-service lifecycle", cluster: true do
 
     @deployment = @seeder.deployment!
     @swarm_image = EsxCloud::ClusterHelper.upload_swarm_image(client)
+    @default_network = @seeder.network!
     EsxCloud::ClusterHelper.enable_cluster_type(client, @deployment, @swarm_image, "SWARM")
   end
 
@@ -27,6 +28,7 @@ describe "Swarm cluster-service lifecycle", cluster: true do
     puts "Staring to clean up Swarm Cluster lifecycle tests Env"
     EsxCloud::ClusterHelper.disable_cluster_type(client, @deployment, "SWARM")
     @cleaner.delete_image(@swarm_image)
+    @cleaner.delete_network(@default_network)
   end
 
   it 'should create, delete and resize Swarm cluster successfully' do
