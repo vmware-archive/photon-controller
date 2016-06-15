@@ -15,7 +15,6 @@ package com.vmware.photon.controller.apife.clients;
 
 import com.vmware.photon.controller.api.Auth;
 import com.vmware.photon.controller.api.AuthInfo;
-import com.vmware.photon.controller.api.ClusterConfiguration;
 import com.vmware.photon.controller.api.ClusterConfigurationSpec;
 import com.vmware.photon.controller.api.ClusterType;
 import com.vmware.photon.controller.api.Deployment;
@@ -248,9 +247,10 @@ public class DeploymentFeClient {
     return hostBackend.getHostsPage(pageLink);
   }
 
-  public ClusterConfiguration configureCluster(String id, ClusterConfigurationSpec spec) throws ExternalException {
+  public Task configureCluster(String id, ClusterConfigurationSpec spec) throws ExternalException {
     deploymentBackend.findById(id);
-    return deploymentBackend.configureCluster(spec);
+    TaskEntity taskEntity =  deploymentBackend.configureCluster(spec);
+    return taskBackend.getApiRepresentation(taskEntity);
   }
 
   public Task deleteClusterConfiguration(String id, ClusterType clusterType) throws ExternalException {

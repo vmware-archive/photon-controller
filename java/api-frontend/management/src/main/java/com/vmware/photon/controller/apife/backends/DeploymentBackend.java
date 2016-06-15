@@ -66,7 +66,7 @@ public interface DeploymentBackend {
 
   List<Deployment> getAll();
 
-  ClusterConfiguration configureCluster(ClusterConfigurationSpec spec) throws ExternalException;
+  TaskEntity configureCluster(ClusterConfigurationSpec spec) throws ExternalException;
 
   TaskEntity deleteClusterConfiguration(ClusterType clusterType) throws ExternalException;
 

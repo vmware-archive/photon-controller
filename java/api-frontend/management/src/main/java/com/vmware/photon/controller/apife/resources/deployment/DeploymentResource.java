@@ -13,7 +13,6 @@
 
 package com.vmware.photon.controller.apife.resources.deployment;
 
-import com.vmware.photon.controller.api.ClusterConfiguration;
 import com.vmware.photon.controller.api.ClusterConfigurationSpec;
 import com.vmware.photon.controller.api.Deployment;
 import com.vmware.photon.controller.api.DeploymentDeployOperation;
@@ -219,17 +218,20 @@ public class DeploymentResource {
 
   @POST
   @Path(DeploymentResourceRoutes.ENABLE_CLUSTER_TYPE_ACTION)
-  @ApiOperation(value = "Configures a given type of cluster associated with the Deployment",
-      response = ClusterConfiguration.class)
+  @ApiOperation(value = "Configures a given type of cluster associated with the Deployment", response = Task.class)
+  @ApiResponses(value = {
+          @ApiResponse(code = 201, message = "Task created, cluster configuration process can be fetched " +
+                  "via the task")
+  })
   public Response configCluster(@Context Request request,
                                 @PathParam("id") String id,
                                 @Validated ClusterConfigurationSpec spec) throws ExternalException {
 
     return generateCustomResponse(
-        Response.Status.OK,
+        Response.Status.CREATED,
         client.configureCluster(id, spec),
         (ContainerRequest) request,
-        DeploymentResourceRoutes.DEPLOYMENT_PATH + DeploymentResourceRoutes.ENABLE_CLUSTER_TYPE_ACTION);
+        TaskResourceRoutes.TASK_PATH);
   }
 
   @POST

@@ -14,7 +14,6 @@
 package com.vmware.photon.controller.apife.resources;
 
 import com.vmware.photon.controller.api.ApiError;
-import com.vmware.photon.controller.api.ClusterConfiguration;
 import com.vmware.photon.controller.api.ClusterConfigurationSpec;
 import com.vmware.photon.controller.api.ClusterType;
 import com.vmware.photon.controller.api.Deployment;
@@ -324,12 +323,9 @@ public class DeploymentResourceTest extends ResourceTest {
 
   @Test
   public void testConfigCluster() throws Exception {
-    ClusterConfiguration configuration = new ClusterConfiguration();
-    configuration.setId("id");
-    configuration.setType(ClusterType.KUBERNETES);
-    configuration.setImageId("imageId");
-
-    doReturn(configuration).when(feClient).configureCluster(eq(deploymentId), any(ClusterConfigurationSpec.class));
+    Task task = new Task();
+    task.setId(taskId);
+    doReturn(task).when(feClient).configureCluster(eq(deploymentId), any(ClusterConfigurationSpec.class));
 
     String uri = UriBuilder
         .fromPath(DeploymentResourceRoutes.DEPLOYMENT_PATH + DeploymentResourceRoutes.ENABLE_CLUSTER_TYPE_ACTION)
@@ -343,12 +339,12 @@ public class DeploymentResourceTest extends ResourceTest {
         .target(uri)
         .request()
         .post(Entity.entity(configSpec, MediaType.APPLICATION_JSON_TYPE));
-    assertThat(response.getStatus(), is(200));
+    assertThat(response.getStatus(), is(201));
 
-    ClusterConfiguration configRetrieved = response.readEntity(ClusterConfiguration.class);
-    assertThat(configRetrieved, is(configuration));
-    assertThat(new URI(configRetrieved.getSelfLink()).isAbsolute(), is(true));
-    assertThat(configRetrieved.getSelfLink().endsWith(uri.toString()), is(true));
+    Task responseTask = response.readEntity(Task.class);
+    assertThat(responseTask, is(task));
+    assertThat(new URI(responseTask.getSelfLink()).isAbsolute(), is(true));
+    assertThat(responseTask.getSelfLink().endsWith(taskRoutePath), is(true));
   }
 
   @Test
