@@ -151,12 +151,13 @@ module EsxCloud
 
       # @param [String] deployment_id
       # @param [String] payload
-      # @return [ClusterConfiguration]
+      # @return [Boolean]
       def enable_cluster_type(deployment_id, payload)
         response = @http_client.post_json("#{DEPLOYMENTS_ROOT}/#{deployment_id}/enable_cluster_type", payload)
         check_response("Config cluster for deployment '#{deployment_id}'", response, 200)
 
-        ClusterConfiguration.create_from_json(response.body)
+        poll_response(response)
+        true
       end
 
       # @param [String] deployment_id
