@@ -20,6 +20,7 @@ describe "Kubernetes cluster-service lifecycle", cluster: true do
 
     @deployment = @seeder.deployment!
     @kubernetes_image = EsxCloud::ClusterHelper.upload_kubernetes_image(client)
+    @default_network = @seeder.network!
     EsxCloud::ClusterHelper.enable_cluster_type(client, @deployment, @kubernetes_image, "KUBERNETES")
   end
 

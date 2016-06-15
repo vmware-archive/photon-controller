@@ -20,6 +20,7 @@ describe "Mesos cluster-service lifecycle", cluster: true do
 
     @deployment = @seeder.deployment!
     @mesos_image = EsxCloud::ClusterHelper.upload_mesos_image(client)
+    @default_network = @seeder.network!
     EsxCloud::ClusterHelper.enable_cluster_type(client, @deployment, @mesos_image, "MESOS")
   end
 

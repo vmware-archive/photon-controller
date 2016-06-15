@@ -20,6 +20,7 @@ describe "Swarm cluster-service lifecycle", cluster: true do
 
     @deployment = @seeder.deployment!
     @swarm_image = EsxCloud::ClusterHelper.upload_swarm_image(client)
+    @default_network = @seeder.network!
     EsxCloud::ClusterHelper.enable_cluster_type(client, @deployment, @swarm_image, "SWARM")
   end
 

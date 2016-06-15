@@ -293,6 +293,16 @@ module EsxCloud
     end
 
     def create_network
+      port_group = get_vm_port_group
+
+      # if the port group has been used by an existing network, simply return that network
+      EsxCloud::Config.client.find_all_networks.items.each do |network|
+        if network.portgroups && network.portgroups.include?(port_group)
+          EsxCloud::Config.client.set_default(network.id)
+          return network
+        end
+      end
+
       spec = EsxCloud::NetworkCreateSpec.new(random_name("network-"), "Seeder Network", [get_vm_port_group])
       network = EsxCloud::Config.client.create_network(spec.to_hash)
       EsxCloud::Config.client.set_default(network.id)
