@@ -1127,7 +1127,6 @@ public class XenonRestClientTest {
           (ExampleService.ExampleServiceState.class, queryTerms, Optional.of(pageSize), expandContent, broadCast);
 
       assertNotNull(queryResult.documents);
-      assertNotNull(queryResult.nextPageLink);
       assertNull(queryResult.prevPageLink);
 
       actualDocumentNames = new HashSet<>();
