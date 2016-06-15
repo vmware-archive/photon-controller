@@ -146,6 +146,11 @@ class AttacheClient(HostClient):
     def remove_update_listener(self, listener):
         self._update_listeners.discard(listener)
 
+    @property
+    @lock_with("_lock")
+    def update_listeners(self):
+        return self._update_listeners
+
     def query_config(self):
         pass
 
@@ -373,13 +378,12 @@ class AttacheClient(HostClient):
     def query_stats(self, entity, metric_names, sampling_interval, start_time, end_time=None):
         pass
 
-    @lock_with("_lock")
     @attache_error_handler
     def update_cache(self):
         ds_updated = self._client.UpdatePropertyCache(self._session)
 
         if ds_updated:
-            for listener in self._update_listeners:
+            for listener in self.update_listeners:
                 self._logger.debug("datastores updated for listener: %s" % listener.__class__.__name__)
                 listener.datastores_updated()
 
