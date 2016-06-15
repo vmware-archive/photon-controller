@@ -116,6 +116,7 @@ public enum Operation {
   PAUSE_SYSTEM("PauseSystem"),
   PAUSE_BACKGROUND_TASKS("PauseBackgroundTasks"),
   RESUME_SYSTEM("ResumeSystem"),
+  CONFIGURE_CLUSTER("ConfigureCluster"),
   DELETE_CLUSTER_CONFIGURATION("DeleteClusterConfiguration"),
   UPDATE_IMAGE_DATASTORES("UpdateImageDatastores"),
 
