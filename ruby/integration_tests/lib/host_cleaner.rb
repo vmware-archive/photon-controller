@@ -37,6 +37,13 @@ module EsxCloud
         end
       end
 
+      def enable_core_dumps(server, user_name, password)
+        puts "enabling core dumps on host #{server}"
+        Net::SSH.start(server, user_name, {password: password, user_known_hosts_file: "/dev/null"}) do |ssh|
+          ssh.exec!("vsish -e set /userworld/global/coreDumpEnabled 1")
+        end
+      end
+
       def reboot_host(server, user_name, password)
         puts "rebooting host #{server}"
         Net::SSH.start(server, user_name, {password: password, user_known_hosts_file: "/dev/null"}) do |ssh|
