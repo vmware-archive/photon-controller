@@ -16,6 +16,7 @@ describe "vm disk ops", management: true do
   before(:all) do
     @seeder = EsxCloud::SystemSeeder.new([create_limit("vm.memory", 15000.0, "GB")], [90])
     @cleaner = EsxCloud::SystemCleaner.new(client)
+    @default_network = @seeder.network!
     @vm = @seeder.vm!
     @persistent_disk = @seeder.persistent_disk!
   end
@@ -27,6 +28,7 @@ describe "vm disk ops", management: true do
 
   after(:all) do
     @cleaner.delete_tenant(@seeder.tenant)
+    @cleaner.delete_network(@default_network)
   end
 
   it "should attach and detach two valid disks" do

@@ -19,6 +19,12 @@ describe "Availability Zone", availabilityzone: true do
     # seed the image on all image datastores
     @seeder.image!
     wait_for_image_seeding_progress_is_done
+
+    @seeder.network!
+  end
+
+  after(:all) do
+    @cleaner.delete_network(@seeder.network)
   end
 
   it "set host's availability zone and create VMs successfully" do

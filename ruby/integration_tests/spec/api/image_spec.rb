@@ -20,6 +20,7 @@ describe "image", management: true, image: true do
   let(:project) { @seeder.project! }
   let(:vm_flavor) { @seeder.vm_flavor! }
   let(:huge_vm_flavor) { @seeder.huge_vm_flavor! }
+  let(:default_network) { @seeder.network! }
 
   before(:all) do
     @seeder = EsxCloud::SystemSeeder.new([create_limit("vm.memory", 15000.0, "GB")])
@@ -28,6 +29,7 @@ describe "image", management: true, image: true do
 
   after(:all) do
     @cleaner.delete_tenant(@seeder.tenant)
+    @cleaner.delete_network(default_network)
   end
 
   after(:each) do

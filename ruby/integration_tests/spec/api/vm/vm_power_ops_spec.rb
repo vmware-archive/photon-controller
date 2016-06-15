@@ -15,11 +15,13 @@ describe "vm power ops", management: true do
   before(:all) do
     @seeder = EsxCloud::SystemSeeder.new(create_small_limits)
     @cleaner = EsxCloud::SystemCleaner.new(client)
+    @default_network = @seeder.network!
     @vm = @seeder.vm!
   end
 
   after(:all) do
     @cleaner.delete_tenant(@seeder.tenant)
+    @cleaner.delete_network(@default_network)
   end
 
   it "should start, stop" do

@@ -16,11 +16,13 @@ describe "disk", management: true do
     @seeder = EsxCloud::SystemSeeder.new(create_small_limits, [5.0])
     @cleaner = EsxCloud::SystemCleaner.new(client)
     @project = @seeder.project!
+    @default_network = @seeder.network!
     @vm = @seeder.vm!
   end
 
   after(:all) do
     @cleaner.delete_tenant(@seeder.tenant)
+    @cleaner.delete_network(@default_network)
   end
 
   let(:disk_name) { random_name("disk-") }

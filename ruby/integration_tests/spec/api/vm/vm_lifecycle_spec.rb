@@ -19,6 +19,12 @@ describe "VM lifecycle", life_cycle: true do
     # seed the image on all image datastores
     @seeder.image!
     wait_for_image_seeding_progress_is_done
+
+    @default_network = @seeder.network!
+  end
+
+  after(:all) do
+    @cleaner.delete_network(@default_network)
   end
 
   context "single VM" do
@@ -49,7 +55,7 @@ describe "VM lifecycle", life_cycle: true do
   private
 
   def vm_lifecycle(project, disk_flavor)
-    vm = create_vm(project, { networks: [@seeder.network!.id] })
+    vm = create_vm(project, { networks: [@default_network.id] })
     vm.state.should eq("STOPPED"), "VM #{vm.id} state was #{vm.state} instead of STOPPED"
     existing_persistent_disks = vm.get_attached_disk_names("persistent-disk")
     existing_persistent_disks.size.should eq(0), "VM #{vm.id} should have 0 disks but has: #{existing_persistent_disks}"

@@ -15,7 +15,7 @@ describe "vm#create_image", management: true, image: true do
   let(:replication_type) { "ON_DEMAND" }
   let(:image_name) { random_name("image-") }
   let(:image_create_spec) { EsxCloud::ImageCreateSpec.new(image_name, replication_type)  }
-
+  let(:default_network) { EsxCloud::SystemSeeder.instance.network! }
   let(:vm) { EsxCloud::SystemSeeder.instance.vm! }
   let(:vm_id) { vm.id }
   let(:image) { EsxCloud::Image.create_from_vm(vm_id, image_create_spec) }
@@ -23,6 +23,10 @@ describe "vm#create_image", management: true, image: true do
   after(:each) do
     image_list = EsxCloud::Image.find_all.items.select { |i| i.name == image_name }
     image_list.each { |i| ignoring_all_errors { i.delete } }
+  end
+
+  after(:all) do
+    ignoring_all_errors { default_network.delete }
   end
 
   context "when parameters are valid" do

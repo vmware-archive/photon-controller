@@ -16,6 +16,7 @@ describe "provisioning scenarios", promote: true, life_cycle: true do
 
   before(:all) do
     @seeder = EsxCloud::SystemSeeder.instance
+    @cleaner = EsxCloud::SystemCleaner.new(client)
 
     # seed the image on all image datastores
     @seeder.image!
@@ -29,6 +30,7 @@ describe "provisioning scenarios", promote: true, life_cycle: true do
           before(:all) do
             @deployment = client.find_all_api_deployments.items.first
             @host = client.get_deployment_hosts(@deployment.id).items.select { |host| host.usage_tags == ["CLOUD"] and host.state == "READY" }.first
+            @default_network = @seeder.network!
             2.times do
               @seeder.create_vm @seeder.project!, affinities: [{id: @host.address, kind: "host"}]
             end
@@ -37,6 +39,7 @@ describe "provisioning scenarios", promote: true, life_cycle: true do
           after(:all) do
             ignoring_all_errors { EsxCloud::Host.exit_maintenance_mode @host.id }
             ignoring_all_errors { EsxCloud::Host.resume @host.id }
+            ignoring_all_errors { @cleaner.delete_network(@default_network) }
           end
 
           it "de-provisions and re-provisions" do
@@ -124,6 +127,7 @@ describe "provisioning scenarios", promote: true, life_cycle: true do
       before(:all) do
         @deployment = client.find_all_api_deployments.items.first
         @host = client.get_deployment_hosts(@deployment.id).items.select { |host| host.usage_tags == ["CLOUD"] and host.state == "READY" }.first
+        @default_network = @seeder.network!
         2.times do
           @seeder.create_vm @seeder.project!, affinities: [{id: @host.address, kind: "host"}]
         end
@@ -134,6 +138,7 @@ describe "provisioning scenarios", promote: true, life_cycle: true do
         vms.items.each{ |vm| vm.delete }
         ignoring_all_errors { EsxCloud::Host.exit_maintenance_mode @host.id }
         ignoring_all_errors { EsxCloud::Host.resume @host.id }
+        ignoring_all_errors { @cleaner.delete_network(@default_network) }
       end
 
       before(:each) do
