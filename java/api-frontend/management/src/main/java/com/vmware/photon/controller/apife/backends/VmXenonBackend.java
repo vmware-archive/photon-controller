@@ -672,7 +672,7 @@ public class VmXenonBackend implements VmBackend {
     }
 
     if (null != vm.networks) {
-      vmEntity.setNetworks(vm.networks);
+      vmEntity.setNetworks(getNetworkIds(vm.networks));
     }
 
     if (null != vm.tags) {
@@ -745,7 +745,7 @@ public class VmXenonBackend implements VmBackend {
       }
     }
 
-    vm.networks = spec.getNetworks();
+    vm.networks = getNetworkInfo(spec.getNetworks());
 
     ImageEntity image = imageBackend.findById(spec.getSourceImageId());
 
@@ -1115,5 +1115,32 @@ public class VmXenonBackend implements VmBackend {
     isoEntity.setName(name);
 
     return isoEntity;
+  }
+
+  private List<VmService.State.NetworkInfo> getNetworkInfo(List<String> networks) {
+    if (networks == null) {
+      return null;
+    }
+
+    List<VmService.State.NetworkInfo> networkInfoList = new ArrayList<VmService.State.NetworkInfo>();
+    for (String id : networks) {
+      VmService.State.NetworkInfo networkInfo = new VmService.State.NetworkInfo();
+      networkInfo.id = id;
+    }
+
+    return networkInfoList;
+  }
+
+  private List<String> getNetworkIds(List<VmService.State.NetworkInfo> networkInfoList) {
+    if (networkInfoList == null) {
+      return null;
+    }
+
+    List<String> networks = new ArrayList<String>();
+    for (VmService.State.NetworkInfo networkInfo : networkInfoList) {
+      networks.add(networkInfo.id);
+    }
+
+    return networks;
   }
 }
