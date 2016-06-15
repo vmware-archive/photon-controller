@@ -22,16 +22,16 @@ import com.vmware.photon.controller.api.VmState;
 import com.vmware.photon.controller.api.common.exceptions.ApiFeException;
 import com.vmware.photon.controller.api.common.exceptions.external.ConcurrentTaskException;
 import com.vmware.photon.controller.apife.TestModule;
-import com.vmware.photon.controller.apife.backends.DcpBackendTestHelper;
-import com.vmware.photon.controller.apife.backends.DcpBackendTestModule;
 import com.vmware.photon.controller.apife.backends.EntityLockBackend;
-import com.vmware.photon.controller.apife.backends.FlavorDcpBackend;
 import com.vmware.photon.controller.apife.backends.FlavorLoader;
-import com.vmware.photon.controller.apife.backends.ProjectDcpBackend;
-import com.vmware.photon.controller.apife.backends.ResourceTicketDcpBackend;
+import com.vmware.photon.controller.apife.backends.FlavorXenonBackend;
+import com.vmware.photon.controller.apife.backends.ProjectXenonBackend;
+import com.vmware.photon.controller.apife.backends.ResourceTicketXenonBackend;
 import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.backends.TaskBackend;
-import com.vmware.photon.controller.apife.backends.TenantDcpBackend;
+import com.vmware.photon.controller.apife.backends.TenantXenonBackend;
+import com.vmware.photon.controller.apife.backends.XenonBackendTestHelper;
+import com.vmware.photon.controller.apife.backends.XenonBackendTestModule;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.backends.clients.DeployerClient;
 import com.vmware.photon.controller.apife.backends.clients.HousekeeperClient;
@@ -91,24 +91,24 @@ import java.util.UUID;
 /**
  * Tests {@link TaskCommand}.
  */
-@Guice(modules = {DcpBackendTestModule.class, TestModule.class, CommandTestModule.class})
+@Guice(modules = {XenonBackendTestModule.class, TestModule.class, CommandTestModule.class})
 public class TaskCommandTest {
-  private static ApiFeXenonRestClient dcpClient;
+  private static ApiFeXenonRestClient xenonClient;
   private static BasicServiceHost host;
 
   private static void commonHostAndClientSetup(
       BasicServiceHost basicServiceHost, ApiFeXenonRestClient apiFeXenonRestClient) {
     host = basicServiceHost;
-    dcpClient = apiFeXenonRestClient;
+    xenonClient = apiFeXenonRestClient;
 
     if (host == null) {
       throw new IllegalStateException(
           "host is not expected to be null in this test setup");
     }
 
-    if (dcpClient == null) {
+    if (xenonClient == null) {
       throw new IllegalStateException(
-          "dcpClient is not expected to be null in this test setup");
+          "xenonClient is not expected to be null in this test setup");
     }
 
     if (!host.isReady()) {
@@ -124,9 +124,9 @@ public class TaskCommandTest {
   }
 
   private static void commonHostAndClientTeardown() throws Throwable {
-    if (dcpClient != null) {
-      dcpClient.stop();
-      dcpClient = null;
+    if (xenonClient != null) {
+      xenonClient.stop();
+      xenonClient = null;
     }
 
     if (host != null) {
@@ -171,16 +171,16 @@ public class TaskCommandTest {
   private TaskEntity task;
 
   @Inject
-  private TenantDcpBackend tenantDcpBackend;
+  private TenantXenonBackend tenantXenonBackend;
 
   @Inject
-  private ResourceTicketDcpBackend resourceTicketDcpBackend;
+  private ResourceTicketXenonBackend resourceTicketXenonBackend;
 
   @Inject
-  private ProjectDcpBackend projectDcpBackend;
+  private ProjectXenonBackend projectXenonBackend;
 
   @Inject
-  private FlavorDcpBackend flavorDcpBackend;
+  private FlavorXenonBackend flavorXenonBackend;
 
   @Inject
   private FlavorLoader flavorLoader;
@@ -204,26 +204,26 @@ public class TaskCommandTest {
 
     commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
 
-    String tenantId = DcpBackendTestHelper.createTenant(tenantDcpBackend, "t1");
+    String tenantId = XenonBackendTestHelper.createTenant(tenantXenonBackend, "t1");
 
     QuotaLineItem ticketLimit = new QuotaLineItem("vm.cost", 100, QuotaUnit.COUNT);
-    DcpBackendTestHelper.createTenantResourceTicket(resourceTicketDcpBackend,
+    XenonBackendTestHelper.createTenantResourceTicket(resourceTicketXenonBackend,
         tenantId, "rt1", ImmutableList.of(ticketLimit));
 
     QuotaLineItem projectLimit = new QuotaLineItem("vm.cost", 10, QuotaUnit.COUNT);
-    String projectId = DcpBackendTestHelper.createProject(projectDcpBackend,
+    String projectId = XenonBackendTestHelper.createProject(projectXenonBackend,
         "p1", tenantId, "rt1", ImmutableList.of(projectLimit));
 
-    DcpBackendTestHelper.createFlavors(flavorDcpBackend, flavorLoader.getAllFlavors());
+    XenonBackendTestHelper.createFlavors(flavorXenonBackend, flavorLoader.getAllFlavors());
 
     VmService.State vmState = new VmService.State();
     vmState.name = "vm-1";
-    FlavorEntity flavorEntity = flavorDcpBackend.getEntityByNameAndKind("core-100", Vm.KIND);
+    FlavorEntity flavorEntity = flavorXenonBackend.getEntityByNameAndKind("core-100", Vm.KIND);
     vmState.flavorId = flavorEntity.getId();
     vmState.imageId = UUID.randomUUID().toString();
     vmState.projectId = projectId;
     vmState.vmState = VmState.CREATING;
-    dcpClient.post(VmServiceFactory.SELF_LINK, vmState);
+    xenonClient.post(VmServiceFactory.SELF_LINK, vmState);
 
     HostService.State hostState = new HostService.State();
     agentId = UUID.randomUUID().toString();
@@ -234,7 +234,7 @@ public class TaskCommandTest {
     hostState.usageTags = new HashSet<>();
     hostState.usageTags.add("VMFS");
     hostState.state = HostState.READY;
-    dcpClient.post(HostServiceFactory.SELF_LINK, hostState);
+    xenonClient.post(HostServiceFactory.SELF_LINK, hostState);
 
     VmEntity vm = new VmEntity();
     task = taskBackend.createQueuedTask(vm, Operation.CREATE_VM);
@@ -255,7 +255,7 @@ public class TaskCommandTest {
   /**
    * Tests for entity lock management.
    */
-  @Guice(modules = {DcpBackendTestModule.class, TestModule.class, CommandTestModule.class})
+  @Guice(modules = {XenonBackendTestModule.class, TestModule.class, CommandTestModule.class})
   public static class TaskLockTest {
 
     @Inject

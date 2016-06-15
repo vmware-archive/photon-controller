@@ -17,7 +17,7 @@ import com.vmware.photon.controller.api.Deployment;
 import com.vmware.photon.controller.api.DeploymentState;
 import com.vmware.photon.controller.api.Operation;
 import com.vmware.photon.controller.api.common.exceptions.ApiFeException;
-import com.vmware.photon.controller.apife.backends.DeploymentDcpBackend;
+import com.vmware.photon.controller.apife.backends.DeploymentXenonBackend;
 import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.backends.TaskBackend;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
@@ -105,7 +105,7 @@ public class DeploymentDeleteStatusStepCmd extends XenonTaskStatusStepCmd {
                 RemoveDeploymentWorkflowService.TaskState.SubStage.DEPROVISION_NETWORK.ordinal())
             .build();
 
-    private final DeploymentDcpBackend deploymentBackend;
+    private final DeploymentXenonBackend deploymentBackend;
 
     private DeploymentEntity entity;
     private TaskCommand taskCommand;
@@ -113,7 +113,7 @@ public class DeploymentDeleteStatusStepCmd extends XenonTaskStatusStepCmd {
 
     public DeploymentDeleteStepPoller(TaskCommand taskCommand,
                                       TaskBackend taskBackend,
-                                      DeploymentDcpBackend deploymentBackend) {
+                                      DeploymentXenonBackend deploymentBackend) {
       this.taskCommand = taskCommand;
       this.deploymentBackend = deploymentBackend;
       this.taskBackend = taskBackend;

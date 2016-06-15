@@ -57,10 +57,10 @@ import java.util.UUID;
 /**
  * Tests {@link DiskBackend}.
  */
-@Guice(modules = {DcpBackendTestModule.class, TestModule.class})
+@Guice(modules = {XenonBackendTestModule.class, TestModule.class})
 public class VmDiskBackendTest {
 
-  private static ApiFeXenonRestClient dcpClient;
+  private static ApiFeXenonRestClient xenonClient;
   private static BasicServiceHost host;
 
   private static String projectId;
@@ -68,16 +68,16 @@ public class VmDiskBackendTest {
   private static void commonHostAndClientSetup(
       BasicServiceHost basicServiceHost, ApiFeXenonRestClient apiFeXenonRestClient) {
     host = basicServiceHost;
-    dcpClient = apiFeXenonRestClient;
+    xenonClient = apiFeXenonRestClient;
 
     if (host == null) {
       throw new IllegalStateException(
           "host is not expected to be null in this test setup");
     }
 
-    if (dcpClient == null) {
+    if (xenonClient == null) {
       throw new IllegalStateException(
-          "dcpClient is not expected to be null in this test setup");
+          "xenonClient is not expected to be null in this test setup");
     }
 
     if (!host.isReady()) {
@@ -93,9 +93,9 @@ public class VmDiskBackendTest {
   }
 
   private static void commonHostAndClientTeardown() throws Throwable {
-    if (dcpClient != null) {
-      dcpClient.stop();
-      dcpClient = null;
+    if (xenonClient != null) {
+      xenonClient.stop();
+      xenonClient = null;
     }
 
     if (host != null) {
@@ -105,22 +105,22 @@ public class VmDiskBackendTest {
   }
 
   private static void commonDataSetup(
-      TenantDcpBackend tenantDcpBackend,
-      ResourceTicketDcpBackend resourceTicketDcpBackend,
-      ProjectDcpBackend projectDcpBackend,
-      FlavorDcpBackend flavorDcpBackend,
+      TenantXenonBackend tenantXenonBackend,
+      ResourceTicketXenonBackend resourceTicketXenonBackend,
+      ProjectXenonBackend projectXenonBackend,
+      FlavorXenonBackend flavorXenonBackend,
       FlavorLoader flavorLoader) throws Throwable {
-    String tenantId = DcpBackendTestHelper.createTenant(tenantDcpBackend, "vmware");
+    String tenantId = XenonBackendTestHelper.createTenant(tenantXenonBackend, "vmware");
 
     QuotaLineItem ticketLimit = new QuotaLineItem("vm.cost", 100, QuotaUnit.COUNT);
-    DcpBackendTestHelper.createTenantResourceTicket(resourceTicketDcpBackend,
+    XenonBackendTestHelper.createTenantResourceTicket(resourceTicketXenonBackend,
         tenantId, "rt1", ImmutableList.of(ticketLimit));
 
     QuotaLineItem projectLimit = new QuotaLineItem("vm.cost", 10, QuotaUnit.COUNT);
-    projectId = DcpBackendTestHelper.createProject(projectDcpBackend,
+    projectId = XenonBackendTestHelper.createProject(projectXenonBackend,
         "staging", tenantId, "rt1", ImmutableList.of(projectLimit));
 
-    DcpBackendTestHelper.createFlavors(flavorDcpBackend, flavorLoader.getAllFlavors());
+    XenonBackendTestHelper.createFlavors(flavorXenonBackend, flavorLoader.getAllFlavors());
   }
 
   @Inject
@@ -138,16 +138,16 @@ public class VmDiskBackendTest {
   private ApiFeXenonRestClient apiFeXenonRestClient;
 
   @Inject
-  private TenantDcpBackend tenantDcpBackend;
+  private TenantXenonBackend tenantXenonBackend;
 
   @Inject
-  private ResourceTicketDcpBackend resourceTicketDcpBackend;
+  private ResourceTicketXenonBackend resourceTicketXenonBackend;
 
   @Inject
-  private ProjectDcpBackend projectDcpBackend;
+  private ProjectXenonBackend projectXenonBackend;
 
   @Inject
-  private FlavorDcpBackend flavorDcpBackend;
+  private FlavorXenonBackend flavorXenonBackend;
 
   @Inject
   private FlavorLoader flavorLoader;
@@ -156,20 +156,20 @@ public class VmDiskBackendTest {
   public void setUp() throws Throwable {
     commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
     commonDataSetup(
-        tenantDcpBackend,
-        resourceTicketDcpBackend,
-        projectDcpBackend,
-        flavorDcpBackend,
+        tenantXenonBackend,
+        resourceTicketXenonBackend,
+        projectXenonBackend,
+        flavorXenonBackend,
         flavorLoader);
 
     VmService.State vm = new VmService.State();
     vm.name = "test-vm";
-    FlavorEntity flavorEntity = flavorDcpBackend.getEntityByNameAndKind("core-100", Vm.KIND);
+    FlavorEntity flavorEntity = flavorXenonBackend.getEntityByNameAndKind("core-100", Vm.KIND);
     vm.flavorId = flavorEntity.getId();
     vm.imageId = UUID.randomUUID().toString();
     vm.projectId = projectId;
     vm.vmState = VmState.CREATING;
-    com.vmware.xenon.common.Operation result = dcpClient.post(VmServiceFactory.SELF_LINK, vm);
+    com.vmware.xenon.common.Operation result = xenonClient.post(VmServiceFactory.SELF_LINK, vm);
     VmService.State createdVm = result.getBody(VmService.State.class);
     vmId = ServiceUtils.getIDFromDocumentSelfLink(createdVm.documentSelfLink);
   }
@@ -251,7 +251,7 @@ public class VmDiskBackendTest {
   private String createPersistentDisk(String name, DiskState state)
       throws ExternalException {
 
-    FlavorEntity flavorEntity = flavorDcpBackend.getEntityByNameAndKind("core-200", PersistentDisk.KIND);
+    FlavorEntity flavorEntity = flavorXenonBackend.getEntityByNameAndKind("core-200", PersistentDisk.KIND);
     DiskService.State diskState = new DiskService.State();
     diskState.flavorId = flavorEntity.getId();
     diskState.diskType = DiskType.PERSISTENT;
@@ -260,7 +260,7 @@ public class VmDiskBackendTest {
     diskState.projectId = projectId;
     diskState.capacityGb = 2;
 
-    com.vmware.xenon.common.Operation result = dcpClient.post(DiskServiceFactory.SELF_LINK, diskState);
+    com.vmware.xenon.common.Operation result = xenonClient.post(DiskServiceFactory.SELF_LINK, diskState);
     diskState = result.getBody(DiskService.State.class);
     return ServiceUtils.getIDFromDocumentSelfLink(diskState.documentSelfLink);
   }

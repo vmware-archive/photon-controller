@@ -17,7 +17,7 @@ import com.vmware.photon.controller.api.Host;
 import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.Operation;
 import com.vmware.photon.controller.api.common.exceptions.ApiFeException;
-import com.vmware.photon.controller.apife.backends.HostDcpBackend;
+import com.vmware.photon.controller.apife.backends.HostXenonBackend;
 import com.vmware.photon.controller.apife.backends.TaskBackend;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.HostEntity;
@@ -40,11 +40,11 @@ public class HostProvisionTaskStatusPoller implements XenonTaskStatusStepCmd.Xen
   private static final Logger logger = LoggerFactory.getLogger(HostProvisionTaskStatusPoller.class);
 
   private final TaskCommand taskCommand;
-  private final HostDcpBackend hostBackend;
+  private final HostXenonBackend hostBackend;
   private final TaskBackend taskBackend;
   private HostEntity hostEntity;
 
-  public HostProvisionTaskStatusPoller(TaskCommand taskCommand, HostDcpBackend hostBackend,
+  public HostProvisionTaskStatusPoller(TaskCommand taskCommand, HostXenonBackend hostBackend,
                                        TaskBackend taskBackend) {
     this.taskCommand = taskCommand;
     this.hostBackend = hostBackend;

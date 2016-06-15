@@ -32,32 +32,32 @@ import com.vmware.photon.controller.apife.auth.fetcher.TenantSecurityGroupFetche
 import com.vmware.photon.controller.apife.auth.fetcher.Vm;
 import com.vmware.photon.controller.apife.auth.fetcher.VmSecurityGroupFetcher;
 import com.vmware.photon.controller.apife.backends.AttachedDiskBackend;
-import com.vmware.photon.controller.apife.backends.AttachedDiskDcpBackend;
+import com.vmware.photon.controller.apife.backends.AttachedDiskXenonBackend;
 import com.vmware.photon.controller.apife.backends.DatastoreBackend;
-import com.vmware.photon.controller.apife.backends.DatastoreDcpBackend;
+import com.vmware.photon.controller.apife.backends.DatastoreXenonBackend;
 import com.vmware.photon.controller.apife.backends.DeploymentBackend;
-import com.vmware.photon.controller.apife.backends.DeploymentDcpBackend;
+import com.vmware.photon.controller.apife.backends.DeploymentXenonBackend;
 import com.vmware.photon.controller.apife.backends.DiskBackend;
-import com.vmware.photon.controller.apife.backends.DiskDcpBackend;
+import com.vmware.photon.controller.apife.backends.DiskXenonBackend;
 import com.vmware.photon.controller.apife.backends.EntityLockBackend;
-import com.vmware.photon.controller.apife.backends.EntityLockDcpBackend;
+import com.vmware.photon.controller.apife.backends.EntityLockXenonBackend;
 import com.vmware.photon.controller.apife.backends.FlavorBackend;
-import com.vmware.photon.controller.apife.backends.FlavorDcpBackend;
+import com.vmware.photon.controller.apife.backends.FlavorXenonBackend;
 import com.vmware.photon.controller.apife.backends.HostBackend;
-import com.vmware.photon.controller.apife.backends.HostDcpBackend;
+import com.vmware.photon.controller.apife.backends.HostXenonBackend;
 import com.vmware.photon.controller.apife.backends.ImageBackend;
-import com.vmware.photon.controller.apife.backends.ImageDcpBackend;
+import com.vmware.photon.controller.apife.backends.ImageXenonBackend;
 import com.vmware.photon.controller.apife.backends.NetworkBackend;
-import com.vmware.photon.controller.apife.backends.NetworkDcpBackend;
+import com.vmware.photon.controller.apife.backends.NetworkXenonBackend;
 import com.vmware.photon.controller.apife.backends.ResourceTicketBackend;
-import com.vmware.photon.controller.apife.backends.ResourceTicketDcpBackend;
+import com.vmware.photon.controller.apife.backends.ResourceTicketXenonBackend;
 import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.backends.TaskBackend;
-import com.vmware.photon.controller.apife.backends.TaskDcpBackend;
+import com.vmware.photon.controller.apife.backends.TaskXenonBackend;
 import com.vmware.photon.controller.apife.backends.TombstoneBackend;
-import com.vmware.photon.controller.apife.backends.TombstoneDcpBackend;
+import com.vmware.photon.controller.apife.backends.TombstoneXenonBackend;
 import com.vmware.photon.controller.apife.backends.VmBackend;
-import com.vmware.photon.controller.apife.backends.VmDcpBackend;
+import com.vmware.photon.controller.apife.backends.VmXenonBackend;
 import com.vmware.photon.controller.apife.config.ApiFeConfiguration;
 import com.vmware.photon.controller.apife.config.ApiFeConfigurationTest;
 import com.vmware.photon.controller.apife.config.AuthConfig;
@@ -143,7 +143,7 @@ public class ApiFeModuleTest {
   /**
    * Helper class used to test backend injection.
    */
-  public static class DcpBackendDummyClient {
+  public static class XenonBackendDummyClient {
     public FlavorBackend flavorBackend;
     public ImageBackend imageBackend;
     public TaskBackend taskBackend;
@@ -160,7 +160,7 @@ public class ApiFeModuleTest {
     public TombstoneBackend tombstoneBackend;
 
     @Inject
-    public DcpBackendDummyClient(FlavorBackend flavorBackend,
+    public XenonBackendDummyClient(FlavorBackend flavorBackend,
                                  ImageBackend imageBackend,
                                  TaskBackend taskBackend,
                                  NetworkBackend networkBackend,
@@ -314,12 +314,12 @@ public class ApiFeModuleTest {
    */
   public class TestBackendInjection {
     /**
-     * Test that DCP backends can be injected successfully.
+     * Test that Xenon backends can be injected successfully.
      *
      * @throws Throwable
      */
     @Test
-    public void testDcpBackendInjection() throws Throwable {
+    public void testXenonBackendInjection() throws Throwable {
       ApiFeModule apiFeModule = new ApiFeModule();
       ApiFeConfiguration apiFeConfiguration = ConfigurationUtils.parseConfiguration(
           ApiFeConfigurationTest.class.getResource("/config.yml").getPath()
@@ -340,35 +340,35 @@ public class ApiFeModuleTest {
             }
           });
 
-      DcpBackendDummyClient dcpBackendDummyClient = injector.getInstance(DcpBackendDummyClient.class);
-      assertThat(dcpBackendDummyClient.flavorBackend, notNullValue());
-      assertThat(dcpBackendDummyClient.flavorBackend, instanceOf(FlavorDcpBackend.class));
-      assertThat(dcpBackendDummyClient.imageBackend, notNullValue());
-      assertThat(dcpBackendDummyClient.imageBackend, instanceOf(ImageDcpBackend.class));
-      assertThat(dcpBackendDummyClient.networkBackend, notNullValue());
-      assertThat(dcpBackendDummyClient.networkBackend, instanceOf(NetworkDcpBackend.class));
-      assertThat(dcpBackendDummyClient.datastoreBackend, notNullValue());
-      assertThat(dcpBackendDummyClient.datastoreBackend, instanceOf(DatastoreDcpBackend.class));
-      assertThat(dcpBackendDummyClient.entityLockBackend, notNullValue());
-      assertThat(dcpBackendDummyClient.entityLockBackend, instanceOf(EntityLockDcpBackend.class));
-      assertThat(dcpBackendDummyClient.taskBackend, notNullValue());
-      assertThat(dcpBackendDummyClient.taskBackend, instanceOf(TaskDcpBackend.class));
-      assertThat(dcpBackendDummyClient.stepBackend, notNullValue());
-      assertThat(dcpBackendDummyClient.stepBackend, instanceOf(TaskDcpBackend.class));
-      assertThat(dcpBackendDummyClient.resourceTicketBackend, notNullValue());
-      assertThat(dcpBackendDummyClient.resourceTicketBackend, instanceOf(ResourceTicketDcpBackend.class));
-      assertThat(dcpBackendDummyClient.diskBackend, notNullValue());
-      assertThat(dcpBackendDummyClient.diskBackend, instanceOf(DiskDcpBackend.class));
-      assertThat(dcpBackendDummyClient.attachedDiskBackend, notNullValue());
-      assertThat(dcpBackendDummyClient.attachedDiskBackend, instanceOf(AttachedDiskDcpBackend.class));
-      assertThat(dcpBackendDummyClient.vmBackend, notNullValue());
-      assertThat(dcpBackendDummyClient.vmBackend, instanceOf(VmDcpBackend.class));
-      assertThat(dcpBackendDummyClient.tombstoneBackend, notNullValue());
-      assertThat(dcpBackendDummyClient.tombstoneBackend, instanceOf(TombstoneDcpBackend.class));
-      assertThat(dcpBackendDummyClient.hostBackend, notNullValue());
-      assertThat(dcpBackendDummyClient.hostBackend, instanceOf(HostDcpBackend.class));
-      assertThat(dcpBackendDummyClient.deploymentBackend, notNullValue());
-      assertThat(dcpBackendDummyClient.deploymentBackend, instanceOf(DeploymentDcpBackend.class));
+      XenonBackendDummyClient xenonBackendDummyClient = injector.getInstance(XenonBackendDummyClient.class);
+      assertThat(xenonBackendDummyClient.flavorBackend, notNullValue());
+      assertThat(xenonBackendDummyClient.flavorBackend, instanceOf(FlavorXenonBackend.class));
+      assertThat(xenonBackendDummyClient.imageBackend, notNullValue());
+      assertThat(xenonBackendDummyClient.imageBackend, instanceOf(ImageXenonBackend.class));
+      assertThat(xenonBackendDummyClient.networkBackend, notNullValue());
+      assertThat(xenonBackendDummyClient.networkBackend, instanceOf(NetworkXenonBackend.class));
+      assertThat(xenonBackendDummyClient.datastoreBackend, notNullValue());
+      assertThat(xenonBackendDummyClient.datastoreBackend, instanceOf(DatastoreXenonBackend.class));
+      assertThat(xenonBackendDummyClient.entityLockBackend, notNullValue());
+      assertThat(xenonBackendDummyClient.entityLockBackend, instanceOf(EntityLockXenonBackend.class));
+      assertThat(xenonBackendDummyClient.taskBackend, notNullValue());
+      assertThat(xenonBackendDummyClient.taskBackend, instanceOf(TaskXenonBackend.class));
+      assertThat(xenonBackendDummyClient.stepBackend, notNullValue());
+      assertThat(xenonBackendDummyClient.stepBackend, instanceOf(TaskXenonBackend.class));
+      assertThat(xenonBackendDummyClient.resourceTicketBackend, notNullValue());
+      assertThat(xenonBackendDummyClient.resourceTicketBackend, instanceOf(ResourceTicketXenonBackend.class));
+      assertThat(xenonBackendDummyClient.diskBackend, notNullValue());
+      assertThat(xenonBackendDummyClient.diskBackend, instanceOf(DiskXenonBackend.class));
+      assertThat(xenonBackendDummyClient.attachedDiskBackend, notNullValue());
+      assertThat(xenonBackendDummyClient.attachedDiskBackend, instanceOf(AttachedDiskXenonBackend.class));
+      assertThat(xenonBackendDummyClient.vmBackend, notNullValue());
+      assertThat(xenonBackendDummyClient.vmBackend, instanceOf(VmXenonBackend.class));
+      assertThat(xenonBackendDummyClient.tombstoneBackend, notNullValue());
+      assertThat(xenonBackendDummyClient.tombstoneBackend, instanceOf(TombstoneXenonBackend.class));
+      assertThat(xenonBackendDummyClient.hostBackend, notNullValue());
+      assertThat(xenonBackendDummyClient.hostBackend, instanceOf(HostXenonBackend.class));
+      assertThat(xenonBackendDummyClient.deploymentBackend, notNullValue());
+      assertThat(xenonBackendDummyClient.deploymentBackend, instanceOf(DeploymentXenonBackend.class));
     }
   }
 

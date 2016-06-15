@@ -20,7 +20,7 @@ import com.vmware.photon.controller.api.PersistentDisk;
 import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
 import com.vmware.photon.controller.apife.backends.AttachedDiskBackend;
 import com.vmware.photon.controller.apife.backends.DiskBackend;
-import com.vmware.photon.controller.apife.backends.DiskDcpBackend;
+import com.vmware.photon.controller.apife.backends.DiskXenonBackend;
 import com.vmware.photon.controller.apife.backends.EntityLockBackend;
 import com.vmware.photon.controller.apife.backends.FlavorBackend;
 import com.vmware.photon.controller.apife.backends.ProjectBackend;
@@ -111,7 +111,7 @@ public class DiskCreateStepCmdTest extends PowerMockTestCase {
     when(taskCommand.getHostClient()).thenReturn(hostClient);
     when(taskCommand.lookupAgentId(anyString())).thenReturn(agentId);
 
-    diskBackend = spy(new DiskDcpBackend(
+    diskBackend = spy(new DiskXenonBackend(
         mock(ApiFeXenonRestClient.class),
         mock(ProjectBackend.class),
         mock(FlavorBackend.class),

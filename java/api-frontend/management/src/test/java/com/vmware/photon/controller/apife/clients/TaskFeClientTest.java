@@ -19,7 +19,7 @@ import com.vmware.photon.controller.api.PersistentDisk;
 import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.Vm;
-import com.vmware.photon.controller.apife.backends.AvailabilityZoneDcpBackend;
+import com.vmware.photon.controller.apife.backends.AvailabilityZoneXenonBackend;
 import com.vmware.photon.controller.apife.backends.DiskBackend;
 import com.vmware.photon.controller.apife.backends.FlavorBackend;
 import com.vmware.photon.controller.apife.backends.HostBackend;
@@ -75,7 +75,7 @@ public class TaskFeClientTest {
           taskBackend, mock(TenantBackend.class), mock(ProjectBackend.class),
           mock(ResourceTicketBackend.class), mock(VmBackend.class), mock(DiskBackend.class),
           mock(ImageBackend.class), mock(FlavorBackend.class), mock(HostBackend.class),
-          mock(AvailabilityZoneDcpBackend.class));
+          mock(AvailabilityZoneXenonBackend.class));
     }
 
     /**
