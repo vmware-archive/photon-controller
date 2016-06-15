@@ -201,7 +201,7 @@ public class DeployerXenonServiceHost
       ReflectionTransformationService.class,
   };
 
-  private static final int DEFAULT_TASK_LIMIT = 8;
+  private static final int DEFAULT_TASK_LIMIT = 4;
 
   protected static final String UPLOAD_VIB_SCHEDULER_SERVICE =
       TaskSchedulerServiceFactory.SELF_LINK + "/vib-uploads";
