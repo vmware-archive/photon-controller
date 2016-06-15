@@ -25,11 +25,11 @@ import static org.hamcrest.Matchers.notNullValue;
 import java.util.EnumSet;
 
 /**
- * Test {@link com.vmware.photon.controller.housekeeper.xenon.ImageSeederSyncTriggerServiceFactory}.
+ * Test {@link ImageSeederSyncServiceFactory}.
  */
-public class ImageSeederSyncTriggerServiceFactoryTest {
+public class ImageSeederSyncServiceFactoryTest {
 
-  private ImageSeederSyncTriggerServiceFactory factory;
+  private ImageSeederSyncServiceFactory factory;
 
   /**
    * Dummy test case to make Intellij recognize this as a test class.
@@ -45,7 +45,7 @@ public class ImageSeederSyncTriggerServiceFactoryTest {
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      factory = new ImageSeederSyncTriggerServiceFactory();
+      factory = new ImageSeederSyncServiceFactory();
     }
 
     @Test
@@ -67,14 +67,14 @@ public class ImageSeederSyncTriggerServiceFactoryTest {
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      factory = new ImageSeederSyncTriggerServiceFactory();
+      factory = new ImageSeederSyncServiceFactory();
     }
 
     @Test
     void testSuccess() throws Throwable {
       Service service = factory.createServiceInstance();
       assertThat(service, is(notNullValue()));
-      assertThat(service, instanceOf(ImageSeederSyncTriggerService.class));
+      assertThat(service, instanceOf(ImageSeederSyncService.class));
     }
   }
 }
