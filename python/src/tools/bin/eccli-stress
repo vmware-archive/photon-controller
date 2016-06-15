@@ -1,0 +1,81 @@
+#!/usr/bin/env python
+# Copyright (c) 2015 VMware, Inc. All Rights Reserved.
+import threading
+
+import time
+
+from eccli.format import print_result
+from eccli.format import print_response
+from eccli.optparser import default_parser
+from eccli.thrift import get_client
+from eccli.utils import createVmResource
+
+from gen.host.ttypes import ReserveRequest, ReserveResultCode, CreateVmRequest, CreateVmResultCode, DeleteVmRequest, \
+    DeleteVmResultCode
+from gen.resource.ttypes import Resource
+from gen.scheduler.ttypes import PlaceRequest
+from gen.scheduler.ttypes import PlaceResultCode
+
+parser = default_parser(usage="eccli-stress [options]",
+                        add_help=True)
+parser.add_option("-i", "--image",
+                  action="store", type="string", dest="image",
+                  help="Image for vm boot disk")
+(options, args) = parser.parse_args()
+
+
+def thread_proc():
+    # create resource
+    resource = Resource()
+    resource.vm = createVmResource(options.image)
+
+    # place
+    place_request = PlaceRequest()
+    place_request.resource = resource
+    client = get_client(options.host)
+    place_response = client.place(place_request)
+    if place_response.result != PlaceResultCode.OK:
+        print_response(place_response)
+        return
+
+    # reserve
+    reserve_request = ReserveRequest()
+    reserve_request.generation = place_response.generation
+    reserve_request.resource = resource
+    reserve_request.resource.placement_list = place_response.placementList
+    reserve_response = client.reserve(reserve_request)
+    if reserve_response.result != ReserveResultCode.OK:
+        print_response(reserve_response)
+        return
+
+    # create
+    create_request = CreateVmRequest()
+    create_request.reservation = reserve_response.reservation
+    create_response = client.create_vm(create_request)
+    if create_response.result != CreateVmResultCode.OK:
+        print_response(create_response)
+        return
+    print_result("vm id: %s" % create_response.vm.id)
+
+    # delete
+    delete_request = DeleteVmRequest()
+    delete_request.vm_id = create_response.vm.id
+    delete_response = client.delete_vm(delete_request)
+    if delete_response.result != DeleteVmResultCode.OK:
+        print_response(delete_response)
+
+
+def thread_proc_loop():
+    while True:
+        thread_proc()
+        time.sleep(1)
+
+threads = []
+for i in range(10):
+    t = threading.Thread(target=thread_proc_loop)
+    t.start()
+    threads.append(t)
+    time.sleep(0.3)
+
+for t in threads:
+    t.join()
