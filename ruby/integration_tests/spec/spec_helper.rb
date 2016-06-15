@@ -24,6 +24,7 @@ end
 
 require_relative "../lib/integration"
 require_relative "../lib/test_helpers"
+require_relative "../../common/lib/common/errors"
 require_relative "support/api_client_helper"
 require_relative "support/api_routes_helper"
 require_relative "support/system_cleaner"
@@ -132,6 +133,10 @@ RSpec.configure do |config|
   config.filter_run_excluding go_cli: true unless ENV["DRIVER"] == "gocli"
 
   config.before(:suite) do
+    unless ENV["DEPLOYER_TEST"]
+      EsxCloud::SystemSeeder.instance.network!
+    end
+
     if ENV["UPTIME"]
       get_system_status(ENV["MANAGEMENT_VM_COUNT"])
       HousekeeperHelper.clean_unreachable_datastores
