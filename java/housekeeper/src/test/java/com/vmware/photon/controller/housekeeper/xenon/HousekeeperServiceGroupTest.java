@@ -290,7 +290,7 @@ public class HousekeeperServiceGroupTest {
   public class JoinNodeGroupTest {
 
     private final long maintenanceInterval = TimeUnit.MILLISECONDS.toMicros(500);
-    private final File storageDir2 = new File("/tmp/dcp/16001/");
+    private final File storageDir2 = new File("/tmp/xenon/16001/");
     private PhotonControllerXenonHost host2;
 
     @BeforeClass

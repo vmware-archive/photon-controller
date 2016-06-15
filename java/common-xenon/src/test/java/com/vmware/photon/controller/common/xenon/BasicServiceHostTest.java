@@ -48,7 +48,7 @@ import java.util.function.Predicate;
 public class BasicServiceHostTest {
 
   public static final String SERVICE_URI = ServiceUriPaths.SERVICES_ROOT + "/BasicServiceHostTest";
-  public static final String STORAGE_PATH = "/tmp/dcp/BasicServiceHostTest/" + UUID.randomUUID().toString() + "/";
+  public static final String STORAGE_PATH = "/tmp/xenon/BasicServiceHostTest/" + UUID.randomUUID().toString() + "/";
   public static final int WAIT_ITERATION_SLEEP = 10;
   public static final int WAIT_ITERATION_COUNT = 10;
 

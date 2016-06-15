@@ -31,7 +31,7 @@ import java.io.File;
 import java.util.concurrent.TimeUnit;
 
 /**
- * TestMachine class hosting a DCP host.
+ * TestMachine class hosting a Xenon host.
  */
 public class TestEnvironment extends MultiHostEnvironment<PhotonControllerXenonHost> {
 

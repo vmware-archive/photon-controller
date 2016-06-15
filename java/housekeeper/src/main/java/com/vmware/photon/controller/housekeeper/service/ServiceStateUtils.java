@@ -18,7 +18,7 @@ import com.vmware.photon.controller.housekeeper.xenon.ImageReplicatorService;
 import static com.google.common.base.Preconditions.checkArgument;
 
 /**
- * ServiceStateUtils implements utility functions to process DcpServer state objects.
+ * ServiceStateUtils implements utility functions to process Xenon service state objects.
  */
 public class ServiceStateUtils {
 

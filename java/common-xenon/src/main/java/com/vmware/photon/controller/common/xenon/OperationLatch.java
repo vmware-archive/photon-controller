@@ -92,7 +92,7 @@ public class OperationLatch {
   }
 
   /**
-   * This class allows us to capture all output from the DCP operation completion handler.
+   * This class allows us to capture all output from the Xenon operation completion handler.
    */
   @VisibleForTesting
   protected static class OperationResult {

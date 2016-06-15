@@ -51,7 +51,7 @@ public class ConfigTest {
       assertThat(xenonConfig.getPeerNodes(), arrayContaining("http://127.0.0.1:16000"));
       assertThat(xenonConfig.getPort(), is(16000));
       assertThat(xenonConfig.getRegistrationAddress(), is("127.0.0.1"));
-      assertThat(xenonConfig.getStoragePath(), is("/tmp/dcp/housekeeper/"));
+      assertThat(xenonConfig.getStoragePath(), is("/tmp/xenon/housekeeper/"));
     }
 
     @Test
@@ -85,7 +85,7 @@ public class ConfigTest {
       assertThat(xenonConfig.getPeerNodes(), arrayContaining("http://127.0.0.1:16000"));
       assertThat(xenonConfig.getPort(), is(16000));
       assertThat(xenonConfig.getRegistrationAddress(), is("127.0.0.1"));
-      assertThat(xenonConfig.getStoragePath(), is("/tmp/dcp/16000"));
+      assertThat(xenonConfig.getStoragePath(), is("/tmp/xenon/16000"));
     }
   }
 }
