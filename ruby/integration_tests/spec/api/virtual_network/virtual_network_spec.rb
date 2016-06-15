@@ -10,6 +10,7 @@
 # specific language governing permissions and limitations under the License.
 
 require "spec_helper"
+require_relative "../../../lib/dcp/cloud_store/deployment_factory"
 
 describe "virtual_network", :virtual_network => true do
   before(:all) do
@@ -28,11 +29,26 @@ describe "virtual_network", :virtual_network => true do
   end
 
   describe "#create" do
-    it "should create one virtual network successfully" do
+    it "should create one ROUTED virtual network successfully" do
       network = create_virtual_network(@project.id, spec)
       expect(network.name).to eq virtual_network_name
       expect(network.description).to eq "virtual network"
       expect(network.state).to eq "READY"
+      expect(network.routing_type).to eq "ROUTED"
+
+      networks = client.find_virtual_networks_by_name(virtual_network_name).items
+      expect(networks.size).to eq 1
+      network_found = client.find_virtual_network_by_id(network.id)
+      expect(network_found).to eq network
+    end
+
+    it "should create one ISOLATED virtual network successfully" do
+      spec.routing_type = "ISOLATED"
+      network = create_virtual_network(@project.id, spec)
+      expect(network.name).to eq virtual_network_name
+      expect(network.description).to eq "virtual network"
+      expect(network.state).to eq "READY"
+      expect(network.routing_type).to eq "ISOLATED"
 
       networks = client.find_virtual_networks_by_name(virtual_network_name).items
       expect(networks.size).to eq 1
@@ -59,11 +75,7 @@ describe "virtual_network", :virtual_network => true do
         expect(e.errors.size).to eq 1
         expect(e.errors.first.code).to eq "InvalidEntity"
       rescue EsxCloud::CliError => e
-        if ENV["DRIVER"] == "gocli"
-          expect(e.output).to include("Please provide network name")
-        else
-          expect(e.output).to include("InvalidEntity")
-        end
+        expect(e.output).to include("InvalidEntity")
       end
     end
 
@@ -94,11 +106,70 @@ describe "virtual_network", :virtual_network => true do
         expect(e.errors.size).to eq 1
         expect(e.errors.first.message).to eq error_msg
       rescue EsxCloud::CliError => e
-        if ENV["DRIVER"] == "gocli"
-          expect(e.output).to include("routing type is invalid")
-        else
-          expect(e.output).to include(error_msg)
-        end
+        expect(e.output).to include(error_msg)
+      end
+    end
+
+    it "should fail to create virtual network when tier0 router is invalid" do
+      deployment = client.find_all_api_deployments.items.first
+      expect(deployment).to_not be_nil
+      expect(deployment.network_configuration).to_not be_nil
+      expect(deployment.network_configuration.virtual_network_enabled).to eq(true)
+      expect(deployment.network_configuration.network_top_router_id).to_not be_nil
+      existing_top_router_id = deployment.network_configuration.network_top_router_id
+
+      set_tier0_router_id(deployment.id, "wrong-id")
+      error_msg = "LogicalRouter/wrong-id could not be found"
+      begin
+        create_virtual_network(@project.id, spec)
+        fail("create virtual network should fail when tier0 router is invalid")
+      rescue EsxCloud::ApiError => e
+        expect(e.errors.size).to eq 1
+        expect(e.errors.first.size).to eq 1
+        step_error = e.errors.first.first.step
+        expect(step_error["state"]).to eq "ERROR"
+        expect(step_error["sequence"]).to eq 3
+        expect(step_error["operation"]).to eq "SET_UP_LOGICAL_ROUTER"
+        expect(step_error["errors"].size).to eq 1
+        expect(step_error["errors"].first["message"]).to include error_msg
+      rescue EsxCloud::CliError => e
+        expect(e.output).to include(error_msg)
+      ensure
+        set_tier0_router_id(deployment.id, existing_top_router_id)
+      end
+    end
+  end
+
+  describe "#delete" do
+    it "should delete virtual network successfully when virtual network is READY" do
+      network = create_virtual_network(@project.id, spec)
+      expect(network.state).to eq "READY"
+      expect(client.delete_network(network.id)).to be_true
+    end
+
+    it "should fail to delete virtual network when virtual network is PENDING_DELETE" do
+      network = create_virtual_network(@project.id, spec)
+      expect(network.state).to eq "READY"
+
+      set_virtual_network_state(network.id, "PENDING_DELETE")
+
+      networks = client.find_virtual_networks_by_name(spec.name).items
+      expect(networks.size).to eq 1
+      expect(networks.first.state).to eq "PENDING_DELETE"
+
+      error_msg = "Invalid operation to delete virtual network #{network.id} in state PENDING_DELETE"
+      begin
+        client.delete_network(network.id)
+        fail "delete virtual network already in PENDING_DELETE state should fail"
+      rescue EsxCloud::ApiError => e
+        expect(e.response_code).to eq 400
+        expect(e.errors.size).to eq 1
+        expect(e.errors.first.code).to eq "InvalidNetworkState"
+        expect(e.errors.first.message).to eq error_msg
+      rescue EsxCloud::CliError => e
+        expect(e.message).to include(error_msg)
+      ensure
+        set_virtual_network_state(network.id, "READY")
       end
     end
   end
@@ -114,5 +185,23 @@ describe "virtual_network", :virtual_network => true do
       EsxCloud::VirtualNetwork.find_by_name(spec.name).items.each {|i| virtual_networks_to_delete << i}
       raise
     end
+  end
+
+  # Patch deployment to set virtual network's tier0 router id.
+  def set_tier0_router_id(deployment_id, router_id)
+    patch = {
+        networkTopRouterId: router_id
+    }
+    link = "/photon/cloudstore/deployments/#{deployment_id}"
+    EsxCloud::Dcp::CloudStore::CloudStoreClient.instance.patch(link, patch)
+  end
+
+  # Patch virtual network to set state.
+  def set_virtual_network_state(network_id, network_state)
+    patch = {
+        state: network_state
+    }
+    link = "/photon/cloudstore/virtual-networks/#{network_id}"
+    EsxCloud::Dcp::CloudStore::CloudStoreClient.instance.patch(link, patch)
   end
 end
