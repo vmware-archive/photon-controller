@@ -138,15 +138,13 @@ describe EsxCloud::ApiClient do
   end
 
   it "enables cluster type for deployment" do
-    configuration = double(EsxCloud::ClusterConfiguration)
-
     expect(@http_client).to receive(:post_json)
                             .with("/deployments/foo/enable_cluster_type", "payload")
-                            .and_return(ok_response("cluster_configuration"))
-    expect(EsxCloud::ClusterConfiguration).to receive(:create_from_json).with("cluster_configuration")
-      .and_return(configuration)
-
-    expect(client.enable_cluster_type("foo", "payload")).to eq configuration
+                            .and_return(task_created("randomid"))
+    expect(@http_client).to receive(:get)
+                            .with(URL_HOST + "/tasks/randomid")
+                            .and_return(task_done("randomid", "entity_id"))
+    expect(client.enable_cluster_type("foo", "payload")).to eq(true)
   end
 
   it "disables cluster type for deployment" do

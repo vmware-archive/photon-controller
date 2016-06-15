@@ -15,9 +15,7 @@ package com.vmware.photon.controller.apife.clients;
 
 import com.vmware.photon.controller.api.Auth;
 import com.vmware.photon.controller.api.AuthInfo;
-import com.vmware.photon.controller.api.ClusterConfiguration;
 import com.vmware.photon.controller.api.ClusterConfigurationSpec;
-import com.vmware.photon.controller.api.ClusterType;
 import com.vmware.photon.controller.api.Deployment;
 import com.vmware.photon.controller.api.DeploymentCreateSpec;
 import com.vmware.photon.controller.api.DeploymentDeployOperation;
@@ -389,28 +387,28 @@ public class DeploymentFeClientTest {
    */
   public class ConfigClusterTest {
     String deploymentId;
-    ClusterConfiguration configuration;
 
     @BeforeMethod
     public void setUp() throws Throwable {
       setUpCommon();
-
-      deploymentId = "deployment-id";
-      doReturn(null).when(deploymentBackend).findById(deploymentId);
-
-      configuration = new ClusterConfiguration();
-      configuration.setType(ClusterType.KUBERNETES);
-      configuration.setImageId("imageId");
-
-      doReturn(configuration).when(deploymentBackend).configureCluster(any(ClusterConfigurationSpec.class));
     }
 
     @Test
     public void testSuccess() throws Throwable {
-      ClusterConfiguration config = feClient.configureCluster(deploymentId, new ClusterConfigurationSpec());
+      deploymentId = "deployment-id";
+      doReturn(null).when(deploymentBackend).findById(deploymentId);
+      TaskEntity taskEntity = new TaskEntity();
 
-      assertThat(config.getType(), is(ClusterType.KUBERNETES));
-      assertThat(config.getImageId(), is("imageId"));
+      doReturn(taskEntity).when(deploymentBackend).configureCluster(any(ClusterConfigurationSpec.class));
+      Task task = new Task();
+      doReturn(task).when(taskBackend).getApiRepresentation(taskEntity);
+
+      TaskCommand command = mock(TaskCommand.class);
+      doReturn(command).when(commandFactory).create(taskEntity);
+
+      Task resp = feClient.configureCluster(deploymentId, new ClusterConfigurationSpec());
+      assertThat(resp, is(task));
+
     }
   }
 

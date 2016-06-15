@@ -367,7 +367,7 @@ public class DeploymentXenonBackend implements DeploymentBackend {
   }
 
   @Override
-  public ClusterConfiguration configureCluster(ClusterConfigurationSpec spec) throws ExternalException {
+  public TaskEntity configureCluster(ClusterConfigurationSpec spec) throws ExternalException {
     if (findClusterConfigurationByType(spec.getType()) != null) {
       throw new ClusterTypeAlreadyConfiguredException(spec.getType());
     }
@@ -377,17 +377,8 @@ public class DeploymentXenonBackend implements DeploymentBackend {
     state.imageId = spec.getImageId();
     state.documentSelfLink = spec.getType().toString().toLowerCase();
 
-    com.vmware.xenon.common.Operation operation =
-        xenonClient.post(true, ClusterConfigurationServiceFactory.SELF_LINK, state);
-
-    state = operation.getBody(ClusterConfigurationService.State.class);
-
-    ClusterConfiguration config = new ClusterConfiguration();
-    config.setId(state.clusterType.toString().toLowerCase());
-    config.setType(state.clusterType);
-    config.setImageId(state.imageId);
-
-    return config;
+    xenonClient.post(true, ClusterConfigurationServiceFactory.SELF_LINK, state);
+    return taskBackend.createCompletedTask(null, Operation.CONFIGURE_CLUSTER);
   }
 
   @Override

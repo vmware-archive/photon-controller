@@ -14,7 +14,6 @@
 package com.vmware.photon.controller.apife.backends;
 
 import com.vmware.photon.controller.api.AuthInfo;
-import com.vmware.photon.controller.api.ClusterConfiguration;
 import com.vmware.photon.controller.api.ClusterConfigurationSpec;
 import com.vmware.photon.controller.api.ClusterType;
 import com.vmware.photon.controller.api.Deployment;
@@ -1224,10 +1223,8 @@ public class DeploymentXenonBackendTest {
       ClusterConfigurationSpec configurationSpec = new ClusterConfigurationSpec();
       configurationSpec.setType(ClusterType.KUBERNETES);
       configurationSpec.setImageId("imageId");
-      ClusterConfiguration configuration = deploymentBackend.configureCluster(configurationSpec);
-
-      assertThat(configuration.getType(), is(ClusterType.KUBERNETES));
-      assertThat(configuration.getImageId(), is("imageId"));
+      TaskEntity taskEntity = deploymentBackend.configureCluster(configurationSpec);
+      assertThat(taskEntity.getState(), is(TaskEntity.State.COMPLETED));
     }
 
     @Test
@@ -1237,11 +1234,8 @@ public class DeploymentXenonBackendTest {
         configurationSpec.setType(clusterType);
         configurationSpec.setImageId("imageId" + clusterType.toString());
 
-        ClusterConfiguration configuration = deploymentBackend.configureCluster(configurationSpec);
-
-        assertThat(configuration.getType(), is(clusterType));
-        assertThat(configuration.getImageId(), is("imageId" + clusterType.toString()));
-
+        TaskEntity taskEntity = deploymentBackend.configureCluster(configurationSpec);
+        assertThat(taskEntity.getState(), is(TaskEntity.State.COMPLETED));
       }
     }
 
