@@ -19,6 +19,8 @@ import weakref
 import time
 
 from common.lock import lock_with
+from common.photon_thrift.thriftserver import ThriftWorker
+from common.photon_thrift.thriftserver import IThriftWorkerCallback
 from gen.agent.ttypes import VmCache
 from gen.host.ttypes import VmNetworkInfo
 from gen.host.ttypes import Ipv4Address
@@ -427,6 +429,7 @@ class SyncAttacheCacheThread(threading.Thread):
         self.last_updated = time.time()
 
     def run(self):
+        attache.EnlistThisThread()
         while True:
             if not self.active:
                 self._logger.info("Exit vmcache sync thread.")
@@ -448,6 +451,7 @@ class SyncAttacheCacheThread(threading.Thread):
                     if self.errback:
                         self.errback()
                 self._wait_between_failures()
+        attache.DelistThisThread()
 
     def stop(self):
         self._logger.info("Stop syncing vm cache thread")
@@ -466,3 +470,20 @@ class SyncAttacheCacheThread(threading.Thread):
         wait_seconds = 1 << (self.fail_count - 1)
         self._logger.info("Wait %d second(s) to retry update cache" % wait_seconds)
         time.sleep(wait_seconds)
+
+
+# Enlist/Delist thrift worker threads
+# attache/vmacore require threads enlisted brefore calling its APIs,
+# and delist before threads exit.
+class ThriftWorkerCallback(IThriftWorkerCallback):
+    _logger = logging.getLogger(__name__)
+
+    def thread_start(self):
+        attache.EnlistThisThread()
+        self._logger.info("attache.EnlistThisThread %s" % threading.current_thread().name)
+
+    def thread_exit(self):
+        self._logger.info("attache.DelistThisThread %s" % threading.current_thread().name)
+        attache.DelistThisThread()
+
+ThriftWorker.set_callback(ThriftWorkerCallback())
