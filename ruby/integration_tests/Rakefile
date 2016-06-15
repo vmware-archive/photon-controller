@@ -157,6 +157,19 @@ task :clean_hosts, [:dc_yml] do |t, args|
   end
 end
 
+desc 'Enable core dumps'
+task :enable_core_dumps, [:dc_yml] do |t, args|
+  host_specs = EsxCloud::HostsImporter.import_file  args[:dc_yml]
+  host_specs.each do |host|
+    EsxCloud::HostCleaner.enable_core_dumps host.address, host.username, host.password
+  end
+end
+
+desc 'Enable core dump'
+task :enable_core_dump do |t|
+  EsxCloud::HostCleaner.enable_core_dumps EsxCloud::TestHelpers.get_esx_ip, EsxCloud::TestHelpers.get_esx_username, EsxCloud::TestHelpers.get_esx_password
+end
+
 desc 'Reboot hosts'
 task :reboot_hosts, [:dc_yml] do |t, args|
   host_specs = EsxCloud::HostsImporter.import_file  args[:dc_yml]
