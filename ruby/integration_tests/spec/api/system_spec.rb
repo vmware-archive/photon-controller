@@ -38,6 +38,8 @@ describe "system" do
     system_cleaner = EsxCloud::SystemCleaner.new(api_client)
     stat = system_cleaner.clean_system
 
+    network_ids = stat.delete "network"
+    expect(network_ids).to be([EsxCloud::SystemSeeder.instance.network.id])
     expect(stat).to be_empty, "Expect no garbage to be cleaned but found some: #{stat.inspect}"
 
     next unless ENV["DEVBOX"]
