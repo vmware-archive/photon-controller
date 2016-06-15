@@ -77,7 +77,7 @@ public class TestEnvironment extends MultiHostEnvironment<PhotonControllerXenonH
    * Get ImageSeederService Sync trigger service uri.
    */
   public String getImageSeederSyncServiceUri() {
-    return HousekeeperServiceGroup.getImageSeederSyncServiceUri();
+    return HousekeeperServiceGroup.getImageSeederSyncTriggerServiceUri();
   }
 
   /**

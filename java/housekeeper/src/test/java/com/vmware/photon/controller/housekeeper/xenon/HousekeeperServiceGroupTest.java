@@ -23,6 +23,7 @@ import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
 import com.vmware.photon.controller.common.xenon.host.XenonConfig;
 import com.vmware.photon.controller.common.xenon.scheduler.TaskSchedulerServiceFactory;
+import com.vmware.photon.controller.common.xenon.scheduler.TaskTriggerFactoryService;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
 import com.vmware.photon.controller.housekeeper.ConfigTest;
@@ -383,10 +384,11 @@ public class HousekeeperServiceGroupTest {
         ImageDatastoreSweeperServiceFactory.SELF_LINK,
         ImageCleanerServiceFactory.SELF_LINK,
         ImageCleanerTriggerServiceFactory.SELF_LINK,
-        ImageSeederSyncTriggerServiceFactory.SELF_LINK,
+        ImageSeederSyncServiceFactory.SELF_LINK,
         TaskSchedulerServiceFactory.SELF_LINK,
+        TaskTriggerFactoryService.SELF_LINK,
         HousekeeperServiceGroup.getTriggerCleanerServiceUri(),
-        HousekeeperServiceGroup.getImageSeederSyncServiceUri(),
+        HousekeeperServiceGroup.getImageSeederSyncTriggerServiceUri(),
         HousekeeperServiceGroup.IMAGE_COPY_SCHEDULER_SERVICE);
   }
 }
