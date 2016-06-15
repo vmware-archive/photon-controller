@@ -491,7 +491,7 @@ public class ImageCleanerService extends StatefulService {
   }
 
   /**
-   * This method sends a DCP query.
+   * This method sends a Xenon query.
    *
    * @param spec
    * @param handler

@@ -14,7 +14,7 @@
 package com.vmware.photon.controller.common.xenon;
 
 /**
- * This class implements simple control flags for DCP task services.
+ * This class implements simple control flags for Xenon task services.
  */
 public class ControlFlags {
 

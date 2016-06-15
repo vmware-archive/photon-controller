@@ -216,7 +216,7 @@ public class ImageSeederServiceTest {
       startState.failedOrCancelledCopies = -1;
       try {
         host.startServiceSynchronously(service, startState);
-        fail("Should have failed with DcpRuntimeException");
+        fail("Should have failed with XenonRuntimeException");
       } catch (XenonRuntimeException e) {
         assertThat(e.getMessage(), containsString("failedOrCanceledCopies needs to be >= 0"));
       }

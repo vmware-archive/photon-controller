@@ -21,7 +21,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 
 /**
- * This class implements utilities for DCP patching actions.
+ * This class implements utilities for Xenon patching actions.
  */
 public class PatchUtils {
 

@@ -28,7 +28,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
 /**
- * This class implements utility functions for validating DCP microservice states.
+ * This class implements utility functions for validating Xenon service states.
  */
 public class ValidationUtils {
 

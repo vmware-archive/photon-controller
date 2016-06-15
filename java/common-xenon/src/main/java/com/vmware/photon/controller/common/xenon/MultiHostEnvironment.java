@@ -42,9 +42,9 @@ import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 /**
- * TestMachine class hosting a DCP host.
+ * TestMachine class hosting a Xenon host.
  *
- * @param <H> Subclass of ServiceHost as well as implementing DcpHostInfoProvider interface.
+ * @param <H> Subclass of ServiceHost as well as implementing XenonHostInfoProvider interface.
  */
 public abstract class MultiHostEnvironment<H extends ServiceHost & XenonHostInfoProvider> {
 
@@ -54,7 +54,7 @@ public abstract class MultiHostEnvironment<H extends ServiceHost & XenonHostInfo
   public static final int TEST_NODE_GROUP_CONVERGENCE_SLEEP = 20;
   public static final int DEFAULT_MULTI_HOST_COUNT = 3;
   protected static final String BIND_ADDRESS = "0.0.0.0";
-  protected static final String STORAGE_PATH_PREFIX = ".dcp_test_sandbox";
+  protected static final String STORAGE_PATH_PREFIX = ".xenon_test_sandbox";
   private static final Logger logger = LoggerFactory.getLogger(MultiHostEnvironment.class);
   protected H[] hosts;
 
@@ -74,7 +74,7 @@ public abstract class MultiHostEnvironment<H extends ServiceHost & XenonHostInfo
   }
 
   /**
-   * Start the DCP host.
+   * Start the Xenon host.
    *
    * @throws Throwable
    */
@@ -179,7 +179,7 @@ public abstract class MultiHostEnvironment<H extends ServiceHost & XenonHostInfo
   }
 
   /**
-   * Stop the DCP host.
+   * Stop the Xenon host.
    *
    * @throws Throwable
    */

@@ -73,7 +73,7 @@ public class ServiceHostUtils {
 
   private static final Logger logger = LoggerFactory.getLogger(ServiceHostUtils.class);
   /**
-   * Value to use for the referrer in DCP operations.
+   * Value to use for the referrer in Xenon operations.
    */
   private static final String REFERRER_PATH = "/service-host-utils";
 

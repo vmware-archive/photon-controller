@@ -18,7 +18,7 @@ import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
 
 /**
- * TestServiceIgnoresPosts implements a DCP service class that no-ops all POST messages it receives. (i.e. no changes
+ * TestServiceIgnoresPosts implements a Xenon service class that no-ops all POST messages it receives. (i.e. no changes
  * are made to its internal state and SUCCESS is returned.
  */
 public class TestServiceIgnoresPosts extends StatefulService {

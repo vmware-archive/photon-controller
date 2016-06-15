@@ -35,7 +35,7 @@ import java.util.function.Predicate;
 import java.util.logging.Level;
 
 /**
- * Test helper used to test DCP services in isolation.
+ * Test helper used to test Xenon services in isolation.
  */
 public class BasicServiceHost
     extends ServiceHost

@@ -228,7 +228,7 @@ public class QueryTaskUtils {
   /**
    * Get the URI of the service document from the query response.
    * <p>
-   * This is to be used for "indirect" DCP calls. A call is returned as
+   * This is to be used for "indirect" Xenon calls. A call is returned as
    * being accepted, and subsequent calls need to be issued to check
    * if the service is finished.
    *
@@ -273,7 +273,7 @@ public class QueryTaskUtils {
     if (terms == null || terms.isEmpty()) {
       // since there are no other clauses
       // skip adding boolean clauses
-      // to workaround the DCP requirement to have at least 2
+      // to workaround the Xenon requirement to have at least 2
       // boolean clauses for a valid query
       spec.query = documentKindClause;
     } else {

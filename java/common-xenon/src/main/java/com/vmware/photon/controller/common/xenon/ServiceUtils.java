@@ -43,7 +43,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 /**
- * Utility functions for DCP services.
+ * Utility functions for Xenon services.
  */
 public class ServiceUtils {
 
