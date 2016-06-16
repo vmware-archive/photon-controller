@@ -39,7 +39,6 @@ import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
-import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
 import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfigurator;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfiguratorFactory;
@@ -876,9 +875,6 @@ public class BatchCreateManagementWorkflowServiceTest {
       ZookeeperClientFactory zkFactory = mock(ZookeeperClientFactory.class);
       ZookeeperClient zkBuilder = mock(ZookeeperClient.class);
       doReturn(zkBuilder).when(zkFactory).create();
-      doReturn(mock(ServiceConfig.class))
-          .when(zkBuilder)
-          .getServiceConfig(anyString(), anyString());
 
       InetSocketAddress address = cloudStoreMachine.getServerSet().getServers().iterator().next();
       doReturn(Collections.singleton(address))

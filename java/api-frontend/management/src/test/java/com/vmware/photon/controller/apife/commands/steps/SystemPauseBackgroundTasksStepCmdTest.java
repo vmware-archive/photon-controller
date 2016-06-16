@@ -13,57 +13,92 @@
 
 package com.vmware.photon.controller.apife.commands.steps;
 
+import com.vmware.photon.controller.api.DeploymentCreateSpec;
+import com.vmware.photon.controller.api.DeploymentState;
+import com.vmware.photon.controller.apife.backends.DeploymentBackend;
 import com.vmware.photon.controller.apife.backends.StepBackend;
+import com.vmware.photon.controller.apife.backends.XenonBackendTestModule;
+import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
+import com.vmware.photon.controller.apife.entities.DeploymentEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
+import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
-import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
 
+import com.google.inject.Inject;
 import org.mockito.Mock;
 import org.powermock.modules.testng.PowerMockTestCase;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.doThrow;
+import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
+
+import java.util.Collections;
 
 /**
  * Tests {@link com.vmware.photon.controller.apife.commands.steps.SystemPauseBackgroundTasksStepCmd}.
  */
+@Guice(modules = {XenonBackendTestModule.class})
 public class SystemPauseBackgroundTasksStepCmdTest extends PowerMockTestCase {
 
   @Mock
   private TaskCommand taskCommand;
   @Mock
   private StepBackend stepBackend;
-  @Mock
-  private ServiceConfig serviceConfig;
+
 
   private StepEntity step;
 
   private SystemPauseBackgroundTasksStepCmd command;
 
+  @Inject
+  private ApiFeXenonRestClient apiFeXenonRestClient;
+
+  @Inject
+  private DeploymentBackend deploymentBackend;
+
+  private DeploymentEntity initialDeploymentEntity;
+
   @BeforeMethod
   public void setUp() throws Exception {
     step = new StepEntity();
     step.setId("step-1");
-    command = spy(new SystemPauseBackgroundTasksStepCmd(taskCommand, stepBackend, step, serviceConfig));
+
+    DeploymentCreateSpec deploymentCreateSpec = new DeploymentCreateSpec();
+    deploymentCreateSpec.setImageDatastores(Collections.singleton("imageDatastore"));
+
+    TaskEntity task = deploymentBackend.prepareCreateDeployment(deploymentCreateSpec);
+    initialDeploymentEntity = deploymentBackend.findById(task.getEntityId());
+    step.createOrUpdateTransientResource(SystemResumeStepCmd.DEPLOYMENT_ID_RESOURCE_KEY,
+        initialDeploymentEntity.getId());
+    when(taskCommand.getApiFeXenonRestClient()).thenReturn(apiFeXenonRestClient);
+    command = spy(new SystemPauseBackgroundTasksStepCmd(taskCommand, stepBackend, step));
+  }
+
+  @AfterMethod
+  public void cleanUp() throws Throwable {
+    // We need to change the state so that it can be deleted
+    deploymentBackend.updateState(initialDeploymentEntity, DeploymentState.NOT_DEPLOYED);
+    deploymentBackend.prepareDeleteDeployment(initialDeploymentEntity.getId());
   }
 
   @Test
   public void testSuccess() throws Throwable {
-    doNothing().when(serviceConfig).pauseBackground();
-
     command.execute();
-    verify(serviceConfig).pauseBackground();
-    verifyNoMoreInteractions(serviceConfig);
+
+    DeploymentEntity deploymentEntity = deploymentBackend.findById(initialDeploymentEntity.getId());
+    assertEquals(deploymentEntity.getState(), DeploymentState.BACKGROUND_PAUSED);
   }
 
   @Test(expectedExceptions = InternalException.class)
   public void testError() throws Throwable {
-    doThrow(new Exception("Error")).when(serviceConfig).pauseBackground();
+    step = new StepEntity();
+    step.setId("step-1");
+
+    command = spy(new SystemPauseBackgroundTasksStepCmd(taskCommand, stepBackend, step));
     command.execute();
   }
 }

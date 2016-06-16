@@ -19,14 +19,11 @@ import com.vmware.photon.controller.cloudstore.xenon.CloudStoreServiceGroup;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.common.xenon.BasicServiceHost;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
-import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.name.Names;
-
-import static org.mockito.Mockito.mock;
 
 import java.net.InetSocketAddress;
 import java.net.URISyntaxException;
@@ -91,11 +88,5 @@ public class XenonBackendTestModule extends AbstractModule {
     StaticServerSet serverSet = new StaticServerSet(
         new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
     return new DeployerXenonRestClient(serverSet, Executors.newFixedThreadPool(128));
-  }
-
-  @Provides
-  @Singleton
-  ServiceConfig getServiceConfig() {
-    return mock(ServiceConfig.class);
   }
 }

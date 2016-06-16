@@ -13,10 +13,10 @@
 
 package com.vmware.photon.controller.housekeeper.xenon;
 
+import com.vmware.photon.controller.cloudstore.SystemConfig;
 import com.vmware.photon.controller.common.xenon.OperationUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
-import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
-import com.vmware.photon.controller.common.zookeeper.ServiceConfigProvider;
+import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
 import com.vmware.xenon.common.NodeSelectorService;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
@@ -113,10 +113,10 @@ public class ImageCleanerTriggerService extends StatefulService {
    * Checks if service's background processing is in pause state.
    */
   private boolean isBackgroundPaused() {
-    ServiceConfig serviceConfig = ((ServiceConfigProvider) getHost()).getServiceConfig();
+    SystemConfig systemConfig = SystemConfig.getInstance((PhotonControllerXenonHost) getHost());
     boolean backgroundPaused = true;
     try {
-      backgroundPaused = serviceConfig.isBackgroundPaused();
+      backgroundPaused = systemConfig.isBackgroundPaused();
     } catch (Exception ex) {
       ServiceUtils.logSevere(this, ex);
     }
