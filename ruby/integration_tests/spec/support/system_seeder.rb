@@ -293,9 +293,14 @@ module EsxCloud
     end
 
     def create_network
-      spec = EsxCloud::NetworkCreateSpec.new(random_name("network-"), "Seeder Network", [get_vm_port_group])
-      network = EsxCloud::Config.client.create_network(spec.to_hash)
-      EsxCloud::Config.client.set_default(network.id)
+      unless ENV["PHYSICAL_NETWORK_DISABLED"] then
+        spec = EsxCloud::NetworkCreateSpec.new(random_name("network-"), "Seeder Network", [get_vm_port_group])
+        network = EsxCloud::Config.client.create_network(spec.to_hash)
+        EsxCloud::Config.client.set_default(network.id)
+      else
+        spec = EsxCloud::VirtualNetworkCreateSpec.new(random_name("network-"), "Seeder Virtual Network", "ROUTED")
+        network = EsxCloud::VirtualNetwork.create(project!.id, spec)
+      end
       network
     end
 
