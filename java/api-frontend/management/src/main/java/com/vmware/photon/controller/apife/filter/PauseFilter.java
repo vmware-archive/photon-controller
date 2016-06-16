@@ -18,10 +18,9 @@ import com.vmware.photon.controller.api.common.exceptions.external.ErrorCode;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.resources.routes.DeploymentResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.VmResourceRoutes;
-import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
+import com.vmware.photon.controller.cloudstore.SystemConfig;
 
 import com.google.common.collect.ImmutableList;
-import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.sun.research.ws.wadl.HTTPMethods;
 import org.glassfish.jersey.server.ContainerRequest;
@@ -50,11 +49,15 @@ public class PauseFilter implements ContainerRequestFilter {
       new UriTemplate(DeploymentResourceRoutes.DEPLOYMENT_PATH + DeploymentResourceRoutes.RESUME_SYSTEM_ACTION),
       new UriTemplate(DeploymentResourceRoutes.DEPLOYMENT_PATH + DeploymentResourceRoutes.PAUSE_BACKGROUND_TASKS_ACTION)
   );
-  private final ServiceConfig serviceConfig;
 
-  @Inject
-  public PauseFilter(ServiceConfig serviceConfig) {
-    this.serviceConfig = serviceConfig;
+  private SystemConfig systemConfig = null;
+
+  public PauseFilter() {
+    this.systemConfig = SystemConfig.getInstance();
+  }
+
+  public SystemConfig getSystemConfig() {
+    return this.systemConfig;
   }
 
   /**
@@ -78,7 +81,7 @@ public class PauseFilter implements ContainerRequestFilter {
 
     boolean isPaused;
     try {
-      isPaused = serviceConfig.isPaused();
+      isPaused = getSystemConfig().isPaused();
     } catch (Exception ex) {
       logger.error("serviceConfig.isPaused() throws error", ex);
       ExternalException e = new ExternalException(ErrorCode.INTERNAL_ERROR, ex.getMessage(), null);
