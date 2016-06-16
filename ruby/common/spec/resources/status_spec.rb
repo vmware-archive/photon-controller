@@ -25,11 +25,11 @@ describe EsxCloud::Status do
 {
     "components": [
       {
-         "component": "HOUSEKEEPER",
+         "component": "PHOTON_CONTROLLER",
          "status": "READY",
          "instances": [
             {
-               "address": "/172.31.253.66:16000",
+               "address": "/172.31.253.66:19000",
                "status": "READY"
             }
          ],
@@ -43,19 +43,6 @@ describe EsxCloud::Status do
          "instances": [
             {
                "address": "/172.31.253.66:13000",
-               "status": "READY"
-            }
-         ],
-         "stats": {
-            "READY": "1"
-         }
-      },
-      {
-         "component": "ROOT_SCHEDULER",
-         "status": "READY",
-         "instances": [
-            {
-               "address": "/172.31.253.66:13010",
                "status": "READY"
             }
          ],
@@ -88,7 +75,7 @@ CONTENT
 
     it "should initialize Status object properly" do
       expect(status.status).to eq "READY"
-      expect(status.components.size).to eq 4
+      expect(status.components.size).to eq 3
       status.components.each do |component|
         expect(component.status).to eq "READY"
         expect(component.stats).to eq({ "READY" => "1"})
@@ -103,12 +90,10 @@ CONTENT
 
     it "should return string properly" do
       expect(status.to_s).to eq "status: READY\ncomponents:\n" +
-                                  "HOUSEKEEPER: READY, message: , stats: {\"READY\"=>\"1\"}\ninstances:\n" +
-                                  "/172.31.253.66:16000: READY, message: , stats: \n" +
+                                  "PHOTON_CONTROLLER: READY, message: , stats: {\"READY\"=>\"1\"}\ninstances:\n" +
+                                  "/172.31.253.66:19000: READY, message: , stats: \n" +
                                   "CHAIRMAN: READY, message: , stats: {\"READY\"=>\"1\"}\ninstances:\n" +
                                   "/172.31.253.66:13000: READY, message: , stats: \n" +
-                                  "ROOT_SCHEDULER: READY, message: , stats: {\"READY\"=>\"1\"}\ninstances:\n" +
-                                  "/172.31.253.66:13010: READY, message: , stats: \n" +
                                   "DEPLOYER: READY, message: , stats: {\"READY\"=>\"1\"}\ninstances:\n" +
                                   "/172.31.253.66:18000: READY, message: , stats: "
     end
