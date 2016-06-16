@@ -15,7 +15,9 @@ package com.vmware.photon.controller.housekeeper.xenon;
 
 import com.vmware.photon.controller.api.ImageState;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ImageService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.ImageServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ImageToImageDatastoreMappingService;
+import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelperProvider;
 import com.vmware.photon.controller.common.xenon.OperationUtils;
 import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
@@ -151,6 +153,13 @@ public class ImageSeederSyncService extends StatefulService {
     current.triggersError = updateLongWithMax(current.triggersError, patch.triggersError);
   }
 
+  /**
+   * Get Cloudstore helper.
+   */
+  protected CloudStoreHelper getCloudStoreHelper() {
+    return ((CloudStoreHelperProvider) getHost()).getCloudStoreHelper();
+  }
+
   private void triggerImageSeederServices(State current, String imageId) {
     sendRequest(
         buildImageToImageDatstoreQuery(imageId)
@@ -167,9 +176,29 @@ public class ImageSeederSyncService extends StatefulService {
                     logFailure(new IllegalArgumentException("No Image Datastore has image " + imageId));
                     return;
                   }
-
-                  triggerImageSeederService(current, imageId, documentLinks.get(0).imageDatastoreId);
+                  updateSeedingCount(current, documentLinks, imageId);
                 }));
+  }
+
+  private void updateSeedingCount(State current, List<ImageToImageDatastoreMappingService.State> documentLinks,
+                                  String imageId) {
+    ImageService.State imageServiceState = new ImageService.State();
+    imageServiceState.replicatedImageDatastore = documentLinks.size();
+
+    Operation.CompletionHandler handler = (operation, throwable) -> {
+      if (throwable != null) {
+        ServiceUtils.logSevere(this, throwable);
+        return;
+      }
+
+      triggerImageSeederService(current, imageId, documentLinks.get(0).imageDatastoreId);
+    };
+
+    Operation updateSeedingCountOperation = getCloudStoreHelper()
+        .createPatch(ImageServiceFactory.SELF_LINK + "/" + imageId)
+        .setBody(imageServiceState)
+        .setCompletion(handler);
+    this.sendRequest(updateSeedingCountOperation);
   }
 
   private void triggerImageSeederService(State currentState, String imageId, String datastoreId) {
