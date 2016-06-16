@@ -95,16 +95,7 @@ describe "deployment lifecycle", order: :defined, deployer: true do
     expect(perform_deployment_task.errors).to be_empty
     expect(perform_deployment_task.warnings).to be_empty
 
-    load_balancer_ip = nil
-
-    # Verify deployment summarize info by getting vm with load balancer
-    vms = api_client.get_deployment_vms deployment.id
-    vms.items.each do |vm|
-      if vm.metadata.values.include?("LoadBalancer")
-        load_balancer_ip = get_vm_ip(vm.id)
-        break
-      end
-    end
+    load_balancer_ip = EsxCloud::TestHelpers.get_mgmt_vm_ip
 
     expect(load_balancer_ip).not_to be_nil
 

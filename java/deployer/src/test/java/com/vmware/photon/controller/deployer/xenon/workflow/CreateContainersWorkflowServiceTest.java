@@ -14,13 +14,13 @@
 package com.vmware.photon.controller.deployer.xenon.workflow;
 
 import com.vmware.photon.controller.api.UsageTag;
+import com.vmware.photon.controller.cloudstore.SystemConfig;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
-import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
 import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.deployengine.DockerProvisioner;
 import com.vmware.photon.controller.deployer.deployengine.DockerProvisionerFactory;
@@ -59,6 +59,7 @@ import static org.mockito.Matchers.anyMap;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.fail;
 
@@ -714,6 +715,7 @@ public class CreateContainersWorkflowServiceTest {
     private HealthCheckHelperFactory healthCheckHelperFactory;
     private CreateContainersWorkflowService.State startState;
     private DeployerConfig deployerConfig;
+    private SystemConfig systemConfig;
 
     @BeforeClass
     public void setUpClass() throws Throwable {
@@ -724,6 +726,7 @@ public class CreateContainersWorkflowServiceTest {
           this.getClass().getResource(configFilePath).getPath());
       TestHelper.setContainersConfig(deployerConfig);
       healthCheckHelperFactory = mock(HealthCheckHelperFactory.class);
+      this.systemConfig = spy(SystemConfig.createInstance(cloudStoreMachine.getHosts()[0]));
     }
 
     @BeforeMethod
@@ -881,9 +884,6 @@ public class CreateContainersWorkflowServiceTest {
       ZookeeperClientFactory zkFactory = mock(ZookeeperClientFactory.class);
       ZookeeperClient zkBuilder = mock(ZookeeperClient.class);
       doReturn(zkBuilder).when(zkFactory).create();
-      doReturn(mock(ServiceConfig.class))
-          .when(zkBuilder)
-          .getServiceConfig(anyString(), anyString());
       return new TestEnvironment.Builder()
           .containersConfig(deployerConfig.getContainersConfig())
           .deployerContext(deployerConfig.getDeployerContext())

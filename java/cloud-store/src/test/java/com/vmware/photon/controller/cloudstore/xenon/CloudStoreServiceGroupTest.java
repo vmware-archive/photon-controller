@@ -55,7 +55,6 @@ import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
 import com.vmware.photon.controller.common.xenon.scheduler.TaskTriggerFactoryService;
-import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
 import com.vmware.xenon.services.common.LuceneDocumentIndexService;
 import com.vmware.xenon.services.common.RootNamespaceService;
 import com.vmware.xenon.services.common.ServiceUriPaths;
@@ -139,7 +138,6 @@ public class CloudStoreServiceGroupTest {
   private CloudStoreConfig config;
   private HostClientFactory hostClientFactory;
   private AgentControlClientFactory agentControlClientFactory;
-  private ServiceConfigFactory serviceConfigFactory;
 
   /**
    * Dummy test case to make Intellij recognize this as a test class.
@@ -161,7 +159,6 @@ public class CloudStoreServiceGroupTest {
 
       hostClientFactory = mock(HostClientFactory.class);
       agentControlClientFactory = mock(AgentControlClientFactory.class);
-      serviceConfigFactory = mock(ServiceConfigFactory.class);
 
       storageDir = new File(config.getXenonConfig().getStoragePath());
       FileUtils.deleteDirectory(storageDir);
@@ -170,7 +167,7 @@ public class CloudStoreServiceGroupTest {
     @BeforeMethod
     public void setUp() throws Throwable {
       host = new PhotonControllerXenonHost(
-              config.getXenonConfig(), hostClientFactory, agentControlClientFactory, serviceConfigFactory, null, null);
+              config.getXenonConfig(), hostClientFactory, agentControlClientFactory, null, null);
       cloudStoreServiceGroup = new CloudStoreServiceGroup();
       host.registerCloudStore(cloudStoreServiceGroup);
     }
@@ -196,7 +193,7 @@ public class CloudStoreServiceGroupTest {
       assertThat(storageDir.exists(), is(false));
 
       host = new PhotonControllerXenonHost(
-              config.getXenonConfig(), hostClientFactory, agentControlClientFactory, serviceConfigFactory, null, null);
+              config.getXenonConfig(), hostClientFactory, agentControlClientFactory, null, null);
       cloudStoreServiceGroup = new CloudStoreServiceGroup();
       host.registerCloudStore(cloudStoreServiceGroup);
       assertThat(storageDir.exists(), is(true));
@@ -223,7 +220,6 @@ public class CloudStoreServiceGroupTest {
 
       hostClientFactory = mock(HostClientFactory.class);
       agentControlClientFactory = mock(AgentControlClientFactory.class);
-      serviceConfigFactory = mock(ServiceConfigFactory.class);
 
       FileUtils.deleteDirectory(storageDir);
     }
@@ -231,7 +227,7 @@ public class CloudStoreServiceGroupTest {
     @BeforeMethod
     private void setUp() throws Throwable {
       host = new PhotonControllerXenonHost(
-              config.getXenonConfig(), hostClientFactory, agentControlClientFactory, serviceConfigFactory, null, null);
+              config.getXenonConfig(), hostClientFactory, agentControlClientFactory, null, null);
       cloudStoreServiceGroup = new CloudStoreServiceGroup();
       host.registerCloudStore(cloudStoreServiceGroup);
     }
@@ -283,13 +279,12 @@ public class CloudStoreServiceGroupTest {
 
       hostClientFactory = mock(HostClientFactory.class);
       agentControlClientFactory = mock(AgentControlClientFactory.class);
-      serviceConfigFactory = mock(ServiceConfigFactory.class);
     }
 
     @BeforeMethod
     private void setUp() throws Throwable {
       host = new PhotonControllerXenonHost(
-              config.getXenonConfig(), hostClientFactory, agentControlClientFactory, serviceConfigFactory, null, null);
+              config.getXenonConfig(), hostClientFactory, agentControlClientFactory, null, null);
       cloudStoreServiceGroup = new CloudStoreServiceGroup();
       host.registerCloudStore(cloudStoreServiceGroup);
       host.start();

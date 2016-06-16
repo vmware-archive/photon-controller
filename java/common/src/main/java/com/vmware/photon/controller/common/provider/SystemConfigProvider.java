@@ -11,11 +11,12 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package com.vmware.photon.controller.common.zookeeper;
+package com.vmware.photon.controller.common.provider;
 
 /**
- * Factory Class that creates ServiceConfig objects.
+ * Interface for getting SystemConfig.
  */
-public interface ServiceConfigFactory {
-  public ServiceConfig create(String serviceName);
+public interface SystemConfigProvider {
+  public boolean isBackgroundPaused();
+  public boolean isPaused();
 }
