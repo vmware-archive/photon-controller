@@ -13,12 +13,14 @@
 
 package com.vmware.photon.controller.apife.clients;
 
+import com.vmware.photon.controller.api.NetworkState;
 import com.vmware.photon.controller.api.Operation;
 import com.vmware.photon.controller.api.Project;
 import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.VirtualNetwork;
 import com.vmware.photon.controller.api.VirtualNetworkCreateSpec;
+import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
 import com.vmware.photon.controller.apibackend.servicedocuments.CreateVirtualNetworkWorkflowDocument;
@@ -26,10 +28,13 @@ import com.vmware.photon.controller.apibackend.servicedocuments.DeleteVirtualNet
 import com.vmware.photon.controller.apibackend.workflows.CreateVirtualNetworkWorkflowService;
 import com.vmware.photon.controller.apibackend.workflows.DeleteVirtualNetworkWorkflowService;
 import com.vmware.photon.controller.apife.backends.TaskBackend;
+import com.vmware.photon.controller.apife.backends.TombstoneBackend;
+import com.vmware.photon.controller.apife.backends.VmBackend;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.backends.clients.HousekeeperXenonRestClient;
 import com.vmware.photon.controller.apife.backends.utils.TaskUtils;
 import com.vmware.photon.controller.apife.backends.utils.VirtualNetworkUtils;
+import com.vmware.photon.controller.apife.exceptions.external.InvalidNetworkStateException;
 import com.vmware.photon.controller.apife.exceptions.external.NetworkNotFoundException;
 import com.vmware.photon.controller.apife.utils.PaginationUtils;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VirtualNetworkService;
@@ -53,11 +58,13 @@ public class VirtualNetworkFeClient {
   private final HousekeeperXenonRestClient backendClient;
   private final ApiFeXenonRestClient cloudStoreClient;
   private final TaskBackend taskBackend;
+  private final VmBackend vmBackend;
+  private final TombstoneBackend tombstoneBackend;
 
   @Inject
   public VirtualNetworkFeClient(HousekeeperXenonRestClient housekeeperClient,
-                                ApiFeXenonRestClient cloudStoreClient,
-                                TaskBackend taskBackend) {
+                                ApiFeXenonRestClient cloudStoreClient, TaskBackend taskBackend, VmBackend vmBackend,
+                                TombstoneBackend tombstoneBackend) {
     this.backendClient = housekeeperClient;
     this.backendClient.start();
 
@@ -65,6 +72,8 @@ public class VirtualNetworkFeClient {
     this.cloudStoreClient.start();
 
     this.taskBackend = taskBackend;
+    this.vmBackend = vmBackend;
+    this.tombstoneBackend = tombstoneBackend;
   }
 
   /**
@@ -93,6 +102,28 @@ public class VirtualNetworkFeClient {
    * Deletes the given virtual network by ID.
    */
   public Task delete(String networkId) throws ExternalException {
+    VirtualNetworkService.State virtualNetworkState = getNetworkById(networkId);
+    if (virtualNetworkState == null) {
+      throw new NetworkNotFoundException(networkId);
+    }
+
+    if (NetworkState.PENDING_DELETE.equals(virtualNetworkState.state)) {
+      throw new InvalidNetworkStateException(
+          String.format("Invalid operation to delete virtual network %s in state PENDING_DELETE", networkId));
+    }
+
+    VirtualNetworkService.State networkState = new VirtualNetworkService.State();
+    networkState.state = NetworkState.PENDING_DELETE;
+    networkState.deleteRequestTime = System.currentTimeMillis();
+    this.patchNetworkService(networkId, networkState);
+
+    List<Vm> vmsOnNetwork = vmBackend.filterByNetwork(networkId);
+    if (!vmsOnNetwork.isEmpty()) {
+      throw new InvalidNetworkStateException(
+          String.format("Invalid operation to delete virtual network %s. There are {} VMs still on virtual network",
+              networkId, vmsOnNetwork.size()));
+    }
+
     DeleteVirtualNetworkWorkflowDocument startState = new DeleteVirtualNetworkWorkflowDocument();
     startState.virtualNetworkId = networkId;
 
@@ -100,6 +131,7 @@ public class VirtualNetworkFeClient {
         .post(DeleteVirtualNetworkWorkflowService.FACTORY_LINK, startState)
         .getBody(DeleteVirtualNetworkWorkflowDocument.class);
 
+    tombstoneBackend.create(VirtualNetwork.KIND, networkId);
     return TaskUtils.convertBackEndToFrontEnd(finalState.taskServiceState);
   }
 
@@ -218,6 +250,15 @@ public class VirtualNetworkFeClient {
       return cloudStoreClient.get(documentLink).getBody(VirtualNetworkService.State.class);
     } catch (DocumentNotFoundException ex) {
       return null;
+    }
+  }
+
+  private void patchNetworkService(String id, VirtualNetworkService.State networkState)
+      throws NetworkNotFoundException {
+    try {
+      cloudStoreClient.patch(VirtualNetworkService.FACTORY_LINK + "/" + id, networkState);
+    } catch (DocumentNotFoundException e) {
+      throw new NetworkNotFoundException(id);
     }
   }
 
