@@ -169,12 +169,12 @@ class VimClient(HostClient):
             # Start syncing vm cache periodically
             self._start_syncing_cache()
 
-    def disconnect(self, wait=False):
+    def disconnect(self):
         """ Disconnect vim client
         :param wait: If wait is true, it waits until the sync thread exit.
         """
         self._logger.info("vimclient disconnect")
-        self._stop_syncing_cache(wait=wait)
+        self._stop_syncing_cache()
         try:
             connect.Disconnect(self._si)
         except:
@@ -188,11 +188,10 @@ class VimClient(HostClient):
                                                self._min_interval, self._errback)
         self._sync_thread.start()
 
-    def _stop_syncing_cache(self, wait=False):
+    def _stop_syncing_cache(self):
         if self._sync_thread:
             self._sync_thread.stop()
-            if wait:
-                self._sync_thread.join()
+            self._sync_thread.join()
 
     def _get_timestamps(self, sample_info_csv):
         # extract timestamps from sampleInfoCSV
