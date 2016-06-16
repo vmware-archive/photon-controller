@@ -44,7 +44,7 @@ class TestVimClient(unittest.TestCase):
         self._logger = logging.getLogger(__name__)
 
     def tearDown(self):
-        self.vim_client.disconnect(wait=True)
+        self.vim_client.disconnect()
 
     def test_memory_usage(self):
         used_memory = self.vim_client.memory_usage_mb
