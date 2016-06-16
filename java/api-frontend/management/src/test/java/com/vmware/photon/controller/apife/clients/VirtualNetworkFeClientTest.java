@@ -20,13 +20,17 @@ import com.vmware.photon.controller.api.RoutingType;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.VirtualNetwork;
 import com.vmware.photon.controller.api.VirtualNetworkCreateSpec;
+import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.apibackend.servicedocuments.CreateVirtualNetworkWorkflowDocument;
 import com.vmware.photon.controller.apibackend.servicedocuments.DeleteVirtualNetworkWorkflowDocument;
 import com.vmware.photon.controller.apibackend.workflows.CreateVirtualNetworkWorkflowService;
 import com.vmware.photon.controller.apibackend.workflows.DeleteVirtualNetworkWorkflowService;
 import com.vmware.photon.controller.apife.backends.TaskBackend;
+import com.vmware.photon.controller.apife.backends.TombstoneBackend;
+import com.vmware.photon.controller.apife.backends.VmBackend;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.backends.clients.HousekeeperXenonRestClient;
+import com.vmware.photon.controller.apife.exceptions.external.InvalidNetworkStateException;
 import com.vmware.photon.controller.apife.exceptions.external.NetworkNotFoundException;
 import com.vmware.photon.controller.cloudstore.xenon.entity.TaskService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VirtualNetworkService;
@@ -56,6 +60,7 @@ import static org.testng.Assert.assertEquals;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -67,6 +72,8 @@ public class VirtualNetworkFeClientTest {
   private HousekeeperXenonRestClient backendClient;
   private ApiFeXenonRestClient cloudStoreClient;
   private TaskBackend taskBackend;
+  private VmBackend vmBackend;
+  private TombstoneBackend tombstoneBackend;
   private VirtualNetworkFeClient frontendClient;
 
   @BeforeMethod
@@ -80,8 +87,18 @@ public class VirtualNetworkFeClientTest {
     doNothing().when(cloudStoreClient).start();
 
     taskBackend = mock(TaskBackend.class);
+    vmBackend = mock(VmBackend.class);
+    tombstoneBackend = mock(TombstoneBackend.class);
 
-    frontendClient = new VirtualNetworkFeClient(backendClient, cloudStoreClient, taskBackend);
+    frontendClient = new VirtualNetworkFeClient(backendClient, cloudStoreClient, taskBackend, vmBackend,
+        tombstoneBackend);
+  }
+
+  private VirtualNetworkService.State createVirtualNetworkState(String networkId) {
+    VirtualNetworkService.State virtualNetworkState = new VirtualNetworkService.State();
+    virtualNetworkState.name = "virtualNetwork";
+    virtualNetworkState.documentSelfLink = VirtualNetworkService.FACTORY_LINK + "/" + networkId;
+    return virtualNetworkState;
   }
 
   @Test
@@ -138,6 +155,13 @@ public class VirtualNetworkFeClientTest {
         refEq(startState)
     );
 
+    VirtualNetworkService.State virtualNetworkState = createVirtualNetworkState(networkId);
+
+    Operation getOperation = new Operation();
+    getOperation.setBody(virtualNetworkState);
+
+    doReturn(getOperation).when(cloudStoreClient).get(virtualNetworkState.documentSelfLink);
+
     Task task = frontendClient.delete(networkId);
 
     verify(backendClient).post(eq(DeleteVirtualNetworkWorkflowService.FACTORY_LINK), refEq(startState));
@@ -148,9 +172,7 @@ public class VirtualNetworkFeClientTest {
   public void succeedsToGet() throws Throwable {
     String networkId = UUID.randomUUID().toString();
 
-    VirtualNetworkService.State virtualNetworkState = new VirtualNetworkService.State();
-    virtualNetworkState.name = "virtualNetwork";
-    virtualNetworkState.documentSelfLink = VirtualNetworkService.FACTORY_LINK + "/" + networkId;
+    VirtualNetworkService.State virtualNetworkState = createVirtualNetworkState(networkId);
 
     Operation operation = new Operation();
     operation.setBody(virtualNetworkState);
@@ -168,6 +190,45 @@ public class VirtualNetworkFeClientTest {
         .when(cloudStoreClient).get(anyString());
 
     frontendClient.get("networkId");
+  }
+
+  @Test(expectedExceptions = NetworkNotFoundException.class)
+  public void failsToDeleteMissingNetwork() throws Throwable {
+    doThrow(new DocumentNotFoundException(new Operation(), null))
+        .when(cloudStoreClient).get(anyString());
+
+    frontendClient.delete("networkId");
+  }
+
+  @Test(expectedExceptions = InvalidNetworkStateException.class)
+  public void failsToDeleteNetworkInPendingState() throws Throwable {
+    String networkId = UUID.randomUUID().toString();
+    VirtualNetworkService.State virtualNetworkState = createVirtualNetworkState(networkId);
+    virtualNetworkState.state = NetworkState.PENDING_DELETE;
+
+    Operation getOperation = new Operation();
+    getOperation.setBody(virtualNetworkState);
+
+    doReturn(getOperation).when(cloudStoreClient).get(virtualNetworkState.documentSelfLink);
+
+    frontendClient.delete(networkId);
+  }
+
+  @Test(expectedExceptions = InvalidNetworkStateException.class)
+  public void failsToDeleteNetworkWithAttachedVMs() throws Throwable {
+    String networkId = UUID.randomUUID().toString();
+    VirtualNetworkService.State virtualNetworkState = createVirtualNetworkState(networkId);
+
+    Operation getOperation = new Operation();
+    getOperation.setBody(virtualNetworkState);
+
+    doReturn(getOperation).when(cloudStoreClient).get(virtualNetworkState.documentSelfLink);
+
+    List<Vm> Vms = new ArrayList<>();
+    Vms.add(new Vm());
+    doReturn(Vms).when(vmBackend).filterByNetwork(networkId);
+
+    frontendClient.delete(networkId);
   }
 
   @Test(dataProvider = "listAllTestData")
