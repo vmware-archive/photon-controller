@@ -39,6 +39,8 @@ import com.google.common.util.concurrent.FutureCallback;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -48,6 +50,7 @@ public class DeleteLogicalPortsTaskService extends StatefulService {
 
   public static final String FACTORY_LINK = ServiceUriPaths.APIBACKEND_ROOT + "/delete-logical-ports-tasks";
   public static final String LOGICAL_PORT = "LogicalPort";
+  private static final int NUM_RETRIES = 5;
 
   public static FactoryService createFactory() {
     return FactoryService.create(DeleteLogicalPortsTaskService.class, DeleteLogicalPortsTask.class);
@@ -159,7 +162,8 @@ public class DeleteLogicalPortsTaskService extends StatefulService {
           break;
 
         case DELETE_SWITCH_PORT:
-          deleteSwitchPort(currentState);
+          List<Integer> retryCount = Arrays.asList(0);
+          deleteSwitchPort(currentState, retryCount);
           break;
 
         default:
@@ -412,33 +416,49 @@ public class DeleteLogicalPortsTaskService extends StatefulService {
     }, currentState.executionDelay, TimeUnit.MILLISECONDS);
   }
 
-  private void deleteSwitchPort(DeleteLogicalPortsTask currentState) throws Throwable {
-    if (currentState.logicalPortOnSwitch == null) {
-      ServiceUtils.logInfo(this, "No link port found on switch %s", currentState.logicalSwitchId);
-      finishTask();
-      return;
-    }
-
-    ServiceUtils.logInfo(this, "Deleting port %s on switch %s",
-        currentState.logicalPortOnSwitch,
-        currentState.logicalSwitchId);
-
-    LogicalSwitchApi logicalSwitchApi = ServiceHostUtils.getNsxClient(getHost(), currentState.nsxManagerEndpoint,
-        currentState.username, currentState.password).getLogicalSwitchApi();
-
-    logicalSwitchApi.deleteLogicalPort(currentState.logicalPortOnSwitch,
-        new FutureCallback<Void>() {
-          @Override
-          public void onSuccess(Void v) {
-            finishTask();
-          }
-
-          @Override
-          public void onFailure(Throwable t) {
-            failTask(t);
-          }
+  private void deleteSwitchPort(DeleteLogicalPortsTask currentState, final List<Integer> retryCount) {
+    getHost().schedule(() -> {
+      try {
+        if (currentState.logicalPortOnSwitch == null) {
+          ServiceUtils.logInfo(this, "No link port found on switch %s", currentState.logicalSwitchId);
+          finishTask();
+          return;
         }
-    );
+
+        ServiceUtils.logInfo(this, "Deleting port %s on switch %s",
+            currentState.logicalPortOnSwitch,
+            currentState.logicalSwitchId);
+
+        LogicalSwitchApi logicalSwitchApi = ServiceHostUtils.getNsxClient(getHost(), currentState.nsxManagerEndpoint,
+            currentState.username, currentState.password).getLogicalSwitchApi();
+
+        logicalSwitchApi.deleteLogicalPort(currentState.logicalPortOnSwitch,
+            new FutureCallback<Void>() {
+              @Override
+              public void onSuccess(Void v) {
+                finishTask();
+              }
+
+              @Override
+              public void onFailure(Throwable t) {
+                int currNumTries = retryCount.get(0);
+                if (currNumTries++ < NUM_RETRIES) {
+                  ServiceUtils.logSevere(DeleteLogicalPortsTaskService.this,
+                      "Deleting port %s on switch %s failed with error %s, retrying ...",
+                      currentState.logicalPortOnSwitch, currentState.logicalSwitchId, t.getMessage());
+
+                  retryCount.set(0, currNumTries);
+                  deleteSwitchPort(currentState, retryCount);
+                } else {
+                  failTask(t);
+                }
+              }
+            }
+        );
+      } catch (Throwable t) {
+        failTask(t);
+      }
+    }, currentState.executionDelay, TimeUnit.MILLISECONDS);
   }
 
   private void validateStartState(DeleteLogicalPortsTask state) {
