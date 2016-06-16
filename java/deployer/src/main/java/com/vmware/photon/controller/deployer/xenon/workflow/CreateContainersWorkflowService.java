@@ -13,8 +13,8 @@
 
 package com.vmware.photon.controller.deployer.xenon.workflow;
 
+import com.vmware.photon.controller.api.DeploymentState;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
-import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
@@ -29,7 +29,6 @@ import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.common.xenon.validation.Positive;
-import com.vmware.photon.controller.deployer.deployengine.ZookeeperClient;
 import com.vmware.photon.controller.deployer.xenon.ContainersConfig;
 import com.vmware.photon.controller.deployer.xenon.entity.ContainerService;
 import com.vmware.photon.controller.deployer.xenon.entity.ContainerTemplateService;
@@ -327,11 +326,21 @@ public class CreateContainersWorkflowService extends StatefulService {
   }
 
   private void pauseBackgroundTasks(DeploymentService.State deploymentState) throws Throwable {
-    ZookeeperClient zookeeperClient = HostUtils.getZookeeperClient(this);
-    zookeeperClient
-      .getServiceConfig(deploymentState.zookeeperQuorum, Constants.APIFE_SERVICE_NAME)
-      .pauseBackground();
-    sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.CREATE_LIGHTWAVE_CONTAINER);
+    DeploymentService.State deployment = new DeploymentService.State();
+    deployment.state = DeploymentState.BACKGROUND_PAUSED;
+
+    HostUtils.getCloudStoreHelper(this)
+        .createPatch(deploymentState.documentSelfLink)
+        .setBody(deployment)
+        .setCompletion(
+            (completedOp, failure) -> {
+              if (null != failure) {
+                failTask(failure);
+              } else {
+                sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.CREATE_LIGHTWAVE_CONTAINER);
+              }
+            }
+        );
   }
 
   //

@@ -12,7 +12,6 @@
  */
 package com.vmware.photon.controller.common.xenon.host;
 
-import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.clients.AgentControlClient;
 import com.vmware.photon.controller.common.clients.AgentControlClientFactory;
 import com.vmware.photon.controller.common.clients.AgentControlClientProvider;
@@ -21,15 +20,13 @@ import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.clients.HostClientProvider;
 import com.vmware.photon.controller.common.logging.LoggingUtils;
 import com.vmware.photon.controller.common.manifest.BuildInfo;
+import com.vmware.photon.controller.common.provider.SystemConfigProvider;
 import com.vmware.photon.controller.common.thrift.ThriftModule;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelperProvider;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.XenonHostInfoProvider;
 import com.vmware.photon.controller.common.xenon.XenonServiceGroup;
-import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
-import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
-import com.vmware.photon.controller.common.zookeeper.ServiceConfigProvider;
 import com.vmware.photon.controller.nsxclient.NsxClientFactory;
 import com.vmware.photon.controller.nsxclient.NsxClientFactoryProvider;
 import com.vmware.xenon.common.ServiceHost;
@@ -52,7 +49,6 @@ public class PhotonControllerXenonHost
         extends AbstractServiceHost
         implements AgentControlClientProvider,
         HostClientProvider,
-        ServiceConfigProvider,
         NsxClientFactoryProvider,
         XenonHostInfoProvider,
         CloudStoreHelperProvider {
@@ -66,7 +62,6 @@ public class PhotonControllerXenonHost
 
     private final AgentControlClientFactory agentControlClientFactory;
     private final HostClientFactory hostClientFactory;
-    private final ServiceConfigFactory serviceConfigFactory;
     private final NsxClientFactory nsxClientFactory;
     private CloudStoreHelper cloudStoreHelper;
     private BuildInfo buildInfo;
@@ -74,6 +69,7 @@ public class PhotonControllerXenonHost
     private XenonServiceGroup cloudStore;
     private XenonServiceGroup scheduler;
     private XenonServiceGroup housekeeper;
+    private SystemConfigProvider systemConfigProvider;
 
     @SuppressWarnings("rawtypes")
     public static final Class[] FACTORY_SERVICES = {
@@ -89,13 +85,11 @@ public class PhotonControllerXenonHost
      * @param xenonConfig
      * @param hostClientFactory
      * @param agentControlClientFactory
-     * @param serviceConfigFactory
      * @throws Throwable
      */
     public PhotonControllerXenonHost(XenonConfig xenonConfig,
                                      HostClientFactory hostClientFactory,
                                      AgentControlClientFactory agentControlClientFactory,
-                                     ServiceConfigFactory serviceConfigFactory,
                                      NsxClientFactory nsxClientFactory,
                                      CloudStoreHelper cloudStoreHelper) throws Throwable {
         super(xenonConfig);
@@ -114,7 +108,6 @@ public class PhotonControllerXenonHost
 
         this.hostClientFactory = hostClientFactory;
         this.agentControlClientFactory = agentControlClientFactory;
-        this.serviceConfigFactory = serviceConfigFactory;
         this.nsxClientFactory = nsxClientFactory;
         this.cloudStoreHelper = cloudStoreHelper;
     }
@@ -194,19 +187,6 @@ public class PhotonControllerXenonHost
         return this.buildInfo;
     }
 
-
-    /**
-     * This method returns a handle to the API_FE service config so that its paused state
-     * can be checked.  This method is used during maintenance to quiesce calls to the
-     * service.  It is only relevant to services which extend TaskTriggerService.
-     *
-     * @return
-     */
-    @Override
-    public ServiceConfig getServiceConfig() {
-        return serviceConfigFactory.create(Constants.APIFE_SERVICE_NAME);
-    }
-
     @SuppressWarnings("rawtypes")
     @Override
     public Class[] getFactoryServices() {
@@ -255,8 +235,12 @@ public class PhotonControllerXenonHost
         xenonServiceGroup.setPhotonControllerXenonHost(this);
     }
 
-    public ServiceConfigFactory getServiceConfigFactory() {
-        return serviceConfigFactory;
+    public SystemConfigProvider getSystemConfigProvider() {
+        return systemConfigProvider;
+    }
+
+    public SystemConfigProvider setSystemConfigProvider(SystemConfigProvider systemConfigProvider) {
+        return this.systemConfigProvider = systemConfigProvider;
     }
 
     public void setCloudStoreHelper(CloudStoreHelper cloudStoreHelper) {

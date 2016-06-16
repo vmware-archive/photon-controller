@@ -42,7 +42,6 @@ import com.vmware.photon.controller.apife.config.AuthConfig;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.common.Constants;
-import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
@@ -77,7 +76,6 @@ public class DeploymentFeClientTest {
   private TenantBackend tenantBackend;
   private ProjectBackend projectBackend;
   private AuthConfig authConfig;
-  private ServiceConfig serviceConfig;
   private TaskCommandFactory commandFactory;
   private ExecutorService executorService;
 
@@ -89,7 +87,6 @@ public class DeploymentFeClientTest {
     tenantBackend = mock(TenantBackend.class);
     projectBackend = mock(ProjectBackend.class);
     authConfig = new AuthConfig();
-    serviceConfig = mock(ServiceConfig.class);
 
     commandFactory = mock(TaskCommandFactory.class);
     executorService = mock(TaskCommandExecutorService.class);
