@@ -4,7 +4,9 @@
 
 Devbox uses [Vagrant], [Docker] and [Photon OS] to create a local VM and install the Photon Controller components in docker containers. These components are installed from source located in the local working copy. This allows you to make a change locally without committing it and testing it end to end.
 
-All of the components are compiled, packaged and started in their own containers inside the VM. The process does not make any changes to your working copy.
+All of the components are compiled, packaged and started in their own containers inside the photon VM. The process does not make any changes to your working copy.
+
+As part of photon controller security another VM that contains Lightwave container is created along with the photon VM above.
 
 The logs from the Photon Controller services are synced to the host and are located in `log` directory.
 
@@ -30,7 +32,7 @@ We use Gradle for building and provisioning the devbox. The entire lifecycle can
 
 	./gradlew :devbox:up
 
-This will bring up Vagrant, build all service containers, then start them. Your devbox is now ready.
+This will bring up Vagrant, create ywo VMs, build all service containers, then start them. Your devbox is now ready.
 
 #### Setting Vagrant box name and location
 
@@ -53,11 +55,17 @@ By default devbox starts with a private IP address (172.31.253.66). As described
 
 You can go into the devbox VM using the vagrant ssh command.
 
-    vagrant ssh [photon]
+    vagrant ssh photon
+
+This will take you into photon VM.
+
+    vagrant ssh lightwave
+
+This will take you into lightwave vm
 
 ### Stopping and destroying devbox
 
-    vagrant destroy [-f] [photon]
+    vagrant destroy [-f] [photon/lightwave]
 
 Destroying devbox is the recommended way of cleaning up.
 

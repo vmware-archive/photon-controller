@@ -68,17 +68,6 @@ Vagrant.configure("2") do |config|
   EOS
 
   # ================ PARAMETERS AND SYNC DIRECTORIES ================
-
-  #
-  # Configure memory and nat dns
-  #
-  config.vm.provider "virtualbox" do |v|
-    v.customize ["modifyvm", :id, "--memory", ENV["DEVBOX_PHOTON_MEMORY"] || "3072"]
-    v.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
-    v.customize ["modifyvm", :id, "--cpus", ENV["DEVBOX_PHOTON_CPUS"] || "4"]
-    v.customize ['modifyvm', :id, '--acpi', 'off'] # needed to run PhotonOS RC1 in vagrant under stress
-  end
-
   #
   # Configure sync-ed directories
   #
@@ -135,6 +124,17 @@ Vagrant.configure("2") do |config|
     lightwave.vm.box = ENV['DEVBOX_NAME'] || "photon-devbox-60"
     lightwave.vm.box_url = ENV['DEVBOX_URL'] ||
         "https://s3.amazonaws.com/photon-platform/artifacts/devbox/60/photon-devbox.box"
+
+    #
+    # Configure memory and nat dns
+    #
+    config.vm.provider "virtualbox" do |v|
+      v.customize ["modifyvm", :id, "--memory", "1024"]
+      v.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
+      v.customize ["modifyvm", :id, "--cpus", "1"]
+      v.customize ['modifyvm', :id, '--acpi', 'off'] # needed to run PhotonOS RC1 in vagrant under stress
+    end
+
     unless ENV["NO_PORT_FORWARDING"]
       #Lightwave
       lightwave.vm.network :forwarded_port, guest: 22, host: 9022,
@@ -232,6 +232,16 @@ $out
     photon.vm.box = ENV['DEVBOX_NAME'] || "photon-devbox-60"
     photon.vm.box_url = ENV['DEVBOX_URL'] ||
       "https://s3.amazonaws.com/photon-platform/artifacts/devbox/60/photon-devbox.box"
+
+    #
+    # Configure memory and nat dns
+    #
+    config.vm.provider "virtualbox" do |v|
+      v.customize ["modifyvm", :id, "--memory", ENV["DEVBOX_PHOTON_MEMORY"] || "2048"]
+      v.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
+      v.customize ["modifyvm", :id, "--cpus", ENV["DEVBOX_PHOTON_CPUS"] || "3"]
+      v.customize ['modifyvm', :id, '--acpi', 'off'] # needed to run PhotonOS RC1 in vagrant under stress
+    end
 
     unless ENV["NO_PORT_FORWARDING"]
       # Load Balancer
