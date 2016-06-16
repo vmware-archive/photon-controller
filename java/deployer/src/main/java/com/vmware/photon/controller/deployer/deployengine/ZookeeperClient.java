@@ -13,8 +13,6 @@
 
 package com.vmware.photon.controller.deployer.deployengine;
 
-import com.vmware.photon.controller.common.zookeeper.PathChildrenCacheFactory;
-import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperServiceReader;
 
 import com.google.common.util.concurrent.FutureCallback;
@@ -119,17 +117,6 @@ public class ZookeeperClient {
 
     } catch (Exception e) {
       logger.error("Ignoring Zookeeper reconfig error ", e);
-      throw new RuntimeException(e);
-    }
-  }
-
-  public ServiceConfig getServiceConfig(String zookeeperInstance, String serviceName) {
-    logger.info("getServiceConfig for " + zookeeperInstance);
-    CuratorFramework zkClient = connectToZookeeper(zookeeperInstance);
-    PathChildrenCacheFactory pathCache = new PathChildrenCacheFactory(zkClient, new ZookeeperServiceReader());
-    try {
-      return new ServiceConfig(zkClient, pathCache, serviceName);
-    } catch (Exception e) {
       throw new RuntimeException(e);
     }
   }

@@ -45,6 +45,7 @@ import com.vmware.photon.controller.apife.exceptions.external.DeploymentNotFound
 import com.vmware.photon.controller.apife.exceptions.external.InvalidAuthConfigException;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidImageDatastoreSetException;
 import com.vmware.photon.controller.apife.exceptions.external.NoManagementHostException;
+import com.vmware.photon.controller.cloudstore.SystemConfig;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ClusterConfigurationService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ClusterConfigurationServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
@@ -52,7 +53,6 @@ import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentServiceFac
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.common.xenon.BasicServiceHost;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
-import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
@@ -75,6 +75,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 
 import java.net.InetSocketAddress;
@@ -563,7 +564,7 @@ public class DeploymentXenonBackendTest {
 
       StepEntity stepEntity = taskEntity.getSteps().get(0);
       assertThat(stepEntity.getOperation(), is(Operation.PAUSE_SYSTEM));
-      assertThat(stepEntity.getResources().isEmpty(), is(true));
+      assertThat(stepEntity.getResources().size(), is(1));
     }
 
     @Test
@@ -673,8 +674,7 @@ public class DeploymentXenonBackendTest {
     @Inject
     private DeploymentBackend deploymentBackend;
 
-    @Inject
-    private ServiceConfig serviceConfig;
+    private SystemConfig systemConfig;
 
     private DeploymentEntity entity;
 
@@ -685,6 +685,7 @@ public class DeploymentXenonBackendTest {
 
       TaskEntity task = deploymentBackend.prepareCreateDeployment(deploymentCreateSpec);
       entity = deploymentBackend.findById(task.getEntityId());
+      systemConfig = mock(SystemConfig.class);
     }
 
     @AfterMethod
@@ -730,29 +731,9 @@ public class DeploymentXenonBackendTest {
       deploymentBackend.toApiRepresentation("foo");
     }
 
-    @Test
-    public void testSystemPaused() throws Throwable {
-      doReturn(true).when(serviceConfig).isPaused();
-      setDeploymentState(DeploymentState.READY);
-
-      Deployment deployment = deploymentBackend.toApiRepresentation(entity.getId());
-      assertThat(deployment, is(notNullValue()));
-      assertThat(deployment.getState(), is(DeploymentState.PAUSED));
-    }
-
-    @Test
-    public void testBackgroundPausedSuccess() throws Throwable {
-      doReturn(true).when(serviceConfig).isBackgroundPaused();
-      setDeploymentState(DeploymentState.READY);
-
-      Deployment deployment = deploymentBackend.toApiRepresentation(entity.getId());
-      assertThat(deployment, is(notNullValue()));
-      assertThat(deployment.getState(), is(DeploymentState.BACKGROUND_PAUSED));
-    }
-
     @Test(dataProvider = "NotReadyState")
     public void testNonReadyState(DeploymentState state) throws Throwable {
-      doReturn(true).when(serviceConfig).isPaused();
+      doReturn(true).when(systemConfig).isPaused();
       setDeploymentState(state);
 
       Deployment deployment = deploymentBackend.toApiRepresentation(entity.getId());

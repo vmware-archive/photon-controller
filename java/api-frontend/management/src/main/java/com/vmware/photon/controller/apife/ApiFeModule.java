@@ -85,9 +85,6 @@ import com.vmware.photon.controller.common.metrics.RpcMetricListener;
 import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.photon.controller.common.thrift.ThriftModule;
 import com.vmware.photon.controller.common.thrift.ThriftServiceModule;
-import com.vmware.photon.controller.common.zookeeper.PathChildrenCacheFactory;
-import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
-import com.vmware.photon.controller.common.zookeeper.ServicePathCacheFactory;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperServerSetFactory;
 import com.vmware.photon.controller.host.gen.Host;
 
@@ -102,7 +99,6 @@ import com.google.inject.assistedinject.FactoryModuleBuilder;
 import com.google.inject.matcher.Matchers;
 import com.google.inject.name.Names;
 import com.google.inject.servlet.RequestScoped;
-import org.apache.curator.framework.CuratorFramework;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -131,15 +127,6 @@ public class ApiFeModule extends AbstractModule {
   @RequestId
   public UUID getUUID() {
     return UUID.randomUUID();
-  }
-
-  @Provides
-  @Singleton
-  public ServiceConfig getServiceConfig(
-      CuratorFramework zkClient,
-      @ServicePathCacheFactory PathChildrenCacheFactory childrenCacheFactory)
-      throws Exception {
-    return new ServiceConfig(zkClient, childrenCacheFactory, Constants.APIFE_SERVICE_NAME);
   }
 
   @Provides
