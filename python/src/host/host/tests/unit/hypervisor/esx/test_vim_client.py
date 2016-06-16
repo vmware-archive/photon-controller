@@ -83,7 +83,7 @@ class TestVimClient(unittest.TestCase):
         client.connect_userpwd("esx.local", "root", "password")
         update_mock.side_effect = vim.fault.HostConnectFault
         time.sleep(0.5)
-        client.disconnect(wait=True)
+        client.disconnect()
         assert_that(update_mock.call_count, less_than(5))  # no crazy loop
 
     @patch.object(VimCache, "poll_updates")
@@ -104,7 +104,7 @@ class TestVimClient(unittest.TestCase):
         client._vim_cache.poll_updates = poll_updates
 
         killed.wait(1)
-        client.disconnect(wait=True)
+        client.disconnect()
 
         # poll_updates will be called 5 times before it kill itself
         assert_that(poll_updates.call_count, is_(5))
@@ -213,7 +213,7 @@ class TestVimClient(unittest.TestCase):
             time.sleep(0.2)
             retry += 1
         assert_that(retry, is_not(10), "VimClient._poll_updates is not called repeatedly")
-        vim_client.disconnect(wait=True)
+        vim_client.disconnect()
         assert_that(disconnect_mock.called, is_(True))
 
     @patch("pysdk.host.GetHostSystem")
@@ -340,7 +340,7 @@ class TestVimClient(unittest.TestCase):
         assert_that(retry, is_not(10), "VimClient.update_mock is not called repeatedly")
 
         # Disconnect the client and stop the thread.
-        vim_client.disconnect(wait=True)
+        vim_client.disconnect()
         assert_that(disconnect_mock.called, is_(True))
 
         assert_that(update_mock.call_count, is_not(0), "VimClient.update_mock is not called")
