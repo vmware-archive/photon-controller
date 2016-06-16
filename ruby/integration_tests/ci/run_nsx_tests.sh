@@ -17,7 +17,5 @@ env
 
 cd "$TESTS"
 
-# Run the virtual network tests only if it is enabled
-if [ -n "$DISABLE_PHYSICAL_NETWORK" ]; then
-  bundle exec rake virtual_network:virtual_network
-fi
+bundle exec rake esxcloud:virtual_network
+bundle exec rake esxcloud:vm_on_virtual_network

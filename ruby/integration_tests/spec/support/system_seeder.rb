@@ -127,7 +127,7 @@ module EsxCloud
     end
 
     def network!
-      network || create_network
+      network || @network = create_network
     end
 
     def persistent_disk!
@@ -299,8 +299,13 @@ module EsxCloud
     end
 
     def create_network
-      spec = EsxCloud::NetworkCreateSpec.new(random_name("network-"), "Seeder Network", [get_vm_port_group])
-      network = EsxCloud::Config.client.create_network(spec.to_hash)
+      unless deployment.network_configuration.virtual_network_enabled then
+        spec = EsxCloud::NetworkCreateSpec.new(random_name("network-"), "Seeder Network", [get_vm_port_group])
+        network = EsxCloud::Config.client.create_network(spec.to_hash)
+      else
+        spec = EsxCloud::VirtualNetworkCreateSpec.new(random_name("network-"), "Seeder Virtual Network", "ROUTED")
+        network = EsxCloud::VirtualNetwork.create(project!.id, spec)
+      end
       EsxCloud::Config.client.set_default(network.id)
       network
     end

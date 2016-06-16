@@ -37,9 +37,7 @@ describe "virtual_network_lifecyle", :virtual_network => true do
 
   def create_network(spec)
     begin
-      network = EsxCloud::VirtualNetwork.create(@project.id, spec)
-      networks_to_delete << network
-      network
+      EsxCloud::VirtualNetwork.create(@project.id, spec)
     rescue
       EsxCloud::VirtualNetwork.find_by_name(spec.name).items.each { |net| networks_to_delete << net }
       raise
