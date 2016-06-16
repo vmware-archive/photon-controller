@@ -1,14 +1,14 @@
 {
   "serviceName": "PhotonControllerCore",
   "cpuCount": 4,
-  "memoryMb": 9216,
-  "diskGb": 26,
+  "memoryMb": 8192,
+  "diskGb": 27,
   "isReplicated": true,
   "isPrivileged": false,
   "containerImage": "photon/photon-controller-core",
   "containerName": "photon-controller-core",
   "portBindings": {
-    "16000": 16000,
+    "9000", 9000,
     "18000": 18000,
     "19000": 19000
   },
@@ -34,6 +34,8 @@
     "HOUSEKEEPER_INSTALL_DIRECTORY": "/usr/lib/esxcloud/housekeeper",
     "JAVA_DEBUG": "-agentlib:jdwp=transport=dt_socket,server=y,address=29000,suspend=n",
     "LOG_DIRECTORY": "/vagrant/log",
+    "MANAGEMENT-API_INSTALL_DIRECTORY": "/usr/lib/esxcloud/management-api",
+    "USE_ESX_STORE": true,
     "PHOTON-CONTROLLER-CORE_INSTALL_DIRECTORY": "/usr/lib/esxcloud/photon-controller-core",
     "ROOT-SCHEDULER_DCP_STORAGE_PATH": "/etc/esxcloud/root-scheduler/sandbox_13010",
     "ROOT-SCHEDULER_INSTALL_DIRECTORY": "/usr/lib/esxcloud/root-scheduler",

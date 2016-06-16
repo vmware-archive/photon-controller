@@ -89,7 +89,7 @@ describe EsxCloud::ApiClient do
     expect(@http_client).to receive(:get).with("/status").and_return(status_ready_response)
     system_status = client.get_status
     system_status.status.should == "READY"
-    system_status.components.size.should == 4
+    system_status.components.size.should == 3
 
     system_status.components.each do |component|
       component.name.should_not be_nil

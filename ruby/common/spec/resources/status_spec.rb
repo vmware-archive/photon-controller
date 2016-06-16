@@ -88,7 +88,7 @@ CONTENT
 
     it "should initialize Status object properly" do
       expect(status.status).to eq "READY"
-      expect(status.components.size).to eq 4
+      expect(status.components.size).to eq 3
       status.components.each do |component|
         expect(component.status).to eq "READY"
         expect(component.stats).to eq({ "READY" => "1"})

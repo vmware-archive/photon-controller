@@ -32,12 +32,10 @@ Vagrant.configure("2") do |config|
   CONFIG_JQ_FILTER='.dynamicParameters | with_entries(select (.key != "DEPLOYMENT_ID"))'
 
   SERVICE_NAME_MAP = {
-    :management_api => "management-api",
     :photon_controller_core => "photon-controller-core",
   }
 
   SERVICE_CONFIG_MAP = {
-    :management_api => "api-frontend/management",
     :photon_controller_core => "photon-controller-core",
   }
 
@@ -318,11 +316,11 @@ $out
       "TASK_EXPIRATION_SCAN_INTERVAL": "3 minutes",
       "SHARED_SECRET": "#{API_SHARED_SECRET}",
       "DEPLOYMENT_ID": "#{DEPLOYMENT_ID}",
-      "LOAD_BALANCER_SERVERS": [ { "serverName": "devbox-management-api", "serverAddress": "#{network_ip}:9000" } ],
+      "LOAD_BALANCER_SERVERS": [ { "serverName": "devbox-photon-controller-core", "serverAddress": "#{network_ip}:9000" } ],
       "ZOOKEEPER_INSTANCES": [ { "zookeeperInstance": "server.1=#{network_ip}:2888:3888" } ],
       "APIFE_IP": "#{network_ip}",
       "ZOOKEEPER_QUORUM": "#{network_ip}:2181",
-      "MGMT_API_HTTP_SERVERS": [ { "serverName": "devbox-management-api", "serverAddress": "#{network_ip}:9000" } ],
+      "MGMT_API_HTTP_SERVERS": [ { "serverName": "devbox-photon-controller-core", "serverAddress": "#{network_ip}:9000" } ],
       "MGMT_UI_HTTP_SERVERS": [ { "serverName": "devbox-management-ui-http", "serverAddress": "#{network_ip}:80" } ],
       "MGMT_UI_HTTPS_SERVERS": [ { "serverName": "devbox-management-ui-https", "serverAddress": "#{network_ip}:443" } ])
 
