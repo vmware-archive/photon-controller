@@ -14,6 +14,12 @@ en_name=$(ip addr show label "en*" | head -n 1 | sed 's/^[0-9]*: \(en.*\): .*/\1
 container_ip=$(ifconfig $en_name | grep 'inet addr:' | cut -d: -f2 | awk '{ print $1 }')
 
 CONFIG_PATH="/etc/esxcloud"
+API_BITS="/usr/lib/esxcloud/photon-controller-core"
+API_BIN="$API_BITS/bin"
+API_LIB="$API_BITS/lib"
+API_CONFIG="$CONFIG_PATH/management-api.yml"
+API_SWAGGER_JS_FILE="swagger-config.js"
+API_SWAGGER_JS="$CONFIG_PATH/$API_SWAGGER_JS_FILE"
 PHOTON_CONTROLLER_CORE_BIN="{{{PHOTON-CONTROLLER-CORE_INSTALL_DIRECTORY}}}/bin"
 PHOTON_CONTROLLER_CORE_CONFIG="$CONFIG_PATH/photon-controller-core.yml"
 SCRIPT_LOG_DIRECTORY="{{{LOG_DIRECTORY}}}/script_logs"
@@ -31,8 +37,8 @@ then
   echo "$container_ip     $myhostname" >> /etc/hosts
 fi
 
-# jvm heap size will be set to by default is 384m
-jvm_mem=512
+# jvm heap size will be set to by default is 1024m
+jvm_mem=1024
 
 {{#memoryMb}}
 jvm_mem=$(({{{memoryMb}}}/2))
@@ -40,7 +46,20 @@ jvm_mem=$(({{{memoryMb}}}/2))
 
 export JAVA_OPTS="-Xmx${jvm_mem}m -Xms${jvm_mem}m -XX:+UseConcMarkSweepGC {{{JAVA_DEBUG}}}"
 
+if [ -n "$ENABLE_AUTH" -a "$ENABLE_AUTH" == "true" ]
+then
+  printf "window.swaggerConfig = {\n  enableAuth: true,\n  swaggerLoginUrl: '%s',\n  swaggerLogoutUrl: '%s',\n};\n" \
+    $SWAGGER_LOGIN_URL $SWAGGER_LOGOUT_URL > $API_SWAGGER_JS
+fi
+
+#
+# Add parameters-modified swagger-config.js to the jar
+#
+mkdir -p $CONFIG_PATH/assets
+mv $API_SWAGGER_JS $CONFIG_PATH/assets
+$JAVA_HOME/bin/jar uf ${API_LIB}/swagger-ui*.jar -C $CONFIG_PATH assets/$API_SWAGGER_JS_FILE
+
 #
 # Start service
 #
-$PHOTON_CONTROLLER_CORE_BIN/photon-controller-core $PHOTON_CONTROLLER_CORE_CONFIG
+$PHOTON_CONTROLLER_CORE_BIN/photon-controller-core $PHOTON_CONTROLLER_CORE_CONFIG $API_CONFIG

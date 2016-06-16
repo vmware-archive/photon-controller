@@ -18,7 +18,7 @@ ext {
       commons_lang3      : '3.1',
       commons_math3      : '3.5',
       commons_io         : '2.4',
-      xenon_common       : '0.8.2-SNAPSHOT',
+      xenon_common       : '0.9.0-SNAPSHOT',
       testng             : '6.8',
       hamcrest           : '1.3',
       http_client        : '4.3.3',

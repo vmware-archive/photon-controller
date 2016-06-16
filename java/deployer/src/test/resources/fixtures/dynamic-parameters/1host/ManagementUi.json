@@ -1,5 +1,6 @@
 {
   "ENABLE_SYSLOG": "true",
+  "ESX_HOST": "hostAddress",
   "memoryMb": "1024",
   "SHARED_SECRET": "shared-secret",
   "APIFE_PORT": "28080",

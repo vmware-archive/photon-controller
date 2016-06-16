@@ -33,7 +33,6 @@ public class HealthCheckHelper {
       final Service service,
       final ContainersConfig.ContainerType containerType,
       final String ipAddress) {
-    List<Integer> ports = new ArrayList<>();
 
     switch (containerType) {
       case Zookeeper:
@@ -41,18 +40,21 @@ public class HealthCheckHelper {
             ServicePortConstants.ZOOKEEPER_PORT);
         break;
 
-      case ManagementApi:
-        this.healthChecker = new HttpBasedHealthChecker(HostUtils.getApiClient(service));
-        break;
-
       case LoadBalancer:
         this.healthChecker = new HttpBasedHealthChecker(HostUtils.getApiClient(service));
         break;
 
       case PhotonControllerCore:
+        MultiTypeHealthChecker multiTypeHealthChecker = new MultiTypeHealthChecker();
+        // add the management api Http based health checker
+        multiTypeHealthChecker.addHealthChecker(new HttpBasedHealthChecker(HostUtils.getApiClient(service)));
+
+        // add the xenon health checker for all other services
+        List<Integer> ports = new ArrayList<>();
         ports.add(ServicePortConstants.CLOUD_STORE_PORT);
         ports.add(ServicePortConstants.DEPLOYER_PORT);
-        this.healthChecker = new XenonBasedHealthChecker(service, ipAddress, ports);
+        multiTypeHealthChecker.addHealthChecker(new XenonBasedHealthChecker(service, ipAddress, ports));
+        this.healthChecker = multiTypeHealthChecker;
         break;
 
       case Lightwave:

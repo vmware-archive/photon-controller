@@ -1,0 +1,1 @@
+../../../../api-frontend/management/src/dist/configuration/swagger-config.js
