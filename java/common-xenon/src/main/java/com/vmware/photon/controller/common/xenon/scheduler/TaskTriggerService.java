@@ -13,17 +13,17 @@
 
 package com.vmware.photon.controller.common.xenon.scheduler;
 
+import com.vmware.photon.controller.common.provider.SystemConfigProvider;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
 import com.vmware.photon.controller.common.xenon.deployment.NoMigrationDuringDeployment;
+import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
 import com.vmware.photon.controller.common.xenon.migration.NoMigrationDuringUpgrade;
 import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
 import com.vmware.photon.controller.common.xenon.validation.NotBlank;
 import com.vmware.photon.controller.common.xenon.validation.Positive;
-import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
-import com.vmware.photon.controller.common.zookeeper.ServiceConfigProvider;
 import com.vmware.xenon.common.NodeSelectorService;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
@@ -102,10 +102,10 @@ public class TaskTriggerService extends StatefulService {
    * Checks if service's background processing is in pause state.
    */
   private boolean isBackgroundPaused() {
-    ServiceConfig serviceConfig = ((ServiceConfigProvider) getHost()).getServiceConfig();
+    SystemConfigProvider systemConfig = ((PhotonControllerXenonHost) getHost()).getSystemConfigProvider();
     boolean backgroundPaused = true;
     try {
-      backgroundPaused = serviceConfig.isBackgroundPaused();
+      backgroundPaused = systemConfig.isBackgroundPaused();
     } catch (Exception ex) {
       ServiceUtils.logSevere(this, ex);
     }

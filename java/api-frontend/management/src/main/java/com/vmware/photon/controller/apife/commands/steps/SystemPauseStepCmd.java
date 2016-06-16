@@ -13,13 +13,17 @@
 
 package com.vmware.photon.controller.apife.commands.steps;
 
+import com.vmware.photon.controller.api.DeploymentState;
 import com.vmware.photon.controller.api.common.exceptions.ApiFeException;
 import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
+import com.vmware.photon.controller.cloudstore.SystemConfig;
+import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentServiceFactory;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
-import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
+import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,25 +32,34 @@ import org.slf4j.LoggerFactory;
  * StepCommand to pause system.
  */
 public class SystemPauseStepCmd extends StepCommand {
-
   private static final Logger logger = LoggerFactory.getLogger(SystemPauseStepCmd.class);
 
-  private final ServiceConfig serviceConfig;
+  public static final String DEPLOYMENT_ID_RESOURCE_KEY = "deployment-id";
+  private String deploymentId;
 
   public SystemPauseStepCmd(TaskCommand taskCommand,
                             StepBackend stepBackend,
-                            StepEntity step,
-                            ServiceConfig serviceConfig) {
+                            StepEntity step
+                            ) {
     super(taskCommand, stepBackend, step);
-    this.serviceConfig = serviceConfig;
+    deploymentId = (String) step.getTransientResource(DEPLOYMENT_ID_RESOURCE_KEY);
   }
 
   @Override
   protected void execute() throws ApiFeException, InterruptedException, RpcException {
     try {
       logger.info("Pausing APIFE service...");
-      this.serviceConfig.pause();
-    } catch (Exception ex) {
+
+      DeploymentService.State state = new DeploymentService.State();
+      state.state = DeploymentState.PAUSED;
+      state.documentSelfLink = DeploymentServiceFactory.SELF_LINK + "/" + deploymentId;
+
+      com.vmware.xenon.common.Operation operation =
+          taskCommand.getApiFeXenonRestClient().patch(state.documentSelfLink, state);
+
+      SystemConfig.getInstance().runCheck();
+      logger.info("Paused APIFE service...");
+    } catch (DocumentNotFoundException ex) {
       throw new InternalException(ex);
     }
   }
