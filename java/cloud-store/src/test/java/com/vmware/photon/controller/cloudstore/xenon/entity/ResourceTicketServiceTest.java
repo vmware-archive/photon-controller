@@ -49,7 +49,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class ResourceTicketServiceTest {
 
-  private static XenonRestClient dcpRestClient;
+  private static XenonRestClient xenonRestClient;
   private static BasicServiceHost host;
   private static ResourceTicketService service;
   private static ResourceTicketService.State testState;
@@ -64,8 +64,8 @@ public class ResourceTicketServiceTest {
     StaticServerSet serverSet = new StaticServerSet(
         new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
 
-    dcpRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
-    dcpRestClient.start();
+    xenonRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
+    xenonRestClient.start();
 
     testState = new ResourceTicketService.State();
     testState.name = UUID.randomUUID().toString();
@@ -87,7 +87,7 @@ public class ResourceTicketServiceTest {
     }
 
     service = null;
-    dcpRestClient.stop();
+    xenonRestClient.stop();
   }
 
   /**
@@ -142,7 +142,7 @@ public class ResourceTicketServiceTest {
      */
     @Test
     public void testStartState() throws Throwable {
-      Operation result = dcpRestClient.post(ResourceTicketServiceFactory.SELF_LINK, testState);
+      Operation result = xenonRestClient.post(ResourceTicketServiceFactory.SELF_LINK, testState);
 
       assertThat(result.getStatusCode(), is(200));
       ResourceTicketService.State createdState = result.getBody(ResourceTicketService.State.class);
@@ -175,7 +175,7 @@ public class ResourceTicketServiceTest {
     @Test
     public void testConsumeWithinLimits() throws Throwable {
 
-      Operation result = dcpRestClient.post(ResourceTicketServiceFactory.SELF_LINK, testState);
+      Operation result = xenonRestClient.post(ResourceTicketServiceFactory.SELF_LINK, testState);
       assertThat(result.getStatusCode(), is(200));
       ResourceTicketService.State createdState = result.getBody(ResourceTicketService.State.class);
 
@@ -195,24 +195,24 @@ public class ResourceTicketServiceTest {
       costItem.setUnit(QuotaUnit.COUNT);
       patch.cost.put(costItem.getKey(), costItem);
 
-      dcpRestClient.patch(createdState.documentSelfLink, patch);
+      xenonRestClient.patch(createdState.documentSelfLink, patch);
 
-      Operation found = dcpRestClient.get(createdState.documentSelfLink);
+      Operation found = xenonRestClient.get(createdState.documentSelfLink);
       ResourceTicketService.State patchedState = found.getBody(ResourceTicketService.State.class);
       assertThat(patchedState.usageMap.get("key1").getValue(), is(testState.limitMap.get("key1").getValue() / 2));
       assertThat(patchedState.usageMap.get("key2").getValue(), is(testState.limitMap.get("key1").getValue() / 2));
 
-      dcpRestClient.patch(createdState.documentSelfLink, patch);
+      xenonRestClient.patch(createdState.documentSelfLink, patch);
 
-      found = dcpRestClient.get(createdState.documentSelfLink);
+      found = xenonRestClient.get(createdState.documentSelfLink);
       patchedState = found.getBody(ResourceTicketService.State.class);
       assertThat(patchedState.usageMap.get("key1").getValue(), is(testState.limitMap.get("key1").getValue()));
       assertThat(patchedState.usageMap.get("key2").getValue(), is(testState.limitMap.get("key1").getValue()));
 
       patch.cost.remove("key1");
-      dcpRestClient.patch(createdState.documentSelfLink, patch);
+      xenonRestClient.patch(createdState.documentSelfLink, patch);
 
-      found = dcpRestClient.get(createdState.documentSelfLink);
+      found = xenonRestClient.get(createdState.documentSelfLink);
       patchedState = found.getBody(ResourceTicketService.State.class);
       assertThat(patchedState.usageMap.get("key1").getValue(), is(testState.limitMap.get("key1").getValue()));
       assertThat(patchedState.usageMap.get("key2").getValue(), is(testState.limitMap.get("key1").getValue() * 1.5));
@@ -225,7 +225,7 @@ public class ResourceTicketServiceTest {
      */
     @Test()
     public void testConsumeAboveLimits() throws Throwable {
-      Operation result = dcpRestClient.post(ResourceTicketServiceFactory.SELF_LINK, testState);
+      Operation result = xenonRestClient.post(ResourceTicketServiceFactory.SELF_LINK, testState);
       assertThat(result.getStatusCode(), is(200));
       ResourceTicketService.State createdState = result.getBody(ResourceTicketService.State.class);
 
@@ -247,7 +247,7 @@ public class ResourceTicketServiceTest {
       patch.cost.put(costItem.getKey(), costItem);
 
       try {
-        dcpRestClient.patch(createdState.documentSelfLink, patch);
+        xenonRestClient.patch(createdState.documentSelfLink, patch);
         fail("resource ticket consume above limits should have failed");
       } catch (BadRequestException e) {
         ServiceErrorResponse serviceErrorResponse =
@@ -257,7 +257,7 @@ public class ResourceTicketServiceTest {
                 ", desiredUsage " + patch.cost.get("key1").toString()));
       }
 
-      Operation found = dcpRestClient.get(createdState.documentSelfLink);
+      Operation found = xenonRestClient.get(createdState.documentSelfLink);
       ResourceTicketService.State patchedState = found.getBody(ResourceTicketService.State.class);
       assertThat(patchedState.usageMap.get("key1"), is(nullValue()));
       assertThat(patchedState.usageMap.get("key2"), is(nullValue()));
@@ -270,7 +270,7 @@ public class ResourceTicketServiceTest {
      */
     @Test
     public void testConsumeAboveLimitsErrorDetails() throws Throwable {
-      Operation result = dcpRestClient.post(ResourceTicketServiceFactory.SELF_LINK, testState);
+      Operation result = xenonRestClient.post(ResourceTicketServiceFactory.SELF_LINK, testState);
       assertThat(result.getStatusCode(), is(200));
       ResourceTicketService.State createdState = result.getBody(ResourceTicketService.State.class);
 
@@ -285,7 +285,7 @@ public class ResourceTicketServiceTest {
       patch.cost.put(costItem.getKey(), costItem);
 
       try {
-        dcpRestClient.patch(createdState.documentSelfLink, patch);
+        xenonRestClient.patch(createdState.documentSelfLink, patch);
         fail("resource ticket consume above limits should have failed");
       } catch (BadRequestException e) {
         ResourceTicketService.QuotaErrorResponse quotaErrorResponse =
@@ -306,7 +306,7 @@ public class ResourceTicketServiceTest {
      */
     @Test()
     public void testInvalidPatchType() throws Throwable {
-      Operation result = dcpRestClient.post(ResourceTicketServiceFactory.SELF_LINK, testState);
+      Operation result = xenonRestClient.post(ResourceTicketServiceFactory.SELF_LINK, testState);
       assertThat(result.getStatusCode(), is(200));
       ResourceTicketService.State createdState = result.getBody(ResourceTicketService.State.class);
 
@@ -320,7 +320,7 @@ public class ResourceTicketServiceTest {
       patch.cost.put(costItem.getKey(), costItem);
 
       try {
-        dcpRestClient.patch(createdState.documentSelfLink, patch);
+        xenonRestClient.patch(createdState.documentSelfLink, patch);
       } catch (XenonRuntimeException e) {
         assertThat(e.getMessage(),
             containsString("PatchType {NONE} in patchOperation"));
@@ -338,7 +338,7 @@ public class ResourceTicketServiceTest {
     @Test
     public void testReturnUsage() throws Throwable {
 
-      Operation result = dcpRestClient.post(ResourceTicketServiceFactory.SELF_LINK, testState);
+      Operation result = xenonRestClient.post(ResourceTicketServiceFactory.SELF_LINK, testState);
       assertThat(result.getStatusCode(), is(200));
       ResourceTicketService.State createdState = result.getBody(ResourceTicketService.State.class);
 
@@ -358,17 +358,17 @@ public class ResourceTicketServiceTest {
       costItem.setUnit(QuotaUnit.COUNT);
       patch.cost.put(costItem.getKey(), costItem);
 
-      dcpRestClient.patch(createdState.documentSelfLink, patch);
+      xenonRestClient.patch(createdState.documentSelfLink, patch);
 
-      Operation found = dcpRestClient.get(createdState.documentSelfLink);
+      Operation found = xenonRestClient.get(createdState.documentSelfLink);
       ResourceTicketService.State patchedState = found.getBody(ResourceTicketService.State.class);
       assertThat(patchedState.usageMap.get("key1").getValue(), is(testState.limitMap.get("key1").getValue() / 2));
       assertThat(patchedState.usageMap.get("key2").getValue(), is(testState.limitMap.get("key1").getValue() / 2));
 
       patch.patchtype = ResourceTicketService.Patch.PatchType.USAGE_RETURN;
-      dcpRestClient.patch(createdState.documentSelfLink, patch);
+      xenonRestClient.patch(createdState.documentSelfLink, patch);
 
-      found = dcpRestClient.get(createdState.documentSelfLink);
+      found = xenonRestClient.get(createdState.documentSelfLink);
       patchedState = found.getBody(ResourceTicketService.State.class);
       assertThat(patchedState.usageMap.get("key1").getValue(), is(0.0));
       assertThat(patchedState.usageMap.get("key2").getValue(), is(0.0));
@@ -397,7 +397,7 @@ public class ResourceTicketServiceTest {
     @Test
     public void testDefaultExpirationIsNotAppliedIfItIsAlreadySpecifiedInCurrentState() throws Throwable {
       TestHelper.testExpirationOnDelete(
-          dcpRestClient,
+          xenonRestClient,
           host,
           ResourceTicketServiceFactory.SELF_LINK,
           testState,
@@ -415,7 +415,7 @@ public class ResourceTicketServiceTest {
     @Test
     public void testDefaultExpirationIsNotAppliedIfItIsAlreadySpecifiedInDeleteOperation() throws Throwable {
       TestHelper.testExpirationOnDelete(
-          dcpRestClient,
+          xenonRestClient,
           host,
           ResourceTicketServiceFactory.SELF_LINK,
           testState,
@@ -433,7 +433,7 @@ public class ResourceTicketServiceTest {
     @Test
     public void testDeleteWithDefaultExpiration() throws Throwable {
       TestHelper.testExpirationOnDelete(
-          dcpRestClient,
+          xenonRestClient,
           host,
           ResourceTicketServiceFactory.SELF_LINK,
           testState,

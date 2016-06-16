@@ -41,7 +41,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class ImageToImageDatastoreMappingServiceTest {
 
-  private XenonRestClient dcpRestClient;
+  private XenonRestClient xenonRestClient;
   private BasicServiceHost host;
   private ImageToImageDatastoreMappingService service;
   private ImageToImageDatastoreMappingService.State testState;
@@ -91,8 +91,8 @@ public class ImageToImageDatastoreMappingServiceTest {
 
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-      dcpRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
-      dcpRestClient.start();
+      xenonRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
+      xenonRestClient.start();
 
       testState = new ImageToImageDatastoreMappingService.State();
       testState.imageId = UUID.randomUUID().toString();
@@ -106,7 +106,7 @@ public class ImageToImageDatastoreMappingServiceTest {
       }
 
       service = null;
-      dcpRestClient.stop();
+      xenonRestClient.stop();
     }
 
     /**
@@ -118,7 +118,7 @@ public class ImageToImageDatastoreMappingServiceTest {
     public void testStartState() throws Throwable {
       host.startServiceSynchronously(new ImageToImageDatastoreMappingServiceFactory(), null);
 
-      Operation result = dcpRestClient.post(ImageToImageDatastoreMappingServiceFactory.SELF_LINK, testState);
+      Operation result = xenonRestClient.post(ImageToImageDatastoreMappingServiceFactory.SELF_LINK, testState);
 
       assertThat(result.getStatusCode(), is(200));
       ImageToImageDatastoreMappingService.State createdState =
@@ -182,8 +182,8 @@ public class ImageToImageDatastoreMappingServiceTest {
 
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-      dcpRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
-      dcpRestClient.start();
+      xenonRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
+      xenonRestClient.start();
 
       testState = new ImageToImageDatastoreMappingService.State();
       testState.imageId = UUID.randomUUID().toString();
@@ -199,7 +199,7 @@ public class ImageToImageDatastoreMappingServiceTest {
       }
 
       service = null;
-      dcpRestClient.stop();
+      xenonRestClient.stop();
     }
 
     /**
@@ -210,7 +210,7 @@ public class ImageToImageDatastoreMappingServiceTest {
     @Test
     public void testDefaultExpirationIsNotAppliedIfItIsAlreadySpecifiedInCurrentState() throws Throwable {
       TestHelper.testExpirationOnDelete(
-          dcpRestClient,
+          xenonRestClient,
           host,
           ImageToImageDatastoreMappingServiceFactory.SELF_LINK,
           testState,
@@ -228,7 +228,7 @@ public class ImageToImageDatastoreMappingServiceTest {
     @Test
     public void testDefaultExpirationIsNotAppliedIfItIsAlreadySpecifiedInDeleteOperation() throws Throwable {
       TestHelper.testExpirationOnDelete(
-          dcpRestClient,
+          xenonRestClient,
           host,
           ImageToImageDatastoreMappingServiceFactory.SELF_LINK,
           testState,
@@ -246,7 +246,7 @@ public class ImageToImageDatastoreMappingServiceTest {
     @Test
     public void testDeleteWithDefaultExpiration() throws Throwable {
       TestHelper.testExpirationOnDelete(
-          dcpRestClient,
+          xenonRestClient,
           host,
           ImageToImageDatastoreMappingServiceFactory.SELF_LINK,
           testState,

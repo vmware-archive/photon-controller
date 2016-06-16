@@ -44,7 +44,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class FlavorServiceTest {
 
-  private XenonRestClient dcpRestClient;
+  private XenonRestClient xenonRestClient;
   private BasicServiceHost host;
   private FlavorService service;
   private FlavorService.State testFlavor;
@@ -94,8 +94,8 @@ public class FlavorServiceTest {
 
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-      dcpRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
-      dcpRestClient.start();
+      xenonRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
+      xenonRestClient.start();
 
       testFlavor = new FlavorService.State();
       testFlavor.name = "dummyName";
@@ -112,7 +112,7 @@ public class FlavorServiceTest {
       }
 
       service = null;
-      dcpRestClient.stop();
+      xenonRestClient.stop();
     }
 
     /**
@@ -124,7 +124,7 @@ public class FlavorServiceTest {
     public void testStartState() throws Throwable {
       host.startServiceSynchronously(new FlavorServiceFactory(), null);
 
-      Operation result = dcpRestClient.post(FlavorServiceFactory.SELF_LINK, testFlavor);
+      Operation result = xenonRestClient.post(FlavorServiceFactory.SELF_LINK, testFlavor);
 
       assertThat(result.getStatusCode(), is(200));
       FlavorService.State createdState = result.getBody(FlavorService.State.class);
@@ -266,8 +266,8 @@ public class FlavorServiceTest {
 
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-      dcpRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
-      dcpRestClient.start();
+      xenonRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
+      xenonRestClient.start();
 
       testState = new FlavorService.State();
       testState.name = "dummyName";
@@ -286,7 +286,7 @@ public class FlavorServiceTest {
       }
 
       service = null;
-      dcpRestClient.stop();
+      xenonRestClient.stop();
     }
 
     /**
@@ -297,7 +297,7 @@ public class FlavorServiceTest {
     @Test
     public void testDefaultExpirationIsNotAppliedIfItIsAlreadySpecifiedInCurrentState() throws Throwable {
       TestHelper.testExpirationOnDelete(
-          dcpRestClient,
+          xenonRestClient,
           host,
           FlavorServiceFactory.SELF_LINK,
           testState,
@@ -315,7 +315,7 @@ public class FlavorServiceTest {
     @Test
     public void testDefaultExpirationIsNotAppliedIfItIsAlreadySpecifiedInDeleteOperation() throws Throwable {
       TestHelper.testExpirationOnDelete(
-          dcpRestClient,
+          xenonRestClient,
           host,
           FlavorServiceFactory.SELF_LINK,
           testState,
@@ -333,7 +333,7 @@ public class FlavorServiceTest {
     @Test
     public void testDeleteWithDefaultExpiration() throws Throwable {
       TestHelper.testExpirationOnDelete(
-          dcpRestClient,
+          xenonRestClient,
           host,
           FlavorServiceFactory.SELF_LINK,
           testState,

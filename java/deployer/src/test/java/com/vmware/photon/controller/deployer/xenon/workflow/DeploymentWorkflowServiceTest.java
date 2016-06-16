@@ -815,7 +815,7 @@ public class DeploymentWorkflowServiceTest {
         DeployerXenonServiceHost remoteHost = remoteDeployer.getHosts()[0];
         hostStartState.metadata.put(HostService.State.METADATA_KEY_NAME_MANAGEMENT_NETWORK_IP,
             bindAddress != null ? bindAddress : remoteHost.getState().bindAddress);
-        hostStartState.metadata.put(HostService.State.METADATA_KEY_NAME_DEPLOYER_DCP_PORT,
+        hostStartState.metadata.put(HostService.State.METADATA_KEY_NAME_DEPLOYER_XENON_PORT,
             Integer.toString(remoteHost.getPort()));
       }
       TestHelper.createHostService(localStore, hostStartState);

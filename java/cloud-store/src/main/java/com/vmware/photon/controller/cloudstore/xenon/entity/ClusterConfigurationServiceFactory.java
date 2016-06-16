@@ -20,7 +20,7 @@ import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
 
 /**
- * This class implements a DCP micro-service which provides a factory for
+ * This class implements a Xenon micro-service which provides a factory for
  * {@link ClusterConfigurationService} instances.
  */
 public class ClusterConfigurationServiceFactory extends FactoryService {

@@ -238,9 +238,9 @@ public class CreateVmSpecTaskService extends StatefulService {
         hostState.metadata.get(HostService.State.METADATA_KEY_NAME_MANAGEMENT_NETWORK_IP);
 
     // This is only used for testing purpose. See reference in {@link HostService} and {@link VmService}
-    if (hostState.metadata.containsKey(HostService.State.METADATA_KEY_NAME_DEPLOYER_DCP_PORT)) {
+    if (hostState.metadata.containsKey(HostService.State.METADATA_KEY_NAME_DEPLOYER_XENON_PORT)) {
       vmServiceState.deployerDcpPort =
-          Integer.parseInt(hostState.metadata.get(HostService.State.METADATA_KEY_NAME_DEPLOYER_DCP_PORT));
+          Integer.parseInt(hostState.metadata.get(HostService.State.METADATA_KEY_NAME_DEPLOYER_XENON_PORT));
     }
 
     Operation createVmPostOperation = Operation

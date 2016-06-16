@@ -43,7 +43,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class TaskServiceTest {
 
-  private XenonRestClient dcpRestClient;
+  private XenonRestClient xenonRestClient;
   private BasicServiceHost host;
   private TaskService service;
   private TaskService.State testState;
@@ -93,8 +93,8 @@ public class TaskServiceTest {
 
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-      dcpRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
-      dcpRestClient.start();
+      xenonRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
+      xenonRestClient.start();
 
       testState = new TaskService.State();
       testState.entityId = UUID.randomUUID().toString();
@@ -108,7 +108,7 @@ public class TaskServiceTest {
       }
 
       service = null;
-      dcpRestClient.stop();
+      xenonRestClient.stop();
     }
 
     /**
@@ -120,7 +120,7 @@ public class TaskServiceTest {
     public void testStartState() throws Throwable {
       host.startServiceSynchronously(new TaskServiceFactory(), null);
 
-      Operation result = dcpRestClient.post(TaskServiceFactory.SELF_LINK, testState);
+      Operation result = xenonRestClient.post(TaskServiceFactory.SELF_LINK, testState);
 
       assertThat(result.getStatusCode(), is(200));
       TaskService.State createdState = result.getBody(TaskService.State.class);
@@ -284,8 +284,8 @@ public class TaskServiceTest {
 
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-      dcpRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
-      dcpRestClient.start();
+      xenonRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
+      xenonRestClient.start();
 
       testState = new TaskService.State();
       testState.entityId = UUID.randomUUID().toString();
@@ -301,7 +301,7 @@ public class TaskServiceTest {
       }
 
       service = null;
-      dcpRestClient.stop();
+      xenonRestClient.stop();
     }
 
     /**
@@ -312,7 +312,7 @@ public class TaskServiceTest {
     @Test
     public void testDefaultExpirationIsNotAppliedIfItIsAlreadySpecifiedInCurrentState() throws Throwable {
       TestHelper.testExpirationOnDelete(
-          dcpRestClient,
+          xenonRestClient,
           host,
           TaskServiceFactory.SELF_LINK,
           testState,
@@ -330,7 +330,7 @@ public class TaskServiceTest {
     @Test
     public void testDefaultExpirationIsNotAppliedIfItIsAlreadySpecifiedInDeleteOperation() throws Throwable {
       TestHelper.testExpirationOnDelete(
-          dcpRestClient,
+          xenonRestClient,
           host,
           TaskServiceFactory.SELF_LINK,
           testState,
@@ -348,7 +348,7 @@ public class TaskServiceTest {
     @Test
     public void testDeleteWithDefaultExpiration() throws Throwable {
       TestHelper.testExpirationOnDelete(
-          dcpRestClient,
+          xenonRestClient,
           host,
           TaskServiceFactory.SELF_LINK,
           testState,

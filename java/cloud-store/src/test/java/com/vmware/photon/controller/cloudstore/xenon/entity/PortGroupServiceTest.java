@@ -49,7 +49,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class PortGroupServiceTest {
 
-  private XenonRestClient dcpRestClient;
+  private XenonRestClient xenonRestClient;
   private BasicServiceHost host;
   private PortGroupService service;
 
@@ -114,8 +114,8 @@ public class PortGroupServiceTest {
 
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-      dcpRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
-      dcpRestClient.start();
+      xenonRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
+      xenonRestClient.start();
     }
 
     @AfterMethod
@@ -125,7 +125,7 @@ public class PortGroupServiceTest {
       }
 
       service = null;
-      dcpRestClient.stop();
+      xenonRestClient.stop();
     }
 
     /**
@@ -138,7 +138,7 @@ public class PortGroupServiceTest {
     public void testStartState() throws Throwable {
       host.startServiceSynchronously(new PortGroupServiceFactory(), null);
       PortGroupService.State testState = buildValidState();
-      Operation result = dcpRestClient.post(PortGroupServiceFactory.SELF_LINK, testState);
+      Operation result = xenonRestClient.post(PortGroupServiceFactory.SELF_LINK, testState);
 
       assertThat(result.getStatusCode(), is(200));
       PortGroupService.State createdState = result.getBody(PortGroupService.State.class);
@@ -182,8 +182,8 @@ public class PortGroupServiceTest {
 
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-      dcpRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
-      dcpRestClient.start();
+      xenonRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
+      xenonRestClient.start();
     }
 
     @AfterMethod
@@ -193,13 +193,13 @@ public class PortGroupServiceTest {
       }
 
       service = null;
-      dcpRestClient.stop();
+      xenonRestClient.stop();
     }
 
     @Test
     public void testPatch() throws Throwable {
       host.startServiceSynchronously(new PortGroupServiceFactory(), null);
-      Operation result = dcpRestClient.post(PortGroupServiceFactory.SELF_LINK, buildValidState());
+      Operation result = xenonRestClient.post(PortGroupServiceFactory.SELF_LINK, buildValidState());
       assertThat(result.getStatusCode(), is(200));
       PortGroupService.State createdState = result.getBody(PortGroupService.State.class);
 
@@ -208,8 +208,8 @@ public class PortGroupServiceTest {
       patchState.usageTags.add(UsageTag.MGMT);
       patchState.network = "network2";
 
-      dcpRestClient.patch(createdState.documentSelfLink, patchState);
-      PortGroupService.State savedState = dcpRestClient.get(createdState.documentSelfLink).getBody
+      xenonRestClient.patch(createdState.documentSelfLink, patchState);
+      PortGroupService.State savedState = xenonRestClient.get(createdState.documentSelfLink).getBody
           (PortGroupService.State.class);
       assertThat(savedState.usageTags, notNullValue());
       assertThat(savedState.usageTags, is(patchState.usageTags));
@@ -219,7 +219,7 @@ public class PortGroupServiceTest {
     @Test
     public void testInvalidPatchWithName() throws Throwable {
       host.startServiceSynchronously(new PortGroupServiceFactory(), null);
-      Operation result = dcpRestClient.post(PortGroupServiceFactory.SELF_LINK, buildValidState());
+      Operation result = xenonRestClient.post(PortGroupServiceFactory.SELF_LINK, buildValidState());
       assertThat(result.getStatusCode(), is(200));
       PortGroupService.State createdState = result.getBody(PortGroupService.State.class);
 
@@ -227,7 +227,7 @@ public class PortGroupServiceTest {
       patchState.name = "something";
 
       try {
-        dcpRestClient.patch(createdState.documentSelfLink, patchState);
+        xenonRestClient.patch(createdState.documentSelfLink, patchState);
         fail("should have failed with IllegalStateException");
       } catch (BadRequestException e) {
         assertThat(e.getMessage(), containsString("name is immutable"));
@@ -327,8 +327,8 @@ public class PortGroupServiceTest {
 
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-      dcpRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
-      dcpRestClient.start();
+      xenonRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
+      xenonRestClient.start();
 
       testState = buildValidState();
 
@@ -342,7 +342,7 @@ public class PortGroupServiceTest {
       }
 
       service = null;
-      dcpRestClient.stop();
+      xenonRestClient.stop();
     }
 
     /**
@@ -353,7 +353,7 @@ public class PortGroupServiceTest {
     @Test
     public void testDefaultExpirationIsNotAppliedIfItIsAlreadySpecifiedInCurrentState() throws Throwable {
       TestHelper.testExpirationOnDelete(
-          dcpRestClient,
+          xenonRestClient,
           host,
           PortGroupServiceFactory.SELF_LINK,
           testState,
@@ -371,7 +371,7 @@ public class PortGroupServiceTest {
     @Test
     public void testDefaultExpirationIsNotAppliedIfItIsAlreadySpecifiedInDeleteOperation() throws Throwable {
       TestHelper.testExpirationOnDelete(
-          dcpRestClient,
+          xenonRestClient,
           host,
           PortGroupServiceFactory.SELF_LINK,
           testState,
@@ -389,7 +389,7 @@ public class PortGroupServiceTest {
     @Test
     public void testDeleteWithDefaultExpiration() throws Throwable {
       TestHelper.testExpirationOnDelete(
-          dcpRestClient,
+          xenonRestClient,
           host,
           PortGroupServiceFactory.SELF_LINK,
           testState,

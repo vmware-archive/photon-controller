@@ -29,7 +29,7 @@ import static org.testng.Assert.assertTrue;
 import java.io.File;
 
 /**
- * TestMachine class hosting a DCP host.
+ * TestMachine class hosting a Xenon host.
  */
 public class TestEnvironment extends MultiHostEnvironment<PhotonControllerXenonHost> {
 

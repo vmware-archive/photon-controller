@@ -41,7 +41,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class AvailabilityZoneServiceTest {
 
-  private XenonRestClient dcpRestClient;
+  private XenonRestClient xenonRestClient;
   private BasicServiceHost host;
   private AvailabilityZoneService service;
   private AvailabilityZoneService.State testAvailabilityZone;
@@ -91,8 +91,8 @@ public class AvailabilityZoneServiceTest {
 
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-      dcpRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
-      dcpRestClient.start();
+      xenonRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
+      xenonRestClient.start();
 
       testAvailabilityZone = new AvailabilityZoneService.State();
       testAvailabilityZone.name = "dummyName";
@@ -106,7 +106,7 @@ public class AvailabilityZoneServiceTest {
       }
 
       service = null;
-      dcpRestClient.stop();
+      xenonRestClient.stop();
     }
 
     /**
@@ -118,7 +118,7 @@ public class AvailabilityZoneServiceTest {
     public void testStartState() throws Throwable {
       host.startServiceSynchronously(new AvailabilityZoneServiceFactory(), null);
 
-      Operation result = dcpRestClient.post(AvailabilityZoneServiceFactory.SELF_LINK, testAvailabilityZone);
+      Operation result = xenonRestClient.post(AvailabilityZoneServiceFactory.SELF_LINK, testAvailabilityZone);
 
       assertThat(result.getStatusCode(), is(200));
       AvailabilityZoneService.State createdState = result.getBody(AvailabilityZoneService.State.class);
@@ -233,8 +233,8 @@ public class AvailabilityZoneServiceTest {
 
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-      dcpRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
-      dcpRestClient.start();
+      xenonRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
+      xenonRestClient.start();
 
       testState = new AvailabilityZoneService.State();
       testState.name = "dummyName";
@@ -250,7 +250,7 @@ public class AvailabilityZoneServiceTest {
       }
 
       service = null;
-      dcpRestClient.stop();
+      xenonRestClient.stop();
     }
 
     /**
@@ -261,7 +261,7 @@ public class AvailabilityZoneServiceTest {
     @Test
     public void testDefaultExpirationIsNotAppliedIfItIsAlreadySpecifiedInCurrentState() throws Throwable {
       TestHelper.testExpirationOnDelete(
-          dcpRestClient,
+          xenonRestClient,
           host,
           AvailabilityZoneServiceFactory.SELF_LINK,
           testState,
@@ -279,7 +279,7 @@ public class AvailabilityZoneServiceTest {
     @Test
     public void testDefaultExpirationIsNotAppliedIfItIsAlreadySpecifiedInDeleteOperation() throws Throwable {
       TestHelper.testExpirationOnDelete(
-          dcpRestClient,
+          xenonRestClient,
           host,
           AvailabilityZoneServiceFactory.SELF_LINK,
           testState,
@@ -297,7 +297,7 @@ public class AvailabilityZoneServiceTest {
     @Test
     public void testDeleteWithDefaultExpiration() throws Throwable {
       TestHelper.testExpirationOnDelete(
-          dcpRestClient,
+          xenonRestClient,
           host,
           AvailabilityZoneServiceFactory.SELF_LINK,
           testState,

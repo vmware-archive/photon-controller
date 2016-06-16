@@ -34,7 +34,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import java.util.List;
 
 /**
- * This class implements a DCP micro-service which provides a plain data object
+ * This class implements a Xenon micro-service which provides a plain data object
  * representing a port group.
  */
 public class PortGroupService extends StatefulService {

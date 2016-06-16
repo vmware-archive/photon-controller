@@ -52,7 +52,7 @@ public class CloudStoreConfigTest {
     assertThat(xenonConfig.getPeerNodes(), arrayContaining("http://127.0.0.1:19000"));
     assertThat(xenonConfig.getPort(), is(19000));
     assertThat(xenonConfig.getRegistrationAddress(), is("127.0.0.1"));
-    assertThat(xenonConfig.getStoragePath(), is("/tmp/dcp/cloud-store/"));
+    assertThat(xenonConfig.getStoragePath(), is("/tmp/xenon/cloud-store/"));
   }
 
   @Test

@@ -42,7 +42,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * This class implements a DCP micro-service which provides a plain data object
+ * This class implements a Xenon micro-service which provides a plain data object
  * representing deployment metadata.
  */
 public class DeploymentService extends StatefulService {

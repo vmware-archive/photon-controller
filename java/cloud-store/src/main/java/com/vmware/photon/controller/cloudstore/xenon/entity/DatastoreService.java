@@ -36,7 +36,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
- * This class implements a DCP micro-service which provides a plain data object
+ * This class implements a Xenon micro-service which provides a plain data object
  * representing a datastore.
  */
 public class DatastoreService extends StatefulService {

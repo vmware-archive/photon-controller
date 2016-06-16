@@ -42,7 +42,7 @@ import java.util.concurrent.Executors;
  */
 public class EntityLockServiceTest {
 
-  private XenonRestClient dcpRestClient;
+  private XenonRestClient xenonRestClient;
   private BasicServiceHost host;
   private EntityLockService service;
   private EntityLockService.State testState;
@@ -92,8 +92,8 @@ public class EntityLockServiceTest {
 
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-      dcpRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
-      dcpRestClient.start();
+      xenonRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
+      xenonRestClient.start();
 
       testState = new EntityLockService.State();
       testState.entityId = UUID.randomUUID().toString();
@@ -112,7 +112,7 @@ public class EntityLockServiceTest {
       }
 
       service = null;
-      dcpRestClient.stop();
+      xenonRestClient.stop();
     }
 
     /**
@@ -122,7 +122,7 @@ public class EntityLockServiceTest {
      */
     @Test
     public void testStartState() throws Throwable {
-      Operation result = dcpRestClient.post(EntityLockServiceFactory.SELF_LINK, testState);
+      Operation result = xenonRestClient.post(EntityLockServiceFactory.SELF_LINK, testState);
 
       assertThat(result.getStatusCode(), is(Operation.STATUS_CODE_OK));
       EntityLockService.State createdState = result.getBody(EntityLockService.State.class);
@@ -148,7 +148,7 @@ public class EntityLockServiceTest {
       startState.lockOperation = EntityLockService.State.LockOperation.ACQUIRE;
 
       try {
-        dcpRestClient.post(EntityLockServiceFactory.SELF_LINK, startState);
+        xenonRestClient.post(EntityLockServiceFactory.SELF_LINK, startState);
         fail("Service start did not fail when 'entityId' was null");
       } catch (BadRequestException e) {
         assertThat(e.getMessage(), is("entityId cannot be blank"));
@@ -167,7 +167,7 @@ public class EntityLockServiceTest {
       startState.lockOperation = EntityLockService.State.LockOperation.ACQUIRE;
 
       try {
-        dcpRestClient.post(EntityLockServiceFactory.SELF_LINK, startState);
+        xenonRestClient.post(EntityLockServiceFactory.SELF_LINK, startState);
         fail("Service start did not fail when 'ownerTaskId' was null");
       } catch (BadRequestException e) {
         assertThat(e.getMessage(), is("ownerTaskId cannot be blank"));
@@ -186,7 +186,7 @@ public class EntityLockServiceTest {
       startState.ownerTaskId = "owner-id";
 
       try {
-        dcpRestClient.post(EntityLockServiceFactory.SELF_LINK, startState);
+        xenonRestClient.post(EntityLockServiceFactory.SELF_LINK, startState);
         fail("Service start did not fail when 'lockOperation' was null");
       } catch (BadRequestException e) {
         assertThat(e.getMessage(), is("lockOperation cannot be null"));
@@ -207,7 +207,7 @@ public class EntityLockServiceTest {
       startState.lockOperation = EntityLockService.State.LockOperation.RELEASE;
 
       try {
-        dcpRestClient.post(EntityLockServiceFactory.SELF_LINK, startState);
+        xenonRestClient.post(EntityLockServiceFactory.SELF_LINK, startState);
         host.startServiceSynchronously(service, startState);
         fail("Service start did not fail when 'lockOperation' was RELEASE");
       } catch (BadRequestException e) {
@@ -215,7 +215,7 @@ public class EntityLockServiceTest {
       }
 
       try {
-        dcpRestClient.post(EntityLockServiceFactory.SELF_LINK, startState);
+        xenonRestClient.post(EntityLockServiceFactory.SELF_LINK, startState);
         fail("Service start did not fail when 'lockOperation' was RELEASE");
       } catch (BadRequestException e) {
         assertThat(e.getMessage(), is("Creating a lock with lockOperation!=ACQUIRE is not allowed"));
@@ -229,13 +229,13 @@ public class EntityLockServiceTest {
      */
     @Test
     public void testReleaseLockSuccess() throws Throwable {
-      Operation result = dcpRestClient.post(EntityLockServiceFactory.SELF_LINK, testState);
+      Operation result = xenonRestClient.post(EntityLockServiceFactory.SELF_LINK, testState);
       assertThat(result.getStatusCode(), is(Operation.STATUS_CODE_OK));
       EntityLockService.State createdState = result.getBody(EntityLockService.State.class);
 
       testState.documentSelfLink = createdState.documentSelfLink;
       testState.lockOperation = EntityLockService.State.LockOperation.RELEASE;
-      result = dcpRestClient.put(testState.documentSelfLink, testState);
+      result = xenonRestClient.put(testState.documentSelfLink, testState);
       assertThat(result.getStatusCode(), is(Operation.STATUS_CODE_OK));
       createdState = result.getBody(EntityLockService.State.class);
       assertThat(createdState.entityId, is(equalTo(testState.entityId)));
@@ -247,7 +247,7 @@ public class EntityLockServiceTest {
       assertThat(savedState.ownerTaskId, is(nullValue()));
       assertThat(savedState.lockOperation, is(nullValue()));
 
-      result = dcpRestClient.put(testState.documentSelfLink, testState);
+      result = xenonRestClient.put(testState.documentSelfLink, testState);
 
       assertThat(result.getStatusCode(), is(Operation.STATUS_CODE_NOT_MODIFIED));
       createdState = result.getBody(EntityLockService.State.class);
@@ -268,7 +268,7 @@ public class EntityLockServiceTest {
      */
     @Test
     public void testReleaseLockFailure() throws Throwable {
-      Operation result = dcpRestClient.post(EntityLockServiceFactory.SELF_LINK, testState);
+      Operation result = xenonRestClient.post(EntityLockServiceFactory.SELF_LINK, testState);
       assertThat(result.getStatusCode(), is(Operation.STATUS_CODE_OK));
       EntityLockService.State createdState = result.getBody(EntityLockService.State.class);
       testState.documentSelfLink = createdState.documentSelfLink;
@@ -276,7 +276,7 @@ public class EntityLockServiceTest {
       testState.ownerTaskId = UUID.randomUUID().toString();
 
       try {
-        dcpRestClient.put(testState.documentSelfLink, testState);
+        xenonRestClient.put(testState.documentSelfLink, testState);
         fail("Only the current owner should be able to release a lock");
       } catch (BadRequestException e) {
         assertThat(e.getMessage(), containsString("Only the current owner can release a lock"));
@@ -291,7 +291,7 @@ public class EntityLockServiceTest {
      */
     @Test
     public void testAcquireLockSuccessByExistingOwner() throws Throwable {
-      Operation result = dcpRestClient.post(EntityLockServiceFactory.SELF_LINK, testState);
+      Operation result = xenonRestClient.post(EntityLockServiceFactory.SELF_LINK, testState);
       assertThat(result.getStatusCode(), is(Operation.STATUS_CODE_OK));
       EntityLockService.State createdState = result.getBody(EntityLockService.State.class);
       assertThat(createdState.lockOperation, is(nullValue()));
@@ -305,7 +305,7 @@ public class EntityLockServiceTest {
       assertThat(savedState.ownerTaskId, is(testState.ownerTaskId));
       assertThat(savedState.entitySelfLink, is(createdState.entitySelfLink));
 
-      result = dcpRestClient.post(EntityLockServiceFactory.SELF_LINK, testState);
+      result = xenonRestClient.post(EntityLockServiceFactory.SELF_LINK, testState);
 
       assertThat(result.getStatusCode(), is(Operation.STATUS_CODE_NOT_MODIFIED));
       createdState = result.getBody(EntityLockService.State.class);
@@ -319,7 +319,7 @@ public class EntityLockServiceTest {
 
       testState.lockOperation = EntityLockService.State.LockOperation.RELEASE;
 
-      result = dcpRestClient.put(testState.documentSelfLink, testState);
+      result = xenonRestClient.put(testState.documentSelfLink, testState);
 
       assertThat(result.getStatusCode(), is(Operation.STATUS_CODE_OK));
       createdState = result.getBody(EntityLockService.State.class);
@@ -339,13 +339,13 @@ public class EntityLockServiceTest {
      */
     @Test
     public void testAcquireLockSuccessByNewOwner() throws Throwable {
-      Operation result = dcpRestClient.post(EntityLockServiceFactory.SELF_LINK, testState);
+      Operation result = xenonRestClient.post(EntityLockServiceFactory.SELF_LINK, testState);
       assertThat(result.getStatusCode(), is(Operation.STATUS_CODE_OK));
       EntityLockService.State createdState = result.getBody(EntityLockService.State.class);
       testState.documentSelfLink = createdState.documentSelfLink;
       testState.lockOperation = EntityLockService.State.LockOperation.RELEASE;
 
-      result = dcpRestClient.put(testState.documentSelfLink, testState);
+      result = xenonRestClient.put(testState.documentSelfLink, testState);
 
       assertThat(result.getStatusCode(), is(Operation.STATUS_CODE_OK));
       createdState = result.getBody(EntityLockService.State.class);
@@ -361,7 +361,7 @@ public class EntityLockServiceTest {
 
       testState.ownerTaskId = UUID.randomUUID().toString();
       testState.lockOperation = EntityLockService.State.LockOperation.ACQUIRE;
-      result = dcpRestClient.post(EntityLockServiceFactory.SELF_LINK, testState);
+      result = xenonRestClient.post(EntityLockServiceFactory.SELF_LINK, testState);
 
       assertThat(result.getStatusCode(), is(Operation.STATUS_CODE_OK));
       createdState = result.getBody(EntityLockService.State.class);
@@ -383,7 +383,7 @@ public class EntityLockServiceTest {
      */
     @Test
     public void testEntityIdChangeFailure() throws Throwable {
-      Operation result = dcpRestClient.post(EntityLockServiceFactory.SELF_LINK, testState);
+      Operation result = xenonRestClient.post(EntityLockServiceFactory.SELF_LINK, testState);
       assertThat(result.getStatusCode(), is(Operation.STATUS_CODE_OK));
       EntityLockService.State createdState = result.getBody(EntityLockService.State.class);
       testState.documentSelfLink = createdState.documentSelfLink;
@@ -391,7 +391,7 @@ public class EntityLockServiceTest {
       testState.entityId = UUID.randomUUID().toString();
 
       try {
-        dcpRestClient.post(EntityLockServiceFactory.SELF_LINK, testState);
+        xenonRestClient.post(EntityLockServiceFactory.SELF_LINK, testState);
         fail("Should not be able to change entityId for a lock");
       } catch (BadRequestException e) {
         assertThat(e.getMessage(), containsString("entityId for a lock cannot be changed"));
@@ -405,7 +405,7 @@ public class EntityLockServiceTest {
      */
     @Test
     public void testEntityKindChangeFailure() throws Throwable {
-      Operation result = dcpRestClient.post(EntityLockServiceFactory.SELF_LINK, testState);
+      Operation result = xenonRestClient.post(EntityLockServiceFactory.SELF_LINK, testState);
       assertThat(result.getStatusCode(), is(Operation.STATUS_CODE_OK));
       EntityLockService.State createdState = result.getBody(EntityLockService.State.class);
       testState.documentSelfLink = createdState.documentSelfLink;
@@ -413,7 +413,7 @@ public class EntityLockServiceTest {
       testState.entityKind = "new-entity-kind";
 
       try {
-        dcpRestClient.post(EntityLockServiceFactory.SELF_LINK, testState);
+        xenonRestClient.post(EntityLockServiceFactory.SELF_LINK, testState);
         fail("Should not be able to change entityId for a lock");
       } catch (BadRequestException e) {
         assertThat(e.getMessage(), containsString("entityKind for a lock cannot be changed"));

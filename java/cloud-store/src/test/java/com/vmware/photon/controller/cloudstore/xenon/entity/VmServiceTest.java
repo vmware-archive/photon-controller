@@ -46,7 +46,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class VmServiceTest {
 
-  private XenonRestClient dcpRestClient;
+  private XenonRestClient xenonRestClient;
   private BasicServiceHost host;
   private VmService service;
   private VmService.State testState;
@@ -113,8 +113,8 @@ public class VmServiceTest {
 
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-      dcpRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
-      dcpRestClient.start();
+      xenonRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
+      xenonRestClient.start();
 
       testState = new VmService.State();
       testState.name = UUID.randomUUID().toString();
@@ -133,7 +133,7 @@ public class VmServiceTest {
       }
 
       service = null;
-      dcpRestClient.stop();
+      xenonRestClient.stop();
     }
 
     /**
@@ -143,7 +143,7 @@ public class VmServiceTest {
      */
     @Test
     public void testStartState() throws Throwable {
-      Operation result = dcpRestClient.post(VmServiceFactory.SELF_LINK, testState);
+      Operation result = xenonRestClient.post(VmServiceFactory.SELF_LINK, testState);
 
       assertThat(result.getStatusCode(), is(200));
       VmService.State createdState = result.getBody(VmService.State.class);
@@ -161,7 +161,7 @@ public class VmServiceTest {
       startState.vmState = VmState.CREATING;
 
       try {
-        dcpRestClient.post(VmServiceFactory.SELF_LINK, startState);
+        xenonRestClient.post(VmServiceFactory.SELF_LINK, startState);
         fail("Service start did not fail when 'name' was null");
       } catch (BadRequestException e) {
         assertThat(e.getMessage(), containsString("name cannot be null"));
@@ -177,7 +177,7 @@ public class VmServiceTest {
       startState.vmState = VmState.CREATING;
 
       try {
-        dcpRestClient.post(VmServiceFactory.SELF_LINK, startState);
+        xenonRestClient.post(VmServiceFactory.SELF_LINK, startState);
         fail("Service start did not fail when 'flavorId' was null");
       } catch (BadRequestException e) {
         assertThat(e.getMessage(), containsString("flavorId cannot be null"));
@@ -193,7 +193,7 @@ public class VmServiceTest {
       startState.vmState = VmState.CREATING;
 
       try {
-        dcpRestClient.post(VmServiceFactory.SELF_LINK, startState);
+        xenonRestClient.post(VmServiceFactory.SELF_LINK, startState);
         fail("Service start did not fail when 'projectId' was null");
       } catch (BadRequestException e) {
         assertThat(e.getMessage(), containsString("projectId cannot be null"));
@@ -209,7 +209,7 @@ public class VmServiceTest {
       startState.imageId = UUID.randomUUID().toString();
 
       try {
-        dcpRestClient.post(VmServiceFactory.SELF_LINK, startState);
+        xenonRestClient.post(VmServiceFactory.SELF_LINK, startState);
         fail("Service start did not fail when 'vmState' was null");
       } catch (BadRequestException e) {
         assertThat(e.getMessage(), containsString("vmState cannot be null"));
@@ -225,7 +225,7 @@ public class VmServiceTest {
       startState.vmState = VmState.CREATING;
 
       try {
-        dcpRestClient.post(VmServiceFactory.SELF_LINK, startState);
+        xenonRestClient.post(VmServiceFactory.SELF_LINK, startState);
         fail("Service start did not fail when 'imageId' was null");
       } catch (BadRequestException e) {
         assertThat(e.getMessage(), containsString("imageId cannot be null"));
@@ -250,8 +250,8 @@ public class VmServiceTest {
 
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-      dcpRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
-      dcpRestClient.start();
+      xenonRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
+      xenonRestClient.start();
 
       testState = new VmService.State();
       testState.name = UUID.randomUUID().toString();
@@ -262,7 +262,7 @@ public class VmServiceTest {
 
       host.startServiceSynchronously(new VmServiceFactory(), null);
 
-      Operation result = dcpRestClient.post(VmServiceFactory.SELF_LINK, testState);
+      Operation result = xenonRestClient.post(VmServiceFactory.SELF_LINK, testState);
       assertThat(result.getStatusCode(), is(200));
       createdState = result.getBody(VmService.State.class);
     }
@@ -286,9 +286,9 @@ public class VmServiceTest {
       VmService.State patchState = new VmService.State();
       patchState.vmState = VmState.STARTED;
 
-      dcpRestClient.patch(createdState.documentSelfLink, patchState);
+      xenonRestClient.patch(createdState.documentSelfLink, patchState);
 
-      Operation found = dcpRestClient.get(createdState.documentSelfLink);
+      Operation found = xenonRestClient.get(createdState.documentSelfLink);
       VmService.State patchedState = found.getBody(VmService.State.class);
       assertThat(patchedState.vmState, is(patchState.vmState));
     }
@@ -309,8 +309,8 @@ public class VmServiceTest {
 
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-      dcpRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
-      dcpRestClient.start();
+      xenonRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
+      xenonRestClient.start();
 
       testState = new VmService.State();
       testState.name = UUID.randomUUID().toString();
@@ -329,7 +329,7 @@ public class VmServiceTest {
       }
 
       service = null;
-      dcpRestClient.stop();
+      xenonRestClient.stop();
     }
 
     /**
@@ -340,7 +340,7 @@ public class VmServiceTest {
     @Test
     public void testDefaultExpirationIsNotAppliedIfItIsAlreadySpecifiedInCurrentState() throws Throwable {
       TestHelper.testExpirationOnDelete(
-          dcpRestClient,
+          xenonRestClient,
           host,
           VmServiceFactory.SELF_LINK,
           testState,
@@ -358,7 +358,7 @@ public class VmServiceTest {
     @Test
     public void testDefaultExpirationIsNotAppliedIfItIsAlreadySpecifiedInDeleteOperation() throws Throwable {
       TestHelper.testExpirationOnDelete(
-          dcpRestClient,
+          xenonRestClient,
           host,
           VmServiceFactory.SELF_LINK,
           testState,
@@ -376,7 +376,7 @@ public class VmServiceTest {
     @Test
     public void testDeleteWithDefaultExpiration() throws Throwable {
       TestHelper.testExpirationOnDelete(
-          dcpRestClient,
+          xenonRestClient,
           host,
           VmServiceFactory.SELF_LINK,
           testState,

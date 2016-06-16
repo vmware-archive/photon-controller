@@ -43,7 +43,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class ClusterServiceTest {
 
-  private XenonRestClient dcpRestClient;
+  private XenonRestClient xenonRestClient;
   private BasicServiceHost host;
   private ClusterService service;
   private ClusterService.State testState;
@@ -145,8 +145,8 @@ public class ClusterServiceTest {
 
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-      dcpRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
-      dcpRestClient.start();
+      xenonRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
+      xenonRestClient.start();
 
       buildValidStartState();
 
@@ -160,7 +160,7 @@ public class ClusterServiceTest {
       }
 
       service = null;
-      dcpRestClient.stop();
+      xenonRestClient.stop();
     }
 
     /**
@@ -171,7 +171,7 @@ public class ClusterServiceTest {
     @Test
     public void testDefaultExpirationIsNotAppliedIfItIsAlreadySpecifiedInCurrentState() throws Throwable {
       TestHelper.testExpirationOnDelete(
-          dcpRestClient,
+          xenonRestClient,
           host,
           ClusterServiceFactory.SELF_LINK,
           testState,
@@ -189,7 +189,7 @@ public class ClusterServiceTest {
     @Test
     public void testDefaultExpirationIsNotAppliedIfItIsAlreadySpecifiedInDeleteOperation() throws Throwable {
       TestHelper.testExpirationOnDelete(
-          dcpRestClient,
+          xenonRestClient,
           host,
           ClusterServiceFactory.SELF_LINK,
           testState,
@@ -207,7 +207,7 @@ public class ClusterServiceTest {
     @Test
     public void testDeleteWithDefaultExpiration() throws Throwable {
       TestHelper.testExpirationOnDelete(
-          dcpRestClient,
+          xenonRestClient,
           host,
           ClusterServiceFactory.SELF_LINK,
           testState,

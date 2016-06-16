@@ -48,7 +48,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class ImageServiceTest {
 
-  private XenonRestClient dcpRestClient;
+  private XenonRestClient xenonRestClient;
   private BasicServiceHost host;
   private ImageService service;
   private ImageService.State testState;
@@ -98,8 +98,8 @@ public class ImageServiceTest {
 
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-      dcpRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
-      dcpRestClient.start();
+      xenonRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
+      xenonRestClient.start();
 
       testState = new ImageService.State();
       testState.name = "dummyName";
@@ -114,7 +114,7 @@ public class ImageServiceTest {
       }
 
       service = null;
-      dcpRestClient.stop();
+      xenonRestClient.stop();
     }
 
     /**
@@ -125,7 +125,7 @@ public class ImageServiceTest {
     @Test
     public void testStartState() throws Throwable {
       host.startServiceSynchronously(new ImageServiceFactory(), null);
-      Operation result = dcpRestClient.post(ImageServiceFactory.SELF_LINK, testState);
+      Operation result = xenonRestClient.post(ImageServiceFactory.SELF_LINK, testState);
 
       assertThat(result.getStatusCode(), is(200));
       ImageService.State createdState = result.getBody(ImageService.State.class);
@@ -145,7 +145,7 @@ public class ImageServiceTest {
       declaredField.set(testState, null);
 
       host.startServiceSynchronously(new ImageServiceFactory(), null);
-      Operation result = dcpRestClient.post(ImageServiceFactory.SELF_LINK, testState);
+      Operation result = xenonRestClient.post(ImageServiceFactory.SELF_LINK, testState);
       assertThat(result.getStatusCode(), is(200));
 
       ImageService.State createdState = result.getBody(ImageService.State.class);
@@ -517,8 +517,8 @@ public class ImageServiceTest {
 
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-      dcpRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
-      dcpRestClient.start();
+      xenonRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
+      xenonRestClient.start();
 
       testState = new ImageService.State();
       testState.name = UUID.randomUUID().toString();
@@ -539,7 +539,7 @@ public class ImageServiceTest {
       }
 
       service = null;
-      dcpRestClient.stop();
+      xenonRestClient.stop();
     }
 
     /**
@@ -550,7 +550,7 @@ public class ImageServiceTest {
     @Test
     public void testDefaultExpirationIsNotAppliedIfItIsAlreadySpecifiedInCurrentState() throws Throwable {
       TestHelper.testExpirationOnDelete(
-          dcpRestClient,
+          xenonRestClient,
           host,
           ImageServiceFactory.SELF_LINK,
           testState,
@@ -568,7 +568,7 @@ public class ImageServiceTest {
     @Test
     public void testDefaultExpirationIsNotAppliedIfItIsAlreadySpecifiedInDeleteOperation() throws Throwable {
       TestHelper.testExpirationOnDelete(
-          dcpRestClient,
+          xenonRestClient,
           host,
           ImageServiceFactory.SELF_LINK,
           testState,
@@ -586,7 +586,7 @@ public class ImageServiceTest {
     @Test
     public void testDeleteWithDefaultExpiration() throws Throwable {
       TestHelper.testExpirationOnDelete(
-          dcpRestClient,
+          xenonRestClient,
           host,
           ImageServiceFactory.SELF_LINK,
           testState,

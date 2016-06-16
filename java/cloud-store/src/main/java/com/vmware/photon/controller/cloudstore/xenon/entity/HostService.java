@@ -70,7 +70,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 /**
- * This class implements a DCP micro-service which provides a plain data object
+ * This class implements a Xenon micro-service which provides a plain data object
  * representing an ESX host.
  */
 public class HostService extends StatefulService {
@@ -581,9 +581,9 @@ public class HostService extends StatefulService {
      * and hence cannot share the same default port number. We implemented a test hook in {@link VmService} entity,
      * but since DeploymentWorkflowService automatically creates the VmService entities, we cannot set that test hook
      * directly. So we use this metadata as an additional test hook, and we will assign the test port number to the
-     * VmService entity in {@link com.vmware.photon.controller.deployer.dcp.task.CreateVmSpecTaskService}
+     * VmService entity in {@link com.vmware.photon.controller.deployer.xenon.task.CreateVmSpecTaskService}
      */
-    public static final String METADATA_KEY_NAME_DEPLOYER_DCP_PORT = "DEPLOYER_DCP_PORT";
+    public static final String METADATA_KEY_NAME_DEPLOYER_XENON_PORT = "DEPLOYER_XENON_PORT";
 
     /**
      * This value represents the state of the host.

@@ -376,7 +376,7 @@ public class DeploymentServiceTest {
    */
   public class HandleDeleteTest {
 
-    private XenonRestClient dcpRestClient;
+    private XenonRestClient xenonRestClient;
     private BasicServiceHost host;
     private DeploymentService service;
     private DeploymentService.State testState;
@@ -391,8 +391,8 @@ public class DeploymentServiceTest {
 
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-      dcpRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
-      dcpRestClient.start();
+      xenonRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
+      xenonRestClient.start();
 
       testState = buildServiceStartState();
 
@@ -406,7 +406,7 @@ public class DeploymentServiceTest {
       }
 
       service = null;
-      dcpRestClient.stop();
+      xenonRestClient.stop();
     }
 
     /**
@@ -417,7 +417,7 @@ public class DeploymentServiceTest {
     @Test
     public void testDefaultExpirationIsNotAppliedIfItIsAlreadySpecifiedInCurrentState() throws Throwable {
       TestHelper.testExpirationOnDelete(
-          dcpRestClient,
+          xenonRestClient,
           host,
           DeploymentServiceFactory.SELF_LINK,
           testState,
@@ -435,7 +435,7 @@ public class DeploymentServiceTest {
     @Test
     public void testDefaultExpirationIsNotAppliedIfItIsAlreadySpecifiedInDeleteOperation() throws Throwable {
       TestHelper.testExpirationOnDelete(
-          dcpRestClient,
+          xenonRestClient,
           host,
           DeploymentServiceFactory.SELF_LINK,
           testState,
@@ -453,7 +453,7 @@ public class DeploymentServiceTest {
     @Test
     public void testDeleteWithDefaultExpiration() throws Throwable {
       TestHelper.testExpirationOnDelete(
-          dcpRestClient,
+          xenonRestClient,
           host,
           DeploymentServiceFactory.SELF_LINK,
           testState,

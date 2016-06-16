@@ -45,7 +45,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class DatastoreServiceTest {
 
-  private XenonRestClient dcpRestClient;
+  private XenonRestClient xenonRestClient;
   private BasicServiceHost host;
   private DatastoreService.State testState;
 
@@ -114,15 +114,15 @@ public class DatastoreServiceTest {
           DatastoreServiceFactory.SELF_LINK, 10, 10);
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-      dcpRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
-      dcpRestClient.start();
+      xenonRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
+      xenonRestClient.start();
       testState = getTestState();
     }
 
     @AfterMethod
     public void tearDown() throws Throwable {
       BasicServiceHost.destroy(host);
-      dcpRestClient.stop();
+      xenonRestClient.stop();
     }
 
     /**
@@ -133,7 +133,7 @@ public class DatastoreServiceTest {
       // Create a document and verify the result.
       // Create a document.
       host.startServiceSynchronously(new DatastoreServiceFactory(), null);
-      Operation result = dcpRestClient.post(DatastoreServiceFactory.SELF_LINK, testState);
+      Operation result = xenonRestClient.post(DatastoreServiceFactory.SELF_LINK, testState);
       assertThat(result.getStatusCode(), is(200));
       DatastoreService.State createdState = result.getBody(DatastoreService.State.class);
       verifyDatastore(createdState, testState);
@@ -160,7 +160,7 @@ public class DatastoreServiceTest {
       fieldObj.set(startState, null);
 
       host.startServiceSynchronously(new DatastoreServiceFactory(), null);
-      dcpRestClient.post(DatastoreServiceFactory.SELF_LINK, startState);
+      xenonRestClient.post(DatastoreServiceFactory.SELF_LINK, startState);
     }
 
     @DataProvider(name = "NotNullableFields")
@@ -176,7 +176,7 @@ public class DatastoreServiceTest {
     public void testValidIdempotentPostWithIdenticalState() throws Throwable {
       // Create a document and verify the result.
       host.startServiceSynchronously(new DatastoreServiceFactory(), null);
-      Operation result = dcpRestClient.post(DatastoreServiceFactory.SELF_LINK, testState);
+      Operation result = xenonRestClient.post(DatastoreServiceFactory.SELF_LINK, testState);
       assertThat(result.getStatusCode(), is(200));
       DatastoreService.State createdState = result.getBody(DatastoreService.State.class);
       verifyDatastore(createdState, testState);
@@ -187,7 +187,7 @@ public class DatastoreServiceTest {
       verifyDatastore(savedState, testState);
 
       // Post the document again and verify that it is translated to a PUT successfully.
-      Operation putOperation = dcpRestClient.post(DatastoreServiceFactory.SELF_LINK, testState);
+      Operation putOperation = xenonRestClient.post(DatastoreServiceFactory.SELF_LINK, testState);
       assertThat(putOperation.getStatusCode(), is(Operation.STATUS_CODE_NOT_MODIFIED));
 
       // Get the created document and verify the result again.
@@ -199,7 +199,7 @@ public class DatastoreServiceTest {
     public void testValidIdempotentPost() throws Throwable {
       // Create a document and verify the result.
       host.startServiceSynchronously(new DatastoreServiceFactory(), null);
-      Operation result = dcpRestClient.post(DatastoreServiceFactory.SELF_LINK, testState);
+      Operation result = xenonRestClient.post(DatastoreServiceFactory.SELF_LINK, testState);
       assertThat(result.getStatusCode(), is(200));
       DatastoreService.State createdState = result.getBody(DatastoreService.State.class);
       verifyDatastore(createdState, testState);
@@ -211,7 +211,7 @@ public class DatastoreServiceTest {
 
       // Post the document again and verify that it is translated to a PUT successfully.
       DatastoreService.State newState = getPutState(createdState);
-      Operation putOperation = dcpRestClient.post(DatastoreServiceFactory.SELF_LINK, newState);
+      Operation putOperation = xenonRestClient.post(DatastoreServiceFactory.SELF_LINK, newState);
       assertThat(putOperation.getStatusCode(), is(200));
 
       // Get the created document and verify the result again.
@@ -231,38 +231,38 @@ public class DatastoreServiceTest {
           DatastoreServiceFactory.SELF_LINK, 10, 10);
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-      dcpRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
-      dcpRestClient.start();
+      xenonRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
+      xenonRestClient.start();
       testState = getTestState();
     }
 
     @AfterMethod
     public void tearDown() throws Throwable {
       BasicServiceHost.destroy(host);
-      dcpRestClient.stop();
+      xenonRestClient.stop();
     }
 
     @Test
     public void testPut() throws Throwable {
       // Create a document.
       host.startServiceSynchronously(new DatastoreServiceFactory(), null);
-      Operation result = dcpRestClient.post(DatastoreServiceFactory.SELF_LINK, testState);
+      Operation result = xenonRestClient.post(DatastoreServiceFactory.SELF_LINK, testState);
       assertThat(result.getStatusCode(), is(200));
       DatastoreService.State createdState = result.getBody(DatastoreService.State.class);
       verifyDatastore(createdState, testState);
 
       // Get the created document and verify the result.
-      result = dcpRestClient.get(createdState.documentSelfLink);
+      result = xenonRestClient.get(createdState.documentSelfLink);
       createdState = result.getBody(DatastoreService.State.class);
       verifyDatastore(createdState, testState);
 
       // Put a new version of the document.
       DatastoreService.State newState = getPutState(createdState);
-      result = dcpRestClient.put(createdState.documentSelfLink, newState);
+      result = xenonRestClient.put(createdState.documentSelfLink, newState);
       assertThat(result.getStatusCode(), is(200));
 
       // Get the new document and verify the result.
-      result = dcpRestClient.get(createdState.documentSelfLink);
+      result = xenonRestClient.get(createdState.documentSelfLink);
       createdState = result.getBody(DatastoreService.State.class);
       verifyDatastore(createdState, newState);
     }
@@ -271,13 +271,13 @@ public class DatastoreServiceTest {
     public void testPutInvalidField(String fieldName) throws Throwable {
       // Create a document.
       host.startServiceSynchronously(new DatastoreServiceFactory(), null);
-      Operation result = dcpRestClient.post(DatastoreServiceFactory.SELF_LINK, testState);
+      Operation result = xenonRestClient.post(DatastoreServiceFactory.SELF_LINK, testState);
       assertThat(result.getStatusCode(), is(200));
       DatastoreService.State createdState = result.getBody(DatastoreService.State.class);
       verifyDatastore(createdState, testState);
 
       // Get the created document and verify the result.
-      result = dcpRestClient.get(createdState.documentSelfLink);
+      result = xenonRestClient.get(createdState.documentSelfLink);
       createdState = result.getBody(DatastoreService.State.class);
       verifyDatastore(createdState, testState);
 
@@ -285,7 +285,7 @@ public class DatastoreServiceTest {
       DatastoreService.State newState = getTestState();
       Field declaredField = newState.getClass().getDeclaredField(fieldName);
       declaredField.set(newState, "INVALID_VALUE");
-      dcpRestClient.put(createdState.documentSelfLink, newState);
+      xenonRestClient.put(createdState.documentSelfLink, newState);
     }
 
     @DataProvider(name = "ImmutableFieldNames")
@@ -304,13 +304,13 @@ public class DatastoreServiceTest {
     public void testPutNotNullField(String fieldName) throws Throwable {
       // Create a document.
       host.startServiceSynchronously(new DatastoreServiceFactory(), null);
-      Operation result = dcpRestClient.post(DatastoreServiceFactory.SELF_LINK, testState);
+      Operation result = xenonRestClient.post(DatastoreServiceFactory.SELF_LINK, testState);
       assertThat(result.getStatusCode(), is(200));
       DatastoreService.State createdState = result.getBody(DatastoreService.State.class);
       verifyDatastore(createdState, testState);
 
       // Get the created document and verify the result.
-      result = dcpRestClient.get(createdState.documentSelfLink);
+      result = xenonRestClient.get(createdState.documentSelfLink);
       createdState = result.getBody(DatastoreService.State.class);
       verifyDatastore(createdState, testState);
 
@@ -318,7 +318,7 @@ public class DatastoreServiceTest {
       DatastoreService.State newState = getTestState();
       Field declaredField = newState.getClass().getDeclaredField(fieldName);
       declaredField.set(newState, null);
-      dcpRestClient.put(createdState.documentSelfLink, newState);
+      xenonRestClient.put(createdState.documentSelfLink, newState);
     }
 
     @DataProvider(name = "NotNullFieldNames")
@@ -342,15 +342,15 @@ public class DatastoreServiceTest {
           DatastoreServiceFactory.SELF_LINK, 10, 10);
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-      dcpRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
-      dcpRestClient.start();
+      xenonRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
+      xenonRestClient.start();
       testState = getTestState();
     }
 
     @AfterMethod
     public void tearDown() throws Throwable {
       BasicServiceHost.destroy(host);
-      dcpRestClient.stop();
+      xenonRestClient.stop();
     }
 
     /**
@@ -360,13 +360,13 @@ public class DatastoreServiceTest {
     public void testPatch() throws Throwable {
       // Create a document.
       host.startServiceSynchronously(new DatastoreServiceFactory(), null);
-      Operation result = dcpRestClient.post(DatastoreServiceFactory.SELF_LINK, testState);
+      Operation result = xenonRestClient.post(DatastoreServiceFactory.SELF_LINK, testState);
       assertThat(result.getStatusCode(), is(200));
       DatastoreService.State createdState = result.getBody(DatastoreService.State.class);
       verifyDatastore(createdState, testState);
 
       // Get the created document and verify the result again.
-      result = dcpRestClient.get(createdState.documentSelfLink);
+      result = xenonRestClient.get(createdState.documentSelfLink);
       createdState = result.getBody(DatastoreService.State.class);
       verifyDatastore(createdState, testState);
 
@@ -375,7 +375,7 @@ public class DatastoreServiceTest {
       String tag = "ds1-newtype";
       patchState.tags = new HashSet<>(Arrays.asList(tag));
       patchState.isImageDatastore = true;
-      result = dcpRestClient.patch(createdState.documentSelfLink, patchState);
+      result = xenonRestClient.patch(createdState.documentSelfLink, patchState);
       DatastoreService.State patchedState = result.getBody(DatastoreService.State.class);
       assertThat(patchedState.tags, containsInAnyOrder(tag));
       assertThat(patchedState.isImageDatastore, is(true));
@@ -388,20 +388,20 @@ public class DatastoreServiceTest {
     public void testPatchId() throws Throwable {
       // Create a document.
       host.startServiceSynchronously(new DatastoreServiceFactory(), null);
-      Operation result = dcpRestClient.post(DatastoreServiceFactory.SELF_LINK, testState);
+      Operation result = xenonRestClient.post(DatastoreServiceFactory.SELF_LINK, testState);
       assertThat(result.getStatusCode(), is(200));
       DatastoreService.State createdState = result.getBody(DatastoreService.State.class);
       verifyDatastore(createdState, testState);
 
       // Get the created document and verify the result again.
-      result = dcpRestClient.get(createdState.documentSelfLink);
+      result = xenonRestClient.get(createdState.documentSelfLink);
       createdState = result.getBody(DatastoreService.State.class);
       verifyDatastore(createdState, testState);
 
       // Patching id should fail.
       DatastoreService.State patchState = new DatastoreService.State();
       patchState.id = "ds1-newid";
-      result = dcpRestClient.patch(createdState.documentSelfLink, patchState);
+      result = xenonRestClient.patch(createdState.documentSelfLink, patchState);
     }
 
     /**
@@ -411,20 +411,20 @@ public class DatastoreServiceTest {
     public void testPatchName() throws Throwable {
       // Create a document.
       host.startServiceSynchronously(new DatastoreServiceFactory(), null);
-      Operation result = dcpRestClient.post(DatastoreServiceFactory.SELF_LINK, testState);
+      Operation result = xenonRestClient.post(DatastoreServiceFactory.SELF_LINK, testState);
       assertThat(result.getStatusCode(), is(200));
       DatastoreService.State createdState = result.getBody(DatastoreService.State.class);
       verifyDatastore(createdState, testState);
 
       // Get the created document and verify the result again.
-      result = dcpRestClient.get(createdState.documentSelfLink);
+      result = xenonRestClient.get(createdState.documentSelfLink);
       createdState = result.getBody(DatastoreService.State.class);
       verifyDatastore(createdState, testState);
 
       // Patching name should fail.
       DatastoreService.State patchState = new DatastoreService.State();
       patchState.name = "ds1-newname";
-      result = dcpRestClient.patch(createdState.documentSelfLink, patchState);
+      result = xenonRestClient.patch(createdState.documentSelfLink, patchState);
     }
 
     /**
@@ -434,20 +434,20 @@ public class DatastoreServiceTest {
     public void testPatchType() throws Throwable {
       // Create a document.
       host.startServiceSynchronously(new DatastoreServiceFactory(), null);
-      Operation result = dcpRestClient.post(DatastoreServiceFactory.SELF_LINK, testState);
+      Operation result = xenonRestClient.post(DatastoreServiceFactory.SELF_LINK, testState);
       assertThat(result.getStatusCode(), is(200));
       DatastoreService.State createdState = result.getBody(DatastoreService.State.class);
       verifyDatastore(createdState, testState);
 
       // Get the created document and verify the result again.
-      result = dcpRestClient.get(createdState.documentSelfLink);
+      result = xenonRestClient.get(createdState.documentSelfLink);
       createdState = result.getBody(DatastoreService.State.class);
       verifyDatastore(createdState, testState);
 
       // Patching type should fail.
       DatastoreService.State patchState = new DatastoreService.State();
       patchState.type = "ds1-newtype";
-      result = dcpRestClient.patch(createdState.documentSelfLink, patchState);
+      result = xenonRestClient.patch(createdState.documentSelfLink, patchState);
     }
   }
 
@@ -464,8 +464,8 @@ public class DatastoreServiceTest {
 
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-      dcpRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
-      dcpRestClient.start();
+      xenonRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
+      xenonRestClient.start();
 
       testState = getTestState();
 
@@ -478,7 +478,7 @@ public class DatastoreServiceTest {
         BasicServiceHost.destroy(host);
       }
 
-      dcpRestClient.stop();
+      xenonRestClient.stop();
     }
 
     /**
@@ -489,7 +489,7 @@ public class DatastoreServiceTest {
     @Test
     public void testDefaultExpirationIsNotApplied() throws Throwable {
       TestHelper.testExpirationOnDelete(
-          dcpRestClient,
+          xenonRestClient,
           host,
           DatastoreServiceFactory.SELF_LINK,
           testState,
@@ -507,7 +507,7 @@ public class DatastoreServiceTest {
     @Test
     public void testCurrentStateExpirationIsNotApplied() throws Throwable {
       TestHelper.testExpirationOnDelete(
-          dcpRestClient,
+          xenonRestClient,
           host,
           DatastoreServiceFactory.SELF_LINK,
           testState,
@@ -525,7 +525,7 @@ public class DatastoreServiceTest {
     @Test
     public void testDeleteOperationExpirationIsApplied() throws Throwable {
       TestHelper.testExpirationOnDelete(
-          dcpRestClient,
+          xenonRestClient,
           host,
           DatastoreServiceFactory.SELF_LINK,
           testState,

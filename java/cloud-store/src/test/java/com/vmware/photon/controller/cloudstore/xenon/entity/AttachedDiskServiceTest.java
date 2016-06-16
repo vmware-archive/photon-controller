@@ -40,7 +40,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class AttachedDiskServiceTest {
 
-  private XenonRestClient dcpRestClient;
+  private XenonRestClient xenonRestClient;
   private BasicServiceHost host;
   private AttachedDiskService service;
   private AttachedDiskService.State testState;
@@ -90,8 +90,8 @@ public class AttachedDiskServiceTest {
 
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-      dcpRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
-      dcpRestClient.start();
+      xenonRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
+      xenonRestClient.start();
 
       testState = new AttachedDiskService.State();
       testState.bootDisk = true;
@@ -107,7 +107,7 @@ public class AttachedDiskServiceTest {
       }
 
       service = null;
-      dcpRestClient.stop();
+      xenonRestClient.stop();
     }
 
     /**
@@ -119,7 +119,7 @@ public class AttachedDiskServiceTest {
     public void testStartState() throws Throwable {
       host.startServiceSynchronously(new AttachedDiskServiceFactory(), null);
 
-      Operation result = dcpRestClient.post(AttachedDiskServiceFactory.SELF_LINK, testState);
+      Operation result = xenonRestClient.post(AttachedDiskServiceFactory.SELF_LINK, testState);
 
       assertThat(result.getStatusCode(), is(200));
       AttachedDiskService.State createdState = result.getBody(AttachedDiskService.State.class);
@@ -168,8 +168,8 @@ public class AttachedDiskServiceTest {
 
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-      dcpRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
-      dcpRestClient.start();
+      xenonRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
+      xenonRestClient.start();
 
       testState = new AttachedDiskService.State();
       testState.bootDisk = true;
@@ -187,7 +187,7 @@ public class AttachedDiskServiceTest {
       }
 
       service = null;
-      dcpRestClient.stop();
+      xenonRestClient.stop();
     }
 
     /**
@@ -198,7 +198,7 @@ public class AttachedDiskServiceTest {
     @Test
     public void testDefaultExpirationIsNotAppliedIfItIsAlreadySpecifiedInCurrentState() throws Throwable {
       TestHelper.testExpirationOnDelete(
-          dcpRestClient,
+          xenonRestClient,
           host,
           AttachedDiskServiceFactory.SELF_LINK,
           testState,
@@ -216,7 +216,7 @@ public class AttachedDiskServiceTest {
     @Test
     public void testDefaultExpirationIsNotAppliedIfItIsAlreadySpecifiedInDeleteOperation() throws Throwable {
       TestHelper.testExpirationOnDelete(
-          dcpRestClient,
+          xenonRestClient,
           host,
           AttachedDiskServiceFactory.SELF_LINK,
           testState,
@@ -234,7 +234,7 @@ public class AttachedDiskServiceTest {
     @Test
     public void testDeleteWithDefaultExpiration() throws Throwable {
       TestHelper.testExpirationOnDelete(
-          dcpRestClient,
+          xenonRestClient,
           host,
           AttachedDiskServiceFactory.SELF_LINK,
           testState,

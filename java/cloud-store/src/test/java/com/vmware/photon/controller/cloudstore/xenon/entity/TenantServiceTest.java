@@ -50,7 +50,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class TenantServiceTest {
 
-  private XenonRestClient dcpRestClient;
+  private XenonRestClient xenonRestClient;
   private BasicServiceHost host;
   private TenantService service;
   private TenantService.State testState;
@@ -117,8 +117,8 @@ public class TenantServiceTest {
 
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-      dcpRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
-      dcpRestClient.start();
+      xenonRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
+      xenonRestClient.start();
 
       testState = new TenantService.State();
       testState.name = "tenant-name";
@@ -132,7 +132,7 @@ public class TenantServiceTest {
       }
 
       service = null;
-      dcpRestClient.stop();
+      xenonRestClient.stop();
     }
 
     /**
@@ -144,7 +144,7 @@ public class TenantServiceTest {
     public void testStartState() throws Throwable {
       host.startServiceSynchronously(new TenantServiceFactory(), null);
 
-      Operation result = dcpRestClient.post(TenantServiceFactory.SELF_LINK, testState);
+      Operation result = xenonRestClient.post(TenantServiceFactory.SELF_LINK, testState);
 
       assertThat(result.getStatusCode(), is(200));
       TenantService.State createdState = result.getBody(TenantService.State.class);
@@ -193,8 +193,8 @@ public class TenantServiceTest {
 
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-      dcpRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
-      dcpRestClient.start();
+      xenonRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
+      xenonRestClient.start();
 
       TenantService.State startState = new TenantService.State();
       startState.name = "tenant-name";
@@ -202,7 +202,7 @@ public class TenantServiceTest {
 
       host.startServiceSynchronously(new TenantServiceFactory(), null);
 
-      Operation result = dcpRestClient.post(TenantServiceFactory.SELF_LINK, startState);
+      Operation result = xenonRestClient.post(TenantServiceFactory.SELF_LINK, startState);
       assertThat(result.getStatusCode(), is(200));
 
       serviceLink = result.getBody(TenantService.State.class).documentSelfLink;
@@ -215,12 +215,12 @@ public class TenantServiceTest {
       }
 
       service = null;
-      dcpRestClient.stop();
+      xenonRestClient.stop();
     }
 
     @Test
     public void testPatchStateSuccess() throws Throwable {
-      Operation result = dcpRestClient.get(serviceLink);
+      Operation result = xenonRestClient.get(serviceLink);
       assertThat(result.getStatusCode(), is(200));
 
       TenantService.State currState = result.getBody(TenantService.State.class);
@@ -231,10 +231,10 @@ public class TenantServiceTest {
       patchState.securityGroups.add(new SecurityGroup("adminGroup1", true));
       patchState.securityGroups.add(new SecurityGroup("adminGroup2", false));
 
-      result = dcpRestClient.patch(serviceLink, patchState);
+      result = xenonRestClient.patch(serviceLink, patchState);
       assertThat(result.getStatusCode(), is(200));
 
-      result = dcpRestClient.get(serviceLink);
+      result = xenonRestClient.get(serviceLink);
       assertThat(result.getStatusCode(), is(200));
 
       TenantService.State stateAfterPatch = result.getBody(TenantService.State.class);
@@ -244,7 +244,7 @@ public class TenantServiceTest {
 
     @Test
     public void testIllegalPatch() throws Throwable {
-      Operation result = dcpRestClient.get(serviceLink);
+      Operation result = xenonRestClient.get(serviceLink);
       assertThat(result.getStatusCode(), is(200));
 
       TenantService.State currState = result.getBody(TenantService.State.class);
@@ -257,7 +257,7 @@ public class TenantServiceTest {
       patchState.securityGroups.add(new SecurityGroup("adminGroup2", false));
 
       try {
-        dcpRestClient.patch(serviceLink, patchState);
+        xenonRestClient.patch(serviceLink, patchState);
         fail("Should have failed due to updating immutable field");
       } catch (BadRequestException e) {
         assertThat(e.getMessage(), containsString("name is immutable"));
@@ -279,8 +279,8 @@ public class TenantServiceTest {
 
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-      dcpRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
-      dcpRestClient.start();
+      xenonRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
+      xenonRestClient.start();
 
       testState = new TenantService.State();
       testState.name = UUID.randomUUID().toString();
@@ -296,7 +296,7 @@ public class TenantServiceTest {
       }
 
       service = null;
-      dcpRestClient.stop();
+      xenonRestClient.stop();
     }
 
     /**
@@ -307,7 +307,7 @@ public class TenantServiceTest {
     @Test
     public void testDefaultExpirationIsNotAppliedIfItIsAlreadySpecifiedInCurrentState() throws Throwable {
       TestHelper.testExpirationOnDelete(
-          dcpRestClient,
+          xenonRestClient,
           host,
           TenantServiceFactory.SELF_LINK,
           testState,
@@ -325,7 +325,7 @@ public class TenantServiceTest {
     @Test
     public void testDefaultExpirationIsNotAppliedIfItIsAlreadySpecifiedInDeleteOperation() throws Throwable {
       TestHelper.testExpirationOnDelete(
-          dcpRestClient,
+          xenonRestClient,
           host,
           TenantServiceFactory.SELF_LINK,
           testState,
@@ -343,7 +343,7 @@ public class TenantServiceTest {
     @Test
     public void testDeleteWithDefaultExpiration() throws Throwable {
       TestHelper.testExpirationOnDelete(
-          dcpRestClient,
+          xenonRestClient,
           host,
           TenantServiceFactory.SELF_LINK,
           testState,

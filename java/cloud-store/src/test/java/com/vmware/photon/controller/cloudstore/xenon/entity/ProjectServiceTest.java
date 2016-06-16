@@ -49,7 +49,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class ProjectServiceTest {
 
-  private XenonRestClient dcpRestClient;
+  private XenonRestClient xenonRestClient;
   private BasicServiceHost host;
   private ProjectService service;
   private ProjectService.State testState;
@@ -116,8 +116,8 @@ public class ProjectServiceTest {
 
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-      dcpRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
-      dcpRestClient.start();
+      xenonRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
+      xenonRestClient.start();
 
       testState = new ProjectService.State();
       testState.name = "project-name";
@@ -133,7 +133,7 @@ public class ProjectServiceTest {
       }
 
       service = null;
-      dcpRestClient.stop();
+      xenonRestClient.stop();
     }
 
     /**
@@ -145,7 +145,7 @@ public class ProjectServiceTest {
     public void testStartState() throws Throwable {
       host.startServiceSynchronously(new ProjectServiceFactory(), null);
 
-      Operation result = dcpRestClient.post(ProjectServiceFactory.SELF_LINK, testState);
+      Operation result = xenonRestClient.post(ProjectServiceFactory.SELF_LINK, testState);
 
       assertThat(result.getStatusCode(), is(200));
       ProjectService.State createdState = result.getBody(ProjectService.State.class);
@@ -217,8 +217,8 @@ public class ProjectServiceTest {
 
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-      dcpRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
-      dcpRestClient.start();
+      xenonRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
+      xenonRestClient.start();
 
       ProjectService.State startState = new ProjectService.State();
       startState.name = "project-name";
@@ -228,7 +228,7 @@ public class ProjectServiceTest {
 
       host.startServiceSynchronously(new ProjectServiceFactory(), null);
 
-      Operation result = dcpRestClient.post(ProjectServiceFactory.SELF_LINK, startState);
+      Operation result = xenonRestClient.post(ProjectServiceFactory.SELF_LINK, startState);
       assertThat(result.getStatusCode(), is(200));
 
       serviceLink = result.getBody(ProjectService.State.class).documentSelfLink;
@@ -241,12 +241,12 @@ public class ProjectServiceTest {
       }
 
       service = null;
-      dcpRestClient.stop();
+      xenonRestClient.stop();
     }
 
     @Test
     public void testPatchStateSuccess() throws Throwable {
-      Operation result = dcpRestClient.get(serviceLink);
+      Operation result = xenonRestClient.get(serviceLink);
       assertThat(result.getStatusCode(), is(200));
 
       ProjectService.State currState = result.getBody(ProjectService.State.class);
@@ -257,10 +257,10 @@ public class ProjectServiceTest {
       patchState.securityGroups.add(new SecurityGroup("adminGroup1", true));
       patchState.securityGroups.add(new SecurityGroup("adminGroup2", false));
 
-      result = dcpRestClient.patch(serviceLink, patchState);
+      result = xenonRestClient.patch(serviceLink, patchState);
       assertThat(result.getStatusCode(), is(200));
 
-      result = dcpRestClient.get(serviceLink);
+      result = xenonRestClient.get(serviceLink);
       assertThat(result.getStatusCode(), is(200));
 
       ProjectService.State stateAfterPatch = result.getBody(ProjectService.State.class);
@@ -270,7 +270,7 @@ public class ProjectServiceTest {
     @Test(expectedExceptions = BadRequestException.class,
         expectedExceptionsMessageRegExp = ".*name is immutable.*")
     public void testIllegalPatch() throws Throwable {
-      Operation result = dcpRestClient.get(serviceLink);
+      Operation result = xenonRestClient.get(serviceLink);
       assertThat(result.getStatusCode(), is(200));
 
       ProjectService.State currState = result.getBody(ProjectService.State.class);
@@ -282,7 +282,7 @@ public class ProjectServiceTest {
       patchState.securityGroups.add(new SecurityGroup("adminGroup2", false));
       patchState.name = "cannot change the name";
 
-      dcpRestClient.patch(serviceLink, patchState);
+      xenonRestClient.patch(serviceLink, patchState);
     }
   }
 
@@ -300,8 +300,8 @@ public class ProjectServiceTest {
 
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-      dcpRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
-      dcpRestClient.start();
+      xenonRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
+      xenonRestClient.start();
 
       testState = new ProjectService.State();
       testState.name = UUID.randomUUID().toString();
@@ -319,7 +319,7 @@ public class ProjectServiceTest {
       }
 
       service = null;
-      dcpRestClient.stop();
+      xenonRestClient.stop();
     }
 
     /**
@@ -330,7 +330,7 @@ public class ProjectServiceTest {
     @Test
     public void testDefaultExpirationIsNotAppliedIfItIsAlreadySpecifiedInCurrentState() throws Throwable {
       TestHelper.testExpirationOnDelete(
-          dcpRestClient,
+          xenonRestClient,
           host,
           ProjectServiceFactory.SELF_LINK,
           testState,
@@ -348,7 +348,7 @@ public class ProjectServiceTest {
     @Test
     public void testDefaultExpirationIsNotAppliedIfItIsAlreadySpecifiedInDeleteOperation() throws Throwable {
       TestHelper.testExpirationOnDelete(
-          dcpRestClient,
+          xenonRestClient,
           host,
           ProjectServiceFactory.SELF_LINK,
           testState,
@@ -366,7 +366,7 @@ public class ProjectServiceTest {
     @Test
     public void testDeleteWithDefaultExpiration() throws Throwable {
       TestHelper.testExpirationOnDelete(
-          dcpRestClient,
+          xenonRestClient,
           host,
           ProjectServiceFactory.SELF_LINK,
           testState,

@@ -41,7 +41,7 @@ public class EntityLockDeleteFactoryServiceTest {
   }
 
   /**
-   * Tests {@link com.vmware.photon.controller.cloudstore.dcp.task.EntityLockDeleteFactoryService()}.
+   * Tests {@link com.vmware.photon.controller.cloudstore.xenon.task.EntityLockDeleteFactoryService()}.
    */
   public class InitializationTest {
 

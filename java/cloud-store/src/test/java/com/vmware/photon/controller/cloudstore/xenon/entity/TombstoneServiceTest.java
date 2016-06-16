@@ -42,7 +42,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class TombstoneServiceTest {
 
-  private XenonRestClient dcpRestClient;
+  private XenonRestClient xenonRestClient;
   private BasicServiceHost host;
   private TombstoneService service;
 
@@ -248,8 +248,8 @@ public class TombstoneServiceTest {
 
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-      dcpRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
-      dcpRestClient.start();
+      xenonRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
+      xenonRestClient.start();
 
       testState = buildValidStartState();
       host.startServiceSynchronously(new TombstoneServiceFactory(), null);
@@ -262,7 +262,7 @@ public class TombstoneServiceTest {
       }
 
       service = null;
-      dcpRestClient.stop();
+      xenonRestClient.stop();
     }
 
     /**
@@ -273,7 +273,7 @@ public class TombstoneServiceTest {
     @Test
     public void testDefaultExpirationIsNotAppliedIfItIsAlreadySpecifiedInCurrentState() throws Throwable {
       TestHelper.testExpirationOnDelete(
-          dcpRestClient,
+          xenonRestClient,
           host,
           TombstoneServiceFactory.SELF_LINK,
           testState,
@@ -291,7 +291,7 @@ public class TombstoneServiceTest {
     @Test
     public void testDefaultExpirationIsNotAppliedIfItIsAlreadySpecifiedInDeleteOperation() throws Throwable {
       TestHelper.testExpirationOnDelete(
-          dcpRestClient,
+          xenonRestClient,
           host,
           TombstoneServiceFactory.SELF_LINK,
           testState,
@@ -309,7 +309,7 @@ public class TombstoneServiceTest {
     @Test
     public void testDeleteWithDefaultExpiration() throws Throwable {
       TestHelper.testExpirationOnDelete(
-          dcpRestClient,
+          xenonRestClient,
           host,
           TombstoneServiceFactory.SELF_LINK,
           testState,

@@ -54,7 +54,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class DiskServiceTest {
 
-  private XenonRestClient dcpRestClient;
+  private XenonRestClient xenonRestClient;
   private BasicServiceHost host;
   private DiskService service;
   private DiskService.State testState;
@@ -104,8 +104,8 @@ public class DiskServiceTest {
 
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-      dcpRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
-      dcpRestClient.start();
+      xenonRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
+      xenonRestClient.start();
 
       testState = new DiskService.State();
       testState.name = "disk-name";
@@ -134,7 +134,7 @@ public class DiskServiceTest {
       }
 
       service = null;
-      dcpRestClient.stop();
+      xenonRestClient.stop();
     }
 
     /**
@@ -144,7 +144,7 @@ public class DiskServiceTest {
      */
     @Test
     public void testStartState() throws Throwable {
-      Operation result = dcpRestClient.post(DiskServiceFactory.SELF_LINK, testState);
+      Operation result = xenonRestClient.post(DiskServiceFactory.SELF_LINK, testState);
 
       assertThat(result.getStatusCode(), is(200));
       DiskService.State createdState = result.getBody(DiskService.State.class);
@@ -198,7 +198,7 @@ public class DiskServiceTest {
     public void testMissingProject() throws Throwable {
       testState.projectId = null;
       try {
-        dcpRestClient.post(DiskServiceFactory.SELF_LINK, testState);
+        xenonRestClient.post(DiskServiceFactory.SELF_LINK, testState);
         fail("Service start did " +
             "not fail when 'projectId' was null");
       } catch (BadRequestException e) {
@@ -215,7 +215,7 @@ public class DiskServiceTest {
     public void testMissingName() throws Throwable {
       testState.name = null;
       try {
-        dcpRestClient.post(DiskServiceFactory.SELF_LINK, testState);
+        xenonRestClient.post(DiskServiceFactory.SELF_LINK, testState);
         fail("Service start did not fail when 'Name' was null");
       } catch (BadRequestException e) {
         assertThat(e.getMessage(), containsString("name cannot be null"));
@@ -231,7 +231,7 @@ public class DiskServiceTest {
     public void testMissingState() throws Throwable {
       testState.state = null;
       try {
-        dcpRestClient.post(DiskServiceFactory.SELF_LINK, testState);
+        xenonRestClient.post(DiskServiceFactory.SELF_LINK, testState);
         fail("Service start did not fail when 'State' was null");
       } catch (BadRequestException e) {
         assertThat(e.getMessage(), containsString("state cannot be null"));
@@ -247,7 +247,7 @@ public class DiskServiceTest {
     public void testMissingDiskType() throws Throwable {
       testState.diskType = null;
       try {
-        dcpRestClient.post(DiskServiceFactory.SELF_LINK, testState);
+        xenonRestClient.post(DiskServiceFactory.SELF_LINK, testState);
         fail("Service start did not fail when 'diskType' was null");
       } catch (BadRequestException e) {
         assertThat(e.getMessage(), containsString("diskType cannot be null"));
@@ -263,7 +263,7 @@ public class DiskServiceTest {
     public void testMissingFlavorId() throws Throwable {
       testState.flavorId = null;
       try {
-        dcpRestClient.post(DiskServiceFactory.SELF_LINK, testState);
+        xenonRestClient.post(DiskServiceFactory.SELF_LINK, testState);
         fail("Service start did not fail when 'flavorId' was null");
       } catch (BadRequestException e) {
         assertThat(e.getMessage(), containsString("flavorId cannot be null"));
@@ -285,8 +285,8 @@ public class DiskServiceTest {
 
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-      dcpRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
-      dcpRestClient.start();
+      xenonRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
+      xenonRestClient.start();
 
       testState = new DiskService.State();
       testState.projectId = "project-id";
@@ -315,18 +315,18 @@ public class DiskServiceTest {
      */
     @Test
     public void testPatchSuccess() throws Throwable {
-      Operation createOperation = dcpRestClient.post(DiskServiceFactory.SELF_LINK, testState);
+      Operation createOperation = xenonRestClient.post(DiskServiceFactory.SELF_LINK, testState);
       assertThat(createOperation.getStatusCode(), is(200));
       DiskService.State createdState = createOperation.getBody(DiskService.State.class);
 
       DiskService.State patchState = new DiskService.State();
       patchState.state = DiskState.ERROR;
 
-      Operation patchOperation = dcpRestClient.patch(createdState.documentSelfLink, patchState);
+      Operation patchOperation = xenonRestClient.patch(createdState.documentSelfLink, patchState);
       DiskService.State result = patchOperation.getBody(DiskService.State.class);
       assertThat(result.state, is(DiskState.ERROR));
 
-      patchOperation = dcpRestClient.get(createdState.documentSelfLink);
+      patchOperation = xenonRestClient.get(createdState.documentSelfLink);
       result = patchOperation.getBody(DiskService.State.class);
       assertThat(result.state, is(DiskState.ERROR));
       assertThat(result.capacityGb, is(2));
@@ -347,8 +347,8 @@ public class DiskServiceTest {
 
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-      dcpRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
-      dcpRestClient.start();
+      xenonRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
+      xenonRestClient.start();
 
       testState = new DiskService.State();
       testState.projectId = "project-id";
@@ -368,7 +368,7 @@ public class DiskServiceTest {
       }
 
       service = null;
-      dcpRestClient.stop();
+      xenonRestClient.stop();
     }
 
     /**
@@ -379,7 +379,7 @@ public class DiskServiceTest {
     @Test
     public void testDefaultExpirationIsNotAppliedIfItIsAlreadySpecifiedInCurrentState() throws Throwable {
       TestHelper.testExpirationOnDelete(
-          dcpRestClient,
+          xenonRestClient,
           host,
           DiskServiceFactory.SELF_LINK,
           testState,
@@ -397,7 +397,7 @@ public class DiskServiceTest {
     @Test
     public void testDefaultExpirationIsNotAppliedIfItIsAlreadySpecifiedInDeleteOperation() throws Throwable {
       TestHelper.testExpirationOnDelete(
-          dcpRestClient,
+          xenonRestClient,
           host,
           DiskServiceFactory.SELF_LINK,
           testState,
@@ -415,7 +415,7 @@ public class DiskServiceTest {
     @Test
     public void testDeleteWithDefaultExpiration() throws Throwable {
       TestHelper.testExpirationOnDelete(
-          dcpRestClient,
+          xenonRestClient,
           host,
           DiskServiceFactory.SELF_LINK,
           testState,

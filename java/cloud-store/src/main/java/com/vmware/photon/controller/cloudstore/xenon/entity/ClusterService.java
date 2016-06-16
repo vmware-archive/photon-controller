@@ -31,7 +31,7 @@ import com.vmware.xenon.common.StatefulService;
 import java.util.Map;
 
 /**
- * This class implements a DCP micro-service which provides a plain data object
+ * This class implements a Xenon micro-service which provides a plain data object
  * representing a cluster.
  */
 public class ClusterService extends StatefulService {

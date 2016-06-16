@@ -48,7 +48,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class NetworkServiceTest {
 
-  private XenonRestClient dcpRestClient;
+  private XenonRestClient xenonRestClient;
   private BasicServiceHost host;
   private NetworkService service;
   private NetworkService.State testNetwork;
@@ -98,8 +98,8 @@ public class NetworkServiceTest {
 
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-      dcpRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
-      dcpRestClient.start();
+      xenonRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
+      xenonRestClient.start();
 
       testNetwork = new NetworkService.State();
       testNetwork.name = "dummyName";
@@ -118,7 +118,7 @@ public class NetworkServiceTest {
       }
 
       service = null;
-      dcpRestClient.stop();
+      xenonRestClient.stop();
     }
 
     /**
@@ -130,7 +130,7 @@ public class NetworkServiceTest {
     public void testStartState() throws Throwable {
       host.startServiceSynchronously(new NetworkServiceFactory(), null);
 
-      Operation result = dcpRestClient.post(NetworkServiceFactory.SELF_LINK, testNetwork);
+      Operation result = xenonRestClient.post(NetworkServiceFactory.SELF_LINK, testNetwork);
 
       assertThat(result.getStatusCode(), is(200));
       NetworkService.State createdState = result.getBody(NetworkService.State.class);
@@ -340,8 +340,8 @@ public class NetworkServiceTest {
 
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-      dcpRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
-      dcpRestClient.start();
+      xenonRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
+      xenonRestClient.start();
 
       testState = new NetworkService.State();
       testState.name = "n1";
@@ -359,7 +359,7 @@ public class NetworkServiceTest {
       }
 
       service = null;
-      dcpRestClient.stop();
+      xenonRestClient.stop();
     }
 
     /**
@@ -370,7 +370,7 @@ public class NetworkServiceTest {
     @Test
     public void testDefaultExpirationIsNotAppliedIfItIsAlreadySpecifiedInCurrentState() throws Throwable {
       TestHelper.testExpirationOnDelete(
-          dcpRestClient,
+          xenonRestClient,
           host,
           NetworkServiceFactory.SELF_LINK,
           testState,
@@ -388,7 +388,7 @@ public class NetworkServiceTest {
     @Test
     public void testDefaultExpirationIsNotAppliedIfItIsAlreadySpecifiedInDeleteOperation() throws Throwable {
       TestHelper.testExpirationOnDelete(
-          dcpRestClient,
+          xenonRestClient,
           host,
           NetworkServiceFactory.SELF_LINK,
           testState,
@@ -406,7 +406,7 @@ public class NetworkServiceTest {
     @Test
     public void testDeleteWithDefaultExpiration() throws Throwable {
       TestHelper.testExpirationOnDelete(
-          dcpRestClient,
+          xenonRestClient,
           host,
           NetworkServiceFactory.SELF_LINK,
           testState,
