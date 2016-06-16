@@ -32,7 +32,6 @@ task removeServicebase(type: DockerRemoveImage) {
 
 task photon() {
   dependsOn(
-    ":api-frontend:management:container",
     ":photon-controller-core:container"
   )
 }

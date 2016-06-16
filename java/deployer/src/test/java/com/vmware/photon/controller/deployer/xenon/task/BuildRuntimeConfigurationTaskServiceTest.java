@@ -69,7 +69,7 @@ public class BuildRuntimeConfigurationTaskServiceTest {
   /**
    * This dummy test case enables IntelliJ to recognize this as a test class.
    */
-  @Test(enabled = false)
+  @Test(enabled = true)
   public void dummy() {
   }
 

@@ -151,7 +151,7 @@ public class ApiFeService extends Application<ApiFeStaticConfiguration> {
    * `management db migrate /etc/esxcloud/management-api.yml`
    * as in {@link io.dropwizard.migrations.DbCommand}
    */
-  private static void setupApiFeConfigurationForServerCommand(String[] args)
+  public static void setupApiFeConfigurationForServerCommand(String[] args)
       throws IOException, ConfigurationException {
     if (args.length == 2 && "server".equals(args[0])) {
       apiFeConfiguration = ConfigurationUtils.parseConfiguration(args[1]);

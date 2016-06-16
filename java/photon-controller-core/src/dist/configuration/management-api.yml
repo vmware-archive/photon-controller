@@ -1,0 +1,68 @@
+server:
+  minThreads: 8
+  maxThreads: 512
+  registerDefaultExceptionMappers: false
+  applicationConnectors:
+    - type: http
+      port: 9000
+      bindHost: "0.0.0.0"
+
+registrationAddress: "{{{REGISTRATION_ADDRESS}}}"
+
+use_virtual_network: {{{USE_VIRTUAL_NETWORK}}}
+
+# to add console logging add '- type: console' below
+logging:
+  appenders:
+    - type: file
+      currentLogFilename: {{{LOG_DIRECTORY}}}/management-api.log
+      archive: true
+      archivedLogFilenamePattern: {{{LOG_DIRECTORY}}}/management-api-%d.log.gz
+      archivedFileCount: 5
+      logFormat: "%-5p [%d{ISO8601}]%X{request}%X{task} %c: %m\n%ex"
+{{#ENABLE_SYSLOG}}
+    - type: syslog
+      host: "{{{SYSLOG_ENDPOINT}}}"
+      logFormat: "%-5p [%d{ISO8601}] [management-api] %X{request}%X{task} %c: %m\n%ex"
+      facility: LOCAL0
+{{/ENABLE_SYSLOG}}
+
+zookeeper:
+  quorum: "{{{ZOOKEEPER_QUORUM}}}"
+
+{{#USE_ESX_STORE}}
+image:
+  use_esx_store: true
+{{#ESX_HOST}}
+  endpoint: https://{{{ESX_HOST}}}/sdk
+  datastore: {{{DATASTORE}}}
+{{/ESX_HOST}}
+{{/USE_ESX_STORE}}
+{{^USE_ESX_STORE}}
+image:
+  use_esx_store: false
+  datastore: {{{DATASTORE}}}
+{{/USE_ESX_STORE}}
+
+{{#ENABLE_INSTALLER_STATUS_FILTER}}
+status:
+  components:
+    - deployer
+    - cloudStore
+    - housekeeper
+{{/ENABLE_INSTALLER_STATUS_FILTER}}
+
+auth:
+  enable_auth: {{{ENABLE_AUTH}}}
+{{#ENABLE_AUTH}}
+  sharedSecret: {{{SHARED_SECRET}}}
+{{#AUTH_SERVER_ADDRESS}}
+  auth_server_address: {{{AUTH_SERVER_ADDRESS}}}
+{{/AUTH_SERVER_ADDRESS}}
+{{#AUTH_SERVER_PORT}}
+  auth_server_port: {{{AUTH_SERVER_PORT}}}
+{{/AUTH_SERVER_PORT}}
+{{#AUTH_SERVER_TENANT}}
+  tenant: {{{AUTH_SERVER_TENANT}}}
+{{/AUTH_SERVER_TENANT}}
+{{/ENABLE_AUTH}}

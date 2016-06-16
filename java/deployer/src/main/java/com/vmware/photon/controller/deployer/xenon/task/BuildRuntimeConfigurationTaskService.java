@@ -438,7 +438,7 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
         dynamicParameters.put(MUSTACHE_KEY_LIGHTWAVE_DOMAIN, deploymentState.oAuthTenantName);
         dynamicParameters.put(MUSTACHE_KEY_LIGHTWAVE_PASSWORD, deploymentState.oAuthPassword);
         break;
-      case ManagementApi:
+      case PhotonControllerCore:
         dynamicParameters.put(MUSTACHE_KEY_MGMT_API_DATASTORE, deploymentState.imageDataStoreNames.iterator().next());
         dynamicParameters.put(MUSTACHE_KEY_MGMT_API_USE_VIRTUAL_NETWORK,
             String.valueOf(deploymentState.virtualNetworkEnabled));
@@ -479,7 +479,6 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
     //
 
     switch (currentState.containerType) {
-      case ManagementApi:
       case PhotonControllerCore:
         if (!currentState.dynamicParameters.containsKey(MUSTACHE_KEY_COMMON_ZOOKEEPER_QUORUM)) {
           getIpsForContainerType(ContainersConfig.ContainerType.Zookeeper,
@@ -564,27 +563,6 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
                   vmIpAddresses.iterator().next()));
           return;
         }
-        break;
-
-      //
-      // The load balancer requires knowledge of the management API IP addresses so that it can
-      // load balance traffic across them.
-      //
-
-      case LoadBalancer:
-        if (!currentState.dynamicParameters.containsKey(MUSTACHE_KEY_HAPROXY_MGMT_API_HTTP_SERVERS)) {
-          getIpsForContainerType(ContainersConfig.ContainerType.ManagementApi,
-              (vmIpAddresses) -> patchLoadBalancerParameters(currentState, vmIpAddresses));
-          return;
-        }
-        break;
-
-      //
-      // The management API server requires information about the host and data store to use for
-      // image upload as well as the address of the Lightwave server, if one is present.
-      //
-
-      case ManagementApi:
         if (!currentState.dynamicParameters.containsKey(MUSTACHE_KEY_MGMT_API_ESX_HOST)) {
           patchEsxHostState(currentState);
           return;
@@ -595,6 +573,19 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
           getIpsForContainerType(ContainersConfig.ContainerType.Lightwave,
               (vmIpAddresses) -> patchDynamicParameter(currentState, MUSTACHE_KEY_MGMT_API_AUTH_SERVER_ADDRESS,
                   vmIpAddresses.iterator().next()));
+          return;
+        }
+        break;
+
+      //
+      // The load balancer requires knowledge of the management API IP addresses so that it can
+      // load balance traffic across them.
+      //
+
+      case LoadBalancer:
+        if (!currentState.dynamicParameters.containsKey(MUSTACHE_KEY_HAPROXY_MGMT_API_HTTP_SERVERS)) {
+          getIpsForContainerType(ContainersConfig.ContainerType.PhotonControllerCore,
+              (vmIpAddresses) -> patchLoadBalancerParameters(currentState, vmIpAddresses));
           return;
         }
         break;

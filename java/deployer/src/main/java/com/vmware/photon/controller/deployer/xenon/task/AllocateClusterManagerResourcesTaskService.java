@@ -209,7 +209,7 @@ public class AllocateClusterManagerResourcesTaskService extends StatefulService 
 
     QueryTask.Query containerNameClause = new QueryTask.Query()
         .setTermPropertyName(ContainerTemplateService.State.FIELD_NAME_NAME)
-        .setTermMatchValue(ContainersConfig.ContainerType.ManagementApi.name());
+        .setTermMatchValue(ContainersConfig.ContainerType.PhotonControllerCore.name());
 
     QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
     querySpecification.query.addBooleanClause(kindClause);
