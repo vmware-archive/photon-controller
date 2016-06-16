@@ -311,6 +311,8 @@ public class ImageSeederSyncServiceTest {
       state.name = "image-1";
       state.replicationType = ImageReplicationType.EAGER;
       state.state = imageState;
+      state.totalDatastore = 1;
+      state.totalImageDatastore = 1;
 
       Operation op = cloudStoreHelper
           .createPost(ImageServiceFactory.SELF_LINK)
