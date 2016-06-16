@@ -29,7 +29,7 @@ describe EsxCloud::Status do
          "status": "READY",
          "instances": [
             {
-               "address": "/172.31.253.66:16000",
+               "address": "/172.31.253.66:19000",
                "status": "READY"
             }
          ],
@@ -55,7 +55,7 @@ describe EsxCloud::Status do
          "status": "READY",
          "instances": [
             {
-               "address": "/172.31.253.66:13010",
+               "address": "/172.31.253.66:19000",
                "status": "READY"
             }
          ],
@@ -104,11 +104,11 @@ CONTENT
     it "should return string properly" do
       expect(status.to_s).to eq "status: READY\ncomponents:\n" +
                                   "HOUSEKEEPER: READY, message: , stats: {\"READY\"=>\"1\"}\ninstances:\n" +
-                                  "/172.31.253.66:16000: READY, message: , stats: \n" +
+                                  "/172.31.253.66:19000: READY, message: , stats: \n" +
                                   "CHAIRMAN: READY, message: , stats: {\"READY\"=>\"1\"}\ninstances:\n" +
                                   "/172.31.253.66:13000: READY, message: , stats: \n" +
                                   "ROOT_SCHEDULER: READY, message: , stats: {\"READY\"=>\"1\"}\ninstances:\n" +
-                                  "/172.31.253.66:13010: READY, message: , stats: \n" +
+                                  "/172.31.253.66:19000: READY, message: , stats: \n" +
                                   "DEPLOYER: READY, message: , stats: {\"READY\"=>\"1\"}\ninstances:\n" +
                                   "/172.31.253.66:18000: READY, message: , stats: "
     end

@@ -29,7 +29,7 @@ describe EsxCloud::ApiClient do
           "status" => "READY",
           "instances" => [
             {
-              "address" => "/172.31.253.66=>16000",
+              "address" => "/172.31.253.66=>19000",
               "status" => "READY"
             }
           ],
@@ -55,7 +55,7 @@ describe EsxCloud::ApiClient do
           "status" => "READY",
           "instances" => [
             {
-              "address" => "/172.31.253.66=>13010",
+              "address" => "/172.31.253.66=>19000",
               "status" => "READY"
             }
           ],
