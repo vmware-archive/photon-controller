@@ -322,12 +322,11 @@ public class ImageServiceTest {
 
     /**
      * Test patch to adjust replicated datastore count where we end up with a count greater than total
-     * datastores.
+     * datastores, we'll cap the replicated datastore count to be total datastore count.
      *
      * @throws Throwable
      */
-    @Test(expectedExceptions = BadRequestException.class,
-        expectedExceptionsMessageRegExp = "Replicated datastore count exceeds total datastore count.")
+    @Test
     public void testReplicatedDatastoreCountExceedsTotalCount() throws Throwable {
       host.startServiceSynchronously(service, testState);
 
@@ -339,7 +338,11 @@ public class ImageServiceTest {
           .createPatch(UriUtils.buildUri(host, BasicServiceHost.SERVICE_URI, null))
           .setBody(requestBody);
 
-      host.sendRequestAndWait(patch);
+      Operation op = host.sendRequestAndWait(patch);
+      ImageService.State createdState = op.getBody(ImageService.State.class);
+      ImageService.State savedState = host.getServiceState(ImageService.State.class, createdState.documentSelfLink);
+      assertThat(savedState.replicatedDatastore, equalTo(savedState.totalDatastore));
+
     }
 
     /**
@@ -397,12 +400,11 @@ public class ImageServiceTest {
 
     /**
      * Test patch to adjust replicated image datastore count where we end up with a count greater than total
-     * datastores.
+     * datastores, we'll cap the seeded datastore count to be total image datastore count.
      *
      * @throws Throwable
      */
-    @Test(expectedExceptions = BadRequestException.class,
-        expectedExceptionsMessageRegExp = "Replicated datastore count exceeds total datastore count.")
+    @Test
     public void testReplicatedImageDatastoreCountExceedsTotalCount() throws Throwable {
       host.startServiceSynchronously(service, testState);
 
