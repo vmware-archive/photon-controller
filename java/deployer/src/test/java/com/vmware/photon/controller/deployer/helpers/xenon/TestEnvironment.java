@@ -22,7 +22,6 @@ import com.vmware.photon.controller.common.xenon.MultiHostEnvironment;
 import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
 import com.vmware.photon.controller.common.xenon.host.XenonConfig;
 import com.vmware.photon.controller.common.xenon.scheduler.TaskSchedulerServiceStateBuilder;
-import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfiguratorFactory;
 import com.vmware.photon.controller.deployer.deployengine.ApiClientFactory;
 import com.vmware.photon.controller.deployer.deployengine.AuthHelperFactory;
@@ -80,7 +79,6 @@ public class TestEnvironment extends MultiHostEnvironment<PhotonControllerXenonH
       AuthHelperFactory authHelperFactory,
       HealthCheckHelperFactory healthCheckHelperFactory,
       ServiceConfiguratorFactory serviceConfiguratorFactory,
-      ServiceConfigFactory serviceConfigFactory,
       ZookeeperClientFactory zookeeperServerSetBuilderFactory,
       HostManagementVmAddressValidatorFactory hostManagementVmAddressValidatorFactory,
       NsxClientFactory nsxClientFactory,
@@ -107,7 +105,6 @@ public class TestEnvironment extends MultiHostEnvironment<PhotonControllerXenonH
           xenonConfig,
           hostClientFactory,
           agentControlClientFactory,
-          serviceConfigFactory,
           nsxClientFactory,
           cloudStoreHelper);
 
@@ -150,7 +147,6 @@ public class TestEnvironment extends MultiHostEnvironment<PhotonControllerXenonH
     private HostClientFactory hostClientFactory;
     private HealthCheckHelperFactory healthCheckHelperFactory;
     private ServiceConfiguratorFactory serviceConfiguratorFactory;
-    private ServiceConfigFactory serviceConfigFactory;
     private Integer hostCount;
     private ListeningExecutorService listeningExecutorService;
     private HttpFileServiceClientFactory httpFileServiceClientFactory;
@@ -232,11 +228,6 @@ public class TestEnvironment extends MultiHostEnvironment<PhotonControllerXenonH
       return this;
     }
 
-    public Builder serviceConfigFactory(ServiceConfigFactory factory) {
-      this.serviceConfigFactory = factory;
-      return this;
-    }
-
     public Builder zookeeperServersetBuilderFactory(ZookeeperClientFactory zookeeperServerSetBuilderFactory) {
       this.zookeeperServerSetBuilderFactory = zookeeperServerSetBuilderFactory;
       return this;
@@ -268,10 +259,6 @@ public class TestEnvironment extends MultiHostEnvironment<PhotonControllerXenonH
         this.hostClientFactory = mock(HostClientFactory.class);
       }
 
-      if (this.serviceConfigFactory == null) {
-        this.serviceConfigFactory = mock(ServiceConfigFactory.class);
-      }
-
       if (this.nsxClientFactory == null) {
         this.nsxClientFactory = mock(NsxClientFactory.class);
       }
@@ -292,7 +279,6 @@ public class TestEnvironment extends MultiHostEnvironment<PhotonControllerXenonH
           this.authHelperFactory,
           this.healthCheckHelperFactory,
           this.serviceConfiguratorFactory,
-          this.serviceConfigFactory,
           this.zookeeperServerSetBuilderFactory,
           this.hostManagementVmAddressValidatorFactory,
           this.nsxClientFactory,
