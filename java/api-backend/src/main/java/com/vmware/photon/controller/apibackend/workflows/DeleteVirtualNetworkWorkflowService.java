@@ -334,7 +334,7 @@ public class DeleteVirtualNetworkWorkflowService extends BaseWorkflowService<Del
             switch (result.taskState.stage) {
               case FINISHED:
                 try {
-                  updateVirtualNetwork(state);
+                  deleteVirtualNetwork(state);
                 } catch (Throwable t) {
                   fail(state, t);
                 }
@@ -376,16 +376,12 @@ public class DeleteVirtualNetworkWorkflowService extends BaseWorkflowService<Del
   }
 
   /**
-   * Updates a VirtualNetworkService.State from {@link com.vmware.photon.controller.cloudstore.xenon.entity
-   * .VirtualNetworkService.State} entity in cloud-store.
+   * Deletes a {@link com.vmware.photon.controller.cloudstore.xenon.entity.VirtualNetworkService.State} entity
+   * from cloud-store.
    */
-  private void updateVirtualNetwork(DeleteVirtualNetworkWorkflowDocument state) {
-    VirtualNetworkService.State virtualNetworkPatchState = new VirtualNetworkService.State();
-    virtualNetworkPatchState.state = NetworkState.DELETED;
-
+  private void deleteVirtualNetwork(DeleteVirtualNetworkWorkflowDocument state) {
     ServiceHostUtils.getCloudStoreHelper(getHost())
-        .createPatch(state.taskServiceEntity.documentSelfLink)
-        .setBody(virtualNetworkPatchState)
+        .createDelete(state.taskServiceEntity.documentSelfLink)
         .setCompletion((op, ex) -> {
           if (ex != null) {
             fail(state, ex);
