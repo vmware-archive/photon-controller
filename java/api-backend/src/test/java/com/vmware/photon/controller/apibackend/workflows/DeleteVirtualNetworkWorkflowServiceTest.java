@@ -27,6 +27,7 @@ import com.vmware.photon.controller.common.tests.nsx.NsxClientMock;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
+import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
 import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.WriteOnce;
@@ -47,6 +48,7 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.testng.Assert.fail;
 
 import java.lang.reflect.Field;
 import java.util.EnumSet;
@@ -701,12 +703,13 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
       assertThat(finalState.taskServiceState, notNullValue());
       assertThat(finalState.taskServiceState.state, is(TaskService.State.TaskState.COMPLETED));
 
-      // Verifies that the virtual network entity is set to DELETED in cloud-store.
-      VirtualNetworkService.State savedVirtualNetworkDocument = testEnvironment.getServiceState(
-          finalState.taskServiceEntity.documentSelfLink,
-          VirtualNetworkService.State.class);
-      assertThat(savedVirtualNetworkDocument, notNullValue());
-      assertThat(savedVirtualNetworkDocument.state, is(NetworkState.DELETED));
+      // Verifies that the virtual network entity is DELETED from cloud-store.
+      try {
+        testEnvironment.getServiceState(
+            finalState.taskServiceEntity.documentSelfLink, VirtualNetworkService.State.class);
+        fail("should have failed to find deleted document");
+      } catch (DocumentNotFoundException ex) {
+      }
     }
 
     /**
