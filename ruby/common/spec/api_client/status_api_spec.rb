@@ -25,11 +25,11 @@ describe EsxCloud::ApiClient do
     {
       "components" => [
         {
-          "component" => "HOUSEKEEPER",
+          "component" => "PHOTON_CONTROLLER",
           "status" => "READY",
           "instances" => [
             {
-              "address" => "/172.31.253.66=>16000",
+              "address" => "/172.31.253.66=>19000",
               "status" => "READY"
             }
           ],
@@ -43,19 +43,6 @@ describe EsxCloud::ApiClient do
           "instances" => [
             {
               "address" => "/172.31.253.66=>13000",
-              "status" => "READY"
-            }
-          ],
-          "stats" => {
-            "READY" => "1"
-          }
-        },
-        {
-          "component" => "ROOT_SCHEDULER",
-          "status" => "READY",
-          "instances" => [
-            {
-              "address" => "/172.31.253.66=>13010",
               "status" => "READY"
             }
           ],

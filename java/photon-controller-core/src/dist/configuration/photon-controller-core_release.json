@@ -8,7 +8,6 @@
   "useHostNetwork": true,
   "containerImage": "esxcloud/photon-controller-core",
   "portBindings": {
-    "16000": 16000,
     "18000": 18000,
     "19000": 19000
   },
