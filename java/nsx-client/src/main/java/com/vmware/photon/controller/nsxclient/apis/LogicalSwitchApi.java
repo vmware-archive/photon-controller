@@ -103,4 +103,14 @@ public class LogicalSwitchApi extends NsxClientApi {
         HttpStatus.SC_OK,
         responseCallback);
   }
+
+  /**
+   * Check the existence of a logical switch port.
+   * @param id
+   * @param responseCallback
+   * @throws IOException
+   */
+  public void checkLogicalSwitchPortExistence(String id, FutureCallback<Boolean> responseCallback) throws IOException {
+    checkExistenceAsync(logicalPortBasePath + "/" + id, responseCallback);
+  }
 }
