@@ -54,6 +54,18 @@ namespace "esxcloud" do
     task.pattern = FileList['spec/api/**/*_spec.rb']
     task.rspec_opts = "--tag life_cycle --format RspecJunitFormatter --out reports/rspec-life-cycle.xml --tag ~slow --profile"
   end
+
+  desc "Run virtual network integration tests"
+  RSpec::Core::RakeTask.new(:virtual_network) do |task|
+    task.pattern = FileList['spec/api/virtual_network/*_spec.rb']
+    task.rspec_opts = "--tag virtual_network --format RspecJunitFormatter  --out reports/rspec-virtual-network.xml --tag ~slow --profile"
+  end
+
+  desc "Run VM integration tests on virtual network"
+  RSpec::Core::RakeTask.new(:vm_on_virtual_network) do |task|
+    task.pattern = FileList['spec/api/vm/vm_lifecycle_spec.rb']
+    task.rspec_opts = "--tag management --format RspecJunitFormatter --out reports/rspec-api.xml --tag ~slow --profile"
+  end
 end
 
 namespace :seed do
@@ -234,14 +246,6 @@ namespace "agent" do
     EsxCloud::Config.client = ApiClientHelper.management
     task.pattern = FileList['spec/agent/stats_spec.rb']
     task.rspec_opts = "--tag stats --format RspecJunitFormatter --out reports/rspec-stats.xml --tag ~slow"
-  end
-end
-
-namespace "virtual_network" do
-  desc "Virtual network integration tests"
-  RSpec::Core::RakeTask.new(:virtual_network) do |task|
-    task.pattern = FileList['spec/api/virtual_network/*_spec.rb']
-    task.rspec_opts = "--tag virtual_network --out reports/rspec-virtual-network.xml --tag ~slow"
   end
 end
 

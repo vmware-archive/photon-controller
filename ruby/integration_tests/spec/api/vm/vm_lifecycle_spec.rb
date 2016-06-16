@@ -33,7 +33,7 @@ describe "VM lifecycle", life_cycle: true do
     N_VMS = (ENV["N_VMS"] || 0).to_i
     N_EXPECTED_PASS_RATE = (ENV["N_EXPECTED_PASS_RATE"] || 100).to_i
 
-    it "should succeed creating 15 VMs simultaneously" do
+    xit "should succeed creating 15 VMs simultaneously" do
       create_vms_simultaneously(15, @seeder.tenant!, @seeder.vm_flavor!, @seeder.persistent_disk_flavor!, 100)
       puts "create 15 vms simultaneously completed"
     end
