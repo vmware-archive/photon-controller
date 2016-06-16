@@ -640,7 +640,7 @@ public class CreateManagementPlaneLayoutWorkflowServiceTest {
     private void populateInvalidContainersConfig() {
       ContainersConfig.Spec spec = new ContainersConfig.Spec();
       spec.setCpuCount(-1);
-      spec.setType(ContainersConfig.ContainerType.ManagementApi.name());
+      spec.setType(ContainersConfig.ContainerType.PhotonControllerCore.name());
 
       containersConfig = new ContainersConfig();
       containersConfig.setContainers(Collections.singletonList(spec));

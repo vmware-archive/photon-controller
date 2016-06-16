@@ -1,5 +1,7 @@
 {
+  AUTH_SERVER_ADDRESS=0.0.0.0,
   "ENABLE_SYSLOG": "true",
+  "ESX_HOST": "hostAddress",
   "SHARED_SECRET": "shared-secret",
   "APIFE_IP": "0.0.0.0",
   "ENABLE_AUTH": "true",

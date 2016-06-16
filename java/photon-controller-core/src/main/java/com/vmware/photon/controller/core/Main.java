@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.core;
 
+import com.vmware.photon.controller.apife.ApiFeService;
 import com.vmware.photon.controller.cloudstore.CloudStoreConfig;
 import com.vmware.photon.controller.cloudstore.xenon.CloudStoreServiceGroup;
 import com.vmware.photon.controller.clustermanager.ClusterManagerFactory;
@@ -96,6 +97,7 @@ public class Main {
         .defaultHelp(true)
         .description("Photon Controller Core");
     parser.addArgument("config-file").help("photon controller configuration file");
+    parser.addArgument("api-config-file").help("photon controller api configuration file");
 
     Namespace namespace = parser.parseArgsOrFail(args);
 
@@ -112,6 +114,14 @@ public class Main {
 
     ServiceHost xenonHost = startXenonHost(photonControllerConfig, zkModule, thriftModule);
     ServiceHost deployerHost = startDeployer(deployerConfig, zkModule, thriftModule);
+
+    // This approach can be simplified once the apife container is gone, but for the time being
+    // it expects the first arg to be the string "server".
+    String[] apiFeArgs = new String[2];
+    apiFeArgs[0] = "server";
+    apiFeArgs[1] = args[1];
+    ApiFeService.setupApiFeConfigurationForServerCommand(apiFeArgs);
+    new ApiFeService().run(apiFeArgs);
 
     Runtime.getRuntime().addShutdownHook(new Thread() {
       @Override

@@ -608,7 +608,7 @@ public class AllocateClusterManagerResourcesTaskServiceTest {
 
       ContainerTemplateService.State containerTemplateState =
           ReflectionUtils.buildValidStartState(ContainerTemplateService.State.class);
-      containerTemplateState.name = ContainersConfig.ContainerType.ManagementApi.name();
+      containerTemplateState.name = ContainersConfig.ContainerType.PhotonControllerCore.name();
       containerTemplateState.cpuCount = 1;
       containerTemplateState.memoryMb = 1024L;
       containerTemplateState.diskGb = 1;
