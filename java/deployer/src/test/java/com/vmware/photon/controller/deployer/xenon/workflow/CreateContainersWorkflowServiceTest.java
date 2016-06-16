@@ -20,7 +20,6 @@ import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
-import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
 import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.deployengine.DockerProvisioner;
 import com.vmware.photon.controller.deployer.deployengine.DockerProvisionerFactory;
@@ -881,9 +880,6 @@ public class CreateContainersWorkflowServiceTest {
       ZookeeperClientFactory zkFactory = mock(ZookeeperClientFactory.class);
       ZookeeperClient zkBuilder = mock(ZookeeperClient.class);
       doReturn(zkBuilder).when(zkFactory).create();
-      doReturn(mock(ServiceConfig.class))
-          .when(zkBuilder)
-          .getServiceConfig(anyString(), anyString());
       return new TestEnvironment.Builder()
           .containersConfig(deployerConfig.getContainersConfig())
           .deployerContext(deployerConfig.getDeployerContext())
