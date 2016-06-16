@@ -111,7 +111,7 @@ public class DeleteLogicalPortsTask extends ServiceDocument {
   /**
    * Execution delay time to verify a port has been deleted.
    */
-  @DefaultInteger(10)
+  @DefaultInteger(1000)
   @Immutable
   public Integer executionDelay;
 
