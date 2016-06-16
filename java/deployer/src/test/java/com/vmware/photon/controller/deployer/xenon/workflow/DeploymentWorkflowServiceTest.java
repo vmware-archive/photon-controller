@@ -32,7 +32,6 @@ import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
-import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
 import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfiguratorFactory;
 import com.vmware.photon.controller.deployer.deployengine.ApiClientFactory;
@@ -702,9 +701,6 @@ public class DeploymentWorkflowServiceTest {
       doReturn(Collections.singleton(new InetSocketAddress("127.0.0.1", remoteStore.getHosts()[0].getState().httpPort)))
           .when(zkBuilder)
           .getServers(Matchers.startsWith("0.0.0"), eq("cloudstore"));
-      doReturn(mock(ServiceConfig.class))
-          .when(zkBuilder)
-          .getServiceConfig(anyString(), anyString());
 
       InetSocketAddress address = remoteStore.getServerSet().getServers().iterator().next();
       doReturn(Collections.singleton(address))
