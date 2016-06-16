@@ -32,6 +32,7 @@ import org.testng.annotations.Test;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -580,6 +581,86 @@ public class LogicalSwitchApiTest {
               }
             }
         );
+        latch.await();
+      }
+    }
+
+    /**
+     * Tests for checking logical switch ports existence.
+     */
+    public static class LogicalPortCheckExistenceTest {
+      private static final int CALLBACK_ARG_INDEX = 1;
+
+      private LogicalSwitchApi logicalSwitchApi;
+      private CountDownLatch latch;
+
+      @BeforeMethod
+      public void setup() {
+        logicalSwitchApi = spy(new LogicalSwitchApi(mock(RestClient.class)));
+        latch = new CountDownLatch(1);
+      }
+
+      @Test
+      public void testCheckLogicalPortExistence() throws Exception {
+        Boolean existing = true;
+
+        doAnswer(invocation -> {
+          if (invocation.getArguments()[CALLBACK_ARG_INDEX] != null) {
+            ((FutureCallback<Boolean>) invocation.getArguments()[CALLBACK_ARG_INDEX])
+                .onSuccess(existing);
+          }
+          return null;
+        }).when(logicalSwitchApi)
+            .checkExistenceAsync(anyString(), any(FutureCallback.class));
+
+        logicalSwitchApi.checkLogicalSwitchPortExistence(UUID.randomUUID().toString(),
+            new FutureCallback<Boolean>() {
+              @Override
+              public void onSuccess(Boolean result) {
+                assertThat(result, is(existing));
+                latch.countDown();
+              }
+
+              @Override
+              public void onFailure(Throwable t) {
+                fail("Should not have failed");
+                latch.countDown();
+              }
+            }
+        );
+
+        latch.await();
+      }
+
+      @Test
+      public void testFailedToCheckLogicalPortExistence() throws Exception {
+        final String errorMsg = "Not found";
+
+        doAnswer(invocation -> {
+          if (invocation.getArguments()[CALLBACK_ARG_INDEX] != null) {
+            ((FutureCallback<Boolean>) invocation.getArguments()[CALLBACK_ARG_INDEX])
+                .onFailure(new Exception(errorMsg));
+          }
+          return null;
+        }).when(logicalSwitchApi)
+            .checkExistenceAsync(anyString(), any(FutureCallback.class));
+
+        logicalSwitchApi.checkLogicalSwitchPortExistence(UUID.randomUUID().toString(),
+            new FutureCallback<Boolean>() {
+              @Override
+              public void onSuccess(Boolean result) {
+                fail("Should not have succeeded");
+                latch.countDown();
+              }
+
+              @Override
+              public void onFailure(Throwable t) {
+                assertThat(t.getMessage(), is(errorMsg));
+                latch.countDown();
+              }
+            }
+        );
+
         latch.await();
       }
     }
