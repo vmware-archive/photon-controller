@@ -19,7 +19,6 @@ import com.vmware.photon.controller.common.xenon.MultiHostEnvironment;
 import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
 import com.vmware.photon.controller.common.xenon.host.XenonConfig;
 import com.vmware.photon.controller.common.xenon.scheduler.TaskSchedulerServiceStateBuilder;
-import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
 import com.vmware.photon.controller.housekeeper.xenon.HousekeeperServiceGroup;
 import com.vmware.photon.controller.nsxclient.NsxClientFactory;
 
@@ -37,7 +36,6 @@ public class TestEnvironment extends MultiHostEnvironment<PhotonControllerXenonH
 
   public TestEnvironment(CloudStoreHelper cloudStoreHelper,
                          HostClientFactory hostClientFactory,
-                         ServiceConfigFactory serviceConfigFactory,
                          NsxClientFactory nsxClientFactory,
                          int hostCount) throws Throwable {
 
@@ -56,7 +54,6 @@ public class TestEnvironment extends MultiHostEnvironment<PhotonControllerXenonH
           xenonConfig,
           hostClientFactory,
           null,
-          serviceConfigFactory,
           nsxClientFactory,
           cloudStoreHelper);
       HousekeeperServiceGroup housekeeperServiceGroup = new HousekeeperServiceGroup();
@@ -86,7 +83,6 @@ public class TestEnvironment extends MultiHostEnvironment<PhotonControllerXenonH
   public static class Builder {
     CloudStoreHelper cloudStoreHelper;
     HostClientFactory hostClientFactory;
-    ServiceConfigFactory serviceConfigFactory;
     NsxClientFactory nsxClientFactory;
     Integer hostCount;
 
@@ -97,11 +93,6 @@ public class TestEnvironment extends MultiHostEnvironment<PhotonControllerXenonH
 
     public Builder hostClientFactory(HostClientFactory factory) {
       this.hostClientFactory = factory;
-      return this;
-    }
-
-    public Builder serviceConfigFactory(ServiceConfigFactory factory) {
-      this.serviceConfigFactory = factory;
       return this;
     }
 
@@ -136,11 +127,6 @@ public class TestEnvironment extends MultiHostEnvironment<PhotonControllerXenonH
         hostClientFactory = mock(HostClientFactory.class);
       }
 
-      ServiceConfigFactory serviceConfigFactory = this.serviceConfigFactory;
-      if (serviceConfigFactory == null) {
-        serviceConfigFactory = mock(ServiceConfigFactory.class);
-      }
-
       NsxClientFactory nsxClientFactory = this.nsxClientFactory;
       if (nsxClientFactory == null) {
         nsxClientFactory = mock(NsxClientFactory.class);
@@ -149,7 +135,6 @@ public class TestEnvironment extends MultiHostEnvironment<PhotonControllerXenonH
       TestEnvironment testEnvironment = new TestEnvironment(
           cloudStoreHelper,
           hostClientFactory,
-          serviceConfigFactory,
           nsxClientFactory,
           this.hostCount);
       testEnvironment.start();

@@ -36,6 +36,9 @@ import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.backends.clients.DeployerClient;
 import com.vmware.photon.controller.apife.commands.steps.DeploymentCreateStepCmd;
 import com.vmware.photon.controller.apife.commands.steps.DeploymentInitializeMigrationStepCmd;
+import com.vmware.photon.controller.apife.commands.steps.SystemPauseBackgroundTasksStepCmd;
+import com.vmware.photon.controller.apife.commands.steps.SystemPauseStepCmd;
+import com.vmware.photon.controller.apife.commands.steps.SystemResumeStepCmd;
 import com.vmware.photon.controller.apife.entities.DeploymentEntity;
 import com.vmware.photon.controller.apife.entities.EntityStateValidator;
 import com.vmware.photon.controller.apife.entities.StepEntity;
@@ -54,7 +57,6 @@ import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentServiceFactory;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
-import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
@@ -86,20 +88,15 @@ public class DeploymentXenonBackend implements DeploymentBackend {
   private final TombstoneBackend tombstoneBackend;
   private final HostXenonBackend hostBackend;
 
-  private final ServiceConfig serviceConfig;
-
   @Inject
   public DeploymentXenonBackend(
       ApiFeXenonRestClient xenonClient,
-                              ServiceConfig serviceConfig,
                               TaskBackend taskBackend,
                               TombstoneBackend tombstoneBackend,
                               TenantBackend tenantBackend,
                               HostXenonBackend hostBackend) {
     this.xenonClient = xenonClient;
     xenonClient.start();
-
-    this.serviceConfig = serviceConfig;
 
     this.taskBackend = taskBackend;
     this.tenantBackend = tenantBackend;
@@ -228,7 +225,10 @@ public class DeploymentXenonBackend implements DeploymentBackend {
         DeploymentState.OPERATION_PREREQ_STATE);
 
     TaskEntity taskEntity = this.taskBackend.createQueuedTask(deployment, Operation.PAUSE_SYSTEM);
-    this.taskBackend.getStepBackend().createQueuedStep(taskEntity, Operation.PAUSE_SYSTEM);
+    StepEntity stepEntity = this.taskBackend.getStepBackend().createQueuedStep(taskEntity, deployment, Operation
+        .PAUSE_SYSTEM);
+
+    stepEntity.createOrUpdateTransientResource(SystemPauseStepCmd.DEPLOYMENT_ID_RESOURCE_KEY, deploymentId);
     return taskEntity;
   }
 
@@ -239,7 +239,10 @@ public class DeploymentXenonBackend implements DeploymentBackend {
         DeploymentState.OPERATION_PREREQ_STATE);
 
     TaskEntity taskEntity = this.taskBackend.createQueuedTask(deployment, Operation.PAUSE_BACKGROUND_TASKS);
-    this.taskBackend.getStepBackend().createQueuedStep(taskEntity, Operation.PAUSE_BACKGROUND_TASKS);
+    StepEntity stepEntity = this.taskBackend.getStepBackend().createQueuedStep(taskEntity, Operation
+        .PAUSE_BACKGROUND_TASKS);
+    stepEntity.createOrUpdateTransientResource(SystemPauseBackgroundTasksStepCmd.DEPLOYMENT_ID_RESOURCE_KEY,
+        deploymentId);
     return taskEntity;
   }
 
@@ -250,7 +253,9 @@ public class DeploymentXenonBackend implements DeploymentBackend {
         DeploymentState.OPERATION_PREREQ_STATE);
 
     TaskEntity taskEntity = this.taskBackend.createQueuedTask(deployment, Operation.RESUME_SYSTEM);
-    this.taskBackend.getStepBackend().createQueuedStep(taskEntity, Operation.RESUME_SYSTEM);
+    StepEntity stepEntity = this.taskBackend.getStepBackend().createQueuedStep(taskEntity, Operation.RESUME_SYSTEM);
+    stepEntity.createOrUpdateTransientResource(SystemResumeStepCmd.DEPLOYMENT_ID_RESOURCE_KEY,
+        deploymentId);
     return taskEntity;
   }
 
@@ -264,7 +269,7 @@ public class DeploymentXenonBackend implements DeploymentBackend {
     Deployment deployment = new Deployment();
 
     deployment.setId(deploymentEntity.getId());
-    deployment.setState(this.generateState(deploymentEntity));
+    deployment.setState(deploymentEntity.getState());
     deployment.setImageDatastores(deploymentEntity.getImageDatastores());
     deployment.setSyslogEndpoint(deploymentEntity.getSyslogEndpoint());
 
@@ -298,24 +303,6 @@ public class DeploymentXenonBackend implements DeploymentBackend {
     deployment.setMigrationStatus(generateMigrationStatus(deploymentEntity));
 
     return deployment;
-  }
-
-  private DeploymentState generateState(DeploymentEntity deploymentEntity) {
-    if (deploymentEntity.getState() != DeploymentState.READY) {
-      return deploymentEntity.getState();
-    }
-
-    try {
-      if (serviceConfig.isPaused()) {
-        return DeploymentState.PAUSED;
-      } else if (serviceConfig.isBackgroundPaused()) {
-        return DeploymentState.BACKGROUND_PAUSED;
-      }
-    } catch (Exception ex) {
-      logger.warn("Getting serviceConfig isBackgroundPaused() or isPaused() throws error %s, ignoring...", ex);
-    }
-
-    return deploymentEntity.getState();
   }
 
   private MigrationStatus generateMigrationStatus(DeploymentEntity entity) {
