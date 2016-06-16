@@ -45,7 +45,7 @@ class TestVmManager(unittest.TestCase):
             vm.Destroy()
 
     def tearDown(self):
-        self.vim_client.disconnect(wait=True)
+        self.vim_client.disconnect()
 
     @patch('os.path.exists', return_value=True)
     def test_mks_ticket(self, _exists):

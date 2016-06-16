@@ -57,7 +57,7 @@ class HostClient(object):
         pass
 
     @abc.abstractmethod
-    def disconnect(self, wait=False):
+    def disconnect(self):
         pass
 
     @abc.abstractmethod
