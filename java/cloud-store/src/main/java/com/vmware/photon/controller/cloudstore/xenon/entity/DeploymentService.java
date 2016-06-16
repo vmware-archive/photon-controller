@@ -15,6 +15,7 @@ package com.vmware.photon.controller.cloudstore.xenon.entity;
 
 import com.vmware.photon.controller.api.DeploymentState;
 import com.vmware.photon.controller.api.StatsStoreType;
+import com.vmware.photon.controller.cloudstore.SystemConfig;
 import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
@@ -101,6 +102,9 @@ public class DeploymentService extends StatefulService {
       validatePatchState(startState, patchState);
       State currentState = applyPatch(startState, patchState);
       validateState(currentState);
+      if (patchState.state != null && startState.state != patchState.state) {
+        SystemConfig.getInstance().runCheck();
+      }
       patchOperation.complete();
     } catch (IllegalStateException t) {
       ServiceUtils.failOperationAsBadRequest(this, patchOperation, t);

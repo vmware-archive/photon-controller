@@ -194,21 +194,6 @@ public class ZookeeperModule extends AbstractModule {
     ServiceNodeUtils.joinService(serviceNode, retryIntervalMilliSeconds);
   }
 
-  /**
-   * Creates a ServiceConfigFactory.
-   *
-   * @param zkClient the ZookeeperClient to register the service.
-   * @return
-   * @throws Exception
-   */
-  public ServiceConfigFactory getServiceConfigFactory(final CuratorFramework zkClient) throws Exception {
-    final ZookeeperServerReader zookeeperServerReader = getServiceServerReader();
-    final PathChildrenCacheFactory pathChildrenCacheFactory = getServicePathCacheFactory(zkClient,
-        zookeeperServerReader);
-
-    return new ServiceConfigFactoryImpl(zkClient, pathChildrenCacheFactory);
-  }
-
   public void setConfig(ZookeeperConfig config) {
     this.config = config;
   }
@@ -226,29 +211,5 @@ public class ZookeeperModule extends AbstractModule {
         .build(ZookeeperServerSetFactory.class));
 
     bind(ZookeeperServerReader.class).to(ZookeeperHostReader.class);
-  }
-
-  /**
-   * Implementation of a ServiceConfigFactory using the given ZookeeperClient and
-   * PathChildrenCacheFactory.
-   */
-  private static class ServiceConfigFactoryImpl implements ServiceConfigFactory {
-    private final CuratorFramework zkClient;
-    private final PathChildrenCacheFactory pathChildrenCacheFactory;
-
-    private ServiceConfigFactoryImpl(final CuratorFramework zkClient,
-                             final PathChildrenCacheFactory pathChildrenCacheFactory) {
-      this.zkClient = zkClient;
-      this.pathChildrenCacheFactory = pathChildrenCacheFactory;
-    }
-
-    @Override
-    public ServiceConfig create(String serviceName) {
-      try {
-        return new ServiceConfig(zkClient, pathChildrenCacheFactory, serviceName);
-      } catch (Exception e) {
-        throw new RuntimeException(e);
-      }
-    }
   }
 }

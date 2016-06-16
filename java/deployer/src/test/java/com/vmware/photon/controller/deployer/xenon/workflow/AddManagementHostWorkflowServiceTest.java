@@ -15,6 +15,7 @@ package com.vmware.photon.controller.deployer.xenon.workflow;
 
 import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.UsageTag;
+import com.vmware.photon.controller.cloudstore.SystemConfig;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.HostService;
 import com.vmware.photon.controller.common.Constants;
@@ -29,7 +30,6 @@ import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
-import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
 import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfiguratorFactory;
 import com.vmware.photon.controller.deployer.deployengine.ApiClientFactory;
@@ -707,6 +707,7 @@ public class AddManagementHostWorkflowServiceTest {
     private AuthClientHandler.ImplicitClient implicitClient;
     private com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment localStore;
     private com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment remoteStore;
+    private SystemConfig systemConfig;
 
     @BeforeClass
     public void setUpClass() throws Throwable {
@@ -752,6 +753,8 @@ public class AddManagementHostWorkflowServiceTest {
       remoteStore = new com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment.Builder()
           .hostClientFactory(hostClientFactory)
           .build();
+
+      this.systemConfig = spy(SystemConfig.createInstance(localStore.getHosts()[0]));
     }
 
     private void createTestEnvironment(int remoteNodeCount) throws Throwable {
@@ -817,10 +820,6 @@ public class AddManagementHostWorkflowServiceTest {
                  }
                }
       ).when(zkBuilder).addServer(anyString(), anyString(), anyString(), anyInt(), anyObject());
-
-      doReturn(mock(ServiceConfig.class))
-          .when(zkBuilder)
-          .getServiceConfig(anyString(), anyString());
 
       InetSocketAddress address = remoteStore.getServerSet().getServers().iterator().next();
       doReturn(Collections.singleton(address))

@@ -19,7 +19,8 @@ import com.vmware.photon.controller.apife.helpers.JerseyPropertiesDelegate;
 import com.vmware.photon.controller.apife.helpers.JerseySecurityContext;
 import com.vmware.photon.controller.apife.resources.routes.DeploymentResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.VmResourceRoutes;
-import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
+import com.vmware.photon.controller.cloudstore.SystemConfig;
+import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
 
 import org.glassfish.jersey.server.ContainerRequest;
 import org.testng.annotations.BeforeMethod;
@@ -28,6 +29,7 @@ import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 import static org.testng.AssertJUnit.fail;
 
@@ -45,14 +47,18 @@ import java.net.URISyntaxException;
  */
 public class PauseFilterTest {
 
-  private ServiceConfig serviceConfig;
+  private SystemConfig systemConfig;
 
   private PauseFilter pauseFilter;
 
+  private PhotonControllerXenonHost xenonHost;
+
   @BeforeMethod
   public void setUp() {
-    this.serviceConfig = mock(ServiceConfig.class);
-    this.pauseFilter = new PauseFilter(this.serviceConfig);
+    xenonHost = mock(PhotonControllerXenonHost.class);
+    this.systemConfig = spy(SystemConfig.createInstance(xenonHost));
+    this.pauseFilter = spy(new PauseFilter());
+
   }
 
   @DataProvider(name = "SuccessfulRequests")
@@ -69,7 +75,8 @@ public class PauseFilterTest {
   @Test(dataProvider = "SuccessfulRequests")
   public void testSuccess(boolean servicePaused, String httpMethod, String path) throws Throwable {
     ContainerRequest request = buildRequest(path, httpMethod, new MultivaluedHashMap<>());
-    when(serviceConfig.isPaused()).thenReturn(servicePaused);
+    when(systemConfig.isPaused()).thenReturn(servicePaused);
+    when(pauseFilter.getSystemConfig()).thenReturn(systemConfig);
     try {
       this.pauseFilter.filter(request);
     } catch (Exception e) {
@@ -88,7 +95,8 @@ public class PauseFilterTest {
   @Test(dataProvider = "UnsuccessfulRequests")
   public void testRejection(boolean servicePaused, String httpMethod, String path) throws Throwable {
     ContainerRequest request = buildRequest(path, httpMethod, new MultivaluedHashMap<>());
-    when(serviceConfig.isPaused()).thenReturn(servicePaused);
+    when(systemConfig.isPaused()).thenReturn(servicePaused);
+    when(pauseFilter.getSystemConfig()).thenReturn(systemConfig);
 
     try {
       this.pauseFilter.filter(request);
