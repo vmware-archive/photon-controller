@@ -23,7 +23,6 @@ import com.vmware.photon.controller.common.xenon.OperationUtils;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
 import com.vmware.photon.controller.common.xenon.host.XenonConfig;
-import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
 import com.vmware.photon.controller.nsxclient.NsxClientFactory;
 import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Operation;
@@ -66,10 +65,9 @@ public class TestHost extends PhotonControllerXenonHost {
   public TestHost(XenonConfig xenonConfig,
                   HostClientFactory hostClientFactory,
                   AgentControlClientFactory agentControlClientFactory,
-                  ServiceConfigFactory serviceConfigFactory,
                   NsxClientFactory nsxClientFactory,
                   CloudStoreHelper cloudStoreHelper) throws Throwable {
-    super(xenonConfig, hostClientFactory, agentControlClientFactory, serviceConfigFactory, nsxClientFactory,
+    super(xenonConfig, hostClientFactory, agentControlClientFactory, nsxClientFactory,
         cloudStoreHelper);
     this.serviceUri = SERVICE_URI;
     this.waitIterationSleep = WAIT_ITERATION_SLEEP;
@@ -89,7 +87,6 @@ public class TestHost extends PhotonControllerXenonHost {
 
     HostClientFactory hostClientFactory = mock(HostClientFactory.class);
     AgentControlClientFactory agentControlClientFactory = mock(AgentControlClientFactory.class);
-    ServiceConfigFactory serviceConfigFactory = mock(ServiceConfigFactory.class);
     NsxClientFactory nsxClientFactory = mock(NsxClientFactory.class);
     ServerSet cloudStoreServerSet = mock(ServerSet.class);
     CloudStoreHelper cloudStoreHelper = new CloudStoreHelper(cloudStoreServerSet);
@@ -98,7 +95,6 @@ public class TestHost extends PhotonControllerXenonHost {
         xenonConfig,
         hostClientFactory,
         agentControlClientFactory,
-        serviceConfigFactory,
         nsxClientFactory,
         cloudStoreHelper);
 

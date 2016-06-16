@@ -31,6 +31,7 @@ import com.vmware.photon.controller.client.resource.ProjectApi;
 import com.vmware.photon.controller.client.resource.TasksApi;
 import com.vmware.photon.controller.client.resource.TenantsApi;
 import com.vmware.photon.controller.client.resource.VmApi;
+import com.vmware.photon.controller.cloudstore.SystemConfig;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.FlavorService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ImageService;
@@ -90,6 +91,7 @@ import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 
 import javax.annotation.Nullable;
 
@@ -518,6 +520,7 @@ public class RemoveDeploymentWorkflowServiceTest {
     private RemoveDeploymentWorkflowService.State startState;
     private TestEnvironment testEnvironment;
     private com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment cloudStoreTestEnvironment;
+    private SystemConfig systemConfig;
 
     @BeforeClass
     public void setUpClass() throws Throwable {
@@ -541,6 +544,7 @@ public class RemoveDeploymentWorkflowServiceTest {
       hostClientFactory = mock(HostClientFactory.class);
       nsxClientFactory = mock(NsxClientFactory.class);
       apiClientFactory = mock(ApiClientFactory.class);
+      this.systemConfig = spy(SystemConfig.createInstance(cloudStoreTestEnvironment.getHosts()[0]));
     }
 
     @AfterMethod

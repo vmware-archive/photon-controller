@@ -29,7 +29,6 @@ import com.vmware.photon.controller.common.xenon.MultiHostEnvironment;
 import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
 import com.vmware.photon.controller.common.xenon.host.XenonConfig;
 import com.vmware.photon.controller.common.xenon.scheduler.TaskSchedulerServiceStateBuilder;
-import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
 import com.vmware.photon.controller.nsxclient.NsxClientFactory;
 
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -73,14 +72,12 @@ public class TestEnvironment extends MultiHostEnvironment<PhotonControllerXenonH
       CloudStoreHelper cloudStoreHelper = clusterManagerFactory.createCloudStoreHelper();
       HostClientFactory hostClientFactory = mock(HostClientFactory.class);
       AgentControlClientFactory agentControlClientFactory = mock(AgentControlClientFactory.class);
-      ServiceConfigFactory serviceConfigFactory = mock(ServiceConfigFactory.class);
       NsxClientFactory nsxClientFactory = mock(NsxClientFactory.class);
 
       hosts[i] = new PhotonControllerXenonHost(
           xenonConfig,
           hostClientFactory,
           agentControlClientFactory,
-          serviceConfigFactory,
           nsxClientFactory,
           cloudStoreHelper);
 

@@ -24,8 +24,6 @@ import com.vmware.photon.controller.common.xenon.MultiHostEnvironment;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
 import com.vmware.photon.controller.common.xenon.host.XenonConfig;
-import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
-import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
 import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.DeployerConfigTest;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfiguratorFactory;
@@ -52,9 +50,7 @@ import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import java.io.File;
 import java.io.IOException;
@@ -82,7 +78,6 @@ public class DeployerServiceGroupTest {
   private DeployerConfig deployerConfig;
   private ServerSet cloudStoreServerSet;
   private CloudStoreHelper cloudStoreHelper;
-  private ServiceConfigFactory serviceConfigFactory;
   private AgentControlClientFactory agentControlClientFactory;
   private HostClientFactory hostClientFactory;
   private HttpFileServiceClientFactory httpFileServiceClientFactory;
@@ -154,10 +149,6 @@ public class DeployerServiceGroupTest {
       clusterManagerFactory = mock(ClusterManagerFactory.class);
       nsxClientFactory = mock(NsxClientFactory.class);
 
-      serviceConfigFactory = mock(ServiceConfigFactory.class);
-      ServiceConfig serviceConfig = mock(ServiceConfig.class);
-      when(serviceConfigFactory.create(anyString())).thenReturn(serviceConfig);
-
       storageDir = new File(deployerConfig.getXenonConfig().getStoragePath());
       FileUtils.deleteDirectory(storageDir);
 
@@ -169,7 +160,6 @@ public class DeployerServiceGroupTest {
           deployerConfig.getXenonConfig(),
           hostClientFactory,
           agentControlClientFactory,
-          serviceConfigFactory,
           nsxClientFactory,
           cloudStoreHelper);
 
@@ -215,7 +205,6 @@ public class DeployerServiceGroupTest {
           deployerConfig.getXenonConfig(),
           hostClientFactory,
           agentControlClientFactory,
-          serviceConfigFactory,
           nsxClientFactory,
           cloudStoreHelper);
 
@@ -274,10 +263,6 @@ public class DeployerServiceGroupTest {
       clusterManagerFactory = mock(ClusterManagerFactory.class);
       nsxClientFactory = mock(NsxClientFactory.class);
 
-      serviceConfigFactory = mock(ServiceConfigFactory.class);
-      ServiceConfig serviceConfig = mock(ServiceConfig.class);
-      when(serviceConfigFactory.create(anyString())).thenReturn(serviceConfig);
-
       storageDir = new File(deployerConfig.getXenonConfig().getStoragePath());
       FileUtils.deleteDirectory(storageDir);
     }
@@ -288,7 +273,6 @@ public class DeployerServiceGroupTest {
           deployerConfig.getXenonConfig(),
           hostClientFactory,
           agentControlClientFactory,
-          serviceConfigFactory,
           nsxClientFactory,
           cloudStoreHelper);
 
@@ -368,10 +352,6 @@ public class DeployerServiceGroupTest {
       clusterManagerFactory = mock(ClusterManagerFactory.class);
       nsxClientFactory = mock(NsxClientFactory.class);
 
-      serviceConfigFactory = mock(ServiceConfigFactory.class);
-      ServiceConfig serviceConfig = mock(ServiceConfig.class);
-      when(serviceConfigFactory.create(anyString())).thenReturn(serviceConfig);
-
       storageDir = new File(deployerConfig.getXenonConfig().getStoragePath());
       FileUtils.deleteDirectory(storageDir);
     }
@@ -382,7 +362,6 @@ public class DeployerServiceGroupTest {
           deployerConfig.getXenonConfig(),
           hostClientFactory,
           agentControlClientFactory,
-          serviceConfigFactory,
           nsxClientFactory,
           cloudStoreHelper);
 
@@ -469,7 +448,6 @@ public class DeployerServiceGroupTest {
           xenonConfig,
           hostClientFactory,
           agentControlClientFactory,
-          serviceConfigFactory,
           nsxClientFactory,
           cloudStoreHelper);
 
@@ -502,7 +480,6 @@ public class DeployerServiceGroupTest {
           xenonConfig2,
           hostClientFactory,
           agentControlClientFactory,
-          serviceConfigFactory,
           nsxClientFactory,
           cloudStoreHelper);
 

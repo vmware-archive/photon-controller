@@ -28,6 +28,7 @@ import com.vmware.photon.controller.client.resource.ProjectApi;
 import com.vmware.photon.controller.client.resource.TasksApi;
 import com.vmware.photon.controller.client.resource.TenantsApi;
 import com.vmware.photon.controller.client.resource.VmApi;
+import com.vmware.photon.controller.cloudstore.SystemConfig;
 import com.vmware.photon.controller.cloudstore.xenon.entity.HostService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ResourceTicketService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.TenantService;
@@ -39,7 +40,6 @@ import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
-import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
 import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfigurator;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfiguratorFactory;
@@ -493,6 +493,8 @@ public class BatchCreateManagementWorkflowServiceTest {
 
     private String deploymentServiceLink;
 
+    private SystemConfig systemConfig;
+
     @BeforeClass
     public void setUpClass() throws Throwable {
       FileUtils.deleteDirectory(storageDirectory);
@@ -503,6 +505,7 @@ public class BatchCreateManagementWorkflowServiceTest {
       healthCheckHelperFactory = mock(HealthCheckHelperFactory.class);
 
       deploymentServiceLink = TestHelper.createDeploymentService(cloudStoreMachine).documentSelfLink;
+      this.systemConfig = spy(SystemConfig.createInstance(cloudStoreMachine.getHosts()[0]));
     }
 
     @AfterClass
@@ -876,9 +879,6 @@ public class BatchCreateManagementWorkflowServiceTest {
       ZookeeperClientFactory zkFactory = mock(ZookeeperClientFactory.class);
       ZookeeperClient zkBuilder = mock(ZookeeperClient.class);
       doReturn(zkBuilder).when(zkFactory).create();
-      doReturn(mock(ServiceConfig.class))
-          .when(zkBuilder)
-          .getServiceConfig(anyString(), anyString());
 
       InetSocketAddress address = cloudStoreMachine.getServerSet().getServers().iterator().next();
       doReturn(Collections.singleton(address))
