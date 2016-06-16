@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.core;
 
 import com.vmware.photon.controller.cloudstore.CloudStoreConfig;
+import com.vmware.photon.controller.cloudstore.SystemConfig;
 import com.vmware.photon.controller.cloudstore.xenon.CloudStoreServiceGroup;
 import com.vmware.photon.controller.clustermanager.ClusterManagerFactory;
 import com.vmware.photon.controller.common.Constants;
@@ -26,7 +27,6 @@ import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.photon.controller.common.thrift.ThriftModule;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
-import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperModule;
 import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfigurator;
@@ -130,7 +130,6 @@ public class Main {
     final CuratorFramework zkClient = zkModule.getCuratorFramework();
 
     // Values for CloudStore
-    final ServiceConfigFactory serviceConfigFactory = zkModule.getServiceConfigFactory(zkClient);
     final HostClientFactory hostClientFactory = thriftModule.getHostClientFactory();
     final AgentControlClientFactory agentControlClientFactory = thriftModule.getAgentControlClientFactory();
     final NsxClientFactory nsxClientFactory = new NsxClientFactory();
@@ -144,8 +143,7 @@ public class Main {
     logger.info("Creating PhotonController Xenon Host");
     final PhotonControllerXenonHost photonControllerXenonHost =
             new PhotonControllerXenonHost(photonControllerConfig.getCloudStoreConfig().getXenonConfig(),
-                hostClientFactory, agentControlClientFactory, serviceConfigFactory, nsxClientFactory,
-                cloudStoreHelper);
+                hostClientFactory, agentControlClientFactory, nsxClientFactory, cloudStoreHelper);
     logger.info("Created PhotonController Xenon Host");
 
     logger.info("Creating Cloud Store Xenon Service Group");
@@ -186,13 +184,13 @@ public class Main {
     logger.info("Registering CloudStore Services Endpoint with Zookeeper at {}:{}",
             cloudStoreXenonAddress, cloudStoreXenonPort);
     registerServiceWithZookeeper(Constants.CLOUDSTORE_SERVICE_NAME, zkModule, zkClient,
-            cloudStoreXenonAddress, cloudStoreXenonPort);
+        cloudStoreXenonAddress, cloudStoreXenonPort);
     logger.info("Registered CloudStore Services Endpoint with Zookeeper");
 
     logger.info("Registering Scheduler Services Endpoint with Zookeeper at {}:{}",
             cloudStoreXenonAddress, cloudStoreXenonPort);
     registerServiceWithZookeeper(Constants.SCHEDULER_SERVICE_NAME, zkModule, zkClient,
-            cloudStoreXenonAddress, cloudStoreXenonPort);
+        cloudStoreXenonAddress, cloudStoreXenonPort);
     logger.info("Registered Scheduler Services Endpoint with Zookeeper");
 
     logger.info("Registering Housekeeper Services Endpoint with Zookeeper at {}:{}",
@@ -201,6 +199,9 @@ public class Main {
         cloudStoreXenonAddress, cloudStoreXenonPort);
     logger.info("Registered Scheduler Services Endpoint with Zookeeper");
 
+    logger.info("Creating SystemConfig instance");
+    SystemConfig.createInstance(photonControllerXenonHost);
+    logger.info("Created SystemConfig instance");
     return photonControllerXenonHost;
   }
 

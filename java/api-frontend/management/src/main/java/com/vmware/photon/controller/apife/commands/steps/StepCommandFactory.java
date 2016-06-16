@@ -33,7 +33,6 @@ import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
 import com.vmware.photon.controller.apife.lib.ImageStoreFactory;
 import com.vmware.photon.controller.apife.lib.VsphereIsoStore;
-import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
 
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
@@ -57,7 +56,6 @@ public class StepCommandFactory {
   private final HostXenonBackend hostBackend;
   private final ImageConfig imageConfig;
   private final ImageStoreFactory imageStoreFactory;
-  private final ServiceConfig serviceConfig;
   private final VsphereIsoStore isoStore;
   private final FlavorBackend flavorBackend;
   private final ClusterBackend clusterBackend;
@@ -78,7 +76,6 @@ public class StepCommandFactory {
                             HostXenonBackend hostBackend,
                             ImageConfig imageConfig,
                             ImageStoreFactory imageStoreFactory,
-                            ServiceConfig serviceConfig,
                             VsphereIsoStore isoStore,
                             NetworkBackend networkBackend,
                             FlavorBackend flavorBackend,
@@ -96,7 +93,6 @@ public class StepCommandFactory {
     this.deploymentBackend = deploymentBackend;
     this.hostBackend = hostBackend;
     this.imageConfig = imageConfig;
-    this.serviceConfig = serviceConfig;
     this.imageStoreFactory = imageStoreFactory;
     this.isoStore = isoStore;
     this.networkBackend = networkBackend;
@@ -249,11 +245,11 @@ public class StepCommandFactory {
         return new TenantPushSecurityGroupsStepCmd(taskCommand, stepBackend, stepEntity,
             tenantBackend, projectBackend);
       case PAUSE_SYSTEM:
-        return new SystemPauseStepCmd(taskCommand, stepBackend, stepEntity, serviceConfig);
+        return new SystemPauseStepCmd(taskCommand, stepBackend, stepEntity);
       case PAUSE_BACKGROUND_TASKS:
-        return new SystemPauseBackgroundTasksStepCmd(taskCommand, stepBackend, stepEntity, serviceConfig);
+        return new SystemPauseBackgroundTasksStepCmd(taskCommand, stepBackend, stepEntity);
       case RESUME_SYSTEM:
-        return new SystemResumeStepCmd(taskCommand, stepBackend, stepEntity, serviceConfig);
+        return new SystemResumeStepCmd(taskCommand, stepBackend, stepEntity);
       default:
         throw new InternalException(String.format("Invalid Operation %s to create StepCommand",
             stepEntity.getOperation()));
