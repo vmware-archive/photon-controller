@@ -75,27 +75,3 @@ run {
 }
 
 distTar << extractRelease(this, 'root-scheduler')
-
-task dockerfile(type: Dockerfile) {
-  dependsOn distTar
-  destFile = file('build/container/Dockerfile')
-  from 'photon/servicebase'
-  copyFile('release/', '/usr/lib/esxcloud/root-scheduler/')
-}
-
-task container(type: DockerBuildImage) {
-  dependsOn dockerfile, ':containers:servicebase'
-  inputDir = dockerfile.destFile.parentFile
-  tag = 'photon/root-scheduler'
-}
-
-task removeContainer(type: DockerRemoveImage) {
-  targetImageId { container.tag }
-}
-
-task start(type: VagrantSsh) {
-  mustRunAfter container
-  description = "Start ${project.name} inside devbox"
-  boxDir = devboxDir
-  sshCommand = "start-${project.name} 2>&1 | tee -a start-${project.name}.log"
-}

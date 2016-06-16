@@ -35,7 +35,6 @@ public class ContainersConfig {
   public enum ContainerType {
     Lightwave,
     LoadBalancer,
-    ManagementApi,
     ManagementUi,
     PhotonControllerCore,
     Zookeeper,

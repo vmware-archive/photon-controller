@@ -86,28 +86,3 @@ tasks.withType(Test) {
 }
 
 distTar << extractRelease(this, project.name)
-
-task dockerfile(type: Dockerfile) {
-  dependsOn distTar
-  destFile = file("build/container/Dockerfile")
-  from "photon/servicebase"
-  copyFile("release/", "/usr/lib/esxcloud/deployer/")
-  runCommand "tdnf install -y openssh && tdnf install -y sshpass"
-}
-
-task container(type: DockerBuildImage) {
-  dependsOn dockerfile, ":containers:servicebase"
-  inputDir = dockerfile.destFile.parentFile
-  tag = "photon/deployer"
-}
-
-task removeContainer(type: DockerRemoveImage) {
-  targetImageId { container.tag }
-}
-
-task start(type: VagrantSsh) {
-  mustRunAfter container
-  description = "Start ${project.name} inside devbox"
-  boxDir = devboxDir
-  sshCommand = "start-${project.name} 2>&1 | tee -a start-${project.name}.log"
-}

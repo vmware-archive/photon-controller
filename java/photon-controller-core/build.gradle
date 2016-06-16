@@ -9,14 +9,21 @@ import com.bmuschko.gradle.vagrant.tasks.VagrantSsh
 mainClassName = 'com.vmware.photon.controller.core.Main'
 
 dependencies {
+  compile project(':api')
+  compile project(':api-backend')
+  compile project(':api-frontend:api-frontend-common')
+  compile project(':api-frontend:management')
+  compile project(':cluster-manager:service-documents')
   compile project(':common')
   compile project(':common-xenon')
-  compile project(':api')
   compile project(':cloud-store')
   compile project(':deployer')
   compile project(':housekeeper')
+  compile project(':nfc-client')
   compile project(':nsx-client')
   compile project(':root-scheduler')
+  compile project(':swagger-ui')
+  compile project(':swagger-jersey')
 
   compile "org.apache.commons:commons-lang3:${versions.commons_lang3}"
   compile 'net.sourceforge.argparse4j:argparse4j:0.4.0'

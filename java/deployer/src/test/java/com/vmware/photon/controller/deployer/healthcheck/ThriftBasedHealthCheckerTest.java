@@ -64,7 +64,6 @@ public class ThriftBasedHealthCheckerTest {
   @DataProvider(name = "ContainerTypesNotSupportingThriftStatus")
   private Object[][] getContainerTypesNotSupportingThriftStatus() {
     return new Object[][]{
-        {ContainersConfig.ContainerType.ManagementApi},
         {ContainersConfig.ContainerType.Zookeeper},
         {ContainersConfig.ContainerType.LoadBalancer},
     };
