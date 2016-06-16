@@ -20,7 +20,6 @@ import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.xenon.MultiHostEnvironment;
 import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
 import com.vmware.photon.controller.common.xenon.host.XenonConfig;
-import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
 
 import org.apache.commons.io.FileUtils;
 import static org.mockito.Mockito.mock;
@@ -35,8 +34,8 @@ public class TestEnvironment extends MultiHostEnvironment<PhotonControllerXenonH
 
   private TestEnvironment(
       int hostCount,
-      HostClientFactory hostClientFactory, AgentControlClientFactory agentControlClientFactory,
-      ServiceConfigFactory serviceConfigFactory) throws Throwable {
+      HostClientFactory hostClientFactory, AgentControlClientFactory agentControlClientFactory
+   ) throws Throwable {
 
     assertTrue(hostCount > 0);
     hosts = new PhotonControllerXenonHost[hostCount];
@@ -51,7 +50,7 @@ public class TestEnvironment extends MultiHostEnvironment<PhotonControllerXenonH
       xenonConfig.setStoragePath(sandbox);
 
       hosts[i] = new PhotonControllerXenonHost(xenonConfig,
-              hostClientFactory, agentControlClientFactory, serviceConfigFactory, null, null);
+              hostClientFactory, agentControlClientFactory, null, null);
       CloudStoreServiceGroup cloudStoreServiceGroup = new CloudStoreServiceGroup();
       hosts[i].registerCloudStore(cloudStoreServiceGroup);
     }
@@ -72,7 +71,6 @@ public class TestEnvironment extends MultiHostEnvironment<PhotonControllerXenonH
     private int hostCount;
     private HostClientFactory hostClientFactory;
     private AgentControlClientFactory agentControlClientFactory;
-    private ServiceConfigFactory serviceConfigFactory;
 
     public Builder hostCount(int hostCount) {
       this.hostCount = hostCount;
@@ -89,20 +87,11 @@ public class TestEnvironment extends MultiHostEnvironment<PhotonControllerXenonH
       return this;
     }
 
-    public Builder serviceConfigFactory(ServiceConfigFactory serviceConfigFactory) {
-      this.serviceConfigFactory = serviceConfigFactory;
-      return this;
-    }
 
     public TestEnvironment build() throws Throwable {
       int hostCount = this.hostCount;
       if (this.hostCount == 0) {
         hostCount = 1;
-      }
-
-      ServiceConfigFactory serviceConfigFactory = this.serviceConfigFactory;
-      if (this.serviceConfigFactory == null) {
-        serviceConfigFactory = mock(ServiceConfigFactory.class);
       }
 
       HostClientFactory hostClientFactory = this.hostClientFactory;
@@ -116,7 +105,7 @@ public class TestEnvironment extends MultiHostEnvironment<PhotonControllerXenonH
       }
 
       TestEnvironment testEnvironment = new TestEnvironment(
-          hostCount, hostClientFactory, agentControlClientFactory, serviceConfigFactory);
+          hostCount, hostClientFactory, agentControlClientFactory);
       testEnvironment.start();
       return testEnvironment;
     }
