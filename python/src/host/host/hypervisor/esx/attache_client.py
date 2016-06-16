@@ -119,6 +119,8 @@ class AttacheClient(HostClient):
 
     @attache_error_handler
     def disconnect(self, wait=False):
+        self._logger.info("AttacheClient disconnect")
+        self._stop_syncing_cache(wait=wait)
         self._client.CloseSession(self._session)
 
     def _start_syncing_cache(self):
