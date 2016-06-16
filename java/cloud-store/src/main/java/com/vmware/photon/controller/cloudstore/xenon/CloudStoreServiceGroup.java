@@ -52,7 +52,6 @@ import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
 import com.vmware.photon.controller.common.xenon.scheduler.TaskStateBuilder;
 import com.vmware.photon.controller.common.xenon.scheduler.TaskTriggerFactoryService;
 import com.vmware.photon.controller.common.xenon.service.UpgradeInformationService;
-import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
 import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
@@ -130,7 +129,6 @@ public class CloudStoreServiceGroup
       VirtualNetworkService.class, VirtualNetworkService::createFactory
   );
 
-  private ServiceConfigFactory serviceConfigFactory;
   private PhotonControllerXenonHost photonControllerXenonHost;
 
   public CloudStoreServiceGroup() {
@@ -207,7 +205,6 @@ public class CloudStoreServiceGroup
   @Override
   public void setPhotonControllerXenonHost(PhotonControllerXenonHost photonControllerXenonHost) {
     this.photonControllerXenonHost = photonControllerXenonHost;
-    serviceConfigFactory = photonControllerXenonHost.getServiceConfigFactory();
   }
 
   private void startTaskTriggerServices() {

@@ -15,6 +15,7 @@ package com.vmware.photon.controller.deployer.xenon.workflow;
 
 import com.vmware.photon.controller.api.DeploymentState;
 import com.vmware.photon.controller.api.UsageTag;
+import com.vmware.photon.controller.cloudstore.SystemConfig;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
 import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
@@ -31,7 +32,6 @@ import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.Positive;
 import com.vmware.photon.controller.common.xenon.validation.WriteOnce;
-import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
 import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClient;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClientFactoryProvider;
@@ -764,37 +764,22 @@ public class DeploymentWorkflowService extends StatefulService {
   }
 
   private void setDesiredDeploymentState(State currentState) {
-    HostUtils.getCloudStoreHelper(this).createGet(currentState.deploymentServiceLink)
-      .setCompletion((o, t) -> {
-        if (t != null) {
-          failTask(t);
-          return;
-        }
-        DeploymentService.State deployment = o.getBody(DeploymentService.State.class);
-        ZookeeperClient zookeeperClient = HostUtils.getZookeeperClient(this);
-        ServiceConfig serviceConfig
-          = zookeeperClient.getServiceConfig(deployment.zookeeperQuorum, Constants.APIFE_SERVICE_NAME);
+    DeploymentService.State deployment = new DeploymentService.State();
+    deployment.state = currentState.desiredState;
 
-        try {
-          switch (currentState.desiredState) {
-            case PAUSED:
-              serviceConfig.pause();
-              break;
-            case BACKGROUND_PAUSED:
-              serviceConfig.pauseBackground();
-              break;
-            case READY:
-              serviceConfig.resume();
-              break;
-            default:
-              throw new Exception("Unexpected desired DeploymentState [" + currentState.desiredState.name() + "]");
-          }
-          TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FINISHED, null, null));
-        } catch (Throwable throwable) {
-          failTask(throwable);
-        }
-      })
-      .sendWith(this);
+    sendRequest(HostUtils.getCloudStoreHelper(this)
+        .createPatch(currentState.deploymentServiceLink)
+        .setBody(deployment)
+        .setCompletion(
+            (completedOp, failure) -> {
+              if (null != failure) {
+                failTask(failure);
+              } else {
+                SystemConfig.getInstance().runCheck();
+                TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FINISHED, null, null));
+              }
+            }
+        ));
   }
 
   /**
