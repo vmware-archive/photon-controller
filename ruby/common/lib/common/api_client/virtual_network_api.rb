@@ -20,6 +20,7 @@ module EsxCloud
         url = "/projects/#{project_id}/networks"
         response = @http_client.post_json(url, payload)
         check_response("Create virtual network #{payload}", response, 201)
+        puts response.inspect
 
         task = poll_response(response)
         find_virtual_network_by_id(task.entity_id)
