@@ -20,16 +20,16 @@ import com.vmware.xenon.common.Service;
 /**
  * Class ImageSeederSyncTriggerServiceFactory is a factory to create a ImageSeederSyncTriggerService instances.
  */
-public class ImageSeederSyncTriggerServiceFactory extends FactoryService {
+public class ImageSeederSyncServiceFactory extends FactoryService {
 
-  public static final String SELF_LINK = ServiceUriPaths.HOUSEKEEPER_ROOT + "/image-seeder-sync-triggers";
+  public static final String SELF_LINK = ServiceUriPaths.HOUSEKEEPER_ROOT + "/image-seeder-sync";
 
-  public ImageSeederSyncTriggerServiceFactory() {
-    super(ImageSeederSyncTriggerService.State.class);
+  public ImageSeederSyncServiceFactory() {
+    super(ImageSeederSyncService.State.class);
   }
 
   @Override
   public Service createServiceInstance() throws Throwable {
-    return new ImageSeederSyncTriggerService();
+    return new ImageSeederSyncService();
   }
 }

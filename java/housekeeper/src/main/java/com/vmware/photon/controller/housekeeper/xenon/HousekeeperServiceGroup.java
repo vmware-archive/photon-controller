@@ -15,11 +15,15 @@ package com.vmware.photon.controller.housekeeper.xenon;
 
 import com.vmware.photon.controller.apibackend.ApiBackendFactory;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
+import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.XenonServiceGroup;
 import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
 import com.vmware.photon.controller.common.xenon.scheduler.TaskSchedulerService;
 import com.vmware.photon.controller.common.xenon.scheduler.TaskSchedulerServiceFactory;
 import com.vmware.photon.controller.common.xenon.scheduler.TaskSchedulerServiceStateBuilder;
+import com.vmware.photon.controller.common.xenon.scheduler.TaskStateBuilder;
+import com.vmware.photon.controller.common.xenon.scheduler.TaskTriggerFactoryService;
+import com.vmware.photon.controller.housekeeper.xenon.trigger.ImageSeederSyncTriggerBuilder;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.services.common.RootNamespaceService;
@@ -49,6 +53,12 @@ public class HousekeeperServiceGroup
       IMAGE_TRANSFER_SCHEDULER_SERVICE, new TaskSchedulerServiceStateBuilder(ImageHostToHostCopyService.class, 1)
   );
 
+  private static final TaskStateBuilder[] TASK_TRIGGERS = new TaskStateBuilder[]{
+      new ImageSeederSyncTriggerBuilder(
+          ImageSeederSyncTriggerBuilder.DEFAULT_TRIGGER_INTERVAL_MILLIS,
+          ImageSeederSyncTriggerBuilder.DEFAULT_TASK_EXPIRATION_AGE_MILLIS)
+  };
+
   private static final String TRIGGER_SERVICE_SUFFIX = "/singleton";
   private static final String HOUSEKEEPER_URI = "housekeeper";
   private static final Class[] FACTORY_SERVICES = {
@@ -57,12 +67,12 @@ public class HousekeeperServiceGroup
       ImageHostToHostCopyServiceFactory.class,
       ImageSeederServiceFactory.class,
       ImageCleanerTriggerServiceFactory.class,
-      ImageSeederSyncTriggerServiceFactory.class,
+      ImageSeederSyncServiceFactory.class,
       ImageCleanerServiceFactory.class,
       ImageDatastoreSweeperServiceFactory.class,
 
+      TaskTriggerFactoryService.class,
       TaskSchedulerServiceFactory.class,
-
   };
 
   private PhotonControllerXenonHost photonControllerXenonHost;
@@ -92,8 +102,8 @@ public class HousekeeperServiceGroup
   /**
    * Get ImageSeederService Sync trigger service uri.
    */
-  public static String getImageSeederSyncServiceUri() {
-    return ImageSeederSyncTriggerServiceFactory.SELF_LINK + TRIGGER_SERVICE_SUFFIX;
+  public static String getImageSeederSyncTriggerServiceUri() {
+    return TaskTriggerFactoryService.SELF_LINK + ImageSeederSyncTriggerBuilder.TRIGGER_SELF_LINK;
   }
 
   @Override
@@ -113,6 +123,7 @@ public class HousekeeperServiceGroup
     startImageCleanerTriggerService();
     startImageSeederSyncTriggerService();
     startTaskSchedulerServices();
+    startTaskTriggerServices();
   }
 
   @Override
@@ -129,12 +140,13 @@ public class HousekeeperServiceGroup
         && photonControllerXenonHost.checkServiceAvailable(ImageCopyServiceFactory.SELF_LINK)
         && photonControllerXenonHost.checkServiceAvailable(ImageHostToHostCopyServiceFactory.SELF_LINK)
         && photonControllerXenonHost.checkServiceAvailable(ImageCleanerTriggerServiceFactory.SELF_LINK)
-        && photonControllerXenonHost.checkServiceAvailable(ImageSeederSyncTriggerServiceFactory.SELF_LINK)
+        && photonControllerXenonHost.checkServiceAvailable(ImageSeederSyncServiceFactory.SELF_LINK)
         && photonControllerXenonHost.checkServiceAvailable(ImageCleanerServiceFactory.SELF_LINK)
         && photonControllerXenonHost.checkServiceAvailable(ImageDatastoreSweeperServiceFactory.SELF_LINK)
 
+        && photonControllerXenonHost.checkServiceAvailable(TaskTriggerFactoryService.SELF_LINK)
         && photonControllerXenonHost.checkServiceAvailable(getTriggerCleanerServiceUri())
-        && photonControllerXenonHost.checkServiceAvailable(getImageSeederSyncServiceUri())
+        && photonControllerXenonHost.checkServiceAvailable(getImageSeederSyncTriggerServiceUri())
         && photonControllerXenonHost.checkServiceAvailable(TaskSchedulerServiceFactory.SELF_LINK);
   }
 
@@ -155,15 +167,15 @@ public class HousekeeperServiceGroup
   private void startImageSeederSyncTriggerService() {
     photonControllerXenonHost.registerForServiceAvailability(
         (Operation operation, Throwable throwable) -> {
-          ImageSeederSyncTriggerService.State state = new ImageSeederSyncTriggerService.State();
+          ImageSeederSyncService.State state = new ImageSeederSyncService.State();
           state.documentSelfLink = TRIGGER_SERVICE_SUFFIX;
 
           URI uri = UriUtils.buildUri(photonControllerXenonHost,
-              ImageSeederSyncTriggerServiceFactory.SELF_LINK, null);
+              ImageSeederSyncServiceFactory.SELF_LINK, null);
           Operation post = Operation.createPost(uri).setBody(state);
           post.setReferer(UriUtils.buildUri(photonControllerXenonHost, HOUSEKEEPER_URI));
           photonControllerXenonHost.sendRequest(post);
-        }, ImageSeederSyncTriggerServiceFactory.SELF_LINK);
+        }, ImageSeederSyncServiceFactory.SELF_LINK);
   }
 
   private void startTaskSchedulerServices() {
@@ -193,5 +205,15 @@ public class HousekeeperServiceGroup
     photonControllerXenonHost.sendRequest(post);
   }
 
-
+  private void startTaskTriggerServices() {
+    photonControllerXenonHost.registerForServiceAvailability((Operation operation, Throwable throwable) -> {
+      for (TaskStateBuilder builder : TASK_TRIGGERS) {
+        Operation post = Operation
+            .createPost(UriUtils.buildUri(photonControllerXenonHost, TaskTriggerFactoryService.SELF_LINK))
+            .setBody(builder.build())
+            .setReferer(UriUtils.buildUri(photonControllerXenonHost, ServiceUriPaths.HOUSEKEEPER_ROOT));
+        photonControllerXenonHost.sendRequest(post);
+      }
+    }, TaskTriggerFactoryService.SELF_LINK);
+  }
 }
