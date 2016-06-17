@@ -3,7 +3,7 @@ cloudstore:
     bindAddress: "0.0.0.0"
     port: 19000
     registrationAddress: "{{{REGISTRATION_ADDRESS}}}"
-    storagePath: "{{{CLOUD-STORE_DCP_STORAGE_PATH}}}"
+    storagePath: "{{{CLOUD-STORE_XENON_STORAGE_PATH}}}"
     peerNodes:
 {{#CLOUDSTORE_PEER_NODES}}
     - http://{{peerAddress}}:{{peerPort}}
@@ -20,7 +20,7 @@ scheduler:
     bindAddress: "0.0.0.0"
     port: 13010
     registrationAddress: "{{{REGISTRATION_ADDRESS}}}"
-    storagePath: "{{{ROOT-SCHEDULER_DCP_STORAGE_PATH}}}"
+    storagePath: "{{{ROOT-SCHEDULER_XENON_STORAGE_PATH}}}"
     peerNodes:
 {{#SCHEDULER_PEER_NODES}}
     - http://{{peerAddress}}:{{peerPort}}
@@ -37,7 +37,7 @@ housekeeper:
     bindAddress: "0.0.0.0"
     port: 16000
     registrationAddress: "{{{REGISTRATION_ADDRESS}}}"
-    storagePath: "{{{HOUSEKEEPER_DCP_STORAGE_PATH}}}"
+    storagePath: "{{{HOUSEKEEPER_XENON_STORAGE_PATH}}}"
     peerNodes:
 {{#HOUSEKEEPER_PEER_NODES}}
     - http://{{peerAddress}}:{{peerPort}}
@@ -69,7 +69,7 @@ deployer:
     bindAddress: "0.0.0.0"
     registrationAddress: "{{{REGISTRATION_ADDRESS}}}"
     port: 18000
-    storagePath: "{{{DEPLOYER_DCP_STORAGE_PATH}}}"
+    storagePath: "{{{DEPLOYER_XENON_STORAGE_PATH}}}"
     peerNodes:
 {{#DEPLOYER_PEER_NODES}}
     - http://{{peerAddress}}:{{peerPort}}

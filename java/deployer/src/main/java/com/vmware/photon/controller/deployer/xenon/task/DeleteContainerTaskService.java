@@ -47,7 +47,7 @@ import javax.annotation.Nullable;
 import java.util.concurrent.Callable;
 
 /**
- * This class implements a DCP micro-service which performs the task of
+ * This class implements a Xenon micro-service which performs the task of
  * deleting a container on the specified VM.
  */
 public class DeleteContainerTaskService extends StatefulService {
@@ -256,7 +256,7 @@ public class DeleteContainerTaskService extends StatefulService {
 
   /**
    * This method deletes a docker container by submitting a future task to
-   * the executor service for the DCP host. On successful completion, the
+   * the executor service for the Xenon host. On successful completion, the
    * service is transitioned to the FINISHED state.
    *
    * @param currentState Supplies the updated state of the current service

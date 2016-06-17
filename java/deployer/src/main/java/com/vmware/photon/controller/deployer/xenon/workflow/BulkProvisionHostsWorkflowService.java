@@ -59,7 +59,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 /**
- * This class implements a DCP microservice which performs the task of provisioning a set of ESX hosts.
+ * This class implements a Xenon microservice which performs the task of provisioning a set of ESX hosts.
  */
 public class BulkProvisionHostsWorkflowService extends StatefulService {
 

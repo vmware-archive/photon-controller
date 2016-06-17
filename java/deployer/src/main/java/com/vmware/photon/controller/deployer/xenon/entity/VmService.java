@@ -28,7 +28,7 @@ import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
 
 /**
- * This class implements a DCP micro-service which provides a plain data object
+ * This class implements a Xenon micro-service which provides a plain data object
  * representing a management plane VM.
  */
 public class VmService extends StatefulService {
@@ -105,13 +105,13 @@ public class VmService extends StatefulService {
     public String vmId;
 
     /**
-     * This value represents the port number of the deployer's DCP service of the VM. Note that this should be used
+     * This value represents the port number of the deployer's Xenon service of the VM. Note that this should be used
      * only for testing purpose because in a test environment we can setup multiple deployer services on the same
      * machine and hence they will have different port numbers. In real deployment, deployer should all listen on
      * the same port number.
      */
     @Immutable
-    public Integer deployerDcpPort;
+    public Integer deployerXenonPort;
   }
 
   public VmService() {

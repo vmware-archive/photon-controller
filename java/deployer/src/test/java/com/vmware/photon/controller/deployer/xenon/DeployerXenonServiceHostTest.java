@@ -388,7 +388,7 @@ public class DeployerXenonServiceHostTest {
    */
   public class JoinNodeGroupTest {
 
-    private final File storageDir2 = new File("/tmp/dcp/18002/");
+    private final File storageDir2 = new File("/tmp/xenon/18002/");
     private final long maintenanceInterval = TimeUnit.MILLISECONDS.toMicros(500);
     private DeployerXenonServiceHost host2;
 

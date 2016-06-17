@@ -86,7 +86,7 @@ import java.util.function.IntUnaryOperator;
 import java.util.stream.Collectors;
 
 /**
- * This class implements a DCP service representing the workflow of creating all management vms.
+ * This class implements a Xenon service representing the workflow of creating all management vms.
  */
 public class BatchCreateManagementWorkflowService extends StatefulService {
 

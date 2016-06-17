@@ -2,8 +2,8 @@ deployer:
   apifeEndpoint: "http://127.0.0.1"
   configDirectory: "/tmp/deployAgent/configurations"
   corePoolSize: 17
-  dcpRetryCount: 17
-  dcpRetryIntervalMs: 50
+  xenonRetryCount: 17
+  xenonRetryIntervalMs: 50
   deployerPort: 18000
   enableSyslog: "true"
   keepAliveTime: 17
@@ -28,7 +28,7 @@ xenon:
   bindAddress: localhost
   registrationAddress: localhost
   port: 18000
-  storagePath: "/tmp/dcp/deployer/"
+  storagePath: "/tmp/xenon/deployer/"
   peerNodes:
   - http://localhost:18000
 

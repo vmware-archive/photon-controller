@@ -67,7 +67,7 @@ public class ContainersConfigTest {
   @Test(expectedExceptions = BadConfigException.class)
   public void throwsOnMissingContainersConfig() throws Exception {
     containersConfig = ConfigBuilder.build(DeployerConfig.class,
-        this.getClass().getResource("/dcpConfig_invalid.yml").getPath()).getContainersConfig();
+        this.getClass().getResource("/xenonConfig_invalid.yml").getPath()).getContainersConfig();
   }
 
   @Test

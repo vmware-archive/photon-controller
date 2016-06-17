@@ -41,7 +41,7 @@ import com.google.common.util.concurrent.FutureCallback;
 import javax.annotation.Nullable;
 
 /**
- * This class implements a DCP micro-service which performs the task of
+ * This class implements a Xenon micro-service which performs the task of
  * deploying a Photon Controller agent instance.
  */
 public class DeleteVmTaskService extends StatefulService {

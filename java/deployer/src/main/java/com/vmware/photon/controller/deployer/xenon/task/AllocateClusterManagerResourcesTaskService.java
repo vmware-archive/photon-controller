@@ -59,7 +59,7 @@ import java.util.Collection;
 import java.util.List;
 
 /**
- * Implements a DCP workflow service to allocate Cluster Manager resources.
+ * Implements a Xenon workflow service to allocate Cluster Manager resources.
  */
 public class AllocateClusterManagerResourcesTaskService extends StatefulService {
 

@@ -42,7 +42,7 @@ import org.apache.thrift.async.AsyncMethodCallback;
 import javax.annotation.Nullable;
 
 /**
- * This class implements a DCP microservice which performs the task of changing an agent's mode.
+ * This class implements a Xenon microservice which performs the task of changing an agent's mode.
  */
 public class ChangeHostModeTaskService extends StatefulService {
 

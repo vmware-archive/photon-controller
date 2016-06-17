@@ -10,7 +10,7 @@ In the future, the deployer service may also take on more responsibilities, incl
 * Restarting failed services or bringing up replacement management images
 * Upgrade of an existing deployment to a new version
 
-The deployer is implemented as a DCP service, with individual tasks implemented as collections of microservices.
+The deployer is implemented as a Xenon service, with individual tasks implemented as collections of microservices.
 
 ## Build
 

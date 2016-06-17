@@ -46,15 +46,15 @@ import com.vmware.xenon.common.Service;
 import com.google.common.util.concurrent.ListeningExecutorService;
 
 /**
- * This class implements utility functions for the deployer DCP host.
+ * This class implements utility functions for the deployer Xenon host.
  */
 public class HostUtils {
 
   /**
    * This function gets the containers config object from the host associated with the specified service.
    *
-   * @param service Supplies a DCP service instance.
-   * @return The containers config object provided by the DCP host associated with the service.
+   * @param service Supplies a Xenon service instance.
+   * @return The containers config object provided by the Xenon host associated with the service.
    */
   public static ContainersConfig getContainersConfig(Service service) {
     return ((ContainersConfigProvider) service.getHost()).getContainersConfig();
@@ -63,8 +63,8 @@ public class HostUtils {
   /**
    * This function gets the deployer context from the host associated with the specified service.
    *
-   * @param service Supplies a DCP service instance.
-   * @return The deployer context provided by the DCP host associated with the service.
+   * @param service Supplies a Xenon service instance.
+   * @return The deployer context provided by the Xenon host associated with the service.
    */
   public static DeployerContext getDeployerContext(Service service) {
     return ((DeployerContextProvider) service.getHost()).getDeployerContext();
@@ -73,8 +73,8 @@ public class HostUtils {
   /**
    * This function gets the docker provisioner factory from the host associated with the specified service.
    *
-   * @param service Supplies a DCP service instance.
-   * @return The docker provisioner factory provided by the DCP host associated with the service.
+   * @param service Supplies a Xenon service instance.
+   * @return The docker provisioner factory provided by the Xenon host associated with the service.
    */
   public static DockerProvisionerFactory getDockerProvisionerFactory(Service service) {
     return ((DockerProvisionerFactoryProvider) service.getHost()).getDockerProvisionerFactory();
@@ -83,7 +83,7 @@ public class HostUtils {
   /**
    * This function creates a new API client object using the API client factory.
    *
-   * @param service Supplies a DCP service instance.
+   * @param service Supplies a Xenon service instance.
    * @return A new API client object.
    */
   public static ApiClient getApiClient(Service service) {
@@ -93,7 +93,7 @@ public class HostUtils {
   /**
    * This function creates a new API client object using the API client factory and the provided API-FE endpoint.
    *
-   * @param service       Supplies a DCP service instance.
+   * @param service       Supplies a Xenon service instance.
    * @param apifeEndpoint Supplies the endpoint of API-FE.
    * @return A new API client object.
    */
@@ -104,8 +104,8 @@ public class HostUtils {
   /**
    * This function gets the API client factory from the host associated with the specified service.
    *
-   * @param service Supplies a DCP service instance.
-   * @return The API client factory provided by the DCP host associated with the service.
+   * @param service Supplies a Xenon service instance.
+   * @return The API client factory provided by the Xenon host associated with the service.
    */
   public static ApiClientFactory getApiClientFactory(Service service) {
     return ((ApiClientFactoryProvider) service.getHost()).getApiClientFactory();
@@ -132,10 +132,10 @@ public class HostUtils {
   }
 
   /**
-   * This function gets the ESX host client from the DCP host associated with the specified service.
+   * This function gets the ESX host client from the Xenon host associated with the specified service.
    *
-   * @param service Supplies a DCP service instance.
-   * @return The host client provided by the DCP host associated with the service.
+   * @param service Supplies a Xenon service instance.
+   * @return The host client provided by the Xenon host associated with the service.
    */
   public static HostClient getHostClient(Service service) {
     return ((HostClientProvider) service.getHost()).getHostClient();
@@ -144,8 +144,8 @@ public class HostUtils {
   /**
    * This function gets the HTTP file service client factory from the host associated with the specified service.
    *
-   * @param service Supplies a DCP service instance.
-   * @return The HTTP file service client factory provided by the DCP host associated with the service.
+   * @param service Supplies a Xenon service instance.
+   * @return The HTTP file service client factory provided by the Xenon host associated with the service.
    */
   public static HttpFileServiceClientFactory getHttpFileServiceClientFactory(Service service) {
     return ((HttpFileServiceClientFactoryProvider) service.getHost()).getHttpFileServiceClientFactory();
@@ -154,8 +154,8 @@ public class HostUtils {
   /**
    * This function gets the listening executor service from the host associated with the specified service.
    *
-   * @param service Supplies a DCP service instance.
-   * @return The listening executor service provided by the DCP host associated with the service.
+   * @param service Supplies a Xenon service instance.
+   * @return The listening executor service provided by the Xenon host associated with the service.
    */
   public static ListeningExecutorService getListeningExecutorService(Service service) {
     return ((ListeningExecutorServiceProvider) service.getHost()).getListeningExecutorService();
@@ -165,8 +165,8 @@ public class HostUtils {
    * This function gets the host management vm address validator factory from the host associated with the specified
    * service.
    *
-   * @param service Supplies a DCP service instance.
-   * @return The host credentials validator factory provided by the DCP host associated with the service.
+   * @param service Supplies a Xenon service instance.
+   * @return The host credentials validator factory provided by the Xenon host associated with the service.
    */
   public static HostManagementVmAddressValidatorFactory getHostManagementVmAddressValidatorFactory(Service service) {
     return ((HostManagementVmAddressValidatorFactoryProvider) service.getHost())
@@ -176,8 +176,8 @@ public class HostUtils {
   /**
    * This function gets the service configurator factory from the host associated with the specified service.
    *
-   * @param service Supplies a DCP service instance.
-   * @return The docker provisioner factory provided by the DCP host associated with the service.
+   * @param service Supplies a Xenon service instance.
+   * @return The docker provisioner factory provided by the Xenon host associated with the service.
    */
   public static ServiceConfiguratorFactory getServiceConfiguratorFactory(Service service) {
     return ((ServiceConfiguratorFactoryProvider) service.getHost()).getServiceConfiguratorFactory();
@@ -186,8 +186,8 @@ public class HostUtils {
   /**
    * This function gets the cloud store helper from the host associated with the specified service.
    *
-   * @param service Supplies a DCP service instance.
-   * @return The cloud store helper provided by the DCP host associated with the service.
+   * @param service Supplies a Xenon service instance.
+   * @return The cloud store helper provided by the Xenon host associated with the service.
    */
   public static CloudStoreHelper getCloudStoreHelper(Service service) {
     return ((DeployerXenonServiceHost) service.getHost()).getCloudStoreHelper();
@@ -196,7 +196,7 @@ public class HostUtils {
   /**
    * This function gets a Zookeeper client object from the host associated with the specified service.
    *
-   * @param service Supplies a DCP service instance.
+   * @param service Supplies a Xenon service instance.
    * @return A factory-created Zookeeper client object.
    */
   public static ZookeeperClient getZookeeperClient(Service service) {
@@ -204,10 +204,10 @@ public class HostUtils {
   }
 
   /**
-   * This function gets a Nsx client object from the host associated with the specified service.
+   * This function gets an NSX client object from the host associated with the specified service.
    *
-   * @param service Supplies a DCP service instance.
-   * @return The Nsx client factory provided by the DCP host associated with the service.
+   * @param service Supplies a Xenon service instance.
+   * @return The NSX client factory provided by the Xenon host associated with the service.
    */
   public static NsxClientFactory getNsxClientFactory(Service service) {
     return ((NsxClientFactoryProvider) service.getHost()).getNsxClientFactory();

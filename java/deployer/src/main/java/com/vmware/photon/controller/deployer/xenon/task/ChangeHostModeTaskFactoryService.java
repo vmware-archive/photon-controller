@@ -18,7 +18,7 @@ import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Service;
 
 /**
- * This class implements a DCP micro-service which provides a factory
+ * This class implements a Xenon micro-service which provides a factory
  * for {@link ChangeHostModeTaskService} instances.
  */
 public class ChangeHostModeTaskFactoryService extends FactoryService {

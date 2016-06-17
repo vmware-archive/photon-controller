@@ -50,7 +50,7 @@ import javax.annotation.Nullable;
 import java.util.HashMap;
 
 /**
- * Implements a DCP workflow service representing the manifest generation workflow.
+ * Implements a Xenon workflow service representing the manifest generation workflow.
  */
 public class CreateManagementPlaneLayoutWorkflowService extends StatefulService {
 

@@ -48,7 +48,7 @@ import javax.annotation.Nullable;
 import java.util.Collection;
 
 /**
- * This class implements a DCP micro-service which performs the task of
+ * This class implements a Xenon micro-service which performs the task of
  * adding a new cloud host to an existing deployment.
  */
 public class AddCloudHostWorkflowService extends StatefulService {
@@ -77,7 +77,7 @@ public class AddCloudHostWorkflowService extends StatefulService {
 
     /**
      * This value represents the interval, in milliseconds, to use when polling
-     * the state of a dcp task.
+     * the state of a Xenon task.
      */
     @Positive
     public Integer taskPollDelay;
