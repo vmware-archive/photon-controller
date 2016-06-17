@@ -383,7 +383,6 @@ public class HousekeeperServiceGroupTest {
         ImageHostToHostCopyServiceFactory.SELF_LINK,
         ImageDatastoreSweeperServiceFactory.SELF_LINK,
         ImageCleanerServiceFactory.SELF_LINK,
-        ImageCleanerTriggerServiceFactory.SELF_LINK,
         ImageSeederSyncServiceFactory.SELF_LINK,
         TaskSchedulerServiceFactory.SELF_LINK,
         TaskTriggerFactoryService.SELF_LINK,
