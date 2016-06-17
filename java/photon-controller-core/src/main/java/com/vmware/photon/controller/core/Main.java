@@ -15,7 +15,6 @@ package com.vmware.photon.controller.core;
 
 import com.vmware.photon.controller.cloudstore.CloudStoreConfig;
 import com.vmware.photon.controller.cloudstore.xenon.CloudStoreServiceGroup;
-import com.vmware.photon.controller.clustermanager.ClusterManagerFactory;
 import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.clients.AgentControlClientFactory;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
@@ -46,7 +45,7 @@ import com.vmware.photon.controller.deployer.healthcheck.HealthCheckHelper;
 import com.vmware.photon.controller.deployer.healthcheck.HealthCheckHelperFactory;
 import com.vmware.photon.controller.deployer.healthcheck.XenonBasedHealthChecker;
 import com.vmware.photon.controller.deployer.xenon.ContainersConfig;
-import com.vmware.photon.controller.deployer.xenon.DeployerXenonServiceHost;
+import com.vmware.photon.controller.deployer.xenon.DeployerServiceGroup;
 import com.vmware.photon.controller.housekeeper.xenon.HousekeeperServiceGroup;
 import com.vmware.photon.controller.nsxclient.NsxClientFactory;
 import com.vmware.photon.controller.rootscheduler.RootSchedulerConfig;
@@ -71,7 +70,6 @@ import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.SSLContext;
 
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -110,14 +108,12 @@ public class Main {
     final ZookeeperModule zkModule = new ZookeeperModule(cloudStoreConfig.getZookeeper());
     ThriftModule thriftModule = new ThriftModule();
 
-    ServiceHost xenonHost = startXenonHost(photonControllerConfig, zkModule, thriftModule);
-    ServiceHost deployerHost = startDeployer(deployerConfig, zkModule, thriftModule);
+    ServiceHost xenonHost = startXenonHost(photonControllerConfig, zkModule, thriftModule, deployerConfig);
 
     Runtime.getRuntime().addShutdownHook(new Thread() {
       @Override
       public void run() {
         logger.info("Shutting down");
-        deployerHost.stop();
         xenonHost.stop();
         logger.info("Done");
         LoggingFactory.detachAndStop();
@@ -126,7 +122,7 @@ public class Main {
   }
 
   private static ServiceHost startXenonHost(PhotonControllerConfig photonControllerConfig, ZookeeperModule zkModule,
-                                            ThriftModule thriftModule) throws Throwable {
+                                            ThriftModule thriftModule, DeployerConfig deployerConfig) throws Throwable {
     final CuratorFramework zkClient = zkModule.getCuratorFramework();
 
     // Values for CloudStore
@@ -140,6 +136,22 @@ public class Main {
             Constants.CLOUDSTORE_SERVICE_NAME, true);
     final CloudStoreHelper cloudStoreHelper = new CloudStoreHelper(cloudStoreServerSet);
     final ConstraintChecker checker = new CloudStoreConstraintChecker(cloudStoreHelper);
+
+    final CloseableHttpAsyncClient httpClient;
+    try {
+      SSLContext sslcontext = SSLContexts.custom()
+          .loadTrustMaterial((chain, authtype) -> true)
+          .build();
+      httpClient = HttpAsyncClientBuilder.create()
+          .setHostnameVerifier(SSLIOSessionStrategy.ALLOW_ALL_HOSTNAME_VERIFIER)
+          .setSSLContext(sslcontext)
+          .build();
+      httpClient.start();
+    } catch (Throwable e) {
+      throw new RuntimeException(e);
+    }
+
+    ServerSet apiFeServerSet = zkModule.getZookeeperServerSet(zkClient, Constants.APIFE_SERVICE_NAME, true);
 
     logger.info("Creating PhotonController Xenon Host");
     final PhotonControllerXenonHost photonControllerXenonHost =
@@ -173,6 +185,15 @@ public class Main {
     photonControllerXenonHost.registerHousekeeper(housekeeperServiceGroup);
     logger.info("Registered Housekeeper Xenon Service Group");
 
+    logger.info("Creating Deployer Xenon Service Group");
+    DeployerServiceGroup deployerServiceGroup = createDeployerServiceGroup(deployerConfig, apiFeServerSet,
+                                                    httpClient);
+    logger.info("Created Deployer Xenon Service Group");
+
+    logger.info("Registering Deployer Xenon Service Group");
+    photonControllerXenonHost.registerDeployer(deployerServiceGroup);
+    logger.info("Registered Deployer Xenon Service Group");
+
     logger.info("Starting PhotonController Xenon Host");
     photonControllerXenonHost.start();
     logger.info("Started PhotonController Xenon Host");
@@ -201,49 +222,16 @@ public class Main {
         cloudStoreXenonAddress, cloudStoreXenonPort);
     logger.info("Registered Scheduler Services Endpoint with Zookeeper");
 
+    logger.info("Registering Deployer Services Endpoint with Zookeeper at {}:{}",
+        cloudStoreXenonAddress, cloudStoreXenonPort);
+    registerServiceWithZookeeper(Constants.DEPLOYER_SERVICE_NAME, zkModule, zkClient,
+        cloudStoreXenonAddress, cloudStoreXenonPort);
+    logger.info("Registered Deployer Services Endpoint with Zookeeper");
+
     return photonControllerXenonHost;
   }
 
-  private static ServiceHost startDeployer(DeployerConfig deployerConfig, ZookeeperModule zkModule,
-                                           ThriftModule thriftModule) throws Throwable {
-    final CuratorFramework zkClient = zkModule.getCuratorFramework();
-    Integer deployerXenonPort = deployerConfig.getXenonConfig().getPort();
-    String deployerXenonAddress = deployerConfig.getXenonConfig().getRegistrationAddress();
 
-    final CloseableHttpAsyncClient httpClient;
-    try {
-      SSLContext sslcontext = SSLContexts.custom()
-              .loadTrustMaterial((chain, authtype) -> true)
-              .build();
-      httpClient = HttpAsyncClientBuilder.create()
-              .setHostnameVerifier(SSLIOSessionStrategy.ALLOW_ALL_HOSTNAME_VERIFIER)
-              .setSSLContext(sslcontext)
-              .build();
-      httpClient.start();
-    } catch (Throwable e) {
-      throw new RuntimeException(e);
-    }
-
-    ServerSet cloudStoreServerSet = zkModule.getZookeeperServerSet(zkClient, Constants.CLOUDSTORE_SERVICE_NAME, true);
-    ServerSet apiFeServerSet = zkModule.getZookeeperServerSet(zkClient, Constants.APIFE_SERVICE_NAME, true);
-
-    logger.info("Creating Deployer Xenon Host");
-    final DeployerXenonServiceHost deployerXenonServiceHost = createDeployerXenonServiceHost(thriftModule,
-            deployerConfig, apiFeServerSet, cloudStoreServerSet, httpClient);
-    logger.info("Created Deployer Xenon Host");
-
-    logger.info("Starting Deployer Xenon Host");
-    deployerXenonServiceHost.start();
-    logger.info("Started Deployer Xenon Host");
-
-    logger.info("Registering Deployer Xenon Host with Zookeeper at {}:{}",
-            deployerXenonAddress, deployerXenonPort);
-    registerServiceWithZookeeper(Constants.DEPLOYER_SERVICE_NAME, zkModule, zkClient,
-            deployerXenonAddress, deployerXenonPort);
-    logger.info("Registered Deployer Xenon Host with Zookeeper");
-
-    return deployerXenonServiceHost;
-  }
 
   private static CloudStoreServiceGroup createCloudStoreServiceGroup() throws Throwable {
     return new CloudStoreServiceGroup();
@@ -274,32 +262,36 @@ public class Main {
     zkModule.registerWithZookeeper(zkClient, serviceName, ipAddress, port, retryIntervalMillis);
   }
 
+
   /**
-   * Creates a new DeployerXenonServiceHost.
+   * Creates a new Deployer Service Group.
    *
-   * @param thriftModule
    * @param deployerConfig
-   * @param cloudStoreServerSet
+   * @param apiFeServerSet
+   * @param httpClient
    * @return
-   * @throws Throwable
    */
-  private static DeployerXenonServiceHost createDeployerXenonServiceHost(ThriftModule thriftModule,
-                                                                         DeployerConfig deployerConfig,
-                                                                         ServerSet apiFeServerSet,
-                                                                         ServerSet cloudStoreServerSet,
-                                                                         CloseableHttpAsyncClient httpClient)
-          throws Throwable {
-    logger.info("Creating Deployer Xenon host instance");
+  private static DeployerServiceGroup createDeployerServiceGroup (DeployerConfig deployerConfig,
+                                                                  ServerSet apiFeServerSet,
+                                                                  CloseableHttpAsyncClient httpClient) {
+
+    logger.info("Creating Deployer Service Group");
+
     // Set deployer context zookeeper quorum
     deployerConfig.getDeployerContext().setZookeeperQuorum(deployerConfig.getZookeeper().getQuorum());
 
     // Set containers config to deployer config
     try {
       deployerConfig.setContainersConfig(new ServiceConfigurator().generateContainersConfig(deployerConfig
-              .getDeployerContext().getConfigDirectory()));
+          .getDeployerContext().getConfigDirectory()));
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
+
+    final DockerProvisionerFactory dockerProvisionerFactory = new com.vmware.photon.controller.core.Main
+        .DockerProvisionerFactoryImpl();
+    final ApiClientFactory apiClientFactory = new ApiClientFactory(apiFeServerSet, httpClient,
+        deployerConfig.getDeployerContext().getSharedSecret());
 
     /**
      * The blocking queue associated with the thread pool executor service
@@ -312,46 +304,29 @@ public class Main {
      */
     final BlockingQueue<Runnable> blockingQueue = new LinkedBlockingDeque<>();
     final ListeningExecutorService listeningExecutorService = MoreExecutors.listeningDecorator(
-            new ThreadPoolExecutor(
-                    deployerConfig.getDeployerContext().getCorePoolSize(),
-                    deployerConfig.getDeployerContext().getMaximumPoolSize(),
-                    deployerConfig.getDeployerContext().getKeepAliveTime(),
-                    TimeUnit.SECONDS,
-                    blockingQueue));
+        new ThreadPoolExecutor(
+            deployerConfig.getDeployerContext().getCorePoolSize(),
+            deployerConfig.getDeployerContext().getMaximumPoolSize(),
+            deployerConfig.getDeployerContext().getKeepAliveTime(),
+            TimeUnit.SECONDS,
+            blockingQueue));
 
-    final DockerProvisionerFactory dockerProvisionerFactory = new com.vmware.photon.controller.core.Main
-        .DockerProvisionerFactoryImpl();
+    final HttpFileServiceClientFactory httpFileServiceClientFactory = new com.vmware.photon.controller.core.Main
+        .HttpFileServiceClientFactoryImpl();
     final AuthHelperFactory authHelperFactory = new com.vmware.photon.controller.core.Main.AuthHelperFactoryImpl();
     final HealthCheckHelperFactory healthCheckHelperFactory =
         new com.vmware.photon.controller.core.Main.HealthCheckHelperFactoryImpl();
     final ServiceConfiguratorFactory serviceConfiguratorFactory =
         new com.vmware.photon.controller.core.Main.ServiceConfiguratorFactoryImpl();
-    final HostManagementVmAddressValidatorFactory hostManagementVmAddressValidatorFactory = new
-            com.vmware.photon.controller.core.Main.HostManagementVmAddressValidatorFactoryImpl();
-    final HttpFileServiceClientFactory httpFileServiceClientFactory = new com.vmware.photon.controller.core.Main
-        .HttpFileServiceClientFactoryImpl();
-    final com.vmware.photon.controller.deployer.deployengine.NsxClientFactory nsxClientFactory =
-        new com.vmware.photon.controller.deployer.deployengine.NsxClientFactory();
-
     final ZookeeperClientFactory zookeeperServerSetBuilderFactory = new com.vmware.photon.controller.core.Main
         .ZookeeperClientFactoryImpl(deployerConfig);
+    final HostManagementVmAddressValidatorFactory hostManagementVmAddressValidatorFactory = new
+        com.vmware.photon.controller.core.Main.HostManagementVmAddressValidatorFactoryImpl();
 
-    final ApiClientFactory apiClientFactory = new ApiClientFactory(apiFeServerSet, httpClient,
-            deployerConfig.getDeployerContext().getSharedSecret());
-
-    final ClusterManagerFactory clusterManagerFactory = new ClusterManagerFactory(listeningExecutorService,
-            httpClient, apiFeServerSet, deployerConfig.getDeployerContext().getSharedSecret(), cloudStoreServerSet,
-            Paths.get(deployerConfig.getDeployerContext().getScriptDirectory(), CLUSTER_SCRIPTS_DIRECTORY).toString());
-
-    final AgentControlClientFactory agentControlClientFactory = thriftModule.getAgentControlClientFactory();
-    final HostClientFactory hostClientFactory = thriftModule.getHostClientFactory();
-
-    return new DeployerXenonServiceHost(deployerConfig.getXenonConfig(), cloudStoreServerSet,
-            deployerConfig.getDeployerContext(), deployerConfig.getContainersConfig(), agentControlClientFactory,
-            hostClientFactory, httpFileServiceClientFactory, listeningExecutorService, apiClientFactory,
-            dockerProvisionerFactory, authHelperFactory, healthCheckHelperFactory, serviceConfiguratorFactory,
-            zookeeperServerSetBuilderFactory, hostManagementVmAddressValidatorFactory, clusterManagerFactory,
-            nsxClientFactory);
+    return new DeployerServiceGroup(deployerConfig.getDeployerContext(), dockerProvisionerFactory,
+        apiClientFactory, deployerConfig.getContainersConfig(), listeningExecutorService,
+        httpFileServiceClientFactory, authHelperFactory, healthCheckHelperFactory,
+        serviceConfiguratorFactory, zookeeperServerSetBuilderFactory, hostManagementVmAddressValidatorFactory);
   }
 
   /**

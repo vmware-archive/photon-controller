@@ -13,11 +13,11 @@ require_relative "../support/deployer/deployer_client"
 
 class DeployerClientHelper
   def self.deployer
-    setup_client((ENV["DEPLOYER_PORT"] || "18000").strip)
+    setup_client((ENV["DEPLOYER_PORT"] || "19000").strip)
   end
 
   def self.dcp
-    setup_client((ENV["DEPLOYER_DCP_PORT"] || "18000").strip)
+    setup_client((ENV["DEPLOYER_DCP_PORT"] || "19000").strip)
   end
 
   private

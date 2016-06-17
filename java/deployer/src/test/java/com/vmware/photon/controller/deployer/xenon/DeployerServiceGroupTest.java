@@ -13,15 +13,18 @@
 
 package com.vmware.photon.controller.deployer.xenon;
 
-import com.vmware.photon.controller.clustermanager.ClusterManagerFactory;
 import com.vmware.photon.controller.common.clients.AgentControlClientFactory;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.config.BadConfigException;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.thrift.ServerSet;
+import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.MultiHostEnvironment;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
+import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
 import com.vmware.photon.controller.common.xenon.host.XenonConfig;
+import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
+import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
 import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.DeployerConfigTest;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfiguratorFactory;
@@ -30,10 +33,10 @@ import com.vmware.photon.controller.deployer.deployengine.AuthHelperFactory;
 import com.vmware.photon.controller.deployer.deployengine.DockerProvisionerFactory;
 import com.vmware.photon.controller.deployer.deployengine.HostManagementVmAddressValidatorFactory;
 import com.vmware.photon.controller.deployer.deployengine.HttpFileServiceClientFactory;
-import com.vmware.photon.controller.deployer.deployengine.NsxClientFactory;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClientFactory;
 import com.vmware.photon.controller.deployer.healthcheck.HealthCheckHelperFactory;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
+import com.vmware.photon.controller.nsxclient.NsxClientFactory;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.services.common.LuceneDocumentIndexService;
 import com.vmware.xenon.services.common.ServiceUriPaths;
@@ -48,7 +51,9 @@ import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.io.File;
 import java.io.IOException;
@@ -61,18 +66,22 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 /**
- * This class implements tests for the {@link DeployerXenonServiceHost} class.
+ * This class implements tests for the {@link DeployerServiceGroup} class.
  */
-public class DeployerXenonServiceHostTest {
+public class DeployerServiceGroupTest {
 
   private static File storageDir;
 
   private static final String configFilePath = "/config.yml";
 
-  private DeployerXenonServiceHost host;
+  private PhotonControllerXenonHost host;
+  private DeployerServiceGroup deployerServiceGroup;
+
   private Collection<String> serviceSelfLinks;
   private DeployerConfig deployerConfig;
   private ServerSet cloudStoreServerSet;
+  private CloudStoreHelper cloudStoreHelper;
+  private ServiceConfigFactory serviceConfigFactory;
   private AgentControlClientFactory agentControlClientFactory;
   private HostClientFactory hostClientFactory;
   private HttpFileServiceClientFactory httpFileServiceClientFactory;
@@ -84,16 +93,16 @@ public class DeployerXenonServiceHostTest {
   private ServiceConfiguratorFactory serviceConfiguratorFactory;
   private ZookeeperClientFactory zookeeperClientFactory;
   private HostManagementVmAddressValidatorFactory hostManagementVmAddressValidatorFactory;
-  private ClusterManagerFactory clusterManagerFactory;
+//  private ClusterManagerFactory clusterManagerFactory;
   private NsxClientFactory nsxClientFactory;
 
-  private void waitForServicesStartup(DeployerXenonServiceHost host)
+  private void waitForServicesStartup(PhotonControllerXenonHost host)
       throws TimeoutException, InterruptedException, NoSuchFieldException, IllegalAccessException {
 
     serviceSelfLinks = ServiceHostUtils.getServiceSelfLinks(
-        DeployerXenonServiceHost.FACTORY_SERVICE_FIELD_NAME_SELF_LINK,
-        DeployerXenonServiceHost.FACTORY_SERVICES);
-    serviceSelfLinks.add(DeployerXenonServiceHost.UPLOAD_VIB_WORK_QUEUE_SELF_LINK);
+        DeployerServiceGroup.FACTORY_SERVICE_FIELD_NAME_SELF_LINK,
+        DeployerServiceGroup.FACTORY_SERVICES);
+    serviceSelfLinks.add(DeployerServiceGroup.UPLOAD_VIB_WORK_QUEUE_SELF_LINK);
 
     final CountDownLatch latch = new CountDownLatch(serviceSelfLinks.size());
     Operation.CompletionHandler handler = new Operation.CompletionHandler() {
@@ -130,6 +139,7 @@ public class DeployerXenonServiceHostTest {
 
       listeningExecutorService = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(1));
       cloudStoreServerSet = mock(ServerSet.class);
+      cloudStoreHelper = new CloudStoreHelper(cloudStoreServerSet);
       agentControlClientFactory = mock(AgentControlClientFactory.class);
       hostClientFactory = mock(HostClientFactory.class);
       httpFileServiceClientFactory = mock(HttpFileServiceClientFactory.class);
@@ -140,8 +150,12 @@ public class DeployerXenonServiceHostTest {
       serviceConfiguratorFactory = mock(ServiceConfiguratorFactory.class);
       zookeeperClientFactory = mock(ZookeeperClientFactory.class);
       hostManagementVmAddressValidatorFactory = mock(HostManagementVmAddressValidatorFactory.class);
-      clusterManagerFactory = mock(ClusterManagerFactory.class);
+//      clusterManagerFactory = mock(ClusterManagerFactory.class);
       nsxClientFactory = mock(NsxClientFactory.class);
+
+      serviceConfigFactory = mock(ServiceConfigFactory.class);
+      ServiceConfig serviceConfig = mock(ServiceConfig.class);
+      when(serviceConfigFactory.create(anyString())).thenReturn(serviceConfig);
 
       storageDir = new File(deployerConfig.getXenonConfig().getStoragePath());
       FileUtils.deleteDirectory(storageDir);
@@ -150,24 +164,28 @@ public class DeployerXenonServiceHostTest {
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      host = new DeployerXenonServiceHost(
+      host = new PhotonControllerXenonHost(
           deployerConfig.getXenonConfig(),
-          cloudStoreServerSet,
-          deployerConfig.getDeployerContext(),
-          deployerConfig.getContainersConfig(),
-          agentControlClientFactory,
           hostClientFactory,
-          httpFileServiceClientFactory,
-          listeningExecutorService,
-          apiClientFactory,
+          agentControlClientFactory,
+          serviceConfigFactory,
+          nsxClientFactory,
+          cloudStoreHelper);
+
+      deployerServiceGroup = new DeployerServiceGroup(
+          deployerConfig.getDeployerContext(),
           dockerProvisionerFactory,
+          apiClientFactory,
+          deployerConfig.getContainersConfig(),
+          listeningExecutorService,
+          httpFileServiceClientFactory,
           authHelperFactory,
           healthCheckHelperFactory,
           serviceConfiguratorFactory,
           zookeeperClientFactory,
-          hostManagementVmAddressValidatorFactory,
-          clusterManagerFactory,
-          nsxClientFactory);
+          hostManagementVmAddressValidatorFactory);
+
+      host.registerDeployer(deployerServiceGroup);
     }
 
     @AfterMethod
@@ -191,24 +209,28 @@ public class DeployerXenonServiceHostTest {
       assertThat(storageDir.exists(), is(false));
 
       // Check that host creates storage directory
-      host = new DeployerXenonServiceHost(
+      host = new PhotonControllerXenonHost(
           deployerConfig.getXenonConfig(),
-          cloudStoreServerSet,
-          deployerConfig.getDeployerContext(),
-          deployerConfig.getContainersConfig(),
-          agentControlClientFactory,
           hostClientFactory,
-          httpFileServiceClientFactory,
-          listeningExecutorService,
-          apiClientFactory,
+          agentControlClientFactory,
+          serviceConfigFactory,
+          nsxClientFactory,
+          cloudStoreHelper);
+
+      deployerServiceGroup = new DeployerServiceGroup(
+          deployerConfig.getDeployerContext(),
           dockerProvisionerFactory,
+          apiClientFactory,
+          deployerConfig.getContainersConfig(),
+          listeningExecutorService,
+          httpFileServiceClientFactory,
           authHelperFactory,
           healthCheckHelperFactory,
           serviceConfiguratorFactory,
           zookeeperClientFactory,
-          hostManagementVmAddressValidatorFactory,
-          clusterManagerFactory,
-          nsxClientFactory);
+          hostManagementVmAddressValidatorFactory);
+
+      host.registerDeployer(deployerServiceGroup);
 
       assertThat(storageDir.exists(), is(true));
       assertThat(host, is(notNullValue()));
@@ -235,6 +257,7 @@ public class DeployerXenonServiceHostTest {
 
       listeningExecutorService = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(1));
       cloudStoreServerSet = mock(ServerSet.class);
+      cloudStoreHelper = new CloudStoreHelper(cloudStoreServerSet);
       agentControlClientFactory = mock(AgentControlClientFactory.class);
       hostClientFactory = mock(HostClientFactory.class);
       httpFileServiceClientFactory = mock(HttpFileServiceClientFactory.class);
@@ -245,8 +268,12 @@ public class DeployerXenonServiceHostTest {
       serviceConfiguratorFactory = mock(ServiceConfiguratorFactory.class);
       zookeeperClientFactory = mock(ZookeeperClientFactory.class);
       hostManagementVmAddressValidatorFactory = mock(HostManagementVmAddressValidatorFactory.class);
-      clusterManagerFactory = mock(ClusterManagerFactory.class);
+//      clusterManagerFactory = mock(ClusterManagerFactory.class);
       nsxClientFactory = mock(NsxClientFactory.class);
+
+      serviceConfigFactory = mock(ServiceConfigFactory.class);
+      ServiceConfig serviceConfig = mock(ServiceConfig.class);
+      when(serviceConfigFactory.create(anyString())).thenReturn(serviceConfig);
 
       storageDir = new File(deployerConfig.getXenonConfig().getStoragePath());
       FileUtils.deleteDirectory(storageDir);
@@ -254,24 +281,28 @@ public class DeployerXenonServiceHostTest {
 
     @BeforeMethod
     private void setUp() throws Throwable {
-      host = new DeployerXenonServiceHost(
+      host = new PhotonControllerXenonHost(
           deployerConfig.getXenonConfig(),
-          cloudStoreServerSet,
-          deployerConfig.getDeployerContext(),
-          deployerConfig.getContainersConfig(),
-          agentControlClientFactory,
           hostClientFactory,
-          httpFileServiceClientFactory,
-          listeningExecutorService,
-          apiClientFactory,
+          agentControlClientFactory,
+          serviceConfigFactory,
+          nsxClientFactory,
+          cloudStoreHelper);
+
+      deployerServiceGroup = new DeployerServiceGroup(
+          deployerConfig.getDeployerContext(),
           dockerProvisionerFactory,
+          apiClientFactory,
+          deployerConfig.getContainersConfig(),
+          listeningExecutorService,
+          httpFileServiceClientFactory,
           authHelperFactory,
           healthCheckHelperFactory,
           serviceConfiguratorFactory,
           zookeeperClientFactory,
-          hostManagementVmAddressValidatorFactory,
-          clusterManagerFactory,
-          nsxClientFactory);
+          hostManagementVmAddressValidatorFactory);
+
+      host.registerDeployer(deployerServiceGroup);
     }
 
     @AfterMethod
@@ -319,6 +350,7 @@ public class DeployerXenonServiceHostTest {
 
       listeningExecutorService = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(1));
       cloudStoreServerSet = mock(ServerSet.class);
+      cloudStoreHelper = new CloudStoreHelper(cloudStoreServerSet);
       agentControlClientFactory = mock(AgentControlClientFactory.class);
       hostClientFactory = mock(HostClientFactory.class);
       httpFileServiceClientFactory = mock(HttpFileServiceClientFactory.class);
@@ -329,8 +361,12 @@ public class DeployerXenonServiceHostTest {
       serviceConfiguratorFactory = mock(ServiceConfiguratorFactory.class);
       zookeeperClientFactory = mock(ZookeeperClientFactory.class);
       hostManagementVmAddressValidatorFactory = mock(HostManagementVmAddressValidatorFactory.class);
-      clusterManagerFactory = mock(ClusterManagerFactory.class);
+//      clusterManagerFactory = mock(ClusterManagerFactory.class);
       nsxClientFactory = mock(NsxClientFactory.class);
+
+      serviceConfigFactory = mock(ServiceConfigFactory.class);
+      ServiceConfig serviceConfig = mock(ServiceConfig.class);
+      when(serviceConfigFactory.create(anyString())).thenReturn(serviceConfig);
 
       storageDir = new File(deployerConfig.getXenonConfig().getStoragePath());
       FileUtils.deleteDirectory(storageDir);
@@ -338,24 +374,28 @@ public class DeployerXenonServiceHostTest {
 
     @BeforeMethod
     private void setUp() throws Throwable {
-      host = new DeployerXenonServiceHost(
+      host = new PhotonControllerXenonHost(
           deployerConfig.getXenonConfig(),
-          cloudStoreServerSet,
-          deployerConfig.getDeployerContext(),
-          deployerConfig.getContainersConfig(),
-          agentControlClientFactory,
           hostClientFactory,
-          httpFileServiceClientFactory,
-          listeningExecutorService,
-          apiClientFactory,
+          agentControlClientFactory,
+          serviceConfigFactory,
+          nsxClientFactory,
+          cloudStoreHelper);
+
+      deployerServiceGroup = new DeployerServiceGroup(
+          deployerConfig.getDeployerContext(),
           dockerProvisionerFactory,
+          apiClientFactory,
+          deployerConfig.getContainersConfig(),
+          listeningExecutorService,
+          httpFileServiceClientFactory,
           authHelperFactory,
           healthCheckHelperFactory,
           serviceConfiguratorFactory,
           zookeeperClientFactory,
-          hostManagementVmAddressValidatorFactory,
-          clusterManagerFactory,
-          nsxClientFactory);
+          hostManagementVmAddressValidatorFactory);
+
+      host.registerDeployer(deployerServiceGroup);
     }
 
     @AfterMethod
@@ -390,12 +430,13 @@ public class DeployerXenonServiceHostTest {
 
     private final File storageDir2 = new File("/tmp/xenon/18002/");
     private final long maintenanceInterval = TimeUnit.MILLISECONDS.toMicros(500);
-    private DeployerXenonServiceHost host2;
+    private PhotonControllerXenonHost host2;
 
     @BeforeClass
     private void setUpClass() throws IOException {
       listeningExecutorService = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(1));
       cloudStoreServerSet = mock(ServerSet.class);
+      cloudStoreHelper = new CloudStoreHelper(cloudStoreServerSet);
       agentControlClientFactory = mock(AgentControlClientFactory.class);
       hostClientFactory = mock(HostClientFactory.class);
       httpFileServiceClientFactory = mock(HttpFileServiceClientFactory.class);
@@ -406,7 +447,7 @@ public class DeployerXenonServiceHostTest {
       serviceConfiguratorFactory = mock(ServiceConfiguratorFactory.class);
       zookeeperClientFactory = mock(ZookeeperClientFactory.class);
       hostManagementVmAddressValidatorFactory = mock(HostManagementVmAddressValidatorFactory.class);
-      clusterManagerFactory = mock(ClusterManagerFactory.class);
+//      clusterManagerFactory = mock(ClusterManagerFactory.class);
       nsxClientFactory = mock(NsxClientFactory.class);
 
       FileUtils.deleteDirectory(storageDir);
@@ -419,24 +460,28 @@ public class DeployerXenonServiceHostTest {
       xenonConfig.setPort(18000);
       xenonConfig.setStoragePath(storageDir.getAbsolutePath());
 
-      host = new DeployerXenonServiceHost(
+      host = new PhotonControllerXenonHost(
           xenonConfig,
-          cloudStoreServerSet,
-          null,
-          null /* containersConfig */,
-          agentControlClientFactory,
           hostClientFactory,
-          httpFileServiceClientFactory,
-          listeningExecutorService,
-          apiClientFactory,
+          agentControlClientFactory,
+          serviceConfigFactory,
+          nsxClientFactory,
+          cloudStoreHelper);
+
+      deployerServiceGroup = new DeployerServiceGroup(
+          null,
           dockerProvisionerFactory,
+          apiClientFactory,
+          null,
+          listeningExecutorService,
+          httpFileServiceClientFactory,
           authHelperFactory,
           healthCheckHelperFactory,
           serviceConfiguratorFactory,
           zookeeperClientFactory,
-          hostManagementVmAddressValidatorFactory,
-          clusterManagerFactory,
-          nsxClientFactory);
+          hostManagementVmAddressValidatorFactory);
+
+      host.registerDeployer(deployerServiceGroup);
 
       host.setMaintenanceIntervalMicros(maintenanceInterval);
       host.start();
@@ -447,24 +492,28 @@ public class DeployerXenonServiceHostTest {
       xenonConfig2.setPort(18002);
       xenonConfig2.setStoragePath(storageDir2.getAbsolutePath());
 
-      host2 = new DeployerXenonServiceHost(
+      host2 = new PhotonControllerXenonHost(
           xenonConfig2,
-          cloudStoreServerSet,
-          null,
-          null /* containersConfig */,
-          agentControlClientFactory,
           hostClientFactory,
-          httpFileServiceClientFactory,
-          listeningExecutorService,
-          apiClientFactory,
+          agentControlClientFactory,
+          serviceConfigFactory,
+          nsxClientFactory,
+          cloudStoreHelper);
+
+      DeployerServiceGroup deployerServiceGroup2 = new DeployerServiceGroup(
+          null,
           dockerProvisionerFactory,
+          apiClientFactory,
+          null,
+          listeningExecutorService,
+          httpFileServiceClientFactory,
           authHelperFactory,
           healthCheckHelperFactory,
           serviceConfiguratorFactory,
           zookeeperClientFactory,
-          hostManagementVmAddressValidatorFactory,
-          clusterManagerFactory,
-          nsxClientFactory);
+          hostManagementVmAddressValidatorFactory);
+
+      host2.registerDeployer(deployerServiceGroup2);
 
       host2.setMaintenanceIntervalMicros(maintenanceInterval);
       host2.start();
@@ -489,7 +538,7 @@ public class DeployerXenonServiceHostTest {
       ServiceHostUtils.joinNodeGroup(host2, host.getUri().getHost(), host.getPort());
 
       ServiceHostUtils.waitForNodeGroupConvergence(
-          new DeployerXenonServiceHost[]{host, host2},
+          new PhotonControllerXenonHost[]{host, host2},
           ServiceUriPaths.DEFAULT_NODE_GROUP,
           ServiceHostUtils.DEFAULT_NODE_GROUP_CONVERGENCE_MAX_RETRIES,
           MultiHostEnvironment.TEST_NODE_GROUP_CONVERGENCE_SLEEP);

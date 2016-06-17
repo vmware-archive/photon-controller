@@ -24,6 +24,7 @@ import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
 import com.vmware.photon.controller.common.xenon.deployment.NoMigrationDuringDeployment;
+import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
 import com.vmware.photon.controller.common.xenon.migration.NoMigrationDuringUpgrade;
 import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
 import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
@@ -35,7 +36,6 @@ import com.vmware.photon.controller.deployer.deployengine.HttpFileServiceClient;
 import com.vmware.photon.controller.deployer.service.exceptions.ExistHostWithSameAddressException;
 import com.vmware.photon.controller.deployer.service.exceptions.InvalidLoginException;
 import com.vmware.photon.controller.deployer.service.exceptions.ManagementVmAddressAlreadyInUseException;
-import com.vmware.photon.controller.deployer.xenon.DeployerXenonServiceHost;
 import com.vmware.photon.controller.deployer.xenon.util.HostUtils;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
@@ -260,7 +260,7 @@ public class ValidateHostTaskService extends StatefulService {
     buildQuerySpecification(querySpecification, exclusionCriteria, true);
 
     QueryTask queryTask = QueryTask.create(querySpecification).setDirect(true);
-    CloudStoreHelper cloudStoreHelper = ((DeployerXenonServiceHost) getHost()).getCloudStoreHelper();
+    CloudStoreHelper cloudStoreHelper = ((PhotonControllerXenonHost) getHost()).getCloudStoreHelper();
     URI uri = cloudStoreHelper.getCloudStoreURI(null);
 
     Operation.CompletionHandler completionHandler = new Operation.CompletionHandler() {
