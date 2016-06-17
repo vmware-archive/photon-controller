@@ -27,6 +27,7 @@ import org.apache.http.HttpStatus;
 import javax.annotation.Nullable;
 
 import java.io.IOException;
+import java.util.Map;
 
 /**
  * Flavors api.
@@ -86,6 +87,24 @@ public class FlavorApi extends ApiBase {
       flavorResourceList.getItems().addAll(resourceList.getItems());
     }
 
+    return flavorResourceList;
+  }
+  
+  /**
+   * List all flavors filtered by query params.
+   *
+   * @param queryParams
+   * @return List of flavors
+   * @throws IOException
+   */
+  public ResourceList<Flavor> listAll(Map<String, String> queryParams) throws IOException {
+    ResourceList<Flavor> flavorResourceList = new ResourceList<>();
+    ResourceList<Flavor> resourceList = getFlavorResourceList(getBasePath() + generateQueryString(queryParams));
+    flavorResourceList.setItems(resourceList.getItems());
+    while (resourceList.getNextPageLink() != null && !resourceList.getNextPageLink().isEmpty()) {
+      resourceList = getFlavorResourceList(resourceList.getNextPageLink());
+      flavorResourceList.getItems().addAll(resourceList.getItems());
+    }
     return flavorResourceList;
   }
 

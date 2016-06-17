@@ -27,6 +27,10 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -212,5 +216,27 @@ public abstract class ApiBase {
           }
         }
     );
+  }
+  
+  /**
+   * Generates query string from query params.
+   *
+   * @param queryParams
+   * @return
+   * @throws UnsupportedEncodingException 
+   */
+  public String generateQueryString(Map<String, String> queryParams) throws UnsupportedEncodingException {
+    StringBuilder query = new StringBuilder();
+    if (queryParams == null) {
+      return query.toString();
+    }
+    if (queryParams != null && queryParams.size() > 0) {
+      query.append("?");
+    }
+    for (Entry<String, String> param : queryParams.entrySet()) {
+      query.append(String.format("%s=%s&", URLEncoder.encode(param.getKey(), "UTF-8"),
+          URLEncoder.encode(param.getValue(), "UTF-8")));
+    }
+    return query.deleteCharAt(query.length() - 1).toString();
   }
 }
