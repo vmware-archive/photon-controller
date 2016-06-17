@@ -30,7 +30,7 @@ import com.vmware.photon.controller.deployer.helpers.TestHelper;
 import com.vmware.photon.controller.deployer.helpers.xenon.TestEnvironment;
 import com.vmware.photon.controller.deployer.helpers.xenon.TestHost;
 import com.vmware.photon.controller.deployer.xenon.DeployerContext;
-import com.vmware.photon.controller.deployer.xenon.DeployerXenonServiceHost;
+import com.vmware.photon.controller.deployer.xenon.DeployerServiceGroup;
 import com.vmware.photon.controller.deployer.xenon.entity.VibService;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
@@ -387,7 +387,7 @@ public class UploadVibTaskServiceTest {
       startState = buildValidStartState(null, null);
       startState.taskControlFlags = null;
       startState.taskTimeoutMicros = null;
-      startState.workQueueServiceLink = DeployerXenonServiceHost.UPLOAD_VIB_WORK_QUEUE_SELF_LINK;
+      startState.workQueueServiceLink = DeployerServiceGroup.UPLOAD_VIB_WORK_QUEUE_SELF_LINK;
       startState.vibServiceLink = vibStartState.documentSelfLink;
     }
 

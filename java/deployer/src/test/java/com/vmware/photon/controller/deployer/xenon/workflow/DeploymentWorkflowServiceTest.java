@@ -30,6 +30,7 @@ import com.vmware.photon.controller.common.xenon.MultiHostEnvironment;
 import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
+import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
@@ -49,7 +50,6 @@ import com.vmware.photon.controller.deployer.helpers.xenon.TestEnvironment;
 import com.vmware.photon.controller.deployer.helpers.xenon.TestHost;
 import com.vmware.photon.controller.deployer.xenon.ContainersConfig;
 import com.vmware.photon.controller.deployer.xenon.DeployerContext;
-import com.vmware.photon.controller.deployer.xenon.DeployerXenonServiceHost;
 import com.vmware.photon.controller.deployer.xenon.entity.ContainerService;
 import com.vmware.photon.controller.deployer.xenon.entity.ContainerTemplateService;
 import com.vmware.photon.controller.deployer.xenon.entity.VmService;
@@ -812,7 +812,7 @@ public class DeploymentWorkflowServiceTest {
     private void createHostService(Set<String> usageTags, String bindAddress) throws Throwable {
       HostService.State hostStartState = TestHelper.getHostServiceStartState(usageTags, HostState.CREATING);
       if (usageTags.contains(UsageTag.MGMT.name())) {
-        DeployerXenonServiceHost remoteHost = remoteDeployer.getHosts()[0];
+        PhotonControllerXenonHost remoteHost = remoteDeployer.getHosts()[0];
         hostStartState.metadata.put(HostService.State.METADATA_KEY_NAME_MANAGEMENT_NETWORK_IP,
             bindAddress != null ? bindAddress : remoteHost.getState().bindAddress);
         hostStartState.metadata.put(HostService.State.METADATA_KEY_NAME_DEPLOYER_XENON_PORT,
