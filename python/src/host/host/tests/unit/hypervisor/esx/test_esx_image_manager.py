@@ -16,7 +16,7 @@ import time
 import unittest
 
 from hamcrest import *  # noqa
-from host.hypervisor.placement_manager import NoSuchResourceException
+from host.placement.placement_manager import NoSuchResourceException
 from mock import MagicMock
 from mock import patch
 from mock import call

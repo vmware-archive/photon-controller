@@ -47,8 +47,8 @@ from host.hypervisor.image_manager import DirectoryNotFound
 from host.hypervisor.image_manager import ImageManager
 from host.hypervisor.image_manager import ImageNotFoundException
 from host.hypervisor.disk_manager import DiskAlreadyExistException
-from host.hypervisor.placement_manager import NoSuchResourceException
-from host.hypervisor.placement_manager import ResourceType
+from host.placement.placement_manager import NoSuchResourceException
+from host.placement.placement_manager import ResourceType
 
 from common.log import log_duration
 
