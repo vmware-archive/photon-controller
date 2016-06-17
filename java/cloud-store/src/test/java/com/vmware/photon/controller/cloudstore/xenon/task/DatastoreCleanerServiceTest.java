@@ -148,8 +148,7 @@ public class DatastoreCleanerServiceTest {
 
       return new Object[][]{
           {"taskState", state},
-          {"batchSize", 5},
-          {"intervalBetweenBatchTriggersInSeconds", 60L}
+          {"batchSize", 5}
       };
     }
   }
