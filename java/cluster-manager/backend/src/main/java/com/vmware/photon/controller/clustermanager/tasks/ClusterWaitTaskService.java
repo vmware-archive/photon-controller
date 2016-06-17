@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.clustermanager.tasks;
 
+import com.vmware.photon.controller.clustermanager.ClusterManagerFactory;
 import com.vmware.photon.controller.clustermanager.ClusterManagerFactoryProvider;
 import com.vmware.photon.controller.clustermanager.servicedocuments.NodeType;
 import com.vmware.photon.controller.clustermanager.statuschecks.SlavesStatusChecker;
@@ -24,6 +25,7 @@ import com.vmware.photon.controller.common.xenon.PatchUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
 import com.vmware.photon.controller.common.xenon.deployment.NoMigrationDuringDeployment;
+import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
 import com.vmware.photon.controller.common.xenon.migration.NoMigrationDuringUpgrade;
 import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
 import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
@@ -231,7 +233,10 @@ public class ClusterWaitTaskService extends StatefulService {
 
   @VisibleForTesting
   protected StatusCheckHelper getStatusCheckHelper() {
-    return ((ClusterManagerFactoryProvider) getHost()).getClusterManagerFactory().createStatusCheckHelper();
+    PhotonControllerXenonHost photonControllerXenonHost = (PhotonControllerXenonHost) getHost();
+    ClusterManagerFactory clusterManagerFactory =
+        ((ClusterManagerFactoryProvider) photonControllerXenonHost.getDeployer()).getClusterManagerFactory();
+    return clusterManagerFactory.createStatusCheckHelper();
   }
 
   /**

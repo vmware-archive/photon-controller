@@ -17,25 +17,29 @@ import com.vmware.photon.controller.clustermanager.ClusterManagerFactory;
 import com.vmware.photon.controller.common.clients.AgentControlClientFactory;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.thrift.ServerSet;
+import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.MultiHostEnvironment;
+import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
 import com.vmware.photon.controller.common.xenon.host.XenonConfig;
 import com.vmware.photon.controller.common.xenon.scheduler.TaskSchedulerServiceStateBuilder;
+import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfiguratorFactory;
 import com.vmware.photon.controller.deployer.deployengine.ApiClientFactory;
 import com.vmware.photon.controller.deployer.deployengine.AuthHelperFactory;
 import com.vmware.photon.controller.deployer.deployengine.DockerProvisionerFactory;
 import com.vmware.photon.controller.deployer.deployengine.HostManagementVmAddressValidatorFactory;
 import com.vmware.photon.controller.deployer.deployengine.HttpFileServiceClientFactory;
-import com.vmware.photon.controller.deployer.deployengine.NsxClientFactory;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClientFactory;
 import com.vmware.photon.controller.deployer.healthcheck.HealthCheckHelperFactory;
 import com.vmware.photon.controller.deployer.xenon.ContainersConfig;
 import com.vmware.photon.controller.deployer.xenon.DeployerContext;
-import com.vmware.photon.controller.deployer.xenon.DeployerXenonServiceHost;
+import com.vmware.photon.controller.deployer.xenon.DeployerServiceGroup;
+import com.vmware.photon.controller.nsxclient.NsxClientFactory;
 
 import com.google.common.util.concurrent.ListeningExecutorService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import static org.mockito.Mockito.mock;
 import static org.testng.Assert.assertTrue;
 
 import java.nio.file.Files;
@@ -44,7 +48,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * This class implements a test host for Xenon micro-services.
  */
-public class TestEnvironment extends MultiHostEnvironment<DeployerXenonServiceHost> {
+public class TestEnvironment extends MultiHostEnvironment<PhotonControllerXenonHost> {
 
   private static final Logger logger = LoggerFactory.getLogger(TestEnvironment.class);
 
@@ -76,10 +80,11 @@ public class TestEnvironment extends MultiHostEnvironment<DeployerXenonServiceHo
       AuthHelperFactory authHelperFactory,
       HealthCheckHelperFactory healthCheckHelperFactory,
       ServiceConfiguratorFactory serviceConfiguratorFactory,
+      ServiceConfigFactory serviceConfigFactory,
       ZookeeperClientFactory zookeeperServerSetBuilderFactory,
       HostManagementVmAddressValidatorFactory hostManagementVmAddressValidatorFactory,
-      ClusterManagerFactory clusterManagerFactory,
       NsxClientFactory nsxClientFactory,
+      ClusterManagerFactory clusterManagerFactory,
       int hostCount,
       Long operationTimeoutMicros,
       int hostNumber,
@@ -87,7 +92,7 @@ public class TestEnvironment extends MultiHostEnvironment<DeployerXenonServiceHo
 
     assertTrue(hostCount > 0);
 
-    hosts = new DeployerXenonServiceHost[hostCount];
+    hosts = new PhotonControllerXenonHost[hostCount];
     for (int i = 0; i < hosts.length; i++) {
       String sandbox = Files.createTempDirectory(STORAGE_PATH_PREFIX).toAbsolutePath().toString();
 
@@ -96,24 +101,31 @@ public class TestEnvironment extends MultiHostEnvironment<DeployerXenonServiceHo
       xenonConfig.setPort(0);
       xenonConfig.setStoragePath(sandbox);
 
-      hosts[i] = new DeployerXenonServiceHost(
+      CloudStoreHelper cloudStoreHelper = new CloudStoreHelper(cloudServerSet);
+
+      hosts[i] = new PhotonControllerXenonHost(
           xenonConfig,
-          cloudServerSet,
-          deployerContext,
-          containersConfig,
-          agentControlClientFactory,
           hostClientFactory,
-          httpFileServiceClientFactory,
-          listeningExecutorService,
-          apiClientFactory,
+          agentControlClientFactory,
+          serviceConfigFactory,
+          nsxClientFactory,
+          cloudStoreHelper);
+
+      DeployerServiceGroup deployerServiceGroup = new DeployerServiceGroup(
+          deployerContext,
           dockerProvisionerFactory,
+          apiClientFactory,
+          containersConfig,
+          listeningExecutorService,
+          httpFileServiceClientFactory,
           authHelperFactory,
           healthCheckHelperFactory,
           serviceConfiguratorFactory,
           zookeeperServerSetBuilderFactory,
           hostManagementVmAddressValidatorFactory,
-          clusterManagerFactory,
-          nsxClientFactory);
+          clusterManagerFactory);
+
+      hosts[i].registerDeployer(deployerServiceGroup);
 
       TaskSchedulerServiceStateBuilder.triggerInterval = TimeUnit.MILLISECONDS.toMicros(500);
       logger.debug(String.format("sandbox for %s: %s", hosts[i].getId(), sandbox));
@@ -138,6 +150,7 @@ public class TestEnvironment extends MultiHostEnvironment<DeployerXenonServiceHo
     private HostClientFactory hostClientFactory;
     private HealthCheckHelperFactory healthCheckHelperFactory;
     private ServiceConfiguratorFactory serviceConfiguratorFactory;
+    private ServiceConfigFactory serviceConfigFactory;
     private Integer hostCount;
     private ListeningExecutorService listeningExecutorService;
     private HttpFileServiceClientFactory httpFileServiceClientFactory;
@@ -156,11 +169,6 @@ public class TestEnvironment extends MultiHostEnvironment<DeployerXenonServiceHo
 
     public Builder authHelperFactory(AuthHelperFactory authHelperFactory) {
       this.authHelperFactory = authHelperFactory;
-      return this;
-    }
-
-    public Builder clusterManagerFactory(ClusterManagerFactory clusterManagerFactory) {
-      this.clusterManagerFactory = clusterManagerFactory;
       return this;
     }
 
@@ -224,6 +232,11 @@ public class TestEnvironment extends MultiHostEnvironment<DeployerXenonServiceHo
       return this;
     }
 
+    public Builder serviceConfigFactory(ServiceConfigFactory factory) {
+      this.serviceConfigFactory = factory;
+      return this;
+    }
+
     public Builder zookeeperServersetBuilderFactory(ZookeeperClientFactory zookeeperServerSetBuilderFactory) {
       this.zookeeperServerSetBuilderFactory = zookeeperServerSetBuilderFactory;
       return this;
@@ -232,6 +245,11 @@ public class TestEnvironment extends MultiHostEnvironment<DeployerXenonServiceHo
     public Builder hostManagementVmAddressValidatorBuilderFactory(
         HostManagementVmAddressValidatorFactory hostManagementVmAddressValidatorFactory) {
       this.hostManagementVmAddressValidatorFactory = hostManagementVmAddressValidatorFactory;
+      return this;
+    }
+
+    public Builder clusterManagerFactory(ClusterManagerFactory clusterManagerFactory) {
+      this.clusterManagerFactory = clusterManagerFactory;
       return this;
     }
 
@@ -246,6 +264,22 @@ public class TestEnvironment extends MultiHostEnvironment<DeployerXenonServiceHo
         throw new IllegalArgumentException("Host count is required");
       }
 
+      if (this.hostClientFactory == null) {
+        this.hostClientFactory = mock(HostClientFactory.class);
+      }
+
+      if (this.serviceConfigFactory == null) {
+        this.serviceConfigFactory = mock(ServiceConfigFactory.class);
+      }
+
+      if (this.nsxClientFactory == null) {
+        this.nsxClientFactory = mock(NsxClientFactory.class);
+      }
+
+      if (this.cloudServerSet == null) {
+        this.cloudServerSet = mock(ServerSet.class);
+      }
+
       TestEnvironment testEnvironment = new TestEnvironment(
           this.deployerContext,
           this.containersConfig,
@@ -258,10 +292,11 @@ public class TestEnvironment extends MultiHostEnvironment<DeployerXenonServiceHo
           this.authHelperFactory,
           this.healthCheckHelperFactory,
           this.serviceConfiguratorFactory,
+          this.serviceConfigFactory,
           this.zookeeperServerSetBuilderFactory,
           this.hostManagementVmAddressValidatorFactory,
-          this.clusterManagerFactory,
           this.nsxClientFactory,
+          this.clusterManagerFactory,
           this.hostCount,
           this.operationTimeoutMicros,
           this.hostNumber,

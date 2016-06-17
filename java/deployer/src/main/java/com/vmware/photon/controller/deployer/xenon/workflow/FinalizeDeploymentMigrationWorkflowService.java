@@ -32,6 +32,7 @@ import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
 import com.vmware.photon.controller.common.xenon.deployment.NoMigrationDuringDeployment;
+import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
 import com.vmware.photon.controller.common.xenon.migration.NoMigrationDuringUpgrade;
 import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
 import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
@@ -40,7 +41,7 @@ import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.common.xenon.validation.Positive;
 import com.vmware.photon.controller.common.xenon.validation.WriteOnce;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClient;
-import com.vmware.photon.controller.deployer.deployengine.ZookeeperClientFactoryProvider;
+import com.vmware.photon.controller.deployer.xenon.DeployerServiceGroup;
 import com.vmware.photon.controller.deployer.xenon.constant.ServicePortConstants;
 import com.vmware.photon.controller.deployer.xenon.task.CopyStateTaskFactoryService;
 import com.vmware.photon.controller.deployer.xenon.task.CopyStateTaskService;
@@ -736,8 +737,9 @@ public class FinalizeDeploymentMigrationWorkflowService extends StatefulService 
 
   private void migrateFinal(State currentState, Map<String, Long> lastUpdateTimes) {
     Map<String, Pair<Set<InetSocketAddress>, Set<InetSocketAddress>>> m = new HashMap<>();
-    ZookeeperClient zookeeperClient
-        = ((ZookeeperClientFactoryProvider) getHost()).getZookeeperServerSetFactoryBuilder().create();
+    DeployerServiceGroup deployerServiceGroup =
+        (DeployerServiceGroup) ((PhotonControllerXenonHost) getHost()).getDeployer();
+    ZookeeperClient zookeeperClient = deployerServiceGroup.getZookeeperServerSetFactoryBuilder().create();
 
     OperationJoin.create(
         HostUtils.getDeployerContext(this).getUpgradeInformation().stream()

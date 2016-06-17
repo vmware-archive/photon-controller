@@ -19,12 +19,12 @@ import com.vmware.photon.controller.cloudstore.xenon.entity.HostService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.HostServiceFactory;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
+import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
 import com.vmware.photon.controller.common.xenon.migration.UpgradeInformation;
 import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
 import com.vmware.photon.controller.deployer.helpers.xenon.TestEnvironment;
 import com.vmware.photon.controller.deployer.xenon.DeployerContext;
-import com.vmware.photon.controller.deployer.xenon.DeployerXenonServiceHost;
 import com.vmware.photon.controller.deployer.xenon.entity.SampleService;
 import com.vmware.photon.controller.deployer.xenon.entity.SampleServiceFactory;
 import com.vmware.xenon.common.Operation;
@@ -83,7 +83,7 @@ public class ReflectionTransformationServiceTest {
       })
       .setReferer(env.getHosts()[0].getPublicUri());
 
-    for (DeployerXenonServiceHost host : env.getHosts()) {
+    for (PhotonControllerXenonHost host : env.getHosts()) {
       host.startService(op, service);
       ServiceHostUtils.startServices(host, HostServiceFactory.class);
       ServiceHostUtils.startServices(host, SampleServiceFactory.class);

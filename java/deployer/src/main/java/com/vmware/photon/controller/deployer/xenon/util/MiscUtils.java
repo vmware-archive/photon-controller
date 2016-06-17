@@ -27,8 +27,8 @@ import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
+import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
 import com.vmware.photon.controller.deployer.xenon.ContainersConfig;
-import com.vmware.photon.controller.deployer.xenon.DeployerXenonServiceHost;
 import com.vmware.photon.controller.deployer.xenon.constant.DeployerDefaults;
 import com.vmware.photon.controller.deployer.xenon.task.CopyStateTaskService;
 import com.vmware.xenon.common.Operation;
@@ -255,7 +255,7 @@ public class MiscUtils {
     querySpecification.query = kindClause;
 
     service.sendRequest(
-        ((DeployerXenonServiceHost) service.getHost()).getCloudStoreHelper()
+        ((PhotonControllerXenonHost) service.getHost()).getCloudStoreHelper()
             .createBroadcastPost(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS, ServiceUriPaths.DEFAULT_NODE_SELECTOR)
             .setBody(QueryTask.create(querySpecification).setDirect(true))
             .setCompletion(

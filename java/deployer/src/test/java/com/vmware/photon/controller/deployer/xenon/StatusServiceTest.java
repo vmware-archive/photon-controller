@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.deployer.xenon;
 
+import com.vmware.photon.controller.common.xenon.host.StatusService;
 import com.vmware.photon.controller.deployer.helpers.xenon.TestHost;
 import com.vmware.xenon.common.Operation;
 
@@ -25,7 +26,7 @@ import static org.mockito.Mockito.spy;
 
 
 /**
- * Tests {@link StatusService}.
+ * Tests {@link com.vmware.photon.controller.common.xenon.host.StatusService}.
  */
 public class StatusServiceTest {
 
@@ -37,7 +38,7 @@ public class StatusServiceTest {
   }
 
   /**
-   * Tests Scheduler {@link StatusService#handleGet}.
+   * Tests Scheduler {@link StatusService#handleGet(com.vmware.xenon.common.Operation)}.
    */
   public class HandleGetTest {
     StatusService service;

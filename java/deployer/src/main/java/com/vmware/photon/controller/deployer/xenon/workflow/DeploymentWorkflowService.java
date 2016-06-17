@@ -24,6 +24,7 @@ import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
 import com.vmware.photon.controller.common.xenon.deployment.NoMigrationDuringDeployment;
+import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
 import com.vmware.photon.controller.common.xenon.migration.DeploymentMigrationInformation;
 import com.vmware.photon.controller.common.xenon.migration.NoMigrationDuringUpgrade;
 import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
@@ -34,8 +35,7 @@ import com.vmware.photon.controller.common.xenon.validation.WriteOnce;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfig;
 import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClient;
-import com.vmware.photon.controller.deployer.deployengine.ZookeeperClientFactoryProvider;
-import com.vmware.photon.controller.deployer.xenon.DeployerXenonServiceHost;
+import com.vmware.photon.controller.deployer.xenon.DeployerServiceGroup;
 import com.vmware.photon.controller.deployer.xenon.task.AllocateClusterManagerResourcesTaskFactoryService;
 import com.vmware.photon.controller.deployer.xenon.task.AllocateClusterManagerResourcesTaskService;
 import com.vmware.photon.controller.deployer.xenon.task.CopyStateTaskFactoryService;
@@ -571,7 +571,7 @@ public class DeploymentWorkflowService extends StatefulService {
     ServiceUtils.logInfo(this, "Migrating deployment data");
 
     sendRequest(
-        ((DeployerXenonServiceHost) getHost()).getCloudStoreHelper()
+        ((PhotonControllerXenonHost) getHost()).getCloudStoreHelper()
             .createGet(currentState.deploymentServiceLink)
             .setCompletion(
                 (operation, throwable) -> {
@@ -595,8 +595,9 @@ public class DeploymentWorkflowService extends StatefulService {
 
     Map<String, Pair<Set<InetSocketAddress>, Set<InetSocketAddress>>> serviceSourceDestinationAddressCache
       = new HashMap<>();
-    ZookeeperClient zookeeperClient
-      = ((ZookeeperClientFactoryProvider) getHost()).getZookeeperServerSetFactoryBuilder().create();
+    DeployerServiceGroup deployerServiceGroup =
+        (DeployerServiceGroup) ((PhotonControllerXenonHost) getHost()).getDeployer();
+    ZookeeperClient zookeeperClient = deployerServiceGroup.getZookeeperServerSetFactoryBuilder().create();
 
     Collection<DeploymentMigrationInformation> migrationInformation
       = HostUtils.getDeployerContext(this).getDeploymentMigrationInformation();

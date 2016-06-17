@@ -9,7 +9,6 @@
   "containerImage": "esxcloud/photon-controller-core",
   "portBindings": {
     "9000": 9000,
-    "18000": 18000,
     "19000": 19000
   },
   "volumeBindings": {
