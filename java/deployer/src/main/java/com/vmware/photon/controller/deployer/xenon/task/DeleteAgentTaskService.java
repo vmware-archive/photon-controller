@@ -48,7 +48,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * This class implements a DCP micro-service which performs the task of
+ * This class implements a Xenon micro-service which performs the task of
  * deleting a Photon Controller agent instance from an ESX hypervisor.
  */
 public class DeleteAgentTaskService extends StatefulService {
@@ -234,7 +234,7 @@ public class DeleteAgentTaskService extends StatefulService {
 
   /**
    * This method creates a script runner object and submits it to the executor
-   * service for the DCP host. On successful completion, the service is
+   * service for the Xenon host. On successful completion, the service is
    * transitioned to the FINISHED state.
    *
    * @param currentState

@@ -68,7 +68,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * This class implements a DCP service representing removing deployment.
+ * This class implements a Xenon service representing removing deployment.
  */
 public class RemoveDeploymentWorkflowService extends StatefulService {
 
@@ -711,7 +711,7 @@ public class RemoveDeploymentWorkflowService extends StatefulService {
         public void onSuccess(@Nullable final ResourceList<Flavor> result) {
           if (result == null || result.getItems().size() == 0) {
             //No flavor
-            deleteDCPEntities(callback);
+            deleteXenonEntities(callback);
 
           } else {
 
@@ -722,7 +722,7 @@ public class RemoveDeploymentWorkflowService extends StatefulService {
               public void onSuccess(@Nullable Task result) {
                 if (latch.decrementAndGet() == 0) {
                   //All flavors are deleted
-                  deleteDCPEntities(callback);
+                  deleteXenonEntities(callback);
                 }
               }
 
@@ -763,7 +763,7 @@ public class RemoveDeploymentWorkflowService extends StatefulService {
   }
 
 
-  private Operation.CompletionHandler createCompletionHandlerForDeleteDCPEntities(boolean isCloudStoreEntity) {
+  private Operation.CompletionHandler createCompletionHandlerForDeleteXenonEntities(boolean isCloudStoreEntity) {
     return new Operation.CompletionHandler() {
       @Override
       public void handle(Operation operation, Throwable throwable) {
@@ -776,7 +776,7 @@ public class RemoveDeploymentWorkflowService extends StatefulService {
           Collection<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(operation);
           QueryTaskUtils.logQueryResults(RemoveDeploymentWorkflowService.this, documentLinks);
           if (documentLinks.size() > 0) {
-            processDeleteFromDCP(documentLinks, isCloudStoreEntity);
+            processDeleteFromXenon(documentLinks, isCloudStoreEntity);
           }
         } catch (Throwable t) {
           failTask(t);
@@ -785,10 +785,10 @@ public class RemoveDeploymentWorkflowService extends StatefulService {
     };
   }
 
-  private void deleteDCPEntities(final FutureCallback<Task> callback) {
-    deleteDCPEntities(ContainerTemplateService.State.class);
-    deleteDCPEntities(ContainerService.State.class);
-    deleteDCPEntities(VmService.State.class);
+  private void deleteXenonEntities(final FutureCallback<Task> callback) {
+    deleteXenonEntities(ContainerTemplateService.State.class);
+    deleteXenonEntities(ContainerService.State.class);
+    deleteXenonEntities(VmService.State.class);
 
     ServiceUtils.logInfo(this, "Remove from cloud store..");
 
@@ -796,18 +796,18 @@ public class RemoveDeploymentWorkflowService extends StatefulService {
         HostUtils.getCloudStoreHelper(this)
             .createBroadcastPost(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS, ServiceUriPaths.DEFAULT_NODE_SELECTOR)
             .setBody(QueryTask.create(buildQuerySpecification(DatastoreService.class)).setDirect(true))
-            .setCompletion(createCompletionHandlerForDeleteDCPEntities(true)));
+            .setCompletion(createCompletionHandlerForDeleteXenonEntities(true)));
 
     sendRequest(
         HostUtils.getCloudStoreHelper(this)
             .createBroadcastPost(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS, ServiceUriPaths.DEFAULT_NODE_SELECTOR)
             .setBody(QueryTask.create(buildQuerySpecification(DeploymentService.class)).setDirect(true))
-            .setCompletion(createCompletionHandlerForDeleteDCPEntities(true)));
+            .setCompletion(createCompletionHandlerForDeleteXenonEntities(true)));
 
     callback.onSuccess(null);
   }
 
-  private void deleteDCPEntities(Class entityClass) {
+  private void deleteXenonEntities(Class entityClass) {
 
     sendRequest(Operation
         .createPost(UriUtils.buildBroadcastRequestUri(
@@ -816,7 +816,7 @@ public class RemoveDeploymentWorkflowService extends StatefulService {
         .setBody(QueryTask
             .create(buildQuerySpecification(entityClass))
             .setDirect(true))
-        .setCompletion(createCompletionHandlerForDeleteDCPEntities(false)));
+        .setCompletion(createCompletionHandlerForDeleteXenonEntities(false)));
   }
 
   private void deleteFlavor(final ApiClient client, final String flavorId,
@@ -830,7 +830,7 @@ public class RemoveDeploymentWorkflowService extends StatefulService {
     }
   }
 
-  private void processDeleteFromDCP(Collection<String> documentLinks, boolean isCloudStoreEntity) {
+  private void processDeleteFromXenon(Collection<String> documentLinks, boolean isCloudStoreEntity) {
 
     OperationJoin
         .create(documentLinks.stream()
@@ -847,11 +847,11 @@ public class RemoveDeploymentWorkflowService extends StatefulService {
         .sendWith(this);
   }
 
-  private QueryTask.QuerySpecification buildQuerySpecification(Class dcpEntityClass) {
+  private QueryTask.QuerySpecification buildQuerySpecification(Class xenonEntityClass) {
     QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
     querySpecification.query = new QueryTask.Query()
         .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
-        .setTermMatchValue(Utils.buildKind(dcpEntityClass));
+        .setTermMatchValue(Utils.buildKind(xenonEntityClass));
     return querySpecification;
   }
 

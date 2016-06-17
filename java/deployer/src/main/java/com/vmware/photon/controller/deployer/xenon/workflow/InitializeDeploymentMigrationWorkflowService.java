@@ -91,7 +91,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * This class implements a DCP micro-service which performs the task of
+ * This class implements a Xenon micro-service which performs the task of
  * initializing migration of an existing deployment to a new deployment.
  */
 public class InitializeDeploymentMigrationWorkflowService extends StatefulService {
@@ -140,7 +140,7 @@ public class InitializeDeploymentMigrationWorkflowService extends StatefulServic
 
     /**
      * This value represents the interval, in milliseconds, to use when polling
-     * the state of a dcp task.
+     * the state of a Xenon task.
      */
     @Positive
     public Integer taskPollDelay;

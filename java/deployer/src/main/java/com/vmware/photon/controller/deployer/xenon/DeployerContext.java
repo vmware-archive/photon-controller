@@ -30,7 +30,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * This class implements deployer context which is provided by the DCP host
+ * This class implements deployer context which is provided by the Xenon host
  * to service instances.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -40,10 +40,10 @@ public class DeployerContext {
   private int corePoolSize = DeployerDefaults.CORE_POOL_SIZE;
 
   @Range(min = 1)
-  private int dcpRetryCount = DeployerDefaults.DEFAULT_DCP_RETRY_COUNT;
+  private int xenonRetryCount = DeployerDefaults.DEFAULT_XENON_RETRY_COUNT;
 
   @Range(min = 1)
-  private int dcpRetryIntervalMs = DeployerDefaults.DEFAULT_DCP_RETRY_INTERVAL_MILLISECOND;
+  private int xenonRetryIntervalMs = DeployerDefaults.DEFAULT_XENON_RETRY_INTERVAL_MILLISECOND;
 
   @Range(min = 1025, max = 65535)
   private int deployerPort = DeployerDefaults.DEPLOYER_PORT_NUMBER;
@@ -114,8 +114,8 @@ public class DeployerContext {
   @VisibleForTesting
   public DeployerContext() {
     corePoolSize = DeployerDefaults.CORE_POOL_SIZE;
-    dcpRetryCount = DeployerDefaults.DEFAULT_DCP_RETRY_COUNT;
-    dcpRetryIntervalMs = DeployerDefaults.DEFAULT_DCP_RETRY_INTERVAL_MILLISECOND;
+    xenonRetryCount = DeployerDefaults.DEFAULT_XENON_RETRY_COUNT;
+    xenonRetryIntervalMs = DeployerDefaults.DEFAULT_XENON_RETRY_INTERVAL_MILLISECOND;
     deployerPort = DeployerDefaults.DEPLOYER_PORT_NUMBER;
     enableSyslog = null;
     keepAliveTime = DeployerDefaults.KEEP_ALIVE_TIME;
@@ -141,12 +141,12 @@ public class DeployerContext {
     return corePoolSize;
   }
 
-  public int getDcpRetryCount() {
-    return dcpRetryCount;
+  public int getXenonRetryCount() {
+    return xenonRetryCount;
   }
 
-  public int getDcpRetryIntervalMs() {
-    return dcpRetryIntervalMs;
+  public int getXenonRetryIntervalMs() {
+    return xenonRetryIntervalMs;
   }
 
   public int getDeployerPort() {

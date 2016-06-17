@@ -18,7 +18,7 @@ import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Service;
 
 /**
- * This class implements a DCP microservice which provides a factory for
+ * This class implements a Xenon microservice which provides a factory for
  * {@link CreateContainerSpecTaskService} instances.
  */
 public class CreateContainerSpecTaskFactoryService extends FactoryService {

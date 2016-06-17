@@ -42,7 +42,7 @@ import java.nio.file.Files;
 import java.util.concurrent.TimeUnit;
 
 /**
- * This class implements a test host for DCP micro-services.
+ * This class implements a test host for Xenon micro-services.
  */
 public class TestEnvironment extends MultiHostEnvironment<DeployerXenonServiceHost> {
 

@@ -414,10 +414,10 @@ public class CreateContainerSpecTaskServiceTest {
       };
     }
 
-    // TODO(hgadgil): This test does not run due to how DCP handles queries.
-    // If a document link is specified and we try to retrieve it when the object does not exist, DCP assumes that
+    // TODO(hgadgil): This test does not run due to how Xenon handles queries.
+    // If a document link is specified and we try to retrieve it when the object does not exist, Xenon assumes that
     // the document is still being replicated so waits forever rather than returning failure "NOT_FOUND".
-    // Filed tracker story to enable this test when DCP enables the required behavior:
+    // Filed tracker story to enable this test when Xenon enables the required behavior:
     // https://www.pivotaltracker.com/story/show/94686222
     @Test(enabled = false)
     public void testContainerTemplateNotFound() throws Throwable {

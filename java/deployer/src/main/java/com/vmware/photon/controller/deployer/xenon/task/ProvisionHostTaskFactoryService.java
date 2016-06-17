@@ -18,7 +18,7 @@ import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Service;
 
 /**
- * This class implements a DCP service which provides a factory for {@link ProvisionHostTaskService} instances.
+ * This class implements a Xenon service which provides a factory for {@link ProvisionHostTaskService} instances.
  */
 public class ProvisionHostTaskFactoryService extends FactoryService {
 

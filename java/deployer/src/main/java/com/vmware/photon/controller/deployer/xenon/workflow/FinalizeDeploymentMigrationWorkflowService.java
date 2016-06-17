@@ -86,7 +86,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 /**
- * This class implements a DCP micro-service which performs the task of
+ * This class implements a Xenon micro-service which performs the task of
  * migration of an existing deployment to a new deployment.
  */
 public class FinalizeDeploymentMigrationWorkflowService extends StatefulService {
@@ -137,7 +137,7 @@ public class FinalizeDeploymentMigrationWorkflowService extends StatefulService 
 
     /**
      * This value represents the interval, in milliseconds, to use when polling
-     * the state of a dcp task.
+     * the state of a Xenon task.
      */
     @Positive
     public Integer taskPollDelay;

@@ -46,7 +46,7 @@ import javax.annotation.Nullable;
 import java.util.Collection;
 
 /**
- * This class implements a DCP micro-service which performs the task of creating {@link VmService} entities once the
+ * This class implements a Xenon micro-service which performs the task of creating {@link VmService} entities once the
  * hypervisor entities exist.
  */
 public class CreateVmSpecTaskService extends StatefulService {
@@ -239,7 +239,7 @@ public class CreateVmSpecTaskService extends StatefulService {
 
     // This is only used for testing purpose. See reference in {@link HostService} and {@link VmService}
     if (hostState.metadata.containsKey(HostService.State.METADATA_KEY_NAME_DEPLOYER_XENON_PORT)) {
-      vmServiceState.deployerDcpPort =
+      vmServiceState.deployerXenonPort =
           Integer.parseInt(hostState.metadata.get(HostService.State.METADATA_KEY_NAME_DEPLOYER_XENON_PORT));
     }
 

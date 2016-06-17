@@ -50,7 +50,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
- * This class moves DCP state between two DCP clusters.
+ * This service moves Xenon state between two Xenon clusters.
  */
 public class CopyStateTriggerTaskService extends StatefulService {
   private static final long OWNER_SELECTION_TIMEOUT = TimeUnit.SECONDS.toMillis(10);
