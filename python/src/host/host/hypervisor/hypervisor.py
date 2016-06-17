@@ -15,7 +15,7 @@
 import abc
 import logging
 
-from host.hypervisor.image_monitor import ImageMonitor
+from host.image.image_monitor import ImageMonitor
 from host.hypervisor.placement_manager import PlacementManager
 from host.hypervisor.placement_manager import PlacementOption
 from host.hypervisor.resources import Resource

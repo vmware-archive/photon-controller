@@ -18,8 +18,8 @@ from matchers import *  # noqa
 from mock import MagicMock, patch
 
 from common.task_runner import TaskTerminated, TaskTimeout
-from host.hypervisor.image_scanner import DatastoreImageScanner
-from host.hypervisor.image_scanner import DatastoreImageScannerTaskRunner
+from host.image.image_scanner import DatastoreImageScanner
+from host.image.image_scanner import DatastoreImageScannerTaskRunner
 from common.tests.unit.test_task_runner import TestSynchronizer
 
 
@@ -57,8 +57,8 @@ class ImageScannerTestCase(unittest.TestCase):
     def tearDown(self):
         self.image_scanner.stop()
 
-    @patch("host.hypervisor.image_scanner.DatastoreImageScannerTaskRunner._scan_for_unused_images")
-    @patch("host.hypervisor.image_scanner.DatastoreImageScannerTaskRunner._scan_vms_for_active_images")
+    @patch("host.image.image_scanner.DatastoreImageScannerTaskRunner._scan_for_unused_images")
+    @patch("host.image.image_scanner.DatastoreImageScannerTaskRunner._scan_vms_for_active_images")
     def test_lifecycle(self, scan_vms_for_active_images, scan_for_unused_images):
         assert_that(self.image_scanner.get_state() is
                     DatastoreImageScanner.State.IDLE)
@@ -78,8 +78,8 @@ class ImageScannerTestCase(unittest.TestCase):
         scan_vms_for_active_images.assert_called_once_with(self.image_scanner, self.DATASTORE_ID)
         scan_for_unused_images.assert_called_once_with(self.image_scanner, self.DATASTORE_ID)
 
-    @patch("host.hypervisor.image_scanner.DatastoreImageScannerTaskRunner._scan_for_unused_images")
-    @patch("host.hypervisor.image_scanner.DatastoreImageScannerTaskRunner._scan_vms_for_active_images")
+    @patch("host.image.image_scanner.DatastoreImageScannerTaskRunner._scan_for_unused_images")
+    @patch("host.image.image_scanner.DatastoreImageScannerTaskRunner._scan_vms_for_active_images")
     def test_stop(self, scan_vms_for_active_images, scan_for_unused_images):
         assert_that(self.image_scanner.get_state() is
                     DatastoreImageScanner.State.IDLE)
@@ -106,8 +106,8 @@ class ImageScannerTestCase(unittest.TestCase):
         scan_vms_for_active_images.assert_called_with(self.image_scanner, self.DATASTORE_ID)
         assert_that(scan_for_unused_images.called is False)
 
-    @patch("host.hypervisor.image_scanner.DatastoreImageScannerTaskRunner._scan_for_unused_images")
-    @patch("host.hypervisor.image_scanner.DatastoreImageScannerTaskRunner._scan_vms_for_active_images")
+    @patch("host.image.image_scanner.DatastoreImageScannerTaskRunner._scan_for_unused_images")
+    @patch("host.image.image_scanner.DatastoreImageScannerTaskRunner._scan_vms_for_active_images")
     def test_timeout(self, scan_vms_for_active_images, scan_for_unused_images):
         assert_that(self.image_scanner.get_state() is
                     DatastoreImageScanner.State.IDLE)
@@ -137,7 +137,7 @@ class ImageScannerTestCase(unittest.TestCase):
 
     def test_parse_vmdk(self):
         base_dir = os.path.dirname(__file__)
-        test_dir = os.path.join(base_dir, "test_files", "vm_good")
+        test_dir = os.path.join(base_dir, "../test_files", "vm_good")
         vmdk_pathname = os.path.join(test_dir, 'good.vmdk')
         dictionary = DatastoreImageScannerTaskRunner._parse_vmdk(vmdk_pathname)
         assert_that(dictionary["version"] == "1")

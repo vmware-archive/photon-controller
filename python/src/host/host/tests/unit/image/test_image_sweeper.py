@@ -15,7 +15,7 @@ import unittest
 from matchers import *  # noqa
 from mock import MagicMock, patch
 
-from host.hypervisor.image_sweeper import DatastoreImageSweeper
+from host.image.image_sweeper import DatastoreImageSweeper
 from common.tests.unit.test_task_runner import TestSynchronizer
 
 
@@ -48,7 +48,7 @@ class ImageSweeperTestCase(unittest.TestCase):
     def tearDown(self):
         self.image_sweeper.stop()
 
-    @patch("host.hypervisor.image_sweeper.DatastoreImageSweeperTaskRunner._delete_unused_images")
+    @patch("host.image.image_sweeper.DatastoreImageSweeperTaskRunner._delete_unused_images")
     def test_lifecycle(self, delete_unused_images):
         assert_that(self.image_sweeper.get_state() is DatastoreImageSweeper.State.IDLE)
 
