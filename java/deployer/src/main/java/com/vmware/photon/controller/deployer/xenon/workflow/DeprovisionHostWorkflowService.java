@@ -25,6 +25,7 @@ import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
 import com.vmware.photon.controller.common.xenon.deployment.NoMigrationDuringDeployment;
+import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
 import com.vmware.photon.controller.common.xenon.migration.NoMigrationDuringUpgrade;
 import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
 import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
@@ -32,7 +33,7 @@ import com.vmware.photon.controller.common.xenon.validation.DefaultUuid;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClient;
-import com.vmware.photon.controller.deployer.deployengine.ZookeeperClientFactoryProvider;
+import com.vmware.photon.controller.deployer.xenon.DeployerServiceGroup;
 import com.vmware.photon.controller.deployer.xenon.entity.ContainerService;
 import com.vmware.photon.controller.deployer.xenon.entity.VmService;
 import com.vmware.photon.controller.deployer.xenon.task.ChangeHostModeTaskFactoryService;
@@ -542,9 +543,10 @@ public class DeprovisionHostWorkflowService extends StatefulService {
 
                     // Update zookeeper config by calling reconfigure
                     try {
-                      ZookeeperClient zookeeperClient
-                          = ((ZookeeperClientFactoryProvider) getHost()).getZookeeperServerSetFactoryBuilder()
-                          .create();
+                      DeployerServiceGroup deployerServiceGroup =
+                          (DeployerServiceGroup) ((PhotonControllerXenonHost) getHost()).getDeployer();
+                      ZookeeperClient zookeeperClient =
+                          deployerServiceGroup.getZookeeperServerSetFactoryBuilder().create();
 
                       zookeeperClient.removeServer(HostUtils.getDeployerContext(this).getZookeeperQuorum(),
                           zkIndex, callback);

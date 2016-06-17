@@ -32,6 +32,7 @@ import com.vmware.photon.controller.common.zookeeper.ServiceConfigFactory;
 import com.vmware.photon.controller.common.zookeeper.ServiceConfigProvider;
 import com.vmware.photon.controller.nsxclient.NsxClientFactory;
 import com.vmware.photon.controller.nsxclient.NsxClientFactoryProvider;
+import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceHost;
 import com.vmware.xenon.common.UtilsHelper;
 import com.vmware.xenon.services.common.LuceneDocumentIndexService;
@@ -70,10 +71,12 @@ public class PhotonControllerXenonHost
     private final NsxClientFactory nsxClientFactory;
     private CloudStoreHelper cloudStoreHelper;
     private BuildInfo buildInfo;
+
     private final List<XenonServiceGroup> xenonServiceGroups = Collections.synchronizedList(new ArrayList<>());
     private XenonServiceGroup cloudStore;
     private XenonServiceGroup scheduler;
     private XenonServiceGroup housekeeper;
+    private XenonServiceGroup deployer;
 
     @SuppressWarnings("rawtypes")
     public static final Class[] FACTORY_SERVICES = {
@@ -250,9 +253,26 @@ public class PhotonControllerXenonHost
       return this.housekeeper;
     }
 
+    public void registerDeployer(XenonServiceGroup deployer) {
+      this.deployer = deployer;
+      addXenonServiceGroup(deployer);
+    }
+
+    public XenonServiceGroup getDeployer() {
+      return this.deployer;
+    }
+
     private void addXenonServiceGroup(XenonServiceGroup xenonServiceGroup) {
         xenonServiceGroups.add(xenonServiceGroup);
         xenonServiceGroup.setPhotonControllerXenonHost(this);
+    }
+
+    /**
+     * Adds a service to a privileged list, allowing it to operate on authorization.
+     * context
+     */
+    public void addPrivilegedService(Class<? extends Service> serviceType) {
+      super.addPrivilegedService(serviceType);
     }
 
     public ServiceConfigFactory getServiceConfigFactory() {
