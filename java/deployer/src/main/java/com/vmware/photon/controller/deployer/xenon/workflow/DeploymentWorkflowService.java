@@ -69,7 +69,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 /**
- * This class implements a DCP service representing the end-to-end deployment workflow.
+ * This class implements a Xenon service representing the end-to-end deployment workflow.
  */
 public class DeploymentWorkflowService extends StatefulService {
 

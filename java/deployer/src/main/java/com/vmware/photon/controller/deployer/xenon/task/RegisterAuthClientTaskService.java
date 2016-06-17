@@ -56,7 +56,7 @@ import java.util.Collection;
 import java.util.concurrent.Callable;
 
 /**
- * This class implements a DCP micro-service that registers a client to lotus.
+ * This class implements a Xenon micro-service that registers a client to lotus.
  */
 public class RegisterAuthClientTaskService extends StatefulService {
 

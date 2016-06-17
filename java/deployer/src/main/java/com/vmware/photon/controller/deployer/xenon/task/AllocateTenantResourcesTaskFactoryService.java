@@ -18,7 +18,7 @@ import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Service;
 
 /**
- * This class implements a DCP service which provides a factory for {@link AllocateTenantResourcesTaskService}
+ * This class implements a Xenon service which provides a factory for {@link AllocateTenantResourcesTaskService}
  * instances.
  */
 public class AllocateTenantResourcesTaskFactoryService extends FactoryService {

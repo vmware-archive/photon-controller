@@ -114,8 +114,8 @@ public class DeployerContextTest {
       assertThat(deployerContext.getMaxMemoryGb(), is(64));
       assertThat(deployerContext.getMaxVmCount(), is(20));
       assertThat(deployerContext.getDeployerPort(), is(18000));
-      assertThat(deployerContext.getDcpRetryCount(), is(17));
-      assertThat(deployerContext.getDcpRetryIntervalMs(), is(50));
+      assertThat(deployerContext.getXenonRetryCount(), is(17));
+      assertThat(deployerContext.getXenonRetryIntervalMs(), is(50));
       assertThat(deployerContext.getScriptTimeoutSec(), is(17));
       assertThat(deployerContext.getPollingIntervalMs(), is(50));
       assertThat(deployerContext.getWaitForServiceMaxRetryCount(), is(17));
@@ -183,8 +183,9 @@ public class DeployerContextTest {
       assertThat(deployerContext.getMaxMemoryGb(), is(DeployerDefaults.DEFAULT_MAX_MEMORY_GB));
       assertThat(deployerContext.getMaxVmCount(), is(DeployerDefaults.DEFAULT_MAX_VM_COUNT));
       assertThat(deployerContext.getDeployerPort(), is(DeployerDefaults.DEPLOYER_PORT_NUMBER));
-      assertThat(deployerContext.getDcpRetryCount(), is(DeployerDefaults.DEFAULT_DCP_RETRY_COUNT));
-      assertThat(deployerContext.getDcpRetryIntervalMs(), is(DeployerDefaults.DEFAULT_DCP_RETRY_INTERVAL_MILLISECOND));
+      assertThat(deployerContext.getXenonRetryCount(), is(DeployerDefaults.DEFAULT_XENON_RETRY_COUNT));
+      assertThat(deployerContext.getXenonRetryIntervalMs(),
+          is(DeployerDefaults.DEFAULT_XENON_RETRY_INTERVAL_MILLISECOND));
       assertThat(deployerContext.getScriptTimeoutSec(), is(DeployerDefaults.SCRIPT_TIMEOUT_IN_SECONDS));
       assertThat(deployerContext.getPollingIntervalMs(), is(DeployerDefaults.DEFAULT_POLLING_INTERVAL_MILLISECOND));
       assertThat(deployerContext.getWaitForServiceMaxRetryCount(),
@@ -683,8 +684,8 @@ public class DeployerContextTest {
       // Tuples representing "KEY", valid_value, invalid_value
       Object[][] testData = new Object[][]{
           {"corePoolSize", DeployerDefaults.CORE_POOL_SIZE, 0},
-          {"dcpRetryCount", DeployerDefaults.DEFAULT_DCP_RETRY_COUNT, 0},
-          {"dcpRetryIntervalMs", DeployerDefaults.DEFAULT_DCP_RETRY_INTERVAL_MILLISECOND, 0},
+          { "xenonRetryCount", DeployerDefaults.DEFAULT_XENON_RETRY_COUNT, 0 },
+          { "xenonRetryIntervalMs", DeployerDefaults.DEFAULT_XENON_RETRY_INTERVAL_MILLISECOND, 0 },
           {"deployerPort", DeployerDefaults.DEPLOYER_PORT_NUMBER, 0},
           {"keepAliveTime", DeployerDefaults.KEEP_ALIVE_TIME, 0},
           {"maxMemoryGb", DeployerDefaults.DEFAULT_MAX_MEMORY_GB, 0},
