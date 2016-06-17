@@ -78,14 +78,14 @@ public class DeployerDefaults {
   public static final int DEPLOYER_PORT_NUMBER = 18000;
 
   /**
-   * Max number of retries for dcp queries.
+   * Max number of retries for Xenon queries.
    */
-  public static final int DEFAULT_DCP_RETRY_COUNT = 5;
+  public static final int DEFAULT_XENON_RETRY_COUNT = 5;
 
   /**
    * Retry interval between successive query requests.
    */
-  public static final int DEFAULT_DCP_RETRY_INTERVAL_MILLISECOND = 5000;
+  public static final int DEFAULT_XENON_RETRY_INTERVAL_MILLISECOND = 5000;
 
   /**
    * Timeout on running shell scripts.

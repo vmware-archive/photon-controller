@@ -48,7 +48,7 @@ public class DeployerConfigTest {
       assertThat(xenonConfig.getPeerNodes(), is(PEER_NODES));
       assertThat(xenonConfig.getPort(), is(18000));
       assertThat(xenonConfig.getRegistrationAddress(), is("localhost"));
-      assertThat(xenonConfig.getStoragePath(), is("/tmp/dcp/deployer/"));
+      assertThat(xenonConfig.getStoragePath(), is("/tmp/xenon/deployer/"));
     }
   }
 
@@ -72,7 +72,7 @@ public class DeployerConfigTest {
       assertThat(xenonConfig.getPeerNodes(), is(PEER_NODES));
       assertThat(xenonConfig.getPort(), is(18000));
       assertThat(xenonConfig.getRegistrationAddress(), is("localhost"));
-      assertThat(xenonConfig.getStoragePath(), is("/tmp/dcp/18000"));
+      assertThat(xenonConfig.getStoragePath(), is("/tmp/xenon/18000"));
     }
   }
 }

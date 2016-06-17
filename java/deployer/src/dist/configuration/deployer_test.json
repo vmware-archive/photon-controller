@@ -22,7 +22,7 @@
     "/var/photon/images": "/var/photon/images"
   },
   "dynamicParameters": {
-    "DEPLOYER_DCP_STORAGE_PATH": "/etc/esxcloud/deployer/sandbox_18000",
+    "DEPLOYER_XENON_STORAGE_PATH": "/etc/esxcloud/deployer/sandbox_18000",
     "LOG_DIRECTORY": "/vagrant/log",
     "APIFE_PORT": 9000,
     "TENANT_NAME": "mgmt-tenant",

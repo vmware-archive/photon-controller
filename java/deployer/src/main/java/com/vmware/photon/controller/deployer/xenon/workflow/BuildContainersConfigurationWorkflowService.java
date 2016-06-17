@@ -57,7 +57,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * This class implements a DCP micro-service which performs the task of
+ * This class implements a Xenon micro-service which performs the task of
  * building configuration for all the containers.
  */
 public class BuildContainersConfigurationWorkflowService extends StatefulService {

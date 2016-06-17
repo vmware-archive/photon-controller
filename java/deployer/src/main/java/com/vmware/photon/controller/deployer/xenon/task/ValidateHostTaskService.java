@@ -59,7 +59,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * This class implements a DCP micro-service which validates and adds ESX host.
+ * This class implements a Xenon micro-service which validates and adds ESX host.
  */
 public class ValidateHostTaskService extends StatefulService {
 

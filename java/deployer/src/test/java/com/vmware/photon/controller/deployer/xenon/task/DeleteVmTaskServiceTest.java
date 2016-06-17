@@ -479,7 +479,7 @@ public class DeleteVmTaskServiceTest {
 
     @Test(enabled = false)
     public void testEndToEndGetVmServiceCall() {
-      fail("Not Implemented Yet, due to DCP bug");
+      fail("Not implemented yet, due to Xenon bug");
     }
 
     private TestEnvironment createTestEnvironment() throws Throwable {

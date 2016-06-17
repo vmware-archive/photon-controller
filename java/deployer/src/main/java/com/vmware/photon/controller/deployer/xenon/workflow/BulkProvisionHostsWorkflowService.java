@@ -43,7 +43,6 @@ import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.OperationJoin;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
-import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.QueryTask;
 import com.vmware.xenon.services.common.ServiceUriPaths;
@@ -60,7 +59,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 /**
- * This class implements a DCP microservice which performs the task of provisioning a set of ESX hosts.
+ * This class implements a Xenon microservice which performs the task of provisioning a set of ESX hosts.
  */
 public class BulkProvisionHostsWorkflowService extends StatefulService {
 

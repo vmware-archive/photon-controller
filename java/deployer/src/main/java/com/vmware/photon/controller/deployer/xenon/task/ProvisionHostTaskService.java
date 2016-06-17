@@ -93,7 +93,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * This class implements a DCP service which provisions a host and updates the corresponding cloud store documents.
+ * This class implements a Xenon service which provisions a host and updates the corresponding cloud store documents.
  */
 public class ProvisionHostTaskService extends StatefulService {
 

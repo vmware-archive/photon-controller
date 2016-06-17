@@ -55,7 +55,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * This class implements a DCP micro-service which performs the task of
+ * This class implements a Xenon micro-service which performs the task of
  * scaling and allocating the memory and cpu of containers and vms based
  * on the host's total memory and cpu count.
  */

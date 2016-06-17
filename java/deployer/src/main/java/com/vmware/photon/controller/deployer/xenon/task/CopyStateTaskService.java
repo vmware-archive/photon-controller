@@ -71,7 +71,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.stream.Collectors;
 
 /**
- * This class moves DCP state between two DCP clusters.
+ * This class moves Xenon state between two Xenon clusters.
  */
 public class CopyStateTaskService extends StatefulService {
 

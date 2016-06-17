@@ -43,7 +43,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * This class implements a DCP micro-service that sets tags on datastores.
+ * This class implements a Xenon micro-service that sets tags on datastores.
  */
 public class SetDatastoreTagsTaskService extends StatefulService {
 

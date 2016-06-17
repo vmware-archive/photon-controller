@@ -48,7 +48,6 @@ import com.vmware.xenon.common.OperationJoin;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
-import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.NodeGroupBroadcastResponse;
@@ -69,7 +68,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * This class implements a DCP service representing the workflow of tearing down a host.
+ * This class implements a Xenon service representing the workflow of tearing down a host.
  */
 public class DeprovisionHostWorkflowService extends StatefulService {
 
@@ -704,7 +703,7 @@ public class DeprovisionHostWorkflowService extends StatefulService {
       public void onSuccess(@Nullable Task result) {
         if (latch.decrementAndGet() == 0) {
           //All api-fe vms are deleted
-          deleteDeployerDCPEntities(currentState, ignoreError);
+          deleteDeployerXenonEntities(currentState, ignoreError);
         }
       }
 
@@ -745,7 +744,7 @@ public class DeprovisionHostWorkflowService extends StatefulService {
     }
   }
 
-  private void deleteDeployerDCPEntities(State currentState, boolean ignoreError) {
+  private void deleteDeployerXenonEntities(State currentState, boolean ignoreError) {
     final AtomicInteger latch = new AtomicInteger(currentState.vmServiceStates.size());
     final FutureCallback<Task> finishedCallback = new FutureCallback<Task>() {
       @Override
@@ -800,7 +799,7 @@ public class DeprovisionHostWorkflowService extends StatefulService {
                       QueryTaskUtils.getBroadcastQueryDocuments(ContainerService.State.class, completedOp);
                   if (containerServices == null || containerServices.size() == 0) {
                     // Delete Vm
-                    deleteDeployerDCPVmEntity(vm.documentSelfLink, ignoreError, finishedCallback);
+                    deleteDeployerXenonVmEntity(vm.documentSelfLink, ignoreError, finishedCallback);
                   } else {
                     OperationJoin
                         .create(documentLinks.stream()
@@ -811,7 +810,7 @@ public class DeprovisionHostWorkflowService extends StatefulService {
                               if (null != failures && failures.size() > 0) {
                                 failTask(failures.get(0));
                               }
-                              deleteDeployerDCPVmEntity(vm.documentSelfLink, ignoreError,
+                              deleteDeployerXenonVmEntity(vm.documentSelfLink, ignoreError,
                                   finishedCallback);
                             }
                         )
@@ -824,7 +823,7 @@ public class DeprovisionHostWorkflowService extends StatefulService {
     }
   }
 
-  private void deleteDeployerDCPVmEntity(String vmLink, boolean ignoreError, FutureCallback<Task> callback) {
+  private void deleteDeployerXenonVmEntity(String vmLink, boolean ignoreError, FutureCallback<Task> callback) {
     Operation delete = Operation.createDelete(this, vmLink)
         .setCompletion((o, t) -> {
           if (t != null) {

@@ -17,7 +17,7 @@
     "/usr/lib/esxcloud/deployer/scripts":"/usr/lib/esxcloud/deployer/scripts"
   },
   "dynamicParameters": {
-    "DEPLOYER_DCP_STORAGE_PATH": "/etc/esxcloud/deployer/sandbox_18000",
+    "DEPLOYER_XENON_STORAGE_PATH": "/etc/esxcloud/deployer/sandbox_18000",
     "LOG_DIRECTORY": "/var/log/esxcloud",
     "TENANT_NAME": "mgmt-tenant",
     "PROJECT_NAME": "mgmt-project",

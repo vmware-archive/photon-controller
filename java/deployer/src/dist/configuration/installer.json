@@ -1,5 +1,5 @@
 {
-  "DEPLOYER_DCP_STORAGE_PATH": "/etc/esxcloud/deployer/sandbox_18000",
+  "DEPLOYER_XENON_STORAGE_PATH": "/etc/esxcloud/deployer/sandbox_18000",
   "DEPLOYER_INSTALL_DIRECTORY": "/usr/lib/esxcloud/deployer",
   "REGISTRATION_ADDRESS": "127.0.0.1",
   "LOG_DIRECTORY": "/var/log/esxcloud",
