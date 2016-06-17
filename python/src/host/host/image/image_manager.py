@@ -43,9 +43,6 @@ from host.hypervisor.esx.path_util import os_to_datastore_path
 from host.hypervisor.esx.path_util import os_vmdk_flat_path
 from host.hypervisor.esx.path_util import os_vmdk_path
 from host.hypervisor.esx.path_util import vmdk_path
-from host.hypervisor.image_manager import DirectoryNotFound
-from host.hypervisor.image_manager import ImageManager
-from host.hypervisor.image_manager import ImageNotFoundException
 from host.hypervisor.disk_manager import DiskAlreadyExistException
 from host.hypervisor.placement_manager import NoSuchResourceException
 from host.hypervisor.placement_manager import ResourceType
@@ -55,7 +52,31 @@ from common.log import log_duration
 GC_IMAGE_FOLDER = "deleted_images"
 
 
-class EsxImageManager(ImageManager):
+class ImageNotFoundException(Exception):
+    """ Exception thrown when image is not found on the datastore """
+    pass
+
+
+class ImageInUse(Exception):
+    """ Exception thrown when we attempt to delete an in use image """
+    pass
+
+
+class InvalidImageUpdate(Exception):
+    """
+    Exception thrown when we attempt to transition a tombstoned image to a
+    non tombstoned image
+    """
+    pass
+
+
+class DirectoryNotFound(Exception):
+    """
+    Exception thrown when the specified directory is not found
+    """
+
+
+class ImageManager():
     NUM_MAKEDIRS_ATTEMPTS = 10
     DEFAULT_TMP_IMAGES_CLEANUP_INTERVAL = 600.0
     REAP_TMP_IMAGES_GRACE_PERIOD = 2 * 60.0 * 60.0  # 2 hrs
@@ -64,7 +85,6 @@ class EsxImageManager(ImageManager):
     IMAGE_TIMESTAMP_FILE_NAME = "image_timestamp.txt"
 
     def __init__(self, host_client, ds_manager):
-        super(EsxImageManager, self).__init__()
         self._logger = logging.getLogger(__name__)
         self._host_client = host_client
         self._ds_manager = ds_manager
@@ -78,6 +98,30 @@ class EsxImageManager(ImageManager):
     def cleanup(self):
         if self._image_reaper is not None:
             self._image_reaper.stop()
+
+    def datastores_with_image(self, image_id, datastores):
+        if image_id is None:
+            return []
+        return [ds for ds in datastores if self.check_image(image_id, ds)]
+
+    def image_metadata(self, image_id, datastores):
+        for ds in datastores:
+            if self.check_image(image_id, ds):
+                return self.get_image_metadata(image_id, ds)
+
+    @staticmethod
+    def get_image_id_from_disks(disks):
+        """Find image id in the disk collection"""
+        if not disks:
+            return None
+
+        for disk in disks:
+            try:
+                if disk.image.id is not None:
+                    return disk.image.id
+            except AttributeError:
+                continue
+        return None
 
     @log_duration
     def check_image(self, image_id, datastore):

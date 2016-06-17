@@ -52,7 +52,7 @@ class TestUnitEsxHypervisor(unittest.TestCase):
         content_mock = MagicMock(name="content")
         return content_mock
 
-    @patch("host.hypervisor.esx.image_manager.EsxImageManager.monitor_for_cleanup")
+    @patch("host.image.image_manager.ImageManager.monitor_for_cleanup")
     @patch.object(VimClient, "_acquire_local_credentials")
     @patch.object(VimCache, "poll_updates")
     @patch("pysdk.connect.Connect")
@@ -77,7 +77,7 @@ class TestUnitEsxHypervisor(unittest.TestCase):
 
         assert_that(update_mock.called, is_(True))
 
-    @patch("host.hypervisor.esx.image_manager.EsxImageManager.monitor_for_cleanup")
+    @patch("host.image.image_manager.ImageManager.monitor_for_cleanup")
     @patch.object(VimClient, "_acquire_local_credentials")
     @patch.object(VimCache, "poll_updates")
     @patch("pysdk.connect.Connect")
