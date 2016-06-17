@@ -39,7 +39,7 @@ public class TestEnvironment extends MultiHostEnvironment<TestHost> {
     assertTrue(hostCount > 0);
     hosts = new TestHost[hostCount];
     for (int i = 0; i < hosts.length; i++) {
-      hosts[i] = new TestHost(clusterManagerFactory);
+      hosts[i] = TestHost.create(clusterManagerFactory);
     }
   }
 

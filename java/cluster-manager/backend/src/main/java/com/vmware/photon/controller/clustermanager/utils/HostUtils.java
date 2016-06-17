@@ -21,6 +21,7 @@ import com.vmware.photon.controller.clustermanager.clients.KubernetesClient;
 import com.vmware.photon.controller.clustermanager.clients.MesosClient;
 import com.vmware.photon.controller.clustermanager.clients.SwarmClient;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
+import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
 import com.vmware.xenon.common.Service;
 
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -63,6 +64,7 @@ public class HostUtils {
   }
 
   public static ClusterManagerFactory getClusterManagerFactory(Service service) {
-    return ((ClusterManagerFactoryProvider) service.getHost()).getClusterManagerFactory();
+    PhotonControllerXenonHost photonControllerXenonHost = (PhotonControllerXenonHost) service.getHost();
+    return  ((ClusterManagerFactoryProvider) photonControllerXenonHost.getDeployer()).getClusterManagerFactory();
   }
 }

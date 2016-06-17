@@ -40,7 +40,7 @@ import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.common.xenon.validation.WriteOnce;
 import com.vmware.photon.controller.deployer.deployengine.ScriptRunner;
 import com.vmware.photon.controller.deployer.xenon.DeployerContext;
-import com.vmware.photon.controller.deployer.xenon.DeployerXenonServiceHost;
+import com.vmware.photon.controller.deployer.xenon.DeployerServiceGroup;
 import com.vmware.photon.controller.deployer.xenon.constant.ServicePortConstants;
 import com.vmware.photon.controller.deployer.xenon.entity.VibFactoryService;
 import com.vmware.photon.controller.deployer.xenon.entity.VibService;
@@ -1077,7 +1077,7 @@ public class ProvisionHostTaskService extends StatefulService {
         (vibStartOp) -> {
           UploadVibTaskService.State startState = new UploadVibTaskService.State();
           startState.parentTaskServiceLink = aggregatorServiceLink;
-          startState.workQueueServiceLink = DeployerXenonServiceHost.UPLOAD_VIB_WORK_QUEUE_SELF_LINK;
+          startState.workQueueServiceLink = DeployerServiceGroup.UPLOAD_VIB_WORK_QUEUE_SELF_LINK;
           startState.vibServiceLink = vibStartOp.getBody(ServiceDocument.class).documentSelfLink;
           return Operation.createPost(this, UploadVibTaskFactoryService.SELF_LINK).setBody(startState);
         });

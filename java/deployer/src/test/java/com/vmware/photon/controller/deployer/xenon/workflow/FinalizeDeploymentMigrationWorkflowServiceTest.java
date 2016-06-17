@@ -43,6 +43,7 @@ import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
+import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
 import com.vmware.photon.controller.common.xenon.migration.MigrationUtils;
 import com.vmware.photon.controller.common.xenon.migration.UpgradeInformation;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
@@ -61,6 +62,7 @@ import com.vmware.photon.controller.deployer.helpers.xenon.TestEnvironment;
 import com.vmware.photon.controller.deployer.helpers.xenon.TestHost;
 import com.vmware.photon.controller.deployer.xenon.ContainersConfig;
 import com.vmware.photon.controller.deployer.xenon.DeployerContext;
+import com.vmware.photon.controller.deployer.xenon.DeployerServiceGroup;
 import com.vmware.photon.controller.deployer.xenon.task.CreateManagementVmTaskService;
 import com.vmware.photon.controller.deployer.xenon.task.ProvisionHostTaskService;
 import com.vmware.photon.controller.resource.gen.DatastoreType;
@@ -386,8 +388,10 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
 
     @DataProvider(name = "TaskPollDelayValues")
     public Object[][] getTaskPollDelayValues() {
+      DeployerServiceGroup deployerServiceGroup =
+          (DeployerServiceGroup) (((PhotonControllerXenonHost) testHost).getDeployer());
       return new Object[][]{
-          {null, new Integer(testHost.getDeployerContext().getTaskPollDelay())},
+          {null, new Integer(deployerServiceGroup.getDeployerContext().getTaskPollDelay())},
           {new Integer(500), new Integer(500)},
       };
     }

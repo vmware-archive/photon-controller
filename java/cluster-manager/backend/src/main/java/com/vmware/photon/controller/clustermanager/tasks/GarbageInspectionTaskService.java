@@ -16,6 +16,7 @@ import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ClusterService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ClusterServiceFactory;
+import com.vmware.photon.controller.clustermanager.ClusterManagerFactory;
 import com.vmware.photon.controller.clustermanager.ClusterManagerFactoryProvider;
 import com.vmware.photon.controller.clustermanager.entities.InactiveVmFactoryService;
 import com.vmware.photon.controller.clustermanager.entities.InactiveVmService;
@@ -32,6 +33,7 @@ import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
 import com.vmware.photon.controller.common.xenon.deployment.NoMigrationDuringDeployment;
+import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
 import com.vmware.photon.controller.common.xenon.migration.NoMigrationDuringUpgrade;
 import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
 import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
@@ -254,8 +256,10 @@ public class GarbageInspectionTaskService extends StatefulService {
                                    final String masterIp,
                                    final Set<Vm> allSlaves) {
 
-    StatusCheckHelper helper = ((ClusterManagerFactoryProvider) getHost())
-        .getClusterManagerFactory().createStatusCheckHelper();
+    PhotonControllerXenonHost photonControllerXenonHost = (PhotonControllerXenonHost) getHost();
+    ClusterManagerFactory clusterManagerFactory =
+        ((ClusterManagerFactoryProvider) photonControllerXenonHost.getDeployer()).getClusterManagerFactory();
+    StatusCheckHelper helper = clusterManagerFactory.createStatusCheckHelper();
     SlavesStatusChecker checker;
     switch (clusterState.clusterType) {
       case KUBERNETES:

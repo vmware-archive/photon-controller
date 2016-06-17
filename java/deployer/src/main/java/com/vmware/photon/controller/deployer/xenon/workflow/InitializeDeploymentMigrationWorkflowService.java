@@ -29,6 +29,7 @@ import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
 import com.vmware.photon.controller.common.xenon.deployment.NoMigrationDuringDeployment;
+import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
 import com.vmware.photon.controller.common.xenon.migration.NoMigrationDuringUpgrade;
 import com.vmware.photon.controller.common.xenon.migration.UpgradeInformation;
 import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
@@ -38,8 +39,7 @@ import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.common.xenon.validation.Positive;
 import com.vmware.photon.controller.common.xenon.validation.WriteOnce;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClient;
-import com.vmware.photon.controller.deployer.deployengine.ZookeeperClientFactoryProvider;
-import com.vmware.photon.controller.deployer.xenon.DeployerXenonServiceHost;
+import com.vmware.photon.controller.deployer.xenon.DeployerServiceGroup;
 import com.vmware.photon.controller.deployer.xenon.constant.ServicePortConstants;
 import com.vmware.photon.controller.deployer.xenon.entity.VibFactoryService;
 import com.vmware.photon.controller.deployer.xenon.entity.VibService;
@@ -338,8 +338,9 @@ public class InitializeDeploymentMigrationWorkflowService extends StatefulServic
         .collect(Collectors.toList());
 
     Map<String, Pair<Set<InetSocketAddress>, Set<InetSocketAddress>>> m = new HashMap<>();
-    ZookeeperClient zookeeperClient
-        = ((ZookeeperClientFactoryProvider) getHost()).getZookeeperServerSetFactoryBuilder().create();
+    DeployerServiceGroup deployerServiceGroup =
+        (DeployerServiceGroup) ((PhotonControllerXenonHost) getHost()).getDeployer();
+    ZookeeperClient zookeeperClient = deployerServiceGroup.getZookeeperServerSetFactoryBuilder().create();
 
     OperationJoin.create(
         hostUpgradeInformation.stream()
@@ -531,7 +532,7 @@ public class InitializeDeploymentMigrationWorkflowService extends StatefulServic
     Stream<Operation> taskStartOps = vibStartOps.stream().map((vibStartOp) -> {
       UploadVibTaskService.State startState = new UploadVibTaskService.State();
       startState.parentTaskServiceLink = aggregatorServiceLink;
-      startState.workQueueServiceLink = DeployerXenonServiceHost.UPLOAD_VIB_WORK_QUEUE_SELF_LINK;
+      startState.workQueueServiceLink = DeployerServiceGroup.UPLOAD_VIB_WORK_QUEUE_SELF_LINK;
       startState.vibServiceLink = vibStartOp.getBody(ServiceDocument.class).documentSelfLink;
       return Operation.createPost(this, UploadVibTaskFactoryService.SELF_LINK).setBody(startState);
     });
@@ -575,8 +576,9 @@ public class InitializeDeploymentMigrationWorkflowService extends StatefulServic
 
   private OperationJoin createStartMigrationOperations(State currentState) {
     Map<String, Pair<Set<InetSocketAddress>, Set<InetSocketAddress>>> m = new HashMap<>();
-    ZookeeperClient zookeeperClient
-        = ((ZookeeperClientFactoryProvider) getHost()).getZookeeperServerSetFactoryBuilder().create();
+    DeployerServiceGroup deployerServiceGroup =
+        (DeployerServiceGroup) ((PhotonControllerXenonHost) getHost()).getDeployer();
+    ZookeeperClient zookeeperClient = deployerServiceGroup.getZookeeperServerSetFactoryBuilder().create();
 
     return OperationJoin.create(
         HostUtils.getDeployerContext(this).getUpgradeInformation().stream()
