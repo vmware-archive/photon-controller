@@ -1,6 +1,6 @@
 LICENSE
 
-Photon Controller version 0.9.0-PCF
+Photon Controller version 0.9.1-PCF
 
 Copyright © 2015-2016 VMware, Inc.  All rights reserved.
 
@@ -84,14 +84,15 @@ You may add Your own copyright statement to Your modifications and may provide a
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or    
-   implied.  See the License for the specific language governing permissions   
-   and limitations under the License.
-   
+   implied.  See the License for the specific language governing 
+   permissions and limitations under the License.
+
+      
 =======================================================================   
 
-Photon Controller version 0.9.0-PCF
+Photon Controller version 0.9.1-PCF 
 
-Photon Controller version 0.9.0-PCF includes a number of components with separate copyright notices and license terms.  This product does not necessarily use all the open source components referred to below. Your use of the source code for these components is subject to the terms and conditions of the following licenses.
+Photon Controller version 0.9.1-PCF includes a number of components with separate copyright notices and license terms.  This product does not necessarily use all the open source components referred to below. Your use of the source code for these components is subject to the terms and conditions of the following licenses.
 
 SECTION 1: BSD-STYLE, MIT-STYLE, OR SIMILAR STYLE LICENSES
    >>> antlr:antlr-2.7.7
@@ -488,7 +489,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-
 >>> flake8-2.1.0
 
 == Flake8 License (MIT) ==
@@ -629,7 +629,7 @@ ADDITIONAL LICENSE INFORMATION:
 
 mock-1.0.1.tar.gz\dist\mock-1.0.1.tar\mock-1.0.1\html\_static\jquery.js
 
-[PLEASE NOTE:  VMWARE, INC. ELECTS TO USE AND DISTRIBUTE THIS COMPONENT UNDER THE TERMS OF THE MIT LICENSE.THE ORIGINAL LICENSE TERMS ARE REPRODUCED BELOW ONLY AS A REFERENCE.]
+[PLEASE NOTE:  VMWARE, INC. ELECTS TO USE AND DISTRIBUTE THIS COMPONENT UNDER THE TERMS OF THE MIT LICENSE. THE ORIGINAL LICENSE TERMS ARE REPRODUCED BELOW ONLY AS A REFERENCE.]
 
 jQuery JavaScript Library v1.4.2
 http://jquery.com/
@@ -642,7 +642,6 @@ Includes Sizzle.js
 http://sizzlejs.com/
 Copyright 2010, The Dojo Foundation
 Released under the MIT, BSD, and GPL Licenses.
-
 
 >>> net-sftp-2.1.2
 
@@ -7140,7 +7139,8 @@ school, if any, to sign a "copyright disclaimer" for the library, if
 necessary.  Here is a sample; alter the names:
 
   Yoyodyne, Inc., hereby disclaims all copyright interest in the
-  library `Frob' (a library for tweaking knobs) written by James Random Hacker.
+  library `Frob' (a library for tweaking knobs) written by James Random 
+  Hacker.
 
   <signature of Ty Coon>, 1 April 1990
   Ty Coon, President of Vice
@@ -7156,5 +7156,4 @@ noted above), you may obtain a copy of the source code corresponding to
 the binaries for such open source components and modifications thereto,
 if any, (the "Source Files"), by sending a request, with your name and address to: VMware, Inc., 3401Hillview Avenue, Palo Alto, CA 94304, United States of America. All such requests should clearly specify: OPEN SOURCE FILES REQUEST, Attention General Counsel. VMware shall mail a copy of the Source Files to you on a CD or equivalent physical medium. This offer to obtain a copy of the Source Files is valid for three years from the date you acquired this Software product. Alternatively, the Source Files may accompany the VMware product or you may obtain a copy of the source files at the VMware github site for the Photon Controller open source project.
 
-[PHOTONCONTROLLER090PCFNV051916]
-
+[PHOTONCONTROLLER091PCFNV061016]
