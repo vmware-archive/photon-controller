@@ -34,6 +34,8 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -113,6 +115,37 @@ public class FlavorApiTest extends ApiTestBase {
     FlavorApi flavorApi = new FlavorApi(restClient);
 
     ResourceList<Flavor> response = flavorApi.listAll();
+    assertEquals(response.getItems().size(), flavorResourceList.getItems().size());
+    assertTrue(response.getItems().containsAll(flavorResourceList.getItems()));
+  }
+
+  @Test
+  public void testListAllWithQueryParams() throws IOException {
+    Flavor flavor1 = new Flavor();
+    flavor1.setId("flavor1");
+    flavor1.setKind("vm");
+
+    Flavor flavor2 = new Flavor();
+    flavor2.setId("flavor2");
+    flavor2.setKind("disk");
+
+    Flavor flavor3 = new Flavor();
+    flavor3.setId("flavor3");
+    flavor3.setKind("vm");
+
+    Map<String, String> params = new HashMap<String, String>();
+    params.put("kind", "vm");
+
+    ResourceList<Flavor> flavorResourceList = new ResourceList<>(Arrays.asList(flavor1, flavor3));
+
+    ObjectMapper mapper = new ObjectMapper();
+    String serializedResponse = mapper.writeValueAsString(flavorResourceList);
+
+    setupMocks(serializedResponse, HttpStatus.SC_OK);
+
+    FlavorApi flavorApi = new FlavorApi(restClient);
+
+    ResourceList<Flavor> response = flavorApi.listAll(params);
     assertEquals(response.getItems().size(), flavorResourceList.getItems().size());
     assertTrue(response.getItems().containsAll(flavorResourceList.getItems()));
   }
