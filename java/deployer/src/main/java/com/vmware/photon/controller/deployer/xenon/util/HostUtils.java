@@ -18,29 +18,20 @@ import com.vmware.photon.controller.common.clients.AgentControlClient;
 import com.vmware.photon.controller.common.clients.AgentControlClientProvider;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientProvider;
-import com.vmware.photon.controller.common.provider.ListeningExecutorServiceProvider;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
+import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfiguratorFactory;
-import com.vmware.photon.controller.deployer.configuration.ServiceConfiguratorFactoryProvider;
 import com.vmware.photon.controller.deployer.deployengine.ApiClientFactory;
-import com.vmware.photon.controller.deployer.deployengine.ApiClientFactoryProvider;
 import com.vmware.photon.controller.deployer.deployengine.DockerProvisionerFactory;
-import com.vmware.photon.controller.deployer.deployengine.DockerProvisionerFactoryProvider;
 import com.vmware.photon.controller.deployer.deployengine.HostManagementVmAddressValidatorFactory;
-import com.vmware.photon.controller.deployer.deployengine.HostManagementVmAddressValidatorFactoryProvider;
 import com.vmware.photon.controller.deployer.deployengine.HttpFileServiceClientFactory;
-import com.vmware.photon.controller.deployer.deployengine.HttpFileServiceClientFactoryProvider;
-import com.vmware.photon.controller.deployer.deployengine.NsxClientFactory;
-import com.vmware.photon.controller.deployer.deployengine.NsxClientFactoryProvider;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClient;
-import com.vmware.photon.controller.deployer.deployengine.ZookeeperClientFactoryProvider;
 import com.vmware.photon.controller.deployer.healthcheck.HealthCheckHelperFactory;
-import com.vmware.photon.controller.deployer.healthcheck.HealthCheckHelperFactoryProvider;
 import com.vmware.photon.controller.deployer.xenon.ContainersConfig;
-import com.vmware.photon.controller.deployer.xenon.ContainersConfigProvider;
 import com.vmware.photon.controller.deployer.xenon.DeployerContext;
-import com.vmware.photon.controller.deployer.xenon.DeployerContextProvider;
-import com.vmware.photon.controller.deployer.xenon.DeployerXenonServiceHost;
+import com.vmware.photon.controller.deployer.xenon.DeployerServiceGroup;
+import com.vmware.photon.controller.nsxclient.NsxClientFactory;
+import com.vmware.photon.controller.nsxclient.NsxClientFactoryProvider;
 import com.vmware.xenon.common.Service;
 
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -57,7 +48,9 @@ public class HostUtils {
    * @return The containers config object provided by the Xenon host associated with the service.
    */
   public static ContainersConfig getContainersConfig(Service service) {
-    return ((ContainersConfigProvider) service.getHost()).getContainersConfig();
+    DeployerServiceGroup deployerServiceGroup =
+        (DeployerServiceGroup) ((PhotonControllerXenonHost) service.getHost()).getDeployer();
+    return deployerServiceGroup.getContainersConfig();
   }
 
   /**
@@ -67,7 +60,9 @@ public class HostUtils {
    * @return The deployer context provided by the Xenon host associated with the service.
    */
   public static DeployerContext getDeployerContext(Service service) {
-    return ((DeployerContextProvider) service.getHost()).getDeployerContext();
+    DeployerServiceGroup deployerServiceGroup =
+        (DeployerServiceGroup) (((PhotonControllerXenonHost) service.getHost()).getDeployer());
+    return deployerServiceGroup.getDeployerContext();
   }
 
   /**
@@ -77,7 +72,9 @@ public class HostUtils {
    * @return The docker provisioner factory provided by the Xenon host associated with the service.
    */
   public static DockerProvisionerFactory getDockerProvisionerFactory(Service service) {
-    return ((DockerProvisionerFactoryProvider) service.getHost()).getDockerProvisionerFactory();
+    DeployerServiceGroup deployerServiceGroup =
+        (DeployerServiceGroup) ((PhotonControllerXenonHost) service.getHost()).getDeployer();
+    return deployerServiceGroup.getDockerProvisionerFactory();
   }
 
   /**
@@ -108,7 +105,9 @@ public class HostUtils {
    * @return The API client factory provided by the Xenon host associated with the service.
    */
   public static ApiClientFactory getApiClientFactory(Service service) {
-    return ((ApiClientFactoryProvider) service.getHost()).getApiClientFactory();
+    DeployerServiceGroup deployerServiceGroup =
+        (DeployerServiceGroup) ((PhotonControllerXenonHost) service.getHost()).getDeployer();
+    return deployerServiceGroup.getApiClientFactory();
   }
 
   /**
@@ -128,7 +127,9 @@ public class HostUtils {
    * @return The health check helper factory provided by the Xenon host associated with the service.
    */
   public static HealthCheckHelperFactory getHealthCheckHelperFactory(Service service) {
-    return ((HealthCheckHelperFactoryProvider) service.getHost()).getHealthCheckHelperFactory();
+    DeployerServiceGroup deployerServiceGroup =
+        (DeployerServiceGroup) ((PhotonControllerXenonHost) service.getHost()).getDeployer();
+    return deployerServiceGroup.getHealthCheckHelperFactory();
   }
 
   /**
@@ -148,7 +149,9 @@ public class HostUtils {
    * @return The HTTP file service client factory provided by the Xenon host associated with the service.
    */
   public static HttpFileServiceClientFactory getHttpFileServiceClientFactory(Service service) {
-    return ((HttpFileServiceClientFactoryProvider) service.getHost()).getHttpFileServiceClientFactory();
+    DeployerServiceGroup deployerServiceGroup =
+        (DeployerServiceGroup) ((PhotonControllerXenonHost) service.getHost()).getDeployer();
+    return deployerServiceGroup.getHttpFileServiceClientFactory();
   }
 
   /**
@@ -158,7 +161,9 @@ public class HostUtils {
    * @return The listening executor service provided by the Xenon host associated with the service.
    */
   public static ListeningExecutorService getListeningExecutorService(Service service) {
-    return ((ListeningExecutorServiceProvider) service.getHost()).getListeningExecutorService();
+    DeployerServiceGroup deployerServiceGroup =
+        (DeployerServiceGroup) ((PhotonControllerXenonHost) service.getHost()).getDeployer();
+    return deployerServiceGroup.getListeningExecutorService();
   }
 
   /**
@@ -169,8 +174,9 @@ public class HostUtils {
    * @return The host credentials validator factory provided by the Xenon host associated with the service.
    */
   public static HostManagementVmAddressValidatorFactory getHostManagementVmAddressValidatorFactory(Service service) {
-    return ((HostManagementVmAddressValidatorFactoryProvider) service.getHost())
-        .getHostManagementVmAddressValidatorFactory();
+    DeployerServiceGroup deployerServiceGroup =
+        (DeployerServiceGroup) ((PhotonControllerXenonHost) service.getHost()).getDeployer();
+    return deployerServiceGroup.getHostManagementVmAddressValidatorFactory();
   }
 
   /**
@@ -180,7 +186,9 @@ public class HostUtils {
    * @return The docker provisioner factory provided by the Xenon host associated with the service.
    */
   public static ServiceConfiguratorFactory getServiceConfiguratorFactory(Service service) {
-    return ((ServiceConfiguratorFactoryProvider) service.getHost()).getServiceConfiguratorFactory();
+    DeployerServiceGroup deployerServiceGroup =
+        (DeployerServiceGroup) ((PhotonControllerXenonHost) service.getHost()).getDeployer();
+    return deployerServiceGroup.getServiceConfiguratorFactory();
   }
 
   /**
@@ -190,7 +198,7 @@ public class HostUtils {
    * @return The cloud store helper provided by the Xenon host associated with the service.
    */
   public static CloudStoreHelper getCloudStoreHelper(Service service) {
-    return ((DeployerXenonServiceHost) service.getHost()).getCloudStoreHelper();
+    return ((PhotonControllerXenonHost) service.getHost()).getCloudStoreHelper();
   }
 
   /**
@@ -200,7 +208,9 @@ public class HostUtils {
    * @return A factory-created Zookeeper client object.
    */
   public static ZookeeperClient getZookeeperClient(Service service) {
-    return ((ZookeeperClientFactoryProvider) service.getHost()).getZookeeperServerSetFactoryBuilder().create();
+    DeployerServiceGroup deployerServiceGroup =
+        (DeployerServiceGroup) ((PhotonControllerXenonHost) service.getHost()).getDeployer();
+    return deployerServiceGroup.getZookeeperServerSetFactoryBuilder().create();
   }
 
   /**

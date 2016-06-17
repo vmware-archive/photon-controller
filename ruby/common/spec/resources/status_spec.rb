@@ -49,19 +49,6 @@ describe EsxCloud::Status do
          "stats": {
             "READY": "1"
          }
-      },
-      {
-         "component": "DEPLOYER",
-         "status": "READY",
-         "instances": [
-            {
-               "address": "/172.31.253.66:18000",
-               "status": "READY"
-            }
-         ],
-         "stats": {
-            "READY": "1"
-         }
       }
    ],
    "status": "READY"
@@ -75,7 +62,7 @@ CONTENT
 
     it "should initialize Status object properly" do
       expect(status.status).to eq "READY"
-      expect(status.components.size).to eq 3
+      expect(status.components.size).to eq 2
       status.components.each do |component|
         expect(component.status).to eq "READY"
         expect(component.stats).to eq({ "READY" => "1"})
@@ -93,9 +80,7 @@ CONTENT
                                   "PHOTON_CONTROLLER: READY, message: , stats: {\"READY\"=>\"1\"}\ninstances:\n" +
                                   "/172.31.253.66:19000: READY, message: , stats: \n" +
                                   "CHAIRMAN: READY, message: , stats: {\"READY\"=>\"1\"}\ninstances:\n" +
-                                  "/172.31.253.66:13000: READY, message: , stats: \n" +
-                                  "DEPLOYER: READY, message: , stats: {\"READY\"=>\"1\"}\ninstances:\n" +
-                                  "/172.31.253.66:18000: READY, message: , stats: "
+                                  "/172.31.253.66:13000: READY, message: , stats: "
     end
 
   end

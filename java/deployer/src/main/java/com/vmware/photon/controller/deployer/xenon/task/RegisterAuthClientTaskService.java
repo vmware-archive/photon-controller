@@ -22,6 +22,7 @@ import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
 import com.vmware.photon.controller.common.xenon.deployment.NoMigrationDuringDeployment;
+import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
 import com.vmware.photon.controller.common.xenon.migration.NoMigrationDuringUpgrade;
 import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
 import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
@@ -30,8 +31,8 @@ import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.common.xenon.validation.WriteOnce;
 import com.vmware.photon.controller.deployer.deployengine.AuthHelper;
 import com.vmware.photon.controller.deployer.deployengine.AuthHelperFactory;
-import com.vmware.photon.controller.deployer.deployengine.AuthHelperFactoryProvider;
 import com.vmware.photon.controller.deployer.xenon.ContainersConfig;
+import com.vmware.photon.controller.deployer.xenon.DeployerServiceGroup;
 import com.vmware.photon.controller.deployer.xenon.entity.ContainerService;
 import com.vmware.photon.controller.deployer.xenon.entity.ContainerTemplateService;
 import com.vmware.photon.controller.deployer.xenon.entity.VmService;
@@ -431,7 +432,9 @@ public class RegisterAuthClientTaskService extends StatefulService {
   private void registerAuthClient(final State currentState,
                                   final DeploymentService.State deploymentState,
                                   final String lbIpAddress) throws Throwable {
-    AuthHelperFactory authHelperFactory = ((AuthHelperFactoryProvider) getHost()).getAuthHelperFactory();
+    DeployerServiceGroup deployerServiceGroup =
+        (DeployerServiceGroup) ((PhotonControllerXenonHost) getHost()).getDeployer();
+    AuthHelperFactory authHelperFactory = deployerServiceGroup.getAuthHelperFactory();
     final AuthHelper authHelper = authHelperFactory.create();
 
     ServiceUtils.logInfo(this, "Starting a thread to register client %s at %s:%s using user %s on tenant %s.",
