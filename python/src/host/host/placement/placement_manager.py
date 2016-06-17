@@ -20,14 +20,14 @@ from common.log import log_duration
 from gen.resource.ttypes import ResourcePlacementType
 from gen.resource.ttypes import ResourceConstraintType
 from host.hypervisor.datastore_manager import DatastoreNotFoundException
-from host.hypervisor.disk_placement_manager import BestEffortPlaceEngine
-from host.hypervisor.disk_placement_manager import DatastoreSelector
-from host.hypervisor.disk_placement_manager import DisksPlacement
-from host.hypervisor.disk_placement_manager import DiskUtil
-from host.hypervisor.disk_placement_manager import ConstraintDiskPlaceEngine
-from host.hypervisor.disk_placement_manager import OptimalPlaceEngine
-from host.hypervisor.disk_placement_manager import PlaceResultCode
-from host.hypervisor.placement import AgentPlacementScore
+from host.placement.disk_placement_manager import BestEffortPlaceEngine
+from host.placement.disk_placement_manager import DatastoreSelector
+from host.placement.disk_placement_manager import DisksPlacement
+from host.placement.disk_placement_manager import DiskUtil
+from host.placement.disk_placement_manager import ConstraintDiskPlaceEngine
+from host.placement.disk_placement_manager import OptimalPlaceEngine
+from host.placement.disk_placement_manager import PlaceResultCode
+from host.placement.placement import AgentPlacementScore
 from host.hypervisor.resources import AgentResourcePlacement
 from host.hypervisor.vm_manager import VmNotFoundException
 

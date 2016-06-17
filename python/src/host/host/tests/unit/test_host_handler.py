@@ -76,8 +76,8 @@ from gen.scheduler.ttypes import Score
 from host.host_handler import HostHandler
 from host.hypervisor.datastore_manager import DatastoreNotFoundException
 from host.hypervisor.disk_manager import DiskAlreadyExistException
-from host.hypervisor.placement_manager import InvalidReservationException
-from host.hypervisor.placement_manager import NoSuchResourceException
+from host.placement.placement_manager import InvalidReservationException
+from host.placement.placement_manager import NoSuchResourceException
 from host.hypervisor.resources import AgentResourcePlacement
 from host.hypervisor.resources import Disk as HostDisk
 from host.hypervisor.resources import NetworkInfo
