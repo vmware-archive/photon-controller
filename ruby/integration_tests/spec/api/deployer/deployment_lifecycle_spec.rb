@@ -211,8 +211,7 @@ describe "deployment lifecycle", order: :defined, deployer: true do
                       "/photon/cloudstore/entity-locks",]
 
     get_cloudstore_services(cloud_store).each do |service_factory|
-      if (!exclusion_list.include?(service_factory) and !service_factory.include?("/photon/housekeeper") and
-          !service_factory.include?("/photon/scheduler"))
+      if (!exclusion_list.include?(service_factory) and service_factory.include?("/photon/cloudstore"))
         checkNoServiceExist(service_factory, cloud_store)
       end
     end

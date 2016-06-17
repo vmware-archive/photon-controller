@@ -16,26 +16,12 @@ package com.vmware.photon.controller.deployer.xenon;
 import com.vmware.photon.controller.cloudstore.xenon.upgrade.HostTransformationService;
 import com.vmware.photon.controller.clustermanager.ClusterManagerFactory;
 import com.vmware.photon.controller.clustermanager.ClusterManagerFactoryProvider;
-import com.vmware.photon.controller.common.clients.AgentControlClient;
-import com.vmware.photon.controller.common.clients.AgentControlClientFactory;
-import com.vmware.photon.controller.common.clients.AgentControlClientProvider;
-import com.vmware.photon.controller.common.clients.HostClient;
-import com.vmware.photon.controller.common.clients.HostClientFactory;
-import com.vmware.photon.controller.common.clients.HostClientProvider;
-import com.vmware.photon.controller.common.manifest.BuildInfo;
 import com.vmware.photon.controller.common.provider.ListeningExecutorServiceProvider;
-import com.vmware.photon.controller.common.thrift.ServerSet;
-import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
-import com.vmware.photon.controller.common.xenon.CloudStoreHelperProvider;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
-import com.vmware.photon.controller.common.xenon.XenonHostInfoProvider;
-import com.vmware.photon.controller.common.xenon.host.AbstractServiceHost;
-import com.vmware.photon.controller.common.xenon.host.XenonConfig;
+import com.vmware.photon.controller.common.xenon.XenonServiceGroup;
+import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
 import com.vmware.photon.controller.common.xenon.scheduler.RateLimitedWorkQueueFactoryService;
 import com.vmware.photon.controller.common.xenon.scheduler.RateLimitedWorkQueueService;
-import com.vmware.photon.controller.common.xenon.scheduler.TaskSchedulerService;
-import com.vmware.photon.controller.common.xenon.scheduler.TaskSchedulerServiceFactory;
-import com.vmware.photon.controller.common.xenon.scheduler.TaskSchedulerServiceStateBuilder;
 import com.vmware.photon.controller.common.xenon.service.UpgradeInformationService;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfiguratorFactory;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfiguratorFactoryProvider;
@@ -49,8 +35,6 @@ import com.vmware.photon.controller.deployer.deployengine.HostManagementVmAddres
 import com.vmware.photon.controller.deployer.deployengine.HostManagementVmAddressValidatorFactoryProvider;
 import com.vmware.photon.controller.deployer.deployengine.HttpFileServiceClientFactory;
 import com.vmware.photon.controller.deployer.deployengine.HttpFileServiceClientFactoryProvider;
-import com.vmware.photon.controller.deployer.deployengine.NsxClientFactory;
-import com.vmware.photon.controller.deployer.deployengine.NsxClientFactoryProvider;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClientFactory;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClientFactoryProvider;
 import com.vmware.photon.controller.deployer.healthcheck.HealthCheckHelperFactory;
@@ -102,12 +86,10 @@ import com.vmware.photon.controller.deployer.xenon.workflow.FinalizeDeploymentMi
 import com.vmware.photon.controller.deployer.xenon.workflow.InitializeDeploymentMigrationWorkflowFactoryService;
 import com.vmware.photon.controller.deployer.xenon.workflow.RemoveDeploymentWorkflowFactoryService;
 import com.vmware.xenon.common.Operation;
-import com.vmware.xenon.common.ServiceHost;
 import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.QueryTask;
-import com.vmware.xenon.services.common.RootNamespaceService;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ObjectArrays;
@@ -115,20 +97,15 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.URI;
-
 /**
- * This class implements the Xenon service host object for the deployer service.
+ * Class to initialize the Deployer Xenon services.
  */
-public class DeployerXenonServiceHost
-    extends AbstractServiceHost
-    implements XenonHostInfoProvider,
+public class DeployerServiceGroup
+    implements XenonServiceGroup,
     DeployerContextProvider,
     DockerProvisionerFactoryProvider,
     ApiClientFactoryProvider,
     ContainersConfigProvider,
-    AgentControlClientProvider,
-    HostClientProvider,
     ListeningExecutorServiceProvider,
     HttpFileServiceClientFactoryProvider,
     AuthHelperFactoryProvider,
@@ -136,13 +113,19 @@ public class DeployerXenonServiceHost
     ServiceConfiguratorFactoryProvider,
     ZookeeperClientFactoryProvider,
     HostManagementVmAddressValidatorFactoryProvider,
-    ClusterManagerFactoryProvider,
-    NsxClientFactoryProvider,
-    CloudStoreHelperProvider {
+    ClusterManagerFactoryProvider {
 
-  private static final Logger logger = LoggerFactory.getLogger(DeployerXenonServiceHost.class);
+  private static final Logger logger = LoggerFactory.getLogger(DeployerServiceGroup.class);
 
   public static final String FACTORY_SERVICE_FIELD_NAME_SELF_LINK = "SELF_LINK";
+
+  private static final String UPLOAD_VIB_WORK_QUEUE_NAME = "vib-uploads";
+
+  @VisibleForTesting
+  public static final String UPLOAD_VIB_WORK_QUEUE_SELF_LINK = UriUtils.buildUriPath(
+      RateLimitedWorkQueueFactoryService.SELF_LINK, UPLOAD_VIB_WORK_QUEUE_NAME);
+
+  private static final String DEPLOYER_URI = "deployer";
 
   public static final Class<?>[] FACTORY_SERVICES_TO_MIGRATE = {
       ContainerFactoryService.class,
@@ -154,7 +137,6 @@ public class DeployerXenonServiceHost
 
       // Infrastructure Services
       RateLimitedWorkQueueFactoryService.class,
-      RootNamespaceService.class,
 
       // Entity Services
       ContainerFactoryService.class,
@@ -213,22 +195,10 @@ public class DeployerXenonServiceHost
       UpgradeInformationService.class,
   };
 
-  private static final String UPLOAD_VIB_WORK_QUEUE_NAME = "vib-uploads";
-
-  @VisibleForTesting
-  public static final String UPLOAD_VIB_WORK_QUEUE_SELF_LINK = UriUtils.buildUriPath(
-      RateLimitedWorkQueueFactoryService.SELF_LINK, UPLOAD_VIB_WORK_QUEUE_NAME);
-
-  private static final String DEPLOYER_URI = "deployer";
-
-  private BuildInfo buildInfo;
-
   private final DeployerContext deployerContext;
   private final DockerProvisionerFactory dockerProvisionerFactory;
   private final ApiClientFactory apiClientFactory;
   private final ContainersConfig containersConfig;
-  private final AgentControlClientFactory agentControlClientFactory;
-  private final HostClientFactory hostClientFactory;
   private final ListeningExecutorService listeningExecutorService;
   private final HttpFileServiceClientFactory httpFileServiceClientFactory;
   private final AuthHelperFactory authHelperFactory;
@@ -237,76 +207,40 @@ public class DeployerXenonServiceHost
   private final ZookeeperClientFactory zookeeperServerSetBuilderFactory;
   private final HostManagementVmAddressValidatorFactory hostManagementVmAddressValidatorFactory;
   private final ClusterManagerFactory clusterManagerFactory;
-  private final NsxClientFactory nsxClientFactory;
 
-  private final ServerSet cloudStoreServerSet;
+  private PhotonControllerXenonHost photonControllerXenonHost;
 
-  public DeployerXenonServiceHost(
-      XenonConfig xenonConfig,
-      ServerSet cloudStoreServerSet,
+  public DeployerServiceGroup (
       DeployerContext deployerContext,
-      ContainersConfig containersConfig,
-      AgentControlClientFactory agentControlClientFactory,
-      HostClientFactory hostClientFactory,
-      HttpFileServiceClientFactory httpFileServiceClientFactory,
-      ListeningExecutorService listeningExecutorService,
-      ApiClientFactory apiClientFactory,
       DockerProvisionerFactory dockerProvisionerFactory,
+      ApiClientFactory apiClientFactory,
+      ContainersConfig containersConfig,
+      ListeningExecutorService listeningExecutorService,
+      HttpFileServiceClientFactory httpFileServiceClientFactory,
       AuthHelperFactory authHelperFactory,
       HealthCheckHelperFactory healthCheckHelperFactory,
       ServiceConfiguratorFactory serviceConfiguratorFactory,
       ZookeeperClientFactory zookeeperServerSetBuilderFactory,
       HostManagementVmAddressValidatorFactory hostManagementVmAddressValidatorFactory,
-      ClusterManagerFactory clusterManagerFactory,
-      NsxClientFactory nsxClientFactory)
-      throws Throwable {
+      ClusterManagerFactory clusterManagerFactory) {
 
-    super(xenonConfig);
-    this.cloudStoreServerSet = cloudStoreServerSet;
     this.deployerContext = deployerContext;
-    this.containersConfig = containersConfig;
-    this.agentControlClientFactory = agentControlClientFactory;
-    this.hostClientFactory = hostClientFactory;
-    this.httpFileServiceClientFactory = httpFileServiceClientFactory;
-    this.listeningExecutorService = listeningExecutorService;
-    this.apiClientFactory = apiClientFactory;
     this.dockerProvisionerFactory = dockerProvisionerFactory;
+    this.apiClientFactory = apiClientFactory;
+    this.containersConfig = containersConfig;
+    this.listeningExecutorService = listeningExecutorService;
+    this.httpFileServiceClientFactory = httpFileServiceClientFactory;
     this.authHelperFactory = authHelperFactory;
     this.healthCheckHelperFactory = healthCheckHelperFactory;
     this.serviceConfiguratorFactory = serviceConfiguratorFactory;
     this.zookeeperServerSetBuilderFactory = zookeeperServerSetBuilderFactory;
     this.hostManagementVmAddressValidatorFactory = hostManagementVmAddressValidatorFactory;
     this.clusterManagerFactory = clusterManagerFactory;
-    this.nsxClientFactory = nsxClientFactory;
-    this.buildInfo = BuildInfo.get(this.getClass());
   }
 
-  /**
-   * This method starts the default Xenon core services and deployer Xenon service
-   * factories.
-   *
-   * @return
-   * @throws Throwable
-   */
   @Override
-  public ServiceHost start() throws Throwable {
-    super.start();
-    startDefaultCoreServicesSynchronously();
-    ServiceHostUtils.startServices(this, getFactoryServices());
-    this.addPrivilegedService(CopyStateTaskService.class);
-    startWorkQueueServices();
-    ServiceHostUtils.startService(this, StatusService.class);
-    return this;
-  }
-
-  /**
-   * This method gets the containers configurations.
-   *
-   * @return
-   */
-  @Override
-  public ContainersConfig getContainersConfig() {
-    return containersConfig;
+  public void setPhotonControllerXenonHost(PhotonControllerXenonHost photonControllerXenonHost) {
+    this.photonControllerXenonHost = photonControllerXenonHost;
   }
 
   /**
@@ -340,23 +274,13 @@ public class DeployerXenonServiceHost
   }
 
   /**
-   * This method gets an agent control client from the local agent control client pool.
+   * This method gets the containers configurations.
    *
    * @return
    */
   @Override
-  public AgentControlClient getAgentControlClient() {
-    return agentControlClientFactory.create();
-  }
-
-  /**
-   * This method gets a host client from the local host client pool.
-   *
-   * @return
-   */
-  @Override
-  public HostClient getHostClient() {
-    return hostClientFactory.create();
+  public ContainersConfig getContainersConfig() {
+    return containersConfig;
   }
 
   /**
@@ -400,16 +324,6 @@ public class DeployerXenonServiceHost
   }
 
   /**
-   * Getter for Host Management VM Address Validator factory instance.
-   *
-   * @return
-   */
-  @Override
-  public HostManagementVmAddressValidatorFactory getHostManagementVmAddressValidatorFactory() {
-    return hostManagementVmAddressValidatorFactory;
-  }
-
-  /**
    * Getter for Service Configurator factory instance.
    *
    * @return
@@ -419,45 +333,44 @@ public class DeployerXenonServiceHost
     return serviceConfiguratorFactory;
   }
 
+  @Override
+  public ZookeeperClientFactory getZookeeperServerSetFactoryBuilder() {
+    return zookeeperServerSetBuilderFactory;
+  }
+
   /**
-   * Getter for ClusterManager factory instance.
+   * Getter for Host Management VM Address Validator factory instance.
    *
    * @return
    */
+  @Override
+  public HostManagementVmAddressValidatorFactory getHostManagementVmAddressValidatorFactory() {
+    return hostManagementVmAddressValidatorFactory;
+  }
+
   @Override
   public ClusterManagerFactory getClusterManagerFactory() {
     return clusterManagerFactory;
   }
 
-  /**
-   * Getter for NsxClient factory instance.
-   *
-   * @return
-   */
   @Override
-  public NsxClientFactory getNsxClientFactory() {
-    return nsxClientFactory;
+  public String getName() {
+    return "deployer";
   }
 
   /**
-   * Getter for CloudstoreHelper.
+   * This method starts the default Xenon core services and deployer Xenon service
+   * factories.
    *
    * @return
+   * @throws Throwable
    */
   @Override
-  public CloudStoreHelper getCloudStoreHelper() {
-    CloudStoreHelper cloudStoreHelper = new CloudStoreHelper(this.cloudStoreServerSet);
-    return cloudStoreHelper;
-  }
+  public void start() throws Throwable {
 
-  /**
-   * Getter for BuildInfo.
-   *
-   * @return
-   */
-  @Override
-  public BuildInfo getBuildInfo() {
-    return this.buildInfo;
+    ServiceHostUtils.startServices(photonControllerXenonHost, getFactoryServices());
+    photonControllerXenonHost.addPrivilegedService(CopyStateTaskService.class);
+    startWorkQueueServices();
   }
 
   /**
@@ -468,20 +381,19 @@ public class DeployerXenonServiceHost
   @Override
   public boolean isReady() {
 
-    if (!checkServiceAvailable(UPLOAD_VIB_WORK_QUEUE_SELF_LINK)) {
+    if (!photonControllerXenonHost.checkServiceAvailable(UPLOAD_VIB_WORK_QUEUE_SELF_LINK)) {
       return false;
     }
 
     try {
       return ServiceHostUtils.areServicesReady(
-          this, FACTORY_SERVICE_FIELD_NAME_SELF_LINK, FACTORY_SERVICES);
+          photonControllerXenonHost, FACTORY_SERVICE_FIELD_NAME_SELF_LINK, FACTORY_SERVICES);
     } catch (Throwable t) {
       logger.debug("IsReady failed: {}", t);
       return false;
     }
   }
 
-  @Override
   public Class<?>[] getFactoryServices() {
     return ObjectArrays.concat(
         FACTORY_SERVICES, ClusterManagerFactory.FACTORY_SERVICES,
@@ -490,7 +402,7 @@ public class DeployerXenonServiceHost
 
   private void startWorkQueueServices() {
 
-    registerForServiceAvailability(
+    photonControllerXenonHost.registerForServiceAvailability(
         (o, e) -> {
           if (e != null) {
             logger.error("Failed to start work queue factory service: " + Utils.toString(e));
@@ -510,27 +422,13 @@ public class DeployerXenonServiceHost
               UploadVibTaskService.TaskState.SubStage.BEGIN_EXECUTION));
           startState.concurrencyLimit = 4;
 
-          sendRequest(Operation
-              .createPost(this, RateLimitedWorkQueueFactoryService.SELF_LINK)
+          photonControllerXenonHost.sendRequest(Operation
+              .createPost(photonControllerXenonHost, RateLimitedWorkQueueFactoryService.SELF_LINK)
               .setBody(startState)
-              .setReferer(UriUtils.buildUri(this, DEPLOYER_URI)));
+              .setReferer(UriUtils.buildUri(photonControllerXenonHost, DEPLOYER_URI)));
         },
         RateLimitedWorkQueueFactoryService.SELF_LINK);
   }
 
-  private void startTaskSchedulerService(final String selfLink, TaskSchedulerServiceStateBuilder builder)
-      throws IllegalAccessException, InstantiationException {
-    TaskSchedulerService.State state = builder.build();
-    state.documentSelfLink = TaskSchedulerServiceStateBuilder.getSuffixFromSelfLink(selfLink);
 
-    URI uri = UriUtils.buildUri(DeployerXenonServiceHost.this, TaskSchedulerServiceFactory.SELF_LINK, null);
-    Operation post = Operation.createPost(uri).setBody(state);
-    post.setReferer(UriUtils.buildUri(DeployerXenonServiceHost.this, DEPLOYER_URI));
-    sendRequest(post);
-  }
-
-  @Override
-  public ZookeeperClientFactory getZookeeperServerSetFactoryBuilder() {
-    return zookeeperServerSetBuilderFactory;
-  }
 }

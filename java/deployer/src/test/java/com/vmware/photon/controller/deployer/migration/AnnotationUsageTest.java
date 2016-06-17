@@ -18,7 +18,7 @@ import com.vmware.photon.controller.common.xenon.deployment.MigrateDuringDeploym
 import com.vmware.photon.controller.common.xenon.deployment.NoMigrationDuringDeployment;
 import com.vmware.photon.controller.common.xenon.migration.MigrateDuringUpgrade;
 import com.vmware.photon.controller.common.xenon.migration.NoMigrationDuringUpgrade;
-import com.vmware.photon.controller.deployer.xenon.DeployerXenonServiceHost;
+import com.vmware.photon.controller.deployer.xenon.DeployerServiceGroup;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.UriUtils;
 
@@ -120,7 +120,7 @@ public class AnnotationUsageTest {
     Collection<String> transformationServicePaths = new HashSet<>();
 
     Collection<String> factoryPaths = new HashSet<>();
-    for (Class<?> type : DeployerXenonServiceHost.FACTORY_SERVICES) {
+    for (Class<?> type : DeployerServiceGroup.FACTORY_SERVICES) {
       Field f = type.getField(UriUtils.FIELD_NAME_SELF_LINK);
       String path = (String) f.get(null);
       factoryPaths.add(path);

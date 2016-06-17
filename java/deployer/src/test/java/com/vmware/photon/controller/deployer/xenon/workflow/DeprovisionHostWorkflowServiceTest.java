@@ -28,7 +28,6 @@ import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeExceptio
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.deployengine.ApiClientFactory;
-import com.vmware.photon.controller.deployer.deployengine.NsxClientFactory;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClient;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClientFactory;
 import com.vmware.photon.controller.deployer.helpers.ReflectionUtils;
@@ -39,6 +38,7 @@ import com.vmware.photon.controller.deployer.helpers.xenon.TestHost;
 import com.vmware.photon.controller.deployer.xenon.DeployerContext;
 import com.vmware.photon.controller.deployer.xenon.entity.VmService;
 import com.vmware.photon.controller.deployer.xenon.task.DeleteAgentTaskService;
+import com.vmware.photon.controller.nsxclient.NsxClientFactory;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.TaskState;
