@@ -756,6 +756,9 @@ public class PlacementTaskService extends StatefulService {
               case NETWORK:
                 output.append("\"network\"");
                 break;
+              case VIRTUAL_NETWORK:
+                output.append("\"virtual-network\"");
+                break;
               case AVAILABILITY_ZONE:
                 output.append("\"availability-zone\"");
                 break;
