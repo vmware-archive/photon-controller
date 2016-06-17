@@ -102,8 +102,6 @@ from host.hypervisor.esx.path_util import vmdk_path
 from host.hypervisor.esx.path_util import IMAGE_FOLDER_NAME_PREFIX
 from host.hypervisor.image_manager import DirectoryNotFound
 from host.hypervisor.image_manager import ImageNotFoundException
-from host.hypervisor.image_scanner import DatastoreImageScanner
-from host.hypervisor.image_sweeper import DatastoreImageSweeper
 from host.hypervisor.placement_manager import InvalidReservationException
 from host.hypervisor.placement_manager import MissingPlacementDescriptorException
 from host.hypervisor.placement_manager import NoSuchResourceException
@@ -114,6 +112,8 @@ from host.hypervisor.resources import AgentResourcePlacementList
 from host.hypervisor.resources import Disk
 from host.hypervisor.resources import NetworkInfoType
 from host.hypervisor.resources import Vm
+from host.image.image_scanner import DatastoreImageScanner
+from host.image.image_sweeper import DatastoreImageSweeper
 
 from hypervisor.disk_manager import DiskAlreadyExistException
 from hypervisor.vm_manager import DiskNotFoundException

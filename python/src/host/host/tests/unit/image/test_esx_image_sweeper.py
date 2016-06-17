@@ -32,8 +32,8 @@ from common.service_name import ServiceName
 from gen.resource.ttypes import DatastoreType
 
 from host.hypervisor.esx.image_manager import EsxImageManager
-from host.hypervisor.image_scanner import DatastoreImageScanner
-from host.hypervisor.image_sweeper import DatastoreImageSweeper
+from host.image.image_scanner import DatastoreImageScanner
+from host.image.image_sweeper import DatastoreImageSweeper
 
 from host.hypervisor.esx.path_util import os_vmdk_path
 
@@ -52,13 +52,13 @@ class ImageScannerVmTestCase(unittest.TestCase):
 
         # Set up test files
         self.base_dir = os.path.dirname(__file__)
-        self.test_dir = os.path.join(self.base_dir, "../../test_files")
+        self.test_dir = os.path.join(self.base_dir, "../test_files")
         self.image_manager = EsxImageManager(MagicMock(), MagicMock())
         self.image_scanner = DatastoreImageScanner(self.image_manager, self.vm_manager, self.DATASTORE_ID)
         self.write_count = 0
 
-    @patch("host.hypervisor.image_scanner.DatastoreImageScannerTaskRunner._list_top_level_directory")
-    @patch("host.hypervisor.image_scanner.DatastoreImageScanner.is_stopped", return_value=False)
+    @patch("host.image.image_scanner.DatastoreImageScannerTaskRunner._list_top_level_directory")
+    @patch("host.image.image_scanner.DatastoreImageScanner.is_stopped", return_value=False)
     def test_vm_scan(self, is_stopped, list_top_level_directory):
         list_top_level_directory.return_value = glob.glob(os.path.join(self.test_dir, "vm_*"))
         self.image_scanner.vm_scan_rate = 60000
@@ -68,25 +68,25 @@ class ImageScannerVmTestCase(unittest.TestCase):
                     "/vmfs/volumes/555ca9f8-9f24fa2c-41c1-0025b5414043/image_92e62599-6689-4a8f-ba2a-633914b5048e/"
                     "92e62599-6689-4a8f-ba2a-633914b5048e.vmdk")
 
-    @patch("host.hypervisor.image_scanner.DatastoreImageScannerTaskRunner._list_top_level_directory")
-    @patch("host.hypervisor.image_scanner.DatastoreImageScanner.is_stopped", return_value=False)
+    @patch("host.image.image_scanner.DatastoreImageScannerTaskRunner._list_top_level_directory")
+    @patch("host.image.image_scanner.DatastoreImageScanner.is_stopped", return_value=False)
     def test_vm_scan_bad_root(self, is_stopped, list_top_level_directory):
         self.image_scanner.vm_scan_rate = 60000
         list_top_level_directory.return_value = [os.path.join(self.test_dir, "vm_bad")]
         dictionary = self.image_scanner._task_runner._scan_vms_for_active_images(self.image_scanner, self.DATASTORE_ID)
         assert_that(len(dictionary) is 0)
 
-    @patch("host.hypervisor.image_scanner.DatastoreImageScannerTaskRunner._list_top_level_directory")
-    @patch("host.hypervisor.image_scanner.DatastoreImageScanner.is_stopped", return_value=False)
+    @patch("host.image.image_scanner.DatastoreImageScannerTaskRunner._list_top_level_directory")
+    @patch("host.image.image_scanner.DatastoreImageScanner.is_stopped", return_value=False)
     def test_vm_scan_bad_vmdk(self, is_stopped, list_top_level_directory):
         self.image_scanner.vm_scan_rate = 60000
         list_top_level_directory.return_value = [os.path.join(self.test_dir, "vm_bad")]
         dictionary = self.image_scanner._task_runner._scan_vms_for_active_images(self.image_scanner, self.DATASTORE_ID)
         assert_that(len(dictionary) is 0)
 
-    @patch("host.hypervisor.image_scanner.DatastoreImageScannerTaskRunner._list_top_level_directory")
-    @patch("host.hypervisor.image_scanner.DatastoreImageScanner.is_stopped", return_value=False)
-    @patch("host.hypervisor.image_scanner.waste_time")
+    @patch("host.image.image_scanner.DatastoreImageScannerTaskRunner._list_top_level_directory")
+    @patch("host.image.image_scanner.DatastoreImageScanner.is_stopped", return_value=False)
+    @patch("host.image.image_scanner.waste_time")
     def test_vm_scan_rate(self, waste_time, is_stopped, list_top_level_directory):
         waste_time.side_effect = self.fake_waste_time
         # fake activation
@@ -157,9 +157,9 @@ class ImageScannerTestCase(unittest.TestCase):
         (4, 0, 0),   # single invalid image id, 0 write, 0 found
         (0, 1, 2),   # three images, 1 writes, 2 found
     ])
-    @patch("host.hypervisor.image_scanner.DatastoreImageScannerTaskRunner._write_marker_file")
-    @patch("host.hypervisor.image_scanner.DatastoreImageScanner.is_stopped", return_value=False)
-    @patch("host.hypervisor.image_scanner.DatastoreImageScannerTaskRunner._list_top_level_directory")
+    @patch("host.image.image_scanner.DatastoreImageScannerTaskRunner._write_marker_file")
+    @patch("host.image.image_scanner.DatastoreImageScanner.is_stopped", return_value=False)
+    @patch("host.image.image_scanner.DatastoreImageScannerTaskRunner._list_top_level_directory")
     def test_image_marker(self, image_id_index, write_count, dict_size,
                           list_top_level_directory, is_stopped, write_marker_file):
         image_id = self.image_ids[image_id_index]
@@ -170,7 +170,7 @@ class ImageScannerTestCase(unittest.TestCase):
         assert_that(len(dictionary) is dict_size)
         assert_that(self.write_count is write_count)
 
-    @patch("host.hypervisor.image_scanner.DatastoreImageScannerTaskRunner._list_top_level_directory")
+    @patch("host.image.image_scanner.DatastoreImageScannerTaskRunner._list_top_level_directory")
     def test_image_marker_bad_root(self, list_top_level_directory):
         self.image_scanner.image_mark_rate = 60000
         list_top_level_directory.return_value = [os.path.join(self.test_dir, "image_im.vmdk")]
@@ -244,7 +244,7 @@ class ImageSweeperTestCase(unittest.TestCase):
         (3, 1),  # 0 image, marker file, 1 delete
     ])
     @patch("host.hypervisor.esx.image_manager.EsxImageManager.delete_image")
-    @patch("host.hypervisor.image_sweeper.DatastoreImageSweeper.is_stopped", return_value=False)
+    @patch("host.image.image_sweeper.DatastoreImageSweeper.is_stopped", return_value=False)
     def test_image_sweeper(self, target_image_id_index, deleted_count, is_stopped, delete_image):
         delete_image.side_effect = self.patched_delete_image
 
@@ -257,7 +257,7 @@ class ImageSweeperTestCase(unittest.TestCase):
         assert_that(self.delete_count is deleted_count)
 
     @patch("host.hypervisor.esx.image_manager.EsxImageManager.delete_image")
-    @patch("host.hypervisor.image_sweeper.DatastoreImageSweeper.is_stopped", return_value=False)
+    @patch("host.image.image_sweeper.DatastoreImageSweeper.is_stopped", return_value=False)
     def test_image_sweeper_bad_root(self, is_stopped, delete_image):
         delete_image.side_effect = self.patched_delete_image
         self.image_sweeper.image_sweep_rate = 60000
