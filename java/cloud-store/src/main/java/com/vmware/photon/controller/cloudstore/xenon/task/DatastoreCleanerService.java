@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.cloudstore.xenon.task;
 
 import com.vmware.photon.controller.cloudstore.xenon.entity.DatastoreService;
+import com.vmware.photon.controller.cloudstore.xenon.task.trigger.DatastoreCleanerTriggerBuilder;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
@@ -22,7 +23,6 @@ import com.vmware.photon.controller.common.xenon.ValidationUtils;
 import com.vmware.photon.controller.common.xenon.deployment.NoMigrationDuringDeployment;
 import com.vmware.photon.controller.common.xenon.migration.NoMigrationDuringUpgrade;
 import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
-import com.vmware.photon.controller.common.xenon.validation.DefaultLong;
 import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.Positive;
@@ -169,7 +169,7 @@ public class DatastoreCleanerService extends StatefulService {
       }
 
       try {
-        triggerDatastoreDeleteTasks(current, completedOp.getBody(QueryTask.class).results.documentLinks);
+        scheduleDatastoreDeleteTasks(current, completedOp.getBody(QueryTask.class).results.documentLinks);
       } catch (Throwable ex) {
         failTask(ex);
       }
@@ -191,32 +191,50 @@ public class DatastoreCleanerService extends StatefulService {
   }
 
   /**
-   * Batch trigger datastore delete tasks for all the datastores.
+   * Schedule datastore delete tasks to run in batches.
    *
    * @param current
    */
-  private void triggerDatastoreDeleteTasks(final State current, List<String> datastoreLinks) {
-    int count = 0;
+  private void scheduleDatastoreDeleteTasks(final State current, List<String> datastoreLinks) {
+    if (datastoreLinks == null || datastoreLinks.size() == 0) {
+      TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FINISHED, null));
+      return;
+    }
 
-    if (datastoreLinks != null && datastoreLinks.size() > 0) {
-      for (List<String> batch : Lists.partition(datastoreLinks, current.batchSize)) {
-        getHost().schedule(() -> {
-          for (String datastoreLink : batch) {
-            DatastoreDeleteService.State startState = new DatastoreDeleteService.State();
-            startState.parentServiceLink = getSelfLink();
-            String[] components = datastoreLink.split("/");
-            startState.datastoreId = components[components.length - 1];
+    // Compute the batch trigger interval based on # of datastores when the interval is not set
+    if (current.intervalBetweenBatchTriggersInSeconds == null) {
+      int batches = datastoreLinks.size() / current.batchSize;
+      current.intervalBetweenBatchTriggersInSeconds =
+          TimeUnit.MILLISECONDS.toSeconds(DatastoreCleanerTriggerBuilder.DEFAULT_TRIGGER_INTERVAL_MILLIS) / batches;
+    }
 
-            sendRequest(Operation
-                .createPost(this, DatastoreDeleteFactoryService.SELF_LINK)
-                .setBody(startState));
-          }
-        }, count * current.intervalBetweenBatchTriggersInSeconds, TimeUnit.SECONDS);
-        count++;
-      }
+    int batchCount = 0;
+    for (List<String> batch : Lists.partition(datastoreLinks, current.batchSize)) {
+      getHost().schedule(() -> {
+        triggerDatastoreDeleteTasksForBatch(batch);
+      }, batchCount * current.intervalBetweenBatchTriggersInSeconds, TimeUnit.SECONDS);
+      batchCount++;
     }
 
     TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FINISHED, null));
+  }
+
+  /**
+   * Trigger datastore delete tasks for the specific batch of datastores.
+   *
+   * @param batch
+   */
+  private void triggerDatastoreDeleteTasksForBatch(List<String> batch) {
+    for (String datastoreLink : batch) {
+      DatastoreDeleteService.State startState = new DatastoreDeleteService.State();
+      startState.parentServiceLink = getSelfLink();
+      String[] components = datastoreLink.split("/");
+      startState.datastoreId = components[components.length - 1];
+
+      sendRequest(Operation
+          .createPost(this, DatastoreDeleteFactoryService.SELF_LINK)
+          .setBody(startState));
+    }
   }
 
   /**
@@ -287,7 +305,6 @@ public class DatastoreCleanerService extends StatefulService {
      */
     @Positive
     @Immutable
-    @DefaultLong(value = 60)
     public Long intervalBetweenBatchTriggersInSeconds;
   }
 }
