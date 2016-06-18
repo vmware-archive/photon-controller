@@ -59,10 +59,7 @@ ln -sf /scratch/log/photon-controller-agent-hypervisor.log $LOG_DIR/photon-contr
 
 build_for_py_ver() {
    esx_version=$1
-   if [ $esx_version == "5.5.0" ]; then
-      PYTHON_VERSION=2.6
-      PYTHON=python2.6
-   elif [ $esx_version == "6.0.0" ]; then
+   if [ $esx_version == "6.0.0" ]; then
       PYTHON_VERSION=2.7
       PYTHON=python2.7
    fi
@@ -139,7 +136,7 @@ build_for_py_ver() {
 # For now we take the smaller of the supported esx version as the value
 # used for $ESX_VERSION, which in this new format now represents the minimum #
 # version of ESX this vib supports.
-for esxver in 6.0.0 5.5.0; do
+for esxver in 6.0.0; do
    ESX_VERSION=$esxver
    build_for_py_ver $esxver
 done
