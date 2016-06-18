@@ -25,7 +25,7 @@ To install the vib package, scp the vib file to the ESX host:
 where esxhost is the IP address of your ESX host. Then, ssh to the ESX host and
 run:
 
-  esxcli software vib install -v file:/photon-controller-agent-0.1.0-5.5.0.vib -f
+  esxcli software vib install -v file:/photon-controller-agent-0.1.0-6.0.0.vib -f
 
 ## Configuring the agent
 
