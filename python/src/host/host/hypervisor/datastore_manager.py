@@ -20,7 +20,7 @@ from gen.resource.constants import NFS_TAG
 from gen.resource.constants import VSAN_TAG
 from gen.resource.ttypes import HostServiceTicket, Datastore, DatastoreType
 from host.hypervisor.exceptions import DatastoreNotFoundException
-from host.hypervisor.hypervisor import UpdateListener
+from host.hypervisor.esx.host_client import UpdateListener
 
 
 class DatastoreManager(UpdateListener):
