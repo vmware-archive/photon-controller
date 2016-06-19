@@ -17,7 +17,7 @@ from hamcrest import *  # noqa
 from pyVmomi import vim
 
 from gen.resource.ttypes import Network, NetworkType
-from host.hypervisor.esx.network_manager import EsxNetworkManager
+from host.hypervisor.network_manager import NetworkManager
 
 MGMT_NETWORK_NAME = "Management Network"
 
@@ -28,7 +28,7 @@ def _net_config(type, name=MGMT_NETWORK_NAME):
     return net_config
 
 
-class TestEsxNetworkManager(unittest.TestCase):
+class TestNetworkManager(unittest.TestCase):
 
     def test_get_networks(self):
         """ Test normal get_network workflow:
@@ -38,7 +38,7 @@ class TestEsxNetworkManager(unittest.TestCase):
         """
         vim_client = MagicMock()
         vim_client.get_networks.return_value = ["VM Network", "VM Network 2"]
-        network_manager = EsxNetworkManager(vim_client, [])
+        network_manager = NetworkManager(vim_client, [])
         networks = network_manager.get_networks()
 
         assert_that(networks, has_length(2))
@@ -53,24 +53,22 @@ class TestEsxNetworkManager(unittest.TestCase):
         vim_client.get_networks.return_value = ["VM Network", "VM Network 2"]
 
         # Verify identical list works.
-        network_manager = EsxNetworkManager(vim_client, ["VM Network",
-                                                         "VM Network 2"])
+        network_manager = NetworkManager(vim_client, ["VM Network", "VM Network 2"])
         networks = network_manager.get_vm_networks()
         self.assertEqual(networks, ["VM Network", "VM Network 2"])
 
         # Verify strict subset works
-        network_manager = EsxNetworkManager(vim_client, ["VM Network"])
+        network_manager = NetworkManager(vim_client, ["VM Network"])
         networks = network_manager.get_vm_networks()
         self.assertEqual(networks, ["VM Network"])
 
         # Verify we filter out invalid networks.
-        network_manager = EsxNetworkManager(vim_client, ["FOOBAR",
-                                                         "VM Network"])
+        network_manager = NetworkManager(vim_client, ["FOOBAR", "VM Network"])
         networks = network_manager.get_vm_networks()
         self.assertEqual(networks, ["VM Network"])
 
         # If no network is specified, return the actual network list.
-        network_manager = EsxNetworkManager(vim_client, None)
+        network_manager = NetworkManager(vim_client, None)
         networks = network_manager.get_vm_networks()
         self.assertEqual(networks, ["VM Network", "VM Network 2"])
 

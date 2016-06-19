@@ -33,9 +33,6 @@ from gen.host.ttypes import VmNetworkInfo
 from gen.host.ttypes import ConnectedStatus
 from gen.host.ttypes import Ipv4Address
 from gen.resource.ttypes import MksTicket
-from host.hypervisor.disk_manager import DiskAlreadyExistException
-from host.hypervisor.disk_manager import DiskPathException
-from host.hypervisor.disk_manager import DiskFileException
 from host.hypervisor.esx import logging_wrappers
 from host.hypervisor.esx.host_client import HostClient
 from host.hypervisor.esx.host_client import DeviceBusyException
@@ -52,10 +49,13 @@ from host.hypervisor.esx.vim_cache import VimCache
 from host.hypervisor.esx.vm_config import uuid_to_vmdk_uuid
 from host.hypervisor.esx.vm_config import EsxVmConfigSpec
 from host.hypervisor.esx.vm_config import DEFAULT_DISK_ADAPTER_TYPE
-from host.hypervisor.vm_manager import VmPowerStateException
-from host.hypervisor.vm_manager import OperationNotAllowedException
-from host.hypervisor.vm_manager import VmAlreadyExistException
-from host.hypervisor.vm_manager import VmNotFoundException
+from host.hypervisor.exceptions import DiskAlreadyExistException
+from host.hypervisor.exceptions import DiskPathException
+from host.hypervisor.exceptions import DiskFileException
+from host.hypervisor.exceptions import VmPowerStateException
+from host.hypervisor.exceptions import OperationNotAllowedException
+from host.hypervisor.exceptions import VmAlreadyExistException
+from host.hypervisor.exceptions import VmNotFoundException
 from pysdk import connect
 from pysdk import host
 from pysdk import invt

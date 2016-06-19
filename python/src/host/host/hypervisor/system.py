@@ -9,12 +9,8 @@
 # warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
 # License for then specific language governing permissions and limitations
 # under the License.
-
-import abc
-
-
-class DatastoreInaccessibleException(Exception):
-    pass
+import logging
+from common.log import log_duration
 
 
 class DatastoreInfo(object):
@@ -24,46 +20,36 @@ class DatastoreInfo(object):
 
 
 class System(object):
-    """Hypervisor host system interface."""
-    __metaclass__ = abc.ABCMeta
 
-    @abc.abstractmethod
-    def datastore_info(self, datastore_id):
-        """Datastore info.
+    def __init__(self, vim_client):
+        self._logger = logging.getLogger(__name__)
+        self._vim_client = vim_client
+        self._num_physical_cpus = None
+        self._total_vmusable_memory_mb = None
+        self._host_version = None
 
-        :rtype: DatastoreInfo
-        """
-        pass
-
-    @abc.abstractmethod
     def total_vmusable_memory_mb(self):
-        """Total memory in MB that can be used to create Vms
+        if self._total_vmusable_memory_mb is None:
+            self._total_vmusable_memory_mb = self._vim_client.total_vmusable_memory_mb
+        return self._total_vmusable_memory_mb
 
-        :rtype: int
-        """
-        pass
-
-    @abc.abstractmethod
     def num_physical_cpus(self):
-        """Total number of pCPUs on the hosts. Includes HT
-        if HT is enabled.
+        if self._num_physical_cpus is None:
+            self._num_physical_cpus = self._vim_client.num_physical_cpus
+        return self._num_physical_cpus
 
-        :rtype int
-        """
-        pass
+    @log_duration
+    def datastore_info(self, datastore_id):
+        ds = self._vim_client.get_datastore_in_cache(datastore_id)
+        total = float(ds.capacity) / (1024 ** 3)
+        free = float(ds.free) / (1024 ** 3)
+        return DatastoreInfo(total, total - free)
 
-    @abc.abstractmethod
     def host_consumed_memory_mb(self):
-        """Total memory in MB that is currently used up in the host.
+        return self._vim_client.memory_usage_mb
 
-        :rtype: int
-        """
-        pass
-
-    @abc.abstractmethod
     def host_version(self):
-        """Version of the host.
+        if self._host_version is None:
+            self._host_version = self._vim_client.host_version
 
-        :rtype: string
-        """
-        pass
+        return self._host_version

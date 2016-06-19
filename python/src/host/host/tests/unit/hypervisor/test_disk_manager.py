@@ -10,9 +10,9 @@
 # License for then specific language governing permissions and limitations
 # under the License.
 import unittest
-from host.hypervisor.esx.disk_manager import EsxDiskManager
-from host.hypervisor.disk_manager import DiskFileException
-from host.hypervisor.disk_manager import DiskPathException
+from host.hypervisor.disk_manager import DiskManager
+from host.hypervisor.exceptions import DiskFileException
+from host.hypervisor.exceptions import DiskPathException
 from host.hypervisor.esx.vim_client import VimClient
 
 from mock import MagicMock
@@ -20,13 +20,13 @@ from mock import MagicMock
 from pyVmomi import vim
 
 
-class TestEsxDiskManager(unittest.TestCase):
+class TestDiskManager(unittest.TestCase):
 
     def setUp(self):
         self.vim_client = VimClient(auto_sync=False)
         self.vim_client._content = MagicMock()
         self.vim_client.wait_for_task = MagicMock()
-        self.disk_manager = EsxDiskManager(self.vim_client, [])
+        self.disk_manager = DiskManager(self.vim_client, [])
         self.disk_manager._vmdk_mkdir = MagicMock()
         self.disk_manager._vmdk_rmdir = MagicMock()
 

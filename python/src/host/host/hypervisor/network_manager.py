@@ -10,19 +10,53 @@
 # License for then specific language governing permissions and limitations
 # under the License.
 
-import abc
+import logging
+
+from gen.resource.ttypes import Network, NetworkType
 
 
 class NetworkManager(object):
-    """A class that wraps hypervisor specific network management code."""
+    """ ESX network manager implementation.
+    """
 
-    @abc.abstractmethod
-    def get_networks(self):
-        """ Get network information including list of networks and their types.
-        :return: list of gen.resource.ttypes.Network
+    def __init__(self, vim_client, configured_networks):
+        self.vim_client = vim_client
+        self.logger = logging.getLogger(__name__)
+        self._configured_networks = configured_networks
+
+    def _validate_networks(self, configured_networks):
+        """ Validates the list of configured networks against the actual
+            list of VM networks available on the host and returns the
+            intersection unless the configured networks is an empty list.
+            If the configured networks is empty, it simply returns the
+            actual list.
         """
-        pass
+        networks = []
+        actual_networks = self.vim_client.get_networks()
+        if configured_networks:
+            for network in configured_networks:
+                if network not in actual_networks:
+                    self.logger.warning("Unknown network %s: Skipping" % network)
+                    continue
+                networks.append(network)
+        else:
+            networks = actual_networks
+        return networks
 
-    @abc.abstractmethod
     def get_vm_networks(self):
-        """ Get the list of ESX networks usable for VMs """
+        """ Return the list of networks to use on this ESX server. """
+        return self._validate_networks(self._configured_networks)
+
+    def get_networks(self):
+        """ This method will call vim_client to get a list of VM networks and
+        translate them into thrift representation.
+        """
+        vm_networks = self.vim_client.get_networks()
+
+        networks = []
+        # Add VM networks in network list
+        for network_name in vm_networks:
+            network = Network(network_name, [NetworkType.VM])
+            networks.append(network)
+
+        return networks

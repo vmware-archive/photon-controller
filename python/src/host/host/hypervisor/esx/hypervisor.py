@@ -16,11 +16,11 @@ import atexit
 import logging
 
 from common.util import suicide
-from host.hypervisor.esx.datastore_manager import EsxDatastoreManager
-from host.hypervisor.esx.disk_manager import EsxDiskManager
-from host.hypervisor.esx.network_manager import EsxNetworkManager
-from host.hypervisor.esx.vm_manager import EsxVmManager
-from host.hypervisor.esx.system import EsxSystem
+from host.hypervisor.datastore_manager import DatastoreManager
+from host.hypervisor.disk_manager import DiskManager
+from host.hypervisor.network_manager import NetworkManager
+from host.hypervisor.vm_manager import VmManager
+from host.hypervisor.system import System
 from host.image.image_manager import ImageManager
 from host.image.nfc_image_transfer import NfcImageTransferer
 
@@ -38,15 +38,15 @@ class EsxHypervisor(object):
         self.host_client.connect_local()
         atexit.register(lambda client: client.disconnect(), self.host_client)
 
-        self.datastore_manager = EsxDatastoreManager(
+        self.datastore_manager = DatastoreManager(
             self, agent_config.datastores, agent_config.image_datastores)
         # datastore manager needs to update the cache when there is a change.
         self.host_client.add_update_listener(self.datastore_manager)
-        self.vm_manager = EsxVmManager(self.host_client, self.datastore_manager)
-        self.disk_manager = EsxDiskManager(self.host_client, self.datastore_manager)
+        self.vm_manager = VmManager(self.host_client, self.datastore_manager)
+        self.disk_manager = DiskManager(self.host_client, self.datastore_manager)
         self.image_manager = ImageManager(self.host_client, self.datastore_manager)
-        self.network_manager = EsxNetworkManager(self.host_client, agent_config.networks)
-        self.system = EsxSystem(self.host_client)
+        self.network_manager = NetworkManager(self.host_client, agent_config.networks)
+        self.system = System(self.host_client)
         self.image_manager.monitor_for_cleanup()
         self.image_transferer = NfcImageTransferer(self.host_client)
         atexit.register(self.image_manager.cleanup)

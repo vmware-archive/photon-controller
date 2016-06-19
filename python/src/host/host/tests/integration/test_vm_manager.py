@@ -22,7 +22,7 @@ from testconfig import config
 
 from common.kind import Unit, QuotaLineItem, Flavor
 from host.hypervisor.esx.vim_client import VimClient
-from host.hypervisor.esx.vm_manager import EsxVmManager
+from host.hypervisor.esx.vm_manager import VmManager
 
 
 class TestVmManager(unittest.TestCase):
@@ -40,7 +40,7 @@ class TestVmManager(unittest.TestCase):
         self._logger = logging.getLogger(__name__)
         self.vim_client = VimClient()
         self.vim_client.connect_userpwd(self.host, "root", self.pwd)
-        self.vm_manager = EsxVmManager(self.vim_client, None)
+        self.vm_manager = VmManager(self.vim_client, None)
         for vm in self.vim_client._get_vms():
             vm.Destroy()
 

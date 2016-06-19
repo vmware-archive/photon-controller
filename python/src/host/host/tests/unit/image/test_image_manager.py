@@ -27,7 +27,7 @@ from common import file_util
 from common import services
 from common.service_name import ServiceName
 from gen.resource.ttypes import DatastoreType
-from host.hypervisor.disk_manager import DiskAlreadyExistException
+from host.hypervisor.exceptions import DiskAlreadyExistException
 from host.hypervisor.esx.path_util import compond_path_join
 from host.hypervisor.esx.path_util import TMP_IMAGE_FOLDER_NAME_PREFIX
 from host.hypervisor.esx.path_util import METADATA_FILE_EXT

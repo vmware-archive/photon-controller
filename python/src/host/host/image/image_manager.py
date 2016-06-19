@@ -43,7 +43,7 @@ from host.hypervisor.esx.path_util import os_to_datastore_path
 from host.hypervisor.esx.path_util import os_vmdk_flat_path
 from host.hypervisor.esx.path_util import os_vmdk_path
 from host.hypervisor.esx.path_util import vmdk_path
-from host.hypervisor.disk_manager import DiskAlreadyExistException
+from host.hypervisor.exceptions import DiskAlreadyExistException
 from host.placement.placement_manager import NoSuchResourceException
 from host.placement.placement_manager import ResourceType
 

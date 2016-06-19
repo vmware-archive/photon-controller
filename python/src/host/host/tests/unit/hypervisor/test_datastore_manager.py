@@ -22,10 +22,10 @@ from gen.resource.constants import NFS_TAG
 from gen.resource.constants import VSAN_TAG
 from gen.resource.ttypes import Datastore
 from gen.resource.ttypes import DatastoreType as DSType
-from host.hypervisor.esx.datastore_manager import EsxDatastoreManager
+from host.hypervisor.datastore_manager import DatastoreManager
 
 
-class TestEsxDatastoreManager(unittest.TestCase):
+class TestDatastoreManager(unittest.TestCase):
 
     def test_get_datastores(self):
         """ Test esx datastore manager with different datastore types.
@@ -50,7 +50,7 @@ class TestEsxDatastoreManager(unittest.TestCase):
         ds_list = ["datastore1", "datastore2", "datastore3",
                    "datastore4", "datastore5", "datastore6"]
         image_ds = [{"name": "datastore2", "used_for_vms": False}]
-        ds_manager = EsxDatastoreManager(hypervisor, ds_list, image_ds)
+        ds_manager = DatastoreManager(hypervisor, ds_list, image_ds)
 
         assert_that(ds_manager.get_datastore_ids(),
                     contains_inanyorder("id-1", "id-2", "id-3", "id-4",
@@ -106,7 +106,7 @@ class TestEsxDatastoreManager(unittest.TestCase):
         # No valid datastore. One image datastore for cloud VMs.
         ds_list = []
         image_ds = [{"name": "datastore1", "used_for_vms": True}]
-        ds_manager = EsxDatastoreManager(hypervisor, ds_list, image_ds)
+        ds_manager = DatastoreManager(hypervisor, ds_list, image_ds)
         assert_that(ds_manager.initialized, is_(True))
         assert_that(ds_manager.get_datastore_ids(), is_(["id-1"]))
         assert_that(ds_manager.vm_datastores(), is_([]))
@@ -115,7 +115,7 @@ class TestEsxDatastoreManager(unittest.TestCase):
         # No valid datastore. No image datastore for cloud VMs.
         ds_list = ["bad-ds"]
         image_ds = [{"name": "datastore1", "used_for_vms": False}]
-        ds_manager = EsxDatastoreManager(hypervisor, ds_list, image_ds)
+        ds_manager = DatastoreManager(hypervisor, ds_list, image_ds)
         assert_that(ds_manager.initialized, is_(False))
 
     @patch("os.mkdir")
@@ -135,7 +135,7 @@ class TestEsxDatastoreManager(unittest.TestCase):
             {"name": "datastore2", "used_for_vms": True},
             {"name": "datastore3", "used_for_vms": False},
         ]
-        ds_manager = EsxDatastoreManager(hypervisor, ds_list, image_ds)
+        ds_manager = DatastoreManager(hypervisor, ds_list, image_ds)
         assert_that(ds_manager.get_datastore_ids(),
                     contains_inanyorder("id-1", "id-2", "id-3"))
         assert_that(ds_manager.vm_datastores(), is_(["id-1"]))
@@ -161,7 +161,7 @@ class TestEsxDatastoreManager(unittest.TestCase):
             {"name": "datastore3", "used_for_vms": False},
             {"name": "bad-datastores2", "used_for_vms": False},
         ]
-        manager = EsxDatastoreManager(hypervisor, ds_list, image_ds)
+        manager = DatastoreManager(hypervisor, ds_list, image_ds)
         assert_that(manager.get_datastore_ids(),
                     contains_inanyorder("id-1", "id-2", "id-3"))
         assert_that(manager.vm_datastores(), is_(["id-1"]))
@@ -183,7 +183,7 @@ class TestEsxDatastoreManager(unittest.TestCase):
 
         ds_list = ["datastore1", "datastore2", "datastore3"]
         image_ds = [{"name": "datastore3", "used_for_vms": True}]
-        manager = EsxDatastoreManager(hypervisor, ds_list, image_ds)
+        manager = DatastoreManager(hypervisor, ds_list, image_ds)
         assert_that(manager.get_datastore_ids(), contains("id-3"))
 
     def get_datastore_mock(self, datastores):

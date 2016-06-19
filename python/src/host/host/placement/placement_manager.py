@@ -19,7 +19,7 @@ from common.kind import Unit
 from common.log import log_duration
 from gen.resource.ttypes import ResourcePlacementType
 from gen.resource.ttypes import ResourceConstraintType
-from host.hypervisor.datastore_manager import DatastoreNotFoundException
+from host.hypervisor.exceptions import DatastoreNotFoundException
 from host.placement.disk_placement_manager import BestEffortPlaceEngine
 from host.placement.disk_placement_manager import DatastoreSelector
 from host.placement.disk_placement_manager import DisksPlacement
