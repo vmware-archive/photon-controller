@@ -39,6 +39,21 @@ class NfcLeaseInitiatizationError(Exception):
     pass
 
 
+class UpdateListener(object):
+    """
+    Abstract base class for host update listener.
+
+    IMPORTANT: The underlying hypervisor holds a lock while notifying
+    listeners, so these callbacks should be reasonably light-weight.
+    """
+    __metaclass__ = abc.ABCMeta
+
+    @abc.abstractmethod
+    def datastores_updated(self):
+        """Gets called when tehre is a change in the list of datastores."""
+        pass
+
+
 class HostClient(object):
     __metaclass__ = abc.ABCMeta
 
