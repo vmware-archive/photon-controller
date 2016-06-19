@@ -12,7 +12,7 @@
 
 import logging
 
-from host.hypervisor.datastore_manager import DatastoreNotFoundException
+from host.hypervisor.exceptions import DatastoreNotFoundException
 
 from host.image.image_scanner import DatastoreImageScanner
 from host.image.image_sweeper import DatastoreImageSweeper

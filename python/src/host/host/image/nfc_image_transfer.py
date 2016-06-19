@@ -24,7 +24,7 @@ from gen.host.ttypes import CreateImageResultCode
 from gen.host.ttypes import ServiceTicketRequest
 from gen.host.ttypes import ServiceType
 from gen.host.ttypes import ServiceTicketResultCode
-from host.hypervisor.disk_manager import DiskAlreadyExistException
+from host.hypervisor.exceptions import DiskAlreadyExistException
 from host.hypervisor.esx.path_util import IMAGE_FOLDER_NAME_PREFIX
 from host.hypervisor.esx.vm_config import datastore_path
 from host.hypervisor.esx.vm_config import compond_path_join

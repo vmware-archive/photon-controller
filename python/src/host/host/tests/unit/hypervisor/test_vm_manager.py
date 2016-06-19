@@ -32,11 +32,11 @@ from gen.host.ttypes import VmNetworkInfo
 from gen.host.ttypes import Ipv4Address
 from host.hypervisor.datastore_manager import DatastoreNotFoundException
 from host.hypervisor.resources import State
-from host.hypervisor.vm_manager import VmAlreadyExistException
-from host.hypervisor.vm_manager import VmNotFoundException
-from host.hypervisor.vm_manager import VmPowerStateException
+from host.hypervisor.exceptions import VmAlreadyExistException
+from host.hypervisor.exceptions import VmNotFoundException
+from host.hypervisor.exceptions import VmPowerStateException
 from host.hypervisor.esx.vim_client import VimClient
-from host.hypervisor.esx.vm_manager import EsxVmManager
+from host.hypervisor.vm_manager import VmManager
 
 
 def FakeConfigInfo():
@@ -46,13 +46,13 @@ def FakeConfigInfo():
     return info
 
 
-class TestEsxVmManager(unittest.TestCase):
+class TestVmManager(unittest.TestCase):
     def setUp(self):
         self.vim_client = VimClient(auto_sync=False)
         self.vim_client._content = MagicMock()
         self.vim_client.wait_for_task = MagicMock()
         self.vim_client.query_config = MagicMock()
-        self.vm_manager = EsxVmManager(self.vim_client, MagicMock())
+        self.vm_manager = VmManager(self.vim_client, MagicMock())
 
     def test_power_vm_not_found(self):
         """Test that we propagate VmNotFound."""
@@ -189,9 +189,9 @@ class TestEsxVmManager(unittest.TestCase):
         expected_extra_config = extra_config_metadata.copy()
         expected_extra_config["bios.bootOrder"] = "x"
 
-        self.assertTrue(TestEsxVmManager._validate_spec_extra_config(
+        self.assertTrue(TestVmManager._validate_spec_extra_config(
             spec.get_spec(), config=expected_extra_config, expected=True))
-        self.assertTrue(TestEsxVmManager._validate_spec_extra_config(
+        self.assertTrue(TestVmManager._validate_spec_extra_config(
             spec.get_spec(), config=non_extra_config_metadata, expected=False))
         assert_that(spec.get_spec().flags.diskUuidEnabled, equal_to(True))
 
@@ -232,7 +232,7 @@ class TestEsxVmManager(unittest.TestCase):
 
         # check that we only create one controller of desired type to attach
         # to both disks
-        summary = TestEsxVmManager._summarize_controllers_in_spec(
+        summary = TestVmManager._summarize_controllers_in_spec(
             spec.get_spec(), vim.vm.device.VirtualSCSIController, expected_ctlr_type)
         assert_that(summary, equal_to((1, 0)))
 
@@ -252,7 +252,7 @@ class TestEsxVmManager(unittest.TestCase):
 
         spec.add_nic("fake_network_id")
 
-        summary = TestEsxVmManager._summarize_controllers_in_spec(
+        summary = TestVmManager._summarize_controllers_in_spec(
             spec.get_spec(), vim.vm.device.VirtualEthernetCard, expected_ctlr_type)
         assert_that(summary, equal_to((1, 0)))
 

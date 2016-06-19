@@ -75,7 +75,6 @@ from gen.scheduler.ttypes import PlaceResultCode
 from gen.scheduler.ttypes import Score
 from host.host_handler import HostHandler
 from host.hypervisor.datastore_manager import DatastoreNotFoundException
-from host.hypervisor.disk_manager import DiskAlreadyExistException
 from host.placement.placement_manager import InvalidReservationException
 from host.placement.placement_manager import NoSuchResourceException
 from host.hypervisor.resources import AgentResourcePlacement
@@ -83,11 +82,12 @@ from host.hypervisor.resources import Disk as HostDisk
 from host.hypervisor.resources import NetworkInfo
 from host.hypervisor.resources import NetworkInfoType
 from host.hypervisor.system import DatastoreInfo
-from host.hypervisor.vm_manager import DiskNotFoundException
-from host.hypervisor.vm_manager import IsoNotAttachedException
-from host.hypervisor.vm_manager import VmAlreadyExistException
-from host.hypervisor.vm_manager import VmNotFoundException
-from host.hypervisor.vm_manager import VmPowerStateException
+from host.hypervisor.exceptions import DiskAlreadyExistException
+from host.hypervisor.exceptions import DiskNotFoundException
+from host.hypervisor.exceptions import IsoNotAttachedException
+from host.hypervisor.exceptions import VmAlreadyExistException
+from host.hypervisor.exceptions import VmNotFoundException
+from host.hypervisor.exceptions import VmPowerStateException
 from host.image.image_scanner import DatastoreImageScanner
 from host.image.image_sweeper import DatastoreImageSweeper
 from matchers import *  # noqa

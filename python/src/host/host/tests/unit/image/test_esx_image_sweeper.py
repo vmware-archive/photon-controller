@@ -22,7 +22,7 @@ import unittest
 from hamcrest import *  # noqa
 from host.hypervisor.esx import vm_config
 from host.hypervisor.esx.vim_client import VimClient
-from host.hypervisor.esx.vm_manager import EsxVmManager
+from host.hypervisor.vm_manager import VmManager
 from mock import MagicMock
 from mock import patch
 from nose_parameterized import parameterized
@@ -47,7 +47,7 @@ class ImageScannerVmTestCase(unittest.TestCase):
         self.vim_client = VimClient(auto_sync=False)
         self.vim_client._content = MagicMock()
         self.vim_client.wait_for_task = MagicMock()
-        self.vm_manager = EsxVmManager(self.vim_client, MagicMock())
+        self.vm_manager = VmManager(self.vim_client, MagicMock())
         services.register(ServiceName.AGENT_CONFIG, MagicMock())
 
         # Set up test files

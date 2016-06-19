@@ -19,7 +19,7 @@ import random
 from common.log import log_duration
 from gen.resource.ttypes import CloneType
 from gen.resource.ttypes import ResourceConstraintType
-from host.hypervisor.datastore_manager import DatastoreNotFoundException
+from host.hypervisor.exceptions import DatastoreNotFoundException
 from host.hypervisor.resources import AgentResourcePlacement
 
 
