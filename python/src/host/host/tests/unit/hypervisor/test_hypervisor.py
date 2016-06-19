@@ -19,14 +19,14 @@ from mock import patch
 from agent.agent_config import AgentConfig
 from common.file_util import mkdtemp
 from host.tests.unit.services_helper import ServicesHelper
-from host.hypervisor.hypervisor import UpdateListener
-from host.hypervisor.esx.hypervisor import EsxHypervisor
+from host.hypervisor.esx.host_client import UpdateListener
+from host.hypervisor.hypervisor import Hypervisor
 from host.hypervisor.esx.vim_client import AcquireCredentialsException
 from host.hypervisor.esx.vim_client import VimClient
 from host.hypervisor.esx.vim_cache import VimCache
 
 
-class TestUnitEsxHypervisor(unittest.TestCase):
+class TestUnitHypervisor(unittest.TestCase):
 
     def setUp(self):
         self.services_helper = ServicesHelper()
@@ -65,15 +65,15 @@ class TestUnitEsxHypervisor(unittest.TestCase):
         creds_mock.return_value = ["user", "pass"]
 
         # Simulate exception thrown during construction of the
-        # EsxHypervisor and verify that no keep alive thread is started
+        # Hypervisor and verify that no keep alive thread is started
         creds_mock.side_effect = AcquireCredentialsException()
         self.assertRaises(AcquireCredentialsException,
-                          EsxHypervisor, self.agent_config)
+                          Hypervisor, self.agent_config)
         assert_that(update_mock.called, is_(False))
 
         creds_mock.side_effect = None
 
-        self.hv = EsxHypervisor(self.agent_config)
+        self.hv = Hypervisor(self.agent_config)
 
         assert_that(update_mock.called, is_(True))
 
@@ -102,7 +102,7 @@ class TestUnitEsxHypervisor(unittest.TestCase):
 
         # Add listeners to the hypervisor and verify that the listeners get
         # notified immediately.
-        self.hv = EsxHypervisor(self.agent_config)
+        self.hv = Hypervisor(self.agent_config)
         for listener in listeners:
             self.hv.add_update_listener(listener)
             assert_that(listener.ds_updated, is_(True))

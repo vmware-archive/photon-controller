@@ -10,56 +10,43 @@
 # License for then specific language governing permissions and limitations
 # under the License.
 
-"""Provides a wrapper around hypervisor specific modules."""
-
-import abc
+import atexit
 import logging
 
+from common.util import suicide
+from host.hypervisor.datastore_manager import DatastoreManager
+from host.hypervisor.disk_manager import DiskManager
+from host.hypervisor.network_manager import NetworkManager
+from host.hypervisor.vm_manager import VmManager
+from host.hypervisor.system import System
+from host.hypervisor.resources import Resource
+from host.image.image_manager import ImageManager
+from host.image.nfc_image_transfer import NfcImageTransferer
 from host.image.image_monitor import ImageMonitor
 from host.placement.placement_manager import PlacementManager
 from host.placement.placement_manager import PlacementOption
-from host.hypervisor.resources import Resource
-
-
-class UpdateListener(object):
-    """
-    Abstract base class for host update listener.
-
-    IMPORTANT: The underlying hypervisor holds a lock while notifying
-    listeners, so these callbacks should be reasonably light-weight.
-    """
-    __metaclass__ = abc.ABCMeta
-
-    @abc.abstractmethod
-    def datastores_updated(self):
-        """Gets called when tehre is a change in the list of datastores."""
-        pass
 
 
 class Hypervisor(object):
-    """A class that wraps hypervisor functionality.
-
-    Based on which hypervisor the agent was configured to use, this will setup
-    the proper modules.
-    """
     def __init__(self, agent_config):
-        self._logger = logging.getLogger(__name__)
-        self._config = agent_config
-        from host.hypervisor.esx.hypervisor import EsxHypervisor
-        self.hypervisor = EsxHypervisor(agent_config)
+        self.logger = logging.getLogger(__name__)
 
-        """
-        The creation of the Hypervisors above translates datastore names
-        into datastore ids. Methods that access datastores through this
-        class should use datastore ids.
-        """
+        # If VimClient's housekeeping thread failed to update its own cache,
+        # call errback to commit suicide. Watchdog will bring up the agent
+        # again.
+        self.host_client = Hypervisor.create_host_client(errback=lambda: suicide())
+        self.host_client.connect_local()
+        atexit.register(lambda client: client.disconnect(), self.host_client)
 
-        self.datastore_manager = self.hypervisor.datastore_manager
-        self.disk_manager = self.hypervisor.disk_manager
-        self.image_manager = self.hypervisor.image_manager
-        self.vm_manager = self.hypervisor.vm_manager
-        self.network_manager = self.hypervisor.network_manager
-        self.system = self.hypervisor.system
+        self.datastore_manager = DatastoreManager(
+            self, agent_config.datastores, agent_config.image_datastores)
+        # datastore manager needs to update the cache when there is a change.
+        self.host_client.add_update_listener(self.datastore_manager)
+        self.vm_manager = VmManager(self.host_client, self.datastore_manager)
+        self.disk_manager = DiskManager(self.host_client, self.datastore_manager)
+        self.image_manager = ImageManager(self.host_client, self.datastore_manager)
+        self.network_manager = NetworkManager(self.host_client, agent_config.networks)
+        self.system = System(self.host_client)
 
         options = PlacementOption(agent_config.memory_overcommit,
                                   agent_config.cpu_overcommit,
@@ -69,34 +56,27 @@ class Hypervisor(object):
         self.image_monitor = ImageMonitor(self.datastore_manager,
                                           self.image_manager,
                                           self.vm_manager)
+        self.image_manager.monitor_for_cleanup()
+        self.image_transferer = NfcImageTransferer(self.host_client)
+        atexit.register(self.image_manager.cleanup)
 
-    def add_update_listener(self, listener):
-        """
-        Adds an update listener.
-        """
-        if not issubclass(listener.__class__, UpdateListener):
-            raise TypeError("Not a subclass of UpdateListener")
-        self.hypervisor.add_update_listener(listener)
-
-    def remove_update_listener(self, listener):
-        """
-        Removes an update listener.
-        """
-        if not issubclass(listener.__class__, UpdateListener):
-            raise TypeError("Not a subclass of UpdateListener")
-        self.hypervisor.remove_update_listener(listener)
+    @staticmethod
+    def create_host_client(auto_sync=True, errback=None):
+        try:
+            # check whether attache is installed. If not, find_module will throw ImportError.
+            from host.hypervisor.esx.attache_client import AttacheClient
+            return AttacheClient(auto_sync, errback)
+        except ImportError:
+            from host.hypervisor.esx.vim_client import VimClient
+            return VimClient(auto_sync, errback)
 
     def check_image(self, image_id, datastore_id):
-        return self.hypervisor.check_image(image_id, datastore_id)
+        return self.image_manager.check_image(
+            image_id, self.datastore_manager.datastore_name(datastore_id)
+        )
 
     def get_resources(self):
-        result = []
-        if hasattr(self.vm_manager, "get_resources"):
-            return self.vm_manager.get_resources()
-        else:
-            for vm_id in self.vm_manager.get_resource_ids():
-                result.append(self.get_vm_resource(vm_id))
-        return result
+        return self.vm_manager.get_resources()
 
     def get_vm_resource(self, vm_id):
         vm = self.vm_manager.get_resource(vm_id)
@@ -104,7 +84,20 @@ class Hypervisor(object):
         return resource
 
     def acquire_vim_ticket(self):
-        return self.hypervisor.acquire_vim_ticket()
+        return self.host_client.acquire_clone_ticket()
+
+    def add_update_listener(self, listener):
+        self.host_client.add_update_listener(listener)
+
+    def remove_update_listener(self, listener):
+        self.host_client.remove_update_listener(listener)
+
+    def transfer_image(self, source_image_id, source_datastore,
+                       destination_image_id, destination_datastore,
+                       host, port):
+        return self.image_transferer.send_image_to_host(
+            source_image_id, source_datastore,
+            destination_image_id, destination_datastore, host, port)
 
     @property
     def memory_overcommit(self):
@@ -112,7 +105,11 @@ class Hypervisor(object):
 
     def set_memory_overcommit(self, value):
         self.placement_manager.memory_overcommit = value
-        self.hypervisor.set_memory_overcommit(value)
+        # Enable/Disable large page support. If this host is removed
+        # from the deployment, large page support will need to be
+        # explicitly updated by the user.
+        disable_large_pages = value > 1.0
+        self.host_client.set_large_page_support(disable=disable_large_pages)
 
     @property
     def cpu_overcommit(self):
@@ -120,10 +117,3 @@ class Hypervisor(object):
 
     def set_cpu_overcommit(self, value):
         self.placement_manager.cpu_overcommit = value
-
-    def transfer_image(self, source_image_id, source_datastore,
-                       destination_image_id, destination_datastore,
-                       host, port):
-        return self.hypervisor.transfer_image(
-            source_image_id, source_datastore, destination_image_id,
-            destination_datastore, host, port)

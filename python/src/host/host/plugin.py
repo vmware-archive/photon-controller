@@ -47,7 +47,7 @@ class HostPlugin(common.plugin.Plugin):
         # Create host handler
         host_handler = HostHandler(hv)
         common.services.register(Host.Iface, host_handler)
-        common.services.register(ServiceName.HOST_CLIENT, hv.hypervisor.host_client)
+        common.services.register(ServiceName.HOST_CLIENT, hv.host_client)
 
         # Load num_threads
         num_threads = config.host_service_threads
