@@ -10,94 +10,114 @@
 # License for then specific language governing permissions and limitations
 # under the License.
 
-import abc
+""" Contains the implementation code for ESX VM Disk operations."""
 
+import logging
+import os
 
-class DiskFileException(Exception):
-    pass
-
-
-class DiskPathException(Exception):
-    pass
-
-
-class DiskAlreadyExistException(DiskFileException):
-    pass
-
-
-class DatastoreOutOfSpaceException(Exception):
-    pass
+from common.kind import Flavor
+from host.hypervisor.esx.path_util import IMAGE_FOLDER_NAME_PREFIX
+from host.hypervisor.esx.path_util import DISK_FOLDER_NAME_PREFIX
+from host.hypervisor.esx.path_util import os_datastore_root
+from host.hypervisor.esx.path_util import os_datastore_path
+from host.hypervisor.esx.path_util import compond_path_join
+from host.hypervisor.esx.path_util import os_vmdk_path
+from host.hypervisor.esx.path_util import vmdk_path
+from host.hypervisor.exceptions import DiskNotFoundException
+from host.hypervisor.resources import Disk
 
 
 class DiskManager(object):
-    """A class that wraps hypervisor specific disk management code."""
-    __metaclass__ = abc.ABCMeta
+    """ESX VM Manager specific implementation.
 
-    @abc.abstractmethod
+    This will be used by host/disk_manager.py if the agent has selected to use
+    the ESX hypervisor on boot. This class contains all methods for VM disk
+    operations.
+    """
+
+    def __init__(self, host_client, ds_manager):
+        """Create ESX Disk Manager.
+
+        :type host_client: VimClient
+        :type ds_manager: DatastoreManager
+        """
+        self._logger = logging.getLogger(__name__)
+        self._host_client = host_client
+        self._ds_manager = ds_manager
+
     def create_disk(self, datastore, disk_id, size):
-        """Create a new virtual disk.
+        name = vmdk_path(datastore, disk_id)
+        self._vmdk_mkdir(datastore, disk_id)
+        self._host_client.create_disk(name, size)
+        self._host_client.set_disk_uuid(name, disk_id)
 
-        :param datastore: The datastore name
-        :type datastore: str
-        :param disk_id: The disk id
-        :param disk_id: str
-        :param size: Capacity of the disk in kilobytes.
-        :type size: int
-        """
-        pass
-
-    @abc.abstractmethod
     def delete_disk(self, datastore, disk_id):
-        """Delete an existing virtual disk.
+        name = vmdk_path(datastore, disk_id)
+        self._host_client.delete_disk(name)
+        self._vmdk_rmdir(datastore, disk_id)
 
-        :param datastore: The datastore name
-        :type datastore: str
-        :param disk_id: The disk id
-        :type disk_id: str
-        """
-        pass
+    def move_disk(self, source_datastore, source_id, dest_datastore, dest_id):
+        source = vmdk_path(source_datastore, source_id)
+        dest = vmdk_path(dest_datastore, dest_id)
+        self._vmdk_mkdir(dest_datastore, dest_id)
+        self._host_client.move_disk(source, dest)
+        self._vmdk_rmdir(source_datastore, source_id)
 
-    @abc.abstractmethod
-    def move_disk(self, source_datastore, source_id,
-                  dest_datastore, dest_id):
-        """Move a virtual disk.
-
-        :param source_datastore: The source disk datastore
-        :type source_datastore: str
-        :param source_id: The id of the source disk
-        :type source_id: str
-        :param dest_datastore: The destination disk datastore
-        :type dest_datastore: str
-        :param dest_id: The id of the destination disk
-        :type dest_id: str
-        """
-        pass
-
-    @abc.abstractmethod
-    def copy_disk(self, source_datastore, source_id,
-                  dest_datastore, dest_id):
+    def copy_disk(self, source_datastore, source_id, dest_datastore, dest_id):
         """Copy a virtual disk.
 
-        :param source_datastore: The source disk datastore
-        :type source_datastore: str
-        :param source_id: The id of the source disk
-        :type source_id: str
-        :param dest_datastore: The destination disk datastore
-        :type dest_datastore: str
-        :param dest_id: The id of the destination disk
-        :type dest_id: str
-        """
-        pass
+        This method is used to create a "full clone" of a vmdk.
+        Underneath, this call boils down to doing a DiskLib_Clone()
 
-    @abc.abstractmethod
+        Command line equivalent:
+          $ vmkfstools -i source dest
+
+        """
+        source = vmdk_path(source_datastore, source_id, IMAGE_FOLDER_NAME_PREFIX)
+        dest = vmdk_path(dest_datastore, dest_id)
+        self._vmdk_mkdir(dest_datastore, dest_id)
+        self._host_client.copy_disk(source, dest)
+        self._host_client.set_disk_uuid(dest, dest_id)
+
     def get_datastore(self, disk_id):
-        pass
+        for datastore in self._ds_manager.get_datastore_ids():
+            disk = os_vmdk_path(datastore, disk_id)
+            if os.path.isfile(disk):
+                return datastore
 
-    @abc.abstractmethod
+        # Extra logging to help debug failures where host2 cannot find disk created by host1 on a shared datastore
+        self._logger.error("get_disk_datastore failed: disk=%s, datastores=%s" %
+                           (disk_id, self._ds_manager.get_datastore_ids()))
+        for datastore in self._ds_manager.get_datastore_ids():
+            p1 = os_datastore_root(datastore)
+            p2 = os_datastore_path(datastore, compond_path_join(DISK_FOLDER_NAME_PREFIX, disk_id))
+            p3 = os_vmdk_path(datastore, disk_id)
+            self._logger.error("get_disk_datastore check_path: %s:%s, %s:%s, %s:%s" %
+                               (p1, os.path.isdir(p1), p2, os.path.isdir(p2), p3, os.path.isfile(p3)))
+
+        return None
+
     def get_resource(self, disk_id):
-        """Get a Disk resource
+        datastore = self.get_datastore(disk_id)
+        if datastore is None:
+            raise DiskNotFoundException(disk_id)
+        resource = Disk(disk_id)
+        resource.flavor = Flavor("default")  # TODO
+        resource.persistent = False  # TODO
+        resource.new_disk = False
+        resource.capacity_gb = -1  # TODO
+        resource.image = None
+        resource.datastore = datastore
+        return resource
 
-        :type disk_id: str
-        :rtype: resources.Disk
-        """
-        pass
+    def _query_uuid(self, datastore, disk_id):
+        name = vmdk_path(datastore, disk_id)
+        return self._host_client.query_disk_uuid(name)
+
+    def _vmdk_mkdir(self, datastore, disk_id):
+        path = os.path.dirname(os_vmdk_path(datastore, disk_id))
+        self._host_client.make_directory(path)
+
+    def _vmdk_rmdir(self, datastore, disk_id):
+        path = os.path.dirname(os_vmdk_path(datastore, disk_id))
+        self._host_client.delete_file(path)

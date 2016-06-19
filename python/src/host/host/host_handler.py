@@ -115,13 +115,13 @@ from host.image.image_manager import ImageNotFoundException
 from host.image.image_scanner import DatastoreImageScanner
 from host.image.image_sweeper import DatastoreImageSweeper
 
-from hypervisor.disk_manager import DiskAlreadyExistException
-from hypervisor.vm_manager import DiskNotFoundException
-from hypervisor.vm_manager import IsoNotAttachedException
-from hypervisor.vm_manager import OperationNotAllowedException
-from hypervisor.vm_manager import VmAlreadyExistException
-from hypervisor.vm_manager import VmNotFoundException
-from hypervisor.vm_manager import VmPowerStateException
+from hypervisor.exceptions import DiskAlreadyExistException
+from hypervisor.exceptions import DiskNotFoundException
+from hypervisor.exceptions import IsoNotAttachedException
+from hypervisor.exceptions import OperationNotAllowedException
+from hypervisor.exceptions import VmAlreadyExistException
+from hypervisor.exceptions import VmNotFoundException
+from hypervisor.exceptions import VmPowerStateException
 
 
 class HypervisorNotConfigured(Exception):
