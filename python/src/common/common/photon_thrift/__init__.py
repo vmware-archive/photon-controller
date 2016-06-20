@@ -9,7 +9,3 @@
 # warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
 # License for then specific language governing permissions and limitations
 # under the License.
-
-from serverset import ServerSet  # noqa
-from serverset import ServerSetListener  # noqa
-from serverset import StaticServerSet  # noqa

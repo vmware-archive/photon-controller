@@ -23,11 +23,11 @@ from gen.agent.ttypes import VmCache
 from gen.host.ttypes import VmNetworkInfo
 from gen.host.ttypes import Ipv4Address
 from gen.resource.ttypes import MksTicket
-from host.hypervisor.disk_manager import DiskFileException
-from host.hypervisor.disk_manager import DiskPathException
-from host.hypervisor.disk_manager import DiskAlreadyExistException
-from host.hypervisor.vm_manager import VmNotFoundException
-from host.hypervisor.vm_manager import VmPowerStateException
+from host.hypervisor.exceptions import DiskFileException
+from host.hypervisor.exceptions import DiskPathException
+from host.hypervisor.exceptions import DiskAlreadyExistException
+from host.hypervisor.exceptions import VmNotFoundException
+from host.hypervisor.exceptions import VmPowerStateException
 from host.hypervisor.esx.host_client import HostClient
 from host.hypervisor.esx.host_client import DeviceNotFoundException
 from host.hypervisor.esx.host_client import DeviceBusyException
