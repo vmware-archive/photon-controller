@@ -23,6 +23,7 @@ import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
+import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
 import com.vmware.photon.controller.nsxclient.utils.NameUtils;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.TaskState;
@@ -34,6 +35,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * This is an optional step which only happens when an VM is to be
@@ -69,7 +71,9 @@ public class VmJoinVirtualNetworkStepCmd extends StepCommand {
 
     startState.logicalSwitchId = logicalSwitchId;
     Operation result = housekeeperXenonRestClient.post(ConnectVmToSwitchTaskService.FACTORY_LINK, startState);
-    TaskState.TaskStage taskStage = result.getBody(ConnectVmToSwitchTask.class).taskState.stage;
+    ConnectVmToSwitchTask task = result.getBody(ConnectVmToSwitchTask.class);
+    TaskState.TaskStage taskStage = waitForConnectionDone(housekeeperXenonRestClient, task.documentSelfLink);
+
     if (taskStage != TaskState.TaskStage.FINISHED) {
       String errorMsg = "Connecting VM at " + vmLocationId + " to logical switch " +
           logicalSwitchId + " failed with a state of " + taskStage;
@@ -81,6 +85,28 @@ public class VmJoinVirtualNetworkStepCmd extends StepCommand {
 
   @Override
   protected void cleanup() {
+  }
+
+  private TaskState.TaskStage waitForConnectionDone(HousekeeperXenonRestClient housekeeperXenonRestClient,
+                                                    String taskUrl) {
+    final int numRetries = 5;
+    final int retryWaitingTimeSeconds = 1;
+
+    for (int i = 0; i < numRetries; i++) {
+      try {
+        Operation result = housekeeperXenonRestClient.get(taskUrl);
+        TaskState.TaskStage taskStage = result.getBody(ConnectVmToSwitchTask.class).taskState.stage;
+        if (taskStage != TaskState.TaskStage.STARTED) {
+          return taskStage;
+        }
+
+        TimeUnit.SECONDS.sleep(retryWaitingTimeSeconds);
+      } catch (DocumentNotFoundException | InterruptedException e) {
+        throw new RuntimeException(e.getMessage());
+      }
+    }
+
+    throw new RuntimeException("Timeout when waiting for ConnectVmToSwitchTask");
   }
 
   private DeploymentService.State getDeploymentServiceState() {
