@@ -1117,11 +1117,19 @@ public class ProvisionHostTaskService extends StatefulService {
 
   private void processInstallVibsSubStage(State currentState) {
 
+    //
+    // N.B. This query uses EXPAND_CONTENT so that only documents which are returned by their
+    // respective owner nodes will be included in the final result set. This addresses a previous
+    // bug which surfaced as HTTP timeouts when trying to GET an already-deleted {@link VibService}
+    // document.
+    //
+
     QueryTask queryTask = QueryTask.Builder.createDirectTask()
         .setQuery(QueryTask.Query.Builder.create()
             .addKindFieldClause(VibService.State.class)
             .addFieldClause(VibService.State.FIELD_NAME_HOST_SERVICE_LINK, currentState.hostServiceLink)
             .build())
+        .addOption(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT)
         .build();
 
     sendRequest(Operation
@@ -1135,7 +1143,7 @@ public class ProvisionHostTaskService extends StatefulService {
                 if (e != null) {
                   failTask(e);
                 } else {
-                  processInstallVibsSubStage(QueryTaskUtils.getBroadcastQueryDocumentLinks(o));
+                  processInstallVibsSubStage(QueryTaskUtils.getBroadcastQueryDocuments(VibService.State.class, o));
                 }
               } catch (Throwable t) {
                 failTask(t);
@@ -1143,9 +1151,9 @@ public class ProvisionHostTaskService extends StatefulService {
             }));
   }
 
-  private void processInstallVibsSubStage(Set<String> vibServiceLinks) {
+  private void processInstallVibsSubStage(List<VibService.State> vibStateList) {
 
-    if (vibServiceLinks.isEmpty()) {
+    if (vibStateList.isEmpty()) {
       ServiceUtils.logInfo(this, "Found no remaining VIBs to install");
       State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_FOR_AGENT_START);
       patchState.agentStartPollCount = 1;
@@ -1153,23 +1161,7 @@ public class ProvisionHostTaskService extends StatefulService {
       return;
     }
 
-    sendRequest(Operation
-        .createGet(this, vibServiceLinks.iterator().next())
-        .setCompletion(
-            (o, e) -> {
-              try {
-                if (e != null) {
-                  failTask(e);
-                } else {
-                  processInstallVibsSubStage(o.getBody(VibService.State.class));
-                }
-              } catch (Throwable t) {
-                failTask(t);
-              }
-            }));
-  }
-
-  private void processInstallVibsSubStage(VibService.State vibState) {
+    VibService.State vibState = vibStateList.get(0);
 
     sendRequest(HostUtils
         .getCloudStoreHelper(this)
