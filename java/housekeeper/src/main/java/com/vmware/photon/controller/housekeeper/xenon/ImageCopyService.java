@@ -22,6 +22,7 @@ import com.vmware.photon.controller.common.clients.HostClientProvider;
 import com.vmware.photon.controller.common.clients.exceptions.ImageNotFoundException;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
 import com.vmware.photon.controller.common.clients.exceptions.SystemErrorException;
+import com.vmware.photon.controller.common.logging.LoggingUtils;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelperProvider;
 import com.vmware.photon.controller.common.xenon.OperationUtils;
 import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
@@ -149,6 +150,8 @@ public class ImageCopyService extends StatefulService {
   protected HostClient getHostClient(final State current) throws IOException {
     HostClient client = ((HostClientProvider) getHost()).getHostClient();
     client.setHostIp(current.host);
+    LoggingUtils.setRequestId(current.documentSelfLink);
+
     return client;
   }
 
