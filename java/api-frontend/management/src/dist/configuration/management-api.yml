@@ -1,11 +1,13 @@
 server:
+  type: simple
   minThreads: 8
   maxThreads: 512
+  applicationContextPath: /
   registerDefaultExceptionMappers: false
-  applicationConnectors:
-    - type: http
-      port: 9000
-      bindHost: "0.0.0.0"
+  connector:
+    type: http
+    port: 9000
+    bindHost: "0.0.0.0"
 
 registrationAddress: "{{{REGISTRATION_ADDRESS}}}"
 
