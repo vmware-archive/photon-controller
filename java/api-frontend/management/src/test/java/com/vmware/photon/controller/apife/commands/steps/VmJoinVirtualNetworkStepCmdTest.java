@@ -37,6 +37,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.testng.Assert.fail;
 
@@ -118,16 +119,21 @@ public class VmJoinVirtualNetworkStepCmdTest {
     doReturn(operation).when(housekeeperXenonRestClient).post(eq(ConnectVmToSwitchTaskService.FACTORY_LINK),
         any(ConnectVmToSwitchTask.class));
 
+    String documentSelfLink = UUID.randomUUID().toString();
     ConnectVmToSwitchTask task = new ConnectVmToSwitchTask();
     task.taskState = new TaskState();
     task.taskState.stage = TaskState.TaskStage.FINISHED;
+    task.documentSelfLink = documentSelfLink;
     doReturn(task).when(operation).getBody(ConnectVmToSwitchTask.class);
+
+    doReturn(operation).when(housekeeperXenonRestClient).get(documentSelfLink);
 
     command.execute();
 
     verify(housekeeperXenonRestClient).post(eq(ConnectVmToSwitchTaskService.FACTORY_LINK),
         any(ConnectVmToSwitchTask.class));
-    verify(operation).getBody(ConnectVmToSwitchTask.class);
+    verify(housekeeperXenonRestClient).get(eq(documentSelfLink));
+    verify(operation, times(2)).getBody(ConnectVmToSwitchTask.class);
   }
 
   @Test
@@ -165,16 +171,67 @@ public class VmJoinVirtualNetworkStepCmdTest {
     doReturn(operation).when(housekeeperXenonRestClient).post(eq(ConnectVmToSwitchTaskService.FACTORY_LINK),
         any(ConnectVmToSwitchTask.class));
 
-    ConnectVmToSwitchTask task = new ConnectVmToSwitchTask();
-    task.taskState = new TaskState();
-    task.taskState.stage = TaskState.TaskStage.FAILED;
-    doReturn(task).when(operation).getBody(ConnectVmToSwitchTask.class);
+    String documentSelfLink = UUID.randomUUID().toString();
+    ConnectVmToSwitchTask task1 = new ConnectVmToSwitchTask();
+    task1.taskState = new TaskState();
+    task1.taskState.stage = TaskState.TaskStage.STARTED;
+    task1.documentSelfLink = documentSelfLink;
+
+    ConnectVmToSwitchTask task2 = new ConnectVmToSwitchTask();
+    task2.taskState = new TaskState();
+    task2.taskState.stage = TaskState.TaskStage.STARTED;
+
+    ConnectVmToSwitchTask task3 = new ConnectVmToSwitchTask();
+    task3.taskState = new TaskState();
+    task3.taskState.stage = TaskState.TaskStage.FAILED;
+
+    doReturn(task1).doReturn(task2).doReturn(task3).when(operation).getBody(ConnectVmToSwitchTask.class);
+    doReturn(operation).when(housekeeperXenonRestClient).get(documentSelfLink);
 
     try {
       command.execute();
     } catch (RuntimeException e) {
+      verify(housekeeperXenonRestClient).post(eq(ConnectVmToSwitchTaskService.FACTORY_LINK),
+          any(ConnectVmToSwitchTask.class));
+      verify(housekeeperXenonRestClient, times(2)).get(eq(documentSelfLink));
+      verify(operation, times(3)).getBody(ConnectVmToSwitchTask.class);
+
       assertThat(e.getMessage(),
           is("Connecting VM at vm-location-id to logical switch logical-switch1 failed with a state of FAILED"));
+    }
+  }
+
+  @Test
+  public void testJoinTaskTimeout() throws Throwable {
+    VmJoinVirtualNetworkStepCmd command = getVmJoinVirtualNetworkStepCmd();
+    step.createOrUpdateTransientResource(VmCreateStepCmd.VM_LOCATION_ID, "vm-location-id");
+    step.createOrUpdateTransientResource(ResourceReserveStepCmd.LOGICAL_SWITCH_ID, "logical-switch1");
+
+    doReturn(ImmutableList.of(new DeploymentService.State())).when(apiFeXenonRestClient)
+        .queryDocuments(eq(DeploymentService.State.class), any(ImmutableMap.class));
+
+    Operation operation = mock(Operation.class);
+    doReturn(operation).when(housekeeperXenonRestClient).post(eq(ConnectVmToSwitchTaskService.FACTORY_LINK),
+        any(ConnectVmToSwitchTask.class));
+
+    String documentSelfLink = UUID.randomUUID().toString();
+    ConnectVmToSwitchTask task = new ConnectVmToSwitchTask();
+    task.taskState = new TaskState();
+    task.taskState.stage = TaskState.TaskStage.STARTED;
+    task.documentSelfLink = documentSelfLink;
+    doReturn(task).when(operation).getBody(ConnectVmToSwitchTask.class);
+
+    doReturn(operation).when(housekeeperXenonRestClient).get(documentSelfLink);
+
+    try {
+      command.execute();
+    } catch (RuntimeException e) {
+      verify(housekeeperXenonRestClient).post(eq(ConnectVmToSwitchTaskService.FACTORY_LINK),
+          any(ConnectVmToSwitchTask.class));
+      verify(housekeeperXenonRestClient, times(5)).get(eq(documentSelfLink));
+      verify(operation, times(6)).getBody(ConnectVmToSwitchTask.class);
+
+      assertThat(e.getMessage(), is("Timeout when waiting for ConnectVmToSwitchTask"));
     }
   }
 
