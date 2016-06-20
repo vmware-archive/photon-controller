@@ -102,7 +102,7 @@ import io.dropwizard.assets.AssetsBundle;
 import io.dropwizard.configuration.ConfigurationException;
 import io.dropwizard.hibernate.HibernateBundle;
 import io.dropwizard.jetty.HttpConnectorFactory;
-import io.dropwizard.server.DefaultServerFactory;
+import io.dropwizard.server.SimpleServerFactory;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import org.reflections.Reflections;
@@ -216,8 +216,8 @@ public class ApiFeService extends Application<ApiFeStaticConfiguration> {
       graphite.enable();
     }
 
-    HttpConnectorFactory httpConnectorFactory = (HttpConnectorFactory) ((DefaultServerFactory) configuration
-        .getServerFactory()).getApplicationConnectors().get(0);
+    HttpConnectorFactory httpConnectorFactory = (HttpConnectorFactory) ((SimpleServerFactory) configuration
+        .getServerFactory()).getConnector();
     registerWithZookeeper(
         injector.getInstance(ServiceNodeFactory.class),
         configuration.getRegistrationAddress(),
