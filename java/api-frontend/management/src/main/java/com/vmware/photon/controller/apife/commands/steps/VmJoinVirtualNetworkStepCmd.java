@@ -43,6 +43,9 @@ import java.util.concurrent.TimeUnit;
  */
 public class VmJoinVirtualNetworkStepCmd extends StepCommand {
 
+  private static final int NUM_RETIRES = 5;
+  private static final int RETRY_WAITING_TIME_SECONDS = 1;
+
   private static Logger logger = LoggerFactory.getLogger(VmJoinVirtualNetworkStepCmd.class);
 
   public VmJoinVirtualNetworkStepCmd(TaskCommand taskCommand, StepBackend stepBackend, StepEntity step) {
@@ -57,6 +60,12 @@ public class VmJoinVirtualNetworkStepCmd extends StepCommand {
     String logicalSwitchId = (String) step.getTransientResource(ResourceReserveStepCmd.LOGICAL_SWITCH_ID);
     checkNotNull(logicalSwitchId, "Logical switch to connect VM to is not available");
 
+    String vmId = (String) step.getTransientResource(ResourceReserveStepCmd.VM_ID);
+    checkNotNull(vmId, "VM id is not available");
+
+    String networkId = (String) step.getTransientResource(ResourceReserveStepCmd.VIRTUAL_NETWORK_ID);
+    checkNotNull(networkId, "Network id is not available");
+
     DeploymentService.State deploymentServiceState = getDeploymentServiceState();
 
     ConnectVmToSwitchTask startState = new ConnectVmToSwitchTask();
@@ -65,11 +74,11 @@ public class VmJoinVirtualNetworkStepCmd extends StepCommand {
     startState.nsxManagerEndpoint = deploymentServiceState.networkManagerAddress;
     startState.username = deploymentServiceState.networkManagerUsername;
     startState.password = deploymentServiceState.networkManagerPassword;
-
-    taskCommand.getApiFeXenonRestClient();
-    HousekeeperXenonRestClient housekeeperXenonRestClient = taskCommand.getHousekeeperXenonRestClient();
-
     startState.logicalSwitchId = logicalSwitchId;
+    startState.networkId = networkId;
+    startState.vmId = vmId;
+
+    HousekeeperXenonRestClient housekeeperXenonRestClient = taskCommand.getHousekeeperXenonRestClient();
     Operation result = housekeeperXenonRestClient.post(ConnectVmToSwitchTaskService.FACTORY_LINK, startState);
     ConnectVmToSwitchTask task = result.getBody(ConnectVmToSwitchTask.class);
     TaskState.TaskStage taskStage = waitForConnectionDone(housekeeperXenonRestClient, task.documentSelfLink);
@@ -89,10 +98,7 @@ public class VmJoinVirtualNetworkStepCmd extends StepCommand {
 
   private TaskState.TaskStage waitForConnectionDone(HousekeeperXenonRestClient housekeeperXenonRestClient,
                                                     String taskUrl) {
-    final int numRetries = 5;
-    final int retryWaitingTimeSeconds = 1;
-
-    for (int i = 0; i < numRetries; i++) {
+    for (int i = 0; i < NUM_RETIRES; i++) {
       try {
         Operation result = housekeeperXenonRestClient.get(taskUrl);
         TaskState.TaskStage taskStage = result.getBody(ConnectVmToSwitchTask.class).taskState.stage;
@@ -100,7 +106,7 @@ public class VmJoinVirtualNetworkStepCmd extends StepCommand {
           return taskStage;
         }
 
-        TimeUnit.SECONDS.sleep(retryWaitingTimeSeconds);
+        TimeUnit.SECONDS.sleep(RETRY_WAITING_TIME_SECONDS);
       } catch (DocumentNotFoundException | InterruptedException e) {
         throw new RuntimeException(e.getMessage());
       }

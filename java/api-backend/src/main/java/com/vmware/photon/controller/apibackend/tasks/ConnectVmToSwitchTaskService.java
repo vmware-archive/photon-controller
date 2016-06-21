@@ -14,7 +14,9 @@
 package com.vmware.photon.controller.apibackend.tasks;
 
 import com.vmware.photon.controller.apibackend.servicedocuments.ConnectVmToSwitchTask;
+import com.vmware.photon.controller.apibackend.servicedocuments.ConnectVmToSwitchTask.TaskState;
 import com.vmware.photon.controller.apibackend.utils.ServiceHostUtils;
+import com.vmware.photon.controller.cloudstore.xenon.entity.VirtualNetworkService;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.OperationUtils;
@@ -33,7 +35,6 @@ import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.StatefulService;
-import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.Utils;
 
 import com.google.common.util.concurrent.FutureCallback;
@@ -41,6 +42,9 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
 import javax.annotation.Nullable;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Implements an Xenon service that represents a task to connect VM with a switch.
@@ -74,6 +78,7 @@ public class ConnectVmToSwitchTaskService extends StatefulService {
 
       if (startState.taskState.stage == TaskState.TaskStage.CREATED) {
         startState.taskState.stage = TaskState.TaskStage.STARTED;
+        startState.taskState.subStage = TaskState.SubStage.CONNECT_VM_TO_SWITCH;
       }
 
       if (startState.documentExpirationTimeMicros <= 0) {
@@ -86,7 +91,7 @@ public class ConnectVmToSwitchTaskService extends StatefulService {
       if (ControlFlags.isOperationProcessingDisabled(startState.controlFlags)) {
         ServiceUtils.logInfo(this, "Skipping start operation processing (disabled)");
       } else if (TaskState.TaskStage.STARTED == startState.taskState.stage) {
-        TaskUtils.sendSelfPatch(this, buildPatch(startState.taskState.stage));
+        TaskUtils.sendSelfPatch(this, buildPatch(startState.taskState.stage, startState.taskState.subStage));
       }
     } catch (Throwable t) {
       ServiceUtils.logSevere(this, t);
@@ -113,13 +118,32 @@ public class ConnectVmToSwitchTaskService extends StatefulService {
       if (ControlFlags.isOperationProcessingDisabled(currentState.controlFlags)) {
         ServiceUtils.logInfo(this, "Skipping patch operation processing (disabled");
       } else if (TaskState.TaskStage.STARTED == currentState.taskState.stage) {
-        connectVmToSwitch(currentState);
+        processPatch(currentState);
       }
     } catch (Throwable t) {
       ServiceUtils.logSevere(this, t);
       if (!OperationUtils.isCompleted(patchOperation)) {
         patchOperation.fail(t);
       }
+    }
+  }
+
+  public void processPatch(ConnectVmToSwitchTask currentState) {
+    try {
+      switch (currentState.taskState.subStage) {
+        case CONNECT_VM_TO_SWITCH:
+          connectVmToSwitch(currentState);
+          break;
+
+        case UPDATE_VIRTUAL_NETWORK:
+          getVirtualNetwork(currentState);
+          break;
+
+        default:
+          throw new RuntimeException("Invalid task substage " + currentState.taskState.subStage);
+      }
+    } catch (Throwable t) {
+      failTask(t);
     }
   }
 
@@ -146,7 +170,8 @@ public class ConnectVmToSwitchTaskService extends StatefulService {
           new FutureCallback<LogicalPort>() {
             @Override
             public void onSuccess(@Nullable LogicalPort result) {
-              ConnectVmToSwitchTask patch = buildPatch(TaskState.TaskStage.FINISHED, null);
+              ConnectVmToSwitchTask patch = buildPatch(TaskState.TaskStage.STARTED,
+                  TaskState.SubStage.UPDATE_VIRTUAL_NETWORK);
               patch.toVmPortId = result.getId();
 
               TaskUtils.sendSelfPatch(ConnectVmToSwitchTaskService.this, patch);
@@ -161,6 +186,55 @@ public class ConnectVmToSwitchTaskService extends StatefulService {
     } catch (Throwable t) {
       failTask(t);
     }
+  }
+
+  private void getVirtualNetwork(ConnectVmToSwitchTask currentState) {
+    ServiceHostUtils.getCloudStoreHelper(getHost())
+        .createGet(VirtualNetworkService.FACTORY_LINK + "/" + currentState.networkId)
+        .setCompletion((op, ex) -> {
+          if (ex != null) {
+            failTask(ex);
+            return;
+          }
+
+          VirtualNetworkService.State virtualNetwork = op.getBody(VirtualNetworkService.State.class);
+          updateVirtualNetwork(virtualNetwork.documentSelfLink,
+              virtualNetwork.logicalSwitchDownlinkPortIds,
+              currentState);
+        })
+        .sendWith(this);
+  }
+
+  private void updateVirtualNetwork(String virtualNetworkSelfLink,
+                                    Map<String, String> currLogicalSwitchDownlinkPortIds,
+                                    ConnectVmToSwitchTask currentState) {
+
+    VirtualNetworkService.State virtualNetwork = new VirtualNetworkService.State();
+
+    if (currLogicalSwitchDownlinkPortIds == null) {
+      virtualNetwork.logicalSwitchDownlinkPortIds = new HashMap<>();
+    } else {
+      virtualNetwork.logicalSwitchDownlinkPortIds = new HashMap<>(currLogicalSwitchDownlinkPortIds);
+    }
+    virtualNetwork.logicalSwitchDownlinkPortIds.put(currentState.vmId, currentState.toVmPortId);
+
+    ServiceHostUtils.getCloudStoreHelper(getHost())
+        .createPatch(virtualNetworkSelfLink)
+        .setBody(virtualNetwork)
+        .setCompletion((op, ex) -> {
+          if (ex != null) {
+            failTask(ex);
+            return;
+          }
+
+          try {
+            ConnectVmToSwitchTask patch = buildPatch(TaskState.TaskStage.FINISHED);
+            TaskUtils.sendSelfPatch(ConnectVmToSwitchTaskService.this, patch);
+          } catch (Throwable t) {
+            failTask(t);
+          }
+        })
+        .sendWith(this);
   }
 
   private void validateStartState(ConnectVmToSwitchTask state) {
@@ -181,16 +255,42 @@ public class ConnectVmToSwitchTaskService extends StatefulService {
     ValidationUtils.validatePatch(currentState, patchState);
     ValidationUtils.validateTaskStage(patchState.taskState);
     ValidationUtils.validateTaskStageProgression(currentState.taskState, patchState.taskState);
+
+    if (currentState.taskState.stage == TaskState.TaskStage.STARTED) {
+      validateTaskSubStageProgression(currentState.taskState, patchState.taskState);
+    }
+  }
+
+  private void validateTaskSubStageProgression(TaskState startState, TaskState patchState) {
+    if (patchState.stage.ordinal() > TaskState.TaskStage.FINISHED.ordinal()) {
+      return;
+    }
+
+    if (patchState.stage == TaskState.TaskStage.FINISHED) {
+      checkState(startState.subStage == TaskState.SubStage.UPDATE_VIRTUAL_NETWORK);
+    } else if (patchState.stage == TaskState.TaskStage.STARTED) {
+      checkState(startState.subStage.ordinal() + 1 == patchState.subStage.ordinal()
+              || startState.subStage.ordinal() == patchState.subStage.ordinal());
+    }
   }
 
   private ConnectVmToSwitchTask buildPatch(TaskState.TaskStage stage) {
-    return buildPatch(stage, null);
+    return buildPatch(stage, null, null);
+  }
+
+  private ConnectVmToSwitchTask buildPatch(TaskState.TaskStage stage, TaskState.SubStage subStage) {
+    return buildPatch(stage, subStage, null);
   }
 
   private ConnectVmToSwitchTask buildPatch(TaskState.TaskStage stage, Throwable t) {
+    return buildPatch(stage, null, t);
+  }
+
+  private ConnectVmToSwitchTask buildPatch(TaskState.TaskStage stage, TaskState.SubStage subStage, Throwable t) {
     ConnectVmToSwitchTask state = new ConnectVmToSwitchTask();
-    state.taskState = new TaskState();
+    state.taskState = new ConnectVmToSwitchTask.TaskState();
     state.taskState.stage = stage;
+    state.taskState.subStage = subStage;
     state.taskState.failure = t == null ? null : Utils.toServiceErrorResponse(t);
 
     return state;

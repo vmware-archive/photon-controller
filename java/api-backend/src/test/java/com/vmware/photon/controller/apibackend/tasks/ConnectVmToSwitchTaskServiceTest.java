@@ -13,20 +13,26 @@
 
 package com.vmware.photon.controller.apibackend.tasks;
 
+import com.vmware.photon.controller.api.NetworkState;
+import com.vmware.photon.controller.api.RoutingType;
 import com.vmware.photon.controller.apibackend.helpers.ReflectionUtils;
 import com.vmware.photon.controller.apibackend.helpers.TestEnvironment;
 import com.vmware.photon.controller.apibackend.helpers.TestHost;
 import com.vmware.photon.controller.apibackend.servicedocuments.ConnectVmToSwitchTask;
+import com.vmware.photon.controller.apibackend.servicedocuments.ConnectVmToSwitchTask.TaskState;
+import com.vmware.photon.controller.cloudstore.xenon.entity.VirtualNetworkService;
 import com.vmware.photon.controller.common.tests.nsx.NsxClientMock;
+import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
+import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.nsxclient.NsxClientFactory;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
-import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.http.HttpStatus;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
@@ -34,6 +40,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Matchers.anyString;
@@ -43,6 +50,8 @@ import static org.testng.Assert.fail;
 
 import java.lang.reflect.Field;
 import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -103,20 +112,24 @@ public class ConnectVmToSwitchTaskServiceTest {
 
     @Test(dataProvider = "expectedStateTransition")
     public void testStateTransition(TaskState.TaskStage startStage,
-                                    TaskState.TaskStage expectedStage) throws Throwable {
+                                    TaskState.SubStage startSubStage,
+                                    TaskState.TaskStage expectedStage,
+                                    TaskState.SubStage expectedSubStage) throws Throwable {
 
       ConnectVmToSwitchTask createdState = createConnectVmToSwitchTaskService(host, connectVmToSwitchTaskService,
-          startStage, ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED);
+          startStage, startSubStage, ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED);
 
       ConnectVmToSwitchTask savedState = host.getServiceState(ConnectVmToSwitchTask.class,
           createdState.documentSelfLink);
       assertThat(savedState.taskState.stage, is(expectedStage));
+      assertThat(savedState.taskState.subStage, is(expectedSubStage));
       assertThat(savedState.documentExpirationTimeMicros > 0, is(true));
     }
 
     @Test(expectedExceptions = XenonRuntimeException.class)
     public void testRestartDisabled() throws Throwable {
-      createConnectVmToSwitchTaskService(host, connectVmToSwitchTaskService, TaskState.TaskStage.STARTED, 0);
+      createConnectVmToSwitchTaskService(host, connectVmToSwitchTaskService, TaskState.TaskStage.STARTED,
+          TaskState.SubStage.CONNECT_VM_TO_SWITCH, 0);
     }
 
     @Test(dataProvider = "notEmptyFields")
@@ -140,10 +153,10 @@ public class ConnectVmToSwitchTaskServiceTest {
     @DataProvider(name = "expectedStateTransition")
     private Object[][] getStates() {
       return new Object[][] {
-          {TaskState.TaskStage.CREATED, TaskState.TaskStage.STARTED},
-          {TaskState.TaskStage.FINISHED, TaskState.TaskStage.FINISHED},
-          {TaskState.TaskStage.CANCELLED, TaskState.TaskStage.CANCELLED},
-          {TaskState.TaskStage.FAILED, TaskState.TaskStage.FAILED}
+          {TaskState.TaskStage.CREATED, null, TaskState.TaskStage.STARTED, TaskState.SubStage.CONNECT_VM_TO_SWITCH},
+          {TaskState.TaskStage.FINISHED, null, TaskState.TaskStage.FINISHED, null},
+          {TaskState.TaskStage.CANCELLED, null, TaskState.TaskStage.CANCELLED, null},
+          {TaskState.TaskStage.FAILED, null, TaskState.TaskStage.FAILED, null}
       };
     }
 
@@ -155,7 +168,9 @@ public class ConnectVmToSwitchTaskServiceTest {
           {"password", "password cannot be null"},
           {"logicalSwitchId", "logicalSwitchId cannot be null"},
           {"toVmPortDisplayName", "toVmPortDisplayName cannot be null"},
-          {"vmLocationId", "vmLocationId cannot be null"}
+          {"vmLocationId", "vmLocationId cannot be null"},
+          {"vmId", "vmId cannot be null"},
+          {"networkId", "networkId cannot be null"}
       };
     }
   }
@@ -190,16 +205,21 @@ public class ConnectVmToSwitchTaskServiceTest {
 
     @Test(dataProvider = "validStageTransitions")
     public void testValidStageTransition(TaskState.TaskStage startStage,
-                                         TaskState.TaskStage patchStage) throws Throwable {
+                                         TaskState.SubStage startSubStage,
+                                         TaskState.TaskStage patchStage,
+                                         TaskState.SubStage patchSubStage) throws Throwable {
 
       ConnectVmToSwitchTask createdState = createConnectVmToSwitchTaskService(
           host,
           connectVmToSwitchTaskService,
-          startStage,
+          TaskState.TaskStage.CREATED,
+          TaskState.SubStage.CONNECT_VM_TO_SWITCH,
           ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED
       );
 
-      ConnectVmToSwitchTask patchState = buildPatchState(patchStage);
+      patchTasktoState(createdState.documentSelfLink, startStage, startSubStage);
+
+      ConnectVmToSwitchTask patchState = buildPatchState(patchStage, patchSubStage);
       Operation patch = Operation
           .createPatch(UriUtils.buildUri(host, createdState.documentSelfLink))
           .setBody(patchState);
@@ -210,20 +230,26 @@ public class ConnectVmToSwitchTaskServiceTest {
       ConnectVmToSwitchTask savedState = host.getServiceState(ConnectVmToSwitchTask.class,
           createdState.documentSelfLink);
       assertThat(savedState.taskState.stage, is(patchStage));
+      assertThat(savedState.taskState.subStage, is(patchSubStage));
     }
 
     @Test(expectedExceptions = XenonRuntimeException.class, dataProvider = "invalidStageTransitions")
     public void testInvalidStageTransition(TaskState.TaskStage startStage,
-                                           TaskState.TaskStage patchStage) throws Throwable {
+                                           TaskState.SubStage startSubStage,
+                                           TaskState.TaskStage patchStage,
+                                           TaskState.SubStage patchSubStage) throws Throwable {
 
       ConnectVmToSwitchTask createdState = createConnectVmToSwitchTaskService(
           host,
           connectVmToSwitchTaskService,
-          startStage,
+          TaskState.TaskStage.CREATED,
+          TaskState.SubStage.CONNECT_VM_TO_SWITCH,
           ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED
       );
 
-      ConnectVmToSwitchTask patchState = buildPatchState(patchStage);
+      patchTasktoState(createdState.documentSelfLink, startStage, startSubStage);
+
+      ConnectVmToSwitchTask patchState = buildPatchState(patchStage, patchSubStage);
       Operation patch = Operation
           .createPatch(UriUtils.buildUri(host, createdState.documentSelfLink))
           .setBody(patchState);
@@ -240,10 +266,12 @@ public class ConnectVmToSwitchTaskServiceTest {
           host,
           connectVmToSwitchTaskService,
           TaskState.TaskStage.CREATED,
+          TaskState.SubStage.CONNECT_VM_TO_SWITCH,
           ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED
       );
 
-      ConnectVmToSwitchTask patchState = buildPatchState(TaskState.TaskStage.FINISHED);
+      ConnectVmToSwitchTask patchState = buildPatchState(TaskState.TaskStage.STARTED,
+          TaskState.SubStage.UPDATE_VIRTUAL_NETWORK);
 
       Field field = patchState.getClass().getDeclaredField(fieldName);
       field.set(patchState, ReflectionUtils.getDefaultAttributeValue(field));
@@ -263,10 +291,12 @@ public class ConnectVmToSwitchTaskServiceTest {
           host,
           connectVmToSwitchTaskService,
           TaskState.TaskStage.CREATED,
+          TaskState.SubStage.CONNECT_VM_TO_SWITCH,
           ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED
       );
 
-      ConnectVmToSwitchTask patchState = buildPatchState(TaskState.TaskStage.FINISHED);
+      ConnectVmToSwitchTask patchState = buildPatchState(TaskState.TaskStage.STARTED,
+          TaskState.SubStage.UPDATE_VIRTUAL_NETWORK);
 
       Field field = patchState.getClass().getDeclaredField(fieldName);
       field.set(patchState, ReflectionUtils.getDefaultAttributeValue(field));
@@ -283,23 +313,58 @@ public class ConnectVmToSwitchTaskServiceTest {
       host.sendRequestAndWait(patch);
     }
 
+    private void patchTasktoState(String documentSelfLink,
+                                  TaskState.TaskStage targetStage,
+                                  TaskState.SubStage targetSubStage) throws Throwable {
+      Pair<TaskState.TaskStage, TaskState.SubStage>[] transitionSequence = new Pair[]{
+          Pair.of(TaskState.TaskStage.STARTED, TaskState.SubStage.CONNECT_VM_TO_SWITCH),
+          Pair.of(TaskState.TaskStage.STARTED, TaskState.SubStage.UPDATE_VIRTUAL_NETWORK),
+          Pair.of(TaskState.TaskStage.FINISHED, null)
+      };
+
+      for (Pair<TaskState.TaskStage, TaskState.SubStage> state : transitionSequence) {
+        ConnectVmToSwitchTask patchState = buildPatchState(state.getLeft(), state.getRight());
+        Operation patch = Operation.createPatch(UriUtils.buildUri(host, documentSelfLink))
+            .setBody(patchState);
+
+        Operation result = host.sendRequestAndWait(patch);
+        assertThat(result.getStatusCode(), is(HttpStatus.SC_OK));
+
+        ConnectVmToSwitchTask savedState = host.getServiceState(ConnectVmToSwitchTask.class, documentSelfLink);
+        assertThat(savedState.taskState.stage, is(state.getLeft()));
+        assertThat(savedState.taskState.subStage, is(state.getRight()));
+
+        if (savedState.taskState.stage == targetStage && savedState.taskState.subStage == targetSubStage) {
+          break;
+        }
+      }
+
+    }
+
     @DataProvider(name = "validStageTransitions")
     public Object[][] getValidStageTransitions() {
       return new Object[][] {
-          {TaskState.TaskStage.CREATED, TaskState.TaskStage.STARTED},
-          {TaskState.TaskStage.CREATED, TaskState.TaskStage.FINISHED},
-          {TaskState.TaskStage.CREATED, TaskState.TaskStage.FAILED},
-          {TaskState.TaskStage.CREATED, TaskState.TaskStage.CANCELLED},
+          {TaskState.TaskStage.STARTED, TaskState.SubStage.CONNECT_VM_TO_SWITCH,
+              TaskState.TaskStage.STARTED, TaskState.SubStage.UPDATE_VIRTUAL_NETWORK},
+          {TaskState.TaskStage.STARTED, TaskState.SubStage.UPDATE_VIRTUAL_NETWORK,
+              TaskState.TaskStage.FINISHED, null},
+
+          {TaskState.TaskStage.STARTED, TaskState.SubStage.CONNECT_VM_TO_SWITCH,
+              TaskState.TaskStage.FAILED, null},
+
+          {TaskState.TaskStage.STARTED, TaskState.SubStage.CONNECT_VM_TO_SWITCH,
+              TaskState.TaskStage.CANCELLED, null},
       };
     }
 
     @DataProvider(name = "invalidStageTransitions")
     public Object[][] getInvalidStageTransitions() {
       return new Object[][] {
-          {TaskState.TaskStage.CREATED, TaskState.TaskStage.CREATED},
-          {TaskState.TaskStage.FINISHED, TaskState.TaskStage.CREATED},
-          {TaskState.TaskStage.FAILED, TaskState.TaskStage.CREATED},
-          {TaskState.TaskStage.CANCELLED, TaskState.TaskStage.CREATED},
+          {TaskState.TaskStage.STARTED, TaskState.SubStage.CONNECT_VM_TO_SWITCH,
+              TaskState.TaskStage.FINISHED, null},
+          {TaskState.TaskStage.FINISHED, null, TaskState.TaskStage.CREATED, null},
+          {TaskState.TaskStage.FAILED, null, TaskState.TaskStage.CREATED, null},
+          {TaskState.TaskStage.CANCELLED, null, TaskState.TaskStage.CREATED, null},
       };
     }
 
@@ -312,7 +377,9 @@ public class ConnectVmToSwitchTaskServiceTest {
           {"password"},
           {"logicalSwitchId"},
           {"toVmPortDisplayName"},
-          {"vmLocationId"}
+          {"vmLocationId"},
+          {"vmId"},
+          {"networkId"},
       };
     }
 
@@ -337,6 +404,7 @@ public class ConnectVmToSwitchTaskServiceTest {
       testEnvironment = new TestEnvironment.Builder()
           .hostCount(1)
           .nsxClientFactory(nsxClientFactory)
+          .cloudStoreHelper(new CloudStoreHelper())
           .build();
     }
 
@@ -357,47 +425,113 @@ public class ConnectVmToSwitchTaskServiceTest {
 
       ConnectVmToSwitchTask savedState = startService();
       assertThat(savedState.taskState.stage, is(TaskState.TaskStage.FAILED));
+      assertThat(savedState.taskState.failure.statusCode, is(400));
+      assertThat(savedState.taskState.failure.message, is("createLogicalPort failed"));
     }
 
     @Test
-    public void testSuccessfulConnection() throws Throwable {
+    public void testFailedToUpdateVirtualNetwork() throws Throwable {
       NsxClientMock nsxClientMock = new NsxClientMock.Builder()
           .createLogicalPort(true, "logicalPortId")
           .build();
       doReturn(nsxClientMock).when(nsxClientFactory).create(anyString(), anyString(), anyString());
 
       ConnectVmToSwitchTask savedState = startService();
+      assertThat(savedState.taskState.stage, is(TaskState.TaskStage.FAILED));
+      assertThat(savedState.taskState.failure.statusCode, is(400));
+    }
+
+    @Test
+    public void testSuccessfulConnection() throws Throwable {
+      VirtualNetworkService.State virtualNetwork = createVirtualNetworkInCloudStore();
+
+      NsxClientMock nsxClientMock = new NsxClientMock.Builder()
+          .createLogicalPort(true, "logicalPortId")
+          .build();
+      doReturn(nsxClientMock).when(nsxClientFactory).create(anyString(), anyString(), anyString());
+
+      ConnectVmToSwitchTask savedState = startService(
+          ServiceUtils.getIDFromDocumentSelfLink(virtualNetwork.documentSelfLink));
       assertThat(savedState.taskState.stage, is(TaskState.TaskStage.FINISHED));
       assertThat(savedState.toVmPortId, is("logicalPortId"));
+
+      Map<String, String> expectedToVmPortIds = new HashMap<>();
+      expectedToVmPortIds.put("vm-id", "logicalPortId");
+      expectedToVmPortIds.put("vm-1", "port1");
+
+      virtualNetwork = getVirtualNetworkInCloudStore(virtualNetwork.documentSelfLink);
+      assertThat(virtualNetwork.logicalSwitchDownlinkPortIds.size(), is(2));
+      assertThat(virtualNetwork.logicalSwitchDownlinkPortIds, equalTo(expectedToVmPortIds));
     }
 
     private ConnectVmToSwitchTask startService() throws Throwable {
+      return startService("network-id");
+    }
+
+    private ConnectVmToSwitchTask startService(String networkId) throws Throwable {
       return testEnvironment.callServiceAndWaitForState(
           ConnectVmToSwitchTaskService.FACTORY_LINK,
-          buildStartState(TaskState.TaskStage.CREATED, 0),
+          buildStartState(TaskState.TaskStage.CREATED, null, networkId, 0),
           ConnectVmToSwitchTask.class,
           (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage)
       );
+    }
+
+    private VirtualNetworkService.State createVirtualNetworkInCloudStore() throws Throwable {
+      VirtualNetworkService.State virtualNetwork = new VirtualNetworkService.State();
+      virtualNetwork.name = "virtual_network_name";
+      virtualNetwork.state = NetworkState.CREATING;
+      virtualNetwork.routingType = RoutingType.ROUTED;
+      virtualNetwork.parentId = "parentId";
+      virtualNetwork.parentKind = "parentKind";
+      virtualNetwork.tier0RouterId = "logical_tier0_router_id";
+      virtualNetwork.logicalRouterId = "logical_tier1_router_id";
+      virtualNetwork.logicalSwitchId = "logical_switch_id";
+      virtualNetwork.logicalSwitchDownlinkPortIds = new HashMap<>();
+      virtualNetwork.logicalSwitchDownlinkPortIds.put("vm-1", "port1");
+
+      Operation result = testEnvironment.sendPostAndWait(VirtualNetworkService.FACTORY_LINK, virtualNetwork);
+      assertThat(result.getStatusCode(), is(Operation.STATUS_CODE_OK));
+
+      VirtualNetworkService.State createdState = result.getBody(VirtualNetworkService.State.class);
+      VirtualNetworkService.State patchState = new VirtualNetworkService.State();
+      patchState.state = NetworkState.READY;
+      result = testEnvironment.sendPatchAndWait(createdState.documentSelfLink, patchState);
+      assertThat(result.getStatusCode(), is(Operation.STATUS_CODE_OK));
+
+      return result.getBody(VirtualNetworkService.State.class);
+    }
+
+    private VirtualNetworkService.State getVirtualNetworkInCloudStore(String serviceUrl) throws Throwable {
+     return testEnvironment.getServiceState(serviceUrl, VirtualNetworkService.State.class);
     }
   }
 
   private static ConnectVmToSwitchTask createConnectVmToSwitchTaskService(TestHost testHost,
                                                                           ConnectVmToSwitchTaskService service,
                                                                           TaskState.TaskStage startStage,
+                                                                          TaskState.SubStage startSubStage,
                                                                           int controlFlag) throws Throwable {
 
-    Operation result = testHost.startServiceSynchronously(service, buildStartState(startStage, controlFlag));
+    Operation result = testHost.startServiceSynchronously(service, buildStartState(startStage, startSubStage,
+        "network-id", controlFlag));
     return result.getBody(ConnectVmToSwitchTask.class);
   }
 
-  private static ConnectVmToSwitchTask buildStartState(TaskState.TaskStage startStage, int controlFlags) {
+  private static ConnectVmToSwitchTask buildStartState(TaskState.TaskStage startStage,
+                                                       TaskState.SubStage subStage,
+                                                       String networkId,
+                                                       int controlFlags) {
     ConnectVmToSwitchTask startState = new ConnectVmToSwitchTask();
     startState.taskState = new TaskState();
     startState.taskState.stage = startStage;
+    startState.taskState.subStage = subStage;
     startState.controlFlags = controlFlags;
     startState.logicalSwitchId = "switch-id";
     startState.toVmPortDisplayName = "port-to-vm";
     startState.vmLocationId = "vm-location-id";
+    startState.vmId = "vm-id";
+    startState.networkId = networkId;
     startState.nsxManagerEndpoint = "https://192.168.1.1";
     startState.username = "username";
     startState.password = "password";
@@ -405,10 +539,13 @@ public class ConnectVmToSwitchTaskServiceTest {
     return startState;
   }
 
-  private static ConnectVmToSwitchTask buildPatchState(TaskState.TaskStage patchStage) {
+  private static ConnectVmToSwitchTask buildPatchState(TaskState.TaskStage patchStage,
+                                                       TaskState.SubStage patchSubStage) {
+
     ConnectVmToSwitchTask patchState = new ConnectVmToSwitchTask();
     patchState.taskState = new TaskState();
     patchState.taskState.stage = patchStage;
+    patchState.taskState.subStage = patchSubStage;
 
     return patchState;
   }

@@ -35,6 +35,8 @@ import com.vmware.xenon.common.StatefulService;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import java.util.Map;
+
 
 /**
  * Used for persisting the virtual network information.
@@ -170,6 +172,11 @@ public class VirtualNetworkService extends StatefulService {
     public String logicalSwitchUplinkPortId;
 
     /**
+     * Mapping between VM and the downlink ports on the logical switch.
+     */
+    public Map<String, String> logicalSwitchDownlinkPortIds;
+
+    /**
      * ID of the port on the tier1 logical router that connects to the logical switch.
      */
     @WriteOnce
@@ -201,6 +208,7 @@ public class VirtualNetworkService extends StatefulService {
           .add("logicalRouterId", logicalRouterId)
           .add("tier0RouterId", tier0RouterId)
           .add("logicalSwitchUplinkPortId", logicalSwitchUplinkPortId)
+          .add("logicalSwitchDownlinkPortIds", logicalSwitchDownlinkPortIds)
           .add("logicalRouterDownlinkPortId", logicalRouterDownlinkPortId)
           .add("logicalRouterUplinkPortId", logicalRouterUplinkPortId)
           .add("logicalRouterUplinkPortId", logicalRouterUplinkPortId)
