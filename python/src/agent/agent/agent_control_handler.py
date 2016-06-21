@@ -53,20 +53,19 @@ class AgentControlHandler(AgentControl.Iface):
         :type request: ProvisionRequest
         :rtype: ProvisionResponse
         """
+
+        # cleanup vibs uploaded by deployer.
+        # in multi-vibs scenario, provision is called after all vibs are successfully installed.
+        rm_rf("/tmp/photon-controller-vibs")
+
         try:
             agent_config = common.services.get(ServiceName.AGENT_CONFIG)
             agent_config.update_config(request)
-
-            # cleanup vibs uploaded by deployer.
-            # in multi-vibs scenario, provision is called after all vibs are successfully installed.
-            rm_rf("/tmp/photon-controller-vibs")
         except InvalidConfig as e:
-            return ProvisionResponse(ProvisionResultCode.INVALID_CONFIG,
-                                     str(e))
+            return ProvisionResponse(ProvisionResultCode.INVALID_CONFIG, str(e))
         except Exception, e:
             self._logger.warning("Unexpected exception", exc_info=True)
-            return ProvisionResponse(ProvisionResultCode.SYSTEM_ERROR,
-                                     str(e))
+            return ProvisionResponse(ProvisionResultCode.SYSTEM_ERROR, str(e))
 
         return ProvisionResponse(ProvisionResultCode.OK)
 
