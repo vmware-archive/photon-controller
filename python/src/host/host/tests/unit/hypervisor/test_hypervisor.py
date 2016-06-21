@@ -55,7 +55,7 @@ class TestUnitHypervisor(unittest.TestCase):
     @patch("host.image.image_manager.ImageManager.monitor_for_cleanup")
     @patch.object(VimClient, "_acquire_local_credentials")
     @patch.object(VimCache, "poll_updates")
-    @patch("pysdk.connect.Connect")
+    @patch("host.hypervisor.esx.connect.Connect")
     def test_config(self, connect_mock, update_mock, creds_mock, monitor_mock):
 
         si_mock = MagicMock(name="si_mock")
@@ -80,7 +80,7 @@ class TestUnitHypervisor(unittest.TestCase):
     @patch("host.image.image_manager.ImageManager.monitor_for_cleanup")
     @patch.object(VimClient, "_acquire_local_credentials")
     @patch.object(VimCache, "poll_updates")
-    @patch("pysdk.connect.Connect")
+    @patch("host.hypervisor.esx.connect.Connect")
     def test_listener(self, connect_mock, update_mock, creds_mock, monitor_mock):
         """Test update listeners"""
         class MyUpdateListener(UpdateListener):

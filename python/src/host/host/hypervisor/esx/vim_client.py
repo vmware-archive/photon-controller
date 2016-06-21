@@ -56,10 +56,10 @@ from host.hypervisor.exceptions import VmPowerStateException
 from host.hypervisor.exceptions import OperationNotAllowedException
 from host.hypervisor.exceptions import VmAlreadyExistException
 from host.hypervisor.exceptions import VmNotFoundException
-from pysdk import connect
-from pysdk import host
-from pysdk import invt
-from pysdk import task
+from host.hypervisor.esx import connect
+from host.hypervisor.esx import host
+from host.hypervisor.esx import invt
+from host.hypervisor.esx import task
 from pyVmomi import vim
 from pyVmomi import vmodl
 

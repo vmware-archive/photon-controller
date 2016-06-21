@@ -75,9 +75,9 @@ from host.hypervisor.esx.path_util import datastore_path
 from host.hypervisor.esx.path_util import vmdk_path
 from nose.plugins.skip import SkipTest
 from pyVmomi import SoapStubAdapter, vim
-from pysdk import connect
-from pysdk import host
-from pysdk import task
+from host.hypervisor.esx import connect
+from host.hypervisor.esx import host
+from host.hypervisor.esx import task
 from thrift.transport import TTransport
 
 from agent_common_tests import AgentCommonTests

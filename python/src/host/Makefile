@@ -1,4 +1,4 @@
-DEPS=common pysdk
+DEPS=common
 TESTS=host/tests/unit
 EXTRAS=[test,esx]
 

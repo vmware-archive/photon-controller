@@ -25,12 +25,12 @@ from host.hypervisor.esx.path_util import compond_path_join
 from host.hypervisor.esx.path_util import datastore_path
 from host.hypervisor.esx.path_util import uuid_to_vmdk_uuid
 from host.hypervisor.esx.path_util import vmdk_add_suffix
+from host.hypervisor.esx.vmconfig import AddIsoCdrom
+from host.hypervisor.esx.vmconfig import GetCnxInfo
+from host.hypervisor.esx.vmconfig import GetFreeBusNumber
+from host.hypervisor.esx.vmconfig import GetFreeKey
 
 from pyVmomi import vim
-from pysdk.vmconfig import AddIsoCdrom
-from pysdk.vmconfig import GetCnxInfo
-from pysdk.vmconfig import GetFreeBusNumber
-from pysdk.vmconfig import GetFreeKey
 
 DEFAULT_DISK_CONTROLLER_CLASS = vim.vm.device.VirtualLsiLogicController
 DEFAULT_DISK_ADAPTER_TYPE = vim.VirtualDiskManager.VirtualDiskAdapterType.lsiLogic

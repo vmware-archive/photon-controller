@@ -108,7 +108,7 @@ class TestImageManager(unittest.TestCase):
             # verify stray image is deleted
             self.assertFalse(os.path.exists(path))
 
-    @patch("pysdk.task.WaitForTask")
+    @patch("host.hypervisor.esx.task.WaitForTask")
     @patch("uuid.uuid4", return_value="fake_id")
     @patch("os.path.exists")
     @patch("shutil.copy")
@@ -143,7 +143,7 @@ class TestImageManager(unittest.TestCase):
 
         _create_image_timestamp.assert_called_once_with("/vmfs/volumes/ds2/tmp_image_fake_id")
 
-    @patch("pysdk.task.WaitForTask")
+    @patch("host.hypervisor.esx.task.WaitForTask")
     @patch("uuid.uuid4", return_value="fake_id")
     @patch("os.path.exists")
     @patch("os.makedirs")
