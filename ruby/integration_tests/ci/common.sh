@@ -54,4 +54,5 @@ bundle install --retry 10
 cd $TESTS
 rm -rf reports/log
 mkdir -p reports/log
-bundle install --retry 10
+rm -rf bin
+bundle install --binstubs --retry 10
