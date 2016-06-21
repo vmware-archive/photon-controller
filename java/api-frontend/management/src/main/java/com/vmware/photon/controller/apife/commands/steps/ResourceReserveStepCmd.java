@@ -101,6 +101,8 @@ import java.util.concurrent.TimeUnit;
 public class ResourceReserveStepCmd extends StepCommand {
 
   public static final String LOGICAL_SWITCH_ID = "logical-switch-id";
+  public static final String VIRTUAL_NETWORK_ID = "virtual-network-id";
+  public static final String VM_ID = "vm-id";
 
   private static final int MAX_PLACEMENT_RETRIES = 5;
   private static final long PLACEMENT_RETRY_INTERVAL = TimeUnit.SECONDS.toMillis(1);
@@ -604,10 +606,12 @@ public class ResourceReserveStepCmd extends StepCommand {
         String logicalSwitchId = getLogicalSwitchId(network);
         resourceConstraint.addToValues(logicalSwitchId);
 
-        // Need to pass the logical switch id to further steps if virtual network is being used.
-        // Only one logical switch is supported at this time.
-        taskCommand.getTask().findStep(com.vmware.photon.controller.api.Operation.CONNECT_VM_SWITCH)
-            .createOrUpdateTransientResource(ResourceReserveStepCmd.LOGICAL_SWITCH_ID, logicalSwitchId);
+        // Need to pass the logical-switch-id, network-id, and vm-id, to further steps
+        // if virtual network is being used. Only one logical switch is supported at this time.
+        StepEntity step = taskCommand.getTask().findStep(com.vmware.photon.controller.api.Operation.CONNECT_VM_SWITCH);
+        step.createOrUpdateTransientResource(ResourceReserveStepCmd.LOGICAL_SWITCH_ID, logicalSwitchId);
+        step.createOrUpdateTransientResource(ResourceReserveStepCmd.VM_ID, entity.getId());
+        step.createOrUpdateTransientResource(ResourceReserveStepCmd.VIRTUAL_NETWORK_ID, network);
       }
 
       vm.addToResource_constraints(resourceConstraint);

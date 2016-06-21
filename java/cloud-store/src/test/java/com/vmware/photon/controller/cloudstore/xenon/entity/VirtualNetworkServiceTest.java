@@ -31,11 +31,13 @@ import org.testng.annotations.AfterSuite;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.Test;
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.testng.Assert.fail;
 
 import java.net.InetSocketAddress;
+import java.util.HashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
@@ -152,6 +154,8 @@ public class VirtualNetworkServiceTest {
       VirtualNetworkService.State patchState = new VirtualNetworkService.State();
       patchState.state = NetworkState.READY;
       patchState.description = "desc";
+      patchState.logicalSwitchDownlinkPortIds = new HashMap<>();
+      patchState.logicalSwitchDownlinkPortIds.put("vm1", "port1");
 
       Operation patch = Operation
           .createPatch(UriUtils.buildUri(host, createdState.documentSelfLink))
@@ -166,6 +170,7 @@ public class VirtualNetworkServiceTest {
       assertThat(savedState.description, is(patchState.description));
       assertThat(savedState.name, is(createdState.name));
       assertThat(savedState.routingType, is(createdState.routingType));
+      assertThat(savedState.logicalSwitchDownlinkPortIds, equalTo(patchState.logicalSwitchDownlinkPortIds));
     }
 
     @Test
