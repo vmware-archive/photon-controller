@@ -12,7 +12,7 @@
 require "net/ssh"
 require "spec_helper"
 
-describe "cluster-service", cluster: true do
+describe "cluster-service", management: true do
   it 'should return 404 HTTP Status Code for invalid Cluster Id' do
     def verify_not_found_status_code
       begin
