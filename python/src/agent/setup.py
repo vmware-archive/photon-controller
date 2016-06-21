@@ -30,7 +30,6 @@ setup(name='photon.controller.agent',
       install_requires=[
           'photon.controller.common',
           'photon.controller.host',
-          'photon.controller.pysdk',
           'photon.controller.stats',
           'futures==2.1.5',
           'thrift==0.9.3',

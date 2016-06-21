@@ -63,13 +63,13 @@ class TestVimClient(unittest.TestCase):
         from pyVmomi import VmomiSupport
         assert_that(getattr(VmomiSupport, "BASE_VERSION", None), not_none())
 
-    @patch("pysdk.connect.Connect")
+    @patch("host.hypervisor.esx.connect.Connect")
     def test_hostd_connect_failure(self, connect_mock):
         connect_mock.side_effect = vim.fault.HostConnectFault
         vim_client = VimClient(auto_sync=False)
         self.assertRaises(HostdConnectionFailure, vim_client.connect_userpwd, "localhost", "username", "password")
 
-    @patch("pysdk.connect.Connect")
+    @patch("host.hypervisor.esx.connect.Connect")
     def test_vim_client_with_param(self, connect_mock):
         vim_client = VimClient(auto_sync=False)
         vim_client.connect_userpwd("esx.local", "root", "password")
@@ -77,7 +77,7 @@ class TestVimClient(unittest.TestCase):
                                              version="vim.version.version9")
 
     @patch.object(VimCache, "poll_updates")
-    @patch("pysdk.connect.Connect")
+    @patch("host.hypervisor.esx.connect.Connect")
     def test_update_fail_without_looping(self, connect_mock, update_mock):
         client = VimClient(auto_sync=True, min_interval=1)
         client.connect_userpwd("esx.local", "root", "password")
@@ -87,7 +87,7 @@ class TestVimClient(unittest.TestCase):
         assert_that(update_mock.call_count, less_than(5))  # no crazy loop
 
     @patch.object(VimCache, "poll_updates")
-    @patch("pysdk.connect.Connect")
+    @patch("host.hypervisor.esx.connect.Connect")
     @patch("time.sleep")
     def test_update_fail_will_suicide(self, sleep_mock, connect_mock, update_mock):
         killed = threading.Event()
@@ -111,7 +111,7 @@ class TestVimClient(unittest.TestCase):
         assert_that(killed.is_set(), is_(True))
 
     @patch.object(VimCache, "_build_filter_spec")
-    @patch("pysdk.connect.Connect")
+    @patch("host.hypervisor.esx.connect.Connect")
     def test_update_cache(self, connect_mock, spec_mock):
         vim_client = VimClient(auto_sync=False)
         vim_client.connect_userpwd("esx.local", "root", "password")
@@ -200,8 +200,8 @@ class TestVimClient(unittest.TestCase):
 
     @patch.object(VimCache, "poll_updates")
     @patch.object(VimCache, "_build_filter_spec")
-    @patch("pysdk.connect.Connect")
-    @patch("pysdk.connect.Disconnect")
+    @patch("host.hypervisor.esx.connect.Connect")
+    @patch("host.hypervisor.esx.connect.Disconnect")
     def test_poll_update_in_thread(self, disconnect_mock, connect_mock, spec_mock, update_mock):
         vim_client = VimClient(min_interval=0, auto_sync=True)
         vim_client.connect_userpwd("esx.local", "root", "password")
@@ -216,8 +216,8 @@ class TestVimClient(unittest.TestCase):
         vim_client.disconnect()
         assert_that(disconnect_mock.called, is_(True))
 
-    @patch("pysdk.host.GetHostSystem")
-    @patch("pysdk.connect.Connect")
+    @patch("host.hypervisor.esx.host.GetHostSystem")
+    @patch("host.hypervisor.esx.connect.Connect")
     def test_vim_client_errback(self, connect_mock, host_mock):
         callback = MagicMock()
         vim_client = VimClient(auto_sync=False, errback=callback)
@@ -238,7 +238,7 @@ class TestVimClient(unittest.TestCase):
         vim_client.host_system
         assert_that(callback.call_count, is_(4))
 
-    @patch("pysdk.connect.Connect")
+    @patch("host.hypervisor.esx.connect.Connect")
     def test_get_nfc_ticket(self, connect_mock):
         vim_client = VimClient(auto_sync=False)
         vim_client._find_by_inventory_path = MagicMock(return_value=None)
@@ -312,8 +312,8 @@ class TestVimClient(unittest.TestCase):
     @patch('host.hypervisor.esx.vim_client.VimClient._property_collector', new_callable=PropertyMock)
     @patch.object(VimCache, "poll_updates")
     @patch.object(VimCache, "_vm_filter_spec")
-    @patch("pysdk.connect.Connect")
-    @patch("pysdk.connect.Disconnect")
+    @patch("host.hypervisor.esx.connect.Connect")
+    @patch("host.hypervisor.esx.connect.Disconnect")
     def test_update_host_cache_in_thread(self, disconnect_mock, connect_mock, spec_mock,
                                          update_mock, prop_collector_mock):
         vm = vim.VirtualMachine("moid", None)

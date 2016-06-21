@@ -18,8 +18,6 @@ many VIM operations return 'tasks' which can have varying completion
 times.
 """
 
-__author__ = 'VMware, Inc'
-
 from pyVmomi import vmodl, vim
 from connect import GetSi
 
