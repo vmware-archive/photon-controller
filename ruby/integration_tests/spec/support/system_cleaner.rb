@@ -39,6 +39,10 @@ module EsxCloud
         delete_image image, stat
       end
 
+      client.find_all_networks.items.each do |network|
+        delete_network network, stat
+      end
+
       clean_flavors
       stat
     end
