@@ -20,7 +20,6 @@ import com.vmware.photon.controller.common.xenon.validation.NotBlank;
 import com.vmware.photon.controller.common.xenon.validation.WriteOnce;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.ServiceDocumentDescription;
-import com.vmware.xenon.common.TaskState;
 
 /**
  * Defines the document state associated with a single
@@ -78,6 +77,20 @@ public class ConnectVmToSwitchTask extends ServiceDocument {
   public String vmLocationId;
 
   /**
+   * The id of the vm to be connected to switch.
+   */
+  @NotBlank
+  @Immutable
+  public String vmId;
+
+  /**
+   * The id of the network that this vm locates in.
+   */
+  @NotBlank
+  @Immutable
+  public String networkId;
+
+  /**
    * State of this task.
    */
   @DefaultTaskState(value = TaskState.TaskStage.CREATED)
@@ -89,4 +102,19 @@ public class ConnectVmToSwitchTask extends ServiceDocument {
   @DefaultInteger(0)
   @Immutable
   public Integer controlFlags;
+
+  /**
+   * Customized task state. Defines substages.
+   */
+  public static class TaskState extends com.vmware.xenon.common.TaskState {
+    public SubStage subStage;
+
+    /**
+     * Definitions of substages.
+     */
+    public enum SubStage {
+      CONNECT_VM_TO_SWITCH,
+      UPDATE_VIRTUAL_NETWORK
+    }
+  }
 }

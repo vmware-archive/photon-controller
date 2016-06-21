@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.apife.commands.steps;
 
 import com.vmware.photon.controller.apibackend.servicedocuments.ConnectVmToSwitchTask;
+import com.vmware.photon.controller.apibackend.servicedocuments.ConnectVmToSwitchTask.TaskState;
 import com.vmware.photon.controller.apibackend.tasks.ConnectVmToSwitchTaskService;
 import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
@@ -23,7 +24,6 @@ import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
 import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
 import com.vmware.xenon.common.Operation;
-import com.vmware.xenon.common.TaskState;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -90,10 +90,41 @@ public class VmJoinVirtualNetworkStepCmdTest {
   }
 
   @Test
+  public void testVmIdMissing() throws Throwable {
+    VmJoinVirtualNetworkStepCmd command = getVmJoinVirtualNetworkStepCmd();
+    step.createOrUpdateTransientResource(VmCreateStepCmd.VM_LOCATION_ID, "vm-location-id");
+    step.createOrUpdateTransientResource(ResourceReserveStepCmd.LOGICAL_SWITCH_ID, "logical-switch1");
+
+    try {
+      command.execute();
+      fail("Should have failed due to missing vm id");
+    } catch (NullPointerException e) {
+      assertThat(e.getMessage(), is("VM id is not available"));
+    }
+  }
+
+  @Test
+  public void testNetworkIdMissing() throws Throwable {
+    VmJoinVirtualNetworkStepCmd command = getVmJoinVirtualNetworkStepCmd();
+    step.createOrUpdateTransientResource(VmCreateStepCmd.VM_LOCATION_ID, "vm-location-id");
+    step.createOrUpdateTransientResource(ResourceReserveStepCmd.LOGICAL_SWITCH_ID, "logical-switch1");
+    step.createOrUpdateTransientResource(ResourceReserveStepCmd.VM_ID, "vm1");
+
+    try {
+      command.execute();
+      fail("Should have failed due to missing network id");
+    } catch (NullPointerException e) {
+      assertThat(e.getMessage(), is("Network id is not available"));
+    }
+  }
+
+  @Test
   public void testDeploymentServiceMissing() throws Throwable {
     VmJoinVirtualNetworkStepCmd command = getVmJoinVirtualNetworkStepCmd();
     step.createOrUpdateTransientResource(VmCreateStepCmd.VM_LOCATION_ID, "vm-location-id");
     step.createOrUpdateTransientResource(ResourceReserveStepCmd.LOGICAL_SWITCH_ID, "logical-switch1");
+    step.createOrUpdateTransientResource(ResourceReserveStepCmd.VM_ID, "vm1");
+    step.createOrUpdateTransientResource(ResourceReserveStepCmd.VIRTUAL_NETWORK_ID, "network1");
 
     doReturn(new ArrayList<>()).when(apiFeXenonRestClient)
         .queryDocuments(eq(DeploymentService.State.class), any(ImmutableMap.class));
@@ -111,6 +142,8 @@ public class VmJoinVirtualNetworkStepCmdTest {
     VmJoinVirtualNetworkStepCmd command = getVmJoinVirtualNetworkStepCmd();
     step.createOrUpdateTransientResource(VmCreateStepCmd.VM_LOCATION_ID, "vm-location-id");
     step.createOrUpdateTransientResource(ResourceReserveStepCmd.LOGICAL_SWITCH_ID, "logical-switch1");
+    step.createOrUpdateTransientResource(ResourceReserveStepCmd.VM_ID, "vm1");
+    step.createOrUpdateTransientResource(ResourceReserveStepCmd.VIRTUAL_NETWORK_ID, "network1");
 
     doReturn(ImmutableList.of(new DeploymentService.State())).when(apiFeXenonRestClient)
         .queryDocuments(eq(DeploymentService.State.class), any(ImmutableMap.class));
@@ -141,6 +174,8 @@ public class VmJoinVirtualNetworkStepCmdTest {
     VmJoinVirtualNetworkStepCmd command = getVmJoinVirtualNetworkStepCmd();
     step.createOrUpdateTransientResource(VmCreateStepCmd.VM_LOCATION_ID, "vm-location-id");
     step.createOrUpdateTransientResource(ResourceReserveStepCmd.LOGICAL_SWITCH_ID, "logical-switch1");
+    step.createOrUpdateTransientResource(ResourceReserveStepCmd.VM_ID, "vm1");
+    step.createOrUpdateTransientResource(ResourceReserveStepCmd.VIRTUAL_NETWORK_ID, "network1");
 
     doReturn(ImmutableList.of(new DeploymentService.State())).when(apiFeXenonRestClient)
         .queryDocuments(eq(DeploymentService.State.class), any(ImmutableMap.class));
@@ -163,6 +198,8 @@ public class VmJoinVirtualNetworkStepCmdTest {
     VmJoinVirtualNetworkStepCmd command = getVmJoinVirtualNetworkStepCmd();
     step.createOrUpdateTransientResource(VmCreateStepCmd.VM_LOCATION_ID, "vm-location-id");
     step.createOrUpdateTransientResource(ResourceReserveStepCmd.LOGICAL_SWITCH_ID, "logical-switch1");
+    step.createOrUpdateTransientResource(ResourceReserveStepCmd.VM_ID, "vm1");
+    step.createOrUpdateTransientResource(ResourceReserveStepCmd.VIRTUAL_NETWORK_ID, "network1");
 
     doReturn(ImmutableList.of(new DeploymentService.State())).when(apiFeXenonRestClient)
         .queryDocuments(eq(DeploymentService.State.class), any(ImmutableMap.class));
@@ -206,6 +243,8 @@ public class VmJoinVirtualNetworkStepCmdTest {
     VmJoinVirtualNetworkStepCmd command = getVmJoinVirtualNetworkStepCmd();
     step.createOrUpdateTransientResource(VmCreateStepCmd.VM_LOCATION_ID, "vm-location-id");
     step.createOrUpdateTransientResource(ResourceReserveStepCmd.LOGICAL_SWITCH_ID, "logical-switch1");
+    step.createOrUpdateTransientResource(ResourceReserveStepCmd.VM_ID, "vm1");
+    step.createOrUpdateTransientResource(ResourceReserveStepCmd.VIRTUAL_NETWORK_ID, "network1");
 
     doReturn(ImmutableList.of(new DeploymentService.State())).when(apiFeXenonRestClient)
         .queryDocuments(eq(DeploymentService.State.class), any(ImmutableMap.class));

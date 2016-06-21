@@ -676,6 +676,13 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
     String logicalSwitchId =
         (String) connectVmSwitchStep.getTransientResource(ResourceReserveStepCmd.LOGICAL_SWITCH_ID);
     assertThat(logicalSwitchId, nullValue());
+
+    String vmId = (String) connectVmSwitchStep.getTransientResource(ResourceReserveStepCmd.VM_ID);
+    assertThat(vmId, nullValue());
+
+    String virtualNetworkId =
+        (String) connectVmSwitchStep.getTransientResource(ResourceReserveStepCmd.VIRTUAL_NETWORK_ID);
+    assertThat(virtualNetworkId, nullValue());
   }
 
   @Test
@@ -722,6 +729,13 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
     String logicalSwitchId =
         (String) connectVmSwitchStep.getTransientResource(ResourceReserveStepCmd.LOGICAL_SWITCH_ID);
     assertThat(logicalSwitchId, nullValue());
+
+    String vmId = (String) connectVmSwitchStep.getTransientResource(ResourceReserveStepCmd.VM_ID);
+    assertThat(vmId, nullValue());
+
+    String virtualNetworkId =
+        (String) connectVmSwitchStep.getTransientResource(ResourceReserveStepCmd.VIRTUAL_NETWORK_ID);
+    assertThat(virtualNetworkId, nullValue());
   }
 
   @Test
@@ -764,6 +778,13 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
     String savedLogicalSwitchId = (String) connectVmSwitchStep
         .getTransientResource(ResourceReserveStepCmd.LOGICAL_SWITCH_ID);
     assertThat(savedLogicalSwitchId, is(logicalSwitchId));
+
+    String savedVmId = (String) connectVmSwitchStep.getTransientResource(ResourceReserveStepCmd.VM_ID);
+    assertThat(savedVmId, is("foo"));
+
+    String savedVirtualNetworkId = (String) connectVmSwitchStep
+        .getTransientResource(ResourceReserveStepCmd.VIRTUAL_NETWORK_ID);
+    assertThat(savedVirtualNetworkId, is(networkId));
   }
 
   @Test
@@ -807,6 +828,13 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
     String savedLogicalSwitchId = (String) connectVmSwitchStep
         .getTransientResource(ResourceReserveStepCmd.LOGICAL_SWITCH_ID);
     assertThat(savedLogicalSwitchId, is(logicalSwitchId));
+
+    String savedVmId = (String) connectVmSwitchStep.getTransientResource(ResourceReserveStepCmd.VM_ID);
+    assertThat(savedVmId, is("foo"));
+
+    String savedVirtualNetworkId = (String) connectVmSwitchStep
+        .getTransientResource(ResourceReserveStepCmd.VIRTUAL_NETWORK_ID);
+    assertThat(savedVirtualNetworkId, is(networkId));
   }
 
   @Test(expectedExceptions = NullPointerException.class)
