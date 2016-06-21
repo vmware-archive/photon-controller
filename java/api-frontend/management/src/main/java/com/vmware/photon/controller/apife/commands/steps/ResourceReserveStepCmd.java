@@ -53,7 +53,6 @@ import com.vmware.photon.controller.cloudstore.xenon.entity.VirtualNetworkServic
 import com.vmware.photon.controller.common.clients.SchedulerErrorCodeToExceptionMapper;
 import com.vmware.photon.controller.common.clients.exceptions.ConstraintMatchingDatastoreNotFoundException;
 import com.vmware.photon.controller.common.clients.exceptions.InvalidAgentStateException;
-import com.vmware.photon.controller.common.clients.exceptions.InvalidSchedulerException;
 import com.vmware.photon.controller.common.clients.exceptions.NoSuchResourceException;
 import com.vmware.photon.controller.common.clients.exceptions.NotEnoughCpuResourceException;
 import com.vmware.photon.controller.common.clients.exceptions.NotEnoughDatastoreCapacityException;
@@ -460,14 +459,6 @@ public class ResourceReserveStepCmd extends StepCommand {
           throw e;
         }
 
-        logger.info("retrying: {}", e.getClass().toString());
-      } catch (InvalidSchedulerException e) {
-        if (++retries >= MAX_PLACEMENT_RETRIES) {
-          throw e;
-        }
-
-        // we should sleep here a bit between retries to give the scheduling tree some time to stabilize.
-        Thread.sleep(PLACEMENT_RETRY_INTERVAL);
         logger.info("retrying: {}", e.getClass().toString());
       }
     }
