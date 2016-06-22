@@ -25,7 +25,7 @@ import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
 
 /**
- * This class implements a DCP micro-service which provides a plain data object
+ * This class implements a Xenon micro-service which provides a plain data object
  * representing an inactive Vm in Cluster.
  */
 public class InactiveVmService extends StatefulService {

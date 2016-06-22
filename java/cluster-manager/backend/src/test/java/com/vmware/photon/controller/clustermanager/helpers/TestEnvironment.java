@@ -30,7 +30,7 @@ import static org.mockito.Mockito.mock;
 import static org.testng.Assert.assertTrue;
 
 /**
- * TestMachine class hosting a DCP host.
+ * TestMachine class hosting a Xenon host.
  */
 public class TestEnvironment extends MultiHostEnvironment<TestHost> {
 

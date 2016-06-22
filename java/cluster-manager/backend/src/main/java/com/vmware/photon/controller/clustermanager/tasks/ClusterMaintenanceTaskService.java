@@ -47,7 +47,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 /**
- * This class implements a DCP Service that performs periodic maintenance on a single cluster.
+ * This class implements a Xenon Service that performs periodic maintenance on a single cluster.
  */
 public class ClusterMaintenanceTaskService extends StatefulService {
 

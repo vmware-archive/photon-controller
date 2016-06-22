@@ -481,7 +481,7 @@ public class VmProvisionTaskServiceTest {
   }
 
   /**
-   * End-to-end tests for the VmProvisioningTaskService DCP task.
+   * End-to-end tests for the VmProvisioningTaskService Xenon task.
    */
   public class EndToEndTest {
 

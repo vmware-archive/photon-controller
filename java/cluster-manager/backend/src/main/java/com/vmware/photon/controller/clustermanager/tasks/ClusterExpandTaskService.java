@@ -55,7 +55,7 @@ import java.io.IOException;
 import java.util.List;
 
 /**
- * This class implements a DCP service representing a task to expand a cluster.
+ * This class implements a Xenon service representing a task to expand a cluster.
  */
 public class ClusterExpandTaskService extends StatefulService {
 

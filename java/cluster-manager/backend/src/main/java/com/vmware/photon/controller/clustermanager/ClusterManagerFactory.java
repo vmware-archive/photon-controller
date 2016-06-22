@@ -53,7 +53,7 @@ public class ClusterManagerFactory {
   private String scriptsDirectory;
 
   /**
-   * All DCP Factory Services in Cluster-Manager backend.
+   * All Xenon Factory Services in Cluster-Manager backend.
    */
   public static final Class[] FACTORY_SERVICES = {
       InactiveVmFactoryService.class,

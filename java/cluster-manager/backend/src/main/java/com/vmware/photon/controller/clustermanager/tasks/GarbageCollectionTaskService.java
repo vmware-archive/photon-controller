@@ -51,7 +51,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * This class implements a DCP service representing a task to delete inactive slave vms of a cluster.
+ * This class implements a Xenon service representing a task to delete inactive slave vms of a cluster.
  */
 public class GarbageCollectionTaskService extends StatefulService {
 
