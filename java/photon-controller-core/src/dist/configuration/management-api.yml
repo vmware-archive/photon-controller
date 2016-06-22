@@ -17,15 +17,15 @@ use_virtual_network: {{{USE_VIRTUAL_NETWORK}}}
 logging:
   appenders:
     - type: file
-      currentLogFilename: {{{LOG_DIRECTORY}}}/management-api.log
+      currentLogFilename: {{{LOG_DIRECTORY}}}/photon-controller.log
       archive: true
-      archivedLogFilenamePattern: {{{LOG_DIRECTORY}}}/management-api-%d.log.gz
+      archivedLogFilenamePattern: {{{LOG_DIRECTORY}}}/photon-controller-%d.log.gz
       archivedFileCount: 5
-      logFormat: "%-5p [%d{ISO8601}]%X{request}%X{task} %c: %m\n%ex"
+      logFormat: "%-5p [%d{ISO8601}] %c: %m\n%ex"
 {{#ENABLE_SYSLOG}}
     - type: syslog
       host: "{{{SYSLOG_ENDPOINT}}}"
-      logFormat: "%-5p [%d{ISO8601}] [management-api] %X{request}%X{task} %c: %m\n%ex"
+      logFormat: "%-5p [%d{ISO8601}] [photon-controller] %X{request}%X{task} %c: %m\n%ex"
       facility: LOCAL0
 {{/ENABLE_SYSLOG}}
 
