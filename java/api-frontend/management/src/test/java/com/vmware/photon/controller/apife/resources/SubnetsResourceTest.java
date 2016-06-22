@@ -23,8 +23,8 @@ import com.vmware.photon.controller.api.common.exceptions.external.ExternalExcep
 import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
 import com.vmware.photon.controller.apife.clients.NetworkFeClient;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
-import com.vmware.photon.controller.apife.resources.physicalnetwork.NetworksResource;
-import com.vmware.photon.controller.apife.resources.routes.NetworkResourceRoutes;
+import com.vmware.photon.controller.apife.resources.physicalnetwork.SubnetsResource;
+import com.vmware.photon.controller.apife.resources.routes.SubnetResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
 
 import com.google.common.base.Optional;
@@ -51,9 +51,9 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Tests {@link com.vmware.photon.controller.apife.resources.physicalnetwork.NetworksResource}.
+ * Tests {@link SubnetsResource}.
  */
-public class NetworksResourceTest extends ResourceTest {
+public class SubnetsResourceTest extends ResourceTest {
 
   private String taskId = "task1";
 
@@ -78,7 +78,7 @@ public class NetworksResourceTest extends ResourceTest {
     paginationConfig.setDefaultPageSize(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE);
     paginationConfig.setMaxPageSize(PaginationConfig.DEFAULT_MAX_PAGE_SIZE);
 
-    addResource(new NetworksResource(networkFeClient, paginationConfig));
+    addResource(new SubnetsResource(networkFeClient, paginationConfig));
   }
 
   @Test
@@ -110,7 +110,7 @@ public class NetworksResourceTest extends ResourceTest {
   @Test
   public void createInvalidJsonNetwork() {
     Response r = client()
-        .target(NetworkResourceRoutes.API)
+        .target(SubnetResourceRoutes.API)
         .request()
         .post(Entity.entity("{ \"name\":\"thename\",\"foo\"}", MediaType.APPLICATION_JSON_TYPE));
     assertThat(r.getStatus(), is(400));
@@ -142,7 +142,7 @@ public class NetworksResourceTest extends ResourceTest {
       Network network = networks.getItems().get(i);
       assertThat(network, is(expectedNetworks.get(i)));
       assertThat(new URI(network.getSelfLink()).isAbsolute(), is(true));
-      assertThat(network.getSelfLink().endsWith(UriBuilder.fromPath(NetworkResourceRoutes.SUBNET_PATH)
+      assertThat(network.getSelfLink().endsWith(UriBuilder.fromPath(SubnetResourceRoutes.SUBNET_PATH)
           .build(network.getId()).toString()), is(true));
     }
   }
@@ -192,7 +192,7 @@ public class NetworksResourceTest extends ResourceTest {
     Network network = networks.getItems().get(0);
     assertThat(network, is(n1));
     assertThat(new URI(network.getSelfLink()).isAbsolute(), is(true));
-    assertThat(network.getSelfLink().endsWith(UriBuilder.fromPath(NetworkResourceRoutes.SUBNET_PATH)
+    assertThat(network.getSelfLink().endsWith(UriBuilder.fromPath(SubnetResourceRoutes.SUBNET_PATH)
         .build(network.getId()).toString()), is(true));
   }
 
@@ -213,13 +213,13 @@ public class NetworksResourceTest extends ResourceTest {
 
   private Response createNetwork() {
     return client()
-        .target(NetworkResourceRoutes.API)
+        .target(SubnetResourceRoutes.API)
         .request()
         .post(Entity.entity(spec, MediaType.APPLICATION_JSON_TYPE));
   }
 
   private Response getNetworks(Optional<String> name, Optional<Integer> pageSize, Optional<String> pageLink) {
-    WebTarget resource = client().target(NetworkResourceRoutes.API);
+    WebTarget resource = client().target(SubnetResourceRoutes.API);
     if (name.isPresent()) {
       resource = resource.queryParam("name", name.get());
     }

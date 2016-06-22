@@ -21,7 +21,7 @@ import com.vmware.photon.controller.api.VirtualNetworkCreateSpec;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.clients.VirtualNetworkFeClient;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
-import com.vmware.photon.controller.apife.resources.routes.NetworkResourceRoutes;
+import com.vmware.photon.controller.apife.resources.routes.SubnetResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.ProjectResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
 import com.vmware.photon.controller.apife.utils.PaginationUtils;
@@ -114,6 +114,6 @@ public class ProjectNetworksResource {
         Response.Status.OK,
         PaginationUtils.formalizePageLinks(resourceList, apiRoute),
         (ContainerRequest) request,
-        NetworkResourceRoutes.SUBNET_PATH);
+        SubnetResourceRoutes.SUBNET_PATH);
   }
 }
