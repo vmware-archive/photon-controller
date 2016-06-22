@@ -47,9 +47,9 @@ import com.vmware.photon.controller.apife.resources.host.DeploymentHostsResource
 import com.vmware.photon.controller.apife.resources.host.HostResource;
 import com.vmware.photon.controller.apife.resources.image.ImageResource;
 import com.vmware.photon.controller.apife.resources.image.ImagesResource;
-import com.vmware.photon.controller.apife.resources.physicalnetwork.NetworkPortGroupsSetResource;
-import com.vmware.photon.controller.apife.resources.physicalnetwork.NetworkResource;
-import com.vmware.photon.controller.apife.resources.physicalnetwork.NetworksResource;
+import com.vmware.photon.controller.apife.resources.physicalnetwork.SubnetPortGroupsSetResource;
+import com.vmware.photon.controller.apife.resources.physicalnetwork.SubnetResource;
+import com.vmware.photon.controller.apife.resources.physicalnetwork.SubnetsResource;
 import com.vmware.photon.controller.apife.resources.portgroup.PortGroupResource;
 import com.vmware.photon.controller.apife.resources.portgroup.PortGroupsResource;
 import com.vmware.photon.controller.apife.resources.project.ProjectResource;
@@ -293,12 +293,12 @@ public class ApiFeService extends Application<ApiFeStaticConfiguration> {
     resources.add(VmTasksResource.class);
 
     if (!apiFeConfiguration.useVirtualNetwork()) {
-      resources.add(NetworkPortGroupsSetResource.class);
-      resources.add(NetworkResource.class);
-      resources.add(NetworksResource.class);
+      resources.add(SubnetPortGroupsSetResource.class);
+      resources.add(SubnetResource.class);
+      resources.add(SubnetsResource.class);
     } else {
-      resources.add(com.vmware.photon.controller.apife.resources.virtualnetwork.NetworkResource.class);
-      resources.add(com.vmware.photon.controller.apife.resources.virtualnetwork.NetworksResource.class);
+      resources.add(com.vmware.photon.controller.apife.resources.virtualnetwork.SubnetResource.class);
+      resources.add(com.vmware.photon.controller.apife.resources.virtualnetwork.SubnetsResource.class);
       resources.add(ProjectNetworksResource.class);
     }
 

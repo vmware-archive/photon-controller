@@ -16,8 +16,8 @@ package com.vmware.photon.controller.apife.resources;
 import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.apife.clients.NetworkFeClient;
-import com.vmware.photon.controller.apife.resources.physicalnetwork.NetworkPortGroupsSetResource;
-import com.vmware.photon.controller.apife.resources.routes.NetworkResourceRoutes;
+import com.vmware.photon.controller.apife.resources.physicalnetwork.SubnetPortGroupsSetResource;
+import com.vmware.photon.controller.apife.resources.routes.SubnetResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
 
 import com.google.common.collect.ImmutableList;
@@ -38,14 +38,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Tests {@link com.vmware.photon.controller.apife.resources.physicalnetwork.NetworkPortGroupsSetResource}.
+ * Tests {@link SubnetPortGroupsSetResource}.
  */
-public class NetworkPortGroupsSetResourceTest extends ResourceTest {
+public class SubnetPortGroupsSetResourceTest extends ResourceTest {
 
   private String networkId = "network1";
 
   private String networkSetPortGroupsRoute =
-      UriBuilder.fromPath(NetworkResourceRoutes.SUBNET_SET_PORTGROUPS_PATH).build(networkId).toString();
+      UriBuilder.fromPath(SubnetResourceRoutes.SUBNET_SET_PORTGROUPS_PATH).build(networkId).toString();
 
   private String taskId = "task1";
 
@@ -57,7 +57,7 @@ public class NetworkPortGroupsSetResourceTest extends ResourceTest {
 
   @Override
   protected void setUpResources() throws Exception {
-    addResource(new NetworkPortGroupsSetResource(networkFeClient));
+    addResource(new SubnetPortGroupsSetResource(networkFeClient));
   }
 
   @DataProvider(name = "ValidPortGroups")
