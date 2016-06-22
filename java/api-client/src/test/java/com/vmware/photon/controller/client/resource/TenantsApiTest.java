@@ -680,4 +680,21 @@ public class TenantsApiTest extends ApiTestBase {
 
     assertThat(latch.await(COUNTDOWNLATCH_AWAIT_TIMEOUT, TimeUnit.SECONDS), is(true));
   }
+
+  @Test
+  public void testGetTenant() throws IOException {
+    Tenant tenant = new Tenant();
+    tenant.setId("tenantId-test");
+    tenant.setName("tenant1");
+
+    ObjectMapper mapper = new ObjectMapper();
+    String serializedResponse = mapper.writeValueAsString(tenant);
+
+    setupMocks(serializedResponse, HttpStatus.SC_OK);
+
+    TenantsApi tenantsApi = new TenantsApi(restClient);
+
+    Tenant response = tenantsApi.getTenant("tenant1");
+    assertEquals(response, tenant);
+  }
 }
