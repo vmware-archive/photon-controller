@@ -128,6 +128,25 @@ public class TenantsApi extends ApiBase {
   }
 
   /**
+   * Get tenant by id.
+   * @param tenantId
+   * @return
+   * @throws IOException
+   */
+  public Tenant getTenant(String tenantId) throws IOException {
+    String path = String.format("%s/%s", getBasePath(), tenantId);
+
+    HttpResponse httpResponse = this.restClient.perform(RestClient.Method.GET, path, null);
+    this.restClient.checkResponse(httpResponse, HttpStatus.SC_OK);
+
+    return this.restClient.parseHttpResponse(
+            httpResponse,
+            new TypeReference<Tenant>() {
+            }
+    );
+  }
+
+  /**
    * Get all tenants at specified path.
    *
    * @param path
