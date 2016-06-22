@@ -29,7 +29,6 @@ describe EsxCloud::ApiClient do
 
     expect(http_client).to receive(:get).with(URL_HOST + "/tasks/aaa").and_return(task_done("aaa", "network-id"))
     expect(http_client).to receive(:get).with("/subnets/network-id").and_return(ok_response("network"))
-    expect(EsxCloud::Network).to receive(:create_from_json).with("subnet").and_return(network)
 
     expect(client.create_network("payload")).to eq network
   end
@@ -50,7 +49,6 @@ describe EsxCloud::ApiClient do
                            .and_return(task_created("aaa"))
     expect(http_client).to receive(:get).with(URL_HOST + "/tasks/aaa").and_return(task_done("aaa", "network-id"))
     expect(http_client).to receive(:get).with("/subnets/network-id").and_return(ok_response("network"))
-    expect(EsxCloud::Network).to receive(:create_from_json).with("subnet").and_return(network)
 
     expect(client.set_portgroups("network-id", portgroups)).to eq network
   end
@@ -68,8 +66,6 @@ describe EsxCloud::ApiClient do
     network = double(EsxCloud::Network)
 
     expect(http_client).to receive(:get).with("/subnets/n1")
-                            .and_return(ok_response("subnet"))
-    expect(EsxCloud::Network).to receive(:create_from_json).with("networks")
                                  .and_return(network)
 
     expect(client.find_network_by_id("n1")).to eq network
