@@ -50,16 +50,10 @@ Vibauthor is the tool to package all the python code into a bundle that can be
 installed on ESX server. Unfortunately, the tool isn't available in OS X. Thus,
 to build agent, you have to find a Linux box or use linux container method.
 
-On OS X you can install docker-machine and then use vibauthor script that will
-invoke vibauthor tool inside a Vibauthor container inside docker-machine VM.
-Following commands assume you installed docker-machine and created a default VM that has
-enabled you to run docker commands from your OS X terminal.
-
-##### Create script to call vibauthor container
-```bash
-echo "docker run -v \`pwd\`/../..:\`pwd\`/../.. -w \`pwd\` lamw/vibauthor vibauthor \"\$@\"" > /usr/local/bin/vibauthor
-chmod +x /usr/local/bin/vibauthor
-```
+##### Linux Container method
+On Mac you can install Docker for Mac and make sure docker is working before creating the vib.
+Vib making script will use docker to build vib inside a docker container that has vibauthor tool
+already installed in it.
 
 ### Linux
 
