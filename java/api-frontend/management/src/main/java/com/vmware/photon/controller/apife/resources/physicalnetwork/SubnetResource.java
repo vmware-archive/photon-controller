@@ -17,7 +17,7 @@ import com.vmware.photon.controller.api.Network;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.clients.NetworkFeClient;
-import com.vmware.photon.controller.apife.resources.routes.NetworkResourceRoutes;
+import com.vmware.photon.controller.apife.resources.routes.SubnetResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
 import static com.vmware.photon.controller.api.common.Responses.generateCustomResponse;
 
@@ -43,16 +43,16 @@ import javax.ws.rs.core.Response;
 /**
  * This resource is for network related API.
  */
-@Path(NetworkResourceRoutes.SUBNET_PATH)
-@Api(value = NetworkResourceRoutes.API)
+@Path(SubnetResourceRoutes.SUBNET_PATH)
+@Api(value = SubnetResourceRoutes.API)
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-public class NetworkResource {
+public class SubnetResource {
 
   private final NetworkFeClient networkFeClient;
 
   @Inject
-  public NetworkResource(NetworkFeClient networkFeClient) {
+  public SubnetResource(NetworkFeClient networkFeClient) {
     this.networkFeClient = networkFeClient;
   }
 
@@ -63,7 +63,7 @@ public class NetworkResource {
         Response.Status.OK,
         networkFeClient.get(id),
         (ContainerRequest) request,
-        NetworkResourceRoutes.SUBNET_PATH);
+        SubnetResourceRoutes.SUBNET_PATH);
   }
 
   @DELETE
@@ -82,7 +82,7 @@ public class NetworkResource {
   }
 
   @POST
-  @Path(NetworkResourceRoutes.SUBNET_SET_DEFAULT_ACTION)
+  @Path(SubnetResourceRoutes.SUBNET_SET_DEFAULT_ACTION)
   @ApiOperation(value = "Set Network Default", response = Task.class)
   @ApiResponses(value = {
       @ApiResponse(code = 201, message = "Setting Network default, progress communicated via the task")

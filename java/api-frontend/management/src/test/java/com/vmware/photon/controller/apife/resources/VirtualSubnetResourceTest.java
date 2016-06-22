@@ -17,9 +17,9 @@ import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.VirtualNetwork;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.clients.VirtualNetworkFeClient;
-import com.vmware.photon.controller.apife.resources.routes.NetworkResourceRoutes;
+import com.vmware.photon.controller.apife.resources.routes.SubnetResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
-import com.vmware.photon.controller.apife.resources.virtualnetwork.NetworkResource;
+import com.vmware.photon.controller.apife.resources.virtualnetwork.SubnetResource;
 
 import org.apache.http.HttpStatus;
 import org.mockito.Mock;
@@ -38,17 +38,17 @@ import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
 
 /**
- * Tests {@link com.vmware.photon.controller.apife.resources.virtualnetwork.NetworkResource}.
+ * Tests {@link SubnetResource}.
  */
-public class VirtualNetworkResourceTest extends ResourceTest {
+public class VirtualSubnetResourceTest extends ResourceTest {
 
   private String taskId = "task1";
   private String networkId = "network1";
-  private String networkRoute = UriBuilder.fromPath(NetworkResourceRoutes.SUBNET_PATH).build(networkId).toString();
+  private String networkRoute = UriBuilder.fromPath(SubnetResourceRoutes.SUBNET_PATH).build(networkId).toString();
   private String taskRoutePath = UriBuilder.fromPath(TaskResourceRoutes.TASK_PATH).build(taskId).toString();
   private String networkSetDefaultRoute =
-      UriBuilder.fromPath(NetworkResourceRoutes.SUBNET_PATH)
-          .path(NetworkResourceRoutes.SUBNET_SET_DEFAULT_ACTION)
+      UriBuilder.fromPath(SubnetResourceRoutes.SUBNET_PATH)
+          .path(SubnetResourceRoutes.SUBNET_SET_DEFAULT_ACTION)
           .build(networkId)
           .toString();
 
@@ -57,7 +57,7 @@ public class VirtualNetworkResourceTest extends ResourceTest {
 
   @Override
   public void setUpResources() throws Exception {
-    addResource(new NetworkResource(frontendClient));
+    addResource(new SubnetResource(frontendClient));
   }
 
   @Test

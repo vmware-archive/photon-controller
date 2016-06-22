@@ -18,8 +18,8 @@ import com.vmware.photon.controller.api.Network;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.apife.clients.NetworkFeClient;
 import com.vmware.photon.controller.apife.exceptions.external.NetworkNotFoundException;
-import com.vmware.photon.controller.apife.resources.physicalnetwork.NetworkResource;
-import com.vmware.photon.controller.apife.resources.routes.NetworkResourceRoutes;
+import com.vmware.photon.controller.apife.resources.physicalnetwork.SubnetResource;
+import com.vmware.photon.controller.apife.resources.routes.SubnetResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
 
 import com.google.common.collect.ImmutableList;
@@ -41,23 +41,23 @@ import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
 
 /**
- * Tests {@link com.vmware.photon.controller.apife.resources.physicalnetwork.NetworkResource}.
+ * Tests {@link SubnetResource}.
  */
-public class NetworkResourceTest extends ResourceTest {
+public class SubnetResourceTest extends ResourceTest {
 
   private String networkId = "network-id";
 
   private String taskId = "task1";
 
   private String networkRoute =
-      UriBuilder.fromPath(NetworkResourceRoutes.SUBNET_PATH).build(networkId).toString();
+      UriBuilder.fromPath(SubnetResourceRoutes.SUBNET_PATH).build(networkId).toString();
 
   private String taskRoutePath =
       UriBuilder.fromPath(TaskResourceRoutes.TASK_PATH).build(taskId).toString();
 
   private String networkSetDefaultRoute =
-      UriBuilder.fromPath(NetworkResourceRoutes.SUBNET_PATH)
-          .path(NetworkResourceRoutes.SUBNET_SET_DEFAULT_ACTION)
+      UriBuilder.fromPath(SubnetResourceRoutes.SUBNET_PATH)
+          .path(SubnetResourceRoutes.SUBNET_SET_DEFAULT_ACTION)
           .build(networkId)
           .toString();
 
@@ -66,7 +66,7 @@ public class NetworkResourceTest extends ResourceTest {
 
   @Override
   public void setUpResources() throws Exception {
-    addResource(new NetworkResource(networkFeClient));
+    addResource(new SubnetResource(networkFeClient));
   }
 
   @Test

@@ -11,19 +11,15 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package com.vmware.photon.controller.apife.resources.physicalnetwork;
+package com.vmware.photon.controller.apife.resources.virtualnetwork;
 
-import com.vmware.photon.controller.api.Network;
-import com.vmware.photon.controller.api.NetworkCreateSpec;
 import com.vmware.photon.controller.api.ResourceList;
-import com.vmware.photon.controller.api.Task;
+import com.vmware.photon.controller.api.VirtualNetwork;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
-import com.vmware.photon.controller.apife.clients.NetworkFeClient;
+import com.vmware.photon.controller.apife.clients.VirtualNetworkFeClient;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
-import com.vmware.photon.controller.apife.resources.routes.NetworkResourceRoutes;
-import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
+import com.vmware.photon.controller.apife.resources.routes.SubnetResourceRoutes;
 import com.vmware.photon.controller.apife.utils.PaginationUtils;
-import static com.vmware.photon.controller.api.common.Responses.generateCustomResponse;
 import static com.vmware.photon.controller.api.common.Responses.generateResourceListResponse;
 
 import com.google.common.base.Optional;
@@ -32,12 +28,10 @@ import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiResponse;
 import com.wordnik.swagger.annotations.ApiResponses;
-import io.dropwizard.validation.Validated;
 import org.glassfish.jersey.server.ContainerRequest;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
-import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
@@ -47,43 +41,27 @@ import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
 
 /**
- * This resource is for network related API.
+ * This resource is for virtual network related API.
  */
-@Path(NetworkResourceRoutes.API)
-@Api(value = NetworkResourceRoutes.API)
+@Path(SubnetResourceRoutes.API)
+@Api(value = SubnetResourceRoutes.API)
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-public class NetworksResource {
+public class SubnetsResource {
 
-  private final NetworkFeClient networkFeClient;
+  private final VirtualNetworkFeClient virtualNetworkFeClient;
   private final PaginationConfig paginationConfig;
 
   @Inject
-  public NetworksResource(NetworkFeClient networkFeClient, PaginationConfig paginationConfig) {
-    this.networkFeClient = networkFeClient;
+  public SubnetsResource(VirtualNetworkFeClient virtualNetworkFeClient, PaginationConfig paginationConfig) {
+    this.virtualNetworkFeClient = virtualNetworkFeClient;
     this.paginationConfig = paginationConfig;
   }
 
-  @POST
-  @ApiOperation(value = "Create a network", response = Task.class)
-  @ApiResponses(value = {
-      @ApiResponse(code = 201, message = "Network is getting created, progress communicated via the task")
-  })
-  public Response create(@Context Request request,
-                         @Validated NetworkCreateSpec network)
-      throws ExternalException {
-    return generateCustomResponse(
-        Response.Status.CREATED,
-        networkFeClient.create(network),
-        (ContainerRequest) request,
-        TaskResourceRoutes.TASK_PATH);
-  }
-
   @GET
-  @ApiOperation(value = "Get all networks",
-      response = Network.class, responseContainer = ResourceList.CLASS_NAME)
-  @ApiResponses(value = {
-      @ApiResponse(code = 200, message = "List of network API representation")
+  @ApiOperation(value = "Get all virtual networks",
+      response = VirtualNetwork.class, responseContainer = ResourceList.CLASS_NAME)
+  @ApiResponses(value = {@ApiResponse(code = 200, message = "List of virtual network API representation")
   })
   public Response list(@Context Request request,
                        @QueryParam("name") Optional<String> name,
@@ -91,18 +69,18 @@ public class NetworksResource {
                        @QueryParam("pageLink") Optional<String> pageLink)
       throws ExternalException {
 
-    ResourceList<Network> resourceList;
+    ResourceList<VirtualNetwork> resourceList;
     if (pageLink.isPresent()) {
-      resourceList = networkFeClient.getPage(pageLink.get());
+      resourceList = virtualNetworkFeClient.nextList(pageLink.get());
     } else {
       Optional<Integer> adjustedPageSize = PaginationUtils.determinePageSize(paginationConfig, pageSize);
-      resourceList = networkFeClient.find(name, adjustedPageSize);
+      resourceList = virtualNetworkFeClient.list(null, null, name, adjustedPageSize);
     }
 
     return generateResourceListResponse(
         Response.Status.OK,
-        PaginationUtils.formalizePageLinks(resourceList, NetworkResourceRoutes.API),
+        PaginationUtils.formalizePageLinks(resourceList, SubnetResourceRoutes.API),
         (ContainerRequest) request,
-        NetworkResourceRoutes.SUBNET_PATH);
+        SubnetResourceRoutes.SUBNET_PATH);
   }
 }

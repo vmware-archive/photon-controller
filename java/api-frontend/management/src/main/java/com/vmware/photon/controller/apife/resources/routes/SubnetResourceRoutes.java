@@ -14,9 +14,9 @@
 package com.vmware.photon.controller.apife.resources.routes;
 
 /**
- * String constants of routes used by network related resource classes.
+ * String constants of routes used by subnet related resource classes.
  */
-public class NetworkResourceRoutes {
+public class SubnetResourceRoutes {
 
   public static final String API = "/subnets";
 

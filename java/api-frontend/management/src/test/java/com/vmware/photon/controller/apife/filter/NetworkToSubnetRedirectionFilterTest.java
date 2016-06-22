@@ -15,7 +15,7 @@ package com.vmware.photon.controller.apife.filter;
 
 import com.vmware.photon.controller.apife.helpers.JerseyPropertiesDelegate;
 import com.vmware.photon.controller.apife.helpers.JerseySecurityContext;
-import com.vmware.photon.controller.apife.resources.routes.NetworkResourceRoutes;
+import com.vmware.photon.controller.apife.resources.routes.SubnetResourceRoutes;
 
 import org.glassfish.jersey.server.ContainerRequest;
 import org.testng.annotations.BeforeMethod;
@@ -46,8 +46,8 @@ public class NetworkToSubnetRedirectionFilterTest {
   @DataProvider(name = "NetworkAndSubnetRequests")
   Object[][] getSuccessfulRequests() {
     return new Object[][]{
-        {"POST", UriBuilder.fromPath(NetworkResourceRoutes.API).build().toString()},
-        {"GET", UriBuilder.fromPath(NetworkResourceRoutes.API).build().toString()},
+        {"POST", UriBuilder.fromPath(SubnetResourceRoutes.API).build().toString()},
+        {"GET", UriBuilder.fromPath(SubnetResourceRoutes.API).build().toString()},
         {"POST", UriBuilder.fromPath("/networks").build().toString()},
         {"GET", UriBuilder.fromPath("/networks").build().toString()},
     };

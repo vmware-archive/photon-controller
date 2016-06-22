@@ -21,8 +21,8 @@ import com.vmware.photon.controller.api.common.exceptions.external.ExternalExcep
 import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
 import com.vmware.photon.controller.apife.clients.VirtualNetworkFeClient;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
-import com.vmware.photon.controller.apife.resources.routes.NetworkResourceRoutes;
-import com.vmware.photon.controller.apife.resources.virtualnetwork.NetworksResource;
+import com.vmware.photon.controller.apife.resources.routes.SubnetResourceRoutes;
+import com.vmware.photon.controller.apife.resources.virtualnetwork.SubnetsResource;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
@@ -47,9 +47,9 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Tests {@link com.vmware.photon.controller.apife.resources.virtualnetwork.NetworksResource}.
+ * Tests {@link SubnetsResource}.
  */
-public class VirtualNetworksResourceTest extends ResourceTest {
+public class VirtualSubnetsResourceTest extends ResourceTest {
 
   @Mock
   private VirtualNetworkFeClient frontendClient;
@@ -57,7 +57,7 @@ public class VirtualNetworksResourceTest extends ResourceTest {
 
   @Override
   public void setUpResources() throws Exception {
-    addResource(new NetworksResource(frontendClient, paginationConfig));
+    addResource(new SubnetsResource(frontendClient, paginationConfig));
   }
 
   @BeforeMethod
@@ -74,7 +74,7 @@ public class VirtualNetworksResourceTest extends ResourceTest {
     when(frontendClient.list(null, null, Optional.absent(), Optional.of(1)))
         .thenReturn(new ResourceList<>(expectedVirtualNetworks));
 
-    Response response = listNetworks(Optional.absent(), Optional.of(1), Optional.absent());
+    Response response = listSubnets(Optional.absent(), Optional.of(1), Optional.absent());
     assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
 
     ResourceList<VirtualNetwork> virtualNetworks =
@@ -87,7 +87,7 @@ public class VirtualNetworksResourceTest extends ResourceTest {
       assertThat(actualVirtualNetwork, is(expectedVirtualNetwork));
 
       String apiRoutePath = UriBuilder
-          .fromPath(NetworkResourceRoutes.SUBNET_PATH)
+          .fromPath(SubnetResourceRoutes.SUBNET_PATH)
           .build(expectedVirtualNetwork.getId())
           .toString();
       assertThat(actualVirtualNetwork.getSelfLink().endsWith(apiRoutePath), is(true));
@@ -111,7 +111,7 @@ public class VirtualNetworksResourceTest extends ResourceTest {
     when(frontendClient.list(null, null, Optional.absent(), Optional.of(3)))
         .thenReturn(new ResourceList<>(Collections.emptyList(), null, null));
 
-    Response response = listNetworks(Optional.absent(), pageSize, Optional.absent());
+    Response response = listSubnets(Optional.absent(), pageSize, Optional.absent());
     assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
 
     ResourceList<VirtualNetwork> virtualNetworks =
@@ -124,7 +124,7 @@ public class VirtualNetworksResourceTest extends ResourceTest {
       assertThat(actualVirtualNetwork, is(expectedVirtualNetwork));
 
       String apiRoutePath = UriBuilder
-          .fromPath(NetworkResourceRoutes.SUBNET_PATH)
+          .fromPath(SubnetResourceRoutes.SUBNET_PATH)
           .build(expectedVirtualNetwork.getId())
           .toString();
       assertThat(actualVirtualNetwork.getSelfLink().endsWith(apiRoutePath), is(true));
@@ -164,7 +164,7 @@ public class VirtualNetworksResourceTest extends ResourceTest {
     when(frontendClient.nextList(pageLink))
         .thenReturn(new ResourceList<>(ImmutableList.of(expectedVirtualNetwork)));
 
-    Response response = listNetworks(Optional.absent(), Optional.absent(), Optional.of(pageLink));
+    Response response = listSubnets(Optional.absent(), Optional.absent(), Optional.of(pageLink));
     assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
 
     ResourceList<VirtualNetwork> virtualNetworks =
@@ -176,7 +176,7 @@ public class VirtualNetworksResourceTest extends ResourceTest {
     assertThat(actualVirtualNetwork, is(expectedVirtualNetwork));
 
     String apiRoutePath = UriBuilder
-        .fromPath(NetworkResourceRoutes.SUBNET_PATH)
+        .fromPath(SubnetResourceRoutes.SUBNET_PATH)
         .build(expectedVirtualNetwork.getId())
         .toString();
     assertThat(actualVirtualNetwork.getSelfLink().endsWith(apiRoutePath), is(true));
@@ -190,7 +190,7 @@ public class VirtualNetworksResourceTest extends ResourceTest {
     when(frontendClient.list(null, null, Optional.of("virtualNetwork"), Optional.of(1)))
         .thenReturn(new ResourceList<>(ImmutableList.of(expectedVirtualNetwork)));
 
-    Response response = listNetworks(Optional.of("virtualNetwork"), Optional.of(1), Optional.absent());
+    Response response = listSubnets(Optional.of("virtualNetwork"), Optional.of(1), Optional.absent());
     assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
 
     ResourceList<VirtualNetwork> virtualNetworks =
@@ -202,7 +202,7 @@ public class VirtualNetworksResourceTest extends ResourceTest {
     assertThat(actualVirtualNetwork, is(expectedVirtualNetwork));
 
     String apiRoutePath = UriBuilder
-        .fromPath(NetworkResourceRoutes.SUBNET_PATH)
+        .fromPath(SubnetResourceRoutes.SUBNET_PATH)
         .build(expectedVirtualNetwork.getId())
         .toString();
     assertThat(actualVirtualNetwork.getSelfLink().endsWith(apiRoutePath), is(true));
@@ -213,14 +213,14 @@ public class VirtualNetworksResourceTest extends ResourceTest {
   public void failsToListAllWithException() throws Throwable {
     when(frontendClient.list(null, null, Optional.absent(), Optional.of(1)))
         .thenThrow(new ExternalException("failed"));
-    assertThat(listNetworks(Optional.absent(), Optional.of(1), Optional.absent()).getStatus(),
+    assertThat(listSubnets(Optional.absent(), Optional.of(1), Optional.absent()).getStatus(),
         is(500));
   }
 
   @Test
   public void failsToListAllWithInvalidPageSize() throws Throwable {
     int pageSize = paginationConfig.getMaxPageSize() + 1;
-    Response response = listNetworks(Optional.absent(), Optional.of(pageSize), Optional.absent());
+    Response response = listSubnets(Optional.absent(), Optional.of(pageSize), Optional.absent());
     assertThat(response.getStatus(), is(Response.Status.BAD_REQUEST.getStatusCode()));
 
     String expectedErrorMsg = String.format("The page size '%d' is not between '1' and '%d'",
@@ -236,7 +236,7 @@ public class VirtualNetworksResourceTest extends ResourceTest {
     String pageLink = "randomPageLink";
     doThrow(new PageExpiredException(pageLink)).when(frontendClient).nextList(pageLink);
 
-    Response response = listNetworks(Optional.absent(), Optional.absent(), Optional.of(pageLink));
+    Response response = listSubnets(Optional.absent(), Optional.absent(), Optional.of(pageLink));
     assertThat(response.getStatus(), is(Response.Status.NOT_FOUND.getStatusCode()));
 
     String expectedErrorMessage = "Page " + pageLink + " has expired";
@@ -250,12 +250,12 @@ public class VirtualNetworksResourceTest extends ResourceTest {
   public void failsToListByNameWithException() throws Throwable {
     when(frontendClient.list(null, null, Optional.of("virtualNetwork"), Optional.of(1)))
         .thenThrow(new ExternalException("failed"));
-    assertThat(listNetworks(Optional.of("virtualNetwork"), Optional.of(1), Optional.absent()).getStatus(),
+    assertThat(listSubnets(Optional.of("virtualNetwork"), Optional.of(1), Optional.absent()).getStatus(),
         is(500));
   }
 
-  private Response listNetworks(Optional<String> name, Optional<Integer> pageSize, Optional<String> pageLink) {
-    WebTarget resource = client().target(NetworkResourceRoutes.API);
+  private Response listSubnets(Optional<String> name, Optional<Integer> pageSize, Optional<String> pageLink) {
+    WebTarget resource = client().target(SubnetResourceRoutes.API);
     if (name.isPresent()) {
       resource = resource.queryParam("name", name.get());
     }

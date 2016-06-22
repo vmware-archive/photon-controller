@@ -17,7 +17,7 @@ import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.VirtualNetwork;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.clients.VirtualNetworkFeClient;
-import com.vmware.photon.controller.apife.resources.routes.NetworkResourceRoutes;
+import com.vmware.photon.controller.apife.resources.routes.SubnetResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
 import static com.vmware.photon.controller.api.common.Responses.generateCustomResponse;
 
@@ -41,25 +41,25 @@ import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
 
 /**
- * Resource for virtual network related API.
+ * Resource for virtual subnet related API.
  */
-@Path(NetworkResourceRoutes.SUBNET_PATH)
-@Api(value = NetworkResourceRoutes.API)
+@Path(SubnetResourceRoutes.SUBNET_PATH)
+@Api(value = SubnetResourceRoutes.API)
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-public class NetworkResource {
+public class SubnetResource {
 
   private final VirtualNetworkFeClient virtualNetworkFeClient;
 
   @Inject
-  public NetworkResource(VirtualNetworkFeClient virtualNetworkFeClient) {
+  public SubnetResource(VirtualNetworkFeClient virtualNetworkFeClient) {
     this.virtualNetworkFeClient = virtualNetworkFeClient;
   }
 
   @GET
-  @ApiOperation(value = "Find Network by id", response = VirtualNetwork.class)
+  @ApiOperation(value = "Find Subnet by id", response = VirtualNetwork.class)
   @ApiResponses(value = {
-      @ApiResponse(code = 200, message = "Network object")
+      @ApiResponse(code = 200, message = "Subnet object")
   })
   public Response get(@Context Request request,
                       @PathParam("id") String id)
@@ -68,13 +68,13 @@ public class NetworkResource {
         Response.Status.OK,
         virtualNetworkFeClient.get(id),
         (ContainerRequest) request,
-        NetworkResourceRoutes.SUBNET_PATH);
+        SubnetResourceRoutes.SUBNET_PATH);
   }
 
   @DELETE
-  @ApiOperation(value = "Delete Network", response = Task.class)
+  @ApiOperation(value = "Delete Subnet", response = Task.class)
   @ApiResponses(value = {
-      @ApiResponse(code = 201, message = "Network is being deleted, progress communicated via the task")
+      @ApiResponse(code = 201, message = "Subnet is being deleted, progress communicated via the task")
   })
   public Response delete(@Context Request request, @PathParam("id") String id) throws ExternalException {
     Response response = generateCustomResponse(
@@ -87,10 +87,10 @@ public class NetworkResource {
   }
 
   @POST
-  @Path(NetworkResourceRoutes.SUBNET_SET_DEFAULT_ACTION)
-  @ApiOperation(value = "Set Network Default", response = Task.class)
+  @Path(SubnetResourceRoutes.SUBNET_SET_DEFAULT_ACTION)
+  @ApiOperation(value = "Set Subnet Default", response = Task.class)
   @ApiResponses(value = {
-      @ApiResponse(code = 201, message = "Setting Network default, progress communicated via the task")
+      @ApiResponse(code = 201, message = "Setting SUbnet default, progress communicated via the task")
   })
   public Response setDefault(@Context Request request,
                              @PathParam("id") String id) throws ExternalException {

@@ -25,7 +25,8 @@ import javax.ws.rs.core.UriInfo;
 import java.net.URI;
 
 /**
- * Custom RequestFilter used to pause the system.
+ * Custom RequestFilter used to redirect calls made to deprecated api starting with /network to /subnet.
+ * This is to ensure backward compatibility to CLI and other clients that still use the old API.
  */
 @Singleton
 @PreMatching
@@ -41,11 +42,11 @@ public class NetworkToSubnetRedirectionFilter implements ContainerRequestFilter 
    */
   @Override
   public void filter(ContainerRequestContext requestContext) {
-    UriInfo uriInfo = requestContext.getUriInfo();
-    URI oldRequestURI = uriInfo.getRequestUri();
-    final String path = oldRequestURI.getPath().toLowerCase();
-    if (path.startsWith("/network")) {
-      String newPath = path.replace("/network", "/subnet");
+    final UriInfo uriInfo = requestContext.getUriInfo();
+    final URI oldRequestURI = uriInfo.getRequestUri();
+    final String oldPath = oldRequestURI.getPath().toLowerCase();
+    if (oldPath.startsWith("/network")) {
+      String newPath = oldPath.replace("/network", "/subnet");
       URI newRequestURI = uriInfo.getBaseUriBuilder().path(newPath).build();
       requestContext.setRequestUri(newRequestURI);
       logger.info("Redirecting {} to {}", oldRequestURI.toString(), newRequestURI.toString());

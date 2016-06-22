@@ -17,7 +17,7 @@ import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.clients.NetworkFeClient;
-import com.vmware.photon.controller.apife.resources.routes.NetworkResourceRoutes;
+import com.vmware.photon.controller.apife.resources.routes.SubnetResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
 import static com.vmware.photon.controller.api.common.Responses.generateCustomResponse;
 
@@ -42,23 +42,23 @@ import javax.ws.rs.core.Response;
 /**
  * This resource is for network set port group API.
  */
-@Path(NetworkResourceRoutes.SUBNET_SET_PORTGROUPS_PATH)
-@Api(value = NetworkResourceRoutes.API)
+@Path(SubnetResourceRoutes.SUBNET_SET_PORTGROUPS_PATH)
+@Api(value = SubnetResourceRoutes.API)
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-public class NetworkPortGroupsSetResource {
+public class SubnetPortGroupsSetResource {
 
   private final NetworkFeClient client;
 
   @Inject
-  public NetworkPortGroupsSetResource(NetworkFeClient client) {
+  public SubnetPortGroupsSetResource(NetworkFeClient client) {
     this.client = client;
   }
 
   @POST
-  @ApiOperation(value = "Set Network Port Groups", response = Task.class)
+  @ApiOperation(value = "Set Subnet Port Groups", response = Task.class)
   @ApiResponses(value = {
-      @ApiResponse(code = 201, message = "Setting Network port groups, progress communicated via the task")
+      @ApiResponse(code = 201, message = "Setting Subnet port groups, progress communicated via the task")
   })
   public Response set(@Context Request request,
                       @PathParam("id") String id,
