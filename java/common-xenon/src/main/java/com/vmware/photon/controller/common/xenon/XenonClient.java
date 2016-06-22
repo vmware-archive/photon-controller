@@ -25,6 +25,7 @@ import com.google.common.collect.ImmutableMap;
 
 import java.net.URI;
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeoutException;
@@ -33,6 +34,19 @@ import java.util.concurrent.TimeoutException;
  * REST client API to access Xenon services.
  */
 public interface XenonClient {
+
+  /**
+   * This type defines header options for Xenon REST operations.
+   */
+  enum HeaderOption {
+
+    /**
+     * This option specifies that Xenon should wait for responses from all nodes in the node group
+     * before returning. This overrides the default quorum settings for the node group.
+     */
+    HEADER_OPTION_FULL_QUORUM,
+  }
+
   void start();
 
   void stop();
@@ -62,6 +76,9 @@ public interface XenonClient {
       throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException;
 
   Operation patch(String serviceSelfLink, ServiceDocument body)
+      throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException;
+
+  Operation patch(String serviceSelfLink, ServiceDocument body, EnumSet<HeaderOption> headerOptions)
       throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException;
 
   Operation query(QueryTask.QuerySpecification spec, boolean isDirect)
