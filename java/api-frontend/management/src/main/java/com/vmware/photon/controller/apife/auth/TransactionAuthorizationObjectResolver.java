@@ -17,9 +17,9 @@ import com.vmware.photon.controller.apife.resources.routes.ClusterResourceRoutes
 import com.vmware.photon.controller.apife.resources.routes.DiskResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.FlavorsResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.ImageResourceRoutes;
-import com.vmware.photon.controller.apife.resources.routes.NetworkResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.ProjectResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.ResourceTicketResourceRoutes;
+import com.vmware.photon.controller.apife.resources.routes.SubnetResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TenantResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.VmResourceRoutes;
@@ -95,7 +95,7 @@ public class TransactionAuthorizationObjectResolver {
 
     // NETWORKS
     EVALUATION_RULES.put(
-        NetworkResourceRoutes.API.substring(1),
+        SubnetResourceRoutes.API.substring(1),
         new Rule[]{
             new Rule(
                 Pattern.compile("get", Pattern.CASE_INSENSITIVE),

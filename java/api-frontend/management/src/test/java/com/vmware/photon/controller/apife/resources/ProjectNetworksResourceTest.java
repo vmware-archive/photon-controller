@@ -25,8 +25,8 @@ import com.vmware.photon.controller.api.common.exceptions.external.ExternalExcep
 import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
 import com.vmware.photon.controller.apife.clients.VirtualNetworkFeClient;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
-import com.vmware.photon.controller.apife.resources.routes.NetworkResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.ProjectResourceRoutes;
+import com.vmware.photon.controller.apife.resources.routes.SubnetResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
 import com.vmware.photon.controller.apife.resources.virtualnetwork.ProjectNetworksResource;
 
@@ -147,7 +147,7 @@ public class ProjectNetworksResourceTest extends ResourceTest {
       assertThat(actualVirtualNetwork, is(expectedVirtualNetwork));
 
       String apiRoutePath = UriBuilder
-          .fromPath(NetworkResourceRoutes.SUBNET_PATH)
+          .fromPath(SubnetResourceRoutes.SUBNET_PATH)
           .build(expectedVirtualNetwork.getId())
           .toString();
       assertThat(actualVirtualNetwork.getSelfLink().endsWith(apiRoutePath), is(true));
@@ -184,7 +184,7 @@ public class ProjectNetworksResourceTest extends ResourceTest {
       assertThat(actualVirtualNetwork, is(expectedVirtualNetwork));
 
       String apiRoutePath = UriBuilder
-          .fromPath(NetworkResourceRoutes.SUBNET_PATH)
+          .fromPath(SubnetResourceRoutes.SUBNET_PATH)
           .build(expectedVirtualNetwork.getId())
           .toString();
       assertThat(actualVirtualNetwork.getSelfLink().endsWith(apiRoutePath), is(true));
@@ -246,7 +246,7 @@ public class ProjectNetworksResourceTest extends ResourceTest {
     assertThat(actualVirtualNetwork, is(expectedVirtualNetwork));
 
     String apiRoutePath = UriBuilder
-        .fromPath(NetworkResourceRoutes.SUBNET_PATH)
+        .fromPath(SubnetResourceRoutes.SUBNET_PATH)
         .build(expectedVirtualNetwork.getId())
         .toString();
     assertThat(actualVirtualNetwork.getSelfLink().endsWith(apiRoutePath), is(true));
@@ -274,7 +274,7 @@ public class ProjectNetworksResourceTest extends ResourceTest {
     assertThat(actualVirtualNetwork, is(expectedVirtualNetwork));
 
     String apiRoutePath = UriBuilder
-        .fromPath(NetworkResourceRoutes.SUBNET_PATH)
+        .fromPath(SubnetResourceRoutes.SUBNET_PATH)
         .build(expectedVirtualNetwork.getId())
         .toString();
     assertThat(actualVirtualNetwork.getSelfLink().endsWith(apiRoutePath), is(true));
