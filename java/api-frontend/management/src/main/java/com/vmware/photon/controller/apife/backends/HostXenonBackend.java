@@ -43,6 +43,7 @@ import com.vmware.photon.controller.apife.utils.PaginationUtils;
 import com.vmware.photon.controller.cloudstore.xenon.entity.HostService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.HostServiceFactory;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
+import com.vmware.photon.controller.common.xenon.XenonClient;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
 import com.vmware.xenon.common.ServiceDocumentQueryResult;
 
@@ -54,6 +55,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -79,8 +81,8 @@ public class HostXenonBackend implements HostBackend {
 
   @Inject
   public HostXenonBackend(ApiFeXenonRestClient xenonClient, DeployerClient deployerClient, TaskBackend taskBackend,
-                        EntityLockBackend entityLockBackend, DeploymentBackend deploymentBackend,
-                        TombstoneBackend tombstoneBackend, AvailabilityZoneBackend availabilityZoneBackend) {
+                          EntityLockBackend entityLockBackend, DeploymentBackend deploymentBackend,
+                          TombstoneBackend tombstoneBackend, AvailabilityZoneBackend availabilityZoneBackend) {
     this.xenonClient = xenonClient;
     this.taskBackend = taskBackend;
     this.entityLockBackend = entityLockBackend;
@@ -116,7 +118,6 @@ public class HostXenonBackend implements HostBackend {
     TaskEntity task = deleteTask(hostEntity);
     return task;
   }
-
 
 
   @Override
@@ -177,7 +178,17 @@ public class HostXenonBackend implements HostBackend {
   public void updateAvailabilityZone(HostEntity entity) throws HostNotFoundException {
     HostService.State hostState = new HostService.State();
     hostState.availabilityZoneId = entity.getAvailabilityZone();
-    updateHostDocument(entity.getId(), hostState);
+
+    //
+    // N.B. HEADER_OPTION_FULL_QUORUM is used here to ensure that all cloud store instances have
+    // received the updated host document before the operation returns. This closes a race
+    // condition where the scheduler will fail to create VMs in a particular availability zone
+    // immediately after associating a host with that availability zone since the scheduler uses
+    // local queries rather than broadcast queries to locate candidate hosts.
+    //
+
+    updateHostDocument(entity.getId(), hostState,
+        EnumSet.of(XenonClient.HeaderOption.HEADER_OPTION_FULL_QUORUM));
   }
 
   @Override
@@ -420,6 +431,16 @@ public class HostXenonBackend implements HostBackend {
   private void updateHostDocument(String hostId, HostService.State state) throws HostNotFoundException {
     try {
       xenonClient.patch(HostServiceFactory.SELF_LINK + "/" + hostId, state);
+    } catch (DocumentNotFoundException e) {
+      throw new HostNotFoundException(hostId);
+    }
+  }
+
+  private void updateHostDocument(String hostId, HostService.State state,
+                                  EnumSet<XenonClient.HeaderOption> headerOptions)
+      throws HostNotFoundException {
+    try {
+      xenonClient.patch(HostServiceFactory.SELF_LINK + "/" + hostId, state, headerOptions);
     } catch (DocumentNotFoundException e) {
       throw new HostNotFoundException(hostId);
     }
