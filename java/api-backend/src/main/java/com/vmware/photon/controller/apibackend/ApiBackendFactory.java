@@ -20,6 +20,7 @@ import com.vmware.photon.controller.apibackend.tasks.CreateLogicalSwitchTaskServ
 import com.vmware.photon.controller.apibackend.tasks.DeleteLogicalPortsTaskService;
 import com.vmware.photon.controller.apibackend.tasks.DeleteLogicalRouterTaskService;
 import com.vmware.photon.controller.apibackend.tasks.DeleteLogicalSwitchTaskService;
+import com.vmware.photon.controller.apibackend.tasks.DisconnectVmFromSwitchTaskService;
 import com.vmware.photon.controller.apibackend.workflows.CreateVirtualNetworkWorkflowService;
 import com.vmware.photon.controller.apibackend.workflows.DeleteVirtualNetworkWorkflowService;
 import com.vmware.xenon.common.FactoryService;
@@ -48,6 +49,7 @@ public class ApiBackendFactory {
       .put(DeleteLogicalRouterTaskService.class, DeleteLogicalRouterTaskService::createFactory)
       .put(DeleteLogicalPortsTaskService.class, DeleteLogicalPortsTaskService::createFactory)
       .put(ConnectVmToSwitchTaskService.class, ConnectVmToSwitchTaskService::createFactory)
+      .put(DisconnectVmFromSwitchTaskService.class, DisconnectVmFromSwitchTaskService::createFactory)
 
       // workflows
       .put(CreateVirtualNetworkWorkflowService.class, CreateVirtualNetworkWorkflowService::createFactory)
