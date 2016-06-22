@@ -369,6 +369,7 @@ public class ImageCleanerService extends StatefulService {
     // start service
     Operation operation = Operation
         .createPost(UriUtils.buildUri(getHost(), ImageDatastoreSweeperServiceFactory.SELF_LINK))
+        .setContextId(ServiceUtils.getIDFromDocumentSelfLink(current.documentSelfLink))
         .setBody(request)
         .setCompletion(handler);
     this.sendRequest(operation);

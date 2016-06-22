@@ -225,6 +225,7 @@ public class ImageSeederSyncService extends StatefulService {
 
     Operation createImageOperation = Operation
         .createPost(UriUtils.buildUri(getHost(), ImageSeederServiceFactory.SELF_LINK))
+        .setContextId(ServiceUtils.getIDFromDocumentSelfLink(currentState.documentSelfLink))
         .setBody(postState)
         .setCompletion(handler);
 

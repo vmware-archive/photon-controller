@@ -151,7 +151,7 @@ public class ImageCopyService extends StatefulService {
     HostClient client = ((HostClientProvider) getHost()).getHostClient();
     client.setHostIp(current.host);
     if (LoggingUtils.getRequestId() == null) {
-      LoggingUtils.setRequestId(current.documentSelfLink);
+      LoggingUtils.setRequestId(ServiceUtils.getIDFromDocumentSelfLink(current.documentSelfLink));
     }
 
     return client;
