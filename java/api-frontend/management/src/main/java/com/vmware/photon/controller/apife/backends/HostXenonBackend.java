@@ -79,8 +79,8 @@ public class HostXenonBackend implements HostBackend {
 
   @Inject
   public HostXenonBackend(ApiFeXenonRestClient xenonClient, DeployerClient deployerClient, TaskBackend taskBackend,
-                        EntityLockBackend entityLockBackend, DeploymentBackend deploymentBackend,
-                        TombstoneBackend tombstoneBackend, AvailabilityZoneBackend availabilityZoneBackend) {
+                          EntityLockBackend entityLockBackend, DeploymentBackend deploymentBackend,
+                          TombstoneBackend tombstoneBackend, AvailabilityZoneBackend availabilityZoneBackend) {
     this.xenonClient = xenonClient;
     this.taskBackend = taskBackend;
     this.entityLockBackend = entityLockBackend;
@@ -116,7 +116,6 @@ public class HostXenonBackend implements HostBackend {
     TaskEntity task = deleteTask(hostEntity);
     return task;
   }
-
 
 
   @Override
@@ -177,7 +176,19 @@ public class HostXenonBackend implements HostBackend {
   public void updateAvailabilityZone(HostEntity entity) throws HostNotFoundException {
     HostService.State hostState = new HostService.State();
     hostState.availabilityZoneId = entity.getAvailabilityZone();
-    updateHostDocument(entity.getId(), hostState);
+
+    //
+    // N.B. REPLICATION_QUORUM_HEADER_VALUE_ALL is used here to ensure that all cloud store
+    // instances have received the updated host document before the operation returns. This closes
+    // a race condition where the scheduler will fail to create VMs in a particular availability
+    // zone immediately after associating a host with that availability zone since the scheduler
+    // uses local queries rather than broadcast queries to locate candidate hosts.
+    //
+
+    updateHostDocument(entity.getId(), hostState,
+        ImmutableMap.of(
+            com.vmware.xenon.common.Operation.REPLICATION_QUORUM_HEADER,
+            com.vmware.xenon.common.Operation.REPLICATION_QUORUM_HEADER_VALUE_ALL));
   }
 
   @Override
@@ -420,6 +431,15 @@ public class HostXenonBackend implements HostBackend {
   private void updateHostDocument(String hostId, HostService.State state) throws HostNotFoundException {
     try {
       xenonClient.patch(HostServiceFactory.SELF_LINK + "/" + hostId, state);
+    } catch (DocumentNotFoundException e) {
+      throw new HostNotFoundException(hostId);
+    }
+  }
+
+  private void updateHostDocument(String hostId, HostService.State state, Map<String, String> requestHeaders)
+      throws HostNotFoundException {
+    try {
+      xenonClient.patch(HostServiceFactory.SELF_LINK + "/" + hostId, state, requestHeaders);
     } catch (DocumentNotFoundException e) {
       throw new HostNotFoundException(hostId);
     }

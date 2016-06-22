@@ -285,15 +285,25 @@ public class XenonRestClient implements XenonClient {
   @Override
   public Operation patch(String serviceSelfLink, ServiceDocument body)
       throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException {
-    URI serviceUri = getServiceUri(serviceSelfLink);
+    return patch(serviceSelfLink, body, null);
+  }
+
+  @Override
+  public Operation patch(String serviceSelfLink, ServiceDocument body, Map<String, String> requestHeaders)
+      throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException {
 
     Operation patchOperation = Operation
-        .createPatch(serviceUri)
-        .setUri(serviceUri)
+        .createPatch(getServiceUri(serviceSelfLink))
         .setExpiration(Utils.getNowMicrosUtc() + getPatchOperationExpirationMicros())
         .setBody(body)
         .setReferer(this.localHostUri)
         .setContextId(LoggingUtils.getRequestId());
+
+    if (requestHeaders != null) {
+      for (Map.Entry<String, String> entry : requestHeaders.entrySet()) {
+        patchOperation.addRequestHeader(entry.getKey(), entry.getValue());
+      }
+    }
 
     return send(patchOperation);
   }

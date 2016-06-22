@@ -64,6 +64,9 @@ public interface XenonClient {
   Operation patch(String serviceSelfLink, ServiceDocument body)
       throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException;
 
+  Operation patch(String serviceSelfLink, ServiceDocument body, Map<String, String> requestHeaders)
+      throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException;
+
   Operation query(QueryTask.QuerySpecification spec, boolean isDirect)
       throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException;
 

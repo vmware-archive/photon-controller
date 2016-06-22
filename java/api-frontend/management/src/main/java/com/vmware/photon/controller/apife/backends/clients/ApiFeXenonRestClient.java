@@ -35,6 +35,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeoutException;
 
@@ -55,7 +56,7 @@ public class ApiFeXenonRestClient extends XenonRestClient {
 
   @Override
   public Operation post(String serviceSelfLink, ServiceDocument body) {
-      return this.post(false, serviceSelfLink, body);
+    return this.post(false, serviceSelfLink, body);
   }
 
   @Override
@@ -132,6 +133,20 @@ public class ApiFeXenonRestClient extends XenonRestClient {
   }
 
   @Override
+  public Operation patch(String serviceSelflink, ServiceDocument body, Map<String, String> requestHeaders)
+      throws DocumentNotFoundException {
+    try {
+      return super.patch(serviceSelflink, body, requestHeaders);
+    } catch (BadRequestException badRequestException) {
+      throw new XenonRuntimeException(badRequestException);
+    } catch (TimeoutException timeoutException) {
+      throw new RuntimeException(timeoutException);
+    } catch (InterruptedException interruptedException) {
+      throw new RuntimeException(interruptedException);
+    }
+  }
+
+  @Override
   public <T extends ServiceDocument> List<T> queryDocuments(Class<T> documentType,
                                                             ImmutableMap<String, String> terms) {
     try {
@@ -153,7 +168,7 @@ public class ApiFeXenonRestClient extends XenonRestClient {
     try {
       return super.queryDocuments(documentType, terms, pageSize, expandContent);
     } catch (DocumentNotFoundException | BadRequestException e) {
-      throw  new XenonRuntimeException(e);
+      throw new XenonRuntimeException(e);
     } catch (TimeoutException | InterruptedException e) {
       throw new RuntimeException(e);
     }
@@ -168,7 +183,7 @@ public class ApiFeXenonRestClient extends XenonRestClient {
     try {
       return super.queryDocuments(documentType, terms, pageSize, expandContent, broadCast);
     } catch (DocumentNotFoundException | BadRequestException e) {
-      throw  new XenonRuntimeException(e);
+      throw new XenonRuntimeException(e);
     } catch (TimeoutException | InterruptedException e) {
       throw new RuntimeException(e);
     }
@@ -180,7 +195,7 @@ public class ApiFeXenonRestClient extends XenonRestClient {
     try {
       return super.queryDocumentPage(pageLink);
     } catch (BadRequestException e) {
-      throw  new XenonRuntimeException(e);
+      throw new XenonRuntimeException(e);
     } catch (TimeoutException | InterruptedException e) {
       throw new RuntimeException(e);
     }
