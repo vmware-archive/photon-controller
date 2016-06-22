@@ -664,6 +664,7 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
           .deleteLogicalRouter(true)
           .deleteLogicalSwitch(true)
           .checkLogicalRouterPortExistence(true)
+          .checkLogicalSwitchPortExistence(true)
           .build();
       doReturn(nsxClientMock).when(nsxClientFactory).create(any(String.class), any(String.class), any(String.class));
 
@@ -801,6 +802,7 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
           .deleteLogicalRouterPort(true)
           .deleteLogicalPort(true)
           .checkLogicalRouterPortExistence(true)
+          .checkLogicalSwitchPortExistence(true)
           .deleteLogicalRouter(false)
           .build();
       doReturn(nsxClientMock).when(nsxClientFactory).create(any(String.class), any(String.class), any(String.class));
@@ -853,6 +855,7 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
           .deleteLogicalRouter(true)
           .deleteLogicalSwitch(false)
           .checkLogicalRouterPortExistence(true)
+          .checkLogicalSwitchPortExistence(true)
           .build();
       doReturn(nsxClientMock).when(nsxClientFactory).create(any(String.class), any(String.class), any(String.class));
 

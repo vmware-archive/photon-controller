@@ -133,6 +133,7 @@ public class DeleteLogicalPortsTask extends ServiceDocument {
       DELETE_TIER1_ROUTER_DOWN_LINK_PORT,
       WAIT_DELETE_TIER1_ROUTER_DOWN_LINK_PORT,
       DELETE_SWITCH_PORT,
+      WAIT_DELETE_SWITCH_PORT,
     }
   }
 }

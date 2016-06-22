@@ -166,6 +166,10 @@ public class DeleteLogicalPortsTaskService extends StatefulService {
           deleteSwitchPort(currentState, retryCount);
           break;
 
+        case WAIT_DELETE_SWITCH_PORT:
+          waitDeleteSwitchPort(currentState);
+          break;
+
         default:
           throw new ConfigureRoutingException("Invalid task sub-stage " + currentState.taskState.stage);
       }
@@ -432,11 +436,12 @@ public class DeleteLogicalPortsTaskService extends StatefulService {
         LogicalSwitchApi logicalSwitchApi = ServiceHostUtils.getNsxClient(getHost(), currentState.nsxManagerEndpoint,
             currentState.username, currentState.password).getLogicalSwitchApi();
 
+
         logicalSwitchApi.deleteLogicalPort(currentState.logicalPortOnSwitch,
             new FutureCallback<Void>() {
               @Override
               public void onSuccess(Void v) {
-                finishTask();
+                progressTask(TaskState.SubStage.WAIT_DELETE_SWITCH_PORT);
               }
 
               @Override
@@ -452,6 +457,39 @@ public class DeleteLogicalPortsTaskService extends StatefulService {
                 } else {
                   failTask(t);
                 }
+              }
+            }
+        );
+      } catch (Throwable t) {
+        failTask(t);
+      }
+    }, currentState.executionDelay, TimeUnit.MILLISECONDS);
+  }
+
+  private void waitDeleteSwitchPort(DeleteLogicalPortsTask currentState) {
+    getHost().schedule(() -> {
+      try {
+        ServiceUtils.logInfo(this, "Wait for delete port %s on switch %s",
+            currentState.logicalPortOnSwitch,
+            currentState.logicalSwitchId);
+
+        LogicalSwitchApi logicalSwitchApi = ServiceHostUtils.getNsxClient(getHost(), currentState.nsxManagerEndpoint,
+            currentState.username, currentState.password).getLogicalSwitchApi();
+
+        logicalSwitchApi.checkLogicalSwitchPortExistence(currentState.logicalPortOnSwitch,
+            new FutureCallback<Boolean>() {
+              @Override
+              public void onSuccess(Boolean successful) {
+                if (!successful) {
+                  finishTask();
+                } else {
+                  waitDeleteSwitchPort(currentState);
+                }
+              }
+
+              @Override
+              public void onFailure(Throwable t) {
+                failTask(t);
               }
             }
         );
@@ -534,6 +572,10 @@ public class DeleteLogicalPortsTaskService extends StatefulService {
 
         case WAIT_DELETE_TIER1_ROUTER_DOWN_LINK_PORT:
           checkState(startSubStage != null && startSubStage == TaskState.SubStage.DELETE_TIER1_ROUTER_DOWN_LINK_PORT);
+          break;
+
+        case WAIT_DELETE_SWITCH_PORT:
+          checkState(startSubStage != null && startSubStage == TaskState.SubStage.DELETE_SWITCH_PORT);
       }
     }
   }

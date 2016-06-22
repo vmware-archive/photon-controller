@@ -278,7 +278,9 @@ public class DeleteLogicalPortsTaskServiceTest {
           {TaskState.TaskStage.STARTED, TaskState.SubStage.DELETE_TIER0_ROUTER_LINK_PORT,
               TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_DELETE_TIER0_ROUTER_LINK_PORT},
           {TaskState.TaskStage.STARTED, TaskState.SubStage.DELETE_TIER1_ROUTER_DOWN_LINK_PORT,
-              TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_DELETE_TIER1_ROUTER_DOWN_LINK_PORT}
+              TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_DELETE_TIER1_ROUTER_DOWN_LINK_PORT},
+          {TaskState.TaskStage.STARTED, TaskState.SubStage.DELETE_SWITCH_PORT,
+              TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_DELETE_SWITCH_PORT}
       };
     }
 
@@ -323,7 +325,9 @@ public class DeleteLogicalPortsTaskServiceTest {
           {TaskState.TaskStage.STARTED, TaskState.SubStage.GET_LINK_PORTS,
               TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_DELETE_TIER0_ROUTER_LINK_PORT},
           {TaskState.TaskStage.STARTED, TaskState.SubStage.GET_LINK_PORTS,
-              TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_DELETE_TIER1_ROUTER_DOWN_LINK_PORT}
+              TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_DELETE_TIER1_ROUTER_DOWN_LINK_PORT},
+          {TaskState.TaskStage.STARTED, TaskState.SubStage.GET_LINK_PORTS,
+              TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_DELETE_SWITCH_PORT}
       };
     }
 
@@ -458,6 +462,7 @@ public class DeleteLogicalPortsTaskServiceTest {
           .deleteLogicalRouterPort(true, true, true)
           .deleteLogicalPort(true)
           .checkLogicalRouterPortExistence(true)
+          .checkLogicalSwitchPortExistence(true)
           .build();
       doReturn(nsxClientMock).when(nsxClientFactory).create(any(String.class), any(String.class), any(String.class));
 
@@ -573,6 +578,22 @@ public class DeleteLogicalPortsTaskServiceTest {
       DeleteLogicalPortsTask savedState = startService();
       assertThat(savedState.taskState.stage, is(TaskState.TaskStage.FAILED));
       assertThat(savedState.taskState.failure.message, containsString("deleteLogicalPort failed"));
+    }
+
+    @Test
+    public void testFailedToCheckLogicalSwitchPortExistence() throws Throwable {
+      NsxClientMock nsxClientMock = new NsxClientMock.Builder()
+          .listLogicalRouterPorts(true)
+          .deleteLogicalRouterPort(true, true, true)
+          .deleteLogicalPort(true)
+          .checkLogicalRouterPortExistence(true, true, true)
+          .checkLogicalSwitchPortExistence(false)
+          .build();
+      doReturn(nsxClientMock).when(nsxClientFactory).create(any(String.class), any(String.class), any(String.class));
+
+      DeleteLogicalPortsTask savedState = startService();
+      assertThat(savedState.taskState.stage, is(TaskState.TaskStage.FAILED));
+      assertThat(savedState.taskState.failure.message, containsString("checkLogicalSwitchPortExistence failed"));
     }
 
     private DeleteLogicalPortsTask startService() throws Throwable {
