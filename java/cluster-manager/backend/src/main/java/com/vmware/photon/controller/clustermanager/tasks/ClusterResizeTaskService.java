@@ -36,7 +36,7 @@ import static com.google.common.base.Preconditions.checkState;
 import javax.annotation.Nullable;
 
 /**
- * This class implements a DCP service representing a task to resize a cluster.
+ * This class implements a Xenon service representing a task to resize a cluster.
  */
 public class ClusterResizeTaskService extends StatefulService {
 

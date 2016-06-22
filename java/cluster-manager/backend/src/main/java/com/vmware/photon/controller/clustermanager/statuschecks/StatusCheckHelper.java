@@ -27,7 +27,7 @@ public class StatusCheckHelper {
   /**
    * Factory method used to create an instance of a StatusChecker corresponding to the passed NodeType.
    *
-   * @param service  Reference to the DCP Service that requires the StatusChecker instance.
+   * @param service  Reference to the Xenon Service that requires the StatusChecker instance.
    * @param nodeType Type of the Cluster Node.
    * @return
    */
@@ -65,7 +65,7 @@ public class StatusCheckHelper {
   /**
    * Factory method used to create an instance of a StatusChecker corresponding to the passed NodeType.
    *
-   * @param service  Reference to the DCP Service that requires the StatusChecker instance.
+   * @param service  Reference to the Xenon Service that requires the StatusChecker instance.
    * @param nodeType Type of the Cluster Node.
    * @return
    */

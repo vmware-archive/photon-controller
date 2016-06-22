@@ -17,7 +17,7 @@ import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Service;
 
 /**
- * This class implements a DCP micro-service which provides a factory for
+ * This class implements a Xenon micro-service which provides a factory for
  * {@link VmDeprovisionTaskService} instances.
  */
 public class VmDeprovisionTaskFactoryService extends FactoryService {

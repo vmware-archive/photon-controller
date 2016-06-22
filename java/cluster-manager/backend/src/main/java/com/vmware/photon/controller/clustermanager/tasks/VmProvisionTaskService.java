@@ -63,7 +63,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * This class implements a DCP service representing a task to provision a VM.
+ * This class implements a Xenon service representing a task to provision a VM.
  */
 public class VmProvisionTaskService extends StatefulService {
 

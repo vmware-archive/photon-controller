@@ -50,7 +50,7 @@ import static com.google.common.base.Preconditions.checkState;
 import javax.annotation.Nullable;
 
 /**
- * This class implements a DCP service representing a task to create a Mesos cluster.
+ * This class implements a Xenon service representing a task to create a Mesos cluster.
  */
 public class MesosClusterCreateTaskService extends StatefulService {
 

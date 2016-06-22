@@ -27,7 +27,7 @@ import com.vmware.xenon.common.Service;
 import com.google.common.util.concurrent.ListeningExecutorService;
 
 /**
- * This class implements utility functions for the deployer DCP host.
+ * This class implements utility functions for the deployer Xenon host.
  */
 public class HostUtils {
 

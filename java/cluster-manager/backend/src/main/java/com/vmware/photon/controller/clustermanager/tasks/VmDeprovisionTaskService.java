@@ -44,7 +44,7 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 
 /**
- * This class implements a DCP service representing a task to deprovision a VM.
+ * This class implements a Xenon service representing a task to deprovision a VM.
  */
 public class VmDeprovisionTaskService extends StatefulService {
 

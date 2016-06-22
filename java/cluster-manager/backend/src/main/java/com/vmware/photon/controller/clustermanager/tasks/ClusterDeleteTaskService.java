@@ -50,7 +50,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * This class implements a DCP service representing a task to delete a Kubernetes cluster.
+ * This class implements a Xenon service representing a task to delete a Kubernetes cluster.
  */
 public class ClusterDeleteTaskService extends StatefulService {
 

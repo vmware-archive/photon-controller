@@ -57,7 +57,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * This class implements a DCP service representing a task to inspect cluster for inactive slave vms.
+ * This class implements a Xenon service representing a task to inspect cluster for inactive slave vms.
  */
 public class GarbageInspectionTaskService extends StatefulService {
 

@@ -197,7 +197,7 @@ public class GarbageCollectionTaskServiceTest {
       TestHost.destroy(host);
     }
 
-    // Because the task relies on DeployerDcpServiceHost to provide the cloud store helper for querying
+    // Because the task relies on DeployerXenonServiceHost to provide the cloud store helper for querying
     // the cluster entity, test host will not work in this case.
     @Test(dataProvider = "validStageUpdates", enabled = false)
     public void testValidStageUpdates(TaskState.TaskStage startStage,

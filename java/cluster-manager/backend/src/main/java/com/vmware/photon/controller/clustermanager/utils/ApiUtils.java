@@ -67,7 +67,7 @@ public class ApiUtils {
    *
    * @param task              Supplies the task object.
    * @param client            Supplies the API client object.
-   * @param service           Supplies the DCP micro-service which is waiting on the task completion.
+   * @param service           Supplies the Xenon micro-service which is waiting on the task completion.
    * @param queryTaskInterval Supplies the time interval between the task status query.
    * @param callback          Supplies the callback to be invoked when the task completes or fails.
    */
@@ -129,7 +129,7 @@ public class ApiUtils {
    *
    * @param tasks             Supplies a list of task objects.
    * @param client            Supplies the API client object.
-   * @param service           Supplies the DCP micro-service which is waiting on the task completion.
+   * @param service           Supplies the Xenon micro-service which is waiting on the task completion.
    * @param queryTaskInterval Supplies the time interval between the task status query.
    * @param callback          Supplies the callback to be invoked when the task completes or fails.
    */

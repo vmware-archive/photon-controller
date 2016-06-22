@@ -14,7 +14,7 @@ Going forward, the ClusterManager will be extended to support the following feat
 - Improve health monitoring of Clusters
 - Improve scalability and performance of different cluster operations.
 
-The ClusterManager is implemented as a set of DCP services, with individual tasks implemented
+The ClusterManager is implemented as a set of Xenon services, with individual tasks implemented
 as collections of micro-services.
 
 ## Build
@@ -34,7 +34,7 @@ The resulting JAR files can be found under:
 
 ## Runtime Configuration
 
-ClusterManager is currently hosted in Deployer's DCP host and runs in the same container as Deployer.
+ClusterManager is currently hosted in Deployer's Xenon host and runs in the same container as Deployer.
 
 ## Debugging
 
