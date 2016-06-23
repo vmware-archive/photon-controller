@@ -735,6 +735,13 @@ public class HostServiceTest {
 
       assertNotNull(savedState.agentState, "Failed to update the agent state");
       assertThat(savedState.agentState, is(AgentState.MISSING));
+
+      // Validate that when an agent becomes missing, its datastores are removed from CloudStore.
+      retryCount = 0;
+      do {
+        Thread.sleep(500);
+      } while (getTotalDatastoreCount(testEnvironment) > 0 && retryCount++ < 10);
+      assertThat(getTotalDatastoreCount(testEnvironment), is(0L));
     }
 
     private GetConfigResponse getConfigResponse(boolean success, HostConfig hostConfig) throws Throwable {
