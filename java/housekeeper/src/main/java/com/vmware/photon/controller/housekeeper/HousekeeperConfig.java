@@ -14,7 +14,6 @@
 package com.vmware.photon.controller.housekeeper;
 
 import com.vmware.photon.controller.common.xenon.host.XenonConfig;
-import com.vmware.photon.controller.common.zookeeper.ZookeeperConfig;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.hibernate.validator.constraints.Range;
@@ -36,15 +35,7 @@ public class HousekeeperConfig {
   @JsonProperty("xenon")
   private XenonConfig xenonConfig;
 
-  @Valid
-  @NotNull
-  private ZookeeperConfig zookeeper;
-
   public XenonConfig getXenonConfig() {
     return this.xenonConfig;
-  }
-
-  public ZookeeperConfig getZookeeper() {
-    return this.zookeeper;
   }
 }

@@ -16,13 +16,11 @@ package com.vmware.photon.controller.cloudstore;
 import com.vmware.photon.controller.common.config.BadConfigException;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.xenon.host.XenonConfig;
-import com.vmware.photon.controller.common.zookeeper.ZookeeperConfig;
 
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.arrayContaining;
-import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 
 /**
@@ -53,10 +51,5 @@ public class CloudStoreConfigTest {
     assertThat(xenonConfig.getPort(), is(19000));
     assertThat(xenonConfig.getRegistrationAddress(), is("127.0.0.1"));
     assertThat(xenonConfig.getStoragePath(), is("/tmp/xenon/cloud-store/"));
-  }
-
-  @Test
-  public void testZookeeperConfig() {
-    assertThat(config.getZookeeper(), instanceOf(ZookeeperConfig.class));
   }
 }

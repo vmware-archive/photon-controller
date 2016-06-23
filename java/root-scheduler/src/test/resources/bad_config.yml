@@ -8,7 +8,3 @@ xenon:
 root:
   place_timeout_ms: 10000
   max_fan_out_count: 33
-zookeeper:
-  quorum: localhost:2181
-  retries:
-    max_retries: 3

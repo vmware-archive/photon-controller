@@ -5,8 +5,3 @@ xenon:
   storagePath: "/tmp/xenon/cloud-store/"
   peerNodes:
   - http://127.0.0.1:19000
-
-zookeeper:
-  quorum: localhost:2181
-  retries:
-    max_retries: 3

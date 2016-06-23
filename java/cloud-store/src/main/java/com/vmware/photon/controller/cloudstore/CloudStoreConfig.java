@@ -14,7 +14,6 @@
 package com.vmware.photon.controller.cloudstore;
 
 import com.vmware.photon.controller.common.xenon.host.XenonConfig;
-import com.vmware.photon.controller.common.zookeeper.ZookeeperConfig;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -31,15 +30,7 @@ public class CloudStoreConfig {
   @JsonProperty("xenon")
   private XenonConfig xenonConfig;
 
-  @Valid
-  @NotNull
-  private ZookeeperConfig zookeeper = new ZookeeperConfig();
-
   public XenonConfig getXenonConfig() {
     return this.xenonConfig;
-  }
-
-  public ZookeeperConfig getZookeeper() {
-    return zookeeper;
   }
 }
