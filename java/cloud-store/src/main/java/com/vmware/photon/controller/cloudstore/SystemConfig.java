@@ -76,6 +76,13 @@ public class SystemConfig implements SystemConfigProvider {
     this.scheduler.submit(new PausedStateChecker());
   }
 
+  // This is an optimization on the local node. As soon as user kicks a Pause/BackgroundPause/Resume/, we mark locally
+  // rather than querying it again.
+  public void markPauseStateLocally(boolean isBackgroundPaused, boolean isPaused) {
+    this.isBackgroundPaused = isBackgroundPaused;
+    this.isPaused = isPaused;
+  }
+
   @Override
   public boolean isPaused() {
     return instance.isPaused;

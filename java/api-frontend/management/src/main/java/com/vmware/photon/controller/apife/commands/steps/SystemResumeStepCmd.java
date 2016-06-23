@@ -59,7 +59,7 @@ public class SystemResumeStepCmd extends StepCommand {
       com.vmware.xenon.common.Operation operation =
           taskCommand.getApiFeXenonRestClient().patch(state.documentSelfLink, state);
 
-      SystemConfig.getInstance().runCheck();
+      SystemConfig.getInstance().markPauseStateLocally(false, false);
       logger.info("Resumed APIFE service...");
     } catch (DocumentNotFoundException ex) {
       throw new InternalException(ex);

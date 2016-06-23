@@ -57,7 +57,7 @@ public class SystemPauseStepCmd extends StepCommand {
       com.vmware.xenon.common.Operation operation =
           taskCommand.getApiFeXenonRestClient().patch(state.documentSelfLink, state);
 
-      SystemConfig.getInstance().runCheck();
+      SystemConfig.getInstance().markPauseStateLocally(false, true);
       logger.info("Paused APIFE service...");
     } catch (DocumentNotFoundException ex) {
       throw new InternalException(ex);
