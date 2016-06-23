@@ -21,19 +21,21 @@ import com.vmware.photon.controller.common.zookeeper.ZookeeperConfig;
  */
 public interface ApiFeConfiguration {
 
+  public int getApifePort();
+
+  public int getXenonPort();
+
   public AuthConfig getAuth();
 
   public RootSchedulerConfig getRootScheduler();
+
+  public ZookeeperConfig getZookeeper();
 
   public int getBackgroundWorkers();
 
   public int getBackgroundWorkersQueueSize();
 
-  public ZookeeperConfig getZookeeper();
-
   public GraphiteConfig getGraphite();
-
-  public String getRegistrationAddress();
 
   public ImageConfig getImage();
 

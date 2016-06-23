@@ -90,9 +90,6 @@ import com.vmware.photon.controller.apife.resources.vm.VmResource;
 import com.vmware.photon.controller.apife.resources.vm.VmTagsResource;
 import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.metrics.GraphiteConfig;
-import com.vmware.photon.controller.common.zookeeper.ServiceNode;
-import com.vmware.photon.controller.common.zookeeper.ServiceNodeFactory;
-import com.vmware.photon.controller.common.zookeeper.ServiceNodeUtils;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperModule;
 import com.vmware.photon.controller.swagger.resources.SwaggerJsonListing;
 
@@ -119,7 +116,6 @@ import javax.validation.Validation;
 import javax.validation.ValidatorFactory;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashSet;
@@ -165,7 +161,6 @@ public class ApiFeService extends Application<ApiFeStaticConfiguration> {
 
     apiModule = new ApiFeModule();
     zookeeperModule = new ZookeeperModule(apiFeConfiguration.getZookeeper());
-
     apiModule.setConfiguration(apiFeConfiguration);
 
     GuiceBundle<ApiFeStaticConfiguration> guiceBundle = getGuiceBundle();
@@ -220,17 +215,8 @@ public class ApiFeService extends Application<ApiFeStaticConfiguration> {
 
     HttpConnectorFactory httpConnectorFactory = (HttpConnectorFactory) ((SimpleServerFactory) configuration
         .getServerFactory()).getConnector();
-    registerWithZookeeper(
-        injector.getInstance(ServiceNodeFactory.class),
-        configuration.getRegistrationAddress(),
-        httpConnectorFactory.getPort());
-  }
-
-  private void registerWithZookeeper(ServiceNodeFactory serviceNodeFactory, String registrationIpAddress,
-                                     int port) {
-    InetSocketAddress registrationSocketAddress = new InetSocketAddress(registrationIpAddress, port);
-    ServiceNode serviceNode = serviceNodeFactory.createSimple(Constants.APIFE_SERVICE_NAME, registrationSocketAddress);
-    ServiceNodeUtils.joinService(serviceNode, retryIntervalMsec);
+    zookeeperModule.registerWithZookeeper(zookeeperModule.getCuratorFramework(), Constants.APIFE_SERVICE_NAME,
+        "127.0.0.1", httpConnectorFactory.getPort(), retryIntervalMsec);
   }
 
   private void registerResourcesWithSwagger(ApiFeConfiguration configuration, Environment environment) {

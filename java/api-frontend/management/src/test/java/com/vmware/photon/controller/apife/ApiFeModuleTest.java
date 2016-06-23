@@ -64,7 +64,6 @@ import com.vmware.photon.controller.apife.config.AuthConfig;
 import com.vmware.photon.controller.apife.config.ConfigurationUtils;
 import com.vmware.photon.controller.apife.config.ImageConfig;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
-import com.vmware.photon.controller.common.zookeeper.ZookeeperModule;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
@@ -246,7 +245,6 @@ public class ApiFeModuleTest {
 
       injector = Guice.createInjector(
           apiFeModule,
-          new ZookeeperModule(),
           new AbstractModule() {
             @Override
             protected void configure() {
@@ -286,7 +284,6 @@ public class ApiFeModuleTest {
 
       injector = Guice.createInjector(
           apiFeModule,
-          new ZookeeperModule(),
           new AbstractModule() {
             @Override
             protected void configure() {
@@ -327,12 +324,8 @@ public class ApiFeModuleTest {
 
       apiFeModule.setConfiguration(apiFeConfiguration);
 
-      ZookeeperModule zookeeperModule = new ZookeeperModule();
-      zookeeperModule.setConfig(apiFeConfiguration.getZookeeper());
-
       Injector injector = Guice.createInjector(
           apiFeModule,
-          zookeeperModule,
           new AbstractModule() {
             @Override
             protected void configure() {
@@ -390,12 +383,8 @@ public class ApiFeModuleTest {
 
       apiFeModule.setConfiguration(apiFeConfiguration);
 
-      ZookeeperModule zookeeperModule = new ZookeeperModule();
-      zookeeperModule.setConfig(apiFeConfiguration.getZookeeper());
-
       Injector injector = Guice.createInjector(
           apiFeModule,
-          zookeeperModule,
           new AbstractModule() {
             @Override
             protected void configure() {
@@ -437,7 +426,6 @@ public class ApiFeModuleTest {
 
       Injector injector = Guice.createInjector(
           apiFeModule,
-          new ZookeeperModule(),
           new AbstractModule() {
             @Override
             protected void configure() {
@@ -466,7 +454,6 @@ public class ApiFeModuleTest {
 
       Injector injector = Guice.createInjector(
           apiFeModule,
-          new ZookeeperModule(),
           new AbstractModule() {
             @Override
             protected void configure() {
