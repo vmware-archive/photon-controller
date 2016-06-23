@@ -31,6 +31,7 @@ import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.QueryTask;
 
 import org.testng.annotations.AfterMethod;
+import org.testng.annotations.AfterTest;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -209,25 +210,13 @@ public class DatastoreCleanerServiceTest {
       request = buildValidStartupState();
     }
 
-    @AfterMethod
+    @AfterTest
     public void tearDown() throws Throwable {
       if (machine != null) {
         machine.stop();
       }
-    }
-
-    private void freeTestEnvironment(TestEnvironment machine) throws Throwable {
-      try {
-        for (String selfLink : hostSelfLinks) {
-          machine.deleteService(selfLink);
-        }
-        for (String datastoreSelfLink : datastoreSelfLinks) {
-          machine.deleteService(datastoreSelfLink);
-        }
-      } finally {
-        hostSelfLinks.clear();
-        datastoreSelfLinks.clear();
-      }
+      hostSelfLinks.clear();
+      datastoreSelfLinks.clear();
     }
 
     @Test(dataProvider = "Success")
@@ -256,8 +245,6 @@ public class DatastoreCleanerServiceTest {
       Thread.sleep(2000);
       assertThat(response.taskState.stage, is(TaskState.TaskStage.FINISHED));
       assertThat(getTotalDatastoreCount(machine), is(new Long(hostsWithDatastore)));
-
-      freeTestEnvironment(machine);
     }
 
     @DataProvider(name = "Success")
