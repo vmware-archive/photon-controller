@@ -160,13 +160,17 @@ task :reboot_hosts, [:dc_yml] do |t, args|
   host_specs.each do |host|
     EsxCloud::HostCleaner.reboot_host host.address, host.username, host.password
   end
-  sleep(5 * 60)
+  max_wait_time = ENV["REBOOT_WAIT_TIME"].to_i || 15 * 60
+  host_specs.each do |host|
+    EsxCloud::HostCleaner.wait_for_boot host.address, host.username, host.password, max_wait_time
+  end
 end
 
 desc 'Reboot host'
 task :reboot_host do |t|
   EsxCloud::HostCleaner.reboot_host EsxCloud::TestHelpers.get_esx_ip, EsxCloud::TestHelpers.get_esx_username, EsxCloud::TestHelpers.get_esx_password
-  sleep(5 * 60)
+  max_wait_time = ENV["REBOOT_WAIT_TIME"].to_i || 15 * 60
+  EsxCloud::HostCleaner.wait_for_boot EsxCloud::TestHelpers.get_esx_ip, EsxCloud::TestHelpers.get_esx_username, EsxCloud::TestHelpers.get_esx_password, max_wait_time
 end
 
 desc 'Power off management vms'
