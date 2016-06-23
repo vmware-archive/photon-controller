@@ -47,6 +47,7 @@ public enum Operation {
   SET_METADATA("SetMetadata"),
   CREATE_VM_IMAGE("CreateVmImage"),
   CONNECT_VM_SWITCH("ConnectVmSwitch"),
+  DISCONNECT_VM_SWITCH("DisconnectVmSwitch"),
 
   CREATE_IMAGE("CreateImage"),
   UPLOAD_IMAGE("UploadImage"),
