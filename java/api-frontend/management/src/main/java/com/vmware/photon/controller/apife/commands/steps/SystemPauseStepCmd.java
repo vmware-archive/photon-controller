@@ -23,10 +23,13 @@ import com.vmware.photon.controller.cloudstore.SystemConfig;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentServiceFactory;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
+import com.vmware.photon.controller.common.xenon.XenonClient;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.EnumSet;
 
 /**
  * StepCommand to pause system.
@@ -55,9 +58,10 @@ public class SystemPauseStepCmd extends StepCommand {
       state.documentSelfLink = DeploymentServiceFactory.SELF_LINK + "/" + deploymentId;
 
       com.vmware.xenon.common.Operation operation =
-          taskCommand.getApiFeXenonRestClient().patch(state.documentSelfLink, state);
+          taskCommand.getApiFeXenonRestClient().patch(state.documentSelfLink, state,
+              EnumSet.of(XenonClient.HeaderOption.HEADER_OPTION_FULL_QUORUM));
 
-      SystemConfig.getInstance().runCheck();
+      SystemConfig.getInstance().markPauseStateLocally(false, true);
       logger.info("Paused APIFE service...");
     } catch (DocumentNotFoundException ex) {
       throw new InternalException(ex);
