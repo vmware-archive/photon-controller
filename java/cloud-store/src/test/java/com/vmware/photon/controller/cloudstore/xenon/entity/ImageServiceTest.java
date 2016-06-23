@@ -343,7 +343,30 @@ public class ImageServiceTest {
       ImageService.State createdState = op.getBody(ImageService.State.class);
       ImageService.State savedState = host.getServiceState(ImageService.State.class, createdState.documentSelfLink);
       assertThat(savedState.replicatedDatastore, equalTo(savedState.totalDatastore));
+    }
 
+    /**
+     * Test patch to adjust total datastore count where we end up with a count less than replicated datastore
+     *
+     * @throws Throwable
+     */
+    @Test
+    public void testTotalDatastoreCountReduced() throws Throwable {
+      testState.replicatedDatastore = 8;
+      testState.totalDatastore = 8;
+      host.startServiceSynchronously(service, testState);
+
+      ImageService.State requestBody = new ImageService.State();
+      requestBody.totalDatastore = 7;
+
+      Operation patch = Operation
+          .createPatch(UriUtils.buildUri(host, BasicServiceHost.SERVICE_URI, null))
+          .setBody(requestBody);
+
+      Operation op = host.sendRequestAndWait(patch);
+      ImageService.State createdState = op.getBody(ImageService.State.class);
+      ImageService.State savedState = host.getServiceState(ImageService.State.class, createdState.documentSelfLink);
+      assertThat(savedState.replicatedDatastore, equalTo(savedState.totalDatastore));
     }
 
     /**
@@ -419,6 +442,32 @@ public class ImageServiceTest {
 
       host.sendRequestAndWait(patch);
     }
+
+    /**
+     * Test patch to adjust total image datastore count where we end up with a count less than seeded
+     * image datastore.
+     *
+     * @throws Throwable
+     */
+    @Test
+    public void testTotalImageDatastoreCountReduced() throws Throwable {
+      testState.replicatedImageDatastore = 5;
+      testState.totalImageDatastore = 5;
+      host.startServiceSynchronously(service, testState);
+
+      ImageService.State requestBody = new ImageService.State();
+      requestBody.totalImageDatastore = 4;
+
+      Operation patch = Operation
+          .createPatch(UriUtils.buildUri(host, BasicServiceHost.SERVICE_URI, null))
+          .setBody(requestBody);
+
+      Operation op = host.sendRequestAndWait(patch);
+      ImageService.State createdState = op.getBody(ImageService.State.class);
+      ImageService.State savedState = host.getServiceState(ImageService.State.class, createdState.documentSelfLink);
+      assertThat(savedState.replicatedImageDatastore, equalTo(savedState.totalImageDatastore));
+    }
+
 
     /**
      * Test patch to adjust replicated image datastore count where we end up with a count less than '0'.
