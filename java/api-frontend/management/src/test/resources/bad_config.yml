@@ -1,9 +1,8 @@
-registrationAddress: 172.31.253.10
 background_workers: 0
 background_workers_queue_size: 3000
 
 zookeeper:
-  quorum: 172.31.253.10:2181
+  quorum: 127.0.0.1:2181
 
 pagination:
   default_page_size: 0

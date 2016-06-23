@@ -13,7 +13,6 @@
 
 package com.vmware.photon.controller.apife.config;
 
-import com.vmware.photon.controller.api.constraints.DomainOrIP;
 import com.vmware.photon.controller.common.metrics.GraphiteConfig;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperConfig;
 
@@ -28,6 +27,12 @@ import javax.validation.constraints.NotNull;
  * API Front End Server Configuration.
  */
 public class ApiFeStaticConfiguration extends Configuration implements ApiFeConfiguration {
+
+  @JsonProperty("apife_port")
+  private int apifePort = 9000;
+
+  @JsonProperty("xenon_port")
+  private int xenonPort = 19000;
 
   @Range(min = 1, max = 2048)
   @JsonProperty("background_workers")
@@ -55,9 +60,6 @@ public class ApiFeStaticConfiguration extends Configuration implements ApiFeConf
   @JsonProperty
   private ZookeeperConfig zookeeper = new ZookeeperConfig();
 
-  @DomainOrIP
-  private String registrationAddress;
-
   @Valid
   @JsonProperty("image")
   private ImageConfig image = new ImageConfig();
@@ -74,6 +76,16 @@ public class ApiFeStaticConfiguration extends Configuration implements ApiFeConf
   private boolean useVirtualNetwork = false;
 
   @Override
+  public int getApifePort() {
+    return this.apifePort;
+  }
+
+  @Override
+  public int getXenonPort() {
+    return this.xenonPort;
+  }
+
+  @Override
   public AuthConfig getAuth() {
     return this.auth;
   }
@@ -81,6 +93,11 @@ public class ApiFeStaticConfiguration extends Configuration implements ApiFeConf
   @Override
   public RootSchedulerConfig getRootScheduler() {
     return rootScheduler;
+  }
+
+  @Override
+  public ZookeeperConfig getZookeeper() {
+    return zookeeper;
   }
 
   @Override
@@ -94,20 +111,10 @@ public class ApiFeStaticConfiguration extends Configuration implements ApiFeConf
   }
 
   @Override
-  public ZookeeperConfig getZookeeper() {
-    return zookeeper;
-  }
-
-  @Override
   public GraphiteConfig getGraphite() {
     // Turn off graphite for now. Once we are ready to turn it back on, return
     // graphite instead of null.
     return null;
-  }
-
-  @Override
-  public String getRegistrationAddress() {
-    return registrationAddress;
   }
 
   @Override

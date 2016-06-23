@@ -9,9 +9,10 @@ server:
     port: 9000
     bindHost: "0.0.0.0"
 
-registrationAddress: "{{{REGISTRATION_ADDRESS}}}"
-
 use_virtual_network: {{{USE_VIRTUAL_NETWORK}}}
+
+zookeeper:
+  quorum: "{{{ZOOKEEPER_QUORUM}}}"
 
 # to add console logging add '- type: console' below
 logging:
@@ -28,9 +29,6 @@ logging:
       logFormat: "%-5p [%d{ISO8601}] [photon-controller] %X{request}%X{task} %c: %m\n%ex"
       facility: LOCAL0
 {{/ENABLE_SYSLOG}}
-
-zookeeper:
-  quorum: "{{{ZOOKEEPER_QUORUM}}}"
 
 {{#USE_ESX_STORE}}
 image:
