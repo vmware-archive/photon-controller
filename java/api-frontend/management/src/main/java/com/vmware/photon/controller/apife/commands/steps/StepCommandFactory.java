@@ -117,6 +117,8 @@ public class StepCommandFactory {
         return new VmCreateStepCmd(taskCommand, stepBackend, stepEntity, vmBackend, diskBackend, useVirtualNetwork);
       case CONNECT_VM_SWITCH:
         return new VmJoinVirtualNetworkStepCmd(taskCommand, stepBackend, stepEntity);
+      case DISCONNECT_VM_SWITCH:
+        return new VmUnjoinVirtualNetworkStepCmd(taskCommand, stepBackend, stepEntity);
       case DELETE_VM:
         return new VmDeleteStepCmd(taskCommand, stepBackend, stepEntity, vmBackend, diskBackend);
       case START_VM:

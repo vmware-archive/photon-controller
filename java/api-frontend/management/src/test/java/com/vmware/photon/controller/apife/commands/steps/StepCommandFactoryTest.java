@@ -104,6 +104,7 @@ public class StepCommandFactoryTest {
         // VM
         {Operation.CREATE_VM, VmCreateStepCmd.class},
         {Operation.CONNECT_VM_SWITCH, VmJoinVirtualNetworkStepCmd.class},
+        {Operation.DISCONNECT_VM_SWITCH, VmUnjoinVirtualNetworkStepCmd.class},
         {Operation.DELETE_VM, VmDeleteStepCmd.class},
         {Operation.START_VM, VmPowerOpStepCmd.class},
         {Operation.STOP_VM, VmPowerOpStepCmd.class},

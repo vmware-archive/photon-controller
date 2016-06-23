@@ -42,6 +42,7 @@ import com.vmware.photon.controller.api.common.exceptions.external.ExternalExcep
 import com.vmware.photon.controller.api.common.exceptions.external.NotImplementedException;
 import com.vmware.photon.controller.apife.TestModule;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
+import com.vmware.photon.controller.apife.commands.steps.ResourceReserveStepCmd;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.entities.FlavorEntity;
 import com.vmware.photon.controller.apife.entities.HostEntity;
@@ -739,10 +740,10 @@ public class VmXenonBackendTest {
   }
 
   /**
-   * Tests for API that generate VM operations related tasks only.
+   * Tests for preparing vm deletion on physical network.
    */
   @Guice(modules = {XenonBackendTestModule.class, TestModule.class})
-  public static class PrepareVmTest {
+  public static class DeleteVmOnPhysicalNetworkTest {
 
     @Inject
     private BasicServiceHost basicServiceHost;
@@ -821,6 +822,171 @@ public class VmXenonBackendTest {
       assertThat(task.getToBeLockedEntities().size(), is(1));
       assertThat(task.getToBeLockedEntities().get(0).getId(), is(vmId));
       assertThat(task.getToBeLockedEntities().get(0).getKind(), is(Vm.KIND));
+    }
+  }
+
+  /**
+   * Tests for preparing vm deletion on virtual network.
+   */
+  @Guice(modules = {XenonBackendWithVirtualNetworkTestModule.class, TestModule.class})
+  public static class DeleteVmOnVirtualNetworkTest {
+
+    @Inject
+    private BasicServiceHost basicServiceHost;
+
+    @Inject
+    private ApiFeXenonRestClient apiFeXenonRestClient;
+
+    @Inject
+    private VmXenonBackend vmXenonBackend;
+
+    @Inject
+    private TenantXenonBackend tenantXenonBackend;
+
+    @Inject
+    private ResourceTicketXenonBackend resourceTicketXenonBackend;
+
+    @Inject
+    private ProjectXenonBackend projectXenonBackend;
+
+    @Inject
+    private FlavorXenonBackend flavorXenonBackend;
+
+    @Inject
+    private EntityLockXenonBackend entityLockXenonBackend;
+
+    @Inject
+    private NetworkXenonBackend networkXenonBackend;
+
+    @Inject
+    private FlavorLoader flavorLoader;
+
+    private String vmId;
+
+    private VmEntity vm;
+
+    private String isoName = "iso-name";
+
+    @Mock
+    private InputStream inputStream;
+
+    @BeforeMethod
+    public void setUp() throws Throwable {
+      commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
+      commonDataSetup(
+          tenantXenonBackend,
+          resourceTicketXenonBackend,
+          projectXenonBackend,
+          flavorXenonBackend,
+          flavorLoader);
+
+      commonVmAndImageSetup(vmXenonBackend, networkXenonBackend);
+
+      vmId = createdVmTaskEntity.getEntityId();
+      entityLockXenonBackend.clearTaskLocks(createdVmTaskEntity);
+      vm = vmXenonBackend.findById(vmId);
+    }
+
+    @AfterMethod
+    public void tearDown() throws Throwable {
+      commonHostDocumentsCleanup();
+    }
+
+    @AfterClass
+    public static void afterClassCleanup() throws Throwable {
+      commonHostAndClientTeardown();
+    }
+
+    @Test
+    public void testPrepareVmDelete() throws Throwable {
+      TaskEntity task = vmXenonBackend.prepareVmDelete(vmId);
+
+      assertThat(task, is(notNullValue()));
+      assertThat(task.getState(), is(TaskEntity.State.QUEUED));
+      assertThat(task.getSteps().size(), is(2));
+      assertThat(task.getSteps().get(0).getOperation(), is(com.vmware.photon.controller.api.Operation.DELETE_VM));
+      assertThat(task.getSteps().get(1).getOperation(),
+          is(com.vmware.photon.controller.api.Operation.DISCONNECT_VM_SWITCH));
+      assertThat(task.getSteps().get(1).getTransientResource(ResourceReserveStepCmd.VM_ID), is(vmId));
+      assertThat(task.getSteps().get(1).getTransientResource(ResourceReserveStepCmd.VIRTUAL_NETWORK_ID),
+          is(vm.getNetworks().get(0)));
+
+      assertThat(task.getToBeLockedEntities().size(), is(1));
+      assertThat(task.getToBeLockedEntities().get(0).getId(), is(vmId));
+      assertThat(task.getToBeLockedEntities().get(0).getKind(), is(Vm.KIND));
+    }
+  }
+
+  /**
+   * Tests for API that generate VM operations related tasks only.
+   */
+  @Guice(modules = {XenonBackendTestModule.class, TestModule.class})
+  public static class PrepareVmTest {
+
+    @Inject
+    private BasicServiceHost basicServiceHost;
+
+    @Inject
+    private ApiFeXenonRestClient apiFeXenonRestClient;
+
+    @Inject
+    private VmXenonBackend vmXenonBackend;
+
+    @Inject
+    private TenantXenonBackend tenantXenonBackend;
+
+    @Inject
+    private ResourceTicketXenonBackend resourceTicketXenonBackend;
+
+    @Inject
+    private ProjectXenonBackend projectXenonBackend;
+
+    @Inject
+    private FlavorXenonBackend flavorXenonBackend;
+
+    @Inject
+    private EntityLockXenonBackend entityLockXenonBackend;
+
+    @Inject
+    private NetworkXenonBackend networkXenonBackend;
+
+    @Inject
+    private FlavorLoader flavorLoader;
+
+    private String vmId;
+
+    private VmEntity vm;
+
+    private String isoName = "iso-name";
+
+    @Mock
+    private InputStream inputStream;
+
+    @BeforeMethod
+    public void setUp() throws Throwable {
+      commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient);
+      commonDataSetup(
+          tenantXenonBackend,
+          resourceTicketXenonBackend,
+          projectXenonBackend,
+          flavorXenonBackend,
+          flavorLoader);
+
+      commonVmAndImageSetup(vmXenonBackend, networkXenonBackend);
+
+      vmId = createdVmTaskEntity.getEntityId();
+      entityLockXenonBackend.clearTaskLocks(createdVmTaskEntity);
+      vm = vmXenonBackend.findById(vmId);
+    }
+
+    @AfterMethod
+    public void tearDown() throws Throwable {
+      commonHostDocumentsCleanup();
+    }
+
+    @AfterClass
+    public static void afterClassCleanup() throws Throwable {
+      commonHostAndClientTeardown();
     }
 
     @Test
