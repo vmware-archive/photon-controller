@@ -318,7 +318,7 @@ public class EntityLockCleanerServiceTest {
     public void testSuccessOnNewEntityLocks(int totalEntityLocks, int danglingEntityLocks, int hostCount)
         throws Throwable {
       machine = TestEnvironment.create(hostCount);
-      seedTestEnvironment(machine, totalEntityLocks, danglingEntityLocks);
+      seedTestEnvironment(machine, totalEntityLocks, danglingEntityLocks, false);
 
       // No entity locks should be deleted when entityLockDeleteWatermarkTimeInMicros is NowMicrosUtc
       request.entityLockDeleteWatermarkTimeInMicros = Utils.getNowMicrosUtc();
@@ -342,7 +342,7 @@ public class EntityLockCleanerServiceTest {
     public void testSuccessOnOldEntityLocks(int totalEntityLocks, int danglingEntityLocks, int hostCount)
         throws Throwable {
       machine = TestEnvironment.create(hostCount);
-      seedTestEnvironment(machine, totalEntityLocks, danglingEntityLocks);
+      seedTestEnvironment(machine, totalEntityLocks, danglingEntityLocks, false);
 
       // All entity locks being created should be found when entityLockDeleteWatermarkTimeInMicros is 0
       request.entityLockDeleteWatermarkTimeInMicros = 0L;
@@ -357,6 +357,32 @@ public class EntityLockCleanerServiceTest {
           is(danglingEntityLocks));
 
       verifyLockStatusAfterCleanup(machine, totalEntityLocks, danglingEntityLocks);
+    }
+
+    /**
+     * Tests clean success scenarios.
+     *
+     * @param hostCount
+     * @throws Throwable
+     */
+    @Test(dataProvider = "Success")
+    public void testSuccessOnOldEntityLocksWithNoTaskAssociated(int totalEntityLocks, int danglingEntityLocks,
+                                                            int hostCount)
+        throws Throwable {
+      machine = TestEnvironment.create(hostCount);
+      seedTestEnvironment(machine, totalEntityLocks, danglingEntityLocks, true);
+
+      // All entity locks being created should be found when entityLockDeleteWatermarkTimeInMicros is 0
+      request.entityLockDeleteWatermarkTimeInMicros = 0L;
+      EntityLockCleanerService.State response = machine.callServiceAndWaitForState(
+          EntityLockCleanerFactoryService.SELF_LINK,
+          request,
+          EntityLockCleanerService.State.class,
+          (EntityLockCleanerService.State state) -> state.taskState.stage == TaskState.TaskStage.FINISHED);
+      assertThat(response.danglingEntityLocksWithInactiveTasks,
+          is(0));
+      assertThat(response.releasedEntityLocks,
+          is(0));
     }
 
     private void freeTestEnvironment(TestEnvironment machine) throws Throwable {
@@ -387,7 +413,8 @@ public class EntityLockCleanerServiceTest {
 
     private void seedTestEnvironment(TestEnvironment env,
                                      int totalEntityLocks,
-                                     int danglingEntityLocks) throws Throwable {
+                                     int danglingEntityLocks,
+                                     boolean releaseTask) throws Throwable {
       for (int i = 0; i < totalEntityLocks; i++) {
         // create task
         TaskService.State newTask = new TaskService.State();
@@ -414,6 +441,16 @@ public class EntityLockCleanerServiceTest {
         EntityLockService.State createdEntityLock = entityLockOperation.getBody(EntityLockService.State.class);
         if (i >= danglingEntityLocks) {
           testSelfLinks.add(createdEntityLock.documentSelfLink);
+        }
+
+        if (releaseTask) {
+          EntityLockService.State state = new EntityLockService.State();
+          state.ownerTaskId = ServiceUtils.getIDFromDocumentSelfLink(createdTask.documentSelfLink);
+          state.entityId = "entity-id" + i;
+          state.entityKind = Vm.KIND;
+          state.documentSelfLink = EntityLockServiceFactory.SELF_LINK + "/" + entityLock.entityId;
+          state.lockOperation = EntityLockService.State.LockOperation.RELEASE;
+          env.sendPutAndWait(EntityLockServiceFactory.SELF_LINK + "/" + state.entityId, state);
         }
       }
     }
