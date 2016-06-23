@@ -113,7 +113,6 @@ public class TaskUtils {
       }
     };
 
-    ServiceUtils.logInfo(service, "Querying this link " + serviceLink);
     Operation get = Operation
         .createGet(UriUtils.buildUri(service.getHost(), serviceLink))
         .setCompletion(completionHandler);
