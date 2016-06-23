@@ -267,6 +267,11 @@ public class EntityLockCleanerService extends StatefulService {
 
   private void releaseUnreleasedEntityLocks(final State current, List<EntityLockService.State> entityLockList) {
     Collection<Operation> getTaskOperations = getTasksAssociatedWithEntityLocks(entityLockList);
+    if (getTaskOperations.isEmpty()) {
+      ServiceUtils.logInfo(EntityLockCleanerService.this, "No task associated with entity lock on this page.");
+      sendStageProgressPatch(current);
+      return;
+    }
     OperationJoin join = OperationJoin.create(getTaskOperations);
     join.setCompletion(releaseEntityLocksAssociatedWithInactiveTasks(current));
     join.sendWith(this);

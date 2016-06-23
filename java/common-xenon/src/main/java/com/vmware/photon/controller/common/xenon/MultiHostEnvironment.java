@@ -271,6 +271,23 @@ public abstract class MultiHostEnvironment<H extends ServiceHost & XenonHostInfo
   }
 
   /**
+   * Issue a PUT with the given parameters.
+   *
+   * @param serviceUri
+   * @param parameters
+   * @param <T>
+   * @return
+   * @throws Throwable
+   */
+  public <T extends ServiceDocument> Operation sendPutAndWait(
+      String serviceUri, T parameters)
+      throws Throwable {
+    Operation op = Operation.createPut(UriUtils.buildUri(hosts[0], serviceUri, null))
+        .setBody(parameters);
+    return sendRequestAndWait(op, hosts[0]);
+  }
+
+  /**
    * Send a POST operation to a service and wait for the response.
    */
   public <T extends ServiceDocument> T callServiceSynchronously(
