@@ -40,6 +40,16 @@ public class ApiFeConfigurationTest {
   }
 
   @Test
+  public void testGetApifePort() throws Exception {
+    assertThat(config.getApifePort(), is (9000));
+  }
+
+  @Test
+  public void testGetXenonPort() throws Exception {
+    assertThat(config.getXenonPort(), is(19000));
+  }
+
+  @Test
   public void testGetBackgroundWorkers() throws Exception {
     assertThat(config.getBackgroundWorkers(), is(500));
   }
@@ -47,11 +57,6 @@ public class ApiFeConfigurationTest {
   @Test
   public void testGetBackgroundWorkersQueueSize() throws Exception {
     assertThat(config.getBackgroundWorkersQueueSize(), is(200));
-  }
-
-  @Test
-  public void testGetRegistrationAddress() {
-    assertThat(config.getRegistrationAddress(), is("172.31.253.10"));
   }
 
   @Test
@@ -89,5 +94,4 @@ public class ApiFeConfigurationTest {
     assertThat(config.getStatusConfig().getComponents(), is(expectedComponents));
     assertThat(config.useDcpBackend(), is(true));
   }
-
 }
