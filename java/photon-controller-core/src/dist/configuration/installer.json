@@ -16,5 +16,9 @@
     "MAX_VM_COUNT": 20,
     "VIB_DIRECTORY": "/var/esxcloud/packages",
     "ZOOKEEPER_QUORUM": "127.0.0.1:2181",
-    "SHARED_SECRET": "6337dfac-73ab-4a46-8b15-8382652b61ef"
+    "SHARED_SECRET": "6337dfac-73ab-4a46-8b15-8382652b61ef",
+    "ENABLE_AUTH": false,
+    "USE_ESX_STORE": true,
+    "ENABLE_INSTALLER_STATUS_FILTER": true,
+    "USE_VIRTUAL_NETWORK": false
 }
