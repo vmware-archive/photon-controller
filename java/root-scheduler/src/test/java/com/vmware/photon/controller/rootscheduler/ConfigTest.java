@@ -16,13 +16,11 @@ package com.vmware.photon.controller.rootscheduler;
 import com.vmware.photon.controller.common.config.BadConfigException;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.xenon.host.XenonConfig;
-import com.vmware.photon.controller.common.zookeeper.ZookeeperConfig;
 
 import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.arrayContaining;
 import static org.hamcrest.Matchers.is;
-import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.fail;
 
 /**
@@ -46,12 +44,6 @@ public class ConfigTest {
     SchedulerConfig root = config.getRoot();
     assertThat(root.getPlaceTimeoutMs(), is(10000L));
     assertThat(root.getMaxFanoutCount(), is(4));
-
-    ZookeeperConfig zkConfig = config.getZookeeper();
-    assertNotNull(zkConfig);
-    assertThat(zkConfig.getQuorum(), is("localhost:2181"));
-    ZookeeperConfig.RetryConfig retryConfig = zkConfig.getRetries();
-    assertThat(retryConfig.getMaxRetries(), is(3));
   }
 
   @Test

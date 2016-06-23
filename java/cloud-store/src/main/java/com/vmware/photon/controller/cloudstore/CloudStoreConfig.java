@@ -31,13 +31,13 @@ public class CloudStoreConfig {
   @JsonProperty("xenon")
   private XenonConfig xenonConfig;
 
-  @Valid
-  @NotNull
-  private ZookeeperConfig zookeeper = new ZookeeperConfig();
-
   public XenonConfig getXenonConfig() {
     return this.xenonConfig;
   }
+
+  @Valid
+  @NotNull
+  private ZookeeperConfig zookeeper = new ZookeeperConfig();
 
   public ZookeeperConfig getZookeeper() {
     return zookeeper;

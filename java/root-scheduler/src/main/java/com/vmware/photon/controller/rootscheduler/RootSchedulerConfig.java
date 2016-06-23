@@ -14,7 +14,6 @@
 package com.vmware.photon.controller.rootscheduler;
 
 import com.vmware.photon.controller.common.xenon.host.XenonConfig;
-import com.vmware.photon.controller.common.zookeeper.ZookeeperConfig;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -33,18 +32,10 @@ public class RootSchedulerConfig {
 
   @Valid
   @NotNull
-  private ZookeeperConfig zookeeper = new ZookeeperConfig();
-
-  @Valid
-  @NotNull
   private SchedulerConfig root = new SchedulerConfig();
 
   public XenonConfig getXenonConfig() {
     return this.xenonConfig;
-  }
-
-  public ZookeeperConfig getZookeeper() {
-    return zookeeper;
   }
 
   public SchedulerConfig getRoot() {

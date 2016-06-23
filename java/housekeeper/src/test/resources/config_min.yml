@@ -5,6 +5,3 @@ xenon:
   storagePath: "/tmp/xenon/16000"
   peerNodes:
   - http://127.0.0.1:16000
-
-zookeeper:
-  quorum: localhost:2181

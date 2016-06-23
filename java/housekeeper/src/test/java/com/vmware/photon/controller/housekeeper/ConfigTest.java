@@ -15,14 +15,12 @@ package com.vmware.photon.controller.housekeeper;
 
 import com.vmware.photon.controller.common.config.BadConfigException;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
-import com.vmware.photon.controller.common.zookeeper.ZookeeperConfig;
 
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.arrayContaining;
-import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 
 /**
@@ -51,11 +49,6 @@ public class ConfigTest {
       assertThat(xenonConfig.getPort(), is(16000));
       assertThat(xenonConfig.getRegistrationAddress(), is("127.0.0.1"));
       assertThat(xenonConfig.getStoragePath(), is("/tmp/xenon/housekeeper/"));
-    }
-
-    @Test
-    public void testZookeeperConfig() {
-      assertThat(housekeeperConfig.getZookeeper(), instanceOf(ZookeeperConfig.class));
     }
   }
 
