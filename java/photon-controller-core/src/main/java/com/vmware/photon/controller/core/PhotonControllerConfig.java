@@ -13,11 +13,11 @@
 
 package com.vmware.photon.controller.core;
 
-import com.vmware.photon.controller.cloudstore.CloudStoreConfig;
 import com.vmware.photon.controller.common.logging.LoggingConfiguration;
+import com.vmware.photon.controller.common.xenon.host.XenonConfig;
+import com.vmware.photon.controller.common.zookeeper.ZookeeperConfig;
 import com.vmware.photon.controller.deployer.DeployerConfig;
-import com.vmware.photon.controller.housekeeper.HousekeeperConfig;
-import com.vmware.photon.controller.rootscheduler.RootSchedulerConfig;
+import com.vmware.photon.controller.rootscheduler.SchedulerConfig;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -32,18 +32,16 @@ public class PhotonControllerConfig {
 
   @Valid
   @NotNull
-  @JsonProperty("cloudstore")
-  private CloudStoreConfig cloudStoreConfig;
+  @JsonProperty("xenon")
+  private XenonConfig xenonConfig;
 
   @Valid
   @NotNull
-  @JsonProperty("scheduler")
-  private RootSchedulerConfig schedulerConfig;
+  private ZookeeperConfig zookeeper;
 
   @Valid
   @NotNull
-  @JsonProperty("housekeeper")
-  private HousekeeperConfig housekeeperConfig;
+  private SchedulerConfig root = new SchedulerConfig();
 
   @Valid
   @NotNull
@@ -54,20 +52,20 @@ public class PhotonControllerConfig {
   @NotNull
   private LoggingConfiguration logging = new LoggingConfiguration();
 
-  public CloudStoreConfig getCloudStoreConfig() {
-    return cloudStoreConfig;
+  public XenonConfig getXenonConfig() {
+    return this.xenonConfig;
+  }
+
+  public ZookeeperConfig getZookeeper() {
+    return zookeeper;
+  }
+
+  public SchedulerConfig getRoot() {
+    return root;
   }
 
   public DeployerConfig getDeployerConfig() {
     return this.deployerConfig;
-  }
-
-  public HousekeeperConfig getHousekeeperConfig() {
-    return housekeeperConfig;
-  }
-
-  public RootSchedulerConfig getSchedulerConfig() {
-    return schedulerConfig;
   }
 
   public LoggingConfiguration getLogging() {

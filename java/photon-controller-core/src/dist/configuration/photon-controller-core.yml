@@ -1,53 +1,18 @@
-cloudstore:
-  xenon:
-    bindAddress: "0.0.0.0"
-    port: 19000
-    registrationAddress: "{{{REGISTRATION_ADDRESS}}}"
-    storagePath: "{{{CLOUD-STORE_XENON_STORAGE_PATH}}}"
-    peerNodes:
+xenon:
+  bindAddress: "0.0.0.0"
+  port: 19000
+  registrationAddress: "{{{REGISTRATION_ADDRESS}}}"
+  storagePath: "{{{CLOUD-STORE_XENON_STORAGE_PATH}}}"
+  peerNodes:
 {{#CLOUDSTORE_PEER_NODES}}
-    - http://{{peerAddress}}:{{peerPort}}
+  - http://{{peerAddress}}:{{peerPort}}
 {{/CLOUDSTORE_PEER_NODES}}
 {{^CLOUDSTORE_PEER_NODES}}
-    - http://{{{REGISTRATION_ADDRESS}}}:19000
+  - http://{{{REGISTRATION_ADDRESS}}}:19000
 {{/CLOUDSTORE_PEER_NODES}}
 
-  zookeeper:
-    quorum: "{{{ZOOKEEPER_QUORUM}}}"
-
-scheduler:
-  xenon:
-    bindAddress: "0.0.0.0"
-    port: 13010
-    registrationAddress: "{{{REGISTRATION_ADDRESS}}}"
-    storagePath: "{{{ROOT-SCHEDULER_XENON_STORAGE_PATH}}}"
-    peerNodes:
-{{#SCHEDULER_PEER_NODES}}
-    - http://{{peerAddress}}:{{peerPort}}
-{{/SCHEDULER_PEER_NODES}}
-{{^SCHEDULER_PEER_NODES}}
-    - http://{{{REGISTRATION_ADDRESS}}}:13010
-{{/SCHEDULER_PEER_NODES}}
-
-  zookeeper:
-    quorum: "{{{ZOOKEEPER_QUORUM}}}"
-
-housekeeper:
-  xenon:
-    bindAddress: "0.0.0.0"
-    port: 16000
-    registrationAddress: "{{{REGISTRATION_ADDRESS}}}"
-    storagePath: "{{{HOUSEKEEPER_XENON_STORAGE_PATH}}}"
-    peerNodes:
-{{#HOUSEKEEPER_PEER_NODES}}
-    - http://{{peerAddress}}:{{peerPort}}
-{{/HOUSEKEEPER_PEER_NODES}}
-{{^HOUSEKEEPER_PEER_NODES}}
-    - http://{{{REGISTRATION_ADDRESS}}}:16000
-{{/HOUSEKEEPER_PEER_NODES}}
-
-  zookeeper:
-    quorum: "{{{ZOOKEEPER_QUORUM}}}"
+zookeeper:
+  quorum: "{{{ZOOKEEPER_QUORUM}}}"
 
 deployer:
   deployer:
@@ -103,7 +68,8 @@ logging:
   file:
     enabled: true
     currentLogFilename: {{{LOG_DIRECTORY}}}/photon-controller.log
-    archivedLogFilenamePattern: {{{LOG_DIRECTORY}}}/photon-controller-%d.log.gz
+    archiv
+    edLogFilenamePattern: {{{LOG_DIRECTORY}}}/photon-controller-%d.log.gz
     logFormat: "%-5p [%d{ISO8601}] %c: %m\n%ex"
   syslog:
     enabled: {{{ENABLE_SYSLOG}}}
