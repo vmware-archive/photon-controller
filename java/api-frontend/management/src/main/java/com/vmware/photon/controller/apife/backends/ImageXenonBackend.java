@@ -281,18 +281,21 @@ public class ImageXenonBackend implements ImageBackend {
       try {
         com.vmware.xenon.common.Operation result = xenonClient.get(DatastoreServiceFactory.SELF_LINK);
         ServiceDocumentQueryResult queryResult = result.getBody(ServiceDocumentQueryResult.class);
-        logger.info("Found datastores: " + Utils.toJson(false, false, queryResult));
+        logger.info("While looking for image datastore named '" + imageDatastoreName + "', found datastores: "
+            + Utils.toJson(false, false, queryResult));
       } catch (DocumentNotFoundException | XenonRuntimeException e) {
         // Ignore failures -- this is just for logging purposes
       }
 
-      logger.error("Expected exactly 1 image datastore (name:{}, id:{}) but found {} [{}]",
-          imageDatastoreName,
+      logger.error(
+          "While attempting to make image to image datastore mapping for image {}, "
+              + "expected exactly 1 image datastore named '{}' but found {} [{}]",
           imageId,
+          imageDatastoreName,
           datastores.size(),
           Utils.toJson(false, false, datastores));
       throw new ExternalException(
-          "Expected exactly 1 image datastore named " + imageDatastoreName + ", found [" + datastores.size() + "]");
+          "Expected exactly 1 image datastore named '" + imageDatastoreName + "', found [" + datastores.size() + "]");
     }
 
     try {
