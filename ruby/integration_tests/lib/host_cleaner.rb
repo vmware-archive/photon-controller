@@ -60,6 +60,21 @@ module EsxCloud
         end
       end
 
+      def wait_for_boot(server, user_name, password, max_wait_time_seconds)
+        wait_start = Time.now
+        puts "waiting for host #{server} to be reachable for #{max_wait_time_seconds} seconds"
+        while Time.now - wait_start < max_wait_time_seconds
+          begin
+            # test if we can ssh into the machine
+            Net::SSH.start(server, user_name, {password: password, user_known_hosts_file: "/dev/null", timeout: 5}) do |ssh|
+            end
+            return
+          rescue
+          end
+        end
+        fail "host #{server} did not become available after #{max_wait_time_seconds} seconds"
+      end
+
       def stop_agent(server, user_name, password)
         puts "stopping agent on host #{server}"
         Net::SSH.start(server, user_name, {password: password, user_known_hosts_file: "/dev/null"}) do |ssh|
