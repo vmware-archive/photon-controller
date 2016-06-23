@@ -77,15 +77,14 @@ import com.vmware.photon.controller.apife.config.ImageConfig;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.config.StatusConfig;
 import com.vmware.photon.controller.common.CloudStoreServerSet;
-import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.metrics.DefaultMetricRegistry;
 import com.vmware.photon.controller.common.metrics.RpcMetricListener;
 import com.vmware.photon.controller.common.thrift.ServerSet;
+import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.common.thrift.ThriftModule;
 import com.vmware.photon.controller.common.thrift.ThriftServiceModule;
-import com.vmware.photon.controller.common.zookeeper.ZookeeperServerSetFactory;
 import com.vmware.photon.controller.host.gen.Host;
 
 import com.codahale.metrics.Gauge;
@@ -102,6 +101,7 @@ import com.google.inject.servlet.RequestScoped;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.InetSocketAddress;
 import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
@@ -183,38 +183,37 @@ public class ApiFeModule extends AbstractModule {
   @Provides
   @Singleton
   @ApiFeServerSet
-  public ServerSet getApiFeServerSet(ZookeeperServerSetFactory serverSetFactory) {
-    return serverSetFactory.createServiceServerSet(Constants.APIFE_SERVICE_NAME, true);
+  public ServerSet getApiFeServerSet() {
+    return new StaticServerSet(new InetSocketAddress("127.0.0.1", configuration.getApifePort()));
   }
 
   @Provides
   @Singleton
   @RootSchedulerServerSet
-  public ServerSet getRootSchedulerServerSet(ZookeeperServerSetFactory serverSetFactory) {
-    return serverSetFactory.createServiceServerSet(Constants.SCHEDULER_SERVICE_NAME, true);
+  public ServerSet getRootSchedulerServerSet() {
+    return new StaticServerSet(new InetSocketAddress("127.0.0.1", configuration.getXenonPort()));
   }
 
   @Provides
   @Singleton
   @HousekeeperServerSet
-  public ServerSet getHousekeeperServerSet(ZookeeperServerSetFactory serverSetFactory) {
-    return serverSetFactory.createServiceServerSet(Constants.HOUSEKEEPER_SERVICE_NAME, true);
+  public ServerSet getHousekeeperServerSet() {
+    return new StaticServerSet(new InetSocketAddress("127.0.0.1", configuration.getXenonPort()));
   }
 
   @Provides
   @Singleton
   @CloudStoreServerSet
-  public ServerSet getCloudStoreServerSet(ZookeeperServerSetFactory serverSetFactory) {
-    return serverSetFactory.createServiceServerSet(Constants.CLOUDSTORE_SERVICE_NAME, true);
+  public ServerSet getCloudStoreServerSet() {
+    return new StaticServerSet(new InetSocketAddress("127.0.0.1", configuration.getXenonPort()));
   }
 
   @Provides
   @Singleton
   @DeployerServerSet
-  public ServerSet getDeployerServerSet(ZookeeperServerSetFactory serverSetFactory) {
-    return serverSetFactory.createServiceServerSet(Constants.DEPLOYER_SERVICE_NAME, true);
+  public ServerSet getDeployerServerSet() {
+    return new StaticServerSet(new InetSocketAddress("127.0.0.1", configuration.getXenonPort()));
   }
-
 
   @Override
   protected void configure() {

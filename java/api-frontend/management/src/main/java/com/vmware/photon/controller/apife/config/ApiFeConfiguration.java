@@ -14,12 +14,15 @@
 package com.vmware.photon.controller.apife.config;
 
 import com.vmware.photon.controller.common.metrics.GraphiteConfig;
-import com.vmware.photon.controller.common.zookeeper.ZookeeperConfig;
 
 /**
  * API Front End Server Configuration interface.
  */
 public interface ApiFeConfiguration {
+
+  public int getApifePort();
+
+  public int getXenonPort();
 
   public AuthConfig getAuth();
 
@@ -29,11 +32,7 @@ public interface ApiFeConfiguration {
 
   public int getBackgroundWorkersQueueSize();
 
-  public ZookeeperConfig getZookeeper();
-
   public GraphiteConfig getGraphite();
-
-  public String getRegistrationAddress();
 
   public ImageConfig getImage();
 

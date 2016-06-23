@@ -1,8 +1,5 @@
-registrationAddress: 172.31.253.10
 background_workers: 500
 background_workers_queue_size: 200
 
-zookeeper:
-  quorum: 172.31.253.10:2181
 image:
   replicationTimeout: 600 seconds

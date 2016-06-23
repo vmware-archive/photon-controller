@@ -88,12 +88,7 @@ import com.vmware.photon.controller.apife.resources.vm.VmMksTicketResource;
 import com.vmware.photon.controller.apife.resources.vm.VmNetworksResource;
 import com.vmware.photon.controller.apife.resources.vm.VmResource;
 import com.vmware.photon.controller.apife.resources.vm.VmTagsResource;
-import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.metrics.GraphiteConfig;
-import com.vmware.photon.controller.common.zookeeper.ServiceNode;
-import com.vmware.photon.controller.common.zookeeper.ServiceNodeFactory;
-import com.vmware.photon.controller.common.zookeeper.ServiceNodeUtils;
-import com.vmware.photon.controller.common.zookeeper.ZookeeperModule;
 import com.vmware.photon.controller.swagger.resources.SwaggerJsonListing;
 
 import com.google.inject.Injector;
@@ -119,7 +114,6 @@ import javax.validation.Validation;
 import javax.validation.ValidatorFactory;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashSet;
@@ -138,7 +132,6 @@ public class ApiFeService extends Application<ApiFeStaticConfiguration> {
   private static ApiFeConfiguration apiFeConfiguration;
   private Injector injector;
   private ApiFeModule apiModule;
-  private ZookeeperModule zookeeperModule;
   private HibernateBundle<ApiFeStaticConfiguration> hibernateBundle;
 
   public static void main(String[] args) throws Exception {
@@ -164,8 +157,6 @@ public class ApiFeService extends Application<ApiFeStaticConfiguration> {
     bootstrap.addBundle(new AssetsBundle("/assets", "/api/", "index.html"));
 
     apiModule = new ApiFeModule();
-    zookeeperModule = new ZookeeperModule(apiFeConfiguration.getZookeeper());
-
     apiModule.setConfiguration(apiFeConfiguration);
 
     GuiceBundle<ApiFeStaticConfiguration> guiceBundle = getGuiceBundle();
@@ -220,17 +211,6 @@ public class ApiFeService extends Application<ApiFeStaticConfiguration> {
 
     HttpConnectorFactory httpConnectorFactory = (HttpConnectorFactory) ((SimpleServerFactory) configuration
         .getServerFactory()).getConnector();
-    registerWithZookeeper(
-        injector.getInstance(ServiceNodeFactory.class),
-        configuration.getRegistrationAddress(),
-        httpConnectorFactory.getPort());
-  }
-
-  private void registerWithZookeeper(ServiceNodeFactory serviceNodeFactory, String registrationIpAddress,
-                                     int port) {
-    InetSocketAddress registrationSocketAddress = new InetSocketAddress(registrationIpAddress, port);
-    ServiceNode serviceNode = serviceNodeFactory.createSimple(Constants.APIFE_SERVICE_NAME, registrationSocketAddress);
-    ServiceNodeUtils.joinService(serviceNode, retryIntervalMsec);
   }
 
   private void registerResourcesWithSwagger(ApiFeConfiguration configuration, Environment environment) {
@@ -311,7 +291,6 @@ public class ApiFeService extends Application<ApiFeStaticConfiguration> {
     return GuiceBundle.<ApiFeStaticConfiguration>newBuilder()
         .setConfigClass(ApiFeStaticConfiguration.class)
         .addModule(apiModule)
-        .addModule(zookeeperModule)
         .enableAutoConfig(packages)
         .build();
   }
