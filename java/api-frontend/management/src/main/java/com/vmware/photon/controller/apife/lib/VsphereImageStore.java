@@ -222,6 +222,9 @@ public class VsphereImageStore implements ImageStore {
     if (null != this.host && (null == this.hostIp || this.hostIp.equals(this.host.getAddress()))) {
       // if we already have a host and it matches the requested IP we just exit
       // we also exit if we have a host and there is no requested IP
+      logger.info(
+          "Using host = [{}] with datastores = [{}] to upload image.",
+          this.host.getAddress(), this.host.getDatastores());
       return;
     }
 
@@ -240,7 +243,9 @@ public class VsphereImageStore implements ImageStore {
 
     logger.info("Host candidates for uploading image: {}.", hostList.getItems());
     this.host = hostList.getItems().get(0);
-    logger.info("Selecting {} to upload image.", this.host);
+    logger.info(
+        "Using host = [{}] with datastores = [{}] to upload image.",
+        this.host.getAddress(), this.host.getDatastores());
   }
 
   /**
