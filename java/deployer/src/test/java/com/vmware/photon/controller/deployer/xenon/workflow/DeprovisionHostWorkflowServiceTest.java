@@ -28,7 +28,6 @@ import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeExceptio
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.deployengine.ApiClientFactory;
-import com.vmware.photon.controller.deployer.deployengine.ZookeeperClient;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClientFactory;
 import com.vmware.photon.controller.deployer.helpers.ReflectionUtils;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
@@ -44,12 +43,9 @@ import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
 
-import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import org.apache.commons.io.FileUtils;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
@@ -61,10 +57,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyObject;
 import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 
@@ -73,7 +66,6 @@ import javax.annotation.Nullable;
 import java.io.File;
 import java.util.Collections;
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.concurrent.Executors;
 
 /**
@@ -534,7 +526,6 @@ public class DeprovisionHostWorkflowServiceTest {
       assertThat(finalState.taskState.subStage, nullValue());
       DeploymentService.State deploymentState = cloudStoreMachine
           .getServiceState(deploymentServiceState.documentSelfLink, DeploymentService.State.class);
-      assertThat(deploymentState.zookeeperIdToIpMap.size(), is(0));
     }
 
     @Test(dataProvider = "HostCounts")
@@ -605,23 +596,6 @@ public class DeprovisionHostWorkflowServiceTest {
       doReturn(nsxClientMock).when(nsxClientFactory).create(anyString(), anyString(), anyString());
 
       MockHelper.mockHostClient(agentControlClientFactory, hostClientFactory, true);
-
-      ZookeeperClient zkBuilder = mock(ZookeeperClient.class);
-      doReturn(zkBuilder).when(zkFactory).create();
-      doAnswer(new Answer<Object>() {
-                 public Object answer(InvocationOnMock invocation) {
-                   ((FutureCallback) invocation.getArguments()[2]).onSuccess(null);
-                   return null;
-                 }
-               }
-      ).when(zkBuilder).removeServer(anyString(), anyInt(), anyObject());
-
-      // Update deploymentService with the map
-      HashMap<Integer, String> zkMap = new HashMap<>();
-      zkMap.put(1, vmService.ipAddress);
-      DeploymentService.State deploymentState = new DeploymentService.State();
-      deploymentState.zookeeperIdToIpMap = zkMap;
-      cloudStoreMachine.sendPatchAndWait(deploymentServiceState.documentSelfLink, deploymentState);
     }
   }
 }
