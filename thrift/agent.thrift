@@ -218,6 +218,4 @@ service AgentControl {
 
   // Get the status of the agent.
   AgentStatusResponse get_agent_status()
-
-  VersionResponse get_version(1: VersionRequest request)
 }
