@@ -109,6 +109,7 @@ public class ImageService extends StatefulService {
 
       ValidationUtils.validatePatch(currentState, patchState);
       PatchUtils.patchState(currentState, patchState);
+      adjustCount(currentState);
       validateState(currentState);
 
       patchOperation.complete();
@@ -164,36 +165,21 @@ public class ImageService extends StatefulService {
     try {
       State currentState = getState(patchOperation);
       DatastoreCountRequest patchState = patchOperation.getBody(DatastoreCountRequest.class);
-      Integer replicatedImageDatastore = currentState.replicatedImageDatastore;
-      Integer replicatedDatastore = currentState.replicatedDatastore;
 
       switch (patchState.kind) {
         case ADJUST_SEEDING_AND_REPLICATION_COUNT:
-          replicatedImageDatastore = currentState.replicatedImageDatastore + patchState.amount;
-          replicatedDatastore = currentState.replicatedDatastore + patchState.amount;
+          currentState.replicatedImageDatastore += patchState.amount;
+          currentState.replicatedDatastore += patchState.amount;
           break;
         case ADJUST_REPLICATION_COUNT:
-          replicatedDatastore = currentState.replicatedDatastore + patchState.amount;
+          currentState.replicatedDatastore += patchState.amount;
           break;
         case ADJUST_SEEDING_COUNT:
-          replicatedImageDatastore = currentState.replicatedImageDatastore + patchState.amount;
+          currentState.replicatedImageDatastore += patchState.amount;
           break;
       }
 
-      //Cap the replication count at the totalDatastore count
-      if (replicatedDatastore > currentState.totalDatastore) {
-        currentState.replicatedDatastore = currentState.totalDatastore;
-      } else {
-        currentState.replicatedDatastore = replicatedDatastore;
-      }
-
-      //Cap the seeding count at the totalImageDatastore count
-      if (replicatedImageDatastore > currentState.totalImageDatastore) {
-        currentState.replicatedImageDatastore = currentState.totalImageDatastore;
-      } else {
-        currentState.replicatedImageDatastore = replicatedImageDatastore;
-      }
-
+      adjustCount(currentState);
       validateState(currentState);
 
       setState(patchOperation, currentState);
@@ -204,6 +190,18 @@ public class ImageService extends StatefulService {
     } catch (Throwable t) {
       ServiceUtils.logSevere(this, t);
       patchOperation.fail(t);
+    }
+  }
+
+  private void adjustCount(State currentState) {
+    //Cap the replication count at the totalDatastore count
+    if (currentState.replicatedDatastore > currentState.totalDatastore) {
+      currentState.replicatedDatastore = currentState.totalDatastore;
+    }
+
+    //Cap the seeding count at the totalImageDatastore count
+    if (currentState.replicatedImageDatastore > currentState.totalImageDatastore) {
+      currentState.replicatedImageDatastore = currentState.totalImageDatastore;
     }
   }
 
