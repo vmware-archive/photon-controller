@@ -14,7 +14,6 @@
 package com.vmware.photon.controller.core;
 
 import com.vmware.photon.controller.apife.ApiFeService;
-import com.vmware.photon.controller.cloudstore.CloudStoreConfig;
 import com.vmware.photon.controller.cloudstore.SystemConfig;
 import com.vmware.photon.controller.cloudstore.xenon.CloudStoreServiceGroup;
 import com.vmware.photon.controller.clustermanager.ClusterManagerFactory;
@@ -50,7 +49,7 @@ import com.vmware.photon.controller.deployer.xenon.ContainersConfig;
 import com.vmware.photon.controller.deployer.xenon.DeployerServiceGroup;
 import com.vmware.photon.controller.housekeeper.xenon.HousekeeperServiceGroup;
 import com.vmware.photon.controller.nsxclient.NsxClientFactory;
-import com.vmware.photon.controller.rootscheduler.RootSchedulerConfig;
+import com.vmware.photon.controller.rootscheduler.SchedulerConfig;
 import com.vmware.photon.controller.rootscheduler.service.CloudStoreConstraintChecker;
 import com.vmware.photon.controller.rootscheduler.service.ConstraintChecker;
 import com.vmware.photon.controller.rootscheduler.xenon.SchedulerServiceGroup;
@@ -102,14 +101,13 @@ public class Main {
     Namespace namespace = parser.parseArgsOrFail(args);
 
     PhotonControllerConfig photonControllerConfig = getPhotonControllerConfig(namespace);
-    CloudStoreConfig cloudStoreConfig = photonControllerConfig.getCloudStoreConfig();
     DeployerConfig deployerConfig = photonControllerConfig.getDeployerConfig();
 
     new LoggingFactory(photonControllerConfig.getLogging(), "photon-controller-core").configure();
 
     // the zk config info is currently taken from the cloud store config but this is temporary as
     // zookeeper usage is going away so this will all be removed.
-    final ZookeeperModule zkModule = new ZookeeperModule(cloudStoreConfig.getZookeeper());
+    final ZookeeperModule zkModule = new ZookeeperModule(photonControllerConfig.getZookeeper());
     ThriftModule thriftModule = new ThriftModule();
 
     ServiceHost xenonHost = startXenonHost(photonControllerConfig, zkModule, thriftModule, deployerConfig);
@@ -166,7 +164,7 @@ public class Main {
 
     logger.info("Creating PhotonController Xenon Host");
     final PhotonControllerXenonHost photonControllerXenonHost =
-            new PhotonControllerXenonHost(photonControllerConfig.getCloudStoreConfig().getXenonConfig(),
+            new PhotonControllerXenonHost(photonControllerConfig.getXenonConfig(),
                 hostClientFactory, agentControlClientFactory, nsxClientFactory, cloudStoreHelper);
     logger.info("Created PhotonController Xenon Host");
 
@@ -180,7 +178,7 @@ public class Main {
 
     logger.info("Creating Scheduler Xenon Service Group");
     SchedulerServiceGroup schedulerServiceGroup =
-            createSchedulerServiceGroup(photonControllerConfig.getSchedulerConfig(), checker);
+            createSchedulerServiceGroup(photonControllerConfig.getRoot(), checker);
     logger.info("Created Scheduler Xenon Service Group");
 
     logger.info("Registering Scheduler Xenon Service Group");
@@ -212,8 +210,8 @@ public class Main {
     // the services don't need to change their lookup / usage behavior but now we use the same
     // address / port for all these(for now the cloudstore address / port)
     String cloudStoreXenonAddress =
-            photonControllerConfig.getCloudStoreConfig().getXenonConfig().getRegistrationAddress();
-    Integer cloudStoreXenonPort = photonControllerConfig.getCloudStoreConfig().getXenonConfig().getPort();
+            photonControllerConfig.getXenonConfig().getRegistrationAddress();
+    Integer cloudStoreXenonPort = photonControllerConfig.getXenonConfig().getPort();
     logger.info("Registering CloudStore Services Endpoint with Zookeeper at {}:{}",
             cloudStoreXenonAddress, cloudStoreXenonPort);
     registerServiceWithZookeeper(Constants.CLOUDSTORE_SERVICE_NAME, zkModule, zkClient,
@@ -250,9 +248,9 @@ public class Main {
     return new CloudStoreServiceGroup();
   }
 
-  private static SchedulerServiceGroup createSchedulerServiceGroup(RootSchedulerConfig rootSchedulerConfig,
+  private static SchedulerServiceGroup createSchedulerServiceGroup(SchedulerConfig root,
           ConstraintChecker constraintChecker) throws Throwable {
-    return  new SchedulerServiceGroup(rootSchedulerConfig.getRoot(), constraintChecker);
+    return  new SchedulerServiceGroup(root, constraintChecker);
   }
 
   private static HousekeeperServiceGroup createHousekeeperServiceGroup() throws Throwable {
