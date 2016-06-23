@@ -765,6 +765,7 @@ public class DeploymentWorkflowService extends StatefulService {
 
     sendRequest(HostUtils.getCloudStoreHelper(this)
         .createPatch(currentState.deploymentServiceLink)
+        .addRequestHeader(Operation.REPLICATION_QUORUM_HEADER, Operation.REPLICATION_QUORUM_HEADER_VALUE_ALL)
         .setBody(deployment)
         .setCompletion(
             (completedOp, failure) -> {
