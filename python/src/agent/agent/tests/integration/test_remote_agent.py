@@ -168,11 +168,9 @@ class TestRemoteAgent(unittest.TestCase, AgentCommonTests):
         # will happen the first time provision_hosts is called.
         self.assertEqual(res.result, ProvisionResultCode.OK)
 
-        # Wait the agent to shutdown
-        time.sleep(1)
-
+        # Wait for up to 60 seconds for the agent to reboot.
         count = 0
-        while count < 15:
+        while count < 60:
             try:
                 res = self.control_client.get_agent_status()
                 if res.status == AgentStatusCode.OK:
@@ -180,7 +178,6 @@ class TestRemoteAgent(unittest.TestCase, AgentCommonTests):
                     return
             except:
                 logger.exception("Can't connect to agent")
-            # Sleep 15 s for the agent to reboot.
             count += 1
             time.sleep(1)
             # Reconnect the clients
