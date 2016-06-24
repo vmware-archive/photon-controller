@@ -320,6 +320,86 @@ public class LogicalSwitchApiTest {
   }
 
   /**
+   * Tests for checking logical switch existence.
+   */
+  public static class NsxSwitchCheckExistenceTest {
+    private static final int CALLBACK_ARG_INDEX = 1;
+
+    private LogicalSwitchApi logicalSwitchApi;
+    private CountDownLatch latch;
+
+    @BeforeMethod
+    public void setup() {
+      logicalSwitchApi = spy(new LogicalSwitchApi(mock(RestClient.class)));
+      latch = new CountDownLatch(1);
+    }
+
+    @Test
+    public void testCheckLogicalSwitchExistence() throws Exception {
+      Boolean existing = true;
+
+      doAnswer(invocation -> {
+        if (invocation.getArguments()[CALLBACK_ARG_INDEX] != null) {
+          ((FutureCallback<Boolean>) invocation.getArguments()[CALLBACK_ARG_INDEX])
+              .onSuccess(existing);
+        }
+        return null;
+      }).when(logicalSwitchApi)
+          .checkExistenceAsync(anyString(), any(FutureCallback.class));
+
+      logicalSwitchApi.checkLogicalSwitchExistence(UUID.randomUUID().toString(),
+          new FutureCallback<Boolean>() {
+            @Override
+            public void onSuccess(Boolean result) {
+              assertThat(result, is(existing));
+              latch.countDown();
+            }
+
+            @Override
+            public void onFailure(Throwable t) {
+              fail("Should not have failed");
+              latch.countDown();
+            }
+          }
+      );
+
+      latch.await();
+    }
+
+    @Test
+    public void testFailedToCheckLogicalSwitchExistence() throws Exception {
+      final String errorMsg = "Not found";
+
+      doAnswer(invocation -> {
+        if (invocation.getArguments()[CALLBACK_ARG_INDEX] != null) {
+          ((FutureCallback<Boolean>) invocation.getArguments()[CALLBACK_ARG_INDEX])
+              .onFailure(new Exception(errorMsg));
+        }
+        return null;
+      }).when(logicalSwitchApi)
+          .checkExistenceAsync(anyString(), any(FutureCallback.class));
+
+      logicalSwitchApi.checkLogicalSwitchExistence(UUID.randomUUID().toString(),
+          new FutureCallback<Boolean>() {
+            @Override
+            public void onSuccess(Boolean result) {
+              fail("Should not have succeeded");
+              latch.countDown();
+            }
+
+            @Override
+            public void onFailure(Throwable t) {
+              assertThat(t.getMessage(), is(errorMsg));
+              latch.countDown();
+            }
+          }
+      );
+
+      latch.await();
+    }
+  }
+
+  /**
    * Tests for creating logical ports.
    */
   public static class LogicalPortTest {
