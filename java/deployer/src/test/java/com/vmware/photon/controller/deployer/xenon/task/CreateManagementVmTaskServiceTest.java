@@ -612,7 +612,8 @@ public class CreateManagementVmTaskServiceTest {
     @Test(dataProvider = "HostStates")
     public void testSuccess(HostService.State hostStartState,
                             Integer expectedCpuCount,
-                            Long expectedMemoryMb)
+                            Long expectedMemoryMb,
+                            String authStatus)
         throws Throwable {
 
       //
@@ -625,6 +626,7 @@ public class CreateManagementVmTaskServiceTest {
       VmService.State vmStartState = TestHelper.getVmServiceStartState(hostState);
       vmStartState.imageId = "IMAGE_ID";
       vmStartState.projectId = "PROJECT_ID";
+      vmStartState.ipAddress = "10.10.10.10";
       VmService.State vmState = TestHelper.createVmService(testEnvironment, vmStartState);
 
       for (ContainersConfig.ContainerType containerType : ContainersConfig.ContainerType.values()) {
@@ -643,6 +645,12 @@ public class CreateManagementVmTaskServiceTest {
       }
 
       startState.vmServiceLink = vmState.documentSelfLink;
+
+      if (authStatus.contains("lightwave")) {
+        startState.isAuthEnabled = true;
+        startState.oAuthServerAddress = "10.10.10.10";
+        startState.oAuthTenantName = "vmware.com";
+      }
 
       CreateManagementVmTaskService.State finalState =
           testEnvironment.callServiceAndWaitForState(
@@ -715,9 +723,19 @@ public class CreateManagementVmTaskServiceTest {
           eq("SET_METADATA_TASK_ID"),
           Matchers.<FutureCallback<Task>>any());
 
-      assertTrue(FileUtils.contentEquals(
-          Paths.get(deployerConfig.getDeployerContext().getScriptDirectory(), "user-data").toFile(),
-          Paths.get(this.getClass().getResource("/fixtures/user-data.yml").getPath()).toFile()));
+      if (authStatus.equals("no-auth")) {
+        assertTrue(FileUtils.contentEquals(
+            Paths.get(deployerConfig.getDeployerContext().getScriptDirectory(), "user-data").toFile(),
+            Paths.get(this.getClass().getResource("/fixtures/user-data-no-auth.yml").getPath()).toFile()));
+      } else if (authStatus.equals("lightwave-server")) {
+        assertTrue(FileUtils.contentEquals(
+            Paths.get(deployerConfig.getDeployerContext().getScriptDirectory(), "user-data").toFile(),
+            Paths.get(this.getClass().getResource("/fixtures/user-data-lightwave-server.yml").getPath()).toFile()));
+      } else {
+        assertTrue(FileUtils.contentEquals(
+            Paths.get(deployerConfig.getDeployerContext().getScriptDirectory(), "user-data").toFile(),
+            Paths.get(this.getClass().getResource("/fixtures/user-data-lightwave-client.yml").getPath()).toFile()));
+      }
 
       assertTrue(FileUtils.contentEquals(
           Paths.get(deployerConfig.getDeployerContext().getScriptDirectory(), "meta-data").toFile(),
@@ -826,7 +844,7 @@ public class CreateManagementVmTaskServiceTest {
 
       assertTrue(FileUtils.contentEquals(
           Paths.get(deployerConfig.getDeployerContext().getScriptDirectory(), "user-data").toFile(),
-          Paths.get(this.getClass().getResource("/fixtures/user-data.yml").getPath()).toFile()));
+          Paths.get(this.getClass().getResource("/fixtures/user-data-no-auth.yml").getPath()).toFile()));
 
       assertTrue(FileUtils.contentEquals(
           Paths.get(deployerConfig.getDeployerContext().getScriptDirectory(), "meta-data").toFile(),
@@ -860,9 +878,18 @@ public class CreateManagementVmTaskServiceTest {
       hostStateWithResourceOverrides.metadata.put(
           HostService.State.METADATA_KEY_NAME_MANAGEMENT_VM_DISK_GB_OVERWRITE, Integer.toString(80));
 
+      HostService.State hostStateWithLightwaveServer = TestHelper.getHostServiceStartState(
+          Collections.singleton(UsageTag.MGMT.name()), HostState.READY);
+      hostStateWithLightwaveServer.cpuCount = 8;
+      hostStateWithLightwaveServer.memoryMb = 2048;
+      hostStateWithLightwaveServer.metadata.put(HostService.State.METADATA_KEY_NAME_ALLOWED_SERVICES,
+          ContainersConfig.ContainerType.Lightwave.name());
+
       return new Object[][]{
-          {hostStateWithResourceValues, 6, 1636L},
-          {hostStateWithResourceOverrides, 7, 1792L},
+          {hostStateWithResourceValues, 6, 1636L, "no-auth"},
+          {hostStateWithResourceOverrides, 7, 1792L, "no-auth"},
+          {hostStateWithLightwaveServer, 6, 1636L, "lightwave-server"},
+          {hostStateWithResourceValues, 6, 1636L, "lightwave-client"}
       };
     }
 
@@ -1730,6 +1757,7 @@ public class CreateManagementVmTaskServiceTest {
     startState.vmServiceLink = "VM_SERVICE_LINK";
     startState.ntpEndpoint = "NTP_ENDPOINT";
     startState.controlFlags = ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED;
+    startState.isAuthEnabled = false;
 
     if (taskStage != null) {
       startState.taskState = new CreateManagementVmTaskService.TaskState();
