@@ -97,6 +97,8 @@ public class CreateManagementVmTaskService extends StatefulService {
   @VisibleForTesting
   public static final String SCRIPT_NAME = "esx-create-vm-iso";
 
+  public static final String DOMAIN_NAME = "photon.vmware.com";
+
   private static final TypeToken loadBalancerTypeToken = new TypeToken<ArrayList<LoadBalancerServer>>() {
   };
 
@@ -181,6 +183,25 @@ public class CreateManagementVmTaskService extends StatefulService {
      */
     @Immutable
     public String ntpEndpoint;
+
+    /**
+     * This value represents whether authentication is enabled for the current deployment.
+     */
+    @NotNull
+    @Immutable
+    public Boolean isAuthEnabled;
+
+    /**
+     * This value represents the oauth server address (lightwave VM IP address) for the current deployment.
+     */
+    @Immutable
+    public String oAuthServerAddress;
+
+    /**
+     * This value represents the oauth tenant name (lightwave domain name) for the current deployment.
+     */
+    @Immutable
+    public String oAuthTenantName;
 
     /**
      * This value represents the delay, in milliseconds, to use when polling a child task.
@@ -1345,6 +1366,8 @@ public class CreateManagementVmTaskService extends StatefulService {
     String ipAddress = hostState.metadata.get(HostService.State.METADATA_KEY_NAME_MANAGEMENT_NETWORK_IP);
     String netmask = hostState.metadata.get(HostService.State.METADATA_KEY_NAME_MANAGEMENT_NETWORK_NETMASK);
     String dnsEndpointList = hostState.metadata.get(HostService.State.METADATA_KEY_NAME_MANAGEMENT_NETWORK_DNS_SERVER);
+    String allowedServices = hostState.metadata.get(HostService.State.METADATA_KEY_NAME_ALLOWED_SERVICES);
+
     if (!Strings.isNullOrEmpty(dnsEndpointList)) {
       dnsEndpointList = Stream.of(dnsEndpointList.split(","))
           .map((dnsServer) -> "DNS=" + dnsServer + "\n")
@@ -1354,14 +1377,38 @@ public class CreateManagementVmTaskService extends StatefulService {
     DeployerContext deployerContext = HostUtils.getDeployerContext(this);
     String scriptDirectory = deployerContext.getScriptDirectory();
 
+    String domainName = DOMAIN_NAME;
+    if (currentState.oAuthTenantName != null) {
+      domainName = currentState.oAuthTenantName;
+    }
+
     String userDataConfigFileContent =
         new String(Files.readAllBytes(Paths.get(scriptDirectory, "user-data.template")), StandardCharsets.UTF_8)
             .replace("$GATEWAY", gateway)
             .replace("$ADDRESS", new SubnetUtils(ipAddress, netmask).getInfo().getCidrSignature())
-            .replace("$DNS", dnsEndpointList);
+            .replace("$DOMAIN_NAME", domainName);
 
     if (currentState.ntpEndpoint != null) {
       userDataConfigFileContent = userDataConfigFileContent.replace("$NTP", currentState.ntpEndpoint);
+    }
+
+    // If auth is enabled and this VM is the lightwave server, then set dns to its own address and add domain name.
+    // If auth is enabled and this VM is not the lightwave server, then set dns to lightwave VM address and add
+    // domain name.
+    // If auth is not enabled, then use the default dns server, don't set domain.
+    if (currentState.isAuthEnabled
+        && vmState.ipAddress.equals(currentState.oAuthServerAddress)) {
+      userDataConfigFileContent = userDataConfigFileContent
+          .replace("$DNS", "DNS=" + vmState.ipAddress)
+          .replace("$DOMAINS", "Domains=" + domainName);
+    } else if (currentState.isAuthEnabled) {
+      userDataConfigFileContent = userDataConfigFileContent
+          .replace("$DNS", "DNS=" + currentState.oAuthServerAddress)
+          .replace("$DOMAINS", "Domains=" + domainName);
+    } else {
+      userDataConfigFileContent = userDataConfigFileContent
+          .replace("$DNS", dnsEndpointList)
+          .replace("\n        $DOMAINS", "");
     }
 
     String metadataConfigFileContent =
