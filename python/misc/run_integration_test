@@ -48,30 +48,26 @@ cd $WORKSPACE/python
 make clean
 make develop
 
-SSH_PATH=$WORKSPACE/python/misc/resources/scripts
-$SSH_PATH/gen-ssh-key
-$SSH_PATH/copy-id --password $ESX_PWD root@$ESX_IP
-
 make vib DEBUG=1
 
-$SSH_PATH/ssh -t -t root@$ESX_IP sh -xec 'rm /tmp/*.vib' || true
-$SSH_PATH/scp ./dist/photon-controller-agent-*.vib root@$ESX_IP:/tmp
-$SSH_PATH/ssh -t -t root@$ESX_IP sh -xec 'esxcli software vib remove -f -n photon-controller-agent' || true
-$SSH_PATH/ssh -t -t root@$ESX_IP sh -xec 'esxcli software vib install -f -v /tmp/photon-controller-agent-*.vib'
+sshpass -p "$ESX_PWD" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null root@$ESX_IP 'rm /tmp/*.vib' || true
+sshpass -p "$ESX_PWD" scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null ./dist/photon-controller-agent-*.vib root@$ESX_IP:/tmp
+sshpass -p "$ESX_PWD" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null root@$ESX_IP 'esxcli software vib remove -f -n photon-controller-agent' || true
+sshpass -p "$ESX_PWD" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null root@$ESX_IP 'esxcli software vib install -f -v /tmp/photon-controller-agent-*.vib'
 
-$SSH_PATH/ssh -t -t root@$ESX_IP sh -xec 'esxcfg-vswitch -a test' || true
-$SSH_PATH/ssh -t -t root@$ESX_IP sh -xec 'esxcfg-vswitch -A "VM Network" test' || true
-$SSH_PATH/ssh -t -t root@$ESX_IP sh -xec 'vim-cmd hostsvc/net/refresh' || true
-$SSH_PATH/ssh -t -t root@$ESX_IP sh -xec '/etc/init.d/photon-controller-agent restart'
+sshpass -p "$ESX_PWD" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null root@$ESX_IP 'esxcfg-vswitch -a test' || true
+sshpass -p "$ESX_PWD" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null root@$ESX_IP 'esxcfg-vswitch -A "VM Network" test' || true
+sshpass -p "$ESX_PWD" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null root@$ESX_IP 'vim-cmd hostsvc/net/refresh' || true
+sshpass -p "$ESX_PWD" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null root@$ESX_IP '/etc/init.d/photon-controller-agent restart'
 
 IMAGE_SUB_DIR=image_ttylinux
 
 # Copy the ttylinux image and metadata to datastore
-$SSH_PATH/ssh -t -t root@$ESX_IP sh -xec "mkdir -p $DATASTORE_DIR/$IMAGE_SUB_DIR" || true
-$SSH_PATH/scp $IMAGES_DIR/* root@$ESX_IP:$DATASTORE_DIR/$IMAGE_SUB_DIR/
+sshpass -p "$ESX_PWD" ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null root@$ESX_IP "mkdir -p $DATASTORE_DIR/$IMAGE_SUB_DIR" || true
+sshpass -p "$ESX_PWD" scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null $IMAGES_DIR/* root@$ESX_IP:$DATASTORE_DIR/$IMAGE_SUB_DIR/
 
 # Copy the test iso to datastore
-$SSH_PATH/scp $ISO_DIR/* root@$ESX_IP:$ISO_DATASTORE_DIR/
+sshpass -p "$ESX_PWD" scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null $ISO_DIR/* root@$ESX_IP:$ISO_DATASTORE_DIR/
 
 ESX_PWD_ESCAPE=$(echo $ESX_PWD | sed 's/\$/$$/g')
 # Save return code from the test run and copy the agent log.
@@ -89,6 +85,6 @@ else
     || make_return_code=$?
 fi
 
-$SSH_PATH/scp root@$ESX_IP:/var/log/photon-controller-agent.log . || true
+sshpass -p "$ESX_PWD" scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null root@$ESX_IP:/var/log/photon-controller-agent.log . || true
 
 exit $make_return_code
