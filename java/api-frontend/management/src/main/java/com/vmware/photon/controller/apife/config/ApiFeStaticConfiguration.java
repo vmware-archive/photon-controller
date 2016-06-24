@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.apife.config;
 
+import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.metrics.GraphiteConfig;
 import com.vmware.photon.controller.common.zookeeper.ZookeeperConfig;
 
@@ -29,10 +30,10 @@ import javax.validation.constraints.NotNull;
 public class ApiFeStaticConfiguration extends Configuration implements ApiFeConfiguration {
 
   @JsonProperty("apife_port")
-  private int apifePort = 9000;
+  private int apifePort = Constants.MANAGEMENT_API_PORT;
 
   @JsonProperty("xenon_port")
-  private int xenonPort = 19000;
+  private int xenonPort = Constants.CLOUD_STORE_PORT;
 
   @Range(min = 1, max = 2048)
   @JsonProperty("background_workers")

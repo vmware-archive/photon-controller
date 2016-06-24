@@ -13,9 +13,9 @@
 
 package com.vmware.photon.controller.deployer.healthcheck;
 
+import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.deployer.xenon.ContainersConfig;
-import com.vmware.photon.controller.deployer.xenon.constant.ServicePortConstants;
 import com.vmware.photon.controller.deployer.xenon.util.HostUtils;
 import com.vmware.xenon.common.Service;
 
@@ -37,7 +37,7 @@ public class HealthCheckHelper {
     switch (containerType) {
       case Zookeeper:
         this.healthChecker = new ZookeeperHealthChecker(ipAddress,
-            ServicePortConstants.ZOOKEEPER_PORT);
+            Constants.ZOOKEEPER_PORT);
         break;
 
       case LoadBalancer:
@@ -51,13 +51,13 @@ public class HealthCheckHelper {
 
         // add the xenon health checker for all other services
         List<Integer> ports = new ArrayList<>();
-        ports.add(ServicePortConstants.CLOUD_STORE_PORT);
+        ports.add(Constants.CLOUD_STORE_PORT);
         multiTypeHealthChecker.addHealthChecker(new XenonBasedHealthChecker(service, ipAddress, ports));
         this.healthChecker = multiTypeHealthChecker;
         break;
 
       case Lightwave:
-        this.healthChecker = new LightwaveHealthChecker(ipAddress, ServicePortConstants.LIGHTWAVE_PORT);
+        this.healthChecker = new LightwaveHealthChecker(ipAddress, Constants.LIGHTWAVE_PORT);
         break;
 
       default:

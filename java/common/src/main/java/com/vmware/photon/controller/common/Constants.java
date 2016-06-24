@@ -17,6 +17,7 @@ package com.vmware.photon.controller.common;
  * Constants available to all EsxCloud projects.
  */
 public class Constants {
+
   public static final Void VOID = null;
 
   public static final String PROJECT_NAME = "mgmt-project";
@@ -34,6 +35,30 @@ public class Constants {
   public static final String HOUSEKEEPER_SERVICE_NAME = "housekeeper";
 
   public static final String SCHEDULER_SERVICE_NAME = "root-scheduler";
+
+  public static final int LOADBALANCER_API_HTTP_PORT = 28080;
+
+  public static final int LOADBALANCER_API_HTTPS_PORT = 443;
+
+  public static final int LOADBALANCER_MGMT_UI_HTTP_PORT = 80;
+
+  public static final int LOADBALANCER_MGMT_UI_HTTPS_PORT = 4343;
+
+  public static final int MANAGEMENT_API_PORT = 9000;
+
+  public static final int ZOOKEEPER_PORT = 2181;
+
+  public static final int CLOUD_STORE_PORT = 19000;
+
+  public static final int LIGHTWAVE_PORT = 443;
+
+  public static final int MANAGEMENT_UI_HTTP_PORT = 20000;
+
+  public static final int MANAGEMENT_UI_HTTPS_PORT = 20001;
+
+  public static final int ESXI_PORT = 443;
+
+  public static final int DHCP_AGENT_PORT = 17000;
 
   private Constants() {
   }

@@ -21,6 +21,7 @@ import com.vmware.photon.controller.client.ApiClient;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.HostService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.HostServiceFactory;
+import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
@@ -40,7 +41,6 @@ import com.vmware.photon.controller.common.xenon.validation.Positive;
 import com.vmware.photon.controller.common.xenon.validation.WriteOnce;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClient;
 import com.vmware.photon.controller.deployer.xenon.DeployerServiceGroup;
-import com.vmware.photon.controller.deployer.xenon.constant.ServicePortConstants;
 import com.vmware.photon.controller.deployer.xenon.entity.VibFactoryService;
 import com.vmware.photon.controller.deployer.xenon.entity.VibService;
 import com.vmware.photon.controller.deployer.xenon.task.ChildTaskAggregatorFactoryService;
@@ -662,7 +662,7 @@ public class InitializeDeploymentMigrationWorkflowService extends StatefulServic
         sourceDeploymentId, currentState.taskPollDelay, new TaskFailingCallback<List<String>>(this) {
           @Override
           public void onSuccess(@Nullable List<String> ipAddresses) {
-            String zookeeperQuorum = MiscUtils.generateReplicaList(ipAddresses, Integer.toString(ServicePortConstants
+            String zookeeperQuorum = MiscUtils.generateReplicaList(ipAddresses, Integer.toString(Constants
                 .ZOOKEEPER_PORT));
 
             ServiceUtils.logInfo(InitializeDeploymentMigrationWorkflowService.this,

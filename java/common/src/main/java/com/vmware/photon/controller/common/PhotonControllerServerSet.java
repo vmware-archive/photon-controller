@@ -11,7 +11,7 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package com.vmware.photon.controller.apife;
+package com.vmware.photon.controller.common;
 
 import com.google.inject.BindingAnnotation;
 
@@ -23,10 +23,10 @@ import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
- * This interface allows Guice injection for the deployer server set.
+ * Binding for the photon-controller server set.
  */
 @BindingAnnotation
 @Target({FIELD, PARAMETER, METHOD})
 @Retention(RUNTIME)
-public @interface DeployerServerSet {
+public @interface PhotonControllerServerSet {
 }
