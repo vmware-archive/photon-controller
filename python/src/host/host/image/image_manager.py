@@ -192,11 +192,17 @@ class ImageManager():
 
     def image_size(self, image_id):
         for image_ds in self._ds_manager.image_datastores():
-            try:
-                image_path = os_vmdk_flat_path(image_ds, image_id, IMAGE_FOLDER_NAME_PREFIX)
-                return os.path.getsize(image_path)
-            except os.error:
-                self._logger.info("Image %s not found in DataStore %s" % (image_id, image_ds))
+            if self._ds_manager.datastore_type(image_ds) is DatastoreType.VSAN:
+                if os.path.exists(os_vmdk_path(image_ds, image_id, IMAGE_FOLDER_NAME_PREFIX)):
+                    # VSAN does not have flat.vmdk so we cannot get file size. Default to 1GB.
+                    return 1024 ** 3
+            else:
+                try:
+                    image_path = os_vmdk_flat_path(image_ds, image_id, IMAGE_FOLDER_NAME_PREFIX)
+                    return os.path.getsize(image_path)
+                except os.error:
+                    pass
+            self._logger.info("Image %s not found in DataStore %s" % (image_id, image_ds))
 
         self._logger.warning("Failed to get image size:", exc_info=True)
         # Failed to access shared image.
