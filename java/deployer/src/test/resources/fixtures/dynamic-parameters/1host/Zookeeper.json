@@ -8,5 +8,6 @@
   "SYSLOG_ENDPOINT": "SYSLOG_ENDPOINT",
   "ZOOKEEPER_DATA_DIRECTORY": "/var/esxcloud/data/zookeeper",
   "diskGb": "1",
+  "ZOOKEEPER_MYID": "1",
   "cpuCount": "1"
 }

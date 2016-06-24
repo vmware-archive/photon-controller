@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.deployer.xenon.workflow;
 
+import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
@@ -26,12 +27,16 @@ import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
 import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
+import com.vmware.photon.controller.deployer.configuration.ZookeeperServer;
+import com.vmware.photon.controller.deployer.xenon.ContainersConfig;
 import com.vmware.photon.controller.deployer.xenon.entity.ContainerService;
+import com.vmware.photon.controller.deployer.xenon.entity.ContainerTemplateService;
 import com.vmware.photon.controller.deployer.xenon.entity.VmService;
 import com.vmware.photon.controller.deployer.xenon.task.BuildRuntimeConfigurationTaskFactoryService;
 import com.vmware.photon.controller.deployer.xenon.task.BuildRuntimeConfigurationTaskService;
 import com.vmware.photon.controller.deployer.xenon.task.ChildTaskAggregatorFactoryService;
 import com.vmware.photon.controller.deployer.xenon.task.ChildTaskAggregatorService;
+import com.vmware.photon.controller.deployer.xenon.util.HostUtils;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.OperationJoin;
 import com.vmware.xenon.common.ServiceDocument;
@@ -40,12 +45,15 @@ import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.QueryTask;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.gson.Gson;
 import static com.google.common.base.Preconditions.checkState;
 
 import javax.annotation.Nullable;
 
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -53,6 +61,12 @@ import java.util.stream.Collectors;
  * building configuration for all the containers.
  */
 public class BuildContainersConfigurationWorkflowService extends StatefulService {
+
+  /**
+   * N.B. This value is used in data processing when applying mustache templates in
+   * {@link com.vmware.photon.controller.deployer.xenon.task.CreateManagementVmTaskService}.
+   */
+  public static final String MUSTACHE_KEY_ZOOKEEPER_INSTANCES = "ZOOKEEPER_INSTANCES";
 
   /**
    * This class defines the state of a {@link BuildContainersConfigurationWorkflowService} task.
@@ -65,6 +79,7 @@ public class BuildContainersConfigurationWorkflowService extends StatefulService
      */
     public enum SubStage {
       BUILD_RUNTIME_CONFIGURATION,
+      SET_ZOOKEEPER_INSTANCES,
     }
 
     /**
@@ -225,6 +240,7 @@ public class BuildContainersConfigurationWorkflowService extends StatefulService
         checkState(taskState.subStage != null);
         switch (taskState.subStage) {
           case BUILD_RUNTIME_CONFIGURATION:
+          case SET_ZOOKEEPER_INSTANCES:
             break;
           default:
             throw new IllegalStateException("Unknown task sub-stage: " + taskState.subStage);
@@ -243,6 +259,9 @@ public class BuildContainersConfigurationWorkflowService extends StatefulService
     switch (currentState.taskState.subStage) {
       case BUILD_RUNTIME_CONFIGURATION:
         processBuildRuntimeConfigurationSubStage(currentState);
+        break;
+      case SET_ZOOKEEPER_INSTANCES:
+        processSetZookeeperInstancesSubStage(currentState);
         break;
     }
   }
@@ -323,7 +342,7 @@ public class BuildContainersConfigurationWorkflowService extends StatefulService
     ChildTaskAggregatorService.State startState = new ChildTaskAggregatorService.State();
     startState.parentTaskLink = getSelfLink();
     startState.parentPatchBody = Utils.toJson(false, false,
-        buildPatch(TaskState.TaskStage.FINISHED, null));
+        buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.SET_ZOOKEEPER_INSTANCES));
     startState.pendingCompletionCount = containerServiceLinks.size();
     startState.errorThreshold = 0.0;
 
@@ -366,6 +385,160 @@ public class BuildContainersConfigurationWorkflowService extends StatefulService
             (ops, exs) -> {
               if (exs != null && !exs.isEmpty()) {
                 failTask(exs.values());
+              }
+            })
+        .sendWith(this);
+  }
+
+  //
+  // SET_ZOOKEEPER_INSTANCES sub-stage routines
+  //
+
+  private void processSetZookeeperInstancesSubStage(State currentState) {
+
+    if (currentState.hostServiceLink == null) {
+      queryZookeeperTemplate(currentState, null);
+      return;
+    }
+
+    QueryTask queryTask = QueryTask.Builder.createDirectTask()
+        .setQuery(QueryTask.Query.Builder.create()
+            .addKindFieldClause(VmService.State.class)
+            .addFieldClause(VmService.State.FIELD_NAME_HOST_SERVICE_LINK, currentState.hostServiceLink)
+            .build())
+        .addOption(QueryTask.QuerySpecification.QueryOption.BROADCAST)
+        .build();
+
+    sendRequest(Operation
+        .createPost(this, ServiceUriPaths.CORE_QUERY_TASKS)
+        .setBody(queryTask)
+        .setCompletion(
+            (o, e) -> {
+              if (e != null) {
+                failTask(e);
+                return;
+              }
+
+              try {
+                List<String> vmServiceLinks = o.getBody(QueryTask.class).results.documentLinks;
+                checkState(vmServiceLinks.size() == 1);
+                queryZookeeperTemplate(currentState, vmServiceLinks.iterator().next());
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            }));
+  }
+
+  private void queryZookeeperTemplate(State currentState, String vmServiceLink) {
+
+    QueryTask queryTask = QueryTask.Builder.createDirectTask()
+        .setQuery(QueryTask.Query.Builder.create()
+            .addKindFieldClause(ContainerTemplateService.State.class)
+            .addFieldClause(ContainerTemplateService.State.FIELD_NAME_NAME,
+                ContainersConfig.ContainerType.Zookeeper.name())
+            .build())
+        .addOption(QueryTask.QuerySpecification.QueryOption.BROADCAST)
+        .build();
+
+    sendRequest(Operation
+        .createPost(this, ServiceUriPaths.CORE_QUERY_TASKS)
+        .setBody(queryTask)
+        .setCompletion(
+            (o, e) -> {
+              if (e != null) {
+                failTask(e);
+                return;
+              }
+
+              try {
+                List<String> templateServiceLinks = o.getBody(QueryTask.class).results.documentLinks;
+                checkState(templateServiceLinks.size() == 1);
+                queryZookeeperContainers(currentState, vmServiceLink, templateServiceLinks.iterator().next());
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            }));
+  }
+
+  private void queryZookeeperContainers(State currentState,
+                                        String vmServiceLink,
+                                        String templateServiceLink) {
+
+    QueryTask.Query.Builder queryBuilder = QueryTask.Query.Builder.create()
+        .addKindFieldClause(ContainerService.State.class)
+        .addFieldClause(ContainerService.State.FIELD_NAME_CONTAINER_TEMPLATE_SERVICE_LINK, templateServiceLink);
+
+    if (vmServiceLink != null) {
+      queryBuilder.addFieldClause(ContainerService.State.FIELD_NAME_VM_SERVICE_LINK, vmServiceLink);
+    }
+
+    QueryTask queryTask = QueryTask.Builder.createDirectTask()
+        .setQuery(queryBuilder.build())
+        .addOptions(EnumSet.of(
+            QueryTask.QuerySpecification.QueryOption.BROADCAST,
+            QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT))
+        .build();
+
+    sendRequest(Operation
+        .createPost(this, ServiceUriPaths.CORE_QUERY_TASKS)
+        .setBody(queryTask)
+        .setCompletion(
+            (o, e) -> {
+              if (e != null) {
+                failTask(e);
+                return;
+              }
+
+              try {
+                getDeploymentState(currentState, o.getBody(QueryTask.class).results.documents);
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            }));
+  }
+
+  private void getDeploymentState(State currentState, Map<String, Object> containerServiceDocuments) {
+
+    sendRequest(HostUtils.getCloudStoreHelper(this)
+        .createGet(currentState.deploymentServiceLink)
+        .setCompletion(
+            (o, e) -> {
+              if (e != null) {
+                failTask(e);
+                return;
+              }
+
+              try {
+                setZookeeperInstances(containerServiceDocuments, o.getBody(DeploymentService.State.class));
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            }));
+  }
+
+  private void setZookeeperInstances(Map<String, Object> containerDocuments, DeploymentService.State deploymentState) {
+
+    List<ZookeeperServer> zookeeperServers = deploymentState.zookeeperIdToIpMap.entrySet().stream()
+        .map((entry) -> new ZookeeperServer("server." + entry.getKey() + "=" + entry.getValue() + ":2888:3888"))
+        .collect(Collectors.toList());
+
+    String zookeeperInstances = new Gson().toJson(zookeeperServers);
+
+    OperationJoin
+        .create(containerDocuments.values().stream().map(
+            (containerDocument) -> {
+              ContainerService.State containerState = Utils.fromJson(containerDocument, ContainerService.State.class);
+              ContainerService.State patchState = new ContainerService.State();
+              patchState.dynamicParameters = containerState.dynamicParameters;
+              patchState.dynamicParameters.put(MUSTACHE_KEY_ZOOKEEPER_INSTANCES, zookeeperInstances);
+              return Operation.createPatch(this, containerState.documentSelfLink).setBody(patchState);
+            }))
+        .setCompletion(
+            (ops, exs) -> {
+              if (exs != null && !exs.isEmpty()) {
+                failTask(exs.values());
+              } else {
+                sendStageProgressPatch(TaskState.TaskStage.FINISHED, null);
               }
             })
         .sendWith(this);

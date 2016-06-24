@@ -40,6 +40,7 @@ import com.vmware.photon.controller.common.xenon.validation.WriteOnce;
 import com.vmware.photon.controller.deployer.configuration.LoadBalancerServer;
 import com.vmware.photon.controller.deployer.configuration.PeerNode;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfigurator;
+import com.vmware.photon.controller.deployer.configuration.ZookeeperServer;
 import com.vmware.photon.controller.deployer.deployengine.ScriptRunner;
 import com.vmware.photon.controller.deployer.xenon.ContainersConfig;
 import com.vmware.photon.controller.deployer.xenon.DeployerContext;
@@ -49,6 +50,7 @@ import com.vmware.photon.controller.deployer.xenon.entity.VmService;
 import com.vmware.photon.controller.deployer.xenon.util.ApiUtils;
 import com.vmware.photon.controller.deployer.xenon.util.HostUtils;
 import com.vmware.photon.controller.deployer.xenon.util.MiscUtils;
+import com.vmware.photon.controller.deployer.xenon.workflow.BuildContainersConfigurationWorkflowService;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.OperationJoin;
 import com.vmware.xenon.common.OperationSequence;
@@ -100,6 +102,9 @@ public class CreateManagementVmTaskService extends StatefulService {
   };
 
   private static final TypeToken peerNodeTypeToken = new TypeToken<ArrayList<PeerNode>>() {
+  };
+
+  private static final TypeToken zookeeperTypeToken = new TypeToken<ArrayList<ZookeeperServer>>() {
   };
 
   /**
@@ -1278,6 +1283,9 @@ public class CreateManagementVmTaskService extends StatefulService {
       dynamicParameters.computeIfPresent(
           BuildRuntimeConfigurationTaskService.MUSTACHE_KEY_DEPLOYER_PEER_NODES,
           (k, v) -> new Gson().fromJson(v.toString(), peerNodeTypeToken.getType()));
+      dynamicParameters.computeIfPresent(
+          BuildContainersConfigurationWorkflowService.MUSTACHE_KEY_ZOOKEEPER_INSTANCES,
+          (k, v) -> new Gson().fromJson(v.toString(), zookeeperTypeToken.getType()));
 
       serviceConfigurator.applyDynamicParameters(serviceConfigDirectoryPath.toString(),
           ContainersConfig.ContainerType.valueOf(templateStates.get(containerState.documentSelfLink).name),
