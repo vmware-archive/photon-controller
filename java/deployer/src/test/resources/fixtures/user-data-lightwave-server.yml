@@ -7,14 +7,14 @@ write_files:
         Name=$en_name
 
         [Network]
-        $DNS
-        $DOMAINS
+        DNS=10.10.10.10
+        Domains=photon.vmware.com
 
         [Address]
-        Address=$ADDRESS
+        Address=8.8.8.27/24
 
         [Route]
-        Gateway=$GATEWAY
+        Gateway=8.8.8.143
         EOF
     owner: root:root
     permissions: 0644
@@ -23,7 +23,7 @@ write_files:
         myhostname="$(hostname)"
         if [ -z "$(grep $myhostname /etc/hosts)" ]
         then
-          echo "127.0.0.1       $myhostname.$DOMAIN_NAME $myhostname" >> /etc/hosts
+          echo "127.0.0.1       $myhostname.photon.vmware.com $myhostname" >> /etc/hosts
         fi
     owner: root:root
     permissions: 0644
@@ -54,7 +54,7 @@ runcmd:
   - rm -f /etc/systemd/network/*.network
   - sh /tmp/init-network.sh
   - sh /tmp/update-hostname.sh
-  - sh /tmp/update-ntp.sh $NTP
+  - sh /tmp/update-ntp.sh NTP_ENDPOINT
   - sed -i 's/ExecStart.*/ExecStart=\/bin\/docker daemon -s overlay -H tcp:\/\/0.0.0.0:2375 -H unix:\/\/\/var\/run\/docker.sock \\/g' /lib/systemd/system/docker.service
   - systemctl enable docker
   - reboot
