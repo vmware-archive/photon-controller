@@ -39,6 +39,7 @@ import com.vmware.photon.controller.common.clients.AgentControlClientFactory;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
+import com.vmware.photon.controller.common.xenon.MultiHostEnvironment;
 import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
@@ -737,7 +738,6 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
     private TestEnvironment sourceEnvironment;
     private TestEnvironment destinationEnvironment;
     private com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment sourceCloudStore;
-    private com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment destinationCloudStore;
     private DeployerConfig deployerConfig;
     private DeployerContext deployerContext;
     private ListeningExecutorService listeningExecutorService;
@@ -789,11 +789,6 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
         sourceCloudStore = null;
       }
 
-      if (null != destinationCloudStore) {
-        destinationCloudStore.stop();
-        destinationCloudStore = null;
-      }
-
       apiClientFactory = null;
     }
 
@@ -810,7 +805,6 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
       ZookeeperClientFactory sourceZKFactory = mock(ZookeeperClientFactory.class);
       ZookeeperClientFactory destinationZKFactory = mock(ZookeeperClientFactory.class);
       sourceCloudStore = com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment.create(1);
-      destinationCloudStore = com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment.create(1);
 
       sourceEnvironment = new TestEnvironment.Builder()
           .deployerContext(deployerContext)
@@ -830,7 +824,7 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
           .deployerContext(deployerContext)
           .apiClientFactory(apiClientFactory)
           .listeningExecutorService(listeningExecutorService)
-          .cloudServerSet(destinationCloudStore.getServerSet())
+          .bindPort(40001)
           .zookeeperServersetBuilderFactory(destinationZKFactory)
           .httpFileServiceClientFactory(httpFileServiceClientFactory)
           .agentControlClientFactory(agentControlClientFactory)
@@ -848,10 +842,6 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
           sourceCloudStore.getHosts()[0].getState().httpPort)))
           .when(destinationZKBuilder)
           .getServers(eq("127.0.0.1:2181"), eq("cloudstore"));
-      doReturn(Collections.singleton(new InetSocketAddress("127.0.0.1",
-          destinationCloudStore.getHosts()[0].getState().httpPort)))
-          .when(destinationZKBuilder)
-          .getServers(eq(quorum), eq("cloudstore"));
       ServiceHost sourceHost = sourceEnvironment.getHosts()[0];
       startState.sourceLoadBalancerAddress = sourceHost.getPublicUri().toString();
 
@@ -888,7 +878,7 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
       TasksApi tasksApi = mock(TasksApi.class);
 
       DeploymentService.State deploymentService = TestHelper.getDeploymentServiceStartState(false, false);
-      deploymentService = TestHelper.createDeploymentService(destinationCloudStore, deploymentService);
+      deploymentService = TestHelper.createDeploymentService(destinationEnvironment, deploymentService);
       Deployment deployment = new Deployment();
       deployment.setId(ServiceUtils.getIDFromDocumentSelfLink(deploymentService.documentSelfLink));
       deployment.setAuth(new AuthInfo());
@@ -1039,12 +1029,12 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
       TestHelper.assertTaskStateFinished(finalState.taskState);
 
       //Make sure that the host is in destination
-      Set<String> hosts = getDocuments(HostService.State.class, destinationCloudStore);
+      Set<String> hosts = getDocuments(HostService.State.class, destinationEnvironment);
       assertThat((hosts.size() == 2), is(true));
     }
 
     private Set<String> getDocuments(Class<?> kindClass,
-                                     com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment cloudStore)
+                                     MultiHostEnvironment cloudStore)
         throws Throwable {
 
       QueryTask.Query kindClause = new QueryTask.Query()

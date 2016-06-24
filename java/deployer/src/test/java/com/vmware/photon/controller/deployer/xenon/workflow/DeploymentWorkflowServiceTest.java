@@ -21,7 +21,6 @@ import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.HostService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ResourceTicketService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.TenantService;
-import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.auth.AuthClientHandler;
 import com.vmware.photon.controller.common.clients.AgentControlClientFactory;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
@@ -31,7 +30,6 @@ import com.vmware.photon.controller.common.xenon.MultiHostEnvironment;
 import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
-import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.deployer.DeployerConfig;
@@ -40,7 +38,6 @@ import com.vmware.photon.controller.deployer.deployengine.ApiClientFactory;
 import com.vmware.photon.controller.deployer.deployengine.AuthHelperFactory;
 import com.vmware.photon.controller.deployer.deployengine.DockerProvisionerFactory;
 import com.vmware.photon.controller.deployer.deployengine.HttpFileServiceClientFactory;
-import com.vmware.photon.controller.deployer.deployengine.ZookeeperClient;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClientFactory;
 import com.vmware.photon.controller.deployer.healthcheck.HealthCheckHelperFactory;
 import com.vmware.photon.controller.deployer.helpers.ReflectionUtils;
@@ -68,7 +65,6 @@ import com.vmware.xenon.services.common.QueryTask;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import org.apache.commons.io.FileUtils;
-import org.mockito.Matchers;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
@@ -80,9 +76,6 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 
@@ -90,7 +83,6 @@ import javax.annotation.Nullable;
 
 import java.io.File;
 import java.lang.reflect.Field;
-import java.net.InetSocketAddress;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -599,8 +591,6 @@ public class DeploymentWorkflowServiceTest {
     private TestEnvironment localDeployer;
     private TestEnvironment remoteDeployer;
     private AuthClientHandler.ImplicitClient implicitClient;
-    private com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment localStore;
-    private com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment remoteStore;
 
     private SystemConfig systemConfig;
 
@@ -639,19 +629,6 @@ public class DeploymentWorkflowServiceTest {
       MockHelper.mockServiceConfigurator(serviceConfiguratorFactory, true);
     }
 
-    private void createCloudStores() throws Throwable {
-
-      localStore = new com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment.Builder()
-          .hostClientFactory(hostClientFactory)
-          .build();
-
-      remoteStore = new com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment.Builder()
-          .hostClientFactory(hostClientFactory)
-          .build();
-
-      this.systemConfig = spy(SystemConfig.createInstance(localStore.getHosts()[0]));
-    }
-
     private void createTestEnvironment(int remoteNodeCount) throws Throwable {
       String quorum = deployerConfig.getZookeeper().getQuorum();
       deployerConfig.getDeployerContext().setZookeeperQuorum(quorum);
@@ -671,7 +648,7 @@ public class DeploymentWorkflowServiceTest {
           .httpFileServiceClientFactory(httpFileServiceClientFactory)
           .listeningExecutorService(listeningExecutorService)
           .serviceConfiguratorFactory(serviceConfiguratorFactory)
-          .cloudServerSet(localStore.getServerSet())
+          .bindPort(20001)
           .zookeeperServersetBuilderFactory(zkFactory)
           .hostCount(1)
           .build();
@@ -688,28 +665,9 @@ public class DeploymentWorkflowServiceTest {
           .httpFileServiceClientFactory(httpFileServiceClientFactory)
           .listeningExecutorService(listeningExecutorService)
           .serviceConfiguratorFactory(serviceConfiguratorFactory)
-          .cloudServerSet(localStore.getServerSet())
+          .bindPort(40001)
           .hostCount(remoteNodeCount)
           .build();
-
-      ZookeeperClient zkBuilder = mock(ZookeeperClient.class);
-      doReturn(zkBuilder).when(zkFactory).create();
-      doReturn(Collections.singleton(
-          new InetSocketAddress("127.0.0.1", localDeployer.getHosts()[0].getState().httpPort)))
-          .when(zkBuilder).getServers(eq(quorum), eq("deployer"));
-      doReturn(Collections.singleton(
-          new InetSocketAddress("127.0.0.1", remoteDeployer.getHosts()[0].getState().httpPort)))
-          .when(zkBuilder)
-          .getServers(Matchers.startsWith("0.0.0"), eq("deployer"));
-      doReturn(Collections.singleton(new InetSocketAddress("127.0.0.1", localStore.getHosts()[0].getState().httpPort)))
-          .when(zkBuilder).getServers(eq(quorum), eq("cloudstore"));
-      doReturn(Collections.singleton(new InetSocketAddress("127.0.0.1", remoteStore.getHosts()[0].getState().httpPort)))
-          .when(zkBuilder)
-          .getServers(Matchers.startsWith("0.0.0"), eq("cloudstore"));
-
-      InetSocketAddress address = remoteStore.getServerSet().getServers().iterator().next();
-      doReturn(Collections.singleton(address))
-          .when(zkBuilder).getServers(anyString(), eq(Constants.HOUSEKEEPER_SERVICE_NAME));
     }
 
     @AfterMethod
@@ -722,16 +680,6 @@ public class DeploymentWorkflowServiceTest {
       if (null != remoteDeployer) {
         remoteDeployer.stop();
         remoteDeployer = null;
-      }
-
-      if (null != localStore) {
-        localStore.stop();
-        localStore = null;
-      }
-
-      if (null != remoteStore) {
-        remoteStore.stop();
-        remoteStore = null;
       }
 
       authHelperFactory = null;
@@ -763,10 +711,10 @@ public class DeploymentWorkflowServiceTest {
     @Test(dataProvider = "HostCountsWithAuthInfo")
     public void testSuccess(Integer mgmtHostCount, Integer mixedHostCount, Integer cloudHostCount,
                             Boolean isAuthEnabled) throws Throwable {
-      createCloudStores();
+      createTestEnvironment(1);
       MockHelper.mockHttpFileServiceClient(httpFileServiceClientFactory, true);
       MockHelper.mockHostClient(agentControlClientFactory, hostClientFactory, true);
-      MockHelper.mockApiClient(apiClientFactory, localStore, true);
+      MockHelper.mockApiClient(apiClientFactory, localDeployer, true);
       MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(),
           ProvisionHostTaskService.CONFIGURE_SYSLOG_SCRIPT_NAME, true);
       MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(),
@@ -776,22 +724,22 @@ public class DeploymentWorkflowServiceTest {
       MockHelper.mockCreateContainer(dockerProvisionerFactory, true);
       MockHelper.mockAuthHelper(implicitClient, authHelperFactory, true);
       MockHelper.mockHealthChecker(healthCheckHelperFactory, true);
-      createTestEnvironment(1);
+
+      Integer port = remoteDeployer.getHosts()[0].getPort();
 
       for (int i = 0; i < mgmtHostCount; i++) {
-        createHostService(Collections.singleton(UsageTag.MGMT.name()), "0.0.0." + i);
+        createHostService(Collections.singleton(UsageTag.MGMT.name()), port);
       }
 
       for (int i = 0; i < mixedHostCount; i++) {
-        createHostService(new HashSet<>(Arrays.asList(UsageTag.CLOUD.name(), UsageTag.MGMT.name())), "0.0.0." +
-            (mgmtHostCount + i));
+        createHostService(new HashSet<>(Arrays.asList(UsageTag.CLOUD.name(), UsageTag.MGMT.name())), port);
       }
 
       for (int i = 0; i < cloudHostCount; i++) {
         createHostService(Collections.singleton(UsageTag.CLOUD.name()), null);
       }
 
-      startState.deploymentServiceLink = createDeploymentServiceLink(localStore, isAuthEnabled);
+      startState.deploymentServiceLink = createDeploymentServiceLink(localDeployer, isAuthEnabled);
 
       DeploymentWorkflowService.State finalState =
           localDeployer.callServiceAndWaitForState(
@@ -799,7 +747,6 @@ public class DeploymentWorkflowServiceTest {
               startState,
               DeploymentWorkflowService.State.class,
               (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
-
       TestHelper.assertTaskStateFinished(finalState.taskState);
 
       verifyDeploymentServiceState(mgmtHostCount + mixedHostCount);
@@ -810,20 +757,19 @@ public class DeploymentWorkflowServiceTest {
       verifyResourceTicketServiceState();
     }
 
-    private void createHostService(Set<String> usageTags, String bindAddress) throws Throwable {
+    private void createHostService(Set<String> usageTags, Integer port) throws Throwable {
       HostService.State hostStartState = TestHelper.getHostServiceStartState(usageTags, HostState.CREATING);
       if (usageTags.contains(UsageTag.MGMT.name())) {
-        PhotonControllerXenonHost remoteHost = remoteDeployer.getHosts()[0];
         hostStartState.metadata.put(HostService.State.METADATA_KEY_NAME_MANAGEMENT_NETWORK_IP,
-            bindAddress != null ? bindAddress : remoteHost.getState().bindAddress);
+            "127.0.0.1");
         hostStartState.metadata.put(HostService.State.METADATA_KEY_NAME_DEPLOYER_XENON_PORT,
-            Integer.toString(remoteHost.getPort()));
+            Integer.toString(port));
       }
-      TestHelper.createHostService(localStore, hostStartState);
+      TestHelper.createHostService(localDeployer, hostStartState);
     }
 
     private String createDeploymentServiceLink(
-        com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment cloudStore,
+        TestEnvironment cloudStore,
         boolean isAuthEnabled)
         throws Throwable {
       DeploymentService.State deploymentService = TestHelper.createDeploymentService(
@@ -841,10 +787,10 @@ public class DeploymentWorkflowServiceTest {
 
     @Test(dataProvider = "AuthEnabled")
     public void testProvisionManagementHostFailure(Boolean authEnabled) throws Throwable {
-      createCloudStores();
+      createTestEnvironment(1);
       MockHelper.mockHttpFileServiceClient(httpFileServiceClientFactory, false);
       MockHelper.mockHostClient(agentControlClientFactory, hostClientFactory, false);
-      MockHelper.mockApiClient(apiClientFactory, localStore, true);
+      MockHelper.mockApiClient(apiClientFactory, localDeployer, true);
       MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(),
           ProvisionHostTaskService.CONFIGURE_SYSLOG_SCRIPT_NAME, true);
       MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(),
@@ -854,14 +800,13 @@ public class DeploymentWorkflowServiceTest {
       MockHelper.mockCreateContainer(dockerProvisionerFactory, true);
       MockHelper.mockAuthHelper(implicitClient, authHelperFactory, true);
       MockHelper.mockHealthChecker(healthCheckHelperFactory, true);
-      createTestEnvironment(1);
 
-      TestHelper.createHostService(localStore, Collections.singleton(UsageTag.MGMT.name()));
-      TestHelper.createHostService(localStore,
+      TestHelper.createHostService(localDeployer, Collections.singleton(UsageTag.MGMT.name()));
+      TestHelper.createHostService(localDeployer,
           new HashSet<>(Arrays.asList(UsageTag.CLOUD.name(), UsageTag.MGMT.name())));
-      TestHelper.createHostService(localStore, Collections.singleton(UsageTag.CLOUD.name()));
+      TestHelper.createHostService(localDeployer, Collections.singleton(UsageTag.CLOUD.name()));
 
-      startState.deploymentServiceLink = createDeploymentServiceLink(localStore, authEnabled);
+      startState.deploymentServiceLink = createDeploymentServiceLink(localDeployer, authEnabled);
 
       DeploymentWorkflowService.State finalState =
           localDeployer.callServiceAndWaitForState(
@@ -875,10 +820,10 @@ public class DeploymentWorkflowServiceTest {
 
     @Test(dataProvider = "AuthEnabled")
     public void testCreateManagementPlaneFailure(Boolean authEnabled) throws Throwable {
-      createCloudStores();
+      createTestEnvironment(1);
       MockHelper.mockHttpFileServiceClient(httpFileServiceClientFactory, true);
       MockHelper.mockHostClient(agentControlClientFactory, hostClientFactory, true);
-      MockHelper.mockApiClient(apiClientFactory, localStore, false);
+      MockHelper.mockApiClient(apiClientFactory, localDeployer, false);
       MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(),
           ProvisionHostTaskService.CONFIGURE_SYSLOG_SCRIPT_NAME, true);
       MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(),
@@ -888,14 +833,13 @@ public class DeploymentWorkflowServiceTest {
       MockHelper.mockCreateContainer(dockerProvisionerFactory, true);
       MockHelper.mockAuthHelper(implicitClient, authHelperFactory, true);
       MockHelper.mockHealthChecker(healthCheckHelperFactory, true);
-      createTestEnvironment(1);
 
-      TestHelper.createHostService(localStore, Collections.singleton(UsageTag.MGMT.name()));
-      TestHelper.createHostService(localStore,
+      TestHelper.createHostService(localDeployer, Collections.singleton(UsageTag.MGMT.name()));
+      TestHelper.createHostService(localDeployer,
           new HashSet<>(Arrays.asList(UsageTag.CLOUD.name(), UsageTag.MGMT.name())));
-      TestHelper.createHostService(localStore, Collections.singleton(UsageTag.CLOUD.name()));
+      TestHelper.createHostService(localDeployer, Collections.singleton(UsageTag.CLOUD.name()));
 
-      startState.deploymentServiceLink = createDeploymentServiceLink(localStore, authEnabled);
+      startState.deploymentServiceLink = createDeploymentServiceLink(localDeployer, authEnabled);
 
       DeploymentWorkflowService.State finalState =
           localDeployer.callServiceAndWaitForState(
@@ -909,10 +853,10 @@ public class DeploymentWorkflowServiceTest {
 
     @Test
     public void testAuthClientRegistrationFailure() throws Throwable {
-      createCloudStores();
+      createTestEnvironment(1);
       MockHelper.mockHttpFileServiceClient(httpFileServiceClientFactory, true);
       MockHelper.mockHostClient(agentControlClientFactory, hostClientFactory, true);
-      MockHelper.mockApiClient(apiClientFactory, localStore, true);
+      MockHelper.mockApiClient(apiClientFactory, localDeployer, true);
       MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(),
           ProvisionHostTaskService.CONFIGURE_SYSLOG_SCRIPT_NAME, true);
       MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(),
@@ -922,14 +866,13 @@ public class DeploymentWorkflowServiceTest {
       MockHelper.mockCreateContainer(dockerProvisionerFactory, true);
       MockHelper.mockAuthHelper(implicitClient, authHelperFactory, false);
       MockHelper.mockHealthChecker(healthCheckHelperFactory, true);
-      createTestEnvironment(1);
 
-      TestHelper.createHostService(localStore, Collections.singleton(UsageTag.MGMT.name()));
-      TestHelper.createHostService(localStore,
+      TestHelper.createHostService(localDeployer, Collections.singleton(UsageTag.MGMT.name()));
+      TestHelper.createHostService(localDeployer,
           new HashSet<>(Arrays.asList(UsageTag.CLOUD.name(), UsageTag.MGMT.name())));
-      TestHelper.createHostService(localStore, Collections.singleton(UsageTag.CLOUD.name()));
+      TestHelper.createHostService(localDeployer, Collections.singleton(UsageTag.CLOUD.name()));
 
-      startState.deploymentServiceLink = createDeploymentServiceLink(localStore, true);
+      startState.deploymentServiceLink = createDeploymentServiceLink(localDeployer, true);
 
       DeploymentWorkflowService.State finalState =
           localDeployer.callServiceAndWaitForState(
@@ -950,7 +893,7 @@ public class DeploymentWorkflowServiceTest {
             assertThat(state.imageDataStoreUsedForVMs, is(true));
             assertThat(state.ntpEndpoint, is("NTP_ENDPOINT"));
             if (state.oAuthEnabled) {
-              assertThat(state.oAuthServerAddress.startsWith("0.0.0"), is(true));
+              assertThat(state.oAuthServerAddress.equals("127.0.0.1"), is(true));
               assertThat(state.oAuthServerPort, is(443));
             } else {
               assertThat(state.oAuthServerAddress, is("OAUTH_ENDPOINT"));
@@ -962,9 +905,8 @@ public class DeploymentWorkflowServiceTest {
             assertThat(state.statsStorePort, is(8081));
             assertThat(state.statsStoreType, is(StatsStoreType.GRAPHITE));
 
-            assertThat(state.zookeeperIdToIpMap.size() == mgmtHostCnt, is(true));
             return true;
-          }, remoteStore);
+          }, remoteDeployer);
     }
 
     private void verifyVmServiceStates(int expectedVmEntityNumber) throws Throwable {
@@ -979,7 +921,7 @@ public class DeploymentWorkflowServiceTest {
         assertThat(state.vmId, is("CREATE_VM_ENTITY_ID"));
         assertThat(state.name, startsWith(CreateVmSpecLayoutTaskService.DOCKER_VM_PREFIX));
 
-        HostService.State hostState = localStore.getServiceState(state.hostServiceLink, HostService.State.class);
+        HostService.State hostState = localDeployer.getServiceState(state.hostServiceLink, HostService.State.class);
         assertThat(state.ipAddress,
             is(hostState.metadata.get(HostService.State.METADATA_KEY_NAME_MANAGEMENT_NETWORK_IP)));
 
@@ -1087,12 +1029,13 @@ public class DeploymentWorkflowServiceTest {
     }
 
     private void verifyTenantServiceState() throws Throwable {
-      List<TenantService.State> states = queryForServiceStates(TenantService.State.class, localStore);
+      List<TenantService.State> states = queryForServiceStates(TenantService.State.class, localDeployer);
       assertThat(states.size(), is(1));
     }
 
     private void verifyResourceTicketServiceState() throws Throwable {
-      List<ResourceTicketService.State> states = queryForServiceStates(ResourceTicketService.State.class, localStore);
+      List<ResourceTicketService.State> states = queryForServiceStates(ResourceTicketService.State.class,
+          localDeployer);
       assertThat(states.size(), is(1));
     }
 
