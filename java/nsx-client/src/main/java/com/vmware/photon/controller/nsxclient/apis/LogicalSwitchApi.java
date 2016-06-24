@@ -84,6 +84,10 @@ public class LogicalSwitchApi extends NsxClientApi {
         responseCallback);
   }
 
+  public void checkLogicalSwitchExistence(String id, FutureCallback<Boolean> responseCallback) throws Exception {
+    checkExistenceAsync(logicalSwitchBasePath + "/" + id, responseCallback);
+  }
+
   public void createLogicalPort(LogicalPortCreateSpec spec,
                                 FutureCallback<LogicalPort> responseCallback)
     throws IOException {
