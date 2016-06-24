@@ -164,6 +164,12 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
     public Boolean isAuthEnabled;
 
     /**
+     * This value represents the oauth server address (lightwave VM IP address) for the current deployment.
+     */
+    @Immutable
+    public String oAuthServerAddress;
+
+    /**
      * This value represents the URL of the DeploymentService object.
      */
     @NotNull
@@ -657,6 +663,8 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
       startState.vmServiceLink = vmServiceLink;
       startState.ntpEndpoint = currentState.ntpEndpoint;
       startState.taskPollDelay = currentState.childPollInterval;
+      startState.isAuthEnabled = currentState.isAuthEnabled;
+      startState.oAuthServerAddress = currentState.oAuthServerAddress;
 
       sendRequest(Operation
           .createPost(this, CreateManagementVmTaskFactoryService.SELF_LINK)

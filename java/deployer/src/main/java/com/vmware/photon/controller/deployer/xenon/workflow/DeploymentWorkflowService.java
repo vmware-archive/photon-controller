@@ -505,6 +505,7 @@ public class DeploymentWorkflowService extends StatefulService {
     startState.taskPollDelay = currentState.taskPollDelay;
     startState.ntpEndpoint = deploymentService.ntpEndpoint;
     startState.childPollInterval = currentState.childPollInterval;
+    startState.oAuthServerAddress = deploymentService.oAuthServerAddress;
 
     TaskUtils.startTaskAsync(
         this,
