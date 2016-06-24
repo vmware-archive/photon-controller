@@ -289,7 +289,7 @@ class ImageManager():
             raise ImageNotFoundException("Temp image %s not found" % tmp_dir)
 
         try:
-            with FileBackedLock(image_path, ds_type, retry=300, wait_secs=0.01):  # wait lock for 3 seconds
+            with FileBackedLock(image_path, ds_type, retry=300, wait_secs=0.1):  # wait lock for 30 seconds
                 if self._check_image_repair(image_id, datastore):
                     raise DiskAlreadyExistException("Image already exists")
 
