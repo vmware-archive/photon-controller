@@ -70,11 +70,11 @@ public class ClusterManagerClient {
   public static final String EXTENDED_PROPERTY_ETCD_IP2          = "etcd_ip2";
   public static final String EXTENDED_PROPERTY_ETCD_IP3          = "etcd_ip3";
 
-  private ClusterManagerXenonRestClient xenonClient;
+  private PhotonControllerXenonRestClient xenonClient;
   private ApiFeXenonRestClient apiFeXenonClient;
 
   @Inject
-  public ClusterManagerClient(ClusterManagerXenonRestClient xenonClient, ApiFeXenonRestClient apiFeXenonClient)
+  public ClusterManagerClient(PhotonControllerXenonRestClient xenonClient, ApiFeXenonRestClient apiFeXenonClient)
       throws URISyntaxException {
     this.xenonClient = xenonClient;
     this.xenonClient.start();

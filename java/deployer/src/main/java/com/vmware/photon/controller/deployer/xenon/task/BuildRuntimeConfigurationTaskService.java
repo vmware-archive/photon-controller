@@ -15,6 +15,7 @@ package com.vmware.photon.controller.deployer.xenon.task;
 
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.HostService;
+import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
@@ -32,7 +33,6 @@ import com.vmware.photon.controller.common.xenon.validation.WriteOnce;
 import com.vmware.photon.controller.deployer.configuration.LoadBalancerServer;
 import com.vmware.photon.controller.deployer.configuration.PeerNode;
 import com.vmware.photon.controller.deployer.xenon.ContainersConfig;
-import com.vmware.photon.controller.deployer.xenon.constant.ServicePortConstants;
 import com.vmware.photon.controller.deployer.xenon.entity.ContainerService;
 import com.vmware.photon.controller.deployer.xenon.entity.ContainerTemplateService;
 import com.vmware.photon.controller.deployer.xenon.entity.VmService;
@@ -417,10 +417,10 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
 
     if (deploymentState.oAuthEnabled) {
       dynamicParameters.put(MUSTACHE_KEY_COMMON_LOAD_BALANCER_PORT,
-          String.valueOf(ServicePortConstants.LOADBALANCER_API_HTTPS_PORT));
+          String.valueOf(Constants.LOADBALANCER_API_HTTPS_PORT));
     } else {
       dynamicParameters.put(MUSTACHE_KEY_COMMON_LOAD_BALANCER_PORT,
-          String.valueOf(ServicePortConstants.LOADBALANCER_API_HTTP_PORT));
+          String.valueOf(Constants.LOADBALANCER_API_HTTP_PORT));
     }
 
     if (deploymentState.syslogEndpoint != null) {
@@ -443,7 +443,7 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
             String.valueOf(deploymentState.virtualNetworkEnabled));
         if (deploymentState.oAuthEnabled) {
           dynamicParameters.put(MUSTACHE_KEY_MGMT_API_AUTH_SERVER_PORT,
-              String.valueOf(ServicePortConstants.LIGHTWAVE_PORT));
+              String.valueOf(Constants.LIGHTWAVE_PORT));
           dynamicParameters.put(MUSTACHE_KEY_MGMT_API_AUTH_SERVER_TENANT, deploymentState.oAuthTenantName);
           dynamicParameters.put(MUSTACHE_KEY_MGMT_API_SWAGGER_LOGIN_URL, deploymentState.oAuthSwaggerLoginEndpoint);
           dynamicParameters.put(MUSTACHE_KEY_MGMT_API_SWAGGER_LOGOUT_URL, deploymentState.oAuthSwaggerLogoutEndpoint);
@@ -482,7 +482,7 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
         if (!currentState.dynamicParameters.containsKey(MUSTACHE_KEY_COMMON_ZOOKEEPER_QUORUM)) {
           getIpsForContainerType(ContainersConfig.ContainerType.Zookeeper,
               (vmIpAddresses) -> patchDynamicParameter(currentState, MUSTACHE_KEY_COMMON_ZOOKEEPER_QUORUM,
-                  generateReplicaList(vmIpAddresses, String.valueOf(ServicePortConstants.ZOOKEEPER_PORT))));
+                  generateReplicaList(vmIpAddresses, String.valueOf(Constants.ZOOKEEPER_PORT))));
           return;
         }
     }
@@ -504,7 +504,7 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
         case PhotonControllerCore:
           getIpsForContainerType(currentState.containerType,
                   (vmIpAddresses) -> patchDynamicParameter(currentState, MUSTACHE_KEY_CLOUDSTORE_PEER_NODES,
-                          generatePeerNodeList(vmIpAddresses, String.valueOf(ServicePortConstants.CLOUD_STORE_PORT))));
+                          generatePeerNodeList(vmIpAddresses, String.valueOf(Constants.CLOUD_STORE_PORT))));
           return;
       }
     }
@@ -515,7 +515,7 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
           getIpsForContainerType(currentState.containerType,
               (vmIpAddresses) -> patchDynamicParameter(currentState, MUSTACHE_KEY_DEPLOYER_PEER_NODES,
                   generatePeerNodeList(vmIpAddresses,
-                      String.valueOf(ServicePortConstants.DEPLOYER_PORT))));
+                      String.valueOf(Constants.CLOUD_STORE_PORT))));
           return;
       }
     }
@@ -527,7 +527,7 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
           getIpsForContainerType(currentState.containerType,
                   (vmIpAddresses) -> patchDynamicParameter(currentState, MUSTACHE_KEY_HOUSEKEEPER_PEER_NODES,
                           generatePeerNodeList(vmIpAddresses,
-                                  String.valueOf(ServicePortConstants.HOUSEKEEPER_PORT))));
+                                  String.valueOf(Constants.CLOUD_STORE_PORT))));
           return;
       }
     }
@@ -538,7 +538,7 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
           getIpsForContainerType(currentState.containerType,
                   (vmIpAddresses) -> patchDynamicParameter(currentState, MUSTACHE_KEY_SCHEDULER_PEER_NODES,
                           generatePeerNodeList(vmIpAddresses,
-                                  String.valueOf(ServicePortConstants.ROOT_SCHEDULER_PORT))));
+                                  String.valueOf(Constants.CLOUD_STORE_PORT))));
           return;
       }
     }
@@ -620,15 +620,15 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
     State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.BUILD_TYPE_SPECIFIC_STATE);
     patchState.dynamicParameters = currentState.dynamicParameters;
     patchState.dynamicParameters.put(MUSTACHE_KEY_HAPROXY_MGMT_API_HTTP_SERVERS,
-        generateServerList(vmIpAddresses, String.valueOf(ServicePortConstants.MANAGEMENT_API_PORT)));
+        generateServerList(vmIpAddresses, String.valueOf(Constants.MANAGEMENT_API_PORT)));
     patchState.dynamicParameters.put(MUSTACHE_KEY_HAPROXY_MGMT_UI_HTTP_SERVERS,
-        generateServerList(vmIpAddresses, String.valueOf(ServicePortConstants.MANAGEMENT_UI_HTTP_PORT)));
+        generateServerList(vmIpAddresses, String.valueOf(Constants.MANAGEMENT_UI_HTTP_PORT)));
     patchState.dynamicParameters.put(MUSTACHE_KEY_HAPROXY_MGMT_UI_HTTPS_SERVERS,
-        generateServerList(vmIpAddresses, String.valueOf(ServicePortConstants.MANAGEMENT_UI_HTTPS_PORT)));
+        generateServerList(vmIpAddresses, String.valueOf(Constants.MANAGEMENT_UI_HTTPS_PORT)));
     patchState.dynamicParameters.put(MUSTACHE_KEY_HAPROXY_MGMT_UI_HTTP_PORT,
-        String.valueOf(ServicePortConstants.LOADBALANCER_MGMT_UI_HTTP_PORT));
+        String.valueOf(Constants.LOADBALANCER_MGMT_UI_HTTP_PORT));
     patchState.dynamicParameters.put(MUSTACHE_KEY_HAPROXY_MGMT_UI_HTTPS_PORT,
-        String.valueOf(ServicePortConstants.LOADBALANCER_MGMT_UI_HTTPS_PORT));
+        String.valueOf(Constants.LOADBALANCER_MGMT_UI_HTTPS_PORT));
 
     /**
      * N.B. Frustratingly, Mustache does not consider the value of this key when modifying the
@@ -782,7 +782,7 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
       case Lightwave: {
         DeploymentService.State deploymentPatchState = new DeploymentService.State();
         deploymentPatchState.oAuthServerAddress = currentState.vmIpAddress;
-        deploymentPatchState.oAuthServerPort = ServicePortConstants.LIGHTWAVE_PORT;
+        deploymentPatchState.oAuthServerPort = Constants.LIGHTWAVE_PORT;
         patchOps.add(HostUtils.getCloudStoreHelper(this).createPatch(currentState.deploymentServiceLink)
             .setBody(deploymentPatchState));
         break;

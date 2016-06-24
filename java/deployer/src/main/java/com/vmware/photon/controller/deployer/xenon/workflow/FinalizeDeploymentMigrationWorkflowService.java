@@ -23,6 +23,7 @@ import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.HostService;
 import com.vmware.photon.controller.clustermanager.utils.ExceptionUtils;
+import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
@@ -42,7 +43,6 @@ import com.vmware.photon.controller.common.xenon.validation.Positive;
 import com.vmware.photon.controller.common.xenon.validation.WriteOnce;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClient;
 import com.vmware.photon.controller.deployer.xenon.DeployerServiceGroup;
-import com.vmware.photon.controller.deployer.xenon.constant.ServicePortConstants;
 import com.vmware.photon.controller.deployer.xenon.task.CopyStateTaskFactoryService;
 import com.vmware.photon.controller.deployer.xenon.task.CopyStateTaskService;
 import com.vmware.photon.controller.deployer.xenon.task.CopyStateTriggerTaskService;
@@ -356,7 +356,7 @@ public class FinalizeDeploymentMigrationWorkflowService extends StatefulService 
         sourceDeploymentId, currentState.taskPollDelay, new FutureCallback<List<String>>() {
           @Override
           public void onSuccess(@Nullable List<String> result) {
-            String zookeeperQuorum = MiscUtils.generateReplicaList(result, Integer.toString(ServicePortConstants
+            String zookeeperQuorum = MiscUtils.generateReplicaList(result, Integer.toString(Constants
                 .ZOOKEEPER_PORT));
 
             ServiceUtils.logInfo(FinalizeDeploymentMigrationWorkflowService.this,

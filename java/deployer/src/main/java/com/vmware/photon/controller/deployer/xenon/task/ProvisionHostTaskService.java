@@ -20,6 +20,7 @@ import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.HostService;
+import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.clients.AgentControlClient;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
@@ -41,7 +42,6 @@ import com.vmware.photon.controller.common.xenon.validation.WriteOnce;
 import com.vmware.photon.controller.deployer.deployengine.ScriptRunner;
 import com.vmware.photon.controller.deployer.xenon.DeployerContext;
 import com.vmware.photon.controller.deployer.xenon.DeployerServiceGroup;
-import com.vmware.photon.controller.deployer.xenon.constant.ServicePortConstants;
 import com.vmware.photon.controller.deployer.xenon.entity.VibFactoryService;
 import com.vmware.photon.controller.deployer.xenon.entity.VibService;
 import com.vmware.photon.controller.deployer.xenon.util.HostUtils;
@@ -551,7 +551,7 @@ public class ProvisionHostTaskService extends StatefulService {
     hostNodeLoginCredential.setUsername(hostState.userName);
     hostNodeLoginCredential.setPassword(hostState.password);
     hostNodeLoginCredential.setThumbprint(nsxClient.getHostThumbprint(hostState.hostAddress,
-        ServicePortConstants.ESXI_PORT));
+        Constants.ESXI_PORT));
 
     FabricNodeCreateSpec request = new FabricNodeCreateSpec();
     request.setDisplayName(NameUtils.getFabricNodeName(hostState.hostAddress));

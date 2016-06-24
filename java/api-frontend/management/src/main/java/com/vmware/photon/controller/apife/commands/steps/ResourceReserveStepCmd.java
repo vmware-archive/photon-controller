@@ -30,7 +30,7 @@ import com.vmware.photon.controller.apife.backends.NetworkBackend;
 import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.backends.VmBackend;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
-import com.vmware.photon.controller.apife.backends.clients.SchedulerXenonRestClient;
+import com.vmware.photon.controller.apife.backends.clients.PhotonControllerXenonRestClient;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.AttachedDiskEntity;
 import com.vmware.photon.controller.apife.entities.BaseDiskEntity;
@@ -473,7 +473,8 @@ public class ResourceReserveStepCmd extends StepCommand {
    * @throws RpcException
    */
   private PlacementTask sendPlaceRequest(Resource resource) throws RpcException {
-    SchedulerXenonRestClient schedulerXenonRestClient = taskCommand.getSchedulerXenonRestClient();
+    PhotonControllerXenonRestClient photonControllerXenonRestClient =
+        taskCommand.getPhotonControllerXenonRestClient();
     logger.info("place request resource: {}", resource);
     PlacementTask placementTask = new PlacementTask();
     placementTask.resource = resource;
@@ -481,7 +482,8 @@ public class ResourceReserveStepCmd extends StepCommand {
     placementTask.taskState.isDirect = true;
 
     // Wait for the response of the PlacementTask
-    Operation placementResponse = schedulerXenonRestClient.post(PlacementTaskService.FACTORY_LINK, placementTask);
+    Operation placementResponse =
+        photonControllerXenonRestClient.post(PlacementTaskService.FACTORY_LINK, placementTask);
     PlacementTask taskResponse = placementResponse.getBody(PlacementTask.class);
 
     SchedulerErrorCodeToExceptionMapper.mapErrorCodeToException(

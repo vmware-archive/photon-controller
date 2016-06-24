@@ -29,7 +29,7 @@ import com.vmware.photon.controller.apife.backends.TaskBackend;
 import com.vmware.photon.controller.apife.backends.TombstoneBackend;
 import com.vmware.photon.controller.apife.backends.VmBackend;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
-import com.vmware.photon.controller.apife.backends.clients.HousekeeperXenonRestClient;
+import com.vmware.photon.controller.apife.backends.clients.PhotonControllerXenonRestClient;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidNetworkStateException;
 import com.vmware.photon.controller.apife.exceptions.external.NetworkNotFoundException;
 import com.vmware.photon.controller.cloudstore.xenon.entity.TaskService;
@@ -69,7 +69,7 @@ import java.util.UUID;
 public class VirtualNetworkFeClientTest {
 
   private ObjectMapper objectMapper;
-  private HousekeeperXenonRestClient backendClient;
+  private PhotonControllerXenonRestClient backendClient;
   private ApiFeXenonRestClient cloudStoreClient;
   private TaskBackend taskBackend;
   private VmBackend vmBackend;
@@ -80,7 +80,7 @@ public class VirtualNetworkFeClientTest {
   public void setUp() {
     objectMapper = new ObjectMapper();
 
-    backendClient = mock(HousekeeperXenonRestClient.class);
+    backendClient = mock(PhotonControllerXenonRestClient.class);
     doNothing().when(backendClient).start();
 
     cloudStoreClient = mock(ApiFeXenonRestClient.class);

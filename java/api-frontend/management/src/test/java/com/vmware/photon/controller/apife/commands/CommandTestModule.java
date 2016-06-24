@@ -14,10 +14,9 @@
 package com.vmware.photon.controller.apife.commands;
 
 import com.vmware.photon.controller.apife.BackendTaskExecutor;
-import com.vmware.photon.controller.apife.DeployerServerSet;
 import com.vmware.photon.controller.apife.lib.ImageStoreFactory;
 import com.vmware.photon.controller.apife.lib.VsphereIsoStore;
-import com.vmware.photon.controller.common.CloudStoreServerSet;
+import com.vmware.photon.controller.common.PhotonControllerServerSet;
 import com.vmware.photon.controller.common.thrift.ServerSet;
 
 import com.google.inject.AbstractModule;
@@ -56,15 +55,8 @@ public class CommandTestModule extends AbstractModule {
 
   @Provides
   @Singleton
-  @DeployerServerSet
-  public ServerSet getDeployerServerSet() {
-    return mock(ServerSet.class);
-  }
-
-  @Provides
-  @Singleton
-  @CloudStoreServerSet
-  public ServerSet getCloudStoreServerSet() {
+  @PhotonControllerServerSet
+  public ServerSet getPhotonControllerServerSet() {
     return mock(ServerSet.class);
   }
 }

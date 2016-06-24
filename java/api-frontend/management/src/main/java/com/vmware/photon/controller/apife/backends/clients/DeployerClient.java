@@ -77,11 +77,11 @@ public class DeployerClient {
 
     private static final String COMMA_DELIMITED_REGEX = "\\s*,\\s*";
 
-    private DeployerXenonRestClient xenonClient;
+    private PhotonControllerXenonRestClient xenonClient;
     private ApiFeXenonRestClient apiFeXenonRestClient;
 
     @Inject
-    public DeployerClient(DeployerXenonRestClient xenonClient, ApiFeXenonRestClient xenonFeXenonClient)
+    public DeployerClient(PhotonControllerXenonRestClient xenonClient, ApiFeXenonRestClient xenonFeXenonClient)
             throws URISyntaxException {
         this.xenonClient = xenonClient;
         this.xenonClient.start();

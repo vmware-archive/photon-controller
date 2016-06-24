@@ -37,14 +37,14 @@ public class HousekeeperClient {
 
     private static final String COMMA_DELIMITED_REGEX = "\\s*,\\s*";
 
-    private HousekeeperXenonRestClient housekeeperXenonClient;
+    private PhotonControllerXenonRestClient photonControllerXenonRestClient;
     private ApiFeXenonRestClient apiFeXenonRestClient;
 
     @Inject
-    public HousekeeperClient(HousekeeperXenonRestClient housekeeperXenonClient, ApiFeXenonRestClient apiFeXenonClient)
-            throws URISyntaxException {
-        this.housekeeperXenonClient = housekeeperXenonClient;
-        this.housekeeperXenonClient.start();
+    public HousekeeperClient(PhotonControllerXenonRestClient photonControllerXenonRestClient,
+                             ApiFeXenonRestClient apiFeXenonClient) throws URISyntaxException {
+        this.photonControllerXenonRestClient = photonControllerXenonRestClient;
+        this.photonControllerXenonRestClient.start();
         this.apiFeXenonRestClient = apiFeXenonClient;
         this.apiFeXenonRestClient.start();
     }
@@ -55,7 +55,7 @@ public class HousekeeperClient {
         postReq.sourceImageDatastore = datastoreId;
 
         // Create the operation and call for seeding.
-        Operation op = housekeeperXenonClient.post(
+        Operation op = photonControllerXenonRestClient.post(
             ImageSeederServiceFactory.SELF_LINK, postReq);
 
         switch (image.getReplicationType()) {
@@ -78,7 +78,7 @@ public class HousekeeperClient {
         postReq.datastore = datastoreId;
 
         // Create the operation and call for replication.
-        Operation op = housekeeperXenonClient.post(
+        Operation op = photonControllerXenonRestClient.post(
             ImageReplicatorServiceFactory.SELF_LINK, postReq);
 
         return op.getBody(ImageReplicatorService.State.class);

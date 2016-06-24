@@ -14,7 +14,7 @@
 package com.vmware.photon.controller.apife.backends;
 
 import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
-import com.vmware.photon.controller.apife.backends.clients.DeployerXenonRestClient;
+import com.vmware.photon.controller.apife.backends.clients.PhotonControllerXenonRestClient;
 import com.vmware.photon.controller.cloudstore.xenon.CloudStoreServiceGroup;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.common.xenon.BasicServiceHost;
@@ -84,9 +84,9 @@ public class XenonBackendTestModule extends AbstractModule {
 
   @Provides
   @Singleton
-  DeployerXenonRestClient getDeployerXenonRestClient(BasicServiceHost host) throws URISyntaxException {
+  PhotonControllerXenonRestClient getPhotonControllerXenonRestClient(BasicServiceHost host) throws URISyntaxException {
     StaticServerSet serverSet = new StaticServerSet(
         new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-    return new DeployerXenonRestClient(serverSet, Executors.newFixedThreadPool(128));
+    return new PhotonControllerXenonRestClient(serverSet, Executors.newFixedThreadPool(128));
   }
 }

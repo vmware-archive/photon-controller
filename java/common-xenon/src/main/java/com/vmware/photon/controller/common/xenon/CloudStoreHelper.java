@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.common.xenon;
 
-import com.vmware.photon.controller.common.CloudStoreServerSet;
+import com.vmware.photon.controller.common.PhotonControllerServerSet;
 import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
@@ -35,7 +35,7 @@ public class CloudStoreHelper {
   private URI localHostUri;
 
   @Inject
-  public CloudStoreHelper(@CloudStoreServerSet ServerSet cloudStoreServerSet) {
+  public CloudStoreHelper(@PhotonControllerServerSet ServerSet cloudStoreServerSet) {
     this.cloudStoreServerSet = checkNotNull(cloudStoreServerSet);
     this.localHostUri = OperationUtils.getLocalHostUri();
   }
