@@ -106,6 +106,7 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
   private static final String MUSTACHE_KEY_MGMT_API_USE_VIRTUAL_NETWORK = "USE_VIRTUAL_NETWORK";
   private static final String MUSTACHE_KEY_MGMT_UI_LOGIN_URL = "MGMT_UI_LOGIN_URL";
   private static final String MUSTACHE_KEY_MGMT_UI_LOGOUT_URL = "MGMT_UI_LOGOUT_URL";
+  private static final String MUSTACHE_KEY_ZOOKEEPER_MY_ID = "ZOOKEEPER_MYID";
 
   /**
    * This class defines the state of a {@link BuildRuntimeConfigurationTaskService} task.
@@ -589,6 +590,17 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
         }
         break;
 
+      //
+      // Zookeeper requires special handling of the Zookeeper server information in order to be
+      // configured correctly.
+      //
+
+      case Zookeeper:
+        if (!currentState.dynamicParameters.containsKey(MUSTACHE_KEY_ZOOKEEPER_MY_ID)) {
+          patchZookeeperParameters(currentState);
+          return;
+        }
+        break;
     }
 
     sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.PATCH_ENTITY_DOCUMENTS);
@@ -664,6 +676,54 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
               try {
                 patchDynamicParameter(currentState, MUSTACHE_KEY_MGMT_API_ESX_HOST,
                     o.getBody(HostService.State.class).hostAddress);
+              } catch (Throwable t) {
+                failTask(t);
+              }
+            }));
+  }
+
+  private void patchZookeeperParameters(State currentState) {
+
+    //
+    // N.B. Zookeeper server ID mappings are maintained by the patch handler in the deployment
+    // service entity, so it is necessary to register the current container with the deployment
+    // document before computing the parameters here.
+    //
+    // This violates the sub-stage separation between generating dynamic state and writing it to
+    // entities, but this is unavoidable.
+    //
+
+    DeploymentService.HostListChangeRequest hostListChangeRequest = new DeploymentService.HostListChangeRequest();
+    hostListChangeRequest.kind = DeploymentService.HostListChangeRequest.Kind.UPDATE_ZOOKEEPER_INFO;
+    hostListChangeRequest.zookeeperIpsToAdd = Collections.singletonList(currentState.vmIpAddress);
+
+    sendRequest(HostUtils.getCloudStoreHelper(this)
+        .createPatch(currentState.deploymentServiceLink)
+        .setBody(hostListChangeRequest)
+        .setCompletion(
+            (o, e) -> {
+              if (e != null) {
+                failTask(e);
+                return;
+              }
+
+              try {
+
+                //
+                // N.B. Because this operation can occur in parallel for multiple Zookeeper service
+                // containers, it is impossible to generate the final Zookeeper quorum here. This
+                // step is performed as a separate sub-stage in the parent workflow.
+                //
+
+                int myId = o.getBody(DeploymentService.State.class).zookeeperIdToIpMap.entrySet().stream()
+                    .filter((entry) -> entry.getValue().equals(currentState.vmIpAddress))
+                    .mapToInt(Map.Entry::getKey)
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalStateException("Replica list does not contain " +
+                        currentState.vmIpAddress));
+
+                patchDynamicParameter(currentState, MUSTACHE_KEY_ZOOKEEPER_MY_ID, String.valueOf(myId));
+
               } catch (Throwable t) {
                 failTask(t);
               }

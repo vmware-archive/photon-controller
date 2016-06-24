@@ -962,6 +962,7 @@ public class DeploymentWorkflowServiceTest {
             assertThat(state.statsStorePort, is(8081));
             assertThat(state.statsStoreType, is(StatsStoreType.GRAPHITE));
 
+            assertThat(state.zookeeperIdToIpMap.size() == mgmtHostCnt, is(true));
             return true;
           }, remoteStore);
     }
