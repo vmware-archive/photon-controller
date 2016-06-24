@@ -735,7 +735,8 @@ public class FinalizeDeploymentMigrationWorkflowService extends StatefulService 
       .sendWith(this);
   }
 
-  private void migrateFinal(State currentState, Map<String, Long> lastUpdateTimes) {
+  private void migrateFinal(State currentState, Map<String, Long>
+      lastUpdateTimes) {
     Map<String, Pair<Set<InetSocketAddress>, Set<InetSocketAddress>>> m = new HashMap<>();
     DeployerServiceGroup deployerServiceGroup =
         (DeployerServiceGroup) ((PhotonControllerXenonHost) getHost()).getDeployer();
@@ -745,9 +746,9 @@ public class FinalizeDeploymentMigrationWorkflowService extends StatefulService 
         HostUtils.getDeployerContext(this).getUpgradeInformation().stream()
         .map(entry -> {
           if (!m.containsKey(entry.zookeeperServerSet)) {
-            Set<InetSocketAddress> destinationServers = zookeeperClient.getServers(
-                HostUtils.getDeployerContext(this).getZookeeperQuorum(),
-                entry.zookeeperServerSet);
+            Set<InetSocketAddress> destinationServers = new HashSet<InetSocketAddress>();
+            destinationServers.add(new InetSocketAddress(getHost().getPreferredAddress(), getHost().getPort()));
+
             Set<InetSocketAddress> sourceServers
                 = zookeeperClient.getServers(currentState.sourceZookeeperQuorum, entry.zookeeperServerSet);
 
