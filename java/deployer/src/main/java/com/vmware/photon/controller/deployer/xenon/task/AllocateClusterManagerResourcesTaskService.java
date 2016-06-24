@@ -18,6 +18,7 @@ import com.vmware.photon.controller.api.QuotaLineItem;
 import com.vmware.photon.controller.api.QuotaUnit;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.clustermanager.servicedocuments.ClusterManagerConstants;
+import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
@@ -32,7 +33,6 @@ import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.WriteOnce;
 import com.vmware.photon.controller.deployer.xenon.ContainersConfig;
-import com.vmware.photon.controller.deployer.xenon.constant.ServicePortConstants;
 import com.vmware.photon.controller.deployer.xenon.entity.ContainerService;
 import com.vmware.photon.controller.deployer.xenon.entity.ContainerTemplateService;
 import com.vmware.photon.controller.deployer.xenon.entity.VmService;
@@ -313,7 +313,7 @@ public class AllocateClusterManagerResourcesTaskService extends StatefulService 
             patchState.loadBalancerAddress = new URL(String.format("%s://%s:%s",
                 MANAGEMENT_API_PROTOCOL,
                 vmState.ipAddress,
-                ServicePortConstants.MANAGEMENT_API_PORT)).toString();
+                Constants.MANAGEMENT_API_PORT)).toString();
             TaskUtils.sendSelfPatch(AllocateClusterManagerResourcesTaskService.this, patchState);
           } catch (Throwable t) {
             failTask(t);

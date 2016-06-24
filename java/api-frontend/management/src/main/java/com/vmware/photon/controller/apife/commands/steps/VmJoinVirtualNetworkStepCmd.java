@@ -18,7 +18,7 @@ import com.vmware.photon.controller.apibackend.servicedocuments.ConnectVmToSwitc
 import com.vmware.photon.controller.apibackend.tasks.ConnectVmToSwitchTaskService;
 import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
-import com.vmware.photon.controller.apife.backends.clients.HousekeeperXenonRestClient;
+import com.vmware.photon.controller.apife.backends.clients.PhotonControllerXenonRestClient;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
@@ -78,10 +78,10 @@ public class VmJoinVirtualNetworkStepCmd extends StepCommand {
     startState.networkId = networkId;
     startState.vmId = vmId;
 
-    HousekeeperXenonRestClient housekeeperXenonRestClient = taskCommand.getHousekeeperXenonRestClient();
-    Operation result = housekeeperXenonRestClient.post(ConnectVmToSwitchTaskService.FACTORY_LINK, startState);
+    PhotonControllerXenonRestClient photonControllerXenonRestClient = taskCommand.getPhotonControllerXenonRestClient();
+    Operation result = photonControllerXenonRestClient.post(ConnectVmToSwitchTaskService.FACTORY_LINK, startState);
     ConnectVmToSwitchTask task = result.getBody(ConnectVmToSwitchTask.class);
-    TaskState.TaskStage taskStage = waitForConnectionDone(housekeeperXenonRestClient, task.documentSelfLink);
+    TaskState.TaskStage taskStage = waitForConnectionDone(photonControllerXenonRestClient, task.documentSelfLink);
 
     if (taskStage != TaskState.TaskStage.FINISHED) {
       String errorMsg = "Connecting VM at " + vmLocationId + " to logical switch " +
@@ -96,11 +96,11 @@ public class VmJoinVirtualNetworkStepCmd extends StepCommand {
   protected void cleanup() {
   }
 
-  private TaskState.TaskStage waitForConnectionDone(HousekeeperXenonRestClient housekeeperXenonRestClient,
+  private TaskState.TaskStage waitForConnectionDone(PhotonControllerXenonRestClient photonControllerXenonRestClient,
                                                     String taskUrl) {
     for (int i = 0; i < NUM_RETIRES; i++) {
       try {
-        Operation result = housekeeperXenonRestClient.get(taskUrl);
+        Operation result = photonControllerXenonRestClient.get(taskUrl);
         TaskState.TaskStage taskStage = result.getBody(ConnectVmToSwitchTask.class).taskState.stage;
         if (taskStage != TaskState.TaskStage.STARTED) {
           return taskStage;

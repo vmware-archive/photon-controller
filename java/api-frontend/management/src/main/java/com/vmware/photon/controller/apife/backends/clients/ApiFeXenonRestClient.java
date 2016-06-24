@@ -14,7 +14,7 @@
 package com.vmware.photon.controller.apife.backends.clients;
 
 import com.vmware.photon.controller.apife.BackendTaskExecutor;
-import com.vmware.photon.controller.common.CloudStoreServerSet;
+import com.vmware.photon.controller.common.PhotonControllerServerSet;
 import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.photon.controller.common.xenon.OperationUtils;
 import com.vmware.photon.controller.common.xenon.XenonRestClient;
@@ -49,7 +49,7 @@ public class ApiFeXenonRestClient extends XenonRestClient {
   private static final Logger logger = LoggerFactory.getLogger(ApiFeXenonRestClient.class);
 
   @Inject
-  public ApiFeXenonRestClient(@CloudStoreServerSet ServerSet serverSet,
+  public ApiFeXenonRestClient(@PhotonControllerServerSet ServerSet serverSet,
                               @BackendTaskExecutor ExecutorService executor) {
     super(serverSet, executor);
   }

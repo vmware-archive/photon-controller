@@ -19,8 +19,7 @@ import com.vmware.photon.controller.apife.backends.TaskBackend;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.backends.clients.DeployerClient;
 import com.vmware.photon.controller.apife.backends.clients.HousekeeperClient;
-import com.vmware.photon.controller.apife.backends.clients.HousekeeperXenonRestClient;
-import com.vmware.photon.controller.apife.backends.clients.SchedulerXenonRestClient;
+import com.vmware.photon.controller.apife.backends.clients.PhotonControllerXenonRestClient;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
@@ -65,16 +64,13 @@ public class VmGetMksTicketStepCmdTest extends PowerMockTestCase {
   private ApiFeXenonRestClient xenonClient;
 
   @Mock
-  private SchedulerXenonRestClient schedulerXenonRestClient;
+  private PhotonControllerXenonRestClient photonControllerXenonRestClient;
 
   @Mock
   private TaskEntity task;
 
   @Mock
   private HousekeeperClient housekeeperClient;
-
-  @Mock
-  private HousekeeperXenonRestClient housekeeperXenonRestClient;
 
   @Mock
   private DeployerClient deployerClient;
@@ -118,12 +114,12 @@ public class VmGetMksTicketStepCmdTest extends PowerMockTestCase {
     Datastore datastore = new Datastore();
     datastore.setId("datastore-id");
 
-    taskCommand = spy(new TaskCommand(xenonClient, schedulerXenonRestClient, hostClient,
-        housekeeperClient, housekeeperXenonRestClient, deployerClient, deployerXenonClient, housekeeperXenonClient,
+    taskCommand = spy(new TaskCommand(xenonClient, photonControllerXenonRestClient, hostClient,
+        housekeeperClient, deployerClient, deployerXenonClient, housekeeperXenonClient,
         entityLockBackend,
         task));
     when(taskCommand.getHostClient()).thenReturn(hostClient);
-    when(taskCommand.getSchedulerXenonRestClient()).thenReturn(schedulerXenonRestClient);
+    when(taskCommand.getPhotonControllerXenonRestClient()).thenReturn(photonControllerXenonRestClient);
     HostService.State hostServiceState = new HostService.State();
     hostServiceState.hostAddress = "host-ip";
     when(hostServiceOp.getBody(Matchers.any())).thenReturn(hostServiceState);

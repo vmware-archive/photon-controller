@@ -22,8 +22,7 @@ import com.vmware.photon.controller.apife.backends.TaskBackend;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.backends.clients.DeployerClient;
 import com.vmware.photon.controller.apife.backends.clients.HousekeeperClient;
-import com.vmware.photon.controller.apife.backends.clients.HousekeeperXenonRestClient;
-import com.vmware.photon.controller.apife.backends.clients.SchedulerXenonRestClient;
+import com.vmware.photon.controller.apife.backends.clients.PhotonControllerXenonRestClient;
 import com.vmware.photon.controller.apife.commands.BaseCommand;
 import com.vmware.photon.controller.apife.commands.steps.StepCommand;
 import com.vmware.photon.controller.apife.commands.steps.StepCommandFactory;
@@ -71,10 +70,9 @@ public class TaskCommand extends BaseCommand {
   private Resource resource;
   private String reservation;
   private ApiFeXenonRestClient xenonClient;
-  private SchedulerXenonRestClient schedulerXenonRestClient;
+  private PhotonControllerXenonRestClient photonControllerXenonRestClient;
   private HostClient hostClient;
   private HousekeeperClient housekeeperClient;
-  private HousekeeperXenonRestClient housekeeperXenonRestClient;
   private DeployerClient deployerClient;
 
   private com.vmware.photon.controller.apife.backends.clients.DeployerClient deployerXenonClient;
@@ -83,10 +81,9 @@ public class TaskCommand extends BaseCommand {
 
   @Inject
   public TaskCommand(ApiFeXenonRestClient xenonClient,
-                     SchedulerXenonRestClient schedulerXenonRestClient,
+                     PhotonControllerXenonRestClient photonControllerXenonRestClient,
                      HostClient hostClient,
                      HousekeeperClient housekeeperClient,
-                     HousekeeperXenonRestClient housekeeperXenonRestClient,
                      DeployerClient deployerClient,
                      com.vmware.photon.controller.apife.backends.clients.DeployerClient deployerXenonClient,
                      com.vmware.photon.controller.apife.backends.clients.HousekeeperClient housekeeperXenonClient,
@@ -95,11 +92,10 @@ public class TaskCommand extends BaseCommand {
     super(task.getId());
     this.task = checkNotNull(task);
     this.xenonClient = xenonClient;
-    this.schedulerXenonRestClient = schedulerXenonRestClient;
+    this.photonControllerXenonRestClient = checkNotNull(photonControllerXenonRestClient);
     this.hostClient = checkNotNull(hostClient);
     this.housekeeperClient = checkNotNull(housekeeperClient);
     this.housekeeperXenonClient = checkNotNull(housekeeperXenonClient);
-    this.housekeeperXenonRestClient = checkNotNull(housekeeperXenonRestClient);
     this.deployerClient = deployerClient;
     this.deployerXenonClient = deployerXenonClient;
     this.entityLockBackend = entityLockBackend;
@@ -208,8 +204,8 @@ public class TaskCommand extends BaseCommand {
     return xenonClient;
   }
 
-  public SchedulerXenonRestClient getSchedulerXenonRestClient() {
-    return schedulerXenonRestClient;
+  public PhotonControllerXenonRestClient getPhotonControllerXenonRestClient() {
+    return photonControllerXenonRestClient;
   }
 
   public HousekeeperClient getHousekeeperClient() {
@@ -218,10 +214,6 @@ public class TaskCommand extends BaseCommand {
 
   public com.vmware.photon.controller.apife.backends.clients.HousekeeperClient getHousekeeperXenonClient() {
     return checkNotNull(housekeeperXenonClient);
-  }
-
-  public HousekeeperXenonRestClient getHousekeeperXenonRestClient() {
-    return housekeeperXenonRestClient;
   }
 
   public DeployerClient getDeployerClient() {

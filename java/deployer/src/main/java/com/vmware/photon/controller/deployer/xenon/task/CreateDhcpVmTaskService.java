@@ -20,6 +20,7 @@ import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.VmCreateSpec;
 import com.vmware.photon.controller.api.VmMetadata;
 import com.vmware.photon.controller.cloudstore.xenon.entity.HostService;
+import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
@@ -42,7 +43,6 @@ import com.vmware.photon.controller.deployer.deployengine.ScriptRunner;
 import com.vmware.photon.controller.deployer.healthcheck.HealthChecker;
 import com.vmware.photon.controller.deployer.xenon.ContainersConfig;
 import com.vmware.photon.controller.deployer.xenon.DeployerContext;
-import com.vmware.photon.controller.deployer.xenon.constant.ServicePortConstants;
 import com.vmware.photon.controller.deployer.xenon.entity.ContainerService;
 import com.vmware.photon.controller.deployer.xenon.entity.ContainerTemplateService;
 import com.vmware.photon.controller.deployer.xenon.entity.VmService;
@@ -1266,7 +1266,7 @@ public class CreateDhcpVmTaskService extends StatefulService {
     }
 
     final HealthChecker healthChecker = HostUtils.getHealthCheckHelperFactory(this)
-        .create(this, ServicePortConstants.DHCP_AGENT_PORT, currentState.dhcpAgentEndpointAddress);
+        .create(this, Constants.DHCP_AGENT_PORT, currentState.dhcpAgentEndpointAddress);
 
     if (healthChecker.isReady()) {
       ServiceUtils.logInfo(this,
