@@ -28,7 +28,7 @@ package com.vmware.photon.controller.api;
  *                |                                       |                            |
  *                +---------------> ERROR <---------------+----------------------------+
  * <p/>
- * - CREATING - a create task is scheduled and the Cluster DCP entity has been created. Will transition to READY when
+ * - CREATING - a create task is scheduled and the Cluster Xenon entity has been created. Will transition to READY when
  * cluster is successfully created. Otherwise will transfer to ERROR state.
  * <p/>
  * - READY - the Cluster is fully functioning.

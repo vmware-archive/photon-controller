@@ -75,8 +75,8 @@ public class ApiFeConfigurationTest {
   }
 
   @Test
-  public void testUseDcpBackend() throws Exception {
-    assertThat(config.useDcpBackend(), is(true));
+  public void testUseXenonBackend() throws Exception {
+    assertThat(config.useXenonBackend(), is(true));
   }
 
   @Test
@@ -87,7 +87,7 @@ public class ApiFeConfigurationTest {
     // When not set, default status config should show status for all components.
     Set expectedComponents = EnumSet.allOf(Component.class);
     assertThat(config.getStatusConfig().getComponents(), is(expectedComponents));
-    assertThat(config.useDcpBackend(), is(true));
+    assertThat(config.useXenonBackend(), is(true));
   }
 
 }

@@ -38,7 +38,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeoutException;
 
 /**
- * Http rest client to talk to DCP.
+ * Http rest client to talk to Xenon.
  * This class allows for injection of DeployerServerSet and executor specific to API-FE
  */
 @Singleton
@@ -158,7 +158,7 @@ public class ClusterManagerXenonRestClient extends XenonRestClient {
   protected void handleTimeoutException(Operation operation, TimeoutException timeoutException) {
     // Cluster Manager Client does not handle timeout exception currently hence converting it to RuntimeException
 
-    logger.warn("ClusterManagerDcpRestClient.send: TIMEOUT Operation={}, Message={}",
+    logger.warn("ClusterManagerXenonRestClient.send: TIMEOUT Operation={}, Message={}",
         OperationUtils.createLogMessageWithStatus(operation),
         timeoutException.getMessage());
     throw new RuntimeException(timeoutException);
@@ -167,7 +167,7 @@ public class ClusterManagerXenonRestClient extends XenonRestClient {
   @VisibleForTesting
   @Override
   protected void handleInterruptedException(Operation operation, InterruptedException interruptedException) {
-    logger.warn("ClusterManagerDcpRestClient.send: INTERRUPTED Operation={}, Exception={}",
+    logger.warn("ClusterManagerXenonRestClient.send: INTERRUPTED Operation={}, Exception={}",
         OperationUtils.createLogMessageWithStatus(operation),
         interruptedException);
 

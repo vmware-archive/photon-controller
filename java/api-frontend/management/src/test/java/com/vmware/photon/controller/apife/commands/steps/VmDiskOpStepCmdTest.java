@@ -135,7 +135,7 @@ public class VmDiskOpStepCmdTest extends PowerMockTestCase {
   @Mock
   AttachedDiskBackend attachedDiskBackend;
   @Mock
-  ApiFeXenonRestClient dcpClient;
+  ApiFeXenonRestClient xenonClient;
   @Mock
   private SchedulerXenonRestClient schedulerXenonRestClient;
   @Mock
@@ -244,7 +244,7 @@ public class VmDiskOpStepCmdTest extends PowerMockTestCase {
     when(diskBackend.find(PersistentDisk.KIND, diskId1)).thenReturn(disk1);
     when(diskBackend.find(PersistentDisk.KIND, diskId2)).thenReturn(disk2);
 
-    taskCommand = spy(new TaskCommand(dcpClient, schedulerXenonRestClient, hostClient,
+    taskCommand = spy(new TaskCommand(xenonClient, schedulerXenonRestClient, hostClient,
         housekeeperClient, housekeeperXenonRestClient, deployerClient, deployerXenonClient, housekeeperXenonClient,
         entityLockBackend, task));
     when(taskCommand.getHostClient()).thenReturn(hostClient);
@@ -259,7 +259,7 @@ public class VmDiskOpStepCmdTest extends PowerMockTestCase {
     HostService.State hostServiceState = new HostService.State();
     hostServiceState.hostAddress = "host-ip";
     when(hostServiceOp.getBody(Matchers.any())).thenReturn(hostServiceState);
-    when(dcpClient.get(Matchers.startsWith(HostServiceFactory.SELF_LINK))).thenReturn(hostServiceOp);
+    when(xenonClient.get(Matchers.startsWith(HostServiceFactory.SELF_LINK))).thenReturn(hostServiceOp);
   }
 
   @Test

@@ -43,7 +43,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class TaskCommandExecutorServiceTest {
   private static final Logger logger = LoggerFactory.getLogger(TaskCommandExecutorServiceTest.class);
-  private ApiFeXenonRestClient dcpClient = mock(ApiFeXenonRestClient.class);
+  private ApiFeXenonRestClient xenonClient = mock(ApiFeXenonRestClient.class);
   private HousekeeperClient housekeeperClient = mock(HousekeeperClient.class);
   private HousekeeperXenonRestClient housekeeperXenonRestClient = mock(HousekeeperXenonRestClient.class);
   private DeployerClient deployerClient = mock(DeployerClient.class);
@@ -121,7 +121,7 @@ public class TaskCommandExecutorServiceTest {
     for (int i = 0; i < count; i++) {
       TaskEntity task = new TaskEntity();
       task.setId("t" + i);
-      commands[i] = new TestTaskCommand(dcpClient, schedulerXenonRestClient, hostClient,
+      commands[i] = new TestTaskCommand(xenonClient, schedulerXenonRestClient, hostClient,
           housekeeperClient, housekeeperXenonRestClient, deployerClient, deployerXenonClient,
           housekeeperXenonClient, task, countDownLatch);
       try {
@@ -141,7 +141,7 @@ public class TaskCommandExecutorServiceTest {
     private volatile Throwable exception = null;
     private volatile boolean done = false;
 
-    public TestTaskCommand(ApiFeXenonRestClient dcpClient,
+    public TestTaskCommand(ApiFeXenonRestClient xenonClient,
                            SchedulerXenonRestClient schedulerXenonRestClient,
                            HostClient hostClient,
                            HousekeeperClient housekeeperClient,
@@ -151,7 +151,7 @@ public class TaskCommandExecutorServiceTest {
                            com.vmware.photon.controller.apife.backends.clients.HousekeeperClient housekeeperXenonClient,
                            TaskEntity task,
                            CountDownLatch countDownLatch) {
-      super(dcpClient, schedulerXenonRestClient, hostClient, housekeeperClient, housekeeperXenonRestClient,
+      super(xenonClient, schedulerXenonRestClient, hostClient, housekeeperClient, housekeeperXenonRestClient,
           deployerClient, deployerXenonClient, housekeeperXenonClient, entityLockBackend, task);
       this.countDownLatch = countDownLatch;
     }

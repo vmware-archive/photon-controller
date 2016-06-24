@@ -240,7 +240,7 @@ public class ApiFeModule extends AbstractModule {
   }
 
   private void bindBackends() {
-    logger.info("Using cloud store DCP backend");
+    logger.info("Using cloud store Xenon backend");
 
     bind(FlavorBackend.class).to(FlavorXenonBackend.class);
     bind(AvailabilityZoneBackend.class).to(AvailabilityZoneXenonBackend.class);

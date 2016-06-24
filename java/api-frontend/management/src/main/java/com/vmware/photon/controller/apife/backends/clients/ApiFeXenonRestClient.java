@@ -40,7 +40,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeoutException;
 
 /**
- * Http rest client to talk to DCP.
+ * Http rest client to talk to Xenon.
  * This class allows for injection of CloudStoreServerSet and executor specific to API-FE
  */
 @Singleton
@@ -219,7 +219,7 @@ public class ApiFeXenonRestClient extends XenonRestClient {
   protected void handleTimeoutException(Operation operation, TimeoutException timeoutException) {
     //API-FE does not handle timeout exception currently hence converting it to RuntimeException
 
-    logger.warn("ApiFeDcpRestClient.send: TIMEOUT Operation={}, Message={}",
+    logger.warn("ApiFeXenonRestClient.send: TIMEOUT Operation={}, Message={}",
         OperationUtils.createLogMessageWithStatus(operation),
         timeoutException.getMessage());
     throw new RuntimeException(timeoutException);
@@ -228,7 +228,7 @@ public class ApiFeXenonRestClient extends XenonRestClient {
   @VisibleForTesting
   @Override
   protected void handleInterruptedException(Operation operation, InterruptedException interruptedException) {
-    logger.warn("ApiFeDcpRestClient.send: INTERRUPTED Operation={}, Exception={}",
+    logger.warn("ApiFeXenonRestClient.send: INTERRUPTED Operation={}, Exception={}",
         OperationUtils.createLogMessageWithStatus(operation),
         interruptedException);
 
