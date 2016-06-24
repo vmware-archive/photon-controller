@@ -16,7 +16,6 @@ package com.vmware.photon.controller.deployer.xenon.workflow;
 import com.vmware.photon.controller.api.DeploymentState;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
-import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
@@ -33,15 +32,12 @@ import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.Positive;
 import com.vmware.photon.controller.common.xenon.validation.WriteOnce;
 import com.vmware.photon.controller.deployer.DeployerConfig;
-import com.vmware.photon.controller.deployer.deployengine.ZookeeperClient;
-import com.vmware.photon.controller.deployer.xenon.DeployerServiceGroup;
 import com.vmware.photon.controller.deployer.xenon.task.AllocateClusterManagerResourcesTaskFactoryService;
 import com.vmware.photon.controller.deployer.xenon.task.AllocateClusterManagerResourcesTaskService;
 import com.vmware.photon.controller.deployer.xenon.task.CopyStateTaskFactoryService;
 import com.vmware.photon.controller.deployer.xenon.task.CopyStateTaskService;
 import com.vmware.photon.controller.deployer.xenon.util.HostUtils;
 import com.vmware.photon.controller.deployer.xenon.util.MiscUtils;
-import com.vmware.photon.controller.deployer.xenon.util.Pair;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceDocument;
@@ -49,7 +45,6 @@ import com.vmware.xenon.common.StatefulService;
 import com.vmware.xenon.common.Utils;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.FutureCallback;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import static com.google.common.base.Preconditions.checkState;
@@ -60,19 +55,15 @@ import java.net.InetSocketAddress;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 
 /**
  * This class implements a Xenon service representing the end-to-end deployment workflow.
  */
 public class DeploymentWorkflowService extends StatefulService {
-
-  public static final String ZOOKEEPER_PORT = "2181";
 
   /**
    * This class defines the state of a {@link DeploymentWorkflowService} task.
@@ -576,7 +567,7 @@ public class DeploymentWorkflowService extends StatefulService {
 
                   try {
                     DeploymentService.State deploymentState = operation.getBody(DeploymentService.State.class);
-                    migrateData(currentState, deploymentState.zookeeperQuorum);
+                    migrateData(currentState, deploymentState.serverIpToPortList);
                   } catch (Throwable t) {
                     failTask(t);
                   }
@@ -585,43 +576,25 @@ public class DeploymentWorkflowService extends StatefulService {
     );
   }
 
-  private void migrateData(State currentState, String destinationZookeeperQuorum) {
-    Map<String, Integer> portAdjustment = ImmutableMap.of(Constants.DEPLOYER_SERVICE_NAME, 0);
-
-    Map<String, Pair<Set<InetSocketAddress>, Set<InetSocketAddress>>> serviceSourceDestinationAddressCache
-      = new HashMap<>();
-    DeployerServiceGroup deployerServiceGroup =
-        (DeployerServiceGroup) ((PhotonControllerXenonHost) getHost()).getDeployer();
-    ZookeeperClient zookeeperClient = deployerServiceGroup.getZookeeperServerSetFactoryBuilder().create();
-
+  private void migrateData(State currentState, String destinationServerAddresses) {
     Collection<DeploymentMigrationInformation> migrationInformation
       = HostUtils.getDeployerContext(this).getDeploymentMigrationInformation();
 
+    Set<InetSocketAddress> sourceServers = new HashSet<>();
+    Set<InetSocketAddress> destinationServers = new HashSet<>();
     final AtomicInteger latch = new AtomicInteger(migrationInformation.size());
     final List<Throwable> errors = new BlockingArrayQueue<>();
 
     for (DeploymentMigrationInformation entry : migrationInformation) {
-      if (!serviceSourceDestinationAddressCache.containsKey(entry.zookeeperServerSetName)) {
-        // need to adjust the port of the address since zookeeper entries only contain the thrift ports
-        Set<InetSocketAddress> sourceServers = zookeeperClient.getServers(
-            HostUtils.getDeployerContext(this).getZookeeperQuorum(),
-            entry.zookeeperServerSetName).stream()
-            .map(a ->
-              new InetSocketAddress(
-                  a.getAddress(),
-                  a.getPort() + portAdjustment.getOrDefault(entry.zookeeperServerSetName, 0))
-            ).collect(Collectors.toSet());
-        Set<InetSocketAddress> destinationServers
-            = zookeeperClient.getServers(destinationZookeeperQuorum, entry.zookeeperServerSetName).stream()
-                .map(a ->
-                new InetSocketAddress(
-                    a.getAddress(),
-                    a.getPort() + portAdjustment.getOrDefault(entry.zookeeperServerSetName, 0))
-              ).collect(Collectors.toSet());;
+      if (sourceServers.size() == 0) {
+        sourceServers.add(new InetSocketAddress(getHost().getPreferredAddress(), getHost().getPort()));
 
-        serviceSourceDestinationAddressCache.put(
-            entry.zookeeperServerSetName,
-            new Pair<>(sourceServers, destinationServers));
+        // destinationServerAddresses is in the form of IP1:Port,IP2:Port
+        String[] dsAddressArr = destinationServerAddresses.split(",");
+        //Pick the first one
+        String[] destinationAddr = dsAddressArr[0].split(":");
+        ServiceUtils.logInfo(this, "MigrateData from local to destination " + dsAddressArr[0]);
+        destinationServers.add(new InetSocketAddress(destinationAddr[0], Integer.valueOf(destinationAddr[1].trim())));
       }
 
       String factory = entry.factoryServicePath;
@@ -630,8 +603,8 @@ public class DeploymentWorkflowService extends StatefulService {
       }
 
       CopyStateTaskService.State startState = MiscUtils.createCopyStateStartState(
-          serviceSourceDestinationAddressCache.get(entry.zookeeperServerSetName).getFirst(),
-          serviceSourceDestinationAddressCache.get(entry.zookeeperServerSetName).getSecond(),
+          sourceServers,
+          destinationServers,
           factory,
           factory);
 
@@ -671,7 +644,7 @@ public class DeploymentWorkflowService extends StatefulService {
                   failTask(errors);
                 } else {
                   updateDeploymentServiceState(
-                      serviceSourceDestinationAddressCache.get(Constants.CLOUDSTORE_SERVICE_NAME).getSecond(),
+                      destinationServers,
                       currentState);
                 }
               }

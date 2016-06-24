@@ -418,9 +418,9 @@ public class DeploymentService extends StatefulService {
     public StatsStoreType statsStoreType;
 
     /**
-     * This value represents the zookeeper quorum.
+     * This value represents the serverIPAndPort list in the form of IP1:port,IP2:port.
      */
-    public String zookeeperQuorum;
+    public String serverIpToPortList;
 
     /**
      * This value represents whether a loadbalancer will be deployed.
