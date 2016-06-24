@@ -289,7 +289,7 @@ public class TaskSchedulerServiceTest {
       environment.startFactoryServiceSynchronously(TestServiceWithStageFactory.class,
           TestServiceWithStageFactory.SELF_LINK);
       for (int i = 0; i < hosts.length; i++) {
-        environment.waitForReplicatedFactoryServices(hosts[i]);
+        environment.waitForHostReady(hosts[i]);
       }
 
       for (BasicServiceHost host : hosts) {

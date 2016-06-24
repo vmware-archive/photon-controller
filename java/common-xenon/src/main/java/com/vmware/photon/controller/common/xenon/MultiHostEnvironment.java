@@ -18,7 +18,6 @@ import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
 import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Operation;
-import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.ServiceDocumentQueryResult;
 import com.vmware.xenon.common.ServiceHost;
@@ -32,14 +31,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
-import java.net.URI;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
-import java.util.stream.Stream;
 
 /**
  * TestMachine class hosting a Xenon host.
@@ -63,7 +59,6 @@ public abstract class MultiHostEnvironment<H extends ServiceHost & XenonHostInfo
   }
 
   public ServerSet getServerSet() {
-    StaticServerSet serverSet = new StaticServerSet();
 
     InetSocketAddress[] servers = new InetSocketAddress[this.hosts.length];
     for (int i = 0; i < this.hosts.length; i++) {
@@ -108,74 +103,14 @@ public abstract class MultiHostEnvironment<H extends ServiceHost & XenonHostInfo
           MultiHostEnvironment.TEST_NODE_GROUP_CONVERGENCE_SLEEP);
 
       /**
-       * In Xenon 0.7.5, the factories for replicated services are not reported as available on all
-       * hosts in a node group; instead, they show up as available only on the node to which the
-       * Xenon owner selection mechanism assigns ownership of the factory service. This is a change
-       * from previous versions, where factory service availability was entirely opaque to outside
-       * entities (0.7.0-0.7.2) or was handled as part of host availability (pre-0.7.0).
-       *
-       * Wait for factory services to be reported as available as appropriate given the replication
-       * characteristics of the services.
+       * waitForHostReady() waits for all factories to be available. We need to do it again
+       * after we set up the node groups because we need to wait for the factories to
+       * synchronize
        */
       for (int i = 0; i < hosts.length; i++) {
-        waitForReplicatedFactoryServices(hosts[i]);
+        waitForHostReady(hosts[i]);
       }
     }
-  }
-
-  private boolean checkFactoryServiceAvailable(H host, Class c) {
-    try {
-      if (FactoryService.class.isAssignableFrom(c)) {
-        if (((FactoryService) c.newInstance()).getOptions().contains(Service.ServiceOption.REPLICATION)) {
-          return checkFactoryServiceAvailable(host, c, ServiceUriPaths.DEFAULT_NODE_SELECTOR);
-        } else {
-          return checkFactoryServiceAvailable(host, c, null);
-        }
-      } else {
-        return true;
-      }
-    } catch (Throwable t) {
-      logger.error("Checking factory service availability failed: {}", t);
-      throw new RuntimeException(t);
-    }
-  }
-
-  private boolean checkFactoryServiceAvailable(H host, Class<? extends Service> c, String selector) throws Throwable {
-
-    URI availableUri = UriUtils.buildAvailableUri(UriUtils.buildUri(host, c));
-    if (selector != null) {
-      availableUri = UriUtils.buildBroadcastRequestUri(availableUri, selector);
-    }
-
-    boolean isReady[] = new boolean[1];
-    CountDownLatch countDownLatch = new CountDownLatch(1);
-    Operation getOp = Operation
-        .createGet(availableUri)
-        .setReferer(UriUtils.buildUri(host, "/multi-host-environment"))
-        .setCompletion(
-            (o, e) -> {
-              if (e != null) {
-                logger.info("Checking availability failed: " + e);
-                isReady[0] = false;
-                countDownLatch.countDown();
-                return;
-              }
-
-              if (selector == null) {
-                isReady[0] = true;
-                countDownLatch.countDown();
-                return;
-              }
-
-              NodeGroupBroadcastResponse rsp = o.getBody(NodeGroupBroadcastResponse.class);
-              logger.info("Received {} failures, {} available nodes", rsp.failures.size(), rsp.availableNodeCount);
-              isReady[0] = (rsp.failures.size() < rsp.availableNodeCount);
-              countDownLatch.countDown();
-            });
-
-    host.sendRequest(getOp);
-    countDownLatch.await();
-    return isReady[0];
   }
 
   /**
@@ -467,21 +402,9 @@ public abstract class MultiHostEnvironment<H extends ServiceHost & XenonHostInfo
     return syncOp.awaitOperationCompletion();
   }
 
-  private void waitForHostReady(H host) throws Throwable {
+  public void waitForHostReady(H host) throws Throwable {
     String timeoutMessage = String.format("Timeout waiting for host ready, host=[%s]", host.getUri());
     ServiceHostUtils.waitForState(() -> host, (h) -> h.isReady(), getEnvironmentCleanup(), timeoutMessage);
-  }
-
-  /**
-   * Waits for replicated service factories to become available for the host.
-   * @param host
-   * @throws Throwable
-   */
-  public void waitForReplicatedFactoryServices(H host) throws Throwable {
-    String timeoutMessage = String.format("Timeout waiting for factory services [host %s]", host.getUri());
-    ServiceHostUtils.waitForState(() -> host,
-        (H h) -> Stream.of(h.getFactoryServices()).allMatch((c) -> checkFactoryServiceAvailable(h, c)),
-        getEnvironmentCleanup(), timeoutMessage);
   }
 
   private void waitForReplication(String serviceUri, String serviceLink) throws Throwable {

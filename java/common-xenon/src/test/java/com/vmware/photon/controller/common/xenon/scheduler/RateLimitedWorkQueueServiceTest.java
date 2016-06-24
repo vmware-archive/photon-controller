@@ -252,7 +252,7 @@ public class RateLimitedWorkQueueServiceTest {
           RateLimitedWorkQueueFactoryService.SELF_LINK);
       basicHostEnvironment.startFactoryServiceSynchronously(TestServiceWithWorkQueueFactory.class,
           TestServiceWithWorkQueueFactory.SELF_LINK);
-      basicHostEnvironment.waitForReplicatedFactoryServices(hosts[0]);
+      basicHostEnvironment.waitForHostReady(hosts[0]);
 
       RateLimitedWorkQueueService.State startState = buildValidStartState();
       startState.documentSelfLink = workQueueName;
