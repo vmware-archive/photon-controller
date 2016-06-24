@@ -32,7 +32,6 @@ import com.vmware.photon.controller.cloudstore.SystemConfig;
 import com.vmware.photon.controller.cloudstore.xenon.entity.HostService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ResourceTicketService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.TenantService;
-import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
@@ -45,8 +44,6 @@ import com.vmware.photon.controller.deployer.configuration.ServiceConfigurator;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfiguratorFactory;
 import com.vmware.photon.controller.deployer.deployengine.ApiClientFactory;
 import com.vmware.photon.controller.deployer.deployengine.DockerProvisionerFactory;
-import com.vmware.photon.controller.deployer.deployengine.ZookeeperClient;
-import com.vmware.photon.controller.deployer.deployengine.ZookeeperClientFactory;
 import com.vmware.photon.controller.deployer.healthcheck.HealthCheckHelperFactory;
 import com.vmware.photon.controller.deployer.helpers.ReflectionUtils;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
@@ -848,7 +845,9 @@ public class BatchCreateManagementWorkflowServiceTest {
           Collections.singleton(UsageTag.MGMT.name()));
 
       VmService.State vmServiceStartState = TestHelper.getVmServiceStartState(hostServiceState);
-      vmServiceStartState.ipAddress = "1.1.1.1";
+      InetSocketAddress address = cloudStoreMachine.getServerSet().getServers().iterator().next();
+      vmServiceStartState.ipAddress = address.getAddress().getHostAddress();
+      vmServiceStartState.deployerXenonPort = address.getPort();
       VmService.State vmServiceState = TestHelper.createVmService(machine, vmServiceStartState);
       for (ContainersConfig.ContainerType containerType : ContainersConfig.ContainerType.values()) {
 
@@ -876,17 +875,6 @@ public class BatchCreateManagementWorkflowServiceTest {
         ContainersConfig containersConfig,
         int hostCount)
         throws Throwable {
-      ZookeeperClientFactory zkFactory = mock(ZookeeperClientFactory.class);
-      ZookeeperClient zkBuilder = mock(ZookeeperClient.class);
-      doReturn(zkBuilder).when(zkFactory).create();
-
-      InetSocketAddress address = cloudStoreMachine.getServerSet().getServers().iterator().next();
-      doReturn(Collections.singleton(address))
-          .when(zkBuilder).getServers(anyString(), eq(Constants.CLOUDSTORE_SERVICE_NAME));
-      doReturn(Collections.singleton(address))
-          .when(zkBuilder).getServers(anyString(), eq(Constants.DEPLOYER_SERVICE_NAME));
-      doReturn(Collections.singleton(address))
-          .when(zkBuilder).getServers(anyString(), eq(Constants.HOUSEKEEPER_SERVICE_NAME));
 
       return new TestEnvironment.Builder()
           .deployerContext(deployerContext)
@@ -897,7 +885,6 @@ public class BatchCreateManagementWorkflowServiceTest {
           .serviceConfiguratorFactory(serviceConfiguratorFactory)
           .cloudServerSet(cloudStoreMachine.getServerSet())
           .containersConfig(containersConfig)
-          .zookeeperServersetBuilderFactory(zkFactory)
           .hostCount(hostCount)
           .build();
     }
