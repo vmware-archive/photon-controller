@@ -47,7 +47,7 @@ import java.util.UUID;
 @Guice(modules = {XenonBackendTestModule.class, TestModule.class})
 public class StepCommandTest {
 
-  private static ApiFeXenonRestClient dcpClient;
+  private static ApiFeXenonRestClient xenonClient;
   private static BasicServiceHost host;
 
   protected String reservationId = "r-00";
@@ -68,9 +68,9 @@ public class StepCommandTest {
 
   @AfterClass
   public static void afterClassCleanup() throws Throwable {
-    if (dcpClient != null) {
-      dcpClient.stop();
-      dcpClient = null;
+    if (xenonClient != null) {
+      xenonClient.stop();
+      xenonClient = null;
     }
 
     if (host != null) {
@@ -82,7 +82,7 @@ public class StepCommandTest {
   @BeforeMethod
   public void setUp() throws Exception {
     host = basicServiceHost;
-    dcpClient = apiFeXenonRestClient;
+    xenonClient = apiFeXenonRestClient;
 
     taskCommand = mock(TaskCommand.class);
 

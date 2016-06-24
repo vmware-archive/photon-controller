@@ -129,7 +129,7 @@ public class XenonTaskStatusStepCmdTest extends PowerMockTestCase {
       setUpCommon(true, 1);
     }
 
-    // happy path: DCP response set currentStage to FINISHED, step completes
+    // happy path: Xenon response set currentStage to FINISHED, step completes
     @Test
     public void testSuccess() throws Throwable {
       when(xenonTaskStatusPoller.poll(any(String.class)))

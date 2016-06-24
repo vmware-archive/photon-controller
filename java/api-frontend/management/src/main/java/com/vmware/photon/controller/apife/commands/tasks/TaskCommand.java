@@ -70,7 +70,7 @@ public class TaskCommand extends BaseCommand {
   private TaskEntity task;
   private Resource resource;
   private String reservation;
-  private ApiFeXenonRestClient dcpClient;
+  private ApiFeXenonRestClient xenonClient;
   private SchedulerXenonRestClient schedulerXenonRestClient;
   private HostClient hostClient;
   private HousekeeperClient housekeeperClient;
@@ -82,7 +82,7 @@ public class TaskCommand extends BaseCommand {
   private EntityLockBackend entityLockBackend;
 
   @Inject
-  public TaskCommand(ApiFeXenonRestClient dcpClient,
+  public TaskCommand(ApiFeXenonRestClient xenonClient,
                      SchedulerXenonRestClient schedulerXenonRestClient,
                      HostClient hostClient,
                      HousekeeperClient housekeeperClient,
@@ -94,7 +94,7 @@ public class TaskCommand extends BaseCommand {
                      @Assisted TaskEntity task) {
     super(task.getId());
     this.task = checkNotNull(task);
-    this.dcpClient = dcpClient;
+    this.xenonClient = xenonClient;
     this.schedulerXenonRestClient = schedulerXenonRestClient;
     this.hostClient = checkNotNull(hostClient);
     this.housekeeperClient = checkNotNull(housekeeperClient);
@@ -205,7 +205,7 @@ public class TaskCommand extends BaseCommand {
   }
 
   public ApiFeXenonRestClient getApiFeXenonRestClient() {
-    return dcpClient;
+    return xenonClient;
   }
 
   public SchedulerXenonRestClient getSchedulerXenonRestClient() {
@@ -283,7 +283,7 @@ public class TaskCommand extends BaseCommand {
     final ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
     termsBuilder.put(HostService.State.FIELD_NAME_HOST_ADDRESS, hostIp);
 
-    List<String> result = dcpClient.queryDocumentsForLinks(HostService.State.class, termsBuilder.build());
+    List<String> result = xenonClient.queryDocumentsForLinks(HostService.State.class, termsBuilder.build());
     checkState(result.size() == 1, "Expect one and only one host with Address {}, found {}", hostIp, result.size());
 
     String agentId = ServiceUtils.getIDFromDocumentSelfLink(result.get(0));
@@ -295,7 +295,7 @@ public class TaskCommand extends BaseCommand {
   private String lookupHostIp(String agentId) throws DocumentNotFoundException {
     checkNotNull(agentId);
 
-    com.vmware.xenon.common.Operation result = dcpClient.get(HostServiceFactory.SELF_LINK + "/" + agentId);
+    com.vmware.xenon.common.Operation result = xenonClient.get(HostServiceFactory.SELF_LINK + "/" + agentId);
     HostService.State hostState = result.getBody(HostService.State.class);
 
     return hostState.hostAddress;

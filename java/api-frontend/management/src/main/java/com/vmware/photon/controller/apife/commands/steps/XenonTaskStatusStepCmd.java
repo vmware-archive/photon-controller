@@ -32,7 +32,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import java.util.concurrent.TimeUnit;
 
 /**
- * StepCommand that monitors the status of a dcp task.
+ * StepCommand that monitors the status of a Xenon task.
  */
 public class XenonTaskStatusStepCmd extends StepCommand {
   private static final Logger logger = LoggerFactory.getLogger(XenonTaskStatusStepCmd.class);

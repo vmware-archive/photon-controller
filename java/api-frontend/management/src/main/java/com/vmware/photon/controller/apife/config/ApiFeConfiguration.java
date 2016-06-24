@@ -39,7 +39,7 @@ public interface ApiFeConfiguration {
 
   public StatusConfig getStatusConfig();
 
-  public boolean useDcpBackend();
+  public boolean useXenonBackend();
 
   public PaginationConfig getPaginationConfig();
 

@@ -77,15 +77,15 @@ public class DeployerClient {
 
     private static final String COMMA_DELIMITED_REGEX = "\\s*,\\s*";
 
-    private DeployerXenonRestClient dcpClient;
+    private DeployerXenonRestClient xenonClient;
     private ApiFeXenonRestClient apiFeXenonRestClient;
 
     @Inject
-    public DeployerClient(DeployerXenonRestClient dcpClient, ApiFeXenonRestClient apiFeXenonClient)
+    public DeployerClient(DeployerXenonRestClient xenonClient, ApiFeXenonRestClient xenonFeXenonClient)
             throws URISyntaxException {
-        this.dcpClient = dcpClient;
-        this.dcpClient.start();
-        this.apiFeXenonRestClient = apiFeXenonClient;
+        this.xenonClient = xenonClient;
+        this.xenonClient.start();
+        this.apiFeXenonRestClient = xenonFeXenonClient;
         this.apiFeXenonRestClient.start();
     }
 
@@ -113,10 +113,10 @@ public class DeployerClient {
             Collections.addAll(state.networks, allowedNetworks);
         }
 
-        // Persist the database ID of the host to the DCP entity so we have a unified ID across the system
+        // Persist the database ID of the host to the Xenon entity so we have a unified ID across the system
         state.documentSelfLink = host.getId();
 
-        Operation operation = dcpClient.post(
+        Operation operation = xenonClient.post(
             ValidateHostTaskFactoryService.SELF_LINK, state);
 
         return operation.getBody(ValidateHostTaskService.State.class);
@@ -124,19 +124,19 @@ public class DeployerClient {
 
     public ValidateHostTaskService.State getHostCreationStatus(String creationTaskLink)
         throws DocumentNotFoundException {
-        Operation operation = dcpClient.get(creationTaskLink);
+        Operation operation = xenonClient.get(creationTaskLink);
         return operation.getBody(ValidateHostTaskService.State.class);
     }
 
     public DeprovisionHostWorkflowService.State getHostDeprovisionStatus(String taskLink)
         throws DocumentNotFoundException {
-        Operation operation = dcpClient.get(taskLink);
+        Operation operation = xenonClient.get(taskLink);
         return operation.getBody(DeprovisionHostWorkflowService.State.class);
     }
 
     public Pair<TaskState, String> getHostProvisionStatus(String taskLink)
         throws DocumentNotFoundException {
-        Operation operation = dcpClient.get(taskLink);
+        Operation operation = xenonClient.get(taskLink);
         TaskState taskState;
         ServiceDocument serviceState;
         String hostId;
@@ -156,7 +156,7 @@ public class DeployerClient {
         DeprovisionHostWorkflowService.State deprovisionHostState = new DeprovisionHostWorkflowService.State();
         deprovisionHostState.hostServiceLink = hostServiceLink;
 
-        Operation operation = dcpClient.post(
+        Operation operation = xenonClient.post(
             DeprovisionHostWorkflowFactoryService.SELF_LINK, deprovisionHostState);
 
         return operation.getBody(DeprovisionHostWorkflowService.State.class);
@@ -165,7 +165,7 @@ public class DeployerClient {
     public AddCloudHostWorkflowService.State provisionCloudHost(String hostServiceLink){
         AddCloudHostWorkflowService.State addCloudHostState = new AddCloudHostWorkflowService.State();
         addCloudHostState.hostServiceLink = hostServiceLink;
-        Operation operation = dcpClient.post(
+        Operation operation = xenonClient.post(
             AddCloudHostWorkflowFactoryService.SELF_LINK, addCloudHostState);
 
         return operation.getBody(AddCloudHostWorkflowService.State.class);
@@ -173,14 +173,14 @@ public class DeployerClient {
 
     public AddManagementHostWorkflowService.State provisionManagementHost(String hostServiceLink){
         final ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
-        List<DeploymentService.State> queryResult = dcpClient.queryDocuments(DeploymentService.State.class,
+        List<DeploymentService.State> queryResult = xenonClient.queryDocuments(DeploymentService.State.class,
             termsBuilder.build());
 
         AddManagementHostWorkflowService.State addMgmtHostState = new AddManagementHostWorkflowService.State();
         addMgmtHostState.hostServiceLink = hostServiceLink;
         addMgmtHostState.isNewDeployment = false;
         addMgmtHostState.deploymentServiceLink = queryResult.get(0).documentSelfLink;
-        Operation operation = dcpClient.post(
+        Operation operation = xenonClient.post(
             AddManagementHostWorkflowFactoryService.SELF_LINK, addMgmtHostState);
 
         return operation.getBody(AddManagementHostWorkflowService.State.class);
@@ -203,7 +203,7 @@ public class DeployerClient {
         state.hostServiceLink = HostServiceFactory.SELF_LINK + "/" + hostId;
         state.hostMode = hostMode;
 
-        Operation operation = dcpClient.post(
+        Operation operation = xenonClient.post(
             ChangeHostModeTaskFactoryService.SELF_LINK, state);
 
         return operation.getBody(ChangeHostModeTaskService.State.class);
@@ -211,7 +211,7 @@ public class DeployerClient {
 
     public ChangeHostModeTaskService.State getHostChangeModeStatus(String creationTaskLink)
         throws DocumentNotFoundException {
-        Operation operation = dcpClient.get(creationTaskLink);
+        Operation operation = xenonClient.get(creationTaskLink);
         return operation.getBody(ChangeHostModeTaskService.State.class);
     }
 
@@ -243,7 +243,7 @@ public class DeployerClient {
         state.deploymentServiceLink = DeploymentServiceFactory.SELF_LINK + "/" + deploymentEntity.getId();
         state.desiredState = deploymentState;
 
-        Operation operation = dcpClient.post(
+        Operation operation = xenonClient.post(
             DeploymentWorkflowFactoryService.SELF_LINK, state);
 
         return operation.getBody(DeploymentWorkflowService.State.class);
@@ -251,7 +251,7 @@ public class DeployerClient {
 
     public DeploymentWorkflowService.State getDeploymentStatus(String taskLink)
         throws DocumentNotFoundException {
-        Operation operation = dcpClient.get(taskLink);
+        Operation operation = xenonClient.get(taskLink);
         return operation.getBody(DeploymentWorkflowService.State.class);
     }
 
@@ -259,7 +259,7 @@ public class DeployerClient {
         RemoveDeploymentWorkflowService.State removeDeploymentState = new RemoveDeploymentWorkflowService.State();
         removeDeploymentState.deploymentId = deploymentId;
 
-        Operation operation = dcpClient.post(
+        Operation operation = xenonClient.post(
             RemoveDeploymentWorkflowFactoryService.SELF_LINK, removeDeploymentState);
 
         return operation.getBody(RemoveDeploymentWorkflowService.State.class);
@@ -267,7 +267,7 @@ public class DeployerClient {
 
     public RemoveDeploymentWorkflowService.State getRemoveDeploymentStatus(String taskLink)
         throws DocumentNotFoundException {
-        Operation operation = dcpClient.get(taskLink);
+        Operation operation = xenonClient.get(taskLink);
         return operation.getBody(RemoveDeploymentWorkflowService.State.class);
     }
 
@@ -278,7 +278,7 @@ public class DeployerClient {
         state.destinationDeploymentId = destinationDeploymentId;
         state.sourceLoadBalancerAddress = sourceLoadbalancerAddress;
 
-        Operation operation = dcpClient.post(
+        Operation operation = xenonClient.post(
             InitializeDeploymentMigrationWorkflowFactoryService.SELF_LINK, state);
 
         return operation.getBody(InitializeDeploymentMigrationWorkflowService.State.class);
@@ -286,7 +286,7 @@ public class DeployerClient {
 
     public InitializeDeploymentMigrationWorkflowService.State getInitializeMigrateDeploymentStatus
         (String taskLink) throws DocumentNotFoundException {
-        Operation operation = dcpClient.get(taskLink);
+        Operation operation = xenonClient.get(taskLink);
         return operation.getBody(InitializeDeploymentMigrationWorkflowService.State.class);
     }
 
@@ -297,7 +297,7 @@ public class DeployerClient {
         state.destinationDeploymentId = destinationDeploymentId;
         state.sourceLoadBalancerAddress = sourceLoadbalancerAddress;
 
-        Operation operation = dcpClient.post(
+        Operation operation = xenonClient.post(
             FinalizeDeploymentMigrationWorkflowFactoryService.SELF_LINK, state);
 
         return operation.getBody(FinalizeDeploymentMigrationWorkflowService.State.class);
@@ -305,7 +305,7 @@ public class DeployerClient {
 
     public FinalizeDeploymentMigrationWorkflowService.State getFinalizeMigrateDeploymentStatus
         (String taskLink) throws DocumentNotFoundException {
-        Operation operation = dcpClient.get(taskLink);
+        Operation operation = xenonClient.get(taskLink);
         return operation.getBody(FinalizeDeploymentMigrationWorkflowService.State.class);
     }
 
@@ -313,7 +313,7 @@ public class DeployerClient {
         final ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
         ServiceDocumentQueryResult queryResult = null;
         try {
-            queryResult = dcpClient.queryDocuments(
+            queryResult = xenonClient.queryDocuments(
                 DeploymentWorkflowService.State.class, termsBuilder.build(), Optional.<Integer>absent(), true, true);
         } catch (DocumentNotFoundException e) {
             return false;

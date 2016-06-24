@@ -82,7 +82,7 @@ public class VmGetNetworksStepCmdTest extends PowerMockTestCase {
   private HostClient hostClient;
 
   @Mock
-  private ApiFeXenonRestClient dcpClient;
+  private ApiFeXenonRestClient xenonClient;
 
   @Mock
   private SchedulerXenonRestClient schedulerXenonRestClient;
@@ -145,7 +145,7 @@ public class VmGetNetworksStepCmdTest extends PowerMockTestCase {
     Datastore datastore = new Datastore();
     datastore.setId("datastore-id");
 
-    taskCommand = spy(new TaskCommand(dcpClient, schedulerXenonRestClient, hostClient,
+    taskCommand = spy(new TaskCommand(xenonClient, schedulerXenonRestClient, hostClient,
         housekeeperClient, housekeeperXenonRestClient, deployerClient, deployerXenonClient, housekeeperXenonClient,
         entityLockBackend, task));
     when(taskCommand.getHostClient()).thenReturn(hostClient);
@@ -153,7 +153,7 @@ public class VmGetNetworksStepCmdTest extends PowerMockTestCase {
     HostService.State hostServiceState = new HostService.State();
     hostServiceState.hostAddress = "host-ip";
     when(hostServiceOp.getBody(Matchers.any())).thenReturn(hostServiceState);
-    when(dcpClient.get(Matchers.startsWith(HostServiceFactory.SELF_LINK))).thenReturn(hostServiceOp);
+    when(xenonClient.get(Matchers.startsWith(HostServiceFactory.SELF_LINK))).thenReturn(hostServiceOp);
 
     when(taskCommand.getTask()).thenReturn(task);
   }

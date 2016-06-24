@@ -57,7 +57,7 @@ import java.util.UUID;
 
 /**
  * Cluster Manager Client Facade that exposes cluster manager functionality via high-level methods,
- * and hides DCP protocol details.
+ * and hides Xenon protocol details.
  */
 @Singleton
 public class ClusterManagerClient {
@@ -70,16 +70,16 @@ public class ClusterManagerClient {
   public static final String EXTENDED_PROPERTY_ETCD_IP2          = "etcd_ip2";
   public static final String EXTENDED_PROPERTY_ETCD_IP3          = "etcd_ip3";
 
-  private ClusterManagerXenonRestClient dcpClient;
-  private ApiFeXenonRestClient apiFeDcpClient;
+  private ClusterManagerXenonRestClient xenonClient;
+  private ApiFeXenonRestClient apiFeXenonClient;
 
   @Inject
-  public ClusterManagerClient(ClusterManagerXenonRestClient dcpClient, ApiFeXenonRestClient apiFeDcpClient)
+  public ClusterManagerClient(ClusterManagerXenonRestClient xenonClient, ApiFeXenonRestClient apiFeXenonClient)
       throws URISyntaxException {
-    this.dcpClient = dcpClient;
-    this.dcpClient.start();
-    this.apiFeDcpClient = apiFeDcpClient;
-    this.apiFeDcpClient.start();
+    this.xenonClient = xenonClient;
+    this.xenonClient.start();
+    this.apiFeXenonClient = apiFeXenonClient;
+    this.apiFeXenonClient.start();
   }
 
   public KubernetesClusterCreateTask createKubernetesCluster(String projectId, ClusterCreateSpec spec)
@@ -92,14 +92,14 @@ public class ClusterManagerClient {
         spec.getSlaveBatchExpansionSize() == 0 ? null : spec.getSlaveBatchExpansionSize();
 
     // Post createTask to KubernetesClusterCreateTaskService
-    Operation operation = dcpClient.post(
+    Operation operation = xenonClient.post(
         ServiceUriPaths.KUBERNETES_CLUSTER_CREATE_TASK_SERVICE, createTask);
     return operation.getBody(KubernetesClusterCreateTask.class);
   }
 
   public KubernetesClusterCreateTask getKubernetesClusterCreationStatus(String creationTaskLink)
       throws DocumentNotFoundException {
-    Operation operation = dcpClient.get(creationTaskLink);
+    Operation operation = xenonClient.get(creationTaskLink);
     return operation.getBody(KubernetesClusterCreateTask.class);
   }
 
@@ -113,14 +113,14 @@ public class ClusterManagerClient {
         spec.getSlaveBatchExpansionSize() == 0 ? null : spec.getSlaveBatchExpansionSize();
 
     // Post createSpec to MesosClusterCreateTaskService
-    Operation operation = dcpClient.post(
+    Operation operation = xenonClient.post(
         ServiceUriPaths.MESOS_CLUSTER_CREATE_TASK_SERVICE, createTask);
     return operation.getBody(MesosClusterCreateTask.class);
   }
 
   public MesosClusterCreateTask getMesosClusterCreationStatus(String creationTaskLink)
       throws DocumentNotFoundException {
-    Operation operation = dcpClient.get(creationTaskLink);
+    Operation operation = xenonClient.get(creationTaskLink);
     return operation.getBody(MesosClusterCreateTask.class);
   }
 
@@ -134,14 +134,14 @@ public class ClusterManagerClient {
         spec.getSlaveBatchExpansionSize() == 0 ? null : spec.getSlaveBatchExpansionSize();
 
     // Post createSpec to SwarmClusterCreateTaskService
-    Operation operation = dcpClient.post(
+    Operation operation = xenonClient.post(
         ServiceUriPaths.SWARM_CLUSTER_CREATE_TASK_SERVICE, createTask);
     return operation.getBody(SwarmClusterCreateTask.class);
   }
 
   public SwarmClusterCreateTask getSwarmClusterCreationStatus(String creationTaskLink)
       throws DocumentNotFoundException {
-    Operation operation = dcpClient.get(creationTaskLink);
+    Operation operation = xenonClient.get(creationTaskLink);
     return operation.getBody(SwarmClusterCreateTask.class);
   }
 
@@ -150,14 +150,14 @@ public class ClusterManagerClient {
     ClusterResizeTask resizeTask = new ClusterResizeTask();
     resizeTask.clusterId = clusterId;
     resizeTask.newSlaveCount = resizeOperation.getNewSlaveCount();
-    Operation operation = dcpClient.post(
+    Operation operation = xenonClient.post(
         ServiceUriPaths.CLUSTER_RESIZE_TASK_SERVICE, resizeTask);
     return operation.getBody(ClusterResizeTask.class);
   }
 
   public ClusterResizeTask getClusterResizeStatus(String resizeTaskLink)
       throws DocumentNotFoundException {
-    Operation operation = dcpClient.get(resizeTaskLink);
+    Operation operation = xenonClient.get(resizeTaskLink);
     return operation.getBody(ClusterResizeTask.class);
   }
 
@@ -165,7 +165,7 @@ public class ClusterManagerClient {
     String uri = ClusterServiceFactory.SELF_LINK + "/" + clusterId;
     com.vmware.xenon.common.Operation operation;
     try {
-      operation = apiFeDcpClient.get(uri);
+      operation = apiFeXenonClient.get(uri);
     } catch (DocumentNotFoundException ex) {
       throw new ClusterNotFoundException(clusterId);
     }
@@ -178,7 +178,7 @@ public class ClusterManagerClient {
     ClusterDeleteTask deleteTask = new ClusterDeleteTask();
     deleteTask.clusterId = clusterId;
 
-    Operation operation = dcpClient.post(
+    Operation operation = xenonClient.post(
         ServiceUriPaths.CLUSTER_DELETE_TASK_SERVICE, deleteTask);
 
     return operation.getBody(ClusterDeleteTask.class);
@@ -186,12 +186,12 @@ public class ClusterManagerClient {
 
   public ClusterDeleteTask getClusterDeletionStatus(String deletionTaskLink)
       throws DocumentNotFoundException {
-    Operation operation = dcpClient.get(deletionTaskLink);
+    Operation operation = xenonClient.get(deletionTaskLink);
     return operation.getBody(ClusterDeleteTask.class);
   }
 
   public ResourceList<Cluster> getClusters(String projectId, Optional<Integer> pageSize) throws ExternalException {
-    ServiceDocumentQueryResult queryResult = apiFeDcpClient.queryDocuments(
+    ServiceDocumentQueryResult queryResult = apiFeXenonClient.queryDocuments(
         ClusterService.State.class,
         ImmutableMap.of("projectId", projectId),
         pageSize,
@@ -204,7 +204,7 @@ public class ClusterManagerClient {
   public ResourceList<Cluster> getClustersPages(String pageLink) throws ExternalException {
     ServiceDocumentQueryResult queryResult = null;
     try {
-      queryResult = apiFeDcpClient.queryDocumentPage(pageLink);
+      queryResult = apiFeXenonClient.queryDocumentPage(pageLink);
     } catch (DocumentNotFoundException e) {
       throw new PageExpiredException(pageLink);
     }
@@ -215,7 +215,7 @@ public class ClusterManagerClient {
 
   private ClusterConfigurationService.State getClusterConfiguration(ClusterType clusterType)
       throws SpecInvalidException {
-    List<ClusterConfigurationService.State> configurations = apiFeDcpClient.queryDocuments(
+    List<ClusterConfigurationService.State> configurations = apiFeXenonClient.queryDocuments(
         ClusterConfigurationService.State.class,
         ImmutableMap.of("documentSelfLink",
             ClusterConfigurationServiceFactory.SELF_LINK + "/" + clusterType.toString().toLowerCase()));
@@ -354,7 +354,7 @@ public class ClusterManagerClient {
     cluster.extendedProperties.put(ClusterManagerConstants.EXTENDED_PROPERTY_MASTER_IP, masterIp);
 
     // Create the cluster entity
-    apiFeDcpClient.post(
+    apiFeXenonClient.post(
         ClusterServiceFactory.SELF_LINK,
         cluster);
 
@@ -392,7 +392,7 @@ public class ClusterManagerClient {
         serializeIpAddresses(zookeeperIps));
 
     // Create the cluster entity
-    apiFeDcpClient.post(
+    apiFeXenonClient.post(
         ClusterServiceFactory.SELF_LINK,
         cluster);
 
@@ -429,7 +429,7 @@ public class ClusterManagerClient {
     cluster.extendedProperties.put(ClusterManagerConstants.EXTENDED_PROPERTY_ETCD_IPS, serializeIpAddresses(etcdIps));
 
     // Create the cluster entity
-    apiFeDcpClient.post(
+    apiFeXenonClient.post(
         ClusterServiceFactory.SELF_LINK,
         cluster);
 

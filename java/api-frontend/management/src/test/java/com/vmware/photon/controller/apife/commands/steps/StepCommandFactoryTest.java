@@ -39,7 +39,7 @@ import static org.hamcrest.Matchers.is;
 @Guice(modules = {XenonBackendTestModule.class, TestModule.class, CommandTestModule.class})
 public class StepCommandFactoryTest {
 
-  private static ApiFeXenonRestClient dcpClient;
+  private static ApiFeXenonRestClient xenonClient;
   private static BasicServiceHost host;
 
   @Inject
@@ -57,9 +57,9 @@ public class StepCommandFactoryTest {
 
   @AfterClass
   public static void afterClassCleanup() throws Throwable {
-    if (dcpClient != null) {
-      dcpClient.stop();
-      dcpClient = null;
+    if (xenonClient != null) {
+      xenonClient.stop();
+      xenonClient = null;
     }
 
     if (host != null) {
@@ -71,7 +71,7 @@ public class StepCommandFactoryTest {
   @BeforeMethod
   public void setUp() throws Exception {
     host = basicServiceHost;
-    dcpClient = apiFeXenonRestClient;
+    xenonClient = apiFeXenonRestClient;
 
     step = new StepEntity();
     step.setId("Step ID");

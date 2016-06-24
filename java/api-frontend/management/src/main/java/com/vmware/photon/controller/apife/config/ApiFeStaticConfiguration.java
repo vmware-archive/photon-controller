@@ -38,7 +38,7 @@ public class ApiFeStaticConfiguration extends Configuration implements ApiFeConf
   private int backgroundWorkersQueueSize = 512;
 
   @JsonProperty
-  private boolean useDcpBackend = true;
+  private boolean useXenonBackend = true;
 
   @Valid
   @NotNull
@@ -121,8 +121,8 @@ public class ApiFeStaticConfiguration extends Configuration implements ApiFeConf
   }
 
   @Override
-  public boolean useDcpBackend() {
-    return useDcpBackend;
+  public boolean useXenonBackend() {
+    return useXenonBackend;
   }
 
   @Override
