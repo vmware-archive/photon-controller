@@ -76,7 +76,7 @@ import com.vmware.photon.controller.apife.config.AuthConfig;
 import com.vmware.photon.controller.apife.config.ImageConfig;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.config.StatusConfig;
-import com.vmware.photon.controller.common.CloudStoreServerSet;
+import com.vmware.photon.controller.common.PhotonControllerServerSet;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.metrics.DefaultMetricRegistry;
@@ -189,29 +189,8 @@ public class ApiFeModule extends AbstractModule {
 
   @Provides
   @Singleton
-  @RootSchedulerServerSet
-  public ServerSet getRootSchedulerServerSet() {
-    return new StaticServerSet(new InetSocketAddress("127.0.0.1", configuration.getXenonPort()));
-  }
-
-  @Provides
-  @Singleton
-  @HousekeeperServerSet
-  public ServerSet getHousekeeperServerSet() {
-    return new StaticServerSet(new InetSocketAddress("127.0.0.1", configuration.getXenonPort()));
-  }
-
-  @Provides
-  @Singleton
-  @CloudStoreServerSet
-  public ServerSet getCloudStoreServerSet() {
-    return new StaticServerSet(new InetSocketAddress("127.0.0.1", configuration.getXenonPort()));
-  }
-
-  @Provides
-  @Singleton
-  @DeployerServerSet
-  public ServerSet getDeployerServerSet() {
+  @PhotonControllerServerSet
+  public ServerSet getPhotonControllerServerSet() {
     return new StaticServerSet(new InetSocketAddress("127.0.0.1", configuration.getXenonPort()));
   }
 

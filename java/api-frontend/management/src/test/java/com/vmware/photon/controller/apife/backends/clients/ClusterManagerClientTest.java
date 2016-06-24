@@ -74,7 +74,7 @@ public class ClusterManagerClientTest {
    */
   public static class CreateKubernetesClusterTest extends PowerMockTestCase {
     @Mock
-    private ClusterManagerXenonRestClient clusterManagerXenonRestClient;
+    private PhotonControllerXenonRestClient photonControllerXenonRestClient;
     @Mock
     private ApiFeXenonRestClient apiFeXenonRestClient;
     private ClusterManagerClient clusterManagerClient;
@@ -85,7 +85,7 @@ public class ClusterManagerClientTest {
       KubernetesClusterCreateTask task = new KubernetesClusterCreateTask();
       operation.setBody(task);
 
-      when(clusterManagerXenonRestClient.post(any(String.class), any(KubernetesClusterCreateTask.class)))
+      when(photonControllerXenonRestClient.post(any(String.class), any(KubernetesClusterCreateTask.class)))
           .thenReturn(operation);
 
       when(apiFeXenonRestClient.post(any(String.class), any(ClusterService.State.class)))
@@ -98,7 +98,7 @@ public class ClusterManagerClientTest {
       when(apiFeXenonRestClient.queryDocuments(eq(ClusterConfigurationService.State.class), any(ImmutableMap.class)))
           .thenReturn(clusterConfigurations);
 
-      clusterManagerClient = new ClusterManagerClient(clusterManagerXenonRestClient, apiFeXenonRestClient);
+      clusterManagerClient = new ClusterManagerClient(photonControllerXenonRestClient, apiFeXenonRestClient);
     }
 
     private static ClusterCreateSpec buildCreateSpec(boolean hasContainerNetwork) {
@@ -172,7 +172,7 @@ public class ClusterManagerClientTest {
    */
   public static class CreateMesosClusterTest extends PowerMockTestCase {
     @Mock
-    private ClusterManagerXenonRestClient clusterManagerXenonRestClient;
+    private PhotonControllerXenonRestClient photonControllerXenonRestClient;
     @Mock
     private ApiFeXenonRestClient apiFeXenonRestClient;
     private ClusterManagerClient clusterManagerClient;
@@ -183,7 +183,7 @@ public class ClusterManagerClientTest {
       KubernetesClusterCreateTask task = new KubernetesClusterCreateTask();
       operation.setBody(task);
 
-      when(clusterManagerXenonRestClient.post(any(String.class), any(KubernetesClusterCreateTask.class)))
+      when(photonControllerXenonRestClient.post(any(String.class), any(KubernetesClusterCreateTask.class)))
           .thenReturn(operation);
 
       when(apiFeXenonRestClient.post(any(String.class), any(ClusterService.State.class)))
@@ -196,7 +196,7 @@ public class ClusterManagerClientTest {
       when(apiFeXenonRestClient.queryDocuments(eq(ClusterConfigurationService.State.class), any(ImmutableMap.class)))
           .thenReturn(clusterConfigurations);
 
-      clusterManagerClient = new ClusterManagerClient(clusterManagerXenonRestClient, apiFeXenonRestClient);
+      clusterManagerClient = new ClusterManagerClient(photonControllerXenonRestClient, apiFeXenonRestClient);
     }
 
     private static ClusterCreateSpec buildCreateSpec(boolean hasZookeeper) {
@@ -267,7 +267,7 @@ public class ClusterManagerClientTest {
    */
   public static class CreateSwarmClusterTest extends PowerMockTestCase {
     @Mock
-    private ClusterManagerXenonRestClient clusterManagerXenonRestClient;
+    private PhotonControllerXenonRestClient photonControllerXenonRestClient;
     @Mock
     private ApiFeXenonRestClient apiFeXenonRestClient;
     private ClusterManagerClient clusterManagerClient;
@@ -278,7 +278,7 @@ public class ClusterManagerClientTest {
       KubernetesClusterCreateTask task = new KubernetesClusterCreateTask();
       operation.setBody(task);
 
-      when(clusterManagerXenonRestClient.post(any(String.class), any(KubernetesClusterCreateTask.class)))
+      when(photonControllerXenonRestClient.post(any(String.class), any(KubernetesClusterCreateTask.class)))
           .thenReturn(operation);
 
       when(apiFeXenonRestClient.post(any(String.class), any(ClusterService.State.class)))
@@ -291,7 +291,7 @@ public class ClusterManagerClientTest {
       when(apiFeXenonRestClient.queryDocuments(eq(ClusterConfigurationService.State.class), any(ImmutableMap.class)))
           .thenReturn(clusterConfigurations);
 
-      clusterManagerClient = new ClusterManagerClient(clusterManagerXenonRestClient, apiFeXenonRestClient);
+      clusterManagerClient = new ClusterManagerClient(photonControllerXenonRestClient, apiFeXenonRestClient);
     }
 
     private static ClusterCreateSpec buildCreateSpec(boolean hasEtcd) {
@@ -363,7 +363,7 @@ public class ClusterManagerClientTest {
   public static class GetClusterTest extends PowerMockTestCase {
     private static final String clusterId = UUID.randomUUID().toString();
     @Mock
-    private ClusterManagerXenonRestClient clusterManagerXenonRestClient;
+    private PhotonControllerXenonRestClient photonControllerXenonRestClient;
     @Mock
     private ApiFeXenonRestClient apiFeXenonRestClient;
     private ClusterManagerClient clusterManagerClient;
@@ -371,7 +371,7 @@ public class ClusterManagerClientTest {
 
     @BeforeMethod
     public void setUp() throws Throwable {
-      clusterManagerClient = new ClusterManagerClient(clusterManagerXenonRestClient, apiFeXenonRestClient);
+      clusterManagerClient = new ClusterManagerClient(photonControllerXenonRestClient, apiFeXenonRestClient);
       clusterDocument = buildClusterDocument();
     }
 

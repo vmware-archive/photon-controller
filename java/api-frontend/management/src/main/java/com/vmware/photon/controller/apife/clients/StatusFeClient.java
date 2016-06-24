@@ -20,15 +20,12 @@ import com.vmware.photon.controller.api.SystemStatus;
 import com.vmware.photon.controller.api.builders.ComponentInstanceBuilder;
 import com.vmware.photon.controller.api.builders.ComponentStatusBuilder;
 import com.vmware.photon.controller.apife.BackendTaskExecutor;
-import com.vmware.photon.controller.apife.DeployerServerSet;
-import com.vmware.photon.controller.apife.HousekeeperServerSet;
-import com.vmware.photon.controller.apife.RootSchedulerServerSet;
 import com.vmware.photon.controller.apife.clients.status.StatusFeClientUtils;
 import com.vmware.photon.controller.apife.clients.status.StatusProviderFactory;
 import com.vmware.photon.controller.apife.clients.status.XenonStatusProviderFactory;
 import com.vmware.photon.controller.apife.config.StatusConfig;
 import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
-import com.vmware.photon.controller.common.CloudStoreServerSet;
+import com.vmware.photon.controller.common.PhotonControllerServerSet;
 import com.vmware.photon.controller.common.clients.StatusProvider;
 import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.photon.controller.status.gen.Status;
@@ -67,31 +64,26 @@ public class StatusFeClient {
   /**
    * Creating StatusFeClient with component server sets to iterate through individual servers to get their status.
    *
-   * @param housekeeperServerSet
-   * @param rootSchedulerServerSet
-   * @param deployerServerSet
+   * @param photonControllerServerSet
    * @param statusConfig
    */
   @Inject
   public StatusFeClient(
       @BackendTaskExecutor ExecutorService executor,
-      @HousekeeperServerSet ServerSet housekeeperServerSet,
-      @RootSchedulerServerSet ServerSet rootSchedulerServerSet,
-      @DeployerServerSet ServerSet deployerServerSet,
-      @CloudStoreServerSet ServerSet cloudStoreServerSet,
+      @PhotonControllerServerSet ServerSet photonControllerServerSet,
       StatusConfig statusConfig) {
     this.executor = executor;
     this.components = statusConfig.getComponents();
 
     statusProviderFactories = Maps.newEnumMap(Component.class);
     statusProviderFactories.put(Component.HOUSEKEEPER,
-            new XenonStatusProviderFactory(housekeeperServerSet, this.executor));
+            new XenonStatusProviderFactory(photonControllerServerSet, this.executor));
     statusProviderFactories.put(Component.CLOUD_STORE,
-        new XenonStatusProviderFactory(cloudStoreServerSet, this.executor));
+        new XenonStatusProviderFactory(photonControllerServerSet, this.executor));
     statusProviderFactories.put(Component.DEPLOYER,
-            new XenonStatusProviderFactory(deployerServerSet, this.executor));
+            new XenonStatusProviderFactory(photonControllerServerSet, this.executor));
     statusProviderFactories.put(Component.ROOT_SCHEDULER,
-        new XenonStatusProviderFactory(rootSchedulerServerSet, this.executor));
+        new XenonStatusProviderFactory(photonControllerServerSet, this.executor));
   }
 
   public SystemStatus getSystemStatus() throws InternalException {

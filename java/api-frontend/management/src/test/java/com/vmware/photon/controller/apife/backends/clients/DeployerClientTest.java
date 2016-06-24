@@ -47,7 +47,7 @@ public class DeployerClientTest {
    */
   public static class CreateHostTest extends PowerMockTestCase {
     @Mock
-    private DeployerXenonRestClient deployerXenonRestClient;
+    private PhotonControllerXenonRestClient photonControllerXenonRestClient;
     @Mock
     private ApiFeXenonRestClient apiFeXenonRestClient;
     private DeployerClient deployerClient;
@@ -58,13 +58,13 @@ public class DeployerClientTest {
       ValidateHostTaskService.State task = new ValidateHostTaskService.State();
       operation.setBody(task);
 
-      when(deployerXenonRestClient.post(any(String.class), any(ValidateHostTaskService.State.class)))
+      when(photonControllerXenonRestClient.post(any(String.class), any(ValidateHostTaskService.State.class)))
           .thenReturn(operation);
 
       when(apiFeXenonRestClient.post(any(String.class), any(HostService.State.class)))
           .thenReturn(null);
 
-      deployerClient = new DeployerClient(deployerXenonRestClient, apiFeXenonRestClient);
+      deployerClient = new DeployerClient(photonControllerXenonRestClient, apiFeXenonRestClient);
     }
 
     private static HostEntity buildCreateSpec() {

@@ -31,7 +31,7 @@ import com.vmware.photon.controller.apife.backends.TaskBackend;
 import com.vmware.photon.controller.apife.backends.TombstoneBackend;
 import com.vmware.photon.controller.apife.backends.VmBackend;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
-import com.vmware.photon.controller.apife.backends.clients.HousekeeperXenonRestClient;
+import com.vmware.photon.controller.apife.backends.clients.PhotonControllerXenonRestClient;
 import com.vmware.photon.controller.apife.backends.utils.TaskUtils;
 import com.vmware.photon.controller.apife.backends.utils.VirtualNetworkUtils;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidNetworkStateException;
@@ -55,17 +55,17 @@ import java.util.List;
 public class VirtualNetworkFeClient {
 
   // We host api-backend in the Housekeeper service.
-  private final HousekeeperXenonRestClient backendClient;
+  private final PhotonControllerXenonRestClient backendClient;
   private final ApiFeXenonRestClient cloudStoreClient;
   private final TaskBackend taskBackend;
   private final VmBackend vmBackend;
   private final TombstoneBackend tombstoneBackend;
 
   @Inject
-  public VirtualNetworkFeClient(HousekeeperXenonRestClient housekeeperClient,
+  public VirtualNetworkFeClient(PhotonControllerXenonRestClient photonControllerXenonRestClient,
                                 ApiFeXenonRestClient cloudStoreClient, TaskBackend taskBackend, VmBackend vmBackend,
                                 TombstoneBackend tombstoneBackend) {
-    this.backendClient = housekeeperClient;
+    this.backendClient = photonControllerXenonRestClient;
     this.backendClient.start();
 
     this.cloudStoreClient = cloudStoreClient;

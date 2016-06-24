@@ -27,8 +27,7 @@ import com.vmware.photon.controller.apife.backends.VmBackend;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.backends.clients.DeployerClient;
 import com.vmware.photon.controller.apife.backends.clients.HousekeeperClient;
-import com.vmware.photon.controller.apife.backends.clients.HousekeeperXenonRestClient;
-import com.vmware.photon.controller.apife.backends.clients.SchedulerXenonRestClient;
+import com.vmware.photon.controller.apife.backends.clients.PhotonControllerXenonRestClient;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.AttachedDiskEntity;
 import com.vmware.photon.controller.apife.entities.FlavorEntity;
@@ -137,7 +136,7 @@ public class VmDiskOpStepCmdTest extends PowerMockTestCase {
   @Mock
   ApiFeXenonRestClient xenonClient;
   @Mock
-  private SchedulerXenonRestClient schedulerXenonRestClient;
+  private PhotonControllerXenonRestClient photonControllerXenonRestClient;
   @Mock
   private HostClient hostClient;
   @Mock
@@ -148,8 +147,6 @@ public class VmDiskOpStepCmdTest extends PowerMockTestCase {
   private VmDisksOpResponse response;
   @Mock
   private HousekeeperClient housekeeperClient;
-  @Mock
-  private HousekeeperXenonRestClient housekeeperXenonRestClient;
 
   @Mock
   private EntityLockBackend entityLockBackend;
@@ -244,11 +241,11 @@ public class VmDiskOpStepCmdTest extends PowerMockTestCase {
     when(diskBackend.find(PersistentDisk.KIND, diskId1)).thenReturn(disk1);
     when(diskBackend.find(PersistentDisk.KIND, diskId2)).thenReturn(disk2);
 
-    taskCommand = spy(new TaskCommand(xenonClient, schedulerXenonRestClient, hostClient,
-        housekeeperClient, housekeeperXenonRestClient, deployerClient, deployerXenonClient, housekeeperXenonClient,
+    taskCommand = spy(new TaskCommand(xenonClient, photonControllerXenonRestClient, hostClient,
+        housekeeperClient, deployerClient, deployerXenonClient, housekeeperXenonClient,
         entityLockBackend, task));
     when(taskCommand.getHostClient()).thenReturn(hostClient);
-    when(taskCommand.getSchedulerXenonRestClient()).thenReturn(schedulerXenonRestClient);
+    when(taskCommand.getPhotonControllerXenonRestClient()).thenReturn(photonControllerXenonRestClient);
     when(vmBackend.findById(vmId)).thenReturn(vm);
     when(diskBackend.find(PersistentDisk.KIND, diskId1)).thenReturn(disk1);
     when(diskBackend.find(PersistentDisk.KIND, diskId2)).thenReturn(disk2);
