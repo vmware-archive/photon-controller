@@ -82,6 +82,16 @@ public class LogicalRouterApi extends NsxClientApi {
   }
 
   /**
+   * Check the existence of a logical router.
+   * @param id
+   * @param responseCallback
+   * @throws IOException
+   */
+  public void checkLogicalRouterExistence(String id, FutureCallback<Boolean> responseCallback) throws IOException {
+    checkExistenceAsync(logicalRouterBasePath + "/" + id, responseCallback);
+  }
+
+  /**
    * Create a downlink port on tier-1 router to switch.
    * @param spec
    * @param responseCallback

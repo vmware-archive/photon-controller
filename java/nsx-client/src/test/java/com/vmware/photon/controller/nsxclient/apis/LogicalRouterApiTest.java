@@ -136,6 +136,86 @@ public class LogicalRouterApiTest extends NsxClientApiTest {
   }
 
   /**
+   * Tests for checking logical router existence.
+   */
+  public static class LogicalRouterCheckExistenceTest {
+    private static final int CALLBACK_ARG_INDEX = 1;
+
+    private LogicalRouterApi logicalRouterApi;
+    private CountDownLatch latch;
+
+    @BeforeMethod
+    public void setup() {
+      logicalRouterApi = spy(new LogicalRouterApi(mock(RestClient.class)));
+      latch = new CountDownLatch(1);
+    }
+
+    @Test
+    public void testCheckLogicalRouterExistence() throws Exception {
+      Boolean existing = true;
+
+      doAnswer(invocation -> {
+        if (invocation.getArguments()[CALLBACK_ARG_INDEX] != null) {
+          ((FutureCallback<Boolean>) invocation.getArguments()[CALLBACK_ARG_INDEX])
+              .onSuccess(existing);
+        }
+        return null;
+      }).when(logicalRouterApi)
+          .checkExistenceAsync(anyString(), any(FutureCallback.class));
+
+      logicalRouterApi.checkLogicalRouterExistence(UUID.randomUUID().toString(),
+          new FutureCallback<Boolean>() {
+            @Override
+            public void onSuccess(Boolean result) {
+              assertThat(result, is(existing));
+              latch.countDown();
+            }
+
+            @Override
+            public void onFailure(Throwable t) {
+              fail("Should not have failed");
+              latch.countDown();
+            }
+          }
+      );
+
+      latch.await();
+    }
+
+    @Test
+    public void testFailedToCheckLogicalRouterExistence() throws Exception {
+      final String errorMsg = "Not found";
+
+      doAnswer(invocation -> {
+        if (invocation.getArguments()[CALLBACK_ARG_INDEX] != null) {
+          ((FutureCallback<Boolean>) invocation.getArguments()[CALLBACK_ARG_INDEX])
+              .onFailure(new Exception(errorMsg));
+        }
+        return null;
+      }).when(logicalRouterApi)
+          .checkExistenceAsync(anyString(), any(FutureCallback.class));
+
+      logicalRouterApi.checkLogicalRouterExistence(UUID.randomUUID().toString(),
+          new FutureCallback<Boolean>() {
+            @Override
+            public void onSuccess(Boolean result) {
+              fail("Should not have succeeded");
+              latch.countDown();
+            }
+
+            @Override
+            public void onFailure(Throwable t) {
+              assertThat(t.getMessage(), is(errorMsg));
+              latch.countDown();
+            }
+          }
+      );
+
+      latch.await();
+    }
+  }
+
+  /**
    * Tests for functions to manage router ports.
    */
   public static class LogicalRouterPortTest {
