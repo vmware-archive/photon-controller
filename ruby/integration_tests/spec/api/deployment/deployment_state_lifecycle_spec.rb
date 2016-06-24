@@ -56,7 +56,8 @@ describe "deployment state lifecycle", life_cycle: true do
 
         client.resume_system(deployment.id)
         expect(client.find_deployment_by_id(deployment.id).state).to eq "READY"
-
+        # Sleep so that deployment state check is done
+        sleep(31)
         # testing that after resuming the system we accept posts again
         tenant_name = random_name("tenant-")
         tenant = create_tenant(:name => tenant_name)

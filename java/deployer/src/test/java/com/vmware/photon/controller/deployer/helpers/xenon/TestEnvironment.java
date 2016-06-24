@@ -13,10 +13,12 @@
 
 package com.vmware.photon.controller.deployer.helpers.xenon;
 
+import com.vmware.photon.controller.cloudstore.xenon.CloudStoreServiceGroup;
 import com.vmware.photon.controller.clustermanager.ClusterManagerFactory;
 import com.vmware.photon.controller.common.clients.AgentControlClientFactory;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.thrift.ServerSet;
+import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.MultiHostEnvironment;
 import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
@@ -41,6 +43,7 @@ import org.slf4j.LoggerFactory;
 import static org.mockito.Mockito.mock;
 import static org.testng.Assert.assertTrue;
 
+import java.net.InetSocketAddress;
 import java.nio.file.Files;
 import java.util.concurrent.TimeUnit;
 
@@ -86,17 +89,23 @@ public class TestEnvironment extends MultiHostEnvironment<PhotonControllerXenonH
       int hostCount,
       Long operationTimeoutMicros,
       int hostNumber,
-      ServerSet cloudServerSet) throws Throwable {
+      ServerSet cloudServerSet,
+      Integer port) throws Throwable {
 
     assertTrue(hostCount > 0);
 
     hosts = new PhotonControllerXenonHost[hostCount];
+
     for (int i = 0; i < hosts.length; i++) {
       String sandbox = Files.createTempDirectory(STORAGE_PATH_PREFIX).toAbsolutePath().toString();
 
       XenonConfig xenonConfig = new XenonConfig();
       xenonConfig.setBindAddress(BIND_ADDRESS);
-      xenonConfig.setPort(0);
+      if (port == null) {
+        xenonConfig.setPort(0);
+      } else {
+        xenonConfig.setPort(port + i);
+      }
       xenonConfig.setStoragePath(sandbox);
 
       CloudStoreHelper cloudStoreHelper = new CloudStoreHelper(cloudServerSet);
@@ -122,7 +131,10 @@ public class TestEnvironment extends MultiHostEnvironment<PhotonControllerXenonH
           hostManagementVmAddressValidatorFactory,
           clusterManagerFactory);
 
+      CloudStoreServiceGroup cloudStoreServiceGroup = new CloudStoreServiceGroup();
+
       hosts[i].registerDeployer(deployerServiceGroup);
+      hosts[i].registerCloudStore(cloudStoreServiceGroup);
 
       TaskSchedulerServiceStateBuilder.triggerInterval = TimeUnit.MILLISECONDS.toMicros(500);
       logger.debug(String.format("sandbox for %s: %s", hosts[i].getId(), sandbox));
@@ -157,6 +169,7 @@ public class TestEnvironment extends MultiHostEnvironment<PhotonControllerXenonH
     private HostManagementVmAddressValidatorFactory hostManagementVmAddressValidatorFactory;
     private ClusterManagerFactory clusterManagerFactory;
     private NsxClientFactory nsxClientFactory;
+    private Integer port;
 
     public Builder apiClientFactory(ApiClientFactory apiClientFactory) {
       this.apiClientFactory = apiClientFactory;
@@ -249,6 +262,11 @@ public class TestEnvironment extends MultiHostEnvironment<PhotonControllerXenonH
       return this;
     }
 
+    public Builder bindPort(Integer port) {
+      this.port = port;
+      return this;
+    }
+
     public TestEnvironment build() throws Throwable {
 
       if (null == this.hostCount) {
@@ -264,7 +282,12 @@ public class TestEnvironment extends MultiHostEnvironment<PhotonControllerXenonH
       }
 
       if (this.cloudServerSet == null) {
-        this.cloudServerSet = mock(ServerSet.class);
+        if (this.port == null) {
+          this.cloudServerSet = mock(ServerSet.class);
+        } else {
+          ServerSet serverSet = new StaticServerSet(new InetSocketAddress(BIND_ADDRESS, port));
+          this.cloudServerSet = serverSet;
+        }
       }
 
       TestEnvironment testEnvironment = new TestEnvironment(
@@ -286,7 +309,8 @@ public class TestEnvironment extends MultiHostEnvironment<PhotonControllerXenonH
           this.hostCount,
           this.operationTimeoutMicros,
           this.hostNumber,
-          this.cloudServerSet);
+          this.cloudServerSet,
+          this.port);
 
       testEnvironment.start();
       return testEnvironment;
