@@ -73,8 +73,6 @@ import java.util.stream.Collectors;
  */
 public class AddManagementHostWorkflowService extends StatefulService {
 
-  public static final String ZOOKEEPER_PORT = "2181";
-
   /**
    * This class defines the state of a {@link AddManagementHostWorkflowService} task.
    */
@@ -554,12 +552,12 @@ public class AddManagementHostWorkflowService extends StatefulService {
           }
 
           try {
-            String zookeeperQuorum = MiscUtils.generateReplicaList(
+            String serverIPAndPortList = MiscUtils.generateReplicaList(
                 ops.values().stream().map(operation -> operation.getBody(VmService.State.class).ipAddress)
                     .collect(Collectors.toList()),
-                ZOOKEEPER_PORT);
+                String.valueOf(ops.values().iterator().next().getBody(VmService.State.class).deployerXenonPort));
 
-            patchDeploymentService(currentState, zookeeperQuorum);
+            patchDeploymentService(currentState, serverIPAndPortList);
           } catch (Throwable t) {
             failTask(t);
           }
@@ -567,9 +565,9 @@ public class AddManagementHostWorkflowService extends StatefulService {
         .sendWith(this);
   }
 
-  private void patchDeploymentService(State currentState, String zookeeperQuorum) {
+  private void patchDeploymentService(State currentState, String serverIPAndPortList) {
     DeploymentService.State deploymentService = new DeploymentService.State();
-    deploymentService.zookeeperQuorum = zookeeperQuorum;
+    deploymentService.serverIpToPortList = serverIPAndPortList;
 
     HostUtils.getCloudStoreHelper(this)
         .createPatch(currentState.deploymentServiceLink)

@@ -27,6 +27,8 @@ import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
 
+import javax.ws.rs.DefaultValue;
+
 /**
  * This class implements a Xenon micro-service which provides a plain data object
  * representing a management plane VM.
@@ -111,6 +113,7 @@ public class VmService extends StatefulService {
      * the same port number.
      */
     @Immutable
+    @DefaultValue("19000")
     public Integer deployerXenonPort;
   }
 

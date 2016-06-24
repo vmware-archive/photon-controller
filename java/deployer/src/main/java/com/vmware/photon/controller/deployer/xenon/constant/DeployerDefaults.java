@@ -104,11 +104,6 @@ public class DeployerDefaults {
   public static final int DEFAULT_WAIT_FOR_SERVICE_MAX_RETRY_COUNT = 300;
 
   /**
-   * Default port for CloudStore.
-   */
-  public static final int CLOUDSTORE_PORT_NUMBER = 19000;
-
-  /**
    * Default entrypoint script to be executed on container startup.
    */
   public static final String DEFAULT_ENTRYPOINT = "/bin/bash";
