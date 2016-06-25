@@ -43,7 +43,6 @@ import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.entities.VmEntity;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidLocalitySpecException;
-import com.vmware.photon.controller.apife.exceptions.external.NetworkNotFoundException;
 import com.vmware.photon.controller.apife.exceptions.external.NoSuchResourceException;
 import com.vmware.photon.controller.apife.exceptions.external.NotEnoughCpuResourceException;
 import com.vmware.photon.controller.apife.exceptions.external.NotEnoughDatastoreCapacityException;
@@ -215,12 +214,24 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
     disk.setFlavorId(diskFlavorEntity.getId());
     disk.setCost(quotaLineItemEntitiesForDisk);
 
+    String networkId = "n1";
+    NetworkEntity networkEntity = new NetworkEntity();
+    networkEntity.setId(networkId);
+    networkBackend = mock(NetworkBackend.class);
+
+    Network network = new Network();
+    network.setId(networkId);
+    network.setPortGroups(ImmutableList.of("P1", "P2"));
+    network.setState(NetworkState.READY);
+    network.setName("public");
+
     when(taskCommand.getHostClient()).thenReturn(hostClient);
     when(taskCommand.getSchedulerXenonRestClient()).thenReturn(schedulerXenonRestClient);
     when(flavorBackend.getEntityById(vmFlavorEntity.getId())).thenReturn(vmFlavorEntity);
     when(flavorBackend.getEntityById(diskFlavorEntity.getId())).thenReturn(diskFlavorEntity);
     when(taskCommand.getApiFeXenonRestClient()).thenReturn(apiFeXenonRestClient);
-    when(networkBackend.getDefault()).thenThrow(new NetworkNotFoundException("No default network"));
+    when(networkBackend.getDefault()).thenReturn(networkEntity);
+    when(networkBackend.toApiRepresentation(networkId)).thenReturn(network);
   }
 
   @Test
@@ -250,7 +261,7 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
     assertThat(resource.getVm().getFlavor_info(), is(expectedFlavor));
     assertThat(resource.getVm().getProject_id(), is(project.getId()));
     assertThat(resource.getVm().getTenant_id(), is(project.getTenantId()));
-    assertThat(resource.getVm().isSetResource_constraints(), is(false));
+    assertThat(resource.getVm().isSetResource_constraints(), is(true));
 
     assertThat(resource.getPlacement_list().getPlacements().size(), is(1));
     assertThat(resource.getPlacement_list().getPlacements().get(0).getType(), is(ResourcePlacementType.VM));
@@ -304,7 +315,7 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
 
     verify(schedulerXenonRestClient).post(any(), placementTaskCaptor.capture());
     Resource resource = placementTaskCaptor.getValue().resource;
-    assertThat(resource.getVm().getResource_constraints().size(), is(vm.getAffinities().size()));
+    assertThat(resource.getVm().getResource_constraints().size(), is(vm.getAffinities().size() + 1));
     assertThat(resource.getVm().getResource_constraints().get(0).getType(), is(ResourceConstraintType.DATASTORE));
     assertThat(resource.getVm().getResource_constraints().get(0).getValues().equals(ImmutableList.of("datastore-1")),
         is(true));
@@ -341,7 +352,7 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
 
     verify(schedulerXenonRestClient).post(any(), placementTaskCaptor.capture());
     Resource resource = placementTaskCaptor.getValue().resource;
-    assertThat(resource.getVm().getResource_constraints().size(), is(vm.getAffinities().size()));
+    assertThat(resource.getVm().getResource_constraints().size(), is(vm.getAffinities().size() + 1));
     assertThat(resource.getVm().getResource_constraints().get(0).getType(),
         is(ResourceConstraintType.AVAILABILITY_ZONE));
     assertThat(resource.getVm().getResource_constraints().get(0).getValues()
@@ -386,7 +397,7 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
     verify(schedulerXenonRestClient).post(any(), placementTaskCaptor.capture());
     Resource resource = placementTaskCaptor.getValue().resource;
     assertThat(resource.getVm().isSetResource_constraints(), is(true));
-    assertThat(resource.getVm().getResource_constraints().size(), is(1));
+    assertThat(resource.getVm().getResource_constraints().size(), is(2));
     assertThat(resource.getVm().getResource_constraints().get(0).getType(), is(ResourceConstraintType.DATASTORE_TAG));
     assertThat(resource.getVm().getResource_constraints().get(0).getValues().equals(ImmutableList.of("SHARED_VMFS")),
         is(true));
@@ -444,7 +455,7 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
     assertThat(resource.getVm().getDisks().get(0).getId(), is("disk1"));
     assertThat(resource.getVm().getDisks().get(0).getFlavor_info(), is(expectedDiskFlavor));
     assertThat(resource.getVm().getDisks().get(0).isSetResource_constraints(), is(false));
-    assertThat(resource.getVm().getResource_constraintsSize(), is(2));
+    assertThat(resource.getVm().getResource_constraintsSize(), is(3));
     assertThat(resource.getVm().getResource_constraints().get(0).getType(), is(ResourceConstraintType.DATASTORE_TAG));
     assertThat(resource.getVm().getResource_constraints().get(0).getValues().equals(ImmutableList.of("SHARED_VMFS")),
         is(true));

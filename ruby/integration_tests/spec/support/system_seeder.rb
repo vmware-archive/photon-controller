@@ -113,6 +113,10 @@ module EsxCloud
     end
 
     def vm!
+      # We create a default network for VM creation so that it will succeed even if
+      # no network is specified, which is a common scenario for most tests.
+      network!
+
       @vm ||= create_vm(project!)
     end
 
