@@ -63,7 +63,7 @@ module EsxCloud
       # @param [String] id
       # @return [Boolean]
       def set_default(id)
-        run_cli("network setDefault '#{id}'")
+        run_cli("network set-default '#{id}'")
         true
       end
 
@@ -78,6 +78,7 @@ module EsxCloud
         network_hash["state"]       = values[2] unless values[2] == ""
         network_hash["portGroups"]  = stringToArray(values[3])
         network_hash["description"] = values[4] unless values[4] == ""
+        network_hash["isDefault"]   = values[5] unless values[5] == ""
 
         Network.create_from_hash(network_hash)
       end
