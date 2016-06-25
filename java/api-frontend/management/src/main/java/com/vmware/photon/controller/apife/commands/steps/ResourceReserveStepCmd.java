@@ -92,7 +92,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.TimeUnit;
 
 /**
  * StepCommand for resource reservation.
@@ -104,7 +103,6 @@ public class ResourceReserveStepCmd extends StepCommand {
   public static final String VM_ID = "vm-id";
 
   private static final int MAX_PLACEMENT_RETRIES = 5;
-  private static final long PLACEMENT_RETRY_INTERVAL = TimeUnit.SECONDS.toMillis(1);
 
   private static final String DISK_KIND = "disk";
   private static final String VM_KIND = "vm";
@@ -570,17 +568,10 @@ public class ResourceReserveStepCmd extends StepCommand {
     }
 
     if (networks.isEmpty()) {
-      try {
-        if (!this.useVirtualNetwork) {
-          networks.add(networkBackend.getDefault().getId());
-        } else {
-          networks.add(getDefaultVirtualNetwork(entity.getProjectId()));
-        }
-      } catch (NetworkNotFoundException ex) {
-        // TODO(ysheng): we temporarily relax the default network constraint.
-        // We need to fix integration tests as well as unit tests such
-        // that we guarantee that there exists a default network.
-        logger.debug("Temporarily relax default network constraint");
+      if (!this.useVirtualNetwork) {
+        networks.add(networkBackend.getDefault().getId());
+      } else {
+        networks.add(getDefaultVirtualNetwork(entity.getProjectId()));
       }
     }
 
@@ -638,7 +629,7 @@ public class ResourceReserveStepCmd extends StepCommand {
       VirtualNetworkService.State defaultNetwork = defaultNetworks.iterator().next();
       return ServiceUtils.getIDFromDocumentSelfLink(defaultNetwork.documentSelfLink);
     } else {
-      throw new NetworkNotFoundException("Cannot find default network for project " + projectId);
+      throw new NetworkNotFoundException("default (virtual)" + projectId);
     }
   }
 }
