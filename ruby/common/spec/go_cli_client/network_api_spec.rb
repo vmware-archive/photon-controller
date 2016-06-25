@@ -56,7 +56,7 @@ describe EsxCloud::GoCliClient do
   end
 
   it "sets default network" do
-    expect(client).to receive(:run_cli).with("network setDefault 'network1'")
+    expect(client).to receive(:run_cli).with("network set-default 'network1'")
     expect(client.set_default("network1")).to be_true
   end
 
