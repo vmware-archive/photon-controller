@@ -25,7 +25,6 @@ import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
 import com.vmware.photon.controller.common.xenon.host.XenonConfig;
 import com.vmware.photon.controller.deployer.DeployerConfig;
-import com.vmware.photon.controller.deployer.DeployerConfigTest;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfiguratorFactory;
 import com.vmware.photon.controller.deployer.deployengine.ApiClientFactory;
 import com.vmware.photon.controller.deployer.deployengine.AuthHelperFactory;
@@ -130,7 +129,7 @@ public class DeployerServiceGroupTest {
     @BeforeClass
     public void setUpClass() throws IOException, BadConfigException {
       deployerConfig = ConfigBuilder.build(DeployerConfig.class,
-          DeployerConfigTest.class.getResource(configFilePath).getPath());
+          DeployerServiceGroupTest.class.getResource(configFilePath).getPath());
       TestHelper.setContainersConfig(deployerConfig);
 
       listeningExecutorService = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(1));
@@ -244,7 +243,7 @@ public class DeployerServiceGroupTest {
     @BeforeClass
     private void setUpClass() throws IOException, BadConfigException {
       deployerConfig = ConfigBuilder.build(DeployerConfig.class,
-          DeployerConfigTest.class.getResource(configFilePath).getPath());
+          DeployerServiceGroupTest.class.getResource(configFilePath).getPath());
       TestHelper.setContainersConfig(deployerConfig);
 
       listeningExecutorService = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(1));
@@ -333,7 +332,7 @@ public class DeployerServiceGroupTest {
     @BeforeClass
     private void setUpClass() throws IOException, BadConfigException {
       deployerConfig = ConfigBuilder.build(DeployerConfig.class,
-          DeployerConfigTest.class.getResource(configFilePath).getPath());
+          DeployerServiceGroupTest.class.getResource(configFilePath).getPath());
       TestHelper.setContainersConfig(deployerConfig);
 
       listeningExecutorService = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(1));

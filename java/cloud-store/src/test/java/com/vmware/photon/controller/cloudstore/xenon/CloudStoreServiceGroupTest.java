@@ -14,7 +14,6 @@
 package com.vmware.photon.controller.cloudstore.xenon;
 
 import com.vmware.photon.controller.cloudstore.CloudStoreConfig;
-import com.vmware.photon.controller.cloudstore.CloudStoreConfigTest;
 import com.vmware.photon.controller.cloudstore.xenon.entity.AttachedDiskServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.AvailabilityZoneServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ClusterConfigurationServiceFactory;
@@ -155,7 +154,7 @@ public class CloudStoreServiceGroupTest {
     @BeforeClass
     public void setUpClass() throws IOException, BadConfigException {
       config = ConfigBuilder.build(CloudStoreConfig.class,
-          CloudStoreConfigTest.class.getResource(configFilePath).getPath());
+          CloudStoreServiceGroupTest.class.getResource(configFilePath).getPath());
 
       hostClientFactory = mock(HostClientFactory.class);
       agentControlClientFactory = mock(AgentControlClientFactory.class);
@@ -216,7 +215,7 @@ public class CloudStoreServiceGroupTest {
     @BeforeClass
     private void setUpClass() throws Throwable {
       config = ConfigBuilder.build(CloudStoreConfig.class,
-          CloudStoreConfigTest.class.getResource(configFilePath).getPath());
+          CloudStoreServiceGroupTest.class.getResource(configFilePath).getPath());
 
       hostClientFactory = mock(HostClientFactory.class);
       agentControlClientFactory = mock(AgentControlClientFactory.class);
@@ -275,7 +274,7 @@ public class CloudStoreServiceGroupTest {
     @BeforeClass
     public void setUpClass() throws Throwable {
       config = ConfigBuilder.build(CloudStoreConfig.class,
-          CloudStoreConfigTest.class.getResource(configFilePath).getPath());
+          CloudStoreServiceGroupTest.class.getResource(configFilePath).getPath());
 
       hostClientFactory = mock(HostClientFactory.class);
       agentControlClientFactory = mock(AgentControlClientFactory.class);

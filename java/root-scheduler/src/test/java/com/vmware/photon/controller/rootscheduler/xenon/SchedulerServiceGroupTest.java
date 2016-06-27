@@ -22,7 +22,6 @@ import com.vmware.photon.controller.common.xenon.MultiHostEnvironment;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
 import com.vmware.photon.controller.common.xenon.host.XenonConfig;
-import com.vmware.photon.controller.rootscheduler.ConfigTest;
 import com.vmware.photon.controller.rootscheduler.RootSchedulerConfig;
 import com.vmware.photon.controller.rootscheduler.service.CloudStoreConstraintChecker;
 import com.vmware.photon.controller.rootscheduler.service.ConstraintChecker;
@@ -104,7 +103,7 @@ public class SchedulerServiceGroupTest {
     @BeforeClass
     public void setUpClass() throws IOException, BadConfigException {
       config = ConfigBuilder.build(RootSchedulerConfig.class,
-          ConfigTest.class.getResource(configFilePath).getPath());
+          SchedulerServiceGroupTest.class.getResource(configFilePath).getPath());
 
       MockitoAnnotations.initMocks(this);
       cloudStoreServerSet = mock(ServerSet.class);
@@ -164,7 +163,7 @@ public class SchedulerServiceGroupTest {
     @BeforeClass
     private void setUpClass() throws IOException, BadConfigException {
       config = ConfigBuilder.build(RootSchedulerConfig.class,
-          ConfigTest.class.getResource(configFilePath).getPath());
+          SchedulerServiceGroupTest.class.getResource(configFilePath).getPath());
 
       MockitoAnnotations.initMocks(this);
 
@@ -212,7 +211,7 @@ public class SchedulerServiceGroupTest {
     @BeforeClass
     private void setUpClass() throws IOException, BadConfigException {
       config = ConfigBuilder.build(RootSchedulerConfig.class,
-          ConfigTest.class.getResource(configFilePath).getPath());
+          SchedulerServiceGroupTest.class.getResource(configFilePath).getPath());
 
       MockitoAnnotations.initMocks(this);
 
@@ -272,7 +271,7 @@ public class SchedulerServiceGroupTest {
     @BeforeClass
     private void setUpClass() throws IOException, BadConfigException {
       config = ConfigBuilder.build(RootSchedulerConfig.class,
-              ConfigTest.class.getResource(configFilePath).getPath());
+          SchedulerServiceGroupTest.class.getResource(configFilePath).getPath());
 
       FileUtils.deleteDirectory(storageDir);
     }

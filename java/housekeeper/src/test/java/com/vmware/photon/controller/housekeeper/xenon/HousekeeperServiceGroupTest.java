@@ -24,7 +24,6 @@ import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
 import com.vmware.photon.controller.common.xenon.host.XenonConfig;
 import com.vmware.photon.controller.common.xenon.scheduler.TaskSchedulerServiceFactory;
 import com.vmware.photon.controller.common.xenon.scheduler.TaskTriggerFactoryService;
-import com.vmware.photon.controller.housekeeper.ConfigTest;
 import com.vmware.photon.controller.housekeeper.HousekeeperConfig;
 import com.vmware.photon.controller.nsxclient.NsxClientFactory;
 import com.vmware.xenon.common.Service;
@@ -95,7 +94,7 @@ public class HousekeeperServiceGroupTest {
     @BeforeClass
     public void setUpClass() throws Exception {
       config = ConfigBuilder.build(HousekeeperConfig.class,
-          ConfigTest.class.getResource(configFilePath).getPath());
+          HousekeeperServiceGroupTest.class.getResource(configFilePath).getPath());
 
       cloudStoreServerSet = mock(ServerSet.class);
       cloudStoreHelper = new CloudStoreHelper(cloudStoreServerSet);
@@ -172,7 +171,7 @@ public class HousekeeperServiceGroupTest {
     @BeforeClass
     private void setUpClass() throws Throwable {
       config = ConfigBuilder.build(HousekeeperConfig.class,
-          ConfigTest.class.getResource(configFilePath).getPath());
+          HousekeeperServiceGroupTest.class.getResource(configFilePath).getPath());
 
       cloudStoreServerSet = mock(ServerSet.class);
       cloudStoreHelper = new CloudStoreHelper(cloudStoreServerSet);
@@ -231,7 +230,7 @@ public class HousekeeperServiceGroupTest {
     @BeforeClass
     private void setUpClass() throws Throwable {
       config = ConfigBuilder.build(HousekeeperConfig.class,
-          ConfigTest.class.getResource(configFilePath).getPath());
+          HousekeeperServiceGroupTest.class.getResource(configFilePath).getPath());
 
       cloudStoreServerSet = mock(ServerSet.class);
       cloudStoreHelper = new CloudStoreHelper(cloudStoreServerSet);
@@ -284,7 +283,7 @@ public class HousekeeperServiceGroupTest {
     @BeforeClass
     private void setUpClass() throws Throwable {
       config = ConfigBuilder.build(HousekeeperConfig.class,
-          ConfigTest.class.getResource(configFilePath).getPath());
+          HousekeeperServiceGroupTest.class.getResource(configFilePath).getPath());
 
       cloudStoreServerSet = mock(ServerSet.class);
       cloudStoreHelper = new CloudStoreHelper(cloudStoreServerSet);
