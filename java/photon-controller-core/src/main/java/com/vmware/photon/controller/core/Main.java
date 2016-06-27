@@ -24,6 +24,7 @@ import com.vmware.photon.controller.common.config.BadConfigException;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.logging.LoggingFactory;
 import com.vmware.photon.controller.common.thrift.ServerSet;
+import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.common.thrift.ThriftModule;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
@@ -71,6 +72,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.SSLContext;
 
+import java.net.InetSocketAddress;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.concurrent.BlockingQueue;
@@ -141,8 +143,8 @@ public class Main {
     final NsxClientFactory nsxClientFactory = new NsxClientFactory();
 
     // Values for Scheduler
-    final ServerSet cloudStoreServerSet = zkModule.getZookeeperServerSet(zkClient,
-            Constants.CLOUDSTORE_SERVICE_NAME, true);
+    final ServerSet cloudStoreServerSet =
+        new StaticServerSet(new InetSocketAddress("127.0.0.1", Constants.CLOUD_STORE_PORT));
     final CloudStoreHelper cloudStoreHelper = new CloudStoreHelper(cloudStoreServerSet);
     final ConstraintChecker checker = new CloudStoreConstraintChecker(cloudStoreHelper);
 
@@ -160,7 +162,7 @@ public class Main {
       throw new RuntimeException(e);
     }
 
-    ServerSet apiFeServerSet = zkModule.getZookeeperServerSet(zkClient, Constants.APIFE_SERVICE_NAME, true);
+    ServerSet apiFeServerSet = new StaticServerSet(new InetSocketAddress("127.0.0.1", Constants.MANAGEMENT_API_PORT));
 
     logger.info("Creating PhotonController Xenon Host");
     final PhotonControllerXenonHost photonControllerXenonHost =
