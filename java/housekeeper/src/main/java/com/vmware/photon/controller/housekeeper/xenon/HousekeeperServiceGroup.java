@@ -123,7 +123,6 @@ public class HousekeeperServiceGroup
     ServiceHostUtils.startFactoryServices(photonControllerXenonHost, ApiBackendFactory.FACTORY_SERVICES_MAP);
 
     //Start the special services
-    startImageSeederSyncTriggerService();
     startTaskSchedulerServices();
     startTaskTriggerServices();
   }
@@ -149,20 +148,6 @@ public class HousekeeperServiceGroup
         && photonControllerXenonHost.checkServiceAvailable(getTriggerCleanerServiceUri())
         && photonControllerXenonHost.checkServiceAvailable(getImageSeederSyncTriggerServiceUri())
         && photonControllerXenonHost.checkServiceAvailable(TaskSchedulerServiceFactory.SELF_LINK);
-  }
-
-  private void startImageSeederSyncTriggerService() {
-    photonControllerXenonHost.registerForServiceAvailability(
-        (Operation operation, Throwable throwable) -> {
-          ImageSeederSyncService.State state = new ImageSeederSyncService.State();
-          state.documentSelfLink = TRIGGER_SERVICE_SUFFIX;
-
-          URI uri = UriUtils.buildUri(photonControllerXenonHost,
-              ImageSeederSyncServiceFactory.SELF_LINK, null);
-          Operation post = Operation.createPost(uri).setBody(state);
-          post.setReferer(UriUtils.buildUri(photonControllerXenonHost, HOUSEKEEPER_URI));
-          photonControllerXenonHost.sendRequest(post);
-        }, ImageSeederSyncServiceFactory.SELF_LINK);
   }
 
   private void startTaskSchedulerServices() {
