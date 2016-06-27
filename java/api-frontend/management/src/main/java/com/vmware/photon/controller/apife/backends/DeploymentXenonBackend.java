@@ -603,8 +603,6 @@ public class DeploymentXenonBackend implements DeploymentBackend {
         taskEntity, deploymentEntity, Operation.PERFORM_DELETE_DEPLOYMENT);
     this.taskBackend.getStepBackend().createQueuedStep(
         taskEntity, deploymentEntity, Operation.DEPROVISION_HOSTS);
-    this.taskBackend.getStepBackend().createQueuedStep(
-        taskEntity, deploymentEntity, Operation.DEPROVISION_NETWORK);
     taskEntity.getToBeLockedEntities().add(deploymentEntity);
     return taskEntity;
   }

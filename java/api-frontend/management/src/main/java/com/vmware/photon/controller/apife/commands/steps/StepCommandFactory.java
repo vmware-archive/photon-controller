@@ -203,7 +203,6 @@ public class StepCommandFactory {
         return new DeploymentDeleteStepCmd(taskCommand, stepBackend, stepEntity, deploymentBackend);
       case PERFORM_DELETE_DEPLOYMENT:
       case DEPROVISION_HOSTS:
-      case DEPROVISION_NETWORK:
         return new DeploymentDeleteStatusStepCmd(taskCommand, stepBackend, stepEntity,
             new DeploymentDeleteStatusStepCmd.DeploymentDeleteStepPoller(taskCommand, taskBackend, deploymentBackend));
       case PUSH_DEPLOYMENT_SECURITY_GROUPS:

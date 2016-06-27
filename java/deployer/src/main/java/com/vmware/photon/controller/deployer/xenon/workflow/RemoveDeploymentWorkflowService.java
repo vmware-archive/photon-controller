@@ -44,7 +44,6 @@ import com.vmware.photon.controller.deployer.xenon.entity.ContainerTemplateServi
 import com.vmware.photon.controller.deployer.xenon.entity.VmService;
 import com.vmware.photon.controller.deployer.xenon.util.HostUtils;
 import com.vmware.photon.controller.deployer.xenon.util.MiscUtils;
-import com.vmware.photon.controller.nsxclient.NsxClient;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.OperationJoin;
 import com.vmware.xenon.common.Service;
@@ -52,7 +51,6 @@ import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
-import com.vmware.xenon.services.common.NodeGroupBroadcastResponse;
 import com.vmware.xenon.services.common.QueryTask;
 import com.vmware.xenon.services.common.ServiceUriPaths;
 
@@ -64,7 +62,6 @@ import javax.annotation.Nullable;
 
 import java.util.Collection;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -88,7 +85,6 @@ public class RemoveDeploymentWorkflowService extends StatefulService {
     public enum SubStage {
       REMOVE_FROM_API_FE,
       DEPROVISION_HOSTS,
-      DEPROVISION_NETWORK
     }
   }
 
@@ -220,7 +216,6 @@ public class RemoveDeploymentWorkflowService extends StatefulService {
       switch (currentState.taskState.subStage) {
         case REMOVE_FROM_API_FE:
         case DEPROVISION_HOSTS:
-        case DEPROVISION_NETWORK:
           break;
         default:
           throw new IllegalStateException("Unknown task sub-stage: " + currentState.taskState.subStage);
@@ -274,9 +269,6 @@ public class RemoveDeploymentWorkflowService extends StatefulService {
         break;
       case DEPROVISION_HOSTS:
         queryAndDeprovisionHosts(currentState);
-        break;
-      case DEPROVISION_NETWORK:
-        deprovisionNetwork(currentState);
         break;
     }
   }
@@ -855,84 +847,6 @@ public class RemoveDeploymentWorkflowService extends StatefulService {
     return querySpecification;
   }
 
-  private void deprovisionNetwork(final State currentState) {
-    if (null == currentState.deploymentServiceLink) {
-      QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
-      querySpecification.query = new QueryTask.Query()
-          .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
-          .setTermMatchValue(Utils.buildKind(DeploymentService.State.class));
-      QueryTask queryTask = QueryTask.create(querySpecification).setDirect(true);
-
-      HostUtils.getCloudStoreHelper(this)
-          .createBroadcastPost(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS, ServiceUriPaths.DEFAULT_NODE_SELECTOR)
-          .setBody(queryTask)
-          .setCompletion((op, ex) -> {
-            if (null != ex) {
-              failTask(ex);
-              return;
-            }
-
-            NodeGroupBroadcastResponse queryResponse = op.getBody(NodeGroupBroadcastResponse.class);
-            Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(queryResponse);
-            if (documentLinks.isEmpty()) {
-              ServiceUtils.logInfo(this, "Skip deprovisioning network because no deployment was found");
-              TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FINISHED, null, null));
-              return;
-            }
-
-            getDeploymentState(documentLinks.iterator().next());
-          })
-          .sendWith(this);
-    } else {
-      getDeploymentState(currentState.deploymentServiceLink);
-    }
-  }
-
-  private void getDeploymentState(String deploymentServiceLink) {
-    HostUtils.getCloudStoreHelper(this)
-        .createGet(deploymentServiceLink)
-        .setCompletion((op, ex) -> {
-          if (null != ex) {
-            failTask(ex);
-            return;
-          }
-
-          deprovisionNetwork(op.getBody(DeploymentService.State.class));
-        })
-        .sendWith(this);
-  }
-
-  private void deprovisionNetwork(final DeploymentService.State deploymentState) {
-    if (!deploymentState.virtualNetworkEnabled || deploymentState.networkZoneId == null) {
-      ServiceUtils.logInfo(this, "Skip deprovisioning network");
-      TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FINISHED, null, null));
-      return;
-    }
-
-    try {
-      NsxClient nsxClient = HostUtils.getNsxClientFactory(this).create(
-          deploymentState.networkManagerAddress,
-          deploymentState.networkManagerUsername,
-          deploymentState.networkManagerPassword);
-
-      nsxClient.getFabricApi().deleteTransportZone(deploymentState.networkZoneId,
-          new FutureCallback<Void>() {
-            @Override
-            public void onSuccess(@Nullable Void aVoid) {
-              TaskUtils.sendSelfPatch(RemoveDeploymentWorkflowService.this,
-                  buildPatch(TaskState.TaskStage.FINISHED, null, null));
-            }
-
-            @Override
-            public void onFailure(Throwable throwable) {
-              failTask(throwable);
-            }
-          });
-    } catch (Throwable t) {
-      failTask(t);
-    }
-  }
-
   private void queryAndDeprovisionHosts(final State currentState) {
 
     sendRequest(
@@ -951,9 +865,6 @@ public class RemoveDeploymentWorkflowService extends StatefulService {
                     QueryTaskUtils.logQueryResults(RemoveDeploymentWorkflowService.this, documentLinks);
                     if (documentLinks.size() > 0) {
                       deprovisionHosts(currentState, documentLinks);
-                    } else {
-                      TaskUtils.sendSelfPatch(this,
-                          buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.DEPROVISION_NETWORK, null));
                     }
                   } catch (Throwable t) {
                     failTask(t);
@@ -976,8 +887,8 @@ public class RemoveDeploymentWorkflowService extends StatefulService {
           case FINISHED:
             if (0 == numOfPendingHosts.decrementAndGet()) {
               TaskUtils.sendSelfPatch(service, buildPatch(
-                  TaskState.TaskStage.STARTED,
-                  TaskState.SubStage.DEPROVISION_NETWORK,
+                  TaskState.TaskStage.FINISHED,
+                  null,
                   null));
             }
             break;
