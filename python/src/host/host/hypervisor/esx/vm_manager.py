@@ -206,6 +206,10 @@ class EsxVmManager(VmManager):
                 resources.append(Resource(vm_resource, vm_resource.disks))
         return resources
 
+    def get_power_state(self, vm_id):
+        vm = self.vim_client.get_vm_in_cache(vm_id)
+        return self._power_state_to_resource_state(vm.power_state)
+
     @log_duration
     def get_resource(self, vm_id):
         vmcache = self.vim_client.get_vm_in_cache(vm_id)
