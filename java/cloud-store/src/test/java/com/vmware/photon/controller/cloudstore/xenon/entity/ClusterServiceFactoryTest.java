@@ -45,7 +45,6 @@ public class ClusterServiceFactoryTest {
         Service.ServiceOption.REPLICATION,
         Service.ServiceOption.FACTORY,
         Service.ServiceOption.CONCURRENT_GET_HANDLING,
-        Service.ServiceOption.ON_DEMAND_LOAD,
         Service.ServiceOption.CONCURRENT_UPDATE_HANDLING);
     assertThat(factory.getOptions(), is(expected));
     assertThat(factory.getPeerNodeSelectorPath(), is(equalTo(ServiceUriPaths.DEFAULT_CLOUD_STORE_NODE_SELECTOR)));
