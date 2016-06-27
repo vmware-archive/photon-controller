@@ -19,7 +19,7 @@ import com.vmware.photon.controller.apibackend.servicedocuments.DisconnectVmFrom
 import com.vmware.photon.controller.apibackend.servicedocuments.DisconnectVmFromSwitchTask.TaskState;
 import com.vmware.photon.controller.apibackend.tasks.DisconnectVmFromSwitchTaskService;
 import com.vmware.photon.controller.apife.backends.StepBackend;
-import com.vmware.photon.controller.apife.backends.clients.HousekeeperXenonRestClient;
+import com.vmware.photon.controller.apife.backends.clients.PhotonControllerXenonRestClient;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
@@ -59,10 +59,10 @@ public class VmUnjoinVirtualNetworkStepCmd extends StepCommand {
     startState.networkId = networkId;
     startState.vmId = vmId;
 
-    HousekeeperXenonRestClient housekeeperXenonRestClient = taskCommand.getHousekeeperXenonRestClient();
-    Operation result = housekeeperXenonRestClient.post(DisconnectVmFromSwitchTaskService.FACTORY_LINK, startState);
+    PhotonControllerXenonRestClient photonControllerXenonRestClient = taskCommand.getPhotonControllerXenonRestClient();
+    Operation result = photonControllerXenonRestClient.post(DisconnectVmFromSwitchTaskService.FACTORY_LINK, startState);
     DisconnectVmFromSwitchTask task = result.getBody(DisconnectVmFromSwitchTask.class);
-    TaskState.TaskStage taskStage = waitForDisconnectDone(housekeeperXenonRestClient, task.documentSelfLink);
+    TaskState.TaskStage taskStage = waitForDisconnectDone(photonControllerXenonRestClient, task.documentSelfLink);
 
     if (taskStage != TaskState.TaskStage.FINISHED) {
       String errorMsg = "Disconnecting VM " + vmId + " from virtual network " + networkId +
@@ -78,11 +78,11 @@ public class VmUnjoinVirtualNetworkStepCmd extends StepCommand {
   protected void cleanup() {
   }
 
-  private TaskState.TaskStage waitForDisconnectDone(HousekeeperXenonRestClient housekeeperXenonRestClient,
+  private TaskState.TaskStage waitForDisconnectDone(PhotonControllerXenonRestClient photonControllerXenonRestClient,
                                                     String taskUrl) {
     for (int i = 0; i < NUM_RETIRES; i++) {
       try {
-        Operation result = housekeeperXenonRestClient.get(taskUrl);
+        Operation result = photonControllerXenonRestClient.get(taskUrl);
         TaskState.TaskStage taskStage = result.getBody(DisconnectVmFromSwitchTask.class).taskState.stage;
         if (taskStage != TaskState.TaskStage.STARTED) {
           return taskStage;

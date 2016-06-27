@@ -19,7 +19,7 @@ import com.vmware.photon.controller.apibackend.servicedocuments.DisconnectVmFrom
 import com.vmware.photon.controller.apibackend.tasks.DisconnectVmFromSwitchTaskService;
 import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
-import com.vmware.photon.controller.apife.backends.clients.HousekeeperXenonRestClient;
+import com.vmware.photon.controller.apife.backends.clients.PhotonControllerXenonRestClient;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
@@ -50,17 +50,17 @@ import java.util.UUID;
 public class VmUnjoinVirtualNetworkStepCmdTest {
 
   private TaskCommand taskCommand;
-  private HousekeeperXenonRestClient housekeeperXenonRestClient;
+  private PhotonControllerXenonRestClient photonControllerXenonRestClient;
   private ApiFeXenonRestClient apiFeXenonRestClient;
   private StepEntity step;
 
   @BeforeMethod
   public void setup() {
     taskCommand = mock(TaskCommand.class);
-    housekeeperXenonRestClient = mock(HousekeeperXenonRestClient.class);
+    photonControllerXenonRestClient = mock(PhotonControllerXenonRestClient.class);
     apiFeXenonRestClient = mock(ApiFeXenonRestClient.class);
 
-    doReturn(housekeeperXenonRestClient).when(taskCommand).getHousekeeperXenonRestClient();
+    doReturn(photonControllerXenonRestClient).when(taskCommand).getPhotonControllerXenonRestClient();
     doReturn(apiFeXenonRestClient).when(taskCommand).getApiFeXenonRestClient();
   }
 
@@ -96,7 +96,7 @@ public class VmUnjoinVirtualNetworkStepCmdTest {
     step.createOrUpdateTransientResource(ResourceReserveStepCmd.VIRTUAL_NETWORK_ID, "network1");
 
     Operation operation = mock(Operation.class);
-    doReturn(operation).when(housekeeperXenonRestClient).post(eq(DisconnectVmFromSwitchTaskService.FACTORY_LINK),
+    doReturn(operation).when(photonControllerXenonRestClient).post(eq(DisconnectVmFromSwitchTaskService.FACTORY_LINK),
         any(DisconnectVmFromSwitchTask.class));
 
     String documentSelfLink = UUID.randomUUID().toString();
@@ -106,13 +106,13 @@ public class VmUnjoinVirtualNetworkStepCmdTest {
     task.documentSelfLink = documentSelfLink;
     doReturn(task).when(operation).getBody(DisconnectVmFromSwitchTask.class);
 
-    doReturn(operation).when(housekeeperXenonRestClient).get(documentSelfLink);
+    doReturn(operation).when(photonControllerXenonRestClient).get(documentSelfLink);
 
     command.execute();
 
-    verify(housekeeperXenonRestClient).post(eq(DisconnectVmFromSwitchTaskService.FACTORY_LINK),
+    verify(photonControllerXenonRestClient).post(eq(DisconnectVmFromSwitchTaskService.FACTORY_LINK),
         any(DisconnectVmFromSwitchTask.class));
-    verify(housekeeperXenonRestClient).get(eq(documentSelfLink));
+    verify(photonControllerXenonRestClient).get(eq(documentSelfLink));
     verify(operation, times(2)).getBody(DisconnectVmFromSwitchTask.class);
   }
 
@@ -127,7 +127,7 @@ public class VmUnjoinVirtualNetworkStepCmdTest {
 
     String errorMsg = "Failed with error code 500";
     doThrow(new XenonRuntimeException(errorMsg))
-        .when(housekeeperXenonRestClient).post(eq(DisconnectVmFromSwitchTaskService.FACTORY_LINK),
+        .when(photonControllerXenonRestClient).post(eq(DisconnectVmFromSwitchTaskService.FACTORY_LINK),
         any(DisconnectVmFromSwitchTask.class));
 
     try {
@@ -148,7 +148,7 @@ public class VmUnjoinVirtualNetworkStepCmdTest {
         .queryDocuments(eq(DeploymentService.State.class), any(ImmutableMap.class));
 
     Operation operation = mock(Operation.class);
-    doReturn(operation).when(housekeeperXenonRestClient).post(eq(DisconnectVmFromSwitchTaskService.FACTORY_LINK),
+    doReturn(operation).when(photonControllerXenonRestClient).post(eq(DisconnectVmFromSwitchTaskService.FACTORY_LINK),
         any(DisconnectVmFromSwitchTask.class));
 
     String documentSelfLink = UUID.randomUUID().toString();
@@ -166,14 +166,14 @@ public class VmUnjoinVirtualNetworkStepCmdTest {
     task3.taskState.stage = TaskState.TaskStage.FAILED;
 
     doReturn(task1).doReturn(task2).doReturn(task3).when(operation).getBody(DisconnectVmFromSwitchTask.class);
-    doReturn(operation).when(housekeeperXenonRestClient).get(documentSelfLink);
+    doReturn(operation).when(photonControllerXenonRestClient).get(documentSelfLink);
 
     try {
       command.execute();
     } catch (ExternalException e) {
-      verify(housekeeperXenonRestClient).post(eq(DisconnectVmFromSwitchTaskService.FACTORY_LINK),
+      verify(photonControllerXenonRestClient).post(eq(DisconnectVmFromSwitchTaskService.FACTORY_LINK),
           any(DisconnectVmFromSwitchTask.class));
-      verify(housekeeperXenonRestClient, times(2)).get(eq(documentSelfLink));
+      verify(photonControllerXenonRestClient, times(2)).get(eq(documentSelfLink));
       verify(operation, times(3)).getBody(DisconnectVmFromSwitchTask.class);
 
       assertThat(e.getMessage(),
@@ -191,7 +191,7 @@ public class VmUnjoinVirtualNetworkStepCmdTest {
         .queryDocuments(eq(DeploymentService.State.class), any(ImmutableMap.class));
 
     Operation operation = mock(Operation.class);
-    doReturn(operation).when(housekeeperXenonRestClient).post(eq(DisconnectVmFromSwitchTaskService.FACTORY_LINK),
+    doReturn(operation).when(photonControllerXenonRestClient).post(eq(DisconnectVmFromSwitchTaskService.FACTORY_LINK),
         any(DisconnectVmFromSwitchTask.class));
 
     String documentSelfLink = UUID.randomUUID().toString();
@@ -201,14 +201,14 @@ public class VmUnjoinVirtualNetworkStepCmdTest {
     task.documentSelfLink = documentSelfLink;
     doReturn(task).when(operation).getBody(DisconnectVmFromSwitchTask.class);
 
-    doReturn(operation).when(housekeeperXenonRestClient).get(documentSelfLink);
+    doReturn(operation).when(photonControllerXenonRestClient).get(documentSelfLink);
 
     try {
       command.execute();
     } catch (RuntimeException e) {
-      verify(housekeeperXenonRestClient).post(eq(DisconnectVmFromSwitchTaskService.FACTORY_LINK),
+      verify(photonControllerXenonRestClient).post(eq(DisconnectVmFromSwitchTaskService.FACTORY_LINK),
           any(DisconnectVmFromSwitchTask.class));
-      verify(housekeeperXenonRestClient, times(5)).get(eq(documentSelfLink));
+      verify(photonControllerXenonRestClient, times(5)).get(eq(documentSelfLink));
       verify(operation, times(6)).getBody(DisconnectVmFromSwitchTask.class);
 
       assertThat(e.getMessage(), is("Timeout when waiting for DisconnectVmFromSwitchTask"));
