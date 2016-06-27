@@ -64,20 +64,6 @@ public class TestEnvironment extends MultiHostEnvironment<PhotonControllerXenonH
   }
 
   /**
-   * Get cleaner trigger service uri.
-   */
-  public String getTriggerCleanerServiceUri() {
-    return HousekeeperServiceGroup.getTriggerCleanerServiceUri();
-  }
-
-  /**
-   * Get ImageSeederService Sync trigger service uri.
-   */
-  public String getImageSeederSyncServiceUri() {
-    return HousekeeperServiceGroup.getImageSeederSyncTriggerServiceUri();
-  }
-
-  /**
    * This class implements a builder for {@link TestEnvironment} objects.
    */
   public static class Builder {
