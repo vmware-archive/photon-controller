@@ -137,6 +137,15 @@ class VmManager(object):
         pass
 
     @abc.abstractmethod
+    def get_power_state(self, vm_id):
+        """Get a VM's state
+
+        :type vm_id: str
+        :rtype: resources.Vm.State
+        """
+        pass
+
+    @abc.abstractmethod
     def get_resource(self, vm_id):
         """Get a VM resource
 
