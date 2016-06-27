@@ -1,0 +1,45 @@
+xenon:
+  bindAddress: "0.0.0.0"
+  port: 19000
+  registrationAddress: "127.0.0.1"
+  storagePath: "/tmp/xenon/19000"
+  peerNodes:
+  - http://127.0.0.1:19000
+
+zookeeper:
+  quorum: localhost:2181
+
+deployer:
+  deployer:
+    apifeEndpoint: "http://127.0.0.1"
+    configDirectory: "/tmp/deployAgent/configurations"
+    enableSyslog: false
+    maxMemoryGb: 64
+    maxVmCount: 20
+    projectName: "mgmt-project"
+    resourceTicketName: "mgmt-res-ticket"
+    scriptDirectory: "/tmp/deployAgent/scripts"
+    scriptLogDirectory: "/tmp/deployAgent/logs"
+    tenantName: "mgmt-tenant"
+    vibDirectory: "/tmp/deployAgent/vibs"
+
+  xenon:
+    bindAddress: localhost
+    registrationAddress: localhost
+    port: 19000
+    storagePath: "/tmp/xenon/19000"
+    peerNodes:
+    - http://localhost:19000
+
+  logging:
+    loggers:
+      "com.vmware.esxcloud.deployer": DEBUG
+  zookeeper:
+    quorum: localhost:2181
+  hierarchy:
+    maxTopTierSchedulers: 1024
+    maxMidTierSchedulers: 32
+    initialScanDelayMs: 10000
+    scanPeriodMs: 5000
+    hostConfigPoolSize: 10
+    enableScan: false
