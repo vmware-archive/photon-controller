@@ -64,7 +64,7 @@ public class ProjectNetworksResourceTest extends ResourceTest {
 
   private String projectId = "projectId";
   private String projectNetworksRoutePath =
-      UriBuilder.fromPath(ProjectResourceRoutes.PROJECT_NETWORKS_PATH).build(projectId).toString();
+      UriBuilder.fromPath(ProjectResourceRoutes.PROJECT_SUBNETS_PATH).build(projectId).toString();
 
   private String taskId = "task1";
   private String taskRoutePath =

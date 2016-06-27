@@ -28,7 +28,7 @@ public class ProjectResourceRoutes {
 
   public static final String PROJECT_VMS_PATH = "/projects/{id}/vms";
 
-  public static final String PROJECT_NETWORKS_PATH = "/projects/{id}/networks";
+  public static final String PROJECT_SUBNETS_PATH = "/projects/{id}/subnets";
 
   public static final String PROJECT_SET_SECURITY_GROUPS_PATH = "/projects/{id}/set_security_groups";
 }

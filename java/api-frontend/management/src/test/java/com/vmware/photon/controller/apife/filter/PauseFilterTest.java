@@ -87,7 +87,7 @@ public class PauseFilterTest {
   @DataProvider(name = "UnsuccessfulRequests")
   Object[][] getUnsuccessfulRequests() {
     return new Object[][]{
-        {true, "GET", UriBuilder.fromPath(VmResourceRoutes.VM_NETWORKS_PATH).build("vmId").toString()},
+        {true, "GET", UriBuilder.fromPath(VmResourceRoutes.VM_SUBNETS_PATH).build("vmId").toString()},
         {true, "POST", UriBuilder.fromPath(VmResourceRoutes.API).build().toString()}
     };
   }

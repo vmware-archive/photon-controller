@@ -38,7 +38,7 @@ import javax.ws.rs.core.Response;
 /**
  * This resource is for vm networks related API.
  */
-@Path(VmResourceRoutes.VM_NETWORKS_PATH)
+@Path(VmResourceRoutes.VM_SUBNETS_PATH)
 @Api(value = VmResourceRoutes.API)
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
