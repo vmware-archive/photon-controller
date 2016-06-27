@@ -1001,11 +1001,10 @@ public class DeploymentXenonBackendTest {
       assertThat(taskEntity.getEntityKind(), is(Deployment.KIND));
 
       // verify that task steps are created successfully
-      assertThat(taskEntity.getSteps().size(), is(4));
+      assertThat(taskEntity.getSteps().size(), is(3));
       assertThat(taskEntity.getSteps().get(0).getOperation(), is(Operation.SCHEDULE_DELETE_DEPLOYMENT));
       assertThat(taskEntity.getSteps().get(1).getOperation(), is(Operation.PERFORM_DELETE_DEPLOYMENT));
       assertThat(taskEntity.getSteps().get(2).getOperation(), is(Operation.DEPROVISION_HOSTS));
-      assertThat(taskEntity.getSteps().get(3).getOperation(), is(Operation.DEPROVISION_NETWORK));
     }
 
     @DataProvider(name = "DestroySuccess")

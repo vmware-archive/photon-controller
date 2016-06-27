@@ -386,7 +386,6 @@ public class DeploymentService extends StatefulService {
     /**
      * This value represents the network zone ID.
      */
-    @WriteOnce
     public String networkZoneId;
 
     /**

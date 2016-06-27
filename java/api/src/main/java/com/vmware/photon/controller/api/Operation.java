@@ -111,7 +111,6 @@ public enum Operation {
   SCHEDULE_DELETE_DEPLOYMENT("ScheduleDeleteDeployment"),
   PERFORM_DELETE_DEPLOYMENT("PerformDeleteDeployment"),
   DEPROVISION_HOSTS("DeprovisionHosts"),
-  DEPROVISION_NETWORK("DeprovisionNetwork"),
   UPDATE_DEPLOYMENT_SECURITY_GROUPS("UpdateDeploymentSecurityGroups"),
   PUSH_DEPLOYMENT_SECURITY_GROUPS("PushDeploymentSecurityGroups"),
   PAUSE_SYSTEM("PauseSystem"),

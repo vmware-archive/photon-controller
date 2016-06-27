@@ -34,15 +34,11 @@ import com.vmware.photon.controller.deployer.xenon.task.ChildTaskAggregatorServi
 import com.vmware.photon.controller.deployer.xenon.task.ProvisionHostTaskFactoryService;
 import com.vmware.photon.controller.deployer.xenon.task.ProvisionHostTaskService;
 import com.vmware.photon.controller.deployer.xenon.util.HostUtils;
-import com.vmware.photon.controller.nsxclient.NsxClient;
-import com.vmware.photon.controller.nsxclient.datatypes.TransportType;
-import com.vmware.photon.controller.nsxclient.models.TransportZone;
-import com.vmware.photon.controller.nsxclient.models.TransportZoneCreateSpec;
-import com.vmware.photon.controller.nsxclient.utils.NameUtils;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.OperationJoin;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
+import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.QueryTask;
 import com.vmware.xenon.services.common.ServiceUriPaths;
@@ -62,26 +58,6 @@ import java.util.stream.Stream;
  * This class implements a Xenon microservice which performs the task of provisioning a set of ESX hosts.
  */
 public class BulkProvisionHostsWorkflowService extends StatefulService {
-
-  /**
-   * This class defines the state of a {@link BulkProvisionHostsWorkflowService} task.
-   */
-  public static class TaskState extends com.vmware.xenon.common.TaskState {
-
-    /**
-     * This type defines the possible sub-stages of a {@link BulkProvisionHostsWorkflowService}
-     * task.
-     */
-    public enum SubStage {
-      PROVISION_NETWORK,
-      PROVISION_HOSTS,
-    }
-
-    /**
-     * This value represents the sub-stage of the current task.
-     */
-    public SubStage subStage;
-  }
 
   /**
    * This class represents the document state associated with a {@link BulkProvisionHostsWorkflowService} instance.
@@ -184,7 +160,7 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
       if (ControlFlags.isOperationProcessingDisabled(startState.controlFlags)) {
         ServiceUtils.logInfo(this, "Skipping start operation processing (disabled)");
       } else if (startState.taskState.stage == TaskState.TaskStage.CREATED) {
-        sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.PROVISION_NETWORK);
+        sendStageProgressPatch(TaskState.TaskStage.STARTED);
       } else {
         throw new IllegalStateException("Task is not restartable");
       }
@@ -258,7 +234,7 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
       if (ControlFlags.isOperationProcessingDisabled(currentState.controlFlags)) {
         ServiceUtils.logInfo(this, "Skipping patch operation processing (disabled)");
       } else if (currentState.taskState.stage == TaskState.TaskStage.STARTED) {
-        processStartedStage(currentState);
+        processProvisionHosts(currentState);
       }
     } catch (Throwable t) {
       failTask(t);
@@ -267,148 +243,14 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
 
   private void validateState(State state) {
     ValidationUtils.validateState(state);
-    validateTaskStage(state.taskState);
   }
 
   private void validatePatch(State currentState, State patchState) {
     ValidationUtils.validatePatch(currentState, patchState);
-    validateTaskStage(patchState.taskState);
-    validateTaskStageProgression(currentState.taskState, patchState.taskState);
+    ValidationUtils.validateTaskStageProgression(currentState.taskState, patchState.taskState);
   }
 
-  private void validateTaskStage(TaskState taskState) {
-    ValidationUtils.validateTaskStage(taskState);
-    switch (taskState.stage) {
-      case CREATED:
-      case FINISHED:
-      case FAILED:
-      case CANCELLED:
-        checkState(taskState.subStage == null);
-        break;
-      case STARTED:
-        checkState(taskState.subStage != null);
-        switch (taskState.subStage) {
-          case PROVISION_NETWORK:
-          case PROVISION_HOSTS:
-            break;
-          default:
-            throw new IllegalStateException("Unknown task sub-stage " + taskState.subStage);
-        }
-    }
-  }
-
-  private void validateTaskStageProgression(TaskState curentState, TaskState patchState) {
-    ValidationUtils.validateTaskStageProgression(curentState, patchState);
-    if (curentState.subStage != null && patchState.subStage != null) {
-      checkState(patchState.subStage.ordinal() >= curentState.subStage.ordinal());
-    }
-  }
-
-  private void processStartedStage(State currentState) {
-    switch (currentState.taskState.subStage) {
-      case PROVISION_NETWORK:
-        processProvisionNetworkSubStage(currentState);
-        break;
-      case PROVISION_HOSTS:
-        processProvisionHostsSubStage(currentState);
-        break;
-    }
-  }
-
-  //
-  // PROVISION_NETWORK sub-stage routines
-  //
-
-  private void processProvisionNetworkSubStage(State currentState) {
-
-    sendRequest(HostUtils
-        .getCloudStoreHelper(this)
-        .createGet(currentState.deploymentServiceLink)
-        .setCompletion(
-            (o, e) -> {
-              try {
-                if (e != null) {
-                  failTask(e);
-                } else {
-                  processProvisionNetworkSubStage(o.getBody(DeploymentService.State.class));
-                }
-              } catch (Throwable t) {
-                failTask(t);
-              }
-            }));
-  }
-
-  private void processProvisionNetworkSubStage(DeploymentService.State deploymentState) throws Throwable {
-
-    if (!deploymentState.virtualNetworkEnabled) {
-      ServiceUtils.logInfo(this, "Skipping virtual network setup (disabled)");
-      sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.PROVISION_HOSTS);
-      return;
-    }
-
-    if (deploymentState.networkZoneId != null) {
-      ServiceUtils.logInfo(this, "Transport zone " + deploymentState.networkZoneId + " already configured");
-      sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.PROVISION_HOSTS);
-      return;
-    }
-
-    NsxClient nsxClient = HostUtils.getNsxClientFactory(this).create(
-        deploymentState.networkManagerAddress,
-        deploymentState.networkManagerUsername,
-        deploymentState.networkManagerPassword);
-
-    String deploymentId = ServiceUtils.getIDFromDocumentSelfLink(deploymentState.documentSelfLink);
-    TransportZoneCreateSpec request = new TransportZoneCreateSpec();
-    request.setDisplayName(NameUtils.getTransportZoneName(deploymentId));
-    request.setDescription(NameUtils.getTransportZoneDescription(deploymentId));
-    request.setHostSwitchName(NameUtils.HOST_SWITCH_NAME);
-    request.setTransportType(TransportType.OVERLAY);
-
-    nsxClient.getFabricApi().createTransportZone(request,
-        new FutureCallback<TransportZone>() {
-          @Override
-          public void onSuccess(@javax.validation.constraints.NotNull TransportZone transportZone) {
-            try {
-              // TODO(ysheng): it seems like transport zone does not have a state - we guess that
-              // the creation of the zone completes immediately after the API call. We need to
-              // verify this with a real NSX deployment.
-              setTransportZoneId(deploymentState.documentSelfLink, transportZone.getId());
-            } catch (Throwable t) {
-              failTask(t);
-            }
-          }
-
-          @Override
-          public void onFailure(Throwable throwable) {
-            failTask(throwable);
-          }
-        });
-  }
-
-  private void setTransportZoneId(String deploymentServiceLink, String transportZoneId) {
-
-    DeploymentService.State patchState = new DeploymentService.State();
-    patchState.networkZoneId = transportZoneId;
-
-    sendRequest(HostUtils
-        .getCloudStoreHelper(this)
-        .createPatch(deploymentServiceLink)
-        .setBody(patchState)
-        .setCompletion(
-            (o, e) -> {
-              if (e != null) {
-                failTask(e);
-              } else {
-                sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.PROVISION_HOSTS);
-              }
-            }));
-  }
-
-  //
-  // PROVISION_HOSTS sub-stage routines
-  //
-
-  private void processProvisionHostsSubStage(State currentState) {
+  private void processProvisionHosts(State currentState) {
 
     sendRequest(HostUtils
         .getCloudStoreHelper(this)
@@ -422,18 +264,18 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
               }
 
               try {
-                processProvisionHostsSubStage(currentState, QueryTaskUtils.getBroadcastQueryDocumentLinks(o));
+                processProvisionHosts(currentState, QueryTaskUtils.getBroadcastQueryDocumentLinks(o));
               } catch (Throwable t) {
                 failTask(t);
               }
             }));
   }
 
-  private void processProvisionHostsSubStage(State currentState, Set<String> hostServiceLinks) {
+  private void processProvisionHosts(State currentState, Set<String> hostServiceLinks) {
 
     if (hostServiceLinks.isEmpty() && currentState.usageTag.equals(UsageTag.CLOUD.name())) {
       ServiceUtils.logInfo(this, "No dedicated cloud hosts were found");
-      sendStageProgressPatch(TaskState.TaskStage.FINISHED, null);
+      sendStageProgressPatch(TaskState.TaskStage.FINISHED);
       return;
     }
 
@@ -471,7 +313,7 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
     } else {
       ChildTaskAggregatorService.State startState = new ChildTaskAggregatorService.State();
       startState.parentTaskLink = getSelfLink();
-      startState.parentPatchBody = Utils.toJson(false, false, buildPatch(TaskState.TaskStage.FINISHED, null, null));
+      startState.parentPatchBody = Utils.toJson(false, false, buildPatch(TaskState.TaskStage.FINISHED, null));
       startState.pendingCompletionCount = hostServiceLinks.size();
       startState.errorThreshold = 0.0;
 
@@ -521,7 +363,7 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
           }
       );
     } else {
-      sendStageProgressPatch(TaskState.TaskStage.FINISHED, null);
+      sendStageProgressPatch(TaskState.TaskStage.FINISHED);
     }
   }
 
@@ -556,30 +398,28 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
   // Utility routines
   //
 
-  private void sendStageProgressPatch(TaskState.TaskStage stage, TaskState.SubStage subStage) {
+  private void sendStageProgressPatch(TaskState.TaskStage stage) {
     ServiceUtils.logInfo(this, "Sending self-patch to stage %s", stage);
-    TaskUtils.sendSelfPatch(this, buildPatch(stage, subStage, null));
+    TaskUtils.sendSelfPatch(this, buildPatch(stage, null));
   }
 
   private void failTask(Throwable failure) {
     ServiceUtils.logSevere(this, failure);
-    TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, null, failure));
+    TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, failure));
   }
 
   private void failTask(Collection<Throwable> failures) {
     ServiceUtils.logSevere(this, failures);
-    TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, null, failures.iterator().next()));
+    TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, failures.iterator().next()));
   }
 
   @VisibleForTesting
   protected static State buildPatch(TaskState.TaskStage stage,
-                                    TaskState.SubStage subStage,
                                     @Nullable Throwable failure) {
 
     State patchState = new State();
     patchState.taskState = new TaskState();
     patchState.taskState.stage = stage;
-    patchState.taskState.subStage = subStage;
 
     if (null != failure) {
       patchState.taskState.failure = Utils.toServiceErrorResponse(failure);

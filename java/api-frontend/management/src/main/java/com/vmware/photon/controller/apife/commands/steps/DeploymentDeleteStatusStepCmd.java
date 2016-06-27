@@ -101,8 +101,6 @@ public class DeploymentDeleteStatusStepCmd extends XenonTaskStatusStepCmd {
                 RemoveDeploymentWorkflowService.TaskState.SubStage.REMOVE_FROM_API_FE.ordinal())
             .put(Operation.DEPROVISION_HOSTS,
                 RemoveDeploymentWorkflowService.TaskState.SubStage.DEPROVISION_HOSTS.ordinal())
-            .put(Operation.DEPROVISION_NETWORK,
-                RemoveDeploymentWorkflowService.TaskState.SubStage.DEPROVISION_NETWORK.ordinal())
             .build();
 
     private final DeploymentXenonBackend deploymentBackend;
