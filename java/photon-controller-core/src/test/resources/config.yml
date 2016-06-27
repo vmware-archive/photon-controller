@@ -1,0 +1,67 @@
+xenon:
+  bindAddress: "0.0.0.0"
+  port: 16000
+  registrationAddress: "127.0.0.1"
+  storagePath: "/tmp/xenon/housekeeper/"
+  peerNodes:
+  - http://127.0.0.1:16000
+
+zookeeper:
+  quorum: localhost:2181
+  retries:
+    max_retries: 3
+
+deployer:
+  deployer:
+    apifeEndpoint: "http://127.0.0.1"
+    configDirectory: "/tmp/deployAgent/configurations"
+    corePoolSize: 17
+    xenonRetryCount: 17
+    xenonRetryIntervalMs: 50
+    deployerPort: 18000
+    enableSyslog: "true"
+    keepAliveTime: 17
+    maxMemoryGb: 64
+    maxVmCount: 20
+    maximumPoolSize: 17
+    pollingIntervalMs: 50
+    projectName: "mgmt-project"
+    resourceTicketName: "mgmt-res-ticket"
+    scriptDirectory: "/tmp/deployAgent/scripts"
+    scriptLogDirectory: "/tmp/deployAgent/logs"
+    scriptTimeoutSec: 17
+    syslogEndpoint: "syslog endpoint"
+    taskPollDelay: 50
+    nsxPollDelay: 10
+    tenantName: "mgmt-tenant"
+    vibDirectory: "/tmp/deployAgent/vibs"
+    waitForServiceMaxRetryCount: 17
+    sharedSecret: "shared-secret"
+
+  xenon:
+    bindAddress: localhost
+    registrationAddress: localhost
+    port: 18000
+    storagePath: "/tmp/xenon/deployer/"
+    peerNodes:
+    - http://localhost:18000
+
+  zookeeper:
+    quorum: localhost:2181
+    retries:
+      max_retries: 3
+
+  logging:
+    level: INFO
+    console:
+      logFormat: "%-5p [%d{ISO8601}]%X{request} %c: %m\n%ex"
+    loggers:
+      "com.vmware.esxcloud.deployer": DEBUG
+
+  hierarchy:
+    maxTopTierSchedulers: 1024
+    maxMidTierSchedulers: 32
+    initialScanDelayMs: 10000
+    scanPeriodMs: 5000
+    hostConfigPoolSize: 10
+    enableScan: true
