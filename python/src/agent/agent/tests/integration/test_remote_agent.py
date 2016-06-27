@@ -53,6 +53,7 @@ from gen.resource.constants import LOCAL_VMFS_TAG
 from gen.resource.constants import NFS_TAG
 from gen.resource.constants import SHARED_VMFS_TAG
 from gen.resource.ttypes import CloneType
+from gen.resource.ttypes import State
 from gen.resource.ttypes import Datastore
 from gen.resource.ttypes import DatastoreType
 from gen.resource.ttypes import Disk
@@ -1161,15 +1162,24 @@ class TestRemoteAgent(unittest.TestCase, AgentCommonTests):
 
         # VM in wrong state
         vm_wrapper.power(Host.PowerVmOp.ON, Host.PowerVmOpResultCode.OK)
+        # wait for up to 10 seconds for property cache to update
+        for i in range(10):
+            if vm_wrapper.get_vm().state == State.STARTED:
+                break
+            time.sleep(1)
         vm_wrapper.create_image_from_vm(
             image_id=img_id,
             datastore=ds.id,
             tmp_image_path=tmp_image_path,
             expect=Host.CreateImageFromVmResultCode.INVALID_VM_POWER_STATE)
 
-        vm_wrapper.power(Host.PowerVmOp.OFF, Host.PowerVmOpResultCode.OK)
-
         # Happy case
+        vm_wrapper.power(Host.PowerVmOp.OFF, Host.PowerVmOpResultCode.OK)
+        # wait for up to 10 seconds for property cache to update
+        for i in range(10):
+            if vm_wrapper.get_vm().state == State.STOPPED:
+                break
+            time.sleep(1)
         vm_wrapper.create_image_from_vm(
             image_id=img_id,
             datastore=ds.id,
