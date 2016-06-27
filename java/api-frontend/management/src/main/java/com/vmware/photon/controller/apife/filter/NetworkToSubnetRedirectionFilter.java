@@ -35,21 +35,43 @@ public class NetworkToSubnetRedirectionFilter implements ContainerRequestFilter 
   private static final Logger logger = LoggerFactory.getLogger(NetworkToSubnetRedirectionFilter.class);
 
   /**
-   * Filter to pause API calls.
+   * Filter to detect API calls that contain /networks in them and redirect to /subnets instead.
+   * <p>
+   * Calls to /networks... get redirected to /subnets...
+   * Calls to /projects/{id}/networks get redirected to /projects/{id}/subnets
+   * Calls to /vms/{id}/networks get redirected to /vms/{id}/subnets
    *
    * @param requestContext
-   * @return
    */
   @Override
   public void filter(ContainerRequestContext requestContext) {
     final UriInfo uriInfo = requestContext.getUriInfo();
     final URI oldRequestURI = uriInfo.getRequestUri();
     final String oldPath = oldRequestURI.getPath().toLowerCase();
-    if (oldPath.startsWith("/network")) {
-      String newPath = oldPath.replace("/network", "/subnet");
-      URI newRequestURI = uriInfo.getBaseUriBuilder().path(newPath).build();
-      requestContext.setRequestUri(newRequestURI);
-      logger.info("Redirecting {} to {}", oldRequestURI.toString(), newRequestURI.toString());
+
+    // String.startsWith should be more efficient than String.contains.
+    // Using startsWith first should short circuit this filter quickly for most requests
+    // that do not have "/networks" in them.
+
+    if (oldPath.startsWith("/networks")) {
+      redirectNetworkToSubnet(requestContext, uriInfo, oldRequestURI, oldPath);
+      return;
     }
+
+    if (oldPath.startsWith("/projects") || oldPath.startsWith("/vms")) {
+      if (oldPath.contains("/networks")) {
+        redirectNetworkToSubnet(requestContext, uriInfo, oldRequestURI, oldPath);
+      }
+    }
+  }
+
+  private void redirectNetworkToSubnet(ContainerRequestContext requestContext,
+                                       UriInfo uriInfo,
+                                       URI oldRequestURI,
+                                       String oldPath) {
+    String newPath = oldPath.replace("/networks", "/subnets");
+    URI newRequestURI = uriInfo.getBaseUriBuilder().path(newPath).build();
+    requestContext.setRequestUri(newRequestURI);
+    logger.info("Redirecting {} to {}", oldRequestURI.toString(), newRequestURI.toString());
   }
 }

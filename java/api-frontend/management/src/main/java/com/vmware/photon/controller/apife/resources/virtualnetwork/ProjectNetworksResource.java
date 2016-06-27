@@ -53,7 +53,7 @@ import javax.ws.rs.core.UriBuilder;
 /**
  * This resource is for network related API.
  */
-@Path(ProjectResourceRoutes.PROJECT_NETWORKS_PATH)
+@Path(ProjectResourceRoutes.PROJECT_SUBNETS_PATH)
 @Api(value = ProjectResourceRoutes.API)
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
@@ -106,7 +106,7 @@ public class ProjectNetworksResource {
     }
 
     String apiRoute = UriBuilder
-        .fromPath(ProjectResourceRoutes.PROJECT_NETWORKS_PATH)
+        .fromPath(ProjectResourceRoutes.PROJECT_SUBNETS_PATH)
         .build(projectId)
         .toString();
 

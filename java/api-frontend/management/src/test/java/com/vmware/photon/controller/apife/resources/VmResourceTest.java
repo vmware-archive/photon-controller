@@ -57,7 +57,7 @@ public class VmResourceTest extends ResourceTest {
       UriBuilder.fromPath(VmResourceRoutes.VM_TAGS_PATH).build(vmId).toString();
 
   private String vmNetworksRoute =
-      UriBuilder.fromPath(VmResourceRoutes.VM_NETWORKS_PATH).build(vmId).toString();
+      UriBuilder.fromPath(VmResourceRoutes.VM_SUBNETS_PATH).build(vmId).toString();
 
   private String vmMksTicketRoute =
       UriBuilder.fromPath(VmResourceRoutes.VM_MKS_TICKET_PATH).build(vmId).toString();
@@ -66,16 +66,16 @@ public class VmResourceTest extends ResourceTest {
       UriBuilder.fromPath(VmResourceRoutes.VM_PATH + VmResourceRoutes.VM_START_ACTION).build(vmId).toString();
 
   private String vmStopOperationsRoute =
-          UriBuilder.fromPath(VmResourceRoutes.VM_PATH + VmResourceRoutes.VM_STOP_ACTION).build(vmId).toString();
+      UriBuilder.fromPath(VmResourceRoutes.VM_PATH + VmResourceRoutes.VM_STOP_ACTION).build(vmId).toString();
 
   private String vmRestartOperationsRoute =
-          UriBuilder.fromPath(VmResourceRoutes.VM_PATH + VmResourceRoutes.VM_RESTART_ACTION).build(vmId).toString();
+      UriBuilder.fromPath(VmResourceRoutes.VM_PATH + VmResourceRoutes.VM_RESTART_ACTION).build(vmId).toString();
 
   private String vmSuspendOperationsRoute =
-          UriBuilder.fromPath(VmResourceRoutes.VM_PATH + VmResourceRoutes.VM_SUSPEND_ACTION).build(vmId).toString();
+      UriBuilder.fromPath(VmResourceRoutes.VM_PATH + VmResourceRoutes.VM_SUSPEND_ACTION).build(vmId).toString();
 
   private String vmResumeOperationsRoute =
-          UriBuilder.fromPath(VmResourceRoutes.VM_PATH + VmResourceRoutes.VM_RESUME_ACTION).build(vmId).toString();
+      UriBuilder.fromPath(VmResourceRoutes.VM_PATH + VmResourceRoutes.VM_RESUME_ACTION).build(vmId).toString();
 
 
   private String taskId = "task1";
