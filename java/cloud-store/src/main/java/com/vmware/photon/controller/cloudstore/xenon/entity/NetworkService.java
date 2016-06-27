@@ -148,5 +148,10 @@ public class NetworkService extends StatefulService {
 
     @DefaultBoolean(false)
     public Boolean isDefault;
+
+    /**
+     * IP address for the DHCP agent.
+     * */
+    public String dhcpAgentIP;
   }
 }
