@@ -163,7 +163,7 @@ public class ImageLoader {
    * @throws IOException
    */
   private boolean isVmdkFile(InputStream inputStream) throws IOException {
-    return VMDK_FILE_SIGNATURE.equals(DataField.getString(VMDK_SIGNATURE_FIELD, inputStream));
+    return VMDK_FILE_SIGNATURE.equalsIgnoreCase(DataField.getString(VMDK_SIGNATURE_FIELD, inputStream));
   }
 
   /**
