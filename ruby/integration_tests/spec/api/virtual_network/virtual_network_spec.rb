@@ -147,6 +147,20 @@ describe "virtual_network", :virtual_network => true do
       expect(client.delete_network(network.id)).to be_true
     end
 
+    it "should delete virtual network successfully when virtual network is ERROR" do
+      network = create_virtual_network(@project.id, spec)
+      expect(network.state).to eq "READY"
+
+      set_virtual_network_state(network.id, "ERROR")
+
+      networks = client.find_virtual_networks_by_name(spec.name).items
+      expect(networks.size).to eq 1
+      expect(networks.first.state).to eq "ERROR"
+
+      expect(client.delete_network(network.id)).to be_true
+      set_virtual_network_state(network.id, "READY")
+    end
+
     it "should fail to delete virtual network when virtual network is PENDING_DELETE" do
       network = create_virtual_network(@project.id, spec)
       expect(network.state).to eq "READY"
