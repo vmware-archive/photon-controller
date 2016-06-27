@@ -15,7 +15,9 @@ package com.vmware.photon.controller.apife.filter;
 
 import com.vmware.photon.controller.apife.helpers.JerseyPropertiesDelegate;
 import com.vmware.photon.controller.apife.helpers.JerseySecurityContext;
+import com.vmware.photon.controller.apife.resources.routes.ProjectResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.SubnetResourceRoutes;
+import com.vmware.photon.controller.apife.resources.routes.VmResourceRoutes;
 
 import org.glassfish.jersey.server.ContainerRequest;
 import org.testng.annotations.BeforeMethod;
@@ -46,18 +48,74 @@ public class NetworkToSubnetRedirectionFilterTest {
   @DataProvider(name = "NetworkAndSubnetRequests")
   Object[][] getSuccessfulRequests() {
     return new Object[][]{
-        {"POST", UriBuilder.fromPath(SubnetResourceRoutes.API).build().toString()},
-        {"GET", UriBuilder.fromPath(SubnetResourceRoutes.API).build().toString()},
-        {"POST", UriBuilder.fromPath("/networks").build().toString()},
-        {"GET", UriBuilder.fromPath("/networks").build().toString()},
+        {
+            "POST",
+            UriBuilder.fromPath(SubnetResourceRoutes.API).build().toString(),
+            UriBuilder.fromPath(SubnetResourceRoutes.API).build().toString()
+        },
+        {
+            "GET",
+            UriBuilder.fromPath(SubnetResourceRoutes.API).build().toString(),
+            UriBuilder.fromPath(SubnetResourceRoutes.API).build().toString()
+        },
+        {
+            "POST",
+            UriBuilder.fromPath("/networks").build().toString(),
+            UriBuilder.fromPath(SubnetResourceRoutes.API).build().toString()
+        },
+        {
+            "GET",
+            UriBuilder.fromPath("/networks").build().toString(),
+            UriBuilder.fromPath(SubnetResourceRoutes.API).build().toString()
+        },
+        {
+            "POST",
+            UriBuilder.fromPath(VmResourceRoutes.VM_SUBNETS_PATH).build("vmId1").toString(),
+            UriBuilder.fromPath(VmResourceRoutes.VM_SUBNETS_PATH).build("vmId1").toString()
+        },
+        {
+            "GET",
+            UriBuilder.fromPath(VmResourceRoutes.VM_SUBNETS_PATH).build("vmId1").toString(),
+            UriBuilder.fromPath(VmResourceRoutes.VM_SUBNETS_PATH).build("vmId1").toString()
+        },
+        {
+            "POST",
+            UriBuilder.fromPath("/vms/{id}/networks").build("vmId1").toString(),
+            UriBuilder.fromPath(VmResourceRoutes.VM_SUBNETS_PATH).build("vmId1").toString().toLowerCase()
+        },
+        {
+            "GET",
+            UriBuilder.fromPath("/vms/{id}/networks").build("vmId1").toString(),
+            UriBuilder.fromPath(VmResourceRoutes.VM_SUBNETS_PATH).build("vmId1").toString().toLowerCase()
+        },
+        {
+            "POST",
+            UriBuilder.fromPath(ProjectResourceRoutes.PROJECT_SUBNETS_PATH).build("projectId1").toString(),
+            UriBuilder.fromPath(ProjectResourceRoutes.PROJECT_SUBNETS_PATH).build("projectId1").toString()
+        },
+        {
+            "GET",
+            UriBuilder.fromPath(ProjectResourceRoutes.PROJECT_SUBNETS_PATH).build("projectId1").toString(),
+            UriBuilder.fromPath(ProjectResourceRoutes.PROJECT_SUBNETS_PATH).build("projectId1").toString()
+        },
+        {
+            "POST",
+            UriBuilder.fromPath("/projects/{id}/networks").build("projectId1").toString(),
+            UriBuilder.fromPath(ProjectResourceRoutes.PROJECT_SUBNETS_PATH).build("projectId1").toString().toLowerCase()
+        },
+        {
+            "GET",
+            UriBuilder.fromPath("/projects/{id}/networks").build("projectId1").toString(),
+            UriBuilder.fromPath(ProjectResourceRoutes.PROJECT_SUBNETS_PATH).build("projectId1").toString().toLowerCase()
+        },
     };
   }
 
   @Test(dataProvider = "NetworkAndSubnetRequests")
-  public void testSuccess(String httpMethod, String path) throws Throwable {
-    ContainerRequest request = buildRequest(path, httpMethod, new MultivaluedHashMap<>());
+  public void testSuccess(String httpMethod, String actualPath, String expectedPath) throws Throwable {
+    ContainerRequest request = buildRequest(actualPath, httpMethod, new MultivaluedHashMap<>());
     this.networkToSubnetRedirectionFilter.filter(request);
-    assertThat(request.getRequestUri().getPath().toLowerCase(), startsWith("/subnet"));
+    assertThat(request.getRequestUri().getPath(), startsWith(expectedPath));
   }
 
   private ContainerRequest buildRequest(String path, String method, MultivaluedMap<String, String> headers) throws

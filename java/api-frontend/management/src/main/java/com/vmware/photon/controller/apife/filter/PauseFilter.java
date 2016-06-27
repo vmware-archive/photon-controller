@@ -43,7 +43,7 @@ public class PauseFilter implements ContainerRequestFilter {
 
   private static final Logger logger = LoggerFactory.getLogger(PauseFilter.class);
   private static final List<UriTemplate> CONSTRAINED_URIS = ImmutableList.of(
-      new UriTemplate(VmResourceRoutes.VM_NETWORKS_PATH)
+      new UriTemplate(VmResourceRoutes.VM_SUBNETS_PATH)
   );
   private static final List<UriTemplate> ALLOWABLE_URIS = ImmutableList.of(
       new UriTemplate(DeploymentResourceRoutes.DEPLOYMENT_PATH + DeploymentResourceRoutes.RESUME_SYSTEM_ACTION),

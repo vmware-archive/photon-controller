@@ -30,7 +30,7 @@ public class VmResourceRoutes {
 
   public static final String VM_DETACH_ISO_PATH = "/vms/{id}/detach_iso";
 
-  public static final String VM_NETWORKS_PATH = "/vms/{id}/networks";
+  public static final String VM_SUBNETS_PATH = "/vms/{id}/subnets";
 
   public static final String VM_MKS_TICKET_PATH = "/vms/{id}/mks_ticket";
 
