@@ -201,4 +201,25 @@ public class VmService extends StatefulService {
      */
     public List<QuotaLineItem> cost;
   }
+
+  /**
+   * Network information for the VM.
+   * */
+  public static class NetworkInfo {
+
+    /**
+     * Network Id.
+     * */
+    public String id;
+
+    /**
+     * MAC address for the VM on this network.
+     * */
+    public String macAddress;
+
+    /**
+     * IP address for the DHCP agent on this network.
+     * */
+    public String dhcpAgentIP;
+  }
 }
