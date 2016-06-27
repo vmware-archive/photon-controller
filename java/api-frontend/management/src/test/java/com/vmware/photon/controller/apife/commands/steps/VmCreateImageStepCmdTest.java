@@ -15,6 +15,7 @@ package com.vmware.photon.controller.apife.commands.steps;
 
 import com.vmware.photon.controller.api.ImageReplicationType;
 import com.vmware.photon.controller.api.ImageState;
+import com.vmware.photon.controller.api.VmState;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.backends.ImageBackend;
 import com.vmware.photon.controller.apife.backends.StepBackend;
@@ -27,6 +28,7 @@ import com.vmware.photon.controller.apife.exceptions.external.NameTakenException
 import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
 import com.vmware.photon.controller.apife.lib.ImageStore;
 import com.vmware.photon.controller.apife.lib.image.ImageLoader;
+import com.vmware.photon.controller.common.clients.exceptions.InvalidVmPowerStateException;
 
 import com.google.common.collect.ImmutableList;
 import org.mockito.InOrder;
@@ -98,6 +100,7 @@ public class VmCreateImageStepCmdTest extends PowerMockTestCase {
     vm.setId("vm-id");
     vm.setImageId(vmImageId);
     vm.setHost("127.0.0.1");
+    vm.setState(VmState.STOPPED);
 
     step = new StepEntity();
     step.setId("step-1");
@@ -121,6 +124,21 @@ public class VmCreateImageStepCmdTest extends PowerMockTestCase {
     InOrder inOrder = inOrder(imageBackend, imageLoader);
     inOrder.verify(imageLoader).createImageFromVm(image, vm.getId(), vm.getHost());
     inOrder.verify(imageBackend).updateImageDatastore(eq(image.getId()), anyString());
+    verifyNoMoreInteractions(imageBackend, imageLoader);
+  }
+
+  @Test
+  public void testInvalidPowerState() throws Throwable {
+    vm.setState(VmState.STARTED);
+
+    try {
+      command.execute();
+      fail("Exception expected.");
+    } catch (InvalidVmPowerStateException e) {
+    }
+
+    InOrder inOrder = inOrder(imageBackend, imageLoader);
+    inOrder.verify(imageBackend).updateState(image, ImageState.ERROR);
     verifyNoMoreInteractions(imageBackend, imageLoader);
   }
 

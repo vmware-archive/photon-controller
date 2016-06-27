@@ -16,6 +16,7 @@ package com.vmware.photon.controller.apife.commands.steps;
 import com.vmware.photon.controller.api.Image;
 import com.vmware.photon.controller.api.ImageState;
 import com.vmware.photon.controller.api.Vm;
+import com.vmware.photon.controller.api.VmState;
 import com.vmware.photon.controller.api.common.exceptions.ApiFeException;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.backends.ImageBackend;
@@ -27,6 +28,7 @@ import com.vmware.photon.controller.apife.entities.VmEntity;
 import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
 import com.vmware.photon.controller.apife.lib.ImageStore;
 import com.vmware.photon.controller.apife.lib.image.ImageLoader;
+import com.vmware.photon.controller.common.clients.exceptions.InvalidVmPowerStateException;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -70,6 +72,11 @@ public class VmCreateImageStepCmd extends StepCommand {
     Preconditions.checkState(
         Objects.equals(vmImage.getId(), vm.getImageId()),
         "image id is inconsistent: %s v.s. %s", vmImage.getId(), vm.getImageId());
+
+    if (vm.getState() != VmState.STOPPED) {
+      imageBackend.updateState(imageEntity, ImageState.ERROR);
+      throw new InvalidVmPowerStateException(String.format("VM %s is not powered off", vm.getId()));
+    }
 
     try {
       getImageLoader().createImageFromVm(imageEntity, vm.getId(), vm.getHost());
