@@ -371,13 +371,6 @@ public class RemoveDeploymentWorkflowServiceTest {
               TaskState.TaskStage.FAILED, null},
           {TaskState.TaskStage.STARTED, RemoveDeploymentWorkflowService.TaskState.SubStage.DEPROVISION_HOSTS,
               TaskState.TaskStage.CANCELLED, null},
-
-          {TaskState.TaskStage.STARTED, RemoveDeploymentWorkflowService.TaskState.SubStage.DEPROVISION_NETWORK,
-              TaskState.TaskStage.FINISHED, null},
-          {TaskState.TaskStage.STARTED, RemoveDeploymentWorkflowService.TaskState.SubStage.DEPROVISION_NETWORK,
-              TaskState.TaskStage.FAILED, null},
-          {TaskState.TaskStage.STARTED, RemoveDeploymentWorkflowService.TaskState.SubStage.DEPROVISION_NETWORK,
-              TaskState.TaskStage.CANCELLED, null},
       };
     }
 
@@ -414,10 +407,6 @@ public class RemoveDeploymentWorkflowServiceTest {
               TaskState.TaskStage.CREATED, null},
           {TaskState.TaskStage.STARTED, RemoveDeploymentWorkflowService.TaskState.SubStage.DEPROVISION_HOSTS,
               TaskState.TaskStage.STARTED, RemoveDeploymentWorkflowService.TaskState.SubStage.REMOVE_FROM_API_FE},
-          {TaskState.TaskStage.STARTED, RemoveDeploymentWorkflowService.TaskState.SubStage.DEPROVISION_NETWORK,
-              TaskState.TaskStage.STARTED, RemoveDeploymentWorkflowService.TaskState.SubStage.REMOVE_FROM_API_FE},
-          {TaskState.TaskStage.STARTED, RemoveDeploymentWorkflowService.TaskState.SubStage.DEPROVISION_NETWORK,
-              TaskState.TaskStage.STARTED, RemoveDeploymentWorkflowService.TaskState.SubStage.DEPROVISION_HOSTS},
 
           {TaskState.TaskStage.FINISHED, null,
               TaskState.TaskStage.CREATED, null},
@@ -425,8 +414,6 @@ public class RemoveDeploymentWorkflowServiceTest {
               TaskState.TaskStage.STARTED, RemoveDeploymentWorkflowService.TaskState.SubStage.REMOVE_FROM_API_FE},
           {TaskState.TaskStage.FINISHED, null,
               TaskState.TaskStage.STARTED, RemoveDeploymentWorkflowService.TaskState.SubStage.DEPROVISION_HOSTS},
-          {TaskState.TaskStage.FINISHED, null,
-              TaskState.TaskStage.STARTED, RemoveDeploymentWorkflowService.TaskState.SubStage.DEPROVISION_NETWORK},
           {TaskState.TaskStage.FINISHED, null,
               TaskState.TaskStage.FINISHED, null},
           {TaskState.TaskStage.FINISHED, null,
@@ -441,8 +428,6 @@ public class RemoveDeploymentWorkflowServiceTest {
           {TaskState.TaskStage.FAILED, null,
               TaskState.TaskStage.STARTED, RemoveDeploymentWorkflowService.TaskState.SubStage.DEPROVISION_HOSTS},
           {TaskState.TaskStage.FAILED, null,
-              TaskState.TaskStage.STARTED, RemoveDeploymentWorkflowService.TaskState.SubStage.DEPROVISION_NETWORK},
-          {TaskState.TaskStage.FAILED, null,
               TaskState.TaskStage.FINISHED, null},
           {TaskState.TaskStage.FAILED, null,
               TaskState.TaskStage.FAILED, null},
@@ -455,8 +440,6 @@ public class RemoveDeploymentWorkflowServiceTest {
               TaskState.TaskStage.STARTED, RemoveDeploymentWorkflowService.TaskState.SubStage.REMOVE_FROM_API_FE},
           {TaskState.TaskStage.CANCELLED, null,
               TaskState.TaskStage.STARTED, RemoveDeploymentWorkflowService.TaskState.SubStage.DEPROVISION_HOSTS},
-          {TaskState.TaskStage.CANCELLED, null,
-              TaskState.TaskStage.STARTED, RemoveDeploymentWorkflowService.TaskState.SubStage.DEPROVISION_NETWORK},
           {TaskState.TaskStage.CANCELLED, null,
               TaskState.TaskStage.FINISHED, null},
           {TaskState.TaskStage.CANCELLED, null,
@@ -513,7 +496,6 @@ public class RemoveDeploymentWorkflowServiceTest {
 
     private AgentControlClientFactory agentControlClientFactory;
     private HostClientFactory hostClientFactory;
-    private NsxClientFactory nsxClientFactory;
     private ListeningExecutorService listeningExecutorService;
     private ApiClientFactory apiClientFactory;
 
@@ -542,7 +524,6 @@ public class RemoveDeploymentWorkflowServiceTest {
       cloudStoreTestEnvironment = com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment.create(1);
       agentControlClientFactory = mock(AgentControlClientFactory.class);
       hostClientFactory = mock(HostClientFactory.class);
-      nsxClientFactory = mock(NsxClientFactory.class);
       apiClientFactory = mock(ApiClientFactory.class);
       this.systemConfig = spy(SystemConfig.createInstance(cloudStoreTestEnvironment.getHosts()[0]));
     }
@@ -600,7 +581,7 @@ public class RemoveDeploymentWorkflowServiceTest {
 
     @Test(dataProvider = "HostCounts")
     public void testEndToEndSuccessWithoutVirtualNetwork(Integer hostCount) throws Throwable {
-      startTestEnvironment(hostCount, false, true, true, true);
+      startTestEnvironment(hostCount, false, true, true);
 
       createContainerService("containerName1");
       int numOfContainers = queryNumOfContainers();
@@ -626,7 +607,7 @@ public class RemoveDeploymentWorkflowServiceTest {
 
     @Test(dataProvider = "HostCounts")
     public void testEndToEndSuccessWithVirtualNetwork(Integer hostCount) throws Throwable {
-      startTestEnvironment(hostCount, true, true, true, true);
+      startTestEnvironment(hostCount, true, true, true);
 
       createContainerService("containerName1");
       int numOfContainers = queryNumOfContainers();
@@ -652,21 +633,7 @@ public class RemoveDeploymentWorkflowServiceTest {
 
     @Test(dataProvider = "HostCounts")
     public void testEndToEndFailFromRemoveAPIFE(Integer hostCount) throws Throwable {
-      startTestEnvironment(hostCount, false, false, true, true);
-
-      RemoveDeploymentWorkflowService.State finalState =
-          testEnvironment.callServiceAndWaitForState(
-              RemoveDeploymentWorkflowFactoryService.SELF_LINK,
-              startState,
-              RemoveDeploymentWorkflowService.State.class,
-              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
-
-      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
-    }
-
-    @Test(dataProvider = "HostCounts")
-    public void testEndToEndFailDeprovisionNetwork(Integer hostCount) throws Throwable {
-      startTestEnvironment(hostCount, true, true, false, true);
+      startTestEnvironment(hostCount, false, false, true);
 
       RemoveDeploymentWorkflowService.State finalState =
           testEnvironment.callServiceAndWaitForState(
@@ -680,7 +647,7 @@ public class RemoveDeploymentWorkflowServiceTest {
 
     @Test(dataProvider = "HostCounts")
     public void testEndToEndFailDeprovisionManagementHosts(Integer hostCount) throws Throwable {
-      startTestEnvironment(hostCount, false, true, true, false);
+      startTestEnvironment(hostCount, false, true, false);
 
       RemoveDeploymentWorkflowService.State finalState =
           testEnvironment.callServiceAndWaitForState(
@@ -751,23 +718,16 @@ public class RemoveDeploymentWorkflowServiceTest {
     private void startTestEnvironment(Integer hostCount,
                                       boolean virtualNetworkEnabled,
                                       boolean removeFromApifeSuccess,
-                                      boolean deprovisionNetworkSuccess,
                                       boolean deprovisionHostSuccess) throws Throwable {
       mockApiClient(removeFromApifeSuccess);
 
       MockHelper.mockCreateScriptFile(deployerContext, DeleteAgentTaskService.SCRIPT_NAME, deprovisionHostSuccess);
       MockHelper.mockHostClient(agentControlClientFactory, hostClientFactory, deprovisionHostSuccess);
 
-      NsxClientMock nsxClientMock = new NsxClientMock.Builder()
-          .deleteTransportZone(deprovisionNetworkSuccess)
-          .build();
-      doReturn(nsxClientMock).when(nsxClientFactory).create(anyString(), anyString(), anyString());
-
       testEnvironment = new TestEnvironment.Builder()
           .deployerContext(deployerContext)
           .containersConfig(null)
           .hostClientFactory(hostClientFactory)
-          .nsxClientFactory(nsxClientFactory)
           .listeningExecutorService(listeningExecutorService)
           .apiClientFactory(apiClientFactory)
           .dockerProvisionerFactory(null)

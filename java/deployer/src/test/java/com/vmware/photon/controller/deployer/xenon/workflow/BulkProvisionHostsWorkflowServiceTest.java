@@ -139,9 +139,8 @@ public class BulkProvisionHostsWorkflowServiceTest {
 
     @Test(dataProvider = "ValidStartStages")
     public void testValidStartState(
-        TaskState.TaskStage startStage,
-        BulkProvisionHostsWorkflowService.TaskState.SubStage startSubStage) throws Throwable {
-      startService(buildValidStartState(startStage, startSubStage));
+        TaskState.TaskStage startStage) throws Throwable {
+      startService(buildValidStartState(startStage));
 
       BulkProvisionHostsWorkflowService.State serviceState =
           testHost.getServiceState(BulkProvisionHostsWorkflowService.State.class);
@@ -153,13 +152,13 @@ public class BulkProvisionHostsWorkflowServiceTest {
 
     @DataProvider(name = "ValidStartStages")
     public Object[][] getValidStartStages() {
-      return TestHelper.getValidStartStages(BulkProvisionHostsWorkflowService.TaskState.SubStage.class);
+      return TestHelper.getValidStartStages(null);
     }
 
     @Test(dataProvider = "TerminalStartStages")
     public void testTerminalStartState(TaskState.TaskStage startStage)
         throws Throwable {
-      BulkProvisionHostsWorkflowService.State startState = buildValidStartState(startStage, null);
+      BulkProvisionHostsWorkflowService.State startState = buildValidStartState(startStage);
       startState.controlFlags = null;
       startService(startState);
 
@@ -180,7 +179,7 @@ public class BulkProvisionHostsWorkflowServiceTest {
 
     @Test(dataProvider = "RequiredFieldNames", expectedExceptions = BadRequestException.class)
     public void testInvalidStartStateMissingRequiredField(String fieldName) throws Throwable {
-      BulkProvisionHostsWorkflowService.State startState = buildValidStartState(null, null);
+      BulkProvisionHostsWorkflowService.State startState = buildValidStartState(null);
       startState.getClass().getDeclaredField(fieldName).set(startState, null);
       startService(startState);
     }
@@ -230,17 +229,15 @@ public class BulkProvisionHostsWorkflowServiceTest {
     @Test(dataProvider = "ValidStageTransitions")
     public void testValidStageTransition(
         TaskState.TaskStage startStage,
-        BulkProvisionHostsWorkflowService.TaskState.SubStage startSubStage,
-        TaskState.TaskStage patchStage,
-        BulkProvisionHostsWorkflowService.TaskState.SubStage patchSubStage) throws Throwable {
+        TaskState.TaskStage patchStage) throws Throwable {
 
-      BulkProvisionHostsWorkflowService.State startState = buildValidStartState(startStage, startSubStage);
+      BulkProvisionHostsWorkflowService.State startState = buildValidStartState(startStage);
       Operation startOperation = testHost.startServiceSynchronously(bulkProvisionHostsWorkflowService, startState);
       assertThat(startOperation.getStatusCode(), is(200));
 
       Operation patchOperation = Operation
           .createPatch(UriUtils.buildUri(testHost, TestHost.SERVICE_URI))
-          .setBody(BulkProvisionHostsWorkflowService.buildPatch(patchStage, patchSubStage, null));
+          .setBody(BulkProvisionHostsWorkflowService.buildPatch(patchStage, null));
 
       Operation result = testHost.sendRequestAndWait(patchOperation);
       assertThat(result.getStatusCode(), is(200));
@@ -253,40 +250,38 @@ public class BulkProvisionHostsWorkflowServiceTest {
 
     @DataProvider(name = "ValidStageTransitions")
     public Object[][] getValidStageTransitions() {
-      return TestHelper.getValidStageTransitions(BulkProvisionHostsWorkflowService.TaskState.SubStage.class);
+      return TestHelper.getValidStageTransitions(null);
     }
 
     @Test(dataProvider = "InvalidStageTransitions", expectedExceptions = BadRequestException.class)
     public void testInvalidStageTransition(
         TaskState.TaskStage startStage,
-        BulkProvisionHostsWorkflowService.TaskState.SubStage startSubStage,
-        TaskState.TaskStage patchStage,
-        BulkProvisionHostsWorkflowService.TaskState.SubStage patchSubStage) throws Throwable {
+        TaskState.TaskStage patchStage) throws Throwable {
 
-      BulkProvisionHostsWorkflowService.State startState = buildValidStartState(startStage, startSubStage);
+      BulkProvisionHostsWorkflowService.State startState = buildValidStartState(startStage);
       Operation startOperation = testHost.startServiceSynchronously(bulkProvisionHostsWorkflowService, startState);
       assertThat(startOperation.getStatusCode(), is(200));
 
       Operation patchOperation = Operation
           .createPatch(UriUtils.buildUri(testHost, TestHost.SERVICE_URI))
-          .setBody(BulkProvisionHostsWorkflowService.buildPatch(patchStage, patchSubStage, null));
+          .setBody(BulkProvisionHostsWorkflowService.buildPatch(patchStage, null));
 
       testHost.sendRequestAndWait(patchOperation);
     }
 
     @DataProvider(name = "InvalidStageTransitions")
     public Object[][] getInvalidStageTransitions() {
-      return TestHelper.getInvalidStageTransitions(BulkProvisionHostsWorkflowService.TaskState.SubStage.class);
+      return TestHelper.getInvalidStageTransitions(null);
     }
 
     @Test(dataProvider = "ImmutableFieldNames", expectedExceptions = BadRequestException.class)
     public void testInvalidPatchImmutableFieldChanged(String fieldName) throws Throwable {
-      BulkProvisionHostsWorkflowService.State startState = buildValidStartState(null, null);
+      BulkProvisionHostsWorkflowService.State startState = buildValidStartState(null);
       Operation startOperation = testHost.startServiceSynchronously(bulkProvisionHostsWorkflowService, startState);
       assertThat(startOperation.getStatusCode(), is(200));
 
       BulkProvisionHostsWorkflowService.State patchState = BulkProvisionHostsWorkflowService.buildPatch(
-          TaskState.TaskStage.STARTED, BulkProvisionHostsWorkflowService.TaskState.SubStage.PROVISION_NETWORK, null);
+          TaskState.TaskStage.STARTED, null);
 
       Field declaredField = patchState.getClass().getDeclaredField(fieldName);
       declaredField.set(patchState, ReflectionUtils.getDefaultAttributeValue(declaredField));
@@ -341,7 +336,7 @@ public class BulkProvisionHostsWorkflowServiceTest {
       TestHelper.setContainersConfig(deployerConfig);
       listeningExecutorService = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(1));
 
-      startState = buildValidStartState(null, null);
+      startState = buildValidStartState(null);
       startState.querySpecification = MiscUtils.generateHostQuerySpecification(null, UsageTag.MGMT.name());
       startState.controlFlags = null;
     }
@@ -389,7 +384,6 @@ public class BulkProvisionHostsWorkflowServiceTest {
       NsxClientMock nsxClientMock = new NsxClientMock.Builder()
           .registerFabricNode(true, "fabricNodeId")
           .createTransportNode(true, "transportNodeId")
-          .createTransportZone(true, "transportZoneId")
           .build();
       doReturn(nsxClientMock).when(nsxClientFactory).create(anyString(), anyString(), anyString());
 
@@ -519,10 +513,6 @@ public class BulkProvisionHostsWorkflowServiceTest {
                 (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
 
         TestHelper.assertTaskStateFinished(finalState.taskState);
-
-        DeploymentService.State deploymentState =
-            cloudStoreMachine.getServiceState(startState.deploymentServiceLink, DeploymentService.State.class);
-        assertThat(deploymentState.networkZoneId, is("transportZoneId"));
       }
     }
 
@@ -551,8 +541,7 @@ public class BulkProvisionHostsWorkflowServiceTest {
   }
 
   private BulkProvisionHostsWorkflowService.State buildValidStartState(
-      @Nullable TaskState.TaskStage stage,
-      @Nullable BulkProvisionHostsWorkflowService.TaskState.SubStage subStage) {
+      @Nullable TaskState.TaskStage stage) {
 
     BulkProvisionHostsWorkflowService.State startState = new BulkProvisionHostsWorkflowService.State();
     startState.deploymentServiceLink = "DEPLOYMENT_SERVICE_LINK";
@@ -560,9 +549,8 @@ public class BulkProvisionHostsWorkflowServiceTest {
     startState.controlFlags = ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED;
 
     if (stage != null) {
-      startState.taskState = new BulkProvisionHostsWorkflowService.TaskState();
+      startState.taskState = new TaskState();
       startState.taskState.stage = stage;
-      startState.taskState.subStage = subStage;
     }
 
     return startState;
