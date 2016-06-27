@@ -1161,15 +1161,24 @@ class TestRemoteAgent(unittest.TestCase, AgentCommonTests):
 
         # VM in wrong state
         vm_wrapper.power(Host.PowerVmOp.ON, Host.PowerVmOpResultCode.OK)
+        # wait for up to 10 seconds for property cache to update
+        for i in range(10):
+            if vm_wrapper.get_vm().state == Host.PowerVmOp.ON:
+                break
+            time.sleep(1)
         vm_wrapper.create_image_from_vm(
             image_id=img_id,
             datastore=ds.id,
             tmp_image_path=tmp_image_path,
             expect=Host.CreateImageFromVmResultCode.INVALID_VM_POWER_STATE)
 
-        vm_wrapper.power(Host.PowerVmOp.OFF, Host.PowerVmOpResultCode.OK)
-
         # Happy case
+        vm_wrapper.power(Host.PowerVmOp.OFF, Host.PowerVmOpResultCode.OK)
+        # wait for up to 10 seconds for property cache to update
+        for i in range(10):
+            if vm_wrapper.get_vm().state == Host.PowerVmOp.OFF:
+                break
+            time.sleep(1)
         vm_wrapper.create_image_from_vm(
             image_id=img_id,
             datastore=ds.id,
