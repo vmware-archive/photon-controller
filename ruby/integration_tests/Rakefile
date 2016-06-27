@@ -160,7 +160,9 @@ task :reboot_hosts, [:dc_yml] do |t, args|
   host_specs.each do |host|
     EsxCloud::HostCleaner.reboot_host host.address, host.username, host.password
   end
-  max_wait_time = ENV["REBOOT_WAIT_TIME"].to_i || 15 * 60
+  # should make sure the machines actually started rebooting
+  sleep 30
+  max_wait_time = (ENV["REBOOT_WAIT_TIME"] || 15 * 60).to_i
   host_specs.each do |host|
     EsxCloud::HostCleaner.wait_for_boot host.address, host.username, host.password, max_wait_time
   end
@@ -169,7 +171,9 @@ end
 desc 'Reboot host'
 task :reboot_host do |t|
   EsxCloud::HostCleaner.reboot_host EsxCloud::TestHelpers.get_esx_ip, EsxCloud::TestHelpers.get_esx_username, EsxCloud::TestHelpers.get_esx_password
-  max_wait_time = ENV["REBOOT_WAIT_TIME"].to_i || 15 * 60
+  # should make sure the machine actually started rebooting
+  sleep 30
+  max_wait_time = (ENV["REBOOT_WAIT_TIME"] || 15 * 60).to_i
   EsxCloud::HostCleaner.wait_for_boot EsxCloud::TestHelpers.get_esx_ip, EsxCloud::TestHelpers.get_esx_username, EsxCloud::TestHelpers.get_esx_password, max_wait_time
 end
 

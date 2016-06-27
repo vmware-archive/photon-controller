@@ -10,6 +10,7 @@
 # specific language governing permissions and limitations under the License.
 
 require "net/ssh"
+require "net/http"
 require_relative "../lib/test_helpers"
 
 module EsxCloud
@@ -39,23 +40,48 @@ module EsxCloud
       def reboot_host(server, user_name, password)
         puts "rebooting host #{server}"
         Net::SSH.start(server, user_name, {password: password, user_known_hosts_file: "/dev/null"}) do |ssh|
-          ssh.exec!("reboot")
+          ssh.exec!("reboot -f")
         end
       end
 
       def wait_for_boot(server, user_name, password, max_wait_time_seconds)
         wait_start = Time.now
-        puts "waiting for host #{server} to be reachable for #{max_wait_time_seconds} seconds"
+        puts "waiting for host #{server} to be reachable within #{max_wait_time_seconds} seconds"
+        wait_for_ssh(server, user_name, password, max_wait_time_seconds, wait_start)
+        wait_for_http(server, user_name, password, max_wait_time_seconds, wait_start)
+        puts "host #{server} became available after #{Time.now - wait_start} seconds"
+      end
+
+      def wait_for_ssh(server, user_name, password, max_wait_time_seconds, wait_start)
         while Time.now - wait_start < max_wait_time_seconds
           begin
             # test if we can ssh into the machine
             Net::SSH.start(server, user_name, {password: password, user_known_hosts_file: "/dev/null", timeout: 5}) do |ssh|
             end
+            puts "ssh on host #{server} is up"
             return
           rescue
           end
         end
-        fail "host #{server} did not become available after #{max_wait_time_seconds} seconds"
+        fail "ssh on host #{server} did not become available after #{max_wait_time_seconds} seconds"
+      end
+
+      def wait_for_http(server, user_name, password, max_wait_time_seconds, wait_start)
+        # using the data store list uri
+        uri = URI("https://#{server}/folder?dcPath=ha-datacenter")
+        while Time.now - wait_start < max_wait_time_seconds
+          begin
+            Net::HTTP.start(uri.host, uri.port, :use_ssl => true, :verify_mode => OpenSSL::SSL::VERIFY_NONE) do |http|
+              request = Net::HTTP::Get.new uri.request_uri
+              request.basic_auth user_name, password
+              http.request request
+            end
+            puts "http on host #{server} is up"
+            return
+          rescue
+          end
+        end
+        fail "http on host #{server} did not become available after #{max_wait_time_seconds} seconds"
       end
 
       def stop_agent(server, user_name, password)
@@ -162,7 +188,6 @@ module EsxCloud
         rescue
         end
       end
-
     end
 
   end
