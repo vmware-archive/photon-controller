@@ -44,7 +44,6 @@ public class DeploymentServiceFactoryTest {
         Service.ServiceOption.INSTRUMENTATION,
         Service.ServiceOption.CONCURRENT_UPDATE_HANDLING,
         Service.ServiceOption.CONCURRENT_GET_HANDLING,
-        Service.ServiceOption.ON_DEMAND_LOAD,
         Service.ServiceOption.FACTORY,
         Service.ServiceOption.REPLICATION);
 

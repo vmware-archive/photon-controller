@@ -72,7 +72,6 @@ public class AvailabilityZoneServiceTest {
           Service.ServiceOption.PERSISTENCE,
           Service.ServiceOption.REPLICATION,
           Service.ServiceOption.OWNER_SELECTION,
-          Service.ServiceOption.ON_DEMAND_LOAD,
           Service.ServiceOption.INSTRUMENTATION);
       assertThat(service.getOptions(), is(expected));
     }

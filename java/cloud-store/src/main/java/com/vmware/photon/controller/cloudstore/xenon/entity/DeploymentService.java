@@ -54,7 +54,6 @@ public class DeploymentService extends StatefulService {
     super.toggleOption(ServiceOption.PERSISTENCE, true);
     super.toggleOption(ServiceOption.REPLICATION, true);
     super.toggleOption(ServiceOption.INSTRUMENTATION, true);
-    super.toggleOption(ServiceOption.ON_DEMAND_LOAD, true);
   }
 
   @Override
