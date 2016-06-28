@@ -164,7 +164,11 @@ public class WaitForNetworkTaskService extends StatefulService {
     VmNetworks vmNetworks = VmApi.parseVmNetworksFromTask(task);
     ServiceUtils.logInfo(this, "Received VM networks response: " + Utils.toJson(false, true, vmNetworks));
     for (NetworkConnection networkConnection : vmNetworks.getNetworkConnections()) {
-      if (null != networkConnection.getNetwork() && null != networkConnection.getIpAddress()) {
+      // We look for the first NIC that has a MAC address with a VMware OUI and an IP Address
+      // The OUI is a standard prefix to indicate the vendor that generated the MAC address
+      // In the past we looked for a port group (network name) but that wasn't always reliably
+      // reported. This should be reliable.
+      if (networkConnection.isVmwareMacAddress() && null != networkConnection.getIpAddress()) {
         State patchState = buildPatch(TaskState.TaskStage.FINISHED, null);
         patchState.vmIpAddress = networkConnection.getIpAddress();
         TaskUtils.sendSelfPatch(this, patchState);
