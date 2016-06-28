@@ -17,6 +17,7 @@ import com.vmware.photon.controller.api.Host;
 import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.Operation;
 import com.vmware.photon.controller.api.common.exceptions.ApiFeException;
+import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.backends.HostXenonBackend;
 import com.vmware.photon.controller.apife.backends.TaskBackend;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
@@ -26,6 +27,7 @@ import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.exceptions.external.DuplicateHostException;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidLoginException;
 import com.vmware.photon.controller.apife.exceptions.external.IpAddressInUseException;
+import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
 import com.vmware.photon.controller.deployer.xenon.task.ValidateHostTaskService;
 import com.vmware.xenon.common.TaskState;
@@ -79,6 +81,12 @@ public class HostCreateTaskStatusPoller implements XenonTaskStatusStepCmd.XenonT
     logger.info("Host create failed, mark entity {} state as ERROR", this.entity);
     if (this.entity != null) {
       this.hostBackend.updateState(this.entity, HostState.ERROR);
+    }
+
+    if (null == state.taskState || null == state.taskState.resultCode) {
+      // not enough information in the taskState to return a custom error message so just exist and let
+      // the system throw a generic error message.
+      return;
     }
 
     switch (state.taskState.resultCode) {
