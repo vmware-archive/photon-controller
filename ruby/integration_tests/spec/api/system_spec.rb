@@ -35,16 +35,24 @@ describe "system" do
   end
 
   it "validates tenants, images and hosts are clean", validate_system: true, devbox: true do
+    # figure out the id of the default network if a default network exists
+    default_network = EsxCloud::SystemSeeder.instance.network
+    default_network_ids = []
+    default_network_ids << default_network.id unless default_network.nil?
+
+    # clean system
     system_cleaner = EsxCloud::SystemCleaner.new(api_client)
     stat = system_cleaner.clean_system
 
-    default_network_ids = [EsxCloud::SystemSeeder.instance.network.id]
+    # validate that no networks were left over other than the default network
     network_ids = stat.delete "network"
     xor_network_ids = (network_ids | default_network_ids) - (network_ids & default_network_ids)
     expect(xor_network_ids.length).to eq(0)
-    expect(stat).to be_empty, "Expect no garbage to be cleaned but found some: #{stat.inspect}"
 
+    # validated that no garbage was found
+    expect(stat).to be_empty, "Expect no garbage to be cleaned but found some: #{stat.inspect}"
     next unless ENV["DEVBOX"]
+
     dirty_vms = EsxCloud::HostCleaner.clean_vms_on_real_host(get_esx_ip, get_esx_username, get_esx_password)
     expect(dirty_vms).to be_nil, "VMs left on host #{get_esx_ip}: #{dirty_vms}"
   end

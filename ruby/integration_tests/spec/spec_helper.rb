@@ -133,10 +133,6 @@ RSpec.configure do |config|
   config.filter_run_excluding go_cli: true unless ENV["DRIVER"] == "gocli"
 
   config.before(:suite) do
-    unless ENV["DEPLOYER_TEST"]
-      EsxCloud::SystemSeeder.instance.network!
-    end
-
     if ENV["UPTIME"]
       get_system_status(ENV["MANAGEMENT_VM_COUNT"])
       HousekeeperHelper.clean_unreachable_datastores
@@ -146,9 +142,6 @@ RSpec.configure do |config|
   config.after(:suite) do
     cleaner = EsxCloud::SystemCleaner.new(ApiClientHelper.management)
     ignoring_all_errors { cleaner.clean_images(EsxCloud::SystemSeeder.instance) }
-    ignoring_all_errors {
-      cleaner.delete_network(EsxCloud::SystemSeeder.instance.network) if EsxCloud::SystemSeeder.instance.network
-    }
     ignoring_all_errors {
       cleaner.delete_tenant(EsxCloud::SystemSeeder.instance.tenant) if EsxCloud::SystemSeeder.instance.tenant
     }
