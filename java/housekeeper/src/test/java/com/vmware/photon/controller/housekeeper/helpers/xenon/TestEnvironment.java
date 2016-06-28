@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.housekeeper.helpers.xenon;
 
+import com.vmware.photon.controller.cloudstore.SystemConfig;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.MultiHostEnvironment;
@@ -37,7 +38,7 @@ public class TestEnvironment extends MultiHostEnvironment<PhotonControllerXenonH
   public TestEnvironment(CloudStoreHelper cloudStoreHelper,
                          HostClientFactory hostClientFactory,
                          NsxClientFactory nsxClientFactory,
-                         int hostCount) throws Throwable {
+                         int hostCount, boolean isBackgroudPaused) throws Throwable {
 
     assertTrue(hostCount > 0);
     hosts = new PhotonControllerXenonHost[hostCount];
@@ -58,6 +59,8 @@ public class TestEnvironment extends MultiHostEnvironment<PhotonControllerXenonH
           cloudStoreHelper);
       HousekeeperServiceGroup housekeeperServiceGroup = new HousekeeperServiceGroup();
       hosts[i].registerHousekeeper(housekeeperServiceGroup);
+      SystemConfig.createInstance(hosts[i]);
+      SystemConfig.getInstance().markPauseStateLocally(isBackgroudPaused, false);
     }
 
     TaskSchedulerServiceStateBuilder.triggerInterval = TimeUnit.MILLISECONDS.toMicros(500);
@@ -71,6 +74,7 @@ public class TestEnvironment extends MultiHostEnvironment<PhotonControllerXenonH
     HostClientFactory hostClientFactory;
     NsxClientFactory nsxClientFactory;
     Integer hostCount;
+    boolean isBackgroundPaused;
 
     public Builder cloudStoreHelper(CloudStoreHelper helper) {
       this.cloudStoreHelper = helper;
@@ -89,6 +93,11 @@ public class TestEnvironment extends MultiHostEnvironment<PhotonControllerXenonH
 
     public Builder hostCount(int hostCount) {
       this.hostCount = hostCount;
+      return this;
+    }
+
+    public Builder isBackgroundPaused(boolean isBackgroundPause) {
+      this.isBackgroundPaused = isBackgroundPause;
       return this;
     }
 
@@ -122,7 +131,8 @@ public class TestEnvironment extends MultiHostEnvironment<PhotonControllerXenonH
           cloudStoreHelper,
           hostClientFactory,
           nsxClientFactory,
-          this.hostCount);
+          this.hostCount,
+          this.isBackgroundPaused);
       testEnvironment.start();
 
       return testEnvironment;
