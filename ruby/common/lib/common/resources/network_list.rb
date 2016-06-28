@@ -17,14 +17,21 @@ module EsxCloud
     # @param [String] json
     # @return [NetworkList]
     def self.create_from_json(json)
+      puts "Create from json"
       payload = JSON.parse(json)
 
       unless payload.is_a?(Hash) && payload["items"].is_a?(Enumerable)
         fail UnexpectedFormat, "Invalid network list: #{payload}"
       end
 
+      puts "creating one by one"
       items = payload["items"].map do |item|
-        Network.create_from_hash(item)
+        puts "The item is"
+        puts item.inspect
+        tmp = Network.create_from_hash(item)
+        puts "network is"
+        puts tmp.inspect
+        tmp
       end
 
       new(items)
