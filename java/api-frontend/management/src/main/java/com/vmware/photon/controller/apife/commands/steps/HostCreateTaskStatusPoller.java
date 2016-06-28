@@ -81,6 +81,12 @@ public class HostCreateTaskStatusPoller implements XenonTaskStatusStepCmd.XenonT
       this.hostBackend.updateState(this.entity, HostState.ERROR);
     }
 
+    if (null == state.taskState || null == state.taskState.resultCode) {
+      // not enough information in the taskState to return a custom error message so just exist and let
+      // the system throw a generic error message.
+      return;
+    }
+
     switch (state.taskState.resultCode) {
       case ExistHostWithSameAddress:
         throw new DuplicateHostException(state.taskState.failure.message);
