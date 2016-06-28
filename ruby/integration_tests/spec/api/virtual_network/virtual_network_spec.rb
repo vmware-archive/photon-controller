@@ -94,7 +94,7 @@ describe "virtual_network", :virtual_network => true do
       end
     end
 
-    it "should fail to create virtual network when routing type is invalid" do
+    xit "should fail to create virtual network when routing type is invalid" do
       error_msg = "The supplied JSON could not be parsed: ROUTED_ISOLATED_BOTH was not one of [ROUTED, ISOLATED]"
 
       spec.routing_type = "ROUTED_ISOLATED_BOTH"
@@ -141,13 +141,13 @@ describe "virtual_network", :virtual_network => true do
   end
 
   describe "#delete" do
-    it "should delete virtual network successfully when virtual network is READY" do
+    xit "should delete virtual network successfully when virtual network is READY" do
       network = create_virtual_network(@project.id, spec)
       expect(network.state).to eq "READY"
       expect(client.delete_network(network.id)).to be_true
     end
 
-    it "should fail to delete virtual network when virtual network is PENDING_DELETE" do
+    xit "should fail to delete virtual network when virtual network is PENDING_DELETE" do
       network = create_virtual_network(@project.id, spec)
       expect(network.state).to eq "READY"
 
