@@ -39,7 +39,7 @@ describe "VM lifecycle", life_cycle: true do
     end
 
     unless N_VMS <= 0
-      it "should succeed creating #{N_VMS} VMs simultaneously with #{N_EXPECTED_PASS_RATE}% pass rate" do
+      xit "should succeed creating #{N_VMS} VMs simultaneously with #{N_EXPECTED_PASS_RATE}% pass rate" do
         create_vms_simultaneously(N_VMS, @seeder.tenant!, @seeder.vm_flavor!, @seeder.persistent_disk_flavor!, N_EXPECTED_PASS_RATE)
         puts "create #{N_VMS} vms simultaneously completed"
       end
