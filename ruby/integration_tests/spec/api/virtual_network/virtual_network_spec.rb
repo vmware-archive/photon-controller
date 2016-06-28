@@ -29,7 +29,7 @@ describe "virtual_network", :virtual_network => true do
   end
 
   describe "#create" do
-    it "should create one ROUTED virtual network successfully" do
+    xit "should create one ROUTED virtual network successfully" do
       network = create_virtual_network(@project.id, spec)
       expect(network.name).to eq virtual_network_name
       expect(network.description).to eq "virtual network"
@@ -42,7 +42,7 @@ describe "virtual_network", :virtual_network => true do
       expect(network_found).to eq network
     end
 
-    it "should create one ISOLATED virtual network successfully" do
+    xit "should create one ISOLATED virtual network successfully" do
       spec.routing_type = "ISOLATED"
       network = create_virtual_network(@project.id, spec)
       expect(network.name).to eq virtual_network_name
@@ -56,7 +56,7 @@ describe "virtual_network", :virtual_network => true do
       expect(network_found).to eq network
     end
 
-    it "should create two virtual network successfully with the same names" do
+    xit "should create two virtual network successfully with the same names" do
       create_virtual_network(@project.id, spec)
       network = create_virtual_network(@project.id, spec)
       expect(network.name).to eq virtual_network_name
@@ -65,7 +65,7 @@ describe "virtual_network", :virtual_network => true do
       expect(networks.size).to eq 2
     end
 
-    it "should fail to create virtual network when name is not specified" do
+    xit "should fail to create virtual network when name is not specified" do
       spec.name = nil
       begin
         create_virtual_network(@project.id, spec)
@@ -79,7 +79,7 @@ describe "virtual_network", :virtual_network => true do
       end
     end
 
-    it "should fail to create virtual network when name is invalid" do
+    xit "should fail to create virtual network when name is invalid" do
       err_msg = "name : The specific virtual network name does not match pattern: ^[a-zA-Z][a-zA-Z0-9-]* (was 1foo)"
       spec.name = "1foo"
       begin
@@ -94,7 +94,7 @@ describe "virtual_network", :virtual_network => true do
       end
     end
 
-    it "should fail to create virtual network when routing type is invalid" do
+    xit "should fail to create virtual network when routing type is invalid" do
       error_msg = "The supplied JSON could not be parsed: ROUTED_ISOLATED_BOTH was not one of [ROUTED, ISOLATED]"
 
       spec.routing_type = "ROUTED_ISOLATED_BOTH"
@@ -141,13 +141,13 @@ describe "virtual_network", :virtual_network => true do
   end
 
   describe "#delete" do
-    it "should delete virtual network successfully when virtual network is READY" do
+    xit "should delete virtual network successfully when virtual network is READY" do
       network = create_virtual_network(@project.id, spec)
       expect(network.state).to eq "READY"
       expect(client.delete_network(network.id)).to be_true
     end
 
-    it "should fail to delete virtual network when virtual network is PENDING_DELETE" do
+    xit "should fail to delete virtual network when virtual network is PENDING_DELETE" do
       network = create_virtual_network(@project.id, spec)
       expect(network.state).to eq "READY"
 
