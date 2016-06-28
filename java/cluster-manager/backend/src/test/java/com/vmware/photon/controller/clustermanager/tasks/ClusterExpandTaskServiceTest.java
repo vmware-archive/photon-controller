@@ -581,6 +581,7 @@ public class ClusterExpandTaskServiceTest {
       NetworkConnection networkConnection = new NetworkConnection();
       networkConnection.setNetwork("VM VLAN");
       networkConnection.setIpAddress("10.0.0.1");
+      networkConnection.setMacAddress("00:0c:29:9e:6b:00");
 
       VmNetworks vmNetworks = new VmNetworks();
       vmNetworks.setNetworkConnections(Collections.singleton(networkConnection));

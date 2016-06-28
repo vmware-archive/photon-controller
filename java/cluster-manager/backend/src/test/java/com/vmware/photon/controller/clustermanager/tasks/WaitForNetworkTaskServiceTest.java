@@ -377,6 +377,7 @@ public class WaitForNetworkTaskServiceTest {
       NetworkConnection networkConnection = new NetworkConnection();
       networkConnection.setNetwork("VM VLAN");
       networkConnection.setIpAddress("IP_ADDRESS");
+      networkConnection.setMacAddress("00:0c:29:9e:6b:00");
 
       VmNetworks vmNetworks = new VmNetworks();
       vmNetworks.setNetworkConnections(Collections.singleton(networkConnection));
