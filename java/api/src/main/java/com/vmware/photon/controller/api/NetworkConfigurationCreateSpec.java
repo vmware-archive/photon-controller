@@ -54,6 +54,10 @@ public class NetworkConfigurationCreateSpec {
   private String networkManagerPassword;
 
   @JsonProperty
+  @ApiModelProperty(value = "The ID of the network zone which inter-connects all hosts", required = true)
+  private String networkZoneId;
+
+  @JsonProperty
   @ApiModelProperty(value = "The ID of the router for accessing outside network (i.e. Internet)", required = false)
   private String networkTopRouterId;
 
@@ -89,6 +93,14 @@ public class NetworkConfigurationCreateSpec {
     this.networkManagerPassword = networkManagerPassword;
   }
 
+  public String getNetworkZoneId() {
+    return networkZoneId;
+  }
+
+  public void setNetworkZoneId(String networkZoneId) {
+    this.networkZoneId = networkZoneId;
+  }
+
   public String getNetworkTopRouterId() {
     return networkTopRouterId;
   }
@@ -112,6 +124,7 @@ public class NetworkConfigurationCreateSpec {
         && Objects.equals(this.getNetworkManagerAddress(), other.getNetworkManagerAddress())
         && Objects.equals(this.getNetworkManagerUsername(), other.getNetworkManagerUsername())
         && Objects.equals(this.getNetworkManagerPassword(), other.getNetworkManagerPassword())
+        && Objects.equals(this.getNetworkZoneId(), other.getNetworkZoneId())
         && Objects.equals(this.getNetworkTopRouterId(), other.getNetworkTopRouterId());
   }
 
@@ -123,6 +136,7 @@ public class NetworkConfigurationCreateSpec {
         this.getNetworkManagerAddress(),
         this.getNetworkManagerUsername(),
         this.getNetworkManagerPassword(),
+        this.getNetworkZoneId(),
         this.getNetworkTopRouterId());
   }
 
@@ -132,6 +146,7 @@ public class NetworkConfigurationCreateSpec {
     return com.google.common.base.Objects.toStringHelper(this)
         .add("virtualNetworkEnabled", this.getVirtualNetworkEnabled())
         .add("networkManagerAddress", this.getNetworkManagerAddress())
+        .add("networkZoneId", this.getNetworkZoneId())
         .add("networkTopRouterId", this.getNetworkTopRouterId());
   }
 

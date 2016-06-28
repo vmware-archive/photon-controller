@@ -54,6 +54,10 @@ public class NetworkConfiguration {
   private String networkManagerPassword;
 
   @JsonProperty
+  @ApiModelProperty(value = "The ID of the network zone which inter-connects all hosts", required = true)
+  private String networkZoneId;
+
+  @JsonProperty
   @ApiModelProperty(value = "The ID of the router for accessing outside network (i.e. Internet)", required = false)
   private String networkTopRouterId;
 
@@ -89,6 +93,14 @@ public class NetworkConfiguration {
     this.networkManagerPassword = networkManagerPassword;
   }
 
+  public String getNetworkZoneId() {
+    return networkZoneId;
+  }
+
+  public void setNetworkZoneId(String networkZoneId) {
+    this.networkZoneId = networkZoneId;
+  }
+
   public String getNetworkTopRouterId() {
     return networkTopRouterId;
   }
@@ -112,6 +124,7 @@ public class NetworkConfiguration {
         && Objects.equals(this.getNetworkManagerAddress(), other.getNetworkManagerAddress())
         && Objects.equals(this.getNetworkManagerUsername(), other.getNetworkManagerUsername())
         && Objects.equals(this.getNetworkManagerPassword(), other.getNetworkManagerPassword())
+        && Objects.equals(this.getNetworkZoneId(), other.getNetworkZoneId())
         && Objects.equals(this.getNetworkTopRouterId(), other.getNetworkTopRouterId());
   }
 
@@ -122,7 +135,9 @@ public class NetworkConfiguration {
         this.getVirtualNetworkEnabled(),
         this.getNetworkManagerAddress(),
         this.getNetworkManagerUsername(),
-        this.getNetworkManagerPassword());
+        this.getNetworkManagerPassword(),
+        this.getNetworkZoneId(),
+        this.getNetworkTopRouterId());
   }
 
   protected com.google.common.base.Objects.ToStringHelper toStringHelper() {
@@ -131,6 +146,7 @@ public class NetworkConfiguration {
     return com.google.common.base.Objects.toStringHelper(this)
         .add("virtualNetworkEnabled", this.getVirtualNetworkEnabled())
         .add("networkManagerAddress", this.getNetworkManagerAddress())
+        .add("networkZoneId", this.getNetworkZoneId())
         .add("networkTopRouterId", this.getNetworkTopRouterId());
   }
 

@@ -46,6 +46,11 @@ public class NetworkConfigurationCreateSpecBuilder {
     return this;
   }
 
+  public NetworkConfigurationCreateSpecBuilder networkZoneId(String networkZoneId) {
+    this.networkConfigurationCreateSpec.setNetworkZoneId(networkZoneId);
+    return this;
+  }
+
   public NetworkConfigurationCreateSpecBuilder networkTopRouterId(String networkTopRouterId) {
     this.networkConfigurationCreateSpec.setNetworkTopRouterId(networkTopRouterId);
     return this;

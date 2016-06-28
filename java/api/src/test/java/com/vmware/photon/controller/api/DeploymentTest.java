@@ -71,6 +71,7 @@ public class DeploymentTest {
         .networkManagerAddress("1.2.3.4")
         .networkManagerUsername("networkManagerUsername")
         .networkManagerPassword("networkManagerPassword")
+        .networkZoneId("networkZoneId")
         .networkTopRouterId("networkTopRouterId")
         .build());
     deployment.setLoadBalancerEnabled(true);
@@ -158,7 +159,7 @@ public class DeploymentTest {
               "auth=AuthInfo{enabled=true, endpoint=10.146.64.236, port=443, " +
               "tenant=t, securityGroups=adminGroup1,adminGroup2}, " +
               "networkConfiguration=NetworkConfiguration{virtualNetworkEnabled=true, networkManagerAddress=1.2.3.4, " +
-              "networkTopRouterId=networkTopRouterId}, " +
+              "networkZoneId=networkZoneId, networkTopRouterId=networkTopRouterId}, " +
               "loadBalancerEnabled=true, loadBalancerAddress=0.0.0.4, migrationProgress=null, " +
               "clusterConfigurations=null}";
       HashSet<String> imageDatastores = new HashSet<String>();
