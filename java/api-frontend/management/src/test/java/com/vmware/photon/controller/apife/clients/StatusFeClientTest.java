@@ -33,7 +33,6 @@ import com.google.common.collect.ImmutableMap;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -66,10 +65,7 @@ public class StatusFeClientTest {
   private List<ClientPool> singleInstanceClientPools;
   private List<ClientProxy> singleInstanceClientProxies;
 
-  private List<StatusProvider> housekeeperClients;
-  private List<StatusProvider> rootSchedulerClients;
-  private List<StatusProvider> deployerClients;
-  private List<StatusProvider> cloudStoreClients;
+  private List<StatusProvider> photonControllerClients;
 
   private ServerSet photonControllerServerSet = mock(StaticServerSet.class);
 
@@ -79,7 +75,7 @@ public class StatusFeClientTest {
   public void setup() throws Throwable {
     statusConfig = new StatusConfig();
     statusConfig.setComponents(
-        ImmutableList.of("housekeeper", "rootScheduler", "deployer", "cloudStore"));
+        ImmutableList.of("photon-controller"));
 
     createServerSet();
 
@@ -131,9 +127,9 @@ public class StatusFeClientTest {
 
     mockAllClientsToReturnSameStatus(readyStatus);
 
-    when(housekeeperClients.get(0).getStatus()).thenReturn(readyStatus);
-    when(housekeeperClients.get(1).getStatus()).thenReturn(initializingStatus);
-    when(housekeeperClients.get(2).getStatus()).thenReturn(errorStatus);
+    when(photonControllerClients.get(0).getStatus()).thenReturn(readyStatus);
+    when(photonControllerClients.get(1).getStatus()).thenReturn(initializingStatus);
+    when(photonControllerClients.get(2).getStatus()).thenReturn(errorStatus);
 
     SystemStatus systemStatus = client.getSystemStatus();
     assertThat(systemStatus.getComponents().size(), is(statusConfig.getComponents().size()));
@@ -142,7 +138,7 @@ public class StatusFeClientTest {
     List<ComponentStatus> compStatuses = systemStatus.getComponents();
 
     for (ComponentStatus status : compStatuses) {
-      if (status.getComponent().equals(Component.HOUSEKEEPER)) {
+      if (status.getComponent().equals(Component.PHOTON_CONTROLLER)) {
         assertThat(status.getStatus(), is(StatusType.PARTIAL_ERROR));
         assertThat(status.getStats().get(StatusType.READY.toString()), is("1"));
         assertThat(status.getStats().get(StatusType.INITIALIZING.toString()), is("1"));
@@ -177,32 +173,9 @@ public class StatusFeClientTest {
     }
   }
 
-  @Test
-  public void testEmptyServerSet() throws Throwable {
-    Status readyStatus = new Status(StatusType.READY);
-    setMessageAndStats(readyStatus);
-    when(photonControllerServerSet.getServers()).thenReturn(new HashSet<>());
-
-    mockAllClientsToReturnSameStatus(readyStatus);
-
-    SystemStatus systemStatus = client.getSystemStatus();
-
-    assertThat(systemStatus.getComponents().size(), is(4));
-    assertThat(systemStatus.getStatus(), is(StatusType.ERROR));
-
-    ComponentStatus deployerComponent = systemStatus.getComponents().stream()
-        .filter(c -> Component.DEPLOYER.equals(c.getComponent())).findFirst().get();
-    assertThat(deployerComponent, notNullValue());
-    assertThat(deployerComponent.getStatus(), is(StatusType.UNREACHABLE));
-    assertThat(deployerComponent.getMessage(), is("Empty ServerSet"));
-  }
-
   private void mockAllClientsToReturnSameStatus(Status status) {
     for (int i = 0; i < SERVER_COUNT; i++) {
-      when(housekeeperClients.get(i).getStatus()).thenReturn(status);
-      when(rootSchedulerClients.get(i).getStatus()).thenReturn(status);
-      when(deployerClients.get(i).getStatus()).thenReturn(status);
-      when(cloudStoreClients.get(i).getStatus()).thenReturn(status);
+      when(photonControllerClients.get(i).getStatus()).thenReturn(status);
     }
   }
 
@@ -219,25 +192,10 @@ public class StatusFeClientTest {
         statusConfig);
 
     Map<Component, StatusProviderFactory> statusProviderFactories = client.getStatusProviderFactories();
-    StatusProviderFactory housekeeperClientFactory = spy(new XenonStatusProviderFactory(
+    StatusProviderFactory photonControllerClientFactory = spy(new XenonStatusProviderFactory(
         photonControllerServerSet, executor));
-    setupStatusProviderFactory(housekeeperClientFactory, housekeeperClients);
-    statusProviderFactories.put(Component.HOUSEKEEPER, housekeeperClientFactory);
-
-    StatusProviderFactory cloudStoreClientFactory =
-        spy(new XenonStatusProviderFactory(photonControllerServerSet, executor));
-    setupStatusProviderFactory(cloudStoreClientFactory, cloudStoreClients);
-    statusProviderFactories.put(Component.CLOUD_STORE, cloudStoreClientFactory);
-
-    StatusProviderFactory deployerClientFactory =
-        spy(new XenonStatusProviderFactory(photonControllerServerSet, executor));
-    setupStatusProviderFactory(deployerClientFactory, deployerClients);
-    statusProviderFactories.put(Component.DEPLOYER, deployerClientFactory);
-
-    StatusProviderFactory rootSchedulerClientFactory = spy(
-        new XenonStatusProviderFactory(photonControllerServerSet, executor));
-    setupStatusProviderFactory(rootSchedulerClientFactory, rootSchedulerClients);
-    statusProviderFactories.put(Component.ROOT_SCHEDULER, rootSchedulerClientFactory);
+    setupStatusProviderFactory(photonControllerClientFactory, photonControllerClients);
+    statusProviderFactories.put(Component.PHOTON_CONTROLLER, photonControllerClientFactory);
   }
 
   private void setupStatusProviderFactory(
@@ -283,15 +241,9 @@ public class StatusFeClientTest {
   }
 
   private void mockComponentClients() {
-    housekeeperClients = new ArrayList<>();
-    rootSchedulerClients = new ArrayList<>();
-    deployerClients = new ArrayList<>();
-    cloudStoreClients = new ArrayList<>();
+    photonControllerClients = new ArrayList<>();
     for (int i = 0; i < SERVER_COUNT; i++) {
-      housekeeperClients.add(mock(XenonStatusProvider.class));
-      deployerClients.add(mock(XenonStatusProvider.class));
-      cloudStoreClients.add(mock(XenonStatusProvider.class));
-      rootSchedulerClients.add(mock(XenonStatusProvider.class));
+      photonControllerClients.add(mock(XenonStatusProvider.class));
     }
   }
 }
