@@ -18,6 +18,7 @@ describe "VM lifecycle", life_cycle: true do
 
     # seed the image on all image datastores
     @seeder.image!
+    @seeder.network!
     wait_for_image_seeding_progress_is_done
   end
 

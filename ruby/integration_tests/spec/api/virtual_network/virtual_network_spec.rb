@@ -110,7 +110,9 @@ describe "virtual_network", :virtual_network => true do
       end
     end
 
-    it "should fail to create virtual network when tier0 router is invalid" do
+    # Temporarily disable this test since the current delete virtual network
+    # flow cannot clean up the virtual network in ERROR state properly
+    xit "should fail to create virtual network when tier0 router is invalid" do
       deployment = client.find_all_api_deployments.items.first
       expect(deployment).to_not be_nil
       expect(deployment.network_configuration).to_not be_nil
