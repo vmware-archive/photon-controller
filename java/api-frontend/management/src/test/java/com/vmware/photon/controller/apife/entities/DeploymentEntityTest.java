@@ -65,6 +65,8 @@ public class DeploymentEntityTest {
       entity.setNetworkManagerAddress("1.2.3.4");
       entity.setNetworkManagerUsername("networkManagerUsername");
       entity.setNetworkManagerPassword("networkManagerPassword");
+      entity.setNetworkZoneId("networkZoneId");
+      entity.setNetworkTopRouterId("networkTopRouterId");
       entity.setNtpEndpoint("http://ntp");
       entity.setImageDatastores(Collections.singleton("datastore1"));
       entity.setUseImageDatastoreForVms(true);
@@ -84,6 +86,8 @@ public class DeploymentEntityTest {
       assertThat(entity.getNetworkManagerAddress(), is("1.2.3.4"));
       assertThat(entity.getNetworkManagerUsername(), is("networkManagerUsername"));
       assertThat(entity.getNetworkManagerPassword(), is("networkManagerPassword"));
+      assertThat(entity.getNetworkZoneId(), is("networkZoneId"));
+      assertThat(entity.getNetworkTopRouterId(), is("networkTopRouterId"));
       assertThat(entity.getNtpEndpoint(), is("http://ntp"));
       Assert.assertTrue(entity.getImageDatastores().contains("datastore1"));
       assertThat(entity.getUseImageDatastoreForVms(), is(true));
@@ -114,6 +118,8 @@ public class DeploymentEntityTest {
       entity.setNetworkManagerAddress("1.2.3.4");
       entity.setNetworkManagerUsername("networkManagerUsername");
       entity.setNetworkManagerPassword("networkManagerPassword");
+      entity.setNetworkZoneId("networkZoneId");
+      entity.setNetworkTopRouterId("networkTopRouterId");
       entity.setNtpEndpoint("http://ntp");
       entity.setImageDatastores(Collections.singleton("datastore1"));
       entity.setUseImageDatastoreForVms(true);
