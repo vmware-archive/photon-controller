@@ -68,7 +68,7 @@ module EsxCloud
          service_log_folder = File.join(ENV["WORKSPACE"], "devbox-photon", "log")
 
          sensitive_info_regex = /username|password/i
-         white_list_regex = ["password must be null", "password may not be null"]
+         white_list_regex = ["password must be null", "password may not be null", "getServiceProviderUsername"]
          regex = /#{white_list_regex.map{ |w| Regexp.escape(w) }.join('|')}/i
 
          matches = Array.new
