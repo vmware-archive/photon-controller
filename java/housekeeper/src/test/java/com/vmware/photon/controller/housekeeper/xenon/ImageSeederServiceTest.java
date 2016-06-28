@@ -749,6 +749,7 @@ public class ImageSeederServiceTest {
 
       machine = machineBuiler
           .hostCount(hostCount)
+          .isBackgroundPaused(true)
           .build();
       ImageService.State createdImageState = createNewImageEntity();
 
@@ -799,6 +800,7 @@ public class ImageSeederServiceTest {
 
       machine = machineBuiler
           .hostCount(hostCount)
+          .isBackgroundPaused(true)
           .build();
 
       ImageService.State createdImageState = createNewImageEntity();
@@ -823,6 +825,7 @@ public class ImageSeederServiceTest {
       doReturn(new HostClientMock()).when(hostClientFactory).create();
       machine = machineBuiler
           .hostCount(hostCount)
+          .isBackgroundPaused(true)
           .build();
 
       ImageService.State createdImageState = createNewImageEntity();
@@ -842,6 +845,7 @@ public class ImageSeederServiceTest {
 
       machine = machineBuiler
           .hostCount(hostCount)
+          .isBackgroundPaused(true)
           .build();
 
       ImageService.State createdImageState = createNewImageEntity();
@@ -861,6 +865,7 @@ public class ImageSeederServiceTest {
 
       machine = machineBuiler
           .hostCount(hostCount)
+          .isBackgroundPaused(true)
           .build();
 
       ImageService.State createdImageState = createNewImageEntity();

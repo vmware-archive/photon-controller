@@ -133,7 +133,7 @@ public class TaskTriggerService extends StatefulService {
       NodeSelectorService.SelectOwnerResponse rsp = op.getBody(NodeSelectorService.SelectOwnerResponse.class);
       if (!getHost().getId().equals(rsp.ownerNodeId)) {
         ServiceUtils.logInfo(TaskTriggerService.this,
-            "Host[%s]: Not owner of scheduler [%s] (Owner Info [%s])",
+            "Host[%s]: Not owner of trigger service [%s] (Owner Info [%s])",
             getHost().getId(), getSelfLink(), Utils.toJson(false, false, rsp));
         return;
       }
