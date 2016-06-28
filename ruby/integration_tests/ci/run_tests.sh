@@ -49,6 +49,7 @@ if [ -z "$DISABLE_CLI_TESTS" ]; then
   drivers+=(gocli)
 fi
 
+export NO_PARALLEL=1
 pids=()
 for driver in "${drivers[@]}"; do
   DRIVER="${driver}" bundle exec rake "esxcloud:${driver}" & pids+=($!)
