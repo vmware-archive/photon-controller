@@ -36,19 +36,6 @@ describe EsxCloud::ApiClient do
           "stats" => {
             "READY" => "1"
           }
-        },
-        {
-          "component" => "CHAIRMAN",
-          "status" => "READY",
-          "instances" => [
-            {
-              "address" => "/172.31.253.66=>13000",
-              "status" => "READY"
-            }
-          ],
-          "stats" => {
-            "READY" => "1"
-          }
         }
       ],
       "status" => "READY"
@@ -63,7 +50,7 @@ describe EsxCloud::ApiClient do
     expect(@http_client).to receive(:get).with("/status").and_return(status_ready_response)
     system_status = client.get_status
     system_status.status.should == "READY"
-    system_status.components.size.should == 2
+    system_status.components.size.should == 1
 
     system_status.components.each do |component|
       component.name.should_not be_nil

@@ -59,7 +59,7 @@ def get_system_status(instances = 1)
     begin
       system_status = EsxCloud::Config.client.get_status
       expect(system_status.status).to eq "READY"
-      expect(system_status.components.size).to eq 4
+      expect(system_status.components.size).to eq 1
 
       system_status.components.each do |component|
         expect(component.name).to_not be_nil

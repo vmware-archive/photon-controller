@@ -55,7 +55,7 @@ public class StatusConfigTest {
   @Test
   public void testAllConfig() {
     config.setComponents(ImmutableList.of(
-        "housekeeper", "rootScheduler", "deployer", "cloudStore"));
+        "photon-controller"));
     Set<Component> expected = EnumSet.allOf(Component.class);
 
     assertThat(config.getComponents(), is(expected));
@@ -63,8 +63,8 @@ public class StatusConfigTest {
 
   @Test
   public void testPartialonfig() {
-    config.setComponents(ImmutableList.of("housekeeper", "deployer"));
-    Set<Component> expected = EnumSet.of(Component.HOUSEKEEPER, Component.DEPLOYER);
+    config.setComponents(ImmutableList.of("photon-controller"));
+    Set<Component> expected = EnumSet.of(Component.PHOTON_CONTROLLER);
 
     assertThat(config.getComponents(), is(expected));
   }

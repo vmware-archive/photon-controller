@@ -26,10 +26,7 @@ import java.util.Set;
  * Components of the system.
  */
 public enum Component {
-  HOUSEKEEPER("housekeeper"),
-  ROOT_SCHEDULER("rootScheduler"),
-  DEPLOYER("deployer"),
-  CLOUD_STORE("cloudStore");
+  PHOTON_CONTROLLER("photon-controller");
   private static final Map<String, Component> COMPONENT_MAP;
   static {
     ImmutableMap.Builder<String, Component> builder = ImmutableMap.builder();
