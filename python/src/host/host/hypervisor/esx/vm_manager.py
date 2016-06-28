@@ -209,6 +209,7 @@ class EsxVmManager(VmManager):
     @log_duration
     def get_resource(self, vm_id):
         vmcache = self.vim_client.get_vm_in_cache(vm_id)
+        self._logger.info("vmcache is %s" % vmcache)
         return self._get_resource_from_vmcache(vmcache)
 
     def _get_resource_from_vmcache(self, vmcache):

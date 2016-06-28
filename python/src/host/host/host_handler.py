@@ -93,6 +93,7 @@ from gen.host.ttypes import VmDisksOpResponse
 from gen.resource.ttypes import CloneType
 from gen.resource.ttypes import Datastore
 from gen.resource.ttypes import InactiveImageDescriptor
+from gen.resource.ttypes import State
 from gen.scheduler.ttypes import PlaceResponse
 from gen.scheduler.ttypes import PlaceResultCode
 from gen.scheduler.ttypes import Score
@@ -1264,33 +1265,42 @@ class HostHandler(Host.Iface):
     @lock_vm
     def create_image_from_vm(self, request):
         """ Create an image by cloning it from a VM's disk. """
-        try:
-            linked_clone_os_path = self.hypervisor.vm_manager.get_linked_clone_path(request.vm_id)
-            if not linked_clone_os_path:
-                self._logger.info("Child disk not found for vm %s" % request.vm_id)
-                raise NotImplementedError()
 
-            datastore_id = self.hypervisor.datastore_manager.normalize(request.datastore)
+        vm_mgr = self.hypervisor.vm_manager
 
-            self.hypervisor.image_manager.create_image_with_vm_disk(datastore_id, request.tmp_image_path,
-                                                                    request.image_id, linked_clone_os_path)
-            return CreateImageFromVmResponse(CreateImageFromVmResultCode.OK)
-
-        except VmNotFoundException:
+        if not vm_mgr.has_vm(request.vm_id):
             return self._error_response(CreateImageFromVmResultCode.VM_NOT_FOUND,
                                         "VM %s not found on host" % request.vm_id, CreateImageFromVmResponse())
-        except DiskAlreadyExistException:
-            return self._error_response(CreateImageFromVmResultCode.IMAGE_ALREADY_EXIST,
-                                        "Image disk already exists", CreateImageFromVmResponse())
-        except DeviceBusyException:
+
+        vm = vm_mgr.get_resource(request.vm_id)
+        self._logger.info("vm in cache is %s" % vm)
+
+        if vm.state != State.STOPPED:
             return self._error_response(CreateImageFromVmResultCode.INVALID_VM_POWER_STATE,
                                         "VM %s not powered off" % request.vm_id, CreateImageFromVmResponse())
+
+        linked_clone_os_path = vm_mgr.get_linked_clone_path(request.vm_id)
+        if not linked_clone_os_path:
+            self._logger.info("Child disk not found for vm %s" % request.vm_id)
+            raise NotImplementedError()
+
+        try:
+            datastore_id = self.hypervisor.datastore_manager.normalize(request.datastore)
         except DatastoreNotFoundException:
             return self._error_response(CreateImageFromVmResultCode.SYSTEM_ERROR,
                                         "Invalid datastore %s" % request.datastore, CreateImageFromVmResponse())
+
+        try:
+            self.hypervisor.image_manager.create_image_with_vm_disk(datastore_id, request.tmp_image_path,
+                                                                    request.image_id, linked_clone_os_path)
+        except DiskAlreadyExistException:
+            return self._error_response(CreateImageFromVmResultCode.IMAGE_ALREADY_EXIST,
+                                        "Image disk already exists", CreateImageFromVmResponse())
         except:
             return self._error_response(CreateImageFromVmResultCode.SYSTEM_ERROR,
                                         str(sys.exc_info()[1]), CreateImageFromVmResponse())
+
+        return CreateImageFromVmResponse(CreateImageFromVmResultCode.OK)
 
     @log_request
     @error_handler(DeleteDirectoryResponse, DeleteDirectoryResultCode)
