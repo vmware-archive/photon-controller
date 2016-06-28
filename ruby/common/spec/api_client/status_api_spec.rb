@@ -36,19 +36,6 @@ describe EsxCloud::ApiClient do
           "stats" => {
             "READY" => "1"
           }
-        },
-        {
-          "component" => "CHAIRMAN",
-          "status" => "READY",
-          "instances" => [
-            {
-              "address" => "/172.31.253.66=>13000",
-              "status" => "READY"
-            }
-          ],
-          "stats" => {
-            "READY" => "1"
-          }
         }
       ],
       "status" => "READY"

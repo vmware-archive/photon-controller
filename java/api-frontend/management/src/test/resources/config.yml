@@ -17,8 +17,5 @@ pagination:
 
 status:
   components:
-    - housekeeper
-    - rootScheduler
-    - deployer
-    - cloudStore
+    - photon-controller
 

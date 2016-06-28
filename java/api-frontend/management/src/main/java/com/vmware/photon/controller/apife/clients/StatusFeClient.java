@@ -76,14 +76,8 @@ public class StatusFeClient {
     this.components = statusConfig.getComponents();
 
     statusProviderFactories = Maps.newEnumMap(Component.class);
-    statusProviderFactories.put(Component.HOUSEKEEPER,
+    statusProviderFactories.put(Component.PHOTON_CONTROLLER,
             new XenonStatusProviderFactory(photonControllerServerSet, this.executor));
-    statusProviderFactories.put(Component.CLOUD_STORE,
-        new XenonStatusProviderFactory(photonControllerServerSet, this.executor));
-    statusProviderFactories.put(Component.DEPLOYER,
-            new XenonStatusProviderFactory(photonControllerServerSet, this.executor));
-    statusProviderFactories.put(Component.ROOT_SCHEDULER,
-        new XenonStatusProviderFactory(photonControllerServerSet, this.executor));
   }
 
   public SystemStatus getSystemStatus() throws InternalException {

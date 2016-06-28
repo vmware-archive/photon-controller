@@ -43,25 +43,13 @@ public class SystemStatusTest {
     systemStatusBuilder.status(StatusType.ERROR);
     int i = 1;
     systemStatusBuilder.components(ImmutableList.of(
-        new ComponentStatusBuilder().component(Component.ROOT_SCHEDULER).status(StatusType.ERROR)
-            .instances(ImmutableList.of(
-                new ComponentInstanceBuilder().address("127.0.0." + i++).status(StatusType.ERROR).build()))
-            .build(),
-        new ComponentStatusBuilder().component(Component.HOUSEKEEPER).status(StatusType.READY)
+        new ComponentStatusBuilder().component(Component.PHOTON_CONTROLLER).status(StatusType.READY)
             .instances(ImmutableList.of(
                 new ComponentInstanceBuilder().address("127.0.0." + i++).status(StatusType.READY).build(),
                 new ComponentInstanceBuilder().address("127.0.0." + i++).status(StatusType.READY).build(),
                 new ComponentInstanceBuilder().address("127.0.0." + i++).status(StatusType.READY).build()))
-            .build(),
-        new ComponentStatusBuilder().component(Component.DEPLOYER).status(StatusType.INITIALIZING)
-            .instances(ImmutableList.of(
-                new ComponentInstanceBuilder().address("127.0.0." + i++).status(StatusType.READY).build(),
-                new ComponentInstanceBuilder().address("127.0.0." + i++).status(StatusType.READY)
-                    .buildInfo("version 0.0.1").build(),
-                new ComponentInstanceBuilder().address("127.0.0." + i++).status(StatusType.INITIALIZING)
-                    .message("In progress").stats(ImmutableMap.of("k", "v")).build()))
             .message("MGMT plane is deployed")
-            .stats(ImmutableMap.of("READY", "3"))
+            .stats(ImmutableMap.of("READY", "1"))
             .buildInfo("version 0.0.1")
             .build()
     ));
@@ -71,7 +59,7 @@ public class SystemStatusTest {
   /**
    * Dummy test case to make Intellij recognize this as a test class.
    */
-  @Test(enabled = false)
+  @Test(enabled = true)
   private void dummy() {
   }
 
@@ -139,19 +127,12 @@ public class SystemStatusTest {
     @Test
     public void testCorrectString() {
       String expectedString =
-          "SystemStatus{status=ERROR, components=[ComponentStatus{status=ERROR, message=null, " +
-              "stats=null, component=rootScheduler, instances=[ComponentInstance{status=ERROR, message=null, " +
-              "stats=null, address=127.0.0.1, buildInfo=null}], buildInfo=null}, ComponentStatus{status=READY, " +
-              "message=null, stats=null, component=housekeeper, instances=[ComponentInstance{status=READY, " +
-              "message=null, stats=null, address=127.0.0.2, buildInfo=null}, ComponentInstance{status=READY, " +
-              "message=null, stats=null, address=127.0.0.3, buildInfo=null}, ComponentInstance{status=READY, " +
-              "message=null, stats=null, address=127.0.0.4, buildInfo=null}], buildInfo=null}, " +
-              "ComponentStatus{status=INITIALIZING, message=MGMT plane is deployed, stats={READY=3}, " +
-              "component=deployer, instances=[ComponentInstance{status=READY, message=null, stats=null, " +
-              "address=127.0.0.5, buildInfo=null}, ComponentInstance{status=READY, message=null, stats=null, " +
-              "address=127.0.0.6, buildInfo=version 0.0.1}, ComponentInstance{status=INITIALIZING, " +
-              "message=In progress, stats={k=v}, address=127.0.0.7, buildInfo=null}], buildInfo=version 0.0.1}]}"
-      ;
+          "SystemStatus{status=ERROR, " +
+          "components=[ComponentStatus{status=READY, message=MGMT plane is deployed, stats={READY=1}, " +
+          "component=photon-controller, instances=[ComponentInstance{status=READY, message=null, stats=null, " +
+          "address=127.0.0.1, buildInfo=null}, ComponentInstance{status=READY, message=null, stats=null, " +
+          "address=127.0.0.2, buildInfo=null}, ComponentInstance{status=READY, message=null, stats=null, " +
+          "address=127.0.0.3, buildInfo=null}], buildInfo=version 0.0.1}]}";
       SystemStatus systemStatus = createSystemStatus();
       assertThat(systemStatus.toString(), is(expectedString));
     }

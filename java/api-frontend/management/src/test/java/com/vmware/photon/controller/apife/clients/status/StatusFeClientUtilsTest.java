@@ -33,7 +33,7 @@ public class StatusFeClientUtilsTest {
   @Test
   public void testComputeComponentStatusWithNoError() {
     ComponentStatus componentStatus = new ComponentStatusBuilder()
-        .component(Component.HOUSEKEEPER)
+        .component(Component.PHOTON_CONTROLLER)
         .instances(ImmutableList.of(
             new ComponentInstanceBuilder().status(StatusType.READY).build(),
             new ComponentInstanceBuilder().status(StatusType.INITIALIZING).build()
@@ -49,7 +49,7 @@ public class StatusFeClientUtilsTest {
   @Test
   public void testComputeComponentStatusWithPartialError() {
     ComponentStatus componentStatus = new ComponentStatusBuilder()
-        .component(Component.HOUSEKEEPER)
+        .component(Component.PHOTON_CONTROLLER)
         .instances(ImmutableList.of(
             new ComponentInstanceBuilder().status(StatusType.READY).build(),
             new ComponentInstanceBuilder().status(StatusType.ERROR).build()
@@ -65,7 +65,7 @@ public class StatusFeClientUtilsTest {
   @Test
   public void testComputeComponentStatusWithError() {
     ComponentStatus componentStatus = new ComponentStatusBuilder()
-        .component(Component.HOUSEKEEPER)
+        .component(Component.PHOTON_CONTROLLER)
         .instances(ImmutableList.of(
             new ComponentInstanceBuilder().status(StatusType.ERROR).build(),
             new ComponentInstanceBuilder().status(StatusType.ERROR).build()
