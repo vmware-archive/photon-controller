@@ -109,7 +109,7 @@ describe "host", management: true do
             fail("There should be an error when creating one without password")
           rescue EsxCloud::ApiError => e
             expect(e.response_code).to eq 400
-            expect(e.errors.first.message).to eq "password may not be null (was null)"
+            expect(e.errors.first.message).to include("password may not be null (was null)")
             expect(e.errors.first.code).to eq "InvalidEntity"
           rescue EsxCloud::CliError => e
             expect(e.output).to include("InvalidEntity")
@@ -151,7 +151,7 @@ describe "host", management: true do
             fail("There should be an error when creating one without username")
           rescue EsxCloud::ApiError => e
             expect(e.response_code).to eq 400
-            expect(e.errors.first.message).to eq "username may not be null (was null)"
+            expect(e.errors.first.message).to include("username may not be null (was null)")
             expect(e.errors.first.code).to eq "InvalidEntity"
           rescue EsxCloud::CliError => e
             expect(e.output).to include("InvalidEntity")
@@ -193,7 +193,7 @@ describe "host", management: true do
             fail("There should be an error when creating one without usage tag")
           rescue EsxCloud::ApiError => e
             expect(e.response_code).to eq 400
-            expect(e.errors.first.message).to eq "usageTags may not be null (was null)"
+            expect(e.errors.first.message).to include("usageTags may not be null (was null)")
             expect(e.errors.first.code).to eq "InvalidEntity"
           rescue EsxCloud::CliError => e
             expect(e.output).to include("InvalidEntity")
