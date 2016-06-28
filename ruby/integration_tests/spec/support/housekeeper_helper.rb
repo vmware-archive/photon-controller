@@ -23,6 +23,7 @@ class HousekeeperHelper
           local_datastore = host["datastoreServiceLinks"]["datastore1"]
           client.delete local_datastore unless local_datastore.nil?
         rescue Exception => e
+          STDERR.puts "  host: #{host.inspect}"
           STDERR.puts "  ignoring error: #{e}"
         end
       end
