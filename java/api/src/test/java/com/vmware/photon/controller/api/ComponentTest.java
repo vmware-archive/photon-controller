@@ -27,15 +27,13 @@ import java.util.EnumSet;
 public class ComponentTest {
   @Test
   public void testFromString() {
-    assertThat(Component.fromString("housekeeper"), is(Component.HOUSEKEEPER));
-    assertThat(Component.fromString("rootScheduler"), is(Component.ROOT_SCHEDULER));
-    assertThat(Component.fromString("deployer"), is(Component.DEPLOYER));
+    assertThat(Component.fromString("photon-controller"), is(Component.PHOTON_CONTROLLER));
   }
 
   @Test
   public void testFromStrings() {
-    assertThat(Component.fromStrings(ImmutableList.of("housekeeper", "deployer")), is
-        (Sets.newHashSet(EnumSet.of(Component.HOUSEKEEPER, Component.DEPLOYER))));
+    assertThat(Component.fromStrings(ImmutableList.of("photon-controller")), is
+        (Sets.newHashSet(EnumSet.of(Component.PHOTON_CONTROLLER))));
   }
 
   @Test (expectedExceptions = IllegalArgumentException.class)
@@ -45,6 +43,6 @@ public class ComponentTest {
 
   @Test (expectedExceptions = IllegalArgumentException.class)
   public void testContainsInvalid() {
-    Component.fromStrings(ImmutableList.of("housekeeper", "deployer", "invalid"));
+    Component.fromStrings(ImmutableList.of("photon-controller", "invalid"));
   }
 }
