@@ -270,7 +270,7 @@ public class DisconnectVmFromSwitchTaskService extends StatefulService {
         public void onFailure(Throwable t) {
           failTask(t);
         }
-      });
+      }, true);
     } catch (Throwable t) {
       failTask(t);
     }

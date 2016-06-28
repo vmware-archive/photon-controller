@@ -468,7 +468,7 @@ public class DisconnectVmFromSwitchTaskServiceTest {
     @Test
     public void testFailedToDeleteLogicalPort() throws Throwable {
       NsxClientMock nsxClientMock = new NsxClientMock.Builder()
-          .deleteLogicalPort(false)
+          .deleteLogicalPort(false, true)
           .build();
       doReturn(nsxClientMock).when(nsxClientFactory).create(anyString(), anyString(), anyString());
 
@@ -486,7 +486,7 @@ public class DisconnectVmFromSwitchTaskServiceTest {
     @Test
     public void testSuccessfullyDisconnect() throws Throwable {
       NsxClientMock nsxClientMock = new NsxClientMock.Builder()
-          .deleteLogicalPort(true)
+          .deleteLogicalPort(true, true)
           .build();
       doReturn(nsxClientMock).when(nsxClientFactory).create(anyString(), anyString(), anyString());
 
