@@ -29,6 +29,8 @@ module EsxCloud
       def find_all_networks
         response = @http_client.get(NETWORKS_ROOT)
         check_response("Find all networks", response, 200)
+        puts "Trying to find default networks"
+        puts response.inspect
 
         NetworkList.create_from_json(response.body)
       end
