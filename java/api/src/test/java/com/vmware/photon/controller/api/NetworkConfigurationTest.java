@@ -40,6 +40,7 @@ public class NetworkConfigurationTest {
       .networkManagerAddress("1.2.3.4")
       .networkManagerUsername("networkManagerUsername")
       .networkManagerPassword("networkManagerPassword")
+      .networkZoneId("networkZoneId")
       .networkTopRouterId("networkTopRouterId")
       .build();
 
@@ -89,7 +90,7 @@ public class NetworkConfigurationTest {
     public void testCorrectString() {
       String expectedString =
           "NetworkConfiguration{virtualNetworkEnabled=true, networkManagerAddress=1.2.3.4, " +
-          "networkTopRouterId=networkTopRouterId}";
+          "networkZoneId=networkZoneId, networkTopRouterId=networkTopRouterId}";
       assertThat(sampleNetworkConfiguration.toString(), is(expectedString));
     }
   }
