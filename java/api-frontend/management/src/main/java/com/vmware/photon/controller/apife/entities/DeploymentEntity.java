@@ -66,6 +66,8 @@ public class DeploymentEntity extends BaseEntity {
 
   private String networkManagerPassword;
 
+  private String networkZoneId;
+
   private String networkTopRouterId;
 
   private String ntpEndpoint;
@@ -244,6 +246,14 @@ public class DeploymentEntity extends BaseEntity {
     this.networkManagerPassword = networkManagerPassword;
   }
 
+  public String getNetworkZoneId() {
+    return networkZoneId;
+  }
+
+  public void setNetworkZoneId(String networkZoneId) {
+    this.networkZoneId = networkZoneId;
+  }
+
   public String getNetworkTopRouterId() {
     return networkTopRouterId;
   }
@@ -336,6 +346,7 @@ public class DeploymentEntity extends BaseEntity {
         && Objects.equals(this.getNetworkManagerAddress(), other.getNetworkManagerAddress())
         && Objects.equals(this.getNetworkManagerUsername(), other.getNetworkManagerUsername())
         && Objects.equals(this.getNetworkManagerPassword(), other.getNetworkManagerPassword())
+        && Objects.equals(this.getNetworkZoneId(), other.getNetworkZoneId())
         && Objects.equals(this.getNetworkTopRouterId(), other.getNetworkTopRouterId())
         && Objects.equals(this.getNtpEndpoint(), other.getNtpEndpoint())
         && Objects.equals(this.getImageDatastores(), other.getImageDatastores())
@@ -365,6 +376,7 @@ public class DeploymentEntity extends BaseEntity {
         .add("oauthSecurityGroups", StringUtils.join(this.getOauthSecurityGroups(), ','))
         .add("virtualNetworkEnabled", this.getVirtualNetworkEnabled())
         .add("networkManagerAddress", this.getNetworkManagerAddress())
+        .add("networkZoneId", this.getNetworkZoneId())
         .add("networkTopRouterId", this.getNetworkTopRouterId())
         .add("ntpEndpoint", this.getNtpEndpoint())
         .add("imageDatastores", StringUtils.join(this.getImageDatastores(), ','))

@@ -156,6 +156,8 @@ public class DeploymentXenonBackendTest {
         .networkManagerAddress("1.2.3.4")
         .networkManagerUsername("networkManagerUsername")
         .networkManagerPassword("networkManagerPassword")
+        .networkZoneId("networkZoneId")
+        .networkTopRouterId("networkTopRouterId")
         .build());
   }
 
@@ -237,6 +239,8 @@ public class DeploymentXenonBackendTest {
       assertThat(deployment.getNetworkManagerAddress(), is("1.2.3.4"));
       assertThat(deployment.getNetworkManagerUsername(), is("networkManagerUsername"));
       assertThat(deployment.getNetworkManagerPassword(), is("networkManagerPassword"));
+      assertThat(deployment.getNetworkZoneId(), is("networkZoneId"));
+      assertThat(deployment.getNetworkTopRouterId(), is("networkTopRouterId"));
       assertThat(ListUtils.isEqualList(deployment.getOauthSecurityGroups(),
           Arrays.asList(new String[]{"securityGroup1", "securityGroup2"})), is(true));
     }
@@ -723,6 +727,8 @@ public class DeploymentXenonBackendTest {
       assertThat(networkConfiguration.getNetworkManagerAddress(), is(entity.getNetworkManagerAddress()));
       assertThat(networkConfiguration.getNetworkManagerUsername(), is(entity.getNetworkManagerUsername()));
       assertThat(networkConfiguration.getNetworkManagerPassword(), is(entity.getNetworkManagerPassword()));
+      assertThat(networkConfiguration.getNetworkZoneId(), is(entity.getNetworkZoneId()));
+      assertThat(networkConfiguration.getNetworkTopRouterId(), is(entity.getNetworkTopRouterId()));
     }
 
     @Test(expectedExceptions = DeploymentNotFoundException.class)
@@ -1095,6 +1101,8 @@ public class DeploymentXenonBackendTest {
       deployment2.networkManagerAddress = deploymentCreateSpec.getNetworkConfiguration().getNetworkManagerAddress();
       deployment2.networkManagerUsername = deploymentCreateSpec.getNetworkConfiguration().getNetworkManagerUsername();
       deployment2.networkManagerPassword = deploymentCreateSpec.getNetworkConfiguration().getNetworkManagerPassword();
+      deployment2.networkZoneId = deploymentCreateSpec.getNetworkConfiguration().getNetworkZoneId();
+      deployment2.networkTopRouterId = deploymentCreateSpec.getNetworkConfiguration().getNetworkTopRouterId();
 
       xenonClient2.post(DeploymentServiceFactory.SELF_LINK, deployment2);
     }
