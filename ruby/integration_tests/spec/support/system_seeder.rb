@@ -120,8 +120,14 @@ module EsxCloud
       @host ||= create_host(deployment!, vm!)
     end
 
+    def network
+      @network ||= client.find_all_networks.items.find { |n| n.is_default }
+    rescue
+      nil
+    end
+
     def network!
-      @network ||= create_network
+      network || create_network
     end
 
     def persistent_disk!

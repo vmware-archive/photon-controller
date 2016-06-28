@@ -35,6 +35,11 @@ fi
 # Zookeeper tests should never be disabled since they verify the health of the devbox
 bundle exec rake zookeeper
 
+# Ensure there is a default network
+if [ -z "$DISABLE_DEFAULT_NETWORK_CREATE" ]; then
+  bundle exec rake seed:ensure_default_network
+fi
+
 # API tests
 if [ -z "$DISABLE_AUTHORIZATION_TESTS" ]; then
   bundle exec rake esxcloud:authorization
@@ -49,7 +54,6 @@ if [ -z "$DISABLE_CLI_TESTS" ]; then
   drivers+=(gocli)
 fi
 
-export NO_PARALLEL=1
 pids=()
 for driver in "${drivers[@]}"; do
   DRIVER="${driver}" bundle exec rake "esxcloud:${driver}" & pids+=($!)

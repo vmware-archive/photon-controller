@@ -133,10 +133,6 @@ RSpec.configure do |config|
   config.filter_run_excluding go_cli: true unless ENV["DRIVER"] == "gocli"
 
   config.before(:suite) do
-    unless ENV["DEPLOYER_TEST"]
-      EsxCloud::SystemSeeder.instance.network!
-    end
-
     if ENV["UPTIME"]
       get_system_status(ENV["MANAGEMENT_VM_COUNT"])
       HousekeeperHelper.clean_unreachable_datastores
