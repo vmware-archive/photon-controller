@@ -377,7 +377,7 @@ public class DeleteLogicalPortsTaskService extends StatefulService {
         new FutureCallback<Void>() {
           @Override
           public void onSuccess(Void v) {
-            progressTask(TaskState.SubStage.DELETE_SWITCH_PORT);
+            progressTask(TaskState.SubStage.WAIT_DELETE_TIER1_ROUTER_DOWN_LINK_PORT);
           }
 
           @Override
