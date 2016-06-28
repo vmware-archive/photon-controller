@@ -28,6 +28,7 @@ import com.google.common.util.concurrent.FutureCallback;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpStatus;
 import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -489,6 +490,14 @@ public class LogicalSwitchApiTest {
         );
         latch.await();
       }
+
+      @DataProvider(name = "DetachData")
+      public Object[][] getDetachData() {
+        return new Object[][] {
+            {true},
+            {false}
+        };
+      }
     }
 
     /**
@@ -506,9 +515,14 @@ public class LogicalSwitchApiTest {
         latch = new CountDownLatch(1);
       }
 
-      @Test
-      public void testSuccessfullyDeleted() throws Exception {
+      @Test(dataProvider = "DetachData")
+      public void testSuccessfullyDeleted(boolean forceDetach) throws Exception {
         final String logicalPortId = UUID.randomUUID().toString();
+
+        String url = logicalSwitchApi.logicalPortBasePath + "/" + logicalPortId;
+        if (forceDetach) {
+          url += "?detach=true";
+        }
 
         doAnswer(invocation -> {
           if (invocation.getArguments()[CALLBACK_ARG_INDEX] != null) {
@@ -517,7 +531,7 @@ public class LogicalSwitchApiTest {
           }
           return null;
         }).when(logicalSwitchApi)
-            .deleteAsync(eq(logicalSwitchApi.logicalPortBasePath + "/" + logicalPortId),
+            .deleteAsync(eq(url),
                 eq(HttpStatus.SC_OK),
                 any(FutureCallback.class));
 
@@ -533,15 +547,21 @@ public class LogicalSwitchApiTest {
                 fail("Should not have failed");
                 latch.countDown();
               }
-            }
+            },
+            forceDetach
         );
         latch.await();
       }
 
-      @Test
-      public void testFailedToDelete() throws Exception {
+      @Test(dataProvider = "DetachData")
+      public void testFailedToDelete(boolean forceDetach) throws Exception {
         final String errorMsg = "Service is not available";
         final String logicalPortId = UUID.randomUUID().toString();
+
+        String url = logicalSwitchApi.logicalPortBasePath + "/" + logicalPortId;
+        if (forceDetach) {
+          url += "?detach=true";
+        }
 
         doAnswer(invocation -> {
           if (invocation.getArguments()[CALLBACK_ARG_INDEX] != null) {
@@ -550,7 +570,7 @@ public class LogicalSwitchApiTest {
           }
           return null;
         }).when(logicalSwitchApi)
-            .deleteAsync(eq(logicalSwitchApi.logicalPortBasePath + "/" + logicalPortId),
+            .deleteAsync(eq(url),
                 eq(HttpStatus.SC_OK),
                 any(FutureCallback.class));
 

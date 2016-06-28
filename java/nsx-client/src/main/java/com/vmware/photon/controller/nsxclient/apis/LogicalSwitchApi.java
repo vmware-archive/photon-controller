@@ -102,10 +102,19 @@ public class LogicalSwitchApi extends NsxClientApi {
   }
 
   public void deleteLogicalPort(String id, FutureCallback<Void> responseCallback) throws Exception {
+    deleteLogicalPort(id, responseCallback, false);
+  }
 
-    deleteAsync(logicalPortBasePath + "/" + id,
-        HttpStatus.SC_OK,
-        responseCallback);
+  public void deleteLogicalPort(String id,
+                                FutureCallback<Void> responseCallback,
+                                boolean forceDetach) throws Exception {
+
+    String url = logicalPortBasePath + "/" + id;
+    if (forceDetach) {
+      url += "?detach=true";
+    }
+
+    deleteAsync(url, HttpStatus.SC_OK, responseCallback);
   }
 
   /**

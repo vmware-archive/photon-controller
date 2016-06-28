@@ -47,6 +47,7 @@ import com.vmware.photon.controller.nsxclient.models.TransportZoneCreateSpec;
 import com.google.common.util.concurrent.FutureCallback;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 
@@ -527,6 +528,26 @@ public class NsxClientMock extends NsxClient {
               .onFailure(error);
           return null;
         }).when(mockLogicalSwitchApi).deleteLogicalPort(any(String.class), any(FutureCallback.class));
+      }
+
+      return this;
+    }
+
+    public Builder deleteLogicalPort(boolean isSuccess, boolean forceDetach) throws Throwable {
+
+      if (isSuccess) {
+        doAnswer(invocation -> {
+          ((FutureCallback<Void>) invocation.getArguments()[1])
+              .onSuccess(null);
+          return null;
+        }).when(mockLogicalSwitchApi).deleteLogicalPort(any(String.class), any(FutureCallback.class), eq(forceDetach));
+      } else {
+        RuntimeException error = new RuntimeException("deleteLogicalPort failed");
+        doAnswer(invocation -> {
+          ((FutureCallback<Void>) invocation.getArguments()[1])
+              .onFailure(error);
+          return null;
+        }).when(mockLogicalSwitchApi).deleteLogicalPort(any(String.class), any(FutureCallback.class), eq(forceDetach));
       }
 
       return this;
