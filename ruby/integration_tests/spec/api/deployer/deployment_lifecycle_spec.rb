@@ -59,6 +59,9 @@ describe "deployment lifecycle", order: :defined, deployer: true do
   end
 
   after(:each) do
+    # Sleep 31 sec, because every 30 sec we poll the paused state and we don't want to miss the READY state check
+    # delete deployment might fail if we missed the check after state is set
+    sleep(31)
     destroy_created_deployment
   end
 
