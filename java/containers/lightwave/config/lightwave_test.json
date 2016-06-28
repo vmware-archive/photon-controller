@@ -7,12 +7,15 @@
   "isPrivileged": true,
   "useHostNetwork": true,
   "containerImage": "vmware/lightwave-sts",
+  "containerName": "lightwave",
   "portBindings": {
     "443":443
   },
   "volumeBindings": {
     "/devbox_data/java/containers/lightwave/build/config": "/etc/lightwave",
-    "/vagrant/log/lightwave": "/var/log"
+    "/vagrant/log/lightwave": "/var/log",
+    "/devbox_data/java/containers/lightwave/build/lightwave-config": "/var/lib/vmware/config",
+    "/sys/fs/cgroup":"/sys/fs/cgroup"
   },
   "dynamicParameters": {
     "LOG_DIRECTORY": "/vagrant/log"

@@ -186,6 +186,47 @@ Vagrant.configure("2") do |config|
       docker tag devbox/compileservices photon/compileservices
     EOS
 
+    dynamic_params = %Q(
+    {)
+    if ENV['ENABLE_AUTH'] == 'true'
+      if ENV['LW_DOMAIN_NAME']
+        dynamic_params += %Q(\n  "LIGHTWAVE_DOMAIN" : "#{ENV['LW_DOMAIN_NAME']}")
+      else
+        abort("auth is enabled for devbox lightwave, but domain is not set")
+      end
+
+      if ENV['LW_PASSWORD']
+        dynamic_params += %Q(,\n  "LIGHTWAVE_PASSWORD" : "#{ENV['LW_PASSWORD']}")
+      else
+        abort("auth is enabled for devbox lightwave, but password is not set")
+      end
+
+      if ENV['LW_HOSTNAME']
+        dynamic_params += %Q(,\n  "LIGHTWAVE_HOSTNAME" : "#{ENV['LW_HOSTNAME']}")
+      else
+        abort("auth is enabled for devbox lightwave, but hostname is not set")
+      end
+    end
+    dynamic_params += "\n}"
+
+    # Write dynamic_params file
+    config.vm.provision :shell, :privileged => false, :inline => <<-EOS
+cat > #{dynamic_params_file} <<'EOM'
+  #{dynamic_params}
+EOM
+  EOS
+
+    # Validate dynamic_params file, catch errors early
+    config.vm.provision :shell, :inline => <<-EOS
+      printf "Validating dynamic params JSON file:"
+      jsonlint #{dynamic_params_file}
+      if [[ $? != 0 ]]; then
+        echo "Validation failed for file:"
+        cat #{dynamic_params_file}
+        exit 1
+      fi
+    EOS
+
     #
     # Generate Lightwave container start script
     #
@@ -195,6 +236,10 @@ Vagrant.configure("2") do |config|
 out="#{SCRIPT_DIR}/start-lightwave"
 cat > $out <<-'EOM'
   #!/bin/bash
+
+  # Setup hostname for Lightwave
+  sed -i s/photon-.*/"#{ENV['LW_HOSTNAME']}.#{ENV['LW_DOMAIN_NAME']} #{ENV['LW_HOSTNAME']}"/ /etc/hosts
+  hostnamectl set-hostname #{ENV['LW_HOSTNAME']}; hostnamectl set-hostname --static #{ENV['LW_HOSTNAME']}
 
   docker build -t vmware/lightwave-sts /devbox_data/java/containers/lightwave
 
@@ -215,6 +260,28 @@ cat >> $out <<-EOM
   $(gen-docker-rm #{lightwave_config_file}) &> /dev/null || true
   $(gen-docker-run #{lightwave_config_file} /usr/sbin/init)
   echo "Start lightwave"
+
+  echo "Wait 30 seconds for Lightwave server to start"
+  sleep 30
+
+  # Set a static IP for Lightwave
+  # Note: Gateway needs to be set to only get a static IP, otherwise another IP can
+  # be obtained through DHCP for the same host.
+
+  echo "DNS=#{ENV['PUBLIC_LW_NETWORK_IP']}" >> /etc/systemd/network/10-dhcp-enp0s8.network
+  echo "Domains=#{ENV['LW_DOMAIN_NAME']}" >> /etc/systemd/network/10-dhcp-enp0s8.network
+  echo "Gateway=#{ENV["PUBLIC_NETWORK_GATEWAY"]}" >> /etc/systemd/network/10-dhcp-enp0s8.network
+
+  systemctl restart systemd-networkd systemd-resolved
+
+  chmod +x /devbox_data/java/containers/lightwave/config/add_lightwave_users.sh
+  chmod +x /devbox_data/java/containers/lightwave/config/update_token_expiration.sh
+
+  /devbox_data/java/containers/lightwave/config/add_lightwave_users.sh #{ENV['LW_PASSWORD']}
+  echo "Wait 45 seconds for Lightwave REST client to start"
+  sleep 45
+  /devbox_data/java/containers/lightwave/config/update_token_expiration.sh #{ENV['LW_PASSWORD']} #{ENV['LW_DOMAIN_NAME']} #{ENV['LW_HOSTNAME']}
+
 EOM
 chmod +x $out
 $out
