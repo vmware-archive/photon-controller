@@ -94,7 +94,9 @@ describe "virtual_network", :virtual_network => true do
       end
     end
 
-    it "should fail to create virtual network when routing type is invalid" do
+    # Temporarily disable this test since the current delete virtual network
+    # flow cannot clean up the virtual network in ERROR state properly
+    xit "should fail to create virtual network when routing type is invalid" do
       error_msg = "The supplied JSON could not be parsed: ROUTED_ISOLATED_BOTH was not one of [ROUTED, ISOLATED]"
 
       spec.routing_type = "ROUTED_ISOLATED_BOTH"
