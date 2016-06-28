@@ -50,6 +50,8 @@ module EsxCloud
         response = @http_client.get("/networks/?name=#{name}")
         check_response("Find Networks by name '#{name}'", response, 200)
 
+        puts "Get virtual subnet #{name}"
+        puts response.inspect
         VirtualNetworkList.create_from_json(response.body)
       end
 
