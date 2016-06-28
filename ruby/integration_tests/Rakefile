@@ -62,6 +62,25 @@ namespace :seed do
     task.pattern = FileList['spec/api/seed/seed_host_spec.rb']
     task.rspec_opts = "--tag seed_host --format RspecJunitFormatter --out reports/rspec-seed-host.xml --tag ~slow --profile"
   end
+
+  desc 'Ensure default network exists'
+  task :ensure_default_network do
+    EsxCloud::Config.init
+    EsxCloud::Config.client = ApiClientHelper.management
+
+    networks = EsxCloud::Config.client.find_all_networks.items
+    if 0 < networks.size do
+      # there already is a network, make sure there is a network marked as default
+      default = networks.find { |n| n.is_default }
+      EsxCloud::Config.client.set_default(networks.first.id) if default.nil?
+      return
+    end
+
+    port_group = EsxCloud::TestHelpers.get_vm_port_group
+    network = EsxCloud::Config.client.create_network(
+        EsxCloud::NetworkCreateSpec.new(random_name("network-"), "Seeder Network", [port_group]))
+    EsxCloud::Config.client.set_default(network.id)
+  end
 end
 
 namespace :monitor do
