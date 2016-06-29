@@ -11,20 +11,20 @@
 
 module EsxCloud
 
-  # Contains NetworkConfiguration Info
-  class NetworkConfiguration
+  # Contains NetworkConfigurationSpec Info
+  class NetworkConfigurationSpec
 
     attr_reader :virtual_network_enabled, :network_manager_address, :network_manager_username,
                 :network_manager_password, :network_zone_id, :network_top_router_id
 
     # @param [String] json
-    # @return [NetworkConfiguration]
+    # @return [NetworkConfigurationSpec]
     def self.create_from_json(json)
       create_from_hash(JSON.parse(json))
     end
 
     # @param [Hash] hash
-    # @return [NetworkConfiguration]
+    # @return [NetworkConfigurationSpec]
     def self.create_from_hash(hash)
       unless hash.is_a?(Hash) && hash.keys.to_set.superset?(%w(virtualNetworkEnabled).to_set)
         fail UnexpectedFormat, "Invalid NetworkConfiguration hash: #{hash}"
@@ -50,7 +50,7 @@ module EsxCloud
       @network_top_router_id = network_top_router_id
     end
 
-    # @param [NetworkConfiguration] other
+    # @param [NetworkConfigurationSpec] other
     def ==(other)
       @virtual_network_enabled == other.virtual_network_enabled &&
       @network_manager_address == other.network_manager_address &&

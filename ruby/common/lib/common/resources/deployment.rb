@@ -153,7 +153,7 @@ module EsxCloud
         loadbalancer_enabled: @loadbalancer_enabled,
         migrationStatus: @migration,
         clusterConfigurations: @cluster_configurations,
-        network_configuration: @network_configuration
+        networkConfiguration: @network_configuration.to_hash
       }
     end
 
