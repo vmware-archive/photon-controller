@@ -11,9 +11,6 @@ xenon:
   - http://{{{REGISTRATION_ADDRESS}}}:19000
 {{/CLOUDSTORE_PEER_NODES}}
 
-zookeeper:
-  quorum: "{{{ZOOKEEPER_QUORUM}}}"
-
 deployer:
   deployer:
     apifeEndpoint: "http://{{{APIFE_IP}}}:{{{APIFE_PORT}}}"

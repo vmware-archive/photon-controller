@@ -416,7 +416,7 @@ public class DeployerServiceGroupTest {
     private PhotonControllerXenonHost host2;
 
     @BeforeClass
-    private void setUpClass() throws IOException {
+    private void setUpClass() throws Throwable {
       listeningExecutorService = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(1));
       cloudStoreServerSet = mock(ServerSet.class);
       cloudStoreHelper = new CloudStoreHelper(cloudStoreServerSet);
@@ -433,6 +433,10 @@ public class DeployerServiceGroupTest {
       clusterManagerFactory = mock(ClusterManagerFactory.class);
       nsxClientFactory = mock(NsxClientFactory.class);
 
+      deployerConfig = ConfigBuilder.build(DeployerConfig.class,
+          DeployerServiceGroupTest.class.getResource(configFilePath).getPath());
+      TestHelper.setContainersConfig(deployerConfig);
+      storageDir = new File(deployerConfig.getXenonConfig().getStoragePath());
       FileUtils.deleteDirectory(storageDir);
     }
 

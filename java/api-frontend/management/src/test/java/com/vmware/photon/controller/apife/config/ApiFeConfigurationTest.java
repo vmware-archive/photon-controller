@@ -83,15 +83,4 @@ public class ApiFeConfigurationTest {
   public void testUseXenonBackend() throws Exception {
     assertThat(config.useXenonBackend(), is(true));
   }
-
-  @Test
-  public void testMinConfig() throws IOException, ConfigurationException {
-    config = ConfigurationUtils.parseConfiguration(
-        ApiFeConfigurationTest.class.getResource("/config_min.yml").getPath());
-
-    // When not set, default status config should show status for all components.
-    Set expectedComponents = EnumSet.allOf(Component.class);
-    assertThat(config.getStatusConfig().getComponents(), is(expectedComponents));
-    assertThat(config.useXenonBackend(), is(true));
-  }
 }

@@ -28,7 +28,6 @@ import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.common.thrift.ThriftModule;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
-import com.vmware.photon.controller.common.zookeeper.ZookeeperModule;
 import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfigurator;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfiguratorFactory;
@@ -41,8 +40,6 @@ import com.vmware.photon.controller.deployer.deployengine.HostManagementVmAddres
 import com.vmware.photon.controller.deployer.deployengine.HostManagementVmAddressValidatorFactory;
 import com.vmware.photon.controller.deployer.deployengine.HttpFileServiceClient;
 import com.vmware.photon.controller.deployer.deployengine.HttpFileServiceClientFactory;
-import com.vmware.photon.controller.deployer.deployengine.ZookeeperClient;
-import com.vmware.photon.controller.deployer.deployengine.ZookeeperClientFactory;
 import com.vmware.photon.controller.deployer.healthcheck.HealthCheckHelper;
 import com.vmware.photon.controller.deployer.healthcheck.HealthCheckHelperFactory;
 import com.vmware.photon.controller.deployer.healthcheck.XenonBasedHealthChecker;
@@ -62,7 +59,6 @@ import com.google.common.util.concurrent.MoreExecutors;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.Namespace;
-import org.apache.curator.framework.CuratorFramework;
 import org.apache.http.impl.nio.client.CloseableHttpAsyncClient;
 import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
 import org.apache.http.nio.conn.ssl.SSLIOSessionStrategy;
@@ -107,12 +103,9 @@ public class Main {
 
     new LoggingFactory(photonControllerConfig.getLogging(), "photon-controller-core").configure();
 
-    // the zk config info is currently taken from the cloud store config but this is temporary as
-    // zookeeper usage is going away so this will all be removed.
-    final ZookeeperModule zkModule = new ZookeeperModule(photonControllerConfig.getZookeeper());
     ThriftModule thriftModule = new ThriftModule();
 
-    ServiceHost xenonHost = startXenonHost(photonControllerConfig, zkModule, thriftModule, deployerConfig);
+    ServiceHost xenonHost = startXenonHost(photonControllerConfig, thriftModule, deployerConfig);
 
     // This approach can be simplified once the apife container is gone, but for the time being
     // it expects the first arg to be the string "server".
@@ -133,10 +126,8 @@ public class Main {
     });
   }
 
-  private static ServiceHost startXenonHost(PhotonControllerConfig photonControllerConfig, ZookeeperModule zkModule,
+  private static ServiceHost startXenonHost(PhotonControllerConfig photonControllerConfig,
                                             ThriftModule thriftModule, DeployerConfig deployerConfig) throws Throwable {
-    final CuratorFramework zkClient = zkModule.getCuratorFramework();
-
     // Values for CloudStore
     final HostClientFactory hostClientFactory = thriftModule.getHostClientFactory();
     final AgentControlClientFactory agentControlClientFactory = thriftModule.getAgentControlClientFactory();
@@ -208,36 +199,6 @@ public class Main {
     photonControllerXenonHost.start();
     logger.info("Started PhotonController Xenon Host");
 
-    // For now we register cloudstore, scheduler and housekeeper services with zookeeper so that users of
-    // the services don't need to change their lookup / usage behavior but now we use the same
-    // address / port for all these(for now the cloudstore address / port)
-    String cloudStoreXenonAddress =
-            photonControllerConfig.getXenonConfig().getRegistrationAddress();
-    Integer cloudStoreXenonPort = photonControllerConfig.getXenonConfig().getPort();
-    logger.info("Registering CloudStore Services Endpoint with Zookeeper at {}:{}",
-            cloudStoreXenonAddress, cloudStoreXenonPort);
-    registerServiceWithZookeeper(Constants.CLOUDSTORE_SERVICE_NAME, zkModule, zkClient,
-        cloudStoreXenonAddress, cloudStoreXenonPort);
-    logger.info("Registered CloudStore Services Endpoint with Zookeeper");
-
-    logger.info("Registering Scheduler Services Endpoint with Zookeeper at {}:{}",
-            cloudStoreXenonAddress, cloudStoreXenonPort);
-    registerServiceWithZookeeper(Constants.SCHEDULER_SERVICE_NAME, zkModule, zkClient,
-        cloudStoreXenonAddress, cloudStoreXenonPort);
-    logger.info("Registered Scheduler Services Endpoint with Zookeeper");
-
-    logger.info("Registering Housekeeper Services Endpoint with Zookeeper at {}:{}",
-        cloudStoreXenonAddress, cloudStoreXenonPort);
-    registerServiceWithZookeeper(Constants.HOUSEKEEPER_SERVICE_NAME, zkModule, zkClient,
-        cloudStoreXenonAddress, cloudStoreXenonPort);
-    logger.info("Registered Scheduler Services Endpoint with Zookeeper");
-
-    logger.info("Registering Deployer Services Endpoint with Zookeeper at {}:{}",
-        cloudStoreXenonAddress, cloudStoreXenonPort);
-    registerServiceWithZookeeper(Constants.DEPLOYER_SERVICE_NAME, zkModule, zkClient,
-        cloudStoreXenonAddress, cloudStoreXenonPort);
-    logger.info("Registered Deployer Services Endpoint with Zookeeper");
-
     logger.info("Creating SystemConfig instance");
     SystemConfig.createInstance(photonControllerXenonHost);
     logger.info("Created SystemConfig instance");
@@ -270,12 +231,6 @@ public class Main {
     return config;
   }
 
-  private static void registerServiceWithZookeeper(String serviceName, ZookeeperModule zkModule,
-                                                   CuratorFramework zkClient, String ipAddress, int port) {
-    zkModule.registerWithZookeeper(zkClient, serviceName, ipAddress, port, retryIntervalMillis);
-  }
-
-
   /**
    * Creates a new Deployer Service Group.
    *
@@ -291,9 +246,6 @@ public class Main {
                                                                   CloseableHttpAsyncClient httpClient) {
 
     logger.info("Creating Deployer Service Group");
-
-    // Set deployer context zookeeper quorum
-    deployerConfig.getDeployerContext().setZookeeperQuorum(deployerConfig.getZookeeper().getQuorum());
 
     // Set containers config to deployer config
     try {
@@ -333,8 +285,6 @@ public class Main {
         new com.vmware.photon.controller.core.Main.HealthCheckHelperFactoryImpl();
     final ServiceConfiguratorFactory serviceConfiguratorFactory =
         new com.vmware.photon.controller.core.Main.ServiceConfiguratorFactoryImpl();
-    final ZookeeperClientFactory zookeeperServerSetBuilderFactory = new com.vmware.photon.controller.core.Main
-        .ZookeeperClientFactoryImpl(deployerConfig);
     final HostManagementVmAddressValidatorFactory hostManagementVmAddressValidatorFactory = new
         com.vmware.photon.controller.core.Main.HostManagementVmAddressValidatorFactoryImpl();
 
@@ -346,7 +296,7 @@ public class Main {
     return new DeployerServiceGroup(deployerConfig.getDeployerContext(), dockerProvisionerFactory,
         apiClientFactory, deployerConfig.getContainersConfig(), listeningExecutorService,
         httpFileServiceClientFactory, authHelperFactory, healthCheckHelperFactory,
-        serviceConfiguratorFactory, zookeeperServerSetBuilderFactory, hostManagementVmAddressValidatorFactory,
+        serviceConfiguratorFactory, null, hostManagementVmAddressValidatorFactory,
         clusterManagerFactory);
   }
 
@@ -421,22 +371,6 @@ public class Main {
                                         String userName,
                                         String password) {
       return new HttpFileServiceClient(hostAddress, userName, password);
-    }
-  }
-
-  /**
-   * Implementation of ZookeeperClientFactory.
-   */
-  private static class ZookeeperClientFactoryImpl implements ZookeeperClientFactory {
-    private final DeployerConfig deployerConfig;
-
-    private ZookeeperClientFactoryImpl(final DeployerConfig deployerConfig) {
-      this.deployerConfig = deployerConfig;
-    }
-
-    @Override
-    public ZookeeperClient create() {
-      return new ZookeeperClient(deployerConfig.getZookeeper().getNamespace());
     }
   }
 }

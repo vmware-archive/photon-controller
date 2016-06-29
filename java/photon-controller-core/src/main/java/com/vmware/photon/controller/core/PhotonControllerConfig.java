@@ -15,7 +15,6 @@ package com.vmware.photon.controller.core;
 
 import com.vmware.photon.controller.common.logging.LoggingConfiguration;
 import com.vmware.photon.controller.common.xenon.host.XenonConfig;
-import com.vmware.photon.controller.common.zookeeper.ZookeeperConfig;
 import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.rootscheduler.SchedulerConfig;
 
@@ -37,10 +36,6 @@ public class PhotonControllerConfig {
 
   @Valid
   @NotNull
-  private ZookeeperConfig zookeeper;
-
-  @Valid
-  @NotNull
   private SchedulerConfig root = new SchedulerConfig();
 
   @Valid
@@ -54,10 +49,6 @@ public class PhotonControllerConfig {
 
   public XenonConfig getXenonConfig() {
     return this.xenonConfig;
-  }
-
-  public ZookeeperConfig getZookeeper() {
-    return zookeeper;
   }
 
   public SchedulerConfig getRoot() {
