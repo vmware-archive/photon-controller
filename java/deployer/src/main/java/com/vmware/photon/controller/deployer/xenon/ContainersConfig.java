@@ -37,7 +37,6 @@ public class ContainersConfig {
     LoadBalancer,
     ManagementUi,
     PhotonControllerCore,
-    Zookeeper,
   }
 
   /**

@@ -588,10 +588,6 @@ public class CreateContainerTaskServiceTest {
       String volumeBindingValue = volumeBindings.get(hostVolumeKeyName);
       assertThat(volumeBindingValue, containsString(ServiceFileConstants.CONTAINER_CONFIG_DIRECTORY));
       switch (containerType) {
-        case Zookeeper:
-          assertThat(volumeBindingValue, containsString(CreateContainerTaskService.ZOOKEEPER_CONF_DIR));
-          assertThat(volumeBindingValue, containsString(CreateContainerTaskService.ZOOKEEPER_DATA_DIR));
-          break;
         case LoadBalancer:
           assertThat(volumeBindingValue, containsString(CreateContainerTaskService.HAPROXY_CONF_DIR));
           break;

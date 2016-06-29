@@ -25,15 +25,12 @@ import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
 import com.vmware.photon.controller.common.xenon.deployment.NoMigrationDuringDeployment;
-import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
 import com.vmware.photon.controller.common.xenon.migration.NoMigrationDuringUpgrade;
 import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
 import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.xenon.validation.DefaultUuid;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
-import com.vmware.photon.controller.deployer.deployengine.ZookeeperClient;
-import com.vmware.photon.controller.deployer.xenon.DeployerServiceGroup;
 import com.vmware.photon.controller.deployer.xenon.entity.ContainerService;
 import com.vmware.photon.controller.deployer.xenon.entity.VmService;
 import com.vmware.photon.controller.deployer.xenon.task.ChangeHostModeTaskFactoryService;
@@ -62,9 +59,7 @@ import static com.google.common.base.Preconditions.checkState;
 import javax.annotation.Nullable;
 
 import java.util.Collection;
-import java.util.EnumSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -88,7 +83,6 @@ public class DeprovisionHostWorkflowService extends StatefulService {
      */
     public enum SubStage {
       PUT_HOST_TO_DEPROVISION_MODE,
-      RECONFIGURE_ZOOKEEPER,
       DELETE_AGENT,
       DEPROVISION_NETWORK,
       DELETE_ENTITIES,
@@ -284,9 +278,6 @@ public class DeprovisionHostWorkflowService extends StatefulService {
                     case PUT_HOST_TO_DEPROVISION_MODE:
                       putHostToDeprovisionMode(currentState, ignoreError);
                       break;
-                    case RECONFIGURE_ZOOKEEPER:
-                      updateZookeeperMapAndHostService(currentState, ignoreError);
-                      break;
                     case DELETE_AGENT:
                       handleDeleteAgent(currentState, ignoreError);
                       break;
@@ -314,11 +305,11 @@ public class DeprovisionHostWorkflowService extends StatefulService {
           public void onSuccess(@Nullable ChangeHostModeTaskService.State result) {
             switch (result.taskState.stage) {
               case FINISHED:
-                sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.RECONFIGURE_ZOOKEEPER);
+                sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.DELETE_AGENT);
                 break;
               case FAILED:
                 if (ignoreError) {
-                  sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.RECONFIGURE_ZOOKEEPER);
+                  sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.DELETE_AGENT);
                 } else {
                   State patchState = buildPatch(TaskState.TaskStage.FAILED, null, null);
                   patchState.taskState.failure = result.taskState.failure;
@@ -334,7 +325,7 @@ public class DeprovisionHostWorkflowService extends StatefulService {
           @Override
           public void onFailure(Throwable t) {
             if (ignoreError) {
-              sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.RECONFIGURE_ZOOKEEPER);
+              sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.DELETE_AGENT);
             } else {
               failTask(t);
             }
@@ -401,163 +392,6 @@ public class DeprovisionHostWorkflowService extends StatefulService {
     startState.hostServiceLink = currentState.hostServiceLink;
     startState.uniqueID = currentState.uniqueId;
     return startState;
-  }
-
-  private void updateZookeeperMapAndHostService(State currentState, boolean ignoreError) {
-    QueryTask queryTask = QueryTask.Builder.createDirectTask()
-        .setQuery(QueryTask.Query.Builder.create()
-            .addKindFieldClause(VmService.State.class)
-            .addFieldClause(VmService.State.FIELD_NAME_HOST_SERVICE_LINK, currentState.hostServiceLink)
-            .build())
-        .addOption(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT)
-        .build();
-
-    Operation queryPostOperation = Operation
-        .createPost(UriUtils.buildBroadcastRequestUri(
-            UriUtils.buildUri(getHost(), ServiceUriPaths.CORE_LOCAL_QUERY_TASKS),
-            ServiceUriPaths.DEFAULT_NODE_SELECTOR))
-        .setBody(queryTask)
-        .setCompletion(new Operation.CompletionHandler() {
-          @Override
-          public void handle(Operation operation, Throwable throwable) {
-            if (null != throwable) {
-              failTask(throwable);
-              return;
-            }
-
-            List<VmService.State> vmServiceStates =
-                QueryTaskUtils.getBroadcastQueryDocuments(VmService.State.class, operation);
-
-            if (vmServiceStates.size() == 0) {
-              sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.DELETE_AGENT);
-            } else {
-              updateZookeeperMapAndHostService(currentState, vmServiceStates, ignoreError);
-            }
-          }
-        });
-
-    sendRequest(queryPostOperation);
-  }
-
-  private void handleZookeeperStepFailure(Throwable failure, String logMessage, boolean ignoreError) {
-    if (ignoreError) {
-      ServiceUtils.logInfo(this, "Ignoring error: " + logMessage);
-      sendStageProgressPatch(TaskState.TaskStage.STARTED,
-          TaskState.SubStage.DELETE_AGENT);
-    } else {
-      failTask(failure);
-    }
-  }
-
-  private void updateZookeeperMapAndHostService(State currentState, List<VmService.State> vmServiceStates, boolean
-      ignoreError) {
-    QueryTask.Query kindClause = new QueryTask.Query()
-        .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
-        .setTermMatchValue(Utils.buildKind(DeploymentService.State.class));
-
-    QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
-    querySpecification.query = kindClause;
-    querySpecification.options = EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
-
-    sendRequest(
-        HostUtils.getCloudStoreHelper(this)
-            .createBroadcastPost(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS, ServiceUriPaths.DEFAULT_NODE_SELECTOR)
-            .setBody(QueryTask.create(querySpecification).setDirect(true))
-            .setCompletion(
-                (completedOp, failure) -> {
-                  if (null != failure) {
-                    handleZookeeperStepFailure(failure, "Error while getting DeploymentService", ignoreError);
-                    return;
-                  }
-
-                  try {
-                    Collection<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(completedOp);
-                    QueryTaskUtils.logQueryResults(DeprovisionHostWorkflowService.this, documentLinks);
-                    List<DeploymentService.State> deploymentServices =
-                        QueryTaskUtils.getBroadcastQueryDocuments(DeploymentService.State.class, completedOp);
-                    if (deploymentServices == null || deploymentServices.size() == 0) {
-                      Throwable t = new RuntimeException("DeploymentService must exist");
-                      handleZookeeperStepFailure(t, "No DeploymentService found", true);
-                      return;
-                    }
-
-                    DeploymentService.State deploymentService = deploymentServices.get(0);
-
-                    if (deploymentService.zookeeperIdToIpMap == null) {
-                      Throwable t = new RuntimeException("ZookeeperIdToIpMap cannot be null");
-                      handleZookeeperStepFailure(t, "ZookeeperIdToIpMap is null moving on", true);
-                      return;
-                    }
-
-                    // We are assuming there is just vm associated with this host
-                    String hostAddress = vmServiceStates.get(0).ipAddress;
-                    Integer zkIndex = null;
-                    for (Map.Entry<Integer, String> zkNode : deploymentService.zookeeperIdToIpMap.entrySet()) {
-                      if (zkNode.getValue().equals(hostAddress)) {
-                        zkIndex = zkNode.getKey();
-                        break;
-                      }
-                    }
-
-                    if (zkIndex == null) {
-                      Throwable t = new RuntimeException("Could not find this host in ZookeeperIdToIpMap");
-                      handleZookeeperStepFailure(t, "ZookeeperIdToIpMap does not have this host " + hostAddress
-                          , true);
-                      return;
-                    }
-
-                    DeploymentService.HostListChangeRequest hostListChangeRequest =
-                        new DeploymentService.HostListChangeRequest();
-                    hostListChangeRequest.kind = DeploymentService.HostListChangeRequest.Kind.UPDATE_ZOOKEEPER_INFO;
-                    hostListChangeRequest.zookeeperIpToRemove = hostAddress;
-
-                    FutureCallback callback = new FutureCallback() {
-                      @Override
-                      public void onSuccess(@Nullable Object result) {
-                        sendRequest(
-                            HostUtils.getCloudStoreHelper(DeprovisionHostWorkflowService.this)
-                                .createPatch(deploymentService.documentSelfLink)
-                                .setBody(hostListChangeRequest)
-                                .setCompletion(
-                                    (operation, throwable) -> {
-                                      if (null != throwable) {
-                                        handleZookeeperStepFailure(throwable, "Error happened while updating " +
-                                            "deploymentService zookeeper map", ignoreError);
-                                        return;
-                                      }
-
-                                      State patchState = buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage
-                                          .DELETE_AGENT, null);
-                                      patchState.vmServiceStates = vmServiceStates;
-                                      TaskUtils.sendSelfPatch(DeprovisionHostWorkflowService.this, patchState);
-                                    }
-                                )
-                        );
-                      }
-
-                      @Override
-                      public void onFailure(Throwable t) {
-                        failTask(t);
-                      }
-                    };
-
-                    // Update zookeeper config by calling reconfigure
-                    try {
-                      DeployerServiceGroup deployerServiceGroup =
-                          (DeployerServiceGroup) ((PhotonControllerXenonHost) getHost()).getDeployer();
-                      ZookeeperClient zookeeperClient =
-                          deployerServiceGroup.getZookeeperServerSetFactoryBuilder().create();
-
-                      zookeeperClient.removeServer(HostUtils.getDeployerContext(this).getZookeeperQuorum(),
-                          zkIndex, callback);
-                    } catch (Throwable t) {
-                      handleZookeeperStepFailure(t, "Error while reconfiguring zookeeper", ignoreError);
-                    }
-                  } catch (Throwable t) {
-                    failTask(t);
-                  }
-                }
-            ));
   }
 
   private void deprovisionNetwork(State currentState, HostService.State hostState, boolean ignoreError) {
