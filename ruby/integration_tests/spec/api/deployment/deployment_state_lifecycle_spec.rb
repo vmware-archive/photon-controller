@@ -39,6 +39,8 @@ describe "deployment state lifecycle", life_cycle: true do
         client.pause_system(deployment.id)
         expect(client.find_deployment_by_id(deployment.id).state).to eq "PAUSED"
 
+        # Sleep so that deployment state check is done
+        sleep(31)
         # tests that while system is paused no POSTs are accepted
         5.times do
           begin
@@ -56,6 +58,8 @@ describe "deployment state lifecycle", life_cycle: true do
 
         client.resume_system(deployment.id)
         expect(client.find_deployment_by_id(deployment.id).state).to eq "READY"
+        # Sleep so that deployment state check is done
+        sleep(31)
 
         # testing that after resuming the system we accept posts again
         tenant_name = random_name("tenant-")
@@ -73,6 +77,8 @@ describe "deployment state lifecycle", life_cycle: true do
 
       client.pause_background_tasks(deployment.id)
       expect(client.find_deployment_by_id(deployment.id).state).to eq "BACKGROUND_PAUSED"
+      # Sleep so that deployment state check is done
+      sleep(31)
 
       # tests that POSTs are accepted while system is pause_background_tasks
       tenant_name = random_name("tenant-")
@@ -84,6 +90,8 @@ describe "deployment state lifecycle", life_cycle: true do
       # resume system
       client.resume_system(deployment.id)
       expect(client.find_deployment_by_id(deployment.id).state).to eq "READY"
+      # Sleep so that deployment state check is done
+      sleep(31)
 
       # testing that after resuming the system we accept posts again
       tenant_name = random_name("tenant-")
