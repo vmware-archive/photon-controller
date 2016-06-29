@@ -47,4 +47,6 @@ public class DeploymentResourceRoutes {
   public static final String DEPLOYMENT_ADMIN_GROUPS_PATH = "/deployments/{id}/set_security_groups";
 
   public static final String SET_IMAGE_DATASTORES_ACTION = "/set_image_datastores";
+
+  public static final String LOGGER = "/logger";
 }

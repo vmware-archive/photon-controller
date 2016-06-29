@@ -37,6 +37,7 @@ import com.vmware.photon.controller.apife.backends.ProjectBackend;
 import com.vmware.photon.controller.apife.backends.TaskBackend;
 import com.vmware.photon.controller.apife.backends.TenantBackend;
 import com.vmware.photon.controller.apife.backends.VmBackend;
+import com.vmware.photon.controller.apife.backends.clients.PhotonControllerXenonRestClient;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommandFactory;
 import com.vmware.photon.controller.apife.config.AuthConfig;
@@ -44,6 +45,8 @@ import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
 import com.vmware.photon.controller.common.Constants;
+import com.vmware.photon.controller.common.xenon.host.LoggerControlService;
+import com.vmware.xenon.common.Operation;
 
 import com.google.common.base.Optional;
 import com.google.inject.Inject;
@@ -54,6 +57,7 @@ import static com.google.common.base.Preconditions.checkState;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 
 /**
@@ -74,6 +78,9 @@ public class DeploymentFeClient {
 
   private final TaskCommandFactory commandFactory;
   private final ExecutorService executor;
+
+  @Inject
+  PhotonControllerXenonRestClient photonControllerXenonRestClient;
 
   @Inject
   public DeploymentFeClient(
@@ -271,5 +278,27 @@ public class DeploymentFeClient {
 
   public ResourceList<Vm> getVmsPage(String pageLink) throws ExternalException {
     return vmBackend.getVmsPage(pageLink);
+  }
+
+
+  public Map<String, String> getLoggerStatus() throws InternalException {
+    logger.info("Getting logger status");
+    try {
+      Operation operation = photonControllerXenonRestClient.get(LoggerControlService.SELF_LINK);
+      return operation.getBody(Map.class);
+    } catch (Throwable e) {
+      throw new InternalException(e);
+    }
+  }
+
+  public Map<String, String> updateLoggerStatus(Map loggerUpdates) throws InternalException {
+    logger.info("Updating logger status");
+    try {
+      Operation operation = photonControllerXenonRestClient.broadcastPutObject(LoggerControlService.SELF_LINK,
+          loggerUpdates);
+      return operation.getBody(Map.class);
+    } catch (Throwable e) {
+      throw new InternalException(e);
+    }
   }
 }

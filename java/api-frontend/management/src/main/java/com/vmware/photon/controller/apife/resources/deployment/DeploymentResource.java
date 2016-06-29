@@ -20,6 +20,7 @@ import com.vmware.photon.controller.api.FinalizeMigrationOperation;
 import com.vmware.photon.controller.api.InitializeMigrationOperation;
 import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
+import com.vmware.photon.controller.api.common.Responses;
 import com.vmware.photon.controller.api.common.exceptions.external.ErrorCode;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.clients.DeploymentFeClient;
@@ -44,6 +45,7 @@ import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
+import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
@@ -51,6 +53,8 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
+
+import java.util.Map;
 
 /**
  * This resource is for Deployment related API.
@@ -288,5 +292,38 @@ public class DeploymentResource {
                   String.format("Desired state %s is invalid for performing deployment.", operation),
                   null);
     }
+  }
+
+  @GET
+  @Path(DeploymentResourceRoutes.LOGGER)
+  @ApiOperation(
+      value = "Get map of loggers and log level for each",
+      notes = "The returned Map only contains the logger information for the ROOT / global " +
+          "logger and any other loggers which have non-default values.  The Map keys " +
+          "will be either the value 'ROOT' for the ROOT logger or a class name for class " +
+          "level loggers.  The Map values are the log level for the corresponding key.  Valid " +
+          "values are Error, Warn, Info, Debug and Trace.",
+      response = Map.class)
+  @ApiResponses(value = {@ApiResponse(code = 200, message = "Get the system logger status")})
+  public Response get() throws InternalException {
+    return Responses.generateCustomResponse(Response.Status.OK, client.getLoggerStatus());
+  }
+
+  @PUT
+  @Path(DeploymentResourceRoutes.LOGGER)
+  @ApiOperation(
+      value = "Update logger status",
+      notes = "The Map passed into this API should be of the same structure as described in the " +
+          "GET call.  A best effort will be made to apply all of the included logging changes " +
+          "so that a single incorrect class name, for example, will not stop valid changes from " +
+          "being applied but if there are any errors an error will be returned, even if most or all " +
+          "other changes were successful.  An additional GET call can be made to find out the effective " +
+          "logger status.",
+      response = Map.class)
+  @ApiResponses(value = {@ApiResponse(code = 200, message = "Update the system logger status")})
+  public Response put(@Context Request request) throws InternalException {
+    ContainerRequest containerRequest = (ContainerRequest) request;
+    Map loggerUpdates = containerRequest.readEntity(Map.class);
+    return Responses.generateCustomResponse(Response.Status.OK, client.updateLoggerStatus(loggerUpdates));
   }
 }

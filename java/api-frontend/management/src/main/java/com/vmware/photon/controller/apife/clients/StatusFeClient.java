@@ -50,7 +50,7 @@ import java.util.concurrent.TimeUnit;
 
 
 /**
- * Frontend client used by {@link StatusResource}.
+ * Frontend client used by {@link com.vmware.photon.controller.apife.resources.status.StatusResource}.
  */
 @Singleton
 public class StatusFeClient {
@@ -75,6 +75,9 @@ public class StatusFeClient {
     this.executor = executor;
     this.components = statusConfig.getComponents();
 
+    // This is a map due to the fact that we historically had multiple component types.
+    // It is being left as one, at this point, since it may become useful again to have
+    // it as such.
     statusProviderFactories = Maps.newEnumMap(Component.class);
     statusProviderFactories.put(Component.PHOTON_CONTROLLER,
             new XenonStatusProviderFactory(photonControllerServerSet, this.executor));
