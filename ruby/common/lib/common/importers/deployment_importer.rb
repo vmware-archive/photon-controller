@@ -40,6 +40,14 @@ module EsxCloud
           deployment['oauth_tenant'],
           deployment['oauth_password'],
           deployment['oauth_security_groups']),
+        EsxCloud::NetworkConfigurationSpec.new(
+          deployment['virtual_network_enabled'],
+          deployment['network_manager_address'],
+          deployment['network_manager_username'],
+          deployment['network_manager_password'],
+          deployment['network_zone_id'],
+          deployment['network_top_router_id']
+        ),
         EsxCloud::StatsInfo.new(
           deployment['stats_enabled'],
           deployment['stats_store_endpoint'],
