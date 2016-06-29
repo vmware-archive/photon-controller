@@ -21,8 +21,8 @@ import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
-import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
+import com.vmware.photon.controller.deployer.helpers.xenon.DeployerTestConfig;
 import com.vmware.photon.controller.deployer.helpers.xenon.TestEnvironment;
 import com.vmware.photon.controller.deployer.helpers.xenon.TestHost;
 import com.vmware.photon.controller.deployer.xenon.ContainersConfig;
@@ -336,7 +336,7 @@ public class CreateContainerSpecLayoutTaskServiceTest {
 
     private static final String configFilePath = "/config.yml";
 
-    private DeployerConfig deployerConfig;
+    private DeployerTestConfig deployerTestConfig;
     private ContainersConfig containersConfig;
     private CreateContainerSpecLayoutTaskService.State startState;
     private TestEnvironment testEnvironment;
@@ -351,10 +351,10 @@ public class CreateContainerSpecLayoutTaskServiceTest {
     @BeforeClass
     public void setUpClass() throws Throwable {
 
-      deployerConfig = ConfigBuilder.build(DeployerConfig.class,
+      deployerTestConfig = ConfigBuilder.build(DeployerTestConfig.class,
           this.getClass().getResource(configFilePath).getPath());
-      TestHelper.setContainersConfig(deployerConfig);
-      containersConfig = deployerConfig.getContainersConfig();
+      TestHelper.setContainersConfig(deployerTestConfig);
+      containersConfig = deployerTestConfig.getContainersConfig();
 
       startState = buildValidStartState();
       startState.controlFlags = 0x0;

@@ -135,7 +135,7 @@ public class Main {
 
     // Values for Scheduler
     final ServerSet cloudStoreServerSet =
-        new StaticServerSet(new InetSocketAddress("127.0.0.1", Constants.CLOUD_STORE_PORT));
+        new StaticServerSet(new InetSocketAddress("127.0.0.1", Constants.PHOTON_CONTROLLER_PORT));
     final CloudStoreHelper cloudStoreHelper = new CloudStoreHelper(cloudStoreServerSet);
     final ConstraintChecker checker = new CloudStoreConstraintChecker(cloudStoreHelper);
 
@@ -187,8 +187,8 @@ public class Main {
     logger.info("Registered Housekeeper Xenon Service Group");
 
     logger.info("Creating Deployer Xenon Service Group");
-    DeployerServiceGroup deployerServiceGroup = createDeployerServiceGroup(deployerConfig, apiFeServerSet,
-        cloudStoreServerSet, httpClient);
+    DeployerServiceGroup deployerServiceGroup = createDeployerServiceGroup(photonControllerConfig,
+        deployerConfig, apiFeServerSet, cloudStoreServerSet, httpClient);
     logger.info("Created Deployer Xenon Service Group");
 
     logger.info("Registering Deployer Xenon Service Group");
@@ -240,7 +240,8 @@ public class Main {
    * @param httpClient
    * @return
    */
-  private static DeployerServiceGroup createDeployerServiceGroup (DeployerConfig deployerConfig,
+  private static DeployerServiceGroup createDeployerServiceGroup (PhotonControllerConfig photonControllerConfig,
+                                                                  DeployerConfig deployerConfig,
                                                                   ServerSet apiFeServerSet,
                                                                   ServerSet cloudStoreServerSet,
                                                                   CloseableHttpAsyncClient httpClient) {
@@ -285,6 +286,7 @@ public class Main {
         new com.vmware.photon.controller.core.Main.HealthCheckHelperFactoryImpl();
     final ServiceConfiguratorFactory serviceConfiguratorFactory =
         new com.vmware.photon.controller.core.Main.ServiceConfiguratorFactoryImpl();
+
     final HostManagementVmAddressValidatorFactory hostManagementVmAddressValidatorFactory = new
         com.vmware.photon.controller.core.Main.HostManagementVmAddressValidatorFactoryImpl();
 

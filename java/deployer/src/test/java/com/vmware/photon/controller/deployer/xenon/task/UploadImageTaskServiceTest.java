@@ -28,10 +28,10 @@ import com.vmware.photon.controller.common.xenon.exceptions.BadRequestException;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.common.xenon.validation.WriteOnce;
-import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.deployengine.ApiClientFactory;
 import com.vmware.photon.controller.deployer.helpers.ReflectionUtils;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
+import com.vmware.photon.controller.deployer.helpers.xenon.DeployerTestConfig;
 import com.vmware.photon.controller.deployer.helpers.xenon.MockHelper;
 import com.vmware.photon.controller.deployer.helpers.xenon.TestEnvironment;
 import com.vmware.photon.controller.deployer.helpers.xenon.TestHost;
@@ -359,7 +359,7 @@ public class UploadImageTaskServiceTest {
     public void setUpClass() throws Throwable {
       apiClientFactory = mock(ApiClientFactory.class);
       cloudStoreEnvironment = com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment.create(1);
-      deployerContext = ConfigBuilder.build(DeployerConfig.class,
+      deployerContext = ConfigBuilder.build(DeployerTestConfig.class,
           this.getClass().getResource("/config.yml").getPath()).getDeployerContext();
       listeningExecutorService = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(1));
       testEnvironment = new TestEnvironment.Builder()

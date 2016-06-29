@@ -23,9 +23,9 @@ import com.vmware.photon.controller.common.xenon.exceptions.BadRequestException;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.common.xenon.validation.WriteOnce;
-import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.helpers.ReflectionUtils;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
+import com.vmware.photon.controller.deployer.helpers.xenon.DeployerTestConfig;
 import com.vmware.photon.controller.deployer.helpers.xenon.TestEnvironment;
 import com.vmware.photon.controller.deployer.helpers.xenon.TestHost;
 import com.vmware.photon.controller.deployer.xenon.ContainersConfig;
@@ -322,19 +322,20 @@ public class BuildRuntimeConfigurationTaskServiceTest {
   public class EndToEndTest {
 
     private com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment cloudStoreEnvironment;
-    private DeployerConfig deployerConfig;
+    private DeployerTestConfig deployerTestConfig;
     private BuildRuntimeConfigurationTaskService.State startState;
     private TestEnvironment testEnvironment;
 
     @BeforeClass
     public void setUpClass() throws Throwable {
       cloudStoreEnvironment = com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment.create(1);
-      deployerConfig = ConfigBuilder.build(DeployerConfig.class, this.getClass().getResource("/config.yml").getPath());
-      TestHelper.setContainersConfig(deployerConfig);
+      deployerTestConfig =
+          ConfigBuilder.build(DeployerTestConfig.class, this.getClass().getResource("/config.yml").getPath());
+      TestHelper.setContainersConfig(deployerTestConfig);
       testEnvironment = new TestEnvironment.Builder()
           .cloudServerSet(cloudStoreEnvironment.getServerSet())
-          .containersConfig(deployerConfig.getContainersConfig())
-          .deployerContext(deployerConfig.getDeployerContext())
+          .containersConfig(deployerTestConfig.getContainersConfig())
+          .deployerContext(deployerTestConfig.getDeployerContext())
           .hostCount(1)
           .build();
     }

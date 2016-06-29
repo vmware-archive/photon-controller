@@ -15,7 +15,7 @@ package com.vmware.photon.controller.deployer.xenon;
 
 import com.vmware.photon.controller.common.config.BadConfigException;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
-import com.vmware.photon.controller.deployer.DeployerConfig;
+import com.vmware.photon.controller.deployer.helpers.xenon.DeployerTestConfig;
 import com.vmware.photon.controller.deployer.xenon.constant.DeployerDefaults;
 
 import org.apache.commons.io.FileUtils;
@@ -61,7 +61,7 @@ public class DeployerContextTest {
 
     @BeforeClass
     public void setUpClass() throws BadConfigException {
-      deployerContext = ConfigBuilder.build(DeployerConfig.class,
+      deployerContext = ConfigBuilder.build(DeployerTestConfig.class,
           DeployerContextTest.class.getResource("/config.yml").getPath()).getDeployerContext();
     }
 
@@ -129,7 +129,7 @@ public class DeployerContextTest {
 
     @BeforeClass
     public void setUpClass() throws BadConfigException {
-      deployerContext = ConfigBuilder.build(DeployerConfig.class,
+      deployerContext = ConfigBuilder.build(DeployerTestConfig.class,
           DeployerContextTest.class.getResource("/config_min.yml").getPath()).getDeployerContext();
     }
 

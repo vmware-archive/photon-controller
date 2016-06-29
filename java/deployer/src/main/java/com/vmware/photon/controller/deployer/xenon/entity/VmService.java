@@ -112,7 +112,7 @@ public class VmService extends StatefulService {
      * the same port number.
      */
     @Immutable
-    @DefaultInteger(Constants.CLOUD_STORE_PORT)
+    @DefaultInteger(Constants.PHOTON_CONTROLLER_PORT)
     public Integer deployerXenonPort;
   }
 

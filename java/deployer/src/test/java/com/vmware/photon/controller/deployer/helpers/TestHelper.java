@@ -35,8 +35,8 @@ import com.vmware.photon.controller.cloudstore.xenon.entity.TenantService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.TenantServiceFactory;
 import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.xenon.MultiHostEnvironment;
-import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfigurator;
+import com.vmware.photon.controller.deployer.helpers.xenon.DeployerTestConfig;
 import com.vmware.photon.controller.deployer.helpers.xenon.TestEnvironment;
 import com.vmware.photon.controller.deployer.xenon.ContainersConfig;
 import com.vmware.photon.controller.deployer.xenon.DeployerContext;
@@ -850,8 +850,8 @@ public class TestHelper {
         is(TaskState.TaskStage.FINISHED));
   }
 
-  public static void setContainersConfig(DeployerConfig deployerConfig) {
-    deployerConfig.setContainersConfig(new ServiceConfigurator().generateContainersConfig(TestHelper.class
+  public static void setContainersConfig(DeployerTestConfig deployerTestConfig) {
+    deployerTestConfig.setContainersConfig(new ServiceConfigurator().generateContainersConfig(TestHelper.class
         .getResource("/configurations/").getPath()));
   }
 }
