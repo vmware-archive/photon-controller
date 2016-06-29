@@ -65,8 +65,8 @@ public class NetworkToSubnetRedirectionFilterTest {
         },
         {
             "GET",
-            UriBuilder.fromPath("/networks").build().toString(),
-            UriBuilder.fromPath(SubnetResourceRoutes.API).build().toString()
+            UriBuilder.fromPath("/networks?name=name1").build().toString(),
+            UriBuilder.fromPath(SubnetResourceRoutes.API).queryParam("name", "name1").build().toString()
         },
         {
             "POST",
