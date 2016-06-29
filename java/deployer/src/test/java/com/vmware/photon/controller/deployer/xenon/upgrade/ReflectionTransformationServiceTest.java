@@ -21,8 +21,8 @@ import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
 import com.vmware.photon.controller.common.xenon.migration.UpgradeInformation;
-import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
+import com.vmware.photon.controller.deployer.helpers.xenon.DeployerTestConfig;
 import com.vmware.photon.controller.deployer.helpers.xenon.TestEnvironment;
 import com.vmware.photon.controller.deployer.xenon.DeployerContext;
 import com.vmware.photon.controller.deployer.xenon.entity.SampleService;
@@ -54,15 +54,15 @@ public class ReflectionTransformationServiceTest {
 
   private TestEnvironment env;
 
-  private DeployerConfig deployerConfig;
+  private DeployerTestConfig deployerTestConfig;
 
   private DeployerContext deployerContext;
 
   @BeforeMethod
   public void setUp() throws Throwable {
-    deployerConfig = ConfigBuilder.build(DeployerConfig.class,
+    deployerTestConfig = ConfigBuilder.build(DeployerTestConfig.class,
         this.getClass().getResource(configFilePath).getPath());
-    deployerContext = spy(deployerConfig.getDeployerContext());
+    deployerContext = spy(deployerTestConfig.getDeployerContext());
 
     env = new TestEnvironment.Builder()
         .hostCount(1)

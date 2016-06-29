@@ -22,10 +22,10 @@ import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
-import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.deployengine.ApiClientFactory;
 import com.vmware.photon.controller.deployer.helpers.ReflectionUtils;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
+import com.vmware.photon.controller.deployer.helpers.xenon.DeployerTestConfig;
 import com.vmware.photon.controller.deployer.helpers.xenon.TestEnvironment;
 import com.vmware.photon.controller.deployer.helpers.xenon.TestHost;
 import com.vmware.photon.controller.deployer.xenon.DeployerContext;
@@ -370,7 +370,7 @@ public class DeleteVmTaskServiceTest {
 
     @BeforeMethod
     public void setUpTest() throws Throwable {
-      deployerContext = ConfigBuilder.build(DeployerConfig.class,
+      deployerContext = ConfigBuilder.build(DeployerTestConfig.class,
           CreateManagementVmTaskServiceTest.class.getResource(configFilePath).getPath())
           .getDeployerContext();
 

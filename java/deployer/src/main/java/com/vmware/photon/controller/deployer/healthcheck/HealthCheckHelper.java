@@ -46,7 +46,7 @@ public class HealthCheckHelper {
 
         // add the xenon health checker for all other services
         List<Integer> ports = new ArrayList<>();
-        ports.add(Constants.CLOUD_STORE_PORT);
+        ports.add(Constants.PHOTON_CONTROLLER_PORT);
         multiTypeHealthChecker.addHealthChecker(new XenonBasedHealthChecker(service, ipAddress, ports));
         this.healthChecker = multiTypeHealthChecker;
         break;

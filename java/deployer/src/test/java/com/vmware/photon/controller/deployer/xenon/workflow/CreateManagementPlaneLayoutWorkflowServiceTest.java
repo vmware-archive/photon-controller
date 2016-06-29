@@ -20,9 +20,9 @@ import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
-import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.helpers.ReflectionUtils;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
+import com.vmware.photon.controller.deployer.helpers.xenon.DeployerTestConfig;
 import com.vmware.photon.controller.deployer.helpers.xenon.TestEnvironment;
 import com.vmware.photon.controller.deployer.helpers.xenon.TestHost;
 import com.vmware.photon.controller.deployer.xenon.ContainersConfig;
@@ -517,7 +517,7 @@ public class CreateManagementPlaneLayoutWorkflowServiceTest {
     private final Set<String> sharedUsageTags = new HashSet<>(
         Arrays.asList(UsageTag.CLOUD.name(), UsageTag.MGMT.name()));
 
-    private DeployerConfig deployerConfig;
+    private DeployerTestConfig deployerTestConfig;
     private ContainersConfig containersConfig;
     private CreateManagementPlaneLayoutWorkflowService.State startState;
     private TestEnvironment testEnvironment = null;
@@ -526,9 +526,9 @@ public class CreateManagementPlaneLayoutWorkflowServiceTest {
     @BeforeClass
     public void setUpClass() throws Throwable {
       cloudStoreMachine = com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment.create(1);
-      deployerConfig = ConfigBuilder.build(DeployerConfig.class,
+      deployerTestConfig = ConfigBuilder.build(DeployerTestConfig.class,
           this.getClass().getResource(configFilePath).getPath());
-      TestHelper.setContainersConfig(deployerConfig);
+      TestHelper.setContainersConfig(deployerTestConfig);
 
       startState = buildValidStartState(null, null);
       startState.controlFlags = null;
@@ -538,7 +538,7 @@ public class CreateManagementPlaneLayoutWorkflowServiceTest {
 
     @BeforeMethod
     public void setUpTest() throws Exception {
-      containersConfig = deployerConfig.getContainersConfig();
+      containersConfig = deployerTestConfig.getContainersConfig();
     }
 
     @AfterMethod

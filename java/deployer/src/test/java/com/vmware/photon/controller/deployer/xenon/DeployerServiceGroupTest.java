@@ -24,7 +24,6 @@ import com.vmware.photon.controller.common.xenon.MultiHostEnvironment;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
 import com.vmware.photon.controller.common.xenon.host.XenonConfig;
-import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfiguratorFactory;
 import com.vmware.photon.controller.deployer.deployengine.ApiClientFactory;
 import com.vmware.photon.controller.deployer.deployengine.AuthHelperFactory;
@@ -34,6 +33,7 @@ import com.vmware.photon.controller.deployer.deployengine.HttpFileServiceClientF
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClientFactory;
 import com.vmware.photon.controller.deployer.healthcheck.HealthCheckHelperFactory;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
+import com.vmware.photon.controller.deployer.helpers.xenon.DeployerTestConfig;
 import com.vmware.photon.controller.nsxclient.NsxClientFactory;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.services.common.LuceneDocumentIndexService;
@@ -74,7 +74,7 @@ public class DeployerServiceGroupTest {
   private DeployerServiceGroup deployerServiceGroup;
 
   private Collection<String> serviceSelfLinks;
-  private DeployerConfig deployerConfig;
+  private DeployerTestConfig deployerTestConfig;
   private ServerSet cloudStoreServerSet;
   private CloudStoreHelper cloudStoreHelper;
   private AgentControlClientFactory agentControlClientFactory;
@@ -128,9 +128,9 @@ public class DeployerServiceGroupTest {
 
     @BeforeClass
     public void setUpClass() throws IOException, BadConfigException {
-      deployerConfig = ConfigBuilder.build(DeployerConfig.class,
+      deployerTestConfig = ConfigBuilder.build(DeployerTestConfig.class,
           DeployerServiceGroupTest.class.getResource(configFilePath).getPath());
-      TestHelper.setContainersConfig(deployerConfig);
+      TestHelper.setContainersConfig(deployerTestConfig);
 
       listeningExecutorService = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(1));
       cloudStoreServerSet = mock(ServerSet.class);
@@ -148,7 +148,7 @@ public class DeployerServiceGroupTest {
       clusterManagerFactory = mock(ClusterManagerFactory.class);
       nsxClientFactory = mock(NsxClientFactory.class);
 
-      storageDir = new File(deployerConfig.getXenonConfig().getStoragePath());
+      storageDir = new File(deployerTestConfig.getXenonConfig().getStoragePath());
       FileUtils.deleteDirectory(storageDir);
 
     }
@@ -156,17 +156,17 @@ public class DeployerServiceGroupTest {
     @BeforeMethod
     public void setUp() throws Throwable {
       host = new PhotonControllerXenonHost(
-          deployerConfig.getXenonConfig(),
+          deployerTestConfig.getXenonConfig(),
           hostClientFactory,
           agentControlClientFactory,
           nsxClientFactory,
           cloudStoreHelper);
 
       deployerServiceGroup = new DeployerServiceGroup(
-          deployerConfig.getDeployerContext(),
+          deployerTestConfig.getDeployerContext(),
           dockerProvisionerFactory,
           apiClientFactory,
-          deployerConfig.getContainersConfig(),
+          deployerTestConfig.getContainersConfig(),
           listeningExecutorService,
           httpFileServiceClientFactory,
           authHelperFactory,
@@ -201,17 +201,17 @@ public class DeployerServiceGroupTest {
 
       // Check that host creates storage directory
       host = new PhotonControllerXenonHost(
-          deployerConfig.getXenonConfig(),
+          deployerTestConfig.getXenonConfig(),
           hostClientFactory,
           agentControlClientFactory,
           nsxClientFactory,
           cloudStoreHelper);
 
       deployerServiceGroup = new DeployerServiceGroup(
-          deployerConfig.getDeployerContext(),
+          deployerTestConfig.getDeployerContext(),
           dockerProvisionerFactory,
           apiClientFactory,
-          deployerConfig.getContainersConfig(),
+          deployerTestConfig.getContainersConfig(),
           listeningExecutorService,
           httpFileServiceClientFactory,
           authHelperFactory,
@@ -242,9 +242,9 @@ public class DeployerServiceGroupTest {
 
     @BeforeClass
     private void setUpClass() throws IOException, BadConfigException {
-      deployerConfig = ConfigBuilder.build(DeployerConfig.class,
+      deployerTestConfig = ConfigBuilder.build(DeployerTestConfig.class,
           DeployerServiceGroupTest.class.getResource(configFilePath).getPath());
-      TestHelper.setContainersConfig(deployerConfig);
+      TestHelper.setContainersConfig(deployerTestConfig);
 
       listeningExecutorService = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(1));
       cloudStoreServerSet = mock(ServerSet.class);
@@ -262,24 +262,24 @@ public class DeployerServiceGroupTest {
       clusterManagerFactory = mock(ClusterManagerFactory.class);
       nsxClientFactory = mock(NsxClientFactory.class);
 
-      storageDir = new File(deployerConfig.getXenonConfig().getStoragePath());
+      storageDir = new File(deployerTestConfig.getXenonConfig().getStoragePath());
       FileUtils.deleteDirectory(storageDir);
     }
 
     @BeforeMethod
     private void setUp() throws Throwable {
       host = new PhotonControllerXenonHost(
-          deployerConfig.getXenonConfig(),
+          deployerTestConfig.getXenonConfig(),
           hostClientFactory,
           agentControlClientFactory,
           nsxClientFactory,
           cloudStoreHelper);
 
       deployerServiceGroup = new DeployerServiceGroup(
-          deployerConfig.getDeployerContext(),
+          deployerTestConfig.getDeployerContext(),
           dockerProvisionerFactory,
           apiClientFactory,
-          deployerConfig.getContainersConfig(),
+          deployerTestConfig.getContainersConfig(),
           listeningExecutorService,
           httpFileServiceClientFactory,
           authHelperFactory,
@@ -331,9 +331,9 @@ public class DeployerServiceGroupTest {
 
     @BeforeClass
     private void setUpClass() throws IOException, BadConfigException {
-      deployerConfig = ConfigBuilder.build(DeployerConfig.class,
+      deployerTestConfig = ConfigBuilder.build(DeployerTestConfig.class,
           DeployerServiceGroupTest.class.getResource(configFilePath).getPath());
-      TestHelper.setContainersConfig(deployerConfig);
+      TestHelper.setContainersConfig(deployerTestConfig);
 
       listeningExecutorService = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(1));
       cloudStoreServerSet = mock(ServerSet.class);
@@ -351,24 +351,24 @@ public class DeployerServiceGroupTest {
       clusterManagerFactory = mock(ClusterManagerFactory.class);
       nsxClientFactory = mock(NsxClientFactory.class);
 
-      storageDir = new File(deployerConfig.getXenonConfig().getStoragePath());
+      storageDir = new File(deployerTestConfig.getXenonConfig().getStoragePath());
       FileUtils.deleteDirectory(storageDir);
     }
 
     @BeforeMethod
     private void setUp() throws Throwable {
       host = new PhotonControllerXenonHost(
-          deployerConfig.getXenonConfig(),
+          deployerTestConfig.getXenonConfig(),
           hostClientFactory,
           agentControlClientFactory,
           nsxClientFactory,
           cloudStoreHelper);
 
       deployerServiceGroup = new DeployerServiceGroup(
-          deployerConfig.getDeployerContext(),
+          deployerTestConfig.getDeployerContext(),
           dockerProvisionerFactory,
           apiClientFactory,
-          deployerConfig.getContainersConfig(),
+          deployerTestConfig.getContainersConfig(),
           listeningExecutorService,
           httpFileServiceClientFactory,
           authHelperFactory,
@@ -433,10 +433,10 @@ public class DeployerServiceGroupTest {
       clusterManagerFactory = mock(ClusterManagerFactory.class);
       nsxClientFactory = mock(NsxClientFactory.class);
 
-      deployerConfig = ConfigBuilder.build(DeployerConfig.class,
+      deployerTestConfig = ConfigBuilder.build(DeployerTestConfig.class,
           DeployerServiceGroupTest.class.getResource(configFilePath).getPath());
-      TestHelper.setContainersConfig(deployerConfig);
-      storageDir = new File(deployerConfig.getXenonConfig().getStoragePath());
+      TestHelper.setContainersConfig(deployerTestConfig);
+      storageDir = new File(deployerTestConfig.getXenonConfig().getStoragePath());
       FileUtils.deleteDirectory(storageDir);
     }
 

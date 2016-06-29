@@ -32,7 +32,7 @@ public class ApiFeStaticConfiguration extends Configuration implements ApiFeConf
   private int apifePort = Constants.MANAGEMENT_API_PORT;
 
   @JsonProperty("xenon_port")
-  private int xenonPort = Constants.CLOUD_STORE_PORT;
+  private int xenonPort = Constants.PHOTON_CONTROLLER_PORT;
 
   @Range(min = 1, max = 2048)
   @JsonProperty("background_workers")

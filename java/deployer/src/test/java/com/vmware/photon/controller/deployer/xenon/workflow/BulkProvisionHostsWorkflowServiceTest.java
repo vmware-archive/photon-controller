@@ -25,10 +25,10 @@ import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.BadRequestException;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
-import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.deployengine.HttpFileServiceClientFactory;
 import com.vmware.photon.controller.deployer.helpers.ReflectionUtils;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
+import com.vmware.photon.controller.deployer.helpers.xenon.DeployerTestConfig;
 import com.vmware.photon.controller.deployer.helpers.xenon.MockHelper;
 import com.vmware.photon.controller.deployer.helpers.xenon.TestEnvironment;
 import com.vmware.photon.controller.deployer.helpers.xenon.TestHost;
@@ -313,7 +313,7 @@ public class BulkProvisionHostsWorkflowServiceTest {
     private final File storageDirectory = new File("/tmp/deployAgent");
     private final File vibDirectory = new File("/tmp/deployAgent/vibs");
 
-    private DeployerConfig deployerConfig;
+    private DeployerTestConfig deployerTestConfig;
     private AgentControlClientFactory agentControlClientFactory;
     private HostClientFactory hostClientFactory;
     private NsxClientFactory nsxClientFactory;
@@ -330,9 +330,9 @@ public class BulkProvisionHostsWorkflowServiceTest {
       vibDirectory.mkdirs();
       vibSourceFile = TestHelper.createSourceFile(null, vibDirectory);
 
-      deployerConfig = ConfigBuilder.build(DeployerConfig.class,
+      deployerTestConfig = ConfigBuilder.build(DeployerTestConfig.class,
           this.getClass().getResource(configFilePath).getPath());
-      TestHelper.setContainersConfig(deployerConfig);
+      TestHelper.setContainersConfig(deployerTestConfig);
       listeningExecutorService = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(1));
 
       startState = buildValidStartState(null);
@@ -355,8 +355,8 @@ public class BulkProvisionHostsWorkflowServiceTest {
     private void createTestEnvironment(int hostCount) throws Throwable {
 
       testEnvironment = new TestEnvironment.Builder()
-          .containersConfig(deployerConfig.getContainersConfig())
-          .deployerContext(deployerConfig.getDeployerContext())
+          .containersConfig(deployerTestConfig.getContainersConfig())
+          .deployerContext(deployerTestConfig.getDeployerContext())
           .agentControlClientFactory(agentControlClientFactory)
           .hostClientFactory(hostClientFactory)
           .nsxClientFactory(nsxClientFactory)
@@ -461,9 +461,9 @@ public class BulkProvisionHostsWorkflowServiceTest {
         Integer mixedHostCount) throws Throwable {
 
       MockHelper.mockHttpFileServiceClient(httpFileServiceClientFactory, true);
-      MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(),
+      MockHelper.mockCreateScriptFile(deployerTestConfig.getDeployerContext(),
           ProvisionHostTaskService.CONFIGURE_SYSLOG_SCRIPT_NAME, true);
-      MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(),
+      MockHelper.mockCreateScriptFile(deployerTestConfig.getDeployerContext(),
           ProvisionHostTaskService.INSTALL_VIB_SCRIPT_NAME, true);
 
       createTestEnvironment(hostCount);
@@ -492,9 +492,9 @@ public class BulkProvisionHostsWorkflowServiceTest {
         Integer cloudHostCout,
         Integer mixedHostCount) throws Throwable {
       MockHelper.mockHttpFileServiceClient(httpFileServiceClientFactory, true);
-      MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(),
+      MockHelper.mockCreateScriptFile(deployerTestConfig.getDeployerContext(),
           ProvisionHostTaskService.CONFIGURE_SYSLOG_SCRIPT_NAME, true);
-      MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(),
+      MockHelper.mockCreateScriptFile(deployerTestConfig.getDeployerContext(),
           ProvisionHostTaskService.INSTALL_VIB_SCRIPT_NAME, true);
       createTestEnvironment(hostCount);
       createHostEntities(mgmtHostCount, cloudHostCout, mixedHostCount);
@@ -519,9 +519,9 @@ public class BulkProvisionHostsWorkflowServiceTest {
     @Test(enabled = false)
     public void testEndToEndFailNoMgmtHost() throws Throwable {
       MockHelper.mockHttpFileServiceClient(httpFileServiceClientFactory, true);
-      MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(),
+      MockHelper.mockCreateScriptFile(deployerTestConfig.getDeployerContext(),
           ProvisionHostTaskService.CONFIGURE_SYSLOG_SCRIPT_NAME, true);
-      MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(),
+      MockHelper.mockCreateScriptFile(deployerTestConfig.getDeployerContext(),
           ProvisionHostTaskService.INSTALL_VIB_SCRIPT_NAME, true);
       MockHelper.mockProvisionAgent(agentControlClientFactory, hostClientFactory, true);
       createTestEnvironment(1);

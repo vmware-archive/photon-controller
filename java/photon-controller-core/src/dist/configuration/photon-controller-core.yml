@@ -4,12 +4,12 @@ xenon:
   registrationAddress: "{{{REGISTRATION_ADDRESS}}}"
   storagePath: "{{{CLOUD-STORE_XENON_STORAGE_PATH}}}"
   peerNodes:
-{{#CLOUDSTORE_PEER_NODES}}
+{{#PHOTON_CONTROLLER_PEER_NODES}}
   - http://{{peerAddress}}:{{peerPort}}
-{{/CLOUDSTORE_PEER_NODES}}
-{{^CLOUDSTORE_PEER_NODES}}
+{{/PHOTON_CONTROLLER_PEER_NODES}}
+{{^PHOTON_CONTROLLER_PEER_NODES}}
   - http://{{{REGISTRATION_ADDRESS}}}:19000
-{{/CLOUDSTORE_PEER_NODES}}
+{{/PHOTON_CONTROLLER_PEER_NODES}}
 
 deployer:
   deployer:
@@ -26,35 +26,6 @@ deployer:
     tenantName: "{{{TENANT_NAME}}}"
     vibDirectory: "{{{VIB_DIRECTORY}}}"
     sharedSecret: "{{{SHARED_SECRET}}}"
-
-  xenon:
-    bindAddress: "0.0.0.0"
-    registrationAddress: "{{{REGISTRATION_ADDRESS}}}"
-    port: 18000
-    storagePath: "{{{DEPLOYER_XENON_STORAGE_PATH}}}"
-    peerNodes:
-{{#DEPLOYER_PEER_NODES}}
-    - http://{{peerAddress}}:{{peerPort}}
-{{/DEPLOYER_PEER_NODES}}
-{{^DEPLOYER_PEER_NODES}}
-    - http://{{{REGISTRATION_ADDRESS}}}:18000
-{{/DEPLOYER_PEER_NODES}}
-
-  logging:
-    console:
-      enabled: true
-    file:
-      enabled: true
-      currentLogFilename: {{{LOG_DIRECTORY}}}/deployer.log
-      archivedLogFilenamePattern: {{{LOG_DIRECTORY}}}/deployer-%d.log.gz
-      logFormat: "%-5p [%d{ISO8601}] %c: %m\n%ex"
-    syslog:
-      enabled: {{{ENABLE_SYSLOG}}}
-      {{#ENABLE_SYSLOG}}
-      host: "{{{SYSLOG_ENDPOINT}}}"
-      logFormat: "%-5p [%d{ISO8601}] [deployer] [%property{instance}]%X{request}%X{task} %c: %m\n%ex"
-      facility: LOCAL0
-      {{/ENABLE_SYSLOG}}
 
 logging:
   file:
