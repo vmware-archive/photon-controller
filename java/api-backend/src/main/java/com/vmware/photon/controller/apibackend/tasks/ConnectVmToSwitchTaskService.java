@@ -30,7 +30,7 @@ import com.vmware.photon.controller.nsxclient.datatypes.NsxSwitch;
 import com.vmware.photon.controller.nsxclient.models.LogicalPort;
 import com.vmware.photon.controller.nsxclient.models.LogicalPortAttachment;
 import com.vmware.photon.controller.nsxclient.models.LogicalPortCreateSpec;
-import com.vmware.photon.controller.nsxclient.models.LogicalPortCreateSpecBuilder;
+import com.vmware.photon.controller.nsxclient.builders.LogicalPortCreateSpecBuilder;
 import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;

@@ -35,7 +35,7 @@ import com.vmware.photon.controller.nsxclient.datatypes.NsxRouter;
 import com.vmware.photon.controller.nsxclient.models.IPSubnet;
 import com.vmware.photon.controller.nsxclient.models.LogicalPort;
 import com.vmware.photon.controller.nsxclient.models.LogicalPortCreateSpec;
-import com.vmware.photon.controller.nsxclient.models.LogicalPortCreateSpecBuilder;
+import com.vmware.photon.controller.nsxclient.builders.LogicalPortCreateSpecBuilder;
 import com.vmware.photon.controller.nsxclient.models.LogicalRouterDownLinkPort;
 import com.vmware.photon.controller.nsxclient.models.LogicalRouterDownLinkPortCreateSpec;
 import com.vmware.photon.controller.nsxclient.models.LogicalRouterLinkPortOnTier0;
