@@ -18,7 +18,8 @@ import sys
 
 from common.lock import lock_with
 from common.blocking_dict import BlockingDict
-from gen.agent.ttypes import VmCache, TaskCache, PowerState, TaskState
+from gen.agent.ttypes import VmCache, TaskCache, TaskState
+from gen.resource.ttypes import VmPowerState
 from host.hypervisor.datastore_manager import DatastoreNotFoundException
 from host.hypervisor.vm_manager import VmNotFoundException
 
@@ -191,7 +192,12 @@ class VimCache:
                 self._logger.debug("cache update: add vm name %s" % vm.name)
                 self._vm_name_to_ref[change.val] = str(object.obj)
             elif change.name == "runtime.powerState":
-                vm.power_state = PowerState._NAMES_TO_VALUES[change.val]
+                if change.val == "poweredOff":
+                    vm.power_state = VmPowerState.STOPPED
+                elif change.val == "poweredOn":
+                    vm.power_state = VmPowerState.STARTED
+                elif change.val == "suspended":
+                    vm.power_state = VmPowerState.SUSPENDED
             elif change.name == "config":
                 vm.memory_mb = change.val.hardware.memoryMB
                 vm.num_cpu = change.val.hardware.numCPU

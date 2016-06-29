@@ -17,12 +17,10 @@ import threading
 
 from common.kind import Flavor
 from common.kind import Unit
-from gen.agent.ttypes import PowerState
 from host.hypervisor.exceptions import VmNotFoundException
 from host.hypervisor.exceptions import IsoNotAttachedException
 from host.hypervisor.resources import Disk
 from host.hypervisor.resources import Resource
-from host.hypervisor.resources import State
 from host.hypervisor.resources import Vm
 from host.hypervisor.esx.host_client import DeviceNotFoundException
 from host.hypervisor.esx.path_util import datastore_to_os_path
@@ -58,14 +56,6 @@ class VmManager(object):
         self._ds_manager = ds_manager
         self._lock = threading.Lock()
         self._datastore_cache = {}
-
-    @staticmethod
-    def _power_state_to_resource_state(power_state):
-        return {
-            PowerState.poweredOn: State.STARTED,
-            PowerState.poweredOff: State.STOPPED,
-            PowerState.suspended: State.SUSPENDED
-        }[power_state]
 
     def power_on_vm(self, vm_id):
         self.vim_client.power_on_vm(vm_id)
@@ -226,7 +216,7 @@ class VmManager(object):
                                      False, -1, None, datastore_uuid)
                 vm_resource.disks.append(disk_resource)
 
-        vm_resource.state = self._power_state_to_resource_state(vmcache.power_state)
+        vm_resource.state = vmcache.power_state
 
         datastore_name = self._get_datastore_name_from_ds_path(vmcache.path)
         vm_resource.datastore = self._get_datastore_uuid(datastore_name)

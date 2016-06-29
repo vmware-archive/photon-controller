@@ -245,7 +245,7 @@ public class ResourceReserveStepCmd extends StepCommand {
 
     vm.setId(entity.getId());
     vm.setDisks(attachedDisks);
-    vm.setState(com.vmware.photon.controller.resource.gen.State.STOPPED);
+    vm.setState(com.vmware.photon.controller.resource.gen.VmPowerState.STOPPED);
     vm.setFlavor_info(getFlavor(entity));
     vm.setProject_id(entity.getProjectId());
     vm.setTenant_id(this.getTenantId(entity));

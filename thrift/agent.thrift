@@ -19,18 +19,11 @@ include 'server_address.thrift'
 include 'stats_plugin.thrift'
 include 'tracing.thrift'
 
-// Power state
-enum PowerState {
-  poweredOff = 0
-  poweredOn = 1
-  suspended = 2
-}
-
 // Vm Cache
 struct VmCache {
   1: required string name
   2: required string path
-  3: required PowerState power_state
+  3: required resource.VmPowerState power_state
   4: required i32 memory_mb
   5: required i32 num_cpu
   6: required list<string> disks

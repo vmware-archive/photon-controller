@@ -20,7 +20,7 @@ from mock import MagicMock
 from nose.plugins.skip import SkipTest
 from testconfig import config
 
-from gen.agent.ttypes import PowerState
+from gen.resource.ttypes import VmPowerState
 from host.hypervisor.esx.vim_client import VimClient
 from host.hypervisor.esx.vm_config import EsxVmConfigSpec
 from host.hypervisor.vm_manager import VmNotFoundException
@@ -80,7 +80,7 @@ class TestVimClient(unittest.TestCase):
         found_vms = [v for v in vms if v.name == vm_id]
         assert_that(len(found_vms), is_(1))
         assert_that(found_vms[0].name, is_(vm_id))
-        assert_that(found_vms[0].power_state, is_(PowerState.poweredOff))
+        assert_that(found_vms[0].power_state, is_(VmPowerState.STOPPED))
         assert_that(found_vms[0].memory_mb, is_(64))
         assert_that(found_vms[0].path, starts_with("[%s]" % datastore))
         assert_that(len(found_vms[0].disks), is_(1))
@@ -136,13 +136,13 @@ class TestVimClient(unittest.TestCase):
         self.vim_client.wait_for_task(task)
 
         # Wait until it disappears from the cache
-        self._wait_vm_power_status(vm_id, PowerState.poweredOn)
+        self._wait_vm_power_status(vm_id, VmPowerState.STARTED)
 
         # Verify VM state in cache is updated
         vms = self.vim_client.get_vms_in_cache()
         found_vms = [v for v in vms if v.name == vm_id]
         assert_that(len(found_vms), is_(1))
-        assert_that(found_vms[0].power_state, is_(PowerState.poweredOn))
+        assert_that(found_vms[0].power_state, is_(VmPowerState.STARTED))
         assert_that(found_vms[0].name, is_(vm_id))
         assert_that(found_vms[0].memory_mb, is_(64))
         assert_that(found_vms[0].path, starts_with("[%s]" % datastore))
