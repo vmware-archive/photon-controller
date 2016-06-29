@@ -14,15 +14,19 @@
 package com.vmware.photon.controller.apife.filter;
 
 import com.google.inject.Singleton;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.utils.URLEncodedUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
 import javax.ws.rs.container.PreMatching;
+import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
 
 import java.net.URI;
+import java.util.List;
 
 /**
  * Custom RequestFilter used to redirect calls made to deprecated api starting with /network to /subnet.
@@ -70,7 +74,14 @@ public class NetworkToSubnetRedirectionFilter implements ContainerRequestFilter 
                                        URI oldRequestURI,
                                        String oldPath) {
     String newPath = oldPath.replace("/networks", "/subnets");
-    URI newRequestURI = uriInfo.getBaseUriBuilder().path(newPath).build();
+    List<NameValuePair> params = URLEncodedUtils.parse(oldRequestURI, "UTF-8");
+
+    UriBuilder uriBuilder = uriInfo.getBaseUriBuilder().path(newPath);
+    for (NameValuePair pair : params) {
+      uriBuilder.queryParam(pair.getName(), pair.getValue());
+    }
+
+    URI newRequestURI = uriBuilder.build();
     requestContext.setRequestUri(newRequestURI);
     logger.info("Redirecting {} to {}", oldRequestURI.toString(), newRequestURI.toString());
   }
