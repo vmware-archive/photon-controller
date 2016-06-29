@@ -11,9 +11,14 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package com.vmware.photon.controller.nsxclient.models;
+package com.vmware.photon.controller.nsxclient.builders;
 
 import com.vmware.photon.controller.nsxclient.datatypes.NsxSwitch;
+import com.vmware.photon.controller.nsxclient.models.LogicalPortAttachment;
+import com.vmware.photon.controller.nsxclient.models.LogicalPortCreateSpec;
+import com.vmware.photon.controller.nsxclient.models.NsxPair;
+import com.vmware.photon.controller.nsxclient.models.PacketAddressClassifier;
+import com.vmware.photon.controller.nsxclient.models.Tag;
 
 import java.util.List;
 
