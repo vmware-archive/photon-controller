@@ -20,6 +20,7 @@ import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
 import com.vmware.photon.controller.common.xenon.deployment.MigrateDuringDeployment;
 import com.vmware.photon.controller.common.xenon.migration.NoMigrationDuringUpgrade;
+import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.common.xenon.validation.WriteOnce;
@@ -111,6 +112,7 @@ public class VmService extends StatefulService {
      * the same port number.
      */
     @Immutable
+    @DefaultInteger(Constants.CLOUD_STORE_PORT)
     public Integer deployerXenonPort;
   }
 

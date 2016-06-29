@@ -15,22 +15,15 @@ package com.vmware.photon.controller.deployer.deployengine;
 
 import com.vmware.photon.controller.common.zookeeper.ZookeeperServiceReader;
 
-import com.google.common.util.concurrent.FutureCallback;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.BoundedExponentialBackoffRetry;
-import org.apache.zookeeper.AsyncCallback;
-import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 
 import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -81,61 +74,6 @@ public class ZookeeperClient {
       logger.error("Rethrowing error ", e);
       throw new RuntimeException(e);
     }
-  }
-
-  public void addServer(String zookeeperInstance, String joiningServerIp, String joiningServerZookeeperPort, Integer
-      myId, FutureCallback callback) {
-    AsyncCallback.DataCallback dataCallback = getDataCallback(callback);
-
-    try (CuratorFramework zkClient =
-             connectToZookeeper(zookeeperInstance)) {
-      List<String> joiningServers = new ArrayList<>();
-      String serverStr = "server." + myId + "=" + joiningServerIp + ":2888:3888;" + joiningServerZookeeperPort;
-      logger.info("Adding server: " + serverStr);
-      joiningServers.add(serverStr);
-      LinkedList<Integer> results = new LinkedList<Integer>();
-      zkClient.getZookeeperClient().getZooKeeper().reconfig(joiningServers, null,
-          null, -1, dataCallback, results);
-
-    } catch (Exception e) {
-      logger.error("Ignoring Zookeeper reconfig error ", e);
-      throw new RuntimeException(e);
-    }
-  }
-
-  public void removeServer(String zookeeperInstance, Integer myId, FutureCallback callback) {
-    AsyncCallback.DataCallback dataCallback = getDataCallback(callback);
-
-    try (CuratorFramework zkClient =
-             connectToZookeeper(zookeeperInstance)) {
-      List<String> leavingServers = new ArrayList<>();
-      leavingServers.add(myId.toString());
-      logger.info("Removing server: " + myId.toString());
-      LinkedList<Integer> results = new LinkedList<Integer>();
-      zkClient.getZookeeperClient().getZooKeeper().reconfig(null, leavingServers,
-          null, -1, dataCallback, results);
-
-    } catch (Exception e) {
-      logger.error("Ignoring Zookeeper reconfig error ", e);
-      throw new RuntimeException(e);
-    }
-  }
-
-  private AsyncCallback.DataCallback getDataCallback(FutureCallback callback) {
-    return new AsyncCallback.DataCallback() {
-      @Override
-      public void processResult(int rc, String path, Object ctx, byte[] data, Stat stat) {
-        switch (KeeperException.Code.get(rc)) {
-          case OK:
-            logger.info("Zookeeper successfully reconfigured");
-            callback.onSuccess(null);
-            break;
-          default:
-            logger.error("Zookeeper returned error code during reconfig" + KeeperException.Code.get(rc));
-            callback.onFailure(new RuntimeException("Failed to reconfigure zookeeper"));
-        }
-      }
-    };
   }
 
   private CuratorFramework connectToZookeeper(String zookeeperInstance) {

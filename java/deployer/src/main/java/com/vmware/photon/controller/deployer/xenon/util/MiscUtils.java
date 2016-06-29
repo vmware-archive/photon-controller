@@ -28,7 +28,6 @@ import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
-import com.vmware.photon.controller.deployer.xenon.ContainersConfig;
 import com.vmware.photon.controller.deployer.xenon.constant.DeployerDefaults;
 import com.vmware.photon.controller.deployer.xenon.task.CopyStateTaskService;
 import com.vmware.xenon.common.Operation;
@@ -130,7 +129,7 @@ public class MiscUtils {
 
             Vm zookeeperVm = null;
             for (Vm vm : result.getItems()) {
-              if (vm.getMetadata().containsValue(ContainersConfig.ContainerType.Zookeeper.name())) {
+              if (vm.getMetadata().containsValue("Zookeeper")) {
                 ServiceUtils.logInfo(service, "Found zookeeper vm");
                 zookeeperVm = vm;
                 break;
