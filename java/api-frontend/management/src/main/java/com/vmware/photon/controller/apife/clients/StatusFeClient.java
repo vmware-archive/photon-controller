@@ -20,6 +20,7 @@ import com.vmware.photon.controller.api.SystemStatus;
 import com.vmware.photon.controller.api.builders.ComponentInstanceBuilder;
 import com.vmware.photon.controller.api.builders.ComponentStatusBuilder;
 import com.vmware.photon.controller.apife.BackendTaskExecutor;
+import com.vmware.photon.controller.apife.backends.clients.PhotonControllerXenonRestClient;
 import com.vmware.photon.controller.apife.clients.status.StatusFeClientUtils;
 import com.vmware.photon.controller.apife.clients.status.StatusProviderFactory;
 import com.vmware.photon.controller.apife.clients.status.XenonStatusProviderFactory;
@@ -28,8 +29,10 @@ import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
 import com.vmware.photon.controller.common.PhotonControllerServerSet;
 import com.vmware.photon.controller.common.clients.StatusProvider;
 import com.vmware.photon.controller.common.thrift.ServerSet;
+import com.vmware.photon.controller.common.xenon.host.LoggerControlService;
 import com.vmware.photon.controller.status.gen.Status;
 import com.vmware.photon.controller.status.gen.StatusType;
+import com.vmware.xenon.common.Operation;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
@@ -50,7 +53,7 @@ import java.util.concurrent.TimeUnit;
 
 
 /**
- * Frontend client used by {@link StatusResource}.
+ * Frontend client used by {@link com.vmware.photon.controller.apife.resources.status.StatusResource}.
  */
 @Singleton
 public class StatusFeClient {
@@ -60,6 +63,9 @@ public class StatusFeClient {
   private final Set<Component> components;
   private final Map<Component, StatusProviderFactory> statusProviderFactories;
   private final ExecutorService executor;
+
+  @Inject
+  PhotonControllerXenonRestClient photonControllerXenonRestClient;
 
   /**
    * Creating StatusFeClient with component server sets to iterate through individual servers to get their status.
@@ -75,6 +81,9 @@ public class StatusFeClient {
     this.executor = executor;
     this.components = statusConfig.getComponents();
 
+    // This is a map due to the fact that we historically had multiple component types.
+    // It is being left as one, at this point, since it may become useful again to have
+    // it as such.
     statusProviderFactories = Maps.newEnumMap(Component.class);
     statusProviderFactories.put(Component.PHOTON_CONTROLLER,
             new XenonStatusProviderFactory(photonControllerServerSet, this.executor));
@@ -139,6 +148,27 @@ public class StatusFeClient {
     systemStatus.setStatus(overall);
     logger.info("Returning system status {}", systemStatus);
     return systemStatus;
+  }
+
+  public Map<String, String> getLoggerStatus() throws InternalException {
+    logger.info("Getting logger status");
+    try {
+      Operation operation = photonControllerXenonRestClient.get(LoggerControlService.SELF_LINK);
+      return operation.getBody(Map.class);
+    } catch (Throwable e) {
+      throw new InternalException(e);
+    }
+  }
+
+  public Map<String, String> updateLoggerStatus(Map loggerUpdates) throws InternalException {
+    logger.info("Updating logger status");
+    try {
+      Operation operation = photonControllerXenonRestClient.broadcastPutObject(LoggerControlService.SELF_LINK,
+          loggerUpdates);
+      return operation.getBody(Map.class);
+    } catch (Throwable e) {
+      throw new InternalException(e);
+    }
   }
 
   @VisibleForTesting
