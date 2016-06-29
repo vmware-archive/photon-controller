@@ -30,7 +30,6 @@ public class ServiceFileConstants {
   public static final Map<ContainersConfig.ContainerType, String> CONTAINER_CONFIG_FILES =
       ImmutableMap.<ContainersConfig.ContainerType, String>builder()
       .put(ContainersConfig.ContainerType.LoadBalancer, "haproxy_release.json")
-      .put(ContainersConfig.ContainerType.Zookeeper, "zookeeper_release.json")
       .put(ContainersConfig.ContainerType.PhotonControllerCore, "photon-controller-core_release.json")
       .put(ContainersConfig.ContainerType.Lightwave, "lightwave_release.json")
       .put(ContainersConfig.ContainerType.ManagementUi, "management-ui_release.json")
@@ -39,7 +38,6 @@ public class ServiceFileConstants {
   public static final Map<ContainersConfig.ContainerType, String> CONTAINER_CONFIG_ROOT_DIRS =
       ImmutableMap.<ContainersConfig.ContainerType, String>builder()
       .put(ContainersConfig.ContainerType.LoadBalancer, "haproxy/")
-      .put(ContainersConfig.ContainerType.Zookeeper, "zookeeper/")
       .put(ContainersConfig.ContainerType.PhotonControllerCore, "photon-controller-core/")
       .put(ContainersConfig.ContainerType.Lightwave, "lightwave/")
       .put(ContainersConfig.ContainerType.ManagementUi, "management-ui/")

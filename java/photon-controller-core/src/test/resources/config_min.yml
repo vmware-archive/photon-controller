@@ -6,9 +6,6 @@ xenon:
   peerNodes:
   - http://127.0.0.1:19000
 
-zookeeper:
-  quorum: localhost:2181
-
 deployer:
   deployer:
     apifeEndpoint: "http://127.0.0.1"

@@ -2,9 +2,6 @@ background_workers: 500
 background_workers_queue_size: 200
 use_virtual_network: true
 
-zookeeper:
-  quorum: 127.0.0.1:2181
-
 auth:
   enable_auth: true
   auth_server_address: 10.146.64.236

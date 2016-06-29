@@ -52,8 +52,7 @@ public class DeployerConfig {
   @NotNull
   private LoggingConfiguration logging;
 
-  @Valid
-  @NotNull
+  // Keep this for now since we use it for Upgrade
   private ZookeeperConfig zookeeper;
 
   private ContainersConfig containersConfig;

@@ -109,8 +109,6 @@ public class DeployerContext {
   @NotBlank
   private final String configDirectory;
 
-  private String zookeeperQuorum;
-
   @VisibleForTesting
   public DeployerContext() {
     corePoolSize = DeployerDefaults.CORE_POOL_SIZE;
@@ -231,14 +229,6 @@ public class DeployerContext {
 
   public String getConfigDirectory() {
     return configDirectory;
-  }
-
-  public String getZookeeperQuorum() {
-    return zookeeperQuorum;
-  }
-
-  public void setZookeeperQuorum(String zookeeperQuorum) {
-    this.zookeeperQuorum = zookeeperQuorum;
   }
 
   public Collection<DeploymentMigrationInformation> getDeploymentMigrationInformation() {

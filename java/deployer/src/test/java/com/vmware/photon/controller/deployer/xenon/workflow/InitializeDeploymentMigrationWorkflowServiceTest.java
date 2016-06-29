@@ -43,7 +43,6 @@ import com.vmware.photon.controller.deployer.helpers.TestHelper;
 import com.vmware.photon.controller.deployer.helpers.xenon.MockHelper;
 import com.vmware.photon.controller.deployer.helpers.xenon.TestEnvironment;
 import com.vmware.photon.controller.deployer.helpers.xenon.TestHost;
-import com.vmware.photon.controller.deployer.xenon.ContainersConfig;
 import com.vmware.photon.controller.deployer.xenon.DeployerContext;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
@@ -590,7 +589,6 @@ public class InitializeDeploymentMigrationWorkflowServiceTest {
 
     private void createTestEnvironment() throws Throwable {
       String quorum = deployerConfig.getZookeeper().getQuorum();
-      deployerContext.setZookeeperQuorum(quorum);
 
       ZookeeperClientFactory zkFactory = mock(ZookeeperClientFactory.class);
       sourceEnvironment = new TestEnvironment.Builder()
@@ -648,7 +646,7 @@ public class InitializeDeploymentMigrationWorkflowServiceTest {
       Vm vm1 = new Vm();
       vm1.setId("vm1");
       Map<String, String> metadata = new HashMap<String, String>();
-      metadata.put("key1", ContainersConfig.ContainerType.Zookeeper.name());
+      metadata.put("key1", "Zookeeper");
       vm1.setMetadata(metadata);
       final ResourceList<Vm> vmList = new ResourceList<>(Arrays.asList(vm1));
 
