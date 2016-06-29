@@ -19,4 +19,6 @@ package com.vmware.photon.controller.apife.resources.routes;
 public class StatusResourceRoutes {
 
   public static final String API = "/status";
+
+  public static final String LOGGER = "/logger";
 }

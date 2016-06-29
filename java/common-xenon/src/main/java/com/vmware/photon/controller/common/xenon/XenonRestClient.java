@@ -158,6 +158,22 @@ public class XenonRestClient implements XenonClient {
     return send(putOperation);
   }
 
+  public Operation broadcastPutObject(String serviceSelfLink, Object body)
+      throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException {
+    URI serviceUri = UriUtils.buildBroadcastRequestUri(
+        getServiceUri(serviceSelfLink),
+        ServiceUriPaths.DEFAULT_NODE_SELECTOR);
+
+    Operation putOperation = Operation
+        .createPut(serviceUri)
+        .setExpiration(Utils.getNowMicrosUtc() + getPutOperationExpirationMicros())
+        .setBody(body)
+        .setReferer(this.localHostUri)
+        .setContextId(LoggingUtils.getRequestId());
+
+    return send(putOperation);
+  }
+
   @Override
   public Operation get(String documentSelfLink)
       throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException {
