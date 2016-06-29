@@ -58,6 +58,7 @@ import com.vmware.photon.controller.apife.resources.project.TenantProjectsResour
 import com.vmware.photon.controller.apife.resources.resourceticket.ResourceTicketResource;
 import com.vmware.photon.controller.apife.resources.resourceticket.TenantResourceTicketsResource;
 import com.vmware.photon.controller.apife.resources.status.AvailableResource;
+import com.vmware.photon.controller.apife.resources.status.LoggerResource;
 import com.vmware.photon.controller.apife.resources.status.StatusResource;
 import com.vmware.photon.controller.apife.resources.tasks.AvailabilityZoneTasksResource;
 import com.vmware.photon.controller.apife.resources.tasks.DiskTasksResource;
@@ -247,6 +248,7 @@ public class ApiFeService extends Application<ApiFeStaticConfiguration> {
     resources.add(ImageResource.class);
     resources.add(ImagesResource.class);
     resources.add(ImageTasksResource.class);
+    resources.add(LoggerResource.class);
     resources.add(ProjectClustersResource.class);
     resources.add(ProjectDisksResource.class);
     resources.add(PortGroupResource.class);

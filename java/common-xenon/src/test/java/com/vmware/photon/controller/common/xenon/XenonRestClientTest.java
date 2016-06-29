@@ -16,6 +16,7 @@ package com.vmware.photon.controller.common.xenon;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
 import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
+import com.vmware.photon.controller.common.xenon.host.LoggerControlService;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.ServiceDocumentQueryResult;
@@ -84,7 +85,7 @@ public class XenonRestClientTest {
   /**
    * Dummy test case to make Intellij recognize this as a test class.
    */
-  @Test(enabled = false)
+  @Test(enabled = true)
   public void dummy() {
   }
 
@@ -1213,6 +1214,53 @@ public class XenonRestClientTest {
 
       //the selected URI should be using local address
       assertThat(localIpAddresses, hasItem(result2Address));
+    }
+  }
+
+  /**
+   * Tests broadcastPutObject method.
+   */
+  public class BroadcastPutObjectTest {
+    private BasicServiceHost[] hosts;
+
+    @BeforeMethod
+    public void setUp() throws Throwable {
+      hosts = setUpMultipleHosts(3);
+      for (BasicServiceHost host : hosts) {
+        host.startServiceSynchronously(new LoggerControlService(), null, LoggerControlService.SELF_LINK);
+      }
+    }
+
+    @AfterMethod
+    public void tearDown() throws Throwable {
+      if (hosts != null) {
+        for (BasicServiceHost host : hosts) {
+          host.destroy();
+        }
+      }
+
+      if (xenonRestClient != null) {
+        xenonRestClient.stop();
+      }
+    }
+
+    @Test
+    public void testBroadcastPutObject() throws Throwable {
+      String loggerPath = "com.vmware.photon.controller.common.xenon.XenonRestClientTest";
+      Map<String, String> loggerMap = new HashMap<>();
+      loggerMap.put(loggerPath, "trace");
+      Operation result = xenonRestClient.broadcastPutObject(LoggerControlService.SELF_LINK, loggerMap);
+      assertThat(result.getStatusCode(), is(Operation.STATUS_CODE_OK));
+      for (BasicServiceHost host : hosts) {
+        Operation operation = host.sendRequestAndWait(
+            new Operation().createGet(xenonRestClient.getServiceUri(LoggerControlService.SELF_LINK)));
+        Map loggerInfo = operation.getBody(Map.class);
+        assertThat(loggerInfo.get(loggerPath), is("TRACE"));
+      }
+
+      loggerMap.clear();
+      loggerMap.put(loggerPath, "info");
+      xenonRestClient.broadcastPutObject(LoggerControlService.SELF_LINK, loggerMap);
     }
   }
 
