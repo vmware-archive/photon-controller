@@ -15,7 +15,6 @@ package com.vmware.photon.controller.apife.config;
 
 import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.metrics.GraphiteConfig;
-import com.vmware.photon.controller.common.zookeeper.ZookeeperConfig;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.dropwizard.Configuration;
@@ -57,11 +56,6 @@ public class ApiFeStaticConfiguration extends Configuration implements ApiFeConf
   private RootSchedulerConfig rootScheduler = new RootSchedulerConfig();
 
   @Valid
-  @NotNull
-  @JsonProperty
-  private ZookeeperConfig zookeeper = new ZookeeperConfig();
-
-  @Valid
   @JsonProperty("image")
   private ImageConfig image = new ImageConfig();
 
@@ -94,11 +88,6 @@ public class ApiFeStaticConfiguration extends Configuration implements ApiFeConf
   @Override
   public RootSchedulerConfig getRootScheduler() {
     return rootScheduler;
-  }
-
-  @Override
-  public ZookeeperConfig getZookeeper() {
-    return zookeeper;
   }
 
   @Override

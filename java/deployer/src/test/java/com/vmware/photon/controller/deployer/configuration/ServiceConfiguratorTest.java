@@ -76,17 +76,6 @@ public class ServiceConfiguratorTest {
     assertThat(haproxyCfg.contains("server server-1 0.0.0.0 check"), is(true));
     assertThat(haproxyCfg.contains("server server-2 1.1.1.1 check"), is(true));
 
-    dynamicParameters = new HashMap<>();
-    List<ZookeeperServer> list1 = new ArrayList<>();
-    list1.add(new ZookeeperServer("server.1=0.0.0.0:2888:2888"));
-    list1.add(new ZookeeperServer("server.2=1.1.1.1:2888:2888"));
-    dynamicParameters.put("ZOOKEEPER_INSTANCES", list1);
-    serviceConfigurator.applyDynamicParameters(TMP_DIR, ContainersConfig.ContainerType.Zookeeper, dynamicParameters);
-    file = new File(TMP_DIR + "zookeeper/zoo.cfg");
-    String zooCfg = FileUtils.readFileToString(file);
-    assertThat(zooCfg.contains("server.1=0.0.0.0:2888:2888"), is(true));
-    assertThat(zooCfg.contains("server.2=1.1.1.1:2888:2888"), is(true));
-
     FileUtils.deleteDirectory(new File(TMP_DIR));
   }
 }

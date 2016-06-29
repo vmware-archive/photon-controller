@@ -378,7 +378,7 @@ public class ApiFeModuleTest {
     public void testInjection() throws Throwable {
       ApiFeModule apiFeModule = new ApiFeModule();
       ApiFeConfiguration apiFeConfiguration = ConfigurationUtils.parseConfiguration(
-          ApiFeConfigurationTest.class.getResource("/config_min.yml").getPath()
+          ApiFeConfigurationTest.class.getResource("/config.yml").getPath()
       );
 
       apiFeModule.setConfiguration(apiFeConfiguration);

@@ -88,9 +88,7 @@ import com.vmware.photon.controller.apife.resources.vm.VmMksTicketResource;
 import com.vmware.photon.controller.apife.resources.vm.VmNetworksResource;
 import com.vmware.photon.controller.apife.resources.vm.VmResource;
 import com.vmware.photon.controller.apife.resources.vm.VmTagsResource;
-import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.metrics.GraphiteConfig;
-import com.vmware.photon.controller.common.zookeeper.ZookeeperModule;
 import com.vmware.photon.controller.swagger.resources.SwaggerJsonListing;
 
 import com.google.inject.Injector;
@@ -99,8 +97,6 @@ import io.dropwizard.Application;
 import io.dropwizard.assets.AssetsBundle;
 import io.dropwizard.configuration.ConfigurationException;
 import io.dropwizard.hibernate.HibernateBundle;
-import io.dropwizard.jetty.HttpConnectorFactory;
-import io.dropwizard.server.SimpleServerFactory;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import org.reflections.Reflections;
@@ -134,7 +130,6 @@ public class ApiFeService extends Application<ApiFeStaticConfiguration> {
   private static ApiFeConfiguration apiFeConfiguration;
   private Injector injector;
   private ApiFeModule apiModule;
-  private ZookeeperModule zookeeperModule;
   private HibernateBundle<ApiFeStaticConfiguration> hibernateBundle;
 
   public static void main(String[] args) throws Exception {
@@ -160,7 +155,6 @@ public class ApiFeService extends Application<ApiFeStaticConfiguration> {
     bootstrap.addBundle(new AssetsBundle("/assets", "/api/", "index.html"));
 
     apiModule = new ApiFeModule();
-    zookeeperModule = new ZookeeperModule(apiFeConfiguration.getZookeeper());
     apiModule.setConfiguration(apiFeConfiguration);
 
     GuiceBundle<ApiFeStaticConfiguration> guiceBundle = getGuiceBundle();
@@ -212,11 +206,6 @@ public class ApiFeService extends Application<ApiFeStaticConfiguration> {
     if (graphite != null) {
       graphite.enable();
     }
-
-    HttpConnectorFactory httpConnectorFactory = (HttpConnectorFactory) ((SimpleServerFactory) configuration
-        .getServerFactory()).getConnector();
-    zookeeperModule.registerWithZookeeper(zookeeperModule.getCuratorFramework(), Constants.APIFE_SERVICE_NAME,
-        "127.0.0.1", httpConnectorFactory.getPort(), retryIntervalMsec);
   }
 
   private void registerResourcesWithSwagger(ApiFeConfiguration configuration, Environment environment) {
@@ -297,7 +286,6 @@ public class ApiFeService extends Application<ApiFeStaticConfiguration> {
     return GuiceBundle.<ApiFeStaticConfiguration>newBuilder()
         .setConfigClass(ApiFeStaticConfiguration.class)
         .addModule(apiModule)
-        .addModule(zookeeperModule)
         .enableAutoConfig(packages)
         .build();
   }
