@@ -11,9 +11,6 @@ server:
 
 use_virtual_network: {{{USE_VIRTUAL_NETWORK}}}
 
-zookeeper:
-  quorum: "{{{ZOOKEEPER_QUORUM}}}"
-
 # to add console logging add '- type: console' below
 logging:
   appenders:

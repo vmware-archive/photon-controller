@@ -35,11 +35,6 @@ public class HealthCheckHelper {
       final String ipAddress) {
 
     switch (containerType) {
-      case Zookeeper:
-        this.healthChecker = new ZookeeperHealthChecker(ipAddress,
-            Constants.ZOOKEEPER_PORT);
-        break;
-
       case LoadBalancer:
         this.healthChecker = new HttpBasedHealthChecker(HostUtils.getApiClient(service));
         break;
