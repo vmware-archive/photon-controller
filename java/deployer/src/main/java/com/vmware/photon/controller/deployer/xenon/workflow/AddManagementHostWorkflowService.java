@@ -23,8 +23,6 @@ import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
 import com.vmware.photon.controller.common.xenon.deployment.NoMigrationDuringDeployment;
-import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
-import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
 import com.vmware.photon.controller.common.xenon.migration.NoMigrationDuringUpgrade;
 import com.vmware.photon.controller.common.xenon.validation.DefaultBoolean;
 import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
@@ -33,11 +31,6 @@ import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.common.xenon.validation.Positive;
 import com.vmware.photon.controller.common.xenon.validation.WriteOnce;
-import com.vmware.photon.controller.deployer.deployengine.ZookeeperClient;
-import com.vmware.photon.controller.deployer.xenon.ContainersConfig;
-import com.vmware.photon.controller.deployer.xenon.DeployerServiceGroup;
-import com.vmware.photon.controller.deployer.xenon.entity.ContainerService;
-import com.vmware.photon.controller.deployer.xenon.entity.ContainerTemplateService;
 import com.vmware.photon.controller.deployer.xenon.entity.VmService;
 import com.vmware.photon.controller.deployer.xenon.task.AllocateHostResourceTaskFactoryService;
 import com.vmware.photon.controller.deployer.xenon.task.AllocateHostResourceTaskService;
@@ -47,11 +40,9 @@ import com.vmware.photon.controller.deployer.xenon.task.CreateManagementVmTaskSe
 import com.vmware.photon.controller.deployer.xenon.util.HostUtils;
 import com.vmware.photon.controller.deployer.xenon.util.MiscUtils;
 import com.vmware.xenon.common.Operation;
-import com.vmware.xenon.common.OperationJoin;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
-import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.QueryTask;
 import com.vmware.xenon.services.common.ServiceUriPaths;
@@ -66,17 +57,13 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 
 /**
  * This class implements a Xenon micro-service which performs the task of
  * adding a new cloud host to an existing deployment.
  */
 public class AddManagementHostWorkflowService extends StatefulService {
-
-  public static final String ZOOKEEPER_PORT = "2181";
 
   /**
    * This class defines the state of a {@link AddManagementHostWorkflowService} task.
@@ -94,10 +81,8 @@ public class AddManagementHostWorkflowService extends StatefulService {
     public enum SubStage {
       CREATE_MANAGEMENT_PLANE_LAYOUT,
       BUILD_RUNTIME_CONFIGURATION,
-      SET_QUORUM_ON_DEPLOYMENT_ENTITY,
       PROVISION_MANAGEMENT_HOSTS,
       CREATE_MANAGEMENT_PLANE,
-      RECONFIGURE_ZOOKEEPER,
     }
   }
 
@@ -250,10 +235,8 @@ public class AddManagementHostWorkflowService extends StatefulService {
       switch (currentState.taskState.subStage) {
         case CREATE_MANAGEMENT_PLANE_LAYOUT:
         case BUILD_RUNTIME_CONFIGURATION:
-        case SET_QUORUM_ON_DEPLOYMENT_ENTITY:
         case PROVISION_MANAGEMENT_HOSTS:
         case CREATE_MANAGEMENT_PLANE:
-        case RECONFIGURE_ZOOKEEPER:
           break;
         default:
           throw new IllegalStateException("Unknown task sub-stage: " + currentState.taskState.subStage);
@@ -331,82 +314,12 @@ public class AddManagementHostWorkflowService extends StatefulService {
       case BUILD_RUNTIME_CONFIGURATION:
         processBuildRuntimeConfiguration(currentState);
         break;
-      case SET_QUORUM_ON_DEPLOYMENT_ENTITY:
-        queryZookeeperContainerTemplate(currentState);
-        break;
       case PROVISION_MANAGEMENT_HOSTS:
         processProvisionManagementHosts(currentState, deploymentService);
         break;
       case CREATE_MANAGEMENT_PLANE:
         processCreateManagementPlane(currentState, deploymentService);
         break;
-      case RECONFIGURE_ZOOKEEPER:
-        reconfigureZookeeper(currentState, deploymentService);
-        break;
-    }
-  }
-
-  private void reconfigureZookeeper(State currentState, DeploymentService.State deploymentService) {
-    if (currentState.hostServiceLink == null) {
-      TaskUtils.sendSelfPatch(AddManagementHostWorkflowService.this, buildPatch(
-          TaskState.TaskStage.FINISHED, null, null));
-    } else {
-
-      FutureCallback callback = new FutureCallback() {
-        @Override
-        public void onSuccess(@Nullable Object result) {
-          TaskUtils.sendSelfPatch(AddManagementHostWorkflowService.this, buildPatch(
-              TaskState.TaskStage.FINISHED, null, null));
-        }
-
-        @Override
-        public void onFailure(Throwable t) {
-          failTask(t);
-        }
-      };
-
-      Operation getOperation = Operation
-          .createGet(UriUtils.buildUri(getHost(), currentState.vmServiceLink))
-              .setCompletion(
-              (operation, throwable) -> {
-                if (null != throwable) {
-                  failTask(throwable);
-                  return;
-                }
-
-                VmService.State managementVmState = operation.getBody(VmService.State.class);
-                String managementVmAddress = managementVmState.ipAddress.trim();
-                // Find the host
-                if (!deploymentService.zookeeperIdToIpMap.containsValue(managementVmAddress)) {
-                  // Really should NEVER EVER happen. But just a sanity check
-                  Throwable t = new RuntimeException("Zookeeper replica list doesn't contain host: "
-                      + managementVmAddress);
-                  failTask(t);
-                  return;
-                }
-
-                Integer myId = null;
-                for (Map.Entry<Integer, String> entry : deploymentService.zookeeperIdToIpMap.entrySet()) {
-                  if (entry.getValue().equals(managementVmAddress)) {
-                    myId = entry.getKey();
-                    break;
-                  }
-                }
-
-                try {
-                  DeployerServiceGroup deployerServiceGroup =
-                      (DeployerServiceGroup) ((PhotonControllerXenonHost) getHost()).getDeployer();
-                  ZookeeperClient zookeeperClient
-                      = deployerServiceGroup.getZookeeperServerSetFactoryBuilder().create();
-
-                  zookeeperClient.addServer(HostUtils.getDeployerContext(this).getZookeeperQuorum(),
-                      managementVmAddress, ZOOKEEPER_PORT, myId, callback);
-                } catch (Throwable t) {
-                  failTask(t);
-                }
-              }
-          );
-      sendRequest(getOperation);
     }
   }
 
@@ -484,7 +397,7 @@ public class AddManagementHostWorkflowService extends StatefulService {
     BuildRuntimeConfigurationTaskService.State startState = new BuildRuntimeConfigurationTaskService.State();
     startState.parentTaskServiceLink = getSelfLink();
     startState.parentPatchBody = Utils.toJson(false, false, buildPatch(TaskState.TaskStage.STARTED,
-        TaskState.SubStage.SET_QUORUM_ON_DEPLOYMENT_ENTITY, null));
+        TaskState.SubStage.PROVISION_MANAGEMENT_HOSTS, null));
     startState.deploymentServiceLink = currentState.deploymentServiceLink;
     startState.hostServiceLink = currentState.hostServiceLink;
 
@@ -502,161 +415,6 @@ public class AddManagementHostWorkflowService extends StatefulService {
   private void processProvisionManagementHosts(State currentState, DeploymentService.State deploymentService)
       throws Throwable {
     bulkProvisionManagementHosts(currentState, deploymentService);
-  }
-
-  private void queryZookeeperContainerTemplate(final State currentState) {
-
-    QueryTask.Query kindClause = new QueryTask.Query()
-        .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
-        .setTermMatchValue(Utils.buildKind(ContainerTemplateService.State.class));
-
-    QueryTask.Query nameClause = new QueryTask.Query()
-        .setTermPropertyName(ContainerTemplateService.State.FIELD_NAME_NAME)
-        .setTermMatchValue(ContainersConfig.ContainerType.Zookeeper.name());
-
-    QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
-    querySpecification.query.addBooleanClause(kindClause);
-    querySpecification.query.addBooleanClause(nameClause);
-    QueryTask queryTask = QueryTask.create(querySpecification).setDirect(true);
-
-    Operation queryPostOperation = Operation
-        .createPost(UriUtils.buildBroadcastRequestUri(
-            UriUtils.buildUri(getHost(), ServiceUriPaths.CORE_LOCAL_QUERY_TASKS),
-            ServiceUriPaths.DEFAULT_NODE_SELECTOR))
-        .setBody(queryTask)
-        .setCompletion((operation, throwable) -> {
-          if (null != throwable) {
-            failTask(throwable);
-            return;
-          }
-
-          try {
-            Collection<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(operation);
-            QueryTaskUtils.logQueryResults(AddManagementHostWorkflowService.this, documentLinks);
-            checkState(1 == documentLinks.size());
-            queryZookeeperContainers(currentState, documentLinks.iterator().next());
-          } catch (Throwable t) {
-            failTask(t);
-          }
-        });
-
-    sendRequest(queryPostOperation);
-  }
-
-  private void queryZookeeperContainers(final State currentState, String containerTemplateServiceLink) {
-
-    QueryTask.Query kindClause = new QueryTask.Query()
-        .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
-        .setTermMatchValue(Utils.buildKind(ContainerService.State.class));
-
-    QueryTask.Query containerTemplateServiceLinkClause = new QueryTask.Query()
-        .setTermPropertyName(ContainerService.State.FIELD_NAME_CONTAINER_TEMPLATE_SERVICE_LINK)
-        .setTermMatchValue(containerTemplateServiceLink);
-
-    QueryTask.QuerySpecification querySpecification = new QueryTask.QuerySpecification();
-    querySpecification.query.addBooleanClause(kindClause);
-    querySpecification.query.addBooleanClause(containerTemplateServiceLinkClause);
-    QueryTask queryTask = QueryTask.create(querySpecification).setDirect(true);
-
-    Operation queryPostOperation = Operation
-        .createPost(UriUtils.buildBroadcastRequestUri(
-            UriUtils.buildUri(getHost(), ServiceUriPaths.CORE_LOCAL_QUERY_TASKS),
-            ServiceUriPaths.DEFAULT_NODE_SELECTOR))
-        .setBody(queryTask)
-        .setCompletion(new Operation.CompletionHandler() {
-          @Override
-          public void handle(Operation operation, Throwable throwable) {
-            if (null != throwable) {
-              failTask(throwable);
-              return;
-            }
-
-            try {
-              Collection<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(operation);
-              QueryTaskUtils.logQueryResults(AddManagementHostWorkflowService.this, documentLinks);
-              checkState(documentLinks.size() > 0);
-              getZookeeperContainerEntities(currentState, documentLinks);
-            } catch (Throwable t) {
-              failTask(t);
-            }
-          }
-        });
-
-    sendRequest(queryPostOperation);
-  }
-
-  private void getZookeeperContainerEntities(final State currentState, Collection<String> documentLinks) {
-
-    if (documentLinks.isEmpty()) {
-      throw new XenonRuntimeException("Document links set is empty");
-    }
-
-    OperationJoin
-        .create(documentLinks.stream().map(documentLink -> Operation.createGet(this, documentLink)))
-        .setCompletion((ops, exs) -> {
-          if (null != exs && !exs.isEmpty()) {
-            failTask(exs);
-            return;
-          }
-
-          try {
-            Set<String> vmServiceLinks = ops.values().stream()
-                .map(operation -> operation.getBody(ContainerService.State.class).vmServiceLink)
-                .collect(Collectors.toSet());
-            getZookeeperVmEntities(currentState, vmServiceLinks);
-          } catch (Throwable t) {
-            failTask(t);
-          }
-        })
-        .sendWith(this);
-  }
-
-  private void getZookeeperVmEntities(final State currentState, Set<String> vmServiceLinks) {
-
-    if (vmServiceLinks.isEmpty()) {
-      throw new XenonRuntimeException("VM service links set is empty");
-    }
-
-    OperationJoin
-        .create(vmServiceLinks.stream().map(vmServiceLink -> Operation.createGet(this, vmServiceLink)))
-        .setCompletion((ops, exs) -> {
-          if (null != exs && !exs.isEmpty()) {
-            failTask(exs);
-            return;
-          }
-
-          try {
-            String zookeeperQuorum = MiscUtils.generateReplicaList(
-                ops.values().stream().map(operation -> operation.getBody(VmService.State.class).ipAddress)
-                    .collect(Collectors.toList()),
-                ZOOKEEPER_PORT);
-
-            patchDeploymentService(currentState, zookeeperQuorum);
-          } catch (Throwable t) {
-            failTask(t);
-          }
-        })
-        .sendWith(this);
-  }
-
-  private void patchDeploymentService(State currentState, String zookeeperQuorum) {
-    DeploymentService.State deploymentService = new DeploymentService.State();
-    deploymentService.zookeeperQuorum = zookeeperQuorum;
-
-    HostUtils.getCloudStoreHelper(this)
-        .createPatch(currentState.deploymentServiceLink)
-        .setBody(deploymentService)
-        .setCompletion(
-            (completedOp, failure) -> {
-              if (null != failure) {
-                failTask(failure);
-              } else {
-                TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.STARTED,
-                    TaskState.SubStage.PROVISION_MANAGEMENT_HOSTS, null));
-              }
-            }
-        )
-        .sendWith(this);
   }
 
   private void bulkProvisionManagementHosts(final State currentState, DeploymentService.State deploymentService) throws
@@ -800,8 +558,8 @@ public class AddManagementHostWorkflowService extends StatefulService {
       // management plane VMs will be created elsewhere (?). Skip to the next stage.
       //
 
-      TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.RECONFIGURE_ZOOKEEPER,
-          null));
+      TaskUtils.sendSelfPatch(AddManagementHostWorkflowService.this, buildPatch(
+          TaskState.TaskStage.FINISHED, null, null));
 
     } else if (currentState.vmServiceLink == null) {
 
@@ -922,8 +680,8 @@ public class AddManagementHostWorkflowService extends StatefulService {
           public void onSuccess(@Nullable CreateContainersWorkflowService.State state) {
             switch (state.taskState.stage) {
               case FINISHED:
-                TaskUtils.sendSelfPatch(AddManagementHostWorkflowService.this,
-                    buildPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.RECONFIGURE_ZOOKEEPER, null));
+                TaskUtils.sendSelfPatch(AddManagementHostWorkflowService.this, buildPatch(
+                    TaskState.TaskStage.FINISHED, null, null));
                 break;
               case FAILED:
                 State patchState = buildPatch(TaskState.TaskStage.FAILED, null, null);

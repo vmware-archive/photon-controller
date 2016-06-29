@@ -346,9 +346,9 @@ public class InitializeDeploymentMigrationWorkflowService extends StatefulServic
         hostUpgradeInformation.stream()
             .map(entry -> {
               if (!m.containsKey(entry.zookeeperServerSet)) {
-                Set<InetSocketAddress> destinationServers = zookeeperClient.getServers(
-                    HostUtils.getDeployerContext(this).getZookeeperQuorum(),
-                    entry.zookeeperServerSet);
+                Set<InetSocketAddress> destinationServers = new HashSet<InetSocketAddress>();
+                destinationServers.add(new InetSocketAddress(getHost().getPreferredAddress(), getHost().getPort()));
+
                 Set<InetSocketAddress> sourceServers
                     = zookeeperClient.getServers(currentState.sourceZookeeperQuorum, entry.zookeeperServerSet);
 
@@ -584,9 +584,9 @@ public class InitializeDeploymentMigrationWorkflowService extends StatefulServic
         HostUtils.getDeployerContext(this).getUpgradeInformation().stream()
             .map(entry -> {
               if (!m.containsKey(entry.zookeeperServerSet)) {
-                Set<InetSocketAddress> destinationServers = zookeeperClient.getServers(
-                    HostUtils.getDeployerContext(this).getZookeeperQuorum(),
-                    entry.zookeeperServerSet);
+                Set<InetSocketAddress> destinationServers = new HashSet<InetSocketAddress>();
+                destinationServers.add(new InetSocketAddress(getHost().getPreferredAddress(), getHost().getPort()));
+
                 Set<InetSocketAddress> sourceServers
                     = zookeeperClient.getServers(currentState.sourceZookeeperQuorum, entry.zookeeperServerSet);
 

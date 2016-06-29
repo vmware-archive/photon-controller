@@ -24,15 +24,12 @@ import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
 import com.vmware.photon.controller.common.xenon.deployment.NoMigrationDuringDeployment;
-import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
 import com.vmware.photon.controller.common.xenon.migration.NoMigrationDuringUpgrade;
 import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
 import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.common.xenon.validation.Positive;
-import com.vmware.photon.controller.deployer.deployengine.ZookeeperClient;
-import com.vmware.photon.controller.deployer.xenon.DeployerServiceGroup;
 import com.vmware.photon.controller.deployer.xenon.entity.ContainerService;
 import com.vmware.photon.controller.deployer.xenon.entity.ContainerTemplateService;
 import com.vmware.photon.controller.deployer.xenon.entity.VmService;
@@ -45,7 +42,6 @@ import com.vmware.photon.controller.deployer.xenon.task.CreateManagementVmTaskSe
 import com.vmware.photon.controller.deployer.xenon.task.UploadImageTaskFactoryService;
 import com.vmware.photon.controller.deployer.xenon.task.UploadImageTaskService;
 import com.vmware.photon.controller.deployer.xenon.util.HostUtils;
-import com.vmware.photon.controller.deployer.xenon.util.MiscUtils;
 import com.vmware.photon.controller.deployer.xenon.util.Pair;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.OperationJoin;
@@ -72,7 +68,6 @@ import static com.google.common.base.Preconditions.checkState;
 
 import javax.annotation.Nullable;
 
-import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -81,7 +76,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.IntUnaryOperator;
 import java.util.stream.Collectors;
@@ -510,20 +504,12 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
         .build();
     Map<String, List<Pair<String, Integer>>> map = new HashMap<>();
 
-    String zookeeperQuorum = MiscUtils.generateReplicaList(
-        vms.stream()
-          .map(vm -> vm.ipAddress)
-          .collect(Collectors.toList()), DeploymentWorkflowService.ZOOKEEPER_PORT);
-
-    DeployerServiceGroup deployerServiceGroup =
-        (DeployerServiceGroup) ((PhotonControllerXenonHost) getHost()).getDeployer();
-    ZookeeperClient zookeeperClient = deployerServiceGroup.getZookeeperServerSetFactoryBuilder().create();
     for (String serviceName : xenonServices) {
-      Set<InetSocketAddress> remoteServers = zookeeperClient.getServers(zookeeperQuorum, serviceName);
-      List<Pair<String, Integer>> serverAddresses = remoteServers.stream()
+      List<Pair<String, Integer>> serverAddresses = vms.stream()
           .map(s -> {
-            return new Pair<String, Integer>(s.getAddress().getHostAddress(), s.getPort());
+            return new Pair<String, Integer>(s.ipAddress, s.deployerXenonPort);
           })
+          .distinct()
           .collect(Collectors.toList());
       map.put(serviceName, serverAddresses);
     }

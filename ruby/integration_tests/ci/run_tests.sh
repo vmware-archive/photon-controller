@@ -28,7 +28,7 @@ fi
 
 if [ "$DEPLOYER_TEST" ]; then
   bundle exec rake deployer
-  bundle exec rake clean_vms_on_real_host
+  bundle exec rake clean_vms_on_real_hostw
   exit $?
 fi
 

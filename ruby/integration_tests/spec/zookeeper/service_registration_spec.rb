@@ -12,7 +12,7 @@
 require "spec_helper"
 
 describe "service registration", zookeeper: true  do
-  let(:client) { ApiClientHelper.zookeeper }
+let(:client) { ApiClientHelper.zookeeper }
 
   ["housekeeper", "apife", "cloudstore", "root-scheduler"].each do |service|
     it "has at least one '#{service}' node registered" do

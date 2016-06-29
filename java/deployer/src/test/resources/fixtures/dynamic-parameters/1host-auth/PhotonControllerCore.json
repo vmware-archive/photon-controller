@@ -36,7 +36,6 @@
   "USE_ESX_STORE": "true",
   "USE_VIRTUAL_NETWORK": "false",
   "VIB_DIRECTORY": "/var/esxcloud/packages",
-  "ZOOKEEPER_QUORUM": "0.0.0.0:2181",
   "memoryMb": "8192",
   "diskGb": "27",
   "cpuCount": "4"
