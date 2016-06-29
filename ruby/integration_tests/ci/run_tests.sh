@@ -32,9 +32,6 @@ if [ "$DEPLOYER_TEST" ]; then
   exit $?
 fi
 
-# Zookeeper tests should never be disabled since they verify the health of the devbox
-bundle exec rake zookeeper
-
 # API tests
 if [ -z "$DISABLE_AUTHORIZATION_TESTS" ]; then
   bundle exec rake esxcloud:authorization

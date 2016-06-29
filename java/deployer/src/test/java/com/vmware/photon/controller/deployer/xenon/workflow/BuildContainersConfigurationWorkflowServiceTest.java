@@ -36,7 +36,6 @@ import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceHost;
 import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
-import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.QueryTask;
 
 import org.testng.annotations.AfterClass;
@@ -46,9 +45,6 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.hasKey;
-import static org.hamcrest.Matchers.hasValue;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 
@@ -388,19 +384,11 @@ public class BuildContainersConfigurationWorkflowServiceTest {
       TestHelper.assertTaskStateFinished(finalState.taskState);
       assertThat(finalState.taskState.subStage, nullValue());
 
-      DeploymentService.State deploymentState =
-          cloudStoreEnvironment.getServiceState(startState.deploymentServiceLink, DeploymentService.State.class);
-
-      for (int i = 0; i < hostCount; i++) {
-        assertThat(deploymentState.zookeeperIdToIpMap, hasKey(i + 1));
-        assertThat(deploymentState.zookeeperIdToIpMap, hasValue("0.0.0." + i));
-      }
-
       QueryTask queryTask = QueryTask.Builder.createDirectTask()
           .setQuery(QueryTask.Query.Builder.create()
               .addKindFieldClause(ContainerService.State.class)
               .addFieldClause(ContainerService.State.FIELD_NAME_CONTAINER_TEMPLATE_SERVICE_LINK,
-                  templateMap.get(ContainersConfig.ContainerType.Zookeeper).documentSelfLink)
+                  templateMap.get(ContainersConfig.ContainerType.PhotonControllerCore).documentSelfLink)
               .build())
           .addOptions(EnumSet.of(
               QueryTask.QuerySpecification.QueryOption.BROADCAST,
@@ -409,18 +397,6 @@ public class BuildContainersConfigurationWorkflowServiceTest {
 
       QueryTask result = testEnvironment.sendQueryAndWait(queryTask);
       assertThat(result.results.documentLinks.size(), is(hostCount));
-
-      for (Object containerObject : result.results.documents.values()) {
-        ContainerService.State containerState = Utils.fromJson(containerObject, ContainerService.State.class);
-        assertThat(containerState.dynamicParameters, hasKey(
-            BuildContainersConfigurationWorkflowService.MUSTACHE_KEY_ZOOKEEPER_INSTANCES));
-        String zookeeperServers = containerState.dynamicParameters.get(
-            BuildContainersConfigurationWorkflowService.MUSTACHE_KEY_ZOOKEEPER_INSTANCES);
-        for (int i = 0; i < hostCount; i++) {
-          assertThat(zookeeperServers, containsString("server." + (i + 1)));
-          assertThat(zookeeperServers, containsString("0.0.0." + i + ":2888:3888"));
-        }
-      }
     }
   }
 
