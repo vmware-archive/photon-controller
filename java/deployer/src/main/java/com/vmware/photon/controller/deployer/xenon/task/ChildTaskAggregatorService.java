@@ -134,8 +134,15 @@ public class ChildTaskAggregatorService extends StatefulService {
     operation.complete();
 
     if (currentState.pendingCompletionCount == 0) {
-      sendRequest(Operation.createPatch(this, currentState.parentTaskLink).setBody(currentState.parentPatchBody));
-      sendRequest(Operation.createDelete(this, getSelfLink()));
+      Operation.createPatch(this, currentState.parentTaskLink).setBody(currentState.parentPatchBody)
+        .setCompletion((o, e) -> {
+          if (e != null) {
+            ServiceUtils.logSevere(this, "Failed to patch parent task %s", currentState.parentTaskLink);
+            ServiceUtils.logSevere(this, e);
+          }
+        })
+        .sendWith(this);;
+      Operation.createDelete(this, getSelfLink()).sendWith(this);
     }
   }
 }
