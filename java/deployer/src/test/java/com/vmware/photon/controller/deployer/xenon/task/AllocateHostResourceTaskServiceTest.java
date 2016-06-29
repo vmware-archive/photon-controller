@@ -22,9 +22,9 @@ import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
-import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.helpers.ReflectionUtils;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
+import com.vmware.photon.controller.deployer.helpers.xenon.DeployerTestConfig;
 import com.vmware.photon.controller.deployer.helpers.xenon.TestEnvironment;
 import com.vmware.photon.controller.deployer.helpers.xenon.TestHost;
 import com.vmware.photon.controller.deployer.xenon.ContainersConfig;
@@ -117,15 +117,15 @@ public class AllocateHostResourceTaskServiceTest {
   }
 
   private TestEnvironment createTestEnvironment(
-      DeployerConfig deployerConfig,
+      DeployerTestConfig deployerTestConfig,
       ListeningExecutorService listeningExecutorService,
       int hostCount)
       throws Throwable {
     cloudStoreMachine = com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment.create(1);
 
     return new TestEnvironment.Builder()
-        .containersConfig(deployerConfig.getContainersConfig())
-        .deployerContext(deployerConfig.getDeployerContext())
+        .containersConfig(deployerTestConfig.getContainersConfig())
+        .deployerContext(deployerTestConfig.getDeployerContext())
         .listeningExecutorService(listeningExecutorService)
         .cloudServerSet(cloudStoreMachine.getServerSet())
         .hostCount(hostCount)
@@ -449,14 +449,14 @@ public class AllocateHostResourceTaskServiceTest {
     private ListeningExecutorService listeningExecutorService;
     private AllocateHostResourceTaskService.State startState;
 
-    private DeployerConfig deployerConfig;
+    private DeployerTestConfig deployerTestConfig;
 
     @BeforeClass
     public void setUpClass() throws Throwable {
       listeningExecutorService = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(1));
-      deployerConfig = ConfigBuilder.build(DeployerConfig.class,
+      deployerTestConfig = ConfigBuilder.build(DeployerTestConfig.class,
           this.getClass().getResource(configFilePath).getPath());
-      TestHelper.setContainersConfig(deployerConfig);
+      TestHelper.setContainersConfig(deployerTestConfig);
     }
 
     @BeforeMethod
@@ -487,7 +487,7 @@ public class AllocateHostResourceTaskServiceTest {
 
     @Test
     public void testTaskSuccess() throws Throwable {
-      machine = createTestEnvironment(deployerConfig, listeningExecutorService, 1);
+      machine = createTestEnvironment(deployerTestConfig, listeningExecutorService, 1);
 
       HostService.State hostService = createHostEntitiesAndAllocateVmsAndContainers(2, 3, 8, 8192, false);
       startState.hostServiceLink = hostService.documentSelfLink;
@@ -519,7 +519,7 @@ public class AllocateHostResourceTaskServiceTest {
 
     @Test
     public void testTaskSuccessWithMixedHostConfig() throws Throwable {
-      machine = createTestEnvironment(deployerConfig, listeningExecutorService, 1);
+      machine = createTestEnvironment(deployerTestConfig, listeningExecutorService, 1);
 
       HostService.State hostService = createHostEntitiesAndAllocateVmsAndContainers(2, 3, 8, 8192, true);
       startState.hostServiceLink = hostService.documentSelfLink;
@@ -551,7 +551,7 @@ public class AllocateHostResourceTaskServiceTest {
 
     @Test(enabled = false)
     public void testTaskSuccessWithoutHostConfig() throws Throwable {
-      machine = createTestEnvironment(deployerConfig, listeningExecutorService, 1);
+      machine = createTestEnvironment(deployerTestConfig, listeningExecutorService, 1);
 
       HostService.State hostService = createHostEntitiesAndAllocateVmsAndContainers(2, 3, null, null, false);
       startState.hostServiceLink = hostService.documentSelfLink;
@@ -568,7 +568,7 @@ public class AllocateHostResourceTaskServiceTest {
 
     @Test
     public void testTaskFailureInvalidHostLink() throws Throwable {
-      machine = createTestEnvironment(deployerConfig, listeningExecutorService, 1);
+      machine = createTestEnvironment(deployerTestConfig, listeningExecutorService, 1);
 
       AllocateHostResourceTaskService.State finalState =
           machine.callServiceAndWaitForState(

@@ -144,7 +144,7 @@ public class Main {
 
     // Values for Scheduler
     final ServerSet cloudStoreServerSet =
-        new StaticServerSet(new InetSocketAddress("127.0.0.1", Constants.CLOUD_STORE_PORT));
+        new StaticServerSet(new InetSocketAddress("127.0.0.1", Constants.PHOTON_CONTROLLER_PORT));
     final CloudStoreHelper cloudStoreHelper = new CloudStoreHelper(cloudStoreServerSet);
     final ConstraintChecker checker = new CloudStoreConstraintChecker(cloudStoreHelper);
 
@@ -196,8 +196,8 @@ public class Main {
     logger.info("Registered Housekeeper Xenon Service Group");
 
     logger.info("Creating Deployer Xenon Service Group");
-    DeployerServiceGroup deployerServiceGroup = createDeployerServiceGroup(deployerConfig, apiFeServerSet,
-        cloudStoreServerSet, httpClient);
+    DeployerServiceGroup deployerServiceGroup = createDeployerServiceGroup(photonControllerConfig,
+        deployerConfig, apiFeServerSet, cloudStoreServerSet, httpClient);
     logger.info("Created Deployer Xenon Service Group");
 
     logger.info("Registering Deployer Xenon Service Group");
@@ -285,7 +285,8 @@ public class Main {
    * @param httpClient
    * @return
    */
-  private static DeployerServiceGroup createDeployerServiceGroup (DeployerConfig deployerConfig,
+  private static DeployerServiceGroup createDeployerServiceGroup (PhotonControllerConfig photonControllerConfig,
+                                                                  DeployerConfig deployerConfig,
                                                                   ServerSet apiFeServerSet,
                                                                   ServerSet cloudStoreServerSet,
                                                                   CloseableHttpAsyncClient httpClient) {
@@ -293,7 +294,7 @@ public class Main {
     logger.info("Creating Deployer Service Group");
 
     // Set deployer context zookeeper quorum
-    deployerConfig.getDeployerContext().setZookeeperQuorum(deployerConfig.getZookeeper().getQuorum());
+    deployerConfig.getDeployerContext().setZookeeperQuorum(photonControllerConfig.getZookeeper().getQuorum());
 
     // Set containers config to deployer config
     try {
@@ -334,7 +335,7 @@ public class Main {
     final ServiceConfiguratorFactory serviceConfiguratorFactory =
         new com.vmware.photon.controller.core.Main.ServiceConfiguratorFactoryImpl();
     final ZookeeperClientFactory zookeeperServerSetBuilderFactory = new com.vmware.photon.controller.core.Main
-        .ZookeeperClientFactoryImpl(deployerConfig);
+        .ZookeeperClientFactoryImpl(photonControllerConfig);
     final HostManagementVmAddressValidatorFactory hostManagementVmAddressValidatorFactory = new
         com.vmware.photon.controller.core.Main.HostManagementVmAddressValidatorFactoryImpl();
 
@@ -428,15 +429,15 @@ public class Main {
    * Implementation of ZookeeperClientFactory.
    */
   private static class ZookeeperClientFactoryImpl implements ZookeeperClientFactory {
-    private final DeployerConfig deployerConfig;
+    private final PhotonControllerConfig photonControllerConfig;
 
-    private ZookeeperClientFactoryImpl(final DeployerConfig deployerConfig) {
-      this.deployerConfig = deployerConfig;
+    private ZookeeperClientFactoryImpl(final PhotonControllerConfig photonControllerConfig) {
+      this.photonControllerConfig = photonControllerConfig;
     }
 
     @Override
     public ZookeeperClient create() {
-      return new ZookeeperClient(deployerConfig.getZookeeper().getNamespace());
+      return new ZookeeperClient(photonControllerConfig.getZookeeper().getNamespace());
     }
   }
 }

@@ -20,7 +20,6 @@ import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
-import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.deployengine.DockerProvisioner;
 import com.vmware.photon.controller.deployer.deployengine.DockerProvisionerFactory;
 import com.vmware.photon.controller.deployer.healthcheck.HealthCheckHelper;
@@ -28,6 +27,7 @@ import com.vmware.photon.controller.deployer.healthcheck.HealthCheckHelperFactor
 import com.vmware.photon.controller.deployer.healthcheck.HealthChecker;
 import com.vmware.photon.controller.deployer.helpers.ReflectionUtils;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
+import com.vmware.photon.controller.deployer.helpers.xenon.DeployerTestConfig;
 import com.vmware.photon.controller.deployer.helpers.xenon.TestEnvironment;
 import com.vmware.photon.controller.deployer.helpers.xenon.TestHost;
 import com.vmware.photon.controller.deployer.xenon.ContainersConfig;
@@ -414,7 +414,7 @@ public class CreateContainerTaskServiceTest {
     private static final String MGMT_UI_LOGOUT_URL = "http://1.2.3.4/mgmt_ui_logout";
 
     private com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment cloudStoreEnvironment;
-    private DeployerConfig deployerConfig;
+    private DeployerTestConfig deployerTestConfig;
     private DockerProvisionerFactory dockerProvisionerFactory;
     private HealthCheckHelperFactory healthCheckHelperFactory;
     private CreateContainerTaskService.State startState;
@@ -433,16 +433,17 @@ public class CreateContainerTaskServiceTest {
     @BeforeClass
     public void setUpClass() throws Throwable {
       cloudStoreEnvironment = com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment.create(1);
-      deployerConfig = ConfigBuilder.build(DeployerConfig.class, getClass().getResource("/config.yml").getPath());
+      deployerTestConfig =
+          ConfigBuilder.build(DeployerTestConfig.class, getClass().getResource("/config.yml").getPath());
       dockerProvisionerFactory = mock(DockerProvisionerFactory.class);
       healthCheckHelperFactory = mock(HealthCheckHelperFactory.class);
 
-      TestHelper.setContainersConfig(deployerConfig);
+      TestHelper.setContainersConfig(deployerTestConfig);
 
       testEnvironment = new TestEnvironment.Builder()
           .cloudServerSet(cloudStoreEnvironment.getServerSet())
-          .containersConfig(deployerConfig.getContainersConfig())
-          .deployerContext(deployerConfig.getDeployerContext())
+          .containersConfig(deployerTestConfig.getContainersConfig())
+          .deployerContext(deployerTestConfig.getDeployerContext())
           .dockerProvisionerFactory(dockerProvisionerFactory)
           .healthCheckerFactory(healthCheckHelperFactory)
           .hostCount(1)
@@ -481,7 +482,7 @@ public class CreateContainerTaskServiceTest {
 
       ContainerTemplateService.State templateState =
           TestHelper.createContainerTemplateService(testEnvironment,
-              deployerConfig.getContainersConfig().getContainerSpecs().get(containerType.name()));
+              deployerTestConfig.getContainersConfig().getContainerSpecs().get(containerType.name()));
 
       VmService.State vmState = TestHelper.createVmService(testEnvironment);
 
@@ -561,7 +562,7 @@ public class CreateContainerTaskServiceTest {
       assertThat(finalState.taskState.subStage, nullValue());
 
       ContainersConfig.Spec containerSpec =
-          deployerConfig.getContainersConfig().getContainerSpecs().get(containerType.name());
+          deployerTestConfig.getContainersConfig().getContainerSpecs().get(containerType.name());
 
       CaptorHolder volumeBindingsCaptor = new CaptorHolder();
       CaptorHolder environmentVariablesCaptor = new CaptorHolder();

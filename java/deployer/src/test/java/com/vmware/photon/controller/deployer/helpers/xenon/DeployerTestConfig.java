@@ -11,8 +11,11 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package com.vmware.photon.controller.deployer;
+package com.vmware.photon.controller.deployer.helpers.xenon;
 
+import com.vmware.photon.controller.common.logging.LoggingConfiguration;
+import com.vmware.photon.controller.common.xenon.host.XenonConfig;
+import com.vmware.photon.controller.common.zookeeper.ZookeeperConfig;
 import com.vmware.photon.controller.deployer.xenon.ContainersConfig;
 import com.vmware.photon.controller.deployer.xenon.DeployerContext;
 
@@ -32,13 +35,26 @@ import java.util.List;
  * This class implements configuration state for the deployer service.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class DeployerConfig {
+public class DeployerTestConfig {
 
   @Valid
   @NotNull
   @JsonProperty("deployer")
   private DeployerContext deployerContext;
 
+  @Valid
+  @NotNull
+  @JsonProperty("xenon")
+  private XenonConfig xenonConfig;
+
+
+  @Valid
+  @NotNull
+  private LoggingConfiguration logging;
+
+  @Valid
+  @NotNull
+  private ZookeeperConfig zookeeper;
 
   private ContainersConfig containersConfig;
 
@@ -49,8 +65,20 @@ public class DeployerConfig {
 
   private static String managementImageFile = IMAGES_PATH + MANAGEMENT_IMAGE_FILE_NAME_PREFIX;
 
+  public XenonConfig getXenonConfig() {
+    return xenonConfig;
+  }
+
   public DeployerContext getDeployerContext() {
     return deployerContext;
+  }
+
+  public LoggingConfiguration getLogging() {
+    return checkNotNull(logging);
+  }
+
+  public ZookeeperConfig getZookeeper() {
+    return checkNotNull(zookeeper);
   }
 
   public ContainersConfig getContainersConfig() {

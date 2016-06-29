@@ -37,7 +37,6 @@ import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
-import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfigurator;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfiguratorFactory;
 import com.vmware.photon.controller.deployer.deployengine.ApiClientFactory;
@@ -45,6 +44,7 @@ import com.vmware.photon.controller.deployer.deployengine.DockerProvisioner;
 import com.vmware.photon.controller.deployer.deployengine.DockerProvisionerFactory;
 import com.vmware.photon.controller.deployer.helpers.ReflectionUtils;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
+import com.vmware.photon.controller.deployer.helpers.xenon.DeployerTestConfig;
 import com.vmware.photon.controller.deployer.helpers.xenon.MockHelper;
 import com.vmware.photon.controller.deployer.helpers.xenon.TestEnvironment;
 import com.vmware.photon.controller.deployer.helpers.xenon.TestHost;
@@ -425,7 +425,7 @@ public class CreateManagementVmTaskServiceTest {
 
     private ApiClientFactory apiClientFactory;
     private com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment cloudStoreEnvironment;
-    private DeployerConfig deployerConfig;
+    private DeployerTestConfig deployerTestConfig;
     private DockerProvisioner dockerProvisioner;
     private DockerProvisionerFactory dockerProvisionerFactory;
     private FlavorApi flavorApi;
@@ -442,16 +442,17 @@ public class CreateManagementVmTaskServiceTest {
     public void setUpClass() throws Throwable {
       apiClientFactory = mock(ApiClientFactory.class);
       cloudStoreEnvironment = com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment.create(1);
-      deployerConfig = ConfigBuilder.build(DeployerConfig.class, this.getClass().getResource("/config.yml").getPath());
+      deployerTestConfig =
+          ConfigBuilder.build(DeployerTestConfig.class, this.getClass().getResource("/config.yml").getPath());
       dockerProvisionerFactory = mock(DockerProvisionerFactory.class);
-      TestHelper.setContainersConfig(deployerConfig);
+      TestHelper.setContainersConfig(deployerTestConfig);
       listeningExecutorService = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(1));
       serviceConfiguratorFactory = mock(ServiceConfiguratorFactory.class);
 
       testEnvironment = new TestEnvironment.Builder()
           .apiClientFactory(apiClientFactory)
           .cloudServerSet(cloudStoreEnvironment.getServerSet())
-          .deployerContext(deployerConfig.getDeployerContext())
+          .deployerContext(deployerTestConfig.getDeployerContext())
           .dockerProvisionerFactory(dockerProvisionerFactory)
           .hostCount(1)
           .listeningExecutorService(listeningExecutorService)
@@ -459,7 +460,7 @@ public class CreateManagementVmTaskServiceTest {
           .build();
 
       FileUtils.copyDirectory(Paths.get(this.getClass().getResource("/configurations/").getPath()).toFile(),
-          Paths.get(deployerConfig.getDeployerContext().getConfigDirectory()).toFile());
+          Paths.get(deployerTestConfig.getDeployerContext().getConfigDirectory()).toFile());
     }
 
     @BeforeMethod
@@ -573,7 +574,7 @@ public class CreateManagementVmTaskServiceTest {
         }
 
         ContainerTemplateService.State templateState = TestHelper.createContainerTemplateService(testEnvironment,
-            deployerConfig.getContainersConfig().getContainerSpecs().get(containerType.name()));
+            deployerTestConfig.getContainersConfig().getContainerSpecs().get(containerType.name()));
         TestHelper.createContainerService(testEnvironment, templateState, vmState);
       }
 
@@ -584,16 +585,16 @@ public class CreateManagementVmTaskServiceTest {
       startState.maxDockerPollIterations = 3;
 
       FileUtils.copyDirectory(Paths.get(this.getClass().getResource("/scripts/").getPath()).toFile(),
-          Paths.get(deployerConfig.getDeployerContext().getScriptDirectory()).toFile());
-      Paths.get(deployerConfig.getDeployerContext().getScriptDirectory(), "esx-create-vm-iso").toFile()
+          Paths.get(deployerTestConfig.getDeployerContext().getScriptDirectory()).toFile());
+      Paths.get(deployerTestConfig.getDeployerContext().getScriptDirectory(), "esx-create-vm-iso").toFile()
           .setExecutable(true, true);
-      Paths.get(deployerConfig.getDeployerContext().getScriptLogDirectory()).toFile().mkdirs();
+      Paths.get(deployerTestConfig.getDeployerContext().getScriptLogDirectory()).toFile().mkdirs();
     }
 
     @AfterMethod
     public void tearDownTest() throws Throwable {
-      FileUtils.deleteDirectory(Paths.get(deployerConfig.getDeployerContext().getScriptDirectory()).toFile());
-      FileUtils.deleteDirectory(Paths.get(deployerConfig.getDeployerContext().getScriptLogDirectory()).toFile());
+      FileUtils.deleteDirectory(Paths.get(deployerTestConfig.getDeployerContext().getScriptDirectory()).toFile());
+      FileUtils.deleteDirectory(Paths.get(deployerTestConfig.getDeployerContext().getScriptLogDirectory()).toFile());
       TestHelper.deleteServicesOfType(cloudStoreEnvironment, FlavorService.State.class);
       TestHelper.deleteServicesOfType(cloudStoreEnvironment, HostService.State.class);
       TestHelper.deleteServicesOfType(testEnvironment, ContainerService.State.class);
@@ -603,7 +604,7 @@ public class CreateManagementVmTaskServiceTest {
 
     @AfterClass
     public void tearDownClass() throws Throwable {
-      FileUtils.deleteDirectory(Paths.get(deployerConfig.getDeployerContext().getConfigDirectory()).toFile());
+      FileUtils.deleteDirectory(Paths.get(deployerTestConfig.getDeployerContext().getConfigDirectory()).toFile());
       testEnvironment.stop();
       cloudStoreEnvironment.stop();
       listeningExecutorService.shutdown();
@@ -638,7 +639,7 @@ public class CreateManagementVmTaskServiceTest {
         }
 
         ContainerTemplateService.State templateState = TestHelper.createContainerTemplateService(testEnvironment,
-            deployerConfig.getContainersConfig().getContainerSpecs().get(containerType.name()));
+            deployerTestConfig.getContainersConfig().getContainerSpecs().get(containerType.name()));
         TestHelper.createContainerService(testEnvironment, templateState, vmState);
       }
 
@@ -716,11 +717,11 @@ public class CreateManagementVmTaskServiceTest {
           Matchers.<FutureCallback<Task>>any());
 
       assertTrue(FileUtils.contentEquals(
-          Paths.get(deployerConfig.getDeployerContext().getScriptDirectory(), "user-data").toFile(),
+          Paths.get(deployerTestConfig.getDeployerContext().getScriptDirectory(), "user-data").toFile(),
           Paths.get(this.getClass().getResource("/fixtures/user-data.yml").getPath()).toFile()));
 
       assertTrue(FileUtils.contentEquals(
-          Paths.get(deployerConfig.getDeployerContext().getScriptDirectory(), "meta-data").toFile(),
+          Paths.get(deployerTestConfig.getDeployerContext().getScriptDirectory(), "meta-data").toFile(),
           Paths.get(this.getClass().getResource("/fixtures/meta-data.yml").getPath()).toFile()));
 
       verify(vmApi).uploadAndAttachIso(
@@ -825,11 +826,11 @@ public class CreateManagementVmTaskServiceTest {
       assertThat(captor.getValue().getMetadata(), is(getExpectedMetadata()));
 
       assertTrue(FileUtils.contentEquals(
-          Paths.get(deployerConfig.getDeployerContext().getScriptDirectory(), "user-data").toFile(),
+          Paths.get(deployerTestConfig.getDeployerContext().getScriptDirectory(), "user-data").toFile(),
           Paths.get(this.getClass().getResource("/fixtures/user-data.yml").getPath()).toFile()));
 
       assertTrue(FileUtils.contentEquals(
-          Paths.get(deployerConfig.getDeployerContext().getScriptDirectory(), "meta-data").toFile(),
+          Paths.get(deployerTestConfig.getDeployerContext().getScriptDirectory(), "meta-data").toFile(),
           Paths.get(this.getClass().getResource("/fixtures/meta-data.yml").getPath()).toFile()));
 
       verify(vmApi).uploadAndAttachIso(
@@ -926,7 +927,8 @@ public class CreateManagementVmTaskServiceTest {
     private Map<String, String> getExpectedMetadata() {
       return Stream.of(ContainersConfig.ContainerType.values())
           .filter((containerType) -> containerType != ContainersConfig.ContainerType.LoadBalancer)
-          .map((containerType) -> deployerConfig.getContainersConfig().getContainerSpecs().get(containerType.name()))
+          .map((containerType) ->
+              deployerTestConfig.getContainersConfig().getContainerSpecs().get(containerType.name()))
           .flatMap((containerSpec) -> containerSpec.getPortBindings().values().stream()
               .collect(Collectors.toMap(
                   (hostPort) -> "CONTAINER_" + hostPort,
@@ -1443,7 +1445,7 @@ public class CreateManagementVmTaskServiceTest {
     @Test
     public void testAttachIsoFailureInScriptRunner() throws Throwable {
 
-      TestHelper.createFailScriptFile(deployerConfig.getDeployerContext(), "esx-create-vm-iso");
+      TestHelper.createFailScriptFile(deployerTestConfig.getDeployerContext(), "esx-create-vm-iso");
 
       CreateManagementVmTaskService.State finalState =
           testEnvironment.callServiceAndWaitForState(
