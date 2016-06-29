@@ -38,6 +38,7 @@ module EsxCloud::Cli
                   options[:oauth_password],
                   oauth_security_groups
               ),
+              EsxCloud::NetworkConfigurationSpec.new(false),
               EsxCloud::StatsInfo.new(
                   options[:stats_enabled],
                   options[:stats_store_endpoint],

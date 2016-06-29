@@ -47,6 +47,12 @@ deployment:
   oauth_username: 'u'
   oauth_password: 'p'
   oauth_security_groups: ["sg1", "sg2"]
+  virtual_network_enabled: true
+  network_manager_address: nma
+  network_manager_username: nmu
+  network_manager_password: nmp
+  network_zone_id: nzi
+  network_top_router_id: ntri
   syslog_endpoint: 0.0.0.1
   ntp_endpoint: 0.0.0.2
   stats_enabled: true
@@ -62,6 +68,8 @@ CONTENT
           let(:spec) do
             EsxCloud::DeploymentCreateSpec.new(["image_datastore"],
                                                EsxCloud::AuthConfigurationSpec.new(true, 't', 'p', ['sg1', 'sg2']),
+                                               EsxCloud::NetworkConfigurationSpec.new(true, "nma", "nmu", "nmp",
+                                                                                      "nzi", "ntri"),
                                                EsxCloud::StatsInfo.new(true, '0.1.2.3', '2004', 'GRAPHITE'),
                                                "0.0.0.1",
                                                "0.0.0.2",
@@ -77,6 +85,7 @@ CONTENT
 deployment:
   image_datastores: image_datastore
   auth_enabled: false
+  virtual_network_enabled: false
   stats_enabled : false
 CONTENT
         end
@@ -87,6 +96,7 @@ CONTENT
             EsxCloud::DeploymentCreateSpec.new(
                 ["image_datastore"],
                 EsxCloud::AuthConfigurationSpec.new(false),
+                EsxCloud::NetworkConfigurationSpec.new(false),
                 EsxCloud::StatsInfo.new(false))
           end
         end
@@ -100,6 +110,7 @@ deployment:
   - image_ds1
   - image_ds2
   auth_enabled: false
+  virtual_network_enabled: false
   stats_enabled: false
 CONTENT
           end
@@ -110,6 +121,7 @@ CONTENT
               EsxCloud::DeploymentCreateSpec.new(
                   ["image_ds1", "image_ds2"],
                   EsxCloud::AuthConfigurationSpec.new(false),
+                  EsxCloud::NetworkConfigurationSpec.new(false),
                   EsxCloud::StatsInfo.new(false))
             end
           end
@@ -122,6 +134,7 @@ CONTENT
 deployment:
   image_datastores: image_ds1,image_ds2
   auth_enabled: false
+  virtual_network_enabled: false
   stats_enabled: false
 CONTENT
           end
@@ -132,6 +145,7 @@ CONTENT
               EsxCloud::DeploymentCreateSpec.new(
                   ["image_ds1", "image_ds2"],
                   EsxCloud::AuthConfigurationSpec.new(false),
+                  EsxCloud::NetworkConfigurationSpec.new(false),
                   EsxCloud::StatsInfo.new(false))
             end
           end
