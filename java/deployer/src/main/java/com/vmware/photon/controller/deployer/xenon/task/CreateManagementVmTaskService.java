@@ -50,7 +50,6 @@ import com.vmware.photon.controller.deployer.xenon.entity.VmService;
 import com.vmware.photon.controller.deployer.xenon.util.ApiUtils;
 import com.vmware.photon.controller.deployer.xenon.util.HostUtils;
 import com.vmware.photon.controller.deployer.xenon.util.MiscUtils;
-import com.vmware.photon.controller.deployer.xenon.workflow.BuildContainersConfigurationWorkflowService;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.OperationJoin;
 import com.vmware.xenon.common.OperationSequence;
@@ -1283,9 +1282,6 @@ public class CreateManagementVmTaskService extends StatefulService {
       dynamicParameters.computeIfPresent(
           BuildRuntimeConfigurationTaskService.MUSTACHE_KEY_DEPLOYER_PEER_NODES,
           (k, v) -> new Gson().fromJson(v.toString(), peerNodeTypeToken.getType()));
-      dynamicParameters.computeIfPresent(
-          BuildContainersConfigurationWorkflowService.MUSTACHE_KEY_ZOOKEEPER_INSTANCES,
-          (k, v) -> new Gson().fromJson(v.toString(), zookeeperTypeToken.getType()));
 
       serviceConfigurator.applyDynamicParameters(serviceConfigDirectoryPath.toString(),
           ContainersConfig.ContainerType.valueOf(templateStates.get(containerState.documentSelfLink).name),
