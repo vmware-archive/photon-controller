@@ -24,8 +24,6 @@ import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.deployengine.DockerProvisioner;
 import com.vmware.photon.controller.deployer.deployengine.DockerProvisionerFactory;
-import com.vmware.photon.controller.deployer.deployengine.ZookeeperClient;
-import com.vmware.photon.controller.deployer.deployengine.ZookeeperClientFactory;
 import com.vmware.photon.controller.deployer.healthcheck.HealthCheckHelperFactory;
 import com.vmware.photon.controller.deployer.helpers.ReflectionUtils;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
@@ -57,7 +55,6 @@ import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyMap;
 import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
@@ -152,7 +149,7 @@ public class CreateContainersWorkflowServiceTest {
           {null, null},
           {TaskState.TaskStage.CREATED, null},
           {TaskState.TaskStage.STARTED,
-              CreateContainersWorkflowService.TaskState.SubStage.CREATE_ZOOKEEPER_AND_CORE_CONTAINERS},
+              CreateContainersWorkflowService.TaskState.SubStage.CREATE_CORE_CONTAINERS},
           {TaskState.TaskStage.STARTED,
               CreateContainersWorkflowService.TaskState.SubStage.CREATE_SERVICE_CONTAINERS},
           {TaskState.TaskStage.STARTED,
@@ -183,7 +180,7 @@ public class CreateContainersWorkflowServiceTest {
           {null, null},
           {TaskState.TaskStage.CREATED, null},
           {TaskState.TaskStage.STARTED,
-              CreateContainersWorkflowService.TaskState.SubStage.CREATE_ZOOKEEPER_AND_CORE_CONTAINERS},
+              CreateContainersWorkflowService.TaskState.SubStage.CREATE_CORE_CONTAINERS},
       };
     }
 
@@ -295,9 +292,9 @@ public class CreateContainersWorkflowServiceTest {
           {TaskState.TaskStage.CREATED,
               null,
               TaskState.TaskStage.STARTED,
-              CreateContainersWorkflowService.TaskState.SubStage.CREATE_ZOOKEEPER_AND_CORE_CONTAINERS},
+              CreateContainersWorkflowService.TaskState.SubStage.CREATE_CORE_CONTAINERS},
           {TaskState.TaskStage.STARTED,
-              CreateContainersWorkflowService.TaskState.SubStage.CREATE_ZOOKEEPER_AND_CORE_CONTAINERS,
+              CreateContainersWorkflowService.TaskState.SubStage.CREATE_CORE_CONTAINERS,
               TaskState.TaskStage.STARTED,
               CreateContainersWorkflowService.TaskState.SubStage.PREEMPTIVE_PAUSE_BACKGROUND_TASKS},
           {TaskState.TaskStage.STARTED,
@@ -330,13 +327,13 @@ public class CreateContainersWorkflowServiceTest {
           {TaskState.TaskStage.CREATED, null, TaskState.TaskStage.CANCELLED, null},
 
           {TaskState.TaskStage.STARTED,
-              CreateContainersWorkflowService.TaskState.SubStage.CREATE_ZOOKEEPER_AND_CORE_CONTAINERS,
+              CreateContainersWorkflowService.TaskState.SubStage.CREATE_CORE_CONTAINERS,
               TaskState.TaskStage.FINISHED, null},
           {TaskState.TaskStage.STARTED,
-              CreateContainersWorkflowService.TaskState.SubStage.CREATE_ZOOKEEPER_AND_CORE_CONTAINERS,
+              CreateContainersWorkflowService.TaskState.SubStage.CREATE_CORE_CONTAINERS,
               TaskState.TaskStage.FAILED, null},
           {TaskState.TaskStage.STARTED,
-              CreateContainersWorkflowService.TaskState.SubStage.CREATE_ZOOKEEPER_AND_CORE_CONTAINERS,
+              CreateContainersWorkflowService.TaskState.SubStage.CREATE_CORE_CONTAINERS,
               TaskState.TaskStage.CANCELLED, null},
 
           {TaskState.TaskStage.STARTED,
@@ -425,7 +422,7 @@ public class CreateContainersWorkflowServiceTest {
           {TaskState.TaskStage.CREATED, null, TaskState.TaskStage.CREATED, null},
 
           {TaskState.TaskStage.STARTED,
-              CreateContainersWorkflowService.TaskState.SubStage.CREATE_ZOOKEEPER_AND_CORE_CONTAINERS,
+              CreateContainersWorkflowService.TaskState.SubStage.CREATE_CORE_CONTAINERS,
               TaskState.TaskStage.CREATED,
               null},
 
@@ -436,7 +433,7 @@ public class CreateContainersWorkflowServiceTest {
           {TaskState.TaskStage.STARTED,
               CreateContainersWorkflowService.TaskState.SubStage.PREEMPTIVE_PAUSE_BACKGROUND_TASKS,
               TaskState.TaskStage.STARTED,
-              CreateContainersWorkflowService.TaskState.SubStage.CREATE_ZOOKEEPER_AND_CORE_CONTAINERS},
+              CreateContainersWorkflowService.TaskState.SubStage.CREATE_CORE_CONTAINERS},
 
           {TaskState.TaskStage.STARTED,
               CreateContainersWorkflowService.TaskState.SubStage.CREATE_LIGHTWAVE_CONTAINER,
@@ -449,7 +446,7 @@ public class CreateContainersWorkflowServiceTest {
           {TaskState.TaskStage.STARTED,
               CreateContainersWorkflowService.TaskState.SubStage.CREATE_LIGHTWAVE_CONTAINER,
               TaskState.TaskStage.STARTED,
-              CreateContainersWorkflowService.TaskState.SubStage.CREATE_ZOOKEEPER_AND_CORE_CONTAINERS},
+              CreateContainersWorkflowService.TaskState.SubStage.CREATE_CORE_CONTAINERS},
 
           {TaskState.TaskStage.STARTED,
               CreateContainersWorkflowService.TaskState.SubStage.REGISTER_AUTH_CLIENT_FOR_SWAGGER_UI,
@@ -458,7 +455,7 @@ public class CreateContainersWorkflowServiceTest {
           {TaskState.TaskStage.STARTED,
               CreateContainersWorkflowService.TaskState.SubStage.REGISTER_AUTH_CLIENT_FOR_SWAGGER_UI,
               TaskState.TaskStage.STARTED,
-              CreateContainersWorkflowService.TaskState.SubStage.CREATE_ZOOKEEPER_AND_CORE_CONTAINERS},
+              CreateContainersWorkflowService.TaskState.SubStage.CREATE_CORE_CONTAINERS},
           {TaskState.TaskStage.STARTED,
               CreateContainersWorkflowService.TaskState.SubStage.REGISTER_AUTH_CLIENT_FOR_SWAGGER_UI,
               TaskState.TaskStage.STARTED,
@@ -471,7 +468,7 @@ public class CreateContainersWorkflowServiceTest {
           {TaskState.TaskStage.STARTED,
               CreateContainersWorkflowService.TaskState.SubStage.REGISTER_AUTH_CLIENT_FOR_MGMT_UI,
               TaskState.TaskStage.STARTED,
-              CreateContainersWorkflowService.TaskState.SubStage.CREATE_ZOOKEEPER_AND_CORE_CONTAINERS},
+              CreateContainersWorkflowService.TaskState.SubStage.CREATE_CORE_CONTAINERS},
           {TaskState.TaskStage.STARTED,
               CreateContainersWorkflowService.TaskState.SubStage.REGISTER_AUTH_CLIENT_FOR_MGMT_UI,
               TaskState.TaskStage.STARTED,
@@ -488,7 +485,7 @@ public class CreateContainersWorkflowServiceTest {
           {TaskState.TaskStage.STARTED,
               CreateContainersWorkflowService.TaskState.SubStage.CREATE_SERVICE_CONTAINERS,
               TaskState.TaskStage.STARTED,
-              CreateContainersWorkflowService.TaskState.SubStage.CREATE_ZOOKEEPER_AND_CORE_CONTAINERS},
+              CreateContainersWorkflowService.TaskState.SubStage.CREATE_CORE_CONTAINERS},
           {TaskState.TaskStage.STARTED,
               CreateContainersWorkflowService.TaskState.SubStage.CREATE_SERVICE_CONTAINERS,
               TaskState.TaskStage.STARTED,
@@ -509,7 +506,7 @@ public class CreateContainersWorkflowServiceTest {
           {TaskState.TaskStage.STARTED,
               CreateContainersWorkflowService.TaskState.SubStage.CREATE_LOAD_BALANCER_CONTAINER,
               TaskState.TaskStage.STARTED,
-              CreateContainersWorkflowService.TaskState.SubStage.CREATE_ZOOKEEPER_AND_CORE_CONTAINERS},
+              CreateContainersWorkflowService.TaskState.SubStage.CREATE_CORE_CONTAINERS},
           {TaskState.TaskStage.STARTED,
               CreateContainersWorkflowService.TaskState.SubStage.CREATE_LOAD_BALANCER_CONTAINER,
               TaskState.TaskStage.STARTED,
@@ -534,7 +531,7 @@ public class CreateContainersWorkflowServiceTest {
           {TaskState.TaskStage.FINISHED,
               null,
               TaskState.TaskStage.STARTED,
-              CreateContainersWorkflowService.TaskState.SubStage.CREATE_ZOOKEEPER_AND_CORE_CONTAINERS},
+              CreateContainersWorkflowService.TaskState.SubStage.CREATE_CORE_CONTAINERS},
           {TaskState.TaskStage.FINISHED,
               null,
               TaskState.TaskStage.STARTED,
@@ -579,7 +576,7 @@ public class CreateContainersWorkflowServiceTest {
           {TaskState.TaskStage.FAILED,
               null,
               TaskState.TaskStage.STARTED,
-              CreateContainersWorkflowService.TaskState.SubStage.CREATE_ZOOKEEPER_AND_CORE_CONTAINERS},
+              CreateContainersWorkflowService.TaskState.SubStage.CREATE_CORE_CONTAINERS},
           {TaskState.TaskStage.FAILED,
               null,
               TaskState.TaskStage.STARTED,
@@ -624,7 +621,7 @@ public class CreateContainersWorkflowServiceTest {
           {TaskState.TaskStage.CANCELLED,
               null,
               TaskState.TaskStage.STARTED,
-              CreateContainersWorkflowService.TaskState.SubStage.CREATE_ZOOKEEPER_AND_CORE_CONTAINERS},
+              CreateContainersWorkflowService.TaskState.SubStage.CREATE_CORE_CONTAINERS},
           {TaskState.TaskStage.CANCELLED,
               null,
               TaskState.TaskStage.STARTED,
@@ -673,7 +670,7 @@ public class CreateContainersWorkflowServiceTest {
       CreateContainersWorkflowService.State patchState =
           CreateContainersWorkflowService.buildPatch(
               TaskState.TaskStage.STARTED,
-              CreateContainersWorkflowService.TaskState.SubStage.CREATE_ZOOKEEPER_AND_CORE_CONTAINERS,
+              CreateContainersWorkflowService.TaskState.SubStage.CREATE_CORE_CONTAINERS,
               null);
 
       Field declaredField = patchState.getClass().getDeclaredField(fieldName);
@@ -881,16 +878,12 @@ public class CreateContainersWorkflowServiceTest {
         HealthCheckHelperFactory healthCheckHelperFactory,
         int hostCount)
         throws Throwable {
-      ZookeeperClientFactory zkFactory = mock(ZookeeperClientFactory.class);
-      ZookeeperClient zkBuilder = mock(ZookeeperClient.class);
-      doReturn(zkBuilder).when(zkFactory).create();
       return new TestEnvironment.Builder()
           .containersConfig(deployerConfig.getContainersConfig())
           .deployerContext(deployerConfig.getDeployerContext())
           .dockerProvisionerFactory(dockerProvisionerFactory)
           .listeningExecutorService(listeningExecutorService)
           .healthCheckerFactory(healthCheckHelperFactory)
-          .zookeeperServersetBuilderFactory(zkFactory)
           .cloudServerSet(cloudStoreMachine.getServerSet())
           .hostCount(hostCount)
           .build();

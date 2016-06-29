@@ -204,7 +204,7 @@ public class DeployerServiceGroup
   private final AuthHelperFactory authHelperFactory;
   private final HealthCheckHelperFactory healthCheckHelperFactory;
   private final ServiceConfiguratorFactory serviceConfiguratorFactory;
-  private final ZookeeperClientFactory zookeeperServerSetBuilderFactory;
+  private  ZookeeperClientFactory zookeeperServerSetBuilderFactory;
   private final HostManagementVmAddressValidatorFactory hostManagementVmAddressValidatorFactory;
   private final ClusterManagerFactory clusterManagerFactory;
 

@@ -303,13 +303,13 @@ public class TestHelper {
   }
 
   public static DeploymentService.State createDeploymentService(
-      com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment testEnvironment) throws
+      MultiHostEnvironment testEnvironment) throws
       Throwable {
     return createDeploymentService(testEnvironment, false, false);
   }
 
   public static DeploymentService.State createDeploymentService(
-      com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment testEnvironment,
+      MultiHostEnvironment testEnvironment,
       boolean isAuthEnabled,
       boolean isVirtualNetworkEnabled) throws Throwable {
     return createDeploymentService(testEnvironment,
@@ -317,39 +317,39 @@ public class TestHelper {
   }
 
   public static DeploymentService.State createDeploymentService(
-      com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment testEnvironment,
+      MultiHostEnvironment testEnvironment,
       DeploymentService.State startState) throws Throwable {
 
-    return testEnvironment.callServiceSynchronously(
+    return (DeploymentService.State) testEnvironment.callServiceSynchronously(
         DeploymentServiceFactory.SELF_LINK,
         startState,
         DeploymentService.State.class);
   }
 
   public static DatastoreService.State createDatastoreService(
-      com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment testEnvironment,
+      MultiHostEnvironment testEnvironment,
       DatastoreService.State startState) throws Throwable {
 
-    return testEnvironment.callServiceSynchronously(
+    return (DatastoreService.State) testEnvironment.callServiceSynchronously(
         DatastoreServiceFactory.SELF_LINK,
         startState,
         DatastoreService.State.class);
   }
 
   public static HostService.State createHostService(
-      com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment testEnvironment, UsageTag usageTag)
+      MultiHostEnvironment testEnvironment, UsageTag usageTag)
       throws Throwable {
     return createHostService(testEnvironment, Collections.singleton(usageTag.name()));
   }
 
   public static HostService.State createHostService(
-      com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment testEnvironment, Set<String> usageTags)
+      MultiHostEnvironment testEnvironment, Set<String> usageTags)
       throws Throwable {
     return createHostService(testEnvironment, usageTags, HostState.READY);
   }
 
   public static HostService.State createHostService(
-      com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment testEnvironment, Set<String> usageTags,
+      MultiHostEnvironment testEnvironment, Set<String> usageTags,
       HostState state) throws Throwable {
     return createHostService(testEnvironment, getHostServiceStartState(usageTags, state));
   }

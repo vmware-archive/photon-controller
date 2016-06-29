@@ -14,7 +14,6 @@
 package com.vmware.photon.controller.apife.config;
 
 import com.vmware.photon.controller.common.metrics.GraphiteConfig;
-import com.vmware.photon.controller.common.zookeeper.ZookeeperConfig;
 
 /**
  * API Front End Server Configuration interface.
@@ -28,8 +27,6 @@ public interface ApiFeConfiguration {
   public AuthConfig getAuth();
 
   public RootSchedulerConfig getRootScheduler();
-
-  public ZookeeperConfig getZookeeper();
 
   public int getBackgroundWorkers();
 
