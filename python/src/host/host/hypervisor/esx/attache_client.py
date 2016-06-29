@@ -69,7 +69,8 @@ ATTACHE_FATAL_ERRORS = [
 def attache_error_handler(func):
     def nested(self, *args, **kwargs):
         try:
-            self._logger.info("Enter %s.%s", self.__class__.__name__, func.__name__)
+            if func.__name__ != "update_cache":
+                self._logger.info("Enter %s.%s", self.__class__.__name__, func.__name__)
             return func(self, *args, **kwargs)
         except attache.attache_exception as e:
             msg = "%s.%s failed with attache_exception: code=%d, msg=%s" %\
@@ -87,7 +88,8 @@ def attache_error_handler(func):
             self._logger.exception("%s.%s failed with exception", self.__class__.__name__, func.__name__)
             raise
         finally:
-            self._logger.info("Leave %s.%s", self.__class__.__name__, func.__name__)
+            if func.__name__ != "update_cache":
+                self._logger.info("Leave %s.%s", self.__class__.__name__, func.__name__)
     return nested
 
 
