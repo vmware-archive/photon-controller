@@ -12,22 +12,24 @@
 module EsxCloud
   class DeploymentCreateSpec
 
-    attr_accessor :image_datastores, :auth, :syslog_endpoint, :ntp_endpoint, :stats,
+    attr_accessor :image_datastores, :auth, :network_configuration, :syslog_endpoint, :ntp_endpoint, :stats,
                   :use_image_datastore_for_vms, :loadbalancer_enabled
 
     # @param [Array<String>] image_datastores
     # @param [AuthConfigurationSpec] auth
+    # @param [NetworkConfigurationSpec] network_configuration
     # @param [StatsInfo] stats
     # @param [String] syslog_endpoint
     # @param [String] ntp_endpoint
     # @param [Boolean] use_image_datastore_for_vms
-    def initialize(image_datastores, auth, stats,
+    def initialize(image_datastores, auth, network_configuration, stats,
       syslog_endpoint = nil, ntp_endpoint = nil, use_image_datastore_for_vms = false,
       loadbalancer_enabled = true)
       fail EsxCloud::UnexpectedFormat, "auth is class #{auth.class} instead of AuthConfigurationSpec" unless
           auth.is_a?(AuthConfigurationSpec)
       @image_datastores = image_datastores
       @auth = auth
+      @network_configuration = network_configuration
       @stats = stats
       @syslog_endpoint = syslog_endpoint
       @ntp_endpoint = ntp_endpoint
@@ -39,6 +41,7 @@ module EsxCloud
       {
         imageDatastores: @image_datastores,
         auth: @auth.to_hash,
+        networkConfiguration: @network_configuration,
         stats: @stats.to_hash,
         syslogEndpoint: @syslog_endpoint,
         ntpEndpoint: @ntp_endpoint,
@@ -49,6 +52,7 @@ module EsxCloud
     def ==(other)
         @image_datastores == other.image_datastores &&
         @auth == other.auth &&
+        @network_configuration == other.network_configuration &&
         @stats == other.stats &&
         @syslog_endpoint == other.syslog_endpoint &&
         @ntp_endpoint == other.ntp_endpoint &&
