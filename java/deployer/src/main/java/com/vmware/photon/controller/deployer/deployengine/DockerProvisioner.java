@@ -244,7 +244,10 @@ public class DockerProvisioner {
       createContainerCmd = createContainerCmd.withNetworkMode("host");
     }
 
-    if (containerName.equals(ContainersConfig.ContainerType.Lightwave.name())) {
+    // Run init process to start lightwave server and photon controller core containers, because both of them require
+    // lightwave related processes to run as a part of the container as systemd services.
+    if (containerName.equals(ContainersConfig.ContainerType.Lightwave.name()) || containerName.equals
+        (ContainersConfig.ContainerType.PhotonControllerCore.name())) {
       //
       // Implement entrypoint and cmd as configuration for containers instead of special-casing Lightwave.
       //
