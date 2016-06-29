@@ -15,10 +15,8 @@ package com.vmware.photon.controller.deployer.xenon.workflow;
 
 import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.UsageTag;
-import com.vmware.photon.controller.cloudstore.SystemConfig;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.HostService;
-import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.auth.AuthClientHandler;
 import com.vmware.photon.controller.common.clients.AgentControlClientFactory;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
@@ -37,8 +35,6 @@ import com.vmware.photon.controller.deployer.deployengine.ApiClientFactory;
 import com.vmware.photon.controller.deployer.deployengine.AuthHelperFactory;
 import com.vmware.photon.controller.deployer.deployengine.DockerProvisionerFactory;
 import com.vmware.photon.controller.deployer.deployengine.HttpFileServiceClientFactory;
-import com.vmware.photon.controller.deployer.deployengine.ZookeeperClient;
-import com.vmware.photon.controller.deployer.deployengine.ZookeeperClientFactory;
 import com.vmware.photon.controller.deployer.healthcheck.HealthCheckHelperFactory;
 import com.vmware.photon.controller.deployer.helpers.ReflectionUtils;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
@@ -64,13 +60,9 @@ import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.NodeGroupBroadcastResponse;
 import com.vmware.xenon.services.common.QueryTask;
 
-import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import org.apache.commons.io.FileUtils;
-import org.mockito.Matchers;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
@@ -81,12 +73,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.startsWith;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyObject;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.testng.Assert.assertNotNull;
@@ -96,7 +82,6 @@ import javax.annotation.Nullable;
 
 import java.io.File;
 import java.lang.reflect.Field;
-import java.net.InetSocketAddress;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -441,15 +426,6 @@ public class AddManagementHostWorkflowServiceTest {
           {TaskState.TaskStage.STARTED,
               AddManagementHostWorkflowService.TaskState.SubStage.BUILD_RUNTIME_CONFIGURATION,
               TaskState.TaskStage.STARTED,
-              AddManagementHostWorkflowService.TaskState.SubStage.SET_QUORUM_ON_DEPLOYMENT_ENTITY},
-          {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.BUILD_RUNTIME_CONFIGURATION,
-              TaskState.TaskStage.FAILED, null},
-          {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.BUILD_RUNTIME_CONFIGURATION,
-              TaskState.TaskStage.CANCELLED, null},
-
-          {TaskState.TaskStage.STARTED,
-              AddManagementHostWorkflowService.TaskState.SubStage.SET_QUORUM_ON_DEPLOYMENT_ENTITY,
-              TaskState.TaskStage.STARTED,
               AddManagementHostWorkflowService.TaskState.SubStage.PROVISION_MANAGEMENT_HOSTS},
           {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.BUILD_RUNTIME_CONFIGURATION,
               TaskState.TaskStage.FAILED, null},
@@ -464,17 +440,9 @@ public class AddManagementHostWorkflowServiceTest {
               TaskState.TaskStage.CANCELLED, null},
 
           {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE,
-              TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.RECONFIGURE_ZOOKEEPER},
-          {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE,
               TaskState.TaskStage.FAILED, null},
           {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE,
               TaskState.TaskStage.CANCELLED, null},
-
-          {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.RECONFIGURE_ZOOKEEPER,
-              TaskState.TaskStage.FAILED, null},
-          {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.RECONFIGURE_ZOOKEEPER,
-              TaskState.TaskStage.CANCELLED, null},
-
       };
     }
 
@@ -509,30 +477,11 @@ public class AddManagementHostWorkflowServiceTest {
               TaskState.TaskStage.CREATED, null},
           {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.BUILD_RUNTIME_CONFIGURATION,
               TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.STARTED,
-              AddManagementHostWorkflowService.TaskState.SubStage.SET_QUORUM_ON_DEPLOYMENT_ENTITY,
-              TaskState.TaskStage.CREATED, null},
           {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.PROVISION_MANAGEMENT_HOSTS,
               TaskState.TaskStage.CREATED, null},
           {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE,
               TaskState.TaskStage.CREATED, null},
-          {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.RECONFIGURE_ZOOKEEPER,
-              TaskState.TaskStage.CREATED, null},
 
-          {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.RECONFIGURE_ZOOKEEPER,
-              TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE},
-          {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.RECONFIGURE_ZOOKEEPER,
-              TaskState.TaskStage.STARTED,
-              AddManagementHostWorkflowService.TaskState.SubStage.PROVISION_MANAGEMENT_HOSTS},
-          {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.RECONFIGURE_ZOOKEEPER,
-              TaskState.TaskStage.STARTED,
-              AddManagementHostWorkflowService.TaskState.SubStage.BUILD_RUNTIME_CONFIGURATION},
-          {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.RECONFIGURE_ZOOKEEPER,
-              TaskState.TaskStage.STARTED,
-              AddManagementHostWorkflowService.TaskState.SubStage.SET_QUORUM_ON_DEPLOYMENT_ENTITY},
-          {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.RECONFIGURE_ZOOKEEPER,
-              TaskState.TaskStage.STARTED,
-              AddManagementHostWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE_LAYOUT},
 
           {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE,
               TaskState.TaskStage.STARTED,
@@ -542,9 +491,6 @@ public class AddManagementHostWorkflowServiceTest {
               AddManagementHostWorkflowService.TaskState.SubStage.BUILD_RUNTIME_CONFIGURATION},
           {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE,
               TaskState.TaskStage.STARTED,
-              AddManagementHostWorkflowService.TaskState.SubStage.SET_QUORUM_ON_DEPLOYMENT_ENTITY},
-          {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE,
-              TaskState.TaskStage.STARTED,
               AddManagementHostWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE_LAYOUT},
 
           {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.PROVISION_MANAGEMENT_HOSTS,
@@ -552,41 +498,20 @@ public class AddManagementHostWorkflowServiceTest {
               AddManagementHostWorkflowService.TaskState.SubStage.BUILD_RUNTIME_CONFIGURATION},
           {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.PROVISION_MANAGEMENT_HOSTS,
               TaskState.TaskStage.STARTED,
-              AddManagementHostWorkflowService.TaskState.SubStage.SET_QUORUM_ON_DEPLOYMENT_ENTITY},
-          {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.PROVISION_MANAGEMENT_HOSTS,
-              TaskState.TaskStage.STARTED,
               AddManagementHostWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE_LAYOUT},
-          {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.PROVISION_MANAGEMENT_HOSTS,
-              TaskState.TaskStage.STARTED,
-              AddManagementHostWorkflowService.TaskState.SubStage.RECONFIGURE_ZOOKEEPER},
 
           {TaskState.TaskStage.STARTED, AddManagementHostWorkflowService.TaskState.SubStage.BUILD_RUNTIME_CONFIGURATION,
               TaskState.TaskStage.STARTED,
               AddManagementHostWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE_LAYOUT},
 
-          {TaskState.TaskStage.STARTED,
-              AddManagementHostWorkflowService.TaskState.SubStage.SET_QUORUM_ON_DEPLOYMENT_ENTITY,
-              TaskState.TaskStage.STARTED,
-              AddManagementHostWorkflowService.TaskState.SubStage.BUILD_RUNTIME_CONFIGURATION},
-          {TaskState.TaskStage.STARTED,
-              AddManagementHostWorkflowService.TaskState.SubStage.SET_QUORUM_ON_DEPLOYMENT_ENTITY,
-              TaskState.TaskStage.STARTED,
-              AddManagementHostWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE_LAYOUT},
-
           {TaskState.TaskStage.FINISHED, null,
               TaskState.TaskStage.CREATED, null},
           {TaskState.TaskStage.FINISHED, null,
               TaskState.TaskStage.STARTED,
-              AddManagementHostWorkflowService.TaskState.SubStage.RECONFIGURE_ZOOKEEPER},
-          {TaskState.TaskStage.FINISHED, null,
-              TaskState.TaskStage.STARTED,
               AddManagementHostWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE_LAYOUT},
           {TaskState.TaskStage.FINISHED, null,
               TaskState.TaskStage.STARTED,
               AddManagementHostWorkflowService.TaskState.SubStage.BUILD_RUNTIME_CONFIGURATION},
-          {TaskState.TaskStage.FINISHED, null,
-              TaskState.TaskStage.STARTED,
-              AddManagementHostWorkflowService.TaskState.SubStage.SET_QUORUM_ON_DEPLOYMENT_ENTITY},
           {TaskState.TaskStage.FINISHED, null,
               TaskState.TaskStage.STARTED,
               AddManagementHostWorkflowService.TaskState.SubStage.PROVISION_MANAGEMENT_HOSTS},
@@ -603,16 +528,10 @@ public class AddManagementHostWorkflowServiceTest {
               TaskState.TaskStage.CREATED, null},
           {TaskState.TaskStage.FAILED, null,
               TaskState.TaskStage.STARTED,
-              AddManagementHostWorkflowService.TaskState.SubStage.RECONFIGURE_ZOOKEEPER},
-          {TaskState.TaskStage.FAILED, null,
-              TaskState.TaskStage.STARTED,
               AddManagementHostWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE_LAYOUT},
           {TaskState.TaskStage.FAILED, null,
               TaskState.TaskStage.STARTED,
               AddManagementHostWorkflowService.TaskState.SubStage.BUILD_RUNTIME_CONFIGURATION},
-          {TaskState.TaskStage.FAILED, null,
-              TaskState.TaskStage.STARTED,
-              AddManagementHostWorkflowService.TaskState.SubStage.SET_QUORUM_ON_DEPLOYMENT_ENTITY},
           {TaskState.TaskStage.FAILED, null,
               TaskState.TaskStage.STARTED,
               AddManagementHostWorkflowService.TaskState.SubStage.PROVISION_MANAGEMENT_HOSTS},
@@ -629,16 +548,10 @@ public class AddManagementHostWorkflowServiceTest {
               TaskState.TaskStage.CREATED, null},
           {TaskState.TaskStage.CANCELLED, null,
               TaskState.TaskStage.STARTED,
-              AddManagementHostWorkflowService.TaskState.SubStage.RECONFIGURE_ZOOKEEPER},
-          {TaskState.TaskStage.CANCELLED, null,
-              TaskState.TaskStage.STARTED,
               AddManagementHostWorkflowService.TaskState.SubStage.CREATE_MANAGEMENT_PLANE_LAYOUT},
           {TaskState.TaskStage.CANCELLED, null,
               TaskState.TaskStage.STARTED,
               AddManagementHostWorkflowService.TaskState.SubStage.BUILD_RUNTIME_CONFIGURATION},
-          {TaskState.TaskStage.CANCELLED, null,
-              TaskState.TaskStage.STARTED,
-              AddManagementHostWorkflowService.TaskState.SubStage.SET_QUORUM_ON_DEPLOYMENT_ENTITY},
           {TaskState.TaskStage.CANCELLED, null,
               TaskState.TaskStage.STARTED,
               AddManagementHostWorkflowService.TaskState.SubStage.PROVISION_MANAGEMENT_HOSTS},
@@ -708,9 +621,6 @@ public class AddManagementHostWorkflowServiceTest {
     private TestEnvironment localDeployer;
     private TestEnvironment remoteDeployer;
     private AuthClientHandler.ImplicitClient implicitClient;
-    private com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment localStore;
-    private com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment remoteStore;
-    private SystemConfig systemConfig;
 
     @BeforeClass
     public void setUpClass() throws Throwable {
@@ -747,25 +657,11 @@ public class AddManagementHostWorkflowServiceTest {
       MockHelper.mockServiceConfigurator(serviceConfiguratorFactory, true);
     }
 
-    private void createCloudStore() throws Throwable {
-
-      localStore = new com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment.Builder()
-          .hostClientFactory(hostClientFactory)
-          .build();
-
-      remoteStore = new com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment.Builder()
-          .hostClientFactory(hostClientFactory)
-          .build();
-
-      this.systemConfig = spy(SystemConfig.createInstance(localStore.getHosts()[0]));
-    }
-
     private void createTestEnvironment(int remoteNodeCount) throws Throwable {
       String quorum = deployerConfig.getZookeeper().getQuorum();
       deployerConfig.getDeployerContext().setZookeeperQuorum(quorum);
 
       DeployerContext context = spy(deployerConfig.getDeployerContext());
-      ZookeeperClientFactory zkFactory = mock(ZookeeperClientFactory.class);
 
       localDeployer = new TestEnvironment.Builder()
           .authHelperFactory(authHelperFactory)
@@ -779,8 +675,7 @@ public class AddManagementHostWorkflowServiceTest {
           .httpFileServiceClientFactory(httpFileServiceClientFactory)
           .listeningExecutorService(listeningExecutorService)
           .serviceConfiguratorFactory(serviceConfiguratorFactory)
-          .cloudServerSet(localStore.getServerSet())
-          .zookeeperServersetBuilderFactory(zkFactory)
+          .bindPort(20001)
           .hostCount(1)
           .build();
 
@@ -796,37 +691,9 @@ public class AddManagementHostWorkflowServiceTest {
           .httpFileServiceClientFactory(httpFileServiceClientFactory)
           .listeningExecutorService(listeningExecutorService)
           .serviceConfiguratorFactory(serviceConfiguratorFactory)
-          .cloudServerSet(remoteStore.getServerSet())
-          .zookeeperServersetBuilderFactory(zkFactory)
+          .bindPort(40001)
           .hostCount(remoteNodeCount)
           .build();
-
-      ZookeeperClient zkBuilder = mock(ZookeeperClient.class);
-      doReturn(zkBuilder).when(zkFactory).create();
-      doReturn(Collections.singleton(
-          new InetSocketAddress("127.0.0.1", localDeployer.getHosts()[0].getState().httpPort)))
-          .when(zkBuilder).getServers(eq(quorum), eq("deployer"));
-      doReturn(Collections.singleton(
-          new InetSocketAddress("127.0.0.1", remoteDeployer.getHosts()[0].getState().httpPort)))
-          .when(zkBuilder)
-          .getServers(Matchers.startsWith("0.0.0.0:2181"), eq("deployer"));
-      doReturn(Collections.singleton(new InetSocketAddress("127.0.0.1", localStore.getHosts()[0].getState().httpPort)))
-          .when(zkBuilder).getServers(eq(quorum), eq("cloudstore"));
-      doReturn(Collections.singleton(new InetSocketAddress("127.0.0.1", remoteStore.getHosts()[0].getState().httpPort)))
-          .when(zkBuilder)
-          .getServers(Matchers.startsWith("0.0.0.0:2181"), eq("cloudstore"));
-      doAnswer(new Answer<Object>() {
-                 @Override
-                 public Object answer(InvocationOnMock invocation) {
-                   ((FutureCallback) invocation.getArguments()[4]).onSuccess(null);
-                   return null;
-                 }
-               }
-      ).when(zkBuilder).addServer(anyString(), anyString(), anyString(), anyInt(), anyObject());
-
-      InetSocketAddress address = remoteStore.getServerSet().getServers().iterator().next();
-      doReturn(Collections.singleton(address))
-          .when(zkBuilder).getServers(anyString(), eq(Constants.HOUSEKEEPER_SERVICE_NAME));
     }
 
     @AfterMethod
@@ -839,16 +706,6 @@ public class AddManagementHostWorkflowServiceTest {
       if (null != remoteDeployer) {
         remoteDeployer.stop();
         remoteDeployer = null;
-      }
-
-      if (null != localStore) {
-        localStore.stop();
-        localStore = null;
-      }
-
-      if (null != remoteStore) {
-        remoteStore.stop();
-        remoteStore = null;
       }
 
       authHelperFactory = null;
@@ -880,10 +737,10 @@ public class AddManagementHostWorkflowServiceTest {
     @Test(dataProvider = "HostWithTagWithAuthInfo")
     public void testSuccess(Boolean isOnlyMgmtHost, Boolean isAuthEnabled, int hostCount) throws Throwable {
       int initialHostNum = isAuthEnabled ? 2 : 1;
-      createCloudStore();
+      createTestEnvironment(1);
       MockHelper.mockHttpFileServiceClient(httpFileServiceClientFactory, true);
       MockHelper.mockHostClient(agentControlClientFactory, hostClientFactory, true);
-      MockHelper.mockApiClient(apiClientFactory, localStore, true);
+      MockHelper.mockApiClient(apiClientFactory, localDeployer, true);
       MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(),
           ProvisionHostTaskService.CONFIGURE_SYSLOG_SCRIPT_NAME, true);
       MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(),
@@ -893,11 +750,11 @@ public class AddManagementHostWorkflowServiceTest {
       MockHelper.mockCreateContainer(dockerProvisionerFactory, true);
       MockHelper.mockAuthHelper(implicitClient, authHelperFactory, true);
       MockHelper.mockHealthChecker(healthCheckHelperFactory, true);
-      createTestEnvironment(1);
 
-      startState.deploymentServiceLink = createDeploymentServiceLink(localStore, isAuthEnabled);
+
+      startState.deploymentServiceLink = createDeploymentServiceLink(localDeployer, isAuthEnabled);
       for (int i = 0; i < initialHostNum; ++i) {
-        createHostService(Collections.singleton(UsageTag.MGMT.name()), localStore, null);
+        createHostService(Collections.singleton(UsageTag.MGMT.name()), localDeployer, null);
       }
 
       DeploymentWorkflowService.State deploymentState = DeploymentWorkflowServiceTest.buildValidStartState(null, null);
@@ -914,17 +771,16 @@ public class AddManagementHostWorkflowServiceTest {
       TestHelper.assertTaskStateFinished(deploymentWorkflowState.taskState);
 
       DeploymentService.State deploymentServiceRemoteOriginal = (queryForServiceStates(DeploymentService.State.class,
-          remoteStore)).get(0);
+          localDeployer)).get(0);
 
-      assertThat(deploymentServiceRemoteOriginal.zookeeperIdToIpMap.size() == 1, is(true));
       for (int i = initialHostNum + 1; i <= hostCount; i++) {
         if (isOnlyMgmtHost) {
-          HostService.State mgmtHost = createHostService(Collections.singleton(UsageTag.MGMT.name()), remoteStore,
+          HostService.State mgmtHost = createHostService(Collections.singleton(UsageTag.MGMT.name()), remoteDeployer,
               "0.0.0." + i);
           startState.hostServiceLink = mgmtHost.documentSelfLink;
         } else {
           HostService.State mgmtHost = createHostService(new HashSet<>(Arrays.asList(UsageTag.CLOUD.name(), UsageTag
-              .MGMT.name())), remoteStore, "0.0.0." + i);
+              .MGMT.name())), remoteDeployer, "0.0.0." + i);
           startState.hostServiceLink = mgmtHost.documentSelfLink;
         }
 
@@ -937,11 +793,7 @@ public class AddManagementHostWorkflowServiceTest {
 
         TestHelper.assertTaskStateFinished(finalState.taskState);
 
-        DeploymentService.State deploymentServiceRemote = (queryForServiceStates(DeploymentService.State.class,
-            remoteStore)).get(0);
 
-        assertThat(deploymentServiceRemote.zookeeperIdToIpMap.size(), is(i - (initialHostNum - 1)));
-        verifyZookeeperQuorumChange(deploymentServiceRemoteOriginal, deploymentServiceRemote, i - initialHostNum);
         verifyVmServiceStates(i);
       }
 
@@ -964,7 +816,7 @@ public class AddManagementHostWorkflowServiceTest {
     }
 
     private String createDeploymentServiceLink(
-        com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment cloudStore,
+        MultiHostEnvironment cloudStore,
         boolean isAuthEnabled)
         throws Throwable {
       DeploymentService.State deploymentService = TestHelper.createDeploymentService(cloudStore,
@@ -982,10 +834,10 @@ public class AddManagementHostWorkflowServiceTest {
 
     @Test(dataProvider = "AuthEnabled")
     public void testProvisionManagementHostFailure(Boolean authEnabled) throws Throwable {
-      createCloudStore();
+      createTestEnvironment(1);
       MockHelper.mockHttpFileServiceClient(httpFileServiceClientFactory, false);
       MockHelper.mockHostClient(agentControlClientFactory, hostClientFactory, false);
-      MockHelper.mockApiClient(apiClientFactory, localStore, true);
+      MockHelper.mockApiClient(apiClientFactory, localDeployer, true);
       MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(),
           ProvisionHostTaskService.CONFIGURE_SYSLOG_SCRIPT_NAME, true);
       MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(),
@@ -995,14 +847,13 @@ public class AddManagementHostWorkflowServiceTest {
       MockHelper.mockCreateContainer(dockerProvisionerFactory, true);
       MockHelper.mockAuthHelper(implicitClient, authHelperFactory, true);
       MockHelper.mockHealthChecker(healthCheckHelperFactory, true);
-      createTestEnvironment(1);
 
-      TestHelper.createHostService(localStore, Collections.singleton(UsageTag.MGMT.name()));
-      TestHelper.createHostService(localStore,
+      TestHelper.createHostService(localDeployer, Collections.singleton(UsageTag.MGMT.name()));
+      TestHelper.createHostService(localDeployer,
           new HashSet<>(Arrays.asList(UsageTag.CLOUD.name(), UsageTag.MGMT.name())));
-      TestHelper.createHostService(localStore, Collections.singleton(UsageTag.CLOUD.name()));
+      TestHelper.createHostService(localDeployer, Collections.singleton(UsageTag.CLOUD.name()));
 
-      startState.deploymentServiceLink = createDeploymentServiceLink(localStore, authEnabled);
+      startState.deploymentServiceLink = createDeploymentServiceLink(localDeployer, authEnabled);
 
       AddManagementHostWorkflowService.State finalState =
           localDeployer.callServiceAndWaitForState(
@@ -1016,10 +867,10 @@ public class AddManagementHostWorkflowServiceTest {
 
     @Test(dataProvider = "AuthEnabled")
     public void testCreateManagementPlaneFailure(Boolean authEnabled) throws Throwable {
-      createCloudStore();
+      createTestEnvironment(1);
       MockHelper.mockHttpFileServiceClient(httpFileServiceClientFactory, true);
       MockHelper.mockHostClient(agentControlClientFactory, hostClientFactory, true);
-      MockHelper.mockApiClient(apiClientFactory, localStore, false);
+      MockHelper.mockApiClient(apiClientFactory, localDeployer, false);
       MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(),
           ProvisionHostTaskService.CONFIGURE_SYSLOG_SCRIPT_NAME, true);
       MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(),
@@ -1029,14 +880,13 @@ public class AddManagementHostWorkflowServiceTest {
       MockHelper.mockCreateContainer(dockerProvisionerFactory, true);
       MockHelper.mockAuthHelper(implicitClient, authHelperFactory, true);
       MockHelper.mockHealthChecker(healthCheckHelperFactory, true);
-      createTestEnvironment(1);
 
-      TestHelper.createHostService(localStore, Collections.singleton(UsageTag.MGMT.name()));
-      TestHelper.createHostService(localStore,
+      TestHelper.createHostService(localDeployer, Collections.singleton(UsageTag.MGMT.name()));
+      TestHelper.createHostService(localDeployer,
           new HashSet<>(Arrays.asList(UsageTag.CLOUD.name(), UsageTag.MGMT.name())));
-      TestHelper.createHostService(localStore, Collections.singleton(UsageTag.CLOUD.name()));
+      TestHelper.createHostService(localDeployer, Collections.singleton(UsageTag.CLOUD.name()));
 
-      startState.deploymentServiceLink = createDeploymentServiceLink(localStore, authEnabled);
+      startState.deploymentServiceLink = createDeploymentServiceLink(localDeployer, authEnabled);
 
       AddManagementHostWorkflowService.State finalState =
           localDeployer.callServiceAndWaitForState(
@@ -1050,10 +900,10 @@ public class AddManagementHostWorkflowServiceTest {
 
     @Test
     public void testAuthClientRegistrationFailure() throws Throwable {
-      createCloudStore();
+      createTestEnvironment(1);
       MockHelper.mockHttpFileServiceClient(httpFileServiceClientFactory, true);
       MockHelper.mockHostClient(agentControlClientFactory, hostClientFactory, true);
-      MockHelper.mockApiClient(apiClientFactory, localStore, true);
+      MockHelper.mockApiClient(apiClientFactory, localDeployer, true);
       MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(),
           ProvisionHostTaskService.CONFIGURE_SYSLOG_SCRIPT_NAME, true);
       MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(),
@@ -1063,14 +913,13 @@ public class AddManagementHostWorkflowServiceTest {
       MockHelper.mockCreateContainer(dockerProvisionerFactory, true);
       MockHelper.mockAuthHelper(implicitClient, authHelperFactory, false);
       MockHelper.mockHealthChecker(healthCheckHelperFactory, true);
-      createTestEnvironment(1);
 
-      TestHelper.createHostService(localStore, Collections.singleton(UsageTag.MGMT.name()));
-      TestHelper.createHostService(localStore,
+      TestHelper.createHostService(localDeployer, Collections.singleton(UsageTag.MGMT.name()));
+      TestHelper.createHostService(localDeployer,
           new HashSet<>(Arrays.asList(UsageTag.CLOUD.name(), UsageTag.MGMT.name())));
-      TestHelper.createHostService(localStore, Collections.singleton(UsageTag.CLOUD.name()));
+      TestHelper.createHostService(localDeployer, Collections.singleton(UsageTag.CLOUD.name()));
 
-      startState.deploymentServiceLink = createDeploymentServiceLink(localStore, true);
+      startState.deploymentServiceLink = createDeploymentServiceLink(localDeployer, true);
 
       AddManagementHostWorkflowService.State finalState =
           localDeployer.callServiceAndWaitForState(
@@ -1094,7 +943,7 @@ public class AddManagementHostWorkflowServiceTest {
         assertThat(state.vmId, is("CREATE_VM_ENTITY_ID"));
         assertThat(state.name, startsWith(CreateVmSpecLayoutTaskService.DOCKER_VM_PREFIX));
 
-        HostService.State hostState = remoteStore.getServiceState(state.hostServiceLink, HostService.State.class);
+        HostService.State hostState = remoteDeployer.getServiceState(state.hostServiceLink, HostService.State.class);
         assertThat(state.ipAddress,
             is(hostState.metadata.get(HostService.State.METADATA_KEY_NAME_MANAGEMENT_NETWORK_IP)));
 
@@ -1204,13 +1053,6 @@ public class AddManagementHostWorkflowServiceTest {
           assertThat(containerStateNumberIfReplicated, is(1));
         }
       }
-    }
-
-    private void verifyZookeeperQuorumChange(DeploymentService.State deploymentServiceOriginal,
-                                             DeploymentService.State deploymentServiceAfterAddHost, int hostCount) {
-      String[] originalZookeeperQuorum = deploymentServiceOriginal.zookeeperQuorum.split(",");
-      String[] newZookeeperQuorum = deploymentServiceAfterAddHost.zookeeperQuorum.split(",");
-      assertThat(newZookeeperQuorum.length == originalZookeeperQuorum.length + hostCount, is(true));
     }
 
     private <T extends ServiceDocument> List<T> queryForServiceStates(Class<T> classType,

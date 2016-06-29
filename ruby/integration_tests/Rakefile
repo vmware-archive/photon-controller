@@ -235,12 +235,6 @@ RSpec::Core::RakeTask.new(:deployer) do |task|
   task.rspec_opts = "--tag deployer --format RspecJunitFormatter --out reports/rspec-deployer.xml --tag ~slow"
 end
 
-desc 'Run integration test for zookeeper service'
-RSpec::Core::RakeTask.new(:zookeeper) do |task|
-  task.pattern = FileList['spec/zookeeper/**/*_spec.rb']
-  task.rspec_opts = "--tag zookeeper --format RspecJunitFormatter --out reports/rspec-zookeeper.xml --tag ~slow"
-end
-
 desc 'Run integration test for Cluster service'
 RSpec::Core::RakeTask.new(:cluster) do |task|
   task.pattern = FileList['spec/api/cluster/*_spec.rb']

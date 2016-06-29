@@ -58,8 +58,6 @@ public class CreateContainerTaskService extends StatefulService {
 
   public static final String HAPROXY_CONF_DIR = "/etc/haproxy";
   public static final String LIGHTWAVE_CONF_DIR = "/var/lib/vmware/config";
-  public static final String ZOOKEEPER_DATA_DIR = "/var/esxcloud/data/zookeeper";
-  public static final String ZOOKEEPER_CONF_DIR = "/usr/lib/zookeeper/conf";
 
   @VisibleForTesting
   protected static final String ENV_COMMON_ENABLE_AUTH = "ENABLE_AUTH";
@@ -367,10 +365,6 @@ public class CreateContainerTaskService extends StatefulService {
     templateState.volumeBindings.put(hostVolume, ServiceFileConstants.CONTAINER_CONFIG_DIRECTORY);
 
     switch (containerType) {
-      case Zookeeper:
-        templateState.volumeBindings.computeIfPresent(hostVolume, (k, v) -> v + "," + ZOOKEEPER_CONF_DIR);
-        templateState.volumeBindings.computeIfPresent(hostVolume, (k, v) -> v + "," + ZOOKEEPER_DATA_DIR);
-        break;
       case LoadBalancer:
         templateState.volumeBindings.computeIfPresent(hostVolume, (k, v) -> v + "," + HAPROXY_CONF_DIR);
         break;

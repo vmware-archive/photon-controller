@@ -32,9 +32,6 @@ if [ "$DEPLOYER_TEST" ]; then
   exit $?
 fi
 
-# Zookeeper tests should never be disabled since they verify the health of the devbox
-bundle exec rake zookeeper
-
 # Ensure there is a default network
 if [ -z "$DISABLE_DEFAULT_NETWORK_CREATE" ]; then
   bundle exec rake seed:ensure_default_network
