@@ -68,7 +68,7 @@ from gen.resource.ttypes import ResourceConstraintType
 from gen.resource.ttypes import ResourcePlacement
 from gen.resource.ttypes import ResourcePlacementList
 from gen.resource.ttypes import ResourcePlacementType
-from gen.resource.ttypes import State
+from gen.resource.ttypes import VmPowerState
 from gen.resource.ttypes import Vm
 from gen.scheduler.ttypes import PlaceRequest
 from gen.scheduler.ttypes import PlaceResultCode
@@ -285,7 +285,7 @@ class HostHandlerTestCase(unittest.TestCase):
             disks.append(disk)
 
         vm_flavor_info = Flavor(name=vm_flavor, cost=[QuotaLineItem("cpu", "1", 5)])
-        vm = Vm(vm_id, vm_flavor, State.STOPPED, None, None, disks, vm_flavor_info)
+        vm = Vm(vm_id, vm_flavor, VmPowerState.STOPPED, None, None, disks, vm_flavor_info)
 
         request = ReserveRequest()
         request.generation = 1
@@ -339,7 +339,7 @@ class HostHandlerTestCase(unittest.TestCase):
         placements.append(placement)
         placement_list = ResourcePlacementList(placements)
 
-        vm = Vm(vm_id, vm_flavor, State.STOPPED, None, None, None, None)
+        vm = Vm(vm_id, vm_flavor, VmPowerState.STOPPED, None, None, None, None)
 
         request = ReserveRequest()
         request.generation = 1
@@ -901,7 +901,7 @@ class HostHandlerTestCase(unittest.TestCase):
         vm.flavor = "flavor"
         vm.flavor_info = flavor
         vm.disks = disks
-        vm.state = State().STARTED
+        vm.state = VmPowerState().STARTED
         vm.datastore = Datastore("ds1")
 
         return vm

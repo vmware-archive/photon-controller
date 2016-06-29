@@ -30,8 +30,8 @@ from gen.agent.ttypes import VmCache
 from gen.host.ttypes import ConnectedStatus
 from gen.host.ttypes import VmNetworkInfo
 from gen.host.ttypes import Ipv4Address
+from gen.resource.ttypes import VmPowerState
 from host.hypervisor.datastore_manager import DatastoreNotFoundException
-from host.hypervisor.resources import State
 from host.hypervisor.exceptions import VmAlreadyExistException
 from host.hypervisor.exceptions import VmNotFoundException
 from host.hypervisor.exceptions import VmPowerStateException
@@ -503,7 +503,7 @@ class TestVmManager(unittest.TestCase):
             return path
 
         def mock_get_state(power_state):
-            return State.STOPPED
+            return VmPowerState.STOPPED
 
         self.vm_manager._ds_manager.normalize.side_effect = normalize
         self.vm_manager._get_datastore_name_from_ds_path = mock_get_name

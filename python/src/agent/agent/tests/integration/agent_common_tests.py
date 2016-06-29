@@ -51,7 +51,7 @@ from gen.resource.ttypes import Image
 from gen.resource.ttypes import Locator
 from gen.resource.ttypes import NetworkType
 from gen.resource.ttypes import Resource
-from gen.resource.ttypes import State
+from gen.resource.ttypes import VmPowerState
 from gen.resource.ttypes import Vm
 from gen.resource.ttypes import VmLocator
 from gen.scheduler.ttypes import PlaceRequest
@@ -90,7 +90,7 @@ def vm_resource():
     return Vm(id=new_id(),
               flavor="default",
               flavor_info=Flavor(name="default", cost=cost),
-              state=State.STOPPED)
+              state=VmPowerState.STOPPED)
 
 
 def rpc_call(method, request):
@@ -129,7 +129,7 @@ class VmWrapper(object):
         return Vm(id=new_id(),
                   flavor="default",
                   flavor_info=Flavor(name="default", cost=cost),
-                  state=State.STOPPED,
+                  state=VmPowerState.STOPPED,
                   tenant_id="t1",
                   project_id="p1")
 

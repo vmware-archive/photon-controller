@@ -22,16 +22,8 @@ from gen.resource.ttypes import ResourceConstraintType
 from gen.resource.ttypes import ResourcePlacementType
 from gen.resource.ttypes import ResourcePlacement
 from gen.resource.ttypes import ResourcePlacementList
-from gen.resource.ttypes import State as ThriftState
 from gen.resource.ttypes import Vm as ThriftVm
 from gen.resource.ttypes import CloneType
-
-
-@enum.unique
-class State(enum.Enum):
-    STARTED = 0
-    STOPPED = 1
-    SUSPENDED = 2
 
 
 @enum.unique
@@ -134,7 +126,7 @@ class Vm(BaseResource):
         instance = Vm(
             vm_id=thrift_object.id,
             flavor=Flavor.from_thrift(thrift_object.flavor_info),
-            state=State(thrift_object.state),
+            state=thrift_object.state,
             environment=thrift_object.environment,
             tenant_id=thrift_object.tenant_id,
             project_id=thrift_object.project_id,
@@ -159,11 +151,9 @@ class Vm(BaseResource):
 
         resource_constraints = self.resource_constraints
 
-        thrift_state = getattr(ThriftState, self.state.name)
-
         thrift_vm = ThriftVm(
             self.id, self.flavor.name,
-            thrift_state, None, self.environment,
+            self.state, None, self.environment,
             disks, self.flavor.to_thrift(), resource_constraints,
             self.tenant_id, self.project_id, self.location_id
         )

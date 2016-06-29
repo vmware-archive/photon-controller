@@ -28,9 +28,9 @@ const string VSAN_TAG = "VSAN"
  * Used for placement and reservation.
  */
 
-enum State {
-  STOPPED = 0
-  STARTED = 1
+enum VmPowerState {
+  STARTED = 0
+  STOPPED = 1
   SUSPENDED = 2
 }
 
@@ -194,7 +194,7 @@ struct Disk {
 struct Vm {
   1: required string id
   2: required string flavor
-  3: required State state
+  3: required VmPowerState state
   4: optional Datastore datastore
   5: optional map<string, string> environment
   6: optional list<Disk> disks

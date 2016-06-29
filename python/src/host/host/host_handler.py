@@ -93,6 +93,7 @@ from gen.host.ttypes import VmDisksOpResponse
 from gen.resource.ttypes import CloneType
 from gen.resource.ttypes import Datastore
 from gen.resource.ttypes import InactiveImageDescriptor
+from gen.resource.ttypes import VmPowerState
 from gen.scheduler.ttypes import PlaceResponse
 from gen.scheduler.ttypes import PlaceResultCode
 from gen.scheduler.ttypes import Score
@@ -109,7 +110,6 @@ from host.placement.placement_manager import NotEnoughMemoryResourceException
 from host.hypervisor.resources import AgentResourcePlacementList
 from host.hypervisor.resources import Disk
 from host.hypervisor.resources import NetworkInfoType
-from host.hypervisor.resources import State
 from host.hypervisor.resources import Vm
 from host.image.image_manager import DirectoryNotFound
 from host.image.image_manager import ImageNotFoundException
@@ -1307,7 +1307,7 @@ class HostHandler(Host.Iface):
             return self._error_response(CreateImageFromVmResultCode.VM_NOT_FOUND,
                                         "VM %s not found on host" % request.vm_id, CreateImageFromVmResponse())
 
-        if vm_mgr.get_resource(request.vm_id).state != State.STOPPED:
+        if vm_mgr.get_resource(request.vm_id).state != VmPowerState.STOPPED:
             return self._error_response(CreateImageFromVmResultCode.INVALID_VM_POWER_STATE,
                                         "VM %s not powered off" % request.vm_id, CreateImageFromVmResponse())
 

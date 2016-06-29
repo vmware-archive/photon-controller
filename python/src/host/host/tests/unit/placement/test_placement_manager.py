@@ -34,7 +34,7 @@ from host.placement.placement_manager import NotEnoughDatastoreCapacityException
 from host.placement.placement_manager import NotEnoughMemoryResourceException
 from host.hypervisor.resources import Disk
 from host.hypervisor.resources import DiskImage
-from host.hypervisor.resources import State
+from host.hypervisor.resources import VmPowerState
 from host.hypervisor.resources import Vm
 from host.hypervisor.system import DatastoreInfo
 
@@ -61,7 +61,7 @@ class TestPlacementManager(unittest.TestCase):
                              disk_capacity_1)
         created_disk2 = Disk(new_id(), DISK_FLAVOR, True, True,
                              disk_capacity_2)
-        vm = Vm(new_id(), VM_FLAVOR, State.STOPPED, None)
+        vm = Vm(new_id(), VM_FLAVOR, VmPowerState.STOPPED, None)
         vm.disks = [created_disk1, created_disk2]
 
         manager = PMBuilder(mem_overcommit=overcommit).build()
@@ -76,7 +76,7 @@ class TestPlacementManager(unittest.TestCase):
     ])
     def test_place_new_with_cpu(self, mem_overcommit,
                                 cpu_overcommit, expected):
-        vm = Vm(new_id(), VM_FLAVOR, State.STOPPED, None)
+        vm = Vm(new_id(), VM_FLAVOR, VmPowerState.STOPPED, None)
         manager = PMBuilder(mem_overcommit=mem_overcommit,
                             cpu_overcommit=cpu_overcommit).build()
         score, placement_list = manager.place(vm, None)
@@ -88,7 +88,7 @@ class TestPlacementManager(unittest.TestCase):
     ])
     def test_place_new_with_mem_consumed(self, mem_consumed,
                                          mem_overcommit, expected):
-        vm = Vm(new_id(), VM_FLAVOR, State.STOPPED, None)
+        vm = Vm(new_id(), VM_FLAVOR, VmPowerState.STOPPED, None)
         manager = PMBuilder(mem_overcommit=mem_overcommit).build()
         manager._system.host_consumed_memory_mb.return_value = mem_consumed
         score, placement_list = manager.place(vm, None)
@@ -101,7 +101,7 @@ class TestPlacementManager(unittest.TestCase):
         (2.0, 64, (50, 100)),    # memory score dominates 1-(64k)/(64k*2)
     ])
     def test_empty_disk_place(self, overcommit, vm_memory, expected):
-        vm = Vm(new_id(), self._vm_flavor_gb(vm_memory), State.STOPPED, None)
+        vm = Vm(new_id(), self._vm_flavor_gb(vm_memory), VmPowerState.STOPPED, None)
         manager = PMBuilder(mem_overcommit=overcommit).build()
         score, placement_list = manager.place(vm, None)
         assert_that(score, is_(AgentPlacementScore(*expected)))
@@ -112,7 +112,7 @@ class TestPlacementManager(unittest.TestCase):
         disk2 = Disk(new_id(), DISK_FLAVOR, True, True, 1024)
         vm = Vm(new_id(),
                 self._vm_flavor_gb(memory_gb=1, cpu=100),
-                State.STARTED, None)
+                VmPowerState.STARTED, None)
         vm.disks = [disk1, disk2]
         manager = PMBuilder(cpu_overcommit=1).build()
         manager.place(vm, None)
@@ -125,7 +125,7 @@ class TestPlacementManager(unittest.TestCase):
         # rejected. In this case, 60GB is also rejected.
         disk1 = Disk(new_id(), DISK_FLAVOR, True, True, 1024)
         disk2 = Disk(new_id(), DISK_FLAVOR, True, True, 1024)
-        vm = Vm(new_id(), self._vm_flavor_gb(64), State.STARTED, None)
+        vm = Vm(new_id(), self._vm_flavor_gb(64), VmPowerState.STARTED, None)
         vm.disks = [disk1, disk2]
         manager = PMBuilder().build()
         manager.place(vm, None)
@@ -133,7 +133,7 @@ class TestPlacementManager(unittest.TestCase):
     @raises(NotEnoughDatastoreCapacityException)
     def test_place_storage_constraint(self):
         disk = Disk(new_id(), DISK_FLAVOR, True, True, 1024)
-        vm = Vm(new_id(), VM_FLAVOR, State.STARTED, None)
+        vm = Vm(new_id(), VM_FLAVOR, VmPowerState.STARTED, None)
         vm.disks = [disk]
         ds_map = {"datastore_id_1": (DatastoreInfo(8 * 1024, 7 * 1024),
                                      set([]))}
@@ -149,7 +149,7 @@ class TestPlacementManager(unittest.TestCase):
                                          overcommit, expected):
         disk1 = Disk(new_id(), DISK_FLAVOR, True, True, disk1_capacity)
         disk2 = Disk(new_id(), DISK_FLAVOR, True, True, disk2_capacity)
-        vm = Vm(new_id(), VM_FLAVOR, State.STOPPED, None)
+        vm = Vm(new_id(), VM_FLAVOR, VmPowerState.STOPPED, None)
         vm.disks = [disk1, disk2]
 
         manager = PMBuilder(mem_overcommit=overcommit).build()
@@ -163,7 +163,7 @@ class TestPlacementManager(unittest.TestCase):
         manager = PMBuilder().build()
 
         disk = Disk(new_id(), DISK_FLAVOR, True, True, 1024)
-        vm = Vm(new_id(), VM_FLAVOR, State.STARTED)
+        vm = Vm(new_id(), VM_FLAVOR, VmPowerState.STARTED)
         reservations = []
 
         for _ in range(3):
@@ -199,7 +199,7 @@ class TestPlacementManager(unittest.TestCase):
     def test_place_vm_no_disks(self):
         manager = PMBuilder().build()
         vm = Vm(new_id(), VM_FLAVOR,
-                State.STOPPED, None, None, None)
+                VmPowerState.STOPPED, None, None, None)
         score, placement_list = manager.place(vm, None)
         assert_that(score, is_(AgentPlacementScore(97, 100)))
         assert_that(len(placement_list) is 1)
@@ -221,7 +221,7 @@ class TestPlacementManager(unittest.TestCase):
             ResourceConstraint(ResourceConstraintType.NETWORK,
                                ["net_3", "net_5"])]
         vm = Vm(new_id(), VM_FLAVOR,
-                State.STOPPED, None, None, None, None, resource_constraints)
+                VmPowerState.STOPPED, None, None, None, None, resource_constraints)
 
         score, placement_list = manager.place(vm, None)
         assert_that(len(placement_list) is 4)
@@ -244,7 +244,7 @@ class TestPlacementManager(unittest.TestCase):
             ResourceConstraint(ResourceConstraintType.NETWORK,
                                ["net_5"])]
         vm = Vm(new_id(), VM_FLAVOR,
-                State.STOPPED, None, None, None, None, resource_constraints)
+                VmPowerState.STOPPED, None, None, None, None, resource_constraints)
 
         self.assertRaises(NoSuchResourceException, manager.place, vm, None)
 
@@ -254,7 +254,7 @@ class TestPlacementManager(unittest.TestCase):
             ResourceConstraint(ResourceConstraintType.NETWORK,
                                ["net_6", "net_7"])]
         vm = Vm(new_id(), VM_FLAVOR,
-                State.STOPPED, None, None, None, None, resource_constraints)
+                VmPowerState.STOPPED, None, None, None, None, resource_constraints)
 
         self.assertRaises(NoSuchResourceException, manager.place, vm, None)
 
@@ -266,7 +266,7 @@ class TestPlacementManager(unittest.TestCase):
             ResourceConstraint(ResourceConstraintType.VIRTUAL_NETWORK,
                                ["virtual_net"])]
         vm = Vm(new_id(), VM_FLAVOR,
-                State.STOPPED, None, None, None, None, resource_constraints)
+                VmPowerState.STOPPED, None, None, None, None, resource_constraints)
 
         score, placement_list = manager.place(vm, None)
         assert_that(len(placement_list) is 2)
@@ -290,7 +290,7 @@ class TestPlacementManager(unittest.TestCase):
                           DiskImage.COPY_ON_WRITE)
         disk = Disk(new_id(), DISK_FLAVOR, False, True, 1024, image)
         vm = Vm(new_id(), VM_FLAVOR,
-                State.STOPPED, None, None, [disk])
+                VmPowerState.STOPPED, None, None, [disk])
         score, placement_list = manager.place(vm, None)
         # Image size is 2GB, 50% of 1GB, so transfer score is
         assert_that(score.transfer, is_(expected))
@@ -313,7 +313,7 @@ class TestPlacementManager(unittest.TestCase):
         disk2 = Disk(new_id(), DISK_FLAVOR, False,
                      True, total_storage / 100)
         vm = Vm(new_id(), self._vm_flavor_mb(1),
-                State.STOPPED, None, None, [disk1, disk2])
+                VmPowerState.STOPPED, None, None, [disk1, disk2])
         score, placement_list = manager.place(vm, None)
 
         # disk1 and disk2 both take 1% space, so utilization score is 98
@@ -330,7 +330,7 @@ class TestPlacementManager(unittest.TestCase):
         # vm with disks
         self.assertRaises(NoSuchResourceException, manager.place, vm, None)
         # vm without disks
-        vm = Vm(new_id(), VM_FLAVOR, State.STOPPED)
+        vm = Vm(new_id(), VM_FLAVOR, VmPowerState.STOPPED)
         self.assertRaises(NoSuchResourceException, manager.place, vm, None)
 
     def test_place_vm_existing_image_two_matching_datastores(self):
@@ -349,7 +349,7 @@ class TestPlacementManager(unittest.TestCase):
         disk2 = Disk(new_id(), DISK_FLAVOR, False,
                      True, total_storage / 100, image)
         vm = Vm(new_id(), self._vm_flavor_mb(1),
-                State.STOPPED, None, None, [disk1, disk2])
+                VmPowerState.STOPPED, None, None, [disk1, disk2])
         score, placement_list = manager.place(vm, None)
 
         # There are 2 disk of approx size 1/100 of avail space
@@ -416,7 +416,7 @@ class TestPlacementManager(unittest.TestCase):
         disk_list = [disk1, disk2, disk3, disk4]
         used_storage = sum(disk.capacity_gb for disk in disk_list)
 
-        vm = Vm(new_id(), VM_FLAVOR, State.STOPPED, None, None, disk_list)
+        vm = Vm(new_id(), VM_FLAVOR, VmPowerState.STOPPED, None, None, disk_list)
         disks = None
         score, placement_list = manager.place(vm, disks)
 
@@ -452,7 +452,7 @@ class TestPlacementManager(unittest.TestCase):
         disk2 = Disk(new_id(), DISK_FLAVOR, False, True, 1024)
         disk_list = [disk1, disk2]
         used_storage = sum(disk.capacity_gb for disk in disk_list)
-        vm = Vm(new_id(), VM_FLAVOR, State.STOPPED, None, None, disk_list)
+        vm = Vm(new_id(), VM_FLAVOR, VmPowerState.STOPPED, None, None, disk_list)
         disks = None
         score, placement_list = manager.place(vm, disks)
         expected_score = 100 * (total_storage - used_storage) / total_storage
@@ -482,7 +482,7 @@ class TestPlacementManager(unittest.TestCase):
         disk3 = Disk(new_id(), DISK_FLAVOR, False, True, 2 * 1024)
         disk4 = Disk(new_id(), DISK_FLAVOR, False, True, 2 * 1024)
         disk_list = [disk1, disk2, disk3, disk4]
-        vm = Vm(new_id(), VM_FLAVOR, State.STOPPED, None, None, disk_list)
+        vm = Vm(new_id(), VM_FLAVOR, VmPowerState.STOPPED, None, None, disk_list)
         disks = None
         manager.place(vm, disks)
 
@@ -510,7 +510,7 @@ class TestPlacementManager(unittest.TestCase):
         disk4 = Disk(new_id(), DISK_FLAVOR, False, True, 7 * 1024, image)
         disk_list = [disk1, disk2, disk3, disk4]
 
-        vm = Vm(new_id(), VM_FLAVOR, State.STOPPED, None, None, disk_list)
+        vm = Vm(new_id(), VM_FLAVOR, VmPowerState.STOPPED, None, None, disk_list)
         disks = None
 
         if not use_image_ds:
@@ -543,7 +543,7 @@ class TestPlacementManager(unittest.TestCase):
         disk1 = Disk(new_id(), DISK_FLAVOR, False, True, 512, None)
         disk_list = [disk1]
 
-        vm = Vm(new_id(), VM_FLAVOR, State.STOPPED, None, None, disk_list)
+        vm = Vm(new_id(), VM_FLAVOR, VmPowerState.STOPPED, None, None, disk_list)
         disks = None
         score, placement_list = manager.place(vm, disks)
 
@@ -559,7 +559,7 @@ class TestPlacementManager(unittest.TestCase):
         # Place a image disk that is linked cloned from image. The size
         # should not be included in calculation.
         disk = Disk(new_id(), DISK_FLAVOR, False, True, 2048, image)
-        vm = Vm(new_id(), VM_FLAVOR, State.STOPPED, None, None, [disk])
+        vm = Vm(new_id(), VM_FLAVOR, VmPowerState.STOPPED, None, None, [disk])
 
         score, placement_list = manager.place(vm, None)
         assert_that(score.utilization, equal_to(97))
@@ -573,7 +573,7 @@ class TestPlacementManager(unittest.TestCase):
         # Try the same place with constraints
         constraint = ResourceConstraint(ResourceConstraintType.DATASTORE, ["datastore_id_1"])
         disk = Disk(new_id(), DISK_FLAVOR, False, True, 2048, image)
-        vm = Vm(new_id(), VM_FLAVOR, State.STOPPED, None, None, [disk], resource_constraints=[constraint])
+        vm = Vm(new_id(), VM_FLAVOR, VmPowerState.STOPPED, None, None, [disk], resource_constraints=[constraint])
         score, placement_list = manager.place(vm, None)
         assert_that(score.utilization, equal_to(97))
         assert_that(score.transfer, equal_to(100))
@@ -594,7 +594,7 @@ class TestPlacementManager(unittest.TestCase):
         disk1 = Disk(new_id(), DISK_FLAVOR, False, True, 512, image)
         disk2 = Disk(new_id(), DISK_FLAVOR, False, True, 2048)
         disk3 = Disk(new_id(), DISK_FLAVOR, False, True, 512)
-        vm = Vm(new_id(), VM_FLAVOR, State.STOPPED, None, None, [disk1, disk2, disk3])
+        vm = Vm(new_id(), VM_FLAVOR, VmPowerState.STOPPED, None, None, [disk1, disk2, disk3])
         score, placement_list = manager.place(vm, None)
         # storage score is 1. 17/10. divided by 10 which is not optimal penalty
         assert_that(score.utilization, equal_to(1))

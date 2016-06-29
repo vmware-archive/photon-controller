@@ -42,7 +42,7 @@ class TestValidation(unittest.TestCase):
         vm = Vm()
         vm.id = "agent_id"
         vm.disks = []
-        vm.state = State()
+        vm.state = VmPowerState()
 
         resource = Resource()
         resource.vm = vm

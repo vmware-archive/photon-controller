@@ -28,7 +28,7 @@ from httplib import HTTPException
 from pyVmomi import vim
 from pyVmomi import vmodl
 
-from gen.agent.ttypes import PowerState
+from gen.resource.ttypes import VmPowerState
 from host.hypervisor.esx.vim_client import VimClient
 from host.hypervisor.esx.host_client import DatastoreNotFound
 from host.hypervisor.esx.host_client import HostdConnectionFailure
@@ -154,7 +154,7 @@ class TestVimClient(unittest.TestCase):
         assert_that(vms[0].memory_mb, is_(4096))
         assert_that(vms[0].path, is_("[datastore2] agent4/agent4.vmx"))
         assert_that(vms[0].name, is_("agent4"))
-        assert_that(vms[0].power_state, is_(PowerState.poweredOff))
+        assert_that(vms[0].power_state, is_(VmPowerState.STOPPED))
         assert_that(len(vms[0].disks), is_(2))
         assert_that(vms[0].disks, contains_inanyorder("disk1", "disk2"))
         assert_that(vms[0].location_id, is_("location1"))
@@ -182,7 +182,7 @@ class TestVimClient(unittest.TestCase):
         assert_that(vms[0].memory_mb, is_(4096))
         assert_that(vms[0].path, is_("[datastore2] agent4/agent4.vmx"))
         assert_that(vms[0].name, is_("agent4"))
-        assert_that(vms[0].power_state, is_(PowerState.poweredOn))
+        assert_that(vms[0].power_state, is_(VmPowerState.STARTED))
         assert_that(len(vms[0].disks), is_(2))
         assert_that(vms[0].disks, contains_inanyorder("disk3", "disk4"))
 
