@@ -1272,14 +1272,17 @@ public class CreateManagementVmTaskService extends StatefulService {
           BuildRuntimeConfigurationTaskService.MUSTACHE_KEY_COMMON_PEER_NODES,
           (k, v) -> new Gson().fromJson(v.toString(), peerNodeTypeToken.getType()));
       dynamicParameters.computeIfPresent(
-          BuildRuntimeConfigurationTaskService.MUSTACHE_KEY_CLOUDSTORE_PEER_NODES,
+          BuildRuntimeConfigurationTaskService.MUSTACHE_KEY_PHOTON_CONTROLLER_PEER_NODES,
           (k, v) -> new Gson().fromJson(v.toString(), peerNodeTypeToken.getType()));
-      dynamicParameters.computeIfPresent(
-          BuildRuntimeConfigurationTaskService.MUSTACHE_KEY_HOUSEKEEPER_PEER_NODES,
-          (k, v) -> new Gson().fromJson(v.toString(), peerNodeTypeToken.getType()));
-      dynamicParameters.computeIfPresent(
-          BuildRuntimeConfigurationTaskService.MUSTACHE_KEY_SCHEDULER_PEER_NODES,
-          (k, v) -> new Gson().fromJson(v.toString(), peerNodeTypeToken.getType()));
+//      dynamicParameters.computeIfPresent(
+//          BuildRuntimeConfigurationTaskService.MUSTACHE_KEY_CLOUDSTORE_PEER_NODES,
+//          (k, v) -> new Gson().fromJson(v.toString(), peerNodeTypeToken.getType()));
+//      dynamicParameters.computeIfPresent(
+//          BuildRuntimeConfigurationTaskService.MUSTACHE_KEY_HOUSEKEEPER_PEER_NODES,
+//          (k, v) -> new Gson().fromJson(v.toString(), peerNodeTypeToken.getType()));
+//      dynamicParameters.computeIfPresent(
+//          BuildRuntimeConfigurationTaskService.MUSTACHE_KEY_SCHEDULER_PEER_NODES,
+//          (k, v) -> new Gson().fromJson(v.toString(), peerNodeTypeToken.getType()));
       dynamicParameters.computeIfPresent(
           BuildRuntimeConfigurationTaskService.MUSTACHE_KEY_DEPLOYER_PEER_NODES,
           (k, v) -> new Gson().fromJson(v.toString(), peerNodeTypeToken.getType()));
