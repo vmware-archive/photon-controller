@@ -158,6 +158,35 @@ public class XenonRestClient implements XenonClient {
     return send(putOperation);
   }
 
+  /**
+   * This method is meant to be used to send a put request to a service with an arbitrary object
+   * type.  One example of this usage is for the LoggerControlService which is a Stateless service
+   * taking only a Map as input, rather than the normal ServiceDocument.
+   *
+   * @param serviceSelfLink
+   * @param body
+   * @return
+   * @throws BadRequestException
+   * @throws DocumentNotFoundException
+   * @throws TimeoutException
+   * @throws InterruptedException
+   */
+  public Operation broadcastPutObject(String serviceSelfLink, Object body)
+      throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException {
+    URI serviceUri = UriUtils.buildBroadcastRequestUri(
+        getServiceUri(serviceSelfLink),
+        ServiceUriPaths.DEFAULT_NODE_SELECTOR);
+
+    Operation putOperation = Operation
+        .createPut(serviceUri)
+        .setExpiration(Utils.getNowMicrosUtc() + getPutOperationExpirationMicros())
+        .setBody(body)
+        .setReferer(this.localHostUri)
+        .setContextId(LoggingUtils.getRequestId());
+
+    return send(putOperation);
+  }
+
   @Override
   public Operation get(String documentSelfLink)
       throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException {
