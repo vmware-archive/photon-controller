@@ -144,7 +144,7 @@ public class Main {
 
     // Values for Scheduler
     final ServerSet cloudStoreServerSet =
-        new StaticServerSet(new InetSocketAddress("127.0.0.1", Constants.CLOUD_STORE_PORT));
+        new StaticServerSet(new InetSocketAddress("127.0.0.1", Constants.PHOTON_CONTROLLER_PORT));
     final CloudStoreHelper cloudStoreHelper = new CloudStoreHelper(cloudStoreServerSet);
     final ConstraintChecker checker = new CloudStoreConstraintChecker(cloudStoreHelper);
 

@@ -33,13 +33,13 @@ import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
-import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.deployengine.ApiClientFactory;
 import com.vmware.photon.controller.deployer.deployengine.HttpFileServiceClientFactory;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClient;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClientFactory;
 import com.vmware.photon.controller.deployer.helpers.ReflectionUtils;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
+import com.vmware.photon.controller.deployer.helpers.xenon.DeployerTestConfig;
 import com.vmware.photon.controller.deployer.helpers.xenon.MockHelper;
 import com.vmware.photon.controller.deployer.helpers.xenon.TestEnvironment;
 import com.vmware.photon.controller.deployer.helpers.xenon.TestHost;
@@ -532,7 +532,7 @@ public class InitializeDeploymentMigrationWorkflowServiceTest {
     private ApiClientFactory apiClientFactory;
     private HttpFileServiceClientFactory httpFileServiceClientFactory;
     private InitializeDeploymentMigrationWorkflowService.State startState;
-    private DeployerConfig deployerConfig;
+    private DeployerTestConfig deployerTestConfig;
     private DeployerContext deployerContext;
 
     @BeforeClass
@@ -550,9 +550,9 @@ public class InitializeDeploymentMigrationWorkflowServiceTest {
       vibDirectory.mkdirs();
       TestHelper.createSourceFile(null, vibDirectory);
 
-      deployerConfig = spy(ConfigBuilder.build(DeployerConfig.class,
+      deployerTestConfig = spy(ConfigBuilder.build(DeployerTestConfig.class,
           this.getClass().getResource(configFilePath).getPath()));
-      deployerContext = spy(deployerConfig.getDeployerContext());
+      deployerContext = spy(deployerTestConfig.getDeployerContext());
     }
 
     @BeforeMethod
@@ -589,7 +589,7 @@ public class InitializeDeploymentMigrationWorkflowServiceTest {
     }
 
     private void createTestEnvironment() throws Throwable {
-      String quorum = deployerConfig.getZookeeper().getQuorum();
+      String quorum = deployerTestConfig.getZookeeper().getQuorum();
       deployerContext.setZookeeperQuorum(quorum);
 
       ZookeeperClientFactory zkFactory = mock(ZookeeperClientFactory.class);

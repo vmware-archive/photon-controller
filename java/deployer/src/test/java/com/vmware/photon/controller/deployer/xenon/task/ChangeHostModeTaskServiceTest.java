@@ -24,9 +24,9 @@ import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeExceptio
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.common.xenon.validation.Positive;
-import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.helpers.ReflectionUtils;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
+import com.vmware.photon.controller.deployer.helpers.xenon.DeployerTestConfig;
 import com.vmware.photon.controller.deployer.helpers.xenon.TestEnvironment;
 import com.vmware.photon.controller.deployer.helpers.xenon.TestHost;
 import com.vmware.photon.controller.deployer.xenon.DeployerContext;
@@ -420,7 +420,7 @@ public class ChangeHostModeTaskServiceTest {
     @BeforeClass
     public void setUpClass() throws Throwable {
       cloudStoreMachine = com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment.create(1);
-      deployerContext = ConfigBuilder.build(DeployerConfig.class,
+      deployerContext = ConfigBuilder.build(DeployerTestConfig.class,
           this.getClass().getResource(configFilePath).getPath()).getDeployerContext();
 
       hostClientFactory = mock(HostClientFactory.class);

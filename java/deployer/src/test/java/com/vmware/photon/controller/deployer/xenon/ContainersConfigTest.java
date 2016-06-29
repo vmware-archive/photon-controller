@@ -15,8 +15,8 @@ package com.vmware.photon.controller.deployer.xenon;
 
 import com.vmware.photon.controller.common.config.BadConfigException;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
-import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
+import com.vmware.photon.controller.deployer.helpers.xenon.DeployerTestConfig;
 import com.vmware.xenon.common.Utils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -47,7 +47,7 @@ import java.util.Map;
 public class ContainersConfigTest {
 
   private ContainersConfig containersConfig;
-  private DeployerConfig deployerConfig;
+  private DeployerTestConfig deployerTestConfig;
 
   private static Map<String, Object> defaultDynamicParamters = ImmutableMap.<String, Object>builder()
       .put("REGISTRATION_ADDRESS", "99.99.99.99")
@@ -57,16 +57,16 @@ public class ContainersConfigTest {
 
   @Test
   public void constructsContainersConfig() throws Exception {
-    deployerConfig = ConfigBuilder.build(DeployerConfig.class,
+    deployerTestConfig = ConfigBuilder.build(DeployerTestConfig.class,
         this.getClass().getResource("/config.yml").getPath());
-    TestHelper.setContainersConfig(deployerConfig);
-    containersConfig = deployerConfig.getContainersConfig();
+    TestHelper.setContainersConfig(deployerTestConfig);
+    containersConfig = deployerTestConfig.getContainersConfig();
     assertThat(containersConfig.getContainerSpecs().size(), is(ContainersConfig.ContainerType.values().length));
   }
 
   @Test(expectedExceptions = BadConfigException.class)
   public void throwsOnMissingContainersConfig() throws Exception {
-    containersConfig = ConfigBuilder.build(DeployerConfig.class,
+    containersConfig = ConfigBuilder.build(DeployerTestConfig.class,
         this.getClass().getResource("/xenonConfig_invalid.yml").getPath()).getContainersConfig();
   }
 

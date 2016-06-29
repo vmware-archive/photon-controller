@@ -21,7 +21,6 @@ import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
-import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.deployengine.DockerProvisioner;
 import com.vmware.photon.controller.deployer.deployengine.DockerProvisionerFactory;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClient;
@@ -29,6 +28,7 @@ import com.vmware.photon.controller.deployer.deployengine.ZookeeperClientFactory
 import com.vmware.photon.controller.deployer.healthcheck.HealthCheckHelperFactory;
 import com.vmware.photon.controller.deployer.helpers.ReflectionUtils;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
+import com.vmware.photon.controller.deployer.helpers.xenon.DeployerTestConfig;
 import com.vmware.photon.controller.deployer.helpers.xenon.MockHelper;
 import com.vmware.photon.controller.deployer.helpers.xenon.TestEnvironment;
 import com.vmware.photon.controller.deployer.helpers.xenon.TestHost;
@@ -714,7 +714,7 @@ public class CreateContainersWorkflowServiceTest {
     private DockerProvisionerFactory dockerProvisionerFactory;
     private HealthCheckHelperFactory healthCheckHelperFactory;
     private CreateContainersWorkflowService.State startState;
-    private DeployerConfig deployerConfig;
+    private DeployerTestConfig deployerTestConfig;
     private SystemConfig systemConfig;
 
     @BeforeClass
@@ -722,9 +722,9 @@ public class CreateContainersWorkflowServiceTest {
       cloudStoreMachine = com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment.create(1);
       listeningExecutorService = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(1));
       dockerProvisionerFactory = mock(DockerProvisionerFactory.class);
-      deployerConfig = ConfigBuilder.build(DeployerConfig.class,
+      deployerTestConfig = ConfigBuilder.build(DeployerTestConfig.class,
           this.getClass().getResource(configFilePath).getPath());
-      TestHelper.setContainersConfig(deployerConfig);
+      TestHelper.setContainersConfig(deployerTestConfig);
       healthCheckHelperFactory = mock(HealthCheckHelperFactory.class);
       this.systemConfig = spy(SystemConfig.createInstance(cloudStoreMachine.getHosts()[0]));
     }
@@ -766,7 +766,7 @@ public class CreateContainersWorkflowServiceTest {
     @SuppressWarnings("unchecked")
     @Test(dataProvider = "hostCounts")
     public void testTaskFailureInsideCreateContainer(Integer hostCount) throws Throwable {
-      machine = createTestEnvironment(deployerConfig, listeningExecutorService, dockerProvisionerFactory,
+      machine = createTestEnvironment(deployerTestConfig, listeningExecutorService, dockerProvisionerFactory,
           healthCheckHelperFactory, hostCount);
 
       DockerProvisioner dockerProvisioner = mock(DockerProvisioner.class);
@@ -797,7 +797,7 @@ public class CreateContainersWorkflowServiceTest {
     @SuppressWarnings("unchecked")
     @Test(dataProvider = "hostCounts")
     public void testTaskSuccess(Integer hostCount) throws Throwable {
-      machine = createTestEnvironment(deployerConfig, listeningExecutorService, dockerProvisionerFactory,
+      machine = createTestEnvironment(deployerTestConfig, listeningExecutorService, dockerProvisionerFactory,
           healthCheckHelperFactory, hostCount);
 
       DockerProvisioner dockerProvisioner = mock(DockerProvisioner.class);
@@ -875,7 +875,7 @@ public class CreateContainersWorkflowServiceTest {
     }
 
     private TestEnvironment createTestEnvironment(
-        DeployerConfig deployerConfig,
+        DeployerTestConfig deployerTestConfig,
         ListeningExecutorService listeningExecutorService,
         DockerProvisionerFactory dockerProvisionerFactory,
         HealthCheckHelperFactory healthCheckHelperFactory,
@@ -885,8 +885,8 @@ public class CreateContainersWorkflowServiceTest {
       ZookeeperClient zkBuilder = mock(ZookeeperClient.class);
       doReturn(zkBuilder).when(zkFactory).create();
       return new TestEnvironment.Builder()
-          .containersConfig(deployerConfig.getContainersConfig())
-          .deployerContext(deployerConfig.getDeployerContext())
+          .containersConfig(deployerTestConfig.getContainersConfig())
+          .deployerContext(deployerTestConfig.getDeployerContext())
           .dockerProvisionerFactory(dockerProvisionerFactory)
           .listeningExecutorService(listeningExecutorService)
           .healthCheckerFactory(healthCheckHelperFactory)

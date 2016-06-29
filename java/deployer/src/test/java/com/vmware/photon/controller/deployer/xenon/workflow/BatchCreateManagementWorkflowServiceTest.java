@@ -40,7 +40,6 @@ import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
-import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfigurator;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfiguratorFactory;
 import com.vmware.photon.controller.deployer.deployengine.ApiClientFactory;
@@ -50,6 +49,7 @@ import com.vmware.photon.controller.deployer.deployengine.ZookeeperClientFactory
 import com.vmware.photon.controller.deployer.healthcheck.HealthCheckHelperFactory;
 import com.vmware.photon.controller.deployer.helpers.ReflectionUtils;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
+import com.vmware.photon.controller.deployer.helpers.xenon.DeployerTestConfig;
 import com.vmware.photon.controller.deployer.helpers.xenon.MockHelper;
 import com.vmware.photon.controller.deployer.helpers.xenon.TestEnvironment;
 import com.vmware.photon.controller.deployer.helpers.xenon.TestHost;
@@ -634,12 +634,12 @@ public class BatchCreateManagementWorkflowServiceTest {
       startState.taskPollDelay = 10;
       startState.deploymentServiceLink = deploymentServiceLink;
 
-      DeployerConfig deployerConfig = ConfigBuilder.build(DeployerConfig.class,
+      DeployerTestConfig deployerTestConfig = ConfigBuilder.build(DeployerTestConfig.class,
           this.getClass().getResource(configFilePath).getPath());
-      TestHelper.setContainersConfig(deployerConfig);
-      containersConfig = deployerConfig.getContainersConfig();
-      deployerContext = deployerConfig.getDeployerContext();
-      TestHelper.setContainersConfig(deployerConfig);
+      TestHelper.setContainersConfig(deployerTestConfig);
+      containersConfig = deployerTestConfig.getContainersConfig();
+      deployerContext = deployerTestConfig.getDeployerContext();
+      TestHelper.setContainersConfig(deployerTestConfig);
 
       scriptDirectory = new File(deployerContext.getScriptDirectory());
       scriptLogDirectory = new File(deployerContext.getScriptLogDirectory());

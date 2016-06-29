@@ -48,7 +48,6 @@ import com.vmware.photon.controller.common.xenon.migration.MigrationUtils;
 import com.vmware.photon.controller.common.xenon.migration.UpgradeInformation;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
-import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.deployengine.ApiClientFactory;
 import com.vmware.photon.controller.deployer.deployengine.DockerProvisioner;
 import com.vmware.photon.controller.deployer.deployengine.DockerProvisionerFactory;
@@ -57,6 +56,7 @@ import com.vmware.photon.controller.deployer.deployengine.ZookeeperClient;
 import com.vmware.photon.controller.deployer.deployengine.ZookeeperClientFactory;
 import com.vmware.photon.controller.deployer.helpers.ReflectionUtils;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
+import com.vmware.photon.controller.deployer.helpers.xenon.DeployerTestConfig;
 import com.vmware.photon.controller.deployer.helpers.xenon.MockHelper;
 import com.vmware.photon.controller.deployer.helpers.xenon.TestEnvironment;
 import com.vmware.photon.controller.deployer.helpers.xenon.TestHost;
@@ -738,7 +738,7 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
     private TestEnvironment destinationEnvironment;
     private com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment sourceCloudStore;
     private com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment destinationCloudStore;
-    private DeployerConfig deployerConfig;
+    private DeployerTestConfig deployerTestConfig;
     private DeployerContext deployerContext;
     private ListeningExecutorService listeningExecutorService;
     private HttpFileServiceClientFactory httpFileServiceClientFactory;
@@ -758,9 +758,9 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
       Files.createFile(Paths.get(scriptDirectory.getAbsolutePath(), "meta-data.template"));
       listeningExecutorService = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(1));
 
-      deployerConfig = spy(ConfigBuilder.build(DeployerConfig.class,
+      deployerTestConfig = spy(ConfigBuilder.build(DeployerTestConfig.class,
           this.getClass().getResource(configFilePath).getPath()));
-      deployerContext = spy(deployerConfig.getDeployerContext());
+      deployerContext = spy(deployerTestConfig.getDeployerContext());
 
       startState = buildValidStartState(TaskState.TaskStage.CREATED, null);
       startState.controlFlags = null;
@@ -804,7 +804,7 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
     }
 
     private void createTestEnvironment() throws Throwable {
-      String quorum = deployerConfig.getZookeeper().getQuorum();
+      String quorum = deployerTestConfig.getZookeeper().getQuorum();
       deployerContext.setZookeeperQuorum(quorum);
 
       ZookeeperClientFactory sourceZKFactory = mock(ZookeeperClientFactory.class);
@@ -1016,12 +1016,12 @@ public class FinalizeDeploymentMigrationWorkflowServiceTest {
       mockApiClient(true);
       MockHelper.mockHttpFileServiceClient(httpFileServiceClientFactory, true);
       MockHelper.mockHostClient(agentControlClientFactory, hostClientFactory, true);
-      MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(),
+      MockHelper.mockCreateScriptFile(deployerTestConfig.getDeployerContext(),
           ProvisionHostTaskService.CONFIGURE_SYSLOG_SCRIPT_NAME, true);
-      MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(),
+      MockHelper.mockCreateScriptFile(deployerTestConfig.getDeployerContext(),
           ProvisionHostTaskService.INSTALL_VIB_SCRIPT_NAME, true);
-      MockHelper.mockCreateScriptFile(deployerConfig.getDeployerContext(), CreateManagementVmTaskService.SCRIPT_NAME,
-          true);
+      MockHelper.mockCreateScriptFile(
+          deployerTestConfig.getDeployerContext(), CreateManagementVmTaskService.SCRIPT_NAME, true);
 
       // Create a host on source
       TestHelper.createHostService(sourceCloudStore, Collections.singleton(UsageTag.CLOUD.name()));

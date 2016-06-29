@@ -48,7 +48,7 @@ public class Constants {
 
   public static final int ZOOKEEPER_PORT = 2181;
 
-  public static final int CLOUD_STORE_PORT = 19000;
+  public static final int PHOTON_CONTROLLER_PORT = 19000;
 
   public static final int LIGHTWAVE_PORT = 443;
 

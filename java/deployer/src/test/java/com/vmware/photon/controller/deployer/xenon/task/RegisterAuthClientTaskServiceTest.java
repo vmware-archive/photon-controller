@@ -21,12 +21,12 @@ import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
-import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.deployengine.AuthHelper;
 import com.vmware.photon.controller.deployer.deployengine.AuthHelperFactory;
 import com.vmware.photon.controller.deployer.deployengine.DockerProvisioner;
 import com.vmware.photon.controller.deployer.deployengine.DockerProvisionerFactory;
 import com.vmware.photon.controller.deployer.helpers.TestHelper;
+import com.vmware.photon.controller.deployer.helpers.xenon.DeployerTestConfig;
 import com.vmware.photon.controller.deployer.helpers.xenon.TestEnvironment;
 import com.vmware.photon.controller.deployer.helpers.xenon.TestHost;
 import com.vmware.photon.controller.deployer.xenon.util.MiscUtils;
@@ -328,16 +328,16 @@ public class RegisterAuthClientTaskServiceTest {
     private ListeningExecutorService listeningExecutorService;
     private DockerProvisionerFactory dockerProvisionerFactory;
     private DeploymentService.State deploymentServiceState;
-    private DeployerConfig deployerConfig;
+    private DeployerTestConfig deployerTestConfig;
     private AuthClientHandler.ImplicitClient implicitClient;
 
     @BeforeClass
     public void setUpClass() throws Throwable {
       listeningExecutorService = MoreExecutors.listeningDecorator(Executors.newFixedThreadPool(1));
       dockerProvisionerFactory = mock(DockerProvisionerFactory.class);
-      deployerConfig = ConfigBuilder.build(DeployerConfig.class,
+      deployerTestConfig = ConfigBuilder.build(DeployerTestConfig.class,
           this.getClass().getResource(configFilePath).getPath());
-      TestHelper.setContainersConfig(deployerConfig);
+      TestHelper.setContainersConfig(deployerTestConfig);
       implicitClient = new AuthClientHandler.ImplicitClient("client", "http://login", "http://logout");
     }
 
@@ -442,8 +442,8 @@ public class RegisterAuthClientTaskServiceTest {
 
       testEnvironment = new TestEnvironment.Builder()
           .authHelperFactory(authHelperFactory)
-          .deployerContext(deployerConfig.getDeployerContext())
-          .containersConfig(deployerConfig.getContainersConfig())
+          .deployerContext(deployerTestConfig.getDeployerContext())
+          .containersConfig(deployerTestConfig.getContainersConfig())
           .dockerProvisionerFactory(dockerProvisionerFactory)
           .listeningExecutorService(listeningExecutorService)
           .cloudServerSet(cloudStoreMachine.getServerSet())

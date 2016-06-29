@@ -24,7 +24,6 @@ import com.vmware.photon.controller.common.xenon.OperationUtils;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
 import com.vmware.photon.controller.common.xenon.host.XenonConfig;
-import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.deployer.configuration.ServiceConfiguratorFactory;
 import com.vmware.photon.controller.deployer.deployengine.ApiClientFactory;
 import com.vmware.photon.controller.deployer.deployengine.AuthHelperFactory;
@@ -110,7 +109,7 @@ public class TestHost extends PhotonControllerXenonHost {
         nsxClientFactory,
         cloudStoreHelper);
 
-    DeployerContext deployerContext = ConfigBuilder.build(DeployerConfig.class,
+    DeployerContext deployerContext = ConfigBuilder.build(DeployerTestConfig.class,
         DeployerContextTest.class.getResource("/config.yml").getPath()).getDeployerContext();
 
     DockerProvisionerFactory dockerProvisionerFactory = mock(DockerProvisionerFactory.class);
