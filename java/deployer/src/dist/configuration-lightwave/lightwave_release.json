@@ -8,10 +8,11 @@
   "useHostNetwork": true,
   "containerImage": "vmware/lightwave-sts",
   "portBindings": {
-    "443":443
+    "443": 443
   },
   "volumeBindings": {
-    "/var/log/esxcloud": "/var/log/vmware"
+    "/var/log/esxcloud": "/var/log/vmware",
+    "/sys/fs/cgroup": "/sys/fs/cgroup"
   },
   "dynamicParameters": {
   }
