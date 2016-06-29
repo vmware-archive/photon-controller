@@ -159,6 +159,7 @@ public class PhotonControllerXenonHost
         }
 
         ServiceHostUtils.startService(this, StatusService.class);
+        ServiceHostUtils.startService(this, LoggerControlService.class);
 
         return this;
     }
