@@ -48,7 +48,7 @@
   "provisioners": [
     {
       "type": "shell",
-      "inline": "tdnf update -y tdnf || true"
+      "inline": "tdnf makecache && tdnf upgrade -y"
     },
     {
       "type": "shell",
@@ -57,6 +57,10 @@
     {
       "type": "shell",
       "inline": "echo 'enabling network renaming' && sed -i \"s/NamePolicy=kernel database/NamePolicy=kernel database onboard slot path/g\" /lib/systemd/network/99-default.link"
+    },
+    {
+      "type": "shell",
+      "inline": "echo 'enabling network renaming, again ...' && sed -i \"s/ifnames=0/ifnames=1/g\" /boot/grub2/grub.cfg"
     },
     {
       "type": "shell",
