@@ -47,9 +47,7 @@ image:
 {{#ENABLE_INSTALLER_STATUS_FILTER}}
 status:
   components:
-    - deployer
-    - cloudStore
-    - housekeeper
+    - photon-controller
 {{/ENABLE_INSTALLER_STATUS_FILTER}}
 
 auth:
