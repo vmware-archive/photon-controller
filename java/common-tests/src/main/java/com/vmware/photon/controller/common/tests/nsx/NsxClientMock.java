@@ -367,6 +367,26 @@ public class NsxClientMock extends NsxClient {
       return this;
     }
 
+    public Builder checkLogicalSwitchExistence(boolean isSuccess) throws Throwable {
+      if (isSuccess) {
+        doAnswer(invocation -> {
+          ((FutureCallback<Boolean>) invocation.getArguments()[1]).onSuccess(true);
+          return null;
+        }).doAnswer(invocation -> {
+          ((FutureCallback<Boolean>) invocation.getArguments()[1]).onSuccess(false);
+          return null;
+        }).when(mockLogicalSwitchApi).checkLogicalSwitchExistence(anyString(), any(FutureCallback.class));
+      } else {
+        RuntimeException e = new RuntimeException("checkLogicalSwitchExistence failed");
+        doAnswer(invocation -> {
+          ((FutureCallback<Boolean>) invocation.getArguments()[1]).onFailure(e);
+          return null;
+        }).when(mockLogicalSwitchApi).checkLogicalSwitchExistence(anyString(), any(FutureCallback.class));
+      }
+
+      return this;
+    }
+
     public Builder createLogicalPort(boolean isSuccess,
                                      String logicalPortId) throws Throwable {
       if (isSuccess) {
