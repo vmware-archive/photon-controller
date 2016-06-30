@@ -23,6 +23,8 @@ public class VirtualNetworkCreateSpecBuilder {
   private String name;
   private String description;
   private RoutingType routingType;
+  private int size;
+  private int reservedStaticIpSize;
 
   public VirtualNetworkCreateSpecBuilder name(String name) {
     this.name = name;
@@ -39,11 +41,23 @@ public class VirtualNetworkCreateSpecBuilder {
     return this;
   }
 
+  public VirtualNetworkCreateSpecBuilder size(int size) {
+    this.size = size;
+    return this;
+  }
+
+  public VirtualNetworkCreateSpecBuilder reservedStaticIpSize(int reservedStaticIpSize) {
+    this.reservedStaticIpSize = reservedStaticIpSize;
+    return this;
+  }
+
   public VirtualNetworkCreateSpec build() {
     VirtualNetworkCreateSpec virtualNetworkCreateSpec = new VirtualNetworkCreateSpec();
     virtualNetworkCreateSpec.setName(name);
     virtualNetworkCreateSpec.setDescription(description);
     virtualNetworkCreateSpec.setRoutingType(routingType);
+    virtualNetworkCreateSpec.setReservedStaticIpSize(reservedStaticIpSize);
+    virtualNetworkCreateSpec.setSize(size);
 
     return virtualNetworkCreateSpec;
   }

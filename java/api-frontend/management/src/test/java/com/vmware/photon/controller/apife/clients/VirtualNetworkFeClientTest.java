@@ -31,6 +31,7 @@ import com.vmware.photon.controller.apife.backends.VmBackend;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.backends.clients.PhotonControllerXenonRestClient;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidNetworkStateException;
+import com.vmware.photon.controller.apife.exceptions.external.InvalidReservedStaticIpSizeException;
 import com.vmware.photon.controller.apife.exceptions.external.NetworkNotFoundException;
 import com.vmware.photon.controller.cloudstore.xenon.entity.TaskService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VirtualNetworkService;
@@ -182,6 +183,17 @@ public class VirtualNetworkFeClientTest {
 
     VirtualNetwork virtualNetwork = frontendClient.get(networkId);
     assertEquals(virtualNetwork.getName(), virtualNetworkState.name);
+  }
+
+  @Test(expectedExceptions = InvalidReservedStaticIpSizeException.class)
+  public void failsToCreateWithInvalidReservedStaticIpSizeException() throws Throwable {
+    VirtualNetworkCreateSpec spec = new VirtualNetworkCreateSpec();
+    spec.setName("virtualNetworkName");
+    spec.setRoutingType(RoutingType.ROUTED);
+    spec.setSize(4);
+    spec.setReservedStaticIpSize(8);
+
+    frontendClient.create("parentId", "parentKind", spec);
   }
 
   @Test(expectedExceptions = NetworkNotFoundException.class)
