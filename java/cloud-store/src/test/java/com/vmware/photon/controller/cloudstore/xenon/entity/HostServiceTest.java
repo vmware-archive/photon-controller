@@ -18,6 +18,7 @@ import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment;
 import com.vmware.photon.controller.cloudstore.xenon.helpers.TestHelper;
+import com.vmware.photon.controller.cloudstore.xenon.task.DatastoreDeleteFactoryService;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
@@ -609,8 +610,8 @@ public class HostServiceTest {
       retryCount = 0;
       do {
         Thread.sleep(500);
-      } while (getTotalDatastoreCount(testEnvironment) > 0 && retryCount++ < 10);
-      assertThat(getTotalDatastoreCount(testEnvironment), is(0L));
+      } while (getDatastoreDeleteTaskCount(testEnvironment) < 10 && retryCount++ < 10);
+      assertThat(getDatastoreDeleteTaskCount(testEnvironment), is(10));
     }
 
     // Test that the host config gets updated successfully and that the previously reported datastores are deleted
@@ -685,12 +686,12 @@ public class HostServiceTest {
       savedState = testEnvironment.getServiceState(createdState.documentSelfLink, HostService.State.class);
       assertThat(savedState.state, is(HostState.READY));
 
-      // Validate that the previously reported datastores are removed from CloudStore.
+      // Validate that datastore delete tasks are created for the corresponding previously reported datastores.
       retryCount = 0;
       do {
         Thread.sleep(500);
-      } while (getTotalDatastoreCount(testEnvironment) > 0 && retryCount++ < 10);
-      assertThat(getTotalDatastoreCount(testEnvironment), is(0L));
+      } while (getDatastoreDeleteTaskCount(testEnvironment) < 10 && retryCount++ < 10);
+      assertThat(getDatastoreDeleteTaskCount(testEnvironment), is(10));
     }
 
     @Test
@@ -735,13 +736,6 @@ public class HostServiceTest {
 
       assertNotNull(savedState.agentState, "Failed to update the agent state");
       assertThat(savedState.agentState, is(AgentState.MISSING));
-
-      // Validate that when an agent becomes missing, its datastores are removed from CloudStore.
-      retryCount = 0;
-      do {
-        Thread.sleep(500);
-      } while (getTotalDatastoreCount(testEnvironment) > 0 && retryCount++ < 10);
-      assertThat(getTotalDatastoreCount(testEnvironment), is(0L));
     }
 
     private GetConfigResponse getConfigResponse(boolean success, HostConfig hostConfig) throws Throwable {
@@ -808,6 +802,12 @@ public class HostServiceTest {
           .build();
       QueryTask result = environment.sendQueryAndWait(queryTask);
       return result.results.documentCount;
+    }
+
+    private int getDatastoreDeleteTaskCount(TestEnvironment environment) throws Throwable {
+      ServiceDocumentQueryResult result = environment.getServiceState(DatastoreDeleteFactoryService.SELF_LINK,
+          ServiceDocumentQueryResult.class);
+      return result.documentLinks.size();
     }
   }
 

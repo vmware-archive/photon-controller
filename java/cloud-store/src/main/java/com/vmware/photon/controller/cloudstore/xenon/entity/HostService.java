@@ -98,6 +98,12 @@ public class HostService extends StatefulService {
   public static final long DEFAULT_MAINTENANCE_INTERVAL_MILLIS = 60 * 1000;
 
   /**
+   * The default amount of time we wait before triggering the datastore delete tasks when the agent state changes to
+   * missing state.
+   */
+  public static final long DEFAULT_DELETE_TASK_TRIGGER_WAIT_MILLIS = 5 * 1000;
+
+  /**
    * This value represents the upper bound of the wait time in milliseconds for a host
    * service instance to ping the agent within its polling interval (10 seconds).
    */
@@ -213,13 +219,13 @@ public class HostService extends StatefulService {
       // If not, get the list of datastores which became inactive since the last update and call the datastore delete
       // task on them as they might be eligible for deletion.
       if (agentStateChangedToMissing) {
-        triggerDatastoreDeleteTasks(previouslyReportedDatastores);
+        scheduleDatastoreDeleteTasks(startState, previouslyReportedDatastores);
       } else {
         if (previouslyReportedDatastores != null && newlyReportedDatastores != null) {
           Set<String> inactiveDatastoreIds = previouslyReportedDatastores.stream()
               .filter(id -> !newlyReportedDatastores.contains(id))
               .collect(Collectors.toSet());
-          triggerDatastoreDeleteTasks(inactiveDatastoreIds);
+          scheduleDatastoreDeleteTasks(startState, inactiveDatastoreIds);
         }
       }
 
@@ -498,6 +504,14 @@ public class HostService extends StatefulService {
     if (operation != null) {
       operation.complete();
     }
+  }
+
+  // Schedule datastore delete tasks to run after a wait time. This is needed for the patchOperation to persist the
+  // state before the datastore delete task can start querying.
+  private void scheduleDatastoreDeleteTasks(State currentState, Set<String> datastoreIds) {
+    getHost().schedule(() -> {
+          triggerDatastoreDeleteTasks(datastoreIds);
+        }, currentState.deleteTaskWaitMillis, TimeUnit.MILLISECONDS);
   }
 
   /**
@@ -783,5 +797,11 @@ public class HostService extends StatefulService {
      */
     @WriteOnce
     public String nsxTransportNodeId;
+
+    /**
+     * This value represents the time to wait before scheduling the datastore delete tasks.
+     */
+    @DefaultLong(value = DEFAULT_DELETE_TASK_TRIGGER_WAIT_MILLIS)
+    public Long deleteTaskWaitMillis;
   }
 }
