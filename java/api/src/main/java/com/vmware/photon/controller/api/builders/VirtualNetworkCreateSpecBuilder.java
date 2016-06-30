@@ -23,6 +23,8 @@ public class VirtualNetworkCreateSpecBuilder {
   private String name;
   private String description;
   private RoutingType routingType;
+  private boolean dhcpEnabled;
+  private int size;
 
   public VirtualNetworkCreateSpecBuilder name(String name) {
     this.name = name;
@@ -39,11 +41,23 @@ public class VirtualNetworkCreateSpecBuilder {
     return this;
   }
 
+  public VirtualNetworkCreateSpecBuilder dhcpEnabled(boolean dhcpEnabled) {
+    this.dhcpEnabled = dhcpEnabled;
+    return this;
+  }
+
+  public VirtualNetworkCreateSpecBuilder size(int size) {
+    this.size = size;
+    return this;
+  }
+
   public VirtualNetworkCreateSpec build() {
     VirtualNetworkCreateSpec virtualNetworkCreateSpec = new VirtualNetworkCreateSpec();
     virtualNetworkCreateSpec.setName(name);
     virtualNetworkCreateSpec.setDescription(description);
     virtualNetworkCreateSpec.setRoutingType(routingType);
+    virtualNetworkCreateSpec.setDhcpEnabled(dhcpEnabled);
+    virtualNetworkCreateSpec.setSize(size);
 
     return virtualNetworkCreateSpec;
   }
