@@ -54,6 +54,7 @@ public class TestHelper {
     startState.esxVersion = "6.0";
     startState.usageTags = new HashSet<>(usageTags);
     startState.reportedImageDatastores = new HashSet<>(Arrays.asList("datastore1"));
+    startState.deleteTaskWaitMillis = 0L;
 
     if (usageTags.contains(UsageTag.MGMT.name())) {
       startState.metadata = new HashMap<>();
