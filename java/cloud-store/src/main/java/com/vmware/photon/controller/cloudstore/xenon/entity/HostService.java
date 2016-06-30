@@ -25,11 +25,7 @@ import com.vmware.photon.controller.common.clients.AgentControlClient;
 import com.vmware.photon.controller.common.clients.AgentControlClientProvider;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientProvider;
-import com.vmware.photon.controller.common.xenon.InitializationUtils;
-import com.vmware.photon.controller.common.xenon.PatchUtils;
-import com.vmware.photon.controller.common.xenon.ServiceUtils;
-import com.vmware.photon.controller.common.xenon.TaskUtils;
-import com.vmware.photon.controller.common.xenon.ValidationUtils;
+import com.vmware.photon.controller.common.xenon.*;
 import com.vmware.photon.controller.common.xenon.deployment.MigrateDuringDeployment;
 import com.vmware.photon.controller.common.xenon.migration.MigrateDuringUpgrade;
 import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
@@ -155,15 +151,34 @@ public class HostService extends StatefulService {
       State startState = startOperation.getBody(State.class);
       InitializationUtils.initialize(startState);
 
-      if (null == startState.schedulingConstant) {
-        startState.schedulingConstant = (long) random.nextInt(MAX_SCHEDULING_CONSTANT);
-      }
+      // Get next scheduling constant from HaltonSequenceService
+      // Put *something* in the body of the patch, otherwise Xenon complains.
+      // The patch body gets ignored by HaltonSequenceService.handlePatch.
+      HaltonSequenceService.State hssReqState = new HaltonSequenceService.State();
+      //hssReqState.index = 0;
+      Operation hssPatch = Operation
+          .createPatch(this, HaltonSequenceService.SINGLETON_LINK)
+          .setBody(hssReqState)
+          //.setReferer(UriUtils.buildUri(this.getHost(), ServiceUriPaths.CLOUDSTORE_ROOT))
+          .setCompletion((op, ex) -> {
+            if (ex != null) {
+              ServiceUtils.logSevere(this, "Request to HaltonSequenceService foobar");
+              ServiceUtils.logSevere(this, ex);
+              startOperation.fail(ex);
+              return;
+            }
 
-      validateState(startState);
+            HaltonSequenceService.State hssResponseState = op.getBody(HaltonSequenceService.State.class);
+            startState.schedulingConstant = (long)(hssResponseState.lastValue * MAX_SCHEDULING_CONSTANT);
 
-      // set the maintenance interval to match the value in the state.
-      this.setMaintenanceIntervalMicros(TimeUnit.MILLISECONDS.toMicros(startState.triggerIntervalMillis));
-      startOperation.complete();
+            validateState(startState);
+
+            // set the maintenance interval to match the value in the state.
+            this.setMaintenanceIntervalMicros(TimeUnit.MILLISECONDS.toMicros(startState.triggerIntervalMillis));
+            startOperation.complete();
+          });
+      sendRequest(hssPatch);
+    // TODO(mstunes): move these catch blocks elsewhere?
     } catch (IllegalStateException t) {
       ServiceUtils.failOperationAsBadRequest(this, startOperation, t);
     } catch (Throwable t) {

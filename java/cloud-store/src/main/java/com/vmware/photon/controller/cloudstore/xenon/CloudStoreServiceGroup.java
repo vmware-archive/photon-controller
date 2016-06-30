@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.cloudstore.xenon;
 
+import com.google.common.collect.ImmutableList;
 import com.vmware.photon.controller.cloudstore.xenon.entity.AttachedDiskServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.AvailabilityZoneServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ClusterConfigurationServiceFactory;
@@ -22,6 +23,7 @@ import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentServiceFac
 import com.vmware.photon.controller.cloudstore.xenon.entity.DiskServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.EntityLockServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.FlavorServiceFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.HaltonSequenceService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.HostServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ImageServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ImageToImageDatastoreMappingServiceFactory;
@@ -61,7 +63,10 @@ import com.google.common.collect.ImmutableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.URI;
+import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 /**
@@ -126,7 +131,12 @@ public class CloudStoreServiceGroup
   };
 
   public static final Map<Class<? extends Service>, Supplier<FactoryService>> FACTORY_SERVICES_MAP = ImmutableMap.of(
-      VirtualNetworkService.class, VirtualNetworkService::createFactory
+      VirtualNetworkService.class, VirtualNetworkService::createFactory,
+      HaltonSequenceService.class, HaltonSequenceService::createFactory
+  );
+
+  public static final List<Consumer<PhotonControllerXenonHost>> SINGLETON_STARTERS = ImmutableList.of(
+      HaltonSequenceService::startSingletonService
   );
 
   private PhotonControllerXenonHost photonControllerXenonHost;
@@ -149,6 +159,7 @@ public class CloudStoreServiceGroup
 
     // Start all special services
     startTaskTriggerServices();
+    startSingletons();
   }
 
   @Override
@@ -157,6 +168,7 @@ public class CloudStoreServiceGroup
     return
             // factories
             photonControllerXenonHost.checkServiceAvailable(VirtualNetworkService.FACTORY_LINK)
+            && photonControllerXenonHost.checkServiceAvailable(HaltonSequenceService.FACTORY_LINK)
 
             // entities
             && photonControllerXenonHost.checkServiceAvailable(FlavorServiceFactory.SELF_LINK)
@@ -217,5 +229,11 @@ public class CloudStoreServiceGroup
         photonControllerXenonHost.sendRequest(post);
       }
     }, TaskTriggerFactoryService.SELF_LINK);
+  }
+
+  private void startSingletons() {
+    for (Consumer<PhotonControllerXenonHost> starter: SINGLETON_STARTERS) {
+      starter.accept(photonControllerXenonHost);
+    }
   }
 }
