@@ -139,6 +139,13 @@ public class HostServiceTest {
 
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
+
+      // Start up a singleton HaltonSequenceService for new HostServices to use
+      host.startFactory(HaltonSequenceService.class, HaltonSequenceService::createFactory);
+      host.registerForServiceAvailability(
+          HaltonSequenceService.startSingletonService(host),
+          HaltonSequenceService.FACTORY_LINK);
+
       xenonRestClient =
           new XenonRestClient(serverSet, Executors.newFixedThreadPool(1), Executors.newScheduledThreadPool(1));
       xenonRestClient.start();
@@ -329,6 +336,7 @@ public class HostServiceTest {
 
     @BeforeMethod
     public void setUp() throws Throwable {
+
       service = new HostService();
       host = BasicServiceHost.create(
           null,
@@ -337,6 +345,12 @@ public class HostServiceTest {
 
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
+
+      // Start up a singleton HaltonSequenceService for new HostServices to use
+      host.startFactory(HaltonSequenceService.class, HaltonSequenceService::createFactory);
+      host.registerForServiceAvailability(
+          HaltonSequenceService.startSingletonService(host),
+          HaltonSequenceService.FACTORY_LINK);
 
       xenonRestClient =
           new XenonRestClient(serverSet, Executors.newFixedThreadPool(1), Executors.newScheduledThreadPool(1));
@@ -907,6 +921,12 @@ public class HostServiceTest {
       xenonRestClient.start();
 
       testState = TestHelper.getHostServiceStartState();
+
+      // Start up a singleton HaltonSequenceService for new HostServices to use
+      host.startFactory(HaltonSequenceService.class, HaltonSequenceService::createFactory);
+      host.registerForServiceAvailability(
+          HaltonSequenceService.startSingletonService(host),
+          HaltonSequenceService.FACTORY_LINK);
 
       host.startServiceSynchronously(new HostServiceFactory(), null);
     }
