@@ -35,6 +35,7 @@ import com.vmware.photon.controller.apife.backends.clients.PhotonControllerXenon
 import com.vmware.photon.controller.apife.backends.utils.TaskUtils;
 import com.vmware.photon.controller.apife.backends.utils.VirtualNetworkUtils;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidNetworkStateException;
+import com.vmware.photon.controller.apife.exceptions.external.InvalidReservedStaticIpSizeException;
 import com.vmware.photon.controller.apife.exceptions.external.NetworkNotFoundException;
 import com.vmware.photon.controller.apife.utils.PaginationUtils;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VirtualNetworkService;
@@ -84,6 +85,11 @@ public class VirtualNetworkFeClient {
   public Task create(String parentId,
                      String parentKind,
                      VirtualNetworkCreateSpec spec) throws ExternalException {
+
+    if (spec.getReservedStaticIpSize() > spec.getSize()) {
+      throw new InvalidReservedStaticIpSizeException("Static IP size exceeds total IP size");
+    }
+
     CreateVirtualNetworkWorkflowDocument startState = new CreateVirtualNetworkWorkflowDocument();
     startState.parentId = parentId;
     startState.parentKind = parentKind;

@@ -1,5 +1,7 @@
 {
     "name": "vn1",
     "description": "desc",
-    "routingType": "ROUTED"
+    "routingType": "ROUTED",
+    "size": 8,
+    "reservedStaticIpSize": 4
 }
