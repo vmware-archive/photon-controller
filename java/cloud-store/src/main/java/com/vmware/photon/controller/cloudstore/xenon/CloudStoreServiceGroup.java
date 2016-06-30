@@ -22,6 +22,7 @@ import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentServiceFac
 import com.vmware.photon.controller.cloudstore.xenon.entity.DiskServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.EntityLockServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.FlavorServiceFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.HaltonSequenceService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.HostServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ImageServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ImageToImageDatastoreMappingServiceFactory;
@@ -134,6 +135,7 @@ public class CloudStoreServiceGroup
           .put(SubnetAllocatorService.class, SubnetAllocatorService::createFactory)
           .put(IpAllocatorService.class, IpAllocatorService::createFactory)
           .put(IpLeaseService.class, IpLeaseService::createFactory)
+          .put(HaltonSequenceService.class, HaltonSequenceService::createFactory)
           .build();
 
   private PhotonControllerXenonHost photonControllerXenonHost;
@@ -156,6 +158,10 @@ public class CloudStoreServiceGroup
 
     // Start all special services
     startTaskTriggerServices();
+
+    photonControllerXenonHost.registerForServiceAvailability(
+        HaltonSequenceService.startSingletonService(photonControllerXenonHost),
+        HaltonSequenceService.FACTORY_LINK);
   }
 
   @Override
@@ -167,6 +173,7 @@ public class CloudStoreServiceGroup
             && photonControllerXenonHost.checkServiceAvailable(SubnetAllocatorService.FACTORY_LINK)
             && photonControllerXenonHost.checkServiceAvailable(IpAllocatorService.FACTORY_LINK)
             && photonControllerXenonHost.checkServiceAvailable(IpLeaseService.FACTORY_LINK)
+            && photonControllerXenonHost.checkServiceAvailable(HaltonSequenceService.FACTORY_LINK)
             && photonControllerXenonHost.checkServiceAvailable(FlavorServiceFactory.SELF_LINK)
             && photonControllerXenonHost.checkServiceAvailable(ImageServiceFactory.SELF_LINK)
             && photonControllerXenonHost.checkServiceAvailable(ImageToImageDatastoreMappingServiceFactory.SELF_LINK)

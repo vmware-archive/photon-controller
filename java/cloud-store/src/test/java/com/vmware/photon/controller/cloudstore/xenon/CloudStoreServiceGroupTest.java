@@ -23,6 +23,7 @@ import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentServiceFac
 import com.vmware.photon.controller.cloudstore.xenon.entity.DiskServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.EntityLockServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.FlavorServiceFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.HaltonSequenceService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.HostServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ImageServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ImageToImageDatastoreMappingServiceFactory;
@@ -114,6 +115,7 @@ public class CloudStoreServiceGroupTest {
       ClusterConfigurationServiceFactory.SELF_LINK,
       AvailabilityZoneServiceFactory.SELF_LINK,
       VirtualNetworkService.FACTORY_LINK,
+      HaltonSequenceService.FACTORY_LINK,
 
       // triggers
       TaskTriggerFactoryService.SELF_LINK,
@@ -133,6 +135,9 @@ public class CloudStoreServiceGroupTest {
 
       // discovery
       RootNamespaceService.SELF_LINK,
+
+      // special
+      HaltonSequenceService.SINGLETON_LINK,
   };
   private CloudStoreConfig config;
   private HostClientFactory hostClientFactory;
