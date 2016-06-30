@@ -14,11 +14,13 @@
 package com.vmware.photon.controller.api;
 
 import com.vmware.photon.controller.api.base.Named;
+import com.vmware.photon.controller.api.constraints.PowerOfTwo;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.wordnik.swagger.annotations.ApiModel;
 import com.wordnik.swagger.annotations.ApiModelProperty;
 
+import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
 
@@ -47,6 +49,16 @@ public class VirtualNetworkCreateSpec implements Named {
   @NotNull
   private RoutingType routingType;
 
+  @JsonProperty
+  @ApiModelProperty(value = "Flag that indicates if dhcp support is enabled or not", required = true)
+  private boolean dhcpEnabled = true;
+
+  @JsonProperty
+  @ApiModelProperty(value = "This property is the size of the virtual network", required = true)
+  @Min(1)
+  @PowerOfTwo
+  private int size;
+
   public String getName() {
     return name;
   }
@@ -71,6 +83,22 @@ public class VirtualNetworkCreateSpec implements Named {
     this.routingType = routingType;
   }
 
+  public boolean getDhcpEnabled() {
+    return dhcpEnabled;
+  }
+
+  public void setDhcpEnabled(boolean dhcpEnabled) {
+    this.dhcpEnabled = dhcpEnabled;
+  }
+
+  public int getSize() {
+    return size;
+  }
+
+  public void setSize(int size) {
+    this.size = size;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -84,12 +112,14 @@ public class VirtualNetworkCreateSpec implements Named {
     VirtualNetworkCreateSpec other = (VirtualNetworkCreateSpec) o;
     return Objects.equals(this.name, other.name)
         && Objects.equals(this.description, other.description)
-        && Objects.equals(this.routingType, other.routingType);
+        && Objects.equals(this.routingType, other.routingType)
+        && Objects.equals(this.dhcpEnabled, other.dhcpEnabled)
+        && Objects.equals(this.size, other.size);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode(), this.name, this.description, this.routingType);
+    return Objects.hash(super.hashCode(), this.name, this.description, this.routingType, this.dhcpEnabled, this.size);
   }
 
   @Override
@@ -98,6 +128,8 @@ public class VirtualNetworkCreateSpec implements Named {
         .add("name", name)
         .add("description", description)
         .add("routingType", routingType)
+        .add("dhcpEnabled", dhcpEnabled)
+        .add("size", size)
         .toString();
   }
 }
