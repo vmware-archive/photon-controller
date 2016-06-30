@@ -49,11 +49,11 @@ public class VirtualNetworkCreateSpecTest {
     public Object[][] getValidVirtualNetworkData() {
       return new Object[][] {
           {
-              new VirtualNetworkCreateSpecBuilder().name("vn1").routingType(RoutingType.ROUTED).build()
+              new VirtualNetworkCreateSpecBuilder().name("vn1").routingType(RoutingType.ROUTED).size(8).build()
           },
           {
               new VirtualNetworkCreateSpecBuilder().name("vn1").description("desc")
-                  .routingType(RoutingType.ROUTED).build()
+                  .routingType(RoutingType.ROUTED).size(8).reservedStaticIpSize(4).build()
           }
       };
     }
@@ -71,17 +71,26 @@ public class VirtualNetworkCreateSpecTest {
       return new Object[][] {
           {
               new VirtualNetworkCreateSpecBuilder().build(),
-              ImmutableList.of("name may not be null (was null)", "routingType may not be null (was null)")
+              ImmutableList.of("name may not be null (was null)", "routingType may not be null (was null)",
+                  "size is not power of two (was 0)", "size must be greater than or equal to 1 (was 0)")
           },
           {
               new VirtualNetworkCreateSpecBuilder().name("").build(),
               ImmutableList.of("name : The specific virtual network name does not match pattern: " +
-                  "^[a-zA-Z][a-zA-Z0-9-]* (was )", "routingType may not be null (was null)")
+                      "^[a-zA-Z][a-zA-Z0-9-]* (was )", "routingType may not be null (was null)",
+                      "size is not power of two (was 0)", "size must be greater than or equal to 1 (was 0)")
           },
           {
               new VirtualNetworkCreateSpecBuilder().name("1a").build(),
               ImmutableList.of("name : The specific virtual network name does not match pattern: " +
-                  "^[a-zA-Z][a-zA-Z0-9-]* (was 1a)", "routingType may not be null (was null)")
+                      "^[a-zA-Z][a-zA-Z0-9-]* (was 1a)", "routingType may not be null (was null)",
+                      "size is not power of two (was 0)", "size must be greater than or equal to 1 (was 0)")
+          },
+          {
+              new VirtualNetworkCreateSpecBuilder().name("1a").size(3).build(),
+              ImmutableList.of("name : The specific virtual network name does not match pattern: " +
+                      "^[a-zA-Z][a-zA-Z0-9-]* (was 1a)", "routingType may not be null (was null)",
+                      "size is not power of two (was 3)")
           }
       };
     }
@@ -101,12 +110,21 @@ public class VirtualNetworkCreateSpecTest {
     public Object[][] getVirtualNetworkData() {
       return new Object[][] {
           {new VirtualNetworkCreateSpecBuilder().name("vn1").build(),
-              "VirtualNetworkCreateSpec{name=vn1, description=null, routingType=null}"},
+              "VirtualNetworkCreateSpec{name=vn1, description=null, routingType=null, size=0, reservedStaticIpSize=0}"},
           {new VirtualNetworkCreateSpecBuilder().name("vn1").description("desc").build(),
-              "VirtualNetworkCreateSpec{name=vn1, description=desc, routingType=null}"},
+              "VirtualNetworkCreateSpec{name=vn1, description=desc, routingType=null, size=0, reservedStaticIpSize=0}"},
           {new VirtualNetworkCreateSpecBuilder().name("vn1").description("desc")
               .routingType(RoutingType.ROUTED).build(),
-              "VirtualNetworkCreateSpec{name=vn1, description=desc, routingType=ROUTED}"}
+              "VirtualNetworkCreateSpec{name=vn1, description=desc, routingType=ROUTED, size=0, " +
+                  "reservedStaticIpSize=0}"},
+          {new VirtualNetworkCreateSpecBuilder().name("vn1").description("desc")
+              .routingType(RoutingType.ROUTED).build(),
+              "VirtualNetworkCreateSpec{name=vn1, description=desc, routingType=ROUTED, size=0, " +
+                  "reservedStaticIpSize=0}"},
+          {new VirtualNetworkCreateSpecBuilder().name("vn1").description("desc")
+              .routingType(RoutingType.ROUTED).size(8).reservedStaticIpSize(4).build(),
+              "VirtualNetworkCreateSpec{name=vn1, description=desc, routingType=ROUTED, size=8, " +
+                  "reservedStaticIpSize=4}"}
       };
     }
   }
@@ -122,6 +140,8 @@ public class VirtualNetworkCreateSpecTest {
           .name("vn1")
           .description("desc")
           .routingType(RoutingType.ROUTED)
+          .size(8)
+          .reservedStaticIpSize(4)
           .build();
       String json = JsonHelpers.jsonFixture("fixtures/virtual-network-create-spec.json");
 
