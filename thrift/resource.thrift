@@ -28,9 +28,10 @@ const string VSAN_TAG = "VSAN"
  * Used for placement and reservation.
  */
 
+// Power state numeric values should match those used by Vim
 enum VmPowerState {
-  STARTED = 0
-  STOPPED = 1
+  STOPPED = 0
+  STARTED = 1
   SUSPENDED = 2
 }
 
