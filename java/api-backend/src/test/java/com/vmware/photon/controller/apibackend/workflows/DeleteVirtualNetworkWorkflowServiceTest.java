@@ -665,6 +665,7 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
           .deleteLogicalSwitch(true)
           .checkLogicalRouterPortExistence(true)
           .checkLogicalSwitchPortExistence(true)
+          .checkLogicalSwitchExistence(true)
           .build();
       doReturn(nsxClientMock).when(nsxClientFactory).create(any(String.class), any(String.class), any(String.class));
 
