@@ -14,7 +14,7 @@ require "spec_helper"
 describe "virtual_network_lifecyle", :virtual_network => true do
   let(:networks_to_delete) { [] }
   let(:spec) {
-    EsxCloud::VirtualNetworkCreateSpec.new(random_name("network-"), "virtual network", "ROUTED")
+    EsxCloud::VirtualNetworkCreateSpec.new(random_name("network-"), "virtual network", "ROUTED", 128, 16)
   }
 
   before(:all) do
