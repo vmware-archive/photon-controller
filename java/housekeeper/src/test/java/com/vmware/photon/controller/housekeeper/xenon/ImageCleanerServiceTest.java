@@ -17,6 +17,7 @@ import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DatastoreService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DatastoreServiceFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.HaltonSequenceService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.HostService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.HostServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ImageServiceFactory;
@@ -416,6 +417,7 @@ public class ImageCleanerServiceTest {
       cloudStoreHelper.setServerSet(serverSet);
       host.startFactoryServiceSynchronously(new DatastoreServiceFactory(), DatastoreServiceFactory.SELF_LINK);
       host.startFactoryServiceSynchronously(new HostServiceFactory(), HostServiceFactory.SELF_LINK);
+      HaltonSequenceService.startSingletonServiceForTest(new ServiceHost[]{host});
     }
 
     @AfterMethod
@@ -1309,7 +1311,7 @@ public class ImageCleanerServiceTest {
       machine.startFactoryServiceSynchronously(
           HostServiceFactory.class,
           HostServiceFactory.SELF_LINK);
-
+      HaltonSequenceService.startSingletonServiceForTest(machine.getHosts());
 
       Iterator<DatastoreService.State> datastoreIterator = datastores.iterator();
       DatastoreService.State imageDatastore = imageDatastores.iterator().next();

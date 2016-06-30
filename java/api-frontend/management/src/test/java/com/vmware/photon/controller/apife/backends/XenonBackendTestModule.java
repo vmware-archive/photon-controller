@@ -16,6 +16,7 @@ package com.vmware.photon.controller.apife.backends;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.backends.clients.PhotonControllerXenonRestClient;
 import com.vmware.photon.controller.cloudstore.xenon.CloudStoreServiceGroup;
+import com.vmware.photon.controller.cloudstore.xenon.entity.HaltonSequenceService;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.common.xenon.BasicServiceHost;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
@@ -66,6 +67,7 @@ public class XenonBackendTestModule extends AbstractModule {
   BasicServiceHost getBasicServiceHost() throws Throwable {
     BasicServiceHost host = BasicServiceHost.create();
     ServiceHostUtils.startServices(host, CloudStoreServiceGroup.FACTORY_SERVICES);
+    HaltonSequenceService.startSingletonServiceForTest(new BasicServiceHost[]{host});
     return host;
   }
 

@@ -138,6 +138,8 @@ public class HostService extends StatefulService {
 
   private static boolean inUnitTests = false;
 
+  private static final long NO_SCHEDULING_CONSTANT_YET = -1;
+
   public HostService() {
     super(State.class);
     super.toggleOption(ServiceOption.OWNER_SELECTION, true);
@@ -155,10 +157,56 @@ public class HostService extends StatefulService {
       State startState = startOperation.getBody(State.class);
       InitializationUtils.initialize(startState);
 
+      // Getting a scheduling constant requires a request to another service.
+      // Before making that request, validate everything else: fail-fast if the
+      // new service's state would fail to validate anyway.
+      // Put in a fake scheduling constant to pass validation.
       if (null == startState.schedulingConstant) {
-        startState.schedulingConstant = (long) random.nextInt(MAX_SCHEDULING_CONSTANT);
+        startState.schedulingConstant = NO_SCHEDULING_CONSTANT_YET;
       }
 
+      validateState(startState);
+
+      // finishHandleStart will complete or fail startOperation. It can be
+      // called asynchronously from a completion handler, in case a request must
+      // be made to HaltonSequenceService, or it can be called directly, if this
+      // host already has its scheduling constant.
+      if (NO_SCHEDULING_CONSTANT_YET == startState.schedulingConstant) {
+        // Get next scheduling constant from HaltonSequenceService
+        // The patch body gets ignored by HaltonSequenceService.handlePatch, but
+        // Xenon will raise an error if the request does not have a body.
+        Operation hssPatch = Operation
+            .createPatch(this, HaltonSequenceService.SINGLETON_LINK)
+            .setBody(new HaltonSequenceService.State())
+            .setCompletion((op, ex) -> {
+              if (ex != null) {
+                ServiceUtils.logSevere(this, "Request to HaltonSequenceService failed: %s", ex);
+                startOperation.fail(ex);
+                return;
+              }
+
+              HaltonSequenceService.State hssResponseState = op.getBody(HaltonSequenceService.State.class);
+              startState.schedulingConstant = (long) (hssResponseState.lastValue * MAX_SCHEDULING_CONSTANT);
+
+              finishHandleStart(startOperation, startState);
+            });
+        sendRequest(hssPatch);
+      } else {
+        finishHandleStart(startOperation, startState);
+      }
+
+    } catch (IllegalStateException t) {
+      ServiceUtils.failOperationAsBadRequest(this, startOperation, t);
+    } catch (Throwable t) {
+      ServiceUtils.logSevere(this, t);
+      startOperation.fail(t);
+    }
+  }
+
+  // Perform final validation of a newly-created host's state, set maintenance
+  // interval, and complete or fail the operation.
+  private void finishHandleStart(Operation startOperation, State startState) {
+    try {
       validateState(startState);
 
       // set the maintenance interval to match the value in the state.

@@ -19,6 +19,7 @@ import com.vmware.photon.controller.api.ImageState;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DatastoreService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DatastoreServiceFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.HaltonSequenceService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.HostService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.HostServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ImageService;
@@ -912,6 +913,7 @@ public class ImageSeederServiceTest {
       machine.startFactoryServiceSynchronously(
           HostServiceFactory.class,
           HostServiceFactory.SELF_LINK);
+      HaltonSequenceService.startSingletonServiceForTest(machine.getHosts());
 
       for (Datastore datastore : imageDatastores) {
         HostService.State state = new HostService.State();
