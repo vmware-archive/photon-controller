@@ -83,6 +83,8 @@ public class ProjectNetworksResourceTest extends ResourceTest {
     spec.setName("virtualNetworkName");
     spec.setDescription("virtualNetworkDescription");
     spec.setRoutingType(RoutingType.ROUTED);
+    spec.setDhcpEnabled(true);
+    spec.setSize(8);
 
     addResource(new ProjectNetworksResource(frontendClient, paginationConfig));
   }
