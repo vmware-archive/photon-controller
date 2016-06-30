@@ -74,6 +74,7 @@ describe "vm#create_image", management: true, image: true do
     let(:vm) do
       vm = create_vm(EsxCloud::SystemSeeder.instance.project)
       vm.start!
+      sleep 10
       vm
     end
 

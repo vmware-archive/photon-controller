@@ -1135,6 +1135,7 @@ class TestRemoteAgent(unittest.TestCase, AgentCommonTests):
 
         # VM in wrong state
         vm_wrapper.power(Host.PowerVmOp.ON, Host.PowerVmOpResultCode.OK)
+        time.sleep(10)
         vm_wrapper.create_image_from_vm(
             image_id=img_id,
             datastore=ds.id,
@@ -1142,6 +1143,7 @@ class TestRemoteAgent(unittest.TestCase, AgentCommonTests):
             expect=Host.CreateImageFromVmResultCode.INVALID_VM_POWER_STATE)
 
         vm_wrapper.power(Host.PowerVmOp.OFF, Host.PowerVmOpResultCode.OK)
+        time.sleep(10)
 
         # Happy case
         vm_wrapper.create_image_from_vm(
