@@ -11,22 +11,28 @@
 
 module EsxCloud
   class VirtualNetworkCreateSpec
-    attr_accessor :name, :description, :routing_type
+    attr_accessor :name, :description, :routing_type, :size, :reserved_static_ip_size
 
     # @param [String] name
     # @param [String] description
     # @param [String] routing_type
-    def initialize(name, description, routing_type)
+    # @param [int] size
+    # @param [int] reserved_static_ip_size
+    def initialize(name, description, routing_type, size, reserved_static_ip_size)
       @name = name
       @description = description
       @routing_type = routing_type
+      @size = size
+      @reserved_static_ip_size = reserved_static_ip_size
     end
 
     def to_hash
       {
         name: @name,
         description: @description,
-        routingType: @routing_type
+        routingType: @routing_type,
+        size: @size,
+        reservedStaticIpSize: @reserved_static_ip_size
       }
     end
   end

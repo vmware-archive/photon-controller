@@ -20,7 +20,7 @@ describe "virtual_network", :virtual_network => true do
 
   let(:virtual_networks_to_delete) { [] }
   let(:virtual_network_name) { random_name("virtual-network-") }
-  let(:spec) { EsxCloud::VirtualNetworkCreateSpec.new(virtual_network_name, "virtual network", "ROUTED") }
+  let(:spec) { EsxCloud::VirtualNetworkCreateSpec.new(virtual_network_name, "virtual network", "ROUTED", 8, 4) }
 
   after(:each) do
     virtual_networks_to_delete.each do |virtual_network|
