@@ -24,7 +24,6 @@ public class NameUtils {
   public static final String TRANSPORT_NODE_DESCRIPTION_PREFIX = "Photon Controller Transport Node ";
   public static final String TRANSPORT_ZONE_NAME_PREFIX = "PC-TransportZone-";
   public static final String TRANSPORT_ZONE_DESCRIPTION_PREFIX = "Photon Controller Transport Zone ";
-  public static final String HOST_SWITCH_NAME = "PhotonControllerHostSwitch";
   public static final String LOGICAL_SWITCH_NAME_PREFIX = "PC-LogicalSwitch-";
   public static final String LOGICAL_ROUTER_NAME_PREFIX = "PC-LogicalRouter-";
   public static final String LOGICAL_ROUTER_DESCRIPTION_PREFIX = "Photon Controller Logical Router ";

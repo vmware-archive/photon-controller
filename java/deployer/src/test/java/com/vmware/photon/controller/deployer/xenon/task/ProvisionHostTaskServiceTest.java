@@ -111,7 +111,7 @@ public class ProvisionHostTaskServiceTest {
   /**
    * This class implements tests for object initialization.
    */
-  public class InitializationTest {
+  public static class InitializationTest {
 
     private ProvisionHostTaskService provisionHostTaskService;
 
@@ -129,7 +129,7 @@ public class ProvisionHostTaskServiceTest {
   /**
    * This class implements tests for the handleStart method.
    */
-  public class HandleStartTest {
+  public static class HandleStartTest {
 
     private ProvisionHostTaskService provisionHostTaskService;
     private TestHost testHost;
@@ -231,7 +231,7 @@ public class ProvisionHostTaskServiceTest {
   /**
    * This class implements tests for the HandlePatch method.
    */
-  public class HandlePatchTest {
+  public static class HandlePatchTest {
 
     private ProvisionHostTaskService provisionHostTaskService;
     private TestHost testHost;
@@ -336,7 +336,7 @@ public class ProvisionHostTaskServiceTest {
   /**
    * This class implements end-to-end tests for the {@link ProvisionHostTaskService} task.
    */
-  public class EndToEndTest {
+  public static class EndToEndTest {
 
     private final File scriptDirectory = new File("/tmp/deployAgent/scripts");
     private final File scriptLogDirectory = new File("/tmp/deployAgent/logs");
@@ -430,6 +430,10 @@ public class ProvisionHostTaskServiceTest {
           .doAnswer(MockHelper.mockGetFabricNodeState(FabricNodeState.SUCCESS))
           .when(fabricApi)
           .getFabricNodeState(eq("FABRIC_NODE_ID"), any());
+
+      doAnswer(MockHelper.mockGetTransportZone("TRANSPORT_ZONE_ID"))
+          .when(fabricApi)
+          .getTransportZone(eq("TRANSPORT_ZONE_ID"), any());
 
       doAnswer(MockHelper.mockCreateTransportNode("TRANSPORT_NODE_ID"))
           .when(fabricApi)
@@ -538,6 +542,7 @@ public class ProvisionHostTaskServiceTest {
 
       verify(fabricApi).registerFabricNode(any(), any());
       verify(fabricApi, times(3)).getFabricNodeState(eq("FABRIC_NODE_ID"), any());
+      verify(fabricApi, times(1)).getTransportZone(eq("TRANSPORT_ZONE_ID"), any());
       verify(fabricApi).createTransportNode(any(), any());
       verify(fabricApi, times(3)).getTransportNodeState(eq("TRANSPORT_NODE_ID"), any());
       verifyNoMoreInteractions(fabricApi);
@@ -754,6 +759,25 @@ public class ProvisionHostTaskServiceTest {
           {FabricNodeState.PARTIAL_SUCCESS},
           {FabricNodeState.ORPHANED},
       };
+    }
+
+    @Test
+    public void testGetTransportZoneFailure() throws Throwable {
+      doThrow(new IOException("I/O exception during getTransportZone"))
+          .when(fabricApi)
+          .getTransportZone(eq("TRANSPORT_ZONE_ID"), any());
+
+      ProvisionHostTaskService.State finalState =
+          testEnvironment.callServiceAndWaitForState(
+              ProvisionHostTaskFactoryService.SELF_LINK,
+              startState,
+              ProvisionHostTaskService.State.class,
+              (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
+
+      assertThat(finalState.taskState.stage, is(TaskState.TaskStage.FAILED));
+      assertThat(finalState.taskState.subStage, nullValue());
+      assertThat(finalState.taskState.failure.statusCode, is(400));
+      assertThat(finalState.taskState.failure.message, is("I/O exception during getTransportZone"));
     }
 
     @Test
@@ -978,12 +1002,13 @@ public class ProvisionHostTaskServiceTest {
     }
   }
 
-  private ProvisionHostTaskService.State buildValidStartState(
+  private static ProvisionHostTaskService.State buildValidStartState(
       ProvisionHostTaskService.TaskState.TaskStage stage,
       ProvisionHostTaskService.TaskState.SubStage subStage) {
     ProvisionHostTaskService.State startState = new ProvisionHostTaskService.State();
     startState.deploymentServiceLink = "DEPLOYMENT_SERVICE_LINK";
     startState.hostServiceLink = "HOST_SERVICE_LINK";
+    startState.networkZoneId = "TRANSPORT_ZONE_ID";
     startState.controlFlags = ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED;
 
     if (stage != null) {
