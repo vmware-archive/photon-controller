@@ -175,7 +175,7 @@ public class DeploymentHostsResourceTest extends ResourceTest {
         "password",
         "availabilityZone",
         new ArrayList<UsageTag>() {{
-          add(UsageTag.MGMT);
+          add(UsageTag.CLOUD);
         }},
         hostMetadata);
 
@@ -205,7 +205,7 @@ public class DeploymentHostsResourceTest extends ResourceTest {
         "password",
         "availabilityZone",
         new ArrayList<UsageTag>() {{
-          add(UsageTag.MGMT);
+          add(UsageTag.CLOUD);
         }},
         hostMetadata);
     doThrow(new ExternalException()).when(hostFeClient).createHost(eq(hostCreateSpec), anyString());
@@ -215,6 +215,26 @@ public class DeploymentHostsResourceTest extends ResourceTest {
         .request(MediaType.APPLICATION_JSON)
         .post(Entity.entity(hostCreateSpec, MediaType.APPLICATION_JSON));
     assertThat(clientResponse.getStatus(), is(500));
+  }
+
+  @Test
+  public void testCreateHostInvalidMetadata() throws ExternalException {
+    Map<String, String> hostMetadata = new HashMap<>();
+
+    HostCreateSpec hostCreateSpec = new HostCreateSpec("10.146.1.1",
+        "username",
+        "password",
+        "availabilityZone",
+        new ArrayList<UsageTag>() {{
+          add(UsageTag.MGMT);
+        }},
+        hostMetadata);
+
+    Response clientResponse = client()
+        .target(hostsRoute)
+        .request(MediaType.APPLICATION_JSON)
+        .post(Entity.entity(hostCreateSpec, MediaType.APPLICATION_JSON));
+    assertThat(clientResponse.getStatus(), is(400));
   }
 
   @Test
