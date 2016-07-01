@@ -117,7 +117,7 @@ module EsxCloud
     end
 
     def get_port_group2
-      ENV["ESX_VM_PORT_GROUP2"] || "VM Network2"
+      ENV["ESX_VM_PORT_GROUP2"] || "VM Network 2"
     end
 
     def create_small_limits

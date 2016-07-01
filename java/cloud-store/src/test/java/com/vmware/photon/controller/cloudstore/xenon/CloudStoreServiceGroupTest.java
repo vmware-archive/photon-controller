@@ -27,7 +27,6 @@ import com.vmware.photon.controller.cloudstore.xenon.entity.HostServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ImageServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ImageToImageDatastoreMappingServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.NetworkServiceFactory;
-import com.vmware.photon.controller.cloudstore.xenon.entity.PortGroupServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ProjectServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ResourceTicketServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.TaskServiceFactory;
@@ -63,6 +62,7 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
@@ -100,7 +100,6 @@ public class CloudStoreServiceGroupTest {
       NetworkServiceFactory.SELF_LINK,
       DatastoreServiceFactory.SELF_LINK,
       DeploymentServiceFactory.SELF_LINK,
-      PortGroupServiceFactory.SELF_LINK,
       TaskServiceFactory.SELF_LINK,
       EntityLockServiceFactory.SELF_LINK,
       ProjectServiceFactory.SELF_LINK,
