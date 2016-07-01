@@ -11,11 +11,11 @@
 
 require "spec_helper"
 
-describe "network", management: true do
+describe "network", management: true, disable_for_cli_test: true do
   let(:networks_to_delete) { [] }
 
   let(:network_name) { random_name("network-") }
-  let(:portgroup) { random_name("port-group-") }
+  let(:portgroup) { get_vm_port_group2 }
   let(:spec) { EsxCloud::NetworkCreateSpec.new(network_name, "VLAN", [portgroup]) }
 
   after(:each) do
@@ -98,13 +98,13 @@ describe "network", management: true do
       end
     end
 
-    context "network with the same name already exists", disable_for_cli_test: true do
+    context "network with the same name already exists" do
       before(:each) do
         create_network(spec)
       end
 
       it "should create network successfully" do
-        spec.portgroups = [random_name("port-group-")]
+        spec.portgroups = [get_mgmt_port_group]
         network = create_network(spec)
         expect(network.name).to eq network_name
 
@@ -112,11 +112,10 @@ describe "network", management: true do
         expect(networks.size).to eq 2
       end
     end
-
   end
 
   describe "#delete" do
-    context "when network is in READY", dcp: true do
+    context "when network is in READY" do
       let(:network_id) do
         network = EsxCloud::Network.create(spec)
         expect(network.state).to eq "READY"
@@ -128,7 +127,7 @@ describe "network", management: true do
       end
     end
 
-    context "when network is in PENDING_DELETE", dcp: true do
+    context "when network is in PENDING_DELETE" do
       let(:network_id) do
         network = EsxCloud::Network.create(spec)
         expect(network.state).to eq "READY"
@@ -157,34 +156,79 @@ describe "network", management: true do
     end
   end
 
-  describe "#set_portgroups", dcp: true do
-    it "sets portgroups successfully" do
-      network = create_network(spec)
-      network_id = network.id
-      expect(network.portgroups).to eq ["P1", "P2"]
+  describe "#set_portgroups" do
+    let(:network) { create_network(spec) }
+    let(:new_port_groups) { [get_mgmt_port_group] }
 
-      network = client.set_portgroups(network_id, ["P3"])
-      expect(network.portgroups).to eq ["P3"]
+    it "sets portgroups successfully" do
+      network_id = network.id
+      expect(network.portgroups).to eq [portgroup]
+
+      network = client.set_portgroups(network_id, new_port_groups)
+      expect(network.portgroups).to eq new_port_groups
     end
 
-    it "should fail when network does not exit" do
-      error_msg = "Network non-existing-network not found"
-      begin
-        client.set_portgroups("non-existing-network", ["P3"])
-        fail("set_portgroups should fail when the network does not exist")
-      rescue EsxCloud::ApiError => e
-        expect(e.response_code).to eq 404
-        expect(e.errors.size).to eq 1
-        expect(e.errors.first.code).to eq("NetworkNotFound")
-        expect(e.errors.first.message).to include(error_msg)
-      rescue EsxCloud::CliError => e
-        expect(e.output).to include(error_msg)
+    context "when network does not exist" do
+      it "fails to update portgroups" do
+        error_msg = "Network non-existing-network not found"
+        begin
+          client.set_portgroups("non-existing-network", new_port_groups)
+          fail("set_portgroups should fail")
+        rescue EsxCloud::ApiError => e
+          expect(e.response_code).to eq 404
+          expect(e.errors.size).to eq 1
+          expect(e.errors.first.code).to eq("NetworkNotFound")
+          expect(e.errors.first.message).to include(error_msg)
+        rescue EsxCloud::CliError => e
+          expect(e.output).to include(error_msg)
+        end
+      end
+    end
+
+    context "when portgroup does not exist" do
+      let(:new_port_groups) { ["missing-portgroup"] }
+
+      it "fails to update portgroups" do
+        error_msg = "Port group missing-portgroup does not exist on any host"
+        begin
+          client.set_portgroups(network, new_port_groups)
+          fail("set_portgroups should fail")
+        rescue EsxCloud::ApiError => e
+          expect(e.response_code).to eq 404
+          expect(e.errors.size).to eq 1
+          expect(e.errors.first.code).to eq("PortGroupsDoNotExist")
+          expect(e.errors.first.message).to include(error_msg)
+        rescue EsxCloud::CliError => e
+          expect(e.output).to include(error_msg)
+        end
+      end
+    end
+
+    context "when portgroup is already in use" do
+      let(:new_port_groups) { [get_vm_port_group] }
+
+      it "fails to update portgroups" do
+        error_msg = "Port group #{get_vm_port_group} is already added to network"
+        begin
+          client.set_portgroups(network, new_port_groups)
+          fail("set_portgroups should fail")
+        rescue EsxCloud::ApiError => e
+          expect(e.response_code).to eq 404
+          expect(e.errors.size).to eq 1
+          expect(e.errors.first.code).to eq("PortGroupAlreadyAddedToNetwork")
+          expect(e.errors.first.message).to include(error_msg)
+        rescue EsxCloud::CliError => e
+          expect(e.output).to include(error_msg)
+        end
       end
     end
   end
 
-  describe "#set_default", dcp: true do
+  describe "#set_default" do
     it "sets default network successfully without existing default network" do
+      default_network = client.find_all_networks.items.find { |n| n.is_default }
+      expect(default_network).to be_nil
+
       network = create_network(spec)
       expect(network.is_default).to be_false
 
@@ -194,8 +238,8 @@ describe "network", management: true do
     end
 
     it "sets default network successfully with existing default network" do
-      network1 = create_network(spec)
-      expect(client.set_default(network1.id)).to be_true
+      network1 = client.find_all_networks.items.find { |n| n.is_default }
+      expect(network1).to_not be_nil
 
       network2 = create_network(spec)
       expect(client.set_default(network2.id)).to be_true
