@@ -154,6 +154,7 @@ idea {
 }
 
 task rpm(type: Exec) {
+  dependsOn 'photon-controller-core:distTar'
   commandLine './rpms/scripts/create-rpm.sh'
 }
 

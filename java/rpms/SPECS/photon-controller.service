@@ -1,0 +1,13 @@
+[Unit]
+Description=Photon Controller Service
+After=syslog.target network.target
+
+[Service]
+Type=simple
+Environment=CONFIG_PATH=/opt/vmware/photon-controller/configuration
+Environment=INSTALLATION_PATH=/opt/vmware/photon-controller
+ExecStart=/opt/vmware/photon-controller/configuration/run.sh ${CONFIG_PATH} ${INSTALLATION_PATH}
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
