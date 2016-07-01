@@ -83,21 +83,24 @@ public class DeploymentXenonBackend implements DeploymentBackend {
   private static final Logger logger = LoggerFactory.getLogger(DeploymentXenonBackend.class);
 
   private final ApiFeXenonRestClient xenonClient;
+  private final DeployerClient deployerClient;
   private final TaskBackend taskBackend;
   private final TenantBackend tenantBackend;
   private final TombstoneBackend tombstoneBackend;
-  private final HostXenonBackend hostBackend;
+  private final HostBackend hostBackend;
 
   @Inject
   public DeploymentXenonBackend(
       ApiFeXenonRestClient xenonClient,
-                              TaskBackend taskBackend,
-                              TombstoneBackend tombstoneBackend,
-                              TenantBackend tenantBackend,
-                              HostXenonBackend hostBackend) {
+      DeployerClient deployerClient,
+      TaskBackend taskBackend,
+      TombstoneBackend tombstoneBackend,
+      TenantBackend tenantBackend,
+      HostBackend hostBackend) {
     this.xenonClient = xenonClient;
     xenonClient.start();
 
+    this.deployerClient = deployerClient;
     this.taskBackend = taskBackend;
     this.tenantBackend = tenantBackend;
     this.tombstoneBackend = tombstoneBackend;
@@ -105,7 +108,7 @@ public class DeploymentXenonBackend implements DeploymentBackend {
   }
 
   public DeployerClient getDeployerClient() {
-    return hostBackend.getDeployerClient();
+    return this.deployerClient;
   }
 
   @Override
