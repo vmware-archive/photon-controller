@@ -72,23 +72,20 @@ public class SystemConfigTest {
   @Test
   public void testPause() throws Throwable {
     DeploymentService.State startState = buildState(DeploymentState.PAUSED);
-    Operation post = Operation
+    Operation create = Operation
         .createPost(UriUtils.buildUri(host, DeploymentServiceFactory.SELF_LINK))
         .setBody(startState);
 
-    ServiceHostUtils.sendRequestAndWait(host, post, "test");
-    waitForIsPaused(SystemConfig.getInstance(), true);
+    ServiceHostUtils.sendRequestAndWait(host, create, "test");
+    checkForIsPaused(SystemConfig.getInstance(), true);
   }
 
-  private void waitForIsPaused(SystemConfig systemConfig, boolean isPaused)
+  private void checkForIsPaused(SystemConfig systemConfig, boolean isPaused)
       throws Throwable {
-    for (int i = 0; i < 600; i++) {
-      Thread.sleep(100);
-      if (isPaused == systemConfig.isPaused()) {
-        return;
-      }
-    }
 
+    if (isPaused == systemConfig.isPaused()) {
+      return;
+    }
     assertThat(systemConfig.isBackgroundPaused(), is(isPaused));
   }
 
@@ -100,18 +97,14 @@ public class SystemConfigTest {
         .setBody(startState);
 
     ServiceHostUtils.sendRequestAndWait(host, post, "test");
-    waitForIsBackgroundPaused(SystemConfig.getInstance(), true);
+    checkForIsBackgroundPaused(SystemConfig.getInstance(), true);
   }
 
-  private void waitForIsBackgroundPaused(SystemConfig systemConfig, boolean isBackgroundPaused)
+  private void checkForIsBackgroundPaused(SystemConfig systemConfig, boolean isBackgroundPaused)
       throws Throwable {
-    for (int i = 0; i < 300; i++) {
-      Thread.sleep(100);
-      if (isBackgroundPaused == systemConfig.isBackgroundPaused()) {
-        return;
-      }
+    if (isBackgroundPaused == systemConfig.isBackgroundPaused()) {
+      return;
     }
-
     assertThat(systemConfig.isBackgroundPaused(), is(isBackgroundPaused));
   }
 }
