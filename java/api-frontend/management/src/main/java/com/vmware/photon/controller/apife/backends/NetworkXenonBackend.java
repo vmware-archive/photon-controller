@@ -27,7 +27,6 @@ import com.vmware.photon.controller.apife.entities.NetworkEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidNetworkStateException;
 import com.vmware.photon.controller.apife.exceptions.external.NetworkNotFoundException;
-import com.vmware.photon.controller.apife.exceptions.external.PortGroupRepeatedInMultipleNetworksException;
 import com.vmware.photon.controller.apife.exceptions.external.PortGroupsAlreadyAddedToNetworkException;
 import com.vmware.photon.controller.apife.utils.PaginationUtils;
 import com.vmware.photon.controller.cloudstore.xenon.entity.NetworkService;
@@ -110,25 +109,6 @@ public class NetworkXenonBackend implements NetworkBackend {
 
     return PaginationUtils.xenonQueryResultToResourceList(NetworkService.State.class, queryResult,
         state -> toApiRepresentation(convertToEntity(state)));
-  }
-
-  @Override
-  public NetworkService.State filterNetworkByPortGroup(Optional<String> portGroup)
-          throws PortGroupRepeatedInMultipleNetworksException {
-    ServiceDocumentQueryResult queryResult = filterServiceDocuments(Optional.absent(), portGroup, Optional.absent());
-
-    ResourceList<NetworkService.State> networksList =
-            PaginationUtils.xenonQueryResultToResourceList(NetworkService.State.class, queryResult);
-
-    if (networksList == null || networksList.getItems() == null || networksList.getItems().size() == 0) {
-      return null;
-    } else if (networksList.getItems().size() > 1) {
-      Map<String, List<NetworkService.State>> violations = new HashMap<>();
-      violations.put(portGroup.toString(), networksList.getItems());
-      throw new PortGroupRepeatedInMultipleNetworksException(violations);
-    } else {
-      return networksList.getItems().get(0);
-    }
   }
 
   @Override
