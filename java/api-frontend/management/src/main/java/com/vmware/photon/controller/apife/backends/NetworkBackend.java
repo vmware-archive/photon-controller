@@ -21,7 +21,6 @@ import com.vmware.photon.controller.apife.entities.NetworkEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.exceptions.external.NetworkNotFoundException;
 import com.vmware.photon.controller.apife.exceptions.external.PortGroupRepeatedInMultipleNetworksException;
-import com.vmware.photon.controller.apife.exceptions.external.PortGroupsAlreadyAddedToNetworkException;
 import com.vmware.photon.controller.cloudstore.xenon.entity.NetworkService;
 
 import com.google.common.base.Optional;
@@ -33,7 +32,7 @@ import java.util.List;
  */
 public interface NetworkBackend {
 
-  TaskEntity createNetwork(NetworkCreateSpec network) throws PortGroupsAlreadyAddedToNetworkException;
+  TaskEntity createNetwork(NetworkCreateSpec network) throws ExternalException;
 
   ResourceList<Network> filter(Optional<String> name, Optional<String> portGroup, Optional<Integer> pageSize);
 

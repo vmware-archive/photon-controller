@@ -13,12 +13,14 @@
 
 package com.vmware.photon.controller.apife.backends;
 
+import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.Network;
 import com.vmware.photon.controller.api.NetworkCreateSpec;
 import com.vmware.photon.controller.api.NetworkState;
 import com.vmware.photon.controller.api.QuotaLineItem;
 import com.vmware.photon.controller.api.QuotaUnit;
 import com.vmware.photon.controller.api.ResourceList;
+import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.api.VmState;
 import com.vmware.photon.controller.apife.TestModule;
@@ -31,12 +33,16 @@ import com.vmware.photon.controller.apife.entities.TombstoneEntity;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidNetworkStateException;
 import com.vmware.photon.controller.apife.exceptions.external.NetworkNotFoundException;
 import com.vmware.photon.controller.apife.exceptions.external.PortGroupsAlreadyAddedToNetworkException;
+import com.vmware.photon.controller.apife.exceptions.external.PortGroupsDoNotExistException;
+import com.vmware.photon.controller.cloudstore.xenon.entity.HostService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.HostServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.NetworkService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.NetworkServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VmService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VmServiceFactory;
 import com.vmware.photon.controller.common.xenon.BasicServiceHost;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
+import com.vmware.xenon.common.Operation;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
@@ -54,6 +60,7 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.testng.Assert.fail;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
 
@@ -66,7 +73,7 @@ public class NetworkXenonBackendTest {
   private static BasicServiceHost host;
 
   private static void commonHostAndClientSetup(
-      BasicServiceHost basicServiceHost, ApiFeXenonRestClient apiFeXenonRestClient) {
+      BasicServiceHost basicServiceHost, ApiFeXenonRestClient apiFeXenonRestClient) throws Throwable {
     host = basicServiceHost;
     xenonClient = apiFeXenonRestClient;
 
@@ -84,6 +91,8 @@ public class NetworkXenonBackendTest {
       throw new IllegalStateException(
           "host is expected to be in started state, current state=" + host.getState());
     }
+
+    createHostDocument(host);
   }
 
   private static void commonHostDocumentsCleanup() throws Throwable {
@@ -102,6 +111,26 @@ public class NetworkXenonBackendTest {
       host.destroy();
       host = null;
     }
+  }
+
+  private static void createHostDocument(BasicServiceHost host) throws Throwable {
+    host.startFactoryServiceSynchronously(new HostServiceFactory(), HostServiceFactory.SELF_LINK);
+
+    HostService.State hostDoc = new HostService.State();
+    hostDoc.state = HostState.READY;
+    hostDoc.hostAddress = "10.0.0.0";
+    hostDoc.userName = "user";
+    hostDoc.password = "pwd";
+
+    hostDoc.usageTags = new HashSet<>();
+    hostDoc.usageTags.add(UsageTag.CLOUD.toString());
+
+    hostDoc.reportedNetworks = new HashSet<>();
+    hostDoc.reportedNetworks.add("PG1");
+    hostDoc.reportedNetworks.add("PG2");
+
+    Operation post = Operation.createPost(host, HostServiceFactory.SELF_LINK).setBody(hostDoc);
+    host.sendRequestAndWait(post);
   }
 
   private static NetworkCreateSpec createNetworkCreateSpec() {
@@ -189,6 +218,21 @@ public class NetworkXenonBackendTest {
       } catch (PortGroupsAlreadyAddedToNetworkException ex) {
         assertThat(ex.getMessage(), containsString("Port group PG1 is already added to network Network{id="));
         assertThat(ex.getMessage(), containsString("Port group PG2 is already added to network Network{id="));
+      }
+    }
+
+    @Test
+    public void testPortGroupsDoNotExistException() throws Exception {
+      NetworkCreateSpec spec = createNetworkCreateSpec();
+      spec.getPortGroups().add("MissingPortgroup1");
+      spec.getPortGroups().add("MissingPortgroup2");
+
+      try {
+        networkBackend.createNetwork(spec);
+        fail("create network should fail");
+      } catch (PortGroupsDoNotExistException ex) {
+        assertThat(ex.getMessage(), containsString("Port group 'MissingPortgroup1' does not exist"));
+        assertThat(ex.getMessage(), containsString("Port group 'MissingPortgroup2' does not exist"));
       }
     }
   }

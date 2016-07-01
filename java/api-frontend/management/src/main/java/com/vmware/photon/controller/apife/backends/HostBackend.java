@@ -48,6 +48,8 @@ public interface HostBackend {
 
   ResourceList<Host> filterByAddress(String address, Optional<Integer> pageSize);
 
+  ResourceList<Host> filterByPortGroup(String portGroup, Optional<Integer> pageSize);
+
   Host toApiRepresentation(String id) throws HostNotFoundException;
 
   void updateState(HostEntity entity, HostState state) throws HostNotFoundException;
