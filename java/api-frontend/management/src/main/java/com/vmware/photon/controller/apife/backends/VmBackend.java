@@ -27,6 +27,7 @@ import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.entities.VmEntity;
 import com.vmware.photon.controller.apife.exceptions.external.DiskNotFoundException;
 import com.vmware.photon.controller.apife.exceptions.external.VmNotFoundException;
+import com.vmware.photon.controller.cloudstore.xenon.entity.VmService;
 
 import com.google.common.base.Optional;
 
@@ -61,7 +62,8 @@ public interface VmBackend {
   void updateState(VmEntity vm, VmState state) throws VmNotFoundException, DiskNotFoundException;
 
   void updateState(VmEntity vm, VmState state, String agent, String agentIp,
-                   String datastoreId, String datastoreName) throws ExternalException;
+                   String datastoreId, String datastoreName,
+                   Map<String, VmService.NetworkInfo> networkInfo) throws ExternalException;
 
   TaskEntity addTag(String vmId, Tag tag) throws ExternalException;
 

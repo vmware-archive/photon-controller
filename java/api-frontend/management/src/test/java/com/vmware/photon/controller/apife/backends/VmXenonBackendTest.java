@@ -1451,7 +1451,7 @@ public class VmXenonBackendTest {
       String datastoreId = UUID.randomUUID().toString();
       String datastoreName = UUID.randomUUID().toString();
 
-      vmXenonBackend.updateState(vm, VmState.STARTED, agent, agentIp, datastoreId, datastoreName);
+      vmXenonBackend.updateState(vm, VmState.STARTED, agent, agentIp, datastoreId, datastoreName, null);
       assertThat(vm.getState(), is(VmState.STARTED));
       assertThat(vm.getAgent(), is(agent));
       assertThat(vm.getHost(), is(agentIp));
