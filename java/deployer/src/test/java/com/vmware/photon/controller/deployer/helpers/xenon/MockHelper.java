@@ -73,6 +73,7 @@ import com.vmware.photon.controller.nsxclient.models.FabricNode;
 import com.vmware.photon.controller.nsxclient.models.FabricNodeState;
 import com.vmware.photon.controller.nsxclient.models.TransportNode;
 import com.vmware.photon.controller.nsxclient.models.TransportNodeState;
+import com.vmware.photon.controller.nsxclient.models.TransportZone;
 import com.vmware.photon.controller.resource.gen.Datastore;
 import com.vmware.photon.controller.resource.gen.Network;
 import com.vmware.xenon.common.Service;
@@ -320,6 +321,19 @@ public class MockHelper {
       FabricNodeState fabricNodeState = new FabricNodeState();
       fabricNodeState.setState(state);
       callback.onSuccess(fabricNodeState);
+      return null;
+    };
+  }
+
+  @SuppressWarnings("unchecked")
+  public static Answer<FutureCallback<TransportZone>> mockGetTransportZone(String transportZoneId) {
+    return (invocation) -> {
+      TransportZone transportZone = new TransportZone();
+      transportZone.setId(transportZoneId);
+
+      FutureCallback<TransportZone> callback = (FutureCallback<TransportZone>) invocation.getArguments()[1];
+      callback.onSuccess(transportZone);
+
       return null;
     };
   }
