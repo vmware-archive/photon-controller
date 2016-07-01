@@ -151,6 +151,7 @@ idea {
 }
 
 task rpm(type: Exec) {
+  dependsOn java.diskTar
   commandLine './rpms/scripts/create-rpm.sh'
 }
 
