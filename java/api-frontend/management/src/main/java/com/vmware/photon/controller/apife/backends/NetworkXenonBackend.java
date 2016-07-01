@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.apife.backends;
 
+import com.vmware.photon.controller.api.Host;
 import com.vmware.photon.controller.api.Network;
 import com.vmware.photon.controller.api.NetworkCreateSpec;
 import com.vmware.photon.controller.api.NetworkState;
@@ -29,6 +30,7 @@ import com.vmware.photon.controller.apife.exceptions.external.InvalidNetworkStat
 import com.vmware.photon.controller.apife.exceptions.external.NetworkNotFoundException;
 import com.vmware.photon.controller.apife.exceptions.external.PortGroupRepeatedInMultipleNetworksException;
 import com.vmware.photon.controller.apife.exceptions.external.PortGroupsAlreadyAddedToNetworkException;
+import com.vmware.photon.controller.apife.exceptions.external.PortGroupsDoNotExistException;
 import com.vmware.photon.controller.apife.utils.PaginationUtils;
 import com.vmware.photon.controller.cloudstore.xenon.entity.NetworkService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.NetworkServiceFactory;
@@ -48,6 +50,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -66,6 +69,7 @@ public class NetworkXenonBackend implements NetworkBackend {
 
   private final TaskBackend taskBackend;
   private final VmBackend vmBackend;
+  private final HostBackend hostBackend;
   private final TombstoneBackend tombstoneBackend;
 
   @Inject
@@ -73,9 +77,11 @@ public class NetworkXenonBackend implements NetworkBackend {
       ApiFeXenonRestClient xenonClient,
       TaskBackend taskBackend,
       VmBackend vmBackend,
+      HostBackend hostBackend,
       TombstoneBackend tombstoneBackend) {
     this.taskBackend = taskBackend;
     this.vmBackend = vmBackend;
+    this.hostBackend = hostBackend;
     this.tombstoneBackend = tombstoneBackend;
 
     this.xenonClient = xenonClient;
@@ -84,11 +90,14 @@ public class NetworkXenonBackend implements NetworkBackend {
 
   @Override
   public TaskEntity createNetwork(NetworkCreateSpec network)
-      throws PortGroupsAlreadyAddedToNetworkException {
+      throws ExternalException {
+    checkPortGroupsExist(network.getPortGroups());
+    checkPortGroupsNotAddedToAnyNetwork(network.getPortGroups());
+
     NetworkService.State state = new NetworkService.State();
     state.name = network.getName();
     state.description = network.getDescription();
-    state.portGroups = checkPortGroupsNotAddedToAnyNetwork(network.getPortGroups());
+    state.portGroups = network.getPortGroups();
     state.state = NetworkState.READY;
 
     com.vmware.xenon.common.Operation result = xenonClient.post(NetworkServiceFactory.SELF_LINK, state);
@@ -175,14 +184,16 @@ public class NetworkXenonBackend implements NetworkBackend {
 
   @Override
   public TaskEntity updatePortGroups(String id, List<String> portGroups)
-      throws NetworkNotFoundException {
-    NetworkEntity network = convertToEntity(getById(id));
+      throws ExternalException {
+    NetworkService.State network = getById(id);
+    checkPortGroupsExist(portGroups);
+    checkPortGroupsNotAddedToAnyNetwork(getPortGroupDelta(network, portGroups));
 
-    NetworkService.State networkState = new NetworkService.State();
-    networkState.portGroups = portGroups;
-    patchNetworkService(id, networkState);
+    NetworkService.State networkStateUpdate = new NetworkService.State();
+    networkStateUpdate.portGroups = portGroups;
+    patchNetworkService(id, networkStateUpdate);
 
-    TaskEntity task = taskBackend.createCompletedTask(network, Operation.SET_PORT_GROUPS);
+    TaskEntity task = taskBackend.createCompletedTask(convertToEntity(network), Operation.SET_PORT_GROUPS);
     return task;
   }
 
@@ -240,7 +251,24 @@ public class NetworkXenonBackend implements NetworkBackend {
         state -> toApiRepresentation(convertToEntity(state)));
   }
 
-  private List<String> checkPortGroupsNotAddedToAnyNetwork(List<String> portGroups)
+  private void checkPortGroupsExist(List<String> portGroups)
+      throws PortGroupsDoNotExistException {
+    List<String> missingPortGroups = new ArrayList<>();
+
+    for (String portGroup : portGroups) {
+      ResourceList<Host> hosts = this.hostBackend.filterByPortGroup(
+          portGroup, Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
+      if (hosts.getItems().isEmpty()) {
+        missingPortGroups.add(portGroup);
+      }
+    }
+
+    if (!missingPortGroups.isEmpty()) {
+      throw new PortGroupsDoNotExistException(missingPortGroups);
+    }
+  }
+
+  private void checkPortGroupsNotAddedToAnyNetwork(List<String> portGroups)
       throws PortGroupsAlreadyAddedToNetworkException {
     Map<String, Network> violations = new HashMap<>();
     for (String portGroup : portGroups) {
@@ -254,7 +282,19 @@ public class NetworkXenonBackend implements NetworkBackend {
     if (!violations.isEmpty()) {
       throw new PortGroupsAlreadyAddedToNetworkException(violations);
     }
-    return portGroups;
+  }
+
+  private List<String> getPortGroupDelta(NetworkService.State networkState, List<String> portGroups) {
+    List<String> delta = new ArrayList<>();
+    for (String portGroup : portGroups) {
+      if (networkState.portGroups.contains(portGroup)) {
+        continue;
+      }
+
+      delta.add(portGroup);
+    }
+
+    return delta;
   }
 
   private void patchNetworkService(String id, NetworkService.State networkState)

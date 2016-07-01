@@ -161,6 +161,14 @@ public class HostXenonBackend implements HostBackend {
   }
 
   @Override
+  public ResourceList<Host> filterByPortGroup(String portGroup, Optional<Integer> pageSize) {
+    final ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
+    termsBuilder.put(HostService.State.REPORTED_NETWORKS_KEY, portGroup);
+
+    return findDocuments(termsBuilder, pageSize);
+  }
+
+  @Override
   public Host toApiRepresentation(String id) throws HostNotFoundException {
     HostEntity hostEntity = findById(id);
     return toApiRepresentation(hostEntity);
