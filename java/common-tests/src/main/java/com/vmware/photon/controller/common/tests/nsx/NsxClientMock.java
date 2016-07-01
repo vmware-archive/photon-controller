@@ -45,6 +45,7 @@ import com.vmware.photon.controller.nsxclient.models.TransportZone;
 import com.vmware.photon.controller.nsxclient.models.TransportZoneCreateSpec;
 
 import com.google.common.util.concurrent.FutureCallback;
+import org.apache.commons.lang3.ArrayUtils;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
@@ -52,7 +53,10 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Queue;
 
 /**
  * This class implements a mock {@link NsxClientMock} object for use in testing.
@@ -98,6 +102,13 @@ public class NsxClientMock extends NsxClient {
     private FabricApi mockFabricApi;
     private LogicalSwitchApi mockLogicalSwitchApi;
     private LogicalRouterApi mockLogicalRouterApi;
+
+    /**
+     * Port state used for test:checkLogicalRouterPortExistence.
+     */
+    private enum PortState {
+      EXIST, NOTEXIST, ERROR
+    }
 
     public Builder() {
       mockFabricApi = mock(FabricApi.class);
@@ -513,23 +524,23 @@ public class NsxClientMock extends NsxClient {
     }
 
     public Builder deleteLogicalRouterPort(boolean... states) throws Throwable {
+      Boolean[] statesBoxed = ArrayUtils.toObject(states);
+      final Queue<Boolean> statesList = new LinkedList<>(Arrays.asList(statesBoxed));
 
-      for (boolean isSuccess : states) {
-        if (isSuccess) {
-          doAnswer(invocation -> {
-            ((FutureCallback<Void>) invocation.getArguments()[1])
-                .onSuccess(null);
-            return null;
-          }).when(mockLogicalRouterApi).deleteLogicalRouterPort(any(String.class), any(FutureCallback.class));
-        } else {
-          RuntimeException error = new RuntimeException("deleteLogicalRouterPort failed");
-          doAnswer(invocation -> {
-            ((FutureCallback<Void>) invocation.getArguments()[1])
-                .onFailure(error);
-            return null;
-          }).when(mockLogicalRouterApi).deleteLogicalRouterPort(any(String.class), any(FutureCallback.class));
+      doAnswer(invocation -> {
+        if (!statesList.isEmpty()) {
+          if (statesList.size() == 1) {
+            statesList.add(statesList.peek());
+          }
+          if (statesList.poll()) {
+            ((FutureCallback<Void>) invocation.getArguments()[1]).onSuccess(null);
+          } else {
+            RuntimeException error = new RuntimeException("deleteLogicalRouterPort failed");
+            ((FutureCallback<Void>) invocation.getArguments()[1]).onFailure(error);
+          }
         }
-      }
+        return null;
+      }).when(mockLogicalRouterApi).deleteLogicalRouterPort(any(String.class), any(FutureCallback.class));
 
       return this;
     }
@@ -575,25 +586,37 @@ public class NsxClientMock extends NsxClient {
     }
 
     public Builder checkLogicalRouterPortExistence(boolean... states) throws Throwable {
+      final Queue<PortState> statesList = new LinkedList<>();
       for (boolean isSuccess : states) {
         if (isSuccess) {
-          doAnswer(invocation -> {
-            ((FutureCallback<Boolean>) invocation.getArguments()[1]).onSuccess(true);
-            return null;
-          }).when(mockLogicalRouterApi).checkLogicalRouterPortExistence(anyString(), any(FutureCallback.class));
-
-          doAnswer(invocation -> {
-            ((FutureCallback<Boolean>) invocation.getArguments()[1]).onSuccess(false);
-            return null;
-          }).when(mockLogicalRouterApi).checkLogicalRouterPortExistence(anyString(), any(FutureCallback.class));
+          statesList.add(PortState.EXIST);
+          statesList.add(PortState.NOTEXIST);
         } else {
-          RuntimeException e = new RuntimeException("checkLogicalRouterPortExistence failed");
-          doAnswer(invocation -> {
-            ((FutureCallback<Boolean>) invocation.getArguments()[1]).onFailure(e);
-            return null;
-          }).when(mockLogicalRouterApi).checkLogicalRouterPortExistence(anyString(), any(FutureCallback.class));
+          statesList.add(PortState.ERROR);
         }
       }
+
+      doAnswer(invocation -> {
+        if (!statesList.isEmpty()) {
+          if (statesList.size() == 1) {
+            statesList.add(statesList.peek());
+          }
+          switch (statesList.poll()) {
+            case EXIST:
+              ((FutureCallback<Boolean>) invocation.getArguments()[1]).onSuccess(true);
+              break;
+
+            case NOTEXIST:
+              ((FutureCallback<Boolean>) invocation.getArguments()[1]).onSuccess(false);
+              break;
+
+            case ERROR:
+              RuntimeException e = new RuntimeException("checkLogicalRouterPortExistence failed");
+              ((FutureCallback<Boolean>) invocation.getArguments()[1]).onFailure(e);
+          }
+        }
+        return null;
+      }).when(mockLogicalRouterApi).checkLogicalRouterPortExistence(anyString(), any(FutureCallback.class));
 
       return this;
     }
