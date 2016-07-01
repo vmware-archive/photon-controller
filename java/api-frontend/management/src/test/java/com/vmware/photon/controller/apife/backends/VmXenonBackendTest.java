@@ -18,6 +18,7 @@ import com.vmware.photon.controller.api.DeploymentCreateSpec;
 import com.vmware.photon.controller.api.DiskState;
 import com.vmware.photon.controller.api.DiskType;
 import com.vmware.photon.controller.api.HostCreateSpec;
+import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.Image;
 import com.vmware.photon.controller.api.ImageCreateSpec;
 import com.vmware.photon.controller.api.ImageReplicationType;
@@ -61,6 +62,8 @@ import com.vmware.photon.controller.apife.exceptions.external.ProjectNotFoundExc
 import com.vmware.photon.controller.apife.exceptions.external.VmNotFoundException;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DiskService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DiskServiceFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.HostService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.HostServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ImageService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ImageServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VmService;
@@ -206,21 +209,13 @@ public class VmXenonBackendTest {
     imageServiceState.imageSettings.add(imageSetting);
 
     Operation result = xenonClient.post(ImageServiceFactory.SELF_LINK, imageServiceState);
-
     createdImageState = result.getBody(ImageService.State.class);
-
     imageId = ServiceUtils.getIDFromDocumentSelfLink(createdImageState.documentSelfLink);
 
-    vmCreateSpec = new VmCreateSpec();
-    vmCreateSpec.setName("test-vm");
-    vmCreateSpec.setFlavor("core-100");
-    vmCreateSpec.setSourceImageId(imageId);
-    vmCreateSpec.setAttachedDisks(ImmutableList.of(disk1, disk2));
-    vmCreateSpec.setAffinities(affinities);
-    vmCreateSpec.setTags(ImmutableSet.of("value1", "value2"));
+    // create networks
+    createHostDocument(host);
 
     List<String> networks = new ArrayList<>();
-
     List<String> portGroups = new ArrayList<>();
     portGroups.add("p1");
     NetworkCreateSpec networkCreateSpec = new NetworkCreateSpec();
@@ -236,9 +231,35 @@ public class VmXenonBackendTest {
     networkTask = networkZenonBackend.createNetwork(networkCreateSpec);
     networks.add(networkTask.getEntityId());
 
+    vmCreateSpec = new VmCreateSpec();
+    vmCreateSpec.setName("test-vm");
+    vmCreateSpec.setFlavor("core-100");
+    vmCreateSpec.setSourceImageId(imageId);
+    vmCreateSpec.setAttachedDisks(ImmutableList.of(disk1, disk2));
+    vmCreateSpec.setAffinities(affinities);
+    vmCreateSpec.setTags(ImmutableSet.of("value1", "value2"));
     vmCreateSpec.setNetworks(networks);
-
     createdVmTaskEntity = vmXenonBackend.prepareVmCreate(projectId, vmCreateSpec);
+  }
+
+  private static void createHostDocument(BasicServiceHost host) throws Throwable {
+    host.startFactoryServiceSynchronously(new HostServiceFactory(), HostServiceFactory.SELF_LINK);
+
+    HostService.State hostDoc = new HostService.State();
+    hostDoc.state = HostState.READY;
+    hostDoc.hostAddress = "10.0.0.0";
+    hostDoc.userName = "user";
+    hostDoc.password = "pwd";
+
+    hostDoc.usageTags = new HashSet<>();
+    hostDoc.usageTags.add(UsageTag.CLOUD.toString());
+
+    hostDoc.reportedNetworks = new HashSet<>();
+    hostDoc.reportedNetworks.add("p1");
+    hostDoc.reportedNetworks.add("p2");
+
+    Operation post = Operation.createPost(host, HostServiceFactory.SELF_LINK).setBody(hostDoc);
+    host.sendRequestAndWait(post);
   }
 
   /**
