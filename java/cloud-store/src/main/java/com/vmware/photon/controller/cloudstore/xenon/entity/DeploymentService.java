@@ -102,9 +102,6 @@ public class DeploymentService extends StatefulService {
       validatePatchState(startState, patchState);
       State currentState = applyPatch(startState, patchState);
       validateState(currentState);
-      if (patchState.state != null && startState.state != patchState.state) {
-        SystemConfig.getInstance().runCheck();
-      }
       patchOperation.complete();
     } catch (IllegalStateException t) {
       ServiceUtils.failOperationAsBadRequest(this, patchOperation, t);
@@ -112,6 +109,29 @@ public class DeploymentService extends StatefulService {
       ServiceUtils.logSevere(this, t);
       patchOperation.fail(t);
     }
+  }
+
+  // handlePatch is called on the owner. handleRequest is called for all the nodes.
+  @Override
+  public void handleRequest(Operation request, OperationProcessingStage opProcessingStage) {
+    if (request.getAction() != null && request.hasBody()) {
+      Action action = request.getAction();
+      if (action == Action.PATCH || action == Action.POST || action == Action.PUT) {
+        State patchState = request.getBody(State.class);
+        if (patchState.state != null) {
+          ServiceUtils.logInfo(this, "SystemConfig update is needed for %s %s", patchState.documentSelfLink,
+              patchState.state);
+          try {
+            validateState(patchState);
+            SystemConfig.getInstance().markPauseStateLocally(patchState);
+          } catch (Throwable t) {
+            ServiceUtils.logSevere(this, t);
+            // We do not fail this here. It will fail when super.handleRequest calls handlePatch
+          }
+        }
+      }
+    }
+    super.handleRequest(request, opProcessingStage);
   }
 
   @Override
