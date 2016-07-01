@@ -17,6 +17,7 @@ import com.vmware.photon.controller.api.DiskState;
 import com.vmware.photon.controller.api.Operation;
 import com.vmware.photon.controller.api.VmState;
 import com.vmware.photon.controller.apife.backends.DiskBackend;
+import com.vmware.photon.controller.apife.backends.NetworkBackend;
 import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.backends.VmBackend;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
@@ -70,6 +71,9 @@ public class VmCreateStepCmdTest extends PowerMockTestCase {
   private DiskBackend diskBackend;
 
   @Mock
+  private NetworkBackend networkBackend;
+
+  @Mock
   private StepBackend stepBackend;
 
   @Mock
@@ -112,7 +116,7 @@ public class VmCreateStepCmdTest extends PowerMockTestCase {
 
     InOrder inOrder = inOrder(hostClient, vmBackend);
     inOrder.verify(hostClient).createVm(reservationId, new HashMap<>());
-    inOrder.verify(vmBackend).updateState(vm, VmState.STOPPED, agentId, agentIp, "datastore-1", "datastore-name");
+    inOrder.verify(vmBackend).updateState(vm, VmState.STOPPED, agentId, agentIp, "datastore-1", "datastore-name", null);
 
     verifyNoMoreInteractions(vmBackend);
   }
@@ -134,7 +138,7 @@ public class VmCreateStepCmdTest extends PowerMockTestCase {
 
     InOrder inOrder = inOrder(hostClient, vmBackend);
     inOrder.verify(hostClient).createVm(reservationId, new HashMap<String, String>());
-    inOrder.verify(vmBackend).updateState(vm, VmState.STOPPED, agentId, agentIp, "datastore-1", "datastore-name");
+    inOrder.verify(vmBackend).updateState(vm, VmState.STOPPED, agentId, agentIp, "datastore-1", "datastore-name", null);
 
     verifyNoMoreInteractions(vmBackend);
   }
@@ -151,7 +155,7 @@ public class VmCreateStepCmdTest extends PowerMockTestCase {
 
     InOrder inOrder = inOrder(hostClient, vmBackend);
     inOrder.verify(hostClient).createVm(reservationId, new HashMap<String, String>());
-    inOrder.verify(vmBackend).updateState(vm, VmState.STOPPED, agentId, agentIp, "datastore-1", "datastore-name");
+    inOrder.verify(vmBackend).updateState(vm, VmState.STOPPED, agentId, agentIp, "datastore-1", "datastore-name", null);
 
     verifyNoMoreInteractions(vmBackend);
   }
@@ -217,7 +221,7 @@ public class VmCreateStepCmdTest extends PowerMockTestCase {
     step.setId(stepId);
     step.addResource(vm);
     VmCreateStepCmd cmd = new VmCreateStepCmd(taskCommand,
-        stepBackend, step, vmBackend, diskBackend, useVirtualNetwork);
+        stepBackend, step, vmBackend, diskBackend, networkBackend, useVirtualNetwork);
     return spy(cmd);
   }
 

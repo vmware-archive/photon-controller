@@ -385,7 +385,8 @@ public class VmXenonBackend implements VmBackend {
 
   @Override
   public void updateState(VmEntity vmEntity, VmState state, String agent,
-                          String agentIp, String datastoreId, String datastoreName)
+                          String agentIp, String datastoreId, String datastoreName,
+                          Map<String, VmService.NetworkInfo> networkInfo)
       throws ExternalException {
     VmService.State vm = new VmService.State();
     vm.vmState = state;
@@ -393,6 +394,7 @@ public class VmXenonBackend implements VmBackend {
     vm.host = agentIp;
     vm.datastore = datastoreId;
     vm.datastoreName = datastoreName;
+    vm.networkInfo = networkInfo;
 
     patchVmService(vmEntity.getId(), vm);
     vmEntity.setState(state);

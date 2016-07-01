@@ -226,7 +226,7 @@ public class VmDiskBackendTest {
     VmEntity vmEntity = vmBackend.findById(vmId);
     if (vmEntity.getState() != vmState) {
       vmBackend.updateState(vmEntity, vmState, "agent-007", "1.1.1.1", vmEntity.getDatastore(),
-          vmEntity.getDatastoreName());
+          vmEntity.getDatastoreName(), null);
     }
     TaskEntity taskEntity = vmBackend.prepareVmDiskOperation(vmId, diskIdList, Operation.ATTACH_DISK);
     List<StepEntity> steps = taskEntity.getSteps();

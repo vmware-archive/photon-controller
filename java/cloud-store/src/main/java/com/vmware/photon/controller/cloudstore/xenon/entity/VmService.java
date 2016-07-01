@@ -140,8 +140,15 @@ public class VmService extends StatefulService {
 
     /**
      * ids of networks to place vm on.
+     * todo: Remove this field once indexing story on networkInfo is figured out.
+     * (It is needed for searching VMs based on network Id.)
      */
     public List<String> networks;
+
+    /**
+     * Networks info on which vm is placed on.
+     */
+    public Map<String, VmService.NetworkInfo> networkInfo;
 
     /**
      * Locality parameters provide a hint that may help the placement engine

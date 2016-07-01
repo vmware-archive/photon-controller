@@ -21,22 +21,32 @@ import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.api.VmState;
 import com.vmware.photon.controller.api.common.exceptions.ApiFeException;
 import com.vmware.photon.controller.apife.backends.DiskBackend;
+import com.vmware.photon.controller.apife.backends.NetworkBackend;
 import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.backends.VmBackend;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.EphemeralDiskEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.VmEntity;
+import com.vmware.photon.controller.apife.exceptions.external.PortGroupRepeatedInMultipleNetworksException;
 import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
+import com.vmware.photon.controller.cloudstore.xenon.entity.NetworkService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.VmService;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
+import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.host.gen.CreateVmResponse;
+import com.vmware.photon.controller.host.gen.VmNetworkInfo;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
+
+import org.apache.commons.collections.map.HashedMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * StepCommand for VM creation.
@@ -49,14 +59,17 @@ public class VmCreateStepCmd extends StepCommand {
   private static Logger logger = LoggerFactory.getLogger(VmCreateStepCmd.class);
   private final VmBackend vmBackend;
   private final DiskBackend diskBackend;
+  private final NetworkBackend networkBackend;
   private final Boolean useVirtualNetwork;
   private VmEntity vm;
 
   public VmCreateStepCmd(TaskCommand taskCommand, StepBackend stepBackend,
-                         StepEntity step, VmBackend vmBackend, DiskBackend diskBackend, Boolean useVirtualNetwork) {
+                         StepEntity step, VmBackend vmBackend, DiskBackend diskBackend,
+                         NetworkBackend networkBackend, Boolean useVirtualNetwork) {
     super(taskCommand, stepBackend, step);
     this.vmBackend = vmBackend;
     this.diskBackend = diskBackend;
+    this.networkBackend = networkBackend;
     this.useVirtualNetwork = useVirtualNetwork;
   }
 
@@ -87,11 +100,14 @@ public class VmCreateStepCmd extends StepCommand {
             .createOrUpdateTransientResource(VmCreateStepCmd.VM_LOCATION_ID, response.getVm().getLocation_id());
       }
 
+      Map<String, VmService.NetworkInfo> networkInfoList = getNetworksFromCreateVMResponse(response.getNetwork_info());
+
       vmBackend.updateState(vm, VmState.STOPPED,
           taskCommand.lookupAgentId(taskCommand.getHostClient().getHostIp()),
           taskCommand.getHostClient().getHostIp(),
           response.getVm().getDatastore().getId(),
-          response.getVm().getDatastore().getName());
+          response.getVm().getDatastore().getName(),
+          networkInfoList);
 
       logger.info("created VM: {}", vm);
       return vm;
@@ -113,5 +129,30 @@ public class VmCreateStepCmd extends StepCommand {
       diskBackend.updateState(disk, DiskState.ATTACHED, vm.getAgent(), vm.getDatastore());
       logger.info("attached Disk: {}", disk);
     }
+  }
+
+  private  Map<String, VmService.NetworkInfo> getNetworksFromCreateVMResponse(List<VmNetworkInfo> vmNetworkInfoList)
+          throws PortGroupRepeatedInMultipleNetworksException  {
+    if (vmNetworkInfoList == null) {
+      return null;
+    }
+
+    Map<String, VmService.NetworkInfo> networkInfoList = new HashedMap();
+    for (VmNetworkInfo vmNetworkInfo : vmNetworkInfoList) {
+      NetworkService.State network =  networkBackend.filterNetworkByPortGroup(Optional.of(vmNetworkInfo.getNetwork()));
+
+      if (network == null) {
+        continue;
+      }
+
+      VmService.NetworkInfo networkInfo = new VmService.NetworkInfo();
+      networkInfo.id = ServiceUtils.getIDFromDocumentSelfLink(network.documentSelfLink);
+      networkInfo.dhcpAgentIP = network.dhcpAgentIP;
+      networkInfo.macAddress = vmNetworkInfo.getMac_address();
+
+      networkInfoList.put(networkInfo.id, networkInfo);
+    }
+
+    return networkInfoList;
   }
 }
