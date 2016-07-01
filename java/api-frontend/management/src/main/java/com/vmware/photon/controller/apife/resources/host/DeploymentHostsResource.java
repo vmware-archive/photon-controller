@@ -17,14 +17,17 @@ import com.vmware.photon.controller.api.Host;
 import com.vmware.photon.controller.api.HostCreateSpec;
 import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
+import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.clients.DeploymentFeClient;
 import com.vmware.photon.controller.apife.clients.HostFeClient;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
+import com.vmware.photon.controller.apife.exceptions.external.InvalidHostCreateSpecException;
 import com.vmware.photon.controller.apife.resources.routes.DeploymentResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.HostResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
 import com.vmware.photon.controller.apife.utils.PaginationUtils;
+import com.vmware.photon.controller.cloudstore.xenon.entity.HostService;
 import static com.vmware.photon.controller.api.common.Responses.generateCustomResponse;
 import static com.vmware.photon.controller.api.common.Responses.generateResourceListResponse;
 
@@ -49,6 +52,9 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * This resource is for deployment hosts related API.
@@ -103,11 +109,32 @@ public class DeploymentHostsResource {
       {@ApiResponse(code = 201, message = "Host is being created, creation process can be fetched via the task")})
   public Response create(@Context Request request, @Validated HostCreateSpec spec, @PathParam("id") String id)
       throws ExternalException {
+    if (spec.getUsageTags().contains(UsageTag.MGMT)) {
+      List<String> errorMessages = new ArrayList<>();
+
+      for (String metaDataField : HostService.State.REQUIRED_MGMT_HOST_METADATA) {
+        validateManagementMetadata(spec, metaDataField, errorMessages);
+      }
+      if (!errorMessages.isEmpty()) {
+        throw new InvalidHostCreateSpecException(String.format(
+            "Metadata must contain value(s) for key %s if the host is tagged as %s", errorMessages.toString(),
+            UsageTag.MGMT.name()));
+      }
+    }
+
     Task task = hostFeClient.createHost(spec, id);
     return generateCustomResponse(
         Response.Status.CREATED,
         task,
         (ContainerRequest) request,
         TaskResourceRoutes.TASK_PATH);
+  }
+
+  private void validateManagementMetadata(HostCreateSpec hostCreateSpec, String key,
+                                          List<String> errorMessages) throws InvalidHostCreateSpecException {
+    if (hostCreateSpec.getMetadata() == null || !hostCreateSpec.getMetadata().containsKey(key) || hostCreateSpec
+        .getMetadata().get(key) == null) {
+      errorMessages.add(key);
+    }
   }
 }
