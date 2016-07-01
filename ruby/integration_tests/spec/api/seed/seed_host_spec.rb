@@ -17,7 +17,7 @@ describe "Seed host", seed_host: true do
     EsxCloud::Config.init
     EsxCloud::Config.client = ApiClientHelper.management
 
-    allowed_networks = EsxCloud::TestHelpers.get_vm_port_groups.join(",")
+    allowed_networks = EsxCloud::TestHelpers.get_all_port_groups.join(",")
     fail "No port group defined for VMs in ESX_VM_PORT_GROUP" if allowed_networks.nil? || allowed_networks.empty?
 
     allowed_datastores = EsxCloud::TestHelpers.get_datastore_name
