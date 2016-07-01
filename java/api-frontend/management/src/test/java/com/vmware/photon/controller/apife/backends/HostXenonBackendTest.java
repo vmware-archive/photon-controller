@@ -78,7 +78,7 @@ public class HostXenonBackendTest {
   private static ApiFeXenonRestClient xenonClient;
   private static BasicServiceHost host;
 
-  @Test
+  @Test(enabled = false)
   private void dummy() {
   }
 
@@ -288,6 +288,7 @@ public class HostXenonBackendTest {
   public static class QueryHostTest {
 
     private static final String HOST_ADDRESS = "0.0.0.1";
+    private static final String PORT_GROUP = "PG1";
 
     @Inject
     private BasicServiceHost basicServiceHost;
@@ -324,6 +325,16 @@ public class HostXenonBackendTest {
 
       TaskEntity taskEntity = hostBackend.prepareHostCreate(hostCreateSpec, deploymentId);
       hostId = taskEntity.getEntityId();
+
+      // set some portgroups
+      HostService.State patchState = new HostService.State();
+      patchState.reportedNetworks = new HashSet<>();
+      patchState.reportedNetworks.add(PORT_GROUP);
+
+      com.vmware.xenon.common.Operation patch = com.vmware.xenon.common.Operation
+          .createPatch(basicServiceHost, HostServiceFactory.SELF_LINK + "/" + hostId)
+          .setBody(patchState);
+      basicServiceHost.sendRequestAndWait(patch);
 
       // create 2nd host
       HostCreateSpec host2CreateSpec = new HostCreateSpec();
@@ -411,6 +422,17 @@ public class HostXenonBackendTest {
       assertThat(hosts.getItems().get(0).getAddress(), is(HOST_ADDRESS));
 
       hosts = hostBackend.filterByAddress("192.168.1.1", Optional.absent());
+      assertThat(hosts, notNullValue());
+      assertThat(hosts.getItems().size(), is(0));
+    }
+
+    @Test
+    public void testFilterByPortGroup() {
+      ResourceList<Host> hosts = hostBackend.filterByPortGroup(PORT_GROUP, Optional.<Integer>absent());
+      assertThat(hosts, notNullValue());
+      assertThat(hosts.getItems().size(), is(1));
+
+      hosts = hostBackend.filterByPortGroup("MISSING_PORTGROUP", Optional.<Integer>absent());
       assertThat(hosts, notNullValue());
       assertThat(hosts.getItems().size(), is(0));
     }
