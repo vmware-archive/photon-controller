@@ -82,7 +82,7 @@ public class BulkProvisionHostsWorkflowServiceTest {
   /**
    * This class implements tests for the constructor.
    */
-  public class InitializationTest {
+  public static class InitializationTest {
 
     private BulkProvisionHostsWorkflowService bulkProvisionHostsWorkflowService;
 
@@ -107,7 +107,7 @@ public class BulkProvisionHostsWorkflowServiceTest {
   /**
    * This class implements tests for the handleStart method.
    */
-  public class HandleStartTest {
+  public static class HandleStartTest {
 
     private BulkProvisionHostsWorkflowService bulkProvisionHostsWorkflowService;
     private Boolean serviceCreated = false;
@@ -200,7 +200,7 @@ public class BulkProvisionHostsWorkflowServiceTest {
   /**
    * This class implements tests for the handlePatch test.
    */
-  public class HandlePatchTest {
+  public static class HandlePatchTest {
 
     private BulkProvisionHostsWorkflowService bulkProvisionHostsWorkflowService;
     private TestHost testHost;
@@ -303,7 +303,7 @@ public class BulkProvisionHostsWorkflowServiceTest {
   /**
    * This class implements end-to-end tests for the service.
    */
-  public class EndToEndTest {
+  public static class EndToEndTest {
 
     private static final String configFilePath = "/config.yml";
 
@@ -383,6 +383,7 @@ public class BulkProvisionHostsWorkflowServiceTest {
       NsxClientMock nsxClientMock = new NsxClientMock.Builder()
           .registerFabricNode(true, "fabricNodeId")
           .createTransportNode(true, "transportNodeId")
+          .getTransportZone(true, "transportZoneId", "hostSwitchName")
           .build();
       doReturn(nsxClientMock).when(nsxClientFactory).create(anyString(), anyString(), anyString());
 
@@ -539,7 +540,7 @@ public class BulkProvisionHostsWorkflowServiceTest {
     }
   }
 
-  private BulkProvisionHostsWorkflowService.State buildValidStartState(
+  private static BulkProvisionHostsWorkflowService.State buildValidStartState(
       @Nullable TaskState.TaskStage stage) {
 
     BulkProvisionHostsWorkflowService.State startState = new BulkProvisionHostsWorkflowService.State();

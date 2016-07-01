@@ -228,6 +228,27 @@ public class NsxClientMock extends NsxClient {
       return this;
     }
 
+    public Builder getTransportZone(boolean isSuccess, String transportZoneId, String hostSwitchName) throws Throwable {
+      if (isSuccess) {
+        TransportZone transportZone = new TransportZone();
+        transportZone.setId(transportZoneId);
+        transportZone.setHostSwitchName(hostSwitchName);
+
+        doAnswer(invocation -> {
+          ((FutureCallback<TransportZone>) invocation.getArguments()[1]).onSuccess(transportZone);
+          return null;
+        }).when(mockFabricApi).getTransportZone(anyString(), any(FutureCallback.class));
+      } else {
+        RuntimeException error = new RuntimeException("getTransportZone failed");
+        doAnswer(invocation -> {
+          ((FutureCallback<TransportZone>) invocation.getArguments()[1]).onFailure(error);
+          return null;
+        }).when(mockFabricApi).getTransportZone(anyString(), any(FutureCallback.class));
+      }
+
+      return this;
+    }
+
     public Builder deleteTransportZone(boolean isSuccess) throws Throwable {
       if (isSuccess) {
         doAnswer(invocation -> {

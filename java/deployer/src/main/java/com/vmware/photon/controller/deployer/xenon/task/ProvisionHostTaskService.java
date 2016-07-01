@@ -54,6 +54,7 @@ import com.vmware.photon.controller.nsxclient.models.HostSwitch;
 import com.vmware.photon.controller.nsxclient.models.TransportNode;
 import com.vmware.photon.controller.nsxclient.models.TransportNodeCreateSpec;
 import com.vmware.photon.controller.nsxclient.models.TransportNodeState;
+import com.vmware.photon.controller.nsxclient.models.TransportZone;
 import com.vmware.photon.controller.nsxclient.models.TransportZoneEndPoint;
 import com.vmware.photon.controller.nsxclient.utils.NameUtils;
 import com.vmware.photon.controller.stats.plugin.gen.StatsPluginConfig;
@@ -721,8 +722,34 @@ public class ProvisionHostTaskService extends StatefulService {
         currentState.networkManagerUserName,
         currentState.networkManagerPassword);
 
+    nsxClient.getFabricApi().getTransportZone(currentState.networkZoneId, new FutureCallback<TransportZone>() {
+      @Override
+      public void onSuccess(@Nullable TransportZone transportZone) {
+        try {
+          createTransportNode(currentState, hostState, transportZone.getHostSwitchName());
+        } catch (Throwable t) {
+          failTask(t);
+        }
+      }
+
+      @Override
+      public void onFailure(Throwable throwable) {
+        failTask(throwable);
+      }
+    });
+  }
+
+  private void createTransportNode(State currentState,
+                                   HostService.State hostState,
+                                   String hostSwitchName) throws Throwable {
+
+    NsxClient nsxClient = HostUtils.getNsxClientFactory(this).create(
+        currentState.networkManagerAddress,
+        currentState.networkManagerUserName,
+        currentState.networkManagerPassword);
+
     HostSwitch hostSwitch = new HostSwitch();
-    hostSwitch.setName(NameUtils.HOST_SWITCH_NAME);
+    hostSwitch.setName(hostSwitchName);
 
     TransportNodeCreateSpec request = new TransportNodeCreateSpec();
     request.setDisplayName(NameUtils.getTransportNodeName(hostState.hostAddress));
