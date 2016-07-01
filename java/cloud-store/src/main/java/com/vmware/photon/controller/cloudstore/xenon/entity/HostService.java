@@ -626,6 +626,8 @@ public class HostService extends StatefulService {
 
     public static final String USAGE_TAGS_KEY =
         QueryTask.QuerySpecification.buildCollectionItemName(FIELD_NAME_USAGE_TAGS);
+    public static final String REPORTED_NETWORKS_KEY =
+        QueryTask.QuerySpecification.buildCollectionItemName(FIELD_NAME_REPORTED_NETWORKS);
 
     public static final String METADATA_KEY_NAME_MANAGEMENT_DATASTORE = "MANAGEMENT_DATASTORE";
     public static final String METADATA_KEY_NAME_ALLOWED_DATASTORES = "ALLOWED_DATASTORES";
