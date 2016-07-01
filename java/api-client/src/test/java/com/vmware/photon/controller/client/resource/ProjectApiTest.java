@@ -20,6 +20,7 @@ import com.vmware.photon.controller.api.PersistentDisk;
 import com.vmware.photon.controller.api.Project;
 import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
+import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.api.VmCreateSpec;
 import com.vmware.photon.controller.api.base.FlavoredCompact;
 
@@ -580,6 +581,65 @@ public class ProjectApiTest extends ApiTestBase {
     assertTrue(response.getItems().containsAll(vmSummaryList.getItems()));
     assertTrue(response.getItems().containsAll(vmSummaryListNextPage.getItems()));
   }
+
+  @Test
+  public void testGetVmDetails() throws IOException {
+    Vm vm1 = new Vm();
+    vm1.setId("vm1-testId");
+    vm1.setName("vm1");
+
+    Vm vm2 = new Vm();
+    vm2.setId("vm2-testId");
+    vm2.setName("vm2");
+
+    ResourceList<Vm> vmSummaryList =
+            new ResourceList<>(Arrays.asList(vm1, vm2));
+
+    ObjectMapper mapper = new ObjectMapper();
+    String serializedTask = mapper.writeValueAsString(vmSummaryList);
+
+    setupMocks(serializedTask, HttpStatus.SC_OK);
+
+    ProjectApi projectApi = new ProjectApi(restClient);
+
+    ResourceList<Vm> response = projectApi.getVmDetailsInProject("foo");
+    assertEquals(response.getItems().size(), vmSummaryList.getItems().size());
+    assertTrue(response.getItems().containsAll(vmSummaryList.getItems()));
+  }
+
+  @Test
+  public void testGetVmDetailsForPagination() throws IOException {
+    Vm vm1 = new Vm();
+    vm1.setId("vm1-testId");
+    vm1.setName("vm1");
+
+    Vm vm2 = new Vm();
+    vm2.setId("vm2-testId");
+    vm2.setName("vm2");
+
+    Vm vm3 = new Vm();
+    vm2.setId("vm3-testId");
+    vm2.setName("vm3");
+
+    String nextPageLink = "nextPageLink";
+
+    ResourceList<Vm> vmSummaryList = new ResourceList<>(Arrays.asList(vm1, vm2), nextPageLink, null);
+    ResourceList<Vm> vmSummaryListNextPage = new ResourceList<>(Arrays.asList(vm3));
+
+    ObjectMapper mapper = new ObjectMapper();
+    String serializedTask = mapper.writeValueAsString(vmSummaryList);
+    String serializedTaskNextPage = mapper.writeValueAsString(vmSummaryListNextPage);
+
+    setupMocksForPagination(serializedTask, serializedTaskNextPage, nextPageLink, HttpStatus.SC_OK);
+
+    ProjectApi projectApi = new ProjectApi(restClient);
+
+    ResourceList<Vm> response = projectApi.getVmDetailsInProject("foo");
+    assertEquals(response.getItems().size(), vmSummaryList.getItems().size() + vmSummaryListNextPage.getItems().size());
+    assertTrue(response.getItems().containsAll(vmSummaryList.getItems()));
+    assertTrue(response.getItems().containsAll(vmSummaryListNextPage.getItems()));
+  }
+
 
   @Test
   public void testGetVmsAsync() throws IOException, InterruptedException {
