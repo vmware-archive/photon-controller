@@ -10,11 +10,18 @@
 # conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the License for the
 # specific language governing permissions and limitations under the License.
 
-en_name=$(ip addr show label "en*" | head -n 1 | sed 's/^[0-9]*: \(en.*\): .*/\1/')
-container_ip=$(ifconfig $en_name | grep 'inet addr:' | cut -d: -f2 | awk '{ print $1 }')
 
-CONFIG_PATH="/etc/esxcloud"
-API_BITS="/usr/lib/esxcloud/photon-controller-core"
+
+# Accept optional parameter for path of configuration files and installation files
+# Example usages: ./run.sh
+#                 ./run.sh /opt/vmware/photon-controller/configuration
+#                 ./run.sh /opt/vmware/photon-controller/configuration /opt/vmware/photon-controller/lib
+
+CONFIG_PATH_PARAM=$1
+INSTALLATION_PATH_PARAM=$2
+
+CONFIG_PATH=${CONFIG_PATH_PARAM:-"/etc/esxcloud"}
+API_BITS=${INSTALLATION_PATH_PARAM:-"/usr/lib/esxcloud/photon-controller-core"}
 API_BIN="$API_BITS/bin"
 API_LIB="$API_BITS/lib"
 API_CONFIG="$CONFIG_PATH/management-api.yml"
@@ -23,6 +30,9 @@ API_SWAGGER_JS="$CONFIG_PATH/$API_SWAGGER_JS_FILE"
 PHOTON_CONTROLLER_CORE_BIN="{{{PHOTON-CONTROLLER-CORE_INSTALL_DIRECTORY}}}/bin"
 PHOTON_CONTROLLER_CORE_CONFIG="$CONFIG_PATH/photon-controller-core.yml"
 SCRIPT_LOG_DIRECTORY="{{{LOG_DIRECTORY}}}/script_logs"
+
+en_name=$(ip addr show label "en*" | head -n 1 | sed 's/^[0-9]*: \(en.*\): .*/\1/')
+container_ip=$(ifconfig $en_name | grep 'inet addr:' | cut -d: -f2 | awk '{ print $1 }')
 
 # Create script log directory
 mkdir -p $SCRIPT_LOG_DIRECTORY
@@ -62,4 +72,11 @@ $JAVA_HOME/bin/jar uf ${API_LIB}/swagger-ui*.jar -C $CONFIG_PATH assets/$API_SWA
 #
 # Start service
 #
-$PHOTON_CONTROLLER_CORE_BIN/photon-controller-core $PHOTON_CONTROLLER_CORE_CONFIG $API_CONFIG
+hash photon-controller-core 2>/dev/null
+if [ $? -eq 1 ]; then
+  COMMAND=$PHOTON_CONTROLLER_CORE_BIN/photon-controller-core
+else
+  COMMAND=photon-controller-core
+fi
+
+$COMMAND $PHOTON_CONTROLLER_CORE_CONFIG $API_CONFIG
