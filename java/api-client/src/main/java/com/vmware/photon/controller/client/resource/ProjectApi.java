@@ -20,6 +20,7 @@ import com.vmware.photon.controller.api.PersistentDisk;
 import com.vmware.photon.controller.api.Project;
 import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
+import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.api.VmCreateSpec;
 import com.vmware.photon.controller.api.base.FlavoredCompact;
 import com.vmware.photon.controller.client.RestClient;
@@ -374,6 +375,45 @@ public class ProjectApi extends ApiBase {
         httpResponse,
         new TypeReference<ResourceList<FlavoredCompact>>() {
         }
+    );
+  }
+
+  /**
+   * Get a list of vm details in the specified project.
+   *
+   * @param projectId - id of project
+   * @return {@link ResourceList} of {@link Vm}
+   * @throws IOException
+   */
+  public ResourceList<Vm> getVmDetailsInProject(String projectId) throws IOException {
+
+    String path = String.format("%s/%s/vms", getBasePath(), projectId);
+    ResourceList<Vm> vmResourceList = new ResourceList<>();
+    ResourceList<Vm> resourceList = getVmResourceList(path);
+    vmResourceList.setItems(resourceList.getItems());
+
+    while (resourceList.getNextPageLink() != null && !resourceList.getNextPageLink().isEmpty()) {
+      resourceList = getVmResourceList(resourceList.getNextPageLink());
+      vmResourceList.getItems().addAll(resourceList.getItems());
+    }
+
+    return vmResourceList;
+  }
+
+  /**
+   * Get all Vms at specified path.
+   *
+   * @param path
+   * @return
+   * @throws IOException
+   */
+  private ResourceList<Vm> getVmResourceList(String path) throws IOException {
+    HttpResponse httpResponse = this.restClient.perform(RestClient.Method.GET, path, null);
+    this.restClient.checkResponse(httpResponse, HttpStatus.SC_OK);
+    return this.restClient.parseHttpResponse(
+            httpResponse,
+            new TypeReference<ResourceList<Vm>>() {
+            }
     );
   }
 
