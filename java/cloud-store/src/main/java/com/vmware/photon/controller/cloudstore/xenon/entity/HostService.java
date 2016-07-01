@@ -554,12 +554,9 @@ public class HostService extends StatefulService {
       checkState(null != currentState.metadata);
 
       // Mandatory metadata for management host
-      validateManagementMetadata(currentState, State.METADATA_KEY_NAME_MANAGEMENT_DATASTORE);
-      validateManagementMetadata(currentState, State.METADATA_KEY_NAME_MANAGEMENT_NETWORK_DNS_SERVER);
-      validateManagementMetadata(currentState, State.METADATA_KEY_NAME_MANAGEMENT_NETWORK_GATEWAY);
-      validateManagementMetadata(currentState, State.METADATA_KEY_NAME_MANAGEMENT_NETWORK_IP);
-      validateManagementMetadata(currentState, State.METADATA_KEY_NAME_MANAGEMENT_NETWORK_NETMASK);
-      validateManagementMetadata(currentState, State.METADATA_KEY_NAME_MANAGEMENT_PORTGROUP);
+      for (String metaDataField : HostService.State.REQUIRED_MGMT_HOST_METADATA) {
+        validateManagementMetadata(currentState, metaDataField);
+      }
 
       // Optional meatadata for management host
       boolean hasVmResourceOverwrite = false;
@@ -642,6 +639,15 @@ public class HostService extends StatefulService {
     public static final String METADATA_KEY_NAME_MANAGEMENT_VM_DISK_GB_OVERWRITE =
         "MANAGEMENT_VM_DISK_GB_OVERWRITE";
     public static final String METADATA_KEY_NAME_ALLOWED_SERVICES = "ALLOWED_SERVICES";
+
+    public static final String[] REQUIRED_MGMT_HOST_METADATA = new String[]{
+        METADATA_KEY_NAME_MANAGEMENT_DATASTORE,
+        METADATA_KEY_NAME_MANAGEMENT_NETWORK_DNS_SERVER,
+        METADATA_KEY_NAME_MANAGEMENT_NETWORK_GATEWAY,
+        METADATA_KEY_NAME_MANAGEMENT_NETWORK_IP,
+        METADATA_KEY_NAME_MANAGEMENT_NETWORK_NETMASK,
+        METADATA_KEY_NAME_MANAGEMENT_PORTGROUP
+    };
 
     /**
      * This metadata should only be used for testing purpose. In the DeploymentWorkflowServiceTest, we need
