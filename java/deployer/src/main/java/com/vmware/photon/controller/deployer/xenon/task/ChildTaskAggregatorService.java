@@ -84,11 +84,6 @@ public class ChildTaskAggregatorService extends StatefulService {
 
   public ChildTaskAggregatorService() {
     super(State.class);
-
-    //UploadVibTask tries to call this service locally and fails since this task is not there on the host
-    super.toggleOption(ServiceOption.OWNER_SELECTION, true);
-    super.toggleOption(ServiceOption.PERSISTENCE, true);
-    super.toggleOption(ServiceOption.REPLICATION, true);
   }
 
   @Override
