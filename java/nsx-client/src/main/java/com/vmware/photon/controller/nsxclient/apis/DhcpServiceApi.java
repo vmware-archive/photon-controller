@@ -16,6 +16,8 @@ package com.vmware.photon.controller.nsxclient.apis;
 import com.vmware.photon.controller.nsxclient.RestClient;
 import com.vmware.photon.controller.nsxclient.models.DhcpRelayProfile;
 import com.vmware.photon.controller.nsxclient.models.DhcpRelayProfileCreateSpec;
+import com.vmware.photon.controller.nsxclient.models.DhcpRelayService;
+import com.vmware.photon.controller.nsxclient.models.DhcpRelayServiceCreateSpec;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.util.concurrent.FutureCallback;
@@ -29,6 +31,7 @@ import java.io.IOException;
 public class DhcpServiceApi extends NsxClientApi {
 
   public final String serviceProfileBasePath = basePath + "/service-profiles";
+  public final String serviceBasePath = basePath + "/services";
 
   /**
    * Constructs a DhcpServiceApi class.
@@ -71,6 +74,44 @@ public class DhcpServiceApi extends NsxClientApi {
                                      FutureCallback<Void> responseCallback)
       throws IOException {
     deleteAsync(serviceProfileBasePath + "/" + id,
+        HttpStatus.SC_OK,
+        responseCallback);
+  }
+
+  /**
+   * Creates a DHCP relay service.
+   */
+  public void createDhcpRelayService(DhcpRelayServiceCreateSpec request,
+                                     FutureCallback<DhcpRelayService> responseCallback)
+      throws IOException {
+    postAsync(serviceBasePath,
+        serializeObjectAsJson(request),
+        HttpStatus.SC_CREATED,
+        new TypeReference<DhcpRelayService>() {
+        },
+        responseCallback);
+  }
+
+  /**
+   * Gets a DHCP relay service.
+   */
+  public void getDhcpRelayService(String id,
+                                  FutureCallback<DhcpRelayService> responseCallback)
+      throws IOException {
+    getAsync(serviceBasePath + "/" + id,
+        HttpStatus.SC_OK,
+        new TypeReference<DhcpRelayService>() {
+        },
+        responseCallback);
+  }
+
+  /**
+   * Deletes a DHCP relay service.
+   */
+  public void deleteDhcpRelayService(String id,
+                                     FutureCallback<Void> responseCallback)
+      throws IOException {
+    deleteAsync(serviceBasePath + "/" + id,
         HttpStatus.SC_OK,
         responseCallback);
   }

@@ -13,9 +13,12 @@
 
 package com.vmware.photon.controller.nsxclient.apis;
 
+import com.vmware.photon.controller.nsxclient.datatypes.LogicalServiceResourceType;
 import com.vmware.photon.controller.nsxclient.datatypes.ServiceProfileResourceType;
 import com.vmware.photon.controller.nsxclient.models.DhcpRelayProfile;
 import com.vmware.photon.controller.nsxclient.models.DhcpRelayProfileCreateSpec;
+import com.vmware.photon.controller.nsxclient.models.DhcpRelayService;
+import com.vmware.photon.controller.nsxclient.models.DhcpRelayServiceCreateSpec;
 
 import org.apache.http.HttpStatus;
 import org.testng.annotations.Test;
@@ -95,6 +98,83 @@ public class DhcpServiceApiTest extends NsxClientApiTest {
     DhcpServiceApi client = new DhcpServiceApi(restClient);
     final CountDownLatch latch = new CountDownLatch(1);
     client.deleteDhcpRelayProfile("id",
+        new com.google.common.util.concurrent.FutureCallback<Void>() {
+          @Override
+          public void onSuccess(Void result) {
+            latch.countDown();
+          }
+
+          @Override
+          public void onFailure(Throwable t) {
+            fail(t.toString());
+            latch.countDown();
+          }
+        });
+
+    assertThat(latch.await(COUNTDOWNLATCH_AWAIT_TIMEOUT, TimeUnit.SECONDS), is(true));
+  }
+
+  @Test
+  public void testCreateDhcpRelayService() throws IOException, InterruptedException {
+    final DhcpRelayService mockResponse = new DhcpRelayService();
+    mockResponse.setId("id");
+    mockResponse.setResourceType(LogicalServiceResourceType.DHCP_RELAY_SERVICE);
+    setupMocks(objectMapper.writeValueAsString(mockResponse), HttpStatus.SC_CREATED);
+
+    DhcpServiceApi client = new DhcpServiceApi(restClient);
+    final CountDownLatch latch = new CountDownLatch(1);
+    client.createDhcpRelayService(new DhcpRelayServiceCreateSpec(),
+        new com.google.common.util.concurrent.FutureCallback<DhcpRelayService>() {
+          @Override
+          public void onSuccess(DhcpRelayService result) {
+            assertEquals(result, mockResponse);
+            latch.countDown();
+          }
+
+          @Override
+          public void onFailure(Throwable t) {
+            fail(t.toString());
+            latch.countDown();
+          }
+        });
+
+    assertThat(latch.await(COUNTDOWNLATCH_AWAIT_TIMEOUT, TimeUnit.SECONDS), is(true));
+  }
+
+  @Test
+  public void testGetDhcpRelayService() throws IOException, InterruptedException {
+    final DhcpRelayService mockResponse = new DhcpRelayService();
+    mockResponse.setId("id");
+    mockResponse.setResourceType(LogicalServiceResourceType.DHCP_RELAY_SERVICE);
+    setupMocks(objectMapper.writeValueAsString(mockResponse), HttpStatus.SC_OK);
+
+    DhcpServiceApi client = new DhcpServiceApi(restClient);
+    final CountDownLatch latch = new CountDownLatch(1);
+    client.getDhcpRelayService("id",
+        new com.google.common.util.concurrent.FutureCallback<DhcpRelayService>() {
+          @Override
+          public void onSuccess(DhcpRelayService result) {
+            assertEquals(result, mockResponse);
+            latch.countDown();
+          }
+
+          @Override
+          public void onFailure(Throwable t) {
+            fail(t.toString());
+            latch.countDown();
+          }
+        });
+
+    assertThat(latch.await(COUNTDOWNLATCH_AWAIT_TIMEOUT, TimeUnit.SECONDS), is(true));
+  }
+
+  @Test
+  public void testDeleteDhcpRelayService() throws IOException, InterruptedException {
+    setupMocks(null, HttpStatus.SC_OK);
+
+    DhcpServiceApi client = new DhcpServiceApi(restClient);
+    final CountDownLatch latch = new CountDownLatch(1);
+    client.deleteDhcpRelayService("id",
         new com.google.common.util.concurrent.FutureCallback<Void>() {
           @Override
           public void onSuccess(Void result) {
