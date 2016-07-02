@@ -24,6 +24,11 @@ PHOTON_CONTROLLER_CORE_BIN="{{{PHOTON-CONTROLLER-CORE_INSTALL_DIRECTORY}}}/bin"
 PHOTON_CONTROLLER_CORE_CONFIG="$CONFIG_PATH/photon-controller-core.yml"
 SCRIPT_LOG_DIRECTORY="{{{LOG_DIRECTORY}}}/script_logs"
 
+# Add java home and other required binaries to path. We need this here even though we are doing this during container
+# build because systemd service does not seem to honor the environment variables set at container build time.
+export JAVA_HOME="/usr/java/default"
+export PATH=$PATH:$JAVA_HOME/bin:/opt/esxcli:/opt/vmware/bin:/opt/likewise/bin
+
 # Create script log directory
 mkdir -p $SCRIPT_LOG_DIRECTORY
 
@@ -57,7 +62,10 @@ fi
 #
 mkdir -p $CONFIG_PATH/assets
 mv $API_SWAGGER_JS $CONFIG_PATH/assets
-$JAVA_HOME/bin/jar uf ${API_LIB}/swagger-ui*.jar -C $CONFIG_PATH assets/$API_SWAGGER_JS_FILE
+
+# Adding the modified swagger js file to swagger-ui*.jar is removed for now because it no longer works with our move
+# to installing JRE instead of JDK. This causes the script to fail and exit early when run as a systemd service.
+# TODO(ashokc): fix this as a part of getting swagger UI to work in auth enabled deployment
 
 #
 # Start service
