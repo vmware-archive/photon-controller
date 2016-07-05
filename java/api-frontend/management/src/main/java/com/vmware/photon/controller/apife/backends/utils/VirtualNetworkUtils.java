@@ -33,6 +33,12 @@ public class VirtualNetworkUtils {
     virtualNetwork.setState(virtualNetworkState.state);
     virtualNetwork.setRoutingType(virtualNetworkState.routingType);
     virtualNetwork.setIsDefault(virtualNetworkState.isDefault);
+    virtualNetwork.setCidr(virtualNetworkState.cidr);
+    virtualNetwork.setLowIpDynamic(virtualNetworkState.lowIpDynamic);
+    virtualNetwork.setHighIpDynamic(virtualNetworkState.highIpDynamic);
+    virtualNetwork.setLowIpStatic(virtualNetworkState.lowIpStatic);
+    virtualNetwork.setHighIpStatic(virtualNetworkState.highIpStatic);
+    virtualNetwork.setReservedIpList(virtualNetworkState.reservedIpList);
 
     return virtualNetwork;
   }
