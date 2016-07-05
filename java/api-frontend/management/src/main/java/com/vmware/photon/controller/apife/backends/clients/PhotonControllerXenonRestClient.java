@@ -69,6 +69,22 @@ public class PhotonControllerXenonRestClient extends XenonRestClient {
   }
 
   @Override
+  public Operation post(String serviceSelfLink, ServiceDocument body, long timeOutInMicros) {
+
+    try {
+      return super.post(serviceSelfLink, body, timeOutInMicros);
+    } catch (DocumentNotFoundException documentNotFoundException) {
+      throw new XenonRuntimeException(documentNotFoundException);
+    } catch (BadRequestException badRequestException) {
+      throw new XenonRuntimeException(badRequestException);
+    } catch (TimeoutException timeoutException) {
+      throw new RuntimeException(timeoutException);
+    } catch (InterruptedException interruptedException) {
+      throw new RuntimeException(interruptedException);
+    }
+  }
+
+  @Override
   public Operation get(String documentSelfLink) throws DocumentNotFoundException {
     try {
       return super.get(documentSelfLink);
