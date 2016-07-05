@@ -96,14 +96,18 @@ module EsxCloud
 
           if oauth_enabled
             tenant = ENV["PHOTON_AUTH_SERVER_TENANT"]
+
             groups = ENV["PHOTON_AUTH_ADMIN_GROUPS"].split(",") if ENV["PHOTON_AUTH_ADMIN_GROUPS"]
+            groups ||= []
+            groups << "#{tenant}\\Administrators"
+
             settings.merge!(
               oAuthTenantName: tenant,
               oAuthUserName: ENV["PHOTON_USERNAME_ADMIN"],
               oAuthPassword: ENV["PHOTON_PASSWORD_ADMIN"],
               oAuthServerAddress: ENV["PHOTON_AUTH_LS_ENDPOINT"] || ip,
               oAuthServerPort: ENV["PHOTON_AUTH_SERVER_PORT"] || "443",
-              oAuthSecurityGroups: groups || []
+              oAuthSecurityGroups: groups
             )
           end
 
