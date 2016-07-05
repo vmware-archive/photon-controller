@@ -15,10 +15,10 @@ package com.vmware.photon.controller.apife.commands.steps;
 
 import com.vmware.photon.controller.api.DiskState;
 import com.vmware.photon.controller.api.EphemeralDisk;
-import com.vmware.photon.controller.api.Network;
-import com.vmware.photon.controller.api.NetworkState;
 import com.vmware.photon.controller.api.PersistentDisk;
 import com.vmware.photon.controller.api.QuotaUnit;
+import com.vmware.photon.controller.api.Subnet;
+import com.vmware.photon.controller.api.SubnetState;
 import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.api.VmState;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
@@ -220,11 +220,11 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
     networkEntity.setId(networkId);
     networkBackend = mock(NetworkBackend.class);
 
-    Network network = new Network();
-    network.setId(networkId);
-    network.setPortGroups(ImmutableList.of("P1", "P2"));
-    network.setState(NetworkState.READY);
-    network.setName("public");
+    Subnet subnet = new Subnet();
+    subnet.setId(networkId);
+    subnet.setPortGroups(ImmutableList.of("P1", "P2"));
+    subnet.setState(SubnetState.READY);
+    subnet.setName("public");
 
     when(taskCommand.getHostClient()).thenReturn(hostClient);
     when(taskCommand.getPhotonControllerXenonRestClient()).thenReturn(photonControllerXenonRestClient);
@@ -232,7 +232,7 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
     when(flavorBackend.getEntityById(diskFlavorEntity.getId())).thenReturn(diskFlavorEntity);
     when(taskCommand.getApiFeXenonRestClient()).thenReturn(apiFeXenonRestClient);
     when(networkBackend.getDefault()).thenReturn(networkEntity);
-    when(networkBackend.toApiRepresentation(networkId)).thenReturn(network);
+    when(networkBackend.toApiRepresentation(networkId)).thenReturn(subnet);
   }
 
   @Test
@@ -650,12 +650,12 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
   @Test
   public void testCreateNetworkConstraints() throws Throwable {
     String networkId = "n1";
-    Network network = new Network();
-    network.setId(networkId);
-    network.setPortGroups(ImmutableList.of("P1", "P2"));
-    network.setState(NetworkState.READY);
-    network.setName("public");
-    when(networkBackend.toApiRepresentation(networkId)).thenReturn(network);
+    Subnet subnet = new Subnet();
+    subnet.setId(networkId);
+    subnet.setPortGroups(ImmutableList.of("P1", "P2"));
+    subnet.setState(SubnetState.READY);
+    subnet.setName("public");
+    when(networkBackend.toApiRepresentation(networkId)).thenReturn(subnet);
 
     vm.setNetworks(ImmutableList.of(networkId));
 
@@ -706,12 +706,12 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
     networkBackend = mock(NetworkBackend.class);
     when(networkBackend.getDefault()).thenReturn(networkEntity);
 
-    Network network = new Network();
-    network.setId(networkId);
-    network.setPortGroups(ImmutableList.of("P1", "P2"));
-    network.setState(NetworkState.READY);
-    network.setName("public");
-    when(networkBackend.toApiRepresentation(networkId)).thenReturn(network);
+    Subnet subnet = new Subnet();
+    subnet.setId(networkId);
+    subnet.setPortGroups(ImmutableList.of("P1", "P2"));
+    subnet.setState(SubnetState.READY);
+    subnet.setName("public");
+    when(networkBackend.toApiRepresentation(networkId)).thenReturn(subnet);
 
     PlacementTask placementTask = generateResourcePlacementList();
     placementTask.resource.getPlacement_list().addToPlacements(

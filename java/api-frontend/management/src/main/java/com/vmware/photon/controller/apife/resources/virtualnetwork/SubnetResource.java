@@ -14,7 +14,7 @@
 package com.vmware.photon.controller.apife.resources.virtualnetwork;
 
 import com.vmware.photon.controller.api.Task;
-import com.vmware.photon.controller.api.VirtualNetwork;
+import com.vmware.photon.controller.api.VirtualSubnet;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.clients.VirtualNetworkFeClient;
 import com.vmware.photon.controller.apife.resources.routes.SubnetResourceRoutes;
@@ -57,7 +57,7 @@ public class SubnetResource {
   }
 
   @GET
-  @ApiOperation(value = "Find Subnet by id", response = VirtualNetwork.class)
+  @ApiOperation(value = "Find Subnet by id", response = VirtualSubnet.class)
   @ApiResponses(value = {
       @ApiResponse(code = 200, message = "Subnet object")
   })

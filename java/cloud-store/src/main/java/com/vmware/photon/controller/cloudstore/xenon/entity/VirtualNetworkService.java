@@ -13,8 +13,8 @@
 
 package com.vmware.photon.controller.cloudstore.xenon.entity;
 
-import com.vmware.photon.controller.api.NetworkState;
 import com.vmware.photon.controller.api.RoutingType;
+import com.vmware.photon.controller.api.SubnetState;
 import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
@@ -121,7 +121,7 @@ public class VirtualNetworkService extends StatefulService {
     public String description;
 
     @NotNull
-    public NetworkState state;
+    public SubnetState state;
 
     /**
      * ID of the parent object this virtual network belongs to.

@@ -13,8 +13,8 @@
 
 package com.vmware.photon.controller.apife.commands.steps;
 
-import com.vmware.photon.controller.api.Network;
 import com.vmware.photon.controller.api.ResourceList;
+import com.vmware.photon.controller.api.Subnet;
 import com.vmware.photon.controller.api.VmState;
 import com.vmware.photon.controller.api.common.exceptions.external.UnsupportedOperationException;
 import com.vmware.photon.controller.apife.backends.EntityLockBackend;
@@ -175,12 +175,12 @@ public class VmGetNetworksStepCmdTest extends PowerMockTestCase {
         .thenReturn(vmNetworkResponse);
 
     vmNetworks.get(0).setNetwork("PG1");
-    Network network = new Network();
-    network.setId("network-id");
+    Subnet subnet = new Subnet();
+    subnet.setId("network-id");
 
     when(networkBackend.filter(Optional.<String>absent(), Optional.of("PG1"),
         Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE)))
-        .thenReturn(new ResourceList<>(ImmutableList.of(network)));
+        .thenReturn(new ResourceList<>(ImmutableList.of(subnet)));
     VmGetNetworksStepCmd command = getCommand();
     command.execute();
 

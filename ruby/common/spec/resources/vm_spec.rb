@@ -40,7 +40,7 @@ describe EsxCloud::Vm do
         ],
         environment: {},
         affinities: [],
-        networks: []
+        subnets: []
     }
 
     expect(@client).to receive(:create_vm).with("foo", spec_hash)

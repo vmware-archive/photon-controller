@@ -22,11 +22,11 @@ import com.vmware.photon.controller.api.ImageCreateSpec;
 import com.vmware.photon.controller.api.ImageState;
 import com.vmware.photon.controller.api.Iso;
 import com.vmware.photon.controller.api.LocalitySpec;
-import com.vmware.photon.controller.api.NetworkState;
 import com.vmware.photon.controller.api.Operation;
 import com.vmware.photon.controller.api.PersistentDisk;
 import com.vmware.photon.controller.api.QuotaLineItem;
 import com.vmware.photon.controller.api.ResourceList;
+import com.vmware.photon.controller.api.SubnetState;
 import com.vmware.photon.controller.api.Tag;
 import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.api.VmCreateSpec;
@@ -354,7 +354,7 @@ public class VmXenonBackend implements VmBackend {
     }
 
     for (NetworkEntity network : networkList) {
-      if (NetworkState.PENDING_DELETE.equals(network.getState())) {
+      if (SubnetState.PENDING_DELETE.equals(network.getState())) {
         networkBackend.tombstone(network);
       }
     }
@@ -752,7 +752,7 @@ public class VmXenonBackend implements VmBackend {
       }
     }
 
-    vm.networks = spec.getNetworks();
+    vm.networks = spec.getSubnets();
 
     ImageEntity image = imageBackend.findById(spec.getSourceImageId());
 
