@@ -3,5 +3,5 @@
     "description": "desc",
     "routingType": "ROUTED",
     "size": 8,
-    "reservedStaticIpSize": 4
+    "reservedStaticIpSize": 2
 }

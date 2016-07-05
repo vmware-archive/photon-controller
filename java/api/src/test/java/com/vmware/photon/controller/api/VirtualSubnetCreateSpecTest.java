@@ -50,11 +50,13 @@ public class VirtualSubnetCreateSpecTest {
     public Object[][] getValidVirtualNetworkData() {
       return new Object[][]{
           {
-              new VirtualNetworkCreateSpecBuilder().name("vn1").routingType(RoutingType.ROUTED).size(8).build()
+              new VirtualNetworkCreateSpecBuilder().name("vn1").routingType(RoutingType.ROUTED)
+                  .size(VirtualNetworkCreateSpec.DEFAULT_MIN_NETWORK_SIZE).build()
           },
           {
               new VirtualNetworkCreateSpecBuilder().name("vn1").description("desc")
-                  .routingType(RoutingType.ROUTED).size(8).reservedStaticIpSize(4).build()
+                  .routingType(RoutingType.ROUTED).size(VirtualNetworkCreateSpec.DEFAULT_MIN_NETWORK_SIZE)
+                  .reservedStaticIpSize(2).build()
           }
       };
     }
@@ -73,25 +75,25 @@ public class VirtualSubnetCreateSpecTest {
           {
               new VirtualNetworkCreateSpecBuilder().build(),
               ImmutableList.of("name may not be null (was null)", "routingType may not be null (was null)",
-                  "size is not power of two (was 0)", "size must be greater than or equal to 1 (was 0)")
+                  "size is not power of two (was 0)", "size must be greater than or equal to 8 (was 0)")
           },
           {
               new VirtualNetworkCreateSpecBuilder().name("").build(),
               ImmutableList.of("name : The specific virtual network name does not match pattern: " +
                       "^[a-zA-Z][a-zA-Z0-9-]* (was )", "routingType may not be null (was null)",
-                      "size is not power of two (was 0)", "size must be greater than or equal to 1 (was 0)")
+                      "size is not power of two (was 0)", "size must be greater than or equal to 8 (was 0)")
           },
           {
               new VirtualNetworkCreateSpecBuilder().name("1a").build(),
               ImmutableList.of("name : The specific virtual network name does not match pattern: " +
                       "^[a-zA-Z][a-zA-Z0-9-]* (was 1a)", "routingType may not be null (was null)",
-                      "size is not power of two (was 0)", "size must be greater than or equal to 1 (was 0)")
+                      "size is not power of two (was 0)", "size must be greater than or equal to 8 (was 0)")
           },
           {
               new VirtualNetworkCreateSpecBuilder().name("1a").size(3).build(),
               ImmutableList.of("name : The specific virtual network name does not match pattern: " +
                       "^[a-zA-Z][a-zA-Z0-9-]* (was 1a)", "routingType may not be null (was null)",
-                      "size is not power of two (was 3)")
+                      "size is not power of two (was 3)", "size must be greater than or equal to 8 (was 3)")
           }
       };
     }
@@ -123,9 +125,10 @@ public class VirtualSubnetCreateSpecTest {
               "VirtualNetworkCreateSpec{name=vn1, description=desc, routingType=ROUTED, size=0, " +
                   "reservedStaticIpSize=0}"},
           {new VirtualNetworkCreateSpecBuilder().name("vn1").description("desc")
-              .routingType(RoutingType.ROUTED).size(8).reservedStaticIpSize(4).build(),
+              .routingType(RoutingType.ROUTED).size(VirtualNetworkCreateSpec.DEFAULT_MIN_NETWORK_SIZE)
+              .reservedStaticIpSize(2).build(),
               "VirtualNetworkCreateSpec{name=vn1, description=desc, routingType=ROUTED, size=8, " +
-                  "reservedStaticIpSize=4}"}
+                  "reservedStaticIpSize=2}"}
       };
     }
   }
@@ -141,8 +144,8 @@ public class VirtualSubnetCreateSpecTest {
           .name("vn1")
           .description("desc")
           .routingType(RoutingType.ROUTED)
-          .size(8)
-          .reservedStaticIpSize(4)
+          .size(VirtualNetworkCreateSpec.DEFAULT_MIN_NETWORK_SIZE)
+          .reservedStaticIpSize(2)
           .build();
       String json = JsonHelpers.jsonFixture("fixtures/virtual-network-create-spec.json");
 
