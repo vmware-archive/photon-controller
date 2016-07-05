@@ -89,6 +89,7 @@ public class TestHelper {
     return getHostServiceStartState(ImmutableSet.of(UsageTag.MGMT.name(), UsageTag.CLOUD.name()));
   }
 
+
   public static <T extends ServiceDocument> void testExpirationOnDelete(
       XenonRestClient xenonRestClient,
       BasicServiceHost host,
@@ -106,7 +107,7 @@ public class TestHelper {
     T createdState = result.getBody(stateType);
     assertThat(createdState.documentExpirationTimeMicros, is(currentStateExpiration));
 
-    T savedState = host.getServiceState(stateType, createdState.documentSelfLink);
+    T savedState = xenonRestClient.get(createdState.documentSelfLink).getBody(stateType);
     assertThat(savedState.documentExpirationTimeMicros, is(currentStateExpiration));
 
     T deleteState = stateType.newInstance();

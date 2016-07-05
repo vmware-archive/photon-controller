@@ -15,6 +15,8 @@ package com.vmware.photon.controller.cloudstore.xenon.entity;
 
 import com.vmware.photon.controller.api.DeploymentState;
 import com.vmware.photon.controller.api.StatsStoreType;
+import com.vmware.photon.controller.cloudstore.SystemConfig;
+import com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment;
 import com.vmware.photon.controller.cloudstore.xenon.helpers.TestHelper;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.common.xenon.BasicServiceHost;
@@ -23,7 +25,6 @@ import com.vmware.photon.controller.common.xenon.XenonRestClient;
 import com.vmware.photon.controller.common.xenon.exceptions.BadRequestException;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
-import com.vmware.xenon.common.UriUtils;
 
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
@@ -91,29 +92,33 @@ public class DeploymentServiceTest {
   public class HandleStartTest {
 
     private DeploymentService deploymentService;
-    private BasicServiceHost testHost;
+    private TestEnvironment testEnvironment;
 
     @BeforeMethod
     public void setUpTest() throws Throwable {
       deploymentService = new DeploymentService();
-      testHost = BasicServiceHost.create(
-          null, BasicServiceHost.SERVICE_URI, 10, 10);
+      testEnvironment = TestEnvironment.create(1);
+      SystemConfig.createInstance(testEnvironment.getHosts()[0]);
     }
 
     @AfterMethod
     public void tearDownTest() throws Throwable {
-      if (testHost != null) {
-        BasicServiceHost.destroy(testHost);
+      if (testEnvironment != null) {
+        testEnvironment.stop();
+        testEnvironment = null;
       }
     }
 
     @Test
     public void testStartState() throws Throwable {
       DeploymentService.State startState = buildServiceStartState();
-      Operation startOperation = testHost.startServiceSynchronously(deploymentService, startState);
+      Operation startOperation = testEnvironment.sendPostAndWait(DeploymentServiceFactory.SELF_LINK, startState);
       assertThat(startOperation.getStatusCode(), is(200));
 
-      DeploymentService.State savedState = testHost.getServiceState(DeploymentService.State.class);
+      DeploymentService.State createdState = startOperation.getBody(DeploymentService.State.class);
+
+      DeploymentService.State savedState = testEnvironment.getServiceState(createdState.documentSelfLink,
+          DeploymentService.State.class);
       assertThat(savedState.imageDataStoreNames, is(Collections.singleton("datastore1")));
       assertThat(savedState.imageDataStoreUsedForVMs, is(true));
     }
@@ -123,7 +128,7 @@ public class DeploymentServiceTest {
       DeploymentService.State startState = buildServiceStartState();
       Field declaredField = startState.getClass().getDeclaredField(fieldName);
       declaredField.set(startState, null);
-      testHost.startServiceSynchronously(deploymentService, startState);
+      testEnvironment.sendPostAndWait(DeploymentServiceFactory.SELF_LINK, startState);
     }
 
     @Test
@@ -133,11 +138,13 @@ public class DeploymentServiceTest {
       startState.dhcpVmConfiguration.vmImageId = UUID.randomUUID().toString();
       startState.dhcpVmConfiguration.vmFlavorId = UUID.randomUUID().toString();
       startState.dhcpVmConfiguration.vmDiskFlavorId = UUID.randomUUID().toString();
-      Operation startOperation = testHost.startServiceSynchronously(deploymentService, startState);
+      Operation startOperation = testEnvironment.sendPostAndWait(DeploymentServiceFactory.SELF_LINK, startState);
 
       assertThat(startOperation.getStatusCode(), is(200));
+      DeploymentService.State createdState = startOperation.getBody(DeploymentService.State.class);
 
-      DeploymentService.State savedState = testHost.getServiceState(DeploymentService.State.class);
+      DeploymentService.State savedState = testEnvironment.getServiceState(createdState.documentSelfLink,
+          DeploymentService.State.class);
       assertThat(savedState.dhcpVmConfiguration.vmImageId, is(startState.dhcpVmConfiguration.vmImageId));
       assertThat(savedState.dhcpVmConfiguration.vmFlavorId, is(startState.dhcpVmConfiguration.vmFlavorId));
       assertThat(savedState.dhcpVmConfiguration.vmDiskFlavorId, is(startState.dhcpVmConfiguration.vmDiskFlavorId));
@@ -148,7 +155,7 @@ public class DeploymentServiceTest {
       DeploymentService.State startState = buildServiceStartState();
       startState.dhcpVmConfiguration = new DeploymentService.DhcpVmConfiguration();
       try {
-        testHost.startServiceSynchronously(deploymentService, startState);
+        testEnvironment.sendPostAndWait(DeploymentServiceFactory.SELF_LINK, startState);
         Assert.fail("Service start should fail with incomplete dhcp configuration");
       } catch (BadRequestException be) {
         assertThat(be.getMessage(),
@@ -158,7 +165,7 @@ public class DeploymentServiceTest {
       deploymentService = new DeploymentService();
       startState.dhcpVmConfiguration.vmImageId = UUID.randomUUID().toString();
       try {
-        testHost.startServiceSynchronously(deploymentService, startState);
+        testEnvironment.sendPostAndWait(DeploymentServiceFactory.SELF_LINK, startState);
         Assert.fail("Service start should fail with incomplete dhcp configuration");
       } catch (BadRequestException be) {
         assertThat(be.getMessage(),
@@ -168,7 +175,7 @@ public class DeploymentServiceTest {
       deploymentService = new DeploymentService();
       startState.dhcpVmConfiguration.vmFlavorId = UUID.randomUUID().toString();
       try {
-        testHost.startServiceSynchronously(deploymentService, startState);
+        testEnvironment.sendPostAndWait(DeploymentServiceFactory.SELF_LINK, startState);
         Assert.fail("Service start should fail with incomplete dhcp configuration");
       } catch (BadRequestException be) {
         assertThat(be.getMessage(),
@@ -177,11 +184,14 @@ public class DeploymentServiceTest {
 
       deploymentService = new DeploymentService();
       startState.dhcpVmConfiguration.vmDiskFlavorId = UUID.randomUUID().toString();
-      Operation startOperation = testHost.startServiceSynchronously(deploymentService, startState);
+      Operation startOperation = testEnvironment.sendPostAndWait(DeploymentServiceFactory.SELF_LINK, startState);
 
       assertThat(startOperation.getStatusCode(), is(200));
 
-      DeploymentService.State savedState = testHost.getServiceState(DeploymentService.State.class);
+      DeploymentService.State createdState = startOperation.getBody(DeploymentService.State.class);
+
+      DeploymentService.State savedState = testEnvironment.getServiceState(createdState.documentSelfLink,
+          DeploymentService.State.class);
       assertThat(savedState.dhcpVmConfiguration.vmImageId, is(startState.dhcpVmConfiguration.vmImageId));
       assertThat(savedState.dhcpVmConfiguration.vmFlavorId, is(startState.dhcpVmConfiguration.vmFlavorId));
       assertThat(savedState.dhcpVmConfiguration.vmDiskFlavorId, is(startState.dhcpVmConfiguration.vmDiskFlavorId));
@@ -203,19 +213,20 @@ public class DeploymentServiceTest {
   public class HandlePatchTest {
 
     private DeploymentService deploymentService;
-    private BasicServiceHost testHost;
+    private TestEnvironment testEnvironment;
 
     @BeforeMethod
     public void setUpTest() throws Throwable {
       deploymentService = new DeploymentService();
-      testHost = BasicServiceHost.create(
-          null, BasicServiceHost.SERVICE_URI, 10, 10);
+      testEnvironment = TestEnvironment.create(1);
+      SystemConfig.createInstance(testEnvironment.getHosts()[0]);
     }
 
     @AfterMethod
     public void tearDownTest() throws Throwable {
-      if (testHost != null) {
-        BasicServiceHost.destroy(testHost);
+      if (testEnvironment != null) {
+        testEnvironment.stop();
+        testEnvironment = null;
       }
     }
 
@@ -228,8 +239,10 @@ public class DeploymentServiceTest {
       final StatsStoreType statsStoreType = StatsStoreType.GRAPHITE;
 
       DeploymentService.State startState = buildServiceStartState();
-      Operation startOperation = testHost.startServiceSynchronously(deploymentService, startState);
+      Operation startOperation = testEnvironment.sendPostAndWait(DeploymentServiceFactory.SELF_LINK, startState);
       assertThat(startOperation.getStatusCode(), is(200));
+
+      DeploymentService.State createState = startOperation.getBody(DeploymentService.State.class);
 
       DeploymentService.State patchState = new DeploymentService.State();
       patchState.oAuthSwaggerLoginEndpoint = lotusLoginEndpoint;
@@ -241,13 +254,10 @@ public class DeploymentServiceTest {
       patchState.statsStorePort = statsStorePort;
       patchState.statsStoreType = statsStoreType;
 
-      Operation patchOperation = Operation
-          .createPatch(UriUtils.buildUri(testHost, BasicServiceHost.SERVICE_URI, null))
-          .setBody(patchState);
+      testEnvironment.sendPatchAndWait(createState.documentSelfLink, patchState);
 
-      testHost.sendRequestAndWait(patchOperation);
-
-      DeploymentService.State currentState = testHost.getServiceState(DeploymentService.State.class);
+      DeploymentService.State currentState = testEnvironment.getServiceState(createState.documentSelfLink,
+          DeploymentService.State.class);
       assertThat(currentState.oAuthSwaggerLoginEndpoint, is(lotusLoginEndpoint));
       assertThat(currentState.oAuthSwaggerLogoutEndpoint, is(lotusLogoutEndpoint));
       assertThat(currentState.oAuthMgmtUiLoginEndpoint, is(lotusLoginEndpoint));
@@ -264,27 +274,24 @@ public class DeploymentServiceTest {
       final String lightwaveAdminUsername = "NonAdministrator";
       final String lightwaveAdminPassword = "SomePassword22";
       DeploymentService.State startState = buildServiceStartState();
-      Operation startOperation = testHost.startServiceSynchronously(deploymentService, startState);
+      Operation startOperation = testEnvironment.sendPostAndWait(DeploymentServiceFactory.SELF_LINK, startState);
       assertThat(startOperation.getStatusCode(), is(200));
 
       DeploymentService.State patchState = new DeploymentService.State();
       patchState.oAuthUserName = lightwaveAdminUsername;
       patchState.oAuthPassword = lightwaveAdminPassword;
 
-      Operation patchOperation = Operation
-          .createPatch(UriUtils.buildUri(testHost, BasicServiceHost.SERVICE_URI, null))
-          .setBody(patchState);
-
-      testHost.sendRequestAndWait(patchOperation);
+      DeploymentService.State createState = startOperation.getBody(DeploymentService.State.class);
+      testEnvironment.sendPatchAndWait(createState.documentSelfLink, patchState);
     }
 
     @Test
     public void testPatchWithDhcpConfiguration() throws Throwable {
       DeploymentService.State startState = buildServiceStartState();
-      Operation startOperation = testHost.startServiceSynchronously(deploymentService, startState);
+      Operation startOperation = testEnvironment.sendPostAndWait(DeploymentServiceFactory.SELF_LINK, startState);
       assertThat(startOperation.getStatusCode(), is(200));
 
-      DeploymentService.State savedState = testHost.getServiceState(DeploymentService.State.class);
+      DeploymentService.State savedState = startOperation.getBody(DeploymentService.State.class);
       assertThat(savedState.dhcpVmConfiguration, is(nullValue()));
 
       DeploymentService.State patchState = new DeploymentService.State();
@@ -293,13 +300,9 @@ public class DeploymentServiceTest {
       patchState.dhcpVmConfiguration.vmFlavorId = UUID.randomUUID().toString();
       patchState.dhcpVmConfiguration.vmDiskFlavorId = UUID.randomUUID().toString();
 
-      Operation patchOperation = Operation
-          .createPatch(UriUtils.buildUri(testHost, BasicServiceHost.SERVICE_URI, null))
-          .setBody(patchState);
+      Operation patchOperation = testEnvironment.sendPatchAndWait(savedState.documentSelfLink, patchState);
 
-      testHost.sendRequestAndWait(patchOperation);
-
-      savedState = testHost.getServiceState(DeploymentService.State.class);
+      savedState = patchOperation.getBody(DeploymentService.State.class);
       assertThat(savedState.dhcpVmConfiguration.vmImageId, is(patchState.dhcpVmConfiguration.vmImageId));
       assertThat(savedState.dhcpVmConfiguration.vmFlavorId, is(patchState.dhcpVmConfiguration.vmFlavorId));
       assertThat(savedState.dhcpVmConfiguration.vmDiskFlavorId, is(patchState.dhcpVmConfiguration.vmDiskFlavorId));
@@ -309,20 +312,17 @@ public class DeploymentServiceTest {
     public void testPatchWithIncompleteDhcpConfiguration() throws Throwable {
 
       DeploymentService.State startState = buildServiceStartState();
-      Operation startOperation = testHost.startServiceSynchronously(deploymentService, startState);
+      Operation startOperation = testEnvironment.sendPostAndWait(DeploymentServiceFactory.SELF_LINK, startState);
       assertThat(startOperation.getStatusCode(), is(200));
 
-      DeploymentService.State savedState = testHost.getServiceState(DeploymentService.State.class);
+      DeploymentService.State savedState = startOperation.getBody(DeploymentService.State.class);
       assertThat(savedState.dhcpVmConfiguration, is(nullValue()));
 
       DeploymentService.State patchState = new DeploymentService.State();
       patchState.dhcpVmConfiguration = new DeploymentService.DhcpVmConfiguration();
       try {
-        Operation patchOperation = Operation
-            .createPatch(UriUtils.buildUri(testHost, BasicServiceHost.SERVICE_URI, null))
-            .setBody(patchState);
+        testEnvironment.sendPatchAndWait(savedState.documentSelfLink, patchState);
 
-        testHost.sendRequestAndWait(patchOperation);
         Assert.fail("Service patch should fail with incomplete dhcp configuration");
       } catch (BadRequestException be) {
         assertThat(be.getMessage(),
@@ -331,11 +331,7 @@ public class DeploymentServiceTest {
 
       patchState.dhcpVmConfiguration.vmImageId = UUID.randomUUID().toString();
       try {
-        Operation patchOperation = Operation
-            .createPatch(UriUtils.buildUri(testHost, BasicServiceHost.SERVICE_URI, null))
-            .setBody(patchState);
-
-        testHost.sendRequestAndWait(patchOperation);
+        testEnvironment.sendPatchAndWait(savedState.documentSelfLink, patchState);
         Assert.fail("Service patch should fail with incomplete dhcp configuration");
       } catch (BadRequestException be) {
         assertThat(be.getMessage(),
@@ -344,11 +340,7 @@ public class DeploymentServiceTest {
 
       patchState.dhcpVmConfiguration.vmFlavorId = UUID.randomUUID().toString();
       try {
-        Operation patchOperation = Operation
-            .createPatch(UriUtils.buildUri(testHost, BasicServiceHost.SERVICE_URI, null))
-            .setBody(patchState);
-
-        testHost.sendRequestAndWait(patchOperation);
+        testEnvironment.sendPatchAndWait(savedState.documentSelfLink, patchState);
         Assert.fail("Service patch should fail with incomplete dhcp configuration");
       } catch (BadRequestException be) {
         assertThat(be.getMessage(),
@@ -356,15 +348,11 @@ public class DeploymentServiceTest {
       }
 
       patchState.dhcpVmConfiguration.vmDiskFlavorId = UUID.randomUUID().toString();
-      Operation patchOperation = Operation
-          .createPatch(UriUtils.buildUri(testHost, BasicServiceHost.SERVICE_URI, null))
-          .setBody(patchState);
-
-      patchOperation = testHost.sendRequestAndWait(patchOperation);
+      Operation patchOperation = testEnvironment.sendPatchAndWait(savedState.documentSelfLink, patchState);
 
       assertThat(patchOperation.getStatusCode(), is(200));
 
-      savedState = testHost.getServiceState(DeploymentService.State.class);
+      savedState = patchOperation.getBody(DeploymentService.State.class);
       assertThat(savedState.dhcpVmConfiguration.vmImageId, is(patchState.dhcpVmConfiguration.vmImageId));
       assertThat(savedState.dhcpVmConfiguration.vmFlavorId, is(patchState.dhcpVmConfiguration.vmFlavorId));
       assertThat(savedState.dhcpVmConfiguration.vmDiskFlavorId, is(patchState.dhcpVmConfiguration.vmDiskFlavorId));
@@ -380,6 +368,7 @@ public class DeploymentServiceTest {
     private BasicServiceHost host;
     private DeploymentService service;
     private DeploymentService.State testState;
+    private TestEnvironment testEnvironment;
 
     @BeforeMethod
     public void setUp() throws Throwable {
@@ -389,13 +378,15 @@ public class DeploymentServiceTest {
           DeploymentServiceFactory.SELF_LINK,
           10, 10);
 
+      testEnvironment = TestEnvironment.create(1);
+      SystemConfig.createInstance(testEnvironment.getHosts()[0]);
       StaticServerSet serverSet = new StaticServerSet(
-          new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
+          new InetSocketAddress(testEnvironment.getHosts()[0].getPreferredAddress(),
+              testEnvironment.getHosts()[0].getPort()));
       xenonRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
       xenonRestClient.start();
 
       testState = buildServiceStartState();
-
       host.startServiceSynchronously(new DeploymentServiceFactory(), null);
     }
 
@@ -403,6 +394,10 @@ public class DeploymentServiceTest {
     public void tearDown() throws Throwable {
       if (host != null) {
         BasicServiceHost.destroy(host);
+      }
+      if (testEnvironment != null) {
+        testEnvironment.stop();
+        testEnvironment = null;
       }
 
       service = null;
