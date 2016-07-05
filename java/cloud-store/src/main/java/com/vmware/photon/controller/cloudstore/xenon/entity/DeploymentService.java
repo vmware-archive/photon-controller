@@ -85,7 +85,7 @@ public class DeploymentService extends StatefulService {
       InitializationUtils.initialize(startState);
       validateState(startState);
       // handleRequest is not called for the initial creation
-      setSystemConfig(startOperation);
+      setSystemConfig(startState);
       startOperation.complete();
     } catch (IllegalStateException t) {
       ServiceUtils.failOperationAsBadRequest(this, startOperation, t);
@@ -129,30 +129,40 @@ public class DeploymentService extends StatefulService {
     if (request.getAction() != null) {
       Action action = request.getAction();
       if (action == Action.PATCH || action == Action.POST || action == Action.PUT) {
-        State patchState = null;
         if (request.hasBody()) {
-          patchState = request.getBody(State.class);;
-        } else {
-          patchState = getState(request);
-        }
-        if (patchState != null && patchState.state != null) {
-          ServiceUtils.logInfo(this, "SystemConfig update is needed for %s %s", patchState.documentSelfLink,
-              patchState.state);
-          try {
-            validateState(patchState);
-            SystemConfig.getInstance().markPauseStateLocally(patchState);
-          } catch (Throwable t) {
-            ServiceUtils.logSevere(this, t);
-            // We do not fail this here. It will fail when super.handleRequest calls handlePatch
+          State patchState = request.getBody(State.class);
+          if (patchState.state != null) {
+            ServiceUtils.logInfo(this, "SystemConfig update is needed for %s %s", patchState.documentSelfLink,
+                patchState.state);
+            try {
+              validatePatchState(getState(request), patchState);
+              setSystemConfig(patchState);
+            } catch (Throwable t) {
+              ServiceUtils.logSevere(this, t);
+              // We do not fail this here. It will fail when super.handleRequest calls handlePatch
+            }
           }
         }
       }
     }
   }
 
+  private void setSystemConfig(State state) {
+    if (state != null && state.state != null) {
+      ServiceUtils.logInfo(this, "SystemConfig update is set for %s %s", state.documentSelfLink,
+          state.state);
+      if (SystemConfig.getInstance() != null) {
+        SystemConfig.getInstance().markPauseStateLocally(state);
+      } else {
+        ServiceUtils.logInfo(this, "SystemConfig.getInstance is null. Should not happen normally %s %s", state
+                .documentSelfLink, state.state);
+      }
+    }
+  }
+
   @Override
-  public void handleDelete(Operation deleteOperation) {
-    ServiceUtils.expireDocumentOnDelete(this, State.class, deleteOperation);
+  public void handleDelete(Operation deleteOperation){
+      ServiceUtils.expireDocumentOnDelete(this, State.class, deleteOperation);
   }
 
   private void handlePatchUpdateHostListInfo(Operation patchOperation) {
