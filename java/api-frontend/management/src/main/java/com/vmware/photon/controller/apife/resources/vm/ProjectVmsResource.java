@@ -162,9 +162,9 @@ public class ProjectVmsResource {
     }
 
     if (useVirtualNetwork &&
-        (spec.getNetworks() == null ||
-            spec.getNetworks().size() == 0 ||
-            spec.getNetworks().size() > 1)) {
+        (spec.getSubnets() == null ||
+            spec.getSubnets().size() == 0 ||
+            spec.getSubnets().size() > 1)) {
       throw new InvalidVmNetworksSpecException("Cannot put a single VM on 0 or more than one virtual network.");
     }
   }

@@ -24,36 +24,36 @@ import javax.validation.constraints.NotNull;
 import java.util.Objects;
 
 /**
- * VirtualNetwork represents an NSX network returned from api-fe to users.
+ * VirtualNetwork represents an NSX subnet returned from api-fe to users.
  */
-@ApiModel(value = "This class represents an NSX network")
-public class VirtualNetwork extends VisibleModel {
+@ApiModel(value = "This class represents an NSX subnet")
+public class VirtualSubnet extends VisibleModel {
 
-  public static final String KIND = "virtualNetwork";
+  public static final String KIND = "virtualSubnet";
 
   @JsonProperty
-  @ApiModelProperty(value = "kind=\"virtualNetwork\"", required = true)
+  @ApiModelProperty(value = "kind=\"virtualSubnet\"", required = true)
   private String kind = KIND;
 
   @JsonProperty
-  @ApiModelProperty(value = "Description to the virtual network", required = false)
+  @ApiModelProperty(value = "Description to the virtual subnet", required = false)
   private String description;
 
   @JsonProperty
-  @ApiModelProperty(value = "Supplies the state of the network",
+  @ApiModelProperty(value = "Supplies the state of the subnet",
       allowableValues = "CREATING,READY,ERROR,DELETED,PENDING_DELETE",
       required = true)
   @NotNull
-  private NetworkState state;
+  private SubnetState state;
 
   @JsonProperty
-  @ApiModelProperty(value = "Whether allow the VMs on this network to access Internet",
+  @ApiModelProperty(value = "Whether allow the VMs on this subnet to access Internet",
       allowableValues = RoutingType.ALLOWABLE_VALUES, required = true)
   @NotNull
   private RoutingType routingType;
 
   @JsonProperty
-  @ApiModelProperty(value = "Indicates whether the network is default", required = false)
+  @ApiModelProperty(value = "Indicates whether the subnet is default", required = false)
   private Boolean isDefault;
 
   @Override
@@ -69,11 +69,11 @@ public class VirtualNetwork extends VisibleModel {
     this.description = description;
   }
 
-  public NetworkState getState() {
+  public SubnetState getState() {
     return state;
   }
 
-  public void setState(NetworkState state) {
+  public void setState(SubnetState state) {
     this.state = state;
   }
 
@@ -103,7 +103,7 @@ public class VirtualNetwork extends VisibleModel {
       return false;
     }
 
-    VirtualNetwork other = (VirtualNetwork) o;
+    VirtualSubnet other = (VirtualSubnet) o;
 
     return Objects.equals(this.getName(), other.getName())
         && Objects.equals(this.description, other.description)

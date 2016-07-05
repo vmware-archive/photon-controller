@@ -13,8 +13,8 @@
 
 package com.vmware.photon.controller.apibackend.tasks;
 
-import com.vmware.photon.controller.api.NetworkState;
 import com.vmware.photon.controller.api.RoutingType;
+import com.vmware.photon.controller.api.SubnetState;
 import com.vmware.photon.controller.apibackend.helpers.ReflectionUtils;
 import com.vmware.photon.controller.apibackend.helpers.TestEnvironment;
 import com.vmware.photon.controller.apibackend.helpers.TestHost;
@@ -536,7 +536,7 @@ public class DisconnectVmFromSwitchTaskServiceTest {
     private VirtualNetworkService.State startVirtualNetworkService() throws Throwable {
       VirtualNetworkService.State virtualNetwork = new VirtualNetworkService.State();
       virtualNetwork.name = "virtual_network_name";
-      virtualNetwork.state = NetworkState.CREATING;
+      virtualNetwork.state = SubnetState.CREATING;
       virtualNetwork.routingType = RoutingType.ROUTED;
       virtualNetwork.parentId = "parentId";
       virtualNetwork.parentKind = "parentKind";
@@ -551,7 +551,7 @@ public class DisconnectVmFromSwitchTaskServiceTest {
 
       VirtualNetworkService.State createdState = result.getBody(VirtualNetworkService.State.class);
       VirtualNetworkService.State patchState = new VirtualNetworkService.State();
-      patchState.state = NetworkState.READY;
+      patchState.state = SubnetState.READY;
       result = testEnvironment.sendPatchAndWait(createdState.documentSelfLink, patchState);
       assertThat(result.getStatusCode(), is(Operation.STATUS_CODE_OK));
 

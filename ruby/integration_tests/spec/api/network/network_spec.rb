@@ -60,7 +60,7 @@ describe "network", management: true, disable_for_cli_test: true do
 
     context "when name is invalid" do
       it "should fail to create network" do
-        error_msg = "name : The specified network name does not match pattern: ^[a-zA-Z][a-zA-Z0-9-]* (was 1foo)"
+        error_msg = "name : The specified subnet name does not match pattern: ^[a-zA-Z][a-zA-Z0-9-]* (was 1foo)"
 
         spec.name = "1foo"
         begin
@@ -215,7 +215,7 @@ describe "network", management: true, disable_for_cli_test: true do
         rescue EsxCloud::ApiError => e
           expect(e.response_code).to eq 400
           expect(e.errors.size).to eq 1
-          expect(e.errors.first.code).to eq("PortGroupAlreadyAddedToNetwork")
+          expect(e.errors.first.code).to eq("PortGroupAlreadyAddedToSubnet")
           expect(e.errors.first.message).to include(error_msg)
         rescue EsxCloud::CliError => e
           expect(e.output).to include(error_msg)

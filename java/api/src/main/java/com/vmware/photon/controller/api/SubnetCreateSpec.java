@@ -28,25 +28,25 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * A network is created using a JSON payload that maps to this class. From a JSON
- * perspective, this looks like a subset of the {@link Network} class.
+ * A subnet is created using a JSON payload that maps to this class. From a JSON
+ * perspective, this looks like a subset of the {@link Subnet} class.
  */
-@ApiModel(value = "A class used as the payload when creating a network.")
+@ApiModel(value = "A class used as the payload when creating a subnet.")
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class NetworkCreateSpec implements Named {
+public class SubnetCreateSpec implements Named {
 
   @JsonProperty
-  @ApiModelProperty(value = "Name of network", required = true)
+  @ApiModelProperty(value = "Name of subnet", required = true)
   @NotNull
-  @Pattern(regexp = Named.PATTERN, message = ": The specified network name does not match pattern: " + Named.PATTERN)
+  @Pattern(regexp = Named.PATTERN, message = ": The specified subnet name does not match pattern: " + Named.PATTERN)
   private String name;
 
   @JsonProperty
-  @ApiModelProperty(value = "Description of network", required = false)
+  @ApiModelProperty(value = "Description of subnet", required = false)
   private String description;
 
   @JsonProperty
-  @ApiModelProperty(value = "PortGroups associated with network", required = true)
+  @ApiModelProperty(value = "PortGroups associated with subnet", required = true)
   @Size(min = 1)
   @NotNull
   private List<String> portGroups;
@@ -84,7 +84,7 @@ public class NetworkCreateSpec implements Named {
       return false;
     }
 
-    NetworkCreateSpec other = (NetworkCreateSpec) o;
+    SubnetCreateSpec other = (SubnetCreateSpec) o;
 
     return Objects.equals(this.getName(), other.getName()) &&
         Objects.equals(this.getDescription(), other.getDescription()) &&

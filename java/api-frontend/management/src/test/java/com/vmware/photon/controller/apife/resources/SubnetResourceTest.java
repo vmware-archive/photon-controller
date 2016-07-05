@@ -14,7 +14,7 @@
 package com.vmware.photon.controller.apife.resources;
 
 import com.vmware.photon.controller.api.ApiError;
-import com.vmware.photon.controller.api.Network;
+import com.vmware.photon.controller.api.Subnet;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.apife.clients.NetworkFeClient;
 import com.vmware.photon.controller.apife.exceptions.external.NetworkNotFoundException;
@@ -71,20 +71,20 @@ public class SubnetResourceTest extends ResourceTest {
 
   @Test
   public void testGetNetworkById() throws Exception {
-    Network network = new Network();
-    network.setId(networkId);
-    network.setName("network1");
-    network.setPortGroups(ImmutableList.of("PG1", "PG2"));
+    Subnet subnet = new Subnet();
+    subnet.setId(networkId);
+    subnet.setName("network1");
+    subnet.setPortGroups(ImmutableList.of("PG1", "PG2"));
 
-    when(networkFeClient.get(networkId)).thenReturn(network);
+    when(networkFeClient.get(networkId)).thenReturn(subnet);
 
     Response response = client().target(networkRoute).request().get();
     assertThat(response.getStatus(), is(200));
 
-    Network responseNetwork = response.readEntity(Network.class);
-    assertThat(responseNetwork, is(network));
-    assertThat(new URI(responseNetwork.getSelfLink()).isAbsolute(), is(true));
-    assertThat(responseNetwork.getSelfLink().endsWith(networkRoute), is(true));
+    Subnet responseSubnet = response.readEntity(Subnet.class);
+    assertThat(responseSubnet, is(subnet));
+    assertThat(new URI(responseSubnet.getSelfLink()).isAbsolute(), is(true));
+    assertThat(responseSubnet.getSelfLink().endsWith(networkRoute), is(true));
   }
 
   @Test

@@ -18,8 +18,8 @@ import com.vmware.photon.controller.api.Project;
 import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.RoutingType;
 import com.vmware.photon.controller.api.Task;
-import com.vmware.photon.controller.api.VirtualNetwork;
 import com.vmware.photon.controller.api.VirtualNetworkCreateSpec;
+import com.vmware.photon.controller.api.VirtualSubnet;
 import com.vmware.photon.controller.api.common.exceptions.external.ErrorCode;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
@@ -124,100 +124,100 @@ public class ProjectNetworksResourceTest extends ResourceTest {
   @Test
   public void succeedsToListAll() throws Throwable {
     int virtualNetworkNumber = 2;
-    List<VirtualNetwork> expectedVirtualNetworks = new ArrayList<>();
+    List<VirtualSubnet> expectedVirtualSubnets = new ArrayList<>();
     for (int i = 0; i < virtualNetworkNumber; ++i) {
-      VirtualNetwork expectedVirtualNetwork = new VirtualNetwork();
-      expectedVirtualNetwork.setId(UUID.randomUUID().toString());
-      expectedVirtualNetwork.setName("virtualNetwork" + i);
+      VirtualSubnet expectedVirtualSubnet = new VirtualSubnet();
+      expectedVirtualSubnet.setId(UUID.randomUUID().toString());
+      expectedVirtualSubnet.setName("virtualNetwork" + i);
 
-      expectedVirtualNetworks.add(expectedVirtualNetwork);
+      expectedVirtualSubnets.add(expectedVirtualSubnet);
     }
 
     when(frontendClient.list(projectId, Project.KIND, Optional.absent(), Optional.of(1)))
-        .thenReturn(new ResourceList<>(expectedVirtualNetworks));
+        .thenReturn(new ResourceList<>(expectedVirtualSubnets));
 
     Response response = listNetworks(Optional.absent(), Optional.of(1), Optional.absent());
     assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
 
-    ResourceList<VirtualNetwork> virtualNetworks =
-        response.readEntity(new GenericType<ResourceList<VirtualNetwork>>() {
+    ResourceList<VirtualSubnet> virtualNetworks =
+        response.readEntity(new GenericType<ResourceList<VirtualSubnet>>() {
         });
     assertThat(virtualNetworks.getItems().size(), is(virtualNetworkNumber));
     for (int i = 0; i < virtualNetworkNumber; ++i) {
-      VirtualNetwork expectedVirtualNetwork = expectedVirtualNetworks.get(i);
-      VirtualNetwork actualVirtualNetwork = virtualNetworks.getItems().get(i);
-      assertThat(actualVirtualNetwork, is(expectedVirtualNetwork));
+      VirtualSubnet expectedVirtualSubnet = expectedVirtualSubnets.get(i);
+      VirtualSubnet actualVirtualSubnet = virtualNetworks.getItems().get(i);
+      assertThat(actualVirtualSubnet, is(expectedVirtualSubnet));
 
       String apiRoutePath = UriBuilder
           .fromPath(SubnetResourceRoutes.SUBNET_PATH)
-          .build(expectedVirtualNetwork.getId())
+          .build(expectedVirtualSubnet.getId())
           .toString();
-      assertThat(actualVirtualNetwork.getSelfLink().endsWith(apiRoutePath), is(true));
-      assertThat(new URI(actualVirtualNetwork.getSelfLink()).isAbsolute(), is(true));
+      assertThat(actualVirtualSubnet.getSelfLink().endsWith(apiRoutePath), is(true));
+      assertThat(new URI(actualVirtualSubnet.getSelfLink()).isAbsolute(), is(true));
     }
   }
 
   @Test(dataProvider = "listAllWithPageSize")
   public void succeedsToListALlWithPageSize(Optional<Integer> pageSize,
-                                            List<VirtualNetwork> expectedVirtualNetworks) throws Throwable {
+                                            List<VirtualSubnet> expectedVirtualSubnets) throws Throwable {
     when(frontendClient.list(projectId, Project.KIND, Optional.absent(),
         Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE)))
-        .thenReturn(new ResourceList<>(expectedVirtualNetworks, null, null));
-    if (!expectedVirtualNetworks.isEmpty()) {
+        .thenReturn(new ResourceList<>(expectedVirtualSubnets, null, null));
+    if (!expectedVirtualSubnets.isEmpty()) {
       when(frontendClient.list(projectId, Project.KIND, Optional.absent(), Optional.of(1)))
-          .thenReturn(new ResourceList<>(ImmutableList.of(expectedVirtualNetworks.get(0)),
+          .thenReturn(new ResourceList<>(ImmutableList.of(expectedVirtualSubnets.get(0)),
               UUID.randomUUID().toString(), null));
     }
     when(frontendClient.list(projectId, Project.KIND, Optional.absent(), Optional.of(2)))
-        .thenReturn(new ResourceList<>(expectedVirtualNetworks, null, null));
+        .thenReturn(new ResourceList<>(expectedVirtualSubnets, null, null));
     when(frontendClient.list(projectId, Project.KIND, Optional.absent(), Optional.of(3)))
         .thenReturn(new ResourceList<>(Collections.emptyList(), null, null));
 
     Response response = listNetworks(Optional.absent(), pageSize, Optional.absent());
     assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
 
-    ResourceList<VirtualNetwork> virtualNetworks =
-        response.readEntity(new GenericType<ResourceList<VirtualNetwork>>() {
+    ResourceList<VirtualSubnet> virtualNetworks =
+        response.readEntity(new GenericType<ResourceList<VirtualSubnet>>() {
         });
-    assertThat(virtualNetworks.getItems().size(), is(expectedVirtualNetworks.size()));
+    assertThat(virtualNetworks.getItems().size(), is(expectedVirtualSubnets.size()));
     for (int i = 0; i < virtualNetworks.getItems().size(); ++i) {
-      VirtualNetwork expectedVirtualNetwork = expectedVirtualNetworks.get(i);
-      VirtualNetwork actualVirtualNetwork = virtualNetworks.getItems().get(i);
-      assertThat(actualVirtualNetwork, is(expectedVirtualNetwork));
+      VirtualSubnet expectedVirtualSubnet = expectedVirtualSubnets.get(i);
+      VirtualSubnet actualVirtualSubnet = virtualNetworks.getItems().get(i);
+      assertThat(actualVirtualSubnet, is(expectedVirtualSubnet));
 
       String apiRoutePath = UriBuilder
           .fromPath(SubnetResourceRoutes.SUBNET_PATH)
-          .build(expectedVirtualNetwork.getId())
+          .build(expectedVirtualSubnet.getId())
           .toString();
-      assertThat(actualVirtualNetwork.getSelfLink().endsWith(apiRoutePath), is(true));
-      assertThat(new URI(actualVirtualNetwork.getSelfLink()).isAbsolute(), is(true));
+      assertThat(actualVirtualSubnet.getSelfLink().endsWith(apiRoutePath), is(true));
+      assertThat(new URI(actualVirtualSubnet.getSelfLink()).isAbsolute(), is(true));
     }
   }
 
   @DataProvider(name = "listAllWithPageSize")
   private Object[][] getListAllWithPageSize() {
     int virtualNetworkNumber = 2;
-    List<VirtualNetwork> expectedVirtualNetworks = new ArrayList<>();
+    List<VirtualSubnet> expectedVirtualSubnets = new ArrayList<>();
     for (int i = 0; i < virtualNetworkNumber; ++i) {
-      VirtualNetwork expectedVirtualNetwork = new VirtualNetwork();
-      expectedVirtualNetwork.setId(UUID.randomUUID().toString());
-      expectedVirtualNetwork.setName("virtualNetwork" + i);
+      VirtualSubnet expectedVirtualSubnet = new VirtualSubnet();
+      expectedVirtualSubnet.setId(UUID.randomUUID().toString());
+      expectedVirtualSubnet.setName("virtualNetwork" + i);
 
-      expectedVirtualNetworks.add(expectedVirtualNetwork);
+      expectedVirtualSubnets.add(expectedVirtualSubnet);
     }
 
     return new Object[][]{
         {
             Optional.absent(),
-            expectedVirtualNetworks
+            expectedVirtualSubnets
         },
         {
             Optional.of(1),
-            ImmutableList.of(expectedVirtualNetworks.get(0))
+            ImmutableList.of(expectedVirtualSubnets.get(0))
         },
         {
             Optional.of(2),
-            expectedVirtualNetworks
+            expectedVirtualSubnets
         },
         {
             Optional.of(3),
@@ -229,58 +229,58 @@ public class ProjectNetworksResourceTest extends ResourceTest {
   @Test
   public void succeedsToListAllWithPageLink() throws Throwable {
     String pageLink = "randomPageLink";
-    VirtualNetwork expectedVirtualNetwork = new VirtualNetwork();
-    expectedVirtualNetwork.setId(UUID.randomUUID().toString());
-    expectedVirtualNetwork.setName("virtualNetwork");
+    VirtualSubnet expectedVirtualSubnet = new VirtualSubnet();
+    expectedVirtualSubnet.setId(UUID.randomUUID().toString());
+    expectedVirtualSubnet.setName("virtualNetwork");
 
     when(frontendClient.nextList(pageLink))
-        .thenReturn(new ResourceList<>(ImmutableList.of(expectedVirtualNetwork)));
+        .thenReturn(new ResourceList<>(ImmutableList.of(expectedVirtualSubnet)));
 
     Response response = listNetworks(Optional.absent(), Optional.absent(), Optional.of(pageLink));
     assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
 
-    ResourceList<VirtualNetwork> virtualNetworks =
-        response.readEntity(new GenericType<ResourceList<VirtualNetwork>>() {
+    ResourceList<VirtualSubnet> virtualNetworks =
+        response.readEntity(new GenericType<ResourceList<VirtualSubnet>>() {
         });
     assertThat(virtualNetworks.getItems().size(), is(1));
 
-    VirtualNetwork actualVirtualNetwork = virtualNetworks.getItems().get(0);
-    assertThat(actualVirtualNetwork, is(expectedVirtualNetwork));
+    VirtualSubnet actualVirtualSubnet = virtualNetworks.getItems().get(0);
+    assertThat(actualVirtualSubnet, is(expectedVirtualSubnet));
 
     String apiRoutePath = UriBuilder
         .fromPath(SubnetResourceRoutes.SUBNET_PATH)
-        .build(expectedVirtualNetwork.getId())
+        .build(expectedVirtualSubnet.getId())
         .toString();
-    assertThat(actualVirtualNetwork.getSelfLink().endsWith(apiRoutePath), is(true));
-    assertThat(new URI(actualVirtualNetwork.getSelfLink()).isAbsolute(), is(true));
+    assertThat(actualVirtualSubnet.getSelfLink().endsWith(apiRoutePath), is(true));
+    assertThat(new URI(actualVirtualSubnet.getSelfLink()).isAbsolute(), is(true));
   }
 
   @Test
   public void succeedsToListByName() throws Throwable {
-    VirtualNetwork expectedVirtualNetwork = new VirtualNetwork();
-    expectedVirtualNetwork.setId(UUID.randomUUID().toString());
-    expectedVirtualNetwork.setName("virtualNetwork");
+    VirtualSubnet expectedVirtualSubnet = new VirtualSubnet();
+    expectedVirtualSubnet.setId(UUID.randomUUID().toString());
+    expectedVirtualSubnet.setName("virtualNetwork");
 
     when(frontendClient.list(projectId, Project.KIND, Optional.of("virtualNetwork"), Optional.of(1)))
-        .thenReturn(new ResourceList<>(ImmutableList.of(expectedVirtualNetwork)));
+        .thenReturn(new ResourceList<>(ImmutableList.of(expectedVirtualSubnet)));
 
     Response response = listNetworks(Optional.of("virtualNetwork"), Optional.of(1), Optional.absent());
     assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
 
-    ResourceList<VirtualNetwork> virtualNetworks =
-        response.readEntity(new GenericType<ResourceList<VirtualNetwork>>() {
+    ResourceList<VirtualSubnet> virtualNetworks =
+        response.readEntity(new GenericType<ResourceList<VirtualSubnet>>() {
         });
     assertThat(virtualNetworks.getItems().size(), is(1));
 
-    VirtualNetwork actualVirtualNetwork = virtualNetworks.getItems().get(0);
-    assertThat(actualVirtualNetwork, is(expectedVirtualNetwork));
+    VirtualSubnet actualVirtualSubnet = virtualNetworks.getItems().get(0);
+    assertThat(actualVirtualSubnet, is(expectedVirtualSubnet));
 
     String apiRoutePath = UriBuilder
         .fromPath(SubnetResourceRoutes.SUBNET_PATH)
-        .build(expectedVirtualNetwork.getId())
+        .build(expectedVirtualSubnet.getId())
         .toString();
-    assertThat(actualVirtualNetwork.getSelfLink().endsWith(apiRoutePath), is(true));
-    assertThat(new URI(actualVirtualNetwork.getSelfLink()).isAbsolute(), is(true));
+    assertThat(actualVirtualSubnet.getSelfLink().endsWith(apiRoutePath), is(true));
+    assertThat(new URI(actualVirtualSubnet.getSelfLink()).isAbsolute(), is(true));
   }
 
   @Test

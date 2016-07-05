@@ -40,7 +40,7 @@ module EsxCloud
         environment: @environment,
         affinities: @affinities ?
           @affinities.map { |a| a.to_hash } : [],
-        networks: @networks || []
+        subnets: @networks || []
       }
     end
 
