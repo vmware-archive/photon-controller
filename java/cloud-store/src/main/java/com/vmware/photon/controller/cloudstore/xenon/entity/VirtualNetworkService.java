@@ -35,6 +35,7 @@ import com.vmware.xenon.common.StatefulService;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import java.util.List;
 import java.util.Map;
 
 
@@ -148,6 +149,42 @@ public class VirtualNetworkService extends StatefulService {
     public RoutingType routingType;
 
     /**
+     * This is the CIDR of the virtual network.
+     */
+    @WriteOnce
+    public String cidr;
+
+    /**
+     * This is the smallest dynamic IP of the available dynamic IP range.
+     */
+    @WriteOnce
+    public String lowIpDynamic;
+
+    /**
+     * This is the biggest dynamic IP of the available dynamic IP range.
+     */
+    @WriteOnce
+    public String highIpDynamic;
+
+    /**
+     * This is a list of IPs reserved for infrastructure use.
+     */
+    @WriteOnce
+    public List<String> reservedIpList;
+
+    /**
+     * This is the smallest static IP of the available static IP range.
+     */
+    @WriteOnce
+    public String lowIpStatic;
+
+    /**
+     * This is the biggest static IP of the available static IP range.
+     */
+    @WriteOnce
+    public String highIpStatic;
+
+    /**
      * ID of the nsx logical switch.
      */
     @WriteOnce
@@ -204,6 +241,12 @@ public class VirtualNetworkService extends StatefulService {
           .add("parentId", parentId)
           .add("parentKind", parentKind)
           .add("routingType", routingType)
+          .add("cidr", cidr)
+          .add("lowIpDynamic", lowIpDynamic)
+          .add("highIpDynamic", highIpDynamic)
+          .add("reservedIpList", reservedIpList)
+          .add("lowIpStatic", lowIpStatic)
+          .add("highIpStatic", highIpStatic)
           .add("logicalSwitchId", logicalSwitchId)
           .add("logicalRouterId", logicalRouterId)
           .add("tier0RouterId", tier0RouterId)
