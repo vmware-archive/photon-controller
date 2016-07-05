@@ -4,7 +4,7 @@
   "memoryMb": 8192,
   "diskGb": 27,
   "isReplicated": true,
-  "isPrivileged": false,
+  "isPrivileged": true,
   "useHostNetwork": true,
   "containerImage": "esxcloud/photon-controller-core",
   "portBindings": {
@@ -15,7 +15,8 @@
     "/var/log": "/var/log",
     "/var/esxcloud/packages":"/var/esxcloud/packages",
     "/etc/esxcloud-deployer":"/etc/esxcloud-deployer",
-    "/usr/lib/esxcloud/photon-controller-core/scripts":"/usr/lib/esxcloud/photon-controller-core/scripts"
+    "/usr/lib/esxcloud/photon-controller-core/scripts":"/usr/lib/esxcloud/photon-controller-core/scripts",
+    "/sys/fs/cgroup": "/sys/fs/cgroup"
   },
   "dynamicParameters": {
     "CLOUD-STORE_XENON_STORAGE_PATH": "/etc/esxcloud/cloud-store/sandbox_19000",
