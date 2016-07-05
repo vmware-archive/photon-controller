@@ -31,6 +31,7 @@ import java.util.Objects;
  */
 @ApiModel(value = "This class represents the payload to create an nsx network.")
 public class VirtualNetworkCreateSpec implements Named {
+  public static final int MIN_NETWORK_SIZE = 64;
 
   @JsonProperty
   @ApiModelProperty(value = "Name of the virtual network", required = true)
@@ -51,7 +52,7 @@ public class VirtualNetworkCreateSpec implements Named {
 
   @JsonProperty
   @ApiModelProperty(value = "This property is the size of the virtual network", required = true)
-  @Min(1)
+  @Min(MIN_NETWORK_SIZE)
   @PowerOfTwo
   private int size;
 
