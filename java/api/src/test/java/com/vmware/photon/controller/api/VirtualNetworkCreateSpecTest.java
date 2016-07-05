@@ -72,25 +72,25 @@ public class VirtualNetworkCreateSpecTest {
           {
               new VirtualNetworkCreateSpecBuilder().build(),
               ImmutableList.of("name may not be null (was null)", "routingType may not be null (was null)",
-                  "size is not power of two (was 0)", "size must be greater than or equal to 1 (was 0)")
+                  "size is not power of two (was 0)", "size must be greater than or equal to 64 (was 0)")
           },
           {
               new VirtualNetworkCreateSpecBuilder().name("").build(),
               ImmutableList.of("name : The specific virtual network name does not match pattern: " +
                       "^[a-zA-Z][a-zA-Z0-9-]* (was )", "routingType may not be null (was null)",
-                      "size is not power of two (was 0)", "size must be greater than or equal to 1 (was 0)")
+                      "size is not power of two (was 0)", "size must be greater than or equal to 64 (was 0)")
           },
           {
               new VirtualNetworkCreateSpecBuilder().name("1a").build(),
               ImmutableList.of("name : The specific virtual network name does not match pattern: " +
                       "^[a-zA-Z][a-zA-Z0-9-]* (was 1a)", "routingType may not be null (was null)",
-                      "size is not power of two (was 0)", "size must be greater than or equal to 1 (was 0)")
+                      "size is not power of two (was 0)", "size must be greater than or equal to 64 (was 0)")
           },
           {
               new VirtualNetworkCreateSpecBuilder().name("1a").size(3).build(),
               ImmutableList.of("name : The specific virtual network name does not match pattern: " +
                       "^[a-zA-Z][a-zA-Z0-9-]* (was 1a)", "routingType may not be null (was null)",
-                      "size is not power of two (was 3)")
+                      "size is not power of two (was 3)", "size must be greater than or equal to 64 (was 3)")
           }
       };
     }
