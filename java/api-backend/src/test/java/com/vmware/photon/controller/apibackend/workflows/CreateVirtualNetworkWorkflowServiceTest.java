@@ -78,6 +78,8 @@ public class CreateVirtualNetworkWorkflowServiceTest {
     startState.controlFlags = controlFlags;
     startState.name = "name";
     startState.description = "desc";
+    startState.size = 16;
+    startState.reservedStaticIpSize = 4;
     startState.executionDelay = 10;
     startState.routingType = RoutingType.ROUTED;
     startState.parentId = "parentId";
