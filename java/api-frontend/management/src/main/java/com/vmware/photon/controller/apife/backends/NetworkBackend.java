@@ -13,15 +13,15 @@
 
 package com.vmware.photon.controller.apife.backends;
 
-import com.vmware.photon.controller.api.Network;
-import com.vmware.photon.controller.api.NetworkCreateSpec;
 import com.vmware.photon.controller.api.ResourceList;
+import com.vmware.photon.controller.api.Subnet;
+import com.vmware.photon.controller.api.SubnetCreateSpec;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.entities.NetworkEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.exceptions.external.NetworkNotFoundException;
 import com.vmware.photon.controller.apife.exceptions.external.PortGroupRepeatedInMultipleNetworksException;
-import com.vmware.photon.controller.apife.exceptions.external.PortGroupsAlreadyAddedToNetworkException;
+import com.vmware.photon.controller.apife.exceptions.external.PortGroupsAlreadyAddedToSubnetException;
 import com.vmware.photon.controller.cloudstore.xenon.entity.NetworkService;
 
 import com.google.common.base.Optional;
@@ -33,20 +33,20 @@ import java.util.List;
  */
 public interface NetworkBackend {
 
-  TaskEntity createNetwork(NetworkCreateSpec network) throws PortGroupsAlreadyAddedToNetworkException;
+  TaskEntity createNetwork(SubnetCreateSpec network) throws PortGroupsAlreadyAddedToSubnetException;
 
-  ResourceList<Network> filter(Optional<String> name, Optional<String> portGroup, Optional<Integer> pageSize);
+  ResourceList<Subnet> filter(Optional<String> name, Optional<String> portGroup, Optional<Integer> pageSize);
 
   NetworkService.State filterNetworkByPortGroup(Optional<String> portGroup)
           throws PortGroupRepeatedInMultipleNetworksException;
 
-  ResourceList<Network> getPage(String pageLink) throws ExternalException;
+  ResourceList<Subnet> getPage(String pageLink) throws ExternalException;
 
   NetworkEntity findById(String id) throws NetworkNotFoundException;
 
   void tombstone(NetworkEntity network) throws ExternalException;
 
-  Network toApiRepresentation(String id) throws NetworkNotFoundException;
+  Subnet toApiRepresentation(String id) throws NetworkNotFoundException;
 
   TaskEntity prepareNetworkDelete(String id) throws ExternalException;
 

@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.apife.resources.physicalnetwork;
 
-import com.vmware.photon.controller.api.Network;
+import com.vmware.photon.controller.api.Subnet;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.clients.NetworkFeClient;
@@ -41,7 +41,7 @@ import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
 
 /**
- * This resource is for network related API.
+ * This resource is for subnet related API.
  */
 @Path(SubnetResourceRoutes.SUBNET_PATH)
 @Api(value = SubnetResourceRoutes.API)
@@ -57,7 +57,7 @@ public class SubnetResource {
   }
 
   @GET
-  @ApiOperation(value = "Find Network by id", response = Network.class)
+  @ApiOperation(value = "Find Subnet by id", response = Subnet.class)
   public Response get(@Context Request request, @PathParam("id") String id) throws ExternalException {
     return generateCustomResponse(
         Response.Status.OK,
@@ -67,9 +67,9 @@ public class SubnetResource {
   }
 
   @DELETE
-  @ApiOperation(value = "Delete Network", response = Task.class)
+  @ApiOperation(value = "Delete Subnet", response = Task.class)
   @ApiResponses(value = {
-      @ApiResponse(code = 201, message = "Network is being deleted, progress communicated via the task")
+      @ApiResponse(code = 201, message = "Subnet is being deleted, progress communicated via the task")
   })
   public Response delete(@Context Request request, @PathParam("id") String id)
       throws ExternalException {
@@ -83,9 +83,9 @@ public class SubnetResource {
 
   @POST
   @Path(SubnetResourceRoutes.SUBNET_SET_DEFAULT_ACTION)
-  @ApiOperation(value = "Set Network Default", response = Task.class)
+  @ApiOperation(value = "Set Subnet Default", response = Task.class)
   @ApiResponses(value = {
-      @ApiResponse(code = 201, message = "Setting Network default, progress communicated via the task")
+      @ApiResponse(code = 201, message = "Setting Subnet default, progress communicated via the task")
   })
   public Response setDefault(@Context Request request,
                              @PathParam("id") String id) throws ExternalException {

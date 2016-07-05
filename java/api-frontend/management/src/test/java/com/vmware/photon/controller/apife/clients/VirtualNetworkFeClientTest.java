@@ -13,13 +13,13 @@
 
 package com.vmware.photon.controller.apife.clients;
 
-import com.vmware.photon.controller.api.NetworkState;
 import com.vmware.photon.controller.api.Project;
 import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.RoutingType;
+import com.vmware.photon.controller.api.SubnetState;
 import com.vmware.photon.controller.api.Task;
-import com.vmware.photon.controller.api.VirtualNetwork;
 import com.vmware.photon.controller.api.VirtualNetworkCreateSpec;
+import com.vmware.photon.controller.api.VirtualSubnet;
 import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.apibackend.servicedocuments.CreateVirtualNetworkWorkflowDocument;
 import com.vmware.photon.controller.apibackend.servicedocuments.DeleteVirtualNetworkWorkflowDocument;
@@ -180,8 +180,8 @@ public class VirtualNetworkFeClientTest {
     doReturn(operation).when(cloudStoreClient).get(virtualNetworkState.documentSelfLink);
 
 
-    VirtualNetwork virtualNetwork = frontendClient.get(networkId);
-    assertEquals(virtualNetwork.getName(), virtualNetworkState.name);
+    VirtualSubnet virtualSubnet = frontendClient.get(networkId);
+    assertEquals(virtualSubnet.getName(), virtualNetworkState.name);
   }
 
   @Test(expectedExceptions = NetworkNotFoundException.class)
@@ -204,7 +204,7 @@ public class VirtualNetworkFeClientTest {
   public void failsToDeleteNetworkInPendingState() throws Throwable {
     String networkId = UUID.randomUUID().toString();
     VirtualNetworkService.State virtualNetworkState = createVirtualNetworkState(networkId);
-    virtualNetworkState.state = NetworkState.PENDING_DELETE;
+    virtualNetworkState.state = SubnetState.PENDING_DELETE;
 
     Operation getOperation = new Operation();
     getOperation.setBody(virtualNetworkState);
@@ -239,7 +239,7 @@ public class VirtualNetworkFeClientTest {
     String documentLink = VirtualNetworkService.FACTORY_LINK + "/" + UUID.randomUUID().toString();
 
     VirtualNetworkService.State expectedVirtualNetworkState = new VirtualNetworkService.State();
-    expectedVirtualNetworkState.state = NetworkState.READY;
+    expectedVirtualNetworkState.state = SubnetState.READY;
     expectedVirtualNetworkState.documentSelfLink = documentLink;
 
     ServiceDocumentQueryResult expectedQueryResult = new ServiceDocumentQueryResult();
@@ -258,7 +258,7 @@ public class VirtualNetworkFeClientTest {
         eq(Optional.absent()),
         eq(true));
 
-    ResourceList<VirtualNetwork> actualVirtualNetworks = frontendClient.list(
+    ResourceList<VirtualSubnet> actualVirtualNetworks = frontendClient.list(
         parentId,
         parentKind,
         name,
@@ -271,8 +271,8 @@ public class VirtualNetworkFeClientTest {
         eq(true));
     assertThat(actualVirtualNetworks.getItems().size(), is(1));
 
-    VirtualNetwork actualVirtualNetwork = actualVirtualNetworks.getItems().get(0);
-    assertThat(actualVirtualNetwork.getState(), is(NetworkState.READY));
+    VirtualSubnet actualVirtualSubnet = actualVirtualNetworks.getItems().get(0);
+    assertThat(actualVirtualSubnet.getState(), is(SubnetState.READY));
   }
 
   @DataProvider(name = "listAllTestData")
@@ -338,7 +338,7 @@ public class VirtualNetworkFeClientTest {
     Task expectedTask = new Task();
     doReturn(expectedTask).when(taskBackend).createCompletedTask(
         eq(newDefaultNetworkId),
-        eq(VirtualNetwork.KIND),
+        eq(VirtualSubnet.KIND),
         eq(parentId),
         eq(com.vmware.photon.controller.api.Operation.SET_DEFAULT_NETWORK.toString()));
 
@@ -386,7 +386,7 @@ public class VirtualNetworkFeClientTest {
     Task expectedTask = new Task();
     doReturn(expectedTask).when(taskBackend).createCompletedTask(
         eq(newDefaultNetworkId),
-        eq(VirtualNetwork.KIND),
+        eq(VirtualSubnet.KIND),
         eq(parentId),
         eq(com.vmware.photon.controller.api.Operation.SET_DEFAULT_NETWORK.toString()));
 

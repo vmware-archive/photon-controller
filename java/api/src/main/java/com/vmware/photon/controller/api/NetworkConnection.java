@@ -43,14 +43,14 @@ public class NetworkConnection {
 
   @JsonProperty
   @ApiModelProperty(value = "IP Address")
-  @Pattern(regexp = Network.IPV4_PATTERN,
-      message = ": The specified ipAddress does not match IPV4 pattern: " + Network.IPV4_PATTERN)
+  @Pattern(regexp = Subnet.IPV4_PATTERN,
+      message = ": The specified ipAddress does not match IPV4 pattern: " + Subnet.IPV4_PATTERN)
   private String ipAddress;
 
   @JsonProperty
   @ApiModelProperty(value = "Netmask")
-  @Pattern(regexp = Network.IPV4_PATTERN,
-      message = ": The specified netmask does not match IPV4 pattern: " + Network.IPV4_PATTERN)
+  @Pattern(regexp = Subnet.IPV4_PATTERN,
+      message = ": The specified netmask does not match IPV4 pattern: " + Subnet.IPV4_PATTERN)
   private String netmask;
 
   @JsonProperty
