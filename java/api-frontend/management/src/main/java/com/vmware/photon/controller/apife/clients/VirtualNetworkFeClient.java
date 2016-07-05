@@ -54,6 +54,7 @@ import java.util.List;
  * Frontend client for virtual network related operations.
  */
 public class VirtualNetworkFeClient {
+  public static final int DEFAULT_RESERVED_IP_LIST_SIZE = 5;
 
   // We host api-backend in the Housekeeper service.
   private final PhotonControllerXenonRestClient backendClient;
@@ -86,8 +87,10 @@ public class VirtualNetworkFeClient {
                      String parentKind,
                      VirtualNetworkCreateSpec spec) throws ExternalException {
 
-    if (spec.getReservedStaticIpSize() > spec.getSize()) {
-      throw new InvalidReservedStaticIpSizeException("Static IP size exceeds total IP size");
+    if (spec.getReservedStaticIpSize() + DEFAULT_RESERVED_IP_LIST_SIZE > spec.getSize()) {
+      throw new InvalidReservedStaticIpSizeException(
+          String.format("Static IP size (%s) exceeds total IP size (%s) minus reserved IP size (%s)",
+              spec.getReservedStaticIpSize(), spec.getSize(), DEFAULT_RESERVED_IP_LIST_SIZE));
     }
 
     CreateVirtualNetworkWorkflowDocument startState = new CreateVirtualNetworkWorkflowDocument();
@@ -96,6 +99,8 @@ public class VirtualNetworkFeClient {
     startState.name = spec.getName();
     startState.description = spec.getDescription();
     startState.routingType = spec.getRoutingType();
+    startState.size = spec.getSize();
+    startState.reservedStaticIpSize = spec.getReservedStaticIpSize();
 
     CreateVirtualNetworkWorkflowDocument finalState = backendClient.post(
         CreateVirtualNetworkWorkflowService.FACTORY_LINK,

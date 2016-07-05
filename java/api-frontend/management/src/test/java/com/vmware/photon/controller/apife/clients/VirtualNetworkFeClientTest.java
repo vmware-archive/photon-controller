@@ -45,6 +45,7 @@ import com.google.common.collect.ImmutableMap;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
+import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Matchers.any;
@@ -57,6 +58,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.fail;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -108,6 +110,8 @@ public class VirtualNetworkFeClientTest {
     spec.setName("virtualNetworkName");
     spec.setDescription("virtualNetworkDescription");
     spec.setRoutingType(RoutingType.ROUTED);
+    spec.setSize(VirtualNetworkCreateSpec.DEFAULT_MIN_NETWORK_SIZE);
+    spec.setReservedStaticIpSize(2);
 
     CreateVirtualNetworkWorkflowDocument expectedStartState = new CreateVirtualNetworkWorkflowDocument();
     expectedStartState.name = spec.getName();
@@ -115,6 +119,8 @@ public class VirtualNetworkFeClientTest {
     expectedStartState.routingType = spec.getRoutingType();
     expectedStartState.parentId = "parentId";
     expectedStartState.parentKind = "parentKind";
+    expectedStartState.size = spec.getSize();
+    expectedStartState.reservedStaticIpSize = spec.getReservedStaticIpSize();
 
     CreateVirtualNetworkWorkflowDocument expectedFinalState = new CreateVirtualNetworkWorkflowDocument();
     expectedFinalState.taskServiceState = new TaskService.State();
@@ -185,15 +191,22 @@ public class VirtualNetworkFeClientTest {
     assertEquals(virtualSubnet.getName(), virtualNetworkState.name);
   }
 
-  @Test(expectedExceptions = InvalidReservedStaticIpSizeException.class)
+  @Test
   public void failsToCreateWithInvalidReservedStaticIpSizeException() throws Throwable {
     VirtualNetworkCreateSpec spec = new VirtualNetworkCreateSpec();
     spec.setName("virtualNetworkName");
     spec.setRoutingType(RoutingType.ROUTED);
-    spec.setSize(4);
-    spec.setReservedStaticIpSize(8);
+    spec.setSize(VirtualNetworkCreateSpec.DEFAULT_MIN_NETWORK_SIZE);
+    spec.setReservedStaticIpSize(4);
 
-    frontendClient.create("parentId", "parentKind", spec);
+    try {
+      frontendClient.create("parentId", "parentKind", spec);
+      fail("Should have failed with InvalidReservedStaticIpSizeException");
+    } catch (Exception ex) {
+      assertThat(ex, instanceOf(InvalidReservedStaticIpSizeException.class));
+      assertThat(ex.getMessage().equals("Static IP size (4) exceeds total IP size (8) minus reserved IP size (5)"),
+          is(true));
+    }
   }
 
   @Test(expectedExceptions = NetworkNotFoundException.class)

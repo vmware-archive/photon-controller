@@ -129,20 +129,22 @@ public class VirtualSubnetTest {
       return new Object[][]{
           {
               new VirtualNetworkBuilder()
-                  .name("vn1")
-                  .state(SubnetState.READY)
-                  .routingType(RoutingType.ROUTED)
-                  .build(),
-              "VirtualSubnet{name=vn1, description=null, state=READY, routingType=ROUTED, isDefault=null}"
+                    .name("vn1")
+                    .state(SubnetState.READY)
+                    .routingType(RoutingType.ROUTED)
+                    .build(),
+              "VirtualSubnet{name=vn1, description=null, state=READY, routingType=ROUTED, isDefault=null, " +
+                  "cide=null, lowIpDynamic=null, highIpDynamic=null, lowIpStatic=null, highIpStatic=null}"
           },
           {
               new VirtualNetworkBuilder()
-                  .name("vn1")
-                  .description("desc")
-                  .state(SubnetState.READY)
-                  .routingType(RoutingType.ROUTED)
-                  .build(),
-              "VirtualSubnet{name=vn1, description=desc, state=READY, routingType=ROUTED, isDefault=null}"
+                    .name("vn1")
+                    .description("desc")
+                    .state(SubnetState.READY)
+                    .routingType(RoutingType.ROUTED)
+                    .build(),
+              "VirtualSubnet{name=vn1, description=desc, state=READY, routingType=ROUTED, isDefault=null, " +
+                  "cide=null, lowIpDynamic=null, highIpDynamic=null, lowIpStatic=null, highIpStatic=null}"
           },
           {
               new VirtualNetworkBuilder()
@@ -151,7 +153,8 @@ public class VirtualSubnetTest {
                   .routingType(RoutingType.ROUTED)
                   .isDefault(true)
                   .build(),
-              "VirtualSubnet{name=vn1, description=null, state=READY, routingType=ROUTED, isDefault=true}"
+              "VirtualSubnet{name=vn1, description=null, state=READY, routingType=ROUTED, isDefault=true, " +
+                  "cide=null, lowIpDynamic=null, highIpDynamic=null, lowIpStatic=null, highIpStatic=null}"
           }
       };
     }
