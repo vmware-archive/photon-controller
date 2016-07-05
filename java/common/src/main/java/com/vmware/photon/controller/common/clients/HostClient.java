@@ -155,9 +155,9 @@ public class HostClient {
   private static final long GET_SERVICE_TICKET_TIMEOUT_MS = TimeUnit.MINUTES.toMillis(1);
   private static final long GET_VM_MKS_TICKET_TIMEOUT_MS = TimeUnit.MINUTES.toMillis(1);
   private static final long GET_VM_NETWORK_TIMEOUT_MS = TimeUnit.MINUTES.toMillis(1);
-  private static final long PLACE_TIMEOUT_MS = TimeUnit.MINUTES.toMillis(1);
   private static final long POWER_VM_OP_TIMEOUT_MS = TimeUnit.MINUTES.toMillis(10);
-  private static final long RESERVE_TIMEOUT_MS = TimeUnit.MINUTES.toMillis(1);
+  private static final long PLACE_TIMEOUT_MS = TimeUnit.SECONDS.toMillis(90);
+  private static final long RESERVE_TIMEOUT_MS = TimeUnit.MINUTES.toMillis(2);
   private static final long TRANSFER_IMAGE_TIMEOUT_MS = TimeUnit.HOURS.toMillis(2);
   private final ClientProxyFactory<Host.AsyncClient> clientProxyFactory;
   private final ClientPoolFactory<Host.AsyncClient> clientPoolFactory;
