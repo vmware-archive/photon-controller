@@ -86,7 +86,7 @@ public class VmOnVirtualNetworkTest extends ResourceTest {
   @Test
   public void testMoreThanOneNetworkInSpec() {
     List<String> networks = ImmutableList.of("network1", "network2");
-    spec.setNetworks(networks);
+    spec.setSubnets(networks);
 
     Response response = createVm();
     assertThat(response.getStatus(), is(400));
@@ -99,7 +99,7 @@ public class VmOnVirtualNetworkTest extends ResourceTest {
   @Test
   public void testSuccessfulCreate() throws Exception {
     List<String> networks = ImmutableList.of("network1");
-    spec.setNetworks(networks);
+    spec.setSubnets(networks);
 
     Task task = new Task();
     task.setId(taskId);

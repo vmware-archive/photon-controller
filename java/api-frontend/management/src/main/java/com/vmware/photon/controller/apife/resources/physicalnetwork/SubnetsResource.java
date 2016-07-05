@@ -13,9 +13,9 @@
 
 package com.vmware.photon.controller.apife.resources.physicalnetwork;
 
-import com.vmware.photon.controller.api.Network;
-import com.vmware.photon.controller.api.NetworkCreateSpec;
 import com.vmware.photon.controller.api.ResourceList;
+import com.vmware.photon.controller.api.Subnet;
+import com.vmware.photon.controller.api.SubnetCreateSpec;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.clients.NetworkFeClient;
@@ -65,12 +65,12 @@ public class SubnetsResource {
   }
 
   @POST
-  @ApiOperation(value = "Create a network", response = Task.class)
+  @ApiOperation(value = "Create a subnet", response = Task.class)
   @ApiResponses(value = {
-      @ApiResponse(code = 201, message = "Network is getting created, progress communicated via the task")
+      @ApiResponse(code = 201, message = "Subnet is getting created, progress communicated via the task")
   })
   public Response create(@Context Request request,
-                         @Validated NetworkCreateSpec network)
+                         @Validated SubnetCreateSpec network)
       throws ExternalException {
     return generateCustomResponse(
         Response.Status.CREATED,
@@ -80,10 +80,10 @@ public class SubnetsResource {
   }
 
   @GET
-  @ApiOperation(value = "Get all networks",
-      response = Network.class, responseContainer = ResourceList.CLASS_NAME)
+  @ApiOperation(value = "Get all subnets",
+      response = Subnet.class, responseContainer = ResourceList.CLASS_NAME)
   @ApiResponses(value = {
-      @ApiResponse(code = 200, message = "List of network API representation")
+      @ApiResponse(code = 200, message = "List of subnet API representation")
   })
   public Response list(@Context Request request,
                        @QueryParam("name") Optional<String> name,
@@ -91,7 +91,7 @@ public class SubnetsResource {
                        @QueryParam("pageLink") Optional<String> pageLink)
       throws ExternalException {
 
-    ResourceList<Network> resourceList;
+    ResourceList<Subnet> resourceList;
     if (pageLink.isPresent()) {
       resourceList = networkFeClient.getPage(pageLink.get());
     } else {

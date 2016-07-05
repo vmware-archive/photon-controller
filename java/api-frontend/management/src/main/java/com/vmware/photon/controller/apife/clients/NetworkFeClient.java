@@ -13,9 +13,9 @@
 
 package com.vmware.photon.controller.apife.clients;
 
-import com.vmware.photon.controller.api.Network;
-import com.vmware.photon.controller.api.NetworkCreateSpec;
 import com.vmware.photon.controller.api.ResourceList;
+import com.vmware.photon.controller.api.Subnet;
+import com.vmware.photon.controller.api.SubnetCreateSpec;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.backends.NetworkBackend;
@@ -44,18 +44,18 @@ public class NetworkFeClient {
     this.taskBackend = taskBackend;
   }
 
-  public Task create(NetworkCreateSpec spec) throws ExternalException {
+  public Task create(SubnetCreateSpec spec) throws ExternalException {
     TaskEntity taskEntity = networkBackend.createNetwork(spec);
     Task task = taskBackend.getApiRepresentation(taskEntity);
 
     return task;
   }
 
-  public Network get(String id) throws NetworkNotFoundException {
+  public Subnet get(String id) throws NetworkNotFoundException {
     return networkBackend.toApiRepresentation(id);
   }
 
-  public ResourceList<Network> find(Optional<String> name, Optional<Integer> pageSize) {
+  public ResourceList<Subnet> find(Optional<String> name, Optional<Integer> pageSize) {
     return networkBackend.filter(name, Optional.<String>absent(), pageSize);
   }
 
@@ -74,7 +74,7 @@ public class NetworkFeClient {
     return taskBackend.getApiRepresentation(taskEntity);
   }
 
-  public ResourceList<Network> getPage(String pageLink) throws ExternalException {
+  public ResourceList<Subnet> getPage(String pageLink) throws ExternalException {
     return networkBackend.getPage(pageLink);
   }
 }

@@ -14,7 +14,7 @@
 package com.vmware.photon.controller.apife.resources.virtualnetwork;
 
 import com.vmware.photon.controller.api.ResourceList;
-import com.vmware.photon.controller.api.VirtualNetwork;
+import com.vmware.photon.controller.api.VirtualSubnet;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.clients.VirtualNetworkFeClient;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
@@ -41,7 +41,7 @@ import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
 
 /**
- * This resource is for virtual network related API.
+ * This resource is for virtual subnet related API.
  */
 @Path(SubnetResourceRoutes.API)
 @Api(value = SubnetResourceRoutes.API)
@@ -59,9 +59,9 @@ public class SubnetsResource {
   }
 
   @GET
-  @ApiOperation(value = "Get all virtual networks",
-      response = VirtualNetwork.class, responseContainer = ResourceList.CLASS_NAME)
-  @ApiResponses(value = {@ApiResponse(code = 200, message = "List of virtual network API representation")
+  @ApiOperation(value = "Get all virtual subnets",
+      response = VirtualSubnet.class, responseContainer = ResourceList.CLASS_NAME)
+  @ApiResponses(value = {@ApiResponse(code = 200, message = "List of virtual subnet API representation")
   })
   public Response list(@Context Request request,
                        @QueryParam("name") Optional<String> name,
@@ -69,7 +69,7 @@ public class SubnetsResource {
                        @QueryParam("pageLink") Optional<String> pageLink)
       throws ExternalException {
 
-    ResourceList<VirtualNetwork> resourceList;
+    ResourceList<VirtualSubnet> resourceList;
     if (pageLink.isPresent()) {
       resourceList = virtualNetworkFeClient.nextList(pageLink.get());
     } else {

@@ -13,8 +13,8 @@
 
 package com.vmware.photon.controller.cloudstore.xenon.entity;
 
-import com.vmware.photon.controller.api.NetworkState;
 import com.vmware.photon.controller.api.RoutingType;
+import com.vmware.photon.controller.api.SubnetState;
 import com.vmware.photon.controller.cloudstore.xenon.CloudStoreServiceGroup;
 import com.vmware.photon.controller.cloudstore.xenon.helpers.TestHelper;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
@@ -152,7 +152,7 @@ public class VirtualNetworkServiceTest {
     @Test
     public void testSuccessfulPatch() throws Throwable {
       VirtualNetworkService.State patchState = new VirtualNetworkService.State();
-      patchState.state = NetworkState.READY;
+      patchState.state = SubnetState.READY;
       patchState.description = "desc";
       patchState.logicalSwitchDownlinkPortIds = new HashMap<>();
       patchState.logicalSwitchDownlinkPortIds.put("vm1", "port1");
@@ -311,7 +311,7 @@ public class VirtualNetworkServiceTest {
   private static VirtualNetworkService.State createInitialState() {
     VirtualNetworkService.State startState = new VirtualNetworkService.State();
     startState.name = "vn1";
-    startState.state = NetworkState.CREATING;
+    startState.state = SubnetState.CREATING;
     startState.routingType = RoutingType.ROUTED;
     startState.parentId = "parentId";
     startState.parentKind = "parentKind";

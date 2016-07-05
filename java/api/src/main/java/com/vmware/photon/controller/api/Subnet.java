@@ -27,41 +27,41 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Network is used for interaction between APIFE and users.
- * VMs within the same 'network' can communicate with each other.
- * VMs in different 'networks' may or may not be able to communicate with each other.
+ * Subnet is used for interaction between APIFE and users.
+ * VMs within the same 'subnet' can communicate with each other.
+ * VMs in different 'subnets' may or may not be able to communicate with each other.
  */
-@ApiModel(value = "This class represents a network.")
+@ApiModel(value = "This class represents a subnet.")
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class Network extends VisibleModel {
+public class Subnet extends VisibleModel {
 
   public static final String IPV4_PATTERN =
       "^\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}$";
 
-  public static final String KIND = "network";
+  public static final String KIND = "subnet";
 
   @JsonProperty
-  @ApiModelProperty(value = "kind=\"network\"", required = true)
+  @ApiModelProperty(value = "kind=\"subnet\"", required = true)
   private String kind = KIND;
 
   @JsonProperty
-  @ApiModelProperty(value = "Description of network", required = false)
+  @ApiModelProperty(value = "Description of subnet", required = false)
   private String description;
 
   @JsonProperty
-  @ApiModelProperty(value = "Supplies the state of the network",
+  @ApiModelProperty(value = "Supplies the state of the subnet",
       allowableValues = "CREATING,READY,ERROR,DELETED,PENDING_DELETE",
       required = true)
-  private NetworkState state;
+  private SubnetState state;
 
   @JsonProperty
-  @ApiModelProperty(value = "PortGroups associated with network", required = true)
+  @ApiModelProperty(value = "PortGroups associated with subnet", required = true)
   @Size(min = 1)
   @NotNull
   private List<String> portGroups;
 
   @JsonProperty
-  @ApiModelProperty(value = "Indicates whether the network is default for VM creation", required = false)
+  @ApiModelProperty(value = "Indicates whether the subnet is default for VM creation", required = false)
   private Boolean isDefault;
 
   @Override
@@ -77,11 +77,11 @@ public class Network extends VisibleModel {
     this.description = description;
   }
 
-  public NetworkState getState() {
+  public SubnetState getState() {
     return state;
   }
 
-  public void setState(NetworkState state) {
+  public void setState(SubnetState state) {
     this.state = state;
   }
 
@@ -110,7 +110,7 @@ public class Network extends VisibleModel {
       return false;
     }
 
-    Network other = (Network) o;
+    Subnet other = (Subnet) o;
 
     return super.equals(other) &&
         Objects.equals(this.getDescription(), other.getDescription()) &&
