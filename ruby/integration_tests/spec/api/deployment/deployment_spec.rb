@@ -208,23 +208,27 @@ describe "deployment", management: true do
       end
 
       it "should successfully update security groups and push them to tenants and projects" do
-        expect(deployment.auth.securityGroups).to eq([])
+        sg_list = deployment.auth.securityGroups
+        sg_list << "esxcloud\\adminGroup2"
+        sg_list << "esxcloud\\adminGroup3"
 
         deployment_id = deployment.id;
 
-        security_groups = {items: ["esxcloud\\adminGroup2", "esxcloud\\adminGroup3"]}
+        security_groups = {items: sg_list}
         client.update_security_groups(deployment_id, security_groups)
 
         deployment = client.find_deployment_by_id(deployment_id)
-        expect(deployment.auth.securityGroups).to eq(["esxcloud\\adminGroup2", "esxcloud\\adminGroup3"])
+        expect(deployment.auth.securityGroups).to eq(sg_list)
 
+        # validate inheritance for tenant and project
+        expected_inherited_list = sg_list.map do |sg|
+          {"name"=> sg, "inherited"=>true}
+        end
         tenant = client.find_tenant_by_id(@tenant.id)
-        tenant.security_groups.should =~ [{"name"=>"esxcloud\\adminGroup2", "inherited"=>true},
-                                          {"name"=>"esxcloud\\adminGroup3", "inherited"=>true}]
+        tenant.security_groups.should =~ expected_inherited_list
 
         project = client.find_project_by_id(@project.id)
-        project.security_groups.should =~ [{"name"=>"esxcloud\\adminGroup2", "inherited"=>true},
-                                           {"name"=>"esxcloud\\adminGroup3", "inherited"=>true}]
+        project.security_groups.should =~ expected_inherited_list
       end
     end
   end

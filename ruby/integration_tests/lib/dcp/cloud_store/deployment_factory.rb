@@ -96,7 +96,10 @@ module EsxCloud
 
           if oauth_enabled
             tenant = ENV["PHOTON_AUTH_SERVER_TENANT"]
+
             groups = ENV["PHOTON_AUTH_ADMIN_GROUPS"].split(",") if ENV["PHOTON_AUTH_ADMIN_GROUPS"]
+            groups << "#{tenant}\\Administrators"
+
             settings.merge!(
               oAuthTenantName: tenant,
               oAuthUserName: ENV["PHOTON_USERNAME_ADMIN"],
