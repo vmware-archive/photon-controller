@@ -60,7 +60,7 @@ describe "network", management: true do
 
     context "when name is invalid" do
       it "should fail to create network" do
-        error_msg = "name : The specified network name does not match pattern: ^[a-zA-Z][a-zA-Z0-9-]* (was 1foo)"
+        error_msg = "name : The specified subnet name does not match pattern: ^[a-zA-Z][a-zA-Z0-9-]* (was 1foo)"
 
         spec.name = "1foo"
         begin

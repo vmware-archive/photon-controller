@@ -69,7 +69,7 @@ public class Task extends Model {
   private Date endTime;
 
   @JsonProperty
-  @ApiModelProperty(value = "This property may contain vm networks' information and other task properties",
+  @ApiModelProperty(value = "This property may contain vm subnets' information and other task properties",
       required = false)
   private Object resourceProperties;
 

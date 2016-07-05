@@ -14,7 +14,7 @@
 package com.vmware.photon.controller.apife.resources;
 
 import com.vmware.photon.controller.api.Task;
-import com.vmware.photon.controller.api.VirtualNetwork;
+import com.vmware.photon.controller.api.VirtualSubnet;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.clients.VirtualNetworkFeClient;
 import com.vmware.photon.controller.apife.resources.routes.SubnetResourceRoutes;
@@ -62,17 +62,17 @@ public class VirtualSubnetResourceTest extends ResourceTest {
 
   @Test
   public void succeedsToGet() throws Throwable {
-    VirtualNetwork expectedVirtualNetwork = new VirtualNetwork();
-    expectedVirtualNetwork.setId(networkId);
-    doReturn(expectedVirtualNetwork).when(frontendClient).get(networkId);
+    VirtualSubnet expectedVirtualSubnet = new VirtualSubnet();
+    expectedVirtualSubnet.setId(networkId);
+    doReturn(expectedVirtualSubnet).when(frontendClient).get(networkId);
 
     Response response = client().target(networkRoute).request().get();
     assertThat(response.getStatus(), is(HttpStatus.SC_OK));
 
-    VirtualNetwork actualVirtualNetwork = response.readEntity(VirtualNetwork.class);
-    assertThat(actualVirtualNetwork, is(expectedVirtualNetwork));
-    assertThat(new URI(actualVirtualNetwork.getSelfLink()).isAbsolute(), is(true));
-    assertThat(actualVirtualNetwork.getSelfLink().endsWith(networkRoute), is(true));
+    VirtualSubnet actualVirtualSubnet = response.readEntity(VirtualSubnet.class);
+    assertThat(actualVirtualSubnet, is(expectedVirtualSubnet));
+    assertThat(new URI(actualVirtualSubnet.getSelfLink()).isAbsolute(), is(true));
+    assertThat(actualVirtualSubnet.getSelfLink().endsWith(networkRoute), is(true));
   }
 
   @Test
