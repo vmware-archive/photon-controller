@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.apibackend.workflows;
 
-import com.vmware.photon.controller.api.NetworkState;
+import com.vmware.photon.controller.api.SubnetState;
 import com.vmware.photon.controller.apibackend.servicedocuments.DeleteLogicalPortsTask;
 import com.vmware.photon.controller.apibackend.servicedocuments.DeleteLogicalRouterTask;
 import com.vmware.photon.controller.apibackend.servicedocuments.DeleteLogicalSwitchTask;
@@ -391,7 +391,7 @@ public class DeleteVirtualNetworkWorkflowService extends BaseWorkflowService<Del
           try {
             DeleteVirtualNetworkWorkflowDocument patchState = buildPatch(TaskState.TaskStage.FINISHED, null);
             patchState.taskServiceEntity = state.taskServiceEntity;
-            patchState.taskServiceEntity.state = NetworkState.DELETED;
+            patchState.taskServiceEntity.state = SubnetState.DELETED;
             finish(state, patchState);
           } catch (Throwable t) {
             fail(state, t);

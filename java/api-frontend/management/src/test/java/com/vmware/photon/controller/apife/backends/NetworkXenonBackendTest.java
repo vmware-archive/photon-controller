@@ -13,12 +13,12 @@
 
 package com.vmware.photon.controller.apife.backends;
 
-import com.vmware.photon.controller.api.Network;
-import com.vmware.photon.controller.api.NetworkCreateSpec;
-import com.vmware.photon.controller.api.NetworkState;
 import com.vmware.photon.controller.api.QuotaLineItem;
 import com.vmware.photon.controller.api.QuotaUnit;
 import com.vmware.photon.controller.api.ResourceList;
+import com.vmware.photon.controller.api.Subnet;
+import com.vmware.photon.controller.api.SubnetCreateSpec;
+import com.vmware.photon.controller.api.SubnetState;
 import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.api.VmState;
 import com.vmware.photon.controller.apife.TestModule;
@@ -104,8 +104,8 @@ public class NetworkXenonBackendTest {
     }
   }
 
-  private static NetworkCreateSpec createNetworkCreateSpec() {
-    NetworkCreateSpec spec = new NetworkCreateSpec();
+  private static SubnetCreateSpec createNetworkCreateSpec() {
+    SubnetCreateSpec spec = new SubnetCreateSpec();
     spec.setName("network1");
     spec.setDescription("VM VLAN");
     List<String> portGroups = new ArrayList<>();
@@ -120,7 +120,7 @@ public class NetworkXenonBackendTest {
   }
 
   /**
-   * Tests {@link NetworkXenonBackend#createNetwork(NetworkCreateSpec)}.
+   * Tests {@link NetworkXenonBackend#createNetwork(SubnetCreateSpec)}.
    */
   @Guice(modules = {XenonBackendTestModule.class, TestModule.class})
   public static class CreateNetworkTest {
@@ -151,7 +151,7 @@ public class NetworkXenonBackendTest {
 
     @Test
     public void testCreateNetworkSuccess() throws Throwable {
-      NetworkCreateSpec spec = createNetworkCreateSpec();
+      SubnetCreateSpec spec = createNetworkCreateSpec();
       TaskEntity taskEntity = networkBackend.createNetwork(spec);
 
       String documentSelfLink = NetworkServiceFactory.SELF_LINK + "/" + taskEntity.getEntityId();
@@ -159,19 +159,19 @@ public class NetworkXenonBackendTest {
       NetworkService.State savedState = xenonClient.get(documentSelfLink).getBody(NetworkService.State.class);
       assertThat(savedState.name, is(spec.getName()));
       assertThat(savedState.description, is(spec.getDescription()));
-      assertThat(savedState.state, is(NetworkState.READY));
+      assertThat(savedState.state, is(SubnetState.READY));
       assertThat(savedState.portGroups, is(spec.getPortGroups()));
     }
 
     @Test
     public void testCreateWithSameName() throws Exception {
-      NetworkCreateSpec spec1 = createNetworkCreateSpec();
+      SubnetCreateSpec spec1 = createNetworkCreateSpec();
       networkBackend.createNetwork(spec1);
-      NetworkCreateSpec spec2 = createNetworkCreateSpec();
+      SubnetCreateSpec spec2 = createNetworkCreateSpec();
       spec2.setPortGroups(new ArrayList<>());
       networkBackend.createNetwork(spec2);
 
-      ResourceList<Network> networks = networkBackend.filter(
+      ResourceList<Subnet> networks = networkBackend.filter(
           Optional.fromNullable(spec1.getName()),
           Optional.<String>absent(),
           Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
@@ -180,7 +180,7 @@ public class NetworkXenonBackendTest {
 
     @Test
     public void testPortGroupAlreadyAddedToNetworkException() throws Exception {
-      NetworkCreateSpec spec = createNetworkCreateSpec();
+      SubnetCreateSpec spec = createNetworkCreateSpec();
       networkBackend.createNetwork(spec);
 
       try {
@@ -226,10 +226,10 @@ public class NetworkXenonBackendTest {
 
     @Test
     public void testFilterNetworks() throws Exception {
-      NetworkCreateSpec spec = createNetworkCreateSpec();
+      SubnetCreateSpec spec = createNetworkCreateSpec();
       networkBackend.createNetwork(spec);
 
-      ResourceList<Network> networks = networkBackend.filter(Optional.of(spec.getName()), Optional.<String>absent(),
+      ResourceList<Subnet> networks = networkBackend.filter(Optional.of(spec.getName()), Optional.<String>absent(),
           Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
       assertThat(networks.getItems().size(), is(1));
       assertThat(networks.getItems().get(0).getName(), is(spec.getName()));
@@ -294,15 +294,15 @@ public class NetworkXenonBackendTest {
 
     @Test
     public void testToApiRepresentation() throws Exception {
-      NetworkCreateSpec spec = createNetworkCreateSpec();
+      SubnetCreateSpec spec = createNetworkCreateSpec();
       TaskEntity task = networkBackend.createNetwork(spec);
       String networkId = task.getEntityId();
 
-      Network network = networkBackend.toApiRepresentation(networkId);
-      assertThat(network.getId(), is(networkId));
-      assertThat(network.getName(), is(spec.getName()));
-      assertThat(network.getDescription(), is(spec.getDescription()));
-      assertThat(network.getPortGroups(), is(spec.getPortGroups()));
+      Subnet subnet = networkBackend.toApiRepresentation(networkId);
+      assertThat(subnet.getId(), is(networkId));
+      assertThat(subnet.getName(), is(spec.getName()));
+      assertThat(subnet.getDescription(), is(spec.getDescription()));
+      assertThat(subnet.getPortGroups(), is(spec.getPortGroups()));
     }
   }
 
@@ -353,9 +353,9 @@ public class NetworkXenonBackendTest {
 
     @Test
     public void testSuccess() throws Throwable {
-      NetworkCreateSpec spec = createNetworkCreateSpec();
+      SubnetCreateSpec spec = createNetworkCreateSpec();
       TaskEntity task = networkBackend.createNetwork(spec);
-      ResourceList<Network> networks = networkBackend.filter(Optional.fromNullable(spec.getName()),
+      ResourceList<Subnet> networks = networkBackend.filter(Optional.fromNullable(spec.getName()),
           Optional.<String>absent(), Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
       assertThat(networks.getItems().size(), is(1));
 
@@ -369,9 +369,9 @@ public class NetworkXenonBackendTest {
 
     @Test
     public void testWhenVmsAreAttached() throws Throwable {
-      NetworkCreateSpec spec = createNetworkCreateSpec();
+      SubnetCreateSpec spec = createNetworkCreateSpec();
       TaskEntity task = networkBackend.createNetwork(spec);
-      ResourceList<Network> networks = networkBackend.filter(Optional.fromNullable(spec.getName()),
+      ResourceList<Subnet> networks = networkBackend.filter(Optional.fromNullable(spec.getName()),
           Optional.<String>absent(), Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
       assertThat(networks.getItems().size(), is(1));
 
@@ -404,9 +404,9 @@ public class NetworkXenonBackendTest {
       networks = networkBackend.filter(Optional.fromNullable(spec.getName()), Optional.<String>absent(),
           Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
       assertThat(networks.getItems().size(), is(1));
-      Network network = networks.getItems().get(0);
-      assertThat(network.getId(), is(networkId));
-      assertThat(network.getState(), is(NetworkState.PENDING_DELETE));
+      Subnet subnet = networks.getItems().get(0);
+      assertThat(subnet.getId(), is(networkId));
+      assertThat(subnet.getState(), is(SubnetState.PENDING_DELETE));
     }
 
     @Test(expectedExceptions = NetworkNotFoundException.class)
@@ -416,9 +416,9 @@ public class NetworkXenonBackendTest {
 
     @Test
     public void testDeletePendingDeleteNetwork() throws Exception {
-      NetworkCreateSpec spec = createNetworkCreateSpec();
+      SubnetCreateSpec spec = createNetworkCreateSpec();
       TaskEntity task = networkBackend.createNetwork(spec);
-      ResourceList<Network> networks = networkBackend.filter(Optional.fromNullable(spec.getName()),
+      ResourceList<Subnet> networks = networkBackend.filter(Optional.fromNullable(spec.getName()),
           Optional.<String>absent(), Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
       assertThat(networks.getItems().size(), is(1));
 
@@ -516,9 +516,9 @@ public class NetworkXenonBackendTest {
 
       TombstoneEntity tombstone = tombstoneBackend.getByEntityId(entity.getId());
       assertThat(tombstone.getEntityId(), is(entity.getId()));
-      assertThat(tombstone.getEntityKind(), is(Network.KIND));
+      assertThat(tombstone.getEntityKind(), is(Subnet.KIND));
 
-      ResourceList<Network> networks = networkBackend.filter(Optional.fromNullable(entity.getName()),
+      ResourceList<Subnet> networks = networkBackend.filter(Optional.fromNullable(entity.getName()),
           Optional.<String>absent(), Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
       assertThat(networks.getItems().size(), is(0));
     }
@@ -551,13 +551,13 @@ public class NetworkXenonBackendTest {
       assertThat(tombstoneBackend.getByEntityId(entity.getId()), nullValue());
 
 
-      ResourceList<Network> networks = networkBackend.filter(Optional.fromNullable(entity.getName()),
+      ResourceList<Subnet> networks = networkBackend.filter(Optional.fromNullable(entity.getName()),
           Optional.<String>absent(), Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
       assertThat(networks.getItems().size(), is(1));
 
-      Network network = networks.getItems().get(0);
-      assertThat(network.getId(), is(entity.getId()));
-      assertThat(network.getState(), is(NetworkState.READY));
+      Subnet subnet = networks.getItems().get(0);
+      assertThat(subnet.getId(), is(entity.getId()));
+      assertThat(subnet.getState(), is(SubnetState.READY));
     }
 
     @Test(enabled = false)
@@ -602,7 +602,7 @@ public class NetworkXenonBackendTest {
 
     @Test
     public void testSuccess() throws Throwable {
-      NetworkCreateSpec spec = createNetworkCreateSpec();
+      SubnetCreateSpec spec = createNetworkCreateSpec();
       TaskEntity taskEntity = networkBackend.createNetwork(spec);
       String networkId = taskEntity.getEntityId();
 
@@ -674,7 +674,7 @@ public class NetworkXenonBackendTest {
     }
 
     private String createAndSetDefaultNetwork(String portGroup) throws Throwable {
-      NetworkCreateSpec spec = createNetworkCreateSpec();
+      SubnetCreateSpec spec = createNetworkCreateSpec();
       // This is to avoid port group conflict between multiple networks, since the createNetworkCreateSpec utility
       // function uses static port group setting.
       List<String> portGroups = new ArrayList<>();

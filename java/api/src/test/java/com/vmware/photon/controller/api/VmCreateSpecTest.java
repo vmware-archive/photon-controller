@@ -52,7 +52,7 @@ public class VmCreateSpecTest {
     vmCreateSpec.setEnvironment(ImmutableMap.of("k1", "v1", "k2", "v2"));
     vmCreateSpec.setAffinities(affinities);
     vmCreateSpec.setSourceImageId("image-id");
-    vmCreateSpec.setNetworks(ImmutableList.of("network1", "network2"));
+    vmCreateSpec.setSubnets(ImmutableList.of("network1", "network2"));
   }
 
   @Test

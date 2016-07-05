@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.apife.exceptions.external;
 
-import com.vmware.photon.controller.api.Network;
+import com.vmware.photon.controller.api.Subnet;
 import com.vmware.photon.controller.api.common.exceptions.external.ErrorCode;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 
@@ -28,13 +28,13 @@ import java.util.Map;
  */
 public class PortGroupsAlreadyAddedToNetworkException extends ExternalException {
 
-  private final Map<String, Network> violations;
+  private final Map<String, Subnet> violations;
 
-  public PortGroupsAlreadyAddedToNetworkException(Map<String, Network> violations) {
+  public PortGroupsAlreadyAddedToNetworkException(Map<String, Subnet> violations) {
     super(ErrorCode.PORT_GROUP_ALREADY_ADDED_TO_NETWORK);
 
     this.violations = violations;
-    for (Map.Entry<String, Network> violation : violations.entrySet()) {
+    for (Map.Entry<String, Subnet> violation : violations.entrySet()) {
       addData("portGroup", violation.getKey());
       addData("network", violation.getValue().getId());
     }
@@ -43,7 +43,7 @@ public class PortGroupsAlreadyAddedToNetworkException extends ExternalException 
   @Override
   public String getMessage() {
     List<String> message = new ArrayList<>(violations.size());
-    for (Map.Entry<String, Network> violation : violations.entrySet()) {
+    for (Map.Entry<String, Subnet> violation : violations.entrySet()) {
       message.add("Port group " + violation.getKey() + " is already added to network "
           + violation.getValue().toString());
     }

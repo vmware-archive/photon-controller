@@ -14,9 +14,9 @@
 package com.vmware.photon.controller.apife.resources;
 
 import com.vmware.photon.controller.api.ApiError;
-import com.vmware.photon.controller.api.Network;
-import com.vmware.photon.controller.api.NetworkCreateSpec;
 import com.vmware.photon.controller.api.ResourceList;
+import com.vmware.photon.controller.api.Subnet;
+import com.vmware.photon.controller.api.SubnetCreateSpec;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.common.exceptions.external.ErrorCode;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
@@ -63,14 +63,14 @@ public class SubnetsResourceTest extends ResourceTest {
   @Mock
   private NetworkFeClient networkFeClient;
 
-  private NetworkCreateSpec spec;
+  private SubnetCreateSpec spec;
   private PaginationConfig paginationConfig = new PaginationConfig();
-  private Network n1 = createNetwork("n1");
-  private Network n2 = createNetwork("n2");
+  private Subnet n1 = createSubnet("n1");
+  private Subnet n2 = createSubnet("n2");
 
   @Override
   public void setUpResources() throws Exception {
-    spec = new NetworkCreateSpec();
+    spec = new SubnetCreateSpec();
     spec.setName("network1");
     spec.setDescription("VM VLAN");
     spec.setPortGroups(ImmutableList.of("PG1", "PG2"));
@@ -87,7 +87,7 @@ public class SubnetsResourceTest extends ResourceTest {
     task.setId(taskId);
     when(networkFeClient.create(spec)).thenReturn(task);
 
-    Response response = createNetwork();
+    Response response = createSubnet();
     assertThat(response.getStatus(), is(201));
 
     Task responseTask = response.readEntity(Task.class);
@@ -98,13 +98,13 @@ public class SubnetsResourceTest extends ResourceTest {
   @Test
   public void testFailedCreateNetwork() throws Exception {
     when(networkFeClient.create(spec)).thenThrow(new ExternalException("failed"));
-    assertThat(createNetwork().getStatus(), is(500));
+    assertThat(createSubnet().getStatus(), is(500));
   }
 
   @Test
   public void testInvalidNetwork() throws Exception {
     spec.setName(" bad name");
-    assertThat(createNetwork().getStatus(), is(400));
+    assertThat(createSubnet().getStatus(), is(400));
   }
 
   @Test
@@ -117,7 +117,7 @@ public class SubnetsResourceTest extends ResourceTest {
   }
 
   @Test(dataProvider = "pageSizes")
-  public void testGetNetworks(Optional<Integer> pageSize, List<Network> expectedNetworks) throws Exception {
+  public void testGetNetworks(Optional<Integer> pageSize, List<Subnet> expectedSubnets) throws Exception {
     doReturn(new ResourceList<>(ImmutableList.of(n1, n2)))
         .when(networkFeClient)
         .find(Optional.<String>absent(), Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
@@ -134,16 +134,16 @@ public class SubnetsResourceTest extends ResourceTest {
     Response response = getNetworks(Optional.<String>absent(), pageSize, Optional.<String>absent());
     assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
 
-    ResourceList<Network> networks = response.readEntity(new GenericType<ResourceList<Network>>() {
+    ResourceList<Subnet> networks = response.readEntity(new GenericType<ResourceList<Subnet>>() {
     });
-    assertThat(networks.getItems().size(), is(expectedNetworks.size()));
+    assertThat(networks.getItems().size(), is(expectedSubnets.size()));
 
     for (int i = 0; i < networks.getItems().size(); i++) {
-      Network network = networks.getItems().get(i);
-      assertThat(network, is(expectedNetworks.get(i)));
-      assertThat(new URI(network.getSelfLink()).isAbsolute(), is(true));
-      assertThat(network.getSelfLink().endsWith(UriBuilder.fromPath(SubnetResourceRoutes.SUBNET_PATH)
-          .build(network.getId()).toString()), is(true));
+      Subnet subnet = networks.getItems().get(i);
+      assertThat(subnet, is(expectedSubnets.get(i)));
+      assertThat(new URI(subnet.getSelfLink()).isAbsolute(), is(true));
+      assertThat(subnet.getSelfLink().endsWith(UriBuilder.fromPath(SubnetResourceRoutes.SUBNET_PATH)
+          .build(subnet.getId()).toString()), is(true));
     }
   }
 
@@ -169,7 +169,7 @@ public class SubnetsResourceTest extends ResourceTest {
     Response response = getNetworks(Optional.of("n1"), Optional.<Integer>absent(), Optional.<String>absent());
     assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
 
-    ResourceList<Network> networks = response.readEntity(new GenericType<ResourceList<Network>>() {
+    ResourceList<Subnet> networks = response.readEntity(new GenericType<ResourceList<Subnet>>() {
     });
 
     assertThat(networks.getItems().size(), is(1));
@@ -185,15 +185,15 @@ public class SubnetsResourceTest extends ResourceTest {
     Response response = getNetworks(Optional.<String>absent(), Optional.<Integer>absent(), Optional.of(pageLink));
     assertThat(response.getStatus(), is(Response.Status.OK.getStatusCode()));
 
-    ResourceList<Network> networks = response.readEntity(new GenericType<ResourceList<Network>>() {
+    ResourceList<Subnet> networks = response.readEntity(new GenericType<ResourceList<Subnet>>() {
     });
     assertThat(networks.getItems().size(), is(1));
 
-    Network network = networks.getItems().get(0);
-    assertThat(network, is(n1));
-    assertThat(new URI(network.getSelfLink()).isAbsolute(), is(true));
-    assertThat(network.getSelfLink().endsWith(UriBuilder.fromPath(SubnetResourceRoutes.SUBNET_PATH)
-        .build(network.getId()).toString()), is(true));
+    Subnet subnet = networks.getItems().get(0);
+    assertThat(subnet, is(n1));
+    assertThat(new URI(subnet.getSelfLink()).isAbsolute(), is(true));
+    assertThat(subnet.getSelfLink().endsWith(UriBuilder.fromPath(SubnetResourceRoutes.SUBNET_PATH)
+        .build(subnet.getId()).toString()), is(true));
   }
 
   @Test
@@ -211,7 +211,7 @@ public class SubnetsResourceTest extends ResourceTest {
     assertThat(errors.getMessage(), is(expectedErrorMessage));
   }
 
-  private Response createNetwork() {
+  private Response createSubnet() {
     return client()
         .target(SubnetResourceRoutes.API)
         .request()
@@ -233,12 +233,12 @@ public class SubnetsResourceTest extends ResourceTest {
     return resource.request().get();
   }
 
-  private Network createNetwork(String name) {
-    Network network = new Network();
-    network.setId(UUID.randomUUID().toString());
-    network.setName(name);
-    network.setPortGroups(ImmutableList.of("PG1"));
-    return network;
+  private Subnet createSubnet(String name) {
+    Subnet subnet = new Subnet();
+    subnet.setId(UUID.randomUUID().toString());
+    subnet.setName(name);
+    subnet.setPortGroups(ImmutableList.of("PG1"));
+    return subnet;
   }
 
   @DataProvider(name = "pageSizes")
