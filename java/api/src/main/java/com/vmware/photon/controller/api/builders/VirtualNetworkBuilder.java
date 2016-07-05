@@ -13,46 +13,46 @@
 
 package com.vmware.photon.controller.api.builders;
 
-import com.vmware.photon.controller.api.NetworkState;
 import com.vmware.photon.controller.api.RoutingType;
-import com.vmware.photon.controller.api.VirtualNetwork;
+import com.vmware.photon.controller.api.SubnetState;
+import com.vmware.photon.controller.api.VirtualSubnet;
 
 /**
- * Builder class for {@link com.vmware.photon.controller.api.VirtualNetwork}.
+ * Builder class for {@link VirtualSubnet}.
  */
 public class VirtualNetworkBuilder {
-  private VirtualNetwork virtualNetwork;
+  private VirtualSubnet virtualSubnet;
 
   public VirtualNetworkBuilder() {
-    virtualNetwork = new VirtualNetwork();
+    virtualSubnet = new VirtualSubnet();
   }
 
   public VirtualNetworkBuilder name(String name) {
-    virtualNetwork.setName(name);
+    virtualSubnet.setName(name);
     return this;
   }
 
   public VirtualNetworkBuilder description(String description) {
-    virtualNetwork.setDescription(description);
+    virtualSubnet.setDescription(description);
     return this;
   }
 
-  public VirtualNetworkBuilder state(NetworkState state) {
-    virtualNetwork.setState(state);
+  public VirtualNetworkBuilder state(SubnetState state) {
+    virtualSubnet.setState(state);
     return this;
   }
 
   public VirtualNetworkBuilder routingType(RoutingType routingType) {
-    virtualNetwork.setRoutingType(routingType);
+    virtualSubnet.setRoutingType(routingType);
     return this;
   }
 
   public VirtualNetworkBuilder isDefault(Boolean isDefault) {
-    virtualNetwork.setIsDefault(isDefault);
+    virtualSubnet.setIsDefault(isDefault);
     return this;
   }
 
-  public VirtualNetwork build() {
-    return virtualNetwork;
+  public VirtualSubnet build() {
+    return virtualSubnet;
   }
 }

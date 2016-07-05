@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.apife.entities;
 
-import com.vmware.photon.controller.api.NetworkState;
+import com.vmware.photon.controller.api.SubnetState;
 
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
@@ -50,29 +50,29 @@ public class NetworkEntityTest {
   @DataProvider(name = "getSetValidStateParams")
   public Object[][] getSetValidStateParams() {
     return new Object[][]{
-        new Object[]{null, NetworkState.CREATING},
-        new Object[]{null, NetworkState.READY},
-        new Object[]{null, NetworkState.PENDING_DELETE},
-        new Object[]{null, NetworkState.ERROR},
-        new Object[]{null, NetworkState.DELETED},
-        new Object[]{NetworkState.CREATING, null},
-        new Object[]{NetworkState.CREATING, NetworkState.READY},
-        new Object[]{NetworkState.CREATING, NetworkState.ERROR},
-        new Object[]{NetworkState.CREATING, NetworkState.DELETED},
-        new Object[]{NetworkState.READY, null},
-        new Object[]{NetworkState.READY, NetworkState.PENDING_DELETE},
-        new Object[]{NetworkState.READY, NetworkState.ERROR},
-        new Object[]{NetworkState.READY, NetworkState.DELETED},
-        new Object[]{NetworkState.PENDING_DELETE, NetworkState.ERROR},
-        new Object[]{NetworkState.PENDING_DELETE, NetworkState.DELETED},
-        new Object[]{NetworkState.ERROR, null},
-        new Object[]{NetworkState.ERROR, NetworkState.DELETED},
-        new Object[]{NetworkState.DELETED, null}
+        new Object[]{null, SubnetState.CREATING},
+        new Object[]{null, SubnetState.READY},
+        new Object[]{null, SubnetState.PENDING_DELETE},
+        new Object[]{null, SubnetState.ERROR},
+        new Object[]{null, SubnetState.DELETED},
+        new Object[]{SubnetState.CREATING, null},
+        new Object[]{SubnetState.CREATING, SubnetState.READY},
+        new Object[]{SubnetState.CREATING, SubnetState.ERROR},
+        new Object[]{SubnetState.CREATING, SubnetState.DELETED},
+        new Object[]{SubnetState.READY, null},
+        new Object[]{SubnetState.READY, SubnetState.PENDING_DELETE},
+        new Object[]{SubnetState.READY, SubnetState.ERROR},
+        new Object[]{SubnetState.READY, SubnetState.DELETED},
+        new Object[]{SubnetState.PENDING_DELETE, SubnetState.ERROR},
+        new Object[]{SubnetState.PENDING_DELETE, SubnetState.DELETED},
+        new Object[]{SubnetState.ERROR, null},
+        new Object[]{SubnetState.ERROR, SubnetState.DELETED},
+        new Object[]{SubnetState.DELETED, null}
     };
   }
 
   @Test(dataProvider = "getSetValidStateParams")
-  public void testSetValidState(NetworkState originalState, NetworkState newState) throws Exception {
+  public void testSetValidState(SubnetState originalState, SubnetState newState) throws Exception {
     NetworkEntity network = new NetworkEntity();
     network.setState(originalState);
     network.setState(newState);
@@ -81,20 +81,20 @@ public class NetworkEntityTest {
   @DataProvider(name = "getSetInvalidStateParams")
   public Object[][] getSetInvalidStateParams() {
     return new Object[][]{
-        new Object[]{NetworkState.CREATING, NetworkState.PENDING_DELETE},
-        new Object[]{NetworkState.READY, NetworkState.CREATING},
-        new Object[]{NetworkState.PENDING_DELETE, NetworkState.CREATING},
-        new Object[]{NetworkState.PENDING_DELETE, NetworkState.READY},
-        new Object[]{NetworkState.ERROR, NetworkState.CREATING},
-        new Object[]{NetworkState.ERROR, NetworkState.READY},
-        new Object[]{NetworkState.DELETED, NetworkState.CREATING},
-        new Object[]{NetworkState.DELETED, NetworkState.READY},
-        new Object[]{NetworkState.DELETED, NetworkState.ERROR}
+        new Object[]{SubnetState.CREATING, SubnetState.PENDING_DELETE},
+        new Object[]{SubnetState.READY, SubnetState.CREATING},
+        new Object[]{SubnetState.PENDING_DELETE, SubnetState.CREATING},
+        new Object[]{SubnetState.PENDING_DELETE, SubnetState.READY},
+        new Object[]{SubnetState.ERROR, SubnetState.CREATING},
+        new Object[]{SubnetState.ERROR, SubnetState.READY},
+        new Object[]{SubnetState.DELETED, SubnetState.CREATING},
+        new Object[]{SubnetState.DELETED, SubnetState.READY},
+        new Object[]{SubnetState.DELETED, SubnetState.ERROR}
     };
   }
 
   @Test(dataProvider = "getSetInvalidStateParams")
-  public void testSetInvalidState(NetworkState originalState, NetworkState newState) throws Exception {
+  public void testSetInvalidState(SubnetState originalState, SubnetState newState) throws Exception {
     NetworkEntity network = new NetworkEntity();
     network.setState(originalState);
 

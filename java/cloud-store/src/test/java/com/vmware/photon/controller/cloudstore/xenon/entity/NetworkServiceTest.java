@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.cloudstore.xenon.entity;
 
-import com.vmware.photon.controller.api.NetworkState;
+import com.vmware.photon.controller.api.SubnetState;
 import com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment;
 import com.vmware.photon.controller.cloudstore.xenon.helpers.TestHelper;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
@@ -104,7 +104,7 @@ public class NetworkServiceTest {
       testNetwork = new NetworkService.State();
       testNetwork.name = "dummyName";
       testNetwork.description = "dummy";
-      testNetwork.state = NetworkState.READY;
+      testNetwork.state = SubnetState.READY;
       testNetwork.portGroups = new ArrayList<>();
       testNetwork.portGroups.add("PG1");
       testNetwork.portGroups.add("PG2");
@@ -148,7 +148,7 @@ public class NetworkServiceTest {
     public void testMissingName() throws Throwable {
       NetworkService.State startState = new NetworkService.State();
       startState.portGroups = new ArrayList<>();
-      startState.state = NetworkState.READY;
+      startState.state = SubnetState.READY;
 
       try {
         host.startServiceSynchronously(service, startState);
@@ -168,7 +168,7 @@ public class NetworkServiceTest {
       NetworkService.State startState = new NetworkService.State();
       startState.name = "n1";
       startState.portGroups = null;
-      startState.state = NetworkState.READY;
+      startState.state = SubnetState.READY;
 
       try {
         host.startServiceSynchronously(service, startState);
@@ -190,7 +190,7 @@ public class NetworkServiceTest {
       testNetwork = new NetworkService.State();
       testNetwork.name = "dummyName";
       testNetwork.description = "dummy";
-      testNetwork.state = NetworkState.READY;
+      testNetwork.state = SubnetState.READY;
       testNetwork.portGroups = new ArrayList<>();
       testNetwork.portGroups.add("PG1");
       testNetwork.portGroups.add("PG2");
@@ -236,7 +236,7 @@ public class NetworkServiceTest {
 
       NetworkService.State patchState = new NetworkService.State();
       patchState.portGroups = new ArrayList<>();
-      patchState.state = NetworkState.PENDING_DELETE;
+      patchState.state = SubnetState.PENDING_DELETE;
       patchState.deleteRequestTime = System.currentTimeMillis();
       patchState.isDefault = true;
 
@@ -250,7 +250,7 @@ public class NetworkServiceTest {
       NetworkService.State savedState = host.getServiceState(
           NetworkService.State.class, patchedState.documentSelfLink);
       assertThat(savedState.name, is(testNetwork.name));
-      assertThat(savedState.state, is(NetworkState.PENDING_DELETE));
+      assertThat(savedState.state, is(SubnetState.PENDING_DELETE));
       assertThat(savedState.deleteRequestTime, is(patchState.deleteRequestTime));
       assertThat(savedState.isDefault, is(patchState.isDefault));
     }
@@ -271,7 +271,7 @@ public class NetworkServiceTest {
       startState.name = "n1";
       startState.portGroups = new ArrayList<>();
       startState.portGroups.add("P1");
-      startState.state = NetworkState.READY;
+      startState.state = SubnetState.READY;
 
       testEnvironment.callServiceSynchronously(
           NetworkServiceFactory.SELF_LINK,
@@ -347,7 +347,7 @@ public class NetworkServiceTest {
       testState.name = "n1";
       testState.portGroups = new ArrayList<>();
       testState.portGroups.add("P1");
-      testState.state = NetworkState.READY;
+      testState.state = SubnetState.READY;
 
       host.startServiceSynchronously(new NetworkServiceFactory(), null);
     }

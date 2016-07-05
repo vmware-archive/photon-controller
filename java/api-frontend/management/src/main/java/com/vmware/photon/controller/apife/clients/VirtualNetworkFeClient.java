@@ -13,13 +13,13 @@
 
 package com.vmware.photon.controller.apife.clients;
 
-import com.vmware.photon.controller.api.NetworkState;
 import com.vmware.photon.controller.api.Operation;
 import com.vmware.photon.controller.api.Project;
 import com.vmware.photon.controller.api.ResourceList;
+import com.vmware.photon.controller.api.SubnetState;
 import com.vmware.photon.controller.api.Task;
-import com.vmware.photon.controller.api.VirtualNetwork;
 import com.vmware.photon.controller.api.VirtualNetworkCreateSpec;
+import com.vmware.photon.controller.api.VirtualSubnet;
 import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
@@ -107,13 +107,13 @@ public class VirtualNetworkFeClient {
       throw new NetworkNotFoundException(networkId);
     }
 
-    if (NetworkState.PENDING_DELETE.equals(virtualNetworkState.state)) {
+    if (SubnetState.PENDING_DELETE.equals(virtualNetworkState.state)) {
       throw new InvalidNetworkStateException(
           String.format("Invalid operation to delete virtual network %s in state PENDING_DELETE", networkId));
     }
 
     VirtualNetworkService.State networkState = new VirtualNetworkService.State();
-    networkState.state = NetworkState.PENDING_DELETE;
+    networkState.state = SubnetState.PENDING_DELETE;
     networkState.deleteRequestTime = System.currentTimeMillis();
     this.patchNetworkService(networkId, networkState);
 
@@ -131,14 +131,14 @@ public class VirtualNetworkFeClient {
         .post(DeleteVirtualNetworkWorkflowService.FACTORY_LINK, startState)
         .getBody(DeleteVirtualNetworkWorkflowDocument.class);
 
-    tombstoneBackend.create(VirtualNetwork.KIND, networkId);
+    tombstoneBackend.create(VirtualSubnet.KIND, networkId);
     return TaskUtils.convertBackEndToFrontEnd(finalState.taskServiceState);
   }
 
   /**
    * Gets the virtual network by ID.
    */
-  public VirtualNetwork get(String networkId) throws ExternalException {
+  public VirtualSubnet get(String networkId) throws ExternalException {
     VirtualNetworkService.State virtualNetworkState = getNetworkById(networkId);
     if (virtualNetworkState == null) {
       throw new NetworkNotFoundException(networkId);
@@ -154,10 +154,10 @@ public class VirtualNetworkFeClient {
    *
    * Parent ID can be project/tenant ID, or can be null in case the virtual network is global.
    */
-  public ResourceList<VirtualNetwork> list(String parentId,
-                                           String parentKind,
-                                           Optional<String> name,
-                                           Optional<Integer> pageSize) throws ExternalException {
+  public ResourceList<VirtualSubnet> list(String parentId,
+                                          String parentKind,
+                                          Optional<String> name,
+                                          Optional<Integer> pageSize) throws ExternalException {
     final ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
 
     if (parentId != null) {
@@ -186,7 +186,7 @@ public class VirtualNetworkFeClient {
   /**
    * Gets the remaining list of the virtual network.
    */
-  public ResourceList<VirtualNetwork> nextList(String pageLink) throws ExternalException {
+  public ResourceList<VirtualSubnet> nextList(String pageLink) throws ExternalException {
     ServiceDocumentQueryResult queryResult;
     try {
       queryResult = cloudStoreClient.queryDocumentPage(pageLink);
@@ -238,7 +238,7 @@ public class VirtualNetworkFeClient {
 
     return taskBackend.createCompletedTask(
         ServiceUtils.getIDFromDocumentSelfLink(newDefaultNetwork.documentSelfLink),
-        VirtualNetwork.KIND,
+        VirtualSubnet.KIND,
         projectId,
         Operation.SET_DEFAULT_NETWORK.toString());
   }

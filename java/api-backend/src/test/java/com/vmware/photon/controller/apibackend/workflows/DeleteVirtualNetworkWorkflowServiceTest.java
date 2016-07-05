@@ -13,8 +13,8 @@
 
 package com.vmware.photon.controller.apibackend.workflows;
 
-import com.vmware.photon.controller.api.NetworkState;
 import com.vmware.photon.controller.api.RoutingType;
+import com.vmware.photon.controller.api.SubnetState;
 import com.vmware.photon.controller.apibackend.helpers.ReflectionUtils;
 import com.vmware.photon.controller.apibackend.helpers.TestEnvironment;
 import com.vmware.photon.controller.apibackend.helpers.TestHelper;
@@ -107,7 +107,7 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
       throws Throwable {
     VirtualNetworkService.State virtualNetwork = new VirtualNetworkService.State();
     virtualNetwork.name = "virtual_network_name";
-    virtualNetwork.state = NetworkState.CREATING;
+    virtualNetwork.state = SubnetState.CREATING;
     virtualNetwork.routingType = RoutingType.ROUTED;
     virtualNetwork.parentId = "parentId";
     virtualNetwork.parentKind = "parentKind";
@@ -120,7 +120,7 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
 
     VirtualNetworkService.State createdState = result.getBody(VirtualNetworkService.State.class);
     VirtualNetworkService.State patchState = new VirtualNetworkService.State();
-    patchState.state = NetworkState.READY;
+    patchState.state = SubnetState.READY;
     result = testEnvironment.sendPatchAndWait(createdState.documentSelfLink, patchState);
     assertThat(result.getStatusCode(), is(Operation.STATUS_CODE_OK));
 
@@ -217,6 +217,7 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
     /**
      * Verifies that when a field of the initial state has null value but is annotated as mandatory,
      * the workflow will validate the state and fail.
+     *
      * @throws Throwable
      */
     @Test
@@ -700,7 +701,7 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
       assertThat(finalState.password, is(NETWORK_MANAGER_PASSWORD));
       assertThat(finalState.taskServiceEntity, notNullValue());
       assertThat(finalState.taskServiceEntity.documentSelfLink, notNullValue());
-      assertThat(finalState.taskServiceEntity.state, is(NetworkState.DELETED));
+      assertThat(finalState.taskServiceEntity.state, is(SubnetState.DELETED));
       assertThat(finalState.taskServiceState, notNullValue());
       assertThat(finalState.taskServiceState.state, is(TaskService.State.TaskState.COMPLETED));
 

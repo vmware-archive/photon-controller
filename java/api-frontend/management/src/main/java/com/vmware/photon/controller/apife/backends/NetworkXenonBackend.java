@@ -13,11 +13,11 @@
 
 package com.vmware.photon.controller.apife.backends;
 
-import com.vmware.photon.controller.api.Network;
-import com.vmware.photon.controller.api.NetworkCreateSpec;
-import com.vmware.photon.controller.api.NetworkState;
 import com.vmware.photon.controller.api.Operation;
 import com.vmware.photon.controller.api.ResourceList;
+import com.vmware.photon.controller.api.Subnet;
+import com.vmware.photon.controller.api.SubnetCreateSpec;
+import com.vmware.photon.controller.api.SubnetState;
 import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
@@ -28,7 +28,7 @@ import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidNetworkStateException;
 import com.vmware.photon.controller.apife.exceptions.external.NetworkNotFoundException;
 import com.vmware.photon.controller.apife.exceptions.external.PortGroupRepeatedInMultipleNetworksException;
-import com.vmware.photon.controller.apife.exceptions.external.PortGroupsAlreadyAddedToNetworkException;
+import com.vmware.photon.controller.apife.exceptions.external.PortGroupsAlreadyAddedToSubnetException;
 import com.vmware.photon.controller.apife.utils.PaginationUtils;
 import com.vmware.photon.controller.cloudstore.xenon.entity.NetworkService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.NetworkServiceFactory;
@@ -83,13 +83,13 @@ public class NetworkXenonBackend implements NetworkBackend {
   }
 
   @Override
-  public TaskEntity createNetwork(NetworkCreateSpec network)
-      throws PortGroupsAlreadyAddedToNetworkException {
+  public TaskEntity createNetwork(SubnetCreateSpec network)
+      throws PortGroupsAlreadyAddedToSubnetException {
     NetworkService.State state = new NetworkService.State();
     state.name = network.getName();
     state.description = network.getDescription();
     state.portGroups = checkPortGroupsNotAddedToAnyNetwork(network.getPortGroups());
-    state.state = NetworkState.READY;
+    state.state = SubnetState.READY;
 
     com.vmware.xenon.common.Operation result = xenonClient.post(NetworkServiceFactory.SELF_LINK, state);
 
@@ -105,7 +105,7 @@ public class NetworkXenonBackend implements NetworkBackend {
   }
 
   @Override
-  public ResourceList<Network> filter(Optional<String> name, Optional<String> portGroup, Optional<Integer> pageSize) {
+  public ResourceList<Subnet> filter(Optional<String> name, Optional<String> portGroup, Optional<Integer> pageSize) {
     ServiceDocumentQueryResult queryResult = filterServiceDocuments(name, portGroup, pageSize);
 
     return PaginationUtils.xenonQueryResultToResourceList(NetworkService.State.class, queryResult,
@@ -147,25 +147,25 @@ public class NetworkXenonBackend implements NetworkBackend {
     xenonClient.delete(
         NetworkServiceFactory.SELF_LINK + "/" + network.getId(),
         new NetworkService.State());
-    tombstoneBackend.create(Network.KIND, network.getId());
+    tombstoneBackend.create(Subnet.KIND, network.getId());
     logger.info("network {} tombstoned", network.getId());
   }
 
   @Override
-  public Network toApiRepresentation(String id) throws NetworkNotFoundException {
+  public Subnet toApiRepresentation(String id) throws NetworkNotFoundException {
     return toApiRepresentation(convertToEntity(getById(id)));
   }
 
   @Override
   public TaskEntity prepareNetworkDelete(String id) throws ExternalException {
     NetworkEntity network = convertToEntity(getById(id));
-    if (NetworkState.PENDING_DELETE.equals(network.getState())) {
+    if (SubnetState.PENDING_DELETE.equals(network.getState())) {
       throw new InvalidNetworkStateException(
           String.format("Invalid operation to delete network %s in state PENDING_DELETE", network.getId()));
     }
 
     NetworkService.State networkState = new NetworkService.State();
-    networkState.state = NetworkState.PENDING_DELETE;
+    networkState.state = SubnetState.PENDING_DELETE;
     networkState.deleteRequestTime = System.currentTimeMillis();
     this.patchNetworkService(id, networkState);
     this.tombstone(network);
@@ -228,7 +228,7 @@ public class NetworkXenonBackend implements NetworkBackend {
   }
 
   @Override
-  public ResourceList<Network> getPage(String pageLink) throws ExternalException {
+  public ResourceList<Subnet> getPage(String pageLink) throws ExternalException {
     ServiceDocumentQueryResult queryResult = null;
     try {
       queryResult = xenonClient.queryDocumentPage(pageLink);
@@ -241,10 +241,10 @@ public class NetworkXenonBackend implements NetworkBackend {
   }
 
   private List<String> checkPortGroupsNotAddedToAnyNetwork(List<String> portGroups)
-      throws PortGroupsAlreadyAddedToNetworkException {
-    Map<String, Network> violations = new HashMap<>();
+      throws PortGroupsAlreadyAddedToSubnetException {
+    Map<String, Subnet> violations = new HashMap<>();
     for (String portGroup : portGroups) {
-      ResourceList<Network> networks = filter(Optional.<String>absent(), Optional.of(portGroup),
+      ResourceList<Subnet> networks = filter(Optional.<String>absent(), Optional.of(portGroup),
           Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
       if (!networks.getItems().isEmpty()) {
         violations.put(portGroup, networks.getItems().get(0));
@@ -252,7 +252,7 @@ public class NetworkXenonBackend implements NetworkBackend {
     }
 
     if (!violations.isEmpty()) {
-      throw new PortGroupsAlreadyAddedToNetworkException(violations);
+      throw new PortGroupsAlreadyAddedToSubnetException(violations);
     }
     return portGroups;
   }
@@ -321,16 +321,16 @@ public class NetworkXenonBackend implements NetworkBackend {
     return networkEntity;
   }
 
-  private Network toApiRepresentation(NetworkEntity entity) {
-    Network network = new Network();
-    network.setId(entity.getId());
-    network.setName(entity.getName());
-    network.setState(entity.getState());
-    network.setDescription(entity.getDescription());
-    network.setPortGroups(getPortGroupsFromJSONString(entity.getPortGroups()));
-    network.setIsDefault(entity.getIsDefault());
+  private Subnet toApiRepresentation(NetworkEntity entity) {
+    Subnet subnet = new Subnet();
+    subnet.setId(entity.getId());
+    subnet.setName(entity.getName());
+    subnet.setState(entity.getState());
+    subnet.setDescription(entity.getDescription());
+    subnet.setPortGroups(getPortGroupsFromJSONString(entity.getPortGroups()));
+    subnet.setIsDefault(entity.getIsDefault());
 
-    return network;
+    return subnet;
   }
 
   private ServiceDocumentQueryResult filterServiceDocuments(Optional<String> name, Optional<String> portGroup,
