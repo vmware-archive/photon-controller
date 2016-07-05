@@ -50,7 +50,7 @@ import java.util.UUID;
 /**
  * Tests for {@link com.vmware.photon.controller.apibackend.tasks.ConfigureRoutingTaskService}.
  */
-public class ConfigRoutingTaskServiceTest {
+public class ConfigureRoutingTaskServiceTest {
 
   @Test(enabled = false)
   private void dummy() {
@@ -69,10 +69,11 @@ public class ConfigRoutingTaskServiceTest {
           Service.ServiceOption.REPLICATION,
           Service.ServiceOption.INSTRUMENTATION);
 
-      CreateLogicalSwitchTaskService service = new CreateLogicalSwitchTaskService();
+      ConfigureRoutingTaskService service = new ConfigureRoutingTaskService();
       assertThat(service.getOptions(), is(expected));
     }
   }
+
   /**
    * Tests for handleStart.
    */
