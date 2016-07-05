@@ -315,17 +315,25 @@ describe "vm", management: true, image: true do
 
         it "can pass portGroup" do
 
+          port_group_affinity = EsxCloud::TestHelpers.get_vm_port_group
+
           create_vm(@project, name: vm_name,
-                    affinities: [{id: get_vm_port_group2, kind: "portGroup"}])
+                    affinities: [{id: port_group_affinity, kind: "portGroup"}])
 
           vms = client.find_vms_by_name(@project.id, vm_name).items
           expect(vms.size).to eq 1
           expect(vms[0].state).to eq "STOPPED"
 
+          # verify one and only one network contains the port group we specified, and that network contains no other
+          # port group
+          networks = client.find_all_networks.items.select {|network| network.portgroups.include?(port_group_affinity)}
+          expect(networks.size).to be(1)
+          expect(networks[0].portgroups.size).to be(1)
+
           # verify network connections
           networks = client.get_vm_networks(vms[0].id).network_connections
           network_ids = networks.map { |n| n.network }
-          expect(network_ids).to match_array([get_vm_port_group2])
+          expect(network_ids).to match_array([port_group_affinity])
         end
 
         it "can pass datastore id", datastore_id:true do
