@@ -13,10 +13,10 @@
 
 package com.vmware.photon.controller.apife.commands.steps;
 
-import com.vmware.photon.controller.api.Network;
 import com.vmware.photon.controller.api.NetworkConnection;
 import com.vmware.photon.controller.api.Operation;
 import com.vmware.photon.controller.api.ResourceList;
+import com.vmware.photon.controller.api.Subnet;
 import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.api.VmNetworks;
 import com.vmware.photon.controller.api.VmState;
@@ -169,7 +169,7 @@ public class VmGetNetworksStepCmd extends StepCommand {
   private void setNetworkInNetworkConnection(VmNetworkInfo vmNetworkInfo, NetworkConnection connection) {
     String portGroup = vmNetworkInfo.getNetwork();
     if (portGroup != null) {
-      ResourceList<Network> networks = networkBackend.filter(
+      ResourceList<Subnet> networks = networkBackend.filter(
           Optional.<String>absent(), Optional.of(portGroup), Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
       Preconditions.checkArgument(networks.getItems().size() <= 1,
           networks.getItems().size() + " networks found with port group " + portGroup);

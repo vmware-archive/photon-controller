@@ -13,8 +13,8 @@
 
 package com.vmware.photon.controller.apife.entities;
 
-import com.vmware.photon.controller.api.Network;
-import com.vmware.photon.controller.api.NetworkState;
+import com.vmware.photon.controller.api.Subnet;
+import com.vmware.photon.controller.api.SubnetState;
 import com.vmware.photon.controller.api.base.Named;
 import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
 
@@ -27,7 +27,7 @@ public class NetworkEntity extends BaseEntity implements Named {
 
   private String description;
 
-  private NetworkState state;
+  private SubnetState state;
 
   private String portGroups;
 
@@ -35,7 +35,7 @@ public class NetworkEntity extends BaseEntity implements Named {
 
   @Override
   public String getKind() {
-    return Network.KIND;
+    return Subnet.KIND;
   }
 
   public String getName() {
@@ -54,13 +54,13 @@ public class NetworkEntity extends BaseEntity implements Named {
     this.description = description;
   }
 
-  public NetworkState getState() {
+  public SubnetState getState() {
     return state;
   }
 
-  public void setState(NetworkState state) {
+  public void setState(SubnetState state) {
     if (this.getState() != null && state != null) {
-      EntityStateValidator.validateStateChange(this.getState(), state, NetworkState.PRECONDITION_STATES);
+      EntityStateValidator.validateStateChange(this.getState(), state, SubnetState.PRECONDITION_STATES);
     }
 
     this.state = state;

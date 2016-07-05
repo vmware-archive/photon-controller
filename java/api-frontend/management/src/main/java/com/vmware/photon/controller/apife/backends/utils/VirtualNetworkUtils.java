@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.apife.backends.utils;
 
-import com.vmware.photon.controller.api.VirtualNetwork;
+import com.vmware.photon.controller.api.VirtualSubnet;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VirtualNetworkService;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 
@@ -25,15 +25,15 @@ public class VirtualNetworkUtils {
   /**
    * Converts virtual network from back-end representation to front-end representation.
    */
-  public static VirtualNetwork convert(VirtualNetworkService.State virtualNetworkState) {
-    VirtualNetwork virtualNetwork = new VirtualNetwork();
-    virtualNetwork.setId(ServiceUtils.getIDFromDocumentSelfLink(virtualNetworkState.documentSelfLink));
-    virtualNetwork.setName(virtualNetworkState.name);
-    virtualNetwork.setDescription(virtualNetworkState.description);
-    virtualNetwork.setState(virtualNetworkState.state);
-    virtualNetwork.setRoutingType(virtualNetworkState.routingType);
-    virtualNetwork.setIsDefault(virtualNetworkState.isDefault);
+  public static VirtualSubnet convert(VirtualNetworkService.State virtualNetworkState) {
+    VirtualSubnet virtualSubnet = new VirtualSubnet();
+    virtualSubnet.setId(ServiceUtils.getIDFromDocumentSelfLink(virtualNetworkState.documentSelfLink));
+    virtualSubnet.setName(virtualNetworkState.name);
+    virtualSubnet.setDescription(virtualNetworkState.description);
+    virtualSubnet.setState(virtualNetworkState.state);
+    virtualSubnet.setRoutingType(virtualNetworkState.routingType);
+    virtualSubnet.setIsDefault(virtualNetworkState.isDefault);
 
-    return virtualNetwork;
+    return virtualSubnet;
   }
 }

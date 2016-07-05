@@ -13,11 +13,12 @@
 
 package com.vmware.photon.controller.api;
 
-import com.vmware.photon.controller.api.helpers.JsonHelpers;
 import com.vmware.photon.controller.api.helpers.Validator;
+import static com.vmware.photon.controller.api.helpers.JsonHelpers.asJson;
+import static com.vmware.photon.controller.api.helpers.JsonHelpers.fromJson;
+import static com.vmware.photon.controller.api.helpers.JsonHelpers.jsonFixture;
 
 import com.google.common.collect.ImmutableList;
-import org.hamcrest.MatcherAssert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -30,9 +31,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Tests {@link Network}.
+ * Tests {@link SubnetCreateSpec}.
  */
-public class NetworkTest {
+public class SubnetCreateSpecTest {
+
+  private Validator validator = new Validator();
+
+  private SubnetCreateSpec subnetCreateSpec;
 
   /**
    * Dummy test case to make Intellij recognize this as a test class.
@@ -41,35 +46,28 @@ public class NetworkTest {
   private void dummy() {
   }
 
-  private Network createValidNetwork() {
-    Network network = new Network();
-    network.setId("id");
-    network.setName("network1");
-    network.setDescription("VM Network");
-    network.setState(NetworkState.READY);
-    network.setPortGroups(ImmutableList.of("PG1", "PG2"));
-    network.setIsDefault(false);
-    return network;
+  private SubnetCreateSpec createValidNetworkCreateSpec() {
+    SubnetCreateSpec subnetCreateSpec = new SubnetCreateSpec();
+    subnetCreateSpec.setName("network1");
+    subnetCreateSpec.setDescription("VM Network");
+    subnetCreateSpec.setPortGroups(ImmutableList.of("PG1", "PG2"));
+    return subnetCreateSpec;
   }
 
   /**
-   * Tests for {@link Network#portGroups}.
+   * Tests for {@link SubnetCreateSpec#portGroups}.
    */
   public class PortGroupsTest {
 
-    private Validator validator = new Validator();
-
-    private Network network;
-
     @BeforeMethod
     public void setUp() {
-      network = createValidNetwork();
+      subnetCreateSpec = createValidNetworkCreateSpec();
     }
 
     @Test(dataProvider = "invalidPortGroups")
     public void testInvalidGateway(List<String> portGroups, String violation) {
-      network.setPortGroups(portGroups);
-      ImmutableList<String> violations = validator.validate(network);
+      subnetCreateSpec.setPortGroups(portGroups);
+      ImmutableList<String> violations = validator.validate(subnetCreateSpec);
 
       assertThat(violations.size(), is(1));
       assertThat(violations.get(0), is(violation));
@@ -85,24 +83,10 @@ public class NetworkTest {
 
     @Test
     public void testValidPortGroups() {
-      network.setPortGroups(ImmutableList.of("PG1", "PG2"));
-      ImmutableList<String> violations = validator.validate(network);
+      subnetCreateSpec.setPortGroups(ImmutableList.of("PG1", "PG2"));
+      ImmutableList<String> violations = validator.validate(subnetCreateSpec);
 
       assertTrue(violations.isEmpty());
-    }
-  }
-
-  /**
-   * Tests {@link Deployment#toString()}.
-   */
-  public class ToStringTest {
-
-    @Test
-    public void testCorrectString() {
-      String expectedString =
-          "Network{id=id, Kind=network, state=READY, description=VM Network, portGroups=[PG1, PG2], isDefault=false}";
-      Network network = createValidNetwork();
-      assertThat(network.toString(), is(expectedString));
     }
   }
 
@@ -111,21 +95,19 @@ public class NetworkTest {
    */
   public class SerializationTest {
 
-    private static final String JSON_FILE = "fixtures/network.json";
-
-    private Network network;
+    private static final String JSON_FILE = "fixtures/network-create-spec.json";
 
     @BeforeMethod
     public void setUp() {
-      network = createValidNetwork();
+      subnetCreateSpec = createValidNetworkCreateSpec();
     }
 
     @Test
     public void testSerialization() throws Exception {
-      String json = JsonHelpers.jsonFixture(JSON_FILE);
+      String json = jsonFixture(JSON_FILE);
 
-      MatcherAssert.assertThat(JsonHelpers.asJson(network), is(equalTo(json)));
-      MatcherAssert.assertThat(JsonHelpers.fromJson(json, Network.class), is(network));
+      assertThat(asJson(subnetCreateSpec), is(equalTo(json)));
+      assertThat(fromJson(json, SubnetCreateSpec.class), is(subnetCreateSpec));
     }
   }
 }

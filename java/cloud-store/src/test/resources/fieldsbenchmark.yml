@@ -104,5 +104,5 @@ NetworkService:
   deleteRequestTime: java.lang.Long
   name: java.lang.String
   description: java.lang.String
-  state: com.vmware.esxcloud.api.NetworkState
+  state: com.vmware.esxcloud.api.SubnetState
   portGroups: java.util.List

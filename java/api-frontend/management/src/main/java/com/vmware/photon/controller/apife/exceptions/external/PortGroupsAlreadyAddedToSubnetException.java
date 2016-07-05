@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.apife.exceptions.external;
 
-import com.vmware.photon.controller.api.Network;
+import com.vmware.photon.controller.api.Subnet;
 import com.vmware.photon.controller.api.common.exceptions.external.ErrorCode;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 
@@ -24,17 +24,17 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Exception thrown when the port group is already added to an existing network.
+ * Exception thrown when the port group is already added to an existing subnet.
  */
-public class PortGroupsAlreadyAddedToNetworkException extends ExternalException {
+public class PortGroupsAlreadyAddedToSubnetException extends ExternalException {
 
-  private final Map<String, Network> violations;
+  private final Map<String, Subnet> violations;
 
-  public PortGroupsAlreadyAddedToNetworkException(Map<String, Network> violations) {
-    super(ErrorCode.PORT_GROUP_ALREADY_ADDED_TO_NETWORK);
+  public PortGroupsAlreadyAddedToSubnetException(Map<String, Subnet> violations) {
+    super(ErrorCode.PORT_GROUP_ALREADY_ADDED_TO_SUBNET);
 
     this.violations = violations;
-    for (Map.Entry<String, Network> violation : violations.entrySet()) {
+    for (Map.Entry<String, Subnet> violation : violations.entrySet()) {
       addData("portGroup", violation.getKey());
       addData("network", violation.getValue().getId());
     }
@@ -43,8 +43,8 @@ public class PortGroupsAlreadyAddedToNetworkException extends ExternalException 
   @Override
   public String getMessage() {
     List<String> message = new ArrayList<>(violations.size());
-    for (Map.Entry<String, Network> violation : violations.entrySet()) {
-      message.add("Port group " + violation.getKey() + " is already added to network "
+    for (Map.Entry<String, Subnet> violation : violations.entrySet()) {
+      message.add("Port group " + violation.getKey() + " is already added to subnet "
           + violation.getValue().toString());
     }
     return Joiner.on(System.getProperty("line.separator")).join(message);
