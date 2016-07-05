@@ -21,6 +21,7 @@ import com.wordnik.swagger.annotations.ApiModelProperty;
 
 import javax.validation.constraints.NotNull;
 
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -55,6 +56,30 @@ public class VirtualNetwork extends VisibleModel {
   @JsonProperty
   @ApiModelProperty(value = "Indicates whether the network is default", required = false)
   private Boolean isDefault;
+
+  @JsonProperty
+  @ApiModelProperty(value = "CIDR of the virtual network", required = false)
+  private String cidr;
+
+  @JsonProperty
+  @ApiModelProperty(value = "Smallest dynamic IP of the available dynamic IP range", required = false)
+  private String lowIpDynamic;
+
+  @JsonProperty
+  @ApiModelProperty(value = "Biggest dynamic IP of the available dynamic IP range", required = false)
+  private String highIpDynamic;
+
+  @JsonProperty
+  @ApiModelProperty(value = "Smallest static IP of the available static IP range", required = false)
+  private String lowIpStatic;
+
+  @JsonProperty
+  @ApiModelProperty(value = "Biggest static IP of the available static IP range", required = false)
+  private String highIpStatic;
+
+  @JsonProperty
+  @ApiModelProperty(value = "List of IPs reserved for infrastructure use.", required = false)
+  private List<String> reservedIpList;
 
   @Override
   public String getKind() {
@@ -93,6 +118,54 @@ public class VirtualNetwork extends VisibleModel {
     this.isDefault = isDefault;
   }
 
+  public String getCidr() {
+    return cidr;
+  }
+
+  public void setCidr(String cidr) {
+    this.cidr = cidr;
+  }
+
+  public String getLowIpDynamic() {
+    return lowIpDynamic;
+  }
+
+  public void setLowIpDynamic(String lowIpDynamic) {
+    this.lowIpDynamic = lowIpDynamic;
+  }
+
+  public String getHighIpDynamic() {
+    return highIpDynamic;
+  }
+
+  public void setHighIpDynamic(String highIpDynamic) {
+    this.highIpDynamic = highIpDynamic;
+  }
+
+  public String getLowIpStatic() {
+    return lowIpStatic;
+  }
+
+  public void setLowIpStatic(String lowIpStatic) {
+    this.lowIpStatic = lowIpStatic;
+  }
+
+  public String getHighIpStatic() {
+    return highIpStatic;
+  }
+
+  public void setHighIpStatic(String highIpStatic) {
+    this.highIpStatic = highIpStatic;
+  }
+
+  public List<String> getReservedIpList() {
+    return reservedIpList;
+  }
+
+  public void setReservedIpList(List<String> reservedIpList) {
+    this.reservedIpList = reservedIpList;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -109,7 +182,12 @@ public class VirtualNetwork extends VisibleModel {
         && Objects.equals(this.description, other.description)
         && Objects.equals(this.state, other.state)
         && Objects.equals(this.routingType, other.routingType)
-        && Objects.equals(this.isDefault, other.isDefault);
+        && Objects.equals(this.isDefault, other.isDefault)
+        && Objects.equals(this.cidr, other.cidr)
+        && Objects.equals(this.lowIpDynamic, other.lowIpDynamic)
+        && Objects.equals(this.highIpDynamic, other.highIpDynamic)
+        && Objects.equals(this.lowIpStatic, other.lowIpStatic)
+        && Objects.equals(this.highIpStatic, other.highIpStatic);
   }
 
   @Override
@@ -119,7 +197,12 @@ public class VirtualNetwork extends VisibleModel {
         this.description,
         this.state,
         this.routingType,
-        this.isDefault);
+        this.isDefault,
+        this.cidr,
+        this.lowIpDynamic,
+        this.highIpDynamic,
+        this.lowIpStatic,
+        this.highIpStatic);
   }
 
   @Override
@@ -130,6 +213,11 @@ public class VirtualNetwork extends VisibleModel {
         .add("state", state)
         .add("routingType", routingType)
         .add("isDefault", isDefault)
+        .add("cide", cidr)
+        .add("lowIpDynamic", lowIpDynamic)
+        .add("highIpDynamic", highIpDynamic)
+        .add("lowIpStatic", lowIpStatic)
+        .add("highIpStatic", highIpStatic)
         .toString();
   }
 }

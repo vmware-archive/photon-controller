@@ -132,7 +132,8 @@ public class VirtualNetworkTest {
                     .state(NetworkState.READY)
                     .routingType(RoutingType.ROUTED)
                     .build(),
-              "VirtualNetwork{name=vn1, description=null, state=READY, routingType=ROUTED, isDefault=null}"
+              "VirtualNetwork{name=vn1, description=null, state=READY, routingType=ROUTED, isDefault=null, " +
+                  "cide=null, lowIpDynamic=null, highIpDynamic=null, lowIpStatic=null, highIpStatic=null}"
           },
           {
               new VirtualNetworkBuilder()
@@ -141,7 +142,8 @@ public class VirtualNetworkTest {
                     .state(NetworkState.READY)
                     .routingType(RoutingType.ROUTED)
                     .build(),
-              "VirtualNetwork{name=vn1, description=desc, state=READY, routingType=ROUTED, isDefault=null}"
+              "VirtualNetwork{name=vn1, description=desc, state=READY, routingType=ROUTED, isDefault=null, " +
+                  "cide=null, lowIpDynamic=null, highIpDynamic=null, lowIpStatic=null, highIpStatic=null}"
           },
           {
               new VirtualNetworkBuilder()
@@ -150,7 +152,8 @@ public class VirtualNetworkTest {
                   .routingType(RoutingType.ROUTED)
                   .isDefault(true)
                   .build(),
-              "VirtualNetwork{name=vn1, description=null, state=READY, routingType=ROUTED, isDefault=true}"
+              "VirtualNetwork{name=vn1, description=null, state=READY, routingType=ROUTED, isDefault=true, " +
+                  "cide=null, lowIpDynamic=null, highIpDynamic=null, lowIpStatic=null, highIpStatic=null}"
           }
       };
     }

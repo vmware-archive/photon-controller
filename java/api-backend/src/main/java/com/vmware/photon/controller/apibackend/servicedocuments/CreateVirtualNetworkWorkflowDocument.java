@@ -90,6 +90,20 @@ public class CreateVirtualNetworkWorkflowDocument extends ServiceDocument{
   public RoutingType routingType;
 
   /**
+   * This value represents size of the network.
+   */
+  @NotNull
+  @Immutable
+  public Integer size;
+
+  /**
+   * This value represents size of reserved static IPs.
+   */
+  @DefaultInteger(0)
+  @Immutable
+  public Integer reservedStaticIpSize;
+
+  /**
    * Endpoint to the nsx manager.
    */
   @WriteOnce
@@ -153,6 +167,8 @@ public class CreateVirtualNetworkWorkflowDocument extends ServiceDocument{
         .add("name", name)
         .add("description", description)
         .add("routingType", routingType)
+        .add("size", size)
+        .add("reservedStaticIpSize", reservedStaticIpSize)
         .add("nsxManagerEndpoint", nsxManagerEndpoint)
         .add("transportZoneId", transportZoneId)
         .add("tier0RouterId", tier0RouterId)
