@@ -31,7 +31,7 @@ public class PortGroupRepeatedInMultipleNetworksException extends ExternalExcept
   private final Map<String, List<NetworkService.State>> violations;
 
   public PortGroupRepeatedInMultipleNetworksException(Map<String, List<NetworkService.State>> violations) {
-    super(ErrorCode.PORT_GROUP_ALREADY_ADDED_TO_NETWORK);
+    super(ErrorCode.PORT_GROUP_ALREADY_ADDED_TO_SUBNET);
 
     this.violations = violations;
     for (Map.Entry<String, List<NetworkService.State>> violation : violations.entrySet()) {

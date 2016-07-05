@@ -16,8 +16,8 @@ package com.vmware.photon.controller.apife.resources.virtualnetwork;
 import com.vmware.photon.controller.api.Project;
 import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
-import com.vmware.photon.controller.api.VirtualNetwork;
 import com.vmware.photon.controller.api.VirtualNetworkCreateSpec;
+import com.vmware.photon.controller.api.VirtualSubnet;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.clients.VirtualNetworkFeClient;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
@@ -51,7 +51,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 
 /**
- * This resource is for network related API.
+ * This resource is for subnet related API.
  */
 @Path(ProjectResourceRoutes.PROJECT_SUBNETS_PATH)
 @Api(value = ProjectResourceRoutes.API)
@@ -70,9 +70,9 @@ public class ProjectNetworksResource {
   }
 
   @POST
-  @ApiOperation(value = "Create a network", response = Task.class)
+  @ApiOperation(value = "Create a subnet", response = Task.class)
   @ApiResponses(value = {
-      @ApiResponse(code = 201, message = "Network is getting created, progress communicated via the task")
+      @ApiResponse(code = 201, message = "Subnet is getting created, progress communicated via the task")
   })
   public Response create(@Context Request request,
                          @PathParam("id") String projectId,
@@ -86,10 +86,10 @@ public class ProjectNetworksResource {
   }
 
   @GET
-  @ApiOperation(value = "Get all networks",
-      response = VirtualNetwork.class, responseContainer = ResourceList.CLASS_NAME)
+  @ApiOperation(value = "Get all subnets",
+      response = VirtualSubnet.class, responseContainer = ResourceList.CLASS_NAME)
   @ApiResponses(value = {
-      @ApiResponse(code = 200, message = "List of all virtual networks")
+      @ApiResponse(code = 200, message = "List of all virtual subnets")
   })
   public Response list(@Context Request request,
                        @PathParam("id") String projectId,
@@ -97,7 +97,7 @@ public class ProjectNetworksResource {
                        @QueryParam("pageSize") Optional<Integer> pageSize,
                        @QueryParam("pageLink") Optional<String> pageLink)
       throws ExternalException {
-    ResourceList<VirtualNetwork> resourceList;
+    ResourceList<VirtualSubnet> resourceList;
     if (pageLink.isPresent()) {
       resourceList = virtualNetworkFeClient.nextList(pageLink.get());
     } else {

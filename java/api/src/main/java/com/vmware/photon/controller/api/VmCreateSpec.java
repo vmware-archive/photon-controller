@@ -76,8 +76,8 @@ public class VmCreateSpec implements Flavorful, Named {
       "optimize placement of a VM with respect to an independent disk.", required = false)
   private List<LocalitySpec> affinities = new ArrayList<>();
   @JsonProperty
-  @ApiModelProperty(value = "ids of networks to place vm on", required = false)
-  private List<String> networks;
+  @ApiModelProperty(value = "ids of subnets to place vm on", required = false)
+  private List<String> subnets;
 
   @JsonProperty
   public String getKind() {
@@ -144,12 +144,12 @@ public class VmCreateSpec implements Flavorful, Named {
     this.affinities = affinities;
   }
 
-  public List<String> getNetworks() {
-    return networks;
+  public List<String> getSubnets() {
+    return subnets;
   }
 
-  public void setNetworks(List<String> networks) {
-    this.networks = networks;
+  public void setSubnets(List<String> subnets) {
+    this.subnets = subnets;
   }
 
   @Override
@@ -168,12 +168,12 @@ public class VmCreateSpec implements Flavorful, Named {
         Objects.equals(sourceImageId, other.sourceImageId) &&
         Objects.equals(tags, other.tags) &&
         Objects.equals(attachedDisks, other.attachedDisks) &&
-        Objects.equals(networks, other.networks);
+        Objects.equals(subnets, other.subnets);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(name, flavor, sourceImageId, tags, attachedDisks, networks);
+    return Objects.hash(name, flavor, sourceImageId, tags, attachedDisks, subnets);
   }
 
   @Override

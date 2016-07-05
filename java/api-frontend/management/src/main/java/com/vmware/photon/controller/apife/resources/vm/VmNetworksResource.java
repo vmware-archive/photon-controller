@@ -52,7 +52,7 @@ public class VmNetworksResource {
   }
 
   @GET
-  @ApiOperation(value = "Find networks information associated with a VM", response = Task.class)
+  @ApiOperation(value = "Find subnets information associated with a VM", response = Task.class)
   public Response get(@Context Request request, @PathParam("id") String id)
       throws ExternalException {
     return generateCustomResponse(

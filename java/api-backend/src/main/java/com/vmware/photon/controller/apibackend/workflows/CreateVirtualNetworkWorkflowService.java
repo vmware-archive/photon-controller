@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.apibackend.workflows;
 
-import com.vmware.photon.controller.api.NetworkState;
+import com.vmware.photon.controller.api.SubnetState;
 import com.vmware.photon.controller.apibackend.servicedocuments.ConfigureRoutingTask;
 import com.vmware.photon.controller.apibackend.servicedocuments.CreateLogicalRouterTask;
 import com.vmware.photon.controller.apibackend.servicedocuments.CreateLogicalSwitchTask;
@@ -415,7 +415,7 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
    */
   private void updateVirtualNetwork(CreateVirtualNetworkWorkflowDocument state) {
     VirtualNetworkService.State virtualNetworkPatchState = new VirtualNetworkService.State();
-    virtualNetworkPatchState.state = NetworkState.READY;
+    virtualNetworkPatchState.state = SubnetState.READY;
     virtualNetworkPatchState.logicalSwitchId = state.taskServiceEntity.logicalSwitchId;
     virtualNetworkPatchState.logicalRouterId = state.taskServiceEntity.logicalRouterId;
     virtualNetworkPatchState.logicalSwitchUplinkPortId = state.taskServiceEntity.logicalSwitchUplinkPortId;
@@ -438,7 +438,7 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
                 TaskState.TaskStage.FINISHED,
                 null);
             patchState.taskServiceEntity = state.taskServiceEntity;
-            patchState.taskServiceEntity.state = NetworkState.READY;
+            patchState.taskServiceEntity.state = SubnetState.READY;
             finish(state, patchState);
           } catch (Throwable t) {
             fail(state, t);
@@ -459,7 +459,7 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
     postState.parentKind = state.parentKind;
     postState.name = state.name;
     postState.description = state.description;
-    postState.state = NetworkState.CREATING;
+    postState.state = SubnetState.CREATING;
     postState.routingType = state.routingType;
 
     ServiceHostUtils.getCloudStoreHelper(getHost())
