@@ -119,18 +119,30 @@ public class XenonRestClient implements XenonClient {
   @Override
   public Operation post(String serviceSelfLink, ServiceDocument body)
       throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException {
-    return post(false, serviceSelfLink, body);
+    return post(false, serviceSelfLink, body, getPostOperationExpirationMicros());
+  }
+
+  @Override
+  public Operation post(String serviceSelfLink, ServiceDocument body, long timeOutInMicros)
+      throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException {
+    return post(false, serviceSelfLink, body, timeOutInMicros);
   }
 
   @Override
   public Operation post(Boolean forceIndexUpdate, String serviceSelfLink, ServiceDocument body)
+      throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException {
+    return post(forceIndexUpdate, serviceSelfLink, body, this.getPostOperationExpirationMicros());
+  }
+
+  @Override
+  public Operation post(Boolean forceIndexUpdate, String serviceSelfLink, ServiceDocument body, long timeOutInMicros)
       throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException {
     URI serviceUri = getServiceUri(serviceSelfLink);
 
     Operation postOperation = Operation
         .createPost(serviceUri)
         .setUri(serviceUri)
-        .setExpiration(Utils.getNowMicrosUtc() + getPostOperationExpirationMicros())
+        .setExpiration(Utils.getNowMicrosUtc() + timeOutInMicros)
         .setBody(body)
         .setReferer(this.localHostUri)
         .setContextId(LoggingUtils.getRequestId());

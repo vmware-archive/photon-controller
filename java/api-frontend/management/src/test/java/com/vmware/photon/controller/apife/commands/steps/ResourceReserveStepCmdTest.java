@@ -92,6 +92,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.inOrder;
@@ -248,13 +249,13 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
         generateResourcePlacement(ResourcePlacementType.VM, "vm-id"));
     Operation placementOperation = new Operation().setBody(placementTask);
 
-    when(photonControllerXenonRestClient.post(any(), any())).thenReturn(placementOperation);
+    when(photonControllerXenonRestClient.post(any(), any(), anyLong())).thenReturn(placementOperation);
     when(hostClient.reserve(any(Resource.class), eq(SUCCESSFUL_GENERATION))).thenReturn(SUCCESSFUL_RESERVE_RESPONSE);
 
     ResourceReserveStepCmd command = getVmReservationCommand();
     command.execute();
 
-    verify(photonControllerXenonRestClient).post(any(), placementTaskCaptor.capture());
+    verify(photonControllerXenonRestClient).post(any(), placementTaskCaptor.capture(), anyLong());
     Resource resource = placementTaskCaptor.getValue().resource;
     assertThat(resource.getVm().getId(), is("foo"));
     assertThat(resource.getVm().getFlavor(), is("vm-100"));
@@ -267,7 +268,7 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
     assertThat(resource.getPlacement_list().getPlacements().get(0).getType(), is(ResourcePlacementType.VM));
     assertThat(resource.getPlacement_list().getPlacements().get(0).getResource_id(), is("vm-id"));
 
-    verify(photonControllerXenonRestClient).post(any(), placementTaskCaptor.capture());
+    verify(photonControllerXenonRestClient).post(any(), placementTaskCaptor.capture(), anyLong());
     verify(hostClient).reserve(resourceCaptor.capture(), eq(SUCCESSFUL_GENERATION));
     assertThat(placementTaskCaptor.getValue().resource, is(resource));
     assertThat(resourceCaptor.getValue(), is(resource));
@@ -307,13 +308,13 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
         generateResourcePlacement(ResourcePlacementType.VM, "vm-id"));
     Operation placementOperation = new Operation().setBody(placementTask);
 
-    when(photonControllerXenonRestClient.post(any(), any())).thenReturn(placementOperation);
+    when(photonControllerXenonRestClient.post(any(), any(), anyLong())).thenReturn(placementOperation);
     when(hostClient.reserve(any(Resource.class), eq(SUCCESSFUL_GENERATION))).thenReturn(SUCCESSFUL_RESERVE_RESPONSE);
 
     ResourceReserveStepCmd command = getVmReservationCommand();
     command.execute();
 
-    verify(photonControllerXenonRestClient).post(any(), placementTaskCaptor.capture());
+    verify(photonControllerXenonRestClient).post(any(), placementTaskCaptor.capture(), anyLong());
     Resource resource = placementTaskCaptor.getValue().resource;
     assertThat(resource.getVm().getResource_constraints().size(), is(vm.getAffinities().size() + 1));
     assertThat(resource.getVm().getResource_constraints().get(0).getType(), is(ResourceConstraintType.DATASTORE));
@@ -323,7 +324,7 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
     assertThat(resource.getVm().getResource_constraints().get(1).getValues().equals(ImmutableList.of("datastore-1")),
         is(true));
 
-    verify(photonControllerXenonRestClient).post(any(), placementTaskCaptor.capture());
+    verify(photonControllerXenonRestClient).post(any(), placementTaskCaptor.capture(), anyLong());
     verify(hostClient).reserve(resourceCaptor.capture(), eq(SUCCESSFUL_GENERATION));
     assertThat(placementTaskCaptor.getValue().resource, is(resource));
     assertThat(resourceCaptor.getValue(), is(resource));
@@ -344,13 +345,13 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
         generateResourcePlacement(ResourcePlacementType.VM, "vm-id"));
     Operation placementOperation = new Operation().setBody(placementTask);
 
-    when(photonControllerXenonRestClient.post(any(), any())).thenReturn(placementOperation);
+    when(photonControllerXenonRestClient.post(any(), any(), anyLong())).thenReturn(placementOperation);
     when(hostClient.reserve(any(Resource.class), eq(42))).thenReturn(SUCCESSFUL_RESERVE_RESPONSE);
 
     ResourceReserveStepCmd command = getVmReservationCommand();
     command.execute();
 
-    verify(photonControllerXenonRestClient).post(any(), placementTaskCaptor.capture());
+    verify(photonControllerXenonRestClient).post(any(), placementTaskCaptor.capture(), anyLong());
     Resource resource = placementTaskCaptor.getValue().resource;
     assertThat(resource.getVm().getResource_constraints().size(), is(vm.getAffinities().size() + 1));
     assertThat(resource.getVm().getResource_constraints().get(0).getType(),
@@ -359,7 +360,7 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
             .equals(ImmutableList.of("availabilityZone-1")),
         is(true));
 
-    verify(photonControllerXenonRestClient).post(any(), placementTaskCaptor.capture());
+    verify(photonControllerXenonRestClient).post(any(), placementTaskCaptor.capture(), anyLong());
     verify(hostClient).reserve(resourceCaptor.capture(), eq(SUCCESSFUL_GENERATION));
     assertThat(placementTaskCaptor.getValue().resource, is(resource));
     assertThat(resourceCaptor.getValue(), is(resource));
@@ -389,12 +390,12 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
         generateResourcePlacement(ResourcePlacementType.DISK, "disk-id"));
     Operation placementOperation = new Operation().setBody(placementTask);
 
-    when(photonControllerXenonRestClient.post(any(), any())).thenReturn(placementOperation);
+    when(photonControllerXenonRestClient.post(any(), any(), anyLong())).thenReturn(placementOperation);
     when(hostClient.reserve(any(Resource.class), eq(SUCCESSFUL_GENERATION))).thenReturn(SUCCESSFUL_RESERVE_RESPONSE);
 
     command.execute();
 
-    verify(photonControllerXenonRestClient).post(any(), placementTaskCaptor.capture());
+    verify(photonControllerXenonRestClient).post(any(), placementTaskCaptor.capture(), anyLong());
     Resource resource = placementTaskCaptor.getValue().resource;
     assertThat(resource.getVm().isSetResource_constraints(), is(true));
     assertThat(resource.getVm().getResource_constraints().size(), is(2));
@@ -443,12 +444,12 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
         generateResourcePlacement(ResourcePlacementType.DISK, "disk-id"));
     Operation placementOperation = new Operation().setBody(placementTask);
 
-    when(photonControllerXenonRestClient.post(any(), any())).thenReturn(placementOperation);
+    when(photonControllerXenonRestClient.post(any(), any(), anyLong())).thenReturn(placementOperation);
     when(hostClient.reserve(any(Resource.class), eq(SUCCESSFUL_GENERATION))).thenReturn(SUCCESSFUL_RESERVE_RESPONSE);
 
     command.execute();
 
-    verify(photonControllerXenonRestClient).post(any(), placementTaskCaptor.capture());
+    verify(photonControllerXenonRestClient).post(any(), placementTaskCaptor.capture(), anyLong());
     Resource resource = placementTaskCaptor.getValue().resource;
     assertThat(resource.getVm().isSetResource_constraints(), is(true));
     assertThat(resource.getVm().getDisks().size(), is(vm.getAttachedDisks().size()));
@@ -505,14 +506,14 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
         generateResourcePlacement(ResourcePlacementType.DISK, "disk-id"));
     Operation placementOperation = new Operation().setBody(placementTask);
 
-    when(photonControllerXenonRestClient.post(any(), any())).thenReturn(placementOperation);
+    when(photonControllerXenonRestClient.post(any(), any(), anyLong())).thenReturn(placementOperation);
     when(hostClient.reserve(any(Resource.class), eq(SUCCESSFUL_GENERATION))).thenReturn(SUCCESSFUL_RESERVE_RESPONSE);
     when(vmBackend.findDatastoreByVmId("vm-1")).thenReturn("datastore-2");
     when(vmBackend.findDatastoreByVmId("vm-2")).thenReturn("datastore-2");
 
     command.execute();
 
-    verify(photonControllerXenonRestClient).post(any(), placementTaskCaptor.capture());
+    verify(photonControllerXenonRestClient).post(any(), placementTaskCaptor.capture(), anyLong());
     Resource resource = placementTaskCaptor.getValue().resource;
     assertThat(resource.getDisks().get(0).getId(), is("disk-1"));
     assertThat(resource.getDisks().get(0).getResource_constraints().get(0).getType(),
@@ -532,7 +533,7 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
     assertThat(resource.getPlacement_list().getPlacements().get(0).getType(), is(ResourcePlacementType.DISK));
     assertThat(resource.getPlacement_list().getPlacements().get(0).getResource_id(), is("disk-id"));
 
-    verify(photonControllerXenonRestClient).post(any(), placementTaskCaptor.capture());
+    verify(photonControllerXenonRestClient).post(any(), placementTaskCaptor.capture(), anyLong());
     verify(hostClient).reserve(resourceCaptor.capture(), eq(SUCCESSFUL_GENERATION));
     assertThat(placementTaskCaptor.getValue().resource, is(resource));
     assertThat(resourceCaptor.getValue(), is(resource));
@@ -542,7 +543,7 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
   public void testFailedReservation() throws Throwable {
     ResourceReserveStepCmd command = getVmReservationCommand();
     Operation placementOperation = new Operation().setBody(generateResourcePlacementList());
-    when(photonControllerXenonRestClient.post(any(), any())).thenReturn(placementOperation);
+    when(photonControllerXenonRestClient.post(any(), any(), anyLong())).thenReturn(placementOperation);
     when(hostClient.reserve(any(Resource.class), eq(SUCCESSFUL_GENERATION)))
         .thenThrow(new StaleGenerationException("Error"));
 
@@ -552,7 +553,7 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
   @Test(expectedExceptions = XenonRuntimeException.class)
   public void testFailedPlacement() throws Throwable {
     ResourceReserveStepCmd command = getVmReservationCommand();
-    when(photonControllerXenonRestClient.post(any(), any())).thenThrow(new XenonRuntimeException("Error"));
+    when(photonControllerXenonRestClient.post(any(), any(), anyLong())).thenThrow(new XenonRuntimeException("Error"));
 
     command.execute();
   }
@@ -564,7 +565,7 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
     placementTask.resultCode = resultCode;
     Operation placementOperation = new Operation().setBody(placementTask);
     ResourceReserveStepCmd command = getVmReservationCommand();
-    when(photonControllerXenonRestClient.post(any(), any())).thenReturn(placementOperation);
+    when(photonControllerXenonRestClient.post(any(), any(), anyLong())).thenReturn(placementOperation);
 
     try {
       command.execute();
@@ -593,14 +594,14 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
     ResourceReserveStepCmd command = getVmReservationCommand();
 
     Operation placementOperation = new Operation().setBody(generateResourcePlacementList());
-    when(photonControllerXenonRestClient.post(any(), any())).thenReturn(placementOperation);
+    when(photonControllerXenonRestClient.post(any(), any(), anyLong())).thenReturn(placementOperation);
     when(hostClient.reserve(any(Resource.class), eq(SUCCESSFUL_GENERATION)))
         .thenThrow(new StaleGenerationException("Error"))
         .thenReturn(SUCCESSFUL_RESERVE_RESPONSE);
 
     command.execute();
 
-    verify(photonControllerXenonRestClient, times(2)).post(any(), any());
+    verify(photonControllerXenonRestClient, times(2)).post(any(), any(), anyLong());
     verify(hostClient, times(2)).reserve(any(Resource.class), eq(SUCCESSFUL_GENERATION));
   }
 
@@ -635,7 +636,7 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
         generateResourcePlacement(ResourcePlacementType.DISK, "disk-id"));
     Operation placementOperation = new Operation().setBody(placementTask);
 
-    when(photonControllerXenonRestClient.post(any(), any())).thenReturn(placementOperation);
+    when(photonControllerXenonRestClient.post(any(), any(), anyLong())).thenReturn(placementOperation);
     when(hostClient.reserve(any(Resource.class), eq(SUCCESSFUL_GENERATION))).thenReturn(SUCCESSFUL_RESERVE_RESPONSE);
 
     attachBootDisk(vm);
@@ -663,7 +664,8 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
         generateResourcePlacement(ResourcePlacementType.NETWORK, networkId));
     Operation placementOperation = new Operation().setBody(placementTask);
 
-    when(photonControllerXenonRestClient.post(any(), placementTaskCaptor.capture())).thenReturn(placementOperation);
+    when(photonControllerXenonRestClient.post(any(), placementTaskCaptor.capture(), anyLong()))
+        .thenReturn(placementOperation);
     when(hostClient.reserve(any(Resource.class), eq(SUCCESSFUL_GENERATION))).thenReturn(SUCCESSFUL_RESERVE_RESPONSE);
 
     TaskEntity task = mock(TaskEntity.class);
@@ -716,7 +718,8 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
         generateResourcePlacement(ResourcePlacementType.NETWORK, networkId));
     Operation placementOperation = new Operation().setBody(placementTask);
 
-    when(photonControllerXenonRestClient.post(any(), placementTaskCaptor.capture())).thenReturn(placementOperation);
+    when(photonControllerXenonRestClient.post(any(), placementTaskCaptor.capture(), anyLong()))
+        .thenReturn(placementOperation);
     when(hostClient.reserve(any(Resource.class), eq(SUCCESSFUL_GENERATION))).thenReturn(SUCCESSFUL_RESERVE_RESPONSE);
 
     TaskEntity task = mock(TaskEntity.class);
@@ -766,7 +769,8 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
         generateResourcePlacement(ResourcePlacementType.NETWORK, networkId));
     Operation placementOperation = new Operation().setBody(placementTask);
 
-    when(photonControllerXenonRestClient.post(any(), placementTaskCaptor.capture())).thenReturn(placementOperation);
+    when(photonControllerXenonRestClient.post(any(), placementTaskCaptor.capture(), anyLong()))
+        .thenReturn(placementOperation);
     when(hostClient.reserve(any(Resource.class), eq(SUCCESSFUL_GENERATION))).thenReturn(SUCCESSFUL_RESERVE_RESPONSE);
 
     TaskEntity task = mock(TaskEntity.class);
@@ -816,7 +820,8 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
         generateResourcePlacement(ResourcePlacementType.NETWORK, networkId));
     Operation placementOperation = new Operation().setBody(placementTask);
 
-    when(photonControllerXenonRestClient.post(any(), placementTaskCaptor.capture())).thenReturn(placementOperation);
+    when(photonControllerXenonRestClient.post(any(), placementTaskCaptor.capture(), anyLong()))
+        .thenReturn(placementOperation);
     when(hostClient.reserve(any(Resource.class), eq(SUCCESSFUL_GENERATION))).thenReturn(SUCCESSFUL_RESERVE_RESPONSE);
 
     TaskEntity task = mock(TaskEntity.class);
@@ -855,7 +860,7 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
         generateResourcePlacement(ResourcePlacementType.DISK, "disk-id"));
     Operation placementOperation = new Operation().setBody(placementTask);
 
-    when(photonControllerXenonRestClient.post(any(), any())).thenReturn(placementOperation);
+    when(photonControllerXenonRestClient.post(any(), any(), anyLong())).thenReturn(placementOperation);
     when(hostClient.reserve(any(Resource.class), eq(SUCCESSFUL_GENERATION))).thenReturn(SUCCESSFUL_RESERVE_RESPONSE);
 
     attachBootDisk(vm);
@@ -879,7 +884,7 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
         generateResourcePlacement(ResourcePlacementType.DISK, "disk-id"));
     Operation placementOperation = new Operation().setBody(placementTask);
 
-    when(photonControllerXenonRestClient.post(any(), any())).thenReturn(placementOperation);
+    when(photonControllerXenonRestClient.post(any(), any(), anyLong())).thenReturn(placementOperation);
     when(hostClient.reserve(any(Resource.class), eq(SUCCESSFUL_GENERATION))).thenReturn(SUCCESSFUL_RESERVE_RESPONSE);
 
     attachBootDisk(vm);
@@ -904,7 +909,7 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
         generateResourcePlacement(ResourcePlacementType.DISK, "disk-id"));
     Operation placementOperation = new Operation().setBody(placementTask);
 
-    when(photonControllerXenonRestClient.post(any(), any())).thenReturn(placementOperation);
+    when(photonControllerXenonRestClient.post(any(), any(), anyLong())).thenReturn(placementOperation);
     when(hostClient.reserve(any(Resource.class), eq(SUCCESSFUL_GENERATION))).thenReturn(SUCCESSFUL_RESERVE_RESPONSE);
 
     attachBootDisk(vm);

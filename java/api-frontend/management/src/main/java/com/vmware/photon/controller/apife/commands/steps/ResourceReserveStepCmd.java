@@ -92,6 +92,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
 /**
  * StepCommand for resource reservation.
@@ -103,6 +104,8 @@ public class ResourceReserveStepCmd extends StepCommand {
   public static final String VM_ID = "vm-id";
 
   private static final int MAX_PLACEMENT_RETRIES = 5;
+
+  private static final long PLACE_REQUEST_TIMEOUT_IN_MICROS = TimeUnit.SECONDS.toMicros(120);
 
   private static final String DISK_KIND = "disk";
   private static final String VM_KIND = "vm";
@@ -480,8 +483,8 @@ public class ResourceReserveStepCmd extends StepCommand {
     placementTask.taskState.isDirect = true;
 
     // Wait for the response of the PlacementTask
-    Operation placementResponse =
-        photonControllerXenonRestClient.post(PlacementTaskService.FACTORY_LINK, placementTask);
+    Operation placementResponse = photonControllerXenonRestClient.post(
+        PlacementTaskService.FACTORY_LINK, placementTask, PLACE_REQUEST_TIMEOUT_IN_MICROS);
     PlacementTask taskResponse = placementResponse.getBody(PlacementTask.class);
 
     SchedulerErrorCodeToExceptionMapper.mapErrorCodeToException(
