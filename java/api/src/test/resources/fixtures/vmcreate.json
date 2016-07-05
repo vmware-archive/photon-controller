@@ -1,47 +1,50 @@
 {
-    "kind": "vm",
-    "name": "myvm",
-    "flavor": "good-flavor",
-    "tags": ["bosh:job=ccdb", "sys:sla=cesspool"],
-    "sourceImageId": "image-id",
-    "attachedDisks": [
-        {
-            "name": "bootdisk",
-            "kind": "ephemeral-disk",
-            "flavor": "good-disk-100",
-            "bootDisk": true
-        },
-        {
-            "name": "datadisk0",
-            "kind": "ephemeral-disk",
-            "flavor": "good-disk-100",
-            "capacityGb": 100,
-            "bootDisk": false
-        },
-        {
-            "name": "datadisk1",
-            "kind": "ephemeral-disk",
-            "flavor": "good-disk-100",
-            "capacityGb": 400,
-            "bootDisk": false
-        }
-    ],
-    "environment": {
-        "k1": "v1",
-        "k2": "v2"
+  "kind": "vm",
+  "name": "myvm",
+  "flavor": "good-flavor",
+  "tags": [
+    "bosh:job=ccdb",
+    "sys:sla=cesspool"
+  ],
+  "sourceImageId": "image-id",
+  "attachedDisks": [
+    {
+      "name": "bootdisk",
+      "kind": "ephemeral-disk",
+      "flavor": "good-disk-100",
+      "bootDisk": true
     },
-    "affinities": [
-        {
-            "id": "disk-1",
-            "kind": "disk"
-        },
-        {
-            "id": "disk-2",
-            "kind": "disk"
-        }
-    ],
-    "networks": [
-        "network1",
-        "network2"
-    ]
+    {
+      "name": "datadisk0",
+      "kind": "ephemeral-disk",
+      "flavor": "good-disk-100",
+      "capacityGb": 100,
+      "bootDisk": false
+    },
+    {
+      "name": "datadisk1",
+      "kind": "ephemeral-disk",
+      "flavor": "good-disk-100",
+      "capacityGb": 400,
+      "bootDisk": false
+    }
+  ],
+  "environment": {
+    "k1": "v1",
+    "k2": "v2"
+  },
+  "affinities": [
+    {
+      "id": "disk-1",
+      "kind": "disk"
+    },
+    {
+      "id": "disk-2",
+      "kind": "disk"
+    }
+  ],
+  "subnets": [
+    "subnet1",
+    "subnet2"
+  ]
 }

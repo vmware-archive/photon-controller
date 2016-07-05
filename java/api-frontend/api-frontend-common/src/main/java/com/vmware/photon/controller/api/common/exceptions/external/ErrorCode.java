@@ -117,7 +117,7 @@ public enum ErrorCode {
   INVALID_RESERVED_STATIC_IP_SIZE("InvalidReservedStaticIpSize", Response.Status.BAD_REQUEST),
   INVALID_LOGIN("InvalidLoginCredentials", Response.Status.BAD_REQUEST),
   IP_ADDRESS_IN_USE("IpAddressInUse", Response.Status.BAD_REQUEST),
-  PORT_GROUP_ALREADY_ADDED_TO_NETWORK("PortGroupAlreadyAddedToNetwork", Response.Status.BAD_REQUEST),
+  PORT_GROUP_ALREADY_ADDED_TO_SUBNET("PortGroupAlreadyAddedToSubnet", Response.Status.BAD_REQUEST),
   PORT_GROUPS_DO_NOT_EXIST("PortGroupsDoNotExist", Response.Status.BAD_REQUEST),
   CLUSTER_NOT_FOUND("ClusterNotFound", Response.Status.NOT_FOUND),
   SECURITY_GROUPS_ALREADY_INHERITED("SecurityGroupsAlreadyInherited", Response.Status.BAD_REQUEST),

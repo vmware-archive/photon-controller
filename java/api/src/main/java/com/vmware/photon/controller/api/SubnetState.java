@@ -22,7 +22,7 @@ import java.util.Set;
 
 /**
  * The state transitions are:
- * <p/>
+ * <p>
  * +----------------------------------+
  * |          PENDING_DELETE -------+ |
  * |           |    ^               | |
@@ -32,22 +32,22 @@ import java.util.Set;
  * |           |   |                |
  * |           V   V                |
  * +---------> ERROR ---------------+
- * <p/>
+ * <p>
  * Note: see PRECONDITION_STATES for formalization of the above diagram
- * <p/>
- * - CREATING - the DB entities have been created, the network has an ID.
+ * <p>
+ * - CREATING - the DB entities have been created, the subnet has an ID.
  * On success will transition to READY.
- * <p/>
- * - READY - means the network is created successfully.
- * <p/>
- * - PENDING_DELETE - means the network is was deleted by the user but there
- * are active VMs that were instantiated from the network.
- * <p/>
- * - DELETED - the network is a deleted tombstone
- * <p/>
- * - ERROR - network creation has failed
+ * <p>
+ * - READY - means the subnet is created successfully.
+ * <p>
+ * - PENDING_DELETE - means the subnet is was deleted by the user but there
+ * are active VMs that were instantiated from the subnet.
+ * <p>
+ * - DELETED - the subnet is a deleted tombstone
+ * <p>
+ * - ERROR - subnet creation has failed
  */
-public enum NetworkState {
+public enum SubnetState {
   CREATING,
   READY,
   PENDING_DELETE,
@@ -57,9 +57,9 @@ public enum NetworkState {
    * The precondition states, eg. to get to the state indicated by the key, the object's current state
    * must be reflected in the set of valid precondition states for that key.
    */
-  public static final Map<NetworkState, Set<NetworkState>> PRECONDITION_STATES =
-      ImmutableMap.<NetworkState, Set<NetworkState>>builder()
-          .put(CREATING, ImmutableSet.<NetworkState>of())
+  public static final Map<SubnetState, Set<SubnetState>> PRECONDITION_STATES =
+      ImmutableMap.<SubnetState, Set<SubnetState>>builder()
+          .put(CREATING, ImmutableSet.<SubnetState>of())
           .put(READY, Sets.immutableEnumSet(CREATING))
           .put(PENDING_DELETE, Sets.immutableEnumSet(READY))
           .put(ERROR, Sets.immutableEnumSet(CREATING, READY, PENDING_DELETE))

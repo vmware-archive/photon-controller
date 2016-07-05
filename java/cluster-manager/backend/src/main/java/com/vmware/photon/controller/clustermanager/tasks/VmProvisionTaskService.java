@@ -203,7 +203,7 @@ public class VmProvisionTaskService extends StatefulService {
     if (currentState.vmNetworkId != null) {
       List<String> networks = new ArrayList<>();
       networks.add(currentState.vmNetworkId);
-      spec.setNetworks(networks);
+      spec.setSubnets(networks);
     }
 
     List<AttachedDiskCreateSpec> attachedDisks = new ArrayList<>();

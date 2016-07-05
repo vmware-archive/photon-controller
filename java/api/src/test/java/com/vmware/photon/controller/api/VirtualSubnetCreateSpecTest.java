@@ -29,10 +29,11 @@ import java.io.IOException;
 /**
  * Tests {@link VirtualNetworkCreateSpec}.
  */
-public class VirtualNetworkCreateSpecTest {
+public class VirtualSubnetCreateSpecTest {
 
   @Test(enabled = false)
-  private void dummy() {}
+  private void dummy() {
+  }
 
   /**
    * Tests for validations.
@@ -47,7 +48,7 @@ public class VirtualNetworkCreateSpecTest {
 
     @DataProvider(name = "ValidVirtualNetworkData")
     public Object[][] getValidVirtualNetworkData() {
-      return new Object[][] {
+      return new Object[][]{
           {
               new VirtualNetworkCreateSpecBuilder().name("vn1").routingType(RoutingType.ROUTED).size(8).build()
           },
@@ -68,7 +69,7 @@ public class VirtualNetworkCreateSpecTest {
 
     @DataProvider(name = "InvalidVirtualNetworkData")
     public Object[][] getInvalidVirtualNetworkData() {
-      return new Object[][] {
+      return new Object[][]{
           {
               new VirtualNetworkCreateSpecBuilder().build(),
               ImmutableList.of("name may not be null (was null)", "routingType may not be null (was null)",
@@ -108,7 +109,7 @@ public class VirtualNetworkCreateSpecTest {
 
     @DataProvider(name = "VirtualNetworkData")
     public Object[][] getVirtualNetworkData() {
-      return new Object[][] {
+      return new Object[][]{
           {new VirtualNetworkCreateSpecBuilder().name("vn1").build(),
               "VirtualNetworkCreateSpec{name=vn1, description=null, routingType=null, size=0, reservedStaticIpSize=0}"},
           {new VirtualNetworkCreateSpecBuilder().name("vn1").description("desc").build(),

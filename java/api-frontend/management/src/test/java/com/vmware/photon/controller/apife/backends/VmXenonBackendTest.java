@@ -25,12 +25,12 @@ import com.vmware.photon.controller.api.ImageReplicationType;
 import com.vmware.photon.controller.api.ImageState;
 import com.vmware.photon.controller.api.Iso;
 import com.vmware.photon.controller.api.LocalitySpec;
-import com.vmware.photon.controller.api.Network;
-import com.vmware.photon.controller.api.NetworkCreateSpec;
 import com.vmware.photon.controller.api.PersistentDisk;
 import com.vmware.photon.controller.api.QuotaLineItem;
 import com.vmware.photon.controller.api.QuotaUnit;
 import com.vmware.photon.controller.api.ResourceList;
+import com.vmware.photon.controller.api.Subnet;
+import com.vmware.photon.controller.api.SubnetCreateSpec;
 import com.vmware.photon.controller.api.Tag;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.api.Vm;
@@ -218,17 +218,17 @@ public class VmXenonBackendTest {
     List<String> networks = new ArrayList<>();
     List<String> portGroups = new ArrayList<>();
     portGroups.add("p1");
-    NetworkCreateSpec networkCreateSpec = new NetworkCreateSpec();
-    networkCreateSpec.setName("n1");
-    networkCreateSpec.setPortGroups(portGroups);
-    TaskEntity networkTask = networkZenonBackend.createNetwork(networkCreateSpec);
+    SubnetCreateSpec subnetCreateSpec = new SubnetCreateSpec();
+    subnetCreateSpec.setName("n1");
+    subnetCreateSpec.setPortGroups(portGroups);
+    TaskEntity networkTask = networkZenonBackend.createNetwork(subnetCreateSpec);
     networks.add(networkTask.getEntityId());
 
     portGroups = new ArrayList<>();
     portGroups.add("p2");
-    networkCreateSpec.setName("n2");
-    networkCreateSpec.setPortGroups(portGroups);
-    networkTask = networkZenonBackend.createNetwork(networkCreateSpec);
+    subnetCreateSpec.setName("n2");
+    subnetCreateSpec.setPortGroups(portGroups);
+    networkTask = networkZenonBackend.createNetwork(subnetCreateSpec);
     networks.add(networkTask.getEntityId());
 
     vmCreateSpec = new VmCreateSpec();
@@ -238,7 +238,8 @@ public class VmXenonBackendTest {
     vmCreateSpec.setAttachedDisks(ImmutableList.of(disk1, disk2));
     vmCreateSpec.setAffinities(affinities);
     vmCreateSpec.setTags(ImmutableSet.of("value1", "value2"));
-    vmCreateSpec.setNetworks(networks);
+    vmCreateSpec.setSubnets(networks);
+
     createdVmTaskEntity = vmXenonBackend.prepareVmCreate(projectId, vmCreateSpec);
   }
 
@@ -424,12 +425,12 @@ public class VmXenonBackendTest {
     @Test
     public void testFilter() throws Throwable {
       ResourceList<Vm> foundVms =
-          vmXenonBackend.filter(vm.projectId, Optional.<String> absent(), Optional.<Integer> absent());
+          vmXenonBackend.filter(vm.projectId, Optional.<String>absent(), Optional.<Integer>absent());
       assertThat(foundVms, is(notNullValue()));
       assertThat(foundVms.getItems().size(), is(1));
       assertThat(foundVms.getItems().get(0).getName(), is(vm.name));
 
-      foundVms = vmXenonBackend.filter(vm.projectId, Optional.of(vm.name), Optional.<Integer> absent());
+      foundVms = vmXenonBackend.filter(vm.projectId, Optional.of(vm.name), Optional.<Integer>absent());
       assertThat(foundVms, is(notNullValue()));
       assertThat(foundVms.getItems().size(), is(1));
       assertThat(foundVms.getItems().get(0).getName(), is(vm.name));
@@ -514,7 +515,7 @@ public class VmXenonBackendTest {
 
     @Test
     public void testGetAllVmsOnHost() throws Throwable {
-      List<Vm> foundVms = vmXenonBackend.getAllVmsOnHost(hostId, Optional.<Integer> absent()).getItems();
+      List<Vm> foundVms = vmXenonBackend.getAllVmsOnHost(hostId, Optional.<Integer>absent()).getItems();
       assertThat(foundVms, is(notNullValue()));
       assertThat(foundVms.size(), is(1));
       assertThat(foundVms.get(0).getName(), is(vm.name));
@@ -645,7 +646,7 @@ public class VmXenonBackendTest {
       assertTrue(tags.contains(tag1));
       assertTrue(tags.contains(tag2));
 
-      assertThat(vmCreateSpec.getNetworks().equals(vm.getNetworks()), is(true));
+      assertThat(vmCreateSpec.getSubnets().equals(vm.getNetworks()), is(true));
     }
 
     private double getUsage(String key) throws Throwable {
@@ -749,7 +750,7 @@ public class VmXenonBackendTest {
       assertTrue(tags.contains(tag1));
       assertTrue(tags.contains(tag2));
 
-      assertThat(vmCreateSpec.getNetworks().equals(vm.getNetworks()), is(true));
+      assertThat(vmCreateSpec.getSubnets().equals(vm.getNetworks()), is(true));
     }
 
     private double getUsage(String key) throws Throwable {
@@ -1360,7 +1361,7 @@ public class VmXenonBackendTest {
 
       tombstone = tombstoneXenonBackend.getByEntityId(networkToDelete);
       assertThat(tombstone.getEntityId(), is(tombstone.getId()));
-      assertThat(tombstone.getEntityKind(), is(Network.KIND));
+      assertThat(tombstone.getEntityKind(), is(Subnet.KIND));
     }
 
     private double getUsage(String key) throws Throwable {
