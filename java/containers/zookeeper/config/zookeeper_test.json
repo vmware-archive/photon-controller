@@ -19,6 +19,7 @@
   },
   "dynamicParameters": {
     "ZOOKEEPER_DATA_DIRECTORY": "/var/devbox_data/data/zookeeper",
+    "ZOOKEEPER_STANDALONE" : true,
     "ZOOKEEPER_MYID": "1"
   }
 }
