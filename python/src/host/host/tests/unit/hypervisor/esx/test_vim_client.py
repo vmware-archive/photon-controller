@@ -36,20 +36,18 @@ from host.hypervisor.esx.vim_client import AcquireCredentialsException
 
 
 class FakeCounter:
-    def __init__(self, group, name):
+    def __init__(self, key, group, name):
         # key has to be an int or vim type validation will fail
-        self.key = (ord(group) * 100) + ord(name)
+        self.key = key
         self.groupInfo = MagicMock(key=group)
         self.nameInfo = MagicMock(key=name)
 
 
-def create_fake_counters():
+def create_fake_counters(counter_ids):
     counters = []
-    letters = [chr(c) for c in xrange(ord('A'), ord('E')+1)]
-    for i in letters:
-        for j in letters:
-            counter = FakeCounter(i, j)
-            counters.append(counter)
+    counters.append(FakeCounter(counter_ids[0], "cpu", "usage"))
+    counters.append(FakeCounter(counter_ids[1], "disk", "usage"))
+    counters.append(FakeCounter(counter_ids[2], "net", "usage"))
     return counters
 
 
@@ -58,6 +56,16 @@ class TestVimClient(unittest.TestCase):
     def setUp(self):
         self.vim_client = VimClient(auto_sync=False)
         self.vim_client._content = MagicMock()
+        self.host = MagicMock(spec=vim.ManagedObject, key=vim.HostSystem("ha-host"))
+        self.host.summary = MagicMock()
+        self.host.summary.quickStats = MagicMock()
+        self.host.summary.hardware = MagicMock()
+        self.host.summary.quickStats.overallCpuUsage = 1024
+        self.host.summary.hardware.cpuMhz = 1024
+        self.host.summary.hardware.numCpuCores = 2
+        self.host.summary.quickStats.overallMemoryUsage = 2  # 2GB
+        self.host.summary.hardware.memorySize = 4*1024*1024  # 4GB
+        self.vim_client.host_system = MagicMock(return_value=self.host)
 
     def test_import_pyvmomi(self):
         from pyVmomi import VmomiSupport
@@ -223,19 +231,19 @@ class TestVimClient(unittest.TestCase):
         vim_client = VimClient(auto_sync=False, errback=callback)
         vim_client.connect_userpwd("esx.local", "root", "password")
         host_mock.side_effect = vim.fault.NotAuthenticated
-        vim_client.host_system
+        vim_client.host_system()
         callback.assert_called_once()
 
         host_mock.side_effect = vim.fault.HostConnectFault
-        vim_client.host_system
+        vim_client.host_system()
         assert_that(callback.call_count, is_(2))
 
         host_mock.side_effect = vim.fault.InvalidLogin
-        vim_client.host_system
+        vim_client.host_system()
         assert_that(callback.call_count, is_(3))
 
         host_mock.side_effect = AcquireCredentialsException
-        vim_client.host_system
+        vim_client.host_system()
         assert_that(callback.call_count, is_(4))
 
     @patch("pysdk.connect.Connect")
@@ -346,9 +354,9 @@ class TestVimClient(unittest.TestCase):
         assert_that(update_mock.call_count, is_not(0), "VimClient.update_mock is not called")
 
     def test_query_stats(self):
-        metric_names = ["A.C", "B.E", "D.E"]
         self.vim_client._content.perfManager = MagicMock()
-        self.vim_client._content.perfManager.perfCounter = create_fake_counters()
+        counter_ids = [101, 102, 103]
+        self.vim_client._content.perfManager.perfCounter = create_fake_counters(counter_ids)
 
         self.vim_client._content.perfManager.QueryPerf.return_value = [
             vim.PerformanceManager.EntityMetricCSV(
@@ -356,7 +364,7 @@ class TestVimClient(unittest.TestCase):
                 sampleInfoCSV='20,1970-01-01T00:00:10Z',
                 value=[
                     vim.PerformanceManager.MetricSeriesCSV(
-                        id=vim.PerformanceManager.MetricId(counterId=6567, instance=''),
+                        id=vim.PerformanceManager.MetricId(counterId=counter_ids[0], instance=''),
                         value='200')]
             ),
             vim.PerformanceManager.EntityMetricCSV(
@@ -364,16 +372,49 @@ class TestVimClient(unittest.TestCase):
                 sampleInfoCSV='20,1970-01-01T00:00:10Z',
                 value=[
                     vim.PerformanceManager.MetricSeriesCSV(
-                        id=vim.PerformanceManager.MetricId(counterId=6669, instance=''),
+                        id=vim.PerformanceManager.MetricId(counterId=counter_ids[1], instance=''),
                         value='200')]
             ),
         ]
-
-        host = MagicMock(spec=vim.ManagedObject, key=vim.HostSystem("ha-host"))
         since = datetime.now() - timedelta(seconds=20)
 
-        results = self.vim_client.query_stats(host, metric_names, 20, since, None)
+        results = self.vim_client.query_stats(since, None)
+        # 2 through QueryPerf + 2 through Pyvmomi Host object
+        assert_that(len(results), equal_to(4))
+
+    def test_query_stats_with_no_query_perf_results(self):
+        self.vim_client._content.perfManager = MagicMock()
+        self.vim_client._content.perfManager.perfCounter = []
+        self.vim_client._content.perfManager.QueryPerf.return_value = []
+
+        now = datetime.now()
+        now_timestamp = int(time.mktime(now.timetuple()))
+        since = now - timedelta(seconds=20)
+
+        results = self.vim_client.query_stats(since, None)
+
+        # Verify counters collected are only through Pyvmomi Host object
         assert_that(len(results), equal_to(2))
+
+        # Verify counters collected through Pyvmomi Host object
+        assert_that(results, has_entries('cpu.cpuUsagePercentage', [(now_timestamp, 50.0)]))
+        assert_that(results, has_entries('mem.memoryUsagePercentage', [(now_timestamp, 50.0)]))
+
+    def test_query_stats_with_bad_pyvmomi_results(self):
+        self.vim_client._content.perfManager = MagicMock()
+        self.vim_client._content.perfManager.perfCounter = []
+        self.vim_client._content.perfManager.QueryPerf.return_value = []
+        self.host.summary.hardware.numCpuCores = 0
+        self.host.summary.hardware.memorySize = 0
+
+        now = datetime.now()
+        now_timestamp = int(time.mktime(now.timetuple()))
+        since = now - timedelta(seconds=20)
+        results = self.vim_client.query_stats(since, None)
+
+        # Verify no counter
+        assert_that(results, has_entries('cpu.cpuUsagePercentage', [(now_timestamp, 0.0)]))
+        assert_that(results, has_entries('mem.memoryUsagePercentage', [(now_timestamp, 0.0)]))
 
 if __name__ == '__main__':
     unittest.main()
