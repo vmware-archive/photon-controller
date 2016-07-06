@@ -338,7 +338,7 @@ public class EntityLockDeleteServiceTest {
         throws Throwable {
       machine = TestEnvironment.create(hostCount);
       seedTestEnvironment(machine, totalEntityLocks, danglingEntityLocks);
-
+      Thread.sleep(1000);
       // All entity locks being created should be found when entityLockDeleteWatermarkTimeInMicros is 0
       request.entityLockDeleteWatermarkTimeInMicros = 0L;
       EntityLockDeleteService.State response = machine.callServiceAndWaitForState(
@@ -382,7 +382,8 @@ public class EntityLockDeleteServiceTest {
         entityLock.entityKind = Vm.KIND;
         entityLock.lockOperation = EntityLockService.State.LockOperation.ACQUIRE;
         entityLock.documentSelfLink = EntityLockServiceFactory.SELF_LINK + "/" + entityLock.entityId;
-        Operation entityLockOperation = env.sendPostAndWait(EntityLockServiceFactory.SELF_LINK, entityLock);
+        Operation entityLockOperation = env.sendPostAndWaitForReplication(
+            EntityLockServiceFactory.SELF_LINK, entityLock);
         EntityLockService.State createdEntityLock = entityLockOperation.getBody(EntityLockService.State.class);
 
         entityLock.entityId = createdEntityLock.entityId;
@@ -390,7 +391,7 @@ public class EntityLockDeleteServiceTest {
         entityLock.entityKind = Vm.KIND;
         entityLock.lockOperation = EntityLockService.State.LockOperation.RELEASE;
         entityLock.documentSelfLink = EntityLockServiceFactory.SELF_LINK + "/" + entityLock.entityId;
-        env.sendPostAndWait(EntityLockServiceFactory.SELF_LINK, entityLock);
+        env.sendPostAndWaitForReplication(EntityLockServiceFactory.SELF_LINK, entityLock);
 
         if (i < (totalEntityLocks - danglingEntityLocks)) {
           VmService.State vm = new VmService.State();
@@ -400,7 +401,7 @@ public class EntityLockDeleteServiceTest {
           vm.imageId = UUID.randomUUID().toString();
           vm.vmState = VmState.CREATING;
           vm.documentSelfLink = createdEntityLock.entitySelfLink;
-          env.sendPostAndWait(VmServiceFactory.SELF_LINK, vm);
+          env.sendPostAndWaitForReplication(VmServiceFactory.SELF_LINK, vm);
         }
       }
     }

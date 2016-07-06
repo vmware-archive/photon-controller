@@ -23,6 +23,7 @@ import com.vmware.photon.controller.common.xenon.BasicServiceHost;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.XenonRestClient;
 import com.vmware.photon.controller.common.xenon.exceptions.BadRequestException;
+import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
 
@@ -39,8 +40,10 @@ import static org.junit.Assert.assertTrue;
 
 import java.lang.reflect.Field;
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -214,6 +217,7 @@ public class DeploymentServiceTest {
 
     private DeploymentService deploymentService;
     private TestEnvironment testEnvironment;
+    private TestEnvironment pauseTestEnv;
 
     @BeforeMethod
     public void setUpTest() throws Throwable {
@@ -227,6 +231,11 @@ public class DeploymentServiceTest {
       if (testEnvironment != null) {
         testEnvironment.stop();
         testEnvironment = null;
+      }
+
+      if (pauseTestEnv != null) {
+        pauseTestEnv.stop();
+        pauseTestEnv = null;
       }
     }
 
@@ -267,6 +276,33 @@ public class DeploymentServiceTest {
       assertThat(currentState.statsStoreEndpoint, is(statsStoreEndpoint));
       assertThat(currentState.statsStorePort, is(statsStorePort));
       assertThat(currentState.statsStoreType, is(statsStoreType));
+    }
+
+    @Test
+    public void testPauseSystemOnThreeNodes() throws Throwable {
+      pauseTestEnv = TestEnvironment.create(3);
+
+      List<SystemConfig> systemConfigs = new ArrayList<>();
+      for (PhotonControllerXenonHost host : pauseTestEnv.getHosts()) {
+        systemConfigs.add(SystemConfig.createInstance(host));
+      }
+      DeploymentService.State startState = buildServiceStartState();
+      Operation startOperation = pauseTestEnv.sendPostAndWait(DeploymentServiceFactory.SELF_LINK, startState);
+      assertThat(startOperation.getStatusCode(), is(200));
+
+      DeploymentService.State createState = startOperation.getBody(DeploymentService.State.class);
+
+      DeploymentService.State patchState = new DeploymentService.State();
+      patchState.state = DeploymentState.PAUSED;
+      pauseTestEnv.sendPatchAndWait(createState.documentSelfLink, patchState);
+
+      DeploymentService.State currentState = pauseTestEnv.getServiceState(createState.documentSelfLink,
+          DeploymentService.State.class);
+      assertThat(currentState.state, is(DeploymentState.PAUSED));
+
+      for (SystemConfig instance : systemConfigs) {
+        assertThat(instance.isPaused(), is(true));
+      }
     }
 
     @Test(expectedExceptions = BadRequestException.class)
