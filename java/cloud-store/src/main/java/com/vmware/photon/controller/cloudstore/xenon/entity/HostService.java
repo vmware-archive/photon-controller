@@ -27,6 +27,7 @@ import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientProvider;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
+import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
@@ -50,22 +51,24 @@ import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.ServiceDocumentDescription;
+import com.vmware.xenon.common.ServiceDocumentQueryResult;
 import com.vmware.xenon.common.ServiceMaintenanceRequest;
 import com.vmware.xenon.common.StatefulService;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.QueryTask;
 
+import org.apache.commons.math3.random.HaltonSequenceGenerator;
 import org.apache.thrift.async.AsyncMethodCallback;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
+import java.net.URI;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
@@ -77,9 +80,6 @@ import java.util.stream.Collectors;
  * representing an ESX host.
  */
 public class HostService extends StatefulService {
-
-  private final Random random = new Random();
-
   /**
    * All the default values specified below are just good starting points. We might
    * need to adjust them after scale testing.
@@ -155,15 +155,68 @@ public class HostService extends StatefulService {
       State startState = startOperation.getBody(State.class);
       InitializationUtils.initialize(startState);
 
-      if (null == startState.schedulingConstant) {
-        startState.schedulingConstant = (long) random.nextInt(MAX_SCHEDULING_CONSTANT);
-      }
+      // Use a Halton sequence (https://en.wikipedia.org/wiki/Halton_sequence)
+      // to assign a scheduling constant to the new host. This gives better
+      // uniformity than assigning it pseudorandomly.
+      // The Halton sequence generator needs some state, namely the index of the
+      // element of the sequence to use for this host. For simplicity, this
+      // implementation uses the count of existing hosts as the index into the
+      // Halton sequence.
+      // (Let S(n) be the nth element of a 1-dimensional Halton sequence. If
+      // e.g., 5 hosts exist already at the time this host is created, this host
+      // gets S(5) as its scheduling constant.)
+      QueryTask.Query existingHostsQuery = QueryTask.Query.Builder.create()
+          .addKindFieldClause(HostService.State.class)
+          .build();
 
-      validateState(startState);
+      QueryTask existingHostsQueryTask = QueryTask.Builder.createDirectTask()
+          .setQuery(existingHostsQuery)
+          .addOption(QueryTask.QuerySpecification.QueryOption.COUNT)
+          .build();
 
-      // set the maintenance interval to match the value in the state.
-      this.setMaintenanceIntervalMicros(TimeUnit.MILLISECONDS.toMicros(startState.triggerIntervalMillis));
-      startOperation.complete();
+      URI queryTaskURI = UriUtils.buildUri(this.getHost(), ServiceUriPaths.CORE_QUERY_TASKS);
+
+      Operation postQuery = Operation.createPost(queryTaskURI)
+          .setBody(existingHostsQueryTask)
+          .setReferer(UriUtils.buildUri(getHost(), getSelfLink()))
+          .setCompletion((op, ex) -> {
+            if (ex != null) {
+              ServiceUtils.logSevere(this, "Failed to query for existing hosts: %s", ex);
+              startOperation.fail(ex);
+              return;
+            }
+
+            try {
+              QueryTask taskState = op.getBody(QueryTask.class);
+              if (taskState == null) {
+                ServiceUtils.logSevere(this, "Got null response from existing-host query");
+                // TODO(mstunes): handle null response
+              }
+
+              ServiceDocumentQueryResult queryResult = taskState.results;
+              int existingHostCount = (int) (long) queryResult.documentCount;
+
+              // Compute Halton sequence value using existingHostCount as the index
+              HaltonSequenceGenerator hsg = new HaltonSequenceGenerator(1);
+              double[] nextValues = hsg.skipTo(existingHostCount);
+              startState.schedulingConstant = (long) (nextValues[0] * MAX_SCHEDULING_CONSTANT);
+
+              validateState(startState);
+
+              // set the maintenance interval to match the value in the state.
+              this.setMaintenanceIntervalMicros(TimeUnit.MILLISECONDS.toMicros(startState.triggerIntervalMillis));
+              startOperation.complete();
+            } catch (IllegalStateException t) {
+              ServiceUtils.failOperationAsBadRequest(this, startOperation, t);
+            } catch (Throwable t) {
+              ServiceUtils.logSevere(this, t);
+              startOperation.fail(t);
+            }
+          });
+
+      this.getHost().sendRequest(postQuery);
+
+      // TODO(mstunes): are both sets of try/catch blocks required?
     } catch (IllegalStateException t) {
       ServiceUtils.failOperationAsBadRequest(this, startOperation, t);
     } catch (Throwable t) {
