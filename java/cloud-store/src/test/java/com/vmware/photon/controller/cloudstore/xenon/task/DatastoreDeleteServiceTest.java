@@ -43,10 +43,8 @@ import static org.hamcrest.Matchers.startsWith;
 import static org.testng.Assert.fail;
 
 import java.lang.reflect.Field;
-import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashSet;
-import java.util.List;
 
 /**
  * Tests {@link com.vmware.photon.controller.cloudstore.xenon.task.DatastoreDeleteService}.
@@ -214,9 +212,6 @@ public class DatastoreDeleteServiceTest {
 
     private TestEnvironment machine;
     private DatastoreDeleteService.State request;
-    private List<String> hostSelfLinks = new ArrayList<>();
-    private String datastoreSelfLink;
-    private String mappingSelfLink;
 
     @BeforeMethod
     public void setUp() throws Throwable {
@@ -227,21 +222,10 @@ public class DatastoreDeleteServiceTest {
     @AfterMethod
     public void tearDown() throws Throwable {
       if (machine != null) {
+        // Note that this will fully clean up the Xenon host's Lucene index: all
+        // services we created will be fully removed.
         machine.stop();
-      }
-    }
-
-    private void freeTestEnvironment(TestEnvironment machine) throws Throwable {
-      try {
-        for (String selfLink : hostSelfLinks) {
-          machine.deleteService(selfLink);
-        }
-        machine.deleteService(datastoreSelfLink);
-        machine.deleteService(mappingSelfLink);
-      } finally {
-        hostSelfLinks.clear();
-        datastoreSelfLink = null;
-        mappingSelfLink = null;
+        machine = null;
       }
     }
 
@@ -279,8 +263,6 @@ public class DatastoreDeleteServiceTest {
         assertThat(getTotalDocumentCount(machine, DatastoreService.State.class), is(0L));
         assertThat(getTotalDocumentCount(machine, ImageToImageDatastoreMappingService.State.class), is(0L));
       }
-
-      freeTestEnvironment(machine);
     }
 
     @DataProvider(name = "Success")
@@ -304,18 +286,12 @@ public class DatastoreDeleteServiceTest {
       datastore.name = "datastore";
       datastore.type = "SHARED_VMFS";
       datastore.documentSelfLink = "datastoreId";
-      Operation operation = env.sendPostAndWaitForReplication(DatastoreServiceFactory.SELF_LINK, datastore);
-      DatastoreService.State createdDatastore =
-          operation.getBody(DatastoreService.State.class);
-      datastoreSelfLink = createdDatastore.documentSelfLink;
+      env.sendPostAndWaitForReplication(DatastoreServiceFactory.SELF_LINK, datastore);
 
       ImageToImageDatastoreMappingService.State mapping = new ImageToImageDatastoreMappingService.State();
       mapping.imageId = "image-id";
       mapping.imageDatastoreId = datastore.id;
-      operation = env.sendPostAndWaitForReplication(ImageToImageDatastoreMappingServiceFactory.SELF_LINK, mapping);
-      ImageToImageDatastoreMappingService.State createdMapping =
-          operation.getBody(ImageToImageDatastoreMappingService.State.class);
-      mappingSelfLink = createdMapping.documentSelfLink;
+      env.sendPostAndWaitForReplication(ImageToImageDatastoreMappingServiceFactory.SELF_LINK, mapping);
 
       for (int i = 0; i < totalHosts; i++) {
         // create hosts
@@ -339,10 +315,7 @@ public class DatastoreDeleteServiceTest {
           host.state = HostState.MAINTENANCE;
         }
 
-        operation = env.sendPostAndWaitForReplication(HostServiceFactory.SELF_LINK, host);
-        HostService.State createdHost =
-            operation.getBody(HostService.State.class);
-        hostSelfLinks.add(createdHost.documentSelfLink);
+        env.sendPostAndWaitForReplication(HostServiceFactory.SELF_LINK, host);
       }
     }
 

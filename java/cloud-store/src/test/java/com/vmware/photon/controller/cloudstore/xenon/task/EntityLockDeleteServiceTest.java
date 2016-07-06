@@ -46,9 +46,7 @@ import static org.testng.Assert.fail;
 
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.EnumSet;
-import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -274,7 +272,6 @@ public class EntityLockDeleteServiceTest {
 
     private TestEnvironment machine;
     private EntityLockDeleteService.State request;
-    private List<String> testSelfLinks = new ArrayList<>();
 
     @BeforeMethod
     public void setUp() throws Throwable {
@@ -286,7 +283,8 @@ public class EntityLockDeleteServiceTest {
     @AfterMethod
     public void tearDown() throws Throwable {
       if (machine != null) {
-        freeTestEnvironment(machine);
+        // Note that this will fully clean up the Xenon host's Lucene index: all
+        // services we created will be fully removed.
         machine.stop();
         machine = null;
       }
@@ -356,16 +354,6 @@ public class EntityLockDeleteServiceTest {
       verifyLockStatusAfterCleanup(machine, totalEntityLocks, danglingEntityLocks);
     }
 
-    private void freeTestEnvironment(TestEnvironment machine) throws Throwable {
-      try {
-        for (String selfLink : testSelfLinks) {
-          machine.deleteService(selfLink);
-        }
-      } finally {
-        testSelfLinks.clear();
-      }
-    }
-
     @DataProvider(name = "Success")
     public Object[][] getSuccessData() {
       return new Object[][]{
@@ -412,11 +400,7 @@ public class EntityLockDeleteServiceTest {
           vm.imageId = UUID.randomUUID().toString();
           vm.vmState = VmState.CREATING;
           vm.documentSelfLink = createdEntityLock.entitySelfLink;
-          Operation vmCreate = env.sendPostAndWait(VmServiceFactory.SELF_LINK, vm);
-          VmService.State vmState = vmCreate.getBody(VmService.State.class);
-
-          testSelfLinks.add(createdEntityLock.documentSelfLink);
-          testSelfLinks.add(vmState.documentSelfLink);
+          env.sendPostAndWait(VmServiceFactory.SELF_LINK, vm);
         }
       }
     }
