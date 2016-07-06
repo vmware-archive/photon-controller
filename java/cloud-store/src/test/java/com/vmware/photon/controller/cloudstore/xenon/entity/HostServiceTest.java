@@ -59,6 +59,7 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doAnswer;
@@ -318,6 +319,35 @@ public class HostServiceTest {
           "/config");
       assertThat(config.maintenanceIntervalMicros,
           is(TimeUnit.MILLISECONDS.toMicros(startState.triggerIntervalMillis)));
+    }
+
+    /**
+     * Test that new hosts get distinct scheduling constants.
+     *
+     * @throws Throwable
+     */
+    @Test
+    public void testDistinctSchedulingConstants() throws Throwable {
+      // Scheduling constants seen so far
+      Set<Long> schedulingConstants = new HashSet<>();
+
+      host.startServiceSynchronously(new HostServiceFactory(), null);
+
+      for (int i = 0; i < 10; i++) {
+        Operation result = xenonRestClient.post(HostServiceFactory.SELF_LINK,
+            TestHelper.getHostServiceStartState());
+        assertThat(result.getStatusCode(), is(Operation.STATUS_CODE_OK));
+        HostService.State createdState = result.getBody(HostService.State.class);
+        Long newSchedConst = createdState.schedulingConstant;
+
+        // Assert that the new host's scheduling constant is not in the set of
+        // scheduling constants seen so far.
+        assertFalse(schedulingConstants.contains(newSchedConst));
+
+        schedulingConstants.add(newSchedConst);
+      }
+
+
     }
   }
 
