@@ -250,7 +250,7 @@ class HostClient(object):
     """ Stats
     """
     @abc.abstractmethod
-    def query_stats(self, entity, metric_names, sampling_interval, start_time, end_time=None):
+    def query_stats(self, start_time, end_time=None):
         pass
 
 
