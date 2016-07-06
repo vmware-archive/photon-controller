@@ -14,9 +14,7 @@
   "volumeBindings": {
     "/devbox_data/tmp": "/devbox_data/tmp",
     "/vagrant/log": "/vagrant/log",
-    "/var/esxcloud": "/var/esxcloud",
     "/var/log": "/var/log",
-    "/var/esxcloud/packages":"/var/esxcloud/packages",
     "/etc/esxcloud-deployer":"/etc/esxcloud-deployer",
     "/devbox_data/java/photon-controller-core/src/main/resources/scripts":"/usr/lib/esxcloud/photon-controller-core/scripts",
     "/devbox_data/java/cluster-manager/backend/src/main/resources/scripts":"/usr/lib/esxcloud/photon-controller-core/scripts/clusters",
