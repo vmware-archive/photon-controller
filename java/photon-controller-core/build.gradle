@@ -72,6 +72,12 @@ task container(type: DockerBuildImage) {
   tag = 'photon/photon-controller-core'
 }
 
+task containerNoBase(type: DockerBuildImage) {
+  dependsOn dockerfile, ':containers:photoncoreNoBase'
+  inputDir = dockerfile.destFile.parentFile
+  tag = 'photon/photon-controller-core'
+}
+
 task removeContainer(type: DockerRemoveImage) {
   targetImageId { container.tag }
 }
