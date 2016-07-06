@@ -69,7 +69,11 @@ task dockerfile(type: Dockerfile) {
 }
 
 task container(type: DockerBuildImage) {
-  dependsOn dockerfile, ':containers:servicebase'
+  dependsOn dockerfile, ':containers:servicebase', ":photon-controller-core:containerNoBase"
+}
+
+task containerNoBase(type: DockerBuildImage) {
+  dependsOn dockerfile
   inputDir = dockerfile.destFile.parentFile
   tag = 'photon/photon-controller-core'
 }
