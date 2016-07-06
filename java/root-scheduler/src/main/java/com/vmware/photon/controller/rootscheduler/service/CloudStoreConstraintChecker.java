@@ -55,11 +55,11 @@ import java.util.concurrent.Executors;
  *
  * Note that this is used from within the PlacementTaskService. It is asynchronous, but it doesn't update the
  * state of the task with PATCHs. This is partly because it doesn't need to (the task is neither persisted
- * nor replicated) and partly because it keeps the constraint checker distinctd from the placement task. This
+ * nor replicated) and partly because it keeps the constraint checker distinct from the placement task. This
  * will allow us to do easy future experimentation with alternative constraint checkers.
  *
  * The approach here is interesting, because we want random hosts, but Xenon's  LuceneDocumentQueryService
- * cannot select randomly. To get randomness, each HostService document is assigned a random number between
+ * cannot select randomly. To get randomness, each HostService document is assigned an arbitrary number between
  *  0 and 10,000 when it's created. We pick a random number and try to find hosts close to that
  * random number.
  *
@@ -71,6 +71,9 @@ import java.util.concurrent.Executors;
  * enough hosts, we query from the first half (0 to random), and we sort them in descending order. (50% of the time,
  * we do it in the reverse order, to reduce bias against hosts with a low scheduling constant.) Note that empirical
  * results shows we still have some bias because we're not making a truly random selection.
+ *
+ * See HostService for notes on the algorithm used to initially assign scheduling constants to hosts, which was chosen
+ * to make the host selection as uniform as possible.
  *
  * We're searching querying approximately 50% of the hosts at a time, which means that when we have a lot of hosts,
  * Lucene has to do a big sort. If we find that this is a performance hit, we can search smaller intervals, but that
