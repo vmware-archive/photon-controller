@@ -97,7 +97,7 @@ class VimCache:
         PC = vmodl.query.PropertyCollector
         host_property_spec = PC.PropertySpec(type=vim.HostSystem, pathSet=["summary.quickStats.overallMemoryUsage"])
         host_traversal_spec = PC.TraversalSpec(name="hostSpec", type=vim.ComputeResource, path="host", skip=False)
-        host_object_spec = PC.ObjectSpec(obj=vim_client.host_system, selectSet=[host_traversal_spec])
+        host_object_spec = PC.ObjectSpec(obj=vim_client.host_system(), selectSet=[host_traversal_spec])
         return PC.FilterSpec(propSet=[host_property_spec], objectSet=[host_object_spec])
 
     def _build_filter_spec(self, vim_client):
