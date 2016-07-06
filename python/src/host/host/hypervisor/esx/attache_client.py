@@ -18,7 +18,9 @@ import weakref
 
 import time
 
+from calendar import timegm
 from common.lock import lock_with
+from datetime import datetime
 from gen.agent.ttypes import VmCache
 from gen.host.ttypes import VmNetworkInfo
 from gen.host.ttypes import Ipv4Address
@@ -364,8 +366,18 @@ class AttacheClient(HostClient):
     """ Stats
     """
     @attache_error_handler
-    def query_stats(self, entity, metric_names, sampling_interval, start_time, end_time=None):
-        pass
+    def query_stats(self, start_time, end_time=None):
+        results = {}
+        if end_time is None:
+            end_time = datetime.now()
+        for stat in self._client.QueryStats(self._session,
+                                            self._get_microseconds(start_time),
+                                            self._get_microseconds(end_time)):
+            timestamps = self._get_timestamps(stat.timestamp)
+            counter_values = [float(i) for i in stat.values.split(',')]
+            results[stat.name] = zip(timestamps, counter_values)
+
+        return results
 
     @attache_error_handler
     def update_cache(self):
@@ -375,6 +387,19 @@ class AttacheClient(HostClient):
             for listener in self.update_listeners:
                 self._logger.debug("datastores updated for listener: %s" % listener.__class__.__name__)
                 listener.datastores_updated()
+
+    def _get_timestamps(self, sample_info_csv):
+        # extract timestamps from sampleInfoCSV
+        # format is '20,2015-12-03T18:39:20Z,20,2015-12-03T18:39:40Z...'
+        # Note: timegm() returns seconds since epoch without adjusting for
+        # local timezone, which is how we want timestamp interpreted.
+        timestamps = sample_info_csv.split(',')[1::2]
+        return [timegm(datetime.strptime(dt, '%Y-%m-%dT%H:%M:%SZ').timetuple()) for dt in timestamps]
+
+    def _get_microseconds(self, time):
+        epoch = datetime.utcfromtimestamp(0)
+        delta = time - epoch
+        return int(delta.total_seconds())*1000000 + delta.microseconds
 
 
 class AttacheVmConfigSpec(VmConfigSpec):

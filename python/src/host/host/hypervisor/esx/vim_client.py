@@ -109,6 +109,43 @@ class VimClient(HostClient):
     """Wrapper class around VIM API calls using Service Instance connection"""
 
     ALLOC_LARGE_PAGES = "Mem.AllocGuestLargePage"
+    metric_names = [
+        "cpu.totalmhz",
+        "cpu.usage",
+        "cpu.usagemhz",
+        "cpu.swapwait",
+        "mem.usage",
+        "mem.totalmb",
+        "mem.sysUsage",
+        "mem.swapout",
+        "mem.swapin",
+        "mem.swapused",
+        "mem.heapfree",
+        "net.usage",
+        "net.packetsRx",
+        "net.packetsTx",
+        "net.droppedRx",
+        "net.droppedTx",
+        "net.errorsRx",
+        "net.errorsTx",
+        "net.bytesRx",
+        "net.bytesTx",
+        "net.transmitted",
+        "disk.usage",
+        "disk.maxTotalLatency",
+        "disk.numberRead",
+        "disk.numberWrite",
+        "disk.commandsAborted",
+        "disk.busResets",
+        "disk.kernelReadLatency",
+        "disk.kernelWriteLatency",
+        "datastore.numberReadAveraged",
+        "datastore.numberWriteAveraged",
+        "storageAdapter.numberReadAveraged",
+        "storageAdapter.numberWriteAveraged"
+    ]
+    host_cpu_usage_metric_name = "cpu.cpuUsagePercentage"
+    host_mem_usage_metric_name = "mem.memoryUsagePercentage"
 
     def __init__(self, auto_sync=True, errback=None, wait_timeout=10, min_interval=1):
         self._logger = logging.getLogger(__name__)
@@ -221,7 +258,7 @@ class VimClient(HostClient):
         return env_browser.QueryConfigOption("vmx-10", None)
 
     @hostd_error_handler
-    def query_stats(self, entity, metric_names, sampling_interval, start_time, end_time=None):
+    def query_stats(self, start_time, end_time=None):
         """ Returns the host statistics by querying the perf manager on the
             host for the passed-in metric_names.
         """
@@ -230,7 +267,7 @@ class VimClient(HostClient):
 
         for c in self._perf_manager.perfCounter:
             metric_name = "%s.%s" % (c.groupInfo.key, c.nameInfo.key)
-            if metric_name in metric_names:
+            if metric_name in self.metric_names:
                 counter_to_metric_map[c.key] = metric_name
                 metric_id_objs.append(
                     vim.PerformanceManager.MetricId(
@@ -242,8 +279,8 @@ class VimClient(HostClient):
         # seconds. Hostd keeps 180 samples at the rate of 1 sample
         # per 20 seconds, which results in samples that span an hour.
         query_spec = [vim.PerformanceManager.QuerySpec(
-            entity=entity,
-            intervalId=sampling_interval,
+            entity=self.host_system(),
+            intervalId=20,
             format='csv',
             metricId=metric_id_objs,
             startTime=start_time,
@@ -251,20 +288,39 @@ class VimClient(HostClient):
 
         results = {}
         stats = self._perf_manager.QueryPerf(query_spec)
-        if not stats:
+        if stats:
+            for stat in stats:
+                timestamps = self._get_timestamps(stat.sampleInfoCSV)
+                values = stat.value
+                for value in values:
+                    id = value.id.counterId
+                    counter_values = [float(i) for i in value.value.split(',')]
+                    if id in counter_to_metric_map:
+                        metric_name = counter_to_metric_map[id]
+                        results[metric_name] = zip(timestamps, counter_values)
+        else:
             self._logger.debug("No metrics collected")
-            return results
 
-        for stat in stats:
-            timestamps = self._get_timestamps(stat.sampleInfoCSV)
-            values = stat.value
-            for value in values:
-                id = value.id.counterId
-                counter_values = [float(i) for i in value.value.split(',')]
-                if id in counter_to_metric_map:
-                    metric_name = counter_to_metric_map[id]
-                    results[metric_name] = zip(timestamps, counter_values)
+        # Get remaining Host Stats for CPU and Memory Usage.
+        host = self.host_system()
+        timestamp = int(time.mktime(datetime.now().timetuple()))
+        results[self.host_cpu_usage_metric_name] = [(timestamp, self._host_cpu_usage(host))]
+        results[self.host_mem_usage_metric_name] = [(timestamp, self._host_mem_usage(host))]
         return results
+
+    def _host_cpu_usage(self, host):
+        overall_cpu_usage = host.summary.quickStats.overallCpuUsage
+        total_cpu = host.summary.hardware.cpuMhz * host.summary.hardware.numCpuCores
+        if total_cpu > 0:
+            return (overall_cpu_usage * 100) / float(total_cpu)
+        return 0.0
+
+    def _host_mem_usage(self, host):
+        overall_memory_usage = host.summary.quickStats.overallMemoryUsage
+        total_memory = host.summary.hardware.memorySize / 1024 / 1024
+        if total_memory > 0:
+            return (overall_memory_usage * 100) / float(total_memory)
+        return 0.0
 
     @property
     @hostd_error_handler
@@ -290,7 +346,6 @@ class VimClient(HostClient):
         """
         return invt.GetVmFolder(si=self._si)
 
-    @property
     @hostd_error_handler
     def host_system(self):
         return host.GetHostSystem(self._si)
@@ -298,7 +353,7 @@ class VimClient(HostClient):
     @property
     @hostd_error_handler
     def host_version(self):
-        return self.host_system.config.product.version
+        return self.host_system().config.product.version
 
     @property
     @hostd_error_handler
@@ -308,7 +363,7 @@ class VimClient(HostClient):
     @property
     @hostd_error_handler
     def total_vmusable_memory_mb(self):
-        return self.host_system.summary.hardware.memorySize >> 20
+        return self.host_system().summary.hardware.memorySize >> 20
 
     @property
     @hostd_error_handler
@@ -318,7 +373,7 @@ class VimClient(HostClient):
         thread, if HT is enabled.
         :rtype: number of pCPUs
         """
-        return self.host_system.summary.hardware.numCpuThreads
+        return self.host_system().summary.hardware.numCpuThreads
 
     @hostd_error_handler
     def get_nfc_ticket_by_ds_name(self, datastore):
@@ -771,7 +826,7 @@ class VimClient(HostClient):
         """Disables large page support on the ESX hypervisor
            This is done when the host memory is overcommitted.
         """
-        optionManager = self.host_system.configManager.advancedOption
+        optionManager = self.host_system().configManager.advancedOption
         option = vim.OptionValue()
         option.key = self.ALLOC_LARGE_PAGES
         if disable:
