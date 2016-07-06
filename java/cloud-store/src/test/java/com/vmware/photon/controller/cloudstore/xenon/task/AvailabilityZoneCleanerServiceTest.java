@@ -41,9 +41,7 @@ import static org.testng.Assert.fail;
 
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.EnumSet;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -276,7 +274,6 @@ public class AvailabilityZoneCleanerServiceTest {
 
     private TestEnvironment machine;
     private AvailabilityZoneCleanerService.State request;
-    private List<String> testSelfLinks = new ArrayList<>();
 
     @BeforeMethod
     public void setUp() throws Throwable {
@@ -288,17 +285,10 @@ public class AvailabilityZoneCleanerServiceTest {
     @AfterMethod
     public void tearDown() throws Throwable {
       if (machine != null) {
+        // Note that this will fully clean up the Xenon host's Lucene index: all
+        // services we created will be fully removed.
         machine.stop();
-      }
-    }
-
-    private void freeTestEnvironment(TestEnvironment machine) throws Throwable {
-      try {
-        for (String selfLink : testSelfLinks) {
-          machine.deleteService(selfLink);
-        }
-      } finally {
-        testSelfLinks.clear();
+        machine = null;
       }
     }
 
@@ -336,8 +326,6 @@ public class AvailabilityZoneCleanerServiceTest {
       assertThat(response.availabilityZoneExpirationAgeInMicros, is(request.availabilityZoneExpirationAgeInMicros));
       assertThat(response.staleAvailabilityZones, is(staleAvailabilityZones));
       assertThat(response.deletedAvailabilityZones, is(expectedAvailabilityZonesDeleted));
-
-      freeTestEnvironment(machine);
     }
 
     /**
@@ -373,8 +361,6 @@ public class AvailabilityZoneCleanerServiceTest {
       assertThat(response.availabilityZoneExpirationAgeInMicros, is(request.availabilityZoneExpirationAgeInMicros));
       assertThat(response.staleAvailabilityZones, is(0));
       assertThat(response.deletedAvailabilityZones, is(0));
-
-      freeTestEnvironment(machine);
     }
 
     @DataProvider(name = "Success")
@@ -409,7 +395,6 @@ public class AvailabilityZoneCleanerServiceTest {
             env.sendPostAndWaitForReplication(AvailabilityZoneServiceFactory.SELF_LINK, availabilityZone);
         AvailabilityZoneService.State createdAvailabilityZone =
             availabilityZoneOperation.getBody(AvailabilityZoneService.State.class);
-        testSelfLinks.add(createdAvailabilityZone.documentSelfLink);
 
         // create Host
         if (i < staleAvailabilityZonesAssociatedWithHosts) {
@@ -417,7 +402,6 @@ public class AvailabilityZoneCleanerServiceTest {
           host.availabilityZoneId = ServiceUtils.getIDFromDocumentSelfLink(createdAvailabilityZone.documentSelfLink);
           Operation hostOperation = env.sendPostAndWait(HostServiceFactory.SELF_LINK, host);
           HostService.State createdHost = hostOperation.getBody(HostService.State.class);
-          testSelfLinks.add(createdHost.documentSelfLink);
         }
       }
     }

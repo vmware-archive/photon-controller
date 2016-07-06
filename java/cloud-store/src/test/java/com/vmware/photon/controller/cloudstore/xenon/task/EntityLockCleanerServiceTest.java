@@ -50,9 +50,7 @@ import static org.testng.Assert.fail;
 
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.EnumSet;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -277,7 +275,6 @@ public class EntityLockCleanerServiceTest {
 
     private TestEnvironment machine;
     private EntityLockCleanerService.State request;
-    private List<String> testSelfLinks = new ArrayList<>();
 
     @BeforeMethod
     public void setUp() throws Throwable {
@@ -289,7 +286,8 @@ public class EntityLockCleanerServiceTest {
     @AfterMethod
     public void tearDown() throws Throwable {
       if (machine != null) {
-        freeTestEnvironment(machine);
+        // Note that this will fully clean up the Xenon host's Lucene index: all
+        // services we created will be fully removed.
         machine.stop();
         machine = null;
       }
@@ -385,16 +383,6 @@ public class EntityLockCleanerServiceTest {
           is(0));
     }
 
-    private void freeTestEnvironment(TestEnvironment machine) throws Throwable {
-      try {
-        for (String selfLink : testSelfLinks) {
-          machine.deleteService(selfLink);
-        }
-      } finally {
-        testSelfLinks.clear();
-      }
-    }
-
     @DataProvider(name = "Success")
     public Object[][] getSuccessData() {
       return new Object[][]{
@@ -428,7 +416,6 @@ public class EntityLockCleanerServiceTest {
 
         Operation taskOperation = env.sendPostAndWait(TaskServiceFactory.SELF_LINK, newTask);
         TaskService.State createdTask = taskOperation.getBody(TaskService.State.class);
-        testSelfLinks.add(createdTask.documentSelfLink);
 
         // create associated entity lock
         EntityLockService.State entityLock = new EntityLockService.State();
@@ -437,11 +424,7 @@ public class EntityLockCleanerServiceTest {
         entityLock.entityKind = Vm.KIND;
         entityLock.lockOperation = EntityLockService.State.LockOperation.ACQUIRE;
         entityLock.documentSelfLink = EntityLockServiceFactory.SELF_LINK + "/" + entityLock.entityId;
-        Operation entityLockOperation = env.sendPostAndWait(EntityLockServiceFactory.SELF_LINK, entityLock);
-        EntityLockService.State createdEntityLock = entityLockOperation.getBody(EntityLockService.State.class);
-        if (i >= danglingEntityLocks) {
-          testSelfLinks.add(createdEntityLock.documentSelfLink);
-        }
+        env.sendPostAndWait(EntityLockServiceFactory.SELF_LINK, entityLock);
 
         if (releaseTask) {
           EntityLockService.State state = new EntityLockService.State();
