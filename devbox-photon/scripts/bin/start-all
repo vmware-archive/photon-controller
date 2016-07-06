@@ -1,6 +1,5 @@
 #!/bin/bash -xe
 # Run all start service scripts
-start-zookeeper
 start-haproxy
 start-photon-controller-core
 check-services

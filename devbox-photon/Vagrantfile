@@ -50,11 +50,6 @@ Vagrant.configure("2") do |config|
   #
   config.vm.provider "virtualbox"
 
-  restart_always = "--restart=always"
-  if ENV["NO_RESTART_ALWAYS"]
-    restart_always = ""
-  end
-
   # Where to save dynamic parameters
   dynamic_params_file = "/home/vagrant/dynamic-params.json"
 
@@ -107,12 +102,14 @@ Vagrant.configure("2") do |config|
     end
   end
 
-  # Install jsonlint, useful for catching errors in dynamic_params early
-  config.vm.provision :shell, :inline  => <<-EOM
-    tdnf makecache
-    tdnf install -y gmp-devel
-    gem install jsonlint --no-rdoc --no-ri
-  EOM
+  config.vm.provision :shell, :privileged => false, :inline => <<-EOS
+    set -xe
+    sudo systemctl start docker.service
+    sudo chmod a+x /usr/bin/mustache
+    sudo chmod a+x /usr/bin/jsonlint
+    sudo chmod -R a+rx /usr/bin
+    sudo chmod -R a+rx /usr/lib/ruby
+  EOS
 
   if ENV['ENABLE_AUTH'] == 'true'
   #
@@ -120,17 +117,17 @@ Vagrant.configure("2") do |config|
   #
   config.vm.define "lightwave" do |lightwave|
     lightwave.vm.guest = :photon
-    lightwave.vm.box = ENV['DEVBOX_NAME'] || "photon-devbox-60"
+    lightwave.vm.box = ENV['DEVBOX_NAME'] || "photon-devbox-70"
     lightwave.vm.box_url = ENV['DEVBOX_URL'] ||
-        "https://s3.amazonaws.com/photon-platform/artifacts/devbox/60/photon-devbox.box"
+        "https://s3.amazonaws.com/photon-platform/artifacts/devbox/70/photon-devbox.box"
 
     #
     # Configure memory and nat dns
     #
     config.vm.provider "virtualbox" do |v|
-      v.customize ["modifyvm", :id, "--memory", "1024"]
+      v.customize ["modifyvm", :id, "--memory", "2048"]
       v.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
-      v.customize ["modifyvm", :id, "--cpus", "1"]
+      v.customize ["modifyvm", :id, "--cpus", "2"]
       v.customize ['modifyvm', :id, '--acpi', 'off'] # needed to run PhotonOS RC1 in vagrant under stress
     end
 
@@ -155,7 +152,7 @@ Vagrant.configure("2") do |config|
     end
 
     # Configure network
-    if ENV["PUBLIC_NETWORK_IP"]
+    if ENV["PUBLIC_LW_NETWORK_IP"]
       public_network_ip = ENV["PUBLIC_LW_NETWORK_IP"]
       network_ip = public_network_ip
       bridge_network = ENV["BRIDGE_NETWORK"]
@@ -170,9 +167,9 @@ Vagrant.configure("2") do |config|
         ip route del default
         ip route add default via #{public_network_gateway} dev enp0s8
       EOS
-      ENV["DOCKER_URL"] = ENV["DOCKER_URL"] || "http://#{public_network_ip}:#{DOCKER_PORT}"
     else
       private_network_lw_ip = ENV["PRIVATE_NETWORK_LW_IP"] || "172.31.253.67"
+      network_ip = private_network_lw_ip
       lightwave.vm.network :private_network, ip: private_network_lw_ip
     end
 
@@ -181,16 +178,8 @@ Vagrant.configure("2") do |config|
     #
     lightwave.vm.hostname = "lightwave"
 
-    lightwave.vm.provision :shell, :privileged => false, :inline => <<-EOS
-      set -xe
-      sleep 15 # docker takes longer to come up in RC1
-      docker tag devbox/compileservices photon/compileservices
-    EOS
-
     dynamic_params = %Q(
     {)
-
-
     if ENV['LW_DOMAIN_NAME']
       dynamic_params += %Q(\n  "LIGHTWAVE_DOMAIN" : "#{ENV['LW_DOMAIN_NAME']}")
     else
@@ -219,64 +208,59 @@ Vagrant.configure("2") do |config|
 
     dynamic_params += "\n}"
 
-    # Write dynamic_params file
-    lightwave.vm.provision :shell, :privileged => false, :inline => <<-EOS
+      # Write dynamic_params file
+      lightwave.vm.provision :shell, :privileged => false, :inline => <<-EOS
 cat > #{dynamic_params_file} <<'EOM'
   #{dynamic_params}
 EOM
-  EOS
-
-    # Validate dynamic_params file, catch errors early
-    lightwave.vm.provision :shell, :inline => <<-EOS
-      printf "Validating dynamic params JSON file:"
-      jsonlint #{dynamic_params_file}
-      if [[ $? != 0 ]]; then
-        echo "Validation failed for file:"
-        cat #{dynamic_params_file}
-        exit 1
-      fi
     EOS
 
-    #
-    # Generate Lightwave container start script
-    #
-    lightwave_config_file="/devbox_data/java/containers/lightwave/config/lightwave_test.json"
-    lightwave.vm.provision :shell, :privileged => true, :inline => <<-EOS
-    set -ex
-out="#{SCRIPT_DIR}/start-lightwave"
+      # Validate dynamic_params file, catch errors early
+      lightwave.vm.provision :shell, :inline => <<-EOS
+        printf "Validating dynamic params JSON file:"
+        jsonlint #{dynamic_params_file}
+        if [[ $? != 0 ]]; then
+          echo "Validation failed for file:"
+          cat #{dynamic_params_file}
+          exit 1
+        fi
+      EOS
+
+      #
+      # Generate Lightwave container start script
+      #
+      lightwave_config_file="/devbox_data/java/containers/lightwave/config/lightwave_test.json"
+      lightwave.vm.provision :shell, :privileged => true, :inline => <<-EOS
+      set -ex
+  out="#{SCRIPT_DIR}/start-lightwave"
 cat > $out <<-'EOM'
-  #!/bin/bash
-
-  # Setup hostname for this host, which is required to run the Lightwave server.
-  sed -i s/photon-.*/"lightwave.#{ENV['LW_DOMAIN_NAME']} lightwave"/ /etc/hosts
-  hostnamectl set-hostname lightwave
-  hostnamectl set-hostname --static lightwave
-
-  docker build -t vmware/lightwave-sts /devbox_data/java/containers/lightwave
-
-  config_build_dir="/devbox_data/java/containers/lightwave/build/config"
-  mkdir -p $config_build_dir
-  combined_params=$(jq -s '.[0] * (.[1]#{CONFIG_JQ_FILTER})' #{dynamic_params_file} #{lightwave_config_file})
-
-  cd $(dirname #{lightwave_config_file})
-  for file in ./*.#{CONFIG_EXTS}
-  do
-    if [ -f $file ]; then
-      mustache - $file <<< "$combined_params" > "$config_build_dir/$file"
-    fi
-  done
+#!/bin/bash -x
+# Setup hostname for this host, which is required to run the Lightwave server.
+sed -i s/photon-.*/"lightwave.#{ENV['LW_DOMAIN_NAME']} lightwave"/ /etc/hosts
+echo "#{network_ip}  lightwave.#{ENV['LW_DOMAIN_NAME']} lightwave" >> /etc/hosts
+hostnamectl set-hostname lightwave
+hostnamectl set-hostname --static lightwave
+config_build_dir="/devbox_data/java/containers/lightwave/build/config"
+mkdir -p $config_build_dir
+combined_params=$(jq -s '.[0] * (.[1]#{CONFIG_JQ_FILTER})' #{dynamic_params_file} #{lightwave_config_file})
+cd $(dirname #{lightwave_config_file})
+for file in ./*.#{CONFIG_EXTS}
+do
+  if [ -f $file ]; then
+    mustache - $file <<< "$combined_params" > "$config_build_dir/$file"
+  fi
+done
 EOM
 cat >> $out <<-EOM
   $(gen-docker-stop #{lightwave_config_file}) &> /dev/null || true
   $(gen-docker-rm #{lightwave_config_file}) &> /dev/null || true
   $(gen-docker-run #{lightwave_config_file} /usr/sbin/init)
   echo "Start lightwave"
-
 EOM
 EOS
-    if ENV['PUBLIC_LW_NETWORK_IP']
-      lightwave.vm.provision :shell, :privileged => true, :inline => <<-EOS
-    set -ex
+      if ENV['PUBLIC_LW_NETWORK_IP']
+        lightwave.vm.provision :shell, :privileged => true, :inline => <<-EOS
+      set -ex
 out="#{SCRIPT_DIR}/start-lightwave"
 cat >> $out <<-EOM
   # Set a static (public) IP for Lightwave
@@ -285,32 +269,28 @@ cat >> $out <<-EOM
   echo "DNS=#{ENV['PUBLIC_LW_NETWORK_IP']}" >> /etc/systemd/network/10-dhcp-enp0s8.network
   echo "Domains=#{ENV['LW_DOMAIN_NAME']}" >> /etc/systemd/network/10-dhcp-enp0s8.network
   echo "Gateway=#{ENV["PUBLIC_NETWORK_GATEWAY"]}" >> /etc/systemd/network/10-dhcp-enp0s8.network
-
 EOM
 EOS
-    else
-    private_network_lw_ip = ENV["PRIVATE_NETWORK_LW_IP"] || "172.31.253.67"
-    lightwave.vm.provision :shell, :privileged => true, :inline => <<-EOS
-    set -ex
-out="#{SCRIPT_DIR}/start-lightwave"
+      else
+      private_network_lw_ip = ENV["PRIVATE_NETWORK_LW_IP"] || "172.31.253.67"
+      lightwave.vm.provision :shell, :privileged => true, :inline => <<-EOS
+      set -ex
+  out="#{SCRIPT_DIR}/start-lightwave"
 cat >> $out <<-EOM
   # Set a static (private) IP for Lightwave
   echo "DNS=#{private_network_lw_ip}" >> /etc/systemd/network/10-dhcp-enp0s8.network
   echo "Domains=#{ENV['LW_DOMAIN_NAME']}" >> /etc/systemd/network/10-dhcp-enp0s8.network
-
 EOM
 EOS
-    end
-    lightwave.vm.provision :shell, :privileged => true, :inline => <<-EOS
-    set -ex
-out="#{SCRIPT_DIR}/start-lightwave"
+      end
+      lightwave.vm.provision :shell, :privileged => true, :inline => <<-EOS
+      set -ex
+  out="#{SCRIPT_DIR}/start-lightwave"
 cat >> $out <<-'EOM'
   # Restart to pick up the networking changes.
   systemctl restart systemd-networkd systemd-resolved
-
   chmod +x /devbox_data/java/containers/lightwave/config/add_lightwave_users.sh
   chmod +x /devbox_data/java/containers/lightwave/config/update_token_expiration.sh
-
   echo "Checking to connect to Lightwave REST client to start"
   attempts=1
   reachable="false"
@@ -338,18 +318,18 @@ cat >> $out <<-'EOM'
 EOM
 chmod +x $out
 $out
-    EOS
+EOS
   end
-  end
+end
 
   #
   # VM definition for photon
   #
   config.vm.define "photon", primary: true do |photon|
     photon.vm.guest = :photon
-    photon.vm.box = ENV['DEVBOX_NAME'] || "photon-devbox-60"
+    photon.vm.box = ENV['DEVBOX_NAME'] || "photon-devbox-70"
     photon.vm.box_url = ENV['DEVBOX_URL'] ||
-      "https://s3.amazonaws.com/photon-platform/artifacts/devbox/60/photon-devbox.box"
+      "https://s3.amazonaws.com/photon-platform/artifacts/devbox/70/photon-devbox.box"
 
     #
     # Configure memory and nat dns
@@ -357,7 +337,7 @@ $out
     config.vm.provider "virtualbox" do |v|
       v.customize ["modifyvm", :id, "--memory", ENV["DEVBOX_PHOTON_MEMORY"] || "2048"]
       v.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
-      v.customize ["modifyvm", :id, "--cpus", ENV["DEVBOX_PHOTON_CPUS"] || "3"]
+      v.customize ["modifyvm", :id, "--cpus", ENV["DEVBOX_PHOTON_CPUS"] || "2"]
       v.customize ['modifyvm', :id, '--acpi', 'off'] # needed to run PhotonOS RC1 in vagrant under stress
     end
 
@@ -399,13 +379,6 @@ $out
       photon.vm.network :forwarded_port, guest: 2375, host: DOCKER_PORT
     end
 
-    photon.vm.provision :shell, :privileged => false, :inline => <<-EOS
-      set -xe
-      sleep 15 # docker takes longer to come up in RC1
-      docker tag devbox/compileservices photon/compileservices
-    EOS
-
-
     # ================ NETWORK CONFIGURATION ================
 
     #
@@ -437,7 +410,6 @@ $out
     # Configure hostname
     #
     photon.vm.hostname = "devbox"
-
 
     dynamic_params = %Q(
     {
@@ -531,37 +503,31 @@ $out
     dynamic_params += "\n}"
 
     # Write dynamic_params file
-    config.vm.provision :shell, :privileged => false, :inline => <<-EOS
+    photon.vm.provision :shell, :privileged => false, :inline => <<-EOS
 cat > #{dynamic_params_file} <<'EOM'
   #{dynamic_params}
 EOM
-  EOS
+    EOS
 
-  # Validate dynamic_params file, catch errors early
-  config.vm.provision :shell, :inline => <<-EOS
-    printf "Validating dynamic params JSON file:"
-    jsonlint #{dynamic_params_file}
-    if [[ $? != 0 ]]; then
-      echo "Validation failed for file:"
-      cat #{dynamic_params_file}
-      exit 1
-    fi
-  EOS
+    # Validate dynamic_params file, catch errors early
+    photon.vm.provision :shell, :inline => <<-EOS
+      printf "Validating dynamic params JSON file:"
+      jsonlint #{dynamic_params_file}
+      if [[ $? != 0 ]]; then
+        echo "Validation failed for file:"
+        cat #{dynamic_params_file}
+        exit 1
+      fi
+    EOS
 
   # Set hostname for devbox. This is needed for the lightwave client.
-  config.vm.provision :shell, :inline => <<-EOS
+  photon.vm.provision :shell, :inline => <<-EOS
     sed -i s/photon-.*/"devbox.#{ENV['LW_DOMAIN_NAME'] || "photon.vmware.com"} devbox"/ /etc/hosts
     hostnamectl set-hostname devbox
     hostnamectl set-hostname --static devbox
   EOS
 
   # ================ PROVISIONING ================
-
-  # renaming esxcloud containers to zookeeper Containers
-  photon.vm.provision :shell, :inline => <<-EOS
-    docker tag devbox/zookeeper photon/zookeeper
-    docker tag devbox/haproxy photon/haproxy
-  EOS
 
   #
   # Give access to zookeeper user inside container to write to log directory in host
@@ -572,139 +538,10 @@ EOM
   EOS
 
   #
-  # Script for building agent VIB
-  #
-  agent_config_build_dir="/mirror/devbox_data/java/devbox/agent/build/configuration"
-
-  photon.vm.provision :shell, :privileged => false, :inline => <<-EOS
-out="#{SCRIPT_DIR}/build-agent"
-cat > $out <<-'EOM'
-#!/bin/bash -xe
-
-# Keep an updated mirror of /devbox_data/ dirs needed for mounting into the container.
-# This avoids vagrant shared folder issues with hard links.
-# Only copy files needed for agent build, exclude all else.
-sudo mkdir -p /mirror/devbox_data
-time sudo rsync -rLgotp --exclude="develop" /devbox_data/python /mirror/devbox_data
-time sudo rsync -rLgotp /devbox_data/thrift /mirror/devbox_data
-
-
-container=$(docker run -d \
-  -v /mirror/devbox_data:/devbox_data \
-  -v /devbox_data/java/devbox/compileservices:/var/compileservices \
-  -e "GIT_ROOT=#{GIT_ROOT}" \
-  -e "GIT_REVISION=#{GIT_REVISION}" \
-  photon/compileservices /var/compileservices/agent_compile_install.sh)
-docker attach $container
-docker commit $container devbox/agent
-
-# Copy for use by integration test
-sudo mkdir -p /var/esxcloud/packages
-sudo rm -f /var/esxcloud/packages/*.vib
-sudo cp /mirror/devbox_data/python/dist/*.vib /var/esxcloud/packages/
-envoy_vib_url=#{ENV["ENVOY_VIB_URL"]}
-if [ ! -z "$envoy_vib_url" ]; then
-  sudo wget $envoy_vib_url -P /var/esxcloud/packages/
-fi
-EOM
-chmod +x $out
-  EOS
-
-  agent_parameters_file = "/home/vagrant/agent-parameters.json"
-  # Make sure agent params file exists so that mustache doesn't fail
-  photon.vm.provision :shell, :privileged => false, :inline => "touch #{agent_parameters_file}"
-
-  if !(ENV["PUBLIC_NETWORK_IP"] || ENV["REAL_AGENT"])
-    agent_parameters = %Q(
-    {
-      "AGENT_BIND_ADDRESS": "#{network_ip}",
-      "AGENT_LOG_PATH": "/var/log",
-      "AGENT_ZOOKEEPER": "#{network_ip}:2181")
-    if(ENV['ESX_AGENT_COUNT'])
-     agent_parameters += %Q(,\n  "AGENT_COUNT": "#{ENV['ESX_AGENT_COUNT']}")
-    end
-    agent_parameters += "\n}"
-
-    # Validate agent parameters JSON
-    config.vm.provision :shell, :privileged => false, :inline => <<-EOS
-cat > #{agent_parameters_file} <<-'EOM'
-#{agent_parameters}
-EOM
-    EOS
-
-    config.vm.provision :shell, :privileged => false, :inline => <<-EOS
-    printf "Validating dynamic params JSON file:"
-    jsonlint #{agent_parameters_file}
-    if [[ $? != 0 ]]; then
-      echo "Validation failed for file:"
-      cat #{agent_parameters_file}
-      exit 1
-    fi
-    EOS
-  end
-
-  #
-  # Start agent script
-  #
-  photon.vm.provision :shell, :privileged => false, :inline => <<-EOS
-set -ex
-out=#{SCRIPT_DIR}/start-agent
-cat > $out <<-'EOM'
-#!/bin/bash -xe
-
-agent_config_dir=/devbox_data/java/devbox/agent/configuration
-
-mkdir -p #{agent_config_build_dir}
-for file in $agent_config_dir/*.#{CONFIG_EXTS}
-do
-  if [ -f $file ]; then
-    output="#{agent_config_build_dir}/$(basename $file)"
-    mustache "#{agent_parameters_file}" $file > "$output"
-    if [[ "${file#*.}" == "sh" ]]; then
-      chmod +x "$output"
-    fi
-  fi
-done
-
-mkdir -p /vagrant/log/agent
-
-# Stop any old running agent container
-docker stop devbox/agent &> /dev/null || true
-docker rm -f devbox/agent &> /dev/null || true
-
-# Start fake agent
-docker run -d -p 8835:8835 \
-  --net=host #{restart_always} \
-  --name=agent \
-  -v /vagrant/log/agent:/var/log \
-  -v /devbox_data/tmp:/devbox_data/tmp \
-  -v #{DATASTORE_DIR}:/tmp \
-  -v #{ESXCLOUD_DIR}:#{ESXCLOUD_DIR} \
-  -v #{agent_config_build_dir}:/etc/esxcloud/agent \
-  devbox/agent /etc/esxcloud/agent/run.sh
-EOM
-chmod +x $out
-  EOS
-
-  #
-  # Stop agent script
-  #
-  photon.vm.provision :shell, :privileged => false, :inline => <<-EOS
-set -ex
-out=#{SCRIPT_DIR}/stop-agent
-cat > $out <<-'EOM'
-#!/bin/bash -x
-docker stop agent
-EOM
-chmod +x $out
-  EOS
-
-  #
   # Create log directories for mounting
   #
   photon.vm.provision :shell, :privileged => false, :inline => <<-EOS
     set -ex
-    mkdir -p /vagrant/log/zookeeper
     mkdir -p /vagrant/log/haproxy
   EOS
 
@@ -762,36 +599,6 @@ EOM
 chmod +x $out
     EOS
   end
-
-  #
-  # Generate Zookeeper container start script
-  #
-  zk_config_file="/devbox_data/java/containers/zookeeper/config/zookeeper_test.json"
-  photon.vm.provision :shell, :privileged => false, :inline => <<-EOS
-out="#{SCRIPT_DIR}/start-zookeeper"
-cat > $out <<-'EOM'
-  #!/bin/bash
-  config_build_dir="/devbox_data/java/containers/zookeeper/build/config"
-  mkdir -p $config_build_dir
-  combined_params=$(jq -s '.[0] * (.[1]#{CONFIG_JQ_FILTER})' #{dynamic_params_file} #{zk_config_file})
-
-  cd $(dirname #{zk_config_file})
-  for file in ./*.#{CONFIG_EXTS}
-  do
-    if [ -f $file ]; then
-      mustache - $file <<< "$combined_params" > "$config_build_dir/$file"
-    fi
-  done
-EOM
-cat >> $out <<-EOM
-  $(gen-docker-stop #{zk_config_file}) &> /dev/null || true
-  $(gen-docker-rm #{zk_config_file}) &> /dev/null || true
-  $(gen-docker-run #{zk_config_file} /bin/bash /usr/lib/zookeeper/conf/run.sh)
-  echo "Sleeping for ZK start"
-  sleep 30
-EOM
-chmod +x $out
-  EOS
 
   #
   # Generate HAProxy container start script

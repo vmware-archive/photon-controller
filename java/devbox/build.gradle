@@ -47,8 +47,7 @@ task buildAll() {
 task buildPhoton() {
   dependsOn(
     ":auth-tool:assemble",
-    ":containers:photon",
-    ":devbox:agent:buildVib"
+    ":containers:photon"
   )
   mustRunAfter vagrantUp, cleanAll
 }
