@@ -33,6 +33,7 @@ import com.vmware.xenon.common.RequestRouter;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.ServiceDocumentDescription;
 import com.vmware.xenon.common.StatefulService;
+import com.vmware.xenon.common.Utils;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -135,7 +136,13 @@ public class DeploymentService extends StatefulService {
             ServiceUtils.logInfo(this, "SystemConfig update is needed for %s %s", patchState.documentSelfLink,
                 patchState.state);
             try {
-              validatePatchState(getState(request), patchState);
+              // If this node is not an owner but a replicated node, we do not need to validate.
+              if (!request.isFromReplication()) {
+                validateForSetSystemConfig(patchState, request, action);
+              } else {
+                ServiceUtils.logInfo(this, "SystemConfig update done without validation because isFromReplication is " +
+                    "true %s %s", patchState.documentSelfLink, patchState.state);
+              }
               setSystemConfig(patchState);
             } catch (Throwable t) {
               ServiceUtils.logSevere(this, t);
@@ -147,6 +154,23 @@ public class DeploymentService extends StatefulService {
     }
   }
 
+  private void validateForSetSystemConfig(State patchState, Operation request, Action action) {
+    ServiceUtils.logInfo(this, "SystemConfig update requires validation for Action: %s  PatchBody: %s " +
+            "getState: %s",
+        action, Utils.toJson(patchState), Utils.toJson(getState(request)));
+    if (action == Action.PATCH) {
+      if (getState(request) != null) {
+        validatePatchState(getState(request), patchState);
+      } else {
+        // In some cases getState is not populated yet. It sends another patch to populate the body which
+        // will handle
+        return;
+      }
+    } else {
+      validateState(patchState);
+    }
+  }
+
   private void setSystemConfig(State state) {
     if (state != null && state.state != null) {
       ServiceUtils.logInfo(this, "SystemConfig update is set for %s %s", state.documentSelfLink,
@@ -154,7 +178,8 @@ public class DeploymentService extends StatefulService {
       if (SystemConfig.getInstance() != null) {
         SystemConfig.getInstance().markPauseStateLocally(state);
       } else {
-        ServiceUtils.logInfo(this, "SystemConfig.getInstance is null. Should not happen normally %s %s", state
+        ServiceUtils.logInfo(this,
+            "SystemConfig.getInstance is unexpectedly null: work may continue when it shouldn't %s %s", state
                 .documentSelfLink, state.state);
       }
     }
