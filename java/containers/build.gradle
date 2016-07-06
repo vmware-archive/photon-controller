@@ -30,10 +30,17 @@ task copyRpms(type: Copy) {
   into "../containers/photon-controller-core/"
 }
 
-task photoncore(type: DockerBuildImage) {
-  dependsOn servicebase, copyRpms
+task photoncoreNoBase(type: DockerBuildImage) {
+  dependsOn copyRpms
   inputDir = file("photon-controller-core")
   tag = "photon/photon-controller-core"
+}
+
+task photoncore(type: DockerBuildImage) {
+  dependsOn(
+    servicebase,
+    photoncoreNoBase
+  )
 }
 
 task removeZookeeper(type: DockerRemoveImage) {
@@ -50,7 +57,7 @@ task removeServicebase(type: DockerRemoveImage) {
 
 task photon() {
   dependsOn(
-    ":photon-controller-core:container"
+    ":photon-controller-core:containerNoBase"
   )
 }
 

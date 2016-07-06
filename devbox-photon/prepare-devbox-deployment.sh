@@ -17,7 +17,6 @@ export NO_RESTART_ALWAYS=1
 
 ./gradlew :devbox:renewPhoton
 
-vagrant ssh -c "docker tag photon/zookeeper esxcloud/zookeeper"
 vagrant ssh -c "docker tag photon/haproxy esxcloud/haproxy"
 vagrant ssh -c "docker tag photon/photon-controller-core esxcloud/photon-controller-core"
 
@@ -35,11 +34,6 @@ vagrant ssh -c "sudo mkdir -p /usr/lib/esxcloud/photon-controller-core/"
 vagrant ssh -c "sudo docker cp photon-controller-core:/usr/lib/esxcloud/photon-controller-core/scripts/ /usr/lib/esxcloud/photon-controller-core/"
 
 photon_vm=$(VBoxManage list runningvms | grep devbox-photon_photon | sed 's/"\(.*\)".*/\1/')
-#
-# Sleep for the docker operations to complete
-#
-echo "sleeping for 2 minutes to let docker operations complete..."
-sleep 120
 
 # removing all docker containers in the vagrant box
 #
@@ -53,6 +47,13 @@ sleep 120
 # / \[_]..........................\  \   /  /
 vagrant ssh -c 'docker stop $(docker ps -a -q)'
 vagrant ssh -c 'docker rm $(docker ps -a -q)'
+
+#
+# Sleep for the docker operations to complete
+# this should be the last thing to run before the vagrant suspend command
+#
+echo "sleeping for 2 minutes to let docker operations complete..."
+sleep 120
 
 vagrant suspend
 
