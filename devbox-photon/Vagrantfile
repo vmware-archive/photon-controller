@@ -736,7 +736,7 @@ cat >> $out <<-EOM
 
   $(gen-docker-stop #{config_file}) &> /dev/null || true
   $(gen-docker-rm #{config_file}) &> /dev/null || true
-  $(gen-docker-run #{config_file} /bin/bash /etc/esxcloud/run.sh "-v #{config_build_dir}:/etc/esxcloud")
+  $(gen-docker-run #{config_file} /usr/sbin/init "" "-v #{config_build_dir}:/etc/esxcloud")
 EOM
 chmod +x $out
     EOS

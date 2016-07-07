@@ -18,6 +18,12 @@ task zookeeper(type: DockerBuildImage) {
   tag = "photon/zookeeper"
 }
 
+task photoncore(type: DockerBuildImage) {
+  dependsOn servicebase
+  inputDir = file("photon-controller-core")
+  tag = "photon/photon-controller-core"
+}
+
 task removeZookeeper(type: DockerRemoveImage) {
   targetImageId { zookeeper.tag }
 }
