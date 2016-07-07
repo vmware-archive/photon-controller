@@ -62,18 +62,18 @@ public class SystemConfig implements SystemConfigProvider {
   // This is an optimization on the local node. As soon as user kicks a Pause/BackgroundPause/Resume/, we mark locally
   // rather than querying it again.
   public void markPauseStateLocally(boolean isBackgroundPaused, boolean isPaused) {
-    instance.isBackgroundPaused = isBackgroundPaused;
-    instance.isPaused = isPaused;
+    this.isBackgroundPaused = isBackgroundPaused;
+    this.isPaused = isPaused;
     logger.info("SystemConfig mark local... isBackgroundPaused:{}  isPaused{}", isBackgroundPaused, isPaused);
   }
 
   @Override
   public boolean isPaused() {
-    return instance.isPaused;
+    return this.isPaused;
   }
 
   @Override
   public boolean isBackgroundPaused()  {
-    return instance.isPaused || instance.isBackgroundPaused;
+    return this.isPaused || this.isBackgroundPaused;
   }
 }
