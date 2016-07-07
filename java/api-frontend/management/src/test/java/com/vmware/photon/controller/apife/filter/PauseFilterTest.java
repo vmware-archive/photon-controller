@@ -56,7 +56,7 @@ public class PauseFilterTest {
   @BeforeMethod
   public void setUp() {
     xenonHost = mock(PhotonControllerXenonHost.class);
-    this.systemConfig = spy(SystemConfig.createInstance(xenonHost));
+    this.systemConfig = mock(SystemConfig.class);
     this.pauseFilter = spy(new PauseFilter());
 
   }

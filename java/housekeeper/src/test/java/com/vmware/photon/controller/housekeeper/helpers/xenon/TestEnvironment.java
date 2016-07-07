@@ -60,7 +60,6 @@ public class TestEnvironment extends MultiHostEnvironment<PhotonControllerXenonH
       HousekeeperServiceGroup housekeeperServiceGroup = new HousekeeperServiceGroup();
       hosts[i].registerHousekeeper(housekeeperServiceGroup);
       SystemConfig.createInstance(hosts[i]);
-      SystemConfig.getInstance().markPauseStateLocally(isBackgroudPaused, false);
     }
 
     TaskSchedulerServiceStateBuilder.triggerInterval = TimeUnit.MILLISECONDS.toMicros(500);

@@ -17,6 +17,7 @@ import com.vmware.photon.controller.api.DeploymentState;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment;
+import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
 import com.vmware.xenon.common.Operation;
@@ -37,6 +38,7 @@ public class SystemConfigTest {
   private TestEnvironment testEnvironment;
   private DeploymentService service;
   private PhotonControllerXenonHost host;
+  private SystemConfig systemConfig;
 
   /**
    * Dummy test case to make Intellij recognize this as a test class.
@@ -50,7 +52,10 @@ public class SystemConfigTest {
     service = new DeploymentService();
     testEnvironment = TestEnvironment.create(1);
     host = testEnvironment.getHosts()[0];
-    SystemConfig.createInstance(host);
+    CloudStoreHelper cloudStoreHelper = new CloudStoreHelper(testEnvironment.getServerSet());
+    host.setCloudStoreHelper(cloudStoreHelper);
+    SystemConfig.destroyInstance();
+    this.systemConfig = SystemConfig.createInstance(host);
   }
 
   @AfterMethod
@@ -58,6 +63,7 @@ public class SystemConfigTest {
     testEnvironment.stop();
     testEnvironment = null;
     service = null;
+    systemConfig = null;
   }
 
   private DeploymentService.State buildState(DeploymentState desiredState) {
