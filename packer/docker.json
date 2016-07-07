@@ -1,0 +1,34 @@
+{
+    "builders":[{
+        "type": "docker",
+        "image": "vmware/photon",
+        "export_path": "image.tar"
+    }],
+    "provisioners":[
+        {
+            "type": "file",
+            "source": "../java/build/RPMS/x86_64/",
+            "destination": "/tmp"
+        },
+        {
+            "type": "shell",
+            "inline": [
+                        "tdnf update -y;",
+                        "tdnf install -y gawk openjre openjdk sed iproute2 net-tools;",
+                        "rpm -i /tmp/photon-controller-rpm-1.x86_64.rpm",
+                        "rm -rf /tmp/*",
+                        "mkdir -p /usr/java",
+                        "ln -sf /var/opt/OpenJDK* /usr/java/default;",
+                        "echo \"export JAVA_HOME=/usr/java/default\" >> /etc/bash.bashrc",
+                        "echo \"export PATH=${PATH}:/usr/java/default/bin\" >> /etc/bash.bashrc"
+                      ]
+        }
+    ],
+    "post-processors": [
+        {
+            "type": "docker-import",
+            "repository": "vmware/photon-controller",
+            "tag": "0.1"
+        }
+    ]
+}
