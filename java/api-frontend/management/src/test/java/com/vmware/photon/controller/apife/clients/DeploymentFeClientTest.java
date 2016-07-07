@@ -19,6 +19,7 @@ import com.vmware.photon.controller.api.ClusterConfigurationSpec;
 import com.vmware.photon.controller.api.Deployment;
 import com.vmware.photon.controller.api.DeploymentCreateSpec;
 import com.vmware.photon.controller.api.DeploymentDeployOperation;
+import com.vmware.photon.controller.api.DhcpConfigurationSpec;
 import com.vmware.photon.controller.api.FinalizeMigrationOperation;
 import com.vmware.photon.controller.api.InitializeMigrationOperation;
 import com.vmware.photon.controller.api.Project;
@@ -38,6 +39,7 @@ import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommandFactory;
 import com.vmware.photon.controller.apife.config.AuthConfig;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
+import com.vmware.photon.controller.apife.entities.DeploymentEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.common.Constants;
 
@@ -380,9 +382,9 @@ public class DeploymentFeClientTest {
   }
 
   /**
-   * Tests the config cluster method.
+   * Tests the configure cluster method.
    */
-  public class ConfigClusterTest {
+  public class ConfigureClusterTest {
     String deploymentId;
 
     @BeforeMethod
@@ -406,6 +408,37 @@ public class DeploymentFeClientTest {
       Task resp = feClient.configureCluster(deploymentId, new ClusterConfigurationSpec());
       assertThat(resp, is(task));
 
+    }
+  }
+
+  /**
+   * Tests the configure DHCP method.
+   */
+  public class ConfigureDhcpTest {
+    String deploymentId;
+
+    @BeforeMethod
+    public void setUp() throws Throwable {
+      setUpCommon();
+    }
+
+    @Test
+    public void testSuccess() throws Throwable {
+      deploymentId = "deployment-id";
+      DeploymentEntity deploymentEntity = new DeploymentEntity();
+      deploymentEntity.setNetworkManagerAddress("1.2.3.4");
+      deploymentEntity.setNetworkManagerUsername("username");
+      deploymentEntity.setNetworkManagerPassword("password");
+      doReturn(deploymentEntity).when(deploymentBackend).findById(deploymentId);
+      TaskEntity taskEntity = new TaskEntity();
+
+      doReturn(taskEntity).when(deploymentBackend).configureDhcp(any(DhcpConfigurationSpec.class),
+        eq("1.2.3.4"), eq("username"), eq("password"));
+      Task task = new Task();
+      doReturn(task).when(taskBackend).getApiRepresentation(taskEntity);
+
+      Task resp = feClient.configureDhcp(deploymentId, new DhcpConfigurationSpec());
+      assertThat(resp, is(task));
     }
   }
 

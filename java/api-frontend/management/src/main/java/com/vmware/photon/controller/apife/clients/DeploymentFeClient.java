@@ -20,6 +20,7 @@ import com.vmware.photon.controller.api.ClusterType;
 import com.vmware.photon.controller.api.Deployment;
 import com.vmware.photon.controller.api.DeploymentCreateSpec;
 import com.vmware.photon.controller.api.DeploymentDeployOperation;
+import com.vmware.photon.controller.api.DhcpConfigurationSpec;
 import com.vmware.photon.controller.api.FinalizeMigrationOperation;
 import com.vmware.photon.controller.api.Host;
 import com.vmware.photon.controller.api.InitializeMigrationOperation;
@@ -41,6 +42,7 @@ import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommandFactory;
 import com.vmware.photon.controller.apife.config.AuthConfig;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
+import com.vmware.photon.controller.apife.entities.DeploymentEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
 import com.vmware.photon.controller.common.Constants;
@@ -271,5 +273,15 @@ public class DeploymentFeClient {
 
   public ResourceList<Vm> getVmsPage(String pageLink) throws ExternalException {
     return vmBackend.getVmsPage(pageLink);
+  }
+
+  public Task configureDhcp(String id, DhcpConfigurationSpec spec) throws ExternalException {
+    DeploymentEntity deploymentEntity = deploymentBackend.findById(id);
+    TaskEntity taskEntity = deploymentBackend.configureDhcp(
+        spec,
+        deploymentEntity.getNetworkManagerAddress(),
+        deploymentEntity.getNetworkManagerUsername(),
+        deploymentEntity.getNetworkManagerPassword());
+    return taskBackend.getApiRepresentation(taskEntity);
   }
 }

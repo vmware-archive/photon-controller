@@ -16,6 +16,7 @@ package com.vmware.photon.controller.apife.resources.deployment;
 import com.vmware.photon.controller.api.ClusterConfigurationSpec;
 import com.vmware.photon.controller.api.Deployment;
 import com.vmware.photon.controller.api.DeploymentDeployOperation;
+import com.vmware.photon.controller.api.DhcpConfigurationSpec;
 import com.vmware.photon.controller.api.FinalizeMigrationOperation;
 import com.vmware.photon.controller.api.InitializeMigrationOperation;
 import com.vmware.photon.controller.api.ResourceList;
@@ -223,9 +224,9 @@ public class DeploymentResource {
           @ApiResponse(code = 201, message = "Task created, cluster configuration process can be fetched " +
                   "via the task")
   })
-  public Response configCluster(@Context Request request,
-                                @PathParam("id") String id,
-                                @Validated ClusterConfigurationSpec spec) throws ExternalException {
+  public Response configureCluster(@Context Request request,
+                                   @PathParam("id") String id,
+                                   @Validated ClusterConfigurationSpec spec) throws ExternalException {
 
     return generateCustomResponse(
         Response.Status.CREATED,
@@ -267,6 +268,23 @@ public class DeploymentResource {
     return generateCustomResponse(
         Response.Status.OK,
         task,
+        (ContainerRequest) request,
+        TaskResourceRoutes.TASK_PATH);
+  }
+
+  @POST
+  @Path(DeploymentResourceRoutes.ENABLE_DHCP_ACTION)
+  @ApiOperation(value = "Configures DHCP service associated with the Deployment", response = Task.class)
+  @ApiResponses(value = {
+      @ApiResponse(code = 201, message = "Task created, DHCP configuration process can be fetched " +
+          "via the task")
+  })
+  public Response configureDhcp(@Context Request request,
+                                @PathParam("id") String id,
+                                DhcpConfigurationSpec spec) throws ExternalException {
+    return generateCustomResponse(
+        Response.Status.CREATED,
+        client.configureDhcp(id, spec),
         (ContainerRequest) request,
         TaskResourceRoutes.TASK_PATH);
   }
