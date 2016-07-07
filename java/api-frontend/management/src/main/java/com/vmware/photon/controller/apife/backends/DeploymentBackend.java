@@ -20,6 +20,7 @@ import com.vmware.photon.controller.api.Deployment;
 import com.vmware.photon.controller.api.DeploymentCreateSpec;
 import com.vmware.photon.controller.api.DeploymentDeployOperation;
 import com.vmware.photon.controller.api.DeploymentState;
+import com.vmware.photon.controller.api.DhcpConfigurationSpec;
 import com.vmware.photon.controller.api.FinalizeMigrationOperation;
 import com.vmware.photon.controller.api.InitializeMigrationOperation;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
@@ -71,6 +72,9 @@ public interface DeploymentBackend {
   TaskEntity deleteClusterConfiguration(ClusterType clusterType) throws ExternalException;
 
   List<ClusterConfiguration> getClusterConfigurations() throws ExternalException;
+
+  TaskEntity configureDhcp(DhcpConfigurationSpec spec, String networkManagerAddress,
+                           String networkManagerUsername, String networkManagerPassword) throws ExternalException;
 
   DeploymentEntity findById(String id) throws DeploymentNotFoundException;
 

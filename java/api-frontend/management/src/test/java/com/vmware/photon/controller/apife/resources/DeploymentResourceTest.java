@@ -18,6 +18,7 @@ import com.vmware.photon.controller.api.ClusterConfigurationSpec;
 import com.vmware.photon.controller.api.ClusterType;
 import com.vmware.photon.controller.api.Deployment;
 import com.vmware.photon.controller.api.DeploymentDeployOperation;
+import com.vmware.photon.controller.api.DhcpConfigurationSpec;
 import com.vmware.photon.controller.api.FinalizeMigrationOperation;
 import com.vmware.photon.controller.api.InitializeMigrationOperation;
 import com.vmware.photon.controller.api.ResourceList;
@@ -51,6 +52,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriBuilder;
 
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 
@@ -382,6 +384,33 @@ public class DeploymentResourceTest extends ResourceTest {
         .request()
         .post(Entity.entity(new ClusterConfigurationSpec(), MediaType.APPLICATION_JSON_TYPE));
     assertThat(response.getStatus(), is(404));
+  }
+
+  @Test
+  public void testConfigureDhcp() throws Exception {
+    String uri = UriBuilder
+        .fromPath(DeploymentResourceRoutes.DEPLOYMENT_PATH +
+          DeploymentResourceRoutes.ENABLE_DHCP_ACTION)
+        .build(deploymentId)
+        .toString();
+
+    Task task = new Task();
+    task.setId(taskId);
+    doReturn(task).when(feClient).configureDhcp(eq(deploymentId), any(DhcpConfigurationSpec.class));
+
+    DhcpConfigurationSpec configSpec = new DhcpConfigurationSpec();
+    configSpec.setServerAddresses(new ArrayList<>());
+
+    Response response = client()
+        .target(uri)
+        .request()
+        .post(Entity.entity(configSpec, MediaType.APPLICATION_JSON_TYPE));
+    assertThat(response.getStatus(), is(201));
+
+    Task responseTask = response.readEntity(Task.class);
+    assertThat(responseTask, is(task));
+    assertThat(new URI(responseTask.getSelfLink()).isAbsolute(), is(true));
+    assertThat(responseTask.getSelfLink().endsWith(taskRoutePath), is(true));
   }
 
   @Test

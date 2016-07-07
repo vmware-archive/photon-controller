@@ -21,6 +21,7 @@ import com.vmware.photon.controller.api.Deployment;
 import com.vmware.photon.controller.api.DeploymentCreateSpec;
 import com.vmware.photon.controller.api.DeploymentDeployOperation;
 import com.vmware.photon.controller.api.DeploymentState;
+import com.vmware.photon.controller.api.DhcpConfigurationSpec;
 import com.vmware.photon.controller.api.FinalizeMigrationOperation;
 import com.vmware.photon.controller.api.Host;
 import com.vmware.photon.controller.api.InitializeMigrationOperation;
@@ -394,6 +395,15 @@ public class DeploymentXenonBackend implements DeploymentBackend {
     }
 
     return clusterConfigurations;
+  }
+
+  @Override
+  public TaskEntity configureDhcp(DhcpConfigurationSpec spec,
+                                  String networkManagerAddress,
+                                  String networkManagerUsername,
+                                  String networkManagerPassword) throws ExternalException {
+    // TODO(ysheng): invoke the actual xenon service
+    return null;
   }
 
   @Override
