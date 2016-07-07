@@ -63,13 +63,13 @@ distTar << extractRelease(this, 'photon-controller-core')
 task dockerfile(type: Dockerfile) {
   dependsOn distTar
   destFile = file('build/container/Dockerfile')
-  from 'photon/servicebase'
+  from 'photon/photon-controller-core'
   copyFile('release/', '/usr/lib/esxcloud/photon-controller-core/')
   runCommand "tdnf install -y openssh && tdnf install -y sshpass"
 }
 
 task container(type: DockerBuildImage) {
-  dependsOn dockerfile, ':containers:servicebase'
+  dependsOn dockerfile, ':containers:photoncore'
   inputDir = dockerfile.destFile.parentFile
   tag = 'photon/photon-controller-core'
 }
