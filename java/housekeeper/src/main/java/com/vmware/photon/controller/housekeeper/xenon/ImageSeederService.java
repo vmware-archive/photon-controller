@@ -428,7 +428,7 @@ public class ImageSeederService extends StatefulService {
       }
 
       ServiceUtils.logInfo(ImageSeederService.this, "ImageHostToHostCopyService %s, is triggered for image: %s",
-          acknowledgeOp.getBody(ImageHostToHostCopyService.class).getSelfLink(), current.image);
+        acknowledgeOp.getBody(ImageHostToHostCopyService.State.class).documentSelfLink, current.image);
     };
 
     // build copy service start state
