@@ -20,6 +20,7 @@ import com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment;
 import com.vmware.photon.controller.cloudstore.xenon.helpers.TestHelper;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.common.xenon.BasicServiceHost;
+import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.XenonRestClient;
 import com.vmware.photon.controller.common.xenon.exceptions.BadRequestException;
@@ -101,7 +102,6 @@ public class DeploymentServiceTest {
     public void setUpTest() throws Throwable {
       deploymentService = new DeploymentService();
       testEnvironment = TestEnvironment.create(1);
-      SystemConfig.createInstance(testEnvironment.getHosts()[0]);
     }
 
     @AfterMethod
@@ -223,7 +223,6 @@ public class DeploymentServiceTest {
     public void setUpTest() throws Throwable {
       deploymentService = new DeploymentService();
       testEnvironment = TestEnvironment.create(1);
-      SystemConfig.createInstance(testEnvironment.getHosts()[0]);
     }
 
     @AfterMethod
@@ -282,8 +281,10 @@ public class DeploymentServiceTest {
     public void testPauseSystemOnThreeNodes() throws Throwable {
       pauseTestEnv = TestEnvironment.create(3);
 
+      CloudStoreHelper cloudStoreHelper = new CloudStoreHelper(pauseTestEnv.getServerSet());
       List<SystemConfig> systemConfigs = new ArrayList<>();
       for (PhotonControllerXenonHost host : pauseTestEnv.getHosts()) {
+        host.setCloudStoreHelper(cloudStoreHelper);
         systemConfigs.add(SystemConfig.createInstance(host));
       }
       DeploymentService.State startState = buildServiceStartState();
@@ -415,7 +416,6 @@ public class DeploymentServiceTest {
           10, 10);
 
       testEnvironment = TestEnvironment.create(1);
-      SystemConfig.createInstance(testEnvironment.getHosts()[0]);
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(testEnvironment.getHosts()[0].getPreferredAddress(),
               testEnvironment.getHosts()[0].getPort()));

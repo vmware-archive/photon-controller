@@ -15,7 +15,6 @@ package com.vmware.photon.controller.cloudstore.xenon.entity;
 
 import com.vmware.photon.controller.api.DeploymentState;
 import com.vmware.photon.controller.api.StatsStoreType;
-import com.vmware.photon.controller.cloudstore.SystemConfig;
 import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
@@ -84,8 +83,6 @@ public class DeploymentService extends StatefulService {
       State startState = startOperation.getBody(State.class);
       InitializationUtils.initialize(startState);
       validateState(startState);
-      // handleRequest is not called for the initial creation
-      setSystemConfig(startState);
       startOperation.complete();
     } catch (IllegalStateException t) {
       ServiceUtils.failOperationAsBadRequest(this, startOperation, t);
@@ -110,75 +107,6 @@ public class DeploymentService extends StatefulService {
     } catch (Throwable t) {
       ServiceUtils.logSevere(this, t);
       patchOperation.fail(t);
-    }
-  }
-
-  @Override
-  public void handleRequest(Operation request) {
-    this.handleRequest(request, OperationProcessingStage.LOADING_STATE);
-  }
-
-  // handlePatch is called on the owner. handleRequest is called for all the nodes.
-  @Override
-  public void handleRequest(Operation request, OperationProcessingStage opProcessingStage) {
-    setSystemConfig(request);
-    super.handleRequest(request, opProcessingStage);
-  }
-
-  private void setSystemConfig(Operation request) {
-    if (request.getAction() != null) {
-      Action action = request.getAction();
-      if (action == Action.PATCH || action == Action.POST || action == Action.PUT) {
-        if (request.hasBody()) {
-          State patchState = request.getBody(State.class);
-          if (patchState.state != null) {
-            ServiceUtils.logInfo(this, "SystemConfig update is needed for %s %s", patchState.documentSelfLink,
-                patchState.state);
-            try {
-              // If this node is not an owner but a replicated node, we do not need to validate.
-              if (!request.isFromReplication()) {
-                if (getState(request) == null) {
-                  // In some cases getState is not populated yet. It sends another patch to populate the body which
-                  // will handle
-                  return;
-                }
-                validateForSetSystemConfig(patchState, request, action);
-              } else {
-                ServiceUtils.logInfo(this, "SystemConfig update done without validation because isFromReplication is " +
-                    "true %s %s", patchState.documentSelfLink, patchState.state);
-              }
-              setSystemConfig(patchState);
-            } catch (Throwable t) {
-              ServiceUtils.logSevere(this, t);
-              // We do not fail this here. It will fail when super.handleRequest calls handlePatch
-            }
-          }
-        }
-      }
-    }
-  }
-
-  private void validateForSetSystemConfig(State patchState, Operation request, Action action) {
-    ServiceUtils.logInfo(this, "SystemConfig update requires validation for Action: %s  deploymentlink: %s ",
-        action, patchState.documentSelfLink);
-    if (action == Action.PATCH) {
-      validatePatchState(getState(request), patchState);
-    } else {
-      validateState(patchState);
-    }
-  }
-
-  private void setSystemConfig(State state) {
-    if (state != null && state.state != null) {
-      ServiceUtils.logInfo(this, "SystemConfig update is set for %s %s", state.documentSelfLink,
-          state.state);
-      if (SystemConfig.getInstance() != null) {
-        SystemConfig.getInstance().markPauseStateLocally(state);
-      } else {
-        ServiceUtils.logInfo(this,
-            "SystemConfig.getInstance is unexpectedly null: work may continue when it shouldn't %s %s", state
-                .documentSelfLink, state.state);
-      }
     }
   }
 

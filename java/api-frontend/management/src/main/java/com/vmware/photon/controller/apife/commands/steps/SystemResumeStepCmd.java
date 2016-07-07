@@ -19,7 +19,6 @@ import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
-import com.vmware.photon.controller.cloudstore.SystemConfig;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentServiceFactory;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
@@ -63,7 +62,6 @@ public class SystemResumeStepCmd extends StepCommand {
           taskCommand.getApiFeXenonRestClient().patch(state.documentSelfLink, state,
               EnumSet.of(XenonClient.HeaderOption.HEADER_OPTION_FULL_QUORUM));
 
-      SystemConfig.getInstance().markPauseStateLocally(false, false);
       logger.info("Resumed APIFE service...");
     } catch (DocumentNotFoundException ex) {
       throw new InternalException(ex);
