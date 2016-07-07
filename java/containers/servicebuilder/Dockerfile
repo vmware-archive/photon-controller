@@ -1,7 +1,7 @@
 #
 # Docker image for building Photon Controller java services.
 #
-FROM vmware/photon:1.0rc
+FROM vmware/photon:1.0
 
 RUN tdnf clean all \
   && tdnf update -y tdnf \
