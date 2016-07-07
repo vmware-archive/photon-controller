@@ -333,7 +333,7 @@ class VimClient(HostClient):
         return nfc_service.FileManagement(ds)
 
     @hostd_error_handler
-    def acquire_clone_ticket(self):
+    def get_vim_ticket(self):
         """
         acquire a clone ticket of current session, that can be used to login as
         current user.
