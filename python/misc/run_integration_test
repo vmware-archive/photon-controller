@@ -53,8 +53,11 @@ make vib DEBUG=1
 
 sshpass -p "$ESX_PWD" ssh root@$ESX_IP 'rm /tmp/*.vib' || true
 sshpass -p "$ESX_PWD" scp ./dist/photon-controller-agent-*.vib root@$ESX_IP:/tmp
+sshpass -p "$ESX_PWD" ssh root@$ESX_IP 'wget http://build-squid.eng.vmware.com/build/mts/release/bora-4099937/publish/uw32/packages/vmware-envoy-6.0.3-4099937.vib -P /tmp/''
 sshpass -p "$ESX_PWD" ssh root@$ESX_IP 'esxcli software vib remove -f -n photon-controller-agent' || true
 sshpass -p "$ESX_PWD" ssh root@$ESX_IP 'esxcli software vib install -f -v /tmp/photon-controller-agent-*.vib'
+sshpass -p "$ESX_PWD" ssh root@$ESX_IP 'esxcli software vib remove -f -n envoy' || true
+sshpass -p "$ESX_PWD" ssh root@$ESX_IP 'esxcli software vib install -f -v /tmp/vmware-envoy-*.vib'
 
 sshpass -p "$ESX_PWD" ssh root@$ESX_IP 'esxcfg-vswitch -a test' || true
 sshpass -p "$ESX_PWD" ssh root@$ESX_IP 'esxcfg-vswitch -A "VM Network" test' || true
