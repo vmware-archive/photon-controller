@@ -4,7 +4,7 @@
   "memoryMb": 8192,
   "diskGb": 27,
   "isReplicated": true,
-  "isPrivileged": false,
+  "isPrivileged": true,
   "containerImage": "photon/photon-controller-core",
   "containerName": "photon-controller-core",
   "portBindings": {
@@ -20,7 +20,8 @@
     "/etc/esxcloud-deployer":"/etc/esxcloud-deployer",
     "/devbox_data/java/photon-controller-core/src/main/resources/scripts":"/usr/lib/esxcloud/photon-controller-core/scripts",
     "/devbox_data/java/cluster-manager/backend/src/main/resources/scripts":"/usr/lib/esxcloud/photon-controller-core/scripts/clusters",
-    "/var/photon/images": "/var/photon/images"
+    "/var/photon/images": "/var/photon/images",
+    "/sys/fs/cgroup": "/sys/fs/cgroup"
   },
   "dynamicParameters": {
     "CLOUD-STORE_BIND_ADDRESS": "0.0.0.0",
