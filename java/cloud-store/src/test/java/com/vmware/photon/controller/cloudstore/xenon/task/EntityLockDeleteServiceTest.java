@@ -314,7 +314,6 @@ public class EntityLockDeleteServiceTest {
         throws Throwable {
       machine = TestEnvironment.create(hostCount);
       seedTestEnvironment(machine, totalEntityLocks, danglingEntityLocks);
-
       // No entity locks should be deleted when entityLockDeleteWatermarkTimeInMicros is NowMicrosUtc
       request.entityLockDeleteWatermarkTimeInMicros = Utils.getNowMicrosUtc();
       EntityLockDeleteService.State response = machine.callServiceAndWaitForState(
@@ -338,7 +337,7 @@ public class EntityLockDeleteServiceTest {
         throws Throwable {
       machine = TestEnvironment.create(hostCount);
       seedTestEnvironment(machine, totalEntityLocks, danglingEntityLocks);
-      Thread.sleep(1000);
+
       // All entity locks being created should be found when entityLockDeleteWatermarkTimeInMicros is 0
       request.entityLockDeleteWatermarkTimeInMicros = 0L;
       EntityLockDeleteService.State response = machine.callServiceAndWaitForState(
