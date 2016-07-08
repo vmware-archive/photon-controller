@@ -214,9 +214,9 @@ public class EntityLockDeleteService extends StatefulService {
       return;
     }
 
-    Operation getFirstPageOfEntityLocks = Operation.createGet(UriUtils.buildUri(getHost(), current.nextPageLink));
+    Operation getOnePageOfEntityLocks = Operation.createGet(UriUtils.buildUri(getHost(), current.nextPageLink));
 
-    getFirstPageOfEntityLocks
+    getOnePageOfEntityLocks
         .setCompletion((op, throwable) -> {
           if (throwable != null) {
             failTask(throwable);
@@ -229,9 +229,12 @@ public class EntityLockDeleteService extends StatefulService {
               parseEntityLockQueryResults(op.getBody(QueryTask.class));
 
           if (entityLockList.size() == 0) {
-            ServiceUtils.logInfo(EntityLockDeleteService.this, "No entityLocks found any more.");
+            ServiceUtils.logInfo(EntityLockDeleteService.this, "No entityLocks found in current page.");
             sendStageProgressPatch(current);
             return;
+          } else {
+            ServiceUtils.logInfo(EntityLockDeleteService.this, "[%d] entityLocks found in current page.",
+                entityLockList.size());
           }
 
           deleteEntityLocksWithDeletedEntities(current, entityLockList);
@@ -264,15 +267,17 @@ public class EntityLockDeleteService extends StatefulService {
   }
 
   private void deleteEntityLocksWithDeletedEntities(final State current, List<EntityLockService.State> entityLockList) {
+    current.entityLocksProcessed += entityLockList.size();
     Collection<Operation> getEntityOperations = getEntitiesAssociateWithDeletedEntities(entityLockList);
 
     if (getEntityOperations.isEmpty()) {
-      ServiceUtils.logInfo(EntityLockDeleteService.this, "No entityLocks found associate with deleted entities with " +
-          "this page.");
+      ServiceUtils.logInfo(EntityLockDeleteService.this, "No entityLocks with deleted entities found on this page.");
       sendStageProgressPatch(current);
       return;
     }
     OperationJoin join = OperationJoin.create(getEntityOperations);
+    ServiceUtils.logInfo(EntityLockDeleteService.this, "Starting GET on [%d] entities",
+        join.getOperations().size());
     join.setCompletion(deleteEntityLocksAssociatedWithDeletedEntities(current));
     join.sendWith(this);
   }
@@ -282,13 +287,10 @@ public class EntityLockDeleteService extends StatefulService {
     Collection<Operation> getEntityOperations = new LinkedList<>();
 
     for (EntityLockService.State entityLock : entityLockList) {
-      if (entityLock.ownerTaskId == null) {
-        Operation getEntityOperation = Operation
-            .createGet(UriUtils.buildUri(getHost(), entityLock.entitySelfLink))
-            .setReferer(UriUtils.buildUri(getHost(), getSelfLink()));
-
-        getEntityOperations.add(getEntityOperation);
-      }
+      Operation getEntityOperation = Operation
+          .createGet(UriUtils.buildUri(getHost(), entityLock.entitySelfLink))
+          .setReferer(UriUtils.buildUri(getHost(), getSelfLink()));
+      getEntityOperations.add(getEntityOperation);
     }
 
     return getEntityOperations;
@@ -296,10 +298,12 @@ public class EntityLockDeleteService extends StatefulService {
 
   private JoinedCompletionHandler deleteEntityLocksAssociatedWithDeletedEntities(final State current) {
     return (ops, failures) -> {
+      ServiceUtils.logInfo(EntityLockDeleteService.this, "Completed GET on [%d] entities",
+          ops.size());
       Collection<Operation> deleteLockOperations = getDeleteLockOperationsForEntityLocks(ops);
 
       if (deleteLockOperations.size() == 0) {
-        ServiceUtils.logInfo(this, "No unreleased entityLocks found with this page.");
+        ServiceUtils.logInfo(this, "No unreleased entityLocks found in this page.");
         sendStageProgressPatch(current);
         return;
       }
@@ -319,7 +323,7 @@ public class EntityLockDeleteService extends StatefulService {
             .createDelete(UriUtils.buildUri(getHost(), EntityLockServiceFactory.SELF_LINK + "/"
                 + UriUtils.getLastPathSegment(op.getUri())))
             .setReferer(UriUtils.buildUri(getHost(), getSelfLink()));
-        ServiceUtils.logInfo(this, "Deleting a dangling EntityLock associate with deleted entities. EntityLock Id: %s",
+        ServiceUtils.logInfo(this, "Deleting a dangling EntityLock with deleted entity. EntityLock Id: %s",
             UriUtils.getLastPathSegment(op.getUri()));
 
         deleteLockOperations.add(deleteLockOperation);
@@ -429,6 +433,12 @@ public class EntityLockDeleteService extends StatefulService {
      */
     @DefaultTaskState(value = TaskState.TaskStage.STARTED)
     public TaskState taskState;
+
+    /**
+     * The number of entity locks to delete.
+     */
+    @DefaultInteger(value = 0)
+    public Integer entityLocksProcessed;
 
     /**
      * The number of entity locks to delete.

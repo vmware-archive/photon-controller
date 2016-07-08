@@ -338,7 +338,7 @@ public class EntityLockDeleteServiceTest {
         throws Throwable {
       machine = TestEnvironment.create(hostCount);
       seedTestEnvironment(machine, totalEntityLocks, danglingEntityLocks);
-      Thread.sleep(1000);
+
       // All entity locks being created should be found when entityLockDeleteWatermarkTimeInMicros is 0
       request.entityLockDeleteWatermarkTimeInMicros = 0L;
       EntityLockDeleteService.State response = machine.callServiceAndWaitForState(
@@ -346,7 +346,9 @@ public class EntityLockDeleteServiceTest {
           request,
           EntityLockDeleteService.State.class,
           (EntityLockDeleteService.State state) -> state.taskState.stage == TaskState.TaskStage.FINISHED);
-      assertThat(response.danglingEntityLocksWithDeletedEntities,
+      assertThat(response.entityLocksProcessed,
+          is(totalEntityLocks));
+      assertThat("Incorrect number of dangling entity locks found", response.danglingEntityLocksWithDeletedEntities,
           is(danglingEntityLocks));
       assertThat(response.deletedEntityLocks,
           is(danglingEntityLocks));
@@ -385,13 +387,6 @@ public class EntityLockDeleteServiceTest {
         Operation entityLockOperation = env.sendPostAndWaitForReplication(
             EntityLockServiceFactory.SELF_LINK, entityLock);
         EntityLockService.State createdEntityLock = entityLockOperation.getBody(EntityLockService.State.class);
-
-        entityLock.entityId = createdEntityLock.entityId;
-        entityLock.ownerTaskId = createdEntityLock.ownerTaskId;
-        entityLock.entityKind = Vm.KIND;
-        entityLock.lockOperation = EntityLockService.State.LockOperation.RELEASE;
-        entityLock.documentSelfLink = EntityLockServiceFactory.SELF_LINK + "/" + entityLock.entityId;
-        env.sendPostAndWaitForReplication(EntityLockServiceFactory.SELF_LINK, entityLock);
 
         if (i < (totalEntityLocks - danglingEntityLocks)) {
           VmService.State vm = new VmService.State();
