@@ -232,7 +232,7 @@ class AttacheClient(HostClient):
 
     @attache_error_handler
     def attach_virtual_network(self, vm_id, network_id):
-        pass
+        return self._client.AttachVirtualNetwork(self._session, vm_id, network_id)
 
     @attache_error_handler
     def get_mks_ticket(self, vm_id):
