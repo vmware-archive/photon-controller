@@ -16,6 +16,7 @@ deployer:
     apifeEndpoint: "http://{{{APIFE_IP}}}:{{{APIFE_PORT}}}"
     configDirectory: "/etc/esxcloud-deployer/configurations/"
     enableSyslog: "{{{ENABLE_SYSLOG}}}"
+    enableInstaller: "{{{ENABLE_INSTALLER}}}"
     maxMemoryGb: {{{MAX_MEMORY_GB}}}
     maxVmCount: {{{MAX_VM_COUNT}}}
     projectName: "{{{PROJECT_NAME}}}"

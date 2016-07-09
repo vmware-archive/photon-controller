@@ -134,4 +134,13 @@ public class DeployerDefaults {
    * tagged with both MGMT and CLOUD usage tags.
    */
   public static final float MANAGEMENT_VM_TO_MIXED_HOST_RESOURCE_RATIO = 0.25f;
+
+  /**
+   * Enable Installer behaviour in Deployer. Default value is true. When disabled the deployer will not load container
+   * configurations of haproxy, lightwave etc. When installer behaviour is enabled the deployer running in InstallerOVA
+   * lauches containers inside the ManagementOVA after deploying them. In Installer less deployment
+   * ManagementOVA/Management Plane is deployed manually by user and deployer does not need to know installer specific
+   * configuration.
+   */
+  public static final Boolean ENABLE_INSTALLER = true;
 }
