@@ -21,7 +21,8 @@
     "/devbox_data/java/photon-controller-core/src/main/resources/scripts":"/usr/lib/esxcloud/photon-controller-core/scripts",
     "/devbox_data/java/cluster-manager/backend/src/main/resources/scripts":"/usr/lib/esxcloud/photon-controller-core/scripts/clusters",
     "/var/photon/images": "/var/photon/images",
-    "/sys/fs/cgroup": "/sys/fs/cgroup"
+    "/sys/fs/cgroup": "/sys/fs/cgroup",
+    "/devbox_data/java/containers/lightwave/build/config/": "/var/lib/vmware/config/"
   },
   "dynamicParameters": {
     "CLOUD-STORE_BIND_ADDRESS": "0.0.0.0",

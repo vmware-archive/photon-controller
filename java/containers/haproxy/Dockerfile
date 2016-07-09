@@ -9,5 +9,5 @@ RUN tdnf makecache && \
 WORKDIR /etc/haproxy
 
 EXPOSE 80
-EXPOSE 443
+EXPOSE 4433
 EXPOSE 8080

@@ -115,231 +115,6 @@ Vagrant.configure("2") do |config|
   EOM
 
   #
-  # VM definition for lightwave
-  #
-  config.vm.define "lightwave" do |lightwave|
-    lightwave.vm.guest = :photon
-    lightwave.vm.box = ENV['DEVBOX_NAME'] || "photon-devbox-60"
-    lightwave.vm.box_url = ENV['DEVBOX_URL'] ||
-        "https://s3.amazonaws.com/photon-platform/artifacts/devbox/60/photon-devbox.box"
-
-    #
-    # Configure memory and nat dns
-    #
-    config.vm.provider "virtualbox" do |v|
-      v.customize ["modifyvm", :id, "--memory", "1024"]
-      v.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
-      v.customize ["modifyvm", :id, "--cpus", "1"]
-      v.customize ['modifyvm', :id, '--acpi', 'off'] # needed to run PhotonOS RC1 in vagrant under stress
-    end
-
-    unless ENV["NO_PORT_FORWARDING"]
-      #Lightwave
-      lightwave.vm.network :forwarded_port, guest: 22, host: 9022,
-          auto_correct: true
-      lightwave.vm.network :forwarded_port, guest: 53, host: 9053,
-          auto_correct: true
-      lightwave.vm.network :forwarded_port, guest: 88, host: 9188,
-          auto_correct: true
-      lightwave.vm.network :forwarded_port, guest: 389, host: 9389,
-          auto_correct: true
-      lightwave.vm.network :forwarded_port, guest: 636, host: 9636,
-          auto_correct: true
-      lightwave.vm.network :forwarded_port, guest: 2012, host: 2012,
-          auto_correct: true
-      lightwave.vm.network :forwarded_port, guest: 2014, host: 2014,
-          auto_correct: true
-      lightwave.vm.network :forwarded_port, guest: 2020, host: 2020,
-          auto_correct: true
-    end
-
-    # Configure network
-    if ENV["PUBLIC_NETWORK_IP"]
-      public_network_ip = ENV["PUBLIC_LW_NETWORK_IP"]
-      network_ip = public_network_ip
-      bridge_network = ENV["BRIDGE_NETWORK"]
-      public_network_netmask = ENV["PUBLIC_NETWORK_NETMASK"] || "255.255.255.128"
-      public_network_netmask = ENV["PUBLIC_NETWORK_NETMASK"]
-      lightwave.vm.network :public_network, bridge: bridge_network, ip: public_network_ip, netmask: public_network_netmask
-
-      public_network_gateway = ENV["PUBLIC_NETWORK_GATEWAY"]
-      # Assign correct default gateway to public network
-      lightwave.vm.provision :shell, :inline => <<-EOS
-        set -ex
-        ip route del default
-        ip route add default via #{public_network_gateway} dev enp0s8
-      EOS
-      ENV["DOCKER_URL"] = ENV["DOCKER_URL"] || "http://#{public_network_ip}:#{DOCKER_PORT}"
-    else
-      private_network_lw_ip = ENV["PRIVATE_NETWORK_LW_IP"] || "172.31.253.67"
-      lightwave.vm.network :private_network, ip: private_network_lw_ip
-    end
-
-    #
-    # Configure hostname
-    #
-    lightwave.vm.hostname = "lightwave"
-
-    lightwave.vm.provision :shell, :privileged => false, :inline => <<-EOS
-      set -xe
-      sleep 15 # docker takes longer to come up in RC1
-      docker tag devbox/compileservices photon/compileservices
-    EOS
-
-    dynamic_params = %Q(
-    {)
-
-    if ENV['ENABLE_AUTH'] == 'true'
-      if ENV['LW_DOMAIN_NAME']
-        dynamic_params += %Q(\n  "LIGHTWAVE_DOMAIN" : "#{ENV['LW_DOMAIN_NAME']}")
-      else
-        abort("auth is enabled for devbox lightwave, but domain is not set")
-      end
-
-      if ENV['LW_PASSWORD']
-        dynamic_params += %Q(,\n  "LIGHTWAVE_PASSWORD" : "#{ENV['LW_PASSWORD']}")
-      else
-        abort("auth is enabled for devbox lightwave, but password is not set")
-      end
-
-      if ENV["PUBLIC_NETWORK_IP"]
-        if ENV["PUBLIC_LW_NETWORK_IP"]
-          # The hostname is set to the IP since Photon Controller does not have DNS set
-          # to Lightwave yet, but Photon Controller during auth enabled needs to
-          # verify the hostname matches the Lightwave server certificate.
-          dynamic_params += %Q(,\n  "LIGHTWAVE_HOSTNAME" : "#{ENV['PUBLIC_LW_NETWORK_IP']}")
-        else
-          abort("auth is enabled for devbox lightwave, but hostname is not set")
-        end
-      else
-        private_network_lw_ip = ENV["PRIVATE_NETWORK_LW_IP"] || "172.31.253.67"
-        dynamic_params += %Q(,\n  "LIGHTWAVE_HOSTNAME" : "#{private_network_lw_ip}")
-      end
-    end
-    dynamic_params += "\n}"
-
-    # Write dynamic_params file
-    lightwave.vm.provision :shell, :privileged => false, :inline => <<-EOS
-cat > #{dynamic_params_file} <<'EOM'
-  #{dynamic_params}
-EOM
-  EOS
-
-    # Validate dynamic_params file, catch errors early
-    lightwave.vm.provision :shell, :inline => <<-EOS
-      printf "Validating dynamic params JSON file:"
-      jsonlint #{dynamic_params_file}
-      if [[ $? != 0 ]]; then
-        echo "Validation failed for file:"
-        cat #{dynamic_params_file}
-        exit 1
-      fi
-    EOS
-
-    #
-    # Generate Lightwave container start script
-    #
-    lightwave_config_file="/devbox_data/java/containers/lightwave/config/lightwave_test.json"
-    lightwave.vm.provision :shell, :privileged => true, :inline => <<-EOS
-    set -ex
-out="#{SCRIPT_DIR}/start-lightwave"
-cat > $out <<-'EOM'
-  #!/bin/bash
-
-  # Setup hostname for this host, which is required to run the Lightwave server.
-  sed -i s/photon-.*/"lightwave.#{ENV['LW_DOMAIN_NAME']} lightwave"/ /etc/hosts
-  hostnamectl set-hostname lightwave
-  hostnamectl set-hostname --static lightwave
-
-  docker build -t vmware/lightwave-sts /devbox_data/java/containers/lightwave
-
-  config_build_dir="/devbox_data/java/containers/lightwave/build/config"
-  mkdir -p $config_build_dir
-  combined_params=$(jq -s '.[0] * (.[1]#{CONFIG_JQ_FILTER})' #{dynamic_params_file} #{lightwave_config_file})
-
-  cd $(dirname #{lightwave_config_file})
-  for file in ./*.#{CONFIG_EXTS}
-  do
-    if [ -f $file ]; then
-      mustache - $file <<< "$combined_params" > "$config_build_dir/$file"
-    fi
-  done
-EOM
-cat >> $out <<-EOM
-  $(gen-docker-stop #{lightwave_config_file}) &> /dev/null || true
-  $(gen-docker-rm #{lightwave_config_file}) &> /dev/null || true
-  $(gen-docker-run #{lightwave_config_file} /usr/sbin/init)
-  echo "Start lightwave"
-
-EOM
-EOS
-    if ENV['PUBLIC_LW_NETWORK_IP']
-      lightwave.vm.provision :shell, :privileged => true, :inline => <<-EOS
-    set -ex
-out="#{SCRIPT_DIR}/start-lightwave"
-cat >> $out <<-EOM
-  # Set a static (public) IP for Lightwave
-  # Note: Gateway needs to be set to only get a static IP, otherwise a secondary IP will
-  # be made by networkd, confusing the Lightwave setup.
-  echo "DNS=#{ENV['PUBLIC_LW_NETWORK_IP']}" >> /etc/systemd/network/10-dhcp-enp0s8.network
-  echo "Domains=#{ENV['LW_DOMAIN_NAME']}" >> /etc/systemd/network/10-dhcp-enp0s8.network
-  echo "Gateway=#{ENV["PUBLIC_NETWORK_GATEWAY"]}" >> /etc/systemd/network/10-dhcp-enp0s8.network
-
-EOM
-EOS
-    else
-    private_network_lw_ip = ENV["PRIVATE_NETWORK_LW_IP"] || "172.31.253.67"
-    lightwave.vm.provision :shell, :privileged => true, :inline => <<-EOS
-    set -ex
-out="#{SCRIPT_DIR}/start-lightwave"
-cat >> $out <<-EOM
-  # Set a static (private) IP for Lightwave
-  echo "DNS=#{private_network_lw_ip}" >> /etc/systemd/network/10-dhcp-enp0s8.network
-  echo "Domains=#{ENV['LW_DOMAIN_NAME']}" >> /etc/systemd/network/10-dhcp-enp0s8.network
-
-EOM
-EOS
-    end
-    lightwave.vm.provision :shell, :privileged => true, :inline => <<-EOS
-    set -ex
-out="#{SCRIPT_DIR}/start-lightwave"
-cat >> $out <<-'EOM'
-  # Restart to pick up the networking changes.
-  systemctl restart systemd-networkd systemd-resolved
-
-  chmod +x /devbox_data/java/containers/lightwave/config/add_lightwave_users.sh
-  chmod +x /devbox_data/java/containers/lightwave/config/update_token_expiration.sh
-
-  echo "Checking to connect to Lightwave REST client to start"
-  attempts=1
-  reachable="false"
-  while [ $attempts -lt 30 ] && [ $reachable != "true" ]; do
-    http_code=$(curl -w "%{http_code}" -s -X GET --insecure https://lightwave.#{ENV['LW_DOMAIN_NAME']})
-    # The curl returns 000 when it fails to connect to the lightwave server
-    if [ $http_code -eq 000 ]; then
-      echo "Lightwave REST server not reachable (attempt $attempts/30), will try again."
-      attempts=$[$attempts+1]
-      sleep 5
-    else
-      reachable="true"
-      echo "Adding Lightwave users."
-      /devbox_data/java/containers/lightwave/config/add_lightwave_users.sh #{ENV['LW_PASSWORD']}
-      echo "Updating tenant token expiration time."
-      /devbox_data/java/containers/lightwave/config/update_token_expiration.sh #{ENV['LW_PASSWORD']} #{ENV['LW_DOMAIN_NAME']}
-      break
-    fi
-  done
-  if [ $attempts -eq 30 ]; then
-    echo "Could not connect to Lightwave REST client after 30 attempts, users not added and token expiration not updated."
-  fi
-EOM
-chmod +x $out
-$out
-    EOS
-  end
-
-
-  #
   # VM definition for photon
   #
   config.vm.define "photon", primary: true do |photon|
@@ -382,7 +157,7 @@ $out
       photon.vm.network :forwarded_port, guest: 18001, host: 9089,
         auto_correct: true
       # Load Balancer
-      photon.vm.network :forwarded_port, guest: 443, host: 9089,
+      photon.vm.network :forwarded_port, guest: 4433, host: 9089,
         auto_correct: true
       photon.vm.network :forwarded_port, guest: 28080, host: 9090,
           auto_correct: true
@@ -394,6 +169,24 @@ $out
 
       # Expose Docker for the Gradle build on the host
       photon.vm.network :forwarded_port, guest: 2375, host: DOCKER_PORT
+
+      #Lightwave
+      photon.vm.network :forwarded_port, guest: 22, host: 9022,
+          auto_correct: true
+      photon.vm.network :forwarded_port, guest: 53, host: 9053,
+          auto_correct: true
+      photon.vm.network :forwarded_port, guest: 88, host: 9188,
+          auto_correct: true
+      photon.vm.network :forwarded_port, guest: 389, host: 9389,
+          auto_correct: true
+      photon.vm.network :forwarded_port, guest: 636, host: 9636,
+          auto_correct: true
+      photon.vm.network :forwarded_port, guest: 2012, host: 2012,
+          auto_correct: true
+      photon.vm.network :forwarded_port, guest: 2014, host: 2014,
+          auto_correct: true
+      photon.vm.network :forwarded_port, guest: 2020, host: 2020,
+          auto_correct: true
     end
 
     photon.vm.provision :shell, :privileged => false, :inline => <<-EOS
@@ -449,47 +242,63 @@ $out
       "ZOOKEEPER_QUORUM": "#{network_ip}:2181",
       "MGMT_API_HTTP_SERVERS": [ { "serverName": "devbox-photon-controller-core", "serverAddress": "#{network_ip}:9000" } ],
       "MGMT_UI_HTTP_SERVERS": [ { "serverName": "devbox-management-ui-http", "serverAddress": "#{network_ip}:80" } ],
-      "MGMT_UI_HTTPS_SERVERS": [ { "serverName": "devbox-management-ui-https", "serverAddress": "#{network_ip}:443" } ])
+      "MGMT_UI_HTTPS_SERVERS": [ { "serverName": "devbox-management-ui-https", "serverAddress": "#{network_ip}:443"
+} ])
 
     # Auth parameters
     if ENV['ENABLE_AUTH'] == 'true'
-        dynamic_params += %Q(,\n  "ENABLE_AUTH" : "true")
-        dynamic_params += %Q(,\n  "APIFE_PORT" : "443")
-        dynamic_params += %Q(,\n  "MGMT_API_PORT_SELECTOR" : "true")
+      dynamic_params += %Q(,\n  "ENABLE_AUTH" : "true")
+      dynamic_params += %Q(,\n  "APIFE_PORT" : "4433")
+      dynamic_params += %Q(,\n  "MGMT_API_PORT_SELECTOR" : "true")
 
-        if ENV['PHOTON_AUTH_LS_ENDPOINT']
-          dynamic_params += %Q(,\n  "AUTH_SERVER_ADDRESS" : "#{ENV['PHOTON_AUTH_LS_ENDPOINT']}")
-        else
-          abort("auth is enabled, but server address is not set")
-        end
+      if ENV['PHOTON_AUTH_LS_ENDPOINT']
+        dynamic_params += %Q(,\n  "AUTH_SERVER_ADDRESS" : "#{ENV['PHOTON_AUTH_LS_ENDPOINT']}")
+      else
+        abort("auth is enabled, but server address is not set")
+      end
 
-        if ENV['PHOTON_AUTH_SERVER_PORT']
-          dynamic_params += %Q(,\n  "AUTH_SERVER_PORT" : "#{ENV['PHOTON_AUTH_SERVER_PORT']}")
-        else
-          abort("auth is enabled, but auth server port is not set")
-        end
+      if ENV['PHOTON_AUTH_SERVER_PORT']
+        dynamic_params += %Q(,\n  "AUTH_SERVER_PORT" : "#{ENV['PHOTON_AUTH_SERVER_PORT']}")
+      else
+        abort("auth is enabled, but auth server port is not set")
+      end
 
-        if ENV['PHOTON_AUTH_SERVER_TENANT']
-          dynamic_params += %Q(,\n  "AUTH_SERVER_TENANT" : "#{ENV['PHOTON_AUTH_SERVER_TENANT']}")
-        else
-          abort("auth is enabled, but auth tenant is not set")
-        end
+      if ENV['PHOTON_AUTH_SERVER_TENANT']
+        dynamic_params += %Q(,\n  "AUTH_SERVER_TENANT" : "#{ENV['PHOTON_AUTH_SERVER_TENANT']}")
+      else
+        abort("auth is enabled, but auth tenant is not set")
+      end
 
-        if ENV['PHOTON_SWAGGER_LOGIN_URL']
-          dynamic_params += %Q(,\n  "SWAGGER_LOGIN_URL" : "#{ENV['PHOTON_SWAGGER_LOGIN_URL']}")
-        else
-          abort("auth is enabled, but swagger login url is not set")
-        end
+      if ENV['PHOTON_SWAGGER_LOGIN_URL']
+        dynamic_params += %Q(,\n  "SWAGGER_LOGIN_URL" : "#{ENV['PHOTON_SWAGGER_LOGIN_URL']}")
+      else
+        abort("auth is enabled, but swagger login url is not set")
+      end
 
       if ENV['PHOTON_SWAGGER_LOGOUT_URL']
         dynamic_params += %Q(,\n  "SWAGGER_LOGOUT_URL" : "#{ENV['PHOTON_SWAGGER_LOGOUT_URL']}")
       else
         abort("auth is enabled, but swagger logout url is not set")
       end
-
     else
       dynamic_params += %Q(,\n  "ENABLE_AUTH" : "false")
       dynamic_params += %Q(,\n  "APIFE_PORT" : "28080")
+    end
+
+    # Lightwave parameters. lightwave server will run even when auth is not enabled. When auth is enabled, photon
+    # controller will use the lightwave server. This is needed because we are using a single container now which has
+    # both lightwave server and photon controller.
+    dynamic_params += %Q(,\n  "LIGHTWAVE_DOMAIN" : "#{ENV['LW_DOMAIN_NAME'] || "photon.vmware.com"}")
+    dynamic_params += %Q(,\n  "LIGHTWAVE_PASSWORD" : "#{ENV['LW_PASSWORD'] || "LW.pass2"}")
+
+    if ENV["PUBLIC_NETWORK_IP"]
+      # The hostname is set to the IP since Photon Controller does not have DNS set
+      # to Lightwave yet, but Photon Controller during auth enabled needs to
+      # verify the hostname matches the Lightwave server certificate.
+      dynamic_params += %Q(,\n  "LIGHTWAVE_HOSTNAME" : "#{ENV['PUBLIC_NETWORK_IP']}")
+    else
+      private_network_lw_ip = ENV["PRIVATE_NETWORK_IP"] || "172.31.253.67"
+      dynamic_params += %Q(,\n  "LIGHTWAVE_HOSTNAME" : "#{private_network_lw_ip}")
     end
 
     # Virtual network parameters
@@ -532,48 +341,62 @@ $out
 cat > #{dynamic_params_file} <<'EOM'
   #{dynamic_params}
 EOM
-  EOS
+    EOS
 
-  # Validate dynamic_params file, catch errors early
-  config.vm.provision :shell, :inline => <<-EOS
-    printf "Validating dynamic params JSON file:"
-    jsonlint #{dynamic_params_file}
-    if [[ $? != 0 ]]; then
-      echo "Validation failed for file:"
-      cat #{dynamic_params_file}
-      exit 1
-    fi
-  EOS
+    # Validate dynamic_params file, catch errors early
+    config.vm.provision :shell, :inline => <<-EOS
+      printf "Validating dynamic params JSON file:"
+      jsonlint #{dynamic_params_file}
+      if [[ $? != 0 ]]; then
+        echo "Validation failed for file:"
+        cat #{dynamic_params_file}
+        exit 1
+      fi
+    EOS
 
-  # Set hostname for devbox. This is needed for the lightwave client.
-  config.vm.provision :shell, :inline => <<-EOS
-    sed -i s/photon-.*/"devbox.#{ENV['LW_DOMAIN_NAME'] || "photon.vmware.com"} devbox"/ /etc/hosts
-    hostnamectl set-hostname devbox
-    hostnamectl set-hostname --static devbox
-  EOS
+    # Setup hostname for this host, which is required to run the Lightwave server.
+    config.vm.provision :shell, :inline => <<-EOS
+      sed -i s/photon-.*/"devbox.#{ENV['LW_DOMAIN_NAME'] || "photon.vmware.com"} devbox"/ /etc/hosts
+      hostnamectl set-hostname devbox
+      hostnamectl set-hostname --static devbox
+    EOS
 
-  # ================ PROVISIONING ================
+    # Mustache apply lightwave config.
+    lightwave_config_file="/devbox_data/java/containers/lightwave/config/lightwave_test.json"
+    config.vm.provision :shell, :inline => <<-EOS
+      config_build_dir="/devbox_data/java/containers/lightwave/build/config"
+      mkdir -p $config_build_dir
+      combined_params=$(jq -s '.[0] * (.[1]#{CONFIG_JQ_FILTER})' #{dynamic_params_file} #{lightwave_config_file})
 
-  # renaming esxcloud containers to zookeeper Containers
-  photon.vm.provision :shell, :inline => <<-EOS
-    docker tag devbox/zookeeper photon/zookeeper
-    docker tag devbox/haproxy photon/haproxy
-  EOS
+      cd $(dirname #{lightwave_config_file})
+      for file in ./*.#{CONFIG_EXTS}
+      do
+        if [ -f $file ]; then
+          mustache - $file <<< "$combined_params" > "$config_build_dir/$file"
+        fi
+      done
+    EOS
 
-  #
-  # Give access to zookeeper user inside container to write to log directory in host
-  #
-  photon.vm.provision :shell, :inline => <<-EOS
-    set -ex
-    chmod -R 777 /var/log/
-  EOS
+    # renaming esxcloud containers to zookeeper Containers
+    photon.vm.provision :shell, :inline => <<-EOS
+      docker tag devbox/zookeeper photon/zookeeper
+      docker tag devbox/haproxy photon/haproxy
+    EOS
 
-  #
-  # Script for building agent VIB
-  #
-  agent_config_build_dir="/mirror/devbox_data/java/devbox/agent/build/configuration"
+    #
+    # Give access to zookeeper user inside container to write to log directory in host
+    #
+    photon.vm.provision :shell, :inline => <<-EOS
+      set -ex
+      chmod -R 777 /var/log/
+    EOS
 
-  photon.vm.provision :shell, :privileged => false, :inline => <<-EOS
+    #
+    # Script for building agent VIB
+    #
+    agent_config_build_dir="/mirror/devbox_data/java/devbox/agent/build/configuration"
+
+    photon.vm.provision :shell, :privileged => false, :inline => <<-EOS
 out="#{SCRIPT_DIR}/build-agent"
 cat > $out <<-'EOM'
 #!/bin/bash -xe
@@ -604,31 +427,31 @@ if #{ENV["ENVOY_VIB_URL"]}
 end
 EOM
 chmod +x $out
-  EOS
+    EOS
 
-  agent_parameters_file = "/home/vagrant/agent-parameters.json"
-  # Make sure agent params file exists so that mustache doesn't fail
-  photon.vm.provision :shell, :privileged => false, :inline => "touch #{agent_parameters_file}"
+    agent_parameters_file = "/home/vagrant/agent-parameters.json"
+    # Make sure agent params file exists so that mustache doesn't fail
+    photon.vm.provision :shell, :privileged => false, :inline => "touch #{agent_parameters_file}"
 
-  if !(ENV["PUBLIC_NETWORK_IP"] || ENV["REAL_AGENT"])
-    agent_parameters = %Q(
-    {
-      "AGENT_BIND_ADDRESS": "#{network_ip}",
-      "AGENT_LOG_PATH": "/var/log",
-      "AGENT_ZOOKEEPER": "#{network_ip}:2181")
-    if(ENV['ESX_AGENT_COUNT'])
-     agent_parameters += %Q(,\n  "AGENT_COUNT": "#{ENV['ESX_AGENT_COUNT']}")
-    end
-    agent_parameters += "\n}"
+    if !(ENV["PUBLIC_NETWORK_IP"] || ENV["REAL_AGENT"])
+      agent_parameters = %Q(
+      {
+        "AGENT_BIND_ADDRESS": "#{network_ip}",
+        "AGENT_LOG_PATH": "/var/log",
+        "AGENT_ZOOKEEPER": "#{network_ip}:2181")
+      if(ENV['ESX_AGENT_COUNT'])
+       agent_parameters += %Q(,\n  "AGENT_COUNT": "#{ENV['ESX_AGENT_COUNT']}")
+      end
+      agent_parameters += "\n}"
 
-    # Validate agent parameters JSON
-    config.vm.provision :shell, :privileged => false, :inline => <<-EOS
+      # Validate agent parameters JSON
+      config.vm.provision :shell, :privileged => false, :inline => <<-EOS
 cat > #{agent_parameters_file} <<-'EOM'
 #{agent_parameters}
 EOM
-    EOS
+      EOS
 
-    config.vm.provision :shell, :privileged => false, :inline => <<-EOS
+      config.vm.provision :shell, :privileged => false, :inline => <<-EOS
     printf "Validating dynamic params JSON file:"
     jsonlint #{agent_parameters_file}
     if [[ $? != 0 ]]; then
@@ -636,13 +459,13 @@ EOM
       cat #{agent_parameters_file}
       exit 1
     fi
-    EOS
-  end
+      EOS
+    end
 
-  #
-  # Start agent script
-  #
-  photon.vm.provision :shell, :privileged => false, :inline => <<-EOS
+    #
+    # Start agent script
+    #
+    photon.vm.provision :shell, :privileged => false, :inline => <<-EOS
 set -ex
 out=#{SCRIPT_DIR}/start-agent
 cat > $out <<-'EOM'
@@ -680,12 +503,12 @@ docker run -d -p 8835:8835 \
   devbox/agent /etc/esxcloud/agent/run.sh
 EOM
 chmod +x $out
-  EOS
+    EOS
 
-  #
-  # Stop agent script
-  #
-  photon.vm.provision :shell, :privileged => false, :inline => <<-EOS
+    #
+    # Stop agent script
+    #
+    photon.vm.provision :shell, :privileged => false, :inline => <<-EOS
 set -ex
 out=#{SCRIPT_DIR}/stop-agent
 cat > $out <<-'EOM'
@@ -693,28 +516,28 @@ cat > $out <<-'EOM'
 docker stop agent
 EOM
 chmod +x $out
-  EOS
+    EOS
 
-  #
-  # Create log directories for mounting
-  #
-  photon.vm.provision :shell, :privileged => false, :inline => <<-EOS
-    set -ex
-    mkdir -p /vagrant/log/zookeeper
-    mkdir -p /vagrant/log/haproxy
-  EOS
-
-  #
-  # Prepare services configurations
-  #
-  SERVICE_CONFIG_MAP.each do | key, servicePath |
-    service = SERVICE_NAME_MAP[key]
-    config_build_dir = "/devbox_data/java/#{servicePath}/build/configuration"
-    config_dir = "/devbox_data/java/#{servicePath}/src/dist/configuration"
-    config_file="#{config_dir}/#{service}_test.json"
-
-    # Write service start script
+    #
+    # Create log directories for mounting
+    #
     photon.vm.provision :shell, :privileged => false, :inline => <<-EOS
+      set -ex
+      mkdir -p /vagrant/log/zookeeper
+      mkdir -p /vagrant/log/haproxy
+    EOS
+
+    #
+    # Prepare services configurations
+    #
+    SERVICE_CONFIG_MAP.each do | key, servicePath |
+      service = SERVICE_NAME_MAP[key]
+      config_build_dir = "/devbox_data/java/#{servicePath}/build/configuration"
+      config_dir = "/devbox_data/java/#{servicePath}/src/dist/configuration"
+      config_file="#{config_dir}/#{service}_test.json"
+
+      # Write service start script
+      photon.vm.provision :shell, :privileged => false, :inline => <<-EOS
 out="#{SCRIPT_DIR}/start-#{service}"
 cat > $out <<-'EOM'
   #!/bin/bash -ex
@@ -746,9 +569,9 @@ cat >> $out <<-EOM
   $(gen-docker-run #{config_file} /usr/sbin/init "" "-v #{config_build_dir}:/etc/esxcloud")
 EOM
 chmod +x $out
-    EOS
+      EOS
 
-    photon.vm.provision :shell, :privileged => false, :inline => <<-EOS
+      photon.vm.provision :shell, :privileged => false, :inline => <<-EOS
 out="#{SCRIPT_DIR}/copy-deployer-config"
 cat >> $out <<-'EOM'
   dir="/etc/esxcloud-deployer/configurations/#{service}/"
@@ -756,14 +579,14 @@ cat >> $out <<-'EOM'
   sudo cp -a #{config_dir}/* $dir
 EOM
 chmod +x $out
-    EOS
-  end
+      EOS
+    end
 
-  #
-  # Generate Zookeeper container start script
-  #
-  zk_config_file="/devbox_data/java/containers/zookeeper/config/zookeeper_test.json"
-  photon.vm.provision :shell, :privileged => false, :inline => <<-EOS
+    #
+    # Generate Zookeeper container start script
+    #
+    zk_config_file="/devbox_data/java/containers/zookeeper/config/zookeeper_test.json"
+    photon.vm.provision :shell, :privileged => false, :inline => <<-EOS
 out="#{SCRIPT_DIR}/start-zookeeper"
 cat > $out <<-'EOM'
   #!/bin/bash
@@ -787,13 +610,13 @@ cat >> $out <<-EOM
   sleep 30
 EOM
 chmod +x $out
-  EOS
+    EOS
 
-  #
-  # Generate HAProxy container start script
-  #
-  haproxy_config_file="/devbox_data/java/containers/haproxy/config/haproxy_test.json"
-  photon.vm.provision :shell, :privileged => false, :inline => <<-EOS
+    #
+    # Generate HAProxy container start script
+    #
+    haproxy_config_file="/devbox_data/java/containers/haproxy/config/haproxy_test.json"
+    photon.vm.provision :shell, :privileged => false, :inline => <<-EOS
 out="#{SCRIPT_DIR}/start-haproxy"
 cat > $out <<-'EOM'
   #!/bin/bash
@@ -815,12 +638,12 @@ cat >> $out <<-EOM
   $(gen-docker-run #{haproxy_config_file} /bin/bash /etc/haproxy/run.sh "-e HAPROXY_IP=#{network_ip}")
 EOM
 chmod +x $out
-  EOS
+    EOS
 
-  #
-  # Set up Graphite container for integration tests
-  #
-  photon.vm.provision :shell, :privileged => false, :inline => <<-EOS
+    #
+    # Set up Graphite container for integration tests
+    #
+    photon.vm.provision :shell, :privileged => false, :inline => <<-EOS
     set -ex
     mkdir -p $HOME/graphite/conf
 
@@ -859,12 +682,12 @@ docker run \
 EOM
     chmod +x $out
     $out
-  EOS
+    EOS
 
-  #
-  # Generate service check script, gets called by start-all script
-  #
-  photon.vm.provision :shell, :privileged => false, :inline => <<-EOS
+    #
+    # Generate service check script, gets called by start-all script
+    #
+    photon.vm.provision :shell, :privileged => false, :inline => <<-EOS
 out="#{SCRIPT_DIR}/check-services"
 cat > $out <<-'EOM'
   #!/bin/bash -xe
@@ -904,11 +727,45 @@ cat > $out <<-'EOM'
   exit -1
 EOM
 chmod +x $out
-  EOS
-end
+    EOS
 
+    if ENV['ENABLE_AUTH'] == 'true'
+      photon.vm.provision :shell, :privileged => true, :inline => <<-EOS
+set -ex
+out="#{SCRIPT_DIR}/seed-lightwave"
+cat >> $out <<-'EOM'
+  chmod +x /devbox_data/java/containers/lightwave/config/add_lightwave_users.sh
+  chmod +x /devbox_data/java/containers/lightwave/config/update_token_expiration.sh
 
-#
+  echo "Checking to connect to Lightwave REST client to start"
+  attempts=1
+  reachable="false"
+  while [ $attempts -lt 30 ] && [ $reachable != "true" ]; do
+    http_code=$(curl -w "%{http_code}" -s -X GET --insecure https://devbox.#{ENV['LW_DOMAIN_NAME'] || "photon.vmware.com"})
+    # The curl returns 000 when it fails to connect to the lightwave server
+    if [ $http_code -eq 000 ]; then
+      echo "Lightwave REST server not reachable (attempt $attempts/30), will try again."
+      attempts=$[$attempts+1]
+      sleep 5
+    else
+      reachable="true"
+      echo "Adding Lightwave users."
+      /devbox_data/java/containers/lightwave/config/add_lightwave_users.sh #{ENV['LW_PASSWORD']}
+      echo "Updating tenant token expiration time."
+      /devbox_data/java/containers/lightwave/config/update_token_expiration.sh #{ENV['LW_PASSWORD']} #{ENV['LW_DOMAIN_NAME']}
+      break
+    fi
+  done
+  if [ $attempts -eq 30 ]; then
+    echo "Could not connect to Lightwave REST client after 30 attempts, users not added and token expiration not updated."
+  fi
+EOM
+chmod +x $out
+      EOS
+    end
+  end
+
+  #
   # Clean log directory if selected
   #
   if ENV["DEVBOX_CLEAN_LOGS"]
@@ -919,3 +776,5 @@ end
     EOS
   end
 end
+
+

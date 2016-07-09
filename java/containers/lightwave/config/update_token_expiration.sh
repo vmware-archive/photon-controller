@@ -8,14 +8,14 @@ expiration_limit=3000000
 
 token=$(curl -X POST --insecure -sS \
  -d "username=Administrator@${domain_name}&password=${admin_password}&&grant_type=password&scope=openid offline_access id_groups at_groups rs_admin_server" \
-https://lightwave.${domain_name}/openidconnect/token | jq -r .access_token)
+https://devbox.${domain_name}/openidconnect/token | jq -r .access_token)
 
 output_tmp=result.tmp
 
 curl -X GET --insecure -sS -o ${output_tmp} \
  -H "Authorization: Bearer ${token}" \
  -H "Content-Type: application/json" \
- https://lightwave.${domain_name}/idm/tenant/${domain_name}/config
+ https://devbox.${domain_name}/idm/tenant/${domain_name}/config
 
 # Replace expiration limit in the tenant configuration json
 rb="\
@@ -29,7 +29,7 @@ updated_config=$(ruby -e "${rb}" | jq -r .tokenPolicy)
 config=$(curl -X PUT --insecure -sS -H "Authorization: Bearer ${token}" \
  -H "Content-Type: application/json" \
  -d "${updated_config}" \
- https://lightwave.${domain_name}/idm/tenant/${domain_name}/config)
+ https://devbox.${domain_name}/idm/tenant/${domain_name}/config)
 
 rm -rf ${output_tmp}
 
