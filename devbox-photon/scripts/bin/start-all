@@ -4,3 +4,4 @@ start-zookeeper
 start-haproxy
 start-photon-controller-core
 check-services
+seed-lightwave

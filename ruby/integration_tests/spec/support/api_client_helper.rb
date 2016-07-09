@@ -26,7 +26,11 @@ class ApiClientHelper
 
       if ENV["ENABLE_AUTH"] && ENV["ENABLE_AUTH"] == "true"
          protocol ||= "https"
-         port ||= "443"
+         if ENV["DEVBOX"]
+           port ||= "4433"
+         else
+           port ||= "443"
+         end
       else
          protocol ||= "http"
          port ||= "28080"
@@ -54,6 +58,10 @@ class ApiClientHelper
       protocol ||= (ENV["API_FE_PORT"] ? "https" : "http")
       address ||= (ENV["API_ADDRESS"] || "172.31.253.66").strip
       port ||= (ENV["API_FE_PORT"] || "9000").strip
+
+      if protocol == "https" && ENV["DEVBOX"]
+        port = 4433
+      end
 
       "#{protocol}://#{address}:#{port}"
     end
