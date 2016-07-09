@@ -41,6 +41,7 @@ import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.Utils;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Strings;
 import com.google.common.util.concurrent.FutureCallback;
 import static com.google.common.base.Preconditions.checkState;
 
@@ -163,7 +164,8 @@ public class WaitForNetworkTaskService extends StatefulService {
     VmNetworks vmNetworks = VmApi.parseVmNetworksFromTask(task);
     ServiceUtils.logInfo(this, "Received VM networks response: " + Utils.toJsonHtml(vmNetworks));
     for (NetworkConnection networkConnection : vmNetworks.getNetworkConnections()) {
-      if (null != networkConnection.getNetwork() && null != networkConnection.getIpAddress()) {
+      if (!Strings.isNullOrEmpty(networkConnection.getNetwork()) &&
+          !Strings.isNullOrEmpty(networkConnection.getIpAddress())) {
         State patchState = buildPatch(TaskState.TaskStage.FINISHED, null);
         patchState.vmIpAddress = networkConnection.getIpAddress();
         TaskUtils.sendSelfPatch(this, patchState);
