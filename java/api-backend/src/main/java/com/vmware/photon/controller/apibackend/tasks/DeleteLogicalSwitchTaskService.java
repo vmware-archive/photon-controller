@@ -13,7 +13,9 @@
 
 package com.vmware.photon.controller.apibackend.tasks;
 
+import com.vmware.photon.controller.apibackend.exceptions.ConfigureRoutingException;
 import com.vmware.photon.controller.apibackend.servicedocuments.DeleteLogicalSwitchTask;
+import com.vmware.photon.controller.apibackend.servicedocuments.DeleteLogicalSwitchTask.TaskState;
 import com.vmware.photon.controller.apibackend.utils.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
@@ -23,16 +25,17 @@ import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
+import com.vmware.photon.controller.nsxclient.apis.LogicalSwitchApi;
 import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Operation;
-import com.vmware.xenon.common.ServiceErrorResponse;
 import com.vmware.xenon.common.StatefulService;
-import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.Utils;
 
 import com.google.common.util.concurrent.FutureCallback;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
+
+import java.util.concurrent.TimeUnit;
 
 /**
  * Implements an Xenon service that represents a task to delete a logical switch.
@@ -65,6 +68,7 @@ public class DeleteLogicalSwitchTaskService extends StatefulService {
 
       if (startState.taskState.stage == TaskState.TaskStage.CREATED) {
         startState.taskState.stage = TaskState.TaskStage.STARTED;
+        startState.taskState.subStage = TaskState.SubStage.DELETE_SWITCH;
       }
 
       if (startState.documentExpirationTimeMicros <= 0) {
@@ -77,7 +81,7 @@ public class DeleteLogicalSwitchTaskService extends StatefulService {
       if (ControlFlags.isOperationProcessingDisabled(startState.controlFlags)) {
         ServiceUtils.logInfo(this, "Skipping start operation processing (disabled)");
       } else if (TaskState.TaskStage.STARTED == startState.taskState.stage) {
-        TaskUtils.sendSelfPatch(this, buildPatch(startState.taskState.stage));
+        TaskUtils.sendSelfPatch(this, buildPatch(startState.taskState.stage, startState.taskState.subStage));
       }
     } catch (Throwable t) {
       ServiceUtils.logSevere(this, t);
@@ -104,7 +108,7 @@ public class DeleteLogicalSwitchTaskService extends StatefulService {
       if (ControlFlags.isOperationProcessingDisabled(currentState.controlFlags)) {
         ServiceUtils.logInfo(this, "Skipping patch handling (disabled)");
       } else if (TaskState.TaskStage.STARTED == currentState.taskState.stage) {
-        deleteLogicalSwitch(currentState);
+        processPatch(currentState);
       }
     } catch (Throwable t) {
       ServiceUtils.logSevere(this, t);
@@ -114,16 +118,38 @@ public class DeleteLogicalSwitchTaskService extends StatefulService {
     }
   }
 
+  private void processPatch(DeleteLogicalSwitchTask currentState) {
+    try {
+      switch (currentState.taskState.subStage) {
+        case DELETE_SWITCH:
+          deleteLogicalSwitch(currentState);
+          break;
+
+        case WAIT_DELETE_SWITCH:
+          waitDeleteLogicalSwitch(currentState);
+          break;
+
+        default:
+           throw new ConfigureRoutingException("Invalid task sub-stage " + currentState.taskState.stage);
+
+      }
+    } catch (Throwable t) {
+      failTask(t);
+    }
+  }
+
   private void deleteLogicalSwitch(DeleteLogicalSwitchTask currentState) {
-    ServiceUtils.logInfo(this, "Deleting logical switch");
+    ServiceUtils.logInfo(this, "Deleting logical switch %s", currentState.logicalSwitchId);
 
     try {
-      ServiceHostUtils.getNsxClient(getHost(), currentState.nsxManagerEndpoint, currentState.username,
-          currentState.password).getLogicalSwitchApi().deleteLogicalSwitch(currentState.logicalSwitchId,
+      LogicalSwitchApi logicalSwitchApi = ServiceHostUtils.getNsxClient(getHost(), currentState.nsxManagerEndpoint,
+          currentState.username, currentState.password).getLogicalSwitchApi();
+
+      logicalSwitchApi.deleteLogicalSwitch(currentState.logicalSwitchId,
           new FutureCallback<Void>() {
             @Override
             public void onSuccess(Void v) {
-              TaskUtils.sendSelfPatch(DeleteLogicalSwitchTaskService.this, buildPatch(TaskState.TaskStage.FINISHED));
+              progressTask(TaskState.SubStage.WAIT_DELETE_SWITCH);
             }
 
             @Override
@@ -135,6 +161,37 @@ public class DeleteLogicalSwitchTaskService extends StatefulService {
     } catch (Throwable t) {
       failTask(t);
     }
+  }
+
+  private void waitDeleteLogicalSwitch(DeleteLogicalSwitchTask currentState) {
+    getHost().schedule(() -> {
+      ServiceUtils.logInfo(this, "Wait for deleting logical switch %s", currentState.logicalSwitchId);
+
+      try {
+        LogicalSwitchApi logicalSwitchApi = ServiceHostUtils.getNsxClient(getHost(), currentState.nsxManagerEndpoint,
+            currentState.username, currentState.password).getLogicalSwitchApi();
+
+        logicalSwitchApi.checkLogicalSwitchExistence(currentState.logicalSwitchId,
+            new FutureCallback<Boolean>() {
+              @Override
+              public void onSuccess(Boolean successful) {
+                if (!successful) {
+                  finishTask();
+                } else {
+                  waitDeleteLogicalSwitch(currentState);
+                }
+              }
+
+              @Override
+              public void onFailure(Throwable t) {
+                failTask(t);
+              }
+            }
+        );
+      } catch (Throwable t) {
+        failTask(t);
+      }
+    }, currentState.executionDelay, TimeUnit.MILLISECONDS);
   }
 
   private void validateStartState(DeleteLogicalSwitchTask startState) {
@@ -154,28 +211,53 @@ public class DeleteLogicalSwitchTaskService extends StatefulService {
     checkNotNull(patchState, "patch cannot be null");
     ValidationUtils.validatePatch(currentState, patchState);
     ValidationUtils.validateTaskStage(patchState.taskState);
-    ValidationUtils.validateTaskStageProgression(currentState.taskState, patchState.taskState);
+    ValidationUtils.validateTaskStageProgression(currentState.taskState, currentState.taskState.subStage,
+        patchState.taskState, patchState.taskState.subStage);
+    validateTaskSubStage(currentState.taskState.subStage, patchState.taskState.subStage);
   }
 
   private DeleteLogicalSwitchTask buildPatch(TaskState.TaskStage stage) {
-    return buildPatch(stage, (Throwable) null);
+    return buildPatch(stage, null, null);
+  }
+
+  private DeleteLogicalSwitchTask buildPatch(TaskState.TaskStage stage, TaskState.SubStage subStage) {
+    return buildPatch(stage, subStage, null);
   }
 
   private DeleteLogicalSwitchTask buildPatch(TaskState.TaskStage stage, Throwable t) {
-    return buildPatch(stage, t == null ? null : Utils.toServiceErrorResponse(t));
+    return buildPatch(stage, null, t);
   }
 
-  private DeleteLogicalSwitchTask buildPatch(TaskState.TaskStage stage, ServiceErrorResponse errorResponse) {
+  private DeleteLogicalSwitchTask buildPatch(TaskState.TaskStage stage, TaskState.SubStage subStage, Throwable t) {
     DeleteLogicalSwitchTask state = new DeleteLogicalSwitchTask();
     state.taskState = new TaskState();
     state.taskState.stage = stage;
-    state.taskState.failure = errorResponse;
-
+    state.taskState.subStage = subStage;
+    state.taskState.failure = t == null ? null : Utils.toServiceErrorResponse(t);
     return state;
+  }
+
+  private void finishTask() {
+    DeleteLogicalSwitchTask patch = buildPatch(TaskState.TaskStage.FINISHED);
+    TaskUtils.sendSelfPatch(DeleteLogicalSwitchTaskService.this, patch);
   }
 
   private void failTask(Throwable e) {
     ServiceUtils.logSevere(this, e);
     TaskUtils.sendSelfPatch(this, buildPatch(TaskState.TaskStage.FAILED, e));
+  }
+
+  private void progressTask(TaskState.SubStage subStage) {
+    DeleteLogicalSwitchTask patch = buildPatch(TaskState.TaskStage.STARTED, subStage);
+    TaskUtils.sendSelfPatch(DeleteLogicalSwitchTaskService.this, patch);
+  }
+
+  private void validateTaskSubStage(TaskState.SubStage startSubStage, TaskState.SubStage patchSubStage) {
+    if (patchSubStage != null) {
+      switch (patchSubStage) {
+        case WAIT_DELETE_SWITCH:
+          checkState(startSubStage != null && startSubStage == TaskState.SubStage.DELETE_SWITCH);
+      }
+    }
   }
 }
