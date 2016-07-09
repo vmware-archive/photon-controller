@@ -19,7 +19,6 @@ import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotBlank;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.ServiceDocumentDescription;
-import com.vmware.xenon.common.TaskState;
 
 /**
  * Defines the document state associated with a single
@@ -69,4 +68,27 @@ public class DeleteLogicalRouterTask extends ServiceDocument {
   @DefaultInteger(0)
   @Immutable
   public Integer controlFlags;
+
+  /**
+   * Execution delay time to verify the router has been deleted.
+   */
+  @DefaultInteger(10)
+  @Immutable
+  public Integer executionDelay;
+
+
+  /**
+   * Customized task state. Defines the sub-stages.
+   */
+  public static class TaskState extends com.vmware.xenon.common.TaskState {
+    public SubStage subStage;
+
+    /**
+     * Definition of sub-stages.
+     */
+    public enum SubStage {
+      DELETE_ROUTER,
+      WAIT_DELETE_ROUTER,
+    }
+  }
 }

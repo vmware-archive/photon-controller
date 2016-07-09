@@ -17,6 +17,7 @@ import com.vmware.photon.controller.apibackend.helpers.ReflectionUtils;
 import com.vmware.photon.controller.apibackend.helpers.TestEnvironment;
 import com.vmware.photon.controller.apibackend.helpers.TestHost;
 import com.vmware.photon.controller.apibackend.servicedocuments.DeleteLogicalRouterTask;
+import com.vmware.photon.controller.apibackend.servicedocuments.DeleteLogicalRouterTask.TaskState;
 import com.vmware.photon.controller.common.tests.nsx.NsxClientMock;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
@@ -24,7 +25,6 @@ import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeExceptio
 import com.vmware.photon.controller.nsxclient.NsxClientFactory;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
-import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
 
 import org.apache.http.HttpStatus;
@@ -104,34 +104,39 @@ public class DeleteLogicalRouterTaskServiceTest {
 
     @Test(dataProvider = "expectedStateTransition")
     public void testStateTransition(TaskState.TaskStage startStage,
-                                    TaskState.TaskStage expectedStage) throws Throwable {
+                                    TaskState.SubStage startSubStage,
+                                    TaskState.TaskStage expectedStage,
+                                    TaskState.SubStage expectedSubStage) throws Throwable {
 
       DeleteLogicalRouterTask createdState = createDeleteLogicalRouterTaskService(
           host,
           deleteLogicalRouterTaskService,
           startStage,
+          startSubStage,
           ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED);
 
       DeleteLogicalRouterTask savedState = host.getServiceState(DeleteLogicalRouterTask.class,
           createdState.documentSelfLink);
       assertThat(savedState.taskState.stage, is(expectedStage));
+      assertThat(savedState.taskState.subStage, is(expectedSubStage));
       assertThat(savedState.documentExpirationTimeMicros > 0, is(true));
     }
 
     @DataProvider(name = "expectedStateTransition")
     private Object[][] getStates() {
       return new Object[][] {
-          {TaskState.TaskStage.CREATED, TaskState.TaskStage.STARTED},
-          {TaskState.TaskStage.FINISHED, TaskState.TaskStage.FINISHED},
-          {TaskState.TaskStage.CANCELLED, TaskState.TaskStage.CANCELLED},
-          {TaskState.TaskStage.FAILED, TaskState.TaskStage.FAILED}
+          {TaskState.TaskStage.CREATED, null, TaskState.TaskStage.STARTED, TaskState.SubStage.DELETE_ROUTER},
+          {TaskState.TaskStage.FINISHED, null, TaskState.TaskStage.FINISHED, null},
+          {TaskState.TaskStage.CANCELLED, null, TaskState.TaskStage.CANCELLED, null},
+          {TaskState.TaskStage.FAILED, null, TaskState.TaskStage.FAILED, null}
       };
     }
 
     @Test
     public void testRestartDisabled() throws Throwable {
       try {
-        createDeleteLogicalRouterTaskService(host, deleteLogicalRouterTaskService, TaskState.TaskStage.STARTED, 0);
+        createDeleteLogicalRouterTaskService(host, deleteLogicalRouterTaskService, TaskState.TaskStage.STARTED,
+            TaskState.SubStage.DELETE_ROUTER, 0);
         fail("should have failed due to invalid START state");
       } catch (XenonRuntimeException ex) {
         assertThat(ex.getMessage(), is("Service state is invalid (START). Restart is disabled."));
@@ -197,18 +202,23 @@ public class DeleteLogicalRouterTaskServiceTest {
 
     @Test(dataProvider = "validStageTransitions")
     public void testValidStageTransition(TaskState.TaskStage startStage,
-                                         TaskState.TaskStage patchStage) throws Throwable {
+                                         TaskState.SubStage startSubStage,
+                                         TaskState.TaskStage patchStage,
+                                         TaskState.SubStage patchSubStage) throws Throwable {
 
       DeleteLogicalRouterTask createdState = createDeleteLogicalRouterTaskService(
           host,
           deleteLogicalRouterTaskService,
-          startStage,
+          TaskState.TaskStage.CREATED,
+          null,
           ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED);
 
-      DeleteLogicalRouterTask patchState = buildPatchState(patchStage);
+      DeleteLogicalRouterTask patchState = buildPatchState(patchStage, patchSubStage);
       Operation patch = Operation
           .createPatch(UriUtils.buildUri(host, createdState.documentSelfLink))
           .setBody(patchState);
+
+      patchTaskToState(createdState.documentSelfLink, startStage, startSubStage);
 
       Operation result = host.sendRequestAndWait(patch);
       assertThat(result.getStatusCode(), is(HttpStatus.SC_OK));
@@ -216,32 +226,48 @@ public class DeleteLogicalRouterTaskServiceTest {
       DeleteLogicalRouterTask savedState = host.getServiceState(DeleteLogicalRouterTask.class,
           createdState.documentSelfLink);
       assertThat(savedState.taskState.stage, is(patchStage));
+      assertThat(savedState.taskState.subStage, is(patchSubStage));
     }
 
     @DataProvider(name = "validStageTransitions")
     public Object[][] getValidStageTransitions() {
       return new Object[][] {
-          {TaskState.TaskStage.CREATED, TaskState.TaskStage.STARTED},
-          {TaskState.TaskStage.CREATED, TaskState.TaskStage.FINISHED},
-          {TaskState.TaskStage.CREATED, TaskState.TaskStage.FAILED},
-          {TaskState.TaskStage.CREATED, TaskState.TaskStage.CANCELLED},
+          {TaskState.TaskStage.STARTED, TaskState.SubStage.DELETE_ROUTER,
+            TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_DELETE_ROUTER},
+          {TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_DELETE_ROUTER,
+              TaskState.TaskStage.FINISHED, null},
+
+          {TaskState.TaskStage.STARTED, TaskState.SubStage.DELETE_ROUTER,
+              TaskState.TaskStage.FAILED, null},
+          {TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_DELETE_ROUTER,
+              TaskState.TaskStage.FAILED, null},
+
+          {TaskState.TaskStage.STARTED, TaskState.SubStage.DELETE_ROUTER,
+              TaskState.TaskStage.CANCELLED, null},
+          {TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_DELETE_ROUTER,
+              TaskState.TaskStage.CANCELLED, null},
       };
     }
 
     @Test(dataProvider = "invalidStageTransitions", expectedExceptions = XenonRuntimeException.class)
     public void testInvalidStageTransition(TaskState.TaskStage startStage,
-                                           TaskState.TaskStage patchStage) throws Throwable {
+                                           TaskState.SubStage startSubStage,
+                                           TaskState.TaskStage patchStage,
+                                           TaskState.SubStage patchSubStage) throws Throwable {
 
       DeleteLogicalRouterTask createdState = createDeleteLogicalRouterTaskService(
           host,
           deleteLogicalRouterTaskService,
           startStage,
+          startSubStage,
           ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED);
 
-      DeleteLogicalRouterTask patchState = buildPatchState(patchStage);
+      DeleteLogicalRouterTask patchState = buildPatchState(patchStage, patchSubStage);
       Operation patch = Operation
           .createPatch(UriUtils.buildUri(host, createdState.documentSelfLink))
           .setBody(patchState);
+
+      patchTaskToState(createdState.documentSelfLink, startStage, startSubStage);
 
       host.sendRequestAndWait(patch);
       fail("Should have failed due to invalid stage transition");
@@ -250,10 +276,15 @@ public class DeleteLogicalRouterTaskServiceTest {
     @DataProvider(name = "invalidStageTransitions")
     public Object[][] getInvalidStageTransitions() {
       return new Object[][] {
-          {TaskState.TaskStage.CREATED, TaskState.TaskStage.CREATED},
-          {TaskState.TaskStage.FINISHED, TaskState.TaskStage.CREATED},
-          {TaskState.TaskStage.FAILED, TaskState.TaskStage.CREATED},
-          {TaskState.TaskStage.CANCELLED, TaskState.TaskStage.CREATED},
+          {TaskState.TaskStage.CREATED, null, TaskState.TaskStage.CREATED, null},
+          {TaskState.TaskStage.STARTED, TaskState.SubStage.DELETE_ROUTER, TaskState.TaskStage.CREATED, null},
+          {TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_DELETE_ROUTER, TaskState.TaskStage.CREATED, null},
+          {TaskState.TaskStage.FINISHED, null, TaskState.TaskStage.CREATED, null},
+          {TaskState.TaskStage.FAILED, null, TaskState.TaskStage.CREATED, null},
+          {TaskState.TaskStage.CANCELLED, null, TaskState.TaskStage.CREATED, null},
+
+          {TaskState.TaskStage.STARTED, TaskState.SubStage.WAIT_DELETE_ROUTER,
+              TaskState.TaskStage.STARTED, TaskState.SubStage.DELETE_ROUTER}
       };
     }
 
@@ -264,9 +295,10 @@ public class DeleteLogicalRouterTaskServiceTest {
           host,
           deleteLogicalRouterTaskService,
           TaskState.TaskStage.CREATED,
+          TaskState.SubStage.DELETE_ROUTER,
           ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED);
 
-      DeleteLogicalRouterTask patchState = buildPatchState(TaskState.TaskStage.FINISHED);
+      DeleteLogicalRouterTask patchState = buildPatchState(TaskState.TaskStage.FINISHED, null);
 
       Field field = patchState.getClass().getDeclaredField(fieldName);
       field.set(patchState, ReflectionUtils.getDefaultAttributeValue(field));
@@ -291,8 +323,26 @@ public class DeleteLogicalRouterTaskServiceTest {
           {"username", "username is immutable"},
           {"password", "password is immutable"},
           {"logicalRouterId", "logicalRouterId is immutable"},
+          {"executionDelay",  "executionDelay is immutable"},
       };
     }
+
+    private void patchTaskToState(String documentSelfLink,
+                                  TaskState.TaskStage targetStage,
+                                  TaskState.SubStage targetSubStage) throws Throwable {
+
+      DeleteLogicalRouterTask patchState = buildPatchState(targetStage, targetSubStage);
+      Operation patch = Operation.createPatch(UriUtils.buildUri(host, documentSelfLink))
+          .setBody(patchState);
+
+      Operation result = host.sendRequestAndWait(patch);
+      assertThat(result.getStatusCode(), is(HttpStatus.SC_OK));
+
+      DeleteLogicalRouterTask savedState = host.getServiceState(DeleteLogicalRouterTask.class, documentSelfLink);
+      assertThat(savedState.taskState.stage, is(targetStage));
+      assertThat(savedState.taskState.subStage, is(targetSubStage));
+    }
+
   }
 
   /**
@@ -324,6 +374,7 @@ public class DeleteLogicalRouterTaskServiceTest {
     public void testSuccessfulDeleteLogicalRouterTask() throws Throwable {
       NsxClientMock nsxClientMock = new NsxClientMock.Builder()
           .deleteLogicalRouter(true)
+          .checkLogicalRouterExistence(true)
           .build();
       doReturn(nsxClientMock).when(nsxClientFactory).create(any(String.class), any(String.class), any(String.class));
 
@@ -343,10 +394,23 @@ public class DeleteLogicalRouterTaskServiceTest {
       assertThat(savedState.taskState.failure.message, containsString("deleteLogicalRouter failed"));
     }
 
+    @Test
+    public void testFailedToCheckLogicalRouterExistence() throws Throwable {
+      NsxClientMock nsxClientMock = new NsxClientMock.Builder()
+          .deleteLogicalRouter(true)
+         .checkLogicalRouterExistence(false)
+          .build();
+      doReturn(nsxClientMock).when(nsxClientFactory).create(any(String.class), any(String.class), any(String.class));
+
+      DeleteLogicalRouterTask savedState = startService();
+      assertThat(savedState.taskState.stage, is(TaskState.TaskStage.FAILED));
+      assertThat(savedState.taskState.failure.message, containsString("checkLogicalRouterExistence failed"));
+    }
+
     private DeleteLogicalRouterTask startService() throws Throwable {
       return testEnvironment.callServiceAndWaitForState(
           DeleteLogicalRouterTaskService.FACTORY_LINK,
-          buildStartState(TaskState.TaskStage.CREATED, 0),
+          buildStartState(TaskState.TaskStage.CREATED, null, 0),
           DeleteLogicalRouterTask.class,
           (state) -> TaskUtils.finalTaskStages.contains(state.taskState.stage));
     }
@@ -355,15 +419,19 @@ public class DeleteLogicalRouterTaskServiceTest {
   private static DeleteLogicalRouterTask createDeleteLogicalRouterTaskService(TestHost testHost,
                                                                               DeleteLogicalRouterTaskService service,
                                                                               TaskState.TaskStage startStage,
+                                                                              TaskState.SubStage startSubStage,
                                                                               int controlFlags) throws Throwable {
-    Operation result = testHost.startServiceSynchronously(service, buildStartState(startStage, controlFlags));
+    Operation result = testHost.startServiceSynchronously(service, buildStartState(startStage, startSubStage,
+        controlFlags));
     return result.getBody(DeleteLogicalRouterTask.class);
   }
 
-  private static DeleteLogicalRouterTask buildStartState(TaskState.TaskStage startStage, int controlFlags) {
+  private static DeleteLogicalRouterTask buildStartState(TaskState.TaskStage startStage,
+                                                         TaskState.SubStage startSubStage, int controlFlags) {
     DeleteLogicalRouterTask startState = new DeleteLogicalRouterTask();
     startState.taskState = new TaskState();
     startState.taskState.stage = startStage;
+    startState.taskState.subStage = startSubStage;
     startState.controlFlags = controlFlags;
     startState.nsxManagerEndpoint = "https://192.168.1.1";
     startState.username = "username";
@@ -373,10 +441,12 @@ public class DeleteLogicalRouterTaskServiceTest {
     return startState;
   }
 
-  private static DeleteLogicalRouterTask buildPatchState(TaskState.TaskStage patchStage) {
+  private static DeleteLogicalRouterTask buildPatchState(TaskState.TaskStage patchStage,
+                                                         TaskState.SubStage patchSubStage) {
     DeleteLogicalRouterTask patchState = new DeleteLogicalRouterTask();
     patchState.taskState = new TaskState();
     patchState.taskState.stage = patchStage;
+    patchState.taskState.subStage = patchSubStage;
 
     return patchState;
   }
