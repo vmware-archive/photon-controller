@@ -1,0 +1,12 @@
+[Unit]
+Description=Photon Controller Configuration Service
+After=syslog.target network.target lwsmd.service configure-lightwave-server.service
+Requires=configure-lightwave-server.service
+
+[Service]
+Type=oneshot
+ExecStart=/etc/esxcloud/run.sh
+RemainAfterExit=true
+
+[Install]
+WantedBy=multi-user.target
