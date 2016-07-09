@@ -36,6 +36,10 @@ import java.util.UUID;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class DeployerContext {
 
+  // Enable deployer to act as installer of Photon Controller Management plane
+  @NotNull
+  private final Boolean enableInstaller;
+
   @Range(min = 1)
   private int corePoolSize = DeployerDefaults.CORE_POOL_SIZE;
 
@@ -111,6 +115,7 @@ public class DeployerContext {
 
   @VisibleForTesting
   public DeployerContext() {
+    enableInstaller = DeployerDefaults.ENABLE_INSTALLER;
     corePoolSize = DeployerDefaults.CORE_POOL_SIZE;
     xenonRetryCount = DeployerDefaults.DEFAULT_XENON_RETRY_COUNT;
     xenonRetryIntervalMs = DeployerDefaults.DEFAULT_XENON_RETRY_INTERVAL_MILLISECOND;
@@ -133,6 +138,10 @@ public class DeployerContext {
     waitForServiceMaxRetryCount = DeployerDefaults.DEFAULT_WAIT_FOR_SERVICE_MAX_RETRY_COUNT;
     sharedSecret = UUID.randomUUID().toString();
     configDirectory = null;
+  }
+
+  public boolean getEnableInstaller() {
+    return enableInstaller;
   }
 
   public int getCorePoolSize() {
