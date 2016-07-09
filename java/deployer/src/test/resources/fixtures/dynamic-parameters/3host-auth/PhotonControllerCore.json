@@ -38,5 +38,6 @@
   "VIB_DIRECTORY": "/var/esxcloud/packages",
   "memoryMb": "8192",
   "diskGb": "27",
-  "cpuCount": "4"
+  "cpuCount": "4",
+  "ENABLE_INSTALLER": "false"
 }

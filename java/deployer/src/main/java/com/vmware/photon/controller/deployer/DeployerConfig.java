@@ -81,7 +81,7 @@ public class DeployerConfig {
   }
 
   public ContainersConfig getContainersConfig() {
-    return checkNotNull(containersConfig);
+    return containersConfig;
   }
 
   public static String getManagementImageFile() {

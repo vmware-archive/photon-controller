@@ -247,14 +247,15 @@ public class Main {
 
     logger.info("Creating Deployer Service Group");
 
-    // Set containers config to deployer config
-    try {
-      deployerConfig.setContainersConfig(new ServiceConfigurator().generateContainersConfig(deployerConfig
-          .getDeployerContext().getConfigDirectory()));
-    } catch (Exception e) {
-      throw new RuntimeException(e);
+    if (deployerConfig.getDeployerContext().getEnableInstaller() == true) {
+      // Set containers config to deployer config
+      try {
+        deployerConfig.setContainersConfig(new ServiceConfigurator().generateContainersConfig(deployerConfig
+            .getDeployerContext().getConfigDirectory()));
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
     }
-
     final DockerProvisionerFactory dockerProvisionerFactory = new com.vmware.photon.controller.core.Main
         .DockerProvisionerFactoryImpl();
     final ApiClientFactory apiClientFactory = new ApiClientFactory(apiFeServerSet, httpClient,

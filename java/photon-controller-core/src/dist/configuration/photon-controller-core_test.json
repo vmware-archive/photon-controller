@@ -44,6 +44,7 @@
     "RESOURCE_TICKET_NAME": "mgmt-res-ticket",
     "MAX_MEMORY_GB": 64,
     "MAX_VM_COUNT": 20,
-    "VIB_DIRECTORY": "/var/esxcloud/packages"
+    "VIB_DIRECTORY": "/var/esxcloud/packages",
+    "ENABLE_INSTALLER": false
   }
 }
