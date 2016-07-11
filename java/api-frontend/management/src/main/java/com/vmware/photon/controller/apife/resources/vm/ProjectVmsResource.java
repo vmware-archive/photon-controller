@@ -160,13 +160,6 @@ public class ProjectVmsResource {
     if (spec.getSourceImageId() == null || spec.getSourceImageId().isEmpty()) {
       throw new InvalidVmSourceImageSpecException("No sourceImageId specified in VM create Spec");
     }
-
-    if (useVirtualNetwork &&
-        (spec.getSubnets() == null ||
-            spec.getSubnets().size() == 0 ||
-            spec.getSubnets().size() > 1)) {
-      throw new InvalidVmNetworksSpecException("Cannot put a single VM on 0 or more than one virtual network.");
-    }
   }
 
   private void validateAffinities(List<LocalitySpec> localitySpecList) throws InvalidLocalitySpecException {

@@ -13,7 +13,6 @@
 
 package com.vmware.photon.controller.apife.resources;
 
-import com.vmware.photon.controller.api.ApiError;
 import com.vmware.photon.controller.api.AttachedDiskCreateSpec;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.VmCreateSpec;
@@ -71,29 +70,6 @@ public class VmOnVirtualNetworkTest extends ResourceTest {
     spec.setAttachedDisks(disks);
 
     addResource(new ProjectVmsResource(vmFeClient, paginationConfig, true));
-  }
-
-  @Test
-  public void testNoNetworksSpec() {
-    Response response = createVm();
-    assertThat(response.getStatus(), is(400));
-
-    ApiError errors = response.readEntity(ApiError.class);
-    assertThat(errors.getCode(), is("InvalidEntity"));
-    assertThat(errors.getMessage(), is("Cannot put a single VM on 0 or more than one virtual network."));
-  }
-
-  @Test
-  public void testMoreThanOneNetworkInSpec() {
-    List<String> networks = ImmutableList.of("network1", "network2");
-    spec.setSubnets(networks);
-
-    Response response = createVm();
-    assertThat(response.getStatus(), is(400));
-
-    ApiError errors = response.readEntity(ApiError.class);
-    assertThat(errors.getCode(), is("InvalidEntity"));
-    assertThat(errors.getMessage(), is("Cannot put a single VM on 0 or more than one virtual network."));
   }
 
   @Test
