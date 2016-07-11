@@ -73,8 +73,7 @@ public interface DeploymentBackend {
 
   List<ClusterConfiguration> getClusterConfigurations() throws ExternalException;
 
-  TaskEntity configureDhcp(DhcpConfigurationSpec spec, String networkManagerAddress,
-                           String networkManagerUsername, String networkManagerPassword) throws ExternalException;
+  TaskEntity configureDhcp(DhcpConfigurationSpec spec) throws ExternalException;
 
   DeploymentEntity findById(String id) throws DeploymentNotFoundException;
 

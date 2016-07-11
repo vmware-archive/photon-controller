@@ -20,6 +20,7 @@ import com.vmware.photon.controller.api.Deployment;
 import com.vmware.photon.controller.api.DeploymentCreateSpec;
 import com.vmware.photon.controller.api.DeploymentDeployOperation;
 import com.vmware.photon.controller.api.DeploymentState;
+import com.vmware.photon.controller.api.DhcpConfigurationSpec;
 import com.vmware.photon.controller.api.FinalizeMigrationOperation;
 import com.vmware.photon.controller.api.InitializeMigrationOperation;
 import com.vmware.photon.controller.api.NetworkConfiguration;
@@ -31,8 +32,11 @@ import com.vmware.photon.controller.api.builders.AuthConfigurationSpecBuilder;
 import com.vmware.photon.controller.api.builders.NetworkConfigurationCreateSpecBuilder;
 import com.vmware.photon.controller.api.builders.StatsInfoBuilder;
 import com.vmware.photon.controller.api.common.exceptions.external.InvalidOperationStateException;
+import com.vmware.photon.controller.apibackend.servicedocuments.ConfigureDhcpWorkflowDocument;
+import com.vmware.photon.controller.apibackend.workflows.ConfigureDhcpWorkflowService;
 import com.vmware.photon.controller.apife.TestModule;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
+import com.vmware.photon.controller.apife.backends.utils.TaskUtils;
 import com.vmware.photon.controller.apife.entities.DeploymentEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
@@ -49,6 +53,7 @@ import com.vmware.photon.controller.cloudstore.xenon.entity.ClusterConfiguration
 import com.vmware.photon.controller.cloudstore.xenon.entity.ClusterConfigurationServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentServiceFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.TaskService;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.common.xenon.BasicServiceHost;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
@@ -73,6 +78,9 @@ import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -83,6 +91,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.Executors;
 
 /**
@@ -1262,6 +1271,42 @@ public class DeploymentXenonBackendTest {
         fail("should have failed deleting cluster that is not configured");
       } catch (ClusterTypeNotConfiguredException e) {
       }
+    }
+  }
+
+  /**
+   * Tests for the configureDhcp method.
+   */
+  @Guice(modules = {XenonBackendTestModule.class, TestModule.class})
+  public static class ConfigureDhcprTest {
+
+    @Test
+    public void testConfigureDhcpSuccess() throws Throwable {
+
+      List<String> dhcpServerAddresses = new ArrayList<>();
+      dhcpServerAddresses.add("1.2.3.4");
+      DhcpConfigurationSpec configurationSpec = new DhcpConfigurationSpec();
+      configurationSpec.setServerAddresses(dhcpServerAddresses);
+
+      ConfigureDhcpWorkflowDocument finalState = new ConfigureDhcpWorkflowDocument();
+      finalState.taskServiceState = new TaskService.State();
+      finalState.taskServiceState.documentSelfLink = UUID.randomUUID().toString();
+      finalState.taskServiceState.entityId = "entityId";
+      finalState.taskServiceState.entityKind = "entityKind";
+      finalState.taskServiceState.state = TaskService.State.TaskState.QUEUED;
+
+      com.vmware.xenon.common.Operation op = new com.vmware.xenon.common.Operation();
+      op.setBody(finalState);
+
+      ApiFeXenonRestClient client = mock(ApiFeXenonRestClient.class);
+      doNothing().when(client).start();
+      doReturn(op).when(client).post(eq(ConfigureDhcpWorkflowService.FACTORY_LINK),
+          any(ConfigureDhcpWorkflowDocument.class));
+      DeploymentBackend deploymentBackend = new DeploymentXenonBackend(
+          client, null, null, null, null, null);
+
+      TaskEntity taskEntity = deploymentBackend.configureDhcp(configurationSpec);
+      assertThat(taskEntity, is(TaskUtils.convertBackEndToMiddleEnd(finalState.taskServiceState)));
     }
   }
 
