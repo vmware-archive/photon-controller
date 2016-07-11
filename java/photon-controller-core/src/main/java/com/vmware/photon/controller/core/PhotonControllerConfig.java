@@ -18,6 +18,7 @@ import com.vmware.photon.controller.common.xenon.host.XenonConfig;
 import com.vmware.photon.controller.deployer.DeployerConfig;
 import com.vmware.photon.controller.rootscheduler.SchedulerConfig;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -25,8 +26,10 @@ import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 
 /**
- * This class implements configuration state for the cloud-store service.
+ * This class implements configuration state for the photon-controller-core service.
  */
+// This annotation is added to ignore apife related configuration sections.
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class PhotonControllerConfig {
 
   @Valid
@@ -45,6 +48,7 @@ public class PhotonControllerConfig {
 
   @Valid
   @NotNull
+  @JsonProperty("photon_controller_logging")
   private LoggingConfiguration logging = new LoggingConfiguration();
 
   public XenonConfig getXenonConfig() {

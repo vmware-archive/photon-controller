@@ -70,6 +70,12 @@ import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.SSLContext;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileWriter;
+import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -96,7 +102,6 @@ public class Main {
         .defaultHelp(true)
         .description("Photon Controller Core");
     parser.addArgument("config-file").help("photon controller configuration file");
-    parser.addArgument("api-config-file").help("photon controller api configuration file");
 
     Namespace namespace = parser.parseArgsOrFail(args);
 
@@ -109,13 +114,36 @@ public class Main {
 
     ServiceHost xenonHost = startXenonHost(photonControllerConfig, thriftModule, deployerConfig);
 
+    // Creating a temp configuration file for apife with modification to some named sections in photon-controller-config
+    // so that it can match the Configuration class of dropwizard.
+    File apiFeTempConfig = File.createTempFile("apiFeTempConfig", ".tmp");
+    File source = new File(args[0]);
+    FileInputStream fis = new FileInputStream(source);
+    BufferedReader in = new BufferedReader(new InputStreamReader(fis));
+
+    FileWriter fstream = new FileWriter(apiFeTempConfig, true);
+    BufferedWriter out = new BufferedWriter(fstream);
+
+    String aLine = null;
+    while ((aLine = in.readLine()) != null) {
+      if (aLine.equals("apife:")) {
+        aLine = aLine.replace("apife:", "server:");
+      }
+      out.write(aLine);
+      out.newLine();
+    }
+    in.close();
+    out.close();
+
     // This approach can be simplified once the apife container is gone, but for the time being
     // it expects the first arg to be the string "server".
     String[] apiFeArgs = new String[2];
     apiFeArgs[0] = "server";
-    apiFeArgs[1] = args[1];
+    apiFeArgs[1] = apiFeTempConfig.getAbsolutePath();
     ApiFeService.setupApiFeConfigurationForServerCommand(apiFeArgs);
+
     new ApiFeService().run(apiFeArgs);
+    apiFeTempConfig.deleteOnExit();
 
     Runtime.getRuntime().addShutdownHook(new Thread() {
       @Override
