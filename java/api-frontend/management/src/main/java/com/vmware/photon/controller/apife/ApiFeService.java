@@ -138,9 +138,9 @@ public class ApiFeService extends Application<ApiFeStaticConfiguration> {
   }
 
   /**
-   * Best effort to parse configuration file as in `bin/management server /etc/esxcloud/management-api.yml`.
+   * Best effort to parse configuration file as in `bin/management server /etc/esxcloud/photon-controller-core.yml`.
    * It does not work with commands such as
-   * `management db migrate /etc/esxcloud/management-api.yml`
+   * `management db migrate /etc/esxcloud/photon-controller-core.yml`
    * as in {@link io.dropwizard.migrations.DbCommand}
    */
   public static void setupApiFeConfigurationForServerCommand(String[] args)

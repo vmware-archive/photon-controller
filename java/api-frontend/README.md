@@ -1,19 +1,19 @@
 # api-frontend
 
-The api-frontend service is the component providing all the APIs for Photon Controller. Users can perform 
-operations (such as creating vms, attaching disks, etc.), also get, list, and modify resources (including hosts, 
-datastores, vms, disks, network, etc.) by calling Photon Controller APIs. In addition, 
-other internal components including deployer, cluster-manager call api-frontend to manage resources and perform 
+The api-frontend service is the component providing all the APIs for Photon Controller. Users can perform
+operations (such as creating vms, attaching disks, etc.), also get, list, and modify resources (including hosts,
+datastores, vms, disks, network, etc.) by calling Photon Controller APIs. In addition,
+other internal components including deployer, cluster-manager call api-frontend to manage resources and perform
 operations. It provides APIs to authorize users/user groups. All the APIs are protected utilizing authentication
-service - LightWave.  
+service - LightWave.
 
-The api-frontend provides a web-based documentation of all the APIs using Swagger UI framework. It can be found at 
-`root_url/api`. 
+The api-frontend provides a web-based documentation of all the APIs using Swagger UI framework. It can be found at
+`root_url/api`.
 
 ## Build
 
 The api-frontend is build through Gradle. The gradle wrapper script in the root directory will take care of installing the
-appropriate Gradle binaries for you. The release JAR is built under 'api-frontend/management' directory, 
+appropriate Gradle binaries for you. The release JAR is built under 'api-frontend/management' directory,
 run this command from the 'api-frontend/management' directory to run unit tests and build release JAR:
 
 ```
@@ -25,7 +25,7 @@ The resulting JAR file can be found in `build/distributions`.
 ## Runtime Configuration
 
 When the api-frontend container is started, the container entrypoint is `/etc/esxcloud/run.sh`. This starts a new instance
-of the api-frontend service using the configuration in `/etc/esxcloud/management-api.yml`.
+of the api-frontend service using the configuration in `/etc/esxcloud/photon-controller-core.yml`.
 
 In production scenarios, the configuration directory is mapped to `/etc/esxcloud/management_api` in the underlying VM.
 

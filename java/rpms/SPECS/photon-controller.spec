@@ -40,11 +40,9 @@ jq -s %{config_jq_filter} ./installer.json ./photon-controller-core_release.json
 content="`cat %{content_file}`"
 
 pystache "`cat ./photon-controller-core.yml`" "$content" > photon-controller-core-out.yml
-pystache "`cat ./management-api.yml`" "$content" > management-api-out.yml
 pystache "`cat ./run.sh`'" "$content" > run-out.sh
 
 mv ./photon-controller-core-out.yml ./photon-controller-core.yml
-mv ./management-api-out.yml ./management-api.yml
 mv ./run-out.sh ./run.sh
 chmod 755 ./run.sh
 
