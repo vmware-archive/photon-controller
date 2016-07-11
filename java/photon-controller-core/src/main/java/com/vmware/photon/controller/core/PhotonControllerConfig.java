@@ -45,6 +45,7 @@ public class PhotonControllerConfig {
 
   @Valid
   @NotNull
+  @JsonProperty("photon_controller_logging")
   private LoggingConfiguration logging = new LoggingConfiguration();
 
   public XenonConfig getXenonConfig() {
