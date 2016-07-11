@@ -16,6 +16,7 @@ package com.vmware.photon.controller.apife.config;
 import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.metrics.GraphiteConfig;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.dropwizard.Configuration;
 import org.hibernate.validator.constraints.Range;
@@ -26,6 +27,8 @@ import javax.validation.constraints.NotNull;
 /**
  * API Front End Server Configuration.
  */
+//This annotation is added to ignore photon-controller-core related configuration sections.
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class ApiFeStaticConfiguration extends Configuration implements ApiFeConfiguration {
 
   @JsonProperty("apife_port")
