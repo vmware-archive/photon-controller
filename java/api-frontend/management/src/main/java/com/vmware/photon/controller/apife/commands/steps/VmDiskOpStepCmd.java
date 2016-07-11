@@ -30,6 +30,7 @@ import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.VmEntity;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidVmStateException;
 import com.vmware.photon.controller.common.clients.HostClient;
+import com.vmware.photon.controller.common.clients.exceptions.DiskNotFoundException;
 import com.vmware.photon.controller.common.clients.exceptions.InvalidVmPowerStateException;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
 import com.vmware.photon.controller.common.clients.exceptions.VmNotFoundException;
@@ -135,27 +136,36 @@ public class VmDiskOpStepCmd extends StepCommand {
 
     boolean failed = false;
 
-    DiskState targetState = (operation == Operation.ATTACH_DISK ? DiskState.ATTACHED : DiskState.DETACHED);
+    DiskState targetState ;
     for (Disk disk : response.getDisks()) {
       VmDiskOpError error = response.getDisk_errors().get(disk.getId());
       checkNotNull(error);
+      targetState = (operation == Operation.ATTACH_DISK ? DiskState.ATTACHED : DiskState.DETACHED);
 
       try {
         HostClient.ResponseValidator.checkVmDisksOpError(error);
-        List<PersistentDiskEntity> disks = step.getTransientResourceEntities(PersistentDisk.KIND);
-        for (PersistentDiskEntity entity : disks) {
-          PersistentDiskEntity diskEntity = entity;
-          if (disk.getId().equals(diskEntity.getId())) {
-            diskBackend.updateState(diskEntity, targetState);
-            break;
-          }
-        }
         logger.info("{} successful: {}", operation.toString(), disk.getId());
       } catch (InvalidVmPowerStateException e) {
         throw new InvalidVmStateException(e);
       } catch (RpcException e) {
-        failed = true;
-        logger.error("{} failed on disk {}", operation.toString(), disk.getId(), e);
+        if (Operation.DETACH_DISK == operation && e instanceof DiskNotFoundException) {
+          targetState = DiskState.ERROR;
+          logger.info("{} failed on disk {}, disk not found, updating disk to be ERROR state.",
+              operation.toString(), disk.getId(), e);
+        } else {
+          failed = true;
+          logger.error("{} failed on disk {}", operation.toString(), disk.getId(), e);
+          continue;
+        }
+      }
+
+      List<PersistentDiskEntity> disks = step.getTransientResourceEntities(PersistentDisk.KIND);
+      for (PersistentDiskEntity entity : disks) {
+        PersistentDiskEntity diskEntity = entity;
+        if (disk.getId().equals(diskEntity.getId())) {
+          diskBackend.updateState(diskEntity, targetState);
+          break;
+        }
       }
     }
 
