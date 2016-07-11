@@ -956,11 +956,33 @@ public class CreateVirtualNetworkWorkflowServiceTest {
               CreateVirtualNetworkWorkflowDocument.class,
               (state) -> TaskState.TaskStage.FAILED == state.taskState.stage);
 
-      // Verifies that logical port IDs are cached in the service document.
-      assertThat(finalState.taskServiceEntity.logicalSwitchUplinkPortId, nullValue());
-      assertThat(finalState.taskServiceEntity.logicalRouterDownlinkPortId, nullValue());
-      assertThat(finalState.taskServiceEntity.logicalRouterUplinkPortId, nullValue());
-      assertThat(finalState.taskServiceEntity.tier0RouterDownlinkPortId, nullValue());
+      VirtualNetworkService.State expectedVirtualNetworkServiceState = finalState.taskServiceEntity;
+      assertThat(expectedVirtualNetworkServiceState.logicalSwitchId, is(LOGICAL_SWITCH_ID));
+      assertThat(expectedVirtualNetworkServiceState.logicalRouterId, is(LOGICAL_ROUTER_ID));
+      assertThat(expectedVirtualNetworkServiceState.logicalSwitchUplinkPortId, nullValue());
+      assertThat(expectedVirtualNetworkServiceState.logicalRouterDownlinkPortId, nullValue());
+      assertThat(expectedVirtualNetworkServiceState.logicalRouterUplinkPortId, nullValue());
+      assertThat(expectedVirtualNetworkServiceState.tier0RouterDownlinkPortId, nullValue());
+
+      // Verifies that the virtual network entity is updated in cloud-store.
+      VirtualNetworkService.State actualVirtualNetworkServiceState = testEnvironment.getServiceState(
+          expectedVirtualNetworkServiceState.documentSelfLink,
+          VirtualNetworkService.State.class);
+
+      assertThat(actualVirtualNetworkServiceState, notNullValue());
+      assertEquals(actualVirtualNetworkServiceState.name, expectedVirtualNetworkServiceState.name);
+      assertEquals(actualVirtualNetworkServiceState.description, expectedVirtualNetworkServiceState.description);
+      assertEquals(actualVirtualNetworkServiceState.routingType, expectedVirtualNetworkServiceState.routingType);
+      assertEquals(actualVirtualNetworkServiceState.parentId, expectedVirtualNetworkServiceState.parentId);
+      assertEquals(actualVirtualNetworkServiceState.parentKind, expectedVirtualNetworkServiceState.parentKind);
+      assertEquals(actualVirtualNetworkServiceState.logicalSwitchId,
+          expectedVirtualNetworkServiceState.logicalSwitchId);
+      assertEquals(actualVirtualNetworkServiceState.logicalRouterId,
+          expectedVirtualNetworkServiceState.logicalRouterId);
+      assertThat(actualVirtualNetworkServiceState.logicalSwitchUplinkPortId, nullValue());
+      assertThat(actualVirtualNetworkServiceState.logicalRouterDownlinkPortId, nullValue());
+      assertThat(actualVirtualNetworkServiceState.logicalRouterUplinkPortId, nullValue());
+      assertThat(actualVirtualNetworkServiceState.tier0RouterDownlinkPortId, nullValue());
     }
 
     @DataProvider(name = "hostCount")
