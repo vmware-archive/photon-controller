@@ -54,6 +54,19 @@ describe EsxCloud::ApiClient do
     expect(client.delete_virtual_network("network1")).to be_true
   end
 
+  it "finds all virtual networks" do
+    virtual_network_list = double(EsxCloud::VirtualNetworkList)
+
+    expect(http_client).to receive(:get)
+                           .with("/subnets")
+                           .and_return(ok_response("networkList"))
+    expect(EsxCloud::VirtualNetworkList).to receive(:create_from_json)
+                                            .with("networkList")
+                                            .and_return(virtual_network_list)
+
+    expect(client.find_all_virtual_networks).to be_true
+  end
+
   it "finds a virtual network by its id" do
     virtual_network = double(EsxCloud::VirtualNetwork)
 
@@ -65,5 +78,18 @@ describe EsxCloud::ApiClient do
                                         .and_return(virtual_network)
 
     expect(client.find_virtual_network_by_id("network1")).to eq virtual_network
+  end
+
+  it "finds a virtual networks by the name" do
+    virtual_network_list = double(EsxCloud::VirtualNetworkList)
+
+    expect(http_client).to receive(:get)
+                           .with("/subnets?name=blah")
+                          .and_return(ok_response("networkList"))
+    expect(EsxCloud::VirtualNetworkList).to receive(:create_from_json)
+                                            .with("networkList")
+                                            .and_return(virtual_network_list)
+
+    expect(client.find_virtual_networks_by_name("blah")).to be_true
   end
 end
