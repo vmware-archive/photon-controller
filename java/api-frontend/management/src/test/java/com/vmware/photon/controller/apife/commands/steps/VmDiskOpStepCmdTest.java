@@ -310,6 +310,20 @@ public class VmDiskOpStepCmdTest extends PowerMockTestCase {
     command.execute();
   }
 
+  @Test
+  public void testSuccessfulDetachDiskNotFoundOperation() throws Exception {
+    when(hostClient.detachDisks(vmId, attachedDiskIds)).thenReturn(DISK_NOT_FOUND_VM_DISKOP_RESPONSE);
+
+    VmDiskOpStepCmd command = getVmDiskOpStepCmd(Operation.DETACH_DISK);
+    vm.setAgent("some-agent");
+    command.execute();
+
+    verify(hostClient).detachDisks(vmId, attachedDiskIds);
+    verify(diskBackend).updateState(disk1, DiskState.ERROR);
+    verify(diskBackend).updateState(disk2, DiskState.DETACHED);
+    verify(attachedDiskBackend).deleteAttachedDisks(vm, persistentDiskEntities);
+  }
+
   @Test(expectedExceptions = RpcException.class)
   public void testFailedDetachOperationDiskDetached() throws Exception {
     when(hostClient.detachDisks(vmId, attachedDiskIds)).thenReturn(DISK_DETACHED_VM_DISKOP_RESPONSE);
