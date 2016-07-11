@@ -13,11 +13,14 @@ module EsxCloud
   class ApiClient
     module VirtualNetworkApi
 
+      NETWORKS_ROOT = "/subnets"
+      PROJECTS_ROOT = "/projects"
+
       # @param [String] project_id
       # @param [VirtualNetworkCreateSpec] payload
       # @return [VirtualNetwork]
       def create_virtual_network(project_id, payload)
-        url = "/projects/#{project_id}/networks"
+        url = "#{PROJECTS_ROOT}/#{project_id}/networks"
         response = @http_client.post_json(url, payload)
         check_response("Create virtual network #{payload}", response, 201)
 
@@ -28,17 +31,25 @@ module EsxCloud
       # @param [String] network_id
       # @return [Boolean]
       def delete_virtual_network(network_id)
-        response = @http_client.delete("/subnets/#{network_id}")
+        response = @http_client.delete("#{NETWORKS_ROOT}/#{network_id}")
         check_response("Delete virtual subnet #{network_id}", response, 201)
 
         poll_response(response)
         true
       end
 
+      # @return [VirtualNetworkList]
+      def find_all_virtual_networks()
+        response = @http_client.get(NETWORKS_ROOT)
+        check_response("Find all virtual subnets", response, 200)
+
+        VirtualNetworkList.create_from_json(response.body)
+      end
+
       # @param [String] network_id
       # @return [VirtualNetwork]
       def find_virtual_network_by_id(network_id)
-        response = @http_client.get("/subnets/#{network_id}")
+        response = @http_client.get("#{NETWORKS_ROOT}/#{network_id}")
         check_response("Get virtual subnet #{network_id}", response, 200)
 
         VirtualNetwork.create_from_json(response.body)
@@ -47,7 +58,7 @@ module EsxCloud
       # @param [String] name
       # return [VirtualNetworkList]
       def find_virtual_networks_by_name(name)
-        response = @http_client.get("/networks/?name=#{name}")
+        response = @http_client.get("#{NETWORKS_ROOT}?name=#{name}")
         check_response("Find Networks by name '#{name}'", response, 200)
 
         VirtualNetworkList.create_from_json(response.body)

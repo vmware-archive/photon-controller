@@ -26,6 +26,12 @@ module EsxCloud
         @api_client.delete_virtual_network network_id
       end
 
+
+      # @return [VirtualNetworkList]
+      def find_all_virtual_networks
+        @api_client.find_all_virtual_networks
+      end
+
       # @param [String] network_id
       # @return [VirtualNetwork]
       def find_virtual_network_by_id(network_id)
