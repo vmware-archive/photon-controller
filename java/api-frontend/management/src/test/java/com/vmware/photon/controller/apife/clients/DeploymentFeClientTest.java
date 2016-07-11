@@ -432,8 +432,7 @@ public class DeploymentFeClientTest {
       doReturn(deploymentEntity).when(deploymentBackend).findById(deploymentId);
       TaskEntity taskEntity = new TaskEntity();
 
-      doReturn(taskEntity).when(deploymentBackend).configureDhcp(any(DhcpConfigurationSpec.class),
-        eq("1.2.3.4"), eq("username"), eq("password"));
+      doReturn(taskEntity).when(deploymentBackend).configureDhcp(any(DhcpConfigurationSpec.class));
       Task task = new Task();
       doReturn(task).when(taskBackend).getApiRepresentation(taskEntity);
 

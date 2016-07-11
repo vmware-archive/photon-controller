@@ -33,8 +33,11 @@ import com.vmware.photon.controller.api.StatsInfo;
 import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
+import com.vmware.photon.controller.apibackend.servicedocuments.ConfigureDhcpWorkflowDocument;
+import com.vmware.photon.controller.apibackend.workflows.ConfigureDhcpWorkflowService;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.backends.clients.DeployerClient;
+import com.vmware.photon.controller.apife.backends.utils.TaskUtils;
 import com.vmware.photon.controller.apife.commands.steps.DeploymentCreateStepCmd;
 import com.vmware.photon.controller.apife.commands.steps.DeploymentInitializeMigrationStepCmd;
 import com.vmware.photon.controller.apife.commands.steps.SystemPauseBackgroundTasksStepCmd;
@@ -161,7 +164,7 @@ public class DeploymentXenonBackend implements DeploymentBackend {
 
     logger.info("Finalize migrate  {}", deploymentEntity);
     TaskEntity taskEntity = createFinalizeMigrateDeploymentTask(
-            finalizeMigrationOperation.getSourceLoadBalancerAddress(), deploymentEntity);
+        finalizeMigrationOperation.getSourceLoadBalancerAddress(), deploymentEntity);
     taskEntity.getToBeLockedEntities().add(deploymentEntity);
     return taskEntity;
   }
@@ -398,12 +401,13 @@ public class DeploymentXenonBackend implements DeploymentBackend {
   }
 
   @Override
-  public TaskEntity configureDhcp(DhcpConfigurationSpec spec,
-                                  String networkManagerAddress,
-                                  String networkManagerUsername,
-                                  String networkManagerPassword) throws ExternalException {
-    // TODO(ysheng): invoke the actual xenon service
-    return null;
+  public TaskEntity configureDhcp(DhcpConfigurationSpec spec) throws ExternalException {
+    ConfigureDhcpWorkflowDocument state = new ConfigureDhcpWorkflowDocument();
+    state.dhcpServerAddresses = spec.getServerAddresses();
+
+    ConfigureDhcpWorkflowDocument finalState = xenonClient.post(ConfigureDhcpWorkflowService.FACTORY_LINK, state)
+        .getBody(ConfigureDhcpWorkflowDocument.class);
+    return TaskUtils.convertBackEndToMiddleEnd(finalState.taskServiceState);
   }
 
   @Override

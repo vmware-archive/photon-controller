@@ -42,7 +42,6 @@ import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommandFactory;
 import com.vmware.photon.controller.apife.config.AuthConfig;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
-import com.vmware.photon.controller.apife.entities.DeploymentEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
 import com.vmware.photon.controller.common.Constants;
@@ -276,12 +275,8 @@ public class DeploymentFeClient {
   }
 
   public Task configureDhcp(String id, DhcpConfigurationSpec spec) throws ExternalException {
-    DeploymentEntity deploymentEntity = deploymentBackend.findById(id);
-    TaskEntity taskEntity = deploymentBackend.configureDhcp(
-        spec,
-        deploymentEntity.getNetworkManagerAddress(),
-        deploymentEntity.getNetworkManagerUsername(),
-        deploymentEntity.getNetworkManagerPassword());
+    deploymentBackend.findById(id);
+    TaskEntity taskEntity = deploymentBackend.configureDhcp(spec);
     return taskBackend.getApiRepresentation(taskEntity);
   }
 }
