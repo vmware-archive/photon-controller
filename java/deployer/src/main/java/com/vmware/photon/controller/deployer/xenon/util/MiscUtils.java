@@ -36,6 +36,7 @@ import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.QueryTask;
 
+import com.google.common.base.Strings;
 import com.google.common.util.concurrent.FutureCallback;
 import static com.google.common.base.Preconditions.checkState;
 
@@ -173,7 +174,8 @@ public class MiscUtils {
                     // Get only the non-docker ips. For docker Ips, network is null
                     Set<NetworkConnection> connections = vmNetworks.getNetworkConnections();
                     for (NetworkConnection networkConnection : connections) {
-                      if (networkConnection.getNetwork() != null) {
+                      if (!Strings.isNullOrEmpty(networkConnection.getNetwork())
+                          && !Strings.isNullOrEmpty(networkConnection.getIpAddress())) {
                         result.add(networkConnection.getIpAddress());
                       }
                     }
