@@ -42,6 +42,7 @@ import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.Utils;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Strings;
 import com.google.common.util.concurrent.FutureCallback;
 import static com.google.common.base.Preconditions.checkState;
 
@@ -179,7 +180,7 @@ public class WaitForNetworkTaskService extends StatefulService {
       // The OUI is a standard prefix to indicate the vendor that generated the MAC address
       // In the past we looked for a port group (network name) but that wasn't always reliably
       // reported. This should be reliable.
-      if (isVmwareMacAddress(networkConnection) && null != networkConnection.getIpAddress()) {
+      if (isVmwareMacAddress(networkConnection) && !Strings.isNullOrEmpty(networkConnection.getIpAddress())) {
         State patchState = buildPatch(TaskState.TaskStage.FINISHED, null);
         patchState.vmIpAddress = networkConnection.getIpAddress();
         TaskUtils.sendSelfPatch(this, patchState);
@@ -240,7 +241,7 @@ public class WaitForNetworkTaskService extends StatefulService {
 
   private boolean isVmwareMacAddress(NetworkConnection connection) {
     String macAddress = connection.getMacAddress();
-    if (macAddress != null) {
+    if (!Strings.isNullOrEmpty(macAddress)) {
       if (macAddress.toLowerCase().startsWith(ESX_MAC_OUI)
           || macAddress.toLowerCase().startsWith(VSPHERE_MAC_OUI)) {
         return true;
