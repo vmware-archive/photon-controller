@@ -21,9 +21,14 @@ module EsxCloud
       Config.client.create_virtual_network(project_id, spec.to_hash)
     end
 
+    # @return [VirtualNetworkList]
+    def self.find_all
+      Config.client.find_all_virtual_networks
+    end
+
     # @param [String] network_id
     def self.get(network_id)
-      Config.client.get_virtual_network(network_id)
+      Config.client.find_virtual_network_by_id(network_id)
     end
 
     # @param [String] name

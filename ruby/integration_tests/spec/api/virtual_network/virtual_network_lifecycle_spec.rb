@@ -30,6 +30,17 @@ describe "virtual_network_lifecyle", :virtual_network => true do
 
   it "Creates a virtual network, and then delete it" do
     network = create_network(spec)
+
+    retrieved_network = EsxCloud::VirtualNetwork.get(network.id)
+    expect(retrieved_network.id).to eq(network.id)
+
+    retrieved_network_list = EsxCloud::VirtualNetwork.find_by_name(spec.name)
+    expect(retrieved_network_list.items.count).to eq(1)
+    expect(retrieved_network_list.items.first.id).to eq(network.id)
+
+    retrieved_network_list = EsxCloud::VirtualNetwork.find_all
+    expect(retrieved_network_list.items.count).to be >= 1
+
     network.delete
   end
 
