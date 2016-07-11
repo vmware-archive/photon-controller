@@ -53,7 +53,7 @@ public class DeployerConfig {
   private LoggingConfiguration logging;
 
   // Keep this for now since we use it for Upgrade
-  private ZookeeperConfig zookeeper;
+  // private ZookeeperConfig zookeeper;
 
   private ContainersConfig containersConfig;
 
@@ -77,7 +77,7 @@ public class DeployerConfig {
   }
 
   public ZookeeperConfig getZookeeper() {
-    return checkNotNull(zookeeper);
+    return null;//checkNotNull(zookeeper);
   }
 
   public ContainersConfig getContainersConfig() {
