@@ -84,7 +84,7 @@ class Hypervisor(object):
         return resource
 
     def acquire_vim_ticket(self):
-        return self.host_client.acquire_clone_ticket()
+        return self.host_client.get_vim_ticket()
 
     def add_update_listener(self, listener):
         self.host_client.add_update_listener(listener)

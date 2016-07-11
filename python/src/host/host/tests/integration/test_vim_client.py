@@ -246,7 +246,7 @@ class TestVimClient(unittest.TestCase):
         return remove_spec
 
     def test_clone_ticket(self):
-        ticket = self.vim_client.acquire_clone_ticket()
+        ticket = self.vim_client.get_vim_ticket()
         vim_client2 = VimClient()
         vim_client2.connect_ticket(self.host, ticket)
         vim_client2.host_system()
