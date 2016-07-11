@@ -32,6 +32,10 @@ public class NameUtils {
   public static final String LOGICAL_ROUTER_DOWNLINK_PORT_NAME_PREFIX = "PC-LogicalRouter-Downlink-Port-";
   public static final String LOGICAL_ROUTER_UPLINK_PORT_NAME_PREFIX = "PC-LogicalRouter-Uplink-Port-";
   public static final String TIER0_ROUTER_DOWNLINK_PORT_NAME_PREFIX = "PC-Tier0Router-Downlink-Port-";
+  public static final String DHCP_RELAY_PROFILE_NAME_PREFIX = "PC-Dhcp-Relay-Profile-";
+  public static final String DHCP_RELAY_PROFILE_DESCRIPTION_PREFIX = "Photon Controller DHCP Relay Profile ";
+  public static final String DHCP_RELAY_SERVICE_NAME_PREFIX = "PC-Dhcp-Relay-Service-";
+  public static final String DHCP_RELAY_SERVICE_DESCRIPTION_PREFIX = "Photon Controller DHCP Relay Service ";
 
   public static String getFabricNodeName(String id) {
     return FABRIC_NODE_NAME_PREFIX + id;
@@ -87,5 +91,21 @@ public class NameUtils {
 
   public static String getTier0RouterDownlinkPortName(String id) {
     return TIER0_ROUTER_DOWNLINK_PORT_NAME_PREFIX + id;
+  }
+
+  public static String getDhcpRelayProfileName(String id) {
+    return DHCP_RELAY_PROFILE_NAME_PREFIX + id;
+  }
+
+  public static String getDhcpRelayProfileDescription(String id) {
+    return DHCP_RELAY_PROFILE_DESCRIPTION_PREFIX + id;
+  }
+
+  public static String getDhcpRelayServiceName(String id) {
+    return DHCP_RELAY_SERVICE_NAME_PREFIX + id;
+  }
+
+  public static String getDhcpRelayServiceDescription(String id) {
+    return DHCP_RELAY_SERVICE_DESCRIPTION_PREFIX + id;
   }
 }
