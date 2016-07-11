@@ -1,9 +1,11 @@
-#!/usr/bin/env bash
+#!/usr/bin/bash -xe
 
 admin_password=$1
 user_password='Passw0rd!'
 
-lwcli="docker exec lightwave opt/vmware/bin/dir-cli"
+lwcli="docker exec photon-controller opt/vmware/bin/dir-cli"
+
+echo ${admin_password}
 
 # Add users to Lightwave
 # Currently 2 administrators, 1 tenant administrator, 1 project user, and 1 normal user.

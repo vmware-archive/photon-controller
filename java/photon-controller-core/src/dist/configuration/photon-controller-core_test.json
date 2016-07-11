@@ -33,7 +33,6 @@
     "HOUSEKEEPER_XENON_STORAGE_PATH": "/etc/esxcloud/housekeeper/sandbox_16000",
     "HOUSEKEEPER_INSTALL_DIRECTORY": "/usr/lib/esxcloud/housekeeper",
     "JAVA_DEBUG": "-agentlib:jdwp=transport=dt_socket,server=y,address=29000,suspend=n",
-    "LOG_DIRECTORY": "/vagrant/log",
     "MANAGEMENT-API_INSTALL_DIRECTORY": "/usr/lib/esxcloud/management-api",
     "USE_ESX_STORE": true,
     "PHOTON-CONTROLLER-CORE_INSTALL_DIRECTORY": "/usr/lib/esxcloud/photon-controller-core",

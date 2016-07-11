@@ -1,0 +1,178 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+# Copyright 2015 VMware, Inc. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not
+# use this file except in compliance with the License.  You may obtain a copy of
+# the License at http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software distributed
+# under the License is distributed on an "AS IS" BASIS, without warranties or
+# conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the License for the
+# specific language governing permissions and limitations under the License.
+
+Vagrant.configure("2") do |config|
+  # ================ VARIABLES ================
+  ESXCLOUD_DIR="/var/esxcloud"
+
+
+  # ================ VM DEFINITIONS ================
+
+  #
+  # photon devbox supports virtualbox only for now
+  #
+  config.vm.provider "virtualbox"
+
+  # Prepare build directory
+  config.vm.provision :shell, :privileged => false, :inline => <<-EOS
+    set -ex
+    sudo chown -R vagrant:vagrant $HOME
+  EOS
+
+  # ================ PARAMETERS AND SYNC DIRECTORIES ================
+  #
+  # Configure sync-ed directories
+  #
+  config.vm.synced_folder "..", "/devbox_data"
+  config.vm.synced_folder ".", "/vagrant", mount_options: ["dmode=777", "fmode=775"]
+
+  lb_ip="172.31.253.65"
+
+  config.vm.define "lb" do |lb|
+    lb.vm.provider "virtualbox" do |v|
+      v.customize ["modifyvm", :id, "--memory", "512"]
+      v.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
+      v.customize ["modifyvm", :id, "--cpus", "1"]
+      v.customize ['modifyvm', :id, '--acpi', 'off'] # needed to run PhotonOS RC1 in vagrant under stress
+      v.customize ["modifyvm", :id, "--cpuexecutioncap", "80"]
+    end
+    lb.vm.guest = :photon
+    lb.vm.box = "voltron-test"
+    lb.vm.box_url = "file://localhost/Users/aschroeter/git/machines/vagrant-discus-box/photon-devbox.box"
+    private_network_ip = "172.31.253.65"
+    network_ip = private_network_ip
+    lb.vm.network :private_network, ip: private_network_ip
+    lb.vm.hostname = "lb"
+
+    lb.vm.provision :shell, :privileged => false, :inline => <<-EOS
+      ping -c 4 10.0.2.2
+      sudo mkdir /configuration
+      sudo chown -R vagrant:vagrant /configuration
+
+      container_ip="172.31.253.65"
+      mkdir -p /etc/ssl/private
+      cp /etc/ssl/openssl.cnf /tmp/
+      sed -i 's/\[ v3_req \]/\[ v3_req \]\nsubjectAltName = @alt_names\n/' /tmp/openssl.cnf
+      sed -i 's/basicConstraints = CA:FALSE/basicConstraints = critical,CA:true\n/g' /tmp/openssl.cnf
+      sed -i 's/basicConstraints=CA:FALSE/basicConstraints = critical,CA:true\n/g' /tmp/openssl.cnf
+      sed -i 's/keyUsage = nonRepudiation, digitalSignature, keyEncipherment/keyUsage = nonRepudiation, digitalSignature, keyEncipherment, keyCertSign, cRLSign/g' /tmp/openssl.cnf
+      printf "\n[ alt_names ]\nIP.1 = %s\n" $container_ip >> /tmp/openssl.cnf
+      openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /tmp/photon_haproxy.key -out /tmp/photon_haproxy.crt -subj "/C=US/ST=WA/L=Bellevue/O=Vmware/OU=Photon/CN=$container_ip" -config /tmp/openssl.cnf -extensions v3_req
+      cat /tmp/photon_haproxy.crt /tmp/photon_haproxy.key > /configuration/photon_haproxy.pem
+
+      docker build -t photon/lb /vagrant/lb
+      docker run -d --name lb --net="host" --privileged=true -v /configuration:/etc/ssl/private/  photon/lb
+    EOS
+  end
+
+  #
+  # VM definition for photon
+  #
+  config.vm.define "photon1", primary: true do |photon1|
+    photon1.vm.guest = :photon
+    photon1.vm.box = "voltron-test"
+    photon1.vm.box_url = "file://localhost/Users/aschroeter/git/machines/vagrant-discus-box/photon-devbox.box"
+
+    #
+    # Configure memory and nat dns
+    #
+    photon1.vm.provider "virtualbox" do |v|
+      v.customize ["modifyvm", :id, "--memory", "2048"]
+      v.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
+      v.customize ["modifyvm", :id, "--cpus", "2"]
+      v.customize ['modifyvm', :id, '--acpi', 'off'] # needed to run PhotonOS RC1 in vagrant under stress
+      # v.customize ["modifyvm", :id, "--cpuexecutioncap", "80"]
+    end
+    private_network_ip = "172.31.253.66"
+    network_ip = private_network_ip
+    photon1.vm.network :private_network, ip: private_network_ip
+    photon1.vm.hostname = "photon1"
+
+    photon1.vm.provision :shell, :privileged => false, :inline => <<-EOS
+      set -xe
+      ping -c 4 10.0.2.2
+      sudo rm -rf /configuration
+      sudo mkdir -p /configuration
+      sudo chown -R vagrant:vagrant /configuration
+      cp /vagrant/photon-controller/lightwave-server-leader.cfg /configuration/
+      mv /configuration/lightwave-server-leader.cfg /configuration/lightwave-server.cfg
+      /vagrant/configure_vm.sh #{photon1.vm.hostname} #{lb_ip} #{network_ip}
+    EOS
+  end
+
+  config.vm.define "photon2" do |photon2|
+    photon2.vm.guest = :photon
+    photon2.vm.box = "voltron-test"
+    photon2.vm.box_url = "file://localhost/Users/aschroeter/git/machines/vagrant-discus-box/photon-devbox.box"
+
+    #
+    # Configure memory and nat dns
+    #
+    photon2.vm.provider "virtualbox" do |v|
+      v.customize ["modifyvm", :id, "--memory", "2048"]
+      # v.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
+      v.customize ["modifyvm", :id, "--cpus", "2"]
+      v.customize ['modifyvm', :id, '--acpi', 'off'] # needed to run PhotonOS RC1 in vagrant under stress
+      v.customize ["modifyvm", :id, "--cpuexecutioncap", "80"]
+    end
+    private_network_ip = "172.31.253.67"
+    network_ip = private_network_ip
+    photon2.vm.network :private_network, ip: private_network_ip
+    photon2.vm.hostname = "photon2"
+
+    photon2.vm.provision :shell, :privileged => false, :inline => <<-EOS
+      set -xe
+      ping -c 4 10.0.2.2
+      sudo rm -rf /configuration
+      sudo mkdir -p /configuration
+      sudo chown -R vagrant:vagrant /configuration
+      cp /vagrant/photon-controller/lightwave-server-replica2.cfg /configuration/
+      mv /configuration/lightwave-server-replica2.cfg /configuration/lightwave-server.cfg
+      /vagrant/configure_vm.sh #{photon2.vm.hostname} #{lb_ip} #{network_ip}
+    EOS
+  end
+
+  # config.vm.define "photon3" do |photon3|
+  #   photon3.vm.guest = :photon
+  #   photon3.vm.box = "voltron-test"
+  #   photon3.vm.box_url = "file://localhost/Users/aschroeter/git/machines/vagrant-discus-box/photon-devbox.box"
+  #
+  #   #
+  #   # Configure memory and nat dns
+  #   #
+  #   photon3.vm.provider "virtualbox" do |v|
+  #     v.customize ["modifyvm", :id, "--memory", "2048"]
+  #     v.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
+  #     v.customize ["modifyvm", :id, "--cpus", "1"]
+  #     v.customize ['modifyvm', :id, '--acpi', 'off'] # needed to run PhotonOS RC1 in vagrant under stress
+  #     v.customize ["modifyvm", :id, "--cpuexecutioncap", "80"]
+  #   end
+  #   private_network_ip = "172.31.253.68"
+  #   network_ip = private_network_ip
+  #   photon3.vm.network :private_network, ip: private_network_ip
+  #   photon3.vm.hostname = "photon3"
+  #
+  #   photon3.vm.provision :shell, :privileged => false, :inline => <<-EOS
+  #     set -xe
+  #     ping -c 4 10.0.2.2
+  #     sudo rm -rf /configuration
+  #     sudo mkdir -p /configuration
+  #     sudo chown -R vagrant:vagrant /configuration
+  #     cp /vagrant/photon-controller/lightwave-server-replica3.cfg /configuration/
+  #     mv /configuration/lightwave-server-replica3.cfg /configuration/lightwave-server.cfg
+  #     /vagrant/configure_vm.sh #{photon3.vm.hostname} #{lb_ip} #{network_ip}
+  #   EOS
+  # end
+
+end

@@ -15,8 +15,8 @@ package com.vmware.photon.controller.apife.lib;
 
 import com.vmware.photon.controller.api.Host;
 import com.vmware.photon.controller.api.HostDatastore;
+import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.ResourceList;
-import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.backends.HostBackend;
 import com.vmware.photon.controller.apife.config.ImageConfig;
@@ -44,6 +44,7 @@ import static com.google.common.base.Preconditions.checkState;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * This class saves image in vSphere datastore. It could connect to vCenter or ESX server, and save/delete image in
@@ -234,7 +235,11 @@ public class VsphereImageStore implements ImageStore {
     }
 
     if ((null == hostList || 0 == hostList.getItems().size()) && this.lookForManagementHostsIfNeeded) {
-      hostList = this.hostBackend.filterByUsage(UsageTag.MGMT, Optional.absent());
+      hostList = this.hostBackend.listAll(Optional.of(10));
+      if (hostList.getItems() != null) {
+        hostList = new ResourceList<Host>(hostList.getItems().stream()
+            .filter(h -> h.getState() == HostState.READY).collect(Collectors.toList()));
+      }
     }
 
     checkState(

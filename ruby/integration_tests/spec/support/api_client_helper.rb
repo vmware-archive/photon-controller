@@ -55,6 +55,8 @@ class ApiClientHelper
       address ||= (ENV["API_ADDRESS"] || "172.31.253.66").strip
       port ||= (ENV["API_FE_PORT"] || "9000").strip
 
+      puts "#{protocol}://#{address}:#{port}"
+
       "#{protocol}://#{address}:#{port}"
     end
 
