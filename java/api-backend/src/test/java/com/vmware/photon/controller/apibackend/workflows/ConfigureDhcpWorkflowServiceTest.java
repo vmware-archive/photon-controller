@@ -13,23 +13,23 @@
 
 package com.vmware.photon.controller.apibackend.workflows;
 
-import com.vmware.photon.controller.api.DeploymentState;
-import com.vmware.photon.controller.api.StatsStoreType;
 import com.vmware.photon.controller.apibackend.helpers.ReflectionUtils;
 import com.vmware.photon.controller.apibackend.helpers.TestEnvironment;
 import com.vmware.photon.controller.apibackend.helpers.TestHelper;
 import com.vmware.photon.controller.apibackend.servicedocuments.ConfigureDhcpWorkflowDocument;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentServiceFactory;
+import com.vmware.photon.controller.common.tests.nsx.NsxClientMock;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
-import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
+import com.vmware.photon.controller.nsxclient.NsxClientFactory;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.TaskState;
 
+import org.hamcrest.Matchers;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
@@ -38,10 +38,14 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.testng.Assert.assertEquals;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.EnumSet;
 
 /**
@@ -59,8 +63,7 @@ public class ConfigureDhcpWorkflowServiceTest {
   private static ConfigureDhcpWorkflowDocument buildStartState(
       ConfigureDhcpWorkflowDocument.TaskState.TaskStage startStage,
       ConfigureDhcpWorkflowDocument.TaskState.SubStage subStage,
-      int controlFlag,
-      String deploymentId) {
+      int controlFlag) {
 
     ConfigureDhcpWorkflowDocument startState = new ConfigureDhcpWorkflowDocument();
 
@@ -72,7 +75,6 @@ public class ConfigureDhcpWorkflowServiceTest {
     startState.nsxManagerEndpoint = "https://192.168.1.1";
     startState.username = "username";
     startState.password = "password";
-    startState.deploymentId = deploymentId;
     startState.dhcpServerAddresses = new ArrayList<>();
     startState.dhcpServerAddresses.add("1.2.3.4");
 
@@ -99,19 +101,18 @@ public class ConfigureDhcpWorkflowServiceTest {
    */
   private DeploymentService.State createDeploymentDocumentInCloudStore(TestEnvironment testEnvironment)
       throws Throwable {
-    DeploymentService.State startState = new DeploymentService.State();
-    startState.imageDataStoreNames = Collections.singleton("IMAGE_DATASTORE_NAME");
-    startState.imageDataStoreUsedForVMs = true;
-    startState.state = DeploymentState.READY;
-    startState.ntpEndpoint = "NTP_ENDPOINT";
-    startState.syslogEndpoint = "SYSLOG_ENDPOINT";
-    startState.statsEnabled = true;
-    startState.statsStoreEndpoint = "STATS_STORE_ENDPOINT";
-    startState.statsStorePort = 8081;
-    startState.statsStoreType = StatsStoreType.GRAPHITE;
-    startState.oAuthEnabled = false;
-    startState.oAuthServerAddress = "OAUTH_ENDPOINT";
-    startState.virtualNetworkEnabled = false;
+    return createDeploymentDocumentInCloudStore(testEnvironment, "nsxAddress", "username", "password");
+  }
+
+  private DeploymentService.State createDeploymentDocumentInCloudStore(TestEnvironment testEnvironment,
+                                                                       String nsxServerAddress,
+                                                                       String username,
+                                                                       String password) throws Throwable {
+    DeploymentService.State startState = ReflectionUtils.buildValidStartState(DeploymentService.State.class);
+    startState.virtualNetworkEnabled = true;
+    startState.networkManagerAddress = nsxServerAddress;
+    startState.networkManagerUsername = username;
+    startState.networkManagerPassword = password;
 
     Operation result = testEnvironment.sendPostAndWait(DeploymentServiceFactory.SELF_LINK, startState);
     assertThat(result.getStatusCode(), is(Operation.STATUS_CODE_OK));
@@ -153,15 +154,14 @@ public class ConfigureDhcpWorkflowServiceTest {
           .cloudStoreHelper(new CloudStoreHelper())
           .build();
 
-      DeploymentService.State deploymentState = createDeploymentDocumentInCloudStore(testEnvironment);
+      createDeploymentDocumentInCloudStore(testEnvironment);
       startState = buildStartState(
           TaskState.TaskStage.CREATED,
           null,
           new ControlFlags.Builder()
               .disableOperationProcessingOnHandleStart()
               .disableOperationProcessingOnHandlePatch()
-              .build(),
-          ServiceUtils.getIDFromDocumentSelfLink(deploymentState.documentSelfLink));
+              .build());
     }
 
     @AfterMethod
@@ -238,8 +238,7 @@ public class ConfigureDhcpWorkflowServiceTest {
           new ControlFlags.Builder()
               .disableOperationProcessingOnHandleStart()
               .disableOperationProcessingOnHandlePatch()
-              .build(),
-          ServiceUtils.getIDFromDocumentSelfLink(deploymentState.documentSelfLink));
+              .build());
     }
 
     @AfterMethod
@@ -281,8 +280,7 @@ public class ConfigureDhcpWorkflowServiceTest {
           new ControlFlags.Builder()
               .disableOperationProcessingOnHandleStart()
               .disableOperationProcessingOnHandlePatch()
-              .build(),
-          ServiceUtils.getIDFromDocumentSelfLink(deploymentState.documentSelfLink));
+              .build());
 
       testEnvironment.callServiceAndWaitForState(
           ConfigureDhcpWorkflowService.FACTORY_LINK,
@@ -347,8 +345,7 @@ public class ConfigureDhcpWorkflowServiceTest {
           new ControlFlags.Builder()
               .disableOperationProcessingOnHandlePatch()
               .disableOperationProcessingOnStageTransition()
-              .build(),
-          ServiceUtils.getIDFromDocumentSelfLink(deploymentState.documentSelfLink));
+              .build());
     }
 
     @AfterMethod
@@ -504,6 +501,151 @@ public class ConfigureDhcpWorkflowServiceTest {
       return TestHelper.toDataProvidersList(
           ReflectionUtils.getAttributeNamesWithAnnotation(
               ConfigureDhcpWorkflowDocument.class, Immutable.class));
+    }
+  }
+
+  /**
+   * Tests end-to-end scenarios of the {@link ConfigureDhcpWorkflowService}.
+   */
+  public class EndToEndTest {
+
+    private static final String NETWORK_MANAGER_ADDRESS = "networkManagerAddress";
+    private static final String NETWORK_MANAGER_USERNAME = "networkManagerUsername";
+    private static final String NETWORK_MANAGER_PASSWORD = "networkManagerPassword";
+    private static final String DHCP_SERVER_ADDRESS = "1.2.3.4";
+    private static final String DHCP_RELAY_PROFILE_ID = "dhcpRelayProfileId";
+    private static final String DHCP_RELAY_SERVICE_ID = "dhcpRelayServiceId";
+
+    private ConfigureDhcpWorkflowDocument startState;
+    private NsxClientFactory nsxClientFactory;
+    private NsxClientMock nsxClientMock;
+    private TestEnvironment testEnvironment;
+
+    @BeforeMethod
+    public void setUpTest() throws Throwable {
+
+      startState = buildStartState(
+          TaskState.TaskStage.CREATED,
+          null,
+          new ControlFlags.Builder().build());
+
+      nsxClientFactory = mock(NsxClientFactory.class);
+    }
+
+    @AfterMethod
+    public void tearDownTest() throws Throwable {
+      if (null != testEnvironment) {
+        testEnvironment.stop();
+        testEnvironment = null;
+      }
+    }
+
+    @Test(dataProvider = "hostCount")
+    public void succeedsToConfigureDhcp(int hostCount) throws Throwable {
+      nsxClientMock = new NsxClientMock.Builder()
+          .createDhcpRelayProfile(true, DHCP_RELAY_PROFILE_ID)
+          .createDhcpRelayService(true, DHCP_RELAY_SERVICE_ID)
+          .build();
+      doReturn(nsxClientMock).when(nsxClientFactory).create(anyString(), anyString(), anyString());
+
+      testEnvironment = new TestEnvironment.Builder()
+          .hostCount(hostCount)
+          .cloudStoreHelper(new CloudStoreHelper())
+          .nsxClientFactory(nsxClientFactory)
+          .build();
+
+      createDeploymentDocumentInCloudStore(testEnvironment,
+          NETWORK_MANAGER_ADDRESS,
+          NETWORK_MANAGER_USERNAME,
+          NETWORK_MANAGER_PASSWORD);
+
+      ConfigureDhcpWorkflowDocument finalState = testEnvironment.callServiceAndWaitForState(
+          ConfigureDhcpWorkflowService.FACTORY_LINK,
+          startState,
+          ConfigureDhcpWorkflowDocument.class,
+          (state) -> TaskState.TaskStage.FINISHED == state.taskState.stage);
+
+      // Verifies that NSX configuration is cached in the service document.
+      assertThat(finalState.nsxManagerEndpoint, Matchers.is(NETWORK_MANAGER_ADDRESS));
+      assertThat(finalState.username, Matchers.is(NETWORK_MANAGER_USERNAME));
+      assertThat(finalState.password, Matchers.is(NETWORK_MANAGER_PASSWORD));
+
+      // Verifies that the DHCP relay profile ID and service ID are cached in the service document,
+      // and persisted in the deployment entity.
+      DeploymentService.State expectedDeploymentState = finalState.taskServiceEntity;
+      DeploymentService.State actualDeploymentState = testEnvironment.getServiceState(
+          finalState.taskServiceEntity.documentSelfLink,
+          DeploymentService.State.class);
+      assertThat(expectedDeploymentState.dhcpRelayProfileId, is(DHCP_RELAY_PROFILE_ID));
+      assertThat(expectedDeploymentState.dhcpRelayServiceId, is(DHCP_RELAY_SERVICE_ID));
+      assertEquals(actualDeploymentState.dhcpRelayProfileId, expectedDeploymentState.dhcpRelayProfileId);
+      assertEquals(actualDeploymentState.dhcpRelayServiceId, expectedDeploymentState.dhcpRelayServiceId);
+    }
+
+    @Test(dataProvider = "hostCount")
+    public void failsToCreateDhcpRelayProfile(int hostCount) throws Throwable {
+      nsxClientMock = new NsxClientMock.Builder()
+          .createDhcpRelayProfile(false, DHCP_RELAY_PROFILE_ID)
+          .createDhcpRelayService(true, DHCP_RELAY_SERVICE_ID)
+          .build();
+      doReturn(nsxClientMock).when(nsxClientFactory).create(anyString(), anyString(), anyString());
+
+      testEnvironment = new TestEnvironment.Builder()
+          .hostCount(hostCount)
+          .cloudStoreHelper(new CloudStoreHelper())
+          .nsxClientFactory(nsxClientFactory)
+          .build();
+
+      createDeploymentDocumentInCloudStore(testEnvironment,
+          NETWORK_MANAGER_ADDRESS,
+          NETWORK_MANAGER_USERNAME,
+          NETWORK_MANAGER_PASSWORD);
+
+      ConfigureDhcpWorkflowDocument finalState = testEnvironment.callServiceAndWaitForState(
+          ConfigureDhcpWorkflowService.FACTORY_LINK,
+          startState,
+          ConfigureDhcpWorkflowDocument.class,
+          (state) -> TaskState.TaskStage.FAILED == state.taskState.stage);
+
+      // Verifies that DHCP relay profile ID is empty in the service document.
+      assertThat(finalState.taskServiceEntity.dhcpRelayProfileId, nullValue());
+    }
+
+    @Test(dataProvider = "hostCount")
+    public void failsToCreateDhcpRelayService(int hostCount) throws Throwable {
+      nsxClientMock = new NsxClientMock.Builder()
+          .createDhcpRelayProfile(true, DHCP_RELAY_PROFILE_ID)
+          .createDhcpRelayService(false, DHCP_RELAY_SERVICE_ID)
+          .build();
+      doReturn(nsxClientMock).when(nsxClientFactory).create(anyString(), anyString(), anyString());
+
+      testEnvironment = new TestEnvironment.Builder()
+          .hostCount(hostCount)
+          .cloudStoreHelper(new CloudStoreHelper())
+          .nsxClientFactory(nsxClientFactory)
+          .build();
+
+      createDeploymentDocumentInCloudStore(testEnvironment,
+          NETWORK_MANAGER_ADDRESS,
+          NETWORK_MANAGER_USERNAME,
+          NETWORK_MANAGER_PASSWORD);
+
+      ConfigureDhcpWorkflowDocument finalState = testEnvironment.callServiceAndWaitForState(
+          ConfigureDhcpWorkflowService.FACTORY_LINK,
+          startState,
+          ConfigureDhcpWorkflowDocument.class,
+          (state) -> TaskState.TaskStage.FAILED == state.taskState.stage);
+
+      // Verifies that DHCP relay service ID is empty in the service document.
+      assertThat(finalState.taskServiceEntity.dhcpRelayServiceId, nullValue());
+    }
+
+    @DataProvider(name = "hostCount")
+    public Object[][] getHostCount() {
+      return new Object[][]{
+          {1},
+          {TestEnvironment.DEFAULT_MULTI_HOST_COUNT}
+      };
     }
   }
 }

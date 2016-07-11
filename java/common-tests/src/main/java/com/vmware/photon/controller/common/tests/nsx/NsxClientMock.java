@@ -14,11 +14,16 @@
 package com.vmware.photon.controller.common.tests.nsx;
 
 import com.vmware.photon.controller.nsxclient.NsxClient;
+import com.vmware.photon.controller.nsxclient.apis.DhcpServiceApi;
 import com.vmware.photon.controller.nsxclient.apis.FabricApi;
 import com.vmware.photon.controller.nsxclient.apis.LogicalRouterApi;
 import com.vmware.photon.controller.nsxclient.apis.LogicalSwitchApi;
 import com.vmware.photon.controller.nsxclient.datatypes.NsxRouter;
 import com.vmware.photon.controller.nsxclient.datatypes.NsxSwitch;
+import com.vmware.photon.controller.nsxclient.models.DhcpRelayProfile;
+import com.vmware.photon.controller.nsxclient.models.DhcpRelayProfileCreateSpec;
+import com.vmware.photon.controller.nsxclient.models.DhcpRelayService;
+import com.vmware.photon.controller.nsxclient.models.DhcpRelayServiceCreateSpec;
 import com.vmware.photon.controller.nsxclient.models.FabricNode;
 import com.vmware.photon.controller.nsxclient.models.FabricNodeCreateSpec;
 import com.vmware.photon.controller.nsxclient.models.FabricNodeState;
@@ -65,14 +70,17 @@ public class NsxClientMock extends NsxClient {
   private FabricApi mockFabricApi;
   private LogicalSwitchApi mockLogicalSwitchApi;
   private LogicalRouterApi mockLogicalRouterApi;
+  private DhcpServiceApi mockDhcpServiceApi;
 
   private NsxClientMock(FabricApi mockFabricApi,
                         LogicalSwitchApi mockLogicalSwitchApi,
-                        LogicalRouterApi mockLogicalRouterApi) {
+                        LogicalRouterApi mockLogicalRouterApi,
+                        DhcpServiceApi mockDhcpServiceApi) {
     super("1.2.3.4", "username", "password");
     this.mockFabricApi = mockFabricApi;
     this.mockLogicalSwitchApi = mockLogicalSwitchApi;
     this.mockLogicalRouterApi = mockLogicalRouterApi;
+    this.mockDhcpServiceApi = mockDhcpServiceApi;
   }
 
   @Override
@@ -91,6 +99,11 @@ public class NsxClientMock extends NsxClient {
   }
 
   @Override
+  public DhcpServiceApi getDhcpServiceApi() {
+    return mockDhcpServiceApi;
+  }
+
+  @Override
   public String getHostThumbprint(String ipAddress, int port) {
     return "hostThumbprint";
   }
@@ -102,6 +115,7 @@ public class NsxClientMock extends NsxClient {
     private FabricApi mockFabricApi;
     private LogicalSwitchApi mockLogicalSwitchApi;
     private LogicalRouterApi mockLogicalRouterApi;
+    private DhcpServiceApi mockDhcpServiceApi;
 
     /**
      * Port state used for test:checkLogicalRouterPortExistence.
@@ -114,6 +128,7 @@ public class NsxClientMock extends NsxClient {
       mockFabricApi = mock(FabricApi.class);
       mockLogicalSwitchApi = mock(LogicalSwitchApi.class);
       mockLogicalRouterApi = mock(LogicalRouterApi.class);
+      mockDhcpServiceApi = mock(DhcpServiceApi.class);
     }
 
     public Builder registerFabricNode(boolean isSuccess,
@@ -641,8 +656,58 @@ public class NsxClientMock extends NsxClient {
       return this;
     }
 
+    public Builder createDhcpRelayProfile(boolean isSuccess,
+                                          String dhcpRelayProfileId) throws Throwable {
+      if (isSuccess) {
+        DhcpRelayProfile response = new DhcpRelayProfile();
+        response.setId(dhcpRelayProfileId);
+
+        doAnswer(invocation -> {
+          ((FutureCallback<DhcpRelayProfile>) invocation.getArguments()[1])
+              .onSuccess(response);
+          return null;
+        }).when(mockDhcpServiceApi).createDhcpRelayProfile(any(DhcpRelayProfileCreateSpec.class),
+            any(FutureCallback.class));
+      } else {
+        RuntimeException error = new RuntimeException("createDhcpRelayProfile failed");
+        doAnswer(invocation -> {
+          ((FutureCallback<DhcpRelayProfile>) invocation.getArguments()[1])
+              .onFailure(error);
+          return null;
+        }).when(mockDhcpServiceApi).createDhcpRelayProfile(any(DhcpRelayProfileCreateSpec.class),
+            any(FutureCallback.class));
+      }
+
+      return this;
+    }
+
+    public Builder createDhcpRelayService(boolean isSuccess,
+                                          String dhcpRelayServiceId) throws Throwable {
+      if (isSuccess) {
+        DhcpRelayService response = new DhcpRelayService();
+        response.setId(dhcpRelayServiceId);
+
+        doAnswer(invocation -> {
+          ((FutureCallback<DhcpRelayService>) invocation.getArguments()[1])
+              .onSuccess(response);
+          return null;
+        }).when(mockDhcpServiceApi).createDhcpRelayService(any(DhcpRelayServiceCreateSpec.class),
+            any(FutureCallback.class));
+      } else {
+        RuntimeException error = new RuntimeException("createDhcpRelayService failed");
+        doAnswer(invocation -> {
+          ((FutureCallback<DhcpRelayService>) invocation.getArguments()[1])
+              .onFailure(error);
+          return null;
+        }).when(mockDhcpServiceApi).createDhcpRelayService(any(DhcpRelayServiceCreateSpec.class),
+            any(FutureCallback.class));
+      }
+
+      return this;
+    }
+
     public NsxClientMock build() {
-      return new NsxClientMock(mockFabricApi, mockLogicalSwitchApi, mockLogicalRouterApi);
+      return new NsxClientMock(mockFabricApi, mockLogicalSwitchApi, mockLogicalRouterApi, mockDhcpServiceApi);
     }
   }
 

@@ -25,7 +25,6 @@ import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotBlank;
 import com.vmware.photon.controller.common.xenon.validation.NotEmpty;
-import com.vmware.photon.controller.common.xenon.validation.WriteOnce;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.ServiceDocumentDescription;
 
@@ -51,11 +50,6 @@ public class ConfigureDhcpWorkflowDocument extends ServiceDocument {
   @DefaultInteger(0)
   @Immutable
   public Integer controlFlags;
-
-  /**
-   * ID of the associated Deployment.
-   */
-  public String deploymentId;
 
   /**
    * Endpoint to the nsx manager.
@@ -86,18 +80,6 @@ public class ConfigureDhcpWorkflowDocument extends ServiceDocument {
   @NotEmpty
   @Immutable
   public List<String> dhcpServerAddresses;
-
-  /**
-   * ID of the DHCP relay profile.
-   */
-  @WriteOnce
-  public String dhcpRelayProfileId;
-
-  /**
-   * ID of the DHCP relay service.
-   */
-  @WriteOnce
-  public String dhcpRelayServiceId;
 
   /**
    * The DeploymentService.State object.

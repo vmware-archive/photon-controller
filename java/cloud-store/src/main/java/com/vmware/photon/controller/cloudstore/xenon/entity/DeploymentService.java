@@ -298,6 +298,16 @@ public class DeploymentService extends StatefulService {
     public String networkZoneId;
 
     /**
+     * This value represents the ID of the DHCP relay profile.
+     */
+    public String dhcpRelayProfileId;
+
+    /**
+     * This value represents the ID of the DHCP relay service.
+     */
+    public String dhcpRelayServiceId;
+
+    /**
      * This value represents the syslog endpoint for the deployment.
      */
     @Immutable
