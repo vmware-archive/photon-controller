@@ -111,7 +111,7 @@ public class Main {
     // it expects the first arg to be the string "server".
     String[] apiFeArgs = new String[2];
     apiFeArgs[0] = "server";
-    apiFeArgs[1] = args[1];
+    apiFeArgs[1] = args[0];
     ApiFeService.setupApiFeConfigurationForServerCommand(apiFeArgs);
     new ApiFeService().run(apiFeArgs);
 
