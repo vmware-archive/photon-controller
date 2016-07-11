@@ -338,6 +338,42 @@ public abstract class BaseWorkflowService <S extends ServiceDocument, T extends 
   }
 
   /**
+   * Moves the service to the FAILED state.
+   */
+  protected void fail(S state, S patchState, Throwable t) {
+    ServiceUtils.logSevere(this, t);
+    ServiceUtils.logInfo(this, "Failing task service for workflow %s", state.documentSelfLink);
+
+    try {
+      TaskServiceUtils.fail(
+          this,
+          ServiceDocumentUtils.getTaskServiceState(state),
+          t,
+          (op, ex) -> {
+            if (ex != null) {
+              ServiceUtils.logSevere(this, "Failed to fail task service: %s", ex.toString());
+              return;
+            }
+
+            try {
+              if (op != null) {
+                TaskService.State taskServiceFinalState = op.getBody(TaskService.State.class);
+                ServiceUtils.logInfo(this, "Task service failed.");
+                ServiceUtils.logInfo(this, taskServiceFinalState.toString());
+
+                ServiceDocumentUtils.setTaskServiceState(patchState, taskServiceFinalState);
+              }
+              TaskUtils.sendSelfPatch(this, patchState);
+            } catch (Throwable tt) {
+              ServiceUtils.logSevere(this, "Failed to fail workflow: %s", tt.toString());
+            }
+          });
+    } catch (Throwable throwable) {
+      ServiceUtils.logSevere(this, "Failed to fail workflow: %s", throwable.toString());
+    }
+  }
+
+  /**
    * Build a state object that can be used to submit a stage progress self patch.
    */
   protected S buildPatch(TaskState.TaskStage stage, E subStage) throws Throwable {
