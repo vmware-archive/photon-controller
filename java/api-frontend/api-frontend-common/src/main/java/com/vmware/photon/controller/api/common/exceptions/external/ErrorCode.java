@@ -114,6 +114,7 @@ public enum ErrorCode {
   INVALID_SECURITY_GROUP_FORMAT("InvalidSecurityGroupFormat", Response.Status.BAD_REQUEST),
   INVALID_FLAVOR_STATE("InvalidFlavorState", Response.Status.BAD_REQUEST),
   INVALID_NETWORK_STATE("InvalidNetworkState", Response.Status.BAD_REQUEST),
+  INVALID_NETWORK_CONFIG("InvalidNetworkConfig", Response.Status.BAD_REQUEST),
   INVALID_RESERVED_STATIC_IP_SIZE("InvalidReservedStaticIpSize", Response.Status.BAD_REQUEST),
   INVALID_LOGIN("InvalidLoginCredentials", Response.Status.BAD_REQUEST),
   IP_ADDRESS_IN_USE("IpAddressInUse", Response.Status.BAD_REQUEST),

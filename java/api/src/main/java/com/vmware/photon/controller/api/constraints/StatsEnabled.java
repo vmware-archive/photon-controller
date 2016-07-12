@@ -14,7 +14,7 @@
 package com.vmware.photon.controller.api.constraints;
 
 /**
- * Defines a constraint group that applies when auth is enabled.
+ * Defines a constraint group that applies when stats is enabled.
  */
 public interface StatsEnabled {
 }

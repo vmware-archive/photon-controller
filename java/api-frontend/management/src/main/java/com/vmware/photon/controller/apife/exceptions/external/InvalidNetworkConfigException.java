@@ -11,10 +11,18 @@
  * specific language governing permissions and limitations under the License.
  */
 
-package com.vmware.photon.controller.api.constraints;
+package com.vmware.photon.controller.apife.exceptions.external;
+
+import com.vmware.photon.controller.api.common.exceptions.external.ErrorCode;
+import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 
 /**
- * Defines a constraint group that applies when stats is disabled.
+ * Gets thrown when calling deployment but invalid network config is specified in deploy request.
  */
-public interface StatsDisabled {
+public class InvalidNetworkConfigException extends ExternalException {
+
+  public InvalidNetworkConfigException(String message) {
+    super(ErrorCode.INVALID_NETWORK_CONFIG, message, null);
+  }
+
 }
