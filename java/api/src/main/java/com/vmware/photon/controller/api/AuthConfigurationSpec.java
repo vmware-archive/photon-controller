@@ -43,22 +43,21 @@ public class AuthConfigurationSpec {
   private boolean enabled = false;
 
   @JsonProperty
-  @ApiModelProperty(value = "The tenant name to configure on LightWave", required = false)
+  @ApiModelProperty(value = "The tenant name to configure on LightWave")
   @Null(groups = {AuthDisabled.class})
   @NotNull(groups = {AuthEnabled.class})
   @Size(min = 1, groups = {AuthEnabled.class})
   private String tenant;
 
   @JsonProperty
-  @ApiModelProperty(value = "Password for the LightWave Administrator account.", required = false)
+  @ApiModelProperty(value = "Password for the LightWave Administrator account.")
   @Null(groups = {AuthDisabled.class})
   @NotNull(groups = {AuthEnabled.class})
   @Size(min = 1, groups = {AuthEnabled.class})
   private String password;
 
   @JsonProperty
-  @ApiModelProperty(value = "Security groups with system administrator privileges on Photon Controller.", required =
-      false)
+  @ApiModelProperty(value = "Security groups with system administrator privileges on Photon Controller.")
   @Null(groups = {AuthDisabled.class})
   @NotNull(groups = {AuthEnabled.class})
   @Size(min = 1, groups = {AuthEnabled.class})

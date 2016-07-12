@@ -14,12 +14,15 @@
 package com.vmware.photon.controller.api;
 
 import com.vmware.photon.controller.api.builders.NetworkConfigurationCreateSpecBuilder;
+import com.vmware.photon.controller.api.constraints.VirtualNetworkDisabled;
+import com.vmware.photon.controller.api.constraints.VirtualNetworkEnabled;
 import com.vmware.photon.controller.api.helpers.JsonHelpers;
 import com.vmware.photon.controller.api.helpers.Validator;
 
 import com.google.common.collect.ImmutableList;
 import org.apache.commons.collections.CollectionUtils;
 import org.hamcrest.MatcherAssert;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -55,31 +58,76 @@ public class NetworkConfigurationCreateSpecTest {
    */
   public class ValidationTest {
 
+    private final String[] virtualNetworkEnabledErrorMsgs = new String[]{
+        "networkManagerAddress is invalid IP or Domain Address (was null)",
+        "networkManagerPassword may not be null (was null)",
+        "networkManagerUsername may not be null (was null)",
+        "networkTopRouterId may not be null (was null)",
+        "networkZoneId may not be null (was null)"
+    };
+
+    private final String[] virtualNetworkDisabledErrorMsgs = new String[]{
+        "networkManagerAddress must be null (was e)",
+        "networkManagerPassword must be null (was p)",
+        "networkManagerUsername must be null (was u)",
+        "networkTopRouterId must be null (was r)",
+        "networkZoneId must be null (was z)"
+    };
+
     private Validator validator = new Validator();
 
-    @Test
-    public void testValidNetworkConfiguration() {
-      ImmutableList<String> violations = validator.validate(sampleNetworkConfigurationCreateSpec);
+    @Test(dataProvider = "validNetworkConfiguration")
+    public void testValidNetworkConfiguration(NetworkConfigurationCreateSpec spec) {
+      ImmutableList<String> violations;
+      if (spec.getVirtualNetworkEnabled()) {
+        violations = validator.validate(spec, VirtualNetworkEnabled.class);
+      } else {
+        violations = validator.validate(spec, VirtualNetworkDisabled.class);
+      }
+
       assertThat(violations.isEmpty(), is(true));
     }
 
-    @Test
-    public void testInvalidNetworkConfiguration() {
-      NetworkConfigurationCreateSpec networkConfigurationCreateSpec = new NetworkConfigurationCreateSpecBuilder()
-          .networkManagerAddress("invalidAddress")
-          .networkManagerUsername(null)
-          .networkManagerPassword(null)
-          .build();
-
-      String[] errorMsgs = new String[] {
-          "networkManagerAddress invalidAddress is invalid IP or Domain Address (was invalidAddress)",
-          "networkManagerPassword may not be null (was null)",
-          "networkManagerUsername may not be null (was null)"
+    @DataProvider(name = "validNetworkConfiguration")
+    public Object[][] getValidNetworkConfig() {
+      return new Object[][]{
+          {new NetworkConfigurationCreateSpecBuilder()
+              .virtualNetworkEnabled(false)
+              .build()},
+          {sampleNetworkConfigurationCreateSpec},
       };
+    }
 
-      ImmutableList<String> violations = validator.validate(networkConfigurationCreateSpec);
+    @Test(dataProvider = "invalidNetworkConfiguration")
+    public void testInvalidNetworkConfiguration(NetworkConfigurationCreateSpec spec, String[] errorMsgs) {
+      ImmutableList<String> violations;
+      if (spec.getVirtualNetworkEnabled()) {
+        violations = validator.validate(spec, VirtualNetworkEnabled.class);
+      } else {
+        violations = validator.validate(spec, VirtualNetworkDisabled.class);
+      }
+
       assertThat(violations.size(), is(errorMsgs.length));
       assertThat(CollectionUtils.isEqualCollection(violations, Arrays.asList(errorMsgs)), is(true));
+    }
+
+    @DataProvider(name = "invalidNetworkConfiguration")
+    public Object[][] getInvalidNetworkConfig() {
+      return new Object[][]{
+          {new NetworkConfigurationCreateSpecBuilder()
+              .virtualNetworkEnabled(true)
+              .build(),
+              virtualNetworkEnabledErrorMsgs},
+          {new NetworkConfigurationCreateSpecBuilder()
+              .virtualNetworkEnabled(false)
+              .networkManagerAddress("e")
+              .networkManagerUsername("u")
+              .networkManagerPassword("p")
+              .networkTopRouterId("r")
+              .networkZoneId("z")
+              .build(),
+              virtualNetworkDisabledErrorMsgs},
+      };
     }
   }
 
