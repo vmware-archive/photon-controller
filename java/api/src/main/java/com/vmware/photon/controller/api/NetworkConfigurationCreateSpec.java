@@ -14,6 +14,8 @@
 package com.vmware.photon.controller.api;
 
 import com.vmware.photon.controller.api.constraints.DomainOrIP;
+import com.vmware.photon.controller.api.constraints.VirtualNetworkDisabled;
+import com.vmware.photon.controller.api.constraints.VirtualNetworkEnabled;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -22,6 +24,7 @@ import com.wordnik.swagger.annotations.ApiModel;
 import com.wordnik.swagger.annotations.ApiModelProperty;
 
 import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Null;
 
 import java.util.Objects;
 
@@ -38,27 +41,33 @@ public class NetworkConfigurationCreateSpec {
   private boolean virtualNetworkEnabled = false;
 
   @JsonProperty
-  @ApiModelProperty(value = "The IP address of the network manager", required = true)
-  @NotNull
-  @DomainOrIP
+  @ApiModelProperty(value = "The IP address of the network manager")
+  @Null(groups = {VirtualNetworkDisabled.class})
+  @DomainOrIP(groups = {VirtualNetworkEnabled.class})
   private String networkManagerAddress;
 
   @JsonProperty
-  @ApiModelProperty(value = "The username for accessing the network manager", required = true)
-  @NotNull
+  @ApiModelProperty(value = "The username for accessing the network manager")
+  @Null(groups = {VirtualNetworkDisabled.class})
+  @NotNull(groups = {VirtualNetworkEnabled.class})
   private String networkManagerUsername;
 
   @JsonProperty
-  @ApiModelProperty(value = "The password for accessing the network manager", required = true)
-  @NotNull
+  @ApiModelProperty(value = "The password for accessing the network manager")
+  @Null(groups = {VirtualNetworkDisabled.class})
+  @NotNull(groups = {VirtualNetworkEnabled.class})
   private String networkManagerPassword;
 
   @JsonProperty
-  @ApiModelProperty(value = "The ID of the network zone which inter-connects all hosts", required = true)
+  @ApiModelProperty(value = "The ID of the network zone which inter-connects all hosts")
+  @Null(groups = {VirtualNetworkDisabled.class})
+  @NotNull(groups = {VirtualNetworkEnabled.class})
   private String networkZoneId;
 
   @JsonProperty
-  @ApiModelProperty(value = "The ID of the router for accessing outside network (i.e. Internet)", required = false)
+  @ApiModelProperty(value = "The ID of the router for accessing outside network (i.e. Internet)")
+  @Null(groups = {VirtualNetworkDisabled.class})
+  @NotNull(groups = {VirtualNetworkEnabled.class})
   private String networkTopRouterId;
 
   public boolean getVirtualNetworkEnabled() {

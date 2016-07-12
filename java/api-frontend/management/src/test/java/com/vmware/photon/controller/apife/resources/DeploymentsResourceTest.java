@@ -20,6 +20,7 @@ import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.builders.AuthConfigurationSpecBuilder;
 import com.vmware.photon.controller.api.builders.AuthInfoBuilder;
+import com.vmware.photon.controller.api.builders.NetworkConfigurationCreateSpecBuilder;
 import com.vmware.photon.controller.api.builders.StatsInfoBuilder;
 import com.vmware.photon.controller.apife.clients.DeploymentFeClient;
 import com.vmware.photon.controller.apife.resources.deployment.DeploymentsResource;
@@ -64,18 +65,18 @@ public class DeploymentsResourceTest extends ResourceTest {
   @Override
   protected void setUpResources() throws Exception {
     spec = new DeploymentCreateSpec();
+    spec.setAuth(new AuthConfigurationSpecBuilder().build());
     spec.setNtpEndpoint("0.0.0.0");
     spec.setSyslogEndpoint("0.0.0.1");
     spec.setImageDatastores(Collections.singleton("imageDatastore"));
-    spec.setStats(new StatsInfoBuilder().enabled(false).build());
+    spec.setNetworkConfiguration(new NetworkConfigurationCreateSpecBuilder().build());
+    spec.setStats(new StatsInfoBuilder().build());
 
     addResource(new DeploymentsResource(deploymentFeClient));
   }
 
   @Test
-  public void testSuccessfulCreateDeploymentWithAuthDisabled() throws Exception {
-    spec.setAuth(new AuthConfigurationSpecBuilder().build());
-
+  public void testSuccessfulDeploymentWithAllDisabled() throws Exception {
     Task task = new Task();
     task.setId(taskId);
     when(deploymentFeClient.create(spec)).thenReturn(task);
@@ -90,7 +91,7 @@ public class DeploymentsResourceTest extends ResourceTest {
   }
 
   @Test
-  public void testInvalidDeploymentWithAuthDisabled() throws Exception {
+  public void testInvalidDeploymentWithAllDisabled() throws Exception {
     spec.setAuth(new AuthConfigurationSpecBuilder().enabled(false).securityGroups(new ArrayList<String>()).build());
 
     Task task = new Task();
@@ -106,27 +107,10 @@ public class DeploymentsResourceTest extends ResourceTest {
     assertThat(apiError.getMessage(), containsString("securityGroups must be null"));
   }
 
-  @Test
-  public void testInvalidDeploymentWithStatsEnabled() throws Exception {
-    spec.setAuth(new AuthConfigurationSpecBuilder().enabled(false).build());
-    spec.setStats(new StatsInfoBuilder().enabled(true).storeEndpoint(null).build());
 
-    Task task = new Task();
-    task.setId(taskId);
-    when(deploymentFeClient.create(spec)).thenReturn(task);
-
-    Response response = createDeployment(spec);
-
-    assertThat(response.getStatus(), is(400));
-
-    ApiError apiError = response.readEntity(ApiError.class);
-    assertThat(apiError.getCode(), is("InvalidStatsConfig"));
-    assertThat(apiError.getMessage(), containsString("storeEndpoint may not be null"));
-    assertThat(apiError.getMessage(), containsString("storePort may not be null"));
-  }
 
   @Test
-  public void testSuccessfulCreateDeploymentWithAuthEnabled() throws Exception {
+  public void testSuccessfulWithAuthEnabled() throws Exception {
     spec.setAuth(new AuthConfigurationSpecBuilder()
         .enabled(true)
         .tenant("t")
@@ -148,7 +132,7 @@ public class DeploymentsResourceTest extends ResourceTest {
   }
 
   @Test
-  public void testInvalidDeploymentWithAuthEnabled() throws Exception {
+  public void testInvalidWithAuthEnabled() throws Exception {
     spec.setAuth(new AuthConfigurationSpecBuilder()
         .enabled(true)
         .tenant("t")
@@ -171,7 +155,7 @@ public class DeploymentsResourceTest extends ResourceTest {
   }
 
   @Test
-  public void testInvalidSecurityGroupFormatWithAuthEnabled() throws Exception {
+  public void testInvalidSecurityGroupFormat() throws Exception {
     spec.setAuth(new AuthConfigurationSpecBuilder()
         .enabled(true)
         .tenant("t")
@@ -191,6 +175,92 @@ public class DeploymentsResourceTest extends ResourceTest {
     assertThat(apiError.getCode(), is("InvalidSecurityGroupFormat"));
     assertThat(apiError.getMessage(),
         containsString("The security group format should match domain\\group"));
+  }
+
+  @Test
+  public void testSuccessfulWithStatsEnabled() throws Exception {
+    spec.setStats(new StatsInfoBuilder()
+        .enabled(true)
+        .storeEndpoint("10.1.1.1")
+        .storePort(8080)
+        .build());
+
+    Task task = new Task();
+    task.setId(taskId);
+    when(deploymentFeClient.create(spec)).thenReturn(task);
+
+    Response response = createDeployment(spec);
+
+    assertThat(response.getStatus(), is(201));
+    Task responseTask = response.readEntity(Task.class);
+    assertThat(responseTask, is(task));
+    assertThat(new URI(responseTask.getSelfLink()).isAbsolute(), is(true));
+    assertThat(responseTask.getSelfLink().endsWith(taskRoutePath), is(true));
+  }
+
+  @Test
+  public void testInvalidWithStatsEnabled() throws Exception {
+    spec.setStats(new StatsInfoBuilder().enabled(true).storeEndpoint(null).build());
+
+    Task task = new Task();
+    task.setId(taskId);
+    when(deploymentFeClient.create(spec)).thenReturn(task);
+
+    Response response = createDeployment(spec);
+
+    assertThat(response.getStatus(), is(400));
+
+    ApiError apiError = response.readEntity(ApiError.class);
+    assertThat(apiError.getCode(), is("InvalidStatsConfig"));
+    assertThat(apiError.getMessage(), containsString("storeEndpoint may not be null"));
+    assertThat(apiError.getMessage(), containsString("storePort may not be null"));
+  }
+
+  @Test
+  public void testSuccessfulWithNetworkConfigEnabled() throws Exception {
+    spec.setNetworkConfiguration(new NetworkConfigurationCreateSpecBuilder()
+        .virtualNetworkEnabled(true)
+        .networkManagerAddress("10.1.1.1")
+        .networkManagerUsername("u")
+        .networkManagerPassword("p")
+        .networkTopRouterId("rid")
+        .networkZoneId("zid")
+        .build());
+
+    Task task = new Task();
+    task.setId(taskId);
+    when(deploymentFeClient.create(spec)).thenReturn(task);
+
+    Response response = createDeployment(spec);
+
+    assertThat(response.getStatus(), is(201));
+    Task responseTask = response.readEntity(Task.class);
+    assertThat(responseTask, is(task));
+    assertThat(new URI(responseTask.getSelfLink()).isAbsolute(), is(true));
+    assertThat(responseTask.getSelfLink().endsWith(taskRoutePath), is(true));
+  }
+
+  @Test
+  public void testInvalidWithNetworkConfigEnabled() throws Exception {
+    spec.setNetworkConfiguration(new NetworkConfigurationCreateSpecBuilder()
+        .virtualNetworkEnabled(true)
+        .build());
+
+    Task task = new Task();
+    task.setId(taskId);
+    when(deploymentFeClient.create(spec)).thenReturn(task);
+
+    Response response = createDeployment(spec);
+
+    assertThat(response.getStatus(), is(400));
+
+    ApiError apiError = response.readEntity(ApiError.class);
+    assertThat(apiError.getCode(), is("InvalidNetworkConfig"));
+    assertThat(apiError.getMessage(), containsString("networkManagerUsername may not be null"));
+    assertThat(apiError.getMessage(), containsString("networkTopRouterId may not be null"));
+    assertThat(apiError.getMessage(), containsString("networkManagerAddress is invalid IP or Domain address"));
+    assertThat(apiError.getMessage(), containsString("networkManagerPassword may not be null"));
+    assertThat(apiError.getMessage(), containsString("networkZoneId may not be null"));
   }
 
   @Test
