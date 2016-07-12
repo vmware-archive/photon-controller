@@ -40,6 +40,8 @@ import com.vmware.photon.controller.deployer.deployengine.HostManagementVmAddres
 import com.vmware.photon.controller.deployer.deployengine.HostManagementVmAddressValidatorFactory;
 import com.vmware.photon.controller.deployer.deployengine.HttpFileServiceClient;
 import com.vmware.photon.controller.deployer.deployengine.HttpFileServiceClientFactory;
+import com.vmware.photon.controller.deployer.deployengine.ZookeeperClient;
+import com.vmware.photon.controller.deployer.deployengine.ZookeeperClientFactory;
 import com.vmware.photon.controller.deployer.healthcheck.HealthCheckHelper;
 import com.vmware.photon.controller.deployer.healthcheck.HealthCheckHelperFactory;
 import com.vmware.photon.controller.deployer.healthcheck.XenonBasedHealthChecker;
@@ -286,7 +288,8 @@ public class Main {
         new com.vmware.photon.controller.core.Main.HealthCheckHelperFactoryImpl();
     final ServiceConfiguratorFactory serviceConfiguratorFactory =
         new com.vmware.photon.controller.core.Main.ServiceConfiguratorFactoryImpl();
-
+    final ZookeeperClientFactory zookeeperServerSetBuilderFactory =
+        new com.vmware.photon.controller.core.Main.ZookeeperClientFactoryImpl();
     final HostManagementVmAddressValidatorFactory hostManagementVmAddressValidatorFactory = new
         com.vmware.photon.controller.core.Main.HostManagementVmAddressValidatorFactoryImpl();
 
@@ -294,11 +297,10 @@ public class Main {
         httpClient, apiFeServerSet, deployerConfig.getDeployerContext().getSharedSecret(), cloudStoreServerSet,
         Paths.get(deployerConfig.getDeployerContext().getScriptDirectory(), CLUSTER_SCRIPTS_DIRECTORY).toString());
 
-
     return new DeployerServiceGroup(deployerConfig.getDeployerContext(), dockerProvisionerFactory,
         apiClientFactory, deployerConfig.getContainersConfig(), listeningExecutorService,
         httpFileServiceClientFactory, authHelperFactory, healthCheckHelperFactory,
-        serviceConfiguratorFactory, null, hostManagementVmAddressValidatorFactory,
+        serviceConfiguratorFactory, zookeeperServerSetBuilderFactory, hostManagementVmAddressValidatorFactory,
         clusterManagerFactory);
   }
 
@@ -373,6 +375,20 @@ public class Main {
                                         String userName,
                                         String password) {
       return new HttpFileServiceClient(hostAddress, userName, password);
+    }
+  }
+
+  /**
+   * Implementation of ZookeeperClientFactory.
+   */
+  private static class ZookeeperClientFactoryImpl implements ZookeeperClientFactory {
+
+    private ZookeeperClientFactoryImpl() {
+    }
+
+    @Override
+    public ZookeeperClient create() {
+      return new ZookeeperClient(null);
     }
   }
 }
