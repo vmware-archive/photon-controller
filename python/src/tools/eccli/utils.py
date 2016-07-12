@@ -12,7 +12,7 @@
 import uuid
 
 from gen.flavors.ttypes import QuotaUnit, QuotaLineItem, Flavor
-from gen.resource.ttypes import Disk, DiskImage, CloneType, Vm, State
+from gen.resource.ttypes import Disk, DiskImage, CloneType, Vm, VmPowerState
 
 
 def createVmResource(image):
@@ -32,7 +32,7 @@ def createVmResource(image):
     vm = Vm()
     vm.id = str(uuid.uuid4())
     vm.flavor = "some-vm-flavor"
-    vm.state = State.STOPPED
+    vm.state = VmPowerState.STOPPED
     vm.flavor_info = Flavor()
     vm.flavor_info.name = "some-vm-flavor"
     vm.flavor_info.cost = [

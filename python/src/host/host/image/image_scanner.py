@@ -107,6 +107,9 @@ class DatastoreImageScannerTaskRunner(TaskRunner):
             # Skip vmdk flat file
             if vm_file.endswith("flat.vmdk"):
                 continue
+            # Skip vmdk sesparse file
+            if vm_file.endswith("sesparse.vmdk"):
+                continue
             vmdk_pathname = os.path.join(vm_dir, vm_file)
             self._logger.info("found vmdk: %s" % vmdk_pathname)
             try:
