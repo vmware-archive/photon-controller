@@ -846,7 +846,8 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
     }
 
     /**
-     * Verifies that when DELETE_LOGICAL_SWITCH sub-stage fails, the workflow will progress to FAILED state.
+     * Verifies that when DELETE_LOGICAL_SWITCH:DELETE_SWITCH sub-stage fails,
+     * the workflow will progress to FAILED state.
      */
     @Test(dataProvider = "hostCount")
     public void failsToDeleteLogicalSwitch(int hostCount) throws Throwable {
@@ -893,6 +894,60 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
       // Verifies that the task entity document is set to ERROR in cloud-store.
       TaskService.State taskServiceState = testEnvironment.getServiceState(finalState.taskServiceState.documentSelfLink,
           TaskService.State.class);
+      assertThat(taskServiceState, notNullValue());
+      assertThat(taskServiceState.state, is(TaskService.State.TaskState.ERROR));
+    }
+
+    /**
+     * Verifies that when DELETE_LOGICAL_SWITCH:WAIT_DELETE_SWITCH sub-stage fails,
+     * the workflow will progress to FAILED state.
+     */
+    @Test(dataProvider = "hostCount")
+    public void failsToWaitForDeleteLogicalSwitch(int hostCount) throws Throwable {
+      nsxClientMock = new NsxClientMock.Builder()
+              .listLogicalRouterPorts(true)
+              .deleteLogicalRouterPort(true)
+              .deleteLogicalPort(true)
+              .deleteLogicalRouter(true)
+              .deleteLogicalSwitch(true)
+              .checkLogicalRouterPortExistence(true)
+              .checkLogicalSwitchPortExistence(true)
+              .checkLogicalSwitchExistence(false)
+              .build();
+      doReturn(nsxClientMock).when(nsxClientFactory).create(any(String.class), any(String.class), any(String.class));
+
+      testEnvironment = new TestEnvironment.Builder()
+              .hostCount(hostCount)
+              .cloudStoreHelper(new CloudStoreHelper())
+              .nsxClientFactory(nsxClientFactory)
+              .build();
+
+      VirtualNetworkService.State virtualNetworkDocument = createVirtualNetworkDocumentInCloudStore(testEnvironment);
+      startState = buildValidStartState(
+              TaskState.TaskStage.CREATED,
+              null,
+              new ControlFlags.Builder().build(),
+              ServiceUtils.getIDFromDocumentSelfLink(virtualNetworkDocument.documentSelfLink));
+
+      testEnvironment.callServiceAndWaitForState(
+              DeploymentServiceFactory.SELF_LINK,
+              deploymentStartState,
+              DeploymentService.State.class,
+              (state) -> true);
+
+      DeleteVirtualNetworkWorkflowDocument finalState =
+              testEnvironment.callServiceAndWaitForState(
+                      DeleteVirtualNetworkWorkflowService.FACTORY_LINK,
+                      startState,
+                      DeleteVirtualNetworkWorkflowDocument.class,
+                      (state) -> TaskState.TaskStage.FAILED == state.taskState.stage);
+
+      // Verifies the cached task entity document.
+      assertThat(finalState.taskServiceState.state, is(TaskService.State.TaskState.ERROR));
+
+      // Verifies that the task entity document is set to ERROR in cloud-store.
+      TaskService.State taskServiceState = testEnvironment.getServiceState(finalState.taskServiceState.documentSelfLink,
+              TaskService.State.class);
       assertThat(taskServiceState, notNullValue());
       assertThat(taskServiceState.state, is(TaskService.State.TaskState.ERROR));
     }
