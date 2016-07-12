@@ -28,6 +28,7 @@ from gen.resource.ttypes import MksTicket
 from host.hypervisor.exceptions import DiskFileException
 from host.hypervisor.exceptions import DiskPathException
 from host.hypervisor.exceptions import DiskAlreadyExistException
+from host.hypervisor.exceptions import OperationNotAllowedException
 from host.hypervisor.exceptions import VmNotFoundException
 from host.hypervisor.exceptions import VmPowerStateException
 from host.hypervisor.esx.host_client import HostClient
@@ -54,7 +55,8 @@ ATTACHE_ERROR_MAP = {
     60101: DiskFileException,           # ERROR_ATTACHE_VIM_FAULT_FILE_FAULT
     60103: DiskAlreadyExistException,   # ERROR_ATTACHE_VIM_FAULT_FILE_ALREADY_EXISTS
     60104: VmPowerStateException,       # ERROR_ATTACHE_VIM_FAULT_INVALID_POWER_STATE
-    60106: DeviceBusyException          # ERROR_ATTACHE_VIM_FAULT_FILE_LOCKED
+    60106: DeviceBusyException,          # ERROR_ATTACHE_VIM_FAULT_FILE_LOCKED
+    60107: OperationNotAllowedException  # ERROR_ATTACHE_VIM_FAULT_OPERATION_NOT_ALLOWED
 }
 
 
@@ -266,7 +268,10 @@ class AttacheClient(HostClient):
 
     @attache_error_handler
     def delete_vm(self, vm_id, force):
-        vmPath = self._client.DeleteVM(self._session, vm_id)
+        k = 1
+        if not force:
+            k = 0
+        vmPath = self._client.DeleteVM(self._session, vm_id, k)
         vm_dir = os.path.dirname(vmPath)
         return vm_dir
 
