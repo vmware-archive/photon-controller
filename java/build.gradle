@@ -108,6 +108,10 @@ task javadoc(type: Javadoc) {
   classpath = files(subprojects.collect { project -> project.sourceSets.main.compileClasspath })
 }
 
+task rpm(type: Exec) {
+  commandLine 'true'
+}
+
 idea {
   project {
     jdkName = '1.8'
