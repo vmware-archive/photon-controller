@@ -249,7 +249,10 @@ class AttacheClient(HostClient):
     def get_vm_networks(self, vm_id):
         network_info = []
         for net in self._client.GetVmNetworks(self._session, vm_id):
-            info = VmNetworkInfo(network=net.name, mac_address=net.macAddress, is_connected=net.connected)
+            info = VmNetworkInfo(mac_address=net.macAddress, is_connected=net.connected)
+            if net.name:
+                # only set network if it is neither None nor empty string
+                info.network = net.name
             if net.ipAddress:
                 netmask = self._prefix_len_to_mask(net.prefixLength)
                 info.ip_address = Ipv4Address(ip_address=net.ipAddress, netmask=netmask)
