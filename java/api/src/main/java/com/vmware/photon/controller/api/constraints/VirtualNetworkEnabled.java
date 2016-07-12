@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 VMware, Inc. All Rights Reserved.
+ * Copyright 2016 VMware, Inc. All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not
  * use this file except in compliance with the License.  You may obtain a copy of
@@ -14,7 +14,7 @@
 package com.vmware.photon.controller.api.constraints;
 
 /**
- * Defines a constraint group that applies when stats is disabled.
+ * Defines a constraint group that applies when virtual network is enabled.
  */
-public interface StatsDisabled {
+public interface VirtualNetworkEnabled {
 }

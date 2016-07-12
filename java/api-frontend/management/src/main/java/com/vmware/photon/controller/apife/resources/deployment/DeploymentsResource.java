@@ -23,6 +23,7 @@ import com.vmware.photon.controller.apife.clients.DeploymentFeClient;
 import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
 import com.vmware.photon.controller.apife.resources.routes.DeploymentResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
+import com.vmware.photon.controller.apife.utils.NetworkConfigurationCreateSpecValidator;
 import com.vmware.photon.controller.apife.utils.SecurityGroupUtils;
 import com.vmware.photon.controller.apife.utils.StatsInfoValidator;
 import static com.vmware.photon.controller.api.common.Responses.generateCustomResponse;
@@ -75,8 +76,10 @@ public class DeploymentsResource {
       throws ExternalException, InternalException {
 
     AuthConfigurationSpecValidator.validate(deploymentCreateSpec.getAuth());
-    StatsInfoValidator.validate(deploymentCreateSpec.getStats());
     SecurityGroupUtils.validateSecurityGroupsFormat(deploymentCreateSpec.getAuth().getSecurityGroups());
+
+    NetworkConfigurationCreateSpecValidator.validate(deploymentCreateSpec.getNetworkConfiguration());
+    StatsInfoValidator.validate(deploymentCreateSpec.getStats());
 
     return generateCustomResponse(
         Response.Status.CREATED,

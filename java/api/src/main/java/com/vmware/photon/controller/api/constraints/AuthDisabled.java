@@ -14,7 +14,7 @@
 package com.vmware.photon.controller.api.constraints;
 
 /**
- * Defines a constraint group that applies when auth is diabled.
+ * Defines a constraint group that applies when auth is disabled.
  */
 public interface AuthDisabled {
 }
