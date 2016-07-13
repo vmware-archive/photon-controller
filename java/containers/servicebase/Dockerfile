@@ -1,6 +1,7 @@
 FROM vmware/photon:1.0
 
-RUN tdnf clean all \
+RUN tdnf makecache \
+  && tdnf clean all \
   && tdnf install -y wget \
   && tdnf install -y gzip \
   && tdnf install -y tar \
