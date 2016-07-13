@@ -391,6 +391,7 @@ public class ConfigureRoutingTaskServiceTest {
           {"nsxManagerEndpoint"},
           {"username"},
           {"password"},
+          {"dhcpRelayServiceId"},
           {"logicalSwitchPortDisplayName"},
           {"logicalSwitchId"},
           {"logicalTier1RouterDownLinkPortDisplayName"},
@@ -596,6 +597,7 @@ public class ConfigureRoutingTaskServiceTest {
     startState.nsxManagerEndpoint = "https://192.168.1.1";
     startState.username = "username";
     startState.password = "password";
+    startState.dhcpRelayServiceId = "dhcpRelayServiceId";
     startState.logicalSwitchPortDisplayName = "port-to-router";
     startState.logicalSwitchId = UUID.randomUUID().toString();
     startState.logicalTier1RouterDownLinkPortDisplayName = "port-to-switch";

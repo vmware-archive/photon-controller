@@ -32,6 +32,7 @@ import com.vmware.photon.controller.nsxclient.builders.LogicalPortCreateSpecBuil
 import com.vmware.photon.controller.nsxclient.builders.LogicalRouterDownLinkPortCreateSpecBuilder;
 import com.vmware.photon.controller.nsxclient.builders.LogicalRouterLinkPortOnTier0CreateSpecBuilder;
 import com.vmware.photon.controller.nsxclient.builders.LogicalRouterLinkPortOnTier1CreateSpecBuilder;
+import com.vmware.photon.controller.nsxclient.datatypes.LogicalServiceResourceType;
 import com.vmware.photon.controller.nsxclient.datatypes.NsxRouter;
 import com.vmware.photon.controller.nsxclient.models.IPSubnet;
 import com.vmware.photon.controller.nsxclient.models.LogicalPort;
@@ -43,6 +44,7 @@ import com.vmware.photon.controller.nsxclient.models.LogicalRouterLinkPortOnTier
 import com.vmware.photon.controller.nsxclient.models.LogicalRouterLinkPortOnTier1;
 import com.vmware.photon.controller.nsxclient.models.LogicalRouterLinkPortOnTier1CreateSpec;
 import com.vmware.photon.controller.nsxclient.models.ResourceReference;
+import com.vmware.photon.controller.nsxclient.models.ServiceBinding;
 import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
@@ -55,6 +57,9 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
 import javax.annotation.Nullable;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Implements an Xenon service that represents a task to configure the routing on a logical network.
@@ -206,15 +211,27 @@ public class ConfigureRoutingTaskService extends StatefulService {
     ipSubnet.setIpAddresses(ImmutableList.of(currentState.logicalTier1RouterDownLinkPortIp));
     ipSubnet.setPrefixLength(currentState.logicalTier1RouterDownLinkPortIpPrefixLen);
 
-    ResourceReference resourceReference = new ResourceReference();
-    resourceReference.setTargetId(currentState.logicalSwitchPortId);
+    ResourceReference logicalSwitchPortReference = new ResourceReference();
+    logicalSwitchPortReference.setTargetId(currentState.logicalSwitchPortId);
+
+    List<ServiceBinding> serviceBindings = new ArrayList<>();
+    if (currentState.dhcpRelayServiceId != null) {
+      ResourceReference dhcpRelayServiceReference = new ResourceReference();
+      dhcpRelayServiceReference.setTargetId(currentState.dhcpRelayServiceId);
+      dhcpRelayServiceReference.setTargetType(LogicalServiceResourceType.DHCP_RELAY_SERVICE.getValue());
+
+      ServiceBinding serviceBinding = new ServiceBinding();
+      serviceBinding.setServiceId(dhcpRelayServiceReference);
+      serviceBindings.add(serviceBinding);
+    }
 
     LogicalRouterDownLinkPortCreateSpec spec = new LogicalRouterDownLinkPortCreateSpecBuilder()
         .displayName(currentState.logicalTier1RouterDownLinkPortDisplayName)
         .logicalRouterId(currentState.logicalTier1RouterId)
         .resourceType(NsxRouter.PortType.DOWN_LINK_PORT)
         .subnets(ImmutableList.of(ipSubnet))
-        .linkedLogicalSwitchPortId(resourceReference)
+        .linkedLogicalSwitchPortId(logicalSwitchPortReference)
+        .serviceBindings(serviceBindings)
         .build();
 
     logicalRouterApi.createLogicalRouterDownLinkPort(spec,

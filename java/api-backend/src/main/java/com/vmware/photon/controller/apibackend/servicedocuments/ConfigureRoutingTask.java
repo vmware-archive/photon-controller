@@ -82,6 +82,12 @@ public class ConfigureRoutingTask extends ServiceDocument {
   @ServiceDocument.UsageOption(option = ServiceDocumentDescription.PropertyUsageOption.SENSITIVE)
   public String password;
 
+  /**
+   * ID of the nsx DHCP relay service.
+   */
+  @Immutable
+  public String dhcpRelayServiceId;
+
 
   /**
    * Display name of the logical switch port.

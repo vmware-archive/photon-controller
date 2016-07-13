@@ -579,6 +579,7 @@ public class CreateVirtualNetworkWorkflowServiceTest {
     private static final String LOGICAL_ROUTER_DONWLINK_PORT_ID = "logicalRouterDownlinkPortId";
     private static final String LOGICAL_ROUTER_UPLINK_PORT_ID = "logicalRouterUplinkPortId";
     private static final String TIER0_ROUTER_DOWNLINK_PORT_ID = "tier0RouterDownlinkPortId";
+    private static final String DHCP_RELAY_SERVICE_ID = "dhcpRelayServiceId";
 
     private CreateVirtualNetworkWorkflowDocument startState;
     private DeploymentService.State deploymentStartState;
@@ -602,6 +603,7 @@ public class CreateVirtualNetworkWorkflowServiceTest {
       deploymentStartState.networkManagerPassword = NETWORK_MANAGER_PASSWORD;
       deploymentStartState.networkZoneId = NETWORK_ZONE_ID;
       deploymentStartState.networkTopRouterId = NETWORK_TOP_ROUTER_ID;
+      deploymentStartState.dhcpRelayServiceId = DHCP_RELAY_SERVICE_ID;
 
       nsxClientFactory = mock(NsxClientFactory.class);
     }
@@ -684,6 +686,7 @@ public class CreateVirtualNetworkWorkflowServiceTest {
       assertThat(finalState.password, is(NETWORK_MANAGER_PASSWORD));
       assertThat(finalState.transportZoneId, is(NETWORK_ZONE_ID));
       assertThat(finalState.tier0RouterId, is(NETWORK_TOP_ROUTER_ID));
+      assertThat(finalState.dhcpRelayServiceId, is(DHCP_RELAY_SERVICE_ID));
 
       // Verifies that logical switch ID is cached in the service document, and persisted in the
       // virtual network entity.
@@ -787,6 +790,7 @@ public class CreateVirtualNetworkWorkflowServiceTest {
       assertThat(finalState.password, is(NETWORK_MANAGER_PASSWORD));
       assertThat(finalState.transportZoneId, is(NETWORK_ZONE_ID));
       assertThat(finalState.tier0RouterId, is(NETWORK_TOP_ROUTER_ID));
+      assertThat(finalState.dhcpRelayServiceId, is(DHCP_RELAY_SERVICE_ID));
 
       // Verifies that logical switch ID is cached in the service document, and persisted in the
       // virtual network entity.

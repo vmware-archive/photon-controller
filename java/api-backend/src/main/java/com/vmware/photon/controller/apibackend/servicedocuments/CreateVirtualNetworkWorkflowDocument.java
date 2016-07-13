@@ -136,6 +136,12 @@ public class CreateVirtualNetworkWorkflowDocument extends ServiceDocument{
   public String tier0RouterId;
 
   /**
+   * ID of the nsx DHCP relay service.
+   */
+  @WriteOnce
+  public String dhcpRelayServiceId;
+
+  /**
    * The VirtualNetworkService.State object.
    */
   @TaskServiceEntityField
