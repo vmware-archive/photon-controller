@@ -19,11 +19,15 @@ import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
 import com.vmware.photon.controller.common.xenon.deployment.MigrateDuringDeployment;
+import com.vmware.photon.controller.common.xenon.deployment.NoMigrationDuringDeployment;
 import com.vmware.photon.controller.common.xenon.migration.MigrateDuringUpgrade;
 import com.vmware.photon.controller.common.xenon.migration.MigrationUtils;
+import com.vmware.photon.controller.common.xenon.migration.NoMigrationDuringUpgrade;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.OperationProcessingChain;
+import com.vmware.xenon.common.RequestRouter;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
 
@@ -47,6 +51,104 @@ public class IpAllocatorService extends StatefulService {
     super.toggleOption(ServiceOption.REPLICATION, true);
     super.toggleOption(ServiceOption.OWNER_SELECTION, true);
     super.toggleOption(ServiceOption.INSTRUMENTATION, true);
+  }
+
+  @Override
+  public OperationProcessingChain getOperationProcessingChain() {
+    if (super.getOperationProcessingChain() != null) {
+      return super.getOperationProcessingChain();
+    }
+
+    RequestRouter myRouter = new RequestRouter();
+
+    myRouter.register(
+        Action.PATCH,
+        new RequestRouter.RequestBodyMatcher<AllocateIpToMacAddress>(
+            AllocateIpToMacAddress.class, "kind", AllocateIpToMacAddress.KIND),
+        this::handleAllocateIpToMacPatch, "Allocate IP to MAC address");
+
+    myRouter.register(
+        Action.PATCH,
+        new RequestRouter.RequestBodyMatcher<ReleaseIpForMacAddress>(
+            ReleaseIpForMacAddress.class, "kind", ReleaseIpForMacAddress.KIND),
+        this::handleReleaseIpForMacPatch, "Release Ip for MAC address");
+
+    OperationProcessingChain opProcessingChain = new OperationProcessingChain(this);
+    opProcessingChain.add(myRouter);
+    setOperationProcessingChain(opProcessingChain);
+    return opProcessingChain;
+  }
+
+  /**
+   * Class for allocating an available IP to the provided MAC address.
+   */
+  @NoMigrationDuringUpgrade
+  @NoMigrationDuringDeployment
+  public static class AllocateIpToMacAddress extends ServiceDocument {
+    public static final String KIND = AllocateIpToMacAddress.class.getCanonicalName();
+    public final String kind;
+    public String macAddress;
+
+    //We do not want to allow creating this patch without setting "kind".
+    //That will lead to handlePatch to be invoked with an empty patch wiping the state of the document clean.
+    //We also cannot set "kind" in default constructor as that would lead to all patches getting matched to StepUpdate
+    //in RequestRouter.RequestBodyMatcher
+    //That will lead to all patches other than StepUpdate to fail.
+    //Hence we make the default constructor private and provide a constructor that ensures this object
+    //is properly constructed.
+
+    private AllocateIpToMacAddress() {
+      kind = null;
+    }
+
+    public AllocateIpToMacAddress(String macAddress) {
+      if (macAddress == null) {
+        throw new IllegalArgumentException("macAddress cannot be null");
+      }
+
+      this.kind = KIND;
+      this.macAddress = macAddress;
+    }
+  }
+
+  /**
+   * Class for releasing IP allocated to the provided MAC address.
+   */
+  @NoMigrationDuringUpgrade
+  @NoMigrationDuringDeployment
+  public static class ReleaseIpForMacAddress extends ServiceDocument {
+    public static final String KIND = ReleaseIpForMacAddress.class.getCanonicalName();
+    public final String kind;
+    public String macAddress;
+
+    //We do not want to allow creating this patch without setting "kind".
+    //That will lead to handlePatch to be invoked with an empty patch wiping the state of the document clean.
+    //We also cannot set "kind" in default constructor as that would lead to all patches getting matched to StepUpdate
+    //in RequestRouter.RequestBodyMatcher
+    //That will lead to all patches other than StepUpdate to fail.
+    //Hence we make the default constructor private and provide a constructor that ensures this object
+    //is properly constructed.
+
+    private ReleaseIpForMacAddress() {
+      kind = null;
+    }
+
+    public ReleaseIpForMacAddress(String macAddress) {
+      if (macAddress == null) {
+        throw new IllegalArgumentException("macAddress cannot be null");
+      }
+
+      this.kind = KIND;
+      this.macAddress = macAddress;
+    }
+  }
+
+  public void handleAllocateIpToMacPatch(Operation patch) {
+    ServiceUtils.logInfo(this, "Patching service %s", getSelfLink());
+  }
+
+  public void handleReleaseIpForMacPatch(Operation patch) {
+    ServiceUtils.logInfo(this, "Patching service %s", getSelfLink());
   }
 
   @Override
