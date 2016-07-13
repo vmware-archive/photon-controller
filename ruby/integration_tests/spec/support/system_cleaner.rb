@@ -39,8 +39,13 @@ module EsxCloud
         delete_image image, stat
       end
 
-      client.find_all_networks.items.each do |network|
-        delete_network network, stat
+      # In physical network situation, all the networks need to be cleaned up
+      # at system level
+      deployment = client.find_all_api_deployments.items.first
+      unless deployment.network_configuration.virtual_network_enabled
+        client.find_all_networks.items.each do |network|
+          delete_network network, stat
+        end
       end
 
       clean_flavors
@@ -99,6 +104,9 @@ module EsxCloud
       stat
     end
 
+    # @param [Network] network
+    # @param [Hash] stat
+    # @return [Hash] stat
     def delete_network(network, stat = {})
       fail "delete network: network is nil!" unless network
 
@@ -133,6 +141,14 @@ module EsxCloud
 
       client.find_all_vms(project.id).items.flatten.each do |vm|
         delete_vm(vm, stat)
+      end
+
+      # Delete virtual networks under this project
+      deployment = client.find_all_api_deployments.items.first
+      if deployment.network_configuration.virtual_network_enabled
+        client.get_project_networks(project.id).items.flatten.each do |network|
+          delete_network(network, stat)
+        end
       end
 
       update_stat stat, "project", project.id

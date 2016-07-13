@@ -94,6 +94,12 @@ module EsxCloud
       end
 
       # @param [String] id
+      # @return [VirtualNetworkList]
+      def get_project_networks(id)
+        @api_client.get_project_networks(id)
+      end
+
+      # @param [String] id
       # @param [Hash] payload
       def set_project_security_groups(id, payload)
         cmd = "project set_security_groups '#{id}' '#{payload[:items].join(",")}'"
