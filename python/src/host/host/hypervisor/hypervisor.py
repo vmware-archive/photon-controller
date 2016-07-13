@@ -45,7 +45,7 @@ class Hypervisor(object):
         self.vm_manager = VmManager(self.host_client, self.datastore_manager)
         self.disk_manager = DiskManager(self.host_client, self.datastore_manager)
         self.image_manager = ImageManager(self.host_client, self.datastore_manager)
-        self.network_manager = NetworkManager(self.host_client, agent_config.networks)
+        self.network_manager = NetworkManager(self.host_client)
         self.system = System(self.host_client)
 
         options = PlacementOption(agent_config.memory_overcommit,

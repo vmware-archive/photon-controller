@@ -91,7 +91,6 @@ class TestUnitAgent(unittest.TestCase):
                                    "--hostname", "localhost",
                                    "--port", "1234",
                                    "--datastores", "ds1, ds2",
-                                   "--vm-network", "VM Network",
                                    "--wait-timeout", "5",
                                    "--stats-enabled", "True",
                                    "--stats-store-endpoint", "10.10.10.10",
@@ -104,7 +103,6 @@ class TestUnitAgent(unittest.TestCase):
         assert_that(self.agent.stats_host_tags, equal_to("MGMT,CLOUD"))
         assert_that(self.agent.host_port, equal_to(1234))
         assert_that(self.agent.datastores, equal_to(["ds1", "ds2"]))
-        assert_that(self.agent.networks, equal_to(["VM Network"]))
         assert_that(self.agent.wait_timeout, equal_to(5))
 
     def test_boostrap_ready(self):
@@ -129,7 +127,6 @@ class TestUnitAgent(unittest.TestCase):
 
         req = ProvisionRequest()
         req.datastores = ["ds3", "ds4"]
-        req.networks = ["Public"]
         req.memory_overcommit = 1.5
         req.image_datastores = set([ImageDatastore("ds3", True)])
         addr = ServerAddress(host="localhost", port=2345)
@@ -149,7 +146,6 @@ class TestUnitAgent(unittest.TestCase):
         assert_that(self.agent.hostname, equal_to("localhost"))
         assert_that(self.agent.host_port, equal_to(2345))
         assert_that(self.agent.datastores, equal_to(["ds3", "ds4"]))
-        assert_that(self.agent.networks, equal_to(["Public"]))
         assert_that(self.agent.memory_overcommit,
                     equal_to(1.5))
         assert_that(self.agent.image_datastores, equal_to(expected_image_ds))
@@ -166,7 +162,6 @@ class TestUnitAgent(unittest.TestCase):
         assert_that(self.agent.hostname, equal_to(None))
         assert_that(self.agent.host_port, equal_to(8835))
         assert_that(self.agent.datastores, equal_to([]))
-        assert_that(self.agent.networks, equal_to([]))
         # Unsetting memory overcommit should set it to the default value.
         self.assertEqual(self.agent.memory_overcommit, 1.0)
 
@@ -178,7 +173,6 @@ class TestUnitAgent(unittest.TestCase):
         # effects.
         req = ProvisionRequest()
         req.datastores = ["ds3", "ds4"]
-        req.networks = ["Public"]
         req.memory_overcommit = 0.5
         addr = ServerAddress(host="localhost", port=2345)
         req.address = addr
@@ -188,7 +182,6 @@ class TestUnitAgent(unittest.TestCase):
         assert_that(self.agent.hostname, equal_to(None))
         assert_that(self.agent.host_port, equal_to(8835))
         assert_that(self.agent.datastores, equal_to([]))
-        assert_that(self.agent.networks, equal_to([]))
         self.assertFalse(self.agent.bootstrap_ready)
         self.assertEqual(self.agent.memory_overcommit, 1.0)
 
@@ -203,7 +196,6 @@ class TestUnitAgent(unittest.TestCase):
 
         req = ProvisionRequest()
         req.datastores = ["ds3", "ds4"]
-        req.networks = ["Public"]
         req.stats_plugin_config = StatsPluginConfig()
         req.stats_plugin_config.enabled = False
         addr = ServerAddress(host="localhost", port=2345)
@@ -216,7 +208,6 @@ class TestUnitAgent(unittest.TestCase):
 
         req = ProvisionRequest()
         req.datastores = ["ds3", "ds4"]
-        req.networks = ["Public"]
         addr = ServerAddress(host="localhost", port=2345)
         req.address = addr
         self.agent.update_config(req)

@@ -38,7 +38,7 @@ class TestNetworkManager(unittest.TestCase):
         """
         vim_client = MagicMock()
         vim_client.get_networks.return_value = ["VM Network", "VM Network 2"]
-        network_manager = NetworkManager(vim_client, [])
+        network_manager = NetworkManager(vim_client)
         networks = network_manager.get_networks()
 
         assert_that(networks, has_length(2))
@@ -52,23 +52,8 @@ class TestNetworkManager(unittest.TestCase):
         vim_client = MagicMock()
         vim_client.get_networks.return_value = ["VM Network", "VM Network 2"]
 
-        # Verify identical list works.
-        network_manager = NetworkManager(vim_client, ["VM Network", "VM Network 2"])
-        networks = network_manager.get_vm_networks()
-        self.assertEqual(networks, ["VM Network", "VM Network 2"])
-
-        # Verify strict subset works
-        network_manager = NetworkManager(vim_client, ["VM Network"])
-        networks = network_manager.get_vm_networks()
-        self.assertEqual(networks, ["VM Network"])
-
-        # Verify we filter out invalid networks.
-        network_manager = NetworkManager(vim_client, ["FOOBAR", "VM Network"])
-        networks = network_manager.get_vm_networks()
-        self.assertEqual(networks, ["VM Network"])
-
-        # If no network is specified, return the actual network list.
-        network_manager = NetworkManager(vim_client, None)
+        # Verify the function returns the actual network list.
+        network_manager = NetworkManager(vim_client)
         networks = network_manager.get_vm_networks()
         self.assertEqual(networks, ["VM Network", "VM Network 2"])
 

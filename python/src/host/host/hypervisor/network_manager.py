@@ -19,33 +19,13 @@ class NetworkManager(object):
     """ ESX network manager implementation.
     """
 
-    def __init__(self, vim_client, configured_networks):
+    def __init__(self, vim_client):
         self.vim_client = vim_client
         self.logger = logging.getLogger(__name__)
-        self._configured_networks = configured_networks
-
-    def _validate_networks(self, configured_networks):
-        """ Validates the list of configured networks against the actual
-            list of VM networks available on the host and returns the
-            intersection unless the configured networks is an empty list.
-            If the configured networks is empty, it simply returns the
-            actual list.
-        """
-        networks = []
-        actual_networks = self.vim_client.get_networks()
-        if configured_networks:
-            for network in configured_networks:
-                if network not in actual_networks:
-                    self.logger.warning("Unknown network %s: Skipping" % network)
-                    continue
-                networks.append(network)
-        else:
-            networks = actual_networks
-        return networks
 
     def get_vm_networks(self):
-        """ Return the list of networks to use on this ESX server. """
-        return self._validate_networks(self._configured_networks)
+        """ Return the list of all actual networks on this ESX server. """
+        return self.vim_client.get_networks()
 
     def get_networks(self):
         """ This method will call vim_client to get a list of VM networks and
