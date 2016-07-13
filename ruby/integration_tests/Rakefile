@@ -79,6 +79,12 @@ namespace :seed do
   task :ensure_default_network do |task|
     EsxCloud::Config.init
     EsxCloud::Config.client = ApiClientHelper.management
+
+    # Only ensure default network exists for physical network since virtual network
+    # is not global.
+    deployment = EsxCloud::Config.client.find_all_api_deployments.items.first
+    return if deployment.network_configuration.virtual_network_enabled
+
     port_group = EsxCloud::TestHelpers.get_vm_port_group
 
     networks = EsxCloud::Config.client.find_all_networks.items
