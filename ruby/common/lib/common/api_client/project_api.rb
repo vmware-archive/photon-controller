@@ -106,6 +106,15 @@ module EsxCloud
       end
 
       # @param [String] id
+      # @return [VirtualNetworkList]
+      def get_project_networks(id)
+        response = @http_client.get("#{PROJECTS_ROOT}/#{id}/subnets")
+        check_response("Get networks for project '#{id}'", response, 200)
+
+        VirtualNetworkList.create_from_json(response.body)
+      end
+
+      # @param [String] id
       # @param [Hash] payload
       def set_project_security_groups(id, payload)
         response = @http_client.post_json("#{PROJECTS_ROOT}/#{id}/set_security_groups", payload)
