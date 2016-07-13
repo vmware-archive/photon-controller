@@ -96,7 +96,11 @@ public class XenonRestClientTest {
     StaticServerSet serverSet = new StaticServerSet(
         new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
 
-    xenonRestClient = spy(new XenonRestClient(serverSet, Executors.newFixedThreadPool(1)));
+    xenonRestClient = spy(
+        new XenonRestClient(
+        serverSet,
+        Executors.newFixedThreadPool(1),
+        Executors.newScheduledThreadPool(1)));
   }
 
   private String createDocument(ExampleService.ExampleServiceState exampleServiceState) throws Throwable {
@@ -141,7 +145,11 @@ public class XenonRestClientTest {
     }
 
     StaticServerSet serverSet = new StaticServerSet(servers);
-    xenonRestClient = spy(new XenonRestClient(serverSet, Executors.newFixedThreadPool(1)));
+    xenonRestClient = spy(
+        new XenonRestClient(
+            serverSet,
+            Executors.newFixedThreadPool(1),
+            Executors.newScheduledThreadPool(1)));
     xenonRestClient.start();
     return hosts;
   }
@@ -152,7 +160,11 @@ public class XenonRestClientTest {
     for (Integer i = 0; i < hosts.length; i++) {
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(hosts[i].getPreferredAddress(), hosts[i].getPort()));
-      xenonRestClients[i] = spy(new XenonRestClient(serverSet, Executors.newFixedThreadPool(1)));
+      xenonRestClients[i] = spy(
+          new XenonRestClient(
+              serverSet,
+              Executors.newFixedThreadPool(1),
+              Executors.newScheduledThreadPool(1)));
       xenonRestClients[i].start();
     }
 
@@ -804,7 +816,11 @@ public class XenonRestClientTest {
 
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-      xenonRestClient = spy(new XenonRestClient(serverSet, Executors.newFixedThreadPool(1)));
+      xenonRestClient = spy(
+          new XenonRestClient(
+              serverSet,
+              Executors.newFixedThreadPool(1),
+              Executors.newScheduledThreadPool(1)));
     }
 
     private String createDocument(ExampleService.ExampleServiceState exampleServiceState) throws Throwable {
@@ -1174,7 +1190,8 @@ public class XenonRestClientTest {
       servers1[2] = new InetSocketAddress("0.0.0.3", 3);
 
       StaticServerSet staticServerSet = new StaticServerSet(servers1);
-      XenonRestClient testXenonRestClient = new XenonRestClient(staticServerSet, Executors.newFixedThreadPool(1));
+      XenonRestClient testXenonRestClient =
+          new XenonRestClient(staticServerSet, Executors.newFixedThreadPool(1), Executors.newScheduledThreadPool(1));
       final URI result1 = testXenonRestClient.getServiceUri("/dummyPath");
       String result1Address = result1.getHost();
       if (result1Address.startsWith("[")) {
@@ -1195,7 +1212,8 @@ public class XenonRestClientTest {
       }
 
       staticServerSet = new StaticServerSet(servers2);
-      testXenonRestClient = new XenonRestClient(staticServerSet, Executors.newFixedThreadPool(1));
+      testXenonRestClient =
+          new XenonRestClient(staticServerSet, Executors.newFixedThreadPool(1), Executors.newScheduledThreadPool(1));
       final URI result2 = testXenonRestClient.getServiceUri("/dummyPath");
       String result2Address = result2.getHost();
       if (result2Address.startsWith("[")) {

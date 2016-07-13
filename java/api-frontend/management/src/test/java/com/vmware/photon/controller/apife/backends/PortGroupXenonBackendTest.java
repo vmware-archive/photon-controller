@@ -80,7 +80,8 @@ public class PortGroupXenonBackendTest {
 
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-      xenonClient = new ApiFeXenonRestClient(serverSet, Executors.newFixedThreadPool(1));
+      xenonClient =
+          new ApiFeXenonRestClient(serverSet, Executors.newFixedThreadPool(1), Executors.newScheduledThreadPool(1));
 
       portGroupBackend = new PortGroupXenonBackend(xenonClient);
     }
@@ -133,7 +134,8 @@ public class PortGroupXenonBackendTest {
 
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-      xenonClient = new ApiFeXenonRestClient(serverSet, Executors.newFixedThreadPool(1));
+      xenonClient =
+          new ApiFeXenonRestClient(serverSet, Executors.newFixedThreadPool(1), Executors.newScheduledThreadPool(1));
 
       portGroupBackend = new PortGroupXenonBackend(xenonClient);
 

@@ -83,7 +83,8 @@ public class DatastoreXenonBackendTest {
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
 
-      xenonClient = new ApiFeXenonRestClient(serverSet, Executors.newFixedThreadPool(1));
+      xenonClient =
+          new ApiFeXenonRestClient(serverSet, Executors.newFixedThreadPool(1), Executors.newScheduledThreadPool(1));
 
       datastoreBackend = new DatastoreXenonBackend(xenonClient);
     }
@@ -137,7 +138,8 @@ public class DatastoreXenonBackendTest {
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
 
-      xenonClient = new ApiFeXenonRestClient(serverSet, Executors.newFixedThreadPool(1));
+      xenonClient =
+          new ApiFeXenonRestClient(serverSet, Executors.newFixedThreadPool(1), Executors.newScheduledThreadPool(1));
 
       datastoreBackend = new DatastoreXenonBackend(xenonClient);
 

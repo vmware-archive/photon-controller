@@ -76,6 +76,7 @@ import com.vmware.photon.controller.apife.config.AuthConfig;
 import com.vmware.photon.controller.apife.config.ImageConfig;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.config.StatusConfig;
+import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.PhotonControllerServerSet;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
@@ -105,6 +106,8 @@ import java.net.InetSocketAddress;
 import java.util.UUID;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
@@ -172,6 +175,13 @@ public class ApiFeModule extends AbstractModule {
         workQueue,
         threadFactory
     );
+  }
+
+  @Provides
+  @Singleton
+  @ScheduledTaskExecutor
+  public ScheduledExecutorService getScheduledExecutorService() {
+    return Executors.newScheduledThreadPool(Constants.DEFAULT_SCHEDULED_THREAD_POOL_SIZE);
   }
 
   @Provides

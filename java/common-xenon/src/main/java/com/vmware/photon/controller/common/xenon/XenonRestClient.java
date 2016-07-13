@@ -50,7 +50,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -79,18 +79,27 @@ public class XenonRestClient implements XenonClient {
   private ServerSet serverSet;
   private URI localHostUri;
   private List<String> localHostIpAddresses;
+  private ScheduledExecutorService scheduledExecutorService;
 
   @Inject
-  public XenonRestClient(ServerSet serverSet, ExecutorService executor) {
+  public XenonRestClient(ServerSet serverSet,
+                         ExecutorService executor,
+                         ScheduledExecutorService scheduledExecutorService) {
+
     checkNotNull(serverSet, "Cannot construct XenonRestClient with null serverSet");
     checkNotNull(executor, "Cannot construct XenonRestClient with null executor");
+    checkNotNull(scheduledExecutorService, "Cannot construct XenonRestClient with null scheduledExecutorService");
 
+    // Since only a single instance of the rest client class is instantiated per system and scheduled executor is only
+    // used in this class, we can create it here instead of passing a singleton through the constructor.
+    this.scheduledExecutorService = scheduledExecutorService;
     this.serverSet = serverSet;
     try {
       client = (NettyHttpServiceClient) NettyHttpServiceClient.create(
           XenonRestClient.class.getCanonicalName(),
           executor,
-          Executors.newScheduledThreadPool(0));
+          scheduledExecutorService
+      );
     } catch (URISyntaxException uriSyntaxException) {
       logger.error("ctor: URISyntaxException={}", uriSyntaxException.toString());
       throw new RuntimeException(uriSyntaxException);

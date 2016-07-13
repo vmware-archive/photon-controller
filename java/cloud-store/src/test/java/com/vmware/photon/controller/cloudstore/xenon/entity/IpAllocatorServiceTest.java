@@ -48,7 +48,8 @@ public class IpAllocatorServiceTest {
     ServiceHostUtils.startFactoryServices(host, CloudStoreServiceGroup.FACTORY_SERVICES_MAP);
 
     StaticServerSet serverSet = new StaticServerSet(new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-    xenonClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(128));
+    xenonClient =
+        new XenonRestClient(serverSet, Executors.newFixedThreadPool(128), Executors.newScheduledThreadPool(1));
     xenonClient.start();
   }
 

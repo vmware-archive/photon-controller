@@ -188,12 +188,13 @@ public class StatusFeClientTest {
 
     client = new StatusFeClient(
         executor,
+        Executors.newScheduledThreadPool(1),
         photonControllerServerSet,
         statusConfig);
 
     Map<Component, StatusProviderFactory> statusProviderFactories = client.getStatusProviderFactories();
     StatusProviderFactory photonControllerClientFactory = spy(new XenonStatusProviderFactory(
-        photonControllerServerSet, executor));
+        photonControllerServerSet, executor, Executors.newScheduledThreadPool(1)));
     setupStatusProviderFactory(photonControllerClientFactory, photonControllerClients);
     statusProviderFactories.put(Component.PHOTON_CONTROLLER, photonControllerClientFactory);
   }

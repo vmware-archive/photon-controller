@@ -20,6 +20,7 @@ import com.vmware.photon.controller.api.SystemStatus;
 import com.vmware.photon.controller.api.builders.ComponentInstanceBuilder;
 import com.vmware.photon.controller.api.builders.ComponentStatusBuilder;
 import com.vmware.photon.controller.apife.BackendTaskExecutor;
+import com.vmware.photon.controller.apife.ScheduledTaskExecutor;
 import com.vmware.photon.controller.apife.clients.status.StatusFeClientUtils;
 import com.vmware.photon.controller.apife.clients.status.StatusProviderFactory;
 import com.vmware.photon.controller.apife.clients.status.XenonStatusProviderFactory;
@@ -46,6 +47,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 
@@ -70,6 +72,7 @@ public class StatusFeClient {
   @Inject
   public StatusFeClient(
       @BackendTaskExecutor ExecutorService executor,
+      @ScheduledTaskExecutor ScheduledExecutorService scheduledExecutorService,
       @PhotonControllerServerSet ServerSet photonControllerServerSet,
       StatusConfig statusConfig) {
     this.executor = executor;
@@ -77,7 +80,7 @@ public class StatusFeClient {
 
     statusProviderFactories = Maps.newEnumMap(Component.class);
     statusProviderFactories.put(Component.PHOTON_CONTROLLER,
-            new XenonStatusProviderFactory(photonControllerServerSet, this.executor));
+            new XenonStatusProviderFactory(photonControllerServerSet, this.executor, scheduledExecutorService));
   }
 
   public SystemStatus getSystemStatus() throws InternalException {
