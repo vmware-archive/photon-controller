@@ -53,6 +53,8 @@ from gen.resource.ttypes import Image
 from gen.resource.ttypes import Locator
 from gen.resource.ttypes import NetworkType
 from gen.resource.ttypes import Resource
+from gen.resource.ttypes import ResourceConstraint
+from gen.resource.ttypes import ResourceConstraintType
 from gen.resource.ttypes import VmPowerState
 from gen.resource.ttypes import Vm
 from gen.resource.ttypes import VmLocator
@@ -155,7 +157,9 @@ class VmWrapper(object):
 
         resource = Resource(self._vm, None)
         resource.vm.disks = vm_disks
-        resource.vm.resource_constraints = vm_constraints
+        resource.vm.resource_constraints = list(vm_constraints)
+        resource.vm.resource_constraints.append(
+            ResourceConstraint(ResourceConstraintType.NETWORK, ["VM Network"]))
 
         return resource
 
@@ -798,8 +802,7 @@ class AgentCommonTests(object):
         vm_id = vm_wrapper.create(request=request).vm.id
         result = vm_wrapper.get_network(vm_id=vm_id)
         assert_that(len(result.network_info), is_(1))
-        assert_that(result.network_info[0].network == "VM Network" or
-                    result.network_info[0].network == "Network-0000")
+        assert_that(result.network_info[0].network == "VM Network")
 
         # delete the disk and the vm
         vm_wrapper.delete(request=vm_wrapper.delete_request())
@@ -884,7 +887,6 @@ class AgentCommonTests(object):
         """
         req = ProvisionRequest()
         req.datastores = ["bootstrap_datastore"]
-        req.networks = ["Bootstrap Network"]
         addr = ServerAddress(host="foobar", port=8835)
         req.address = addr
         req.memory_overcommit = 2.0
@@ -921,7 +923,6 @@ class AgentCommonTests(object):
         """
         req = ProvisionRequest()
         req.datastores = ["bootstrap_datastore"]
-        req.networks = ["Bootstrap Network"]
         addr = ServerAddress(host="foobar", port=8835)
         req.address = addr
         req.memory_overcommit = 0.5
