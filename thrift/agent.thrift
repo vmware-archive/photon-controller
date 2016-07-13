@@ -99,10 +99,6 @@ struct ProvisionRequest {
   // the host uses all the datastores.
   3: optional list<string> datastores
 
-  // The networks to use for cloud virtual machine workloads
-  // Specifying no networks will bring up a VM without networking.
-  4: optional list<string> networks
-
   // The host ip + port information for the thrift services to bind to.
   // Address update will result in agent restart.
   5: optional server_address.ServerAddress address
