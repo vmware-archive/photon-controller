@@ -134,7 +134,9 @@ public class ConstraintCheckerPerfTest {
   @DataProvider(name = "default")
   public Object[][] createDefault() throws Throwable {
     XenonRestClient xenonRestClient = new XenonRestClient(
-            cloudStoreTestEnvironment.getServerSet(), Executors.newFixedThreadPool(1));
+            cloudStoreTestEnvironment.getServerSet(),
+        Executors.newFixedThreadPool(1),
+        Executors.newScheduledThreadPool(1));
     CloudStoreHelper cloudStoreHelper = new CloudStoreHelper(cloudStoreTestEnvironment.getServerSet());
     // This tests does tens of thousands of operation. We only log failures, so we can see what's happening.
     xenonRestClient.start();

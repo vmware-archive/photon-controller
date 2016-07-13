@@ -60,6 +60,8 @@ public class Constants {
 
   public static final int DHCP_AGENT_PORT = 17000;
 
+  public static final int DEFAULT_SCHEDULED_THREAD_POOL_SIZE = 10;
+
   private Constants() {
   }
 }

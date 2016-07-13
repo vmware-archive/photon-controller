@@ -114,7 +114,8 @@ public class DatastoreServiceTest {
           DatastoreServiceFactory.SELF_LINK, 10, 10);
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-      xenonRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
+      xenonRestClient =
+          new XenonRestClient(serverSet, Executors.newFixedThreadPool(1), Executors.newScheduledThreadPool(1));
       xenonRestClient.start();
       testState = getTestState();
     }
@@ -231,7 +232,8 @@ public class DatastoreServiceTest {
           DatastoreServiceFactory.SELF_LINK, 10, 10);
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-      xenonRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
+      xenonRestClient =
+          new XenonRestClient(serverSet, Executors.newFixedThreadPool(1), Executors.newScheduledThreadPool(1));
       xenonRestClient.start();
       testState = getTestState();
     }
@@ -342,7 +344,8 @@ public class DatastoreServiceTest {
           DatastoreServiceFactory.SELF_LINK, 10, 10);
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-      xenonRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
+      xenonRestClient =
+          new XenonRestClient(serverSet, Executors.newFixedThreadPool(1), Executors.newScheduledThreadPool(1));
       xenonRestClient.start();
       testState = getTestState();
     }
@@ -464,7 +467,8 @@ public class DatastoreServiceTest {
 
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
-      xenonRestClient = new XenonRestClient(serverSet, Executors.newFixedThreadPool(1));
+      xenonRestClient =
+          new XenonRestClient(serverSet, Executors.newFixedThreadPool(1), Executors.newScheduledThreadPool(1));
       xenonRestClient.start();
 
       testState = getTestState();

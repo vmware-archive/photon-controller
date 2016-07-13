@@ -24,6 +24,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
 
 /**
  * Class providing status via REST call to Xenon services.
@@ -34,10 +35,14 @@ public class XenonStatusProviderFactory implements StatusProviderFactory {
   private final ServerSet serverSet;
 
   private final ExecutorService executor;
+  private final ScheduledExecutorService scheduledExecutorService;
 
-  public XenonStatusProviderFactory(ServerSet serverSet, ExecutorService executor) {
+  public XenonStatusProviderFactory(ServerSet serverSet,
+                                    ExecutorService executor,
+                                    ScheduledExecutorService scheduledExecutorService) {
     this.serverSet = serverSet;
     this.executor = executor;
+    this.scheduledExecutorService = scheduledExecutorService;
   }
 
   @Override
@@ -48,7 +53,8 @@ public class XenonStatusProviderFactory implements StatusProviderFactory {
   @Override
   public StatusProvider create(InetSocketAddress server) throws InternalException {
     logger.info("Creating XenonRestClient as StatusProvider on {}", server);
-    XenonRestClient xenonRestClient = new XenonRestClient(new StaticServerSet(server), this.executor);
+    XenonRestClient xenonRestClient =
+        new XenonRestClient(new StaticServerSet(server), this.executor, this.scheduledExecutorService);
     return new XenonStatusProvider(xenonRestClient);
   }
 }

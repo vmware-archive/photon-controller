@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.apife.backends.clients;
 
 import com.vmware.photon.controller.apife.BackendTaskExecutor;
+import com.vmware.photon.controller.apife.ScheduledTaskExecutor;
 import com.vmware.photon.controller.common.PhotonControllerServerSet;
 import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.photon.controller.common.xenon.OperationUtils;
@@ -37,6 +38,7 @@ import org.slf4j.LoggerFactory;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeoutException;
 
 /**
@@ -50,8 +52,9 @@ public class ApiFeXenonRestClient extends XenonRestClient {
 
   @Inject
   public ApiFeXenonRestClient(@PhotonControllerServerSet ServerSet serverSet,
-                              @BackendTaskExecutor ExecutorService executor) {
-    super(serverSet, executor);
+                              @BackendTaskExecutor ExecutorService executor,
+                              @ScheduledTaskExecutor ScheduledExecutorService scheduledExecutorService) {
+    super(serverSet, executor, scheduledExecutorService);
   }
 
   @Override

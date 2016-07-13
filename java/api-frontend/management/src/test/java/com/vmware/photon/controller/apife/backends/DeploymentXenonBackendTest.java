@@ -1078,7 +1078,8 @@ public class DeploymentXenonBackendTest {
 
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host2.getPreferredAddress(), host2.getPort()));
-      ApiFeXenonRestClient xenonClient2 = new ApiFeXenonRestClient(serverSet, Executors.newFixedThreadPool(1));
+      ApiFeXenonRestClient xenonClient2 =
+          new ApiFeXenonRestClient(serverSet, Executors.newFixedThreadPool(1), Executors.newScheduledThreadPool(1));
       xenonClient2.start();
 
       DeploymentService.State deployment2 = new DeploymentService.State();
