@@ -19,11 +19,15 @@ import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
 import com.vmware.photon.controller.common.xenon.deployment.MigrateDuringDeployment;
+import com.vmware.photon.controller.common.xenon.deployment.NoMigrationDuringDeployment;
 import com.vmware.photon.controller.common.xenon.migration.MigrateDuringUpgrade;
 import com.vmware.photon.controller.common.xenon.migration.MigrationUtils;
+import com.vmware.photon.controller.common.xenon.migration.NoMigrationDuringUpgrade;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.OperationProcessingChain;
+import com.vmware.xenon.common.RequestRouter;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
 
@@ -47,6 +51,74 @@ public class IpAllocatorService extends StatefulService {
     super.toggleOption(ServiceOption.REPLICATION, true);
     super.toggleOption(ServiceOption.OWNER_SELECTION, true);
     super.toggleOption(ServiceOption.INSTRUMENTATION, true);
+  }
+
+  @Override
+  public OperationProcessingChain getOperationProcessingChain() {
+    if (super.getOperationProcessingChain() != null) {
+      return super.getOperationProcessingChain();
+    }
+
+    RequestRouter myRouter = new RequestRouter();
+
+    myRouter.register(
+        Action.PATCH,
+        new RequestRouter.RequestBodyMatcher<IpOperationPatch>(
+            IpOperationPatch.class, "kind", IpOperationPatch.Kind.AllocateIpToMAc),
+        this::handleAllocateIpToMacPatch, "Allocate IP to MAC address");
+
+    myRouter.register(
+        Action.PATCH,
+        new RequestRouter.RequestBodyMatcher<IpOperationPatch>(
+            IpOperationPatch.class, "kind", IpOperationPatch.Kind.ReleaseIpForMac),
+        this::handleReleaseIpForMacPatch, "Release Ip for MAC address");
+
+    OperationProcessingChain opProcessingChain = new OperationProcessingChain(this);
+    opProcessingChain.add(myRouter);
+    setOperationProcessingChain(opProcessingChain);
+    return opProcessingChain;
+  }
+
+  /**
+   * Class for allocating an available IP to the provided MAC address.
+   */
+  @NoMigrationDuringUpgrade
+  @NoMigrationDuringDeployment
+  public static class IpOperationPatch extends ServiceDocument {
+    /**
+     * Defines type of IP operations that are supported.
+     */
+    public enum Kind {
+      AllocateIpToMAc,
+      ReleaseIpForMac
+    };
+    public final Kind kind;
+    public String macAddress;
+
+    private IpOperationPatch() {
+      kind = null;
+    }
+
+    public IpOperationPatch(Kind kind, String macAddress) {
+      if (kind == null) {
+        throw new IllegalArgumentException("kind cannot be null");
+      }
+
+      if (macAddress == null) {
+        throw new IllegalArgumentException("macAddress cannot be null");
+      }
+
+      this.kind = kind;
+      this.macAddress = macAddress;
+    }
+  }
+
+  public void handleAllocateIpToMacPatch(Operation patch) {
+    ServiceUtils.logInfo(this, "Patching service %s", getSelfLink());
+  }
+
+  public void handleReleaseIpForMacPatch(Operation patch) {
+    ServiceUtils.logInfo(this, "Patching service %s", getSelfLink());
   }
 
   @Override
