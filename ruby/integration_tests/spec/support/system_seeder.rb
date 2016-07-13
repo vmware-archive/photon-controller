@@ -303,7 +303,7 @@ module EsxCloud
         spec = EsxCloud::NetworkCreateSpec.new(random_name("network-"), "Seeder Network", [get_vm_port_group])
         network = EsxCloud::Config.client.create_network(spec.to_hash)
       else
-        spec = EsxCloud::VirtualNetworkCreateSpec.new(random_name("network-"), "Seeder Virtual Network", "ROUTED")
+        spec = EsxCloud::VirtualNetworkCreateSpec.new(random_name("network-"), "Seeder Virtual Network", "ROUTED", 128, 16)
         network = EsxCloud::VirtualNetwork.create(project!.id, spec)
       end
       EsxCloud::Config.client.set_default(network.id)

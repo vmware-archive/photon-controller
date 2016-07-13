@@ -39,8 +39,13 @@ module EsxCloud
         delete_image image, stat
       end
 
-      client.find_all_networks.items.each do |network|
-        delete_network network, stat
+      # In physical network situation, all the networks need to be cleaned up
+      # at system level
+      deployment = client.find_all_api_deployments.items.first
+      unless deployment.network_configuration.virtual_network_enabled
+        client.find_all_networks.items.each do |network|
+          delete_network network, stat
+        end
       end
 
       clean_flavors

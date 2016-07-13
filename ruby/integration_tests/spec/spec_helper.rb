@@ -145,5 +145,11 @@ RSpec.configure do |config|
     ignoring_all_errors {
       cleaner.delete_tenant(EsxCloud::SystemSeeder.instance.tenant) if EsxCloud::SystemSeeder.instance.tenant
     }
+    ignoring_all_errors {
+      # Clean up the virtual network in system seeder, if any
+      if EsxCloud::SystemSeeder.instance.deployment.network_configuration.virtual_network_enabled and EsxCloud::SystemSeeder.instance.network
+        cleaner.delete_network(EsxCloud::SystemSeeder.instance.network)
+      end
+    }
   end
 end
