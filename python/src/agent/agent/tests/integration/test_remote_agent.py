@@ -128,7 +128,7 @@ class TestRemoteAgent(unittest.TestCase, AgentCommonTests):
         self.control_client = self.connect_client("AgentControl", AgentControl.Client, self.server)
 
     def provision_hosts(self, mem_overcommit=2.0,
-                        vm_networks=None, datastores=None, used_for_vms=True,
+                        datastores=None, used_for_vms=True,
                         image_ds=None, host_id=None,
                         deployment_id="test-deployment"):
         """ Provisions the agents on the remote hosts """
@@ -142,9 +142,6 @@ class TestRemoteAgent(unittest.TestCase, AgentCommonTests):
 
         req = ProvisionRequest()
         req.datastores = datastores
-        if vm_networks is None:
-            vm_networks = [self._vm_network]
-        req.networks = vm_networks
         req.address = ServerAddress(host=self.server, port=8835)
         req.memory_overcommit = mem_overcommit
         req.image_datastore_info = ImageDatastore(
@@ -191,12 +188,8 @@ class TestRemoteAgent(unittest.TestCase, AgentCommonTests):
         if "agent_remote_test" not in config:
             raise SkipTest()
 
-        # Set the default netork name and datastore name
-        self._vm_network = "VM Network"
+        # Set the default datastore name
         self._datastores = None
-
-        if "vm_network" in config["agent_remote_test"]:
-            self._vm_network = config["agent_remote_test"]["vm_network"]
 
         if "datastores" in config["agent_remote_test"]:
             datastores = config["agent_remote_test"]["datastores"]
@@ -337,7 +330,7 @@ class TestRemoteAgent(unittest.TestCase, AgentCommonTests):
                       if ds in datastores]
         self.assertEqual(containsDs, self.get_all_datastores())
         networks = [net.id for net in hostConfig.networks]
-        self.assertTrue(self._vm_network in networks)
+        self.assertEqual(networks, self.vim_client.get_networks())
         self.assertEqual(hostConfig.address, ServerAddress(host=self.server,
                                                            port=8835))
         self.assertTrue(hostConfig.management_only)
@@ -760,50 +753,6 @@ class TestRemoteAgent(unittest.TestCase, AgentCommonTests):
         vm_wrapper.detach_disks(vm_id, [disk_id_persistent])
         vm_wrapper.delete(request=vm_wrapper.delete_request())
         vm_wrapper.delete_disks([disk_id_persistent], validate=True)
-
-    def test_network_validation(self):
-        """ Test the creation of VMs with the right default networks"""
-
-        # Provision a host with no network specified and verify that the VM
-        # created has a valid network backing
-        self.provision_hosts(mem_overcommit=1.0, vm_networks=[])
-        # Make client connections again
-        self.client_connections()
-
-        vm_wrapper = VmWrapper(self.host_client)
-        image = DiskImage("ttylinux", CloneType.COPY_ON_WRITE)
-        disks = [
-            Disk(new_id(), self.DEFAULT_DISK_FLAVOR.name, False, True,
-                 image=image, capacity_gb=1,
-                 flavor_info=self.DEFAULT_DISK_FLAVOR),
-        ]
-
-        # create disk
-        reservation = vm_wrapper.place_and_reserve(vm_disks=disks).reservation
-
-        # create vm without network info specified
-        request = vm_wrapper.create_request(res_id=reservation)
-        vm_id = vm_wrapper.create(request=request).vm.id
-        result = vm_wrapper.get_network(vm_id=vm_id)
-        assert_that(len(result.network_info), is_(1))
-        vm_wrapper.delete()
-
-        # Provision a host with one invalid and one valid network and verify
-        # that the VM gets created with the valid network backing.
-        self.provision_hosts(mem_overcommit=1.0,
-                             vm_networks=["invalid_net_name",
-                                          self._vm_network])
-        # Make client connections again
-        self.client_connections()
-        vm_wrapper = VmWrapper(self.host_client)
-        reservation = vm_wrapper.place_and_reserve(vm_disks=disks).reservation
-
-        request = vm_wrapper.create_request(res_id=reservation)
-        vm_id = vm_wrapper.create(request=request).vm.id
-        result = vm_wrapper.get_network(vm_id=vm_id)
-        assert_that(len(result.network_info), is_(1))
-        assert_that(result.network_info[0].network == self._vm_network)
-        vm_wrapper.delete()
 
     def test_place_on_multiple_datastores(self):
         """ Test placement can actually place vm to datastores without image.
