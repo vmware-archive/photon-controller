@@ -34,7 +34,6 @@ Modify /etc/opt/vmware/photon/controller/config.json. Here is a sample configura
     {
       "log_level": "debug",
       "datastores": ["datastore1"],
-      "vm_network": "VM Network",
       "fault_domain_id": "test"
     }
 

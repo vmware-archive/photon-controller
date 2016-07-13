@@ -53,7 +53,6 @@ class AgentConfig(object):
 
     # Default config file options that are always persisted.
     DATASTORES = "datastores"
-    VM_NETWORK = "vm_network"
     HOSTNAME = "hostname"
     HOST_PORT = "port"
     MEMORY_OVERCOMMIT = "memory_overcommit"
@@ -171,8 +170,6 @@ class AgentConfig(object):
         reboot = False
         reboot |= self._check_and_set_attr(
             self.DATASTORES, provision_req.datastores)
-        reboot |= self._check_and_set_attr(
-            self.VM_NETWORK, provision_req.networks)
 
         host = None
         port = self.DEFAULT_PORT_NUMBER
@@ -242,14 +239,6 @@ class AgentConfig(object):
         if datastores is None:
             return []
         return datastores
-
-    @property
-    @locked
-    def networks(self):
-        networks = getattr(self._options, self.VM_NETWORK)
-        if networks is None:
-            return []
-        return networks
 
     @property
     @locked
@@ -459,9 +448,6 @@ class AgentConfig(object):
         parser.add_option("--datastores", dest=self.DATASTORES, type="string",
                           default=None,
                           help="Comma separated list of datastore ids")
-        parser.add_option("--vm-network", dest=self.VM_NETWORK, type="string",
-                          default=None,
-                          help="Comma separated list of vm networks")
         parser.add_option("--workers", dest="workers", type="int", default=32)
         parser.add_option("--bootstrap-poll-frequency",
                           dest="bootstrap_poll_frequency",
@@ -587,8 +573,6 @@ class AgentConfig(object):
         """
         setattr(self._options, self.DATASTORES,
                 self._parse_list(getattr(self._options, self.DATASTORES)))
-        setattr(self._options, self.VM_NETWORK,
-                self._parse_list(getattr(self._options, self.VM_NETWORK)))
 
     def _parse_list(self, string_option):
         """

@@ -781,29 +781,6 @@ class AgentCommonTests(object):
             assert_that(response.result, is_(GetResourcesResultCode.OK))
             assert_that(response.resources, is_([]))
 
-    def test_default_network(self):
-        vm_wrapper = VmWrapper(self.host_client)
-        image = DiskImage("ttylinux", CloneType.COPY_ON_WRITE)
-        disks = [
-            Disk(new_id(), self.DEFAULT_DISK_FLAVOR.name, False, True,
-                 image=image, capacity_gb=1,
-                 flavor_info=self.DEFAULT_DISK_FLAVOR),
-        ]
-
-        # create disk
-        reservation = vm_wrapper.place_and_reserve(vm_disks=disks).reservation
-
-        # create vm without network info specified
-        request = vm_wrapper.create_request(res_id=reservation)
-        vm_id = vm_wrapper.create(request=request).vm.id
-        result = vm_wrapper.get_network(vm_id=vm_id)
-        assert_that(len(result.network_info), is_(1))
-        assert_that(result.network_info[0].network == "VM Network" or
-                    result.network_info[0].network == "Network-0000")
-
-        # delete the disk and the vm
-        vm_wrapper.delete(request=vm_wrapper.delete_request())
-
     def test_attach_detach_disks(self):
         vm_wrapper = VmWrapper(self.host_client)
 
@@ -884,7 +861,6 @@ class AgentCommonTests(object):
         """
         req = ProvisionRequest()
         req.datastores = ["bootstrap_datastore"]
-        req.networks = ["Bootstrap Network"]
         addr = ServerAddress(host="foobar", port=8835)
         req.address = addr
         req.memory_overcommit = 2.0
@@ -921,7 +897,6 @@ class AgentCommonTests(object):
         """
         req = ProvisionRequest()
         req.datastores = ["bootstrap_datastore"]
-        req.networks = ["Bootstrap Network"]
         addr = ServerAddress(host="foobar", port=8835)
         req.address = addr
         req.memory_overcommit = 0.5
