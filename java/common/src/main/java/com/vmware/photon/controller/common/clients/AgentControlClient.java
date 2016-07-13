@@ -194,7 +194,6 @@ public class AgentControlClient {
    * @param dataStoreList
    * @param imageDataStores
    * @param usedForVMs
-   * @param networkList
    * @param hostAddress
    * @param hostPort
    * @param memoryOverCommit
@@ -212,7 +211,6 @@ public class AgentControlClient {
       List<String> dataStoreList,
       Set<String> imageDataStores,
       boolean usedForVMs,
-      List<String> networkList,
       String hostAddress,
       int hostPort,
       double memoryOverCommit,
@@ -234,7 +232,6 @@ public class AgentControlClient {
 
     ProvisionRequest provisionRequest = new ProvisionRequest();
     provisionRequest.setDatastores(dataStoreList);
-    provisionRequest.setNetworks(networkList);
     provisionRequest.setAddress(new ServerAddress(hostAddress, hostPort));
     provisionRequest.setMemory_overcommit(memoryOverCommit);
     provisionRequest.setManagement_only(managementOnly);
@@ -260,7 +257,6 @@ public class AgentControlClient {
    * @param dataStoreList
    * @param imageDataStores
    * @param usedForVMs
-   * @param networkList
    * @param hostAddress
    * @param hostPort
    * @param memoryOverCommit
@@ -279,7 +275,6 @@ public class AgentControlClient {
       List<String> dataStoreList,
       Set<String> imageDataStores,
       boolean usedForVMs,
-      List<String> networkList,
       String hostAddress,
       int hostPort,
       double memoryOverCommit,
@@ -292,7 +287,7 @@ public class AgentControlClient {
       String ntpEndpoint)
       throws InterruptedException, RpcException {
     SyncHandler<ProvisionResponse, AgentControl.AsyncClient.provision_call> syncHandler = new SyncHandler<>();
-    provision(dataStoreList, imageDataStores, usedForVMs, networkList, hostAddress, hostPort,
+    provision(dataStoreList, imageDataStores, usedForVMs, hostAddress, hostPort,
         memoryOverCommit, loggingEndpoint, logLevel, statsPluginConfig,
         managementOnly, hostId, deploymentId, ntpEndpoint, syncHandler);
     syncHandler.await();
