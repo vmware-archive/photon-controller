@@ -35,8 +35,12 @@ import java.io.IOException;
  */
 public class FabricApi extends NsxClientApi {
 
+  public static final String FABRIC_NODES_BASE_PATH = BASE_PATH + "/fabric/nodes";
+  public static final String TRANSPORT_NODES_BASE_PATH = BASE_PATH + "/transport-nodes";
+  public static final String TRANSPORT_ZONES_BASE_PATH = BASE_PATH + "/transport-zones";
+
   /**
-   * Constructs a FabricApi class.
+   * Constructs a FabricApi object.
    */
   public FabricApi(RestClient restClient) {
     super(restClient);
@@ -48,51 +52,46 @@ public class FabricApi extends NsxClientApi {
   public void registerFabricNode(FabricNodeCreateSpec request,
                                  FutureCallback<FabricNode> responseCallback)
       throws IOException {
-    final String path = basePath + "/fabric/nodes";
-    postAsync(path,
+    postAsync(FABRIC_NODES_BASE_PATH,
         serializeObjectAsJson(request),
         HttpStatus.SC_CREATED,
-        new TypeReference<FabricNode>() {
-        },
+        new TypeReference<FabricNode>() {},
         responseCallback);
   }
 
   /**
    * Gets a NSX fabric node.
    */
-  public void getFabricNode(String nodeId,
+  public void getFabricNode(String id,
                             FutureCallback<FabricNode> responseCallback)
       throws IOException {
-    final String path = basePath + "/fabric/nodes/" + nodeId;
-    getAsync(path,
+    getAsync(FABRIC_NODES_BASE_PATH + "/" + id,
         HttpStatus.SC_OK,
-        new TypeReference<FabricNode>() {
-        },
+        new TypeReference<FabricNode>() {},
         responseCallback);
   }
 
   /**
    * Gets the state of a NSX fabric node.
    */
-  public void getFabricNodeState(String nodeId,
+  public void getFabricNodeState(String id,
                                  FutureCallback<FabricNodeState> responseCallback)
       throws IOException {
-    final String path = basePath + "/fabric/nodes/" + nodeId + "/state";
-    getAsync(path,
+    getAsync(FABRIC_NODES_BASE_PATH + "/" + id + "/state",
         HttpStatus.SC_OK,
-        new TypeReference<FabricNodeState>() {
-        },
+        new TypeReference<FabricNodeState>() {},
         responseCallback);
   }
 
   /**
    * Unregisters a NSX fabric node.
    */
-  public void unregisterFabricNode(String nodeId,
+  public void unregisterFabricNode(String id,
                                    FutureCallback<Void> responseCallback)
       throws IOException {
-    final String path = basePath + "/fabric/nodes/" + nodeId + "?unprepare_host=true";
-    deleteAsync(path, HttpStatus.SC_OK, responseCallback);
+    deleteAsync(FABRIC_NODES_BASE_PATH + "/" + id + "?unprepare_host=true",
+        HttpStatus.SC_OK,
+        responseCallback);
   }
 
   /**
@@ -101,12 +100,10 @@ public class FabricApi extends NsxClientApi {
   public void createTransportNode(TransportNodeCreateSpec request,
                                   FutureCallback<TransportNode> responseCallback)
       throws IOException {
-    final String path = basePath + "/transport-nodes";
-    postAsync(path,
+    postAsync(TRANSPORT_NODES_BASE_PATH,
         serializeObjectAsJson(request),
         HttpStatus.SC_CREATED,
-        new TypeReference<TransportNode>() {
-        },
+        new TypeReference<TransportNode>() {},
         responseCallback);
   }
 
@@ -116,11 +113,9 @@ public class FabricApi extends NsxClientApi {
   public void getTransportNode(String id,
                                FutureCallback<TransportNode> responseFutureCallback)
       throws IOException {
-    final String path = basePath + "/transport-nodes/" + id;
-    getAsync(path,
+    getAsync(TRANSPORT_NODES_BASE_PATH + "/" + id,
         HttpStatus.SC_OK,
-        new TypeReference<TransportNode>() {
-        },
+        new TypeReference<TransportNode>() {},
         responseFutureCallback);
   }
 
@@ -130,11 +125,9 @@ public class FabricApi extends NsxClientApi {
   public void getTransportNodeState(String id,
                                     FutureCallback<TransportNodeState> responseCallback)
       throws IOException {
-    final String path = basePath + "/transport-nodes/" + id + "/state";
-    getAsync(path,
+    getAsync(TRANSPORT_NODES_BASE_PATH + "/" + id + "/state",
         HttpStatus.SC_OK,
-        new TypeReference<TransportNodeState>() {
-        },
+        new TypeReference<TransportNodeState>() {},
         responseCallback);
   }
 
@@ -144,8 +137,9 @@ public class FabricApi extends NsxClientApi {
   public void deleteTransportNode(String id,
                                   FutureCallback<Void> responseCallback)
       throws IOException {
-    final String path = basePath + "/transport-nodes/" + id;
-    deleteAsync(path, HttpStatus.SC_OK, responseCallback);
+    deleteAsync(TRANSPORT_NODES_BASE_PATH + "/" + id,
+        HttpStatus.SC_OK,
+        responseCallback);
   }
 
   /**
@@ -154,12 +148,10 @@ public class FabricApi extends NsxClientApi {
   public void createTransportZone(TransportZoneCreateSpec request,
                                   FutureCallback<TransportZone> responseCallback)
       throws IOException {
-    final String path = basePath + "/transport-zones";
-    postAsync(path,
+    postAsync(TRANSPORT_ZONES_BASE_PATH,
         serializeObjectAsJson(request),
         HttpStatus.SC_CREATED,
-        new TypeReference<TransportZone>() {
-        },
+        new TypeReference<TransportZone>() {},
         responseCallback);
   }
 
@@ -169,11 +161,9 @@ public class FabricApi extends NsxClientApi {
   public void getTransportZone(String id,
                                FutureCallback<TransportZone> responseCallback)
       throws IOException {
-    final String path = basePath + "/transport-zones/" + id;
-    getAsync(path,
+    getAsync(TRANSPORT_ZONES_BASE_PATH + "/" + id,
         HttpStatus.SC_OK,
-        new TypeReference<TransportZone>() {
-        },
+        new TypeReference<TransportZone>() {},
         responseCallback);
   }
 
@@ -183,11 +173,9 @@ public class FabricApi extends NsxClientApi {
   public void getTransportZoneSummary(String id,
                                       FutureCallback<TransportZoneSummary> responseCallback)
       throws IOException {
-    final String path = basePath + "/transport-zones/" + id + "/summary";
-    getAsync(path,
+    getAsync(TRANSPORT_ZONES_BASE_PATH + "/" + id + "/summary",
         HttpStatus.SC_OK,
-        new TypeReference<TransportZoneSummary>() {
-        },
+        new TypeReference<TransportZoneSummary>() {},
         responseCallback);
   }
 
@@ -197,7 +185,8 @@ public class FabricApi extends NsxClientApi {
   public void deleteTransportZone(String id,
                                   FutureCallback<Void> responseCallback)
       throws IOException {
-    final String path = basePath + "/transport-zones/" + id;
-    deleteAsync(path, HttpStatus.SC_OK, responseCallback);
+    deleteAsync(TRANSPORT_ZONES_BASE_PATH + "/" + id,
+        HttpStatus.SC_OK,
+        responseCallback);
   }
 }

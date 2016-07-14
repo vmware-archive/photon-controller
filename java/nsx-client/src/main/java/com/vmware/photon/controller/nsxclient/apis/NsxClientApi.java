@@ -35,9 +35,11 @@ import java.io.IOException;
  * should extends this class.
  */
 public class NsxClientApi {
+
+  protected static final String BASE_PATH = "/api/v1";
+
   private final RestClient restClient;
   private final ObjectMapper objectMapper;
-  protected final String basePath = "/api/v1";
 
   /**
    * Constructs a NSX client api base class.
@@ -217,9 +219,6 @@ public class NsxClientApi {
    * Check if an NSX equipment is there.
    * For example, NSX does not provide the function to check if a port has been deleted successfully.
    * Adding this function to check if it is still there.
-   *
-   * @param path
-   * @return
    */
   protected void checkExistenceAsync(final String path,
                                      final FutureCallback<Boolean> responseCallback) throws IOException {

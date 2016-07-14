@@ -35,13 +35,11 @@ import java.io.IOException;
  */
 public class LogicalRouterApi extends NsxClientApi {
 
-  public final String logicalRouterBasePath = basePath + "/logical-routers";
-  public final String logicalRouterPortBasePath = basePath + "/logical-router-ports";
+  public static final String LOGICAL_ROUTERS_BASE_PATH = BASE_PATH + "/logical-routers";
+  public static final String LOGICAL_ROUTER_PORTS_BASE_PATH = BASE_PATH + "/logical-router-ports";
 
   /**
-   * Constructs a LogicalRouterApi class.
-   *
-   * @param restClient
+   * Constructs a LogicalRouterApi object.
    */
   public LogicalRouterApi(RestClient restClient) {
     super(restClient);
@@ -50,23 +48,24 @@ public class LogicalRouterApi extends NsxClientApi {
   /**
    * Creates a logical router.
    */
-  public void createLogicalRouter(LogicalRouterCreateSpec spec, FutureCallback<LogicalRouter> responseCallback)
+  public void createLogicalRouter(LogicalRouterCreateSpec spec,
+                                  FutureCallback<LogicalRouter> responseCallback)
       throws IOException {
-    postAsync(logicalRouterBasePath,
+    postAsync(LOGICAL_ROUTERS_BASE_PATH,
         serializeObjectAsJson(spec),
         HttpStatus.SC_CREATED,
-        new TypeReference<LogicalRouter>() {
-        },
+        new TypeReference<LogicalRouter>() {},
         responseCallback
     );
   }
 
   /**
-   * Gets a logical router async.
+   * Gets a logical router.
    */
-  public void getLogicalRouter(String id, FutureCallback<LogicalRouter> responseCallback)
+  public void getLogicalRouter(String id,
+                               FutureCallback<LogicalRouter> responseCallback)
       throws IOException {
-    getAsync(logicalRouterBasePath + "/" + id,
+    getAsync(LOGICAL_ROUTERS_BASE_PATH + "/" + id,
         HttpStatus.SC_OK,
         new TypeReference<LogicalRouter>() {},
         responseCallback
@@ -74,89 +73,75 @@ public class LogicalRouterApi extends NsxClientApi {
   }
 
   /**
-   * Deletes a logical router async.
+   * Deletes a logical router.
    */
-  public void deleteLogicalRouter(String id, FutureCallback<Void> responseCallback)
+  public void deleteLogicalRouter(String id,
+                                  FutureCallback<Void> responseCallback)
       throws IOException {
-    deleteAsync(logicalRouterBasePath + "/" + id, HttpStatus.SC_OK, responseCallback);
+    deleteAsync(LOGICAL_ROUTERS_BASE_PATH + "/" + id,
+        HttpStatus.SC_OK,
+        responseCallback);
   }
 
   /**
-   * Check the existence of a logical router.
-   * @param id
-   * @param responseCallback
-   * @throws IOException
+   * Checks the existence of a logical router.
    */
-  public void checkLogicalRouterExistence(String id, FutureCallback<Boolean> responseCallback) throws IOException {
-    checkExistenceAsync(logicalRouterBasePath + "/" + id, responseCallback);
+  public void checkLogicalRouterExistence(String id,
+                                          FutureCallback<Boolean> responseCallback)
+      throws IOException {
+    checkExistenceAsync(LOGICAL_ROUTERS_BASE_PATH + "/" + id,
+        responseCallback);
   }
 
   /**
-   * Create a downlink port on tier-1 router to switch.
-   * @param spec
-   * @param responseCallback
+   * Creates a downlink port on tier-1 router to switch.
    */
   public void createLogicalRouterDownLinkPort(LogicalRouterDownLinkPortCreateSpec spec,
                                               FutureCallback<LogicalRouterDownLinkPort> responseCallback)
       throws IOException {
-
-    postAsync(logicalRouterPortBasePath,
+    postAsync(LOGICAL_ROUTER_PORTS_BASE_PATH,
         serializeObjectAsJson(spec),
         HttpStatus.SC_CREATED,
-        new TypeReference<LogicalRouterDownLinkPort>() {
-        },
+        new TypeReference<LogicalRouterDownLinkPort>() {},
         responseCallback
     );
   }
 
   /**
-   * Create a port on tier0 router that connects to tier1 router.
-   *
-   * @param spec
-   * @param responseCallback
-   * @throws IOException
+   * Creates a port on tier0 router that connects to tier1 router.
    */
   public void createLogicalRouterLinkPortTier0(LogicalRouterLinkPortOnTier0CreateSpec spec,
                                                FutureCallback<LogicalRouterLinkPortOnTier0> responseCallback)
       throws IOException {
-
-    postAsync(logicalRouterPortBasePath,
+    postAsync(LOGICAL_ROUTER_PORTS_BASE_PATH,
         serializeObjectAsJson(spec),
         HttpStatus.SC_CREATED,
-        new TypeReference<LogicalRouterLinkPortOnTier0>() {
-        },
+        new TypeReference<LogicalRouterLinkPortOnTier0>() {},
         responseCallback
     );
   }
 
   /**
-   * Create a port on tier1 router that connects to tier0 router.
-   *
-   * @param spec
-   * @param responseCallback
-   * @throws IOException
+   * Creates a port on tier1 router that connects to tier0 router.
    */
   public void createLogicalRouterLinkPortTier1(LogicalRouterLinkPortOnTier1CreateSpec spec,
                                                FutureCallback<LogicalRouterLinkPortOnTier1> responseCallback)
-    throws IOException {
-
-    postAsync(logicalRouterPortBasePath,
+      throws IOException {
+    postAsync(LOGICAL_ROUTER_PORTS_BASE_PATH,
         serializeObjectAsJson(spec),
         HttpStatus.SC_CREATED,
-        new TypeReference<LogicalRouterLinkPortOnTier1>() {
-        },
+        new TypeReference<LogicalRouterLinkPortOnTier1>() {},
         responseCallback
     );
   }
 
   /**
-   * Get list of ports associated with router.
-   * @param id
-   * @param responseCallback
+   * Gets list of ports associated with the router.
    */
-  public void listLogicalRouterPorts(String id, FutureCallback<LogicalRouterPortListResult> responseCallback)
+  public void listLogicalRouterPorts(String id,
+                                     FutureCallback<LogicalRouterPortListResult> responseCallback)
       throws IOException {
-    getAsync(logicalRouterPortBasePath + "?logical_router_id=" + id,
+    getAsync(LOGICAL_ROUTER_PORTS_BASE_PATH + "?logical_router_id=" + id,
         HttpStatus.SC_OK,
         new TypeReference<LogicalRouterPortListResult>() {},
         responseCallback
@@ -164,21 +149,23 @@ public class LogicalRouterApi extends NsxClientApi {
   }
 
   /**
-   * Delete a router port.
-   * @param id
-   * @param responseCallback
+   * Deletes a router port.
    */
-  public void deleteLogicalRouterPort(String id, FutureCallback<Void> responseCallback) throws IOException {
-    deleteAsync(logicalRouterPortBasePath + "/" + id, HttpStatus.SC_OK, responseCallback);
+  public void deleteLogicalRouterPort(String id,
+                                      FutureCallback<Void> responseCallback)
+      throws IOException {
+    deleteAsync(LOGICAL_ROUTER_PORTS_BASE_PATH + "/" + id,
+        HttpStatus.SC_OK,
+        responseCallback);
   }
 
   /**
-   * Check the existence of a logical router port.
-   * @param id
-   * @param responseCallback
-   * @throws IOException
+   * Checks the existence of a logical router port.
    */
-  public void checkLogicalRouterPortExistence(String id, FutureCallback<Boolean> responseCallback) throws IOException {
-    checkExistenceAsync(logicalRouterPortBasePath + "/" + id, responseCallback);
+  public void checkLogicalRouterPortExistence(String id,
+                                              FutureCallback<Boolean> responseCallback)
+      throws IOException {
+    checkExistenceAsync(LOGICAL_ROUTER_PORTS_BASE_PATH + "/" + id,
+        responseCallback);
   }
 }

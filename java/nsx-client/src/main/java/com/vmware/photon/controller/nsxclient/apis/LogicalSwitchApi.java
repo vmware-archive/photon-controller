@@ -28,21 +28,27 @@ import org.apache.http.HttpStatus;
 import java.io.IOException;
 
 /**
- * Class for NSX logical switch related APIs.
+ * This is the class of the NSX Logical Switch API implementation.
  */
 public class LogicalSwitchApi extends NsxClientApi {
-  public final String logicalSwitchBasePath = basePath + "/logical-switches";
-  public final String logicalPortBasePath = basePath + "/logical-ports";
 
+  public static final String LOGICAL_SWITCHS_BASE_PATH = BASE_PATH + "/logical-switches";
+  public static final String LOGICAL_PORTS_BASE_PATH = BASE_PATH + "/logical-ports";
+
+  /**
+   * Constructs a LogicalSwitchApi object.
+   */
   public LogicalSwitchApi(RestClient restClient) {
     super(restClient);
   }
 
+  /**
+   * Creates a logical switch.
+   */
   public void createLogicalSwitch(LogicalSwitchCreateSpec spec,
                                   FutureCallback<LogicalSwitch> responseCallback)
       throws IOException {
-
-    postAsync(logicalSwitchBasePath,
+    postAsync(LOGICAL_SWITCHS_BASE_PATH,
         serializeObjectAsJson(spec),
         HttpStatus.SC_CREATED,
         new TypeReference<LogicalSwitch>() {
@@ -51,11 +57,13 @@ public class LogicalSwitchApi extends NsxClientApi {
     );
   }
 
+  /**
+   * Gets the state of a logical switch.
+   */
   public void getLogicalSwitchState(String id,
                                     FutureCallback<LogicalSwitchState> responseCallback)
-      throws Exception {
-
-    getAsync(logicalSwitchBasePath + "/" + id + "/state",
+      throws IOException {
+    getAsync(LOGICAL_SWITCHS_BASE_PATH + "/" + id + "/state",
         HttpStatus.SC_OK,
         new TypeReference<LogicalSwitchState>() {
         },
@@ -64,35 +72,46 @@ public class LogicalSwitchApi extends NsxClientApi {
   }
 
   /**
-   * Get list of ports.
-   * @param responseCallback
+   * Gets list of ports associated with the switch.
    */
   public void listLogicalSwitchPorts(FutureCallback<LogicalPortListResult> responseCallback)
       throws IOException {
-    getAsync(logicalPortBasePath,
+    getAsync(LOGICAL_PORTS_BASE_PATH,
         HttpStatus.SC_OK,
-        new TypeReference<LogicalPortListResult>() {},
+        new TypeReference<LogicalPortListResult>() {
+        },
         responseCallback
     );
   }
 
+  /**
+   * Deletes a logical switch.
+   */
   public void deleteLogicalSwitch(String id,
-                                  FutureCallback<Void> responseCallback) throws Exception {
-
-    deleteAsync(logicalSwitchBasePath + "/" + id,
+                                  FutureCallback<Void> responseCallback)
+      throws IOException {
+    deleteAsync(LOGICAL_SWITCHS_BASE_PATH + "/" + id,
         HttpStatus.SC_OK,
         responseCallback);
   }
 
-  public void checkLogicalSwitchExistence(String id, FutureCallback<Boolean> responseCallback) throws Exception {
-    checkExistenceAsync(logicalSwitchBasePath + "/" + id, responseCallback);
+  /**
+   * Checks the existence of a logical switch.
+   */
+  public void checkLogicalSwitchExistence(String id,
+                                          FutureCallback<Boolean> responseCallback)
+      throws IOException {
+    checkExistenceAsync(LOGICAL_SWITCHS_BASE_PATH + "/" + id,
+        responseCallback);
   }
 
+  /**
+   * Creates a port on the switch.
+   */
   public void createLogicalPort(LogicalPortCreateSpec spec,
                                 FutureCallback<LogicalPort> responseCallback)
     throws IOException {
-
-    postAsync(logicalPortBasePath,
+    postAsync(LOGICAL_PORTS_BASE_PATH,
         serializeObjectAsJson(spec),
         HttpStatus.SC_CREATED,
         new TypeReference<LogicalPort>() {
@@ -101,29 +120,41 @@ public class LogicalSwitchApi extends NsxClientApi {
     );
   }
 
-  public void deleteLogicalPort(String id, FutureCallback<Void> responseCallback) throws Exception {
-    deleteLogicalPort(id, responseCallback, false);
+  /**
+   * Deletes a port on the switch.
+   */
+  public void deleteLogicalPort(String id,
+                                FutureCallback<Void> responseCallback)
+      throws IOException {
+    deleteLogicalPort(id,
+        responseCallback,
+        false);
   }
 
+  /**
+   * Deletes a port on the switch.
+   */
   public void deleteLogicalPort(String id,
                                 FutureCallback<Void> responseCallback,
-                                boolean forceDetach) throws Exception {
-
-    String url = logicalPortBasePath + "/" + id;
+                                boolean forceDetach)
+      throws IOException {
+    String url = LOGICAL_PORTS_BASE_PATH + "/" + id;
     if (forceDetach) {
       url += "?detach=true";
     }
 
-    deleteAsync(url, HttpStatus.SC_OK, responseCallback);
+    deleteAsync(url,
+        HttpStatus.SC_OK,
+        responseCallback);
   }
 
   /**
    * Check the existence of a logical switch port.
-   * @param id
-   * @param responseCallback
-   * @throws IOException
    */
-  public void checkLogicalSwitchPortExistence(String id, FutureCallback<Boolean> responseCallback) throws IOException {
-    checkExistenceAsync(logicalPortBasePath + "/" + id, responseCallback);
+  public void checkLogicalSwitchPortExistence(String id,
+                                              FutureCallback<Boolean> responseCallback)
+      throws IOException {
+    checkExistenceAsync(LOGICAL_PORTS_BASE_PATH + "/" + id,
+        responseCallback);
   }
 }
