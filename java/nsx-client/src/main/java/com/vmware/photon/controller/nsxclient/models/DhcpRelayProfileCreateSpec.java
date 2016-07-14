@@ -16,6 +16,7 @@ package com.vmware.photon.controller.nsxclient.models;
 import com.vmware.photon.controller.nsxclient.datatypes.ServiceProfileResourceType;
 import com.vmware.photon.controller.nsxclient.utils.ToStringHelper;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;
@@ -24,6 +25,7 @@ import java.util.Objects;
 /**
  * This class represents a DhcpRelayProfileCreateSpec JSON structure.
  */
+@JsonIgnoreProperties(ignoreUnknown =  true)
 public class DhcpRelayProfileCreateSpec {
 
   @JsonProperty(value = "resource_type", required = true)
