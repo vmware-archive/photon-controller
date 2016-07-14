@@ -66,23 +66,6 @@ describe "migrate finalize", upgrade: true do
       map.select { |key,_| key.include? "photon" }
     end
 
-    it "should have all expected factories" do
-      destination_map = get_service_map URI.parse(ApiClientHelper.endpoint(nil, nil, nil))
-      destination_map = destination_map.select { |key,_| key.include? "photon" }
-
-      expected_new_services_at_destination = ["/photon/cloudstore/virtual-networks"]
-
-      # the two lists should be equal
-      uri = URI.parse(EsxCloud::TestHelpers.get_upgrade_source_address)
-      map = get_service_map uri
-      source_map = map.select { |key,_| key.include? "photon" }
-      source_services = source_map.keys
-      destination_services = destination_map.keys
-      expect(destination_services).to include(*source_services)
-      puts (destination_services - source_services - expected_new_services_at_destination)
-      expect((destination_services - source_services - expected_new_services_at_destination).size).to be 0
-    end
-
     self.get_upgrade_cloudstore_map.each do |k, v|
       it "should destination contain all the cloudstore content of the source" do
 
