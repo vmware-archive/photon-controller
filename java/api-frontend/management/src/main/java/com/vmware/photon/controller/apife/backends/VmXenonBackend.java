@@ -1009,13 +1009,13 @@ public class VmXenonBackend implements VmBackend {
 
     StepEntity step = new StepEntity();
     stepEntities.add(step);
-    step.addResources(entityList);
-    step.setOperation(Operation.DELETE_VM);
+    step.createOrUpdateTransientResource(ResourceReserveStepCmd.VM_ID, vm.getId());
+    step.setOperation(Operation.RELEASE_VM_IP);
 
     step = new StepEntity();
     stepEntities.add(step);
-    step.createOrUpdateTransientResource(ResourceReserveStepCmd.VM_ID, vm.getId());
-    step.setOperation(Operation.RELEASE_VM_IP);
+    step.addResources(entityList);
+    step.setOperation(Operation.DELETE_VM);
 
     // Conditional step. If virtual network is being used, the vm connection
     // to logical switch needs to be released.
