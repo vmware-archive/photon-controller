@@ -41,8 +41,6 @@ setup(name='photon.controller.agent',
               'Mock==1.0.1',
               'nose-testconfig==0.9',
               'pyhamcrest==1.8.0',
-              'PyYAML==3.11',
-              'pystache==0.5.4',
           ]
       },
       )
