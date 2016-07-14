@@ -171,7 +171,7 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
           break;
       }
     } catch (Throwable t) {
-      updateVirtualNetwork(state, SubnetState.ERROR, t);
+      fail(state, t);
     }
   }
 
@@ -278,7 +278,7 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
                 break;
               case FAILED:
               case CANCELLED:
-                updateVirtualNetwork(state, SubnetState.ERROR, new IllegalStateException(
+                fail(state, new IllegalStateException(
                     String.format("Failed to create logical switch: %s", result.taskState.failure.message)));
                 break;
             }
@@ -286,7 +286,7 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
 
           @Override
           public void onFailure(Throwable t) {
-            updateVirtualNetwork(state, SubnetState.ERROR, t);
+            fail(state, t);
           }
         }
     );
@@ -326,12 +326,12 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
                   patchState.taskServiceEntity.logicalRouterId = result.id;
                   progress(state, patchState);
                 } catch (Throwable t) {
-                  updateVirtualNetwork(state, SubnetState.ERROR, t);
+                  fail(state, t);
                 }
                 break;
               case FAILED:
               case CANCELLED:
-                updateVirtualNetwork(state, SubnetState.ERROR, new IllegalStateException(
+                fail(state, new IllegalStateException(
                     String.format("Failed to create logical switch: %s", result.taskState.failure.message)));
                 break;
             }
@@ -339,7 +339,7 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
 
           @Override
           public void onFailure(Throwable t) {
-            updateVirtualNetwork(state, SubnetState.ERROR, t);
+            fail(state, t);
           }
         }
     );
@@ -387,11 +387,11 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
                 state.taskServiceEntity.logicalRouterUplinkPortId = result.logicalLinkPortOnTier1Router;
                 state.taskServiceEntity.tier0RouterDownlinkPortId = result.logicalLinkPortOnTier0Router;
                 state.taskServiceEntity.tier0RouterId = state.tier0RouterId;
-                updateVirtualNetwork(state, SubnetState.READY, null);
+                finish(state);
                 break;
               case FAILED:
               case CANCELLED:
-                updateVirtualNetwork(state, SubnetState.ERROR, new IllegalStateException(
+                fail(state, new IllegalStateException(
                     String.format("Failed to configure routing: %s", result.taskState.failure.message)));
                 break;
             }
@@ -399,17 +399,39 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
 
           @Override
           public void onFailure(Throwable t) {
-            updateVirtualNetwork(state, SubnetState.ERROR, t);
+            fail(state, t);
           }
         }
     );
   }
 
   /**
+   * Updates the VirtualNetwork entity in cloud-store and Moves the service to the FAILED state.
+   */
+  protected void fail(CreateVirtualNetworkWorkflowDocument state, Throwable throwable) {
+    updateVirtualNetwork(state, SubnetState.ERROR);
+    super.fail(state, throwable);
+  }
+
+  /**
+   * Updates the VirtualNetwork entity in cloud-store and Moves the service to the FINISHED state.
+   */
+  protected void finish(CreateVirtualNetworkWorkflowDocument state) {
+    updateVirtualNetwork(state, SubnetState.READY);
+    try {
+      CreateVirtualNetworkWorkflowDocument patchState = buildPatch(TaskState.TaskStage.FINISHED, null);
+      patchState.taskServiceEntity = state.taskServiceEntity;
+      patchState.taskServiceEntity.state = SubnetState.READY;
+      finish(state, patchState);
+    } catch (Throwable t) {
+      fail(state, t);
+    }
+  }
+
+  /**
    * Updates the VirtualNetwork entity in cloud-store.
    */
-  private void updateVirtualNetwork(CreateVirtualNetworkWorkflowDocument state, SubnetState subnetState,
-                                    Throwable throwable) {
+  private void updateVirtualNetwork(CreateVirtualNetworkWorkflowDocument state, SubnetState subnetState) {
     VirtualNetworkService.State virtualNetworkPatchState = new VirtualNetworkService.State();
     virtualNetworkPatchState.state = subnetState;
     virtualNetworkPatchState.logicalSwitchId = state.taskServiceEntity.logicalSwitchId;
@@ -421,29 +443,14 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
     virtualNetworkPatchState.tier0RouterId = state.taskServiceEntity.tier0RouterId;
 
     ServiceHostUtils.getCloudStoreHelper(getHost())
-        .createPatch(state.taskServiceEntity.documentSelfLink)
-        .setBody(virtualNetworkPatchState)
-        .setCompletion((op, ex) -> {
-          if (subnetState.equals(SubnetState.ERROR)) {
-            fail(state, throwable);
-            return;
-          } else if (ex != null) {
-            fail(state, ex);
-            return;
-          }
-
-          try {
-            CreateVirtualNetworkWorkflowDocument patchState = buildPatch(
-                TaskState.TaskStage.FINISHED,
-                null);
-            patchState.taskServiceEntity = state.taskServiceEntity;
-            patchState.taskServiceEntity.state = SubnetState.READY;
-            finish(state, patchState);
-          } catch (Throwable t) {
-            fail(state, t);
-          }
-        })
-        .sendWith(this);
+      .createPatch(state.taskServiceEntity.documentSelfLink)
+      .setBody(virtualNetworkPatchState)
+      .setCompletion((op, ex) -> {
+        if (ex != null) {
+          ServiceUtils.logSevere(this, ex);
+        }
+      })
+      .sendWith(this);
   }
 
   /**
