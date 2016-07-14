@@ -4,6 +4,7 @@ set -x -e
 VERSION=$1
 DEBUG=$2
 
+cd rpms
 chown root:root ./SPECS/*
 chown root:root /usr/src/photon/SOURCES/*
 

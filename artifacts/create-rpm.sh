@@ -8,7 +8,8 @@ set -x -e
 BRANCH=${GERRIT_BRANCH:-`git rev-parse --abbrev-ref HEAD`}
 VERSION=${BRANCH}
 ROOT=`git rev-parse --show-toplevel`
-SOURCES_DIR="${ROOT}/java/rpms/SOURCES"
+SOURCES_DIR="${ROOT}/artifacts/rpms/SOURCES"
+SPECS_DIR="${ROOT}/artifacts/rpms/SPECS"
 TEMP_DIR=$(mktemp -d "${ROOT}/create_tar.XXXXX")
 TAR_PATH="/java/photon-controller-core/build/distributions/"
 TAR_PREFIX="photon-controller-core"
@@ -16,6 +17,9 @@ RPM_PREFIX="photon-controller"
 ENVOY_VIB_URL="http://artifactory.ec.eng.vmware.com/artifactory/esxcloud-archives/envoy/${BRANCH}/latest/vmware-envoy-latest.vib"
 
 trap "rm -rf ${TEMP_DIR}; rm -rf ${SOURCES_DIR};" EXIT
+
+rm -rf "${ROOT}${TAR_PATH}"/*
+(cd ../java; ./gradlew distTar)
 
 # Create source tar file for use by RPM spec file
 mkdir -p "${SOURCES_DIR}"
@@ -27,7 +31,7 @@ RPM_DIR="${RPM_PREFIX}-${VERSION}"
 mv ${TAR_PREFIX}* "${RPM_DIR}"
 tar -czf "${SOURCES_DIR}/${RPM_DIR}.tar" "${RPM_DIR}"
 
-cp "${SOURCES_DIR}"/../SPECS/* "${SOURCES_DIR}"
+cp "${SPECS_DIR}"/* "${SOURCES_DIR}"
 
 # Download pre-build ENVOY vib from artifactory. Ignore if not found, in the case when branches do not match in the URL.
 wget "${ENVOY_VIB_URL}" -P "${SOURCES_DIR}" || true
@@ -36,7 +40,6 @@ wget "${ENVOY_VIB_URL}" -P "${SOURCES_DIR}" || true
 cd "${ROOT}"/python
 make vib-only
 cp "${ROOT}"/python/dist/* "${SOURCES_DIR}"
-
 
 DEBUG_OPTIONS=""
 if [ "$DEBUG" == "true" ]; then
@@ -48,14 +51,14 @@ fi
 docker pull vmware/photon-controller-rpm-builder
 docker run -i ${DEBUG_OPTIONS} \
   -v "${ROOT}":/photon-controller \
-  -v "${ROOT}"/java/rpms/SOURCES/:/usr/src/photon/SOURCES \
-  -v "${ROOT}"/java/build/RPMS:/usr/src/photon/RPMS \
-  -w /photon-controller/java/rpms \
+  -v "${ROOT}"/artifacts/rpms/SOURCES/:/usr/src/photon/SOURCES \
+  -v "${ROOT}"/artifacts/build/RPMS:/usr/src/photon/RPMS \
+  -w /photon-controller/artifacts \
   vmware/photon-controller-rpm-builder \
-  scripts/create-rpm-helper.sh "${VERSION}" "${DEBUG}"
+  ./create-rpm-helper.sh "${VERSION}" "${DEBUG}"
 
 # Verify rpm was created and could be installed.
 docker run -i \
-  -v "${ROOT}"/java/build/RPMS/x86_64:/rpms \
+  -v "${ROOT}"/artifacts/build/RPMS/x86_64:/rpms \
   vmware/photon-controller-rpm-builder \
   bash -c 'ls /rpms/photon-controller*.rpm | xargs rpm -Uvh && [ -d /usr/lib/esxcloud/photon-controller-core ]'
