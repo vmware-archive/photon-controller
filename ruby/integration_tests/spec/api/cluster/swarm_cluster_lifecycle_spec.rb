@@ -58,7 +58,7 @@ describe "Swarm cluster-service lifecycle", cluster: true do
         type: "SWARM",
         vm_flavor: @seeder.vm_flavor!.name,
         disk_flavor: @seeder.ephemeral_disk_flavor!.name,
-        network_id: nil,
+        network_id: @seeder.network!.id,
         slave_count: 1,
         batch_size: nil,
         extended_properties: props
