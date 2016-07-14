@@ -84,7 +84,7 @@ public class LogicalSwitchApiTest {
         }
         return null;
       }).when(logicalSwitchApi)
-          .postAsync(eq(logicalSwitchApi.logicalSwitchBasePath),
+          .postAsync(eq(LogicalSwitchApi.LOGICAL_SWITCHS_BASE_PATH),
               any(HttpEntity.class),
               eq(HttpStatus.SC_CREATED),
               any(TypeReference.class),
@@ -119,7 +119,7 @@ public class LogicalSwitchApiTest {
         }
         return null;
       }).when(logicalSwitchApi)
-          .postAsync(eq(logicalSwitchApi.logicalSwitchBasePath),
+          .postAsync(eq(LogicalSwitchApi.LOGICAL_SWITCHS_BASE_PATH),
               any(HttpEntity.class),
               eq(HttpStatus.SC_CREATED),
               any(TypeReference.class),
@@ -177,7 +177,7 @@ public class LogicalSwitchApiTest {
         }
         return null;
       }).when(logicalSwitchApi)
-          .getAsync(eq(logicalSwitchApi.logicalSwitchBasePath + "/" + switchId + "/state"),
+          .getAsync(eq(LogicalSwitchApi.LOGICAL_SWITCHS_BASE_PATH + "/" + switchId + "/state"),
               eq(HttpStatus.SC_OK),
               any(TypeReference.class),
               any(FutureCallback.class));
@@ -213,7 +213,7 @@ public class LogicalSwitchApiTest {
         }
         return null;
       }).when(logicalSwitchApi)
-          .getAsync(eq(logicalSwitchApi.logicalSwitchBasePath + "/" + switchId + "/state"),
+          .getAsync(eq(LogicalSwitchApi.LOGICAL_SWITCHS_BASE_PATH + "/" + switchId + "/state"),
               eq(HttpStatus.SC_OK),
               any(TypeReference.class),
               any(FutureCallback.class));
@@ -264,7 +264,7 @@ public class LogicalSwitchApiTest {
         }
         return null;
       }).when(logicalSwitchApi)
-          .deleteAsync(eq(logicalSwitchApi.logicalSwitchBasePath + "/" + switchId),
+          .deleteAsync(eq(LogicalSwitchApi.LOGICAL_SWITCHS_BASE_PATH + "/" + switchId),
               eq(HttpStatus.SC_OK),
               any(FutureCallback.class));
 
@@ -297,7 +297,7 @@ public class LogicalSwitchApiTest {
         }
         return null;
       }).when(logicalSwitchApi)
-          .deleteAsync(eq(logicalSwitchApi.logicalSwitchBasePath + "/" + switchId),
+          .deleteAsync(eq(LogicalSwitchApi.LOGICAL_SWITCHS_BASE_PATH + "/" + switchId),
               eq(HttpStatus.SC_OK),
               any(FutureCallback.class));
 
@@ -431,7 +431,7 @@ public class LogicalSwitchApiTest {
           }
           return null;
         }).when(logicalSwitchApi)
-            .postAsync(eq(logicalSwitchApi.logicalPortBasePath),
+            .postAsync(eq(LogicalSwitchApi.LOGICAL_PORTS_BASE_PATH),
                 any(HttpEntity.class),
                 eq(HttpStatus.SC_CREATED),
                 any(TypeReference.class),
@@ -467,7 +467,7 @@ public class LogicalSwitchApiTest {
           }
           return null;
         }).when(logicalSwitchApi)
-            .postAsync(eq(logicalSwitchApi.logicalPortBasePath),
+            .postAsync(eq(LogicalSwitchApi.LOGICAL_PORTS_BASE_PATH),
                 any(HttpEntity.class),
                 eq(HttpStatus.SC_CREATED),
                 any(TypeReference.class),
@@ -519,7 +519,7 @@ public class LogicalSwitchApiTest {
       public void testSuccessfullyDeleted(boolean forceDetach) throws Exception {
         final String logicalPortId = UUID.randomUUID().toString();
 
-        String url = logicalSwitchApi.logicalPortBasePath + "/" + logicalPortId;
+        String url = LogicalSwitchApi.LOGICAL_PORTS_BASE_PATH + "/" + logicalPortId;
         if (forceDetach) {
           url += "?detach=true";
         }
@@ -558,7 +558,7 @@ public class LogicalSwitchApiTest {
         final String errorMsg = "Service is not available";
         final String logicalPortId = UUID.randomUUID().toString();
 
-        String url = logicalSwitchApi.logicalPortBasePath + "/" + logicalPortId;
+        String url = LogicalSwitchApi.LOGICAL_PORTS_BASE_PATH + "/" + logicalPortId;
         if (forceDetach) {
           url += "?detach=true";
         }
@@ -627,7 +627,7 @@ public class LogicalSwitchApiTest {
           }
           return null;
         }).when(logicalSwitchApi)
-            .getAsync(eq(logicalSwitchApi.logicalPortBasePath),
+            .getAsync(eq(LogicalSwitchApi.LOGICAL_PORTS_BASE_PATH),
                 eq(HttpStatus.SC_OK),
                 any(TypeReference.class),
                 any(FutureCallback.class));
@@ -661,7 +661,7 @@ public class LogicalSwitchApiTest {
           }
           return null;
         }).when(logicalSwitchApi)
-            .getAsync(eq(logicalSwitchApi.logicalPortBasePath),
+            .getAsync(eq(LogicalSwitchApi.LOGICAL_PORTS_BASE_PATH),
                 eq(HttpStatus.SC_OK),
                 any(TypeReference.class),
                 any(FutureCallback.class));

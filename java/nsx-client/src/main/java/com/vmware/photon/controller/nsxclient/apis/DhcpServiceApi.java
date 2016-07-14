@@ -30,11 +30,11 @@ import java.io.IOException;
  */
 public class DhcpServiceApi extends NsxClientApi {
 
-  public final String serviceProfileBasePath = basePath + "/service-profiles";
-  public final String serviceBasePath = basePath + "/services";
+  public static final String SERVICE_PROFILES_BASE_PATH = BASE_PATH + "/service-profiles";
+  public static final String SERVICES_BASE_PATH = BASE_PATH + "/services";
 
   /**
-   * Constructs a DhcpServiceApi class.
+   * Constructs a DhcpServiceApi object.
    */
   public DhcpServiceApi(RestClient restClient) {
     super(restClient);
@@ -46,11 +46,10 @@ public class DhcpServiceApi extends NsxClientApi {
   public void createDhcpRelayProfile(DhcpRelayProfileCreateSpec request,
                                      FutureCallback<DhcpRelayProfile> responseCallback)
       throws IOException {
-    postAsync(serviceProfileBasePath,
+    postAsync(SERVICE_PROFILES_BASE_PATH,
         serializeObjectAsJson(request),
         HttpStatus.SC_CREATED,
-        new TypeReference<DhcpRelayProfile>() {
-        },
+        new TypeReference<DhcpRelayProfile>() {},
         responseCallback);
   }
 
@@ -60,10 +59,9 @@ public class DhcpServiceApi extends NsxClientApi {
   public void getDhcpRelayProfile(String id,
                                   FutureCallback<DhcpRelayProfile> responseCallback)
       throws IOException {
-    getAsync(serviceProfileBasePath + "/" + id,
+    getAsync(SERVICE_PROFILES_BASE_PATH + "/" + id,
         HttpStatus.SC_OK,
-        new TypeReference<DhcpRelayProfile>() {
-        },
+        new TypeReference<DhcpRelayProfile>() {},
         responseCallback);
   }
 
@@ -73,7 +71,7 @@ public class DhcpServiceApi extends NsxClientApi {
   public void deleteDhcpRelayProfile(String id,
                                      FutureCallback<Void> responseCallback)
       throws IOException {
-    deleteAsync(serviceProfileBasePath + "/" + id,
+    deleteAsync(SERVICE_PROFILES_BASE_PATH + "/" + id,
         HttpStatus.SC_OK,
         responseCallback);
   }
@@ -84,11 +82,10 @@ public class DhcpServiceApi extends NsxClientApi {
   public void createDhcpRelayService(DhcpRelayServiceCreateSpec request,
                                      FutureCallback<DhcpRelayService> responseCallback)
       throws IOException {
-    postAsync(serviceBasePath,
+    postAsync(SERVICES_BASE_PATH,
         serializeObjectAsJson(request),
         HttpStatus.SC_CREATED,
-        new TypeReference<DhcpRelayService>() {
-        },
+        new TypeReference<DhcpRelayService>() {},
         responseCallback);
   }
 
@@ -98,10 +95,9 @@ public class DhcpServiceApi extends NsxClientApi {
   public void getDhcpRelayService(String id,
                                   FutureCallback<DhcpRelayService> responseCallback)
       throws IOException {
-    getAsync(serviceBasePath + "/" + id,
+    getAsync(SERVICES_BASE_PATH + "/" + id,
         HttpStatus.SC_OK,
-        new TypeReference<DhcpRelayService>() {
-        },
+        new TypeReference<DhcpRelayService>() {},
         responseCallback);
   }
 
@@ -111,7 +107,7 @@ public class DhcpServiceApi extends NsxClientApi {
   public void deleteDhcpRelayService(String id,
                                      FutureCallback<Void> responseCallback)
       throws IOException {
-    deleteAsync(serviceBasePath + "/" + id,
+    deleteAsync(SERVICES_BASE_PATH + "/" + id,
         HttpStatus.SC_OK,
         responseCallback);
   }

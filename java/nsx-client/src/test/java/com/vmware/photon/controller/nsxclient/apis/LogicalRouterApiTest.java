@@ -240,7 +240,7 @@ public class LogicalRouterApiTest extends NsxClientApiTest {
         }
         return null;
       }).when(logicalRouterApi)
-          .postAsync(eq(logicalRouterApi.logicalRouterPortBasePath),
+          .postAsync(eq(LogicalRouterApi.LOGICAL_ROUTER_PORTS_BASE_PATH),
               any(HttpEntity.class),
               eq(HttpStatus.SC_CREATED),
               any(TypeReference.class),
@@ -276,7 +276,7 @@ public class LogicalRouterApiTest extends NsxClientApiTest {
         }
         return null;
       }).when(logicalRouterApi)
-          .postAsync(eq(logicalRouterApi.logicalRouterPortBasePath),
+          .postAsync(eq(LogicalRouterApi.LOGICAL_ROUTER_PORTS_BASE_PATH),
               any(HttpEntity.class),
               eq(HttpStatus.SC_CREATED),
               any(TypeReference.class),
@@ -326,7 +326,7 @@ public class LogicalRouterApiTest extends NsxClientApiTest {
             .onSuccess(logicalRouterLinkPortOnTier1);
         return null;
       }).when(logicalRouterApi)
-          .postAsync(eq(logicalRouterApi.logicalRouterPortBasePath),
+          .postAsync(eq(LogicalRouterApi.LOGICAL_ROUTER_PORTS_BASE_PATH),
               any(HttpEntity.class),
               eq(HttpStatus.SC_CREATED),
               any(TypeReference.class),
@@ -371,7 +371,7 @@ public class LogicalRouterApiTest extends NsxClientApiTest {
             .onFailure(new RuntimeException(errorMsg));
         return null;
       }).when(logicalRouterApi)
-          .postAsync(eq(logicalRouterApi.logicalRouterPortBasePath),
+          .postAsync(eq(LogicalRouterApi.LOGICAL_ROUTER_PORTS_BASE_PATH),
               any(HttpEntity.class),
               eq(HttpStatus.SC_CREATED),
               any(TypeReference.class),
@@ -412,7 +412,7 @@ public class LogicalRouterApiTest extends NsxClientApiTest {
             .onSuccess(logicalRouterLinkPortOnTier0);
         return null;
       }).when(logicalRouterApi)
-          .postAsync(eq(logicalRouterApi.logicalRouterPortBasePath),
+          .postAsync(eq(LogicalRouterApi.LOGICAL_ROUTER_PORTS_BASE_PATH),
               any(HttpEntity.class),
               eq(HttpStatus.SC_CREATED),
               any(TypeReference.class),
@@ -449,7 +449,7 @@ public class LogicalRouterApiTest extends NsxClientApiTest {
             .onFailure(new RuntimeException(errorMsg));
         return null;
       }).when(logicalRouterApi)
-          .postAsync(eq(logicalRouterApi.logicalRouterPortBasePath),
+          .postAsync(eq(LogicalRouterApi.LOGICAL_ROUTER_PORTS_BASE_PATH),
               any(HttpEntity.class),
               eq(HttpStatus.SC_CREATED),
               any(TypeReference.class),
@@ -491,7 +491,7 @@ public class LogicalRouterApiTest extends NsxClientApiTest {
             .onSuccess(logicalRouterPortListResult);
         return null;
       }).when(logicalRouterApi)
-          .getAsync(eq(logicalRouterApi.logicalRouterPortBasePath + "?logical_router_id=id"),
+          .getAsync(eq(LogicalRouterApi.LOGICAL_ROUTER_PORTS_BASE_PATH + "?logical_router_id=id"),
               eq(HttpStatus.SC_OK),
               any(TypeReference.class),
               any(FutureCallback.class));
@@ -523,7 +523,7 @@ public class LogicalRouterApiTest extends NsxClientApiTest {
             .onFailure(new RuntimeException(errorMsg));
         return null;
       }).when(logicalRouterApi)
-          .getAsync(eq(logicalRouterApi.logicalRouterPortBasePath + "?logical_router_id=id"),
+          .getAsync(eq(LogicalRouterApi.LOGICAL_ROUTER_PORTS_BASE_PATH + "?logical_router_id=id"),
               eq(HttpStatus.SC_OK),
               any(TypeReference.class),
               any(FutureCallback.class));
@@ -557,7 +557,7 @@ public class LogicalRouterApiTest extends NsxClientApiTest {
         }
         return null;
       }).when(logicalRouterApi)
-          .deleteAsync(eq(logicalRouterApi.logicalRouterPortBasePath + "/" + portId),
+          .deleteAsync(eq(LogicalRouterApi.LOGICAL_ROUTER_PORTS_BASE_PATH + "/" + portId),
               eq(HttpStatus.SC_OK),
               any(FutureCallback.class));
 
@@ -590,7 +590,7 @@ public class LogicalRouterApiTest extends NsxClientApiTest {
         }
         return null;
       }).when(logicalRouterApi)
-          .deleteAsync(eq(logicalRouterApi.logicalRouterPortBasePath + "/" + portId),
+          .deleteAsync(eq(LogicalRouterApi.LOGICAL_ROUTER_PORTS_BASE_PATH + "/" + portId),
               eq(HttpStatus.SC_OK),
               any(FutureCallback.class));
 

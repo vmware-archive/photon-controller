@@ -48,27 +48,28 @@ import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
 
 /**
- * A dummy class used for test purpose.
- */
-class DummyClass {
-  @JsonProperty("field1")
-  public String dummyField1;
-  @JsonProperty("field2")
-  public String dummyField2;
-
-  public DummyClass() {
-  }
-
-  public DummyClass(String dummyField1, String dummyField2) {
-    this.dummyField1 = dummyField1;
-    this.dummyField2 = dummyField2;
-  }
-}
-
-/**
  * Tests {@link com.vmware.photon.controller.nsxclient.apis.NsxClientApi}.
  */
 public class NsxClientApiBaseTest extends NsxClientApi {
+
+  /**
+   * A dummy class used for test purpose.
+   */
+  public static class DummyClass {
+    @JsonProperty("field1")
+    public String dummyField1;
+    @JsonProperty("field2")
+    public String dummyField2;
+
+    public DummyClass() {
+    }
+
+    public DummyClass(String dummyField1, String dummyField2) {
+      this.dummyField1 = dummyField1;
+      this.dummyField2 = dummyField2;
+    }
+  }
+
   protected static final int CALLBACK_ARG_INDEX = 2;
 
   public NsxClientApiBaseTest() {
