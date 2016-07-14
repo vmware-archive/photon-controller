@@ -13,7 +13,7 @@ Source1:    photon-controller.service
 Requires:        gawk
 Requires:        openjre >= 1.8
 
-%define install_dir /opt/vmware/photon-controller
+%define install_dir /usr/lib/esxcloud/photon-controller-core
 %define config_jq_filter '.[0] * .[1].dynamicParameters | with_entries(select (.key != "DEPLOYMENT_ID"))'
 %define content_file config_values.json
 %description
@@ -30,9 +30,11 @@ install -vdm 755 %{buildroot}%{install_dir}
 install -vdm 755 %{buildroot}/etc/systemd/system/photon-controller.service.d
 install -vdm 755 %{buildroot}/usr/lib/systemd/system/
 install -vdm 755 %{buildroot}/usr/bin/
+install -vdm 755 %{buildroot}/var/esxcloud/packages
+install -vdm 755 %{buildroot}/etc/esxcloud
 
 cp /usr/src/photon/SOURCES/photon-controller.service %{buildroot}/usr/lib/systemd/system/
-
+cp /usr/src/photon/SOURCES/*.vib %{buildroot}/var/esxcloud/packages
 cd configuration
 jq -s %{config_jq_filter} ./installer.json ./photon-controller-core_release.json > %{content_file}
 content="`cat %{content_file}`"
@@ -52,6 +54,8 @@ ln -sf ../../%{install_dir}/bin/photon-controller-core  %{buildroot}/usr/bin/pho
 %files
 %defattr(-,root,root)
 %{install_dir}/*
+/var/esxcloud/packages/*
+%dir /etc/esxcloud
 /usr/bin/photon-controller-core
 /usr/lib/systemd/system/photon-controller.service
 %dir /etc/systemd/system/photon-controller.service.d/
