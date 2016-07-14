@@ -840,7 +840,8 @@ public class VmXenonBackendTest {
       assertThat(task, is(notNullValue()));
       assertThat(task.getState(), is(TaskEntity.State.QUEUED));
       assertThat(task.getSteps().size(), is(2));
-      assertThat(task.getSteps().get(0).getOperation(), is(com.vmware.photon.controller.api.Operation.DELETE_VM));
+      assertThat(task.getSteps().get(0).getOperation(), is(com.vmware.photon.controller.api.Operation.RELEASE_VM_IP));
+      assertThat(task.getSteps().get(1).getOperation(), is(com.vmware.photon.controller.api.Operation.DELETE_VM));
       assertThat(task.getToBeLockedEntities().size(), is(1));
       assertThat(task.getToBeLockedEntities().get(0).getId(), is(vmId));
       assertThat(task.getToBeLockedEntities().get(0).getKind(), is(Vm.KIND));
@@ -926,11 +927,11 @@ public class VmXenonBackendTest {
       assertThat(task, is(notNullValue()));
       assertThat(task.getState(), is(TaskEntity.State.QUEUED));
       assertThat(task.getSteps().size(), is(3));
-      assertThat(task.getSteps().get(0).getOperation(), is(com.vmware.photon.controller.api.Operation.DELETE_VM));
 
-      assertThat(task.getSteps().get(1).getOperation(),
+      assertThat(task.getSteps().get(0).getOperation(),
           is(com.vmware.photon.controller.api.Operation.RELEASE_VM_IP));
-      assertThat(task.getSteps().get(1).getTransientResource(ResourceReserveStepCmd.VM_ID), is(vmId));
+      assertThat(task.getSteps().get(0).getTransientResource(ResourceReserveStepCmd.VM_ID), is(vmId));
+      assertThat(task.getSteps().get(1).getOperation(), is(com.vmware.photon.controller.api.Operation.DELETE_VM));
 
       assertThat(task.getSteps().get(2).getOperation(),
           is(com.vmware.photon.controller.api.Operation.DISCONNECT_VM_SWITCH));
