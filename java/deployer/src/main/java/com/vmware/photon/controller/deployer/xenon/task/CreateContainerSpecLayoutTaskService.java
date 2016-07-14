@@ -69,12 +69,16 @@ public class CreateContainerSpecLayoutTaskService extends StatefulService {
 
   /**
    * Map with incompatible container types matrix.
+   * LoadBalancer and Lightwave cannot co-exist because they both use port 443.
+   * PhotonControllerCore and Lightwave cannot co-exist because PhotonControllerCore runs lightwave client which runs
+   * certain processes like vmafd which are also run as a part of Lightwave server and they use same ports.
    */
   @VisibleForTesting
   public static final Map<String, List<String>> INCOMPATIBLE_CONTAINER_TYPES
     = ImmutableMap.<String, List<String>>builder()
       .put("LoadBalancer", Arrays.asList("Lightwave"))
-      .put("Lightwave", Arrays.asList("LoadBalancer"))
+      .put("Lightwave", Arrays.asList("LoadBalancer", "PhotonControllerCore"))
+      .put("PhotonControllerCore", Arrays.asList("Lightwave"))
       .build();
 
   /**
