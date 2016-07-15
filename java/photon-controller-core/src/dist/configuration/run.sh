@@ -71,7 +71,7 @@ fi
 # Add parameters-modified swagger-config.js to the jar
 #
 mkdir -p $CONFIG_PATH/assets
-mv $API_SWAGGER_JS $CONFIG_PATH/assets
+cp $API_SWAGGER_JS $CONFIG_PATH/assets
 
 # Adding the modified swagger js file to swagger-ui*.jar is removed for now because it no longer works with our move
 # to installing JRE instead of JDK. This causes the script to fail and exit early when run as a systemd service.
