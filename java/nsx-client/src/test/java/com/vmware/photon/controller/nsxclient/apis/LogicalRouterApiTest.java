@@ -16,6 +16,7 @@ package com.vmware.photon.controller.nsxclient.apis;
 import com.vmware.photon.controller.nsxclient.RestClient;
 import com.vmware.photon.controller.nsxclient.builders.LogicalRouterLinkPortOnTier0CreateSpecBuilder;
 import com.vmware.photon.controller.nsxclient.builders.LogicalRouterLinkPortOnTier1CreateSpecBuilder;
+import com.vmware.photon.controller.nsxclient.datatypes.NatActionType;
 import com.vmware.photon.controller.nsxclient.datatypes.NsxRouter;
 import com.vmware.photon.controller.nsxclient.models.IPv4CIDRBlock;
 import com.vmware.photon.controller.nsxclient.models.LogicalRouter;
@@ -29,6 +30,8 @@ import com.vmware.photon.controller.nsxclient.models.LogicalRouterLinkPortOnTier
 import com.vmware.photon.controller.nsxclient.models.LogicalRouterLinkPortOnTier1CreateSpec;
 import com.vmware.photon.controller.nsxclient.models.LogicalRouterPort;
 import com.vmware.photon.controller.nsxclient.models.LogicalRouterPortListResult;
+import com.vmware.photon.controller.nsxclient.models.NatRule;
+import com.vmware.photon.controller.nsxclient.models.NatRuleCreateSpec;
 import com.vmware.photon.controller.nsxclient.models.ResourceReference;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -667,6 +670,220 @@ public class LogicalRouterApiTest extends NsxClientApiTest {
             }
           }
       );
+      latch.await();
+    }
+  }
+
+  /**
+   * Tests for functions to manage NAT rules.
+   */
+  public static class NatRuleTest {
+    private LogicalRouterApi logicalRouterApi;
+    private CountDownLatch latch;
+    private String routerId;
+    private String ruleId;
+
+    @BeforeMethod
+    public void setup() {
+      logicalRouterApi = spy(new LogicalRouterApi(mock(RestClient.class)));
+      latch = new CountDownLatch(1);
+      routerId = "routerId";
+      ruleId = "ruleId";
+    }
+
+    @Test
+    public void testSuccessfullyCreatedNatRule() throws Exception {
+      NatRuleCreateSpec spec = new NatRuleCreateSpec();
+      spec.setNatAction(NatActionType.SNAT);
+
+      NatRule natRule = new NatRule();
+      natRule.setNatAction(NatActionType.SNAT);
+
+      doAnswer(invocation -> {
+        ((FutureCallback<NatRule>) invocation.getArguments()[4])
+            .onSuccess(natRule);
+        return null;
+      }).when(logicalRouterApi)
+          .postAsync(eq(LogicalRouterApi.LOGICAL_ROUTERS_BASE_PATH + "/" + routerId + "/nat/rules"),
+              any(HttpEntity.class),
+              eq(HttpStatus.SC_CREATED),
+              any(TypeReference.class),
+              any(FutureCallback.class));
+
+      logicalRouterApi.createNatRule(routerId,
+          spec,
+          new FutureCallback<NatRule>() {
+            @Override
+            public void onSuccess(NatRule result) {
+              assertThat(result, is(natRule));
+              latch.countDown();
+            }
+
+            @Override
+            public void onFailure(Throwable t) {
+              fail("Should not have failed");
+              latch.countDown();
+            }
+          });
+      latch.await();
+    }
+
+    @Test
+    public void testFailedToCreateNatRule() throws Exception {
+      final String errorMsg = "Service is not available";
+      NatRuleCreateSpec spec = new NatRuleCreateSpec();
+      spec.setNatAction(NatActionType.SNAT);
+
+      doAnswer(invocation -> {
+        ((FutureCallback<NatRule>) invocation.getArguments()[4])
+            .onFailure(new RuntimeException(errorMsg));
+        return null;
+      }).when(logicalRouterApi)
+          .postAsync(eq(LogicalRouterApi.LOGICAL_ROUTERS_BASE_PATH + "/" + routerId + "/nat/rules"),
+              any(HttpEntity.class),
+              eq(HttpStatus.SC_CREATED),
+              any(TypeReference.class),
+              any(FutureCallback.class));
+
+      logicalRouterApi.createNatRule(routerId,
+          spec,
+          new FutureCallback<NatRule>() {
+            @Override
+            public void onSuccess(NatRule result) {
+              fail("Should not have succeeded");
+              latch.countDown();
+            }
+
+            @Override
+            public void onFailure(Throwable t) {
+              assertThat(t.getMessage(), is(errorMsg));
+              latch.countDown();
+            }
+          });
+      latch.await();
+    }
+
+    @Test
+    public void testSuccessfullyGetNatRule() throws Exception {
+      NatRule natRule = new NatRule();
+      natRule.setNatAction(NatActionType.SNAT);
+
+      doAnswer(invocation -> {
+        ((FutureCallback<NatRule>) invocation.getArguments()[3])
+            .onSuccess(natRule);
+        return null;
+      }).when(logicalRouterApi)
+          .getAsync(eq(LogicalRouterApi.LOGICAL_ROUTERS_BASE_PATH + "/" + routerId + "/nat/rules/" + ruleId),
+              eq(HttpStatus.SC_OK),
+              any(TypeReference.class),
+              any(FutureCallback.class));
+
+      logicalRouterApi.getNatRule(routerId,
+          ruleId,
+          new FutureCallback<NatRule>() {
+            @Override
+            public void onSuccess(NatRule result) {
+              assertThat(result, is(natRule));
+              latch.countDown();
+            }
+
+            @Override
+            public void onFailure(Throwable t) {
+              fail("Should not have failed");
+              latch.countDown();
+            }
+          });
+      latch.await();
+    }
+
+    @Test
+    public void testFailedToGetNatRule() throws Exception {
+      final String errorMsg = "Service is not available";
+
+      doAnswer(invocation -> {
+        ((FutureCallback<NatRule>) invocation.getArguments()[3])
+            .onFailure(new RuntimeException(errorMsg));
+        return null;
+      }).when(logicalRouterApi)
+          .getAsync(eq(LogicalRouterApi.LOGICAL_ROUTERS_BASE_PATH + "/" + routerId + "/nat/rules/" + ruleId),
+              eq(HttpStatus.SC_OK),
+              any(TypeReference.class),
+              any(FutureCallback.class));
+
+      logicalRouterApi.getNatRule(routerId,
+          ruleId,
+          new FutureCallback<NatRule>() {
+            @Override
+            public void onSuccess(NatRule result) {
+              fail("Should not have succeeded");
+              latch.countDown();
+            }
+
+            @Override
+            public void onFailure(Throwable t) {
+              assertThat(t.getMessage(), is(errorMsg));
+              latch.countDown();
+            }
+          });
+      latch.await();
+    }
+
+    @Test
+    public void testSuccessfullyDeleteNatRule() throws Exception {
+      doAnswer(invocation -> {
+        ((FutureCallback<NatRule>) invocation.getArguments()[2])
+            .onSuccess(null);
+        return null;
+      }).when(logicalRouterApi)
+          .deleteAsync(eq(LogicalRouterApi.LOGICAL_ROUTERS_BASE_PATH + "/" + routerId + "/nat/rules/" + ruleId),
+              eq(HttpStatus.SC_OK),
+              any(FutureCallback.class));
+
+      logicalRouterApi.deleteNatRule(routerId,
+          ruleId,
+          new FutureCallback<Void>() {
+            @Override
+            public void onSuccess(Void result) {
+              latch.countDown();
+            }
+
+            @Override
+            public void onFailure(Throwable t) {
+              fail("Should not have failed");
+              latch.countDown();
+            }
+          });
+      latch.await();
+    }
+
+    @Test
+    public void testFailedToDeleteNatRule() throws Exception {
+      final String errorMsg = "Service is not available";
+
+      doAnswer(invocation -> {
+        ((FutureCallback<NatRule>) invocation.getArguments()[2])
+            .onFailure(new RuntimeException(errorMsg));
+        return null;
+      }).when(logicalRouterApi)
+          .deleteAsync(eq(LogicalRouterApi.LOGICAL_ROUTERS_BASE_PATH + "/" + routerId + "/nat/rules/" + ruleId),
+              eq(HttpStatus.SC_OK),
+              any(FutureCallback.class));
+
+      logicalRouterApi.deleteNatRule(routerId,
+          ruleId,
+          new FutureCallback<Void>() {
+            @Override
+            public void onSuccess(Void result) {
+              fail("Should not have succeeded");
+              latch.countDown();
+            }
+
+            @Override
+            public void onFailure(Throwable t) {
+              assertThat(t.getMessage(), is(errorMsg));
+              latch.countDown();
+            }
+          });
       latch.await();
     }
   }
