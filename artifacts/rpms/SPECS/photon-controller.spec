@@ -30,8 +30,15 @@ install -vdm 755 %{buildroot}%{install_dir}
 install -vdm 755 %{buildroot}/etc/systemd/system/photon-controller.service.d
 install -vdm 755 %{buildroot}/usr/lib/systemd/system/
 install -vdm 755 %{buildroot}/usr/bin/
+
+# Add folder for deployer configuration.
+install -vdm 755 %{buildroot}/etc/esxcloud-deployer
+
+# Add folder for photon-controller vibs.
 install -vdm 755 %{buildroot}/var/esxcloud/packages
-install -vdm 755 %{buildroot}/etc/esxcloud
+
+# Add folder for configuration of photon-controller-core.
+install -vdm 755 %{buildroot}%{install_dir}/configuration/photon-controller-core
 
 cp /usr/src/photon/SOURCES/photon-controller.service %{buildroot}/usr/lib/systemd/system/
 cp /usr/src/photon/SOURCES/*.vib %{buildroot}/var/esxcloud/packages
@@ -39,23 +46,31 @@ cd configuration
 jq -s %{config_jq_filter} ./installer.json ./photon-controller-core_release.json > %{content_file}
 content="`cat %{content_file}`"
 
+# Apply configuration using mustache.
 pystache "`cat ./photon-controller-core.yml`" "$content" > photon-controller-core-out.yml
 pystache "`cat ./management-api.yml`" "$content" > management-api-out.yml
-pystache "`cat ./run.sh`'" "$content" > run-out.sh
-
+pystache "`cat ./run.sh`" "$content" > run-out.sh
+pystache "`cat ./swagger-config.js`" "$content" > swagger-config-out.js
 mv ./photon-controller-core-out.yml ./photon-controller-core.yml
 mv ./management-api-out.yml ./management-api.yml
 mv ./run-out.sh ./run.sh
+mv ./swagger-config-out.js ./swagger-config.js
 chmod 755 ./run.sh
 
 cp -pr ../* %{buildroot}%{install_dir}
-ln -sf ../../%{install_dir}/bin/photon-controller-core  %{buildroot}/usr/bin/photon-controller-core
+cp ../configuration/*.json ../configuration/*.yml %{buildroot}%{install_dir}/configuration/photon-controller-core/
+ln -sf %{install_dir}/bin/photon-controller-core  %{buildroot}/usr/bin/photon-controller-core
+ln -sf %{install_dir}/configuration/run.sh  %{buildroot}/usr/bin/run.sh
+ln -sf %{install_dir}/configuration %{buildroot}/etc/esxcloud
+ln -sf %{install_dir}/configuration %{buildroot}/etc/esxcloud-deployer/configurations
 
 %files
 %defattr(-,root,root)
 %{install_dir}/*
 /var/esxcloud/packages/*
-%dir /etc/esxcloud
+/etc/esxcloud
+/etc/esxcloud-deployer/*
+/usr/bin/run.sh
 /usr/bin/photon-controller-core
 /usr/lib/systemd/system/photon-controller.service
 %dir /etc/systemd/system/photon-controller.service.d/
