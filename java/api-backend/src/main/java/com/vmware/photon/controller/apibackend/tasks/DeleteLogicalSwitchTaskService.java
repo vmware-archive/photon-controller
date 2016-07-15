@@ -130,7 +130,7 @@ public class DeleteLogicalSwitchTaskService extends StatefulService {
           break;
 
         default:
-           throw new ConfigureRoutingException("Invalid task sub-stage " + currentState.taskState.stage);
+           throw new ConfigureRoutingException("Invalid task sub-stage " + currentState.taskState.subStage);
 
       }
     } catch (Throwable t) {
