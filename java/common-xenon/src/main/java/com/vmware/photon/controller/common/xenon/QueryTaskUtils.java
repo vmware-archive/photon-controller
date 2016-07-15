@@ -373,4 +373,20 @@ public class QueryTaskUtils {
     }
     ServiceUtils.logInfo(service, summary);
   }
+
+  /**
+   * Checks if propertyName is present in query's booleanClauses.
+   *
+   * @param query
+   * @param propertyName
+   * @return
+   */
+  public static boolean queryClausesContainProperty(QueryTask.Query query, String propertyName) {
+    for (QueryTask.Query clause : query.booleanClauses) {
+      if (clause.term != null && clause.term.propertyName != null && clause.term.propertyName.equals(propertyName)) {
+        return true;
+      }
+    }
+    return false;
+  }
 }
