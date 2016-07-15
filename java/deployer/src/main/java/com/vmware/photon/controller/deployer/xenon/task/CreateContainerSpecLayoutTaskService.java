@@ -327,7 +327,8 @@ public class CreateContainerSpecLayoutTaskService extends StatefulService {
       startState.dockerVmDocumentLinks = computeValidVms(containerTemplate, vms, managementHosts);
       startState.containerTemplateDocumentLink = containerTemplate.documentSelfLink;
       if (!containerTemplate.isReplicated) {
-        String vmServiceLink = getAvailableVm(containerTemplate.name, vms, singletonServiceToVmMap);
+        String vmServiceLink = getAvailableVm(containerTemplate.name, startState.dockerVmDocumentLinks,
+            singletonServiceToVmMap);
         if (null == vmServiceLink) {
           throw new XenonRuntimeException("Unable to find available VM for container " + containerTemplate.name);
         }
@@ -339,8 +340,7 @@ public class CreateContainerSpecLayoutTaskService extends StatefulService {
     performContainerAllocations(currentState, startStates);
   }
 
-  private String getAvailableVm(String containerName, Set<VmService.State> vms,
-                                Map<String, String> singletonServiceToVmMap) {
+  private String getAvailableVm(String containerName, List<String> vms, Map<String, String> singletonServiceToVmMap) {
     String vmLinkResult = null;
 
     log(Level.INFO, "Selecting VM for a non-replicated container %s", containerName);
@@ -356,20 +356,18 @@ public class CreateContainerSpecLayoutTaskService extends StatefulService {
       }
       log(Level.INFO, "Total VMs %d, VMs with incompatible containers %d", vms.size(),
           vmsWithIncompatibleContainers.size());
-      for (VmService.State vm : vms) {
-        if (!vmsWithIncompatibleContainers.contains(vm.documentSelfLink)) {
+      for (String vm : vms) {
+        if (!vmsWithIncompatibleContainers.contains(vm)) {
           log(Level.INFO, "Found VM without incompatible container for %s", containerName);
-          vmLinkResult = vm.documentSelfLink;
+          vmLinkResult = vm;
           break;
         }
       }
     } else {
       log(Level.INFO,
           "Incompatible containers matrix does not contain entry for %s. Selecting random VM", containerName);
-      List<VmService.State> vmList = new ArrayList<>();
-      vmList.addAll(vms);
-      Collections.shuffle(vmList);
-      vmLinkResult = vmList.get(0).documentSelfLink;
+      Collections.shuffle(vms);
+      vmLinkResult = vms.get(0);
     }
     log(Level.INFO, "VM selection for non-replicated container %s - %s", containerName, vmLinkResult);
     return vmLinkResult;
