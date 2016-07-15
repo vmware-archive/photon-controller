@@ -141,8 +141,9 @@ module EsxCloud
     end
 
     # @param [String] id
+    # @param [String] name
     # @return [VirtualNetworkList]
-    def get_project_networks(id)
+    def get_project_networks(id, name = nil)
     end
 
     # @param [String] id
@@ -558,11 +559,6 @@ module EsxCloud
     # @param [String] network_id
     # @return [VirtualNetwork]
     def find_virtual_network_by_id(network_id)
-    end
-
-    # @param [String] name
-    # @return [VirtualNetwork]
-    def find_virtual_networks_by_name(name)
     end
   end
 end

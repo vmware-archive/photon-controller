@@ -94,9 +94,10 @@ module EsxCloud
       end
 
       # @param [String] id
+      # @param [String] name
       # @return [VirtualNetworkList]
-      def get_project_networks(id)
-        @api_client.get_project_networks(id)
+      def get_project_networks(id, name = nil)
+        @api_client.get_project_networks(id, name)
       end
 
       # @param [String] id

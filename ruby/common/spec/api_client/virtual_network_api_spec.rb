@@ -28,7 +28,7 @@ describe EsxCloud::ApiClient do
     virtual_network = double(EsxCloud::VirtualNetwork)
 
     expect(http_client).to receive(:post_json)
-                           .with("/projects/project1/networks", "payload")
+                           .with("/projects/project1/subnets", "payload")
                            .and_return(task_created("task1"))
     expect(http_client).to receive(:get)
                            .with(URL_HOST + "/tasks/task1")
@@ -78,18 +78,5 @@ describe EsxCloud::ApiClient do
                                         .and_return(virtual_network)
 
     expect(client.find_virtual_network_by_id("network1")).to eq virtual_network
-  end
-
-  it "finds a virtual networks by the name" do
-    virtual_network_list = double(EsxCloud::VirtualNetworkList)
-
-    expect(http_client).to receive(:get)
-                           .with("/subnets?name=blah")
-                          .and_return(ok_response("networkList"))
-    expect(EsxCloud::VirtualNetworkList).to receive(:create_from_json)
-                                            .with("networkList")
-                                            .and_return(virtual_network_list)
-
-    expect(client.find_virtual_networks_by_name("blah")).to be_true
   end
 end

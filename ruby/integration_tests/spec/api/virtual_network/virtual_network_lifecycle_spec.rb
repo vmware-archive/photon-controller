@@ -34,11 +34,11 @@ describe "virtual_network_lifecyle", :virtual_network => true do
     retrieved_network = EsxCloud::VirtualNetwork.get(network.id)
     expect(retrieved_network.id).to eq(network.id)
 
-    retrieved_network_list = EsxCloud::VirtualNetwork.find_by_name(spec.name)
+    retrieved_network_list = client.get_project_networks(@project.id, spec.name)
     expect(retrieved_network_list.items.count).to eq(1)
     expect(retrieved_network_list.items.first.id).to eq(network.id)
 
-    retrieved_network_list = EsxCloud::VirtualNetwork.find_all
+    retrieved_network_list = client.get_project_networks(@project.id)
     expect(retrieved_network_list.items.count).to be >= 1
 
     network.delete
@@ -50,7 +50,7 @@ describe "virtual_network_lifecyle", :virtual_network => true do
     begin
       EsxCloud::VirtualNetwork.create(@project.id, spec)
     rescue
-      EsxCloud::VirtualNetwork.find_by_name(spec.name).items.each { |net| networks_to_delete << net }
+      client.get_project_networks(@project.id, spec.name).items.each { |net| networks_to_delete << net }
       raise
     end
   end

@@ -106,6 +106,24 @@ describe EsxCloud::ApiClient do
     client.get_project_clusters("foo").should == clusters
   end
 
+  it "gets all project networks" do
+    networks = double(EsxCloud::VirtualNetworkList)
+
+    expect(@http_client).to receive(:get).with("/projects/foo/subnets").and_return(ok_response("subsets"))
+    expect(EsxCloud::VirtualNetworkList).to receive(:create_from_json).with("subsets").and_return(networks)
+
+    expect(client.get_project_networks("foo")).to eq(networks)
+  end
+
+  it "gets all project networks with given name" do
+    networks = double(EsxCloud::VirtualNetworkList)
+
+    expect(@http_client).to receive(:get).with("/projects/foo/subnets?name=network1").and_return(ok_response("subsets"))
+    expect(EsxCloud::VirtualNetworkList).to receive(:create_from_json).with("subsets").and_return(networks)
+
+    expect(client.get_project_networks("foo", "network1")).to eq(networks)
+  end
+
   it "sets project security groups" do
     security_groups = {items: ["adminGroup1", "adminGroup2"]}
 

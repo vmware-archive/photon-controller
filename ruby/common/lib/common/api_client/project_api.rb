@@ -106,9 +106,13 @@ module EsxCloud
       end
 
       # @param [String] id
+      # @param [String] name
       # @return [VirtualNetworkList]
-      def get_project_networks(id)
-        response = @http_client.get("#{PROJECTS_ROOT}/#{id}/subnets")
+      def get_project_networks(id, name = nil)
+        url = "#{PROJECTS_ROOT}/#{id}/subnets"
+        url += "?name=#{name}" if name
+
+        response = @http_client.get(url)
         check_response("Get networks for project '#{id}'", response, 200)
 
         VirtualNetworkList.create_from_json(response.body)

@@ -37,12 +37,6 @@ module EsxCloud
       def find_virtual_network_by_id(network_id)
         @api_client.find_virtual_network_by_id network_id
       end
-
-      # @param [String] name
-      # return [VirtualNetworkList]
-      def find_virtual_networks_by_name(name)
-        @api_client.find_virtual_networks_by_name name
-      end
     end
   end
 end

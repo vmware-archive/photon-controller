@@ -20,7 +20,7 @@ module EsxCloud
       # @param [VirtualNetworkCreateSpec] payload
       # @return [VirtualNetwork]
       def create_virtual_network(project_id, payload)
-        url = "#{PROJECTS_ROOT}/#{project_id}/networks"
+        url = "#{PROJECTS_ROOT}/#{project_id}/subnets"
         response = @http_client.post_json(url, payload)
         check_response("Create virtual network #{payload}", response, 201)
 
@@ -54,16 +54,6 @@ module EsxCloud
 
         VirtualNetwork.create_from_json(response.body)
       end
-
-      # @param [String] name
-      # return [VirtualNetworkList]
-      def find_virtual_networks_by_name(name)
-        response = @http_client.get("#{NETWORKS_ROOT}?name=#{name}")
-        check_response("Find Networks by name '#{name}'", response, 200)
-
-        VirtualNetworkList.create_from_json(response.body)
-      end
-
     end
   end
 end

@@ -36,7 +36,7 @@ describe "virtual_network", :virtual_network => true do
       expect(network.state).to eq "READY"
       expect(network.routing_type).to eq "ROUTED"
 
-      networks = client.find_virtual_networks_by_name(virtual_network_name).items
+      networks = client.get_project_networks(@project.id, virtual_network_name).items
       expect(networks.size).to eq 1
       network_found = client.find_virtual_network_by_id(network.id)
       expect(network_found).to eq network
@@ -50,7 +50,7 @@ describe "virtual_network", :virtual_network => true do
       expect(network.state).to eq "READY"
       expect(network.routing_type).to eq "ISOLATED"
 
-      networks = client.find_virtual_networks_by_name(virtual_network_name).items
+      networks = client.get_project_networks(@project.id, virtual_network_name).items
       expect(networks.size).to eq 1
       network_found = client.find_virtual_network_by_id(network.id)
       expect(network_found).to eq network
@@ -61,7 +61,7 @@ describe "virtual_network", :virtual_network => true do
       network = create_virtual_network(@project.id, spec)
       expect(network.name).to eq virtual_network_name
 
-      networks = client.find_virtual_networks_by_name(spec.name).items
+      networks = client.get_project_networks(@project.id, spec.name).items
       expect(networks.size).to eq 2
     end
 
@@ -155,7 +155,7 @@ describe "virtual_network", :virtual_network => true do
 
       set_virtual_network_state(network.id, "PENDING_DELETE")
 
-      networks = client.find_virtual_networks_by_name(spec.name).items
+      networks = client.get_project_networks(@project.id, spec.name).items
       expect(networks.size).to eq 1
       expect(networks.first.state).to eq "PENDING_DELETE"
 
@@ -184,7 +184,7 @@ describe "virtual_network", :virtual_network => true do
       virtual_networks_to_delete << network
       network
     rescue
-      EsxCloud::VirtualNetwork.find_by_name(spec.name).items.each {|i| virtual_networks_to_delete << i}
+      client.get_project_networks(project_id, spec.name).items.each {|i| virtual_networks_to_delete << i}
       raise
     end
   end

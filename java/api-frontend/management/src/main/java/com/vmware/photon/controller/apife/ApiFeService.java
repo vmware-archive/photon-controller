@@ -273,7 +273,6 @@ public class ApiFeService extends Application<ApiFeStaticConfiguration> {
       resources.add(SubnetsResource.class);
     } else {
       resources.add(com.vmware.photon.controller.apife.resources.virtualnetwork.SubnetResource.class);
-      resources.add(com.vmware.photon.controller.apife.resources.virtualnetwork.SubnetsResource.class);
       resources.add(ProjectNetworksResource.class);
     }
 

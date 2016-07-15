@@ -107,4 +107,18 @@ describe EsxCloud::GoCliClient do
     expect(client).to receive(:get_task_list_from_response).with(result).and_return(tasks)
     client.get_project_tasks(project_id, "COMPLETED").should == tasks
   end
+
+  it "get all project networks" do
+    networks = double(EsxCloud::VirtualNetworkList)
+    expect(@api_client).to receive(:get_project_networks).with("project_id", nil).and_return(networks)
+
+    expect(client.get_project_networks("project_id")).to eq(networks)
+  end
+
+  it "get all project networks with given name" do
+    networks = double(EsxCloud::VirtualNetworkList)
+    expect(@api_client).to receive(:get_project_networks).with("project_id", "network_name").and_return(networks)
+
+    expect(client.get_project_networks("project_id", "network_name")).to eq(networks)
+  end
 end

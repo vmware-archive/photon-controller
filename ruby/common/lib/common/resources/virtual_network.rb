@@ -31,12 +31,6 @@ module EsxCloud
       Config.client.find_virtual_network_by_id(network_id)
     end
 
-    # @param [String] name
-    # @return [VirtualNetworkList]
-    def self.find_by_name(name)
-      Config.client.find_virtual_networks_by_name(name)
-    end
-
     # @param [String] json
     # @return [VirtualNetwork]
     def self.create_from_json(json)
