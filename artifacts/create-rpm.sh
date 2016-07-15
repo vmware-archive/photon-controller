@@ -10,6 +10,7 @@ VERSION=${BRANCH}
 ROOT=`git rev-parse --show-toplevel`
 SOURCES_DIR="${ROOT}/artifacts/rpms/SOURCES"
 SPECS_DIR="${ROOT}/artifacts/rpms/SPECS"
+RPMS_DIR="${ROOT}/artifacts/build/RPMS"
 TEMP_DIR=$(mktemp -d "${ROOT}/create_tar.XXXXX")
 TAR_PATH="/java/photon-controller-core/build/distributions/"
 TAR_PREFIX="photon-controller-core"
@@ -18,8 +19,11 @@ ENVOY_VIB_URL="http://artifactory.ec.eng.vmware.com/artifactory/esxcloud-archive
 
 trap "rm -rf ${TEMP_DIR}; rm -rf ${SOURCES_DIR};" EXIT
 
+# Clean old files before building new distTar and RPMs.
+rm -rf "${RPMS_DIR}"/*
 rm -rf "${ROOT}${TAR_PATH}"/*
-(cd ../java; ./gradlew distTar)
+
+(cd ../java; ./gradlew clean; ./gradlew distTar)
 
 # Create source tar file for use by RPM spec file
 mkdir -p "${SOURCES_DIR}"
@@ -51,8 +55,8 @@ fi
 docker pull vmware/photon-controller-rpm-builder
 docker run -i ${DEBUG_OPTIONS} \
   -v "${ROOT}":/photon-controller \
-  -v "${ROOT}"/artifacts/rpms/SOURCES/:/usr/src/photon/SOURCES \
-  -v "${ROOT}"/artifacts/build/RPMS:/usr/src/photon/RPMS \
+  -v "${SOURCES_DIR}":/usr/src/photon/SOURCES \
+  -v "${RPMS_DIR}":/usr/src/photon/RPMS \
   -w /photon-controller/artifacts \
   vmware/photon-controller-rpm-builder \
   ./create-rpm-helper.sh "${VERSION}" "${DEBUG}"
