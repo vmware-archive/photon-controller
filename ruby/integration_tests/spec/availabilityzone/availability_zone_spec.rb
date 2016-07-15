@@ -46,6 +46,11 @@ describe "Availability Zone", availabilityzone: true do
           vm = create_vm(@seeder.project!, name: vm_name, affinities: [{id: availability_zone.id, kind: "availabilityZone"}])
         rescue EsxCloud::Error => e
           host_service = EsxCloud::Dcp::CloudStore::HostFactory.get_host host.id
+          puts host_service.inspect
+
+          hosts = EsxCloud::Dcp::CloudStore::HostFactory.get_all_hosts
+          hosts.each { |h| puts h.inspect }
+
           fail "Create VM failed. Host: #{host.id} HostState: #{host_service["agentState"]} Error: #{e}"
         end
 
