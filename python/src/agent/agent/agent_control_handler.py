@@ -15,6 +15,7 @@ import logging
 import common
 from common.file_util import rm_rf
 
+from . import version
 from .agent_config import InvalidConfig
 from common.photon_thrift.decorators import error_handler
 from common.photon_thrift.decorators import log_request
@@ -26,6 +27,8 @@ from gen.agent.ttypes import ProvisionResponse
 from gen.agent.ttypes import ProvisionResultCode
 from gen.agent.ttypes import UpgradeResponse
 from gen.agent.ttypes import UpgradeResultCode
+from gen.agent.ttypes import VersionResponse
+from gen.agent.ttypes import VersionResultCode
 
 
 class AgentControlHandler(AgentControl.Iface):
@@ -99,3 +102,10 @@ class AgentControlHandler(AgentControl.Iface):
 
         # agent is ready
         return AgentStatusResponse(AgentStatusCode.OK)
+
+    @log_request
+    @error_handler(VersionResponse, VersionResultCode)
+    def get_version(self, request):
+        return VersionResponse(VersionResultCode.OK,
+                               version=version.version,
+                               revision=version.revision)
