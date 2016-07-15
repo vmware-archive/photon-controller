@@ -34,6 +34,12 @@ describe "Host monitor", monitor_host: true do
       host_service = EsxCloud::Dcp::CloudStore::HostFactory.get_host host.id
     end
 
+    host_service = EsxCloud::Dcp::CloudStore::HostFactory.get_host host.id
+    puts host_service.inspect
+
+    hosts = EsxCloud::Dcp::CloudStore::HostFactory.get_all_hosts
+    hosts.each { |h| puts h.inspect }
+
     expect(host_service["agentState"]).to eq("ACTIVE")
   end
 end
