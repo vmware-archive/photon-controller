@@ -23,6 +23,15 @@ module EsxCloud
         def self.get_host(id)
           CloudStoreClient.instance.get "#{FACTORY_SERVICE_LINK}/#{id}"
         end
+
+        def self.get_all_hosts
+          json = CloudStoreClient.instance.get "#{FACTORY_SERVICE_LINK}"
+          result = Array.new
+          json["documentLinks"].map do |hostUrl|
+            result << (CloudStoreClient.instance.get hostUrl)
+          end
+          result
+        end
       end
     end
   end
