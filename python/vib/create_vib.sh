@@ -91,6 +91,9 @@ build_for_py_ver() {
    DEST_SITE_PACKAGES=$DEST_VIB_ROOT/$PYTHON_VERSION/site-packages
    (cd $SRC_SITE_PACKAGES; tar cf - . | (cd $DEST_SITE_PACKAGES && tar xf -))
 
+   # Fill revision
+   $SED s/#REVISION#/$REVISION$DIRTY/g -i $DEST_SITE_PACKAGES/agent/version.py
+
    # Generate pyc files
    find $DEST_SITE_PACKAGES -name '*.py' -exec $PYTHON -m py_compile {} +
 

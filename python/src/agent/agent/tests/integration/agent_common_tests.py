@@ -20,6 +20,8 @@ from gen.agent.ttypes import AgentStatusCode
 from gen.agent.ttypes import PingRequest
 from gen.agent.ttypes import ProvisionRequest
 from gen.agent.ttypes import ProvisionResultCode
+from gen.agent.ttypes import VersionRequest
+from gen.agent.ttypes import VersionResultCode
 from gen.common.ttypes import ServerAddress
 from gen.flavors.ttypes import Flavor
 from gen.flavors.ttypes import QuotaLineItem
@@ -942,6 +944,13 @@ class AgentCommonTests(object):
         # Test runs against both real and fake hosts
         ping_req = PingRequest()
         self.control_client.ping(ping_req)
+
+    def test_version(self):
+        req = VersionRequest()
+        response = self.control_client.get_version(req)
+        assert_that(response.result, equal_to(VersionResultCode.OK))
+        assert_that(response.version, not_none())
+        assert_that(response.revision, not_none())
 
     def get_image_datastore(self):
         return self.get_all_datastores()[0]

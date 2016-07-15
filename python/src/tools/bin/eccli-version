@@ -1,0 +1,18 @@
+#!/usr/bin/env python
+# Copyright (c) 2015 VMware, Inc. All Rights Reserved.
+from eccli.format import print_response, print_request
+
+from eccli.optparser import default_parser
+from eccli.thrift import get_client
+from gen.agent.ttypes import VersionRequest
+
+parser = default_parser(usage="eccli-version",
+                        add_help=True)
+(options, args) = parser.parse_args()
+
+request = VersionRequest()
+
+print_request(request)
+client = get_client(options.host, "AgentControl")
+response = client.get_version(request)
+print_response(response)
