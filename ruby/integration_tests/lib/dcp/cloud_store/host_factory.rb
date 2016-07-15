@@ -23,6 +23,10 @@ module EsxCloud
         def self.get_host(id)
           CloudStoreClient.instance.get "#{FACTORY_SERVICE_LINK}/#{id}"
         end
+
+        def self.get_all_hosts
+          CloudStoreClient.instance.get "#{FACTORY_SERVICE_LINK}"
+        end
       end
     end
   end
