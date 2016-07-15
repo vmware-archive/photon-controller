@@ -725,9 +725,7 @@ public class AddManagementHostWorkflowServiceTest {
     @DataProvider(name = "HostWithTagWithAuthInfo")
     public Object[][] getHostsWithAuthInfo() {
       return new Object[][]{
-          {true, true, 4},
           {true, false, 5},
-          {false, true, 4},
           {false, false, 5},
       };
     }
