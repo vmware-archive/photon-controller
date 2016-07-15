@@ -38,10 +38,11 @@ module EsxCloud
         @api_client.find_virtual_network_by_id network_id
       end
 
+      # @param [String] project_id
       # @param [String] name
       # return [VirtualNetworkList]
-      def find_virtual_networks_by_name(name)
-        @api_client.find_virtual_networks_by_name name
+      def find_virtual_networks_by_name(project_id, name)
+        @api_client.find_virtual_networks_by_name project_id, name
       end
     end
   end

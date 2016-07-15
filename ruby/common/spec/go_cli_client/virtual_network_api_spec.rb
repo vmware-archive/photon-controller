@@ -54,9 +54,9 @@ describe EsxCloud::GoCliClient do
   describe "#find_virtual_network_by_name" do
     it "delegates to api client" do
       networks = double(EsxCloud::VirtualNetwork)
-      expect(@api_client).to receive(:find_virtual_networks_by_name).with("name").and_return(networks)
+      expect(@api_client).to receive(:find_virtual_networks_by_name).with("project1", "name").and_return(networks)
 
-      expect(client.find_virtual_networks_by_name("name")).to be(networks)
+      expect(client.find_virtual_networks_by_name("project1", "name")).to be(networks)
     end
   end
 end

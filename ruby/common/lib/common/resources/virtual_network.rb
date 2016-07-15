@@ -31,10 +31,11 @@ module EsxCloud
       Config.client.find_virtual_network_by_id(network_id)
     end
 
+    # @param [String] project_id
     # @param [String] name
     # @return [VirtualNetworkList]
-    def self.find_by_name(name)
-      Config.client.find_virtual_networks_by_name(name)
+    def self.find_by_name(project_id, name)
+      Config.client.find_virtual_networks_by_name(project_id, name)
     end
 
     # @param [String] json
