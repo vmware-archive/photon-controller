@@ -18,14 +18,21 @@ import com.vmware.photon.controller.api.DeploymentCreateSpec;
 import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
-import com.vmware.photon.controller.apife.auth.AuthConfigurationSpecValidator;
+import com.vmware.photon.controller.api.constraints.AuthDisabled;
+import com.vmware.photon.controller.api.constraints.AuthEnabled;
+import com.vmware.photon.controller.api.constraints.ConditionalValidator;
+import com.vmware.photon.controller.api.constraints.StatsDisabled;
+import com.vmware.photon.controller.api.constraints.StatsEnabled;
+import com.vmware.photon.controller.api.constraints.VirtualNetworkDisabled;
+import com.vmware.photon.controller.api.constraints.VirtualNetworkEnabled;
 import com.vmware.photon.controller.apife.clients.DeploymentFeClient;
+import com.vmware.photon.controller.apife.exceptions.external.InvalidAuthConfigException;
+import com.vmware.photon.controller.apife.exceptions.external.InvalidNetworkConfigException;
+import com.vmware.photon.controller.apife.exceptions.external.InvalidStatsConfigException;
 import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
 import com.vmware.photon.controller.apife.resources.routes.DeploymentResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
-import com.vmware.photon.controller.apife.utils.NetworkConfigurationCreateSpecValidator;
 import com.vmware.photon.controller.apife.utils.SecurityGroupUtils;
-import com.vmware.photon.controller.apife.utils.StatsInfoValidator;
 import static com.vmware.photon.controller.api.common.Responses.generateCustomResponse;
 import static com.vmware.photon.controller.api.common.Responses.generateResourceListResponse;
 
@@ -75,12 +82,7 @@ public class DeploymentsResource {
                          @Validated DeploymentCreateSpec deploymentCreateSpec)
       throws ExternalException, InternalException {
 
-    AuthConfigurationSpecValidator.validate(deploymentCreateSpec.getAuth());
-    SecurityGroupUtils.validateSecurityGroupsFormat(deploymentCreateSpec.getAuth().getSecurityGroups());
-
-    NetworkConfigurationCreateSpecValidator.validate(deploymentCreateSpec.getNetworkConfiguration());
-    StatsInfoValidator.validate(deploymentCreateSpec.getStats());
-
+    validate(deploymentCreateSpec);
     return generateCustomResponse(
         Response.Status.CREATED,
         deploymentFeClient.create(deploymentCreateSpec),
@@ -101,4 +103,30 @@ public class DeploymentsResource {
         DeploymentResourceRoutes.API);
   }
 
+  private void validate(DeploymentCreateSpec spec) throws ExternalException{
+    // validate auth config
+    ConditionalValidator.validate(
+        spec.getAuth(),
+        spec.getAuth().getEnabled(),
+        AuthEnabled.class,
+        AuthDisabled.class,
+        InvalidAuthConfigException.class);
+    SecurityGroupUtils.validateSecurityGroupsFormat(spec.getAuth().getSecurityGroups());
+
+    // validate network config
+    ConditionalValidator.validate(
+        spec.getNetworkConfiguration(),
+        spec.getNetworkConfiguration().getVirtualNetworkEnabled(),
+        VirtualNetworkEnabled.class,
+        VirtualNetworkDisabled.class,
+        InvalidNetworkConfigException.class);
+
+    // validate stats config
+    ConditionalValidator.validate(
+        spec.getStats(),
+        spec.getStats().getEnabled(),
+        StatsEnabled.class,
+        StatsDisabled.class,
+        InvalidStatsConfigException.class);
+  }
 }
