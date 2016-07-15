@@ -23,6 +23,8 @@ import com.vmware.photon.controller.nsxclient.models.LogicalRouterLinkPortOnTier
 import com.vmware.photon.controller.nsxclient.models.LogicalRouterLinkPortOnTier1;
 import com.vmware.photon.controller.nsxclient.models.LogicalRouterLinkPortOnTier1CreateSpec;
 import com.vmware.photon.controller.nsxclient.models.LogicalRouterPortListResult;
+import com.vmware.photon.controller.nsxclient.models.NatRule;
+import com.vmware.photon.controller.nsxclient.models.NatRuleCreateSpec;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.util.concurrent.FutureCallback;
@@ -102,7 +104,8 @@ public class LogicalRouterApi extends NsxClientApi {
     postAsync(LOGICAL_ROUTER_PORTS_BASE_PATH,
         serializeObjectAsJson(spec),
         HttpStatus.SC_CREATED,
-        new TypeReference<LogicalRouterDownLinkPort>() {},
+        new TypeReference<LogicalRouterDownLinkPort>() {
+        },
         responseCallback
     );
   }
@@ -116,7 +119,8 @@ public class LogicalRouterApi extends NsxClientApi {
     postAsync(LOGICAL_ROUTER_PORTS_BASE_PATH,
         serializeObjectAsJson(spec),
         HttpStatus.SC_CREATED,
-        new TypeReference<LogicalRouterLinkPortOnTier0>() {},
+        new TypeReference<LogicalRouterLinkPortOnTier0>() {
+        },
         responseCallback
     );
   }
@@ -130,7 +134,8 @@ public class LogicalRouterApi extends NsxClientApi {
     postAsync(LOGICAL_ROUTER_PORTS_BASE_PATH,
         serializeObjectAsJson(spec),
         HttpStatus.SC_CREATED,
-        new TypeReference<LogicalRouterLinkPortOnTier1>() {},
+        new TypeReference<LogicalRouterLinkPortOnTier1>() {
+        },
         responseCallback
     );
   }
@@ -143,7 +148,8 @@ public class LogicalRouterApi extends NsxClientApi {
       throws IOException {
     getAsync(LOGICAL_ROUTER_PORTS_BASE_PATH + "?logical_router_id=" + id,
         HttpStatus.SC_OK,
-        new TypeReference<LogicalRouterPortListResult>() {},
+        new TypeReference<LogicalRouterPortListResult>() {
+        },
         responseCallback
     );
   }
@@ -166,6 +172,47 @@ public class LogicalRouterApi extends NsxClientApi {
                                               FutureCallback<Boolean> responseCallback)
       throws IOException {
     checkExistenceAsync(LOGICAL_ROUTER_PORTS_BASE_PATH + "/" + id,
+        responseCallback);
+  }
+
+  /**
+   * Creates a NAT rule on the associated logical router.
+   */
+  public void createNatRule(String id,
+                            NatRuleCreateSpec spec,
+                            FutureCallback<NatRule> responseCallback)
+      throws IOException {
+    postAsync(LOGICAL_ROUTERS_BASE_PATH + "/" + id + "/nat/rules",
+        serializeObjectAsJson(spec),
+        HttpStatus.SC_CREATED,
+        new TypeReference<NatRule>() {
+        },
+        responseCallback);
+  }
+
+  /**
+   * Gets a NAT rule associated with the logical router.
+   */
+  public void getNatRule(String id,
+                         String ruleId,
+                         FutureCallback<NatRule> responseCallback)
+      throws IOException {
+    getAsync(LOGICAL_ROUTERS_BASE_PATH + "/" + id + "/nat/rules/" + ruleId,
+        HttpStatus.SC_OK,
+        new TypeReference<NatRule>() {
+        },
+        responseCallback);
+  }
+
+  /**
+   * Deletes a NAT rule associated with the logical router.
+   */
+  public void deleteNatRule(String id,
+                            String ruleId,
+                            FutureCallback<Void> responseCallback)
+      throws IOException {
+    deleteAsync(LOGICAL_ROUTERS_BASE_PATH + "/" + id + "/nat/rules/" + ruleId,
+        HttpStatus.SC_OK,
         responseCallback);
   }
 }
