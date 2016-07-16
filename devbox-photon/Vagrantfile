@@ -747,14 +747,17 @@ cat > $out <<-'EOM'
   i=0
   while (($i < $MAX_RETRIES))
   do
-    status=$(curl -s --connect-timeout 60 --max-time 60 --header "Authorization: Bearer #{API_SHARED_SECRET}" #{PROTOCOL}://127.0.0.1:9000/status/)
-    if [ "READY" == "$(echo $status | jq -r '.status')" ]; then
-      echo "Services started successfully"
-      exit 0
+    # Check that our service is ready by checking the available api is reachable
+    status=$(curl -w "%{http_code}" -o /tmp/out.txt -k -sS --connect-timeout 60 --max-time 60 \
+    --header "Authorization: Bearer #{API_SHARED_SECRET}" #{PROTOCOL}://127.0.0.1:9000/available)
+
+    if [[ $status == 2* ]]; then
+       echo "Services started successfully"
+       exit 0
     fi
     # Print current statuses
     echo "Service status:"
-    echo $status | jq -r '.components[] | .component + ": " + .status'
+    echo $status
     echo "Retry count: $i"
     sleep $SLEEP_BETWEEN_RETRIES_SEC
     ((i++))
@@ -766,7 +769,7 @@ chmod +x $out
 end
 
 
-#
+  #
   # Clean log directory if selected
   #
   if ENV["DEVBOX_CLEAN_LOGS"]
