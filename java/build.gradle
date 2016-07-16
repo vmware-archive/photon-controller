@@ -154,7 +154,13 @@ idea {
 }
 
 task rpm(type: Exec, dependsOn: ['photon-controller-core:clean', 'photon-controller-core:distTar']) {
-  commandLine 'true'
+  workingDir '../artifacts'
+  commandLine './create-rpm.sh'
+}
+
+task docker(type: Exec, dependsOn: ['photon-controller-core:clean', 'photon-controller-core:distTar']) {
+  workingDir '../artifacts'
+  commandLine './create-docker.sh'
 }
 
 ext.gitRoot = "git rev-parse --show-toplevel".execute().text.trim()
