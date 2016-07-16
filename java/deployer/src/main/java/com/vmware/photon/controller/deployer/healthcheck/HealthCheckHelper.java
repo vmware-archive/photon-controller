@@ -40,15 +40,7 @@ public class HealthCheckHelper {
         break;
 
       case PhotonControllerCore:
-        MultiTypeHealthChecker multiTypeHealthChecker = new MultiTypeHealthChecker();
-        // add the management api Http based health checker
-        multiTypeHealthChecker.addHealthChecker(new HttpBasedHealthChecker(HostUtils.getApiClient(service)));
-
-        // add the xenon health checker for all other services
-        List<Integer> ports = new ArrayList<>();
-        ports.add(Constants.PHOTON_CONTROLLER_PORT);
-        multiTypeHealthChecker.addHealthChecker(new XenonBasedHealthChecker(service, ipAddress, ports));
-        this.healthChecker = multiTypeHealthChecker;
+        this.healthChecker = new HttpBasedHealthChecker(HostUtils.getApiClient(service));
         break;
 
       case Lightwave:
