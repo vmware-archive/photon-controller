@@ -111,6 +111,8 @@ import org.apache.thrift.TException;
 import org.apache.thrift.async.AsyncMethodCallback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.net.InetSocketAddress;
 import java.util.List;
@@ -122,7 +124,15 @@ import java.util.concurrent.TimeUnit;
  * Note that this class is not thread safe.
  */
 @RpcClient
-public class HostClient extends ThriftClient{
+public class HostClient {
+
+  protected static final ClientPoolOptions CLIENT_POOL_OPTIONS = new ClientPoolOptions()
+      .setMaxClients(1)
+      .setMaxWaiters(100)
+      .setTimeout(30, TimeUnit.SECONDS)
+      .setServiceName("Host");
+  private static final int DEFAULT_PORT_NUMBER = 8835;
+  private static final int MAX_RESERVED_PORT_NUMBER = 1023;
 
   private static final Logger logger = LoggerFactory.getLogger(HostClient.class);
   private static final long ATTACH_DISKS_TIMEOUT_MS = TimeUnit.MINUTES.toMillis(1);
@@ -156,6 +166,8 @@ public class HostClient extends ThriftClient{
    * Reference: {@link ClientProxyImpl#createMethodHandler() createMethodHandler}.
    */
   private Host.AsyncClient clientProxy;
+  private String hostIp;
+  private int port;
   private ClientPool<Host.AsyncClient> clientPool;
 
   @Inject
@@ -163,6 +175,32 @@ public class HostClient extends ThriftClient{
                     ClientPoolFactory<Host.AsyncClient> clientPoolFactory) {
     this.clientProxyFactory = clientProxyFactory;
     this.clientPoolFactory = clientPoolFactory;
+  }
+
+  public String getHostIp() {
+    return hostIp;
+  }
+
+  public void setHostIp(String hostIp) {
+    setIpAndPort(hostIp, DEFAULT_PORT_NUMBER);
+  }
+
+  public int getPort() {
+    return port;
+  }
+
+  public void setIpAndPort(String ip, int port) {
+    checkNotNull(ip, "IP can not be null");
+    checkArgument(port > MAX_RESERVED_PORT_NUMBER,
+        "Please set port above %s", MAX_RESERVED_PORT_NUMBER);
+
+    if (ip.equals(this.hostIp) && port == this.port) {
+      return;
+    }
+
+    this.close();
+    this.hostIp = ip;
+    this.port = port;
   }
 
   /**
@@ -1365,11 +1403,9 @@ public class HostClient extends ThriftClient{
 
   private void createClientProxyWithIpAndPort() {
     logger.debug("Creating host async client of hostIp {} and port {}", this.getHostIp(), this.getPort());
-    ClientPoolOptions options = new ClientPoolOptions(CLIENT_POOL_OPTIONS);
-    options = options.setServiceName("Host");
     this.clientPool = this.clientPoolFactory.create(
         ImmutableSet.of(new InetSocketAddress(this.getHostIp(), this.getPort())),
-        options);
+        CLIENT_POOL_OPTIONS);
     this.clientProxy = clientProxyFactory.create(clientPool).get();
   }
 

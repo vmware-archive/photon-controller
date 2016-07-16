@@ -24,6 +24,8 @@ deployer:
   waitForServiceMaxRetryCount: 17
   sharedSecret: "shared-secret"
   enableAuth: true
+  keyStorePath: keystore.jks
+  keyStorePassword: password
 
 xenon:
   bindAddress: localhost

@@ -35,6 +35,8 @@ import com.vmware.photon.controller.deployer.healthcheck.HealthCheckHelperFactor
 import com.vmware.photon.controller.deployer.xenon.ContainersConfig;
 import com.vmware.photon.controller.deployer.xenon.DeployerContext;
 import com.vmware.photon.controller.deployer.xenon.DeployerServiceGroup;
+import com.vmware.photon.controller.deployer.xenon.workflow.BatchCreateManagementWorkflowService;
+import com.vmware.photon.controller.deployer.xenon.workflow.DeploymentWorkflowService;
 import com.vmware.photon.controller.nsxclient.NsxClientFactory;
 
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -141,6 +143,10 @@ public class TestEnvironment extends MultiHostEnvironment<PhotonControllerXenonH
       if (null != operationTimeoutMicros) {
         hosts[i].setOperationTimeOutMicros(operationTimeoutMicros);
       }
+
+      // Disable https with two way SSL during unit tests as it requires certificates.
+      BatchCreateManagementWorkflowService.setInUnitTests(true);
+      DeploymentWorkflowService.setInUnitTests(true);
     }
   }
 
