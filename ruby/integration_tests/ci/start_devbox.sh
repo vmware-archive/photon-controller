@@ -36,16 +36,15 @@ fi
 rm -rf "$DEVBOX/log/"
 ./gradlew :devbox:renewPhoton
 
-# Seed cloudstore with deployment
-(cd "$TESTS" && bundle exec rake cloudstore:seed)
 
 # Register real agent to devbox
 if [ -n "$REAL_AGENT" ]; then
-  (
+
     cd "$TESTS"
     bundle exec rake seed:host
 
+  if [ -n "$ENABLE_AUTH" ]; then
     # Wait for the host monitoring service to detect the newly added host
     bundle exec rake monitor:host
-  )
+  fi
 fi

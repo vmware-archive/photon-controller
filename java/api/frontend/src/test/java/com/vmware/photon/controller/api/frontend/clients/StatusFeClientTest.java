@@ -25,6 +25,7 @@ import com.vmware.photon.controller.common.thrift.ClientPool;
 import com.vmware.photon.controller.common.thrift.ClientProxy;
 import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
+import com.vmware.photon.controller.common.xenon.BasicServiceHost;
 import com.vmware.photon.controller.status.gen.Status;
 import com.vmware.photon.controller.status.gen.StatusType;
 
@@ -185,16 +186,16 @@ public class StatusFeClientTest {
   }
 
   private void prepareStatusFeClient() throws Throwable {
-
+    BasicServiceHost host = new BasicServiceHost();
     client = new StatusFeClient(
         executor,
         Executors.newScheduledThreadPool(1),
         photonControllerServerSet,
-        statusConfig);
+        statusConfig, host);
 
     Map<Component, StatusProviderFactory> statusProviderFactories = client.getStatusProviderFactories();
     StatusProviderFactory photonControllerClientFactory = spy(new XenonStatusProviderFactory(
-        photonControllerServerSet, executor, Executors.newScheduledThreadPool(1)));
+        photonControllerServerSet, executor, Executors.newScheduledThreadPool(1), host));
     setupStatusProviderFactory(photonControllerClientFactory, photonControllerClients);
     statusProviderFactories.put(Component.PHOTON_CONTROLLER, photonControllerClientFactory);
   }

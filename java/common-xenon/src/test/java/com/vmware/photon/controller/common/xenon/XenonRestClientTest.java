@@ -33,6 +33,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.hamcrest.Matchers;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -84,7 +85,7 @@ public class XenonRestClientTest {
   /**
    * Dummy test case to make Intellij recognize this as a test class.
    */
-  @Test(enabled = false)
+  @Test
   public void dummy() {
   }
 
@@ -98,9 +99,9 @@ public class XenonRestClientTest {
 
     xenonRestClient = spy(
         new XenonRestClient(
-        serverSet,
-        Executors.newFixedThreadPool(1),
-        Executors.newScheduledThreadPool(1)));
+            serverSet,
+            Executors.newFixedThreadPool(1),
+            Executors.newScheduledThreadPool(1), host));
   }
 
   private String createDocument(ExampleService.ExampleServiceState exampleServiceState) throws Throwable {
@@ -149,7 +150,7 @@ public class XenonRestClientTest {
         new XenonRestClient(
             serverSet,
             Executors.newFixedThreadPool(1),
-            Executors.newScheduledThreadPool(1)));
+            Executors.newScheduledThreadPool(1), hosts[0]));
     xenonRestClient.start();
     return hosts;
   }
@@ -164,7 +165,7 @@ public class XenonRestClientTest {
           new XenonRestClient(
               serverSet,
               Executors.newFixedThreadPool(1),
-              Executors.newScheduledThreadPool(1)));
+              Executors.newScheduledThreadPool(1), hosts[i]));
       xenonRestClients[i].start();
     }
 
@@ -205,24 +206,6 @@ public class XenonRestClientTest {
       ExampleService.ExampleServiceState savedState = host.getServiceState(ExampleService.ExampleServiceState.class,
           createdState.documentSelfLink);
       assertThat(savedState.name, is(equalTo(exampleServiceState.name)));
-    }
-
-    @Test(expectedExceptions = XenonRuntimeException.class)
-    public void testWithoutStartingClient() throws Throwable {
-      ExampleService.ExampleServiceState exampleServiceState = new ExampleService.ExampleServiceState();
-      exampleServiceState.name = UUID.randomUUID().toString();
-
-      xenonRestClient.post(ExampleService.FACTORY_LINK, exampleServiceState);
-    }
-
-    @Test(expectedExceptions = XenonRuntimeException.class)
-    public void testWithStoppedClient() throws Throwable {
-      xenonRestClient.start();
-      xenonRestClient.stop();
-      ExampleService.ExampleServiceState exampleServiceState = new ExampleService.ExampleServiceState();
-      exampleServiceState.name = UUID.randomUUID().toString();
-
-      xenonRestClient.post(ExampleService.FACTORY_LINK, exampleServiceState);
     }
 
     @Test
@@ -774,7 +757,7 @@ public class XenonRestClientTest {
 
     @DataProvider(name = "QueryOfCreateDocuments")
     Object[][] queryOfCreateDocumentsParams() {
-      return new Object[][] {
+      return new Object[][]{
           {false},
           {true}
       };
@@ -820,7 +803,7 @@ public class XenonRestClientTest {
           new XenonRestClient(
               serverSet,
               Executors.newFixedThreadPool(1),
-              Executors.newScheduledThreadPool(1)));
+              Executors.newScheduledThreadPool(1), host));
     }
 
     private String createDocument(ExampleService.ExampleServiceState exampleServiceState) throws Throwable {
@@ -844,8 +827,15 @@ public class XenonRestClientTest {
 
     @BeforeMethod
     public void setUp() throws Throwable {
+      setUpHostAndClient();
       hosts = setUpMultipleHosts(5);
+      for (BasicServiceHost host : hosts) {
+        host = BasicServiceHost.create();
+        host.startServiceSynchronously(ExampleService.createFactory(), null, ExampleService.FACTORY_LINK);
+        assertThat(host.checkServiceAvailable(ExampleService.FACTORY_LINK), is(true));
+      }
       xenonRestClients = setupXenonRestClients(hosts);
+
       doReturn(TimeUnit.SECONDS.toMicros(5)).when(xenonRestClient).getGetOperationExpirationMicros();
       doReturn(TimeUnit.SECONDS.toMicros(5)).when(xenonRestClient).getQueryOperationExpirationMicros();
     }
@@ -1065,7 +1055,7 @@ public class XenonRestClientTest {
 
     @DataProvider(name = "QueryOfCreateDocuments")
     Object[][] queryOfCreateDocumentsParams() {
-      return new Object[][] {
+      return new Object[][]{
           {false},
           {true}
       };
@@ -1147,8 +1137,8 @@ public class XenonRestClientTest {
 
       actualDocumentNames = new HashSet<>();
       actualDocumentNames.addAll(queryResult.documents.values().stream()
-              .map(d -> Utils.fromJson(d, ExampleService.ExampleServiceState.class).name)
-              .collect(Collectors.toSet())
+          .map(d -> Utils.fromJson(d, ExampleService.ExampleServiceState.class).name)
+          .collect(Collectors.toSet())
       );
 
       expectedDocumentNames = expectedDocuments.stream()
@@ -1159,8 +1149,8 @@ public class XenonRestClientTest {
         queryResult = xenonRestClient.queryDocumentPage(queryResult.nextPageLink);
 
         actualDocumentNames.addAll(queryResult.documents.values().stream()
-                .map(d -> Utils.fromJson(d, ExampleService.ExampleServiceState.class).name)
-                .collect(Collectors.toSet())
+            .map(d -> Utils.fromJson(d, ExampleService.ExampleServiceState.class).name)
+            .collect(Collectors.toSet())
         );
       }
 
@@ -1180,6 +1170,22 @@ public class XenonRestClientTest {
    */
   public class HelperMethodTest {
 
+    @BeforeMethod
+    public void setUp() throws Throwable {
+      setUpHostAndClient();
+    }
+
+    @AfterMethod
+    public void tearDown() throws Throwable {
+      if (host != null) {
+        host.destroy();
+      }
+
+      if (xenonRestClient != null) {
+        xenonRestClient.stop();
+      }
+    }
+
     @Test
     public void testGetServiceUri() throws Throwable {
       List<String> localIpAddresses = OperationUtils.getLocalHostIpAddresses();
@@ -1191,7 +1197,8 @@ public class XenonRestClientTest {
 
       StaticServerSet staticServerSet = new StaticServerSet(servers1);
       XenonRestClient testXenonRestClient =
-          new XenonRestClient(staticServerSet, Executors.newFixedThreadPool(1), Executors.newScheduledThreadPool(1));
+          new XenonRestClient(staticServerSet, Executors.newFixedThreadPool(1), Executors.newScheduledThreadPool(1),
+              host);
       final URI result1 = testXenonRestClient.getServiceUri("/dummyPath");
       String result1Address = result1.getHost();
       if (result1Address.startsWith("[")) {
@@ -1213,7 +1220,8 @@ public class XenonRestClientTest {
 
       staticServerSet = new StaticServerSet(servers2);
       testXenonRestClient =
-          new XenonRestClient(staticServerSet, Executors.newFixedThreadPool(1), Executors.newScheduledThreadPool(1));
+          new XenonRestClient(staticServerSet, Executors.newFixedThreadPool(1), Executors.newScheduledThreadPool(1),
+              host);
       final URI result2 = testXenonRestClient.getServiceUri("/dummyPath");
       String result2Address = result2.getHost();
       if (result2Address.startsWith("[")) {
@@ -1231,6 +1239,10 @@ public class XenonRestClientTest {
 
       //the selected URI should be using local address
       assertThat(localIpAddresses, hasItem(result2Address));
+
+      final URI result3 = testXenonRestClient.getServiceUri("/dummyPath?params=1");
+      assertTrue(result3.getQuery().equals("params=1"));
+
     }
   }
 
