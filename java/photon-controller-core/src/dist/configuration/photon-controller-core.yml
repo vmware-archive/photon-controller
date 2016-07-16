@@ -1,15 +1,30 @@
 xenon:
   bindAddress: "0.0.0.0"
-  port: 19000
   registrationAddress: "{{{REGISTRATION_ADDRESS}}}"
   storagePath: "{{{CLOUD-STORE_XENON_STORAGE_PATH}}}"
+{{^ENABLE_AUTH}}
+  port: 19000
   peerNodes:
-{{#PHOTON_CONTROLLER_PEER_NODES}}
-  - http://{{peerAddress}}:{{peerPort}}
-{{/PHOTON_CONTROLLER_PEER_NODES}}
-{{^PHOTON_CONTROLLER_PEER_NODES}}
-  - http://{{{REGISTRATION_ADDRESS}}}:19000
-{{/PHOTON_CONTROLLER_PEER_NODES}}
+  {{#PHOTON_CONTROLLER_PEER_NODES}}
+    - http://{{peerAddress}}:{{peerPort}}
+  {{/PHOTON_CONTROLLER_PEER_NODES}}
+  {{^PHOTON_CONTROLLER_PEER_NODES}}
+    - http://{{{REGISTRATION_ADDRESS}}}:19000
+  {{/PHOTON_CONTROLLER_PEER_NODES}}
+{{/ENABLE_AUTH}}
+{{#ENABLE_AUTH}}
+  securePort: 19000
+  keyFile: "/etc/keys/machine.privkey"
+  certificateFile: "/etc/keys/machine.crt"
+  port: 0
+  peerNodes:
+  {{#PHOTON_CONTROLLER_PEER_NODES}}
+    - https://{{peerAddress}}:{{peerPort}}
+  {{/PHOTON_CONTROLLER_PEER_NODES}}
+  {{^PHOTON_CONTROLLER_PEER_NODES}}
+    - https://{{{REGISTRATION_ADDRESS}}}:19000
+  {{/PHOTON_CONTROLLER_PEER_NODES}}
+{{/ENABLE_AUTH}}
 
 deployer:
   deployer:
@@ -30,6 +45,10 @@ deployer:
     vibUninstallOrder:
     - photon-controller-agent
     - envoy
+{{#ENABLE_AUTH}}
+    keyStorePath: /keystore.jks
+    keyStorePassword: {{{LIGHTWAVE_PASSWORD}}}
+{{/ENABLE_AUTH}}
 
 photon_controller_logging:
   file:

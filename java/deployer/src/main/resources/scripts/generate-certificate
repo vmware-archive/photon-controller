@@ -1,0 +1,87 @@
+#!/bin/bash
+
+tools=$(readlink -nf $(dirname $0))
+source $tools/common.sh
+
+function usage() {
+  echo "Usage: $0 LIGHTWAVE_ADDRESS LIGHTWAVE_PASSWORD LIGHTWAVE_DOMAIN" 1>&2
+  echo
+  echo "Supplied args:"
+  echo $*
+  exit 1
+}
+
+lightwave_address=""
+lightwave_password=""
+lightwave_domain=""
+
+if [ "$#" -lt 3 ]
+then
+  usage $*
+fi
+
+lightwave_address=$1
+shift
+lightwave_password=$1
+shift
+lightwave_domain=$1
+shift
+
+function get_ca_cert() {
+  # Get CA certificates
+  curl -X GET -k -sS -H "Content-Type: application/json" \
+    https://$lightwave_address/idm/tenant/$lightwave_domain/certificates?scope=tenant > ca_cert.json
+
+  # Parse the JSON response
+  python << END
+import json,sys
+with open('ca_cert.json') as data_file:
+        obj = json.load(data_file);
+f = open('ca.crt', 'w')
+for x in obj[0]['certificates']:
+        f.write(x['encoded'] + "\n")
+END
+
+  # Import the CA cert into trust store
+  keytool -import -trustcacerts -alias TRUSTED_ROOTS -file ca.crt \
+    -keystore /usr/java/default/jre/lib/security/cacerts -storepass changeit -noprompt
+}
+
+function generate_certificate() {
+  # Fill in the hostname and ip address for generating a machine certificate
+  full_hostname="$(hostname -f)"
+  ip_address="$(hostname -i)"
+  sed -i s/IPAddress.*/"IPAddress = $ip_address"/ /opt/vmware/share/config/certool.cfg
+  sed -i s/Hostname.*/"Hostname = $full_hostname"/ /opt/vmware/share/config/certool.cfg
+
+  mkdir -p /etc/keys
+
+  # Generate keys if they don't exist
+  if [ ! -f /etc/keys/machine.privkey ] || [ ! -f /etc/keys/machine.pubkey ]; then
+    certool --genkey --privkey=/etc/keys/machine.privkey --pubkey=/etc/keys/machine.pubkey \
+      --srp-upn administrator@$lightwave_domain --srp-pwd $lightwave_password --server $lightwave_address
+  fi
+
+  # Generate certificate if it doesn't exist
+  if [ ! -f /etc/keys/machine.crt ]; then
+    certool --gencert --privkey=/etc/keys/machine.privkey --cert=/etc/keys/machine.crt \
+      --srp-upn administrator@$lightwave_domain --srp-pwd $lightwave_password \
+      --server $lightwave_address --config /opt/vmware/share/config/certool.cfg
+  fi
+
+  # Generate pkcs12 keystore
+  openssl pkcs12 -export -in /etc/keys/machine.crt -inkey /etc/keys/machine.privkey -out keystore.p12 \
+    -name MACHINE_CERT -password pass:$lightwave_password
+
+  # Convert it into JKS
+  keytool -importkeystore -deststorepass changeit -destkeypass changeit \
+    -destkeystore /keystore.jks -srckeystore keystore.p12 -srcstoretype PKCS12 -srcstorepass $lightwave_password \
+    -alias MACHINE_CERT
+
+  # Restrict permission on the key files
+  chmod 0400 /etc/keys/machine.privkey
+  chmod 0444 /etc/keys/machine.pubkey
+}
+
+generate_certificate
+get_ca_cert

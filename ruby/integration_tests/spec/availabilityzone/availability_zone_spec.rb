@@ -22,7 +22,7 @@ describe "Availability Zone", availabilityzone: true do
     wait_for_image_seeding_progress_is_done
   end
 
-  it "set host's availability zone and create VMs successfully" do
+  it "set host's availability zone and create VMs successfully", auth_disabled: true do
     # create an availability zone
     availability_zone_name = random_name("zone3-")
     availability_zone = create_availability_zone(EsxCloud::AvailabilityZoneCreateSpec.new(availability_zone_name))
