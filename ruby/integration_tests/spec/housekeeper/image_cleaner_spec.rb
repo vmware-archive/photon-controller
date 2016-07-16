@@ -11,7 +11,7 @@
 
 require_relative "spec_helper_housekeeper"
 
-describe "Image Cleaner", housekeeper: true do
+describe "Image Cleaner", housekeeper: true, auth_disabled: true do
   let(:service_link) { "/photon/housekeeper/image-cleaners" }
   let(:client) { EsxCloud::Dcp::HouskeeperClient.instance }
   let(:task_completion_stages) { ["FINISHED", "FAILED", "CANCELLED"] }
