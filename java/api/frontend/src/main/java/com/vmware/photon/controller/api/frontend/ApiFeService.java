@@ -88,6 +88,7 @@ import com.vmware.photon.controller.api.frontend.resources.vm.VmResource;
 import com.vmware.photon.controller.api.frontend.resources.vm.VmTagsResource;
 import com.vmware.photon.controller.common.metrics.GraphiteConfig;
 import com.vmware.photon.controller.swagger.resources.SwaggerJsonListing;
+import com.vmware.xenon.common.ServiceHost;
 
 import com.google.inject.Injector;
 import com.hubspot.dropwizard.guice.GuiceBundle;
@@ -129,6 +130,7 @@ public class ApiFeService extends Application<ApiFeStaticConfiguration> {
   private Injector injector;
   private ApiFeModule apiModule;
   private HibernateBundle<ApiFeStaticConfiguration> hibernateBundle;
+  private static ServiceHost xenonHost;
 
   public static void main(String[] args) throws Exception {
     setupApiFeConfigurationForServerCommand(args);
@@ -148,12 +150,17 @@ public class ApiFeService extends Application<ApiFeStaticConfiguration> {
     }
   }
 
+  public static void addServiceHost(ServiceHost xenonHost) {
+    ApiFeService.xenonHost = xenonHost;
+  }
+
   @Override
   public void initialize(Bootstrap<ApiFeStaticConfiguration> bootstrap) {
     bootstrap.addBundle(new AssetsBundle("/assets", "/api/", "index.html"));
 
     apiModule = new ApiFeModule();
     apiModule.setConfiguration(apiFeConfiguration);
+    apiModule.setServiceHost(xenonHost);
 
     GuiceBundle<ApiFeStaticConfiguration> guiceBundle = getGuiceBundle();
     bootstrap.addBundle(guiceBundle);

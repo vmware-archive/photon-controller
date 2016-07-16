@@ -15,8 +15,6 @@ import site
 import os
 
 # this will be /opt/vmware/photon/controller/site-packages on ESX
-from thrift.transport.TSSLSocket import TSSLServerSocket
-
 site.addsitedir(os.path.join(os.path.dirname(__file__), ".."))
 
 # IMPORTANT: Add any 3rd party dependencies below since they will not be
@@ -134,13 +132,7 @@ class Agent:
             processor = plugin.service.Processor(handler)
             mux_processor.registerProcessor(plugin.name, processor)
 
-        cert_file = "/etc/vmware/ssl/host.crt"
-
-        if os.path.isfile(cert_file):
-            transport = TSSLServerSocket(port=self._config.host_port, certfile=cert_file)
-        else:
-            transport = TSocket.TServerSocket(port=self._config.host_port)
-
+        transport = TSocket.TServerSocket(port=self._config.host_port)
         protocol_factory = TCompactProtocol.TCompactProtocolFactory()
 
         server = TNonblockingServer.TNonblockingServer(
