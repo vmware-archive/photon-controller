@@ -490,7 +490,8 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
       for (Pair<String, Integer> address : e.getValue()) {
         Operation op = Operation
             .createGet(
-                UriUtils.buildUri(address.getFirst(), address.getSecond(), ServiceUriPaths.DEFAULT_NODE_GROUP, null));
+                UriUtils.buildUri(address.getFirst(), address.getSecond(), ServiceUriPaths.DEFAULT_NODE_GROUP, null))
+            .setReferer(UriUtils.buildUri(getHost(), getSelfLink()));
         ops.add(op);
       }
     }
@@ -512,6 +513,7 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
           Operation.createPatch(
               UriUtils.buildUri(address.getFirst(), address.getSecond(), ServiceUriPaths.DEFAULT_NODE_GROUP, null))
             .setBody(patch)
+            .setReferer(UriUtils.buildUri(getHost(), getSelfLink()))
         );
       }
     }
