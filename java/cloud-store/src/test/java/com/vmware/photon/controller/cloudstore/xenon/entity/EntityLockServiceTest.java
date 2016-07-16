@@ -93,7 +93,7 @@ public class EntityLockServiceTest {
       StaticServerSet serverSet = new StaticServerSet(
           new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
       xenonRestClient =
-          new XenonRestClient(serverSet, Executors.newFixedThreadPool(1), Executors.newScheduledThreadPool(1));
+          new XenonRestClient(serverSet, Executors.newFixedThreadPool(1), Executors.newScheduledThreadPool(1), host);
       xenonRestClient.start();
 
       testState = new EntityLockService.State();
@@ -254,7 +254,8 @@ public class EntityLockServiceTest {
       createdState = result.getBody(EntityLockService.State.class);
       assertThat(createdState.entityId, is(equalTo(testState.entityId)));
       assertThat(createdState.ownerTaskId, is(equalTo(testState.ownerTaskId)));
-      assertThat(createdState.lockOperation, is(EntityLockService.State.LockOperation.RELEASE));
+      // Expect the lockOperation to be null because Xenon returns a null value for the operation in case of a no-op
+      assertThat(createdState.lockOperation, is(nullValue()));
       savedState = host.getServiceState(EntityLockService.State.class,
           testState.documentSelfLink);
       assertThat(savedState.entityId, is(equalTo(testState.entityId)));
@@ -310,7 +311,7 @@ public class EntityLockServiceTest {
 
       assertThat(result.getStatusCode(), is(Operation.STATUS_CODE_NOT_MODIFIED));
       createdState = result.getBody(EntityLockService.State.class);
-      assertThat(createdState.lockOperation, is(EntityLockService.State.LockOperation.ACQUIRE));
+      assertThat(createdState.lockOperation, is(nullValue()));
       assertThat(createdState.ownerTaskId, is(testState.ownerTaskId));
       savedState = host.getServiceState(EntityLockService.State.class,
           createdState.documentSelfLink);

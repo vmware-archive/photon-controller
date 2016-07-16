@@ -23,10 +23,10 @@ import com.vmware.xenon.common.OperationJoin;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.ServiceDocumentQueryResult;
 import com.vmware.xenon.common.ServiceErrorResponse;
+import com.vmware.xenon.common.ServiceHost;
 import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
-import com.vmware.xenon.common.http.netty.NettyHttpServiceClient;
 import com.vmware.xenon.services.common.QueryTask;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -75,7 +75,14 @@ public class XenonRestClient implements XenonClient {
   private static final long SERVICE_DOCUMENT_STATUS_CHECK_INTERVAL_MILLIS = 100L;
   private long serviceDocumentStatusCheckIntervalMillis = SERVICE_DOCUMENT_STATUS_CHECK_INTERVAL_MILLIS;
   private static final Logger logger = LoggerFactory.getLogger(XenonRestClient.class);
-  private NettyHttpServiceClient client;
+
+  // APIFE will use the Xenon service host to communicate with the other Xenon services like deployer, scheduler,
+  // housekeeper, etc. Previously this was done using a separate HTTP rest client. We no longer need it as APIFE and
+  // other Xenon services are running inside the same Java process. Also in an auth enabled deployment where Xenon
+  // uses SSL, using the service host becomes easier and efficient instead of sending all traffic between APIFE and
+  // Xenon through SSL.
+  private ServiceHost serviceHost;
+
   private ServerSet serverSet;
   private URI localHostUri;
   private List<String> localHostIpAddresses;
@@ -84,7 +91,8 @@ public class XenonRestClient implements XenonClient {
   @Inject
   public XenonRestClient(ServerSet serverSet,
                          ExecutorService executor,
-                         ScheduledExecutorService scheduledExecutorService) {
+                         ScheduledExecutorService scheduledExecutorService,
+                         ServiceHost serviceHost) {
 
     checkNotNull(serverSet, "Cannot construct XenonRestClient with null serverSet");
     checkNotNull(executor, "Cannot construct XenonRestClient with null executor");
@@ -94,30 +102,20 @@ public class XenonRestClient implements XenonClient {
     // used in this class, we can create it here instead of passing a singleton through the constructor.
     this.scheduledExecutorService = scheduledExecutorService;
     this.serverSet = serverSet;
-    try {
-      client = (NettyHttpServiceClient) NettyHttpServiceClient.create(
-          XenonRestClient.class.getCanonicalName(),
-          executor,
-          scheduledExecutorService
-      );
-    } catch (URISyntaxException uriSyntaxException) {
-      logger.error("ctor: URISyntaxException={}", uriSyntaxException.toString());
-      throw new RuntimeException(uriSyntaxException);
-    }
-
+    this.serviceHost = serviceHost;
     this.localHostUri = OperationUtils.getLocalHostUri();
     this.localHostIpAddresses = OperationUtils.getLocalHostIpAddresses();
   }
 
+  // This method is no longer needed, will be removed in a future change
   @Override
   public void start() {
-    client.start();
     logger.info("client started");
   }
 
+  // This method is no longer needed, will be removed in a future change
   @Override
   public void stop() {
-    client.stop();
     logger.info("client stopped");
   }
 
@@ -566,8 +564,7 @@ public class XenonRestClient implements XenonClient {
       throws BadRequestException, DocumentNotFoundException, TimeoutException, InterruptedException {
     logger.info("send: STARTED {}", OperationUtils.createLogMessage(requestedOperation));
     OperationLatch operationLatch = createOperationLatch(requestedOperation);
-
-    client.send(requestedOperation);
+    serviceHost.sendRequest(requestedOperation);
 
     Operation completedOperation = null;
     try {
@@ -595,7 +592,7 @@ public class XenonRestClient implements XenonClient {
 
     OperationJoin operationJoin = OperationJoin.create(requestedOperations.values());
     OperationJoinLatch operationJoinLatch = createOperationJoinLatch(operationJoin);
-    operationJoin.sendWith(client, batchSize);
+    operationJoin.sendWith(serviceHost, batchSize);
 
     Map<String, Operation> result = null;
 
@@ -684,11 +681,29 @@ public class XenonRestClient implements XenonClient {
       selectedInetSocketAddress = getRandomInetSocketAddress();
     }
 
+    String query = null;
+    String parsedPath = null;
+    int index = path.indexOf('?');
+    if (index != -1) {
+      parsedPath = path.substring(0, index);
+      query = path.substring(index + 1);
+    }
+
     int port = getPort(selectedInetSocketAddress);
     String address = selectedInetSocketAddress.getAddress().getHostAddress();
 
     try {
-      return new URI("http", null, address, port, path, null, null);
+      if (serviceHost.getUri().getScheme().equals("https")) {
+        if (query != null) {
+          return new URI("https", null, address, port, parsedPath, query, null);
+        }
+        return new URI("https", null, address, port, path, null, null);
+       } else {
+        if (query != null) {
+          return new URI("http", null, address, port, parsedPath, query, null);
+        }
+        return new URI("http", null, address, port, path, null, null);
+       }
     } catch (URISyntaxException uriSyntaxException) {
       logger.error("createUriFromServerSet: URISyntaxException path={} exception={} port={}",
           path, uriSyntaxException, port);

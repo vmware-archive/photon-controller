@@ -111,6 +111,16 @@ public class DeployerContextTest {
     }
 
     @Test
+    public void testKeystorePath() {
+      assertThat(deployerContext.getKeyStorePath(), is("keystore.jks"));
+    }
+
+    @Test
+    public void testKeystorePassword() {
+      assertThat(deployerContext.getKeyStorePassword(), is("password"));
+    }
+
+    @Test
     public void testDeployerDefaultOverrides() {
       assertThat(deployerContext.getCorePoolSize(), is(17));
       assertThat(deployerContext.getMaximumPoolSize(), is(17));

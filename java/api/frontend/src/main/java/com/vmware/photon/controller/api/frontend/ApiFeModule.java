@@ -87,6 +87,7 @@ import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.common.thrift.ThriftModule;
 import com.vmware.photon.controller.common.thrift.ThriftServiceModule;
 import com.vmware.photon.controller.host.gen.Host;
+import com.vmware.xenon.common.ServiceHost;
 
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
@@ -118,11 +119,22 @@ public class ApiFeModule extends AbstractModule {
   private static final Logger logger = LoggerFactory.getLogger(ApiFeModule.class);
   private ApiFeConfiguration configuration;
 
+  // APIFE will use the Xenon service host to communicate with the other Xenon services like deployer, scheduler,
+  // housekeeper, etc. Previously this was done using a separate HTTP rest client. We no longer need it as APIFE and
+  // other Xenon services are running inside the same Java process. Also in an auth enabled deployment where Xenon
+  // uses SSL, using the service host becomes easier and efficient instead of sending all traffic between APIFE and
+  // Xenon through SSL.
+  private ServiceHost serviceHost;
+
   public ApiFeModule() {
   }
 
   public void setConfiguration(ApiFeConfiguration configuration) {
     this.configuration = configuration;
+  }
+
+  public void setServiceHost(ServiceHost serviceHost) {
+    this.serviceHost = serviceHost;
   }
 
   @Provides
@@ -148,6 +160,12 @@ public class ApiFeModule extends AbstractModule {
   @Singleton
   public AuthConfig getAuthConfig() {
     return configuration.getAuth();
+  }
+
+  @Provides
+  @Singleton
+  public ServiceHost getServiceHost() {
+    return serviceHost;
   }
 
   @Provides
