@@ -29,7 +29,9 @@ import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.common.xenon.validation.Positive;
+import com.vmware.photon.controller.deployer.deployengine.ScriptRunner;
 import com.vmware.photon.controller.deployer.xenon.ContainersConfig;
+import com.vmware.photon.controller.deployer.xenon.DeployerContext;
 import com.vmware.photon.controller.deployer.xenon.entity.ContainerService;
 import com.vmware.photon.controller.deployer.xenon.entity.ContainerTemplateService;
 import com.vmware.photon.controller.deployer.xenon.task.ChildTaskAggregatorFactoryService;
@@ -48,10 +50,15 @@ import com.vmware.xenon.services.common.ServiceUriPaths;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFutureTask;
+import org.apache.commons.io.FileUtils;
 import static com.google.common.base.Preconditions.checkState;
 
 import javax.annotation.Nullable;
 
+import java.io.File;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -66,6 +73,7 @@ public class CreateContainersWorkflowService extends StatefulService {
   private static final String MGMT_UI_LOGOUT_REDIRECT_URL_TEMPLATE = "https://%s:4343/logout_callback";
   private static final String SWAGGER_UI_LOGIN_REDIRECT_URL_TEMPLATE = "https://%s/api/login-redirect.html";
   private static final String SWAGGER_UI_LOGOUT_REDIRECT_URL_TEMPLATE = "https://%s/api/login-redirect.html";
+  public static final String SCRIPT_NAME = "generate-certificate";
 
   /**
    * This enum lists the services which require authentication.
@@ -85,6 +93,7 @@ public class CreateContainersWorkflowService extends StatefulService {
      */
     public enum SubStage {
       CREATE_LIGHTWAVE_CONTAINER,
+      GENERATE_CERTIFICATE,
       REGISTER_AUTH_CLIENT_FOR_SWAGGER_UI,
       REGISTER_AUTH_CLIENT_FOR_MGMT_UI,
       CREATE_CORE_CONTAINERS,
@@ -239,11 +248,12 @@ public class CreateContainersWorkflowService extends StatefulService {
       case STARTED:
         checkState(taskState.subStage != null);
         switch (taskState.subStage) {
-          case CREATE_CORE_CONTAINERS:
-          case PREEMPTIVE_PAUSE_BACKGROUND_TASKS:
           case CREATE_LIGHTWAVE_CONTAINER:
+          case GENERATE_CERTIFICATE:
           case REGISTER_AUTH_CLIENT_FOR_SWAGGER_UI:
           case REGISTER_AUTH_CLIENT_FOR_MGMT_UI:
+          case CREATE_CORE_CONTAINERS:
+          case PREEMPTIVE_PAUSE_BACKGROUND_TASKS:
           case CREATE_SERVICE_CONTAINERS:
           case CREATE_LOAD_BALANCER_CONTAINER:
             break;
@@ -264,6 +274,10 @@ public class CreateContainersWorkflowService extends StatefulService {
     switch (currentState.taskState.subStage) {
       case CREATE_LIGHTWAVE_CONTAINER:
         processCreateLightwaveContainerSubStage(currentState);
+        break;
+      case GENERATE_CERTIFICATE:
+        generateCertificate(currentState, TaskState.TaskStage.STARTED,
+            TaskState.SubStage.REGISTER_AUTH_CLIENT_FOR_SWAGGER_UI);
         break;
       case REGISTER_AUTH_CLIENT_FOR_SWAGGER_UI:
         registerAuthClient(currentState, AuthenticationServiceType.SWAGGER, TaskState.TaskStage.STARTED,
@@ -350,20 +364,20 @@ public class CreateContainersWorkflowService extends StatefulService {
 
     if (!currentState.isNewDeployment) {
       ServiceUtils.logInfo(this, "Skipping creation of Lightwave container (not a new deployment");
-      sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.REGISTER_AUTH_CLIENT_FOR_SWAGGER_UI);
+      sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.GENERATE_CERTIFICATE);
       return;
     }
 
     if (!currentState.isAuthEnabled) {
       ServiceUtils.logInfo(this, "Skipping creation of Lightwave container (auth is disabled)");
-      sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.REGISTER_AUTH_CLIENT_FOR_SWAGGER_UI);
+      sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.GENERATE_CERTIFICATE);
       return;
     }
 
     createContainers(currentState,
         Collections.singletonList(ContainersConfig.ContainerType.Lightwave),
         TaskState.TaskStage.STARTED,
-        TaskState.SubStage.REGISTER_AUTH_CLIENT_FOR_SWAGGER_UI);
+        TaskState.SubStage.GENERATE_CERTIFICATE);
   }
 
   //
@@ -522,6 +536,89 @@ public class CreateContainersWorkflowService extends StatefulService {
                 }
               }));
     }
+  }
+
+  private void generateCertificate(State currentState,
+                                  TaskState.TaskStage nextStage,
+                                  TaskState.SubStage nextSubStage) {
+
+    if (!currentState.isNewDeployment) {
+      ServiceUtils.logInfo(this, "Skipping certificate generation - not a new deployment");
+      sendStageProgressPatch(nextStage, nextSubStage);
+      return;
+    }
+
+    if (!currentState.isAuthEnabled) {
+      ServiceUtils.logInfo(this, "Skipping certificate generation - auth is disabled");
+      sendStageProgressPatch(nextStage, nextSubStage);
+      return;
+    }
+
+    sendRequest(
+        HostUtils.getCloudStoreHelper(this)
+            .createGet(currentState.deploymentServiceLink)
+            .setCompletion(
+                (completedOp, failure) -> {
+                  if (null != failure) {
+                    failTask(failure);
+                    return;
+                  }
+
+                  try {
+                    DeploymentService.State deploymentState = completedOp.getBody(DeploymentService.State.class);
+                    generateCertificate(deploymentState, nextStage, nextSubStage);
+                  } catch (Throwable t) {
+                    failTask(t);
+                  }
+                }
+            ));
+  }
+
+  private void generateCertificate(DeploymentService.State deploymentState,
+                                   TaskState.TaskStage nextStage,
+                                   TaskState.SubStage nextSubStage) {
+    List<String> command = new ArrayList<>();
+    command.add("./" + SCRIPT_NAME);
+    command.add(deploymentState.oAuthServerAddress);
+    command.add(deploymentState.oAuthPassword);
+    command.add(deploymentState.oAuthTenantName);
+
+    DeployerContext deployerContext = HostUtils.getDeployerContext(this);
+    File scriptLogFile = new File(deployerContext.getScriptLogDirectory(), SCRIPT_NAME + ".log");
+
+    ScriptRunner scriptRunner = new ScriptRunner.Builder(command, deployerContext.getScriptTimeoutSec())
+        .directory(deployerContext.getScriptDirectory())
+        .redirectOutput(ProcessBuilder.Redirect.to(scriptLogFile))
+        .build();
+
+    ListenableFutureTask<Integer> futureTask = ListenableFutureTask.create(scriptRunner);
+    HostUtils.getListeningExecutorService(this).submit(futureTask);
+    Futures.addCallback(futureTask,
+        new FutureCallback<Integer>() {
+          @Override
+          public void onSuccess(@javax.validation.constraints.NotNull Integer result) {
+            try {
+              if (result != 0) {
+                logScriptErrorAndFail(result, scriptLogFile);
+              } else {
+                sendStageProgressPatch(nextStage, nextSubStage);
+              }
+            } catch (Throwable t) {
+              failTask(t);
+            }
+          }
+
+          @Override
+          public void onFailure(Throwable throwable) {
+            failTask(throwable);
+          }
+        });
+  }
+
+  private void logScriptErrorAndFail(Integer result, File scriptLogFile) throws Throwable {
+    ServiceUtils.logSevere(this, SCRIPT_NAME + " returned " + result.toString());
+    ServiceUtils.logSevere(this, "Script output: " + FileUtils.readFileToString(scriptLogFile));
+    failTask(new IllegalStateException("Generating certificate failed with exit code " + result.toString()));
   }
 
   private void registerAuthClient(State currentState,
