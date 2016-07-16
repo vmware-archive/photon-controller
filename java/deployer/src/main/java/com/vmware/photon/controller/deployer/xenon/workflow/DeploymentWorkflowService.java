@@ -83,6 +83,8 @@ import java.util.stream.Collectors;
  */
 public class DeploymentWorkflowService extends StatefulService {
 
+  private static boolean inUnitTests = false;
+
   /**
    * This class defines the state of a {@link DeploymentWorkflowService} task.
    */
@@ -176,6 +178,10 @@ public class DeploymentWorkflowService extends StatefulService {
     // It is intentional to leave out the OWNER_SELECTED and REPLICATION options, because
     // this task is only intended to run on the initial deployer, and should not be
     // replicated among the new deployers in the management plane we bring up.
+  }
+
+  public static void setInUnitTests(boolean inUnitTests) {
+    DeploymentWorkflowService.inUnitTests = inUnitTests;
   }
 
   /**
@@ -727,9 +733,36 @@ public class DeploymentWorkflowService extends StatefulService {
     return state;
   }
 
-  private void migrateData(State currentState) {
+  private void migrateData(final State currentState) {
     ServiceUtils.logInfo(this, "Migrating deployment data");
 
+    if (DeploymentWorkflowService.inUnitTests) {
+      migrateData(currentState, "http");
+      return;
+    }
+
+    sendRequest(
+        HostUtils.getCloudStoreHelper(this)
+            .createGet(currentState.deploymentServiceLink)
+            .setCompletion(
+                (operation, throwable) -> {
+                  if (null != throwable) {
+                    failTask(throwable);
+                    return;
+                  }
+
+                  DeploymentService.State deploymentState = operation.getBody(DeploymentService.State.class);
+                  String destinationProtocol = "http";
+                  if (deploymentState.oAuthEnabled) {
+                    destinationProtocol = "https";
+                  }
+                  migrateData(currentState, destinationProtocol);
+                }
+            )
+    );
+  }
+
+  private void migrateData(State currentState, String destinationProtocol) {
     // get all container
     Operation queryContainersOp = buildBroadcastKindQuery(ContainerService.State.class);
     // get all container templates
@@ -761,12 +794,14 @@ public class DeploymentWorkflowService extends StatefulService {
             .filter(vm -> vmServiceLinks.contains(vm.documentSelfLink))
             .collect(Collectors.toList());
 
-        migrateData(currentState, photonControllerCoreVms);
+        migrateData(currentState, photonControllerCoreVms, destinationProtocol);
       })
       .sendWith(this);
   }
 
-  private void migrateData(State currentState, List<VmService.State> managementVms) {
+  private void migrateData(State currentState,
+                           List<VmService.State> managementVms,
+                           final String destinationProtocol) {
     Collection<DeploymentMigrationInformation> migrationInformation
       = HostUtils.getDeployerContext(this).getDeploymentMigrationInformation();
 
@@ -794,6 +829,7 @@ public class DeploymentWorkflowService extends StatefulService {
           destinationServers,
           factory,
           factory);
+      startState.destinationProtocol = destinationProtocol;
 
       TaskUtils.startTaskAsync(
           this,
@@ -830,9 +866,7 @@ public class DeploymentWorkflowService extends StatefulService {
                 if (!errors.isEmpty()) {
                   failTask(errors);
                 } else {
-                  updateDeploymentServiceState(
-                      destinationServers,
-                      currentState);
+                  updateDeploymentServiceState(destinationServers, currentState, destinationProtocol);
                 }
               }
             }
@@ -849,7 +883,9 @@ public class DeploymentWorkflowService extends StatefulService {
     }
   }
 
-  private void updateDeploymentServiceState(Set<InetSocketAddress> remoteCloudStoreServers, State currentState) {
+  private void updateDeploymentServiceState(Set<InetSocketAddress> remoteCloudStoreServers,
+                                            State currentState,
+                                            String destinationProtocol) {
 
     DeploymentService.State deploymentServiceState = new DeploymentService.State();
     deploymentServiceState.state = DeploymentState.READY;
@@ -857,7 +893,7 @@ public class DeploymentWorkflowService extends StatefulService {
     try {
       sendRequest(Operation
           .createPatch(ServiceUtils.createUriFromServerSet(remoteCloudStoreServers,
-              currentState.deploymentServiceLink))
+              currentState.deploymentServiceLink, destinationProtocol))
           .addRequestHeader(Operation.REPLICATION_QUORUM_HEADER, Operation.REPLICATION_QUORUM_HEADER_VALUE_ALL)
           .setBody(deploymentServiceState)
           .setCompletion(
