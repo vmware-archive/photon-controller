@@ -413,7 +413,7 @@ public class CopyStateTaskService extends StatefulService {
               // we will need to implement an alternative solution using idempotent posts so that this workaround can
               // be removed https://www.pivotaltracker.com/story/show/114425679
           .addPragmaDirective(Operation.PRAGMA_DIRECTIVE_FORCE_INDEX_UPDATE)
-          .setReferer(uri);
+          .setReferer(UriUtils.buildUri(getHost(), getSelfLink()));
       return postOp;
     } catch (Throwable ex) {
       failTask(ex);
@@ -503,7 +503,7 @@ public class CopyStateTaskService extends StatefulService {
     return Operation
         .createDelete(uri)
         .setBody(new ServiceDocument())
-        .setReferer(uri);
+        .setReferer(UriUtils.buildUri(getHost(), getSelfLink()));
   }
 
   private Object removeFactoryPathFromSelfLink(Object jsonObject, String factoryPath) {

@@ -67,7 +67,7 @@ for pid in "${pids[@]}"; do wait "$pid"; done
 export DRIVER=api
 
 # run life_cycle tests
-if [ -z "$DISABLE_LIFECYCLE_TESTS" ]; then
+if [ -z "$DISABLE_LIFECYCLE_TESTS" ] && [ "$ENABLE_AUTH" == "false" ]; then
   bundle exec rake esxcloud:life_cycle
 fi
 
