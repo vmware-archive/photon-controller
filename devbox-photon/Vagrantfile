@@ -485,6 +485,7 @@ end
         private_network_lw_ip = ENV["PRIVATE_NETWORK_LW_IP"] || "172.31.253.67"
         dynamic_params += %Q(,\n  "LIGHTWAVE_HOSTNAME" : "#{private_network_lw_ip}")
       end
+
     else
       dynamic_params += %Q(,\n  "ENABLE_AUTH" : false)
       dynamic_params += %Q(,\n  "APIFE_PORT" : "28080")
@@ -741,7 +742,7 @@ cat > $out <<-'EOM'
   echo "Containers:"
   docker ps -a
 
-  MAX_RETRIES=300
+  MAX_RETRIES=50
   SLEEP_BETWEEN_RETRIES_SEC=1
   echo "Checking status of services"
   i=0
@@ -766,7 +767,7 @@ chmod +x $out
 end
 
 
-#
+  #
   # Clean log directory if selected
   #
   if ENV["DEVBOX_CLEAN_LOGS"]

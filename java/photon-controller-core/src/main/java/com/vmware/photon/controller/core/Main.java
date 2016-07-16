@@ -53,6 +53,7 @@ import com.vmware.photon.controller.rootscheduler.SchedulerConfig;
 import com.vmware.photon.controller.rootscheduler.service.CloudStoreConstraintChecker;
 import com.vmware.photon.controller.rootscheduler.service.ConstraintChecker;
 import com.vmware.photon.controller.rootscheduler.xenon.SchedulerServiceGroup;
+import com.vmware.provider.VecsLoadStoreParameter;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceHost;
 
@@ -78,6 +79,9 @@ import java.io.FileWriter;
 import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
 import java.nio.file.Paths;
+import java.security.Key;
+import java.security.KeyStore;
+import java.security.cert.Certificate;
 import java.util.Arrays;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -112,6 +116,17 @@ public class Main {
 
     ThriftModule thriftModule = new ThriftModule();
 
+    KeyStore ks = KeyStore.getInstance("VKS");
+    logger.info("truststore property {}", System.getProperty("javax.net.ssl.trustStore"));
+    logger.info("keystore property {}", System.getProperty("javax.net.ssl.keyStore"));
+
+
+    logger.info("keystore: " + ks.getType());
+    ks.load(new VecsLoadStoreParameter("TRUSTED_ROOTS"));
+    Certificate cert = ks.getCertificate("machinecert");
+    Key key = ks.getKey("machinecert", null);
+    logger.info("cert {} , key {}", cert, key);
+
     ServiceHost xenonHost = startXenonHost(photonControllerConfig, thriftModule, deployerConfig);
 
     // Creating a temp configuration file for apife with modification to some named sections in photon-controller-config
@@ -141,6 +156,7 @@ public class Main {
     apiFeArgs[0] = "server";
     apiFeArgs[1] = apiFeTempConfig.getAbsolutePath();
     ApiFeService.setupApiFeConfigurationForServerCommand(apiFeArgs);
+    ApiFeService.addServiceHost(xenonHost);
 
     new ApiFeService().run(apiFeArgs);
     apiFeTempConfig.deleteOnExit();
@@ -168,7 +184,6 @@ public class Main {
         new StaticServerSet(new InetSocketAddress(photonControllerConfig.getXenonConfig().getRegistrationAddress(),
             Constants.PHOTON_CONTROLLER_PORT));
     final CloudStoreHelper cloudStoreHelper = new CloudStoreHelper(cloudStoreServerSet);
-    final ConstraintChecker checker = new CloudStoreConstraintChecker(cloudStoreHelper);
 
     final CloseableHttpAsyncClient httpClient;
     try {
@@ -192,6 +207,8 @@ public class Main {
             new PhotonControllerXenonHost(photonControllerConfig.getXenonConfig(),
                 hostClientFactory, agentControlClientFactory, nsxClientFactory, cloudStoreHelper);
     logger.info("Created PhotonController Xenon Host");
+
+    final ConstraintChecker checker = new CloudStoreConstraintChecker(cloudStoreHelper, photonControllerXenonHost);
 
     logger.info("Creating Cloud Store Xenon Service Group");
     CloudStoreServiceGroup cloudStoreServiceGroup = createCloudStoreServiceGroup();
@@ -245,7 +262,7 @@ public class Main {
 
   private static SchedulerServiceGroup createSchedulerServiceGroup(SchedulerConfig root,
           ConstraintChecker constraintChecker) throws Throwable {
-    return  new SchedulerServiceGroup(root, constraintChecker);
+    return new SchedulerServiceGroup(root, constraintChecker);
   }
 
   private static HousekeeperServiceGroup createHousekeeperServiceGroup() throws Throwable {
