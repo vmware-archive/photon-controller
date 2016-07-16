@@ -29,18 +29,29 @@ import com.vmware.photon.controller.common.xenon.XenonHostInfoProvider;
 import com.vmware.photon.controller.common.xenon.XenonServiceGroup;
 import com.vmware.photon.controller.nsxclient.NsxClientFactory;
 import com.vmware.photon.controller.nsxclient.NsxClientFactoryProvider;
+import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
+import com.vmware.xenon.common.ServiceClient;
 import com.vmware.xenon.common.ServiceHost;
+import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.common.UtilsHelper;
+import com.vmware.xenon.common.http.netty.NettyHttpServiceClient;
 import com.vmware.xenon.services.common.LuceneDocumentIndexService;
 import com.vmware.xenon.services.common.RootNamespaceService;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManagerFactory;
+
+import java.io.FileInputStream;
+import java.security.KeyStore;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.Executors;
 
 /**
  * This class implements the Xenon service host object. It is the only Xenon host for Photon Controller
@@ -73,6 +84,7 @@ public class PhotonControllerXenonHost
     private XenonServiceGroup housekeeper;
     private XenonServiceGroup deployer;
     private SystemConfigProvider systemConfigProvider;
+    private ServiceClient serviceClient;
 
 
     @SuppressWarnings("rawtypes")
@@ -207,6 +219,54 @@ public class PhotonControllerXenonHost
       return this.nsxClientFactory;
     }
 
+  /**
+   * This method is overridden to change the client used by Xenon to send requests.
+   * @param op
+   */
+    @Override
+    public void sendRequest(Operation op) {
+      String refererPath = op.getReferer().getPath();
+      if (!refererPath.contains("batch-create-mgmt-vm") && !refererPath.contains("copy-state")) {
+        super.sendRequest(op);
+        return;
+      }
+
+      if (!op.getReferer().getScheme().equals("https")) {
+        super.sendRequest(op);
+        return;
+      }
+
+      logger.info("sendRequest operation: " + op);
+      logger.info("sendRequest referer: " + op.getReferer());
+      try {
+        if (this.serviceClient == null) {
+          this.serviceClient = NettyHttpServiceClient.create(
+              this.getClass().getSimpleName(),
+              Executors.newFixedThreadPool(Utils.DEFAULT_THREAD_COUNT),
+              Executors.newScheduledThreadPool(Utils.DEFAULT_IO_THREAD_COUNT),
+              this);
+
+          SSLContext clientContext = SSLContext.getInstance(ServiceClient.TLS_PROTOCOL_NAME);
+          TrustManagerFactory trustManagerFactory = TrustManagerFactory
+              .getInstance(TrustManagerFactory.getDefaultAlgorithm());
+          trustManagerFactory.init((KeyStore) null);
+          KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+          KeyStore keyStore = KeyStore.getInstance("JKS");
+          try (FileInputStream fis = new FileInputStream("/keystore.jks")) {
+            keyStore.load(fis, "changeit".toCharArray());
+          }
+          kmf.init(keyStore, "changeit".toCharArray());
+          clientContext.init(kmf.getKeyManagers(), trustManagerFactory.getTrustManagers(), null);
+          serviceClient.setSSLContext(clientContext);
+          serviceClient.start();
+        }
+
+        this.serviceClient.send(op);
+      } catch (Exception exception) {
+        logger.warn("Exception during sendRequest: " + exception.getMessage());
+      }
+    }
+
     public void registerCloudStore(XenonServiceGroup cloudStore) {
         this.cloudStore = cloudStore;
         addXenonServiceGroup(cloudStore);
@@ -242,6 +302,7 @@ public class PhotonControllerXenonHost
     public XenonServiceGroup getDeployer() {
       return this.deployer;
     }
+
 
     private void addXenonServiceGroup(XenonServiceGroup xenonServiceGroup) {
         xenonServiceGroups.add(xenonServiceGroup);

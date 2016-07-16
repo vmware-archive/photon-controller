@@ -543,35 +543,35 @@ EOM
       fi
     EOS
 
-  # Set hostname for devbox. This is needed for the lightwave client.
-  photon.vm.provision :shell, :inline => <<-EOS
-    sed -i s/photon-.*/"devbox.#{ENV['LW_DOMAIN_NAME'] || "photon.vmware.com"} devbox"/ /etc/hosts
-    hostnamectl set-hostname devbox
-    hostnamectl set-hostname --static devbox
-  EOS
+    # Set hostname for devbox. This is needed for the lightwave client.
+    photon.vm.provision :shell, :inline => <<-EOS
+      sed -i s/photon-.*/"devbox.#{ENV['LW_DOMAIN_NAME'] || "photon.vmware.com"} devbox"/ /etc/hosts
+      hostnamectl set-hostname devbox
+      hostnamectl set-hostname --static devbox
+    EOS
 
-  # Set a static (public/private) lightwave IP as DNS so that devbox can join lightwave's domain
-  # Note: Gateway needs to be set to only get a static IP, otherwise a secondary IP will
-  # be made by networkd.
-  if ENV['ENABLE_AUTH'] == 'true'
-    if ENV['PUBLIC_LW_NETWORK_IP']
-      photon.vm.provision :shell, :privileged => true, :inline => <<-EOS
-          set -ex
-          echo "DNS=#{ENV['PUBLIC_LW_NETWORK_IP']}" >> /etc/systemd/network/10-dhcp-enp0s8.network
-          echo "Domains=#{ENV['LW_DOMAIN_NAME']}" >> /etc/systemd/network/10-dhcp-enp0s8.network
-          echo "Gateway=#{ENV["PUBLIC_NETWORK_GATEWAY"]}" >> /etc/systemd/network/10-dhcp-enp0s8.network
-          systemctl restart systemd-networkd systemd-resolved
-      EOS
-    else
-      private_network_lw_ip = ENV["PRIVATE_NETWORK_LW_IP"] || "172.31.253.67"
-      photon.vm.provision :shell, :privileged => true, :inline => <<-EOS
-          set -ex
-          echo "DNS=#{private_network_lw_ip}" >> /etc/systemd/network/10-dhcp-enp0s8.network
-          echo "Domains=#{ENV['LW_DOMAIN_NAME']}" >> /etc/systemd/network/10-dhcp-enp0s8.network
-          systemctl restart systemd-networkd systemd-resolved
-      EOS
+    # Set a static (public/private) lightwave IP as DNS so that devbox can join lightwave's domain
+    # Note: Gateway needs to be set to only get a static IP, otherwise a secondary IP will
+    # be made by networkd.
+    if ENV['ENABLE_AUTH'] == 'true'
+      if ENV['PUBLIC_LW_NETWORK_IP']
+        photon.vm.provision :shell, :privileged => true, :inline => <<-EOS
+            set -ex
+            echo "DNS=#{ENV['PUBLIC_LW_NETWORK_IP']}" >> /etc/systemd/network/10-dhcp-enp0s8.network
+            echo "Domains=#{ENV['LW_DOMAIN_NAME']}" >> /etc/systemd/network/10-dhcp-enp0s8.network
+            echo "Gateway=#{ENV["PUBLIC_NETWORK_GATEWAY"]}" >> /etc/systemd/network/10-dhcp-enp0s8.network
+            systemctl restart systemd-networkd systemd-resolved
+        EOS
+      else
+        private_network_lw_ip = ENV["PRIVATE_NETWORK_LW_IP"] || "172.31.253.67"
+        photon.vm.provision :shell, :privileged => true, :inline => <<-EOS
+            set -ex
+            echo "DNS=#{private_network_lw_ip}" >> /etc/systemd/network/10-dhcp-enp0s8.network
+            echo "Domains=#{ENV['LW_DOMAIN_NAME']}" >> /etc/systemd/network/10-dhcp-enp0s8.network
+            systemctl restart systemd-networkd systemd-resolved
+        EOS
+      end
     end
-  end
 
 
   # ================ PROVISIONING ================
@@ -747,14 +747,17 @@ cat > $out <<-'EOM'
   i=0
   while (($i < $MAX_RETRIES))
   do
-    status=$(curl -s --connect-timeout 60 --max-time 60 --header "Authorization: Bearer #{API_SHARED_SECRET}" #{PROTOCOL}://127.0.0.1:9000/status/)
-    if [ "READY" == "$(echo $status | jq -r '.status')" ]; then
-      echo "Services started successfully"
-      exit 0
+    # Check that our service is ready by checking the available api is reachable
+    status=$(curl -w "%{http_code}" -o /tmp/out.txt -k -sS --connect-timeout 60 --max-time 60 \
+    --header "Authorization: Bearer #{API_SHARED_SECRET}" #{PROTOCOL}://127.0.0.1:9000/available)
+
+    if [[ $status == 2* ]]; then
+       echo "Services started successfully"
+       exit 0
     fi
     # Print current statuses
     echo "Service status:"
-    echo $status | jq -r '.components[] | .component + ": " + .status'
+    echo $status
     echo "Retry count: $i"
     sleep $SLEEP_BETWEEN_RETRIES_SEC
     ((i++))
@@ -766,7 +769,7 @@ chmod +x $out
 end
 
 
-#
+  #
   # Clean log directory if selected
   #
   if ENV["DEVBOX_CLEAN_LOGS"]

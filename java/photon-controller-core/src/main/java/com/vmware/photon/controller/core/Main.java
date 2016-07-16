@@ -46,6 +46,7 @@ import com.vmware.photon.controller.deployer.healthcheck.HealthCheckHelper;
 import com.vmware.photon.controller.deployer.healthcheck.HealthCheckHelperFactory;
 import com.vmware.photon.controller.deployer.healthcheck.XenonBasedHealthChecker;
 import com.vmware.photon.controller.deployer.xenon.ContainersConfig;
+import com.vmware.photon.controller.deployer.xenon.DeployerContext;
 import com.vmware.photon.controller.deployer.xenon.DeployerServiceGroup;
 import com.vmware.photon.controller.housekeeper.xenon.HousekeeperServiceGroup;
 import com.vmware.photon.controller.nsxclient.NsxClientFactory;
@@ -54,7 +55,10 @@ import com.vmware.photon.controller.rootscheduler.service.CloudStoreConstraintCh
 import com.vmware.photon.controller.rootscheduler.service.ConstraintChecker;
 import com.vmware.photon.controller.rootscheduler.xenon.SchedulerServiceGroup;
 import com.vmware.xenon.common.Service;
+import com.vmware.xenon.common.ServiceClient;
 import com.vmware.xenon.common.ServiceHost;
+import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.common.http.netty.NettyHttpServiceClient;
 
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -68,7 +72,9 @@ import org.apache.http.ssl.SSLContexts;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManagerFactory;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -78,8 +84,10 @@ import java.io.FileWriter;
 import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
 import java.nio.file.Paths;
+import java.security.KeyStore;
 import java.util.Arrays;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -141,6 +149,7 @@ public class Main {
     apiFeArgs[0] = "server";
     apiFeArgs[1] = apiFeTempConfig.getAbsolutePath();
     ApiFeService.setupApiFeConfigurationForServerCommand(apiFeArgs);
+    ApiFeService.addServiceHost(xenonHost);
 
     new ApiFeService().run(apiFeArgs);
     apiFeTempConfig.deleteOnExit();
@@ -168,7 +177,6 @@ public class Main {
         new StaticServerSet(new InetSocketAddress(photonControllerConfig.getXenonConfig().getRegistrationAddress(),
             Constants.PHOTON_CONTROLLER_PORT));
     final CloudStoreHelper cloudStoreHelper = new CloudStoreHelper(cloudStoreServerSet);
-    final ConstraintChecker checker = new CloudStoreConstraintChecker(cloudStoreHelper);
 
     final CloseableHttpAsyncClient httpClient;
     try {
@@ -192,6 +200,8 @@ public class Main {
             new PhotonControllerXenonHost(photonControllerConfig.getXenonConfig(),
                 hostClientFactory, agentControlClientFactory, nsxClientFactory, cloudStoreHelper);
     logger.info("Created PhotonController Xenon Host");
+
+    final ConstraintChecker checker = new CloudStoreConstraintChecker(cloudStoreHelper, photonControllerXenonHost);
 
     logger.info("Creating Cloud Store Xenon Service Group");
     CloudStoreServiceGroup cloudStoreServiceGroup = createCloudStoreServiceGroup();
@@ -227,6 +237,29 @@ public class Main {
     photonControllerXenonHost.registerDeployer(deployerServiceGroup);
     logger.info("Registered Deployer Xenon Service Group");
 
+    DeployerContext deployerContext = deployerConfig.getDeployerContext();
+    if (deployerContext.isAuthEnabled()) {
+      ServiceClient serviceClient = NettyHttpServiceClient.create(
+          Main.class.getSimpleName(),
+          Executors.newFixedThreadPool(Utils.DEFAULT_THREAD_COUNT),
+          Executors.newScheduledThreadPool(Utils.DEFAULT_IO_THREAD_COUNT),
+          photonControllerXenonHost);
+
+      SSLContext clientContext = SSLContext.getInstance(ServiceClient.TLS_PROTOCOL_NAME);
+      TrustManagerFactory trustManagerFactory = TrustManagerFactory
+          .getInstance(TrustManagerFactory.getDefaultAlgorithm());
+      trustManagerFactory.init((KeyStore) null);
+      KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+      KeyStore keyStore = KeyStore.getInstance("JKS");
+      try (FileInputStream fis = new FileInputStream(deployerContext.getKeyStorePath())) {
+        keyStore.load(fis, deployerContext.getKeyStorePassword().toCharArray());
+      }
+      kmf.init(keyStore, deployerContext.getKeyStorePassword().toCharArray());
+      clientContext.init(kmf.getKeyManagers(), trustManagerFactory.getTrustManagers(), null);
+      serviceClient.setSSLContext(clientContext);
+      photonControllerXenonHost.setClient(serviceClient);
+    }
+
     logger.info("Starting PhotonController Xenon Host");
     photonControllerXenonHost.start();
     logger.info("Started PhotonController Xenon Host");
@@ -245,7 +278,7 @@ public class Main {
 
   private static SchedulerServiceGroup createSchedulerServiceGroup(SchedulerConfig root,
           ConstraintChecker constraintChecker) throws Throwable {
-    return  new SchedulerServiceGroup(root, constraintChecker);
+    return new SchedulerServiceGroup(root, constraintChecker);
   }
 
   private static HousekeeperServiceGroup createHousekeeperServiceGroup() throws Throwable {
