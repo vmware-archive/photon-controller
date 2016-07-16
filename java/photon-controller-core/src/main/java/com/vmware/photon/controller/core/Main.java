@@ -142,6 +142,10 @@ public class Main {
     apiFeArgs[1] = apiFeTempConfig.getAbsolutePath();
     ApiFeService.setupApiFeConfigurationForServerCommand(apiFeArgs);
 
+
+    ApiFeService.addServiceHost(xenonHost);
+
+
     new ApiFeService().run(apiFeArgs);
     apiFeTempConfig.deleteOnExit();
 
@@ -168,7 +172,6 @@ public class Main {
         new StaticServerSet(new InetSocketAddress(photonControllerConfig.getXenonConfig().getRegistrationAddress(),
             Constants.PHOTON_CONTROLLER_PORT));
     final CloudStoreHelper cloudStoreHelper = new CloudStoreHelper(cloudStoreServerSet);
-    final ConstraintChecker checker = new CloudStoreConstraintChecker(cloudStoreHelper);
 
     final CloseableHttpAsyncClient httpClient;
     try {
@@ -192,6 +195,8 @@ public class Main {
             new PhotonControllerXenonHost(photonControllerConfig.getXenonConfig(),
                 hostClientFactory, agentControlClientFactory, nsxClientFactory, cloudStoreHelper);
     logger.info("Created PhotonController Xenon Host");
+
+    final ConstraintChecker checker = new CloudStoreConstraintChecker(cloudStoreHelper, photonControllerXenonHost);
 
     logger.info("Creating Cloud Store Xenon Service Group");
     CloudStoreServiceGroup cloudStoreServiceGroup = createCloudStoreServiceGroup();
@@ -245,7 +250,7 @@ public class Main {
 
   private static SchedulerServiceGroup createSchedulerServiceGroup(SchedulerConfig root,
           ConstraintChecker constraintChecker) throws Throwable {
-    return  new SchedulerServiceGroup(root, constraintChecker);
+    return new SchedulerServiceGroup(root, constraintChecker);
   }
 
   private static HousekeeperServiceGroup createHousekeeperServiceGroup() throws Throwable {
