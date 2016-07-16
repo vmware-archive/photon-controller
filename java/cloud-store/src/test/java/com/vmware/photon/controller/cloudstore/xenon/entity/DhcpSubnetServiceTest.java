@@ -51,7 +51,7 @@ public class DhcpSubnetServiceTest {
 
     StaticServerSet serverSet = new StaticServerSet(new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
     xenonClient =
-        new XenonRestClient(serverSet, Executors.newFixedThreadPool(128), Executors.newScheduledThreadPool(1));
+        new XenonRestClient(serverSet, Executors.newFixedThreadPool(128), Executors.newScheduledThreadPool(1), host);
     xenonClient.start();
   }
 

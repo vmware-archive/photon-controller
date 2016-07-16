@@ -67,6 +67,7 @@ import com.vmware.photon.controller.api.frontend.config.PaginationConfig;
 import com.vmware.photon.controller.api.frontend.utils.NetworkHelper;
 import com.vmware.photon.controller.api.frontend.utils.PhysicalNetworkHelper;
 import com.vmware.photon.controller.api.frontend.utils.VirtualNetworkHelper;
+import com.vmware.photon.controller.common.xenon.BasicServiceHost;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
@@ -258,6 +259,9 @@ public class ApiFeModuleTest {
           )
       );
 
+      BasicServiceHost host = BasicServiceHost.create();
+      apiFeModule.setServiceHost(host);
+
       injector = Guice.createInjector(
           apiFeModule,
           new AbstractModule() {
@@ -338,6 +342,8 @@ public class ApiFeModuleTest {
       );
 
       apiFeModule.setConfiguration(apiFeConfiguration);
+      BasicServiceHost host = BasicServiceHost.create();
+      apiFeModule.setServiceHost(host);
 
       Injector injector = Guice.createInjector(
           apiFeModule,
@@ -397,6 +403,8 @@ public class ApiFeModuleTest {
       );
 
       apiFeModule.setConfiguration(apiFeConfiguration);
+      BasicServiceHost host = BasicServiceHost.create();
+      apiFeModule.setServiceHost(host);
 
       Injector injector = Guice.createInjector(
           apiFeModule,
@@ -499,6 +507,8 @@ public class ApiFeModuleTest {
       );
 
       apiFeModule.setConfiguration(apiFeConfiguration);
+      BasicServiceHost host = BasicServiceHost.create();
+      apiFeModule.setServiceHost(host);
 
       Injector injector = Guice.createInjector(
           apiFeModule,
@@ -528,6 +538,8 @@ public class ApiFeModuleTest {
       );
 
       apiFeModule.setConfiguration(apiFeConfiguration);
+      BasicServiceHost host = BasicServiceHost.create();
+      apiFeModule.setServiceHost(host);
 
       Injector injector = Guice.createInjector(
           apiFeModule,

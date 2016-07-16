@@ -72,7 +72,7 @@ if [ -z "$DISABLE_LIFECYCLE_TESTS" ]; then
 fi
 
 # run the housekeeper integration test
-if [ -z "$DISABLE_HOUSEKEEPER" ]; then
+if [ -z "$DISABLE_HOUSEKEEPER" ] && [ "$ENABLE_AUTH" == "false" ]; then
   bundle exec rake housekeeper
 fi
 

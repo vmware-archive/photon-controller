@@ -74,7 +74,7 @@ public class DatastoreXenonBackendTest {
         new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
 
     xenonClient =
-        new ApiFeXenonRestClient(serverSet, Executors.newFixedThreadPool(1), Executors.newScheduledThreadPool(1));
+        new ApiFeXenonRestClient(serverSet, Executors.newFixedThreadPool(1), Executors.newScheduledThreadPool(1), host);
 
     datastoreBackend = new DatastoreXenonBackend(xenonClient);
   }

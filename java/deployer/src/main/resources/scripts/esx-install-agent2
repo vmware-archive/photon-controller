@@ -132,7 +132,6 @@ function create_and_copy_certificate() {
 
     rm -rf "${cert_dir}"
   fi
-
 }
 
 sshpass -p "$password"  ssh -o StrictHostKeyChecking=no ${username}@${host_address} date

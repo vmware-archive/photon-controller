@@ -24,8 +24,6 @@ public class ClientPoolOptions {
   private int maxWaiters = 1;
   private long timeoutMs = 0;
   private String serviceName;
-  private String keyStorePath;
-  private String keyStorePassword;
 
   public ClientPoolOptions() {
   }
@@ -35,8 +33,6 @@ public class ClientPoolOptions {
     this.maxWaiters = other.maxWaiters;
     this.timeoutMs = other.timeoutMs;
     this.serviceName = other.serviceName;
-    this.keyStorePath = other.keyStorePath;
-    this.keyStorePassword = other.keyStorePassword;
   }
 
   public int getMaxClients() {
@@ -72,24 +68,6 @@ public class ClientPoolOptions {
 
   public ClientPoolOptions setServiceName(String serviceName) {
     this.serviceName = serviceName;
-    return this;
-  }
-
-  public String getKeyStorePath() {
-    return keyStorePath;
-  }
-
-  public ClientPoolOptions setKeyStorePath(String keyStorePath) {
-    this.keyStorePath = keyStorePath;
-    return this;
-  }
-
-  public String getKeyStorePassword() {
-    return keyStorePassword;
-  }
-
-  public ClientPoolOptions setKeyStorePassword(String keyStorePassword) {
-    this.keyStorePassword = keyStorePassword;
     return this;
   }
 }
