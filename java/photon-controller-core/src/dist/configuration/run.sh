@@ -58,8 +58,10 @@ jvm_mem=1024
 jvm_mem=$(({{{memoryMb}}}/2))
 {{/memoryMb}}
 
+
 # Use the JKS keystore which has our certificate as the default java keystore
-security_opts="-Djavax.net.ssl.trustStore=/keystore.jks"
+security_opts="-Djavax.net.ssl.trustStore=/keystore.jks -Djava.security.properties=/etc/vmware/java/vmware-override-java.security"
+
 export JAVA_OPTS="-Xmx${jvm_mem}m -Xms${jvm_mem}m -XX:+UseConcMarkSweepGC ${security_opts} {{{JAVA_DEBUG}}}"
 
 if [ -n "$ENABLE_AUTH" -a "$ENABLE_AUTH" == "true" ]
@@ -134,6 +136,18 @@ keytool -importkeystore -deststorepass {{{LIGHTWAVE_PASSWORD}}} -destkeypass {{{
 chmod 0400 /etc/keys/machine.privkey
 chmod 0444 /etc/keys/machine.pubkey
 {{/ENABLE_AUTH}}
+
+# Move vecs jar out of classpath
+mkdir -p ${API_LIB}/ext
+mv ${API_LIB}/vmware-endpoint-certificate-store-6.5.0.jar ${API_LIB}/ext
+
+
+# Add the private key and certificate to the MACHINE_SSL_CERT store.
+#/opt/vmware/bin/vecs-cli entry create --store TRUSTED_ROOTS --alias machinecert --cert /etc/keys/machine.crt \
+#--key /etc/keys/machine.privkey
+/opt/vmware/bin/vecs-cli entry create --store MACHINE_SSL_CERT --alias machinecert --cert /etc/keys/machine.crt \
+--key /etc/keys/machine.privkey
+
 
 #
 # Start service

@@ -108,7 +108,7 @@ public class SchedulerServiceGroupTest {
       MockitoAnnotations.initMocks(this);
       cloudStoreServerSet = mock(ServerSet.class);
       cloudStoreHelper = new CloudStoreHelper(cloudStoreServerSet);
-      checker = new CloudStoreConstraintChecker(cloudStoreHelper);
+      checker = new CloudStoreConstraintChecker(cloudStoreHelper, host);
 
       storageDir = new File(config.getXenonConfig().getStoragePath());
       FileUtils.deleteDirectory(storageDir);
@@ -282,8 +282,8 @@ public class SchedulerServiceGroupTest {
       xenonConfig.setBindAddress("0.0.0.0");
       xenonConfig.setPort(18000);
       xenonConfig.setStoragePath(storageDir.getAbsolutePath());
-      CloudStoreConstraintChecker checker = new CloudStoreConstraintChecker(null);
       host = new PhotonControllerXenonHost(xenonConfig, hostClientFactory, null, null, cloudStoreHelper);
+      CloudStoreConstraintChecker checker = new CloudStoreConstraintChecker(null, host);
       SchedulerServiceGroup schedulerServiceGroup = new SchedulerServiceGroup(config.getRoot(), checker);
       host.registerScheduler(schedulerServiceGroup);
       host.setMaintenanceIntervalMicros(maintenanceInterval);
