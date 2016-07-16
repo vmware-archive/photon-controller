@@ -6,7 +6,7 @@
         {
             "type": "docker",
             "image": "vmware/photon-controller-service-base:latest",
-            "export_path": "./build/photon-controller-docker-{{user `version`}}.tar"
+            "export_path": "./build/docker/photon-controller-docker-{{user `version`}}.tar"
         }
     ],
     "provisioners":[
