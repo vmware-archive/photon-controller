@@ -487,9 +487,27 @@ $out
         abort("auth is enabled, but swagger logout url is not set")
       end
 
+    # Lightwave parameters. lightwave server will run even when auth is not enabled. When auth is enabled, photon
+    # controller will use the lightwave server. This is needed because we are using a single container now which has
+    # both lightwave server and photon controller.
+    dynamic_params += %Q(,\n  "LIGHTWAVE_DOMAIN" : "#{ENV['LW_DOMAIN_NAME'] || "photon.vmware.com"}")
+    dynamic_params += %Q(,\n  "LIGHTWAVE_PASSWORD" : "#{ENV['LW_PASSWORD'] || "LW.pass2"}")
+
+
     else
       dynamic_params += %Q(,\n  "ENABLE_AUTH" : "false")
       dynamic_params += %Q(,\n  "APIFE_PORT" : "28080")
+    end
+
+
+    if ENV["PUBLIC_NETWORK_IP"]
+      # The hostname is set to the IP since Photon Controller does not have DNS set
+      # to Lightwave yet, but Photon Controller during auth enabled needs to
+      # verify the hostname matches the Lightwave server certificate.
+      dynamic_params += %Q(,\n  "LIGHTWAVE_HOSTNAME" : "#{ENV['PUBLIC_NETWORK_IP']}")
+    else
+      private_network_lw_ip = ENV["PRIVATE_NETWORK_IP"] || "172.31.253.67"
+      dynamic_params += %Q(,\n  "LIGHTWAVE_HOSTNAME" : "#{private_network_lw_ip}")
     end
 
     # Virtual network parameters
@@ -883,7 +901,7 @@ cat > $out <<-'EOM'
   echo "Containers:"
   docker ps -a
 
-  MAX_RETRIES=300
+  MAX_RETRIES=50
   SLEEP_BETWEEN_RETRIES_SEC=1
   echo "Checking status of services"
   i=0
@@ -908,7 +926,7 @@ chmod +x $out
 end
 
 
-#
+  #
   # Clean log directory if selected
   #
   if ENV["DEVBOX_CLEAN_LOGS"]

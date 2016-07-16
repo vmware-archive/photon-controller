@@ -14,7 +14,6 @@
 package com.vmware.photon.controller.common.xenon.host;
 
 import com.vmware.xenon.common.ServiceHost;
-import com.vmware.xenon.common.UriUtils;
 
 import java.nio.file.Paths;
 
@@ -24,16 +23,21 @@ import java.nio.file.Paths;
 public abstract class AbstractServiceHost extends ServiceHost {
 
   public AbstractServiceHost(XenonConfig xenonConfig) throws Throwable {
-
     Arguments arguments = new Arguments();
-    arguments.port = xenonConfig.getPort();
+
     arguments.bindAddress = xenonConfig.getBindAddress();
     arguments.sandbox = Paths.get(xenonConfig.getStoragePath());
     arguments.peerNodes = xenonConfig.getPeerNodes();
-
-    if (xenonConfig.getRegistrationAddress() != null) {
-      arguments.publicUri = UriUtils.buildUri(xenonConfig.getRegistrationAddress(), xenonConfig.getPort(), null, null)
-          .toString();
+    // Check if securePort is used, this means authentication is enabled.
+    if (xenonConfig.getSecurePort() != null) {
+      // authentication enabled
+      arguments.securePort = xenonConfig.getSecurePort();
+      arguments.keyFile = Paths.get(xenonConfig.getKeyFile());
+      arguments.certificateFile = Paths.get(xenonConfig.getCertificateFile());
+      arguments.sslClientAuthMode = ServiceHostState.SslClientAuthMode.NEED;
+      arguments.port = -1;
+    } else {
+      arguments.port = xenonConfig.getPort();
     }
 
     this.initialize(arguments);

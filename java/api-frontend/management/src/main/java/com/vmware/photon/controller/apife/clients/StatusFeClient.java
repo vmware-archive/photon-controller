@@ -31,6 +31,7 @@ import com.vmware.photon.controller.common.clients.StatusProvider;
 import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.photon.controller.status.gen.Status;
 import com.vmware.photon.controller.status.gen.StatusType;
+import com.vmware.xenon.common.ServiceHost;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
@@ -74,13 +75,15 @@ public class StatusFeClient {
       @BackendTaskExecutor ExecutorService executor,
       @ScheduledTaskExecutor ScheduledExecutorService scheduledExecutorService,
       @PhotonControllerServerSet ServerSet photonControllerServerSet,
-      StatusConfig statusConfig) {
+      StatusConfig statusConfig,
+      ServiceHost serviceHost) {
     this.executor = executor;
     this.components = statusConfig.getComponents();
 
     statusProviderFactories = Maps.newEnumMap(Component.class);
     statusProviderFactories.put(Component.PHOTON_CONTROLLER,
-            new XenonStatusProviderFactory(photonControllerServerSet, this.executor, scheduledExecutorService));
+            new XenonStatusProviderFactory(photonControllerServerSet, this.executor, scheduledExecutorService,
+                serviceHost));
   }
 
   public SystemStatus getSystemStatus() throws InternalException {

@@ -87,6 +87,7 @@ import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.common.thrift.ThriftModule;
 import com.vmware.photon.controller.common.thrift.ThriftServiceModule;
 import com.vmware.photon.controller.host.gen.Host;
+import com.vmware.xenon.common.ServiceHost;
 
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
@@ -117,12 +118,17 @@ import java.util.concurrent.TimeUnit;
 public class ApiFeModule extends AbstractModule {
   private static final Logger logger = LoggerFactory.getLogger(ApiFeModule.class);
   private ApiFeConfiguration configuration;
+  private ServiceHost serviceHost;
 
   public ApiFeModule() {
   }
 
   public void setConfiguration(ApiFeConfiguration configuration) {
     this.configuration = configuration;
+  }
+
+  public void setServiceHost(ServiceHost serviceHost) {
+    this.serviceHost = serviceHost;
   }
 
   @Provides
@@ -148,6 +154,12 @@ public class ApiFeModule extends AbstractModule {
   @Singleton
   public AuthConfig getAuthConfig() {
     return configuration.getAuth();
+  }
+
+  @Provides
+  @Singleton
+  public ServiceHost getServiceHost() {
+    return serviceHost;
   }
 
   @Provides

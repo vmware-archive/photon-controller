@@ -30,8 +30,8 @@ import com.vmware.photon.controller.resource.gen.ResourceConstraintType;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocumentDescription;
 import com.vmware.xenon.common.ServiceDocumentQueryResult;
+import com.vmware.xenon.common.ServiceHost;
 import com.vmware.xenon.common.Utils;
-import com.vmware.xenon.common.http.netty.NettyHttpServiceClient;
 import com.vmware.xenon.services.common.QueryTask;
 import com.vmware.xenon.services.common.QueryTask.Query.Occurance;
 import com.vmware.xenon.services.common.QueryTask.QuerySpecification.SortOrder;
@@ -39,7 +39,6 @@ import com.vmware.xenon.services.common.QueryTask.QuerySpecification.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -47,7 +46,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executors;
 
 /**
  * This scheduler constraint checker (currently the only one used by the scheduler) will find a set of up to
@@ -102,7 +100,7 @@ public class CloudStoreConstraintChecker implements ConstraintChecker {
   private final Random random = new Random();
 
   private final CloudStoreHelper cloudStoreHelper;
-  private NettyHttpServiceClient xenonClient;
+  private ServiceHost xenonHost;
 
   private class Range {
     int lowerBound;
@@ -165,25 +163,9 @@ public class CloudStoreConstraintChecker implements ConstraintChecker {
 
   }
 
-  public CloudStoreConstraintChecker(CloudStoreHelper cloudStoreHelper) {
+  public CloudStoreConstraintChecker(CloudStoreHelper cloudStoreHelper, ServiceHost xenonHost) {
     this.cloudStoreHelper = cloudStoreHelper;
-
-    try {
-      // We need a Xenon client to send requests to CloudStore. You might ask why we create one.
-      // 1. We don't use XenonRestClient because it's blocking, and we want to be asynchronous
-      // 2. We don't use ServiceHost.sendRequest() because the ServiceHost is not present in all of our tests.
-      // We could work around this by having the tests pass the CloudStore host. Doing that ran into
-      // Guice injection issues, so we're going to stick with the xenonClient issue. When we remove Guice,
-      // we should revisit this by passing in the host.
-      xenonClient = (NettyHttpServiceClient) NettyHttpServiceClient.create(
-          CloudStoreConstraintChecker.class.getCanonicalName(),
-          Executors.newFixedThreadPool(4),
-          Executors.newScheduledThreadPool(0));
-      xenonClient.start();
-    } catch (URISyntaxException uriSyntaxException) {
-      logger.error("CloudStoreConstraintChecker: URISyntaxException={}", uriSyntaxException.toString());
-      throw new RuntimeException(uriSyntaxException);
-    }
+    this.xenonHost = xenonHost;
   }
 
   /**
@@ -380,7 +362,7 @@ public class CloudStoreConstraintChecker implements ConstraintChecker {
           state.currentStep = Step.BUILD_DS_TAG_CONSTRAINT;
           getCandidates_HandleStep(state);
         });
-    xenonClient.send(queryOperation);
+    xenonHost.sendRequest(queryOperation);
   }
 
   /**
@@ -591,7 +573,7 @@ public class CloudStoreConstraintChecker implements ConstraintChecker {
           state.currentStep = Step.ANALYZE_CANDIDATES;
           getCandidates_HandleStep(state);
         });
-    xenonClient.send(queryOperation);
+    xenonHost.sendRequest(queryOperation);
   }
 
   /**

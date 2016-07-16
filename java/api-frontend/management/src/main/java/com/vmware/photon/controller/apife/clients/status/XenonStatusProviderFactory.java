@@ -18,6 +18,7 @@ import com.vmware.photon.controller.common.clients.StatusProvider;
 import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.common.xenon.XenonRestClient;
+import com.vmware.xenon.common.ServiceHost;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,13 +37,16 @@ public class XenonStatusProviderFactory implements StatusProviderFactory {
 
   private final ExecutorService executor;
   private final ScheduledExecutorService scheduledExecutorService;
+  private final ServiceHost serviceHost;
 
   public XenonStatusProviderFactory(ServerSet serverSet,
                                     ExecutorService executor,
-                                    ScheduledExecutorService scheduledExecutorService) {
+                                    ScheduledExecutorService scheduledExecutorService,
+                                    ServiceHost serviceHost) {
     this.serverSet = serverSet;
     this.executor = executor;
     this.scheduledExecutorService = scheduledExecutorService;
+    this.serviceHost = serviceHost;
   }
 
   @Override
@@ -54,7 +58,8 @@ public class XenonStatusProviderFactory implements StatusProviderFactory {
   public StatusProvider create(InetSocketAddress server) throws InternalException {
     logger.info("Creating XenonRestClient as StatusProvider on {}", server);
     XenonRestClient xenonRestClient =
-        new XenonRestClient(new StaticServerSet(server), this.executor, this.scheduledExecutorService);
+        new XenonRestClient(new StaticServerSet(server), this.executor, this.scheduledExecutorService,
+            this.serviceHost);
     return new XenonStatusProvider(xenonRestClient);
   }
 }

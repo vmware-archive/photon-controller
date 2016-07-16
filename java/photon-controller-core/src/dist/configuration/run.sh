@@ -58,7 +58,8 @@ jvm_mem=1024
 jvm_mem=$(({{{memoryMb}}}/2))
 {{/memoryMb}}
 
-export JAVA_OPTS="-Xmx${jvm_mem}m -Xms${jvm_mem}m -XX:+UseConcMarkSweepGC {{{JAVA_DEBUG}}}"
+security_opts="-Djava.security.properties=/etc/vmware/java/vmware-override-java.security"
+export JAVA_OPTS="-Xmx${jvm_mem}m -Xms${jvm_mem}m -XX:+UseConcMarkSweepGC ${security_opts} {{{JAVA_DEBUG}}}"
 
 if [ -n "$ENABLE_AUTH" -a "$ENABLE_AUTH" == "true" ]
 then
@@ -75,6 +76,25 @@ mv $API_SWAGGER_JS $CONFIG_PATH/assets
 # Adding the modified swagger js file to swagger-ui*.jar is removed for now because it no longer works with our move
 # to installing JRE instead of JDK. This causes the script to fail and exit early when run as a systemd service.
 # TODO(ashokc): fix this as a part of getting swagger UI to work in auth enabled deployment
+
+# Generate certificate by contacting the Lightwave server
+
+# Update the certificate tool configurations with host information.
+sed -i s/127.0.0.1/"{{{REGISTRATION_ADDRESS}}}"/ /opt/vmware/share/config/certool.cfg
+sed -i s/server.acme.com/"$myhostname.{{{LIGHTWAVE_DOMAIN}}}"/ /opt/vmware/share/config/certool.cfg
+
+mkdir -p /etc/keys/
+# Generate private key and certificate
+/opt/vmware/bin/certool --genkey --privkey=/etc/keys/machine.privkey --pubkey=/etc/keys/machine.pubkey
+
+/opt/vmware/bin/certool --gencert --privkey=/etc/keys/machine.privkey --cert=/etc/keys/machine.crt \
+--srp-upn administrator@{{{LIGHTWAVE_DOMAIN}}} --srp-pwd {{{LIGHTWAVE_PASSWORD}}} --server {{{AUTH_SERVER_ADDRESS}}} \
+--config /opt/vmware/share/config/certool.cfg
+
+# Add the private key and certificate to the MACHINE_SSL_CERT store.
+/opt/vmware/bin/vecs-cli entry create --store MACHINE_SSL_CERT --alias machinecert --cert /etc/keys/machine.crt \
+--key /etc/keys/machine.privkey
+
 
 #
 # Start service

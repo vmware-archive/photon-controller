@@ -79,7 +79,8 @@ public class XenonBackendTestModule extends AbstractModule {
     //instance of this module then the host and the rest client singleton instance will
     //be shared. To address this scenario I am setting the thread pool to be 4 assuming
     //that there are 4 cores present in the machine executing the tests.
-    return new ApiFeXenonRestClient(serverSet, Executors.newFixedThreadPool(128), Executors.newScheduledThreadPool(1));
+    return new ApiFeXenonRestClient(serverSet, Executors.newFixedThreadPool(128), Executors.newScheduledThreadPool(1)
+        , host);
   }
 
   @Provides
@@ -89,6 +90,6 @@ public class XenonBackendTestModule extends AbstractModule {
         new InetSocketAddress(host.getPreferredAddress(), host.getPort()));
     return new PhotonControllerXenonRestClient(serverSet,
         Executors.newFixedThreadPool(128),
-        Executors.newScheduledThreadPool(1));
+        Executors.newScheduledThreadPool(1), host);
   }
 }
