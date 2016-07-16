@@ -714,6 +714,8 @@ public class DeploymentWorkflowServiceTest {
           ProvisionHostTaskService.INSTALL_VIB_SCRIPT_NAME, true);
       MockHelper.mockCreateScriptFile(
           deployerTestConfig.getDeployerContext(), CreateManagementVmTaskService.SCRIPT_NAME, true);
+      MockHelper.mockCreateScriptFile(
+          deployerTestConfig.getDeployerContext(), CreateContainersWorkflowService.SCRIPT_NAME, true);
       MockHelper.mockCreateContainer(dockerProvisionerFactory, true);
       MockHelper.mockAuthHelper(implicitClient, authHelperFactory, true);
       MockHelper.mockHealthChecker(healthCheckHelperFactory, true);

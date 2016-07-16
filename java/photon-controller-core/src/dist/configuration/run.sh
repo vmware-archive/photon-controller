@@ -58,8 +58,10 @@ jvm_mem=1024
 jvm_mem=$(({{{memoryMb}}}/2))
 {{/memoryMb}}
 
+
 # Use the JKS keystore which has our certificate as the default java keystore
 security_opts="-Djavax.net.ssl.trustStore=/keystore.jks"
+
 export JAVA_OPTS="-Xmx${jvm_mem}m -Xms${jvm_mem}m -XX:+UseConcMarkSweepGC ${security_opts} {{{JAVA_DEBUG}}}"
 
 if [ -n "$ENABLE_AUTH" -a "$ENABLE_AUTH" == "true" ]
@@ -130,10 +132,20 @@ keytool -importkeystore -deststorepass {{{LIGHTWAVE_PASSWORD}}} -destkeypass {{{
   -destkeystore /keystore.jks -srckeystore keystore.p12 -srcstoretype PKCS12 -srcstorepass {{{LIGHTWAVE_PASSWORD}}} \
   -alias MACHINE_CERT
 
+# Get the trusted roots certificate
+cert_alias=$(vecs-cli entry list --store TRUSTED_ROOTS | grep "Alias" | cut -d: -f2)
+vecs-cli entry getcert --store TRUSTED_ROOTS --alias $cert_alias --output /etc/keys/cacert.crt
+keytool -import -trustcacerts -alias TRUSTED_ROOTS -file /etc/keys/cacert.crt \
+-keystore /keystore.jks -storepass {{{LIGHTWAVE_PASSWORD}}} -noprompt
+
 # Restrict permission on the key files
 chmod 0400 /etc/keys/machine.privkey
 chmod 0444 /etc/keys/machine.pubkey
 {{/ENABLE_AUTH}}
+
+# Move vecs jar out of classpath
+mkdir -p ${API_LIB}/ext
+mv ${API_LIB}/vmware-endpoint-certificate-store-6.5.0.jar ${API_LIB}/ext
 
 #
 # Start service
