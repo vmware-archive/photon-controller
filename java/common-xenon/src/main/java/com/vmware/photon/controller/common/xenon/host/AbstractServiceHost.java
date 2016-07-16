@@ -23,19 +23,29 @@ import java.nio.file.Paths;
  */
 public abstract class AbstractServiceHost extends ServiceHost {
 
-  public AbstractServiceHost(XenonConfig xenonConfig) throws Throwable {
-
+  public AbstractServiceHost(XenonConfig xenonConfig, boolean ssl) throws Throwable {
     Arguments arguments = new Arguments();
-    arguments.port = xenonConfig.getPort();
-    arguments.bindAddress = xenonConfig.getBindAddress();
-    arguments.sandbox = Paths.get(xenonConfig.getStoragePath());
-    arguments.peerNodes = xenonConfig.getPeerNodes();
+    if (ssl) {
+      arguments.port = -1;
+      arguments.bindAddress = xenonConfig.getBindAddress();
+      arguments.sandbox = Paths.get(xenonConfig.getStoragePath());
+      arguments.peerNodes = xenonConfig.getPeerNodes();
+      arguments.securePort = xenonConfig.getPort();
+      arguments.keyFile = Paths.get("/tmp/cert.privkey");
+      arguments.certificateFile = Paths.get("/tmp/cert");
+//    arguments.sslClientAuthMode = ServiceHostState.SslClientAuthMode.NEED;
 
-    if (xenonConfig.getRegistrationAddress() != null) {
-      arguments.publicUri = UriUtils.buildUri(xenonConfig.getRegistrationAddress(), xenonConfig.getPort(), null, null)
-          .toString();
+    } else {
+      arguments.port = xenonConfig.getPort();
+      arguments.bindAddress = xenonConfig.getBindAddress();
+      arguments.sandbox = Paths.get(xenonConfig.getStoragePath());
+      arguments.peerNodes = xenonConfig.getPeerNodes();
+
+      if (xenonConfig.getRegistrationAddress() != null) {
+        arguments.publicUri = UriUtils.buildUri(xenonConfig.getRegistrationAddress(), xenonConfig.getPort(), null, null)
+            .toString();
+      }
     }
-
     this.initialize(arguments);
   }
 }

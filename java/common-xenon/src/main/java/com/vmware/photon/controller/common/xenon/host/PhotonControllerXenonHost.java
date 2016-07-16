@@ -96,7 +96,7 @@ public class PhotonControllerXenonHost
                                      AgentControlClientFactory agentControlClientFactory,
                                      NsxClientFactory nsxClientFactory,
                                      CloudStoreHelper cloudStoreHelper) throws Throwable {
-        super(xenonConfig);
+        super(xenonConfig, true);
         this.buildInfo = BuildInfo.get(this.getClass());
 
         if (hostClientFactory == null || agentControlClientFactory == null) {

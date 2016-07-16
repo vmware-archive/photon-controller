@@ -53,6 +53,7 @@ import com.vmware.photon.controller.rootscheduler.SchedulerConfig;
 import com.vmware.photon.controller.rootscheduler.service.CloudStoreConstraintChecker;
 import com.vmware.photon.controller.rootscheduler.service.ConstraintChecker;
 import com.vmware.photon.controller.rootscheduler.xenon.SchedulerServiceGroup;
+import com.vmware.provider.VecsLoadStoreParameter;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceHost;
 
@@ -78,6 +79,9 @@ import java.io.FileWriter;
 import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
 import java.nio.file.Paths;
+import java.security.Key;
+import java.security.KeyStore;
+import java.security.cert.Certificate;
 import java.util.Arrays;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -111,6 +115,20 @@ public class Main {
     new LoggingFactory(photonControllerConfig.getLogging(), "photon-controller-core").configure();
 
     ThriftModule thriftModule = new ThriftModule();
+
+    logger.info("Starting keystore");
+    try {
+      KeyStore ks = KeyStore.getInstance("VKS");
+      ks.load(new VecsLoadStoreParameter("MACHINE_SSL_CERT"));
+
+      logger.info("Loaded keystore");
+      Certificate cert = ks.getCertificate("cert");
+      logger.info("cert: " + cert);
+      Key key = ks.getKey("cert", new char[]{});
+      logger.info("key: " + key);
+    } catch (Exception e) {
+      logger.info("Error with keystore: " + e);
+    }
 
     ServiceHost xenonHost = startXenonHost(photonControllerConfig, thriftModule, deployerConfig);
 

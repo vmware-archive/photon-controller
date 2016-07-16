@@ -58,7 +58,8 @@ jvm_mem=1024
 jvm_mem=$(({{{memoryMb}}}/2))
 {{/memoryMb}}
 
-export JAVA_OPTS="-Xmx${jvm_mem}m -Xms${jvm_mem}m -XX:+UseConcMarkSweepGC {{{JAVA_DEBUG}}}"
+security_opts="-Djava.security.properties=/etc/vmware/java/vmware-override-java.security"
+export JAVA_OPTS="-Xmx${jvm_mem}m -Xms${jvm_mem}m -XX:+UseConcMarkSweepGC ${security_opts} {{{JAVA_DEBUG}}}"
 
 if [ -n "$ENABLE_AUTH" -a "$ENABLE_AUTH" == "true" ]
 then
@@ -75,6 +76,20 @@ mv $API_SWAGGER_JS $CONFIG_PATH/assets
 # Adding the modified swagger js file to swagger-ui*.jar is removed for now because it no longer works with our move
 # to installing JRE instead of JDK. This causes the script to fail and exit early when run as a systemd service.
 # TODO(ashokc): fix this as a part of getting swagger UI to work in auth enabled deployment
+
+set -x
+
+# Generate cert from certool to use
+sed -i s/127.0.0.1/"{{{REGISTRATION_ADDRESS}}}"/ /opt/vmware/share/config/certool.cfg
+sed -i s/server.acme.com/"devbox.esxcloud"/ /opt/vmware/share/config/certool.cfg
+/opt/vmware/bin/certool --genkey --privkey=/tmp/cert.privkey --pubkey=/tmp/cert.pubkey
+sleep 55
+/opt/vmware/bin/certool --gencert --privkey=/tmp/cert.privkey --cert=/tmp/cert --srp-upn administrator@esxcloud --srp-pwd LW.pass2 --server {{{AUTH_SERVER_ADDRESS}}} --config /opt/vmware/share/config/certool.cfg
+
+/opt/vmware/bin/vecs-cli entry create --store MACHINE_SSL_CERT --alias cert --cert /tmp/cert --key /tmp/cert.privkey
+
+/opt/vmware/bin/vecs-cli entry getcert --store MACHINE_SSL_CERT --alias cert --text
+/opt/vmware/bin/vecs-cli entry getkey --store MACHINE_SSL_CERT --alias cert --text
 
 #
 # Start service
