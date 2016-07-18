@@ -18,27 +18,49 @@ package com.vmware.photon.controller.nsxclient.utils;
  */
 public class NameUtils {
 
+  ///
+  /// Fabric Naming Constants
+  ///
   public static final String FABRIC_NODE_NAME_PREFIX = "PC-FabricNode-";
   public static final String FABRIC_NODE_DESCRIPTION_PREFIX = "Photon Controller Fabric Node ";
   public static final String TRANSPORT_NODE_NAME_PREFIX = "PC-TransportNode-";
   public static final String TRANSPORT_NODE_DESCRIPTION_PREFIX = "Photon Controller Transport Node ";
   public static final String TRANSPORT_ZONE_NAME_PREFIX = "PC-TransportZone-";
   public static final String TRANSPORT_ZONE_DESCRIPTION_PREFIX = "Photon Controller Transport Zone ";
+
+  ///
+  /// Logical Switch and Router Naming Constants
+  ///
   public static final String LOGICAL_SWITCH_NAME_PREFIX = "PC-LogicalSwitch-";
   public static final String LOGICAL_SWITCH_DESCRIPTION_PREFIX =
       "Photon Controller Logical Switch in Virtual Network ";
   public static final String LOGICAL_ROUTER_NAME_PREFIX = "PC-LogicalRouter-";
   public static final String LOGICAL_ROUTER_DESCRIPTION_PREFIX =
       "Photon Controller Logical Router in Virtual Network ";
+
+  ///
+  /// Logical Port Naming Constants
+  ///
   public static final String LOGICAL_SWITCH_UPLINK_PORT_NAME_PREFIX = "PC-LogicalSwitch-Uplink-Port-";
   public static final String LOGICAL_SWITCH_DOWNLINK_PORT_NAME_PREFIX = "PC-LogicalSwitch-Downlink-Port-";
   public static final String LOGICAL_ROUTER_DOWNLINK_PORT_NAME_PREFIX = "PC-LogicalRouter-Downlink-Port-";
   public static final String LOGICAL_ROUTER_UPLINK_PORT_NAME_PREFIX = "PC-LogicalRouter-Uplink-Port-";
   public static final String TIER0_ROUTER_DOWNLINK_PORT_NAME_PREFIX = "PC-Tier0Router-Downlink-Port-";
+
+  ///
+  /// DHCP Service Naming Constants
+  ///
   public static final String DHCP_RELAY_PROFILE_NAME_PREFIX = "PC-Dhcp-Relay-Profile-";
   public static final String DHCP_RELAY_PROFILE_DESCRIPTION_PREFIX = "Photon Controller DHCP Relay Profile ";
   public static final String DHCP_RELAY_SERVICE_NAME_PREFIX = "PC-Dhcp-Relay-Service-";
   public static final String DHCP_RELAY_SERVICE_DESCRIPTION_PREFIX = "Photon Controller DHCP Relay Service ";
+
+
+  ///
+  /// NAT Naming Constants
+  ///
+  public static final String DNAT_RULE_NAME_PREFIX = "PC-Dnat-";
+  public static final String DNAT_RULE_DESCRIPTION_PREFIX = "Photon Controller DNAT ";
 
   public static String getFabricNodeName(String id) {
     return FABRIC_NODE_NAME_PREFIX + id;
@@ -114,5 +136,13 @@ public class NameUtils {
 
   public static String getDhcpRelayServiceDescription(String id) {
     return DHCP_RELAY_SERVICE_DESCRIPTION_PREFIX + id;
+  }
+
+  public static String getDnatRuleName(String id) {
+    return DNAT_RULE_NAME_PREFIX + id;
+  }
+
+  public static String getDnatRuleDescription(String id) {
+    return DNAT_RULE_DESCRIPTION_PREFIX + id;
   }
 }
