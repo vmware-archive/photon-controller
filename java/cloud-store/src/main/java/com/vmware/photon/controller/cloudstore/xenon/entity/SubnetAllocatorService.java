@@ -33,11 +33,18 @@ import com.vmware.xenon.common.StatefulService;
 
 
 /**
- * Used for creating a subnet and allocating avaible IP ranges to it from the root CIDR.
+ * Used for carving out subnets from the network represented by rootCidr.
  */
 public class SubnetAllocatorService extends StatefulService {
 
   public static final String FACTORY_LINK = ServiceUriPaths.CLOUDSTORE_ROOT + "/subnet-allocators";
+
+  /**
+   * This is the well known location for the single instance of this service.
+   * The single instance will be started at the time of configuration of virtual networking
+   * in the system which could be at deployment time or later.
+   */
+  public static final String SINGLETON_LINK = FACTORY_LINK + "/root-subnet";
 
   public static FactoryService createFactory() {
     return FactoryService.create(SubnetAllocatorService.class, SubnetAllocatorService.State.class);
