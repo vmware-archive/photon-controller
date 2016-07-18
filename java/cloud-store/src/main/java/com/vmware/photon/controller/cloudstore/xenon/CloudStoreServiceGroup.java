@@ -25,7 +25,7 @@ import com.vmware.photon.controller.cloudstore.xenon.entity.FlavorServiceFactory
 import com.vmware.photon.controller.cloudstore.xenon.entity.HostServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ImageServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ImageToImageDatastoreMappingServiceFactory;
-import com.vmware.photon.controller.cloudstore.xenon.entity.IpAllocatorService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.DhcpSubnetService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.IpLeaseService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.NetworkServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.PortGroupServiceFactory;
@@ -132,7 +132,7 @@ public class CloudStoreServiceGroup
       ImmutableMap.<Class<? extends Service>, Supplier<FactoryService>>builder()
           .put(VirtualNetworkService.class, VirtualNetworkService::createFactory)
           .put(SubnetAllocatorService.class, SubnetAllocatorService::createFactory)
-          .put(IpAllocatorService.class, IpAllocatorService::createFactory)
+          .put(DhcpSubnetService.class, DhcpSubnetService::createFactory)
           .put(IpLeaseService.class, IpLeaseService::createFactory)
           .build();
 
@@ -165,7 +165,7 @@ public class CloudStoreServiceGroup
         // entities
         photonControllerXenonHost.checkServiceAvailable(VirtualNetworkService.FACTORY_LINK)
             && photonControllerXenonHost.checkServiceAvailable(SubnetAllocatorService.FACTORY_LINK)
-            && photonControllerXenonHost.checkServiceAvailable(IpAllocatorService.FACTORY_LINK)
+            && photonControllerXenonHost.checkServiceAvailable(DhcpSubnetService.FACTORY_LINK)
             && photonControllerXenonHost.checkServiceAvailable(IpLeaseService.FACTORY_LINK)
             && photonControllerXenonHost.checkServiceAvailable(FlavorServiceFactory.SELF_LINK)
             && photonControllerXenonHost.checkServiceAvailable(ImageServiceFactory.SELF_LINK)

@@ -19,7 +19,7 @@ import com.vmware.photon.controller.apife.backends.clients.PhotonControllerXenon
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.exceptions.external.VmNotFoundException;
-import com.vmware.photon.controller.cloudstore.xenon.entity.IpAllocatorService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.DhcpSubnetService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VmService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VmServiceFactory;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
@@ -82,10 +82,10 @@ public class VmReleaseIpStepCmd extends StepCommand {
     }
     logger.info("Releasing one network info entry for vm, macAddress is {}", macAddress);
 
-    IpAllocatorService.IpOperationPatch patch = new IpAllocatorService.IpOperationPatch(IpAllocatorService
+    DhcpSubnetService.IpOperationPatch patch = new DhcpSubnetService.IpOperationPatch(DhcpSubnetService
         .IpOperationPatch.Kind.ReleaseIpForMac, macAddress);
 
     PhotonControllerXenonRestClient photonControllerXenonRestClient = taskCommand.getPhotonControllerXenonRestClient();
-    photonControllerXenonRestClient.patch(IpAllocatorService.FACTORY_LINK + "/" + subnetId, patch);
+    photonControllerXenonRestClient.patch(DhcpSubnetService.FACTORY_LINK + "/" + subnetId, patch);
   }
 }

@@ -37,15 +37,15 @@ import java.util.List;
 /**
  * Used for allocating IPs from a subnet and also to track ownership of a CIDR range by a network.
  */
-public class IpAllocatorService extends StatefulService {
+public class DhcpSubnetService extends StatefulService {
 
-  public static final String FACTORY_LINK = ServiceUriPaths.CLOUDSTORE_ROOT + "/ip-allocators";
+  public static final String FACTORY_LINK = ServiceUriPaths.CLOUDSTORE_ROOT + "/dhcp-subnets";
 
   public static FactoryService createFactory() {
-    return FactoryService.create(IpAllocatorService.class, IpAllocatorService.State.class);
+    return FactoryService.create(DhcpSubnetService.class, DhcpSubnetService.State.class);
   }
 
-  public IpAllocatorService() {
+  public DhcpSubnetService() {
     super(State.class);
     super.toggleOption(ServiceOption.PERSISTENCE, true);
     super.toggleOption(ServiceOption.REPLICATION, true);
@@ -64,7 +64,7 @@ public class IpAllocatorService extends StatefulService {
     myRouter.register(
         Action.PATCH,
         new RequestRouter.RequestBodyMatcher<IpOperationPatch>(
-            IpOperationPatch.class, "kind", IpOperationPatch.Kind.AllocateIpToMAc),
+            IpOperationPatch.class, "kind", IpOperationPatch.Kind.AllocateIpToMac),
         this::handleAllocateIpToMacPatch, "Allocate IP to MAC address");
 
     myRouter.register(
@@ -89,7 +89,7 @@ public class IpAllocatorService extends StatefulService {
      * Defines type of IP operations that are supported.
      */
     public enum Kind {
-      AllocateIpToMAc,
+      AllocateIpToMac,
       ReleaseIpForMac
     };
     public final Kind kind;
