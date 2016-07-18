@@ -17,7 +17,7 @@ import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.backends.clients.PhotonControllerXenonRestClient;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.StepEntity;
-import com.vmware.photon.controller.cloudstore.xenon.entity.IpAllocatorService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.DhcpSubnetService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VmService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VmServiceFactory;
 import com.vmware.xenon.common.Operation;
@@ -89,7 +89,7 @@ public class VmReleaseIpStepCmdTest {
 
     verify(photonControllerXenonRestClient).get(eq(VmServiceFactory.SELF_LINK + "/vm-id"));
     verify(photonControllerXenonRestClient, times(2)).patch(anyString(),
-        any(IpAllocatorService.IpOperationPatch.class));
+        any(DhcpSubnetService.IpOperationPatch.class));
   }
 
   @Test
@@ -128,8 +128,8 @@ public class VmReleaseIpStepCmdTest {
     command.execute();
 
     verify(photonControllerXenonRestClient).get(eq(VmServiceFactory.SELF_LINK + "/vm-id"));
-    verify(photonControllerXenonRestClient, times(1)).patch(eq(IpAllocatorService.FACTORY_LINK + "/network-id"),
-        any(IpAllocatorService.IpOperationPatch.class));
+    verify(photonControllerXenonRestClient, times(1)).patch(eq(DhcpSubnetService.FACTORY_LINK + "/network-id"),
+        any(DhcpSubnetService.IpOperationPatch.class));
   }
 
   private VmReleaseIpStepCmd getVmReleaseIpStepCmd() {
