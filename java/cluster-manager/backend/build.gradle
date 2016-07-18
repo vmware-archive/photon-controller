@@ -1,7 +1,7 @@
 apply plugin: 'java'
 
 dependencies {
-    compile project(':api-client')
+    compile project(':api:client')
     compile project(':cloud-store')
     compile project(':common')
     compile project(':common-xenon')

@@ -32,7 +32,6 @@ import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.services.common.QueryTask;
 
 import com.google.common.annotations.VisibleForTesting;
-
 import static org.mockito.Mockito.mock;
 
 import java.nio.file.Files;

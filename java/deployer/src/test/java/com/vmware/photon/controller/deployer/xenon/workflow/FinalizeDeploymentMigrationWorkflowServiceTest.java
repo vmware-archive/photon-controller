@@ -13,6 +13,10 @@
 
 package com.vmware.photon.controller.deployer.xenon.workflow;
 
+import com.vmware.photon.controller.api.client.ApiClient;
+import com.vmware.photon.controller.api.client.resource.DeploymentApi;
+import com.vmware.photon.controller.api.client.resource.TasksApi;
+import com.vmware.photon.controller.api.client.resource.VmApi;
 import com.vmware.photon.controller.api.model.AuthInfo;
 import com.vmware.photon.controller.api.model.Deployment;
 import com.vmware.photon.controller.api.model.DeploymentState;
@@ -22,10 +26,6 @@ import com.vmware.photon.controller.api.model.Task;
 import com.vmware.photon.controller.api.model.UsageTag;
 import com.vmware.photon.controller.api.model.Vm;
 import com.vmware.photon.controller.api.model.VmNetworks;
-import com.vmware.photon.controller.client.ApiClient;
-import com.vmware.photon.controller.client.resource.DeploymentApi;
-import com.vmware.photon.controller.client.resource.TasksApi;
-import com.vmware.photon.controller.client.resource.VmApi;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DatastoreService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.FlavorService;
@@ -89,7 +89,6 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;

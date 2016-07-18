@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.clustermanager.helpers;
 
-import com.vmware.photon.controller.client.ApiClient;
+import com.vmware.photon.controller.api.client.ApiClient;
 import com.vmware.photon.controller.clustermanager.ClusterManagerFactory;
 import com.vmware.photon.controller.clustermanager.ClusterManagerTestServiceGroup;
 import com.vmware.photon.controller.clustermanager.clients.EtcdClient;

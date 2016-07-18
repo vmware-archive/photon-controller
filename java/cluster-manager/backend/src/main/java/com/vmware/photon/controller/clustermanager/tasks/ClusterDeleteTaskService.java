@@ -12,10 +12,10 @@
  */
 package com.vmware.photon.controller.clustermanager.tasks;
 
+import com.vmware.photon.controller.api.client.ApiClient;
 import com.vmware.photon.controller.api.model.ClusterState;
 import com.vmware.photon.controller.api.model.ResourceList;
 import com.vmware.photon.controller.api.model.Vm;
-import com.vmware.photon.controller.client.ApiClient;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ClusterService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ClusterServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.TombstoneService;

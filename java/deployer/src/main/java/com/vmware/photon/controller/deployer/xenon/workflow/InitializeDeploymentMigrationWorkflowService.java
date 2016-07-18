@@ -13,11 +13,11 @@
 
 package com.vmware.photon.controller.deployer.xenon.workflow;
 
+import com.vmware.photon.controller.api.client.ApiClient;
 import com.vmware.photon.controller.api.model.Deployment;
 import com.vmware.photon.controller.api.model.HostState;
 import com.vmware.photon.controller.api.model.ResourceList;
 import com.vmware.photon.controller.api.model.Task;
-import com.vmware.photon.controller.client.ApiClient;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.HostService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.HostServiceFactory;

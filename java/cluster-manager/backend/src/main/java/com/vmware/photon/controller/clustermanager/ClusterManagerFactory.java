@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.clustermanager;
 
-import com.vmware.photon.controller.client.ApiClient;
+import com.vmware.photon.controller.api.client.ApiClient;
 import com.vmware.photon.controller.clustermanager.clients.EtcdClient;
 import com.vmware.photon.controller.clustermanager.clients.KubernetesClient;
 import com.vmware.photon.controller.clustermanager.clients.MesosClient;

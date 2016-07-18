@@ -12,6 +12,9 @@
  */
 package com.vmware.photon.controller.clustermanager.tasks;
 
+import com.vmware.photon.controller.api.client.ApiClient;
+import com.vmware.photon.controller.api.client.resource.ClusterApi;
+import com.vmware.photon.controller.api.client.resource.VmApi;
 import com.vmware.photon.controller.api.model.ClusterState;
 import com.vmware.photon.controller.api.model.ClusterType;
 import com.vmware.photon.controller.api.model.NetworkConnection;
@@ -19,9 +22,6 @@ import com.vmware.photon.controller.api.model.ResourceList;
 import com.vmware.photon.controller.api.model.Task;
 import com.vmware.photon.controller.api.model.Vm;
 import com.vmware.photon.controller.api.model.VmNetworks;
-import com.vmware.photon.controller.client.ApiClient;
-import com.vmware.photon.controller.client.resource.ClusterApi;
-import com.vmware.photon.controller.client.resource.VmApi;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ClusterService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ClusterServiceFactory;
 import com.vmware.photon.controller.clustermanager.clients.KubernetesClient;
