@@ -15,8 +15,8 @@ package com.vmware.photon.controller.apife.lib;
 
 import com.vmware.photon.controller.api.Host;
 import com.vmware.photon.controller.api.HostDatastore;
+import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.ResourceList;
-import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.backends.HostBackend;
 import com.vmware.photon.controller.apife.config.ImageConfig;
@@ -38,6 +38,7 @@ import com.google.common.base.Optional;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
@@ -233,8 +234,10 @@ public class VsphereImageStore implements ImageStore {
       hostList = this.hostBackend.filterByAddress(this.hostIp, Optional.absent());
     }
 
+    // since we can't guarantee that the management plane is running on a ESX host
+    // we are selecting any host in READY state
     if ((null == hostList || 0 == hostList.getItems().size()) && this.lookForManagementHostsIfNeeded) {
-      hostList = this.hostBackend.filterByUsage(UsageTag.MGMT, Optional.absent());
+      hostList = this.hostBackend.filterByState(HostState.READY, Optional.of(1));
     }
 
     checkState(
