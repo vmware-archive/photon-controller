@@ -13,7 +13,7 @@ import unittest
 
 from hamcrest import assert_that
 from host.upgrade.upgrade import HostUpgrade
-from mock import MagicMock, patch
+from mock import MagicMock
 
 
 class HostUpgradeTestCase(unittest.TestCase):
@@ -29,22 +29,9 @@ class HostUpgradeTestCase(unittest.TestCase):
     def tearDown(self):
         self.host_upgrade._task_runner.stop()
 
-    @patch("host.upgrade.softlink_generator.SoftLinkGenerator.process")
-    def test_lifecycle(self, process):
+    def test_lifecycle(self):
         assert_that(not self.host_upgrade.in_progress())
         self.host_upgrade.start(self.timeout)
         self.host_upgrade._task_runner.wait_for_task_end()
 
         assert_that(not self.host_upgrade.in_progress())
-        self.assertEqual(process.call_count, 1)
-
-    @patch("host.upgrade.softlink_generator.SoftLinkGenerator.process")
-    def test_upgrade_exception(self, process):
-        process.side_effect = Exception("create_symlinks failed.")
-
-        assert_that(not self.host_upgrade.in_progress())
-        self.host_upgrade.start(self.timeout)
-        self.host_upgrade._task_runner.wait_for_task_end()
-
-        assert_that(not self.host_upgrade.in_progress())
-        self.assertEqual(process.call_count, 1)

@@ -12,7 +12,6 @@
 import logging
 
 from common.task_runner import TaskRunner
-from host.upgrade.softlink_generator import SoftLinkGenerator
 
 
 class HostUpgradeTaskRunner(TaskRunner):
@@ -23,16 +22,7 @@ class HostUpgradeTaskRunner(TaskRunner):
 
     # Override
     def execute_task(self):
-        self._logger.info("HostUpgrade started")
-
-        try:
-            datastores = self._host_upgrade._datastore_manager.get_datastore_ids()
-            soft_link_generator = SoftLinkGenerator()
-            soft_link_generator.process(datastores)
-
-            self._logger.info("HostUpgrade completed")
-        except:
-            self._logger.exception("HostUpgrade failed")
+        pass
 
 
 class HostUpgrade:
