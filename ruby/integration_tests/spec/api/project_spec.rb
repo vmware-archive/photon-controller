@@ -12,7 +12,7 @@
 require "spec_helper"
 
 describe "project", management: true do
-  describe "#create" do
+  describe "#life_cycle" do
     before(:all) do
       @seeder = EsxCloud::SystemSeeder.new([create_limit("vm", 100.0, "COUNT")])
       @cleaner = EsxCloud::SystemCleaner.new(client)
@@ -88,7 +88,8 @@ describe "project", management: true do
       after(:all) do
         client.set_tenant_security_groups(@seeder.tenant!.id, {items: []})
       end
-      it "should create one with security groups and import from tenant, get it, and then delete it" do
+
+      it "creates one with security groups and import from tenant, get it, and then delete it" do
         begin
           project_name = random_name("project-")
 
@@ -123,8 +124,19 @@ describe "project", management: true do
         end
       end
     end
+  end
 
-    it "should complain on invalid name" do
+  describe "#create" do
+    before(:all) do
+      @seeder = EsxCloud::SystemSeeder.new([create_limit("vm", 100.0, "COUNT")])
+      @cleaner = EsxCloud::SystemCleaner.new(client)
+    end
+
+    after(:all) do
+      @cleaner.delete_tenant(@seeder.tenant)
+    end
+
+    it "complains on invalid name" do
       error_msg = "name : The specified project name does not match pattern: ^[a-zA-Z][a-zA-Z0-9-]* (was 1foo)"
 
       begin
@@ -141,7 +153,7 @@ describe "project", management: true do
       end
     end
 
-    it "should not allow duplicate project names" do
+    it "does not allow duplicate project names" do
       project_name = random_name("project-")
       project = @seeder.tenant!.create_project(
         name: project_name,
@@ -168,8 +180,99 @@ describe "project", management: true do
     end
   end
 
-  describe "#update security group" do
+  describe "#delete" do
+    before(:all) do
+      @seeder = EsxCloud::SystemSeeder.new([create_limit("vm", 100.0, "COUNT")])
+      @cleaner = EsxCloud::SystemCleaner.new(client)
+    end
 
+    after(:all) do
+      @cleaner.delete_tenant(@seeder.tenant)
+    end
+
+    subject do
+      @seeder.tenant!.create_project(
+          name: random_name("project-"),
+          resource_ticket_name: @seeder.resource_ticket!.name,
+          limits: [create_limit("vm", 10.0, "COUNT")])
+    end
+
+    context "when project has VMs" do
+      before(:each) do
+        create_vm(subject)
+      end
+
+      it "fails to delete" do
+        error_msg = "Container not empty: project: #{subject.id} (Project '#{subject.id}' VM list is non-empty)"
+
+        begin
+          subject.delete
+        rescue EsxCloud::ApiError => e
+          e.response_code.should == 400
+          e.errors.size.should == 1
+          e.errors[0].code.should == "ContainerNotEmpty"
+          e.errors[0].message.should == error_msg
+        rescue EsxCloud::CliError => e
+          e.output.should match(error_msg)
+        end
+      end
+    end
+
+    context "when project has disks" do
+      before(:each) do
+        subject.create_disk(
+            name: random_name("disk-"),
+            kind: "persistent-disk",
+            flavor: @seeder.persistent_disk_flavor!.name,
+            capacity_gb: 2,
+            boot_disk: false)
+      end
+
+      it "fails to delete" do
+        error_msg =
+            "Container not empty: project: #{subject.id} (Project '#{subject.id}' persistent disk list is non-empty)"
+
+        begin
+          subject.delete
+        rescue EsxCloud::ApiError => e
+          e.response_code.should == 400
+          e.errors.size.should == 1
+          e.errors[0].code.should == "ContainerNotEmpty"
+          e.errors[0].message.should == error_msg
+        rescue EsxCloud::CliError => e
+          e.output.should match(error_msg)
+        end
+      end
+    end
+
+    context "when project has virtual subnets" do
+      before(:each) do
+        subject.create_disk(
+            name: random_name("disk-"),
+            kind: "persistent-disk",
+            flavor: @seeder.persistent_disk_flavor!.name,
+            capacity_gb: 2,
+            boot_disk: false)
+      end
+
+      xit "fails to delete" do
+        error_msg = "Container not empty: project: #{subject.id} (Project '#{subject.id}' subnet list is non-empty)"
+
+        begin
+          subject.delete
+        rescue EsxCloud::ApiError => e
+          e.response_code.should == 400
+          e.errors.size.should == 1
+          e.errors[0].code.should == "ContainerNotEmpty"
+          e.errors[0].message.should == error_msg
+        rescue EsxCloud::CliError => e
+          e.output.should match(error_msg)
+        end
+      end
+    end
+  end
+
+  describe "#update security group" do
     before(:all) do
       @seeder = EsxCloud::SystemSeeder.new([create_limit("vm", 100.0, "COUNT")])
       @cleaner = EsxCloud::SystemCleaner.new(client)
