@@ -42,6 +42,8 @@ import com.vmware.photon.controller.nsxclient.models.LogicalRouterPortListResult
 import com.vmware.photon.controller.nsxclient.models.LogicalSwitch;
 import com.vmware.photon.controller.nsxclient.models.LogicalSwitchCreateSpec;
 import com.vmware.photon.controller.nsxclient.models.LogicalSwitchState;
+import com.vmware.photon.controller.nsxclient.models.NatRule;
+import com.vmware.photon.controller.nsxclient.models.NatRuleCreateSpec;
 import com.vmware.photon.controller.nsxclient.models.ResourceReference;
 import com.vmware.photon.controller.nsxclient.models.TransportNode;
 import com.vmware.photon.controller.nsxclient.models.TransportNodeCreateSpec;
@@ -743,6 +745,31 @@ public class NsxClientMock extends NsxClient {
               .onFailure(error);
           return null;
         }).when(mockDhcpServiceApi).createDhcpRelayService(any(DhcpRelayServiceCreateSpec.class),
+            any(FutureCallback.class));
+      }
+
+      return this;
+    }
+
+    public Builder createNatRule(boolean isSuccess,
+                                 String natRuleId) throws Throwable {
+      if (isSuccess) {
+        NatRule response = new NatRule();
+        response.setId(natRuleId);
+
+        doAnswer(invocation -> {
+          ((FutureCallback<NatRule>) invocation.getArguments()[2])
+              .onSuccess(response);
+          return null;
+        }).when(mockLogicalRouterApi).createNatRule(anyString(), any(NatRuleCreateSpec.class),
+            any(FutureCallback.class));
+      } else {
+        RuntimeException error = new RuntimeException("createNatRule failed");
+        doAnswer(invocation -> {
+          ((FutureCallback<NatRule>) invocation.getArguments()[2])
+              .onFailure(error);
+          return null;
+        }).when(mockLogicalRouterApi).createNatRule(anyString(), any(NatRuleCreateSpec.class),
             any(FutureCallback.class));
       }
 

@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.apibackend;
 
+import com.vmware.photon.controller.apibackend.tasks.AssignFloatingIpToVmTaskService;
 import com.vmware.photon.controller.apibackend.tasks.ConfigureRoutingTaskService;
 import com.vmware.photon.controller.apibackend.tasks.ConnectVmToSwitchTaskService;
 import com.vmware.photon.controller.apibackend.tasks.CreateLogicalRouterTaskService;
@@ -51,6 +52,7 @@ public class ApiBackendFactory {
       .put(DeleteLogicalPortsTaskService.class, DeleteLogicalPortsTaskService::createFactory)
       .put(ConnectVmToSwitchTaskService.class, ConnectVmToSwitchTaskService::createFactory)
       .put(DisconnectVmFromSwitchTaskService.class, DisconnectVmFromSwitchTaskService::createFactory)
+      .put(AssignFloatingIpToVmTaskService.class, AssignFloatingIpToVmTaskService::createFactory)
 
       // workflows
       .put(CreateVirtualNetworkWorkflowService.class, CreateVirtualNetworkWorkflowService::createFactory)
