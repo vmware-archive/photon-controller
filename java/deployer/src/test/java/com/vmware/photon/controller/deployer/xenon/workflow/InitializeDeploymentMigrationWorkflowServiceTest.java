@@ -13,6 +13,10 @@
 
 package com.vmware.photon.controller.deployer.xenon.workflow;
 
+import com.vmware.photon.controller.api.client.ApiClient;
+import com.vmware.photon.controller.api.client.resource.DeploymentApi;
+import com.vmware.photon.controller.api.client.resource.TasksApi;
+import com.vmware.photon.controller.api.client.resource.VmApi;
 import com.vmware.photon.controller.api.model.AuthInfo;
 import com.vmware.photon.controller.api.model.Deployment;
 import com.vmware.photon.controller.api.model.NetworkConnection;
@@ -21,10 +25,6 @@ import com.vmware.photon.controller.api.model.Task;
 import com.vmware.photon.controller.api.model.UsageTag;
 import com.vmware.photon.controller.api.model.Vm;
 import com.vmware.photon.controller.api.model.VmNetworks;
-import com.vmware.photon.controller.client.ApiClient;
-import com.vmware.photon.controller.client.resource.DeploymentApi;
-import com.vmware.photon.controller.client.resource.TasksApi;
-import com.vmware.photon.controller.client.resource.VmApi;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.xenon.ControlFlags;

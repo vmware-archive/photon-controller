@@ -14,7 +14,6 @@
 package com.vmware.photon.controller.deployer.xenon.entity;
 
 import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
-
 import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Service;
 

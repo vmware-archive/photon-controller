@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.deployer.deployengine;
 
-import com.vmware.photon.controller.client.ApiClient;
+import com.vmware.photon.controller.api.client.ApiClient;
 import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 

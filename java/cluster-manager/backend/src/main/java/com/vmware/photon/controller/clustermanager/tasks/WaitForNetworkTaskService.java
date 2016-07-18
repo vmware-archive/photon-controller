@@ -13,10 +13,10 @@
 
 package com.vmware.photon.controller.clustermanager.tasks;
 
+import com.vmware.photon.controller.api.client.resource.VmApi;
 import com.vmware.photon.controller.api.model.NetworkConnection;
 import com.vmware.photon.controller.api.model.Task;
 import com.vmware.photon.controller.api.model.VmNetworks;
-import com.vmware.photon.controller.client.resource.VmApi;
 import com.vmware.photon.controller.clustermanager.servicedocuments.ClusterManagerConstants;
 import com.vmware.photon.controller.clustermanager.utils.ApiUtils;
 import com.vmware.photon.controller.clustermanager.utils.HostUtils;

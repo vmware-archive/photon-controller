@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.deployer.xenon.util;
 
-import com.vmware.photon.controller.client.ApiClient;
+import com.vmware.photon.controller.api.client.ApiClient;
 import com.vmware.photon.controller.common.clients.AgentControlClient;
 import com.vmware.photon.controller.common.clients.AgentControlClientProvider;
 import com.vmware.photon.controller.common.clients.HostClient;

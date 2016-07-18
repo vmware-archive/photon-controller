@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.deployer.xenon.workflow;
 
+import com.vmware.photon.controller.api.client.ApiClient;
 import com.vmware.photon.controller.api.model.Flavor;
 import com.vmware.photon.controller.api.model.Image;
 import com.vmware.photon.controller.api.model.PersistentDisk;
@@ -22,7 +23,6 @@ import com.vmware.photon.controller.api.model.Task;
 import com.vmware.photon.controller.api.model.Tenant;
 import com.vmware.photon.controller.api.model.VmDiskOperation;
 import com.vmware.photon.controller.api.model.base.FlavoredCompact;
-import com.vmware.photon.controller.client.ApiClient;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DatastoreService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.HostService;

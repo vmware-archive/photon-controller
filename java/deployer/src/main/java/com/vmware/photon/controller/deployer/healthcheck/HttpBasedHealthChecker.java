@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.deployer.healthcheck;
 
-import com.vmware.photon.controller.client.ApiClient;
+import com.vmware.photon.controller.api.client.ApiClient;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

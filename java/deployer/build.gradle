@@ -11,7 +11,7 @@ mainClassName = 'com.vmware.photon.controller.deployer.Main'
 
 
 dependencies {
-  compile project(':api-client')
+  compile project(':api:client')
   compile project(':nsx-client')
   compile project(':cloud-store')
   compile project(':common')

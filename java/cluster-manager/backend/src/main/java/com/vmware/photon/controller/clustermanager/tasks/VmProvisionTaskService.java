@@ -12,11 +12,11 @@
  */
 package com.vmware.photon.controller.clustermanager.tasks;
 
+import com.vmware.photon.controller.api.client.ApiClient;
 import com.vmware.photon.controller.api.model.AttachedDiskCreateSpec;
 import com.vmware.photon.controller.api.model.EphemeralDisk;
 import com.vmware.photon.controller.api.model.Task;
 import com.vmware.photon.controller.api.model.VmCreateSpec;
-import com.vmware.photon.controller.client.ApiClient;
 import com.vmware.photon.controller.clustermanager.servicedocuments.ClusterManagerConstants;
 import com.vmware.photon.controller.clustermanager.servicedocuments.FileTemplate;
 import com.vmware.photon.controller.clustermanager.utils.ApiUtils;

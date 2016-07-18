@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.clustermanager.clients;
 
-import com.vmware.photon.controller.client.RestClient;
+import com.vmware.photon.controller.api.client.RestClient;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;

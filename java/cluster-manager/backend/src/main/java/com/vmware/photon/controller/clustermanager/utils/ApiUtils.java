@@ -13,10 +13,10 @@
 
 package com.vmware.photon.controller.clustermanager.utils;
 
+import com.vmware.photon.controller.api.client.ApiClient;
 import com.vmware.photon.controller.api.model.ApiError;
 import com.vmware.photon.controller.api.model.Step;
 import com.vmware.photon.controller.api.model.Task;
-import com.vmware.photon.controller.client.ApiClient;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.xenon.common.Service;
 

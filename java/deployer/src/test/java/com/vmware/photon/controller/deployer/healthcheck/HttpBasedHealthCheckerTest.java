@@ -13,9 +13,9 @@
 
 package com.vmware.photon.controller.deployer.healthcheck;
 
+import com.vmware.photon.controller.api.client.ApiClient;
+import com.vmware.photon.controller.api.client.resource.AuthApi;
 import com.vmware.photon.controller.api.model.Auth;
-import com.vmware.photon.controller.client.ApiClient;
-import com.vmware.photon.controller.client.resource.AuthApi;
 
 import org.testng.annotations.Test;
 import static org.mockito.Mockito.doReturn;

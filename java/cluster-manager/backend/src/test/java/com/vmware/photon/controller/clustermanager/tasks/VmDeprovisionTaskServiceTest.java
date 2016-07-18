@@ -12,12 +12,12 @@
  */
 package com.vmware.photon.controller.clustermanager.tasks;
 
+import com.vmware.photon.controller.api.client.ApiClient;
+import com.vmware.photon.controller.api.client.resource.TasksApi;
+import com.vmware.photon.controller.api.client.resource.VmApi;
 import com.vmware.photon.controller.api.model.ApiError;
 import com.vmware.photon.controller.api.model.Step;
 import com.vmware.photon.controller.api.model.Task;
-import com.vmware.photon.controller.client.ApiClient;
-import com.vmware.photon.controller.client.resource.TasksApi;
-import com.vmware.photon.controller.client.resource.VmApi;
 import com.vmware.photon.controller.clustermanager.helpers.ReflectionUtils;
 import com.vmware.photon.controller.clustermanager.helpers.TestEnvironment;
 import com.vmware.photon.controller.clustermanager.helpers.TestHelper;
