@@ -28,6 +28,8 @@ from gen.resource.ttypes import MksTicket
 from host.hypervisor.exceptions import DiskFileException
 from host.hypervisor.exceptions import DiskPathException
 from host.hypervisor.exceptions import DiskAlreadyExistException
+from host.hypervisor.exceptions import OperationNotAllowedException
+from host.hypervisor.exceptions import VmAlreadyExistException
 from host.hypervisor.exceptions import VmNotFoundException
 from host.hypervisor.exceptions import VmPowerStateException
 from host.hypervisor.esx.host_client import HostClient
@@ -44,17 +46,18 @@ from host.hypervisor.esx.path_util import VM_FOLDER_NAME_PREFIX
 from vmware.envoy import attache
 
 ATTACHE_ERROR_MAP = {
-    60011: HostdConnectionFailure,      # ERROR_ATTACHE_CONNECT_FAILED
-    60032: VmNotFoundException,         # ERROR_ATTACHE_VM_NOT_FOUND
-    60033: DeviceNotFoundException,     # ERROR_ATTACHE_DEVICE_NOT_FOUND
-    60035: DatastoreNotFound,           # ERROR_ATTACHE_DATASTORE_NOT_FOUND
-    60036: DeviceBusyException,         # ERROR_ATTACHE_DEVICE_BUSY
+    60011: HostdConnectionFailure,       # ERROR_ATTACHE_CONNECT_FAILED
+    60032: VmNotFoundException,          # ERROR_ATTACHE_VM_NOT_FOUND
+    60033: DeviceNotFoundException,      # ERROR_ATTACHE_DEVICE_NOT_FOUND
+    60035: DatastoreNotFound,            # ERROR_ATTACHE_DATASTORE_NOT_FOUND
+    60036: DeviceBusyException,          # ERROR_ATTACHE_DEVICE_BUSY
 
-    60100: DiskPathException,           # ERROR_ATTACHE_VIM_FAULT_INVALID_DATASTORE
-    60101: DiskFileException,           # ERROR_ATTACHE_VIM_FAULT_FILE_FAULT
-    60103: DiskAlreadyExistException,   # ERROR_ATTACHE_VIM_FAULT_FILE_ALREADY_EXISTS
-    60104: VmPowerStateException,       # ERROR_ATTACHE_VIM_FAULT_INVALID_POWER_STATE
-    60106: DeviceBusyException          # ERROR_ATTACHE_VIM_FAULT_FILE_LOCKED
+    60100: DiskPathException,            # ERROR_ATTACHE_VIM_FAULT_INVALID_DATASTORE
+    60101: DiskFileException,            # ERROR_ATTACHE_VIM_FAULT_FILE_FAULT
+    60103: DiskAlreadyExistException,    # ERROR_ATTACHE_VIM_FAULT_FILE_ALREADY_EXISTS
+    60104: VmPowerStateException,        # ERROR_ATTACHE_VIM_FAULT_INVALID_POWER_STATE
+    60106: DeviceBusyException,          # ERROR_ATTACHE_VIM_FAULT_FILE_LOCKED
+    60108: OperationNotAllowedException  # ERROR_ATTACHE_VIM_FAULT_OPERATION_NOT_ALLOWED
 }
 
 
@@ -167,6 +170,12 @@ class AttacheClient(HostClient):
 
     @attache_error_handler
     def create_vm(self, vm_id, create_spec):
+        # sanity check since VIM does not prevent this
+        try:
+            if self.get_vm_in_cache(vm_id):
+                raise VmAlreadyExistException("VM already exists")
+        except VmNotFoundException:
+            pass
         self._client.CreateVM(self._session, create_spec.get_spec())
         self.wait_for_vm_create(vm_id)
 
@@ -269,7 +278,7 @@ class AttacheClient(HostClient):
 
     @attache_error_handler
     def delete_vm(self, vm_id, force):
-        vmPath = self._client.DeleteVM(self._session, vm_id)
+        vmPath = self._client.DeleteVM2(self._session, vm_id, force)
         vm_dir = os.path.dirname(vmPath)
         return vm_dir
 
