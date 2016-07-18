@@ -15,8 +15,8 @@ package com.vmware.photon.controller.apife.lib;
 
 import com.vmware.photon.controller.api.Host;
 import com.vmware.photon.controller.api.HostDatastore;
+import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.ResourceList;
-import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.apife.backends.HostBackend;
 import com.vmware.photon.controller.apife.config.ImageConfig;
 import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
@@ -35,6 +35,7 @@ import com.google.common.collect.ImmutableList;
 import org.powermock.modules.testng.PowerMockTestCase;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.notNullValue;
@@ -110,7 +111,7 @@ public class VsphereImageStoreTest extends PowerMockTestCase {
     public void setUp() {
       hostBackend = mock(HostBackend.class);
       ResourceList<Host> hostList = buildHostList();
-      when(hostBackend.filterByUsage(eq(UsageTag.MGMT), any())).thenReturn(hostList);
+      when(hostBackend.filterByState(eq(HostState.READY), any())).thenReturn(hostList);
       when(hostBackend.filterByAddress(eq(HOST_ADDRESS), any())).thenReturn(hostList);
 
       hostClient = mock(HostClient.class);
@@ -172,7 +173,7 @@ public class VsphereImageStoreTest extends PowerMockTestCase {
           expectedExceptionsMessageRegExp = "Could not find any host to upload image.")
     public void testWithHostIpProvidedNoHostFound() throws Exception {
       doReturn(new ResourceList<Host>()).when(hostBackend).filterByAddress(HOST_ADDRESS, Optional.absent());
-      doReturn(new ResourceList<Host>()).when(hostBackend).filterByUsage(UsageTag.MGMT, Optional.absent());
+      doReturn(new ResourceList<Host>()).when(hostBackend).filterByState(HostState.READY, Optional.of(1));
 
       imageStore.createImage(imageId);
     }
@@ -181,7 +182,7 @@ public class VsphereImageStoreTest extends PowerMockTestCase {
           expectedExceptionsMessageRegExp = "Could not find any host to upload image.")
     public void testNoHostIpProvidedNoHostFound() throws Exception {
       imageConfig.setEndpoint(null);
-      doReturn(new ResourceList<Host>()).when(hostBackend).filterByUsage(UsageTag.MGMT, Optional.absent());
+      doReturn(new ResourceList<Host>()).when(hostBackend).filterByState(HostState.READY, Optional.of(1));
 
       imageStore.createImage(imageId);
     }
@@ -200,7 +201,7 @@ public class VsphereImageStoreTest extends PowerMockTestCase {
       ResourceList<Host> vmHostList = buildVmHostList();
       when(hostBackend.filterByAddress(eq(HOST_ADDRESS), any())).thenReturn(hostList);
       when(hostBackend.filterByAddress(eq(VM_HOST_ADDRESS), any())).thenReturn(vmHostList);
-      when(hostBackend.filterByUsage(UsageTag.MGMT, Optional.<Integer>absent())).thenReturn(vmHostList);
+      when(hostBackend.filterByState(HostState.READY, Optional.of(1))).thenReturn(vmHostList);
 
       hostClient = mock(HostClient.class);
       hostClientFactory = mock(HostClientFactory.class);
@@ -285,7 +286,7 @@ public class VsphereImageStoreTest extends PowerMockTestCase {
       imageConfig.setEndpoint(HOST_ADDRESS);
 
       hostBackend = mock(HostBackend.class);
-      when(hostBackend.filterByUsage(any(), any())).thenReturn(buildHostList());
+      when(hostBackend.filterByState(any(), any())).thenReturn(buildHostList());
 
       hostClient = mock(HostClient.class);
       hostClientFactory = mock(HostClientFactory.class);
