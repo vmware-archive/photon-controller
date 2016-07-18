@@ -68,4 +68,6 @@ public interface HostBackend {
   TaskEntity enterMaintenance(String hostId) throws ExternalException;
 
   TaskEntity exitMaintenance(String hostId) throws ExternalException;
+
+  ResourceList<Host> filterByState(HostState hostState, Optional<Integer> pageSize);
 }

@@ -85,7 +85,7 @@ public class VsphereImageStoreImageTest {
     hostList.setItems(ImmutableList.of(host));
 
     HostBackend hostBackend = mock(HostBackend.class);
-    when(hostBackend.filterByUsage(any(), any())).thenReturn(hostList);
+    when(hostBackend.filterByState(any(), any())).thenReturn(hostList);
 
     hostClient = mock(HostClient.class);
     HostClientFactory hostClientFactory = mock(HostClientFactory.class);

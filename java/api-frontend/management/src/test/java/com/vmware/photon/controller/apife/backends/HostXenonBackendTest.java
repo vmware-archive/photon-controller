@@ -54,6 +54,7 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
+
 import static junit.framework.TestCase.fail;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.nullValue;
@@ -428,6 +429,17 @@ public class HostXenonBackendTest {
 
     @Test
     public void testFilterByPortGroup() {
+      ResourceList<Host> hosts = hostBackend.filterByPortGroup(PORT_GROUP, Optional.<Integer>absent());
+      assertThat(hosts, notNullValue());
+      assertThat(hosts.getItems().size(), is(1));
+
+      hosts = hostBackend.filterByPortGroup("MISSING_PORTGROUP", Optional.<Integer>absent());
+      assertThat(hosts, notNullValue());
+      assertThat(hosts.getItems().size(), is(0));
+    }
+
+    @Test
+    public void testFilterByStatus() {
       ResourceList<Host> hosts = hostBackend.filterByPortGroup(PORT_GROUP, Optional.<Integer>absent());
       assertThat(hosts, notNullValue());
       assertThat(hosts.getItems().size(), is(1));
