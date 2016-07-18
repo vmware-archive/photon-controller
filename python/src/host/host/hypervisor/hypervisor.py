@@ -105,11 +105,6 @@ class Hypervisor(object):
 
     def set_memory_overcommit(self, value):
         self.placement_manager.memory_overcommit = value
-        # Enable/Disable large page support. If this host is removed
-        # from the deployment, large page support will need to be
-        # explicitly updated by the user.
-        disable_large_pages = value > 1.0
-        self.host_client.set_large_page_support(disable=disable_large_pages)
 
     @property
     def cpu_overcommit(self):
