@@ -125,10 +125,11 @@ class VmManager(object):
         :raise VmPowerStateException when vm is not powered off
         """
         vm_dir = self.vim_client.delete_vm(vm_id, force)
-
+        self._logger.info("will enter if block if vmDir exists %s" % vm_dir)
         # Upon successful destroy of VM, log any stray files still left in the
         # VM directory and delete the directory.
         if os.path.isdir(vm_dir):
+            self._logger.info("Enterd the if - vmDir exists")
             # log any stray files still left in the VM directory
             try:
                 target_dir = vm_dir
