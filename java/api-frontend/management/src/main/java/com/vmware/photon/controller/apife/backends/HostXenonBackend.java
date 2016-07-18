@@ -169,6 +169,14 @@ public class HostXenonBackend implements HostBackend {
   }
 
   @Override
+  public ResourceList<Host> filterByState(HostState hostState, Optional<Integer> pageSize) {
+    final ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
+    termsBuilder.put(HostService.State.FIELD_NAME_STATE, hostState.toString());
+
+    return findDocuments(termsBuilder, pageSize);
+  }
+
+  @Override
   public Host toApiRepresentation(String id) throws HostNotFoundException {
     HostEntity hostEntity = findById(id);
     return toApiRepresentation(hostEntity);
