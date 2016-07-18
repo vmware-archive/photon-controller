@@ -42,6 +42,7 @@ import com.vmware.photon.controller.apife.utils.PaginationUtils;
 import com.vmware.photon.controller.apife.utils.SecurityGroupUtils;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ProjectService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ProjectServiceFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.VirtualNetworkService;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
 import com.vmware.xenon.common.ServiceDocumentQueryResult;
@@ -49,6 +50,7 @@ import com.vmware.xenon.common.ServiceDocumentQueryResult;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
+import com.google.inject.name.Named;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -72,14 +74,18 @@ public class ProjectXenonBackend implements ProjectBackend {
   private final VmBackend vmBackend;
   private final DiskBackend diskBackend;
   private final TombstoneBackend tombstoneBackend;
+  private final boolean useVirtualNetwork;
 
   @Inject
   public ProjectXenonBackend(
       ApiFeXenonRestClient xenonClient,
       TaskBackend taskBackend,
       TenantBackend tenantBackend,
-                           ResourceTicketBackend resourceTicketBackend, VmBackend vmBackend, DiskBackend diskBackend,
-                           TombstoneBackend tombstoneBackend) {
+      ResourceTicketBackend resourceTicketBackend,
+      VmBackend vmBackend,
+      DiskBackend diskBackend,
+      TombstoneBackend tombstoneBackend,
+      @Named("useVirtualNetwork") Boolean useVirtualNetwork) {
     this.xenonClient = xenonClient;
     this.taskBackend = taskBackend;
     this.tenantBackend = tenantBackend;
@@ -87,6 +93,7 @@ public class ProjectXenonBackend implements ProjectBackend {
     this.vmBackend = vmBackend;
     this.diskBackend = diskBackend;
     this.tombstoneBackend = tombstoneBackend;
+    this.useVirtualNetwork = useVirtualNetwork;
     this.xenonClient.start();
   }
 
@@ -270,6 +277,11 @@ public class ProjectXenonBackend implements ProjectBackend {
   private ProjectEntity delete(String projectId) throws ExternalException {
     ProjectEntity projectEntity = findById(projectId);
 
+    if (hasSubnets(projectId)) {
+      throw new ContainerNotEmptyException(projectEntity,
+          String.format("Project '%s' subnet list is non-empty", projectId));
+    }
+
     if (!vmBackend.filterByProject(projectId, Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE)).getItems()
         .isEmpty()) {
       throw new ContainerNotEmptyException(projectEntity,
@@ -384,6 +396,26 @@ public class ProjectXenonBackend implements ProjectBackend {
       tenantSecurityGroupsNames.add(sg.getName());
     }
     return tenantSecurityGroupsNames;
+  }
+
+  private boolean hasSubnets(String projectId) {
+    if (!useVirtualNetwork) {
+      // no need to check if we are not using virtual networking since the physical networks are all at the
+      // deployment level
+      return false;
+    }
+
+    final ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
+    termsBuilder.put("parentId", projectId);
+    termsBuilder.put("parentKind", Project.KIND);
+
+    ServiceDocumentQueryResult queryResult = xenonClient.queryDocuments(
+        VirtualNetworkService.State.class,
+        termsBuilder.build(),
+        Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE),
+        false);
+
+    return queryResult.documentCount > 0;
   }
 
 }
