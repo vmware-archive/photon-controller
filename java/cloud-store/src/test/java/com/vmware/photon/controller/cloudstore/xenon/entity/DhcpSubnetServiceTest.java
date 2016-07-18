@@ -36,9 +36,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Tests {@link IpAllocatorService}.
+ * Tests {@link DhcpSubnetService}.
  */
-public class IpAllocatorServiceTest {
+public class DhcpSubnetServiceTest {
   private static BasicServiceHost host;
   private static XenonRestClient xenonClient;
 
@@ -75,17 +75,17 @@ public class IpAllocatorServiceTest {
 
     @Test
     public void testSuccessfulCreation() throws Throwable {
-      IpAllocatorService.State startState = createInitialState();
+      DhcpSubnetService.State startState = createInitialState();
 
-      Operation result = xenonClient.post(IpAllocatorService.FACTORY_LINK, startState);
+      Operation result = xenonClient.post(DhcpSubnetService.FACTORY_LINK, startState);
       assertThat(result.getStatusCode(), is(HttpStatus.SC_OK));
 
-      IpAllocatorService.State createdState = result.getBody(IpAllocatorService.State.class);
-      assertThat(ServiceUtils.documentEquals(IpAllocatorService.State.class, startState, createdState), is(true));
+      DhcpSubnetService.State createdState = result.getBody(DhcpSubnetService.State.class);
+      assertThat(ServiceUtils.documentEquals(DhcpSubnetService.State.class, startState, createdState), is(true));
 
-      IpAllocatorService.State savedState = host.getServiceState(IpAllocatorService.State.class,
+      DhcpSubnetService.State savedState = host.getServiceState(DhcpSubnetService.State.class,
           createdState.documentSelfLink);
-      assertThat(ServiceUtils.documentEquals(IpAllocatorService.State.class, startState, savedState), is(true));
+      assertThat(ServiceUtils.documentEquals(DhcpSubnetService.State.class, startState, savedState), is(true));
     }
   }
 
@@ -93,7 +93,7 @@ public class IpAllocatorServiceTest {
    * Tests for handleDelete method.
    */
   public class HandleDeleteTest {
-    private IpAllocatorService.State startState;
+    private DhcpSubnetService.State startState;
 
     @BeforeMethod
     public void beforeMethod() throws Throwable {
@@ -110,9 +110,9 @@ public class IpAllocatorServiceTest {
       TestHelper.testExpirationOnDelete(
           xenonClient,
           host,
-          IpAllocatorService.FACTORY_LINK,
+          DhcpSubnetService.FACTORY_LINK,
           startState,
-          IpAllocatorService.State.class,
+          DhcpSubnetService.State.class,
           0L,
           0L,
           ServiceUtils.computeExpirationTime(ServiceUtils.DEFAULT_ON_DELETE_DOC_EXPIRATION_TIME_MICROS)
@@ -124,9 +124,9 @@ public class IpAllocatorServiceTest {
       TestHelper.testExpirationOnDelete(
           xenonClient,
           host,
-          IpAllocatorService.FACTORY_LINK,
+          DhcpSubnetService.FACTORY_LINK,
           startState,
-          IpAllocatorService.State.class,
+          DhcpSubnetService.State.class,
           ServiceUtils.computeExpirationTime(Integer.MAX_VALUE),
           0L,
           ServiceUtils.computeExpirationTime(Integer.MAX_VALUE)
@@ -138,9 +138,9 @@ public class IpAllocatorServiceTest {
       TestHelper.testExpirationOnDelete(
           xenonClient,
           host,
-          IpAllocatorService.FACTORY_LINK,
+          DhcpSubnetService.FACTORY_LINK,
           startState,
-          IpAllocatorService.State.class,
+          DhcpSubnetService.State.class,
           ServiceUtils.computeExpirationTime(TimeUnit.MINUTES.toMicros(1)),
           ServiceUtils.computeExpirationTime(Integer.MAX_VALUE),
           ServiceUtils.computeExpirationTime(Integer.MAX_VALUE)
@@ -148,8 +148,8 @@ public class IpAllocatorServiceTest {
     }
   }
 
-  private static IpAllocatorService.State createInitialState() {
-    IpAllocatorService.State startState = new IpAllocatorService.State();
+  private static DhcpSubnetService.State createInitialState() {
+    DhcpSubnetService.State startState = new DhcpSubnetService.State();
     startState.cidr = "192.168.0.0/16";
     return startState;
   }
