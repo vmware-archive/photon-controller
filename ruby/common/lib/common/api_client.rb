@@ -10,7 +10,6 @@
 # specific language governing permissions and limitations under the License.
 
 require_relative "api_client/auth_api"
-require_relative "api_client/portgroup_api"
 require_relative "api_client/project_api"
 require_relative "api_client/resource_ticket_api"
 require_relative "api_client/tenant_api"
@@ -35,7 +34,6 @@ require_relative "api_client/virtual_network_api"
 module EsxCloud
   class ApiClient
     include EsxCloud::ApiClient::AuthApi
-    include EsxCloud::ApiClient::PortGroupApi
     include EsxCloud::ApiClient::ProjectApi
     include EsxCloud::ApiClient::ResourceTicketApi
     include EsxCloud::ApiClient::TenantApi

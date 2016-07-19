@@ -118,10 +118,6 @@ Use '-n' flag to trigger non-interactive mode (for scripting).
       photon network show <network-id>
       photon network list
 
-      # Show portgroup's information or list portgroups
-      photon portgroup show <portgroup-id>
-      photon portgroup list --name p1 --usage_tag CLOUD
-
       # Get Vm networks information
       photon vm networks <id> --tenant joe --project dev
 

@@ -18,7 +18,6 @@ require_relative "go_cli_client/host_api"
 require_relative "go_cli_client/image_api"
 require_relative "go_cli_client/import_api"
 require_relative "go_cli_client/network_api"
-require_relative "go_cli_client/portgroup_api"
 require_relative "go_cli_client/project_api"
 require_relative "go_cli_client/resource_ticket_api"
 require_relative "go_cli_client/status_api"
@@ -40,7 +39,6 @@ module EsxCloud
     include EsxCloud::GoCliClient::ImageApi
     include EsxCloud::GoCliClient::ImportApi
     include EsxCloud::GoCliClient::NetworkApi
-    include EsxCloud::GoCliClient::PortGroupApi
     include EsxCloud::GoCliClient::ProjectApi
     include EsxCloud::GoCliClient::ResourceTicketApi
     include EsxCloud::GoCliClient::StatusApi

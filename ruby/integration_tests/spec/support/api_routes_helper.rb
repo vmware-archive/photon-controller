@@ -24,7 +24,6 @@ module EsxCloud
         *hosts_routes,
         *networks_routes,
         *images_routes,
-        *portgroups_routes,
         *projects_routes,
         *resource_tickets_routes,
         *tasks_routes,
@@ -46,7 +45,6 @@ module EsxCloud
           *vms_routes(seeder.vm!.id),
           *images_routes(seeder.image!.id),
           *flavors_routes(seeder.vm_flavor!.id),
-          *portgroups_routes,
           *projects_routes(seeder.project!.id),
           *resource_tickets_routes,
           *tasks_routes,
@@ -154,13 +152,6 @@ module EsxCloud
         EsxCloud::ApiRoute.new(:post, "/projects/#{id}/vms", 400, 400, 400, 400, 403),
         EsxCloud::ApiRoute.new(:post, "/projects/#{id}/set_security_groups", 400, 400, 400, 403, 403),
         EsxCloud::ApiRoute.new(:delete, "/projects/#{id}", 404, 201, 201, 403, 403)
-      ]
-    end
-
-    def self.portgroups_routes(id = SecureRandom.uuid)
-      [
-        EsxCloud::ApiRoute.new(:get, "/portgroups", 200, 200, 403, 403, 403),
-        EsxCloud::ApiRoute.new(:get, "/portgroups/#{id}", 404, 404, 403, 403, 403)
       ]
     end
 

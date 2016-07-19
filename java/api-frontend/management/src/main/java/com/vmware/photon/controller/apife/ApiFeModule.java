@@ -53,8 +53,6 @@ import com.vmware.photon.controller.apife.backends.ImageBackend;
 import com.vmware.photon.controller.apife.backends.ImageXenonBackend;
 import com.vmware.photon.controller.apife.backends.NetworkBackend;
 import com.vmware.photon.controller.apife.backends.NetworkXenonBackend;
-import com.vmware.photon.controller.apife.backends.PortGroupBackend;
-import com.vmware.photon.controller.apife.backends.PortGroupXenonBackend;
 import com.vmware.photon.controller.apife.backends.ProjectBackend;
 import com.vmware.photon.controller.apife.backends.ProjectXenonBackend;
 import com.vmware.photon.controller.apife.backends.ResourceTicketBackend;
@@ -235,7 +233,6 @@ public class ApiFeModule extends AbstractModule {
     bind(ImageBackend.class).to(ImageXenonBackend.class);
     bind(NetworkBackend.class).to(NetworkXenonBackend.class);
     bind(DatastoreBackend.class).to(DatastoreXenonBackend.class);
-    bind(PortGroupBackend.class).to(PortGroupXenonBackend.class);
     bind(EntityLockBackend.class).to(EntityLockXenonBackend.class);
     bind(TaskBackend.class).to(TaskXenonBackend.class);
     bind(StepBackend.class).to(TaskXenonBackend.class); // Step backend was merged into Task backend

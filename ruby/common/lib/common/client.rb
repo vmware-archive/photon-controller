@@ -454,17 +454,6 @@ module EsxCloud
     end
 
     # @param [String] id
-    # @return [PortGroup]
-    def find_portgroup_by_id(id)
-    end
-
-    # @param [String] name
-    # @param [String] usage_tag
-    # @return [PortGroupList]
-    def find_portgroups(name, usage_tag)
-    end
-
-    # @param [String] id
     # @return [Host]
     def host_enter_maintenance_mode(id)
     end

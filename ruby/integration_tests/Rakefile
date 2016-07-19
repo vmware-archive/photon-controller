@@ -162,7 +162,7 @@ namespace "upgrade" do
   task :prepare_old_plane, [:new_config_file, :task_number] do |t, args|
     EsxCloud::Config.init
     EsxCloud::Config.client = ApiClientHelper.management
-    EsxCloud::ManagementPlaneSeeder.populate
+    EsxCloud::ManagementPlaneSeeder.populate("VM Network", "VM Network 2")
     EsxCloud::Dcp::CloudStore::TaskFactory.create_random_tasks args[:number].to_i
     host_specs = EsxCloud::HostsImporter.import_file  args[:new_config_file]
     host_specs.each{ |h| EsxCloud::HostCleaner.api_clean h.address }

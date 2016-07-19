@@ -44,7 +44,6 @@ describe "authorization", authorization: true, devbox: true do
         *EsxCloud::ApiRoutesHelper.hosts_routes,
         *EsxCloud::ApiRoutesHelper.networks_routes,
         *EsxCloud::ApiRoutesHelper.images_routes,
-        *EsxCloud::ApiRoutesHelper.portgroups_routes,
         *EsxCloud::ApiRoutesHelper.projects_routes,
         *EsxCloud::ApiRoutesHelper.resource_tickets_routes,
         *EsxCloud::ApiRoutesHelper.tasks_routes,
