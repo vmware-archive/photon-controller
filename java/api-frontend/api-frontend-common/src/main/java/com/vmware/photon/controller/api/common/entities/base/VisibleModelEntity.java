@@ -13,8 +13,8 @@
 
 package com.vmware.photon.controller.api.common.entities.base;
 
-import com.vmware.photon.controller.api.base.Named;
 import com.vmware.photon.controller.api.common.entities.TaggableEntity;
+import com.vmware.photon.controller.api.model.base.Named;
 
 import java.util.HashSet;
 import java.util.Set;

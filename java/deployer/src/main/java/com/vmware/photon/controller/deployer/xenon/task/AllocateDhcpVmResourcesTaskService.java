@@ -13,10 +13,10 @@
 
 package com.vmware.photon.controller.deployer.xenon.task;
 
-import com.vmware.photon.controller.api.FlavorCreateSpec;
-import com.vmware.photon.controller.api.QuotaLineItem;
-import com.vmware.photon.controller.api.QuotaUnit;
-import com.vmware.photon.controller.api.Task;
+import com.vmware.photon.controller.api.model.FlavorCreateSpec;
+import com.vmware.photon.controller.api.model.QuotaLineItem;
+import com.vmware.photon.controller.api.model.QuotaUnit;
+import com.vmware.photon.controller.api.model.Task;
 import com.vmware.photon.controller.clustermanager.servicedocuments.ClusterManagerConstants;
 import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.xenon.ControlFlags;

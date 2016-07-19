@@ -13,16 +13,16 @@
 
 package com.vmware.photon.controller.apife.clients;
 
-import com.vmware.photon.controller.api.Operation;
-import com.vmware.photon.controller.api.Project;
-import com.vmware.photon.controller.api.ResourceList;
-import com.vmware.photon.controller.api.SubnetState;
-import com.vmware.photon.controller.api.Task;
-import com.vmware.photon.controller.api.VirtualNetworkCreateSpec;
-import com.vmware.photon.controller.api.VirtualSubnet;
-import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
+import com.vmware.photon.controller.api.model.Operation;
+import com.vmware.photon.controller.api.model.Project;
+import com.vmware.photon.controller.api.model.ResourceList;
+import com.vmware.photon.controller.api.model.SubnetState;
+import com.vmware.photon.controller.api.model.Task;
+import com.vmware.photon.controller.api.model.VirtualNetworkCreateSpec;
+import com.vmware.photon.controller.api.model.VirtualSubnet;
+import com.vmware.photon.controller.api.model.Vm;
 import com.vmware.photon.controller.apibackend.servicedocuments.CreateVirtualNetworkWorkflowDocument;
 import com.vmware.photon.controller.apibackend.servicedocuments.DeleteVirtualNetworkWorkflowDocument;
 import com.vmware.photon.controller.apibackend.workflows.CreateVirtualNetworkWorkflowService;

@@ -15,7 +15,7 @@ package com.vmware.photon.controller.deployer.xenon.workflow;
 
 import com.vmware.photon.controller.agent.gen.AgentStatusCode;
 import com.vmware.photon.controller.agent.gen.ProvisionResultCode;
-import com.vmware.photon.controller.api.UsageTag;
+import com.vmware.photon.controller.api.model.UsageTag;
 import com.vmware.photon.controller.common.clients.AgentControlClientFactory;
 import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.config.ConfigBuilder;

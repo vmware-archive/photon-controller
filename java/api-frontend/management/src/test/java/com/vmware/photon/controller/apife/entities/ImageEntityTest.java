@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.apife.entities;
 
-import com.vmware.photon.controller.api.ImageState;
+import com.vmware.photon.controller.api.model.ImageState;
 
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;

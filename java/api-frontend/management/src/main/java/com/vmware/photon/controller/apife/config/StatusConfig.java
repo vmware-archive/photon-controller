@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.apife.config;
 
-import com.vmware.photon.controller.api.Component;
+import com.vmware.photon.controller.api.model.Component;
 
 import java.util.Collection;
 import java.util.EnumSet;

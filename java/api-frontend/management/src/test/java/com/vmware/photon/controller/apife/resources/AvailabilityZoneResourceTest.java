@@ -13,9 +13,9 @@
 
 package com.vmware.photon.controller.apife.resources;
 
-import com.vmware.photon.controller.api.ApiError;
-import com.vmware.photon.controller.api.AvailabilityZone;
-import com.vmware.photon.controller.api.Task;
+import com.vmware.photon.controller.api.model.ApiError;
+import com.vmware.photon.controller.api.model.AvailabilityZone;
+import com.vmware.photon.controller.api.model.Task;
 import com.vmware.photon.controller.apife.clients.AvailabilityZoneFeClient;
 import com.vmware.photon.controller.apife.exceptions.external.AvailabilityZoneNotFoundException;
 import com.vmware.photon.controller.apife.resources.availabilityzone.AvailabilityZoneResource;

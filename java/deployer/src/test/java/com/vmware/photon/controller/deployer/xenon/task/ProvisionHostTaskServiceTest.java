@@ -15,8 +15,8 @@ package com.vmware.photon.controller.deployer.xenon.task;
 
 import com.vmware.photon.controller.agent.gen.AgentStatusCode;
 import com.vmware.photon.controller.agent.gen.ProvisionResultCode;
-import com.vmware.photon.controller.api.HostState;
-import com.vmware.photon.controller.api.UsageTag;
+import com.vmware.photon.controller.api.model.HostState;
+import com.vmware.photon.controller.api.model.UsageTag;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DatastoreService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.HostService;

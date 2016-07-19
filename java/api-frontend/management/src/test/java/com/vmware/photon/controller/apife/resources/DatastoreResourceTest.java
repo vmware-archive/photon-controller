@@ -13,8 +13,8 @@
 
 package com.vmware.photon.controller.apife.resources;
 
-import com.vmware.photon.controller.api.Datastore;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
+import com.vmware.photon.controller.api.model.Datastore;
 import com.vmware.photon.controller.apife.clients.DatastoreFeClient;
 import com.vmware.photon.controller.apife.exceptions.external.DatastoreNotFoundException;
 import com.vmware.photon.controller.apife.resources.datastore.DatastoreResource;
@@ -22,7 +22,6 @@ import com.vmware.photon.controller.apife.resources.routes.DatastoreResourceRout
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
 
 import com.google.common.collect.ImmutableSet;
-
 import org.mockito.Mock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.apife.entities;
 
-import com.vmware.photon.controller.api.QuotaUnit;
+import com.vmware.photon.controller.api.model.QuotaUnit;
 
 import java.util.Objects;
 

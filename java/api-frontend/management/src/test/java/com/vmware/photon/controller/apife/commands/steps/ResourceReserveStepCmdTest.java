@@ -13,15 +13,15 @@
 
 package com.vmware.photon.controller.apife.commands.steps;
 
-import com.vmware.photon.controller.api.DiskState;
-import com.vmware.photon.controller.api.EphemeralDisk;
-import com.vmware.photon.controller.api.PersistentDisk;
-import com.vmware.photon.controller.api.QuotaUnit;
-import com.vmware.photon.controller.api.Subnet;
-import com.vmware.photon.controller.api.SubnetState;
-import com.vmware.photon.controller.api.Vm;
-import com.vmware.photon.controller.api.VmState;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
+import com.vmware.photon.controller.api.model.DiskState;
+import com.vmware.photon.controller.api.model.EphemeralDisk;
+import com.vmware.photon.controller.api.model.PersistentDisk;
+import com.vmware.photon.controller.api.model.QuotaUnit;
+import com.vmware.photon.controller.api.model.Subnet;
+import com.vmware.photon.controller.api.model.SubnetState;
+import com.vmware.photon.controller.api.model.Vm;
+import com.vmware.photon.controller.api.model.VmState;
 import com.vmware.photon.controller.apife.backends.DiskBackend;
 import com.vmware.photon.controller.apife.backends.FlavorBackend;
 import com.vmware.photon.controller.apife.backends.NetworkBackend;
@@ -238,7 +238,8 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
   @Test
   public void testSuccessfulVmExecution() throws Exception {
     List<QuotaLineItem> quotaLineItems = new ArrayList<>();
-    quotaLineItems.add(new QuotaLineItem("vm.cost", "100.0", com.vmware.photon.controller.flavors.gen.QuotaUnit.COUNT));
+    quotaLineItems.add(new QuotaLineItem("vm.cost", "100.0",
+        com.vmware.photon.controller.flavors.gen.QuotaUnit.COUNT));
 
     Flavor expectedFlavor = new Flavor();
     expectedFlavor.setName("vm-100");
@@ -277,7 +278,8 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
   @Test
   public void testSuccessfulVmExecutionWithDiskAffinities() throws Throwable {
     List<QuotaLineItem> quotaLineItems = new ArrayList<>();
-    quotaLineItems.add(new QuotaLineItem("vm.cost", "100.0", com.vmware.photon.controller.flavors.gen.QuotaUnit.COUNT));
+    quotaLineItems.add(new QuotaLineItem("vm.cost", "100.0",
+        com.vmware.photon.controller.flavors.gen.QuotaUnit.COUNT));
 
     Flavor expectedFlavor = new Flavor();
     expectedFlavor.setName("vm-100");
@@ -671,7 +673,8 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
     TaskEntity task = mock(TaskEntity.class);
     StepEntity connectVmSwitchStep = new StepEntity();
     doReturn(task).when(taskCommand).getTask();
-    doReturn(connectVmSwitchStep).when(task).findStep(com.vmware.photon.controller.api.Operation.CONNECT_VM_SWITCH);
+    doReturn(connectVmSwitchStep).when(task).findStep(
+        com.vmware.photon.controller.api.model.Operation.CONNECT_VM_SWITCH);
 
     ResourceReserveStepCmd command = getVmReservationCommand();
     command.setInfrastructureEntity(vm);
@@ -725,7 +728,8 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
     TaskEntity task = mock(TaskEntity.class);
     StepEntity connectVmSwitchStep = new StepEntity();
     doReturn(task).when(taskCommand).getTask();
-    doReturn(connectVmSwitchStep).when(task).findStep(com.vmware.photon.controller.api.Operation.CONNECT_VM_SWITCH);
+    doReturn(connectVmSwitchStep).when(task).findStep(
+        com.vmware.photon.controller.api.model.Operation.CONNECT_VM_SWITCH);
 
     ResourceReserveStepCmd command = getVmReservationCommand();
     command.setInfrastructureEntity(vm);
@@ -776,7 +780,8 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
     TaskEntity task = mock(TaskEntity.class);
     StepEntity connectVmSwitchStep = new StepEntity();
     doReturn(task).when(taskCommand).getTask();
-    doReturn(connectVmSwitchStep).when(task).findStep(com.vmware.photon.controller.api.Operation.CONNECT_VM_SWITCH);
+    doReturn(connectVmSwitchStep).when(task).findStep(
+        com.vmware.photon.controller.api.model.Operation.CONNECT_VM_SWITCH);
 
     ResourceReserveStepCmd command = getVmReservationCommand(true);
     command.setInfrastructureEntity(vm);
@@ -827,7 +832,8 @@ public class ResourceReserveStepCmdTest extends PowerMockTestCase {
     TaskEntity task = mock(TaskEntity.class);
     StepEntity connectVmSwitchStep = new StepEntity();
     doReturn(task).when(taskCommand).getTask();
-    doReturn(connectVmSwitchStep).when(task).findStep(com.vmware.photon.controller.api.Operation.CONNECT_VM_SWITCH);
+    doReturn(connectVmSwitchStep).when(task).findStep(
+        com.vmware.photon.controller.api.model.Operation.CONNECT_VM_SWITCH);
 
     ResourceReserveStepCmd command = getVmReservationCommand(true);
     command.setInfrastructureEntity(vm);

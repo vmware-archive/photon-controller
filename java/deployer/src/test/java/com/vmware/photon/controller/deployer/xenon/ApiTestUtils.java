@@ -13,9 +13,9 @@
 
 package com.vmware.photon.controller.deployer.xenon;
 
-import com.vmware.photon.controller.api.ApiError;
-import com.vmware.photon.controller.api.Step;
-import com.vmware.photon.controller.api.Task;
+import com.vmware.photon.controller.api.model.ApiError;
+import com.vmware.photon.controller.api.model.Step;
+import com.vmware.photon.controller.api.model.Task;
 
 import java.util.ArrayList;
 import java.util.List;

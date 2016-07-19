@@ -13,9 +13,9 @@
 
 package com.vmware.photon.controller.apife.resources.vm;
 
-import com.vmware.photon.controller.api.ResourceList;
-import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
+import com.vmware.photon.controller.api.model.ResourceList;
+import com.vmware.photon.controller.api.model.Vm;
 import com.vmware.photon.controller.apife.clients.ClusterFeClient;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.resources.routes.ClusterResourceRoutes;

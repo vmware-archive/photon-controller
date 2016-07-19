@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.apife.commands.steps;
 
-import com.vmware.photon.controller.api.ClusterResizeOperation;
+import com.vmware.photon.controller.api.model.ClusterResizeOperation;
 import com.vmware.photon.controller.apife.backends.ClusterBackend;
 import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;

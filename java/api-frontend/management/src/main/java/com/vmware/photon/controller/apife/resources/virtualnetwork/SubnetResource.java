@@ -13,9 +13,9 @@
 
 package com.vmware.photon.controller.apife.resources.virtualnetwork;
 
-import com.vmware.photon.controller.api.Task;
-import com.vmware.photon.controller.api.VirtualSubnet;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
+import com.vmware.photon.controller.api.model.Task;
+import com.vmware.photon.controller.api.model.VirtualSubnet;
 import com.vmware.photon.controller.apife.clients.VirtualNetworkFeClient;
 import com.vmware.photon.controller.apife.resources.routes.SubnetResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;

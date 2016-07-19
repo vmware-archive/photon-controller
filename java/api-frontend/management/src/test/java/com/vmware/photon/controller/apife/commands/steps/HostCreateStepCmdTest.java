@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.apife.commands.steps;
 
-import com.vmware.photon.controller.api.HostState;
+import com.vmware.photon.controller.api.model.HostState;
 import com.vmware.photon.controller.apife.backends.HostXenonBackend;
 import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.backends.TaskBackend;

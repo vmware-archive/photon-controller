@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.apife.clients.status;
 
-import com.vmware.photon.controller.api.ComponentStatus;
+import com.vmware.photon.controller.api.model.ComponentStatus;
 import com.vmware.photon.controller.status.gen.StatusType;
 
 import com.google.common.collect.ImmutableMap;

@@ -12,10 +12,10 @@
  */
 package com.vmware.photon.controller.clustermanager.tasks;
 
-import com.vmware.photon.controller.api.NetworkConnection;
-import com.vmware.photon.controller.api.Task;
-import com.vmware.photon.controller.api.VmCreateSpec;
-import com.vmware.photon.controller.api.VmNetworks;
+import com.vmware.photon.controller.api.model.NetworkConnection;
+import com.vmware.photon.controller.api.model.Task;
+import com.vmware.photon.controller.api.model.VmCreateSpec;
+import com.vmware.photon.controller.api.model.VmNetworks;
 import com.vmware.photon.controller.client.ApiClient;
 import com.vmware.photon.controller.client.resource.ProjectApi;
 import com.vmware.photon.controller.client.resource.TasksApi;

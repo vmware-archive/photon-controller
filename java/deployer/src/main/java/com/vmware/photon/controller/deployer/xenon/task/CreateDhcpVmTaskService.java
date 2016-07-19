@@ -13,12 +13,12 @@
 
 package com.vmware.photon.controller.deployer.xenon.task;
 
-import com.vmware.photon.controller.api.AttachedDiskCreateSpec;
-import com.vmware.photon.controller.api.EphemeralDisk;
-import com.vmware.photon.controller.api.LocalitySpec;
-import com.vmware.photon.controller.api.Task;
-import com.vmware.photon.controller.api.VmCreateSpec;
-import com.vmware.photon.controller.api.VmMetadata;
+import com.vmware.photon.controller.api.model.AttachedDiskCreateSpec;
+import com.vmware.photon.controller.api.model.EphemeralDisk;
+import com.vmware.photon.controller.api.model.LocalitySpec;
+import com.vmware.photon.controller.api.model.Task;
+import com.vmware.photon.controller.api.model.VmCreateSpec;
+import com.vmware.photon.controller.api.model.VmMetadata;
 import com.vmware.photon.controller.cloudstore.xenon.entity.HostService;
 import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.xenon.ControlFlags;

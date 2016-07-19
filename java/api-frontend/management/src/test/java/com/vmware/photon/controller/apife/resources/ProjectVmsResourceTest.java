@@ -13,17 +13,17 @@
 
 package com.vmware.photon.controller.apife.resources;
 
-import com.vmware.photon.controller.api.ApiError;
-import com.vmware.photon.controller.api.AttachedDiskCreateSpec;
-import com.vmware.photon.controller.api.LocalitySpec;
-import com.vmware.photon.controller.api.ResourceList;
-import com.vmware.photon.controller.api.Task;
-import com.vmware.photon.controller.api.Vm;
-import com.vmware.photon.controller.api.VmCreateSpec;
-import com.vmware.photon.controller.api.builders.AttachedDiskCreateSpecBuilder;
 import com.vmware.photon.controller.api.common.exceptions.external.ErrorCode;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
+import com.vmware.photon.controller.api.model.ApiError;
+import com.vmware.photon.controller.api.model.AttachedDiskCreateSpec;
+import com.vmware.photon.controller.api.model.LocalitySpec;
+import com.vmware.photon.controller.api.model.ResourceList;
+import com.vmware.photon.controller.api.model.Task;
+import com.vmware.photon.controller.api.model.Vm;
+import com.vmware.photon.controller.api.model.VmCreateSpec;
+import com.vmware.photon.controller.api.model.builders.AttachedDiskCreateSpecBuilder;
 import com.vmware.photon.controller.apife.clients.VmFeClient;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.exceptions.external.FlavorNotFoundException;

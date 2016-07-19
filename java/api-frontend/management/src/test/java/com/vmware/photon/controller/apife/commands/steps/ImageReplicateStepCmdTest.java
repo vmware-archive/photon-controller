@@ -13,8 +13,8 @@
 
 package com.vmware.photon.controller.apife.commands.steps;
 
-import com.vmware.photon.controller.api.ImageReplicationType;
-import com.vmware.photon.controller.api.ImageState;
+import com.vmware.photon.controller.api.model.ImageReplicationType;
+import com.vmware.photon.controller.api.model.ImageState;
 import com.vmware.photon.controller.apife.backends.ImageBackend;
 import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.backends.TaskBackend;

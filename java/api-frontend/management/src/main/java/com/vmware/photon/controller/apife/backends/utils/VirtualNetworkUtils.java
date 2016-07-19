@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.apife.backends.utils;
 
-import com.vmware.photon.controller.api.VirtualSubnet;
+import com.vmware.photon.controller.api.model.VirtualSubnet;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VirtualNetworkService;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 

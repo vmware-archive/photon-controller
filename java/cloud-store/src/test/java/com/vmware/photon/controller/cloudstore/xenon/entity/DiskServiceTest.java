@@ -13,11 +13,11 @@
 
 package com.vmware.photon.controller.cloudstore.xenon.entity;
 
-import com.vmware.photon.controller.api.DiskState;
-import com.vmware.photon.controller.api.DiskType;
-import com.vmware.photon.controller.api.LocalitySpec;
-import com.vmware.photon.controller.api.QuotaLineItem;
-import com.vmware.photon.controller.api.QuotaUnit;
+import com.vmware.photon.controller.api.model.DiskState;
+import com.vmware.photon.controller.api.model.DiskType;
+import com.vmware.photon.controller.api.model.LocalitySpec;
+import com.vmware.photon.controller.api.model.QuotaLineItem;
+import com.vmware.photon.controller.api.model.QuotaUnit;
 import com.vmware.photon.controller.cloudstore.xenon.helpers.TestHelper;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.common.xenon.BasicServiceHost;

@@ -13,17 +13,17 @@
 
 package com.vmware.photon.controller.apife.backends;
 
-import com.vmware.photon.controller.api.EphemeralDisk;
-import com.vmware.photon.controller.api.Flavor;
-import com.vmware.photon.controller.api.FlavorCreateSpec;
-import com.vmware.photon.controller.api.FlavorState;
-import com.vmware.photon.controller.api.Operation;
-import com.vmware.photon.controller.api.PersistentDisk;
-import com.vmware.photon.controller.api.QuotaLineItem;
-import com.vmware.photon.controller.api.ResourceList;
-import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
+import com.vmware.photon.controller.api.model.EphemeralDisk;
+import com.vmware.photon.controller.api.model.Flavor;
+import com.vmware.photon.controller.api.model.FlavorCreateSpec;
+import com.vmware.photon.controller.api.model.FlavorState;
+import com.vmware.photon.controller.api.model.Operation;
+import com.vmware.photon.controller.api.model.PersistentDisk;
+import com.vmware.photon.controller.api.model.QuotaLineItem;
+import com.vmware.photon.controller.api.model.ResourceList;
+import com.vmware.photon.controller.api.model.Vm;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.entities.EntityStateValidator;
 import com.vmware.photon.controller.apife.entities.FlavorEntity;

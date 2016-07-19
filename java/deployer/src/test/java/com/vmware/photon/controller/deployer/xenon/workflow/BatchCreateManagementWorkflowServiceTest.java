@@ -13,14 +13,14 @@
 
 package com.vmware.photon.controller.deployer.xenon.workflow;
 
-import com.vmware.photon.controller.api.FlavorCreateSpec;
-import com.vmware.photon.controller.api.Image;
-import com.vmware.photon.controller.api.ProjectCreateSpec;
-import com.vmware.photon.controller.api.ResourceTicketCreateSpec;
-import com.vmware.photon.controller.api.Task;
-import com.vmware.photon.controller.api.UsageTag;
-import com.vmware.photon.controller.api.VmCreateSpec;
-import com.vmware.photon.controller.api.VmMetadata;
+import com.vmware.photon.controller.api.model.FlavorCreateSpec;
+import com.vmware.photon.controller.api.model.Image;
+import com.vmware.photon.controller.api.model.ProjectCreateSpec;
+import com.vmware.photon.controller.api.model.ResourceTicketCreateSpec;
+import com.vmware.photon.controller.api.model.Task;
+import com.vmware.photon.controller.api.model.UsageTag;
+import com.vmware.photon.controller.api.model.VmCreateSpec;
+import com.vmware.photon.controller.api.model.VmMetadata;
 import com.vmware.photon.controller.client.ApiClient;
 import com.vmware.photon.controller.client.resource.FlavorApi;
 import com.vmware.photon.controller.client.resource.ImagesApi;

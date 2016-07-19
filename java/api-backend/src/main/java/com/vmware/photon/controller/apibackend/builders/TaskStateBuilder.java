@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.apibackend.builders;
 
+import com.vmware.photon.controller.api.model.Operation;
 import com.vmware.photon.controller.cloudstore.xenon.entity.TaskService;
 
 import java.util.ArrayList;
@@ -27,7 +28,7 @@ public class TaskStateBuilder {
 
   private String entityKind;
 
-  private com.vmware.photon.controller.api.Operation operation;
+  private Operation operation;
 
   private TaskService.State.TaskState taskState;
 
@@ -47,7 +48,7 @@ public class TaskStateBuilder {
     return this;
   }
 
-  public TaskStateBuilder setOperation(com.vmware.photon.controller.api.Operation operation) {
+  public TaskStateBuilder setOperation(Operation operation) {
     this.operation = operation;
     return this;
   }
@@ -57,7 +58,7 @@ public class TaskStateBuilder {
     return this;
   }
 
-  public TaskStateBuilder addStep(com.vmware.photon.controller.api.Operation operation) {
+  public TaskStateBuilder addStep(Operation operation) {
     TaskService.State.Step step = new TaskService.State.Step();
     step.sequence = stepEntities.size();
     step.operation = operation.getOperation();

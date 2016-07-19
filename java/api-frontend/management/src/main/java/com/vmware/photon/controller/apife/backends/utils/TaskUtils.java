@@ -13,10 +13,10 @@
 
 package com.vmware.photon.controller.apife.backends.utils;
 
-import com.vmware.photon.controller.api.Operation;
-import com.vmware.photon.controller.api.ResourceList;
-import com.vmware.photon.controller.api.Step;
-import com.vmware.photon.controller.api.Task;
+import com.vmware.photon.controller.api.model.Operation;
+import com.vmware.photon.controller.api.model.ResourceList;
+import com.vmware.photon.controller.api.model.Step;
+import com.vmware.photon.controller.api.model.Task;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.cloudstore.xenon.entity.TaskService;

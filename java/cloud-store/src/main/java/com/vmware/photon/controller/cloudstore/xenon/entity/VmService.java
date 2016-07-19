@@ -13,10 +13,10 @@
 
 package com.vmware.photon.controller.cloudstore.xenon.entity;
 
-import com.vmware.photon.controller.api.Iso;
-import com.vmware.photon.controller.api.LocalitySpec;
-import com.vmware.photon.controller.api.QuotaLineItem;
-import com.vmware.photon.controller.api.VmState;
+import com.vmware.photon.controller.api.model.Iso;
+import com.vmware.photon.controller.api.model.LocalitySpec;
+import com.vmware.photon.controller.api.model.QuotaLineItem;
+import com.vmware.photon.controller.api.model.VmState;
 import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;

@@ -13,12 +13,12 @@
 
 package com.vmware.photon.controller.apife.clients;
 
-import com.vmware.photon.controller.api.ResourceList;
-import com.vmware.photon.controller.api.Task;
-import com.vmware.photon.controller.api.Tenant;
-import com.vmware.photon.controller.api.TenantCreateSpec;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
+import com.vmware.photon.controller.api.model.ResourceList;
+import com.vmware.photon.controller.api.model.Task;
+import com.vmware.photon.controller.api.model.Tenant;
+import com.vmware.photon.controller.api.model.TenantCreateSpec;
 import com.vmware.photon.controller.apife.BackendTaskExecutor;
 import com.vmware.photon.controller.apife.backends.TaskBackend;
 import com.vmware.photon.controller.apife.backends.TenantBackend;

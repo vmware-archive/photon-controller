@@ -13,8 +13,8 @@
 
 package com.vmware.photon.controller.deployer.xenon.workflow;
 
-import com.vmware.photon.controller.api.HostState;
-import com.vmware.photon.controller.api.UsageTag;
+import com.vmware.photon.controller.api.model.HostState;
+import com.vmware.photon.controller.api.model.UsageTag;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.HostService;
 import com.vmware.photon.controller.common.auth.AuthClientHandler;

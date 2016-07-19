@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.clustermanager.testtool;
 
-import com.vmware.photon.controller.api.ClusterType;
+import com.vmware.photon.controller.api.model.ClusterType;
 
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.inf.ArgumentParser;

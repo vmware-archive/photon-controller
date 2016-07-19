@@ -13,10 +13,10 @@
 
 package com.vmware.photon.controller.apife.entities;
 
-import com.vmware.photon.controller.api.AvailabilityZone;
-import com.vmware.photon.controller.api.AvailabilityZoneState;
-import com.vmware.photon.controller.api.base.Named;
 import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
+import com.vmware.photon.controller.api.model.AvailabilityZone;
+import com.vmware.photon.controller.api.model.AvailabilityZoneState;
+import com.vmware.photon.controller.api.model.base.Named;
 
 /**
  * AvailabilityZone entity.

@@ -13,13 +13,13 @@
 
 package com.vmware.photon.controller.apife.backends;
 
-import com.vmware.photon.controller.api.FlavorCreateSpec;
-import com.vmware.photon.controller.api.ProjectCreateSpec;
-import com.vmware.photon.controller.api.QuotaLineItem;
-import com.vmware.photon.controller.api.ResourceTicketCreateSpec;
-import com.vmware.photon.controller.api.ResourceTicketReservation;
-import com.vmware.photon.controller.api.TenantCreateSpec;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
+import com.vmware.photon.controller.api.model.FlavorCreateSpec;
+import com.vmware.photon.controller.api.model.ProjectCreateSpec;
+import com.vmware.photon.controller.api.model.QuotaLineItem;
+import com.vmware.photon.controller.api.model.ResourceTicketCreateSpec;
+import com.vmware.photon.controller.api.model.ResourceTicketReservation;
+import com.vmware.photon.controller.api.model.TenantCreateSpec;
 import com.vmware.photon.controller.apife.entities.QuotaLineItemEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.exceptions.external.FlavorNotFoundException;

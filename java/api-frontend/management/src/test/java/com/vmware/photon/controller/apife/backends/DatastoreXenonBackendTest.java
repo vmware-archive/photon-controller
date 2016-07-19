@@ -13,8 +13,8 @@
 
 package com.vmware.photon.controller.apife.backends;
 
-import com.vmware.photon.controller.api.Datastore;
-import com.vmware.photon.controller.api.ResourceList;
+import com.vmware.photon.controller.api.model.Datastore;
+import com.vmware.photon.controller.api.model.ResourceList;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.exceptions.external.DatastoreNotFoundException;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DatastoreService;
