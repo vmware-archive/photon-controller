@@ -599,13 +599,15 @@ docker commit $container devbox/agent
 sudo mkdir -p /var/esxcloud/packages
 sudo rm -f /var/esxcloud/packages/*.vib
 sudo cp /mirror/devbox_data/python/dist/*.vib /var/esxcloud/packages/
-if #{ENV["ENVOY_VIB_URL"]}
-  sudo wget #{ENV["ENVOY_VIB_URL"]} -P /var/esxcloud/packages/
-end
 EOM
 chmod +x $out
   EOS
 
+  if ENV["ENVOY_VIB_URL"]
+    photon.vm.provision :shell, :privileged => false, :inline => <<-EOS
+      sudo wget #{ENV["ENVOY_VIB_URL"]} -P /var/esxcloud/packages/
+    EOS
+  end
   agent_parameters_file = "/home/vagrant/agent-parameters.json"
   # Make sure agent params file exists so that mustache doesn't fail
   photon.vm.provision :shell, :privileged => false, :inline => "touch #{agent_parameters_file}"
