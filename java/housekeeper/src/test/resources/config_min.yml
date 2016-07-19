@@ -1,7 +1,6 @@
 xenon:
   bindAddress: "0.0.0.0"
   port: 16000
-  registrationAddress: "127.0.0.1"
   storagePath: "/tmp/xenon/16000"
   peerNodes:
   - http://127.0.0.1:16000
