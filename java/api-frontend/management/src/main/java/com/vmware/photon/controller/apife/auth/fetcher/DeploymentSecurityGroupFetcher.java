@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.apife.auth.fetcher;
 
-import com.vmware.photon.controller.api.Deployment;
+import com.vmware.photon.controller.api.model.Deployment;
 import com.vmware.photon.controller.apife.auth.TransactionAuthorizationObject;
 import com.vmware.photon.controller.apife.backends.DeploymentBackend;
 import com.vmware.photon.controller.apife.exceptions.external.DeploymentNotFoundException;

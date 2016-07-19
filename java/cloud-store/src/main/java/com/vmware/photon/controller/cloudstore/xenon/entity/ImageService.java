@@ -13,8 +13,8 @@
 
 package com.vmware.photon.controller.cloudstore.xenon.entity;
 
-import com.vmware.photon.controller.api.ImageReplicationType;
-import com.vmware.photon.controller.api.ImageState;
+import com.vmware.photon.controller.api.model.ImageReplicationType;
+import com.vmware.photon.controller.api.model.ImageState;
 import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;

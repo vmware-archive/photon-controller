@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.client.resource;
 
-import com.vmware.photon.controller.api.SystemStatus;
+import com.vmware.photon.controller.api.model.SystemStatus;
 import com.vmware.photon.controller.status.gen.StatusType;
 
 import com.fasterxml.jackson.databind.ObjectMapper;

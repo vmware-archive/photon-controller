@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.apibackend.workflows;
 
-import com.vmware.photon.controller.api.RoutingType;
+import com.vmware.photon.controller.api.model.RoutingType;
 import com.vmware.photon.controller.apibackend.helpers.ReflectionUtils;
 import com.vmware.photon.controller.apibackend.helpers.TestEnvironment;
 import com.vmware.photon.controller.apibackend.helpers.TestHelper;

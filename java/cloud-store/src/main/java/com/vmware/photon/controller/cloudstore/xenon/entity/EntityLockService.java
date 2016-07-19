@@ -13,13 +13,13 @@
 
 package com.vmware.photon.controller.cloudstore.xenon.entity;
 
-import com.vmware.photon.controller.api.Deployment;
-import com.vmware.photon.controller.api.EphemeralDisk;
-import com.vmware.photon.controller.api.Host;
-import com.vmware.photon.controller.api.Image;
-import com.vmware.photon.controller.api.Iso;
-import com.vmware.photon.controller.api.PersistentDisk;
-import com.vmware.photon.controller.api.Vm;
+import com.vmware.photon.controller.api.model.Deployment;
+import com.vmware.photon.controller.api.model.EphemeralDisk;
+import com.vmware.photon.controller.api.model.Host;
+import com.vmware.photon.controller.api.model.Image;
+import com.vmware.photon.controller.api.model.Iso;
+import com.vmware.photon.controller.api.model.PersistentDisk;
+import com.vmware.photon.controller.api.model.Vm;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;

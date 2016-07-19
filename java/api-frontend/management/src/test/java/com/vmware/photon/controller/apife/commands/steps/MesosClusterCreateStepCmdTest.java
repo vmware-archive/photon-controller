@@ -13,8 +13,8 @@
 
 package com.vmware.photon.controller.apife.commands.steps;
 
-import com.vmware.photon.controller.api.ClusterCreateSpec;
-import com.vmware.photon.controller.api.ClusterType;
+import com.vmware.photon.controller.api.model.ClusterCreateSpec;
+import com.vmware.photon.controller.api.model.ClusterType;
 import com.vmware.photon.controller.apife.backends.ClusterBackend;
 import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.backends.clients.ClusterManagerClient;

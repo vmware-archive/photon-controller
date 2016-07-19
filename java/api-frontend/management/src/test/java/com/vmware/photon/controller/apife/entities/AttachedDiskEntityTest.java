@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.apife.entities;
 
-import com.vmware.photon.controller.api.PersistentDisk;
+import com.vmware.photon.controller.api.model.PersistentDisk;
 
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;

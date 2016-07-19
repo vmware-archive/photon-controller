@@ -12,9 +12,9 @@
  */
 package com.vmware.photon.controller.apife.commands.steps;
 
-import com.vmware.photon.controller.api.Deployment;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.common.exceptions.external.TaskNotFoundException;
+import com.vmware.photon.controller.api.model.Deployment;
 import com.vmware.photon.controller.apife.backends.DeploymentBackend;
 import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;

@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.apife.entities;
 
-import com.vmware.photon.controller.api.ApiError;
+import com.vmware.photon.controller.api.model.ApiError;
 
 import com.google.common.collect.ImmutableMap;
 import org.testng.annotations.Test;

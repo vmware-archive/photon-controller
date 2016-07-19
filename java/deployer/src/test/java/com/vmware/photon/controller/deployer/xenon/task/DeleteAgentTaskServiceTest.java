@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.deployer.xenon.task;
 
-import com.vmware.photon.controller.api.UsageTag;
+import com.vmware.photon.controller.api.model.UsageTag;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.thrift.ServerSet;
 import com.vmware.photon.controller.common.xenon.ControlFlags;

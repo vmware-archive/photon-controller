@@ -13,8 +13,8 @@
 
 package com.vmware.photon.controller.cloudstore.xenon.entity;
 
-import com.vmware.photon.controller.api.FlavorState;
-import com.vmware.photon.controller.api.QuotaUnit;
+import com.vmware.photon.controller.api.model.FlavorState;
+import com.vmware.photon.controller.api.model.QuotaUnit;
 import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;

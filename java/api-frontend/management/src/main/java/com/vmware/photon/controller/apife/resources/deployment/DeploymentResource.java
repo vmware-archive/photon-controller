@@ -13,16 +13,16 @@
 
 package com.vmware.photon.controller.apife.resources.deployment;
 
-import com.vmware.photon.controller.api.ClusterConfigurationSpec;
-import com.vmware.photon.controller.api.Deployment;
-import com.vmware.photon.controller.api.DeploymentDeployOperation;
-import com.vmware.photon.controller.api.DhcpConfigurationSpec;
-import com.vmware.photon.controller.api.FinalizeMigrationOperation;
-import com.vmware.photon.controller.api.InitializeMigrationOperation;
-import com.vmware.photon.controller.api.ResourceList;
-import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.common.exceptions.external.ErrorCode;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
+import com.vmware.photon.controller.api.model.ClusterConfigurationSpec;
+import com.vmware.photon.controller.api.model.Deployment;
+import com.vmware.photon.controller.api.model.DeploymentDeployOperation;
+import com.vmware.photon.controller.api.model.DhcpConfigurationSpec;
+import com.vmware.photon.controller.api.model.FinalizeMigrationOperation;
+import com.vmware.photon.controller.api.model.InitializeMigrationOperation;
+import com.vmware.photon.controller.api.model.ResourceList;
+import com.vmware.photon.controller.api.model.Task;
 import com.vmware.photon.controller.apife.clients.DeploymentFeClient;
 import com.vmware.photon.controller.apife.exceptions.external.ClusterTypeNotConfiguredException;
 import com.vmware.photon.controller.apife.exceptions.internal.InternalException;

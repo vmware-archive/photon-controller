@@ -13,10 +13,10 @@
 
 package com.vmware.photon.controller.apife.lib;
 
-import com.vmware.photon.controller.api.Host;
-import com.vmware.photon.controller.api.HostDatastore;
-import com.vmware.photon.controller.api.HostState;
-import com.vmware.photon.controller.api.ResourceList;
+import com.vmware.photon.controller.api.model.Host;
+import com.vmware.photon.controller.api.model.HostDatastore;
+import com.vmware.photon.controller.api.model.HostState;
+import com.vmware.photon.controller.api.model.ResourceList;
 import com.vmware.photon.controller.apife.backends.HostBackend;
 import com.vmware.photon.controller.apife.config.ImageConfig;
 import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
@@ -35,7 +35,6 @@ import com.google.common.collect.ImmutableList;
 import org.powermock.modules.testng.PowerMockTestCase;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.notNullValue;

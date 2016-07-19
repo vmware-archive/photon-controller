@@ -13,14 +13,14 @@
 
 package com.vmware.photon.controller.apife.clients;
 
-import com.vmware.photon.controller.api.Project;
-import com.vmware.photon.controller.api.ResourceList;
-import com.vmware.photon.controller.api.RoutingType;
-import com.vmware.photon.controller.api.SubnetState;
-import com.vmware.photon.controller.api.Task;
-import com.vmware.photon.controller.api.VirtualNetworkCreateSpec;
-import com.vmware.photon.controller.api.VirtualSubnet;
-import com.vmware.photon.controller.api.Vm;
+import com.vmware.photon.controller.api.model.Project;
+import com.vmware.photon.controller.api.model.ResourceList;
+import com.vmware.photon.controller.api.model.RoutingType;
+import com.vmware.photon.controller.api.model.SubnetState;
+import com.vmware.photon.controller.api.model.Task;
+import com.vmware.photon.controller.api.model.VirtualNetworkCreateSpec;
+import com.vmware.photon.controller.api.model.VirtualSubnet;
+import com.vmware.photon.controller.api.model.Vm;
 import com.vmware.photon.controller.apibackend.servicedocuments.CreateVirtualNetworkWorkflowDocument;
 import com.vmware.photon.controller.apibackend.servicedocuments.DeleteVirtualNetworkWorkflowDocument;
 import com.vmware.photon.controller.apibackend.workflows.CreateVirtualNetworkWorkflowService;
@@ -365,7 +365,7 @@ public class VirtualNetworkFeClientTest {
         eq(newDefaultNetworkId),
         eq(VirtualSubnet.KIND),
         eq(parentId),
-        eq(com.vmware.photon.controller.api.Operation.SET_DEFAULT_NETWORK.toString()));
+        eq(com.vmware.photon.controller.api.model.Operation.SET_DEFAULT_NETWORK.toString()));
 
     Task actualTask = frontendClient.setDefault(newDefaultNetworkId);
     assertEquals(actualTask, expectedTask);
@@ -413,7 +413,7 @@ public class VirtualNetworkFeClientTest {
         eq(newDefaultNetworkId),
         eq(VirtualSubnet.KIND),
         eq(parentId),
-        eq(com.vmware.photon.controller.api.Operation.SET_DEFAULT_NETWORK.toString()));
+        eq(com.vmware.photon.controller.api.model.Operation.SET_DEFAULT_NETWORK.toString()));
 
     Task actualTask = frontendClient.setDefault(newDefaultNetworkId);
     assertEquals(actualTask, expectedTask);

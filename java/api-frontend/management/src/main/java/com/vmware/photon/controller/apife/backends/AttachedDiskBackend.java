@@ -13,8 +13,8 @@
 
 package com.vmware.photon.controller.apife.backends;
 
-import com.vmware.photon.controller.api.AttachedDiskCreateSpec;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
+import com.vmware.photon.controller.api.model.AttachedDiskCreateSpec;
 import com.vmware.photon.controller.apife.entities.AttachedDiskEntity;
 import com.vmware.photon.controller.apife.entities.BaseDiskEntity;
 import com.vmware.photon.controller.apife.entities.PersistentDiskEntity;

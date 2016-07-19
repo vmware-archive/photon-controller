@@ -13,13 +13,13 @@
 
 package com.vmware.photon.controller.apife.clients;
 
-import com.vmware.photon.controller.api.Image;
-import com.vmware.photon.controller.api.ImageReplicationType;
-import com.vmware.photon.controller.api.Operation;
-import com.vmware.photon.controller.api.ResourceList;
-import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
+import com.vmware.photon.controller.api.model.Image;
+import com.vmware.photon.controller.api.model.ImageReplicationType;
+import com.vmware.photon.controller.api.model.Operation;
+import com.vmware.photon.controller.api.model.ResourceList;
+import com.vmware.photon.controller.api.model.Task;
 import com.vmware.photon.controller.apife.BackendTaskExecutor;
 import com.vmware.photon.controller.apife.backends.ImageBackend;
 import com.vmware.photon.controller.apife.backends.TaskBackend;

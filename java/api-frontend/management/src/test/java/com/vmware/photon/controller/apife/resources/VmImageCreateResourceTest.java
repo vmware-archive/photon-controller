@@ -13,9 +13,9 @@
 
 package com.vmware.photon.controller.apife.resources;
 
-import com.vmware.photon.controller.api.ImageCreateSpec;
-import com.vmware.photon.controller.api.ImageReplicationType;
-import com.vmware.photon.controller.api.Task;
+import com.vmware.photon.controller.api.model.ImageCreateSpec;
+import com.vmware.photon.controller.api.model.ImageReplicationType;
+import com.vmware.photon.controller.api.model.Task;
 import com.vmware.photon.controller.apife.clients.VmFeClient;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.VmResourceRoutes;

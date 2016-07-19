@@ -13,8 +13,8 @@
 
 package com.vmware.photon.controller.apife.auth.fetcher;
 
-import com.vmware.photon.controller.api.SecurityGroup;
-import com.vmware.photon.controller.api.Tenant;
+import com.vmware.photon.controller.api.model.SecurityGroup;
+import com.vmware.photon.controller.api.model.Tenant;
 import com.vmware.photon.controller.apife.auth.TransactionAuthorizationObject;
 import com.vmware.photon.controller.apife.backends.TenantBackend;
 import com.vmware.photon.controller.apife.exceptions.external.TenantNotFoundException;

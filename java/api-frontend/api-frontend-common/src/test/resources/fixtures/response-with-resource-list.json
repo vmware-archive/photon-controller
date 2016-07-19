@@ -33,7 +33,7 @@
             "nextPageLink": null,
             "previousPageLink": null
         },
-        "entityType": "com.vmware.photon.controller.api.ResourceList",
+        "entityType": "com.vmware.photon.controller.api.model.ResourceList",
         "entityAnnotations": [],
         "entityStream": {
             "committed": false,

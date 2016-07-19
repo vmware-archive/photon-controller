@@ -13,8 +13,8 @@
 
 package com.vmware.photon.controller.apife.resources;
 
-import com.vmware.photon.controller.api.ClusterResizeOperation;
-import com.vmware.photon.controller.api.Task;
+import com.vmware.photon.controller.api.model.ClusterResizeOperation;
+import com.vmware.photon.controller.api.model.Task;
 import com.vmware.photon.controller.apife.clients.ClusterFeClient;
 import com.vmware.photon.controller.apife.resources.cluster.ClusterResizeResource;
 import com.vmware.photon.controller.apife.resources.routes.ClusterResourceRoutes;

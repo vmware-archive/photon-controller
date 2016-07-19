@@ -13,18 +13,18 @@
 
 package com.vmware.photon.controller.apife.resources;
 
-import com.vmware.photon.controller.api.ApiError;
-import com.vmware.photon.controller.api.ClusterConfigurationSpec;
-import com.vmware.photon.controller.api.ClusterType;
-import com.vmware.photon.controller.api.Deployment;
-import com.vmware.photon.controller.api.DeploymentDeployOperation;
-import com.vmware.photon.controller.api.DhcpConfigurationSpec;
-import com.vmware.photon.controller.api.FinalizeMigrationOperation;
-import com.vmware.photon.controller.api.InitializeMigrationOperation;
-import com.vmware.photon.controller.api.ResourceList;
-import com.vmware.photon.controller.api.Task;
-import com.vmware.photon.controller.api.builders.AuthInfoBuilder;
-import com.vmware.photon.controller.api.builders.StatsInfoBuilder;
+import com.vmware.photon.controller.api.model.ApiError;
+import com.vmware.photon.controller.api.model.ClusterConfigurationSpec;
+import com.vmware.photon.controller.api.model.ClusterType;
+import com.vmware.photon.controller.api.model.Deployment;
+import com.vmware.photon.controller.api.model.DeploymentDeployOperation;
+import com.vmware.photon.controller.api.model.DhcpConfigurationSpec;
+import com.vmware.photon.controller.api.model.FinalizeMigrationOperation;
+import com.vmware.photon.controller.api.model.InitializeMigrationOperation;
+import com.vmware.photon.controller.api.model.ResourceList;
+import com.vmware.photon.controller.api.model.Task;
+import com.vmware.photon.controller.api.model.builders.AuthInfoBuilder;
+import com.vmware.photon.controller.api.model.builders.StatsInfoBuilder;
 import com.vmware.photon.controller.apife.backends.DeploymentBackend;
 import com.vmware.photon.controller.apife.clients.DeploymentFeClient;
 import com.vmware.photon.controller.apife.exceptions.external.DeploymentNotFoundException;

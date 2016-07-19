@@ -13,12 +13,12 @@
 
 package com.vmware.photon.controller.apife.resources;
 
-import com.vmware.photon.controller.api.ApiError;
-import com.vmware.photon.controller.api.ResourceList;
-import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.api.common.exceptions.external.ErrorCode;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
+import com.vmware.photon.controller.api.model.ApiError;
+import com.vmware.photon.controller.api.model.ResourceList;
+import com.vmware.photon.controller.api.model.Vm;
 import com.vmware.photon.controller.apife.clients.ClusterFeClient;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.resources.routes.ClusterResourceRoutes;
@@ -35,7 +35,7 @@ import org.testng.annotations.Test;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.doThrow;
+import static org.powermock.api.mockito.PowerMockito.doThrow;
 import static org.powermock.api.mockito.PowerMockito.when;
 
 import javax.ws.rs.client.WebTarget;

@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.client.resource;
 
-import com.vmware.photon.controller.api.Auth;
+import com.vmware.photon.controller.api.model.Auth;
 import com.vmware.photon.controller.client.RestClient;
 
 import com.fasterxml.jackson.core.type.TypeReference;

@@ -13,9 +13,9 @@
 
 package com.vmware.photon.controller.apife.clients;
 
-import com.vmware.photon.controller.api.Component;
-import com.vmware.photon.controller.api.ComponentStatus;
-import com.vmware.photon.controller.api.SystemStatus;
+import com.vmware.photon.controller.api.model.Component;
+import com.vmware.photon.controller.api.model.ComponentStatus;
+import com.vmware.photon.controller.api.model.SystemStatus;
 import com.vmware.photon.controller.apife.clients.status.StatusProviderFactory;
 import com.vmware.photon.controller.apife.clients.status.XenonStatusProvider;
 import com.vmware.photon.controller.apife.clients.status.XenonStatusProviderFactory;

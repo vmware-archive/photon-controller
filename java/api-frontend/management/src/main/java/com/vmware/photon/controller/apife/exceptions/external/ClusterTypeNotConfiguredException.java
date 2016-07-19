@@ -13,9 +13,9 @@
 
 package com.vmware.photon.controller.apife.exceptions.external;
 
-import com.vmware.photon.controller.api.ClusterType;
 import com.vmware.photon.controller.api.common.exceptions.external.ErrorCode;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
+import com.vmware.photon.controller.api.model.ClusterType;
 
 /**
  * Exception thrown when a certain type cluster is not configured.

@@ -12,8 +12,8 @@
  */
 package com.vmware.photon.controller.clustermanager.tasks;
 
-import com.vmware.photon.controller.api.ClusterState;
-import com.vmware.photon.controller.api.Task;
+import com.vmware.photon.controller.api.model.ClusterState;
+import com.vmware.photon.controller.api.model.Task;
 import com.vmware.photon.controller.client.ApiClient;
 import com.vmware.photon.controller.client.resource.ClusterApi;
 import com.vmware.photon.controller.client.resource.ProjectApi;

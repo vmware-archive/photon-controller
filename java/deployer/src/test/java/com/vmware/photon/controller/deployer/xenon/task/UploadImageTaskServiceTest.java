@@ -13,10 +13,10 @@
 
 package com.vmware.photon.controller.deployer.xenon.task;
 
-import com.vmware.photon.controller.api.Image;
-import com.vmware.photon.controller.api.ImageReplicationType;
-import com.vmware.photon.controller.api.ImageState;
-import com.vmware.photon.controller.api.Task;
+import com.vmware.photon.controller.api.model.Image;
+import com.vmware.photon.controller.api.model.ImageReplicationType;
+import com.vmware.photon.controller.api.model.ImageState;
+import com.vmware.photon.controller.api.model.Task;
 import com.vmware.photon.controller.client.ApiClient;
 import com.vmware.photon.controller.client.resource.ImagesApi;
 import com.vmware.photon.controller.client.resource.TasksApi;

@@ -13,16 +13,16 @@
 
 package com.vmware.photon.controller.client.resource;
 
-import com.vmware.photon.controller.api.Cluster;
-import com.vmware.photon.controller.api.ClusterCreateSpec;
-import com.vmware.photon.controller.api.DiskCreateSpec;
-import com.vmware.photon.controller.api.PersistentDisk;
-import com.vmware.photon.controller.api.Project;
-import com.vmware.photon.controller.api.ResourceList;
-import com.vmware.photon.controller.api.Task;
-import com.vmware.photon.controller.api.Vm;
-import com.vmware.photon.controller.api.VmCreateSpec;
-import com.vmware.photon.controller.api.base.FlavoredCompact;
+import com.vmware.photon.controller.api.model.Cluster;
+import com.vmware.photon.controller.api.model.ClusterCreateSpec;
+import com.vmware.photon.controller.api.model.DiskCreateSpec;
+import com.vmware.photon.controller.api.model.PersistentDisk;
+import com.vmware.photon.controller.api.model.Project;
+import com.vmware.photon.controller.api.model.ResourceList;
+import com.vmware.photon.controller.api.model.Task;
+import com.vmware.photon.controller.api.model.Vm;
+import com.vmware.photon.controller.api.model.VmCreateSpec;
+import com.vmware.photon.controller.api.model.base.FlavoredCompact;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.util.concurrent.FutureCallback;

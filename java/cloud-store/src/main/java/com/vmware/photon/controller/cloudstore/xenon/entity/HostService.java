@@ -14,9 +14,9 @@
 package com.vmware.photon.controller.cloudstore.xenon.entity;
 
 import com.vmware.photon.controller.agent.gen.AgentControl;
-import com.vmware.photon.controller.api.AgentState;
-import com.vmware.photon.controller.api.HostState;
-import com.vmware.photon.controller.api.UsageTag;
+import com.vmware.photon.controller.api.model.AgentState;
+import com.vmware.photon.controller.api.model.HostState;
+import com.vmware.photon.controller.api.model.UsageTag;
 import com.vmware.photon.controller.cloudstore.xenon.task.DatastoreDeleteFactoryService;
 import com.vmware.photon.controller.cloudstore.xenon.task.DatastoreDeleteService;
 import com.vmware.photon.controller.cloudstore.xenon.upgrade.HostTransformationService;

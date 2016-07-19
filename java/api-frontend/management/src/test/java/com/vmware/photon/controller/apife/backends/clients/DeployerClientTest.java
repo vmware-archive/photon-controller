@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.apife.backends.clients;
 
-import com.vmware.photon.controller.api.UsageTag;
+import com.vmware.photon.controller.api.model.UsageTag;
 import com.vmware.photon.controller.apife.entities.HostEntity;
 import com.vmware.photon.controller.apife.exceptions.external.SpecInvalidException;
 import com.vmware.photon.controller.apife.lib.UsageTagHelper;
@@ -25,7 +25,6 @@ import org.mockito.Mock;
 import org.powermock.modules.testng.PowerMockTestCase;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.isNotNull;
 import static org.mockito.Mockito.when;

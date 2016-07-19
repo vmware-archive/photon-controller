@@ -13,11 +13,11 @@
 
 package com.vmware.photon.controller.apife.clients;
 
-import com.vmware.photon.controller.api.ResourceList;
-import com.vmware.photon.controller.api.Subnet;
-import com.vmware.photon.controller.api.SubnetCreateSpec;
-import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
+import com.vmware.photon.controller.api.model.ResourceList;
+import com.vmware.photon.controller.api.model.Subnet;
+import com.vmware.photon.controller.api.model.SubnetCreateSpec;
+import com.vmware.photon.controller.api.model.Task;
 import com.vmware.photon.controller.apife.backends.NetworkBackend;
 import com.vmware.photon.controller.apife.backends.TaskBackend;
 import com.vmware.photon.controller.apife.entities.TaskEntity;

@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.client.resource;
 
-import com.vmware.photon.controller.api.Auth;
+import com.vmware.photon.controller.api.model.Auth;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.util.concurrent.FutureCallback;

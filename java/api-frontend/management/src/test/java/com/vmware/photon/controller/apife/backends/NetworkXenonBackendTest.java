@@ -13,16 +13,16 @@
 
 package com.vmware.photon.controller.apife.backends;
 
-import com.vmware.photon.controller.api.HostState;
-import com.vmware.photon.controller.api.QuotaLineItem;
-import com.vmware.photon.controller.api.QuotaUnit;
-import com.vmware.photon.controller.api.ResourceList;
-import com.vmware.photon.controller.api.Subnet;
-import com.vmware.photon.controller.api.SubnetCreateSpec;
-import com.vmware.photon.controller.api.SubnetState;
-import com.vmware.photon.controller.api.UsageTag;
-import com.vmware.photon.controller.api.Vm;
-import com.vmware.photon.controller.api.VmState;
+import com.vmware.photon.controller.api.model.HostState;
+import com.vmware.photon.controller.api.model.QuotaLineItem;
+import com.vmware.photon.controller.api.model.QuotaUnit;
+import com.vmware.photon.controller.api.model.ResourceList;
+import com.vmware.photon.controller.api.model.Subnet;
+import com.vmware.photon.controller.api.model.SubnetCreateSpec;
+import com.vmware.photon.controller.api.model.SubnetState;
+import com.vmware.photon.controller.api.model.UsageTag;
+import com.vmware.photon.controller.api.model.Vm;
+import com.vmware.photon.controller.api.model.VmState;
 import com.vmware.photon.controller.apife.TestModule;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.config.PaginationConfig;

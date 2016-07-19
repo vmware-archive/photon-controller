@@ -13,12 +13,12 @@
 
 package com.vmware.photon.controller.apife.clients;
 
-import com.vmware.photon.controller.api.Flavor;
-import com.vmware.photon.controller.api.FlavorCreateSpec;
-import com.vmware.photon.controller.api.ResourceList;
-import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
+import com.vmware.photon.controller.api.model.Flavor;
+import com.vmware.photon.controller.api.model.FlavorCreateSpec;
+import com.vmware.photon.controller.api.model.ResourceList;
+import com.vmware.photon.controller.api.model.Task;
 import com.vmware.photon.controller.apife.backends.FlavorBackend;
 import com.vmware.photon.controller.apife.backends.TaskBackend;
 import com.vmware.photon.controller.apife.entities.TaskEntity;

@@ -13,13 +13,13 @@
 
 package com.vmware.photon.controller.client.resource;
 
-import com.vmware.photon.controller.api.ResourceList;
-import com.vmware.photon.controller.api.Tag;
-import com.vmware.photon.controller.api.Task;
-import com.vmware.photon.controller.api.Vm;
-import com.vmware.photon.controller.api.VmDiskOperation;
-import com.vmware.photon.controller.api.VmMetadata;
-import com.vmware.photon.controller.api.VmNetworks;
+import com.vmware.photon.controller.api.model.ResourceList;
+import com.vmware.photon.controller.api.model.Tag;
+import com.vmware.photon.controller.api.model.Task;
+import com.vmware.photon.controller.api.model.Vm;
+import com.vmware.photon.controller.api.model.VmDiskOperation;
+import com.vmware.photon.controller.api.model.VmMetadata;
+import com.vmware.photon.controller.api.model.VmNetworks;
 import com.vmware.photon.controller.client.RestClient;
 
 import com.fasterxml.jackson.core.type.TypeReference;

@@ -13,11 +13,11 @@
 
 package com.vmware.photon.controller.apife.resources.image;
 
-import com.vmware.photon.controller.api.Image;
-import com.vmware.photon.controller.api.ImageReplicationType;
-import com.vmware.photon.controller.api.ResourceList;
-import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
+import com.vmware.photon.controller.api.model.Image;
+import com.vmware.photon.controller.api.model.ImageReplicationType;
+import com.vmware.photon.controller.api.model.ResourceList;
+import com.vmware.photon.controller.api.model.Task;
 import com.vmware.photon.controller.apife.clients.ImageFeClient;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.exceptions.external.ImageUploadException;

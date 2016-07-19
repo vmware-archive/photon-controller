@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.apife.resources.status;
 
-import com.vmware.photon.controller.api.SystemStatus;
+import com.vmware.photon.controller.api.model.SystemStatus;
 import com.vmware.photon.controller.apife.clients.StatusFeClient;
 import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
 import com.vmware.photon.controller.apife.resources.routes.StatusResourceRoutes;

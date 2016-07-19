@@ -13,8 +13,8 @@
 
 package com.vmware.photon.controller.apife.resources;
 
-import com.vmware.photon.controller.api.Task;
-import com.vmware.photon.controller.api.Tenant;
+import com.vmware.photon.controller.api.model.Task;
+import com.vmware.photon.controller.api.model.Tenant;
 import com.vmware.photon.controller.apife.clients.TenantFeClient;
 import com.vmware.photon.controller.apife.entities.TenantEntity;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;

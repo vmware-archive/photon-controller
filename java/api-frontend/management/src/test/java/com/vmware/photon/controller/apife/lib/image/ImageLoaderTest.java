@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.apife.lib.image;
 
-import com.vmware.photon.controller.api.ImageReplicationType;
+import com.vmware.photon.controller.api.model.ImageReplicationType;
 import com.vmware.photon.controller.apife.entities.ImageEntity;
 import com.vmware.photon.controller.apife.exceptions.external.UnsupportedDiskControllerException;
 import com.vmware.photon.controller.apife.lib.VsphereImageStore;

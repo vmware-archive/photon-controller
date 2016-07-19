@@ -13,8 +13,8 @@
 
 package com.vmware.photon.controller.apife.backends.clients;
 
-import com.vmware.photon.controller.api.DeploymentState;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
+import com.vmware.photon.controller.api.model.DeploymentState;
 import com.vmware.photon.controller.apife.entities.DeploymentEntity;
 import com.vmware.photon.controller.apife.entities.HostEntity;
 import com.vmware.photon.controller.apife.exceptions.external.SpecInvalidException;
@@ -56,7 +56,6 @@ import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

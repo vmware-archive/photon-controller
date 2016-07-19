@@ -13,9 +13,9 @@
 
 package com.vmware.photon.controller.apife.entities;
 
-import com.vmware.photon.controller.api.Operation;
 import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
+import com.vmware.photon.controller.api.model.Operation;
 
 import com.google.common.base.Objects;
 import org.apache.commons.lang3.StringUtils;

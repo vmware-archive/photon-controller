@@ -13,13 +13,13 @@
 
 package com.vmware.photon.controller.apife.resources.disk;
 
-import com.vmware.photon.controller.api.DiskCreateSpec;
-import com.vmware.photon.controller.api.LocalitySpec;
-import com.vmware.photon.controller.api.PersistentDisk;
-import com.vmware.photon.controller.api.ResourceList;
-import com.vmware.photon.controller.api.Task;
-import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
+import com.vmware.photon.controller.api.model.DiskCreateSpec;
+import com.vmware.photon.controller.api.model.LocalitySpec;
+import com.vmware.photon.controller.api.model.PersistentDisk;
+import com.vmware.photon.controller.api.model.ResourceList;
+import com.vmware.photon.controller.api.model.Task;
+import com.vmware.photon.controller.api.model.Vm;
 import com.vmware.photon.controller.apife.clients.DiskFeClient;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidLocalitySpecException;

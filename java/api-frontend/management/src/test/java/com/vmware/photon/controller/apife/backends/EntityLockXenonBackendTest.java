@@ -13,13 +13,13 @@
 
 package com.vmware.photon.controller.apife.backends;
 
-import com.vmware.photon.controller.api.EphemeralDisk;
-import com.vmware.photon.controller.api.Image;
-import com.vmware.photon.controller.api.Iso;
-import com.vmware.photon.controller.api.PersistentDisk;
-import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
 import com.vmware.photon.controller.api.common.exceptions.external.ConcurrentTaskException;
+import com.vmware.photon.controller.api.model.EphemeralDisk;
+import com.vmware.photon.controller.api.model.Image;
+import com.vmware.photon.controller.api.model.Iso;
+import com.vmware.photon.controller.api.model.PersistentDisk;
+import com.vmware.photon.controller.api.model.Vm;
 import com.vmware.photon.controller.apife.TestModule;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.entities.EphemeralDiskEntity;

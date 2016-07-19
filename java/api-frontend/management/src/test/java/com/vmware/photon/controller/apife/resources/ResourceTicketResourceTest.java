@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.apife.resources;
 
-import com.vmware.photon.controller.api.ResourceTicket;
+import com.vmware.photon.controller.api.model.ResourceTicket;
 import com.vmware.photon.controller.apife.clients.ResourceTicketFeClient;
 import com.vmware.photon.controller.apife.resources.resourceticket.ResourceTicketResource;
 import com.vmware.photon.controller.apife.resources.routes.ResourceTicketResourceRoutes;

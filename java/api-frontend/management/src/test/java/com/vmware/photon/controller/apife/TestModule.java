@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.apife;
 
-import com.vmware.photon.controller.api.FlavorCreateSpec;
+import com.vmware.photon.controller.api.model.FlavorCreateSpec;
 import com.vmware.photon.controller.apife.backends.FlavorLoader;
 import com.vmware.photon.controller.apife.exceptions.external.FlavorNotFoundException;
 

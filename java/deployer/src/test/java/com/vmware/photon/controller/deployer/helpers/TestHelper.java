@@ -13,14 +13,14 @@
 
 package com.vmware.photon.controller.deployer.helpers;
 
-import com.vmware.photon.controller.api.DeploymentState;
-import com.vmware.photon.controller.api.HostState;
-import com.vmware.photon.controller.api.Image;
-import com.vmware.photon.controller.api.ImageReplicationType;
-import com.vmware.photon.controller.api.ImageState;
-import com.vmware.photon.controller.api.StatsStoreType;
-import com.vmware.photon.controller.api.Task;
-import com.vmware.photon.controller.api.UsageTag;
+import com.vmware.photon.controller.api.model.DeploymentState;
+import com.vmware.photon.controller.api.model.HostState;
+import com.vmware.photon.controller.api.model.Image;
+import com.vmware.photon.controller.api.model.ImageReplicationType;
+import com.vmware.photon.controller.api.model.ImageState;
+import com.vmware.photon.controller.api.model.StatsStoreType;
+import com.vmware.photon.controller.api.model.Task;
+import com.vmware.photon.controller.api.model.UsageTag;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DatastoreService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DatastoreServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;

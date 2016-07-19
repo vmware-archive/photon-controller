@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.apibackend.workflows;
 
-import com.vmware.photon.controller.api.SubnetState;
+import com.vmware.photon.controller.api.model.SubnetState;
 import com.vmware.photon.controller.apibackend.servicedocuments.DeleteLogicalPortsTask;
 import com.vmware.photon.controller.apibackend.servicedocuments.DeleteLogicalRouterTask;
 import com.vmware.photon.controller.apibackend.servicedocuments.DeleteLogicalSwitchTask;

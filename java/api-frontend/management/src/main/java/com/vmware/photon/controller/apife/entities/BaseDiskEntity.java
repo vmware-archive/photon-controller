@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.apife.entities;
 
-import com.vmware.photon.controller.api.DiskState;
+import com.vmware.photon.controller.api.model.DiskState;
 import com.vmware.photon.controller.apife.entities.base.InfrastructureEntity;
 
 import java.util.ArrayList;

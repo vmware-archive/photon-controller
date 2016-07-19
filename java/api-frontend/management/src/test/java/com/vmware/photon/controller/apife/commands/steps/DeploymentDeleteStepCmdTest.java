@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.apife.commands.steps;
 
-import com.vmware.photon.controller.api.DeploymentState;
+import com.vmware.photon.controller.api.model.DeploymentState;
 import com.vmware.photon.controller.apife.backends.DeploymentBackend;
 import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.backends.clients.DeployerClient;

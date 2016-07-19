@@ -13,9 +13,9 @@
 
 package com.vmware.photon.controller.apife.resources.physicalnetwork;
 
-import com.vmware.photon.controller.api.ResourceList;
-import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
+import com.vmware.photon.controller.api.model.ResourceList;
+import com.vmware.photon.controller.api.model.Task;
 import com.vmware.photon.controller.apife.clients.NetworkFeClient;
 import com.vmware.photon.controller.apife.resources.routes.SubnetResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;

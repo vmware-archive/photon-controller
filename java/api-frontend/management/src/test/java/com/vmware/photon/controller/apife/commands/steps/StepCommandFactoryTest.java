@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.apife.commands.steps;
 
-import com.vmware.photon.controller.api.Operation;
+import com.vmware.photon.controller.api.model.Operation;
 import com.vmware.photon.controller.apife.TestModule;
 import com.vmware.photon.controller.apife.backends.XenonBackendTestModule;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;

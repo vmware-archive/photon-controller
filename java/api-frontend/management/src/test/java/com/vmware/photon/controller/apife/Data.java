@@ -13,8 +13,8 @@
 
 package com.vmware.photon.controller.apife;
 
-import com.vmware.photon.controller.api.QuotaLineItem;
-import com.vmware.photon.controller.api.QuotaUnit;
+import com.vmware.photon.controller.api.model.QuotaLineItem;
+import com.vmware.photon.controller.api.model.QuotaUnit;
 import com.vmware.photon.controller.apife.backends.FlavorLoader;
 import com.vmware.photon.controller.apife.entities.QuotaLineItemEntity;
 import com.vmware.photon.controller.apife.exceptions.external.FlavorNotFoundException;

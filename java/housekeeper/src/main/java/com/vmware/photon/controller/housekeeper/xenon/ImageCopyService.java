@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.housekeeper.xenon;
 
-import com.vmware.photon.controller.api.HostState;
+import com.vmware.photon.controller.api.model.HostState;
 import com.vmware.photon.controller.cloudstore.xenon.entity.HostService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ImageService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ImageServiceFactory;

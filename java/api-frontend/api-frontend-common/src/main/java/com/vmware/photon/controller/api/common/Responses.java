@@ -13,12 +13,12 @@
 
 package com.vmware.photon.controller.api.common;
 
-import com.vmware.photon.controller.api.ApiError;
-import com.vmware.photon.controller.api.ResourceList;
-import com.vmware.photon.controller.api.Version;
-import com.vmware.photon.controller.api.base.Base;
 import com.vmware.photon.controller.api.common.exceptions.external.ErrorCode;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
+import com.vmware.photon.controller.api.model.ApiError;
+import com.vmware.photon.controller.api.model.ResourceList;
+import com.vmware.photon.controller.api.model.Version;
+import com.vmware.photon.controller.api.model.base.Base;
 import com.vmware.photon.controller.common.logging.LoggingUtils;
 
 import com.google.inject.Singleton;

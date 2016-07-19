@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.apife.entities;
 
-import com.vmware.photon.controller.api.EphemeralDisk;
+import com.vmware.photon.controller.api.model.EphemeralDisk;
 
 /**
  * Ephemeral disk entity.

@@ -13,8 +13,8 @@
 
 package com.vmware.photon.controller.apife.resources.status;
 
-import com.vmware.photon.controller.api.Available;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
+import com.vmware.photon.controller.api.model.Available;
 import com.vmware.photon.controller.apife.resources.routes.AvailableRoutes;
 import static com.vmware.photon.controller.api.common.Responses.generateCustomResponse;
 
