@@ -30,6 +30,7 @@ import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.photon.controller.common.xenon.validation.Positive;
+import com.vmware.photon.controller.deployer.xenon.ContainersConfig;
 import com.vmware.photon.controller.deployer.xenon.entity.ContainerService;
 import com.vmware.photon.controller.deployer.xenon.entity.ContainerTemplateService;
 import com.vmware.photon.controller.deployer.xenon.entity.VmService;
@@ -374,8 +375,19 @@ public class BatchCreateManagementWorkflowService extends StatefulService {
         List<VmService.State> vms = QueryTaskUtils
             .getBroadcastQueryDocuments(VmService.State.class, os.get(queryVmsOp.getId()));
 
+        String templateLink = templates.stream()
+            .filter(template -> template.name.equals(ContainersConfig.ContainerType.PhotonControllerCore.name()))
+            .findFirst().get().documentSelfLink;
+        List<String> vmServiceLinks = containers.stream()
+            .filter(container -> container.containerTemplateServiceLink.equals(templateLink))
+            .map(container -> container.vmServiceLink)
+            .collect(Collectors.toList());
+        List<VmService.State> photonControllerCoreVms = vms.stream()
+            .filter(vm -> vmServiceLinks.contains(vm.documentSelfLink))
+            .collect(Collectors.toList());
+
         // Update Quorum on services
-        Map<String, List<Pair<String, Integer>>> xenonServiceToIp = mapXenonServices(vms);
+        Map<String, List<Pair<String, Integer>>> xenonServiceToIp = mapXenonServices(photonControllerCoreVms);
         List<Operation> quorumUpdates = getQuroumUpdateOperations(xenonServiceToIp, x -> x);
         OperationJoin.create(quorumUpdates)
           .setCompletion((os2, ts2) -> {
