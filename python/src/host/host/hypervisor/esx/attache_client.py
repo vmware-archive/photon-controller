@@ -346,10 +346,6 @@ class AttacheClient(HostClient):
         return self._client.GetEsxVersion(self._session)
 
     @attache_error_handler
-    def set_large_page_support(self, disable=False):
-        pass
-
-    @attache_error_handler
     def get_vim_ticket(self):
         return self._client.GetVimTicket(self._session)
 

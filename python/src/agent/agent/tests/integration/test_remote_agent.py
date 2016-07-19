@@ -564,41 +564,6 @@ class TestRemoteAgent(unittest.TestCase, AgentCommonTests):
         assert_that(response.result, is_(ServiceTicketResultCode.OK))
         return response.vim_ticket
 
-    def test_disable_large_pages(self):
-        def _update_host_config(self, mem_overcommit):
-            """Helper that actually updates the host config"""
-            self.provision_hosts(mem_overcommit=mem_overcommit)
-
-            # Make client connections again
-            self.client_connections()
-
-        # create a connection to hostd.
-        si = self.get_service_instance()
-
-        # Get the host MO.
-        host_system = host.GetHostSystem(si)
-        advOption = host_system.configManager.advancedOption
-        values = advOption.QueryOptions('Mem.AllocGuestLargePage')
-        self.assertEqual(values[0].key, 'Mem.AllocGuestLargePage')
-
-        # No over commit, allow large pages.
-        _update_host_config(self, 1.0)
-        values = advOption.QueryOptions('Mem.AllocGuestLargePage')
-        self.assertEqual(values[0].value, 1)
-
-        # Set memory overcommit and check if large page is disabled.
-        _update_host_config(self, 2.0)
-        values = advOption.QueryOptions('Mem.AllocGuestLargePage')
-        self.assertEqual(values[0].value, 0)
-
-        # Set memory overcommit and check if large page is enabled.
-        _update_host_config(self, 1.0)
-        values = advOption.QueryOptions('Mem.AllocGuestLargePage')
-        self.assertEqual(values[0].value, 1)
-
-        # Reprovision using defaults for other tests.
-        _update_host_config(self, 2.0)
-
     def test_create_vm_with_ephemeral_disks_concurrent(self):
         concurrency = 5
         atmoic_lock = threading.Lock()
