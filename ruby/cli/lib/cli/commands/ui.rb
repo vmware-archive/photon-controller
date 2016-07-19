@@ -229,22 +229,6 @@ module EsxCloud::Cli
         puts table
       end
 
-      # @param [Array<EsxCloud::PortGroup>] portgroups
-      def render_portgroups(portgroups)
-        table = Terminal::Table.new
-        table.headings = ["ID", "Usage Tags", "Name"]
-
-        portgroups.each do |portgroup|
-          table.add_row([portgroup.id, portgroup.usage_tags.join(", "), portgroup.name])
-          table.add_separator unless portgroup == portgroup[-1]
-        end
-
-        puts
-        puts table
-        puts
-        puts green("#{portgroups.length} portgroups totally")
-      end
-
       # @param [Numeric] time_ms Time in milliseconds
       def format_time(time_ms)
         return "N/A" if time_ms.nil?

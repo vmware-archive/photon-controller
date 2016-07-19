@@ -50,8 +50,6 @@ import com.vmware.photon.controller.apife.resources.image.ImagesResource;
 import com.vmware.photon.controller.apife.resources.physicalnetwork.SubnetPortGroupsSetResource;
 import com.vmware.photon.controller.apife.resources.physicalnetwork.SubnetResource;
 import com.vmware.photon.controller.apife.resources.physicalnetwork.SubnetsResource;
-import com.vmware.photon.controller.apife.resources.portgroup.PortGroupResource;
-import com.vmware.photon.controller.apife.resources.portgroup.PortGroupsResource;
 import com.vmware.photon.controller.apife.resources.project.ProjectResource;
 import com.vmware.photon.controller.apife.resources.project.ProjectSecurityGroupsResource;
 import com.vmware.photon.controller.apife.resources.project.TenantProjectsResource;
@@ -238,8 +236,6 @@ public class ApiFeService extends Application<ApiFeStaticConfiguration> {
     resources.add(ImageTasksResource.class);
     resources.add(ProjectClustersResource.class);
     resources.add(ProjectDisksResource.class);
-    resources.add(PortGroupResource.class);
-    resources.add(PortGroupsResource.class);
     resources.add(ProjectResource.class);
     resources.add(ProjectTasksResource.class);
     resources.add(ProjectVmsResource.class);

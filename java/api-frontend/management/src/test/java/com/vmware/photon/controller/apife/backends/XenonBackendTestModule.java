@@ -39,7 +39,6 @@ public class XenonBackendTestModule extends AbstractModule {
     bind(ImageBackend.class).to(ImageXenonBackend.class);
     bind(NetworkBackend.class).to(NetworkXenonBackend.class);
     bind(DatastoreBackend.class).to(DatastoreXenonBackend.class);
-    bind(PortGroupBackend.class).to(PortGroupXenonBackend.class);
     bind(EntityLockBackend.class).to(EntityLockXenonBackend.class);
     bind(TaskBackend.class).to(TaskXenonBackend.class);
     bind(StepBackend.class).to(TaskXenonBackend.class); // Step backend was merged into Task backend

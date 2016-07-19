@@ -12,10 +12,6 @@ HostService:
   userName: java.lang.String
   networks: java.util.Set
   usageTags: java.util.Set
-PortGroupService:
-  name: java.lang.String
-  usageTags: java.util.List
-  network: java.lang.String
 FlavorService:
   cost: java.util.List
   deleteRequestTime: java.lang.Long

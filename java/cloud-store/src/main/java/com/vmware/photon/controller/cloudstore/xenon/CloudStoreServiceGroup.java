@@ -28,7 +28,6 @@ import com.vmware.photon.controller.cloudstore.xenon.entity.ImageServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ImageToImageDatastoreMappingServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.IpLeaseService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.NetworkServiceFactory;
-import com.vmware.photon.controller.cloudstore.xenon.entity.PortGroupServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ProjectServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ResourceTicketServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.SubnetAllocatorService;
@@ -101,7 +100,6 @@ public class CloudStoreServiceGroup
       NetworkServiceFactory.class,
       DatastoreServiceFactory.class,
       DeploymentServiceFactory.class,
-      PortGroupServiceFactory.class,
       TaskServiceFactory.class,
       EntityLockServiceFactory.class,
       ProjectServiceFactory.class,
@@ -174,7 +172,6 @@ public class CloudStoreServiceGroup
             && photonControllerXenonHost.checkServiceAvailable(NetworkServiceFactory.SELF_LINK)
             && photonControllerXenonHost.checkServiceAvailable(DatastoreServiceFactory.SELF_LINK)
             && photonControllerXenonHost.checkServiceAvailable(DeploymentServiceFactory.SELF_LINK)
-            && photonControllerXenonHost.checkServiceAvailable(PortGroupServiceFactory.SELF_LINK)
             && photonControllerXenonHost.checkServiceAvailable(TaskServiceFactory.SELF_LINK)
             && photonControllerXenonHost.checkServiceAvailable(EntityLockServiceFactory.SELF_LINK)
             && photonControllerXenonHost.checkServiceAvailable(ProjectServiceFactory.SELF_LINK)

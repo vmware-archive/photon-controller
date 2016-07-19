@@ -156,7 +156,7 @@ describe "migrate finalize", upgrade: true do
         req = VersionRequest.new
         res = agent_client.get_version req
         puts host.address
-        expected_version = ENV["AGENT_VERSION"] || "#{`git rev-parse --abbrev-ref HEAD`}-#{`git rev-parse --short HEAD`}"
+        expected_version = ENV["AGENT_VERSION"] || "#{`git rev-parse --abbrev-ref HEAD`.strip()}-#{`git rev-parse --short HEAD`.strip()}"
         expect(res.version).to eq expected_version
       end
     end
@@ -267,7 +267,7 @@ describe "migrate finalize", upgrade: true do
 
   describe "creating new entities" do
     it "should be able to create new tenant with entities" do
-      EsxCloud::ManagementPlaneSeeder.populate
+      EsxCloud::ManagementPlaneSeeder.populate("VM New Network", "VM New Network 2")
     end
   end
 

@@ -13,12 +13,12 @@ require_relative 'test_helpers'
 
 module EsxCloud
   class ManagementPlaneSeeder
-    def self.populate()
+    def self.populate(port_group = nil, port_group2 = nil)
       seeder = ManagementPlaneSeeder.new
       image_file = ENV["ESXCLOUD_DISK_BOOTABLE_OVA_IMAGE"] || fail("ESXCLOUD_DISK_BOOTABLE_OVA_IMAGE is not defined")
       image_id = EsxCloud::Image.create(image_file, seeder.random_name("image-"), "EAGER").id
-      network = seeder.create_network
-      network2 = seeder.create_network2
+      network = seeder.create_network(port_group)
+      network2 = seeder.create_network2(port_group2)
       2.times do
         tenant = seeder.create_random_tenant
         2.times do
@@ -100,14 +100,14 @@ module EsxCloud
       EsxCloud::Flavor.create spec
     end
 
-    def create_network
-      portgroup = get_port_group
+    def create_network(port_group = nil)
+      portgroup = port_group || get_port_group
       network_spec = EsxCloud::NetworkCreateSpec.new(random_name("network-"), "VLAN", [portgroup])
       EsxCloud::Network.create(network_spec)
     end
 
-    def create_network2
-      portgroup2 = get_port_group2
+    def create_network2(port_group2 = nil)
+      portgroup2 = port_group2 || get_port_group2
       network_spec2 = EsxCloud::NetworkCreateSpec.new(random_name("network-"), "VLAN", [portgroup2])
       EsxCloud::Network.create(network_spec2)
     end
@@ -117,7 +117,7 @@ module EsxCloud
     end
 
     def get_port_group2
-      ENV["ESX_VM_PORT_GROUP2"] || "VM Network2"
+      ENV["ESX_VM_PORT_GROUP2"] || "VM Network 2"
     end
 
     def create_small_limits
