@@ -19,6 +19,7 @@ import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
+import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
@@ -31,6 +32,9 @@ import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.Positive;
 import com.vmware.photon.controller.common.xenon.validation.WriteOnce;
 import com.vmware.photon.controller.deployer.DeployerConfig;
+import com.vmware.photon.controller.deployer.xenon.ContainersConfig;
+import com.vmware.photon.controller.deployer.xenon.entity.ContainerService;
+import com.vmware.photon.controller.deployer.xenon.entity.ContainerTemplateService;
 import com.vmware.photon.controller.deployer.xenon.entity.VmService;
 import com.vmware.photon.controller.deployer.xenon.task.AllocateClusterManagerResourcesTaskFactoryService;
 import com.vmware.photon.controller.deployer.xenon.task.AllocateClusterManagerResourcesTaskService;
@@ -39,9 +43,11 @@ import com.vmware.photon.controller.deployer.xenon.task.CopyStateTaskService;
 import com.vmware.photon.controller.deployer.xenon.util.HostUtils;
 import com.vmware.photon.controller.deployer.xenon.util.MiscUtils;
 import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.OperationJoin;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
+import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.QueryTask;
 import com.vmware.xenon.services.common.ServiceUriPaths;
@@ -57,11 +63,12 @@ import java.net.InetSocketAddress;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 /**
  * This class implements a Xenon service representing the end-to-end deployment workflow.
@@ -561,33 +568,43 @@ public class DeploymentWorkflowService extends StatefulService {
   private void migrateData(State currentState) {
     ServiceUtils.logInfo(this, "Migrating deployment data");
 
-    QueryTask queryTask = QueryTask.Builder.createDirectTask()
-        .setQuery(QueryTask.Query.Builder.create()
-            .addKindFieldClause(VmService.State.class)
-            .build())
-        .addOption(QueryTask.QuerySpecification.QueryOption.BROADCAST)
-        .addOption(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT)
-        .build();
+    // get all container
+    Operation queryContainersOp = buildBroadcastKindQuery(ContainerService.State.class);
+    // get all container templates
+    Operation queryTemplatesOp =  buildBroadcastKindQuery(ContainerTemplateService.State.class);
+    // get all vms
+    Operation queryVmsOp = buildBroadcastKindQuery(VmService.State.class);
 
-    sendRequest(Operation
-        .createPost(this, ServiceUriPaths.CORE_QUERY_TASKS)
-        .setBody(queryTask)
-        .setCompletion(
-            (o, e) -> {
-              if (e != null) {
-                failTask(e);
-                return;
-              }
+    OperationJoin.create(queryContainersOp, queryTemplatesOp, queryVmsOp)
+      .setCompletion((os, ts) -> {
+        if (ts != null && !ts.isEmpty()) {
+          failTask(ts.values());
+          return;
+        }
+        List<ContainerService.State> containers = QueryTaskUtils
+            .getBroadcastQueryDocuments(ContainerService.State.class, os.get(queryContainersOp.getId()));
+        List<ContainerTemplateService.State> templates = QueryTaskUtils
+            .getBroadcastQueryDocuments(ContainerTemplateService.State.class, os.get(queryTemplatesOp.getId()));
+        List<VmService.State> vms = QueryTaskUtils
+            .getBroadcastQueryDocuments(VmService.State.class, os.get(queryVmsOp.getId()));
 
-              try {
-                migrateData(currentState, o.getBody(QueryTask.class).results.documents);
-              } catch (Throwable t) {
-                failTask(t);
-              }
-            }));
+        String templateLink = templates.stream()
+            .filter(template -> template.name.equals(ContainersConfig.ContainerType.PhotonControllerCore.name()))
+            .findFirst().get().documentSelfLink;
+        List<String> vmServiceLinks = containers.stream()
+            .filter(container -> container.containerTemplateServiceLink.equals(templateLink))
+            .map(container -> container.vmServiceLink)
+            .collect(Collectors.toList());
+        List<VmService.State> photonControllerCoreVms = vms.stream()
+            .filter(vm -> vmServiceLinks.contains(vm.documentSelfLink))
+            .collect(Collectors.toList());
+
+        migrateData(currentState, photonControllerCoreVms);
+      })
+      .sendWith(this);
   }
 
-  private void migrateData(State currentState, Map<String, Object> managementVms) {
+  private void migrateData(State currentState, List<VmService.State> managementVms) {
     Collection<DeploymentMigrationInformation> migrationInformation
       = HostUtils.getDeployerContext(this).getDeploymentMigrationInformation();
 
@@ -600,8 +617,7 @@ public class DeploymentWorkflowService extends StatefulService {
     for (DeploymentMigrationInformation entry : migrationInformation) {
       if (sourceServers.size() == 0) {
         sourceServers.add(new InetSocketAddress(getHost().getPreferredAddress(), getHost().getPort()));
-        for (Map.Entry<String, Object> keyVal : managementVms.entrySet()) {
-          VmService.State vm = Utils.fromJson(keyVal.getValue(), VmService.State.class);
+        for (VmService.State vm : managementVms) {
           destinationServers.add(new InetSocketAddress(vm.ipAddress, vm.deployerXenonPort));
         }
       }
@@ -759,6 +775,19 @@ public class DeploymentWorkflowService extends StatefulService {
               }
             }
         ));
+  }
+
+  private Operation buildBroadcastKindQuery(Class<? extends ServiceDocument> type) {
+    QueryTask.Query query = QueryTask.Query.Builder.create().addKindFieldClause(type)
+        .build();
+    return Operation
+      .createPost(UriUtils.buildBroadcastRequestUri(
+          UriUtils.buildUri(getHost(), ServiceUriPaths.CORE_LOCAL_QUERY_TASKS), ServiceUriPaths.DEFAULT_NODE_SELECTOR))
+      .setBody(QueryTask.Builder
+          .createDirectTask()
+          .addOptions(EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT))
+          .setQuery(query)
+          .build());
   }
 
   /**
