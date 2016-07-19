@@ -218,10 +218,6 @@ class HostClient(object):
         pass
 
     @abc.abstractmethod
-    def set_large_page_support(self, disable=False):
-        pass
-
-    @abc.abstractmethod
     def get_vim_ticket(self):
         pass
 

@@ -822,21 +822,6 @@ class VimClient(HostClient):
                 self._logger.info("Exception: %s" % e.msg)
                 raise VmPowerStateException(e.msg)
 
-    def set_large_page_support(self, disable=False):
-        """Disables large page support on the ESX hypervisor
-           This is done when the host memory is overcommitted.
-        """
-        optionManager = self.host_system().configManager.advancedOption
-        option = vim.OptionValue()
-        option.key = self.ALLOC_LARGE_PAGES
-        if disable:
-            option.value = 0L
-            self._logger.warning("Disabling large page support")
-        else:
-            option.value = 1L
-            self._logger.warning("Enabling large page support")
-        optionManager.UpdateOptions([option])
-
     def get_vm_networks(self, vm_id):
         """ Get the vm's network information
         We only report ip info if vmware tools is running within the guest.
