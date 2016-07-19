@@ -25,6 +25,8 @@ public class NameUtils {
   public static final String TRANSPORT_ZONE_NAME_PREFIX = "PC-TransportZone-";
   public static final String TRANSPORT_ZONE_DESCRIPTION_PREFIX = "Photon Controller Transport Zone ";
   public static final String LOGICAL_SWITCH_NAME_PREFIX = "PC-LogicalSwitch-";
+  public static final String LOGICAL_SWITCH_DESCRIPTION_PREFIX =
+      "Photon Controller Logical Switch in Virtual Network ";
   public static final String LOGICAL_ROUTER_NAME_PREFIX = "PC-LogicalRouter-";
   public static final String LOGICAL_ROUTER_DESCRIPTION_PREFIX = "Photon Controller Logical Router ";
   public static final String LOGICAL_SWITCH_UPLINK_PORT_NAME_PREFIX = "PC-LogicalSwitch-Uplink-Port-";
@@ -63,6 +65,10 @@ public class NameUtils {
 
   public static String getLogicalSwitchName(String id) {
     return LOGICAL_SWITCH_NAME_PREFIX + id;
+  }
+
+  public static String getLogicalSwitchDescription(String id) {
+    return LOGICAL_SWITCH_DESCRIPTION_PREFIX + id;
   }
 
   public static String getLogicalRouterName(String id) {
