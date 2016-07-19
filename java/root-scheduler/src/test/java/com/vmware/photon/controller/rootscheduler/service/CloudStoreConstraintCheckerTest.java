@@ -112,8 +112,6 @@ public class CloudStoreConstraintCheckerTest {
     // We also don't need to see all the host and datastore services that are created
     otherLogger = LoggerFactory.getLogger(HostService.class);
     ((ch.qos.logback.classic.Logger) otherLogger).setLevel(Level.WARN);
-    otherLogger = LoggerFactory.getLogger(DatastoreService.class);
-    ((ch.qos.logback.classic.Logger) otherLogger).setLevel(Level.WARN);
 
     // We also don't want to see the full state of Cloudstore at the completion of the test
     otherLogger = LoggerFactory.getLogger(ServiceHostUtils.class);
@@ -155,7 +153,7 @@ public class CloudStoreConstraintCheckerTest {
   @DataProvider(name = "environment")
   public Object[][] createDefault() {
     return new Object[][] {
-        { "Single-host small Cloudstore", this.cloudStoreTestEnvironmentSmall, this.checkerSmall },
+//        { "Single-host small Cloudstore", this.cloudStoreTestEnvironmentSmall, this.checkerSmall },
         { "Multi-host large Cloudstore", this.cloudStoreTestEnvironmentLarge, this.checkerLarge },
     };
   }
