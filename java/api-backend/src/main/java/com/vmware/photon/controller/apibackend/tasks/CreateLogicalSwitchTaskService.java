@@ -29,6 +29,8 @@ import com.vmware.photon.controller.nsxclient.datatypes.NsxSwitch;
 import com.vmware.photon.controller.nsxclient.models.LogicalSwitch;
 import com.vmware.photon.controller.nsxclient.models.LogicalSwitchCreateSpec;
 import com.vmware.photon.controller.nsxclient.models.LogicalSwitchState;
+import com.vmware.photon.controller.nsxclient.utils.NameUtils;
+import com.vmware.photon.controller.nsxclient.utils.TagUtils;
 import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceErrorResponse;
@@ -130,16 +132,18 @@ public class CreateLogicalSwitchTaskService extends StatefulService {
 
     try {
       LogicalSwitchCreateSpec logicalSwitchCreateSpec = new LogicalSwitchCreateSpecBuilder()
-          .displayName(currentState.displayName)
+          .displayName(NameUtils.getLogicalSwitchName(currentState.virtualNetworkId))
+          .description(NameUtils.getLogicalRouterDescription(currentState.virtualNetworkId))
           .transportZoneId(currentState.transportZoneId)
+          .tags(TagUtils.getLogicalSwitchTags(currentState.virtualNetworkId))
           .build();
 
-      ServiceHostUtils.getNsxClient(getHost(), currentState.nsxManagerEndpoint, currentState.username,
-          currentState.password).getLogicalSwitchApi().createLogicalSwitch(logicalSwitchCreateSpec,
+      ServiceHostUtils.getNsxClient(getHost(), currentState.nsxAddress, currentState.nsxUsername,
+          currentState.nsxPassword).getLogicalSwitchApi().createLogicalSwitch(logicalSwitchCreateSpec,
           new FutureCallback<LogicalSwitch>() {
             @Override
             public void onSuccess(@Nullable LogicalSwitch result) {
-              currentState.id = result.getId();
+              currentState.logicalSwitchId = result.getId();
               waitForConfigurationComplete(currentState);
             }
 
@@ -152,6 +156,46 @@ public class CreateLogicalSwitchTaskService extends StatefulService {
     } catch (Throwable t) {
       failTask(t);
     }
+  }
+
+  private void waitForConfigurationComplete(CreateLogicalSwitchTask currentState) {
+    getHost().schedule(() -> {
+      try {
+        ServiceUtils.logInfo(this, "Checking the configuration status of logical switch");
+
+        ServiceHostUtils.getNsxClient(getHost(), currentState.nsxAddress, currentState.nsxUsername,
+            currentState.nsxPassword).getLogicalSwitchApi().getLogicalSwitchState(
+            currentState.logicalSwitchId,
+            new FutureCallback<LogicalSwitchState>() {
+              @Override
+              public void onSuccess(@Nullable LogicalSwitchState result) {
+                NsxSwitch.State state = result.getState();
+                switch (state) {
+                  case IN_PROGRESS:
+                  case PENDING:
+                    waitForConfigurationComplete(currentState);
+                    break;
+
+                  case SUCCESS:
+                    finishTask(result.getId());
+                    break;
+
+                  default:
+                    failTask(new CreateLogicalSwitchException("Creating logical switch " +
+                        currentState.logicalSwitchId + " failed with state " + state));
+                }
+              }
+
+              @Override
+              public void onFailure(Throwable t) {
+                failTask(t);
+              }
+            }
+        );
+      } catch (Throwable t) {
+        failTask(t);
+      }
+    }, currentState.executionDelay, TimeUnit.MILLISECONDS);
   }
 
   private void validateStartState(CreateLogicalSwitchTask startState) {
@@ -197,48 +241,8 @@ public class CreateLogicalSwitchTaskService extends StatefulService {
 
   private void finishTask(String logicalSwitchId) {
     CreateLogicalSwitchTask patch = buildPatch(TaskState.TaskStage.FINISHED);
-    patch.id = logicalSwitchId;
+    patch.logicalSwitchId = logicalSwitchId;
 
     TaskUtils.sendSelfPatch(this, patch);
-  }
-
-  private void waitForConfigurationComplete(CreateLogicalSwitchTask currentState) {
-    getHost().schedule(() -> {
-      try {
-        ServiceUtils.logInfo(this, "Checking the configuration status of logical switch");
-
-        ServiceHostUtils.getNsxClient(getHost(), currentState.nsxManagerEndpoint, currentState.username,
-            currentState.password).getLogicalSwitchApi().getLogicalSwitchState(
-            currentState.id,
-            new FutureCallback<LogicalSwitchState>() {
-              @Override
-              public void onSuccess(@Nullable LogicalSwitchState result) {
-                NsxSwitch.State state = result.getState();
-                switch (state) {
-                  case IN_PROGRESS:
-                  case PENDING:
-                    waitForConfigurationComplete(currentState);
-                    break;
-
-                  case SUCCESS:
-                    finishTask(result.getId());
-                    break;
-
-                  default:
-                    failTask(new CreateLogicalSwitchException("Creating logical switch " + currentState.id +
-                        " failed with state " + state));
-                }
-              }
-
-              @Override
-              public void onFailure(Throwable t) {
-                failTask(t);
-              }
-            }
-        );
-      } catch (Throwable t) {
-        failTask(t);
-      }
-    }, currentState.executionDelay, TimeUnit.MILLISECONDS);
   }
 }

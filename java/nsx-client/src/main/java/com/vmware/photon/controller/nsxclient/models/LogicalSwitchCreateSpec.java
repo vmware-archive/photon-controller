@@ -19,6 +19,7 @@ import com.vmware.photon.controller.nsxclient.utils.ToStringHelper;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -37,6 +38,12 @@ public class LogicalSwitchCreateSpec {
 
   @JsonProperty(value = "display_name")
   private String displayName;
+
+  @JsonProperty(value = "description")
+  private String description;
+
+  @JsonProperty(value = "tags")
+  private List<Tag> tags;
 
   public String getTransportZoneId() {
     return transportZoneId;
@@ -70,6 +77,22 @@ public class LogicalSwitchCreateSpec {
     this.displayName = displayName;
   }
 
+  public String getDescription() {
+    return description;
+  }
+
+  public void setDescription(String description) {
+    this.description = description;
+  }
+
+  public List<Tag> getTags() {
+    return tags;
+  }
+
+  public void setTags(List<Tag> tags) {
+    this.tags = tags;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -84,12 +107,14 @@ public class LogicalSwitchCreateSpec {
     return Objects.equals(this.transportZoneId, other.transportZoneId)
         && Objects.equals(this.replicationMode, other.replicationMode)
         && Objects.equals(this.adminState, other.adminState)
-        && Objects.equals(this.displayName, other.displayName);
+        && Objects.equals(this.displayName, other.displayName)
+        && Objects.equals(this.description, other.description)
+        && Objects.deepEquals(this.tags, other.tags);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode(), transportZoneId, replicationMode, adminState, displayName);
+    return Objects.hash(super.hashCode(), transportZoneId, replicationMode, adminState, displayName, description, tags);
   }
 
   @Override

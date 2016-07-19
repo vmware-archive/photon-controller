@@ -153,11 +153,11 @@ public class CreateLogicalSwitchTaskServiceTest {
     @DataProvider(name = "notEmptyFields")
     private Object[][] getNotEmptyFields() {
       return new Object[][] {
-          {"nsxManagerEndpoint", "nsxManagerEndpoint cannot be null"},
-          {"username", "username cannot be null"},
-          {"password", "password cannot be null"},
+          {"nsxAddress", "nsxAddress cannot be null"},
+          {"nsxUsername", "nsxUsername cannot be null"},
+          {"nsxPassword", "nsxPassword cannot be null"},
           {"transportZoneId", "transportZoneId cannot be null"},
-          {"displayName", "displayName cannot be null"},
+          {"virtualNetworkId", "virtualNetworkId cannot be null"},
           {"executionDelay", "executionDelay cannot be null"}
       };
     }
@@ -316,11 +316,11 @@ public class CreateLogicalSwitchTaskServiceTest {
     public Object[][] getImmutableFields() {
       return new Object[][] {
           {"controlFlags", "controlFlags is immutable"},
-          {"nsxManagerEndpoint", "nsxManagerEndpoint is immutable"},
-          {"username", "username is immutable"},
-          {"password", "password is immutable"},
+          {"nsxAddress", "nsxAddress is immutable"},
+          {"nsxUsername", "nsxUsername is immutable"},
+          {"nsxPassword", "nsxPassword is immutable"},
           {"transportZoneId", "transportZoneId is immutable"},
-          {"displayName", "displayName is immutable"},
+          {"virtualNetworkId", "virtualNetworkId is immutable"},
           {"executionDelay", "executionDelay is immutable"}
       };
     }
@@ -328,7 +328,7 @@ public class CreateLogicalSwitchTaskServiceTest {
     @DataProvider(name = "writeOnceFields")
     public Object[][] getWriteOnceFields() {
       return new Object[][] {
-          {"id", "id cannot be set or changed in a patch"}
+          {"logicalSwitchId", "logicalSwitchId cannot be set or changed in a patch"}
       };
     }
   }
@@ -391,7 +391,7 @@ public class CreateLogicalSwitchTaskServiceTest {
 
       CreateLogicalSwitchTask savedState = startService();
       assertThat(savedState.taskState.stage, is(TaskState.TaskStage.FINISHED));
-      assertThat(savedState.id, is("logicalSwitchId"));
+      assertThat(savedState.logicalSwitchId, is("logicalSwitchId"));
     }
 
     private CreateLogicalSwitchTask startService() throws Throwable {
@@ -417,10 +417,10 @@ public class CreateLogicalSwitchTaskServiceTest {
     startState.taskState = new TaskState();
     startState.taskState.stage = startStage;
     startState.controlFlags = controlFlags;
-    startState.displayName = "switch1";
-    startState.nsxManagerEndpoint = "https://192.168.1.1";
-    startState.username = "username";
-    startState.password = "password";
+    startState.nsxAddress = "https://192.168.1.1";
+    startState.nsxUsername = "username";
+    startState.nsxPassword = "password";
+    startState.virtualNetworkId = "virtualNetworkId";
     startState.transportZoneId = UUID.randomUUID().toString();
     startState.executionDelay = 100;
 

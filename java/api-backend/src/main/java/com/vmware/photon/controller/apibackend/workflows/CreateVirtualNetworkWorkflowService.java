@@ -247,11 +247,12 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
    */
   private void createLogicalSwitch(CreateVirtualNetworkWorkflowDocument state) {
     CreateLogicalSwitchTask createLogicalSwitchTask = new CreateLogicalSwitchTask();
-    createLogicalSwitchTask.nsxManagerEndpoint = state.nsxManagerEndpoint;
-    createLogicalSwitchTask.username = state.username;
-    createLogicalSwitchTask.password = state.password;
+    createLogicalSwitchTask.nsxAddress = state.nsxManagerEndpoint;
+    createLogicalSwitchTask.nsxUsername = state.username;
+    createLogicalSwitchTask.nsxPassword = state.password;
+    createLogicalSwitchTask.virtualNetworkId =
+        ServiceUtils.getIDFromDocumentSelfLink(state.taskServiceEntity.documentSelfLink);
     createLogicalSwitchTask.transportZoneId = state.transportZoneId;
-    createLogicalSwitchTask.displayName = NameUtils.getLogicalSwitchName(getVirtualNetworkId(state));
     createLogicalSwitchTask.executionDelay = state.executionDelay;
 
     TaskUtils.startTaskAsync(
@@ -271,7 +272,7 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
                       TaskState.TaskStage.STARTED,
                       CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.CREATE_LOGICAL_ROUTER);
                   patchState.taskServiceEntity = state.taskServiceEntity;
-                  patchState.taskServiceEntity.logicalSwitchId = result.id;
+                  patchState.taskServiceEntity.logicalSwitchId = result.logicalSwitchId;
                   progress(state, patchState);
                 } catch (Throwable t) {
                   fail(state, t);

@@ -29,48 +29,9 @@ import com.vmware.xenon.common.TaskState;
  */
 public class CreateLogicalSwitchTask extends ServiceDocument {
 
-  /**
-   * Id of the logical switch.
-   */
-  @WriteOnce
-  public String id;
-
-  /**
-   * Endpoint to the nsx manager.
-   */
-  @NotBlank
-  @Immutable
-  public String nsxManagerEndpoint;
-
-  /**
-   * Username to access nsx manager.
-   */
-  @NotBlank
-  @Immutable
-  @ServiceDocument.UsageOption(option = ServiceDocumentDescription.PropertyUsageOption.SENSITIVE)
-  public String username;
-
-  /**
-   * Password to access nsx manager.
-   */
-  @NotBlank
-  @Immutable
-  @ServiceDocument.UsageOption(option = ServiceDocumentDescription.PropertyUsageOption.SENSITIVE)
-  public String password;
-
-  /**
-   * ID of the transport zone.
-   */
-  @NotBlank
-  @Immutable
-  public String transportZoneId;
-
-  /**
-   * Display name.
-   */
-  @NotBlank
-  @Immutable
-  public String displayName;
+  ///
+  /// Controls Input
+  ///
 
   /**
    * State of this task.
@@ -85,10 +46,61 @@ public class CreateLogicalSwitchTask extends ServiceDocument {
   @Immutable
   public Integer controlFlags;
 
+  ///
+  /// Task Input
+  ///
+
+  /**
+   * Endpoint to the nsx manager.
+   */
+  @NotBlank
+  @Immutable
+  public String nsxAddress;
+
+  /**
+   * Username to access nsx manager.
+   */
+  @NotBlank
+  @Immutable
+  @ServiceDocument.UsageOption(option = ServiceDocumentDescription.PropertyUsageOption.SENSITIVE)
+  public String nsxUsername;
+
+  /**
+   * Password to access nsx manager.
+   */
+  @NotBlank
+  @Immutable
+  @ServiceDocument.UsageOption(option = ServiceDocumentDescription.PropertyUsageOption.SENSITIVE)
+  public String nsxPassword;
+
+  /**
+   * ID of the virtual network.
+   */
+  @NotBlank
+  @Immutable
+  public String virtualNetworkId;
+
+  /**
+   * ID of the transport zone.
+   */
+  @NotBlank
+  @Immutable
+  public String transportZoneId;
+
   /**
    * Execution delay time to verify the state of logical switch.
    */
   @NotNull
   @Immutable
   public Integer executionDelay;
+
+  ///
+  /// Task Output
+  ///
+
+  /**
+   * Id of the logical switch.
+   */
+  @WriteOnce
+  public String logicalSwitchId;
 }
