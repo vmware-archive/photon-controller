@@ -47,3 +47,4 @@ ruby/common/test_files/deployment/dcmap.yml
 *.box
 .vagrant
 .bundle
+java/containers/photon-controller-core/*.rpm
