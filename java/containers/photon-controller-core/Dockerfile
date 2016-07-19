@@ -4,6 +4,9 @@ ENV container=docker
 
 VOLUME ["/sys/fs/cgroup"]
 
+ADD *.rpm /tmp/
+RUN find /tmp -iname "*.rpm" | xargs rpm -Uvh
+
 RUN tdnf makecache
 
 # install systemd
