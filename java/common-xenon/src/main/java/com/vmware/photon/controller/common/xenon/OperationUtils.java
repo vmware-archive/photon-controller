@@ -18,6 +18,7 @@ import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundExce
 import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceErrorResponse;
+import com.vmware.xenon.common.Utils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -104,6 +105,8 @@ public class OperationUtils {
       case Operation.STATUS_CODE_ACCEPTED:
         return completedOperation;
       case Operation.STATUS_CODE_NOT_FOUND:
+        logger.info("Requested Operation failed, document not found: {}", Utils.toJson(true, false,
+            requestedOperation));
         throw new DocumentNotFoundException(requestedOperation, completedOperation);
       case Operation.STATUS_CODE_TIMEOUT:
         throw new TimeoutException(completedOperation.getBody(ServiceErrorResponse.class).message);
