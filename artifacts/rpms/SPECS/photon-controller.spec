@@ -1,3 +1,5 @@
+%define debug_package %{nil}
+
 Summary:    The Photon Controller management plane
 Name:       photon-controller
 Version:    %{pkg_version}

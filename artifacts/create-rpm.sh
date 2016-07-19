@@ -37,8 +37,16 @@ cp "${SPECS_DIR}"/* "${SOURCES_DIR}"
 wget "${ENVOY_VIB_URL}" -P "${SOURCES_DIR}" || true
 
 # Build the Photon-Controller vib from local repo and copy to SROUCES folder
-cd "${ROOT}"/python
-make vib-only
+cd "${ROOT}"
+
+docker pull vmware/photon-controller-rpm-builder
+
+docker run -i --rm \
+  -v `pwd`:`pwd` \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -w `pwd`/python vmware/photon-controller-rpm-builder \
+   make vib-only
+
 cp "${ROOT}"/python/dist/* "${SOURCES_DIR}"
 
 DEBUG_OPTIONS=""
