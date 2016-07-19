@@ -29,9 +29,6 @@ public class XenonConfig {
   private String bindAddress;
 
   @NotBlank
-  private String registrationAddress;
-
-  @NotBlank
   private String storagePath;
 
   @NotEmpty
@@ -51,14 +48,6 @@ public class XenonConfig {
 
   public String getBindAddress() {
     return this.bindAddress;
-  }
-
-  public void setRegistrationAddress(String registrationAddress) {
-    this.registrationAddress = registrationAddress;
-  }
-
-  public String getRegistrationAddress() {
-    return this.registrationAddress;
   }
 
   public void setStoragePath(String storagePath) {

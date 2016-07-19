@@ -13,7 +13,6 @@ deployer:
 
 xenon:
   bindAddress: localhost
-  registrationAddress: localhost
   port: 18000
   storagePath: "/tmp/xenon/18000"
   peerNodes:

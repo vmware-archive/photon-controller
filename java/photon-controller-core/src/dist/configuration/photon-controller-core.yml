@@ -1,7 +1,6 @@
 xenon:
   bindAddress: "0.0.0.0"
   port: 19000
-  registrationAddress: "{{{REGISTRATION_ADDRESS}}}"
   storagePath: "{{{CLOUD-STORE_XENON_STORAGE_PATH}}}"
   peerNodes:
 {{#PHOTON_CONTROLLER_PEER_NODES}}

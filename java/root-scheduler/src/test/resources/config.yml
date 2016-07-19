@@ -1,7 +1,6 @@
 xenon:
   bindAddress: "0.0.0.0"
   port: 15001
-  registrationAddress: "127.0.0.1"
   storagePath: "/tmp/dcp/scheduler/"
   peerNodes:
   - http://127.0.0.1:15001

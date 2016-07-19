@@ -41,24 +41,18 @@ public class TestHelper {
    */
   public static class TestInjectedConfig {
     private String bind;
-    private String registrationAddress;
     private int port;
     private String path;
 
     @Inject
     public TestInjectedConfig(DHCPAgentConfig dhcpAgentConfig) {
       this.bind = dhcpAgentConfig.getXenonConfig().getBindAddress();
-      this.registrationAddress = dhcpAgentConfig.getXenonConfig().getRegistrationAddress();
       this.port = dhcpAgentConfig.getXenonConfig().getPort();
       this.path = dhcpAgentConfig.getXenonConfig().getStoragePath();
     }
 
     public String getBind() {
       return bind;
-    }
-
-    public String getRegistrationAddress() {
-      return registrationAddress;
     }
 
     public int getPort() {
