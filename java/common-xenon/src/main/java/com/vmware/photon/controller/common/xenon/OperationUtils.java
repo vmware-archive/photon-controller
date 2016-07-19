@@ -104,6 +104,8 @@ public class OperationUtils {
       case Operation.STATUS_CODE_ACCEPTED:
         return completedOperation;
       case Operation.STATUS_CODE_NOT_FOUND:
+        logger.info("Requested Operation failed, document not found: {}", Utils.toJson(true, false,
+            requestedOperation));
         throw new DocumentNotFoundException(requestedOperation, completedOperation);
       case Operation.STATUS_CODE_TIMEOUT:
         throw new TimeoutException(completedOperation.getBody(ServiceErrorResponse.class).message);
