@@ -23,7 +23,8 @@ import com.vmware.photon.controller.common.xenon.deployment.NoMigrationDuringDep
 import com.vmware.photon.controller.common.xenon.migration.MigrateDuringUpgrade;
 import com.vmware.photon.controller.common.xenon.migration.MigrationUtils;
 import com.vmware.photon.controller.common.xenon.migration.NoMigrationDuringUpgrade;
-import com.vmware.photon.controller.common.xenon.validation.Immutable;
+import com.vmware.photon.controller.common.xenon.validation.DefaultBoolean;
+import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
 import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.OperationProcessingChain;
@@ -41,16 +42,16 @@ public class DhcpSubnetService extends StatefulService {
 
   public static final String FACTORY_LINK = ServiceUriPaths.CLOUDSTORE_ROOT + "/dhcp-subnets";
 
-  public static FactoryService createFactory() {
-    return FactoryService.create(DhcpSubnetService.class, DhcpSubnetService.State.class);
-  }
-
   public DhcpSubnetService() {
     super(State.class);
     super.toggleOption(ServiceOption.PERSISTENCE, true);
     super.toggleOption(ServiceOption.REPLICATION, true);
     super.toggleOption(ServiceOption.OWNER_SELECTION, true);
     super.toggleOption(ServiceOption.INSTRUMENTATION, true);
+  }
+
+  public static FactoryService createFactory() {
+    return FactoryService.create(DhcpSubnetService.class, DhcpSubnetService.State.class);
   }
 
   @Override
@@ -73,52 +74,48 @@ public class DhcpSubnetService extends StatefulService {
             IpOperationPatch.class, "kind", IpOperationPatch.Kind.ReleaseIpForMac),
         this::handleReleaseIpForMacPatch, "Release Ip for MAC address");
 
+    myRouter.register(
+        Action.PATCH,
+        new RequestRouter.RequestBodyMatcher<SubnetOperationPatch>(
+            SubnetOperationPatch.class, "kind", SubnetOperationPatch.Kind.ExtractSubnetFromBottom),
+        this::handleReleaseIpForMacPatch, "Extract subnet from bottom");
+
+    myRouter.register(
+        Action.PATCH,
+        new RequestRouter.RequestBodyMatcher<SubnetOperationPatch>(
+            SubnetOperationPatch.class, "kind", SubnetOperationPatch.Kind.ExpandSubnetAtBottom),
+        this::handleReleaseIpForMacPatch, "Expand subnet at bottom");
+
+    myRouter.register(
+        Action.PATCH,
+        new RequestRouter.RequestBodyMatcher<SubnetOperationPatch>(
+            SubnetOperationPatch.class, "kind", SubnetOperationPatch.Kind.ExpandSubnetAtTop),
+        this::handleReleaseIpForMacPatch, "Expand subnet at top");
+
     OperationProcessingChain opProcessingChain = new OperationProcessingChain(this);
     opProcessingChain.add(myRouter);
     setOperationProcessingChain(opProcessingChain);
     return opProcessingChain;
   }
 
-  /**
-   * Class for allocating an available IP to the provided MAC address.
-   */
-  @NoMigrationDuringUpgrade
-  @NoMigrationDuringDeployment
-  public static class IpOperationPatch extends ServiceDocument {
-    /**
-     * Defines type of IP operations that are supported.
-     */
-    public enum Kind {
-      AllocateIpToMac,
-      ReleaseIpForMac
-    };
-    public final Kind kind;
-    public String macAddress;
-
-    private IpOperationPatch() {
-      kind = null;
-    }
-
-    public IpOperationPatch(Kind kind, String macAddress) {
-      if (kind == null) {
-        throw new IllegalArgumentException("kind cannot be null");
-      }
-
-      if (macAddress == null) {
-        throw new IllegalArgumentException("macAddress cannot be null");
-      }
-
-      this.kind = kind;
-      this.macAddress = macAddress;
-    }
-  }
-
   public void handleAllocateIpToMacPatch(Operation patch) {
-    ServiceUtils.logInfo(this, "Patching service %s", getSelfLink());
+    ServiceUtils.logInfo(this, "Patching service %s to allocate IP to MAC", getSelfLink());
   }
 
   public void handleReleaseIpForMacPatch(Operation patch) {
-    ServiceUtils.logInfo(this, "Patching service %s", getSelfLink());
+    ServiceUtils.logInfo(this, "Patching service %s to release IP for MAC", getSelfLink());
+  }
+
+  public void handleExtractSubnet(Operation patch) {
+    ServiceUtils.logInfo(this, "Patching service %s to extract subnet", getSelfLink());
+  }
+
+  public void handleExpandSubnetAtBottom(Operation patch) {
+    ServiceUtils.logInfo(this, "Patching service %s to expand available subnet at bottom", getSelfLink());
+  }
+
+  public void handleExpandSubnetAtTop(Operation patch) {
+    ServiceUtils.logInfo(this, "Patching service %s to expand available subnet at top", getSelfLink());
   }
 
   @Override
@@ -143,6 +140,86 @@ public class DhcpSubnetService extends StatefulService {
     ServiceUtils.expireDocumentOnDelete(this, State.class, deleteOperation);
   }
 
+  @Override
+  public void handlePatch(Operation patchOperation) {
+    ServiceUtils.logWarning(this, "Patching service %s using default handler not allowed", getSelfLink());
+    patchOperation.fail(Operation.STATUS_CODE_BAD_METHOD);
+  }
+
+
+  /**
+   * Class for resizing the subnet to support extraction and coalescing of subnets.
+   */
+  @NoMigrationDuringUpgrade
+  @NoMigrationDuringDeployment
+  public static class SubnetOperationPatch extends ServiceDocument {
+    public final Kind kind;;
+    public Integer size;
+    private SubnetOperationPatch() {
+      kind = null;
+    }
+
+    public SubnetOperationPatch(Kind kind, Integer size) {
+      if (kind == null) {
+        throw new IllegalArgumentException("kind should not be null");
+      }
+
+      if (size == null) {
+        throw new IllegalArgumentException("size should not be null");
+      }
+
+      if (size <= 0) {
+        throw new IllegalArgumentException("size should be greater than zero");
+      }
+
+      this.kind = kind;
+      this.size = size;
+    }
+
+    /**
+     * Defines type of Subnet operations that are supported.
+     */
+    public enum Kind {
+      ExtractSubnetFromBottom,
+      ExpandSubnetAtTop,
+      ExpandSubnetAtBottom
+    }
+  }
+
+  /**
+   * Class for allocating an available IP to the provided MAC address.
+   */
+  @NoMigrationDuringUpgrade
+  @NoMigrationDuringDeployment
+  public static class IpOperationPatch extends ServiceDocument {
+        public final Kind kind;;
+    public String macAddress;
+    private IpOperationPatch() {
+      kind = null;
+    }
+
+    public IpOperationPatch(Kind kind, String macAddress) {
+      if (kind == null) {
+        throw new IllegalArgumentException("kind cannot be null");
+      }
+
+      if (macAddress == null) {
+        throw new IllegalArgumentException("macAddress cannot be null");
+      }
+
+      this.kind = kind;
+      this.macAddress = macAddress;
+    }
+
+    /**
+     * Defines type of IP operations that are supported.
+     */
+    public enum Kind {
+      AllocateIpToMac,
+      ReleaseIpForMac
+    }
+  }
+
   /**
    * Persistent virtual network state data.
    */
@@ -158,53 +235,60 @@ public class DhcpSubnetService extends StatefulService {
     /**
      * This is the CIDR allocated to the subnet.
      */
-    @Immutable
     public String cidr;
 
     /**
      * This is the smallest IP of this subnet. It is reserved as Network Address.
      */
-    @Immutable
-    public long lowIp;
+    public Long lowIp;
 
     /**
      * This is the biggest IP of this subnet. It is reserved as Broadcast Address.
      */
-    @Immutable
-    public long highIp;
+    public Long highIp;
 
     /**
      * This is the smallest IP of the range from which IPs will be allocated to VMs/MACs.
      */
-    @Immutable
-    public long lowIpDynamic;
+    public Long lowIpDynamic;
 
     /**
      * This is the biggest IP of the range from which IPs will be allocated to VMs/MACs.
      */
-    @Immutable
-    public long highIpDynamic;
+    public Long highIpDynamic;
 
     /**
      * This is a list of IPs reserved for infrastructure use e.g. address for DHCP Relay router for the subnet.
      * We will include the lowIp and highIp in this list. This is calculated only for display purposes for the user.
      */
-    @Immutable
     public List<Long> reservedIpList;
 
     /**
      * This is the smallest IP of the range from which IPs will be excluded for allocations to VMs/MACs.
      * This is calculated only for display purposes for the user.
      */
-    @Immutable
-    public long lowIpStatic;
+    public Long lowIpStatic;
 
     /**
      * This is the biggest IP of the range from which IPs will be excluded for allocations to VMs/MACs.
      * This is calculated only for display purposes for the user.
      */
-    @Immutable
-    public long highIpStatic;
+    public Long highIpStatic;
+
+    /**
+     * This flag indicates if the subnet range is available for extracting subnets that take up
+     * all or part of the range.
+     */
+    @DefaultBoolean(false)
+    public boolean isAllocated;
+
+    /**
+     * This is a calculated field based on the difference of highIp and lowIp however it is still
+     * persisted so that we can do queries on the index to find an available subnet from which to extract
+     * a new subnet of smaller or equal size.
+     */
+    @DefaultInteger(0)
+    public Integer size;
 
 
     @Override
