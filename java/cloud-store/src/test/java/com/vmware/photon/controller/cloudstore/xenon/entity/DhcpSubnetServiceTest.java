@@ -86,6 +86,8 @@ public class DhcpSubnetServiceTest {
       DhcpSubnetService.State savedState = host.getServiceState(DhcpSubnetService.State.class,
           createdState.documentSelfLink);
       assertThat(ServiceUtils.documentEquals(DhcpSubnetService.State.class, startState, savedState), is(true));
+      assertThat(startState.doGarbageCollection, is(false));
+
     }
   }
 
