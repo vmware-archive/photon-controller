@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.cloudstore.xenon.task;
 
-import com.vmware.photon.controller.api.AvailabilityZoneState;
+import com.vmware.photon.controller.api.model.AvailabilityZoneState;
 import com.vmware.photon.controller.cloudstore.xenon.entity.AvailabilityZoneService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.AvailabilityZoneServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.HostService;

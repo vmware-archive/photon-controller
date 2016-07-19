@@ -13,14 +13,14 @@
 
 package com.vmware.photon.controller.apife.backends.clients;
 
-import com.vmware.photon.controller.api.Cluster;
-import com.vmware.photon.controller.api.ClusterCreateSpec;
-import com.vmware.photon.controller.api.ClusterResizeOperation;
-import com.vmware.photon.controller.api.ClusterState;
-import com.vmware.photon.controller.api.ClusterType;
-import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
+import com.vmware.photon.controller.api.model.Cluster;
+import com.vmware.photon.controller.api.model.ClusterCreateSpec;
+import com.vmware.photon.controller.api.model.ClusterResizeOperation;
+import com.vmware.photon.controller.api.model.ClusterState;
+import com.vmware.photon.controller.api.model.ClusterType;
+import com.vmware.photon.controller.api.model.ResourceList;
 import com.vmware.photon.controller.apife.exceptions.external.ClusterNotFoundException;
 import com.vmware.photon.controller.apife.exceptions.external.SpecInvalidException;
 import com.vmware.photon.controller.apife.utils.PaginationUtils;

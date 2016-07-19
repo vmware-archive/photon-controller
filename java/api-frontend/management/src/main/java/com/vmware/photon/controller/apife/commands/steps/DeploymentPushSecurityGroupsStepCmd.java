@@ -13,10 +13,10 @@
 
 package com.vmware.photon.controller.apife.commands.steps;
 
-import com.vmware.photon.controller.api.ResourceList;
-import com.vmware.photon.controller.api.SecurityGroup;
-import com.vmware.photon.controller.api.Tenant;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
+import com.vmware.photon.controller.api.model.ResourceList;
+import com.vmware.photon.controller.api.model.SecurityGroup;
+import com.vmware.photon.controller.api.model.Tenant;
 import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.backends.TenantBackend;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;

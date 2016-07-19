@@ -13,18 +13,18 @@
 
 package com.vmware.photon.controller.apife.backends;
 
-import com.vmware.photon.controller.api.AttachedDiskCreateSpec;
-import com.vmware.photon.controller.api.DiskCreateSpec;
-import com.vmware.photon.controller.api.DiskState;
-import com.vmware.photon.controller.api.EphemeralDisk;
-import com.vmware.photon.controller.api.FlavorCreateSpec;
-import com.vmware.photon.controller.api.PersistentDisk;
-import com.vmware.photon.controller.api.ProjectCreateSpec;
-import com.vmware.photon.controller.api.QuotaLineItem;
-import com.vmware.photon.controller.api.QuotaUnit;
-import com.vmware.photon.controller.api.ResourceTicketCreateSpec;
-import com.vmware.photon.controller.api.ResourceTicketReservation;
-import com.vmware.photon.controller.api.TenantCreateSpec;
+import com.vmware.photon.controller.api.model.AttachedDiskCreateSpec;
+import com.vmware.photon.controller.api.model.DiskCreateSpec;
+import com.vmware.photon.controller.api.model.DiskState;
+import com.vmware.photon.controller.api.model.EphemeralDisk;
+import com.vmware.photon.controller.api.model.FlavorCreateSpec;
+import com.vmware.photon.controller.api.model.PersistentDisk;
+import com.vmware.photon.controller.api.model.ProjectCreateSpec;
+import com.vmware.photon.controller.api.model.QuotaLineItem;
+import com.vmware.photon.controller.api.model.QuotaUnit;
+import com.vmware.photon.controller.api.model.ResourceTicketCreateSpec;
+import com.vmware.photon.controller.api.model.ResourceTicketReservation;
+import com.vmware.photon.controller.api.model.TenantCreateSpec;
 import com.vmware.photon.controller.apife.TestModule;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.entities.AttachedDiskEntity;

@@ -13,21 +13,21 @@
 
 package com.vmware.photon.controller.apife.clients;
 
-import com.vmware.photon.controller.api.Auth;
-import com.vmware.photon.controller.api.AuthInfo;
-import com.vmware.photon.controller.api.ClusterConfigurationSpec;
-import com.vmware.photon.controller.api.Deployment;
-import com.vmware.photon.controller.api.DeploymentCreateSpec;
-import com.vmware.photon.controller.api.DeploymentDeployOperation;
-import com.vmware.photon.controller.api.DhcpConfigurationSpec;
-import com.vmware.photon.controller.api.FinalizeMigrationOperation;
-import com.vmware.photon.controller.api.InitializeMigrationOperation;
-import com.vmware.photon.controller.api.Project;
-import com.vmware.photon.controller.api.ResourceList;
-import com.vmware.photon.controller.api.Task;
-import com.vmware.photon.controller.api.Tenant;
-import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
+import com.vmware.photon.controller.api.model.Auth;
+import com.vmware.photon.controller.api.model.AuthInfo;
+import com.vmware.photon.controller.api.model.ClusterConfigurationSpec;
+import com.vmware.photon.controller.api.model.Deployment;
+import com.vmware.photon.controller.api.model.DeploymentCreateSpec;
+import com.vmware.photon.controller.api.model.DeploymentDeployOperation;
+import com.vmware.photon.controller.api.model.DhcpConfigurationSpec;
+import com.vmware.photon.controller.api.model.FinalizeMigrationOperation;
+import com.vmware.photon.controller.api.model.InitializeMigrationOperation;
+import com.vmware.photon.controller.api.model.Project;
+import com.vmware.photon.controller.api.model.ResourceList;
+import com.vmware.photon.controller.api.model.Task;
+import com.vmware.photon.controller.api.model.Tenant;
+import com.vmware.photon.controller.api.model.Vm;
 import com.vmware.photon.controller.apife.backends.DeploymentBackend;
 import com.vmware.photon.controller.apife.backends.HostBackend;
 import com.vmware.photon.controller.apife.backends.ProjectBackend;

@@ -13,8 +13,8 @@
 
 package com.vmware.photon.controller.apife.commands.steps;
 
-import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.api.common.exceptions.ApiFeException;
+import com.vmware.photon.controller.api.model.UsageTag;
 import com.vmware.photon.controller.apife.backends.HostBackend;
 import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.backends.VmBackend;

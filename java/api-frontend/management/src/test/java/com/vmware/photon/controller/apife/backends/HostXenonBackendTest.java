@@ -13,22 +13,22 @@
 
 package com.vmware.photon.controller.apife.backends;
 
-import com.vmware.photon.controller.api.AvailabilityZoneCreateSpec;
-import com.vmware.photon.controller.api.AvailabilityZoneState;
-import com.vmware.photon.controller.api.DeploymentCreateSpec;
-import com.vmware.photon.controller.api.Host;
-import com.vmware.photon.controller.api.HostCreateSpec;
-import com.vmware.photon.controller.api.HostDatastore;
-import com.vmware.photon.controller.api.HostSetAvailabilityZoneOperation;
-import com.vmware.photon.controller.api.HostState;
-import com.vmware.photon.controller.api.Operation;
-import com.vmware.photon.controller.api.ResourceList;
-import com.vmware.photon.controller.api.UsageTag;
-import com.vmware.photon.controller.api.builders.AuthConfigurationSpecBuilder;
-import com.vmware.photon.controller.api.builders.StatsInfoBuilder;
 import com.vmware.photon.controller.api.common.exceptions.external.ErrorCode;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.common.exceptions.external.InvalidOperationStateException;
+import com.vmware.photon.controller.api.model.AvailabilityZoneCreateSpec;
+import com.vmware.photon.controller.api.model.AvailabilityZoneState;
+import com.vmware.photon.controller.api.model.DeploymentCreateSpec;
+import com.vmware.photon.controller.api.model.Host;
+import com.vmware.photon.controller.api.model.HostCreateSpec;
+import com.vmware.photon.controller.api.model.HostDatastore;
+import com.vmware.photon.controller.api.model.HostSetAvailabilityZoneOperation;
+import com.vmware.photon.controller.api.model.HostState;
+import com.vmware.photon.controller.api.model.Operation;
+import com.vmware.photon.controller.api.model.ResourceList;
+import com.vmware.photon.controller.api.model.UsageTag;
+import com.vmware.photon.controller.api.model.builders.AuthConfigurationSpecBuilder;
+import com.vmware.photon.controller.api.model.builders.StatsInfoBuilder;
 import com.vmware.photon.controller.apife.TestModule;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
@@ -54,7 +54,6 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
-
 import static junit.framework.TestCase.fail;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.nullValue;

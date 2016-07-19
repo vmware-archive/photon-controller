@@ -13,8 +13,8 @@
 
 package com.vmware.photon.controller.apife.commands.steps;
 
-import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.api.common.exceptions.ApiFeException;
+import com.vmware.photon.controller.api.model.Vm;
 import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.backends.TaskBackend;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;

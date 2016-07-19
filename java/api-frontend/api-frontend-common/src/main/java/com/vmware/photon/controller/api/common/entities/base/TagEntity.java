@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.api.common.entities.base;
 
-import com.vmware.photon.controller.api.Tag;
+import com.vmware.photon.controller.api.model.Tag;
 
 import java.util.Objects;
 

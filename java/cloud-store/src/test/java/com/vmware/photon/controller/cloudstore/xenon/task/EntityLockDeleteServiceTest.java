@@ -13,8 +13,8 @@
 
 package com.vmware.photon.controller.cloudstore.xenon.task;
 
-import com.vmware.photon.controller.api.Vm;
-import com.vmware.photon.controller.api.VmState;
+import com.vmware.photon.controller.api.model.Vm;
+import com.vmware.photon.controller.api.model.VmState;
 import com.vmware.photon.controller.cloudstore.xenon.entity.EntityLockService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.EntityLockServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VmService;

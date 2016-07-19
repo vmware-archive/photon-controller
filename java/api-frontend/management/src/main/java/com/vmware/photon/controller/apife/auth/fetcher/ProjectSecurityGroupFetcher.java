@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.apife.auth.fetcher;
 
-import com.vmware.photon.controller.api.Project;
+import com.vmware.photon.controller.api.model.Project;
 import com.vmware.photon.controller.apife.auth.TransactionAuthorizationObject;
 import com.vmware.photon.controller.apife.backends.ProjectBackend;
 import com.vmware.photon.controller.apife.exceptions.external.ProjectNotFoundException;

@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.apife.auth.fetcher;
 
-import com.vmware.photon.controller.api.PersistentDisk;
+import com.vmware.photon.controller.api.model.PersistentDisk;
 import com.vmware.photon.controller.apife.auth.TransactionAuthorizationObject;
 import com.vmware.photon.controller.apife.backends.DiskBackend;
 import com.vmware.photon.controller.apife.exceptions.external.DiskNotFoundException;

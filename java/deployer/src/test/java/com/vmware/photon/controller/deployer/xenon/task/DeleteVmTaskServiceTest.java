@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.deployer.xenon.task;
 
-import com.vmware.photon.controller.api.Task;
+import com.vmware.photon.controller.api.model.Task;
 import com.vmware.photon.controller.client.ApiClient;
 import com.vmware.photon.controller.client.resource.TasksApi;
 import com.vmware.photon.controller.client.resource.VmApi;

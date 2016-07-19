@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.apife.auth.fetcher;
 
-import com.vmware.photon.controller.api.ResourceTicket;
+import com.vmware.photon.controller.api.model.ResourceTicket;
 import com.vmware.photon.controller.apife.auth.TransactionAuthorizationObject;
 import com.vmware.photon.controller.apife.backends.ResourceTicketBackend;
 import com.vmware.photon.controller.apife.exceptions.external.ResourceTicketNotFoundException;

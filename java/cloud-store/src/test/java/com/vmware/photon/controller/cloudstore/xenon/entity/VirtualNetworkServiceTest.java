@@ -13,8 +13,8 @@
 
 package com.vmware.photon.controller.cloudstore.xenon.entity;
 
-import com.vmware.photon.controller.api.RoutingType;
-import com.vmware.photon.controller.api.SubnetState;
+import com.vmware.photon.controller.api.model.RoutingType;
+import com.vmware.photon.controller.api.model.SubnetState;
 import com.vmware.photon.controller.cloudstore.xenon.CloudStoreServiceGroup;
 import com.vmware.photon.controller.cloudstore.xenon.helpers.TestHelper;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;

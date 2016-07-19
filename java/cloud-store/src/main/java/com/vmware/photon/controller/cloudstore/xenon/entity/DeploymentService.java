@@ -13,8 +13,8 @@
 
 package com.vmware.photon.controller.cloudstore.xenon.entity;
 
-import com.vmware.photon.controller.api.DeploymentState;
-import com.vmware.photon.controller.api.StatsStoreType;
+import com.vmware.photon.controller.api.model.DeploymentState;
+import com.vmware.photon.controller.api.model.StatsStoreType;
 import com.vmware.photon.controller.common.Constants;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;

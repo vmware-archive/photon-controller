@@ -13,8 +13,8 @@
 
 package com.vmware.photon.controller.apife.resources;
 
-import com.vmware.photon.controller.api.Project;
-import com.vmware.photon.controller.api.Task;
+import com.vmware.photon.controller.api.model.Project;
+import com.vmware.photon.controller.api.model.Task;
 import com.vmware.photon.controller.apife.clients.ProjectFeClient;
 import com.vmware.photon.controller.apife.resources.project.ProjectResource;
 import com.vmware.photon.controller.apife.resources.routes.ProjectResourceRoutes;

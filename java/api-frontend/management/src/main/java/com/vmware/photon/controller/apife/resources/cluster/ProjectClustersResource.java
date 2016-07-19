@@ -13,11 +13,11 @@
 
 package com.vmware.photon.controller.apife.resources.cluster;
 
-import com.vmware.photon.controller.api.Cluster;
-import com.vmware.photon.controller.api.ClusterCreateSpec;
-import com.vmware.photon.controller.api.ResourceList;
-import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
+import com.vmware.photon.controller.api.model.Cluster;
+import com.vmware.photon.controller.api.model.ClusterCreateSpec;
+import com.vmware.photon.controller.api.model.ResourceList;
+import com.vmware.photon.controller.api.model.Task;
 import com.vmware.photon.controller.apife.clients.ClusterFeClient;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.resources.routes.ClusterResourceRoutes;

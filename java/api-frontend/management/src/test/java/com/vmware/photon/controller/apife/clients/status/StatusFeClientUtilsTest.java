@@ -13,10 +13,10 @@
 
 package com.vmware.photon.controller.apife.clients.status;
 
-import com.vmware.photon.controller.api.Component;
-import com.vmware.photon.controller.api.ComponentStatus;
-import com.vmware.photon.controller.api.builders.ComponentInstanceBuilder;
-import com.vmware.photon.controller.api.builders.ComponentStatusBuilder;
+import com.vmware.photon.controller.api.model.Component;
+import com.vmware.photon.controller.api.model.ComponentStatus;
+import com.vmware.photon.controller.api.model.builders.ComponentInstanceBuilder;
+import com.vmware.photon.controller.api.model.builders.ComponentStatusBuilder;
 import com.vmware.photon.controller.status.gen.StatusType;
 
 import com.google.common.collect.ImmutableList;

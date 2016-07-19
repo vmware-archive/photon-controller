@@ -13,9 +13,9 @@
 
 package com.vmware.photon.controller.apife.resources;
 
-import com.vmware.photon.controller.api.ApiError;
-import com.vmware.photon.controller.api.Datastore;
-import com.vmware.photon.controller.api.ResourceList;
+import com.vmware.photon.controller.api.model.ApiError;
+import com.vmware.photon.controller.api.model.Datastore;
+import com.vmware.photon.controller.api.model.ResourceList;
 import com.vmware.photon.controller.apife.clients.DatastoreFeClient;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.resources.datastore.DatastoresResource;
@@ -24,7 +24,6 @@ import com.vmware.photon.controller.apife.resources.routes.DatastoreResourceRout
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-
 import org.mockito.Mock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

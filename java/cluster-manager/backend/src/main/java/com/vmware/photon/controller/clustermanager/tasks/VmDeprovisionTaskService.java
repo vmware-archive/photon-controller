@@ -12,7 +12,7 @@
  */
 package com.vmware.photon.controller.clustermanager.tasks;
 
-import com.vmware.photon.controller.api.Task;
+import com.vmware.photon.controller.api.model.Task;
 import com.vmware.photon.controller.clustermanager.servicedocuments.ClusterManagerConstants;
 import com.vmware.photon.controller.clustermanager.utils.ApiUtils;
 import com.vmware.photon.controller.clustermanager.utils.HostUtils;

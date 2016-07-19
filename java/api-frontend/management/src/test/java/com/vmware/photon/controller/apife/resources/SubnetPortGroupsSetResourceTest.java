@@ -13,8 +13,8 @@
 
 package com.vmware.photon.controller.apife.resources;
 
-import com.vmware.photon.controller.api.ResourceList;
-import com.vmware.photon.controller.api.Task;
+import com.vmware.photon.controller.api.model.ResourceList;
+import com.vmware.photon.controller.api.model.Task;
 import com.vmware.photon.controller.apife.clients.NetworkFeClient;
 import com.vmware.photon.controller.apife.resources.physicalnetwork.SubnetPortGroupsSetResource;
 import com.vmware.photon.controller.apife.resources.routes.SubnetResourceRoutes;

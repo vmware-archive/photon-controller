@@ -13,9 +13,9 @@
 
 package com.vmware.photon.controller.apife.entities;
 
-import com.vmware.photon.controller.api.Host;
-import com.vmware.photon.controller.api.Vm;
-import com.vmware.photon.controller.api.VmState;
+import com.vmware.photon.controller.api.model.Host;
+import com.vmware.photon.controller.api.model.Vm;
+import com.vmware.photon.controller.api.model.VmState;
 import com.vmware.photon.controller.apife.entities.base.InfrastructureEntity;
 import com.vmware.photon.controller.apife.exceptions.external.MoreThanOneHostAffinityException;
 

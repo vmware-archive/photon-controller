@@ -1,7 +1,7 @@
 apply plugin: 'java'
 
 dependencies {
-  compile(project(':api'))
+  compile(project(':api:model'))
   compile(project(':common'))
   compile(project(':swagger-ui'))
   compile(project(':swagger-jersey'))

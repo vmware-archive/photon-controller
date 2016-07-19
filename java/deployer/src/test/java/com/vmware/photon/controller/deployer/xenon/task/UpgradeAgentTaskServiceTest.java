@@ -15,7 +15,7 @@ package com.vmware.photon.controller.deployer.xenon.task;
 
 import com.vmware.photon.controller.agent.gen.AgentStatusCode;
 import com.vmware.photon.controller.agent.gen.UpgradeResultCode;
-import com.vmware.photon.controller.api.UsageTag;
+import com.vmware.photon.controller.api.model.UsageTag;
 import com.vmware.photon.controller.common.clients.AgentControlClientFactory;
 import com.vmware.photon.controller.common.clients.exceptions.SystemErrorException;
 import com.vmware.photon.controller.common.xenon.ControlFlags;

@@ -13,12 +13,12 @@
 
 package com.vmware.photon.controller.deployer.xenon.util;
 
-import com.vmware.photon.controller.api.NetworkConnection;
-import com.vmware.photon.controller.api.ResourceList;
-import com.vmware.photon.controller.api.Task;
-import com.vmware.photon.controller.api.UsageTag;
-import com.vmware.photon.controller.api.Vm;
-import com.vmware.photon.controller.api.VmNetworks;
+import com.vmware.photon.controller.api.model.NetworkConnection;
+import com.vmware.photon.controller.api.model.ResourceList;
+import com.vmware.photon.controller.api.model.Task;
+import com.vmware.photon.controller.api.model.UsageTag;
+import com.vmware.photon.controller.api.model.Vm;
+import com.vmware.photon.controller.api.model.VmNetworks;
 import com.vmware.photon.controller.client.ApiClient;
 import com.vmware.photon.controller.client.resource.VmApi;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;

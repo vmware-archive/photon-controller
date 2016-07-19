@@ -13,11 +13,11 @@
 
 package com.vmware.photon.controller.apife.entities;
 
-import com.vmware.photon.controller.api.Flavor;
-import com.vmware.photon.controller.api.FlavorState;
-import com.vmware.photon.controller.api.QuotaLineItem;
 import com.vmware.photon.controller.api.common.entities.base.TagEntity;
 import com.vmware.photon.controller.api.common.entities.base.VisibleModelEntity;
+import com.vmware.photon.controller.api.model.Flavor;
+import com.vmware.photon.controller.api.model.FlavorState;
+import com.vmware.photon.controller.api.model.QuotaLineItem;
 
 import java.util.ArrayList;
 import java.util.HashSet;

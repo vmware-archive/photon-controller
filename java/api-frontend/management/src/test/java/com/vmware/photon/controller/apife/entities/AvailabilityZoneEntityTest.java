@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.apife.entities;
 
-import com.vmware.photon.controller.api.AvailabilityZoneState;
+import com.vmware.photon.controller.api.model.AvailabilityZoneState;
 
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;

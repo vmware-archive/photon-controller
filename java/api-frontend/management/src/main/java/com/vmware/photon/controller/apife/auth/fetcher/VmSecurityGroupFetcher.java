@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.apife.auth.fetcher;
 
-import com.vmware.photon.controller.api.Vm;
+import com.vmware.photon.controller.api.model.Vm;
 import com.vmware.photon.controller.apife.auth.TransactionAuthorizationObject;
 import com.vmware.photon.controller.apife.backends.VmBackend;
 import com.vmware.photon.controller.apife.exceptions.external.VmNotFoundException;

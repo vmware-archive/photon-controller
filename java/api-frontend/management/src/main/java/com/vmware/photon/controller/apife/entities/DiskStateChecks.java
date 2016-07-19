@@ -13,9 +13,9 @@
 
 package com.vmware.photon.controller.apife.entities;
 
-import com.vmware.photon.controller.api.DiskState;
-import com.vmware.photon.controller.api.Operation;
 import com.vmware.photon.controller.api.common.exceptions.external.InvalidOperationStateException;
+import com.vmware.photon.controller.api.model.DiskState;
+import com.vmware.photon.controller.api.model.Operation;
 
 import com.google.common.collect.ImmutableSet;
 

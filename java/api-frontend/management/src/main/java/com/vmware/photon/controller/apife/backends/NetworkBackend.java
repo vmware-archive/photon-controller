@@ -13,10 +13,10 @@
 
 package com.vmware.photon.controller.apife.backends;
 
-import com.vmware.photon.controller.api.ResourceList;
-import com.vmware.photon.controller.api.Subnet;
-import com.vmware.photon.controller.api.SubnetCreateSpec;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
+import com.vmware.photon.controller.api.model.ResourceList;
+import com.vmware.photon.controller.api.model.Subnet;
+import com.vmware.photon.controller.api.model.SubnetCreateSpec;
 import com.vmware.photon.controller.apife.entities.NetworkEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.exceptions.external.NetworkNotFoundException;

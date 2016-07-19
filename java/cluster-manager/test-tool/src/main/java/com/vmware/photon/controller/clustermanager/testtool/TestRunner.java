@@ -13,12 +13,12 @@
 
 package com.vmware.photon.controller.clustermanager.testtool;
 
-import com.vmware.photon.controller.api.Cluster;
-import com.vmware.photon.controller.api.ClusterCreateSpec;
-import com.vmware.photon.controller.api.ClusterState;
-import com.vmware.photon.controller.api.ClusterType;
-import com.vmware.photon.controller.api.ResourceList;
-import com.vmware.photon.controller.api.Task;
+import com.vmware.photon.controller.api.model.Cluster;
+import com.vmware.photon.controller.api.model.ClusterCreateSpec;
+import com.vmware.photon.controller.api.model.ClusterState;
+import com.vmware.photon.controller.api.model.ClusterType;
+import com.vmware.photon.controller.api.model.ResourceList;
+import com.vmware.photon.controller.api.model.Task;
 import com.vmware.photon.controller.client.ApiClient;
 import com.vmware.photon.controller.client.RestClient;
 import com.vmware.photon.controller.cloudstore.xenon.entity.TaskService;

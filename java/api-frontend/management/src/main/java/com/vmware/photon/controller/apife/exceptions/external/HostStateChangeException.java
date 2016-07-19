@@ -13,8 +13,8 @@
 
 package com.vmware.photon.controller.apife.exceptions.external;
 
-import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
+import com.vmware.photon.controller.api.model.HostState;
 
 /**
  * Thrown when the host fails to change from one state to another.

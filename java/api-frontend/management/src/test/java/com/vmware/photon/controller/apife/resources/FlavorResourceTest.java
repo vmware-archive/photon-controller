@@ -13,9 +13,9 @@
 
 package com.vmware.photon.controller.apife.resources;
 
-import com.vmware.photon.controller.api.ApiError;
-import com.vmware.photon.controller.api.Flavor;
-import com.vmware.photon.controller.api.Task;
+import com.vmware.photon.controller.api.model.ApiError;
+import com.vmware.photon.controller.api.model.Flavor;
+import com.vmware.photon.controller.api.model.Task;
 import com.vmware.photon.controller.apife.clients.FlavorFeClient;
 import com.vmware.photon.controller.apife.exceptions.external.FlavorNotFoundException;
 import com.vmware.photon.controller.apife.resources.flavor.FlavorResource;

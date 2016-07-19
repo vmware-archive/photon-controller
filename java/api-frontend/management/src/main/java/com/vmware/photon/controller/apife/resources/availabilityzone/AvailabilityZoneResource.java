@@ -13,9 +13,9 @@
 
 package com.vmware.photon.controller.apife.resources.availabilityzone;
 
-import com.vmware.photon.controller.api.AvailabilityZone;
-import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
+import com.vmware.photon.controller.api.model.AvailabilityZone;
+import com.vmware.photon.controller.api.model.Task;
 import com.vmware.photon.controller.apife.clients.AvailabilityZoneFeClient;
 import com.vmware.photon.controller.apife.resources.routes.AvailabilityZonesResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;

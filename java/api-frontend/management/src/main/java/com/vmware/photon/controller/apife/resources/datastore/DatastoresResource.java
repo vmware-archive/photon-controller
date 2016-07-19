@@ -13,9 +13,9 @@
 
 package com.vmware.photon.controller.apife.resources.datastore;
 
-import com.vmware.photon.controller.api.Datastore;
-import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
+import com.vmware.photon.controller.api.model.Datastore;
+import com.vmware.photon.controller.api.model.ResourceList;
 import com.vmware.photon.controller.apife.clients.DatastoreFeClient;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.resources.routes.DatastoreResourceRoutes;

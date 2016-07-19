@@ -13,13 +13,13 @@
 
 package com.vmware.photon.controller.apife.commands.steps;
 
-import com.vmware.photon.controller.api.DiskState;
-import com.vmware.photon.controller.api.EphemeralDisk;
-import com.vmware.photon.controller.api.Operation;
-import com.vmware.photon.controller.api.PersistentDisk;
-import com.vmware.photon.controller.api.Vm;
-import com.vmware.photon.controller.api.VmState;
 import com.vmware.photon.controller.api.common.exceptions.ApiFeException;
+import com.vmware.photon.controller.api.model.DiskState;
+import com.vmware.photon.controller.api.model.EphemeralDisk;
+import com.vmware.photon.controller.api.model.Operation;
+import com.vmware.photon.controller.api.model.PersistentDisk;
+import com.vmware.photon.controller.api.model.Vm;
+import com.vmware.photon.controller.api.model.VmState;
 import com.vmware.photon.controller.apife.backends.DiskBackend;
 import com.vmware.photon.controller.apife.backends.NetworkBackend;
 import com.vmware.photon.controller.apife.backends.StepBackend;
@@ -40,7 +40,6 @@ import com.vmware.photon.controller.host.gen.VmNetworkInfo;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
-
 import org.apache.commons.collections.map.HashedMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

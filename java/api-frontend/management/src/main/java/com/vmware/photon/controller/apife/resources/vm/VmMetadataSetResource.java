@@ -13,9 +13,9 @@
 
 package com.vmware.photon.controller.apife.resources.vm;
 
-import com.vmware.photon.controller.api.Task;
-import com.vmware.photon.controller.api.VmMetadata;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
+import com.vmware.photon.controller.api.model.Task;
+import com.vmware.photon.controller.api.model.VmMetadata;
 import com.vmware.photon.controller.apife.clients.VmFeClient;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.VmResourceRoutes;

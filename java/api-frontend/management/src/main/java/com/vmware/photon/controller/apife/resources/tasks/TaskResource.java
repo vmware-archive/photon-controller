@@ -13,8 +13,8 @@
 
 package com.vmware.photon.controller.apife.resources.tasks;
 
-import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
+import com.vmware.photon.controller.api.model.Task;
 import com.vmware.photon.controller.apife.clients.TaskFeClient;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
 import static com.vmware.photon.controller.api.common.Responses.generateCustomResponse;

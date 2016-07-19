@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.api.common.serialization;
 
-import com.vmware.photon.controller.api.base.Base;
+import com.vmware.photon.controller.api.model.base.Base;
 import static com.vmware.photon.controller.api.common.helpers.JsonHelpers.asJson;
 import static com.vmware.photon.controller.api.common.helpers.JsonHelpers.fromJson;
 import static com.vmware.photon.controller.api.common.helpers.JsonHelpers.jsonFixture;

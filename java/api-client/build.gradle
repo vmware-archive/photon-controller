@@ -1,7 +1,7 @@
 apply plugin: 'java'
 
 dependencies {
-  compile(project(':api'))
+  compile(project(':api:model'))
 
   compile 'org.apache.httpcomponents:httpclient:4.3.3'
   compile 'org.apache.httpcomponents:httpasyncclient:4.0.1'
