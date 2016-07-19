@@ -14,7 +14,6 @@
 package com.vmware.photon.controller.common.xenon.host;
 
 import com.vmware.xenon.common.ServiceHost;
-import com.vmware.xenon.common.UriUtils;
 
 import java.nio.file.Paths;
 
@@ -30,11 +29,6 @@ public abstract class AbstractServiceHost extends ServiceHost {
     arguments.bindAddress = xenonConfig.getBindAddress();
     arguments.sandbox = Paths.get(xenonConfig.getStoragePath());
     arguments.peerNodes = xenonConfig.getPeerNodes();
-
-    if (xenonConfig.getRegistrationAddress() != null) {
-      arguments.publicUri = UriUtils.buildUri(xenonConfig.getRegistrationAddress(), xenonConfig.getPort(), null, null)
-          .toString();
-    }
 
     this.initialize(arguments);
   }

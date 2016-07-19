@@ -48,7 +48,6 @@ public class ConfigTest {
       assertThat(xenonConfig.getBindAddress(), is("0.0.0.0"));
       assertThat(xenonConfig.getPeerNodes(), arrayContaining("http://127.0.0.1:19000"));
       assertThat(xenonConfig.getPort(), is(19000));
-      assertThat(xenonConfig.getRegistrationAddress(), is("127.0.0.1"));
       assertThat(xenonConfig.getStoragePath(), is("/tmp/xenon/photonControllerCore/"));
     }
   }
@@ -72,7 +71,6 @@ public class ConfigTest {
       assertThat(xenonConfig.getBindAddress(), is("0.0.0.0"));
       assertThat(xenonConfig.getPeerNodes(), arrayContaining("http://127.0.0.1:19000"));
       assertThat(xenonConfig.getPort(), is(19000));
-      assertThat(xenonConfig.getRegistrationAddress(), is("127.0.0.1"));
       assertThat(xenonConfig.getStoragePath(), is("/tmp/xenon/19000"));
     }
   }

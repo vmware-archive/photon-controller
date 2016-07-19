@@ -55,7 +55,6 @@ public class DHCPAgentModuleTest {
     public void testConfig() {
       TestHelper.TestInjectedConfig test = injector.getInstance(TestHelper.TestInjectedConfig.class);
       assertThat(test.getBind(), is("0.0.0.0"));
-      assertThat(test.getRegistrationAddress(), is("127.0.0.1"));
       assertThat(test.getPort(), is(17000));
       assertThat(test.getPath(), is("/tmp/xenon/dhcp-agent/"));
     }
