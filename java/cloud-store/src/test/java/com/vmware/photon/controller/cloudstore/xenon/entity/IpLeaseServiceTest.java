@@ -74,8 +74,25 @@ public class IpLeaseServiceTest {
     }
 
     @Test
+    public void testSuccessfulMinimalCreation() throws Throwable {
+      IpLeaseService.State startState = createInitialState();
+
+      Operation result = xenonClient.post(IpLeaseService.FACTORY_LINK, startState);
+      assertThat(result.getStatusCode(), is(HttpStatus.SC_OK));
+
+      IpLeaseService.State createdState = result.getBody(IpLeaseService.State.class);
+      assertThat(ServiceUtils.documentEquals(IpLeaseService.State.class, startState, createdState), is(true));
+
+      IpLeaseService.State savedState = host.getServiceState(IpLeaseService.State.class,
+          createdState.documentSelfLink);
+      assertThat(ServiceUtils.documentEquals(IpLeaseService.State.class, startState, savedState), is(true));
+    }
+
+    @Test
     public void testSuccessfulCreation() throws Throwable {
       IpLeaseService.State startState = createInitialState();
+      startState.macAddress = "macAddress";
+      startState.vmId = "vm-id";
 
       Operation result = xenonClient.post(IpLeaseService.FACTORY_LINK, startState);
       assertThat(result.getStatusCode(), is(HttpStatus.SC_OK));
@@ -151,6 +168,7 @@ public class IpLeaseServiceTest {
   private static IpLeaseService.State createInitialState() {
     IpLeaseService.State startState = new IpLeaseService.State();
     startState.ip = "192.168.0.1";
+    startState.subnetId = "subnet-id";
     return startState;
   }
 }

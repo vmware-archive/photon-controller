@@ -105,6 +105,12 @@ public class IpLeaseService extends StatefulService {
      */
     public String macAddress;
 
+    /**
+     * This is the vm to which the IP is allocated. Null value indicates the IP is available for
+     * allocation, no vm is using the IP.
+     */
+    public String vmId;
+
     @Override
     public String toString() {
       return com.google.common.base.Objects.toStringHelper(this)
