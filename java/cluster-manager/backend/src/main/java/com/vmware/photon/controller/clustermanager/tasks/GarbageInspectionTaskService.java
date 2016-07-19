@@ -12,8 +12,8 @@
  */
 package com.vmware.photon.controller.clustermanager.tasks;
 
-import com.vmware.photon.controller.api.ResourceList;
-import com.vmware.photon.controller.api.Vm;
+import com.vmware.photon.controller.api.model.ResourceList;
+import com.vmware.photon.controller.api.model.Vm;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ClusterService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ClusterServiceFactory;
 import com.vmware.photon.controller.clustermanager.ClusterManagerFactory;

@@ -13,10 +13,10 @@
 
 package com.vmware.photon.controller.apife.commands.steps;
 
-import com.vmware.photon.controller.api.ResourceList;
-import com.vmware.photon.controller.api.Subnet;
-import com.vmware.photon.controller.api.VmState;
 import com.vmware.photon.controller.api.common.exceptions.external.UnsupportedOperationException;
+import com.vmware.photon.controller.api.model.ResourceList;
+import com.vmware.photon.controller.api.model.Subnet;
+import com.vmware.photon.controller.api.model.VmState;
 import com.vmware.photon.controller.apife.backends.EntityLockBackend;
 import com.vmware.photon.controller.apife.backends.NetworkBackend;
 import com.vmware.photon.controller.apife.backends.StepBackend;

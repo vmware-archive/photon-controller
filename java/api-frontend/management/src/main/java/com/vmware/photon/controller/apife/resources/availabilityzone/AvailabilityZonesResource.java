@@ -13,11 +13,11 @@
 
 package com.vmware.photon.controller.apife.resources.availabilityzone;
 
-import com.vmware.photon.controller.api.AvailabilityZone;
-import com.vmware.photon.controller.api.AvailabilityZoneCreateSpec;
-import com.vmware.photon.controller.api.ResourceList;
-import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
+import com.vmware.photon.controller.api.model.AvailabilityZone;
+import com.vmware.photon.controller.api.model.AvailabilityZoneCreateSpec;
+import com.vmware.photon.controller.api.model.ResourceList;
+import com.vmware.photon.controller.api.model.Task;
 import com.vmware.photon.controller.apife.clients.AvailabilityZoneFeClient;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.resources.routes.AvailabilityZonesResourceRoutes;

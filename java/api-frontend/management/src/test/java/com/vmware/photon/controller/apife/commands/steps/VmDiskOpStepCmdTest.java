@@ -13,12 +13,12 @@
 
 package com.vmware.photon.controller.apife.commands.steps;
 
-import com.vmware.photon.controller.api.AttachedDisk;
-import com.vmware.photon.controller.api.DiskState;
-import com.vmware.photon.controller.api.Operation;
-import com.vmware.photon.controller.api.PersistentDisk;
-import com.vmware.photon.controller.api.Vm;
-import com.vmware.photon.controller.api.VmState;
+import com.vmware.photon.controller.api.model.AttachedDisk;
+import com.vmware.photon.controller.api.model.DiskState;
+import com.vmware.photon.controller.api.model.Operation;
+import com.vmware.photon.controller.api.model.PersistentDisk;
+import com.vmware.photon.controller.api.model.Vm;
+import com.vmware.photon.controller.api.model.VmState;
 import com.vmware.photon.controller.apife.backends.AttachedDiskBackend;
 import com.vmware.photon.controller.apife.backends.DiskBackend;
 import com.vmware.photon.controller.apife.backends.EntityLockBackend;

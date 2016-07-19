@@ -13,34 +13,34 @@
 
 package com.vmware.photon.controller.apife.backends;
 
-import com.vmware.photon.controller.api.AttachedDiskCreateSpec;
-import com.vmware.photon.controller.api.DeploymentCreateSpec;
-import com.vmware.photon.controller.api.DiskState;
-import com.vmware.photon.controller.api.DiskType;
-import com.vmware.photon.controller.api.HostCreateSpec;
-import com.vmware.photon.controller.api.HostState;
-import com.vmware.photon.controller.api.Image;
-import com.vmware.photon.controller.api.ImageCreateSpec;
-import com.vmware.photon.controller.api.ImageReplicationType;
-import com.vmware.photon.controller.api.ImageState;
-import com.vmware.photon.controller.api.Iso;
-import com.vmware.photon.controller.api.LocalitySpec;
-import com.vmware.photon.controller.api.PersistentDisk;
-import com.vmware.photon.controller.api.QuotaLineItem;
-import com.vmware.photon.controller.api.QuotaUnit;
-import com.vmware.photon.controller.api.ResourceList;
-import com.vmware.photon.controller.api.Subnet;
-import com.vmware.photon.controller.api.SubnetCreateSpec;
-import com.vmware.photon.controller.api.Tag;
-import com.vmware.photon.controller.api.UsageTag;
-import com.vmware.photon.controller.api.Vm;
-import com.vmware.photon.controller.api.VmCreateSpec;
-import com.vmware.photon.controller.api.VmOperation;
-import com.vmware.photon.controller.api.VmState;
-import com.vmware.photon.controller.api.builders.AttachedDiskCreateSpecBuilder;
 import com.vmware.photon.controller.api.common.entities.base.TagEntity;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.common.exceptions.external.NotImplementedException;
+import com.vmware.photon.controller.api.model.AttachedDiskCreateSpec;
+import com.vmware.photon.controller.api.model.DeploymentCreateSpec;
+import com.vmware.photon.controller.api.model.DiskState;
+import com.vmware.photon.controller.api.model.DiskType;
+import com.vmware.photon.controller.api.model.HostCreateSpec;
+import com.vmware.photon.controller.api.model.HostState;
+import com.vmware.photon.controller.api.model.Image;
+import com.vmware.photon.controller.api.model.ImageCreateSpec;
+import com.vmware.photon.controller.api.model.ImageReplicationType;
+import com.vmware.photon.controller.api.model.ImageState;
+import com.vmware.photon.controller.api.model.Iso;
+import com.vmware.photon.controller.api.model.LocalitySpec;
+import com.vmware.photon.controller.api.model.PersistentDisk;
+import com.vmware.photon.controller.api.model.QuotaLineItem;
+import com.vmware.photon.controller.api.model.QuotaUnit;
+import com.vmware.photon.controller.api.model.ResourceList;
+import com.vmware.photon.controller.api.model.Subnet;
+import com.vmware.photon.controller.api.model.SubnetCreateSpec;
+import com.vmware.photon.controller.api.model.Tag;
+import com.vmware.photon.controller.api.model.UsageTag;
+import com.vmware.photon.controller.api.model.Vm;
+import com.vmware.photon.controller.api.model.VmCreateSpec;
+import com.vmware.photon.controller.api.model.VmOperation;
+import com.vmware.photon.controller.api.model.VmState;
+import com.vmware.photon.controller.api.model.builders.AttachedDiskCreateSpecBuilder;
 import com.vmware.photon.controller.apife.TestModule;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.commands.steps.ResourceReserveStepCmd;
@@ -617,12 +617,12 @@ public class VmXenonBackendTest {
       String vmId = createdVmTaskEntity.getEntityId();
       assertThat(createdVmTaskEntity.getSteps().size(), is(2));
       assertThat(createdVmTaskEntity.getSteps().get(0).getOperation(),
-          is(com.vmware.photon.controller.api.Operation.RESERVE_RESOURCE));
+          is(com.vmware.photon.controller.api.model.Operation.RESERVE_RESOURCE));
       assertThat(createdVmTaskEntity.getSteps().get(0).getTransientResourceEntities(ProjectEntity.KIND).size(), is(1));
       assertThat(createdVmTaskEntity.getSteps().get(0).getTransientResourceEntities(ProjectEntity.KIND).get(0).getId(),
           is(projectId));
       assertThat(createdVmTaskEntity.getSteps().get(1).getOperation(),
-          is(com.vmware.photon.controller.api.Operation.CREATE_VM));
+          is(com.vmware.photon.controller.api.model.Operation.CREATE_VM));
       assertThat(createdVmTaskEntity.getToBeLockedEntities().size(), is(1));
       assertThat(createdVmTaskEntity.getToBeLockedEntities().get(0).getId(), is(vmId));
       assertThat(createdVmTaskEntity.getToBeLockedEntities().get(0).getKind(), is(Vm.KIND));
@@ -719,17 +719,17 @@ public class VmXenonBackendTest {
       String vmId = createdVmTaskEntity.getEntityId();
       assertThat(createdVmTaskEntity.getSteps().size(), is(3));
       assertThat(createdVmTaskEntity.getSteps().get(0).getOperation(),
-          is(com.vmware.photon.controller.api.Operation.RESERVE_RESOURCE));
+          is(com.vmware.photon.controller.api.model.Operation.RESERVE_RESOURCE));
       assertThat(createdVmTaskEntity.getSteps().get(0).getTransientResourceEntities(ProjectEntity.KIND).size(), is(1));
       assertThat(createdVmTaskEntity.getSteps().get(0).getTransientResourceEntities(ProjectEntity.KIND).get(0).getId(),
           is(projectId));
       assertThat(createdVmTaskEntity.getSteps().get(1).getOperation(),
-          is(com.vmware.photon.controller.api.Operation.CREATE_VM));
+          is(com.vmware.photon.controller.api.model.Operation.CREATE_VM));
       assertThat(createdVmTaskEntity.getToBeLockedEntities().size(), is(1));
       assertThat(createdVmTaskEntity.getToBeLockedEntities().get(0).getId(), is(vmId));
       assertThat(createdVmTaskEntity.getToBeLockedEntities().get(0).getKind(), is(Vm.KIND));
       assertThat(createdVmTaskEntity.getSteps().get(2).getOperation(),
-          is(com.vmware.photon.controller.api.Operation.CONNECT_VM_SWITCH));
+          is(com.vmware.photon.controller.api.model.Operation.CONNECT_VM_SWITCH));
 
       VmEntity vm = vmXenonBackend.findById(vmId);
       assertThat(vm, is(notNullValue()));
@@ -840,8 +840,10 @@ public class VmXenonBackendTest {
       assertThat(task, is(notNullValue()));
       assertThat(task.getState(), is(TaskEntity.State.QUEUED));
       assertThat(task.getSteps().size(), is(2));
-      assertThat(task.getSteps().get(0).getOperation(), is(com.vmware.photon.controller.api.Operation.RELEASE_VM_IP));
-      assertThat(task.getSteps().get(1).getOperation(), is(com.vmware.photon.controller.api.Operation.DELETE_VM));
+      assertThat(task.getSteps().get(0).getOperation(),
+          is(com.vmware.photon.controller.api.model.Operation.RELEASE_VM_IP));
+      assertThat(task.getSteps().get(1).getOperation(),
+          is(com.vmware.photon.controller.api.model.Operation.DELETE_VM));
       assertThat(task.getToBeLockedEntities().size(), is(1));
       assertThat(task.getToBeLockedEntities().get(0).getId(), is(vmId));
       assertThat(task.getToBeLockedEntities().get(0).getKind(), is(Vm.KIND));
@@ -929,12 +931,13 @@ public class VmXenonBackendTest {
       assertThat(task.getSteps().size(), is(3));
 
       assertThat(task.getSteps().get(0).getOperation(),
-          is(com.vmware.photon.controller.api.Operation.RELEASE_VM_IP));
+          is(com.vmware.photon.controller.api.model.Operation.RELEASE_VM_IP));
       assertThat(task.getSteps().get(0).getTransientResource(ResourceReserveStepCmd.VM_ID), is(vmId));
-      assertThat(task.getSteps().get(1).getOperation(), is(com.vmware.photon.controller.api.Operation.DELETE_VM));
+      assertThat(task.getSteps().get(1).getOperation(),
+          is(com.vmware.photon.controller.api.model.Operation.DELETE_VM));
 
       assertThat(task.getSteps().get(2).getOperation(),
-          is(com.vmware.photon.controller.api.Operation.DISCONNECT_VM_SWITCH));
+          is(com.vmware.photon.controller.api.model.Operation.DISCONNECT_VM_SWITCH));
       assertThat(task.getSteps().get(2).getTransientResource(ResourceReserveStepCmd.VM_ID), is(vmId));
       assertThat(task.getSteps().get(2).getTransientResource(ResourceReserveStepCmd.VIRTUAL_NETWORK_ID),
           is(vm.getNetworks().get(0)));
@@ -1019,7 +1022,7 @@ public class VmXenonBackendTest {
 
     @Test
     public void testPrepareVmOperation() throws Throwable {
-      com.vmware.photon.controller.api.Operation operation = VmOperation.VALID_OPERATIONS.iterator().next();
+      com.vmware.photon.controller.api.model.Operation operation = VmOperation.VALID_OPERATIONS.iterator().next();
       TaskEntity task = vmXenonBackend.prepareVmOperation(vmId, operation);
 
       assertThat(task, is(notNullValue()));
@@ -1028,7 +1031,7 @@ public class VmXenonBackendTest {
       assertThat(task.getSteps().get(0).getOperation(), is(operation));
 
       try {
-        vmXenonBackend.prepareVmOperation(vmId, com.vmware.photon.controller.api.Operation.MOCK_OP);
+        vmXenonBackend.prepareVmOperation(vmId, com.vmware.photon.controller.api.model.Operation.MOCK_OP);
         fail("vmXenonBackend.prepareVmOperation with invalid operation should have failed");
       } catch (NotImplementedException e) {
         // do nothing
@@ -1037,7 +1040,8 @@ public class VmXenonBackendTest {
 
     @Test
     public void testPrepareVmDiskOperation() throws Throwable {
-      com.vmware.photon.controller.api.Operation operation = com.vmware.photon.controller.api.Operation.DETACH_DISK;
+      com.vmware.photon.controller.api.model.Operation operation =
+          com.vmware.photon.controller.api.model.Operation.DETACH_DISK;
 
       DiskService.State diskState = new DiskService.State();
       diskState.name = "test-vm-disk-1";
@@ -1063,7 +1067,7 @@ public class VmXenonBackendTest {
 
       try {
         vmXenonBackend.prepareVmDiskOperation(
-            vmId, disks, com.vmware.photon.controller.api.Operation.MOCK_OP);
+            vmId, disks, com.vmware.photon.controller.api.model.Operation.MOCK_OP);
         fail("vmXenonBackend.prepareVmDiskOperation with invalid operation should have failed");
       } catch (NotImplementedException e) {
         // do nothing
@@ -1072,8 +1076,6 @@ public class VmXenonBackendTest {
 
     @Test
     public void testPrepareVmDiskOperationInvalidDisk() throws Throwable {
-      com.vmware.photon.controller.api.Operation operation = com.vmware.photon.controller.api.Operation.DETACH_DISK;
-
       DiskService.State diskState = new DiskService.State();
       diskState.name = "test-vm-disk-1";
       diskState.projectId = "invalid-project";
@@ -1091,7 +1093,7 @@ public class VmXenonBackendTest {
 
       try {
         vmXenonBackend.prepareVmDiskOperation(
-            vmId, disks, com.vmware.photon.controller.api.Operation.ATTACH_DISK);
+            vmId, disks, com.vmware.photon.controller.api.model.Operation.ATTACH_DISK);
         fail("vmXenonBackend.prepareVmDiskOperation with invalid disk should have failed InvalidAttachDisksException");
       } catch (InvalidAttachDisksException e) {
         assertThat(e.getMessage(), is("Disk " + diskId + " and Vm " + vmId +
@@ -1125,7 +1127,8 @@ public class VmXenonBackendTest {
       assertThat(task, is(notNullValue()));
       assertThat(task.getState(), is(TaskEntity.State.QUEUED));
       assertThat(task.getSteps().size(), is(2));
-      assertThat(task.getSteps().get(0).getOperation(), is(com.vmware.photon.controller.api.Operation.UPLOAD_ISO));
+      assertThat(task.getSteps().get(0).getOperation(),
+          is(com.vmware.photon.controller.api.model.Operation.UPLOAD_ISO));
       IsoEntity iso = (IsoEntity) task.getSteps().get(0).getTransientResourceEntities().get(1);
       assertThat(iso.getName(), is(isoName));
 
@@ -1143,7 +1146,8 @@ public class VmXenonBackendTest {
       assertThat(task, is(notNullValue()));
       assertThat(task.getState(), is(TaskEntity.State.QUEUED));
       assertThat(task.getSteps().size(), is(1));
-      assertThat(task.getSteps().get(0).getOperation(), is(com.vmware.photon.controller.api.Operation.DETACH_ISO));
+      assertThat(task.getSteps().get(0).getOperation(),
+          is(com.vmware.photon.controller.api.model.Operation.DETACH_ISO));
       assertThat(task.getSteps().get(0).getTransientResourceEntities().get(0), is(vm));
     }
 
@@ -1154,7 +1158,8 @@ public class VmXenonBackendTest {
       assertThat(task, is(notNullValue()));
       assertThat(task.getState(), is(TaskEntity.State.QUEUED));
       assertThat(task.getSteps().size(), is(1));
-      assertThat(task.getSteps().get(0).getOperation(), is(com.vmware.photon.controller.api.Operation.GET_NETWORKS));
+      assertThat(task.getSteps().get(0).getOperation(),
+          is(com.vmware.photon.controller.api.model.Operation.GET_NETWORKS));
     }
 
     @Test
@@ -1165,7 +1170,8 @@ public class VmXenonBackendTest {
       assertThat(task, is(notNullValue()));
       assertThat(task.getState(), is(TaskEntity.State.QUEUED));
       assertThat(task.getSteps().size(), is(1));
-      assertThat(task.getSteps().get(0).getOperation(), is(com.vmware.photon.controller.api.Operation.GET_MKS_TICKET));
+      assertThat(task.getSteps().get(0).getOperation(),
+          is(com.vmware.photon.controller.api.model.Operation.GET_MKS_TICKET));
     }
 
     @Test
@@ -1210,7 +1216,7 @@ public class VmXenonBackendTest {
       assertThat(task.getState(), is(TaskEntity.State.QUEUED));
       assertThat(task.getSteps().size(), is(2));
       StepEntity step = task.getSteps().get(0);
-      assertThat(step.getOperation(), is(com.vmware.photon.controller.api.Operation.CREATE_VM_IMAGE));
+      assertThat(step.getOperation(), is(com.vmware.photon.controller.api.model.Operation.CREATE_VM_IMAGE));
       assertThat(step.getTransientResourceEntities().size(), is(3));
       assertThat(step.getTransientResourceEntities(Vm.KIND).size(), is(1));
       assertThat(step.getTransientResourceEntities(Image.KIND).size(), is(2));
@@ -1228,7 +1234,7 @@ public class VmXenonBackendTest {
       assertThat(vmImage.getId(), is(vm.getImageId()));
 
       step = task.getSteps().get(1);
-      assertThat(step.getOperation(), is(com.vmware.photon.controller.api.Operation.REPLICATE_IMAGE));
+      assertThat(step.getOperation(), is(com.vmware.photon.controller.api.model.Operation.REPLICATE_IMAGE));
     }
 
     @DataProvider(name = "vmCreateImageReplicationType")

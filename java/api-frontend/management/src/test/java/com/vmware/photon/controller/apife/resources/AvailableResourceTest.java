@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.apife.resources;
 
-import com.vmware.photon.controller.api.Available;
+import com.vmware.photon.controller.api.model.Available;
 import com.vmware.photon.controller.apife.resources.routes.AvailableRoutes;
 import com.vmware.photon.controller.apife.resources.status.AvailableResource;
 

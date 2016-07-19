@@ -13,8 +13,8 @@
 
 package com.vmware.photon.controller.apife.entities;
 
-import com.vmware.photon.controller.api.DeploymentState;
-import com.vmware.photon.controller.api.StatsStoreType;
+import com.vmware.photon.controller.api.model.DeploymentState;
+import com.vmware.photon.controller.api.model.StatsStoreType;
 
 import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;

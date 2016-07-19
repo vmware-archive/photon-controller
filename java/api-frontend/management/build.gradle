@@ -1,15 +1,16 @@
 apply plugin: 'application'
 apply plugin: 'thrift'
 
-import com.bmuschko.gradle.docker.tasks.image.Dockerfile
+
 import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage
 import com.bmuschko.gradle.docker.tasks.image.DockerRemoveImage
+import com.bmuschko.gradle.docker.tasks.image.Dockerfile
 import com.bmuschko.gradle.vagrant.tasks.VagrantSsh
 
 mainClassName = 'com.vmware.photon.controller.apife.ApiFeService'
 
 dependencies {
-  compile(project(':api'))
+  compile(project(':api:model'))
   compile(project(':common'))
   compile(project(':common-auth'))
   compile(project(':common-xenon'))
@@ -48,7 +49,7 @@ dependencies {
       '../../../thrift/tracing.thrift',
       '../../../thrift/status.thrift')
 
-  testCompile(project(path: ':api', configuration: 'tests'))
+  testCompile(project(path: ':api:model', configuration: 'tests'))
 
   testCompile("org.apache.curator:curator-test:${versions.curator}") {
     exclude group: 'org.slf4j', module: 'slf4j-log4j12'

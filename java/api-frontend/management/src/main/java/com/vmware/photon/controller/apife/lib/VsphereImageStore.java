@@ -13,11 +13,11 @@
 
 package com.vmware.photon.controller.apife.lib;
 
-import com.vmware.photon.controller.api.Host;
-import com.vmware.photon.controller.api.HostDatastore;
-import com.vmware.photon.controller.api.HostState;
-import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
+import com.vmware.photon.controller.api.model.Host;
+import com.vmware.photon.controller.api.model.HostDatastore;
+import com.vmware.photon.controller.api.model.HostState;
+import com.vmware.photon.controller.api.model.ResourceList;
 import com.vmware.photon.controller.apife.backends.HostBackend;
 import com.vmware.photon.controller.apife.config.ImageConfig;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidVmStateException;
@@ -38,7 +38,6 @@ import com.google.common.base.Optional;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;

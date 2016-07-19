@@ -13,9 +13,9 @@
 
 package com.vmware.photon.controller.api.common.serialization;
 
-import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.common.Responses;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
+import com.vmware.photon.controller.api.model.ResourceList;
 import com.vmware.photon.controller.common.logging.LoggingUtils;
 import static com.vmware.photon.controller.api.common.Responses.generateCustomResponse;
 import static com.vmware.photon.controller.api.common.Responses.generateResourceListResponse;

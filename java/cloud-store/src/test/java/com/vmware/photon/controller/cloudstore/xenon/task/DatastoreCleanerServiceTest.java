@@ -13,9 +13,9 @@
 
 package com.vmware.photon.controller.cloudstore.xenon.task;
 
-import com.vmware.photon.controller.api.AgentState;
-import com.vmware.photon.controller.api.HostState;
-import com.vmware.photon.controller.api.UsageTag;
+import com.vmware.photon.controller.api.model.AgentState;
+import com.vmware.photon.controller.api.model.HostState;
+import com.vmware.photon.controller.api.model.UsageTag;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DatastoreService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DatastoreServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.HostService;

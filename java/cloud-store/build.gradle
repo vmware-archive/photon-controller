@@ -11,7 +11,7 @@ mainClassName = 'com.vmware.photon.controller.cloudstore.Main'
 dependencies {
   compile project(':common')
   compile project(':common-xenon')
-  compile project(':api')
+  compile project(':api:model')
 
   compile "org.apache.commons:commons-lang3:${versions.commons_lang3}"
   compile 'net.sourceforge.argparse4j:argparse4j:0.4.0'

@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.apife.entities;
 
-import com.vmware.photon.controller.api.FlavorState;
+import com.vmware.photon.controller.api.model.FlavorState;
 
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;

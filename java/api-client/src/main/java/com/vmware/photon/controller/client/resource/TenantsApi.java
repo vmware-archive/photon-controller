@@ -13,13 +13,13 @@
 
 package com.vmware.photon.controller.client.resource;
 
-import com.vmware.photon.controller.api.Project;
-import com.vmware.photon.controller.api.ProjectCreateSpec;
-import com.vmware.photon.controller.api.ResourceList;
-import com.vmware.photon.controller.api.ResourceTicket;
-import com.vmware.photon.controller.api.ResourceTicketCreateSpec;
-import com.vmware.photon.controller.api.Task;
-import com.vmware.photon.controller.api.Tenant;
+import com.vmware.photon.controller.api.model.Project;
+import com.vmware.photon.controller.api.model.ProjectCreateSpec;
+import com.vmware.photon.controller.api.model.ResourceList;
+import com.vmware.photon.controller.api.model.ResourceTicket;
+import com.vmware.photon.controller.api.model.ResourceTicketCreateSpec;
+import com.vmware.photon.controller.api.model.Task;
+import com.vmware.photon.controller.api.model.Tenant;
 import com.vmware.photon.controller.client.RestClient;
 
 import com.fasterxml.jackson.core.type.TypeReference;

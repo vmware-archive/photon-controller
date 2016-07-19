@@ -1,7 +1,6 @@
 apply plugin: 'java'
 
 dependencies {
-  compile project(':api')
   compile project(':common')
   compile project(':common-xenon')
 

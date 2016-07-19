@@ -13,10 +13,10 @@
 
 package com.vmware.photon.controller.apife.entities;
 
-import com.vmware.photon.controller.api.Host;
-import com.vmware.photon.controller.api.HostState;
 import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
-import com.vmware.photon.controller.api.constraints.DomainOrIP;
+import com.vmware.photon.controller.api.model.Host;
+import com.vmware.photon.controller.api.model.HostState;
+import com.vmware.photon.controller.api.model.constraints.DomainOrIP;
 
 import java.util.HashMap;
 import java.util.List;

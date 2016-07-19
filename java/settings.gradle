@@ -1,6 +1,6 @@
 include 'devbox'
 include 'devbox:agent'
-include 'api'
+include 'api:model'
 include 'api-client'
 include 'api-frontend:api-frontend-common'
 include 'api-frontend:management'

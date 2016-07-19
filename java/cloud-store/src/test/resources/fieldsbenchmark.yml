@@ -7,7 +7,7 @@ HostService:
   password: java.lang.String
   metadata: java.util.Map
   datastoreServiceLinks: java.util.Map
-  state: com.vmware.esxcloud.api.HostState
+  state: com.vmware.esxcloud.api.model.HostState
   hostAddress: java.lang.String
   userName: java.lang.String
   networks: java.util.Set
@@ -17,7 +17,7 @@ FlavorService:
   deleteRequestTime: java.lang.Long
   kind: java.lang.String
   name: java.lang.String
-  state: com.vmware.esxcloud.api.FlavorState
+  state: com.vmware.esxcloud.api.model.FlavorState
   tags: java.util.Set
 TaskService:
   entityKind: java.lang.String
@@ -49,7 +49,7 @@ VmService:
   name: java.lang.String
   host: java.lang.String
   projectId: java.lang.String
-  vmState: com.vmware.esxcloud.api.VmState
+  vmState: com.vmware.esxcloud.api.model.VmState
   isos: java.util.List
 ProjectService:
   tagIds: java.util.Set
@@ -66,9 +66,9 @@ ResourceTicketService:
   tags: java.util.Set
 ImageService:
   size: java.lang.Long
-  replicationType: com.vmware.esxcloud.api.ImageReplicationType
+  replicationType: com.vmware.esxcloud.api.model.ImageReplicationType
   name: java.lang.String
-  state: com.vmware.esxcloud.api.ImageState
+  state: com.vmware.esxcloud.api.model.ImageState
   imageSettings: java.util.List
 DiskService:
   agent: java.lang.String
@@ -79,8 +79,8 @@ DiskService:
   affinities: java.util.List
   name: java.lang.String
   flavorId: java.lang.String
-  diskType: com.vmware.esxcloud.api.DiskType
-  state: com.vmware.esxcloud.api.DiskState
+  diskType: com.vmware.esxcloud.api.model.DiskType
+  state: com.vmware.esxcloud.api.model.DiskState
   projectId: java.lang.String
 AttachedDiskService:
   persistentDiskId: java.lang.String
@@ -100,5 +100,5 @@ NetworkService:
   deleteRequestTime: java.lang.Long
   name: java.lang.String
   description: java.lang.String
-  state: com.vmware.esxcloud.api.SubnetState
+  state: com.vmware.esxcloud.api.model.SubnetState
   portGroups: java.util.List

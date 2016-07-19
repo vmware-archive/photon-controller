@@ -13,13 +13,13 @@
 
 package com.vmware.photon.controller.apife.backends;
 
-import com.vmware.photon.controller.api.DeploymentCreateSpec;
-import com.vmware.photon.controller.api.Operation;
-import com.vmware.photon.controller.api.ResourceList;
-import com.vmware.photon.controller.api.SecurityGroup;
-import com.vmware.photon.controller.api.Tenant;
-import com.vmware.photon.controller.api.TenantCreateSpec;
-import com.vmware.photon.controller.api.builders.AuthConfigurationSpecBuilder;
+import com.vmware.photon.controller.api.model.DeploymentCreateSpec;
+import com.vmware.photon.controller.api.model.Operation;
+import com.vmware.photon.controller.api.model.ResourceList;
+import com.vmware.photon.controller.api.model.SecurityGroup;
+import com.vmware.photon.controller.api.model.Tenant;
+import com.vmware.photon.controller.api.model.TenantCreateSpec;
+import com.vmware.photon.controller.api.model.builders.AuthConfigurationSpecBuilder;
 import com.vmware.photon.controller.apife.TestModule;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.entities.DeploymentEntity;

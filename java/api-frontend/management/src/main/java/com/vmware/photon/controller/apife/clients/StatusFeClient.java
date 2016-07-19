@@ -13,12 +13,12 @@
 
 package com.vmware.photon.controller.apife.clients;
 
-import com.vmware.photon.controller.api.Component;
-import com.vmware.photon.controller.api.ComponentInstance;
-import com.vmware.photon.controller.api.ComponentStatus;
-import com.vmware.photon.controller.api.SystemStatus;
-import com.vmware.photon.controller.api.builders.ComponentInstanceBuilder;
-import com.vmware.photon.controller.api.builders.ComponentStatusBuilder;
+import com.vmware.photon.controller.api.model.Component;
+import com.vmware.photon.controller.api.model.ComponentInstance;
+import com.vmware.photon.controller.api.model.ComponentStatus;
+import com.vmware.photon.controller.api.model.SystemStatus;
+import com.vmware.photon.controller.api.model.builders.ComponentInstanceBuilder;
+import com.vmware.photon.controller.api.model.builders.ComponentStatusBuilder;
 import com.vmware.photon.controller.apife.BackendTaskExecutor;
 import com.vmware.photon.controller.apife.ScheduledTaskExecutor;
 import com.vmware.photon.controller.apife.clients.status.StatusFeClientUtils;

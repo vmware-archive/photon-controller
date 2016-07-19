@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.apife.auth.fetcher;
 
-import com.vmware.photon.controller.api.Cluster;
+import com.vmware.photon.controller.api.model.Cluster;
 import com.vmware.photon.controller.apife.auth.TransactionAuthorizationObject;
 import com.vmware.photon.controller.apife.backends.ClusterBackend;
 import com.vmware.photon.controller.apife.exceptions.external.ClusterNotFoundException;

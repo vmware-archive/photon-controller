@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.apife.resources;
 
-import com.vmware.photon.controller.api.Auth;
+import com.vmware.photon.controller.api.model.Auth;
 import com.vmware.photon.controller.apife.clients.DeploymentFeClient;
 import com.vmware.photon.controller.apife.resources.auth.AuthResource;
 import com.vmware.photon.controller.apife.resources.routes.AuthRoutes;
