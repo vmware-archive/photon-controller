@@ -206,6 +206,10 @@ public class DhcpSubnetService extends StatefulService {
     @Immutable
     public long highIpStatic;
 
+    /**
+     * This is the flag to indicate if the garbage collection service should perform on this document.
+     */
+    public boolean doGarbageCollect;
 
     @Override
     public String toString() {
