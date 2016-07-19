@@ -13,18 +13,18 @@
 
 package com.vmware.photon.controller.apife.resources.deployment;
 
-import com.vmware.photon.controller.api.Deployment;
-import com.vmware.photon.controller.api.DeploymentCreateSpec;
-import com.vmware.photon.controller.api.ResourceList;
-import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
-import com.vmware.photon.controller.api.constraints.AuthDisabled;
-import com.vmware.photon.controller.api.constraints.AuthEnabled;
-import com.vmware.photon.controller.api.constraints.ConditionalValidator;
-import com.vmware.photon.controller.api.constraints.StatsDisabled;
-import com.vmware.photon.controller.api.constraints.StatsEnabled;
-import com.vmware.photon.controller.api.constraints.VirtualNetworkDisabled;
-import com.vmware.photon.controller.api.constraints.VirtualNetworkEnabled;
+import com.vmware.photon.controller.api.model.Deployment;
+import com.vmware.photon.controller.api.model.DeploymentCreateSpec;
+import com.vmware.photon.controller.api.model.ResourceList;
+import com.vmware.photon.controller.api.model.Task;
+import com.vmware.photon.controller.api.model.constraints.AuthDisabled;
+import com.vmware.photon.controller.api.model.constraints.AuthEnabled;
+import com.vmware.photon.controller.api.model.constraints.ConditionalValidator;
+import com.vmware.photon.controller.api.model.constraints.StatsDisabled;
+import com.vmware.photon.controller.api.model.constraints.StatsEnabled;
+import com.vmware.photon.controller.api.model.constraints.VirtualNetworkDisabled;
+import com.vmware.photon.controller.api.model.constraints.VirtualNetworkEnabled;
 import com.vmware.photon.controller.apife.clients.DeploymentFeClient;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidAuthConfigException;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidNetworkConfigException;

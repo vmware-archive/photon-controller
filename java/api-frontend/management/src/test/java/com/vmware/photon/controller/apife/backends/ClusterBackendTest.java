@@ -13,21 +13,21 @@
 
 package com.vmware.photon.controller.apife.backends;
 
-import com.vmware.photon.controller.api.AttachedDiskCreateSpec;
-import com.vmware.photon.controller.api.Cluster;
-import com.vmware.photon.controller.api.ClusterCreateSpec;
-import com.vmware.photon.controller.api.ClusterResizeOperation;
-import com.vmware.photon.controller.api.ClusterState;
-import com.vmware.photon.controller.api.ClusterType;
-import com.vmware.photon.controller.api.ImageReplicationType;
-import com.vmware.photon.controller.api.ImageState;
-import com.vmware.photon.controller.api.Operation;
-import com.vmware.photon.controller.api.QuotaLineItem;
-import com.vmware.photon.controller.api.QuotaUnit;
-import com.vmware.photon.controller.api.ResourceList;
-import com.vmware.photon.controller.api.Vm;
-import com.vmware.photon.controller.api.VmCreateSpec;
-import com.vmware.photon.controller.api.builders.AttachedDiskCreateSpecBuilder;
+import com.vmware.photon.controller.api.model.AttachedDiskCreateSpec;
+import com.vmware.photon.controller.api.model.Cluster;
+import com.vmware.photon.controller.api.model.ClusterCreateSpec;
+import com.vmware.photon.controller.api.model.ClusterResizeOperation;
+import com.vmware.photon.controller.api.model.ClusterState;
+import com.vmware.photon.controller.api.model.ClusterType;
+import com.vmware.photon.controller.api.model.ImageReplicationType;
+import com.vmware.photon.controller.api.model.ImageState;
+import com.vmware.photon.controller.api.model.Operation;
+import com.vmware.photon.controller.api.model.QuotaLineItem;
+import com.vmware.photon.controller.api.model.QuotaUnit;
+import com.vmware.photon.controller.api.model.ResourceList;
+import com.vmware.photon.controller.api.model.Vm;
+import com.vmware.photon.controller.api.model.VmCreateSpec;
+import com.vmware.photon.controller.api.model.builders.AttachedDiskCreateSpecBuilder;
 import com.vmware.photon.controller.apife.TestModule;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.backends.clients.ClusterManagerClient;

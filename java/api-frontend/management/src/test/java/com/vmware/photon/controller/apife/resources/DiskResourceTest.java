@@ -13,8 +13,8 @@
 
 package com.vmware.photon.controller.apife.resources;
 
-import com.vmware.photon.controller.api.PersistentDisk;
-import com.vmware.photon.controller.api.Task;
+import com.vmware.photon.controller.api.model.PersistentDisk;
+import com.vmware.photon.controller.api.model.Task;
 import com.vmware.photon.controller.apife.backends.DiskBackend;
 import com.vmware.photon.controller.apife.clients.DiskFeClient;
 import com.vmware.photon.controller.apife.entities.PersistentDiskEntity;

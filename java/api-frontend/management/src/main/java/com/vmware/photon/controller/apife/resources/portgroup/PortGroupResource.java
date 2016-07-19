@@ -13,8 +13,8 @@
 
 package com.vmware.photon.controller.apife.resources.portgroup;
 
-import com.vmware.photon.controller.api.PortGroup;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
+import com.vmware.photon.controller.api.model.PortGroup;
 import com.vmware.photon.controller.apife.clients.PortGroupFeClient;
 import com.vmware.photon.controller.apife.resources.routes.PortGroupResourceRoutes;
 import static com.vmware.photon.controller.api.common.Responses.generateCustomResponse;

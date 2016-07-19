@@ -13,9 +13,9 @@
 
 package com.vmware.photon.controller.apife.entities;
 
-import com.vmware.photon.controller.api.PortGroupCreateSpec;
 import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
-import com.vmware.photon.controller.api.constraints.IPv4;
+import com.vmware.photon.controller.api.model.PortGroupCreateSpec;
+import com.vmware.photon.controller.api.model.constraints.IPv4;
 import com.vmware.photon.controller.apife.lib.UsageTagHelper;
 
 import com.google.common.base.Objects.ToStringHelper;

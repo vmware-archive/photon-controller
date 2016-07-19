@@ -13,15 +13,15 @@
 
 package com.vmware.photon.controller.apife.commands.steps;
 
-import com.vmware.photon.controller.api.NetworkConnection;
-import com.vmware.photon.controller.api.Operation;
-import com.vmware.photon.controller.api.ResourceList;
-import com.vmware.photon.controller.api.Subnet;
-import com.vmware.photon.controller.api.Vm;
-import com.vmware.photon.controller.api.VmNetworks;
-import com.vmware.photon.controller.api.VmState;
 import com.vmware.photon.controller.api.common.exceptions.ApiFeException;
 import com.vmware.photon.controller.api.common.exceptions.external.UnsupportedOperationException;
+import com.vmware.photon.controller.api.model.NetworkConnection;
+import com.vmware.photon.controller.api.model.Operation;
+import com.vmware.photon.controller.api.model.ResourceList;
+import com.vmware.photon.controller.api.model.Subnet;
+import com.vmware.photon.controller.api.model.Vm;
+import com.vmware.photon.controller.api.model.VmNetworks;
+import com.vmware.photon.controller.api.model.VmState;
 import com.vmware.photon.controller.apife.backends.NetworkBackend;
 import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.backends.TaskBackend;

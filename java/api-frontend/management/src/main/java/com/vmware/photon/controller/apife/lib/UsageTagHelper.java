@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.apife.lib;
 
-import com.vmware.photon.controller.api.UsageTag;
+import com.vmware.photon.controller.api.model.UsageTag;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;

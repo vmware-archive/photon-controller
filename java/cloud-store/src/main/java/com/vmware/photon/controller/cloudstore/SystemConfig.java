@@ -12,7 +12,7 @@
  */
 package com.vmware.photon.controller.cloudstore;
 
-import com.vmware.photon.controller.api.DeploymentState;
+import com.vmware.photon.controller.api.model.DeploymentState;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
 import com.vmware.photon.controller.common.provider.SystemConfigProvider;
 import com.vmware.photon.controller.common.xenon.OperationLatch;

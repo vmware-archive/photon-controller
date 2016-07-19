@@ -13,15 +13,15 @@
 
 package com.vmware.photon.controller.apife.resources;
 
-import com.vmware.photon.controller.api.ApiError;
-import com.vmware.photon.controller.api.Deployment;
-import com.vmware.photon.controller.api.DeploymentCreateSpec;
-import com.vmware.photon.controller.api.ResourceList;
-import com.vmware.photon.controller.api.Task;
-import com.vmware.photon.controller.api.builders.AuthConfigurationSpecBuilder;
-import com.vmware.photon.controller.api.builders.AuthInfoBuilder;
-import com.vmware.photon.controller.api.builders.NetworkConfigurationCreateSpecBuilder;
-import com.vmware.photon.controller.api.builders.StatsInfoBuilder;
+import com.vmware.photon.controller.api.model.ApiError;
+import com.vmware.photon.controller.api.model.Deployment;
+import com.vmware.photon.controller.api.model.DeploymentCreateSpec;
+import com.vmware.photon.controller.api.model.ResourceList;
+import com.vmware.photon.controller.api.model.Task;
+import com.vmware.photon.controller.api.model.builders.AuthConfigurationSpecBuilder;
+import com.vmware.photon.controller.api.model.builders.AuthInfoBuilder;
+import com.vmware.photon.controller.api.model.builders.NetworkConfigurationCreateSpecBuilder;
+import com.vmware.photon.controller.api.model.builders.StatsInfoBuilder;
 import com.vmware.photon.controller.apife.clients.DeploymentFeClient;
 import com.vmware.photon.controller.apife.resources.deployment.DeploymentsResource;
 import com.vmware.photon.controller.apife.resources.routes.DeploymentResourceRoutes;

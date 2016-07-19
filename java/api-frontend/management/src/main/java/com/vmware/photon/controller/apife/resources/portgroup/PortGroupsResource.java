@@ -13,10 +13,10 @@
 
 package com.vmware.photon.controller.apife.resources.portgroup;
 
-import com.vmware.photon.controller.api.PortGroup;
-import com.vmware.photon.controller.api.ResourceList;
-import com.vmware.photon.controller.api.UsageTag;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
+import com.vmware.photon.controller.api.model.PortGroup;
+import com.vmware.photon.controller.api.model.ResourceList;
+import com.vmware.photon.controller.api.model.UsageTag;
 import com.vmware.photon.controller.apife.clients.PortGroupFeClient;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.resources.routes.PortGroupResourceRoutes;

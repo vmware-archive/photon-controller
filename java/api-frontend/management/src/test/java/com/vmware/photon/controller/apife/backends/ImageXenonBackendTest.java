@@ -13,13 +13,13 @@
 
 package com.vmware.photon.controller.apife.backends;
 
-import com.vmware.photon.controller.api.Image;
-import com.vmware.photon.controller.api.ImageCreateSpec;
-import com.vmware.photon.controller.api.ImageReplicationType;
-import com.vmware.photon.controller.api.ImageState;
-import com.vmware.photon.controller.api.Operation;
-import com.vmware.photon.controller.api.ResourceList;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
+import com.vmware.photon.controller.api.model.Image;
+import com.vmware.photon.controller.api.model.ImageCreateSpec;
+import com.vmware.photon.controller.api.model.ImageReplicationType;
+import com.vmware.photon.controller.api.model.ImageState;
+import com.vmware.photon.controller.api.model.Operation;
+import com.vmware.photon.controller.api.model.ResourceList;
 import com.vmware.photon.controller.apife.TestModule;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.commands.steps.ImageUploadStepCmd;

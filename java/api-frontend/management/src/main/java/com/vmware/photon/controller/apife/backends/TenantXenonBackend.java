@@ -13,17 +13,17 @@
 
 package com.vmware.photon.controller.apife.backends;
 
-import com.vmware.photon.controller.api.Deployment;
-import com.vmware.photon.controller.api.Operation;
-import com.vmware.photon.controller.api.ResourceList;
-import com.vmware.photon.controller.api.ResourceTicket;
-import com.vmware.photon.controller.api.SecurityGroup;
-import com.vmware.photon.controller.api.Tenant;
-import com.vmware.photon.controller.api.TenantCreateSpec;
-import com.vmware.photon.controller.api.base.BaseCompact;
 import com.vmware.photon.controller.api.common.entities.base.TagEntity;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
+import com.vmware.photon.controller.api.model.Deployment;
+import com.vmware.photon.controller.api.model.Operation;
+import com.vmware.photon.controller.api.model.ResourceList;
+import com.vmware.photon.controller.api.model.ResourceTicket;
+import com.vmware.photon.controller.api.model.SecurityGroup;
+import com.vmware.photon.controller.api.model.Tenant;
+import com.vmware.photon.controller.api.model.TenantCreateSpec;
+import com.vmware.photon.controller.api.model.base.BaseCompact;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.entities.ResourceTicketEntity;

@@ -13,8 +13,8 @@
 
 package com.vmware.photon.controller.api.common.exceptions.external;
 
-import com.vmware.photon.controller.api.Operation;
 import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
+import com.vmware.photon.controller.api.model.Operation;
 
 /**
  * Gets thrown when attempted disk state transition is invalid.

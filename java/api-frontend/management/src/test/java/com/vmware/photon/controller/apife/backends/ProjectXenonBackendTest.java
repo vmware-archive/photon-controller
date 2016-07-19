@@ -13,16 +13,16 @@
 
 package com.vmware.photon.controller.apife.backends;
 
-import com.vmware.photon.controller.api.Project;
-import com.vmware.photon.controller.api.ProjectCreateSpec;
-import com.vmware.photon.controller.api.ProjectTicket;
-import com.vmware.photon.controller.api.QuotaLineItem;
-import com.vmware.photon.controller.api.QuotaUnit;
-import com.vmware.photon.controller.api.ResourceList;
-import com.vmware.photon.controller.api.ResourceTicketCreateSpec;
-import com.vmware.photon.controller.api.ResourceTicketReservation;
-import com.vmware.photon.controller.api.SecurityGroup;
-import com.vmware.photon.controller.api.TenantCreateSpec;
+import com.vmware.photon.controller.api.model.Project;
+import com.vmware.photon.controller.api.model.ProjectCreateSpec;
+import com.vmware.photon.controller.api.model.ProjectTicket;
+import com.vmware.photon.controller.api.model.QuotaLineItem;
+import com.vmware.photon.controller.api.model.QuotaUnit;
+import com.vmware.photon.controller.api.model.ResourceList;
+import com.vmware.photon.controller.api.model.ResourceTicketCreateSpec;
+import com.vmware.photon.controller.api.model.ResourceTicketReservation;
+import com.vmware.photon.controller.api.model.SecurityGroup;
+import com.vmware.photon.controller.api.model.TenantCreateSpec;
 import com.vmware.photon.controller.apife.TestModule;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.config.PaginationConfig;

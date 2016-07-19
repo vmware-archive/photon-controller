@@ -13,15 +13,15 @@
 
 package com.vmware.photon.controller.apife.backends;
 
-import com.vmware.photon.controller.api.Cluster;
-import com.vmware.photon.controller.api.ClusterCreateSpec;
-import com.vmware.photon.controller.api.ClusterResizeOperation;
-import com.vmware.photon.controller.api.Operation;
-import com.vmware.photon.controller.api.ResourceList;
-import com.vmware.photon.controller.api.Tag;
-import com.vmware.photon.controller.api.Vm;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.common.exceptions.external.TaskNotFoundException;
+import com.vmware.photon.controller.api.model.Cluster;
+import com.vmware.photon.controller.api.model.ClusterCreateSpec;
+import com.vmware.photon.controller.api.model.ClusterResizeOperation;
+import com.vmware.photon.controller.api.model.Operation;
+import com.vmware.photon.controller.api.model.ResourceList;
+import com.vmware.photon.controller.api.model.Tag;
+import com.vmware.photon.controller.api.model.Vm;
 import com.vmware.photon.controller.apife.backends.clients.ClusterManagerClient;
 import com.vmware.photon.controller.apife.commands.steps.ClusterDeleteStepCmd;
 import com.vmware.photon.controller.apife.commands.steps.ClusterResizeStepCmd;
@@ -69,7 +69,7 @@ public class ClusterBackend {
 
   // Kick off the creation of a cluster.
   public TaskEntity create(String projectId, ClusterCreateSpec spec)
-      throws SpecInvalidException, TaskNotFoundException {
+      throws SpecInvalidException, TaskNotFoundException{
     switch (spec.getType()) {
       case KUBERNETES:
         return createKubernetesCluster(projectId, spec);
@@ -199,9 +199,9 @@ public class ClusterBackend {
       throws SpecInvalidException, TaskNotFoundException {
     // Create the steps
     TaskEntity taskEntity = taskBackend.createQueuedTask(
-        null, com.vmware.photon.controller.api.Operation.CREATE_CLUSTER);
+        null, Operation.CREATE_CLUSTER);
     StepEntity initiateStep = taskBackend.getStepBackend().createQueuedStep(
-        taskEntity, com.vmware.photon.controller.api.Operation.CREATE_SWARM_CLUSTER_INITIATE);
+        taskEntity, Operation.CREATE_SWARM_CLUSTER_INITIATE);
 
     // Pass projectId and createSpec to initiateStep as transient resources
     initiateStep.createOrUpdateTransientResource(SwarmClusterCreateStepCmd.PROJECT_ID_RESOURCE_KEY, projectId);

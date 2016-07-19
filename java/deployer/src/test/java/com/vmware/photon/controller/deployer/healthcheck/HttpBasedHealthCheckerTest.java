@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.deployer.healthcheck;
 
-import com.vmware.photon.controller.api.Auth;
+import com.vmware.photon.controller.api.model.Auth;
 import com.vmware.photon.controller.client.ApiClient;
 import com.vmware.photon.controller.client.resource.AuthApi;
 

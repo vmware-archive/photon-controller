@@ -13,9 +13,9 @@
 
 package com.vmware.photon.controller.apife.commands.steps;
 
-import com.vmware.photon.controller.api.DiskState;
-import com.vmware.photon.controller.api.Operation;
-import com.vmware.photon.controller.api.VmState;
+import com.vmware.photon.controller.api.model.DiskState;
+import com.vmware.photon.controller.api.model.Operation;
+import com.vmware.photon.controller.api.model.VmState;
 import com.vmware.photon.controller.apife.backends.DiskBackend;
 import com.vmware.photon.controller.apife.backends.NetworkBackend;
 import com.vmware.photon.controller.apife.backends.StepBackend;

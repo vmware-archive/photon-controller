@@ -1,77 +1,17 @@
-apply plugin: 'java'
-apply plugin: 'thrift'
+subprojects {
 
-dependencies {
-  compile 'org.apache.thrift:libthrift:0.9.3'
-
-  compile 'com.fasterxml.jackson.core:jackson-core:2.5.1'
-  compile 'com.fasterxml.jackson.core:jackson-annotations:2.5.1'
-
-  compile 'javax.validation:validation-api:1.1.0.Final'
-
-  compile "com.wordnik:swagger-annotations_2.9.1:${versions.swagger_core}"
-  compile 'org.apache.commons:commons-lang3:3.1'
-  compile "com.google.inject.extensions:guice-assistedinject:${versions.guice}"
-  compile "com.google.inject:guice:${versions.guice}"
-  compile 'org.hibernate.javax.persistence:hibernate-jpa-2.1-api:1.0.0.Final'
-  compile 'commons-validator:commons-validator:1.4.1'
-
-  compile("org.apache.curator:curator-recipes:${versions.curator}") {
-    exclude group: 'org.slf4j', module: 'slf4j-log4j12'
-    exclude group: 'log4j', module: 'log4j'
-  }
-
-  thrift files('../../thrift/tracing.thrift',
-               '../../thrift/status.thrift')
-
-  testCompile("org.apache.curator:curator-test:${versions.curator}") {
-    exclude group: 'org.slf4j', module: 'slf4j-log4j12'
-    exclude group: 'log4j', module: 'log4j'
-  }
-
-  testCompile "org.hibernate:hibernate-validator:${versions.hibernate_validator}"
-  testCompile "io.dropwizard:dropwizard-testing:${versions.dropwizard}"
-  testCompile 'org.hamcrest:hamcrest-all:1.3'
-  testCompile 'org.testng:testng:6.8'
-  testCompile "org.mockito:mockito-core:${versions.mockito}"
-  testCompile("org.powermock:powermock-api-mockito:${versions.powermock}") {
-    exclude group: 'org.mockito', module: 'mockito-all'
-  }
-  testCompile "org.powermock:powermock-module-testng:${versions.powermock}"
-  testCompile 'uk.co.datumedge:hamcrest-json:0.2'
-}
-
-jar {
-  manifest {
-      attributes 'Specification-Title': 'Photon Controller Client API Library',
-          'Specification-Version': version,
-          'Built-By': System.getProperty('user.name'),
-          'Built-Date': new Date(),
-          'Built-JDK': System.getProperty('java.version'),
-          'Built-Gradle': gradle.gradleVersion,
-          'Git-Commit': "git rev-parse --short HEAD".execute().text.trim()
+  buildscript {
+    repositories {
+      mavenLocal()
+      mavenCentral()
     }
-    into("META-INF/maven/$project.group/$project.name") {
-        from "$buildDir/pom.xml"
-        rename ".*", "pom.xml"
+  }
+
+  repositories {
+    mavenLocal()
+    mavenCentral()
+    maven {
+      url "http://oss.sonatype.org/content/repositories/snapshots/"
     }
-}
-
-task testJar(type: Jar, dependsOn: testClasses) {
-  baseName = "test-${project.archivesBaseName}"
-  from sourceSets.test.output
-}
-
-configurations {
-  tests
-}
-
-artifacts {
-  tests testJar
-}
-
-test {
-  useTestNG() {
-    excludeGroups 'flaky'
   }
 }

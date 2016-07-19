@@ -13,9 +13,9 @@
 
 package com.vmware.photon.controller.apife.lib;
 
-import com.vmware.photon.controller.api.Host;
-import com.vmware.photon.controller.api.HostDatastore;
-import com.vmware.photon.controller.api.ResourceList;
+import com.vmware.photon.controller.api.model.Host;
+import com.vmware.photon.controller.api.model.HostDatastore;
+import com.vmware.photon.controller.api.model.ResourceList;
 import com.vmware.photon.controller.apife.backends.HostBackend;
 import com.vmware.photon.controller.apife.config.ImageConfig;
 import com.vmware.photon.controller.apife.exceptions.internal.InternalException;

@@ -13,9 +13,10 @@
 
 package com.vmware.photon.controller.apife.commands.steps;
 
-import com.vmware.photon.controller.api.DeploymentState;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.common.exceptions.external.TaskNotFoundException;
+import com.vmware.photon.controller.api.model.Deployment;
+import com.vmware.photon.controller.api.model.DeploymentState;
 import com.vmware.photon.controller.apife.backends.DeploymentBackend;
 import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
@@ -53,7 +54,7 @@ public class DeploymentCreateStepCmd extends StepCommand {
   @Override
   protected void execute() throws RpcException, InterruptedException, ExternalException {
     List<DeploymentEntity> deploymentEntityList =
-        step.getTransientResourceEntities(com.vmware.photon.controller.api.Deployment.KIND);
+        step.getTransientResourceEntities(Deployment.KIND);
     Preconditions.checkArgument(deploymentEntityList.size() == 1);
 
     // build the deployment object

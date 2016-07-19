@@ -13,10 +13,10 @@
 
 package com.vmware.photon.controller.apife.entities.base;
 
-import com.vmware.photon.controller.api.base.Named;
 import com.vmware.photon.controller.api.common.entities.TaggableEntity;
 import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
 import com.vmware.photon.controller.api.common.entities.base.TagEntity;
+import com.vmware.photon.controller.api.model.base.Named;
 import com.vmware.photon.controller.apife.entities.QuotaLineItemEntity;
 
 import com.google.common.base.Objects;

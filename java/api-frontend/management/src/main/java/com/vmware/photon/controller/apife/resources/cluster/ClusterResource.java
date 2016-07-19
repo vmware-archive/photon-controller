@@ -13,9 +13,9 @@
 
 package com.vmware.photon.controller.apife.resources.cluster;
 
-import com.vmware.photon.controller.api.Cluster;
-import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
+import com.vmware.photon.controller.api.model.Cluster;
+import com.vmware.photon.controller.api.model.Task;
 import com.vmware.photon.controller.apife.clients.ClusterFeClient;
 import com.vmware.photon.controller.apife.resources.routes.ClusterResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;

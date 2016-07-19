@@ -13,10 +13,10 @@
 
 package com.vmware.photon.controller.apife.resources.host;
 
-import com.vmware.photon.controller.api.Host;
-import com.vmware.photon.controller.api.HostSetAvailabilityZoneOperation;
-import com.vmware.photon.controller.api.Task;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
+import com.vmware.photon.controller.api.model.Host;
+import com.vmware.photon.controller.api.model.HostSetAvailabilityZoneOperation;
+import com.vmware.photon.controller.api.model.Task;
 import com.vmware.photon.controller.apife.clients.HostFeClient;
 import com.vmware.photon.controller.apife.resources.routes.HostResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;

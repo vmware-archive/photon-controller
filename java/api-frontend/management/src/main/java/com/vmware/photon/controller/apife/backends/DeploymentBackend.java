@@ -13,17 +13,17 @@
 
 package com.vmware.photon.controller.apife.backends;
 
-import com.vmware.photon.controller.api.ClusterConfiguration;
-import com.vmware.photon.controller.api.ClusterConfigurationSpec;
-import com.vmware.photon.controller.api.ClusterType;
-import com.vmware.photon.controller.api.Deployment;
-import com.vmware.photon.controller.api.DeploymentCreateSpec;
-import com.vmware.photon.controller.api.DeploymentDeployOperation;
-import com.vmware.photon.controller.api.DeploymentState;
-import com.vmware.photon.controller.api.DhcpConfigurationSpec;
-import com.vmware.photon.controller.api.FinalizeMigrationOperation;
-import com.vmware.photon.controller.api.InitializeMigrationOperation;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
+import com.vmware.photon.controller.api.model.ClusterConfiguration;
+import com.vmware.photon.controller.api.model.ClusterConfigurationSpec;
+import com.vmware.photon.controller.api.model.ClusterType;
+import com.vmware.photon.controller.api.model.Deployment;
+import com.vmware.photon.controller.api.model.DeploymentCreateSpec;
+import com.vmware.photon.controller.api.model.DeploymentDeployOperation;
+import com.vmware.photon.controller.api.model.DeploymentState;
+import com.vmware.photon.controller.api.model.DhcpConfigurationSpec;
+import com.vmware.photon.controller.api.model.FinalizeMigrationOperation;
+import com.vmware.photon.controller.api.model.InitializeMigrationOperation;
 import com.vmware.photon.controller.apife.entities.DeploymentEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.exceptions.external.DeploymentNotFoundException;

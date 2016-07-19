@@ -13,17 +13,17 @@
 
 package com.vmware.photon.controller.apife.commands.steps;
 
-import com.vmware.photon.controller.api.DiskState;
-import com.vmware.photon.controller.api.EphemeralDisk;
-import com.vmware.photon.controller.api.PersistentDisk;
-import com.vmware.photon.controller.api.Project;
-import com.vmware.photon.controller.api.Vm;
-import com.vmware.photon.controller.api.VmState;
 import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
 import com.vmware.photon.controller.api.common.exceptions.ApiFeException;
 import com.vmware.photon.controller.api.common.exceptions.external.ErrorCode;
 import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.common.exceptions.external.TaskNotFoundException;
+import com.vmware.photon.controller.api.model.DiskState;
+import com.vmware.photon.controller.api.model.EphemeralDisk;
+import com.vmware.photon.controller.api.model.PersistentDisk;
+import com.vmware.photon.controller.api.model.Project;
+import com.vmware.photon.controller.api.model.Vm;
+import com.vmware.photon.controller.api.model.VmState;
 import com.vmware.photon.controller.apife.backends.DiskBackend;
 import com.vmware.photon.controller.apife.backends.FlavorBackend;
 import com.vmware.photon.controller.apife.backends.NetworkBackend;
@@ -595,7 +595,8 @@ public class ResourceReserveStepCmd extends StepCommand {
 
         // Need to pass the logical-switch-id, network-id, and vm-id, to further steps
         // if virtual network is being used. Only one logical switch is supported at this time.
-        StepEntity step = taskCommand.getTask().findStep(com.vmware.photon.controller.api.Operation.CONNECT_VM_SWITCH);
+        StepEntity step = taskCommand.getTask().findStep(
+            com.vmware.photon.controller.api.model.Operation.CONNECT_VM_SWITCH);
         step.createOrUpdateTransientResource(ResourceReserveStepCmd.LOGICAL_SWITCH_ID, logicalSwitchId);
         step.createOrUpdateTransientResource(ResourceReserveStepCmd.VM_ID, entity.getId());
         step.createOrUpdateTransientResource(ResourceReserveStepCmd.VIRTUAL_NETWORK_ID, network);

@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.apibackend.servicedocuments;
 
-import com.vmware.photon.controller.api.RoutingType;
+import com.vmware.photon.controller.api.model.RoutingType;
 import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
 import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;

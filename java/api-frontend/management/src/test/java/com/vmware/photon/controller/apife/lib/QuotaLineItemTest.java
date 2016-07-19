@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.apife.lib;
 
-import com.vmware.photon.controller.api.QuotaUnit;
+import com.vmware.photon.controller.api.model.QuotaUnit;
 import com.vmware.photon.controller.apife.entities.QuotaLineItemEntity;
 
 import org.testng.annotations.Test;

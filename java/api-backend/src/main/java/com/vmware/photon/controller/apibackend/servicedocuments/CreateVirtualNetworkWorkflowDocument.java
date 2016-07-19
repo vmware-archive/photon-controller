@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.apibackend.servicedocuments;
 
-import com.vmware.photon.controller.api.RoutingType;
+import com.vmware.photon.controller.api.model.RoutingType;
 import com.vmware.photon.controller.apibackend.annotations.ControlFlagsField;
 import com.vmware.photon.controller.apibackend.annotations.TaskServiceEntityField;
 import com.vmware.photon.controller.apibackend.annotations.TaskServiceStateField;

@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.apife.utils;
 
-import com.vmware.photon.controller.api.SecurityGroup;
+import com.vmware.photon.controller.api.model.SecurityGroup;
 import com.vmware.photon.controller.apife.entities.SecurityGroupEntity;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidSecurityGroupFormatException;
 
