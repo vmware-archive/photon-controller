@@ -18,8 +18,14 @@ task zookeeper(type: DockerBuildImage) {
   tag = "photon/zookeeper"
 }
 
+task copyRpms(type: Copy) {
+    dependsOn ':rpm'
+    from "../../artifacts/build/RPMS/x86_64/"
+    into "../containers/photon-controller-core/"
+}
+
 task photoncore(type: DockerBuildImage) {
-  dependsOn servicebase
+  dependsOn servicebase, copyRpms
   inputDir = file("photon-controller-core")
   tag = "photon/photon-controller-core"
 }
