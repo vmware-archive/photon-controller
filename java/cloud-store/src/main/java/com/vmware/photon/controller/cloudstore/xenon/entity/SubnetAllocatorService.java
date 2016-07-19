@@ -153,6 +153,7 @@ public class SubnetAllocatorService extends StatefulService {
 
   public void handleAllocateSubnet(Operation patch) {
     ServiceUtils.logInfo(this, "Allocating subnet %s", getSelfLink());
+    patch.complete();
   }
 
   public void handleReleaseSubnet(Operation patch) {

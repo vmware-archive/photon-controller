@@ -23,6 +23,7 @@ import com.vmware.photon.controller.apibackend.tasks.CreateLogicalRouterTaskServ
 import com.vmware.photon.controller.apibackend.tasks.CreateLogicalSwitchTaskService;
 import com.vmware.photon.controller.apibackend.utils.ServiceHostUtils;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.SubnetAllocatorService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VirtualNetworkService;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.OperationUtils;
@@ -157,6 +158,9 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
   private void processPatch(CreateVirtualNetworkWorkflowDocument state) {
     try {
       switch (state.taskState.subStage) {
+        case ALLOCATE_IP_ADDRESS_SPACE:
+          allocateIpAddressSpace(state);
+          break;
         case GET_NSX_CONFIGURATION:
           getNsxConfiguration(state);
           break;
@@ -173,6 +177,36 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
     } catch (Throwable t) {
       fail(state, t);
     }
+  }
+
+  /**
+   * Allocate IPs for the virtual network.
+   */
+  private void allocateIpAddressSpace(CreateVirtualNetworkWorkflowDocument state) {
+
+    SubnetAllocatorService.AllocateSubnet allocateSubnet =
+        new SubnetAllocatorService.AllocateSubnet(state.parentId, state.size, state.reservedStaticIpSize);
+
+    ServiceHostUtils.getCloudStoreHelper(getHost())
+        .createPatch(SubnetAllocatorService.SINGLETON_LINK)
+        .setBody(allocateSubnet)
+        .setCompletion((op, ex) -> {
+          if (ex != null) {
+            fail(state, ex);
+            return;
+          }
+
+          try {
+            SubnetAllocatorService.AllocateSubnet subnet = op.getBody(SubnetAllocatorService.AllocateSubnet.class);
+            CreateVirtualNetworkWorkflowDocument patchState = buildPatch(
+                TaskState.TaskStage.STARTED,
+                CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.GET_NSX_CONFIGURATION);
+            progress(state, patchState);
+          } catch (Throwable t) {
+            fail(state, t);
+          }
+        })
+        .sendWith(this);
   }
 
   /**
