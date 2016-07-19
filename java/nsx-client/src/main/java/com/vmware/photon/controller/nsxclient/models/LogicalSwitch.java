@@ -31,6 +31,9 @@ public class LogicalSwitch {
   @JsonProperty(value = "display_name", required = true)
   private String displayName;
 
+  @JsonProperty(value = "description")
+  private String description;
+
   @JsonProperty(value = "resource_type", required = true)
   private String resourceType;
 
@@ -52,6 +55,9 @@ public class LogicalSwitch {
   @JsonProperty(value = "switching_profile_ids", required = true)
   private List<NsxPair<NsxSwitch.SwitchingProfileType, String>> switchingProfileIds;
 
+  @JsonProperty(value = "tags")
+  private List<Tag> tags;
+
   public String getId() {
     return id;
   }
@@ -66,6 +72,14 @@ public class LogicalSwitch {
 
   public void setDisplayName(String displayName) {
     this.displayName = displayName;
+  }
+
+  public String getDescription() {
+    return description;
+  }
+
+  public void setDescription(String description) {
+    this.description = description;
   }
 
   public String getResourceType() {
@@ -124,6 +138,14 @@ public class LogicalSwitch {
     this.switchingProfileIds = switchingProfileIds;
   }
 
+  public List<Tag> getTags() {
+    return tags;
+  }
+
+  public void setTags(List<Tag> tags) {
+    this.tags = tags;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -137,19 +159,21 @@ public class LogicalSwitch {
     LogicalSwitch other = (LogicalSwitch) o;
     return Objects.equals(this.id, other.id)
         && Objects.equals(this.displayName, other.displayName)
+        && Objects.equals(this.description, other.description)
         && Objects.equals(this.resourceType, other.resourceType)
         && Objects.equals(this.replicationMode, other.replicationMode)
         && Objects.equals(this.transportZoneId, other.transportZoneId)
         && Objects.equals(this.adminState, other.adminState)
         && Objects.equals(this.vni, other.vni)
         && Objects.equals(this.addressBindings, other.addressBindings)
-        && Objects.equals(this.switchingProfileIds, other.switchingProfileIds);
+        && Objects.equals(this.switchingProfileIds, other.switchingProfileIds)
+        && Objects.deepEquals(this.tags, other.tags);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode(), id, displayName, resourceType, replicationMode, transportZoneId,
-        adminState, vni, addressBindings, switchingProfileIds);
+    return Objects.hash(super.hashCode(), id, displayName, description, resourceType, replicationMode, transportZoneId,
+        adminState, vni, addressBindings, switchingProfileIds, tags);
   }
 
   @Override

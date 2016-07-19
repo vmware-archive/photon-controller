@@ -15,43 +15,51 @@ package com.vmware.photon.controller.nsxclient.builders;
 
 import com.vmware.photon.controller.nsxclient.datatypes.NsxSwitch;
 import com.vmware.photon.controller.nsxclient.models.LogicalSwitchCreateSpec;
+import com.vmware.photon.controller.nsxclient.models.Tag;
+
+import java.util.List;
 
 /**
  * Builder for {@link com.vmware.photon.controller.nsxclient.models.LogicalSwitchCreateSpec}.
  */
 public class LogicalSwitchCreateSpecBuilder {
-  private String transportZoneId;
-  private NsxSwitch.ReplicationMode replicationMode = NsxSwitch.ReplicationMode.MTEP;
-  private NsxSwitch.AdminState adminState = NsxSwitch.AdminState.UP;
-  private String displayName;
+  private LogicalSwitchCreateSpec spec;
+
+  public LogicalSwitchCreateSpecBuilder() {
+    spec = new LogicalSwitchCreateSpec();
+  }
 
   public LogicalSwitchCreateSpecBuilder transportZoneId(String transportZoneId) {
-    this.transportZoneId = transportZoneId;
+    spec.setTransportZoneId(transportZoneId);
     return this;
   }
 
   public LogicalSwitchCreateSpecBuilder replicationMode(NsxSwitch.ReplicationMode replicationMode) {
-    this.replicationMode = replicationMode;
+    spec.setReplicationMode(replicationMode);
     return this;
   }
 
   public LogicalSwitchCreateSpecBuilder adminState(NsxSwitch.AdminState adminState) {
-    this.adminState = adminState;
+    spec.setAdminState(adminState);
     return this;
   }
 
   public LogicalSwitchCreateSpecBuilder displayName(String displayName) {
-    this.displayName = displayName;
+    spec.setDisplayName(displayName);
+    return this;
+  }
+
+  public LogicalSwitchCreateSpecBuilder description(String description) {
+    spec.setDescription(description);
+    return this;
+  }
+
+  public LogicalSwitchCreateSpecBuilder tags(List<Tag> tags) {
+    spec.setTags(tags);
     return this;
   }
 
   public LogicalSwitchCreateSpec build() {
-    LogicalSwitchCreateSpec spec = new LogicalSwitchCreateSpec();
-    spec.setTransportZoneId(transportZoneId);
-    spec.setReplicationMode(replicationMode);
-    spec.setAdminState(adminState);
-    spec.setDisplayName(displayName);
-
     return spec;
   }
 }
