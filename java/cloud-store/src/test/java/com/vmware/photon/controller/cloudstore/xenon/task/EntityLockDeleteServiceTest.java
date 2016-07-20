@@ -168,6 +168,7 @@ public class EntityLockDeleteServiceTest {
 
       return new Object[][]{
           {"taskState", state},
+          {"queryPageSize", EntityLockDeleteService.DEFAULT_PAGE_LIMIT},
           {"isSelfProgressionDisabled", false},
           {"danglingEntityLocksWithDeletedEntities", 0},
           {"deletedEntityLocks", 0}
@@ -310,13 +311,15 @@ public class EntityLockDeleteServiceTest {
      * @throws Throwable
      */
     @Test(dataProvider = "Success")
-    public void testSuccessOnNewEntityLocks(int totalEntityLocks, int danglingEntityLocks, int hostCount)
+    public void testSuccessOnNewEntityLocks(
+        int totalEntityLocks, int danglingEntityLocks, int hostCount, int queryPageSize)
         throws Throwable {
       machine = TestEnvironment.create(hostCount);
       seedTestEnvironment(machine, totalEntityLocks, danglingEntityLocks);
 
       // No entity locks should be deleted when entityLockDeleteWatermarkTimeInMicros is NowMicrosUtc
       request.entityLockDeleteWatermarkTimeInMicros = Utils.getNowMicrosUtc();
+      request.queryPageSize = queryPageSize;
       EntityLockDeleteService.State response = machine.callServiceAndWaitForState(
           EntityLockDeleteFactoryService.SELF_LINK,
           request,
@@ -334,13 +337,15 @@ public class EntityLockDeleteServiceTest {
      * @throws Throwable
      */
     @Test(dataProvider = "Success")
-    public void testSuccessOnOldEntityLocks(int totalEntityLocks, int danglingEntityLocks, int hostCount)
+    public void testSuccessOnOldEntityLocks(
+        int totalEntityLocks, int danglingEntityLocks, int hostCount, int queryPageSize)
         throws Throwable {
       machine = TestEnvironment.create(hostCount);
       seedTestEnvironment(machine, totalEntityLocks, danglingEntityLocks);
 
       // All entity locks being created should be found when entityLockDeleteWatermarkTimeInMicros is 0
       request.entityLockDeleteWatermarkTimeInMicros = 0L;
+      request.queryPageSize = queryPageSize;
       EntityLockDeleteService.State response = machine.callServiceAndWaitForState(
           EntityLockDeleteFactoryService.SELF_LINK,
           request,
@@ -359,16 +364,15 @@ public class EntityLockDeleteServiceTest {
     @DataProvider(name = "Success")
     public Object[][] getSuccessData() {
       return new Object[][]{
-          {0, 0, 1},
-          {2, 0, 1},
-          {2, 0, TestEnvironment.DEFAULT_MULTI_HOST_COUNT},
-          {5, 5, 1},
-          {7, 5, 1},
-          {7, 5, TestEnvironment.DEFAULT_MULTI_HOST_COUNT},
+          {0, 0, 1, EntityLockDeleteService.DEFAULT_PAGE_LIMIT},
+          {2, 0, 1, EntityLockDeleteService.DEFAULT_PAGE_LIMIT},
+          {2, 0, TestEnvironment.DEFAULT_MULTI_HOST_COUNT, EntityLockDeleteService.DEFAULT_PAGE_LIMIT},
+          {5, 5, 1, EntityLockDeleteService.DEFAULT_PAGE_LIMIT},
+          {7, 5, 1, EntityLockDeleteService.DEFAULT_PAGE_LIMIT},
+          {7, 5, TestEnvironment.DEFAULT_MULTI_HOST_COUNT, EntityLockDeleteService.DEFAULT_PAGE_LIMIT},
           // Test cases with entity locks greater than the default page limit.
-          {EntityLockDeleteService.DEFAULT_PAGE_LIMIT + 100, EntityLockDeleteService
-              .DEFAULT_PAGE_LIMIT + 100, 1},
-          {EntityLockDeleteService.DEFAULT_PAGE_LIMIT + 100, 1, 1},
+          {10, 10, 1, 6},
+          {10, 1, 1, 6},
       };
     }
 
