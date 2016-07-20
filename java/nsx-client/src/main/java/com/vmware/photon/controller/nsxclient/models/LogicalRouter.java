@@ -19,6 +19,7 @@ import com.vmware.photon.controller.nsxclient.utils.ToStringHelper;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -44,6 +45,9 @@ public class LogicalRouter {
 
   @JsonProperty(value = "description", required = false)
   private String description;
+
+  @JsonProperty(value = "tags")
+  private List<Tag> tags;
 
   public String getId() {
     return id;
@@ -93,6 +97,14 @@ public class LogicalRouter {
     this.logicalRouterConfig = logicalRouterConfig;
   }
 
+  public List<Tag> getTags() {
+    return tags;
+  }
+
+  public void setTags(List<Tag> tags) {
+    this.tags = tags;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -109,7 +121,8 @@ public class LogicalRouter {
         && Objects.deepEquals(getLogicalRouterConfig(), other.getLogicalRouterConfig())
         && Objects.equals(getRouterType(), other.getRouterType())
         && Objects.equals(getDisplayName(), other.getDisplayName())
-        && Objects.equals(getDescription(), other.getDescription());
+        && Objects.equals(getDescription(), other.getDescription())
+        && Objects.deepEquals(this.tags, other.tags);
   }
 
   @Override
@@ -120,7 +133,8 @@ public class LogicalRouter {
         getLogicalRouterConfig(),
         getRouterType(),
         getDisplayName(),
-        getDescription());
+        getDescription(),
+        getTags());
   }
 
   @Override

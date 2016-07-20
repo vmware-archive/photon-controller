@@ -25,6 +25,8 @@ import com.vmware.photon.controller.common.xenon.ValidationUtils;
 import com.vmware.photon.controller.nsxclient.datatypes.NsxRouter;
 import com.vmware.photon.controller.nsxclient.models.LogicalRouter;
 import com.vmware.photon.controller.nsxclient.models.LogicalRouterCreateSpec;
+import com.vmware.photon.controller.nsxclient.utils.NameUtils;
+import com.vmware.photon.controller.nsxclient.utils.TagUtils;
 import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceErrorResponse;
@@ -122,22 +124,23 @@ public class CreateLogicalRouterTaskService extends StatefulService {
 
     try {
       LogicalRouterCreateSpec logicalRouterCreateSpec = new LogicalRouterCreateSpec();
-      logicalRouterCreateSpec.setDisplayName(currentState.displayName);
-      logicalRouterCreateSpec.setDescription(currentState.description);
+      logicalRouterCreateSpec.setDisplayName(NameUtils.getLogicalRouterName(currentState.virtualNetworkId));
+      logicalRouterCreateSpec.setDescription(NameUtils.getLogicalRouterDescription(currentState.virtualNetworkId));
       logicalRouterCreateSpec.setRouterType(NsxRouter.RouterType.TIER1);
+      logicalRouterCreateSpec.setTags(TagUtils.getLogicalRouterTags(currentState.virtualNetworkId));
       if (currentState.edgeClusterId != null) {
         logicalRouterCreateSpec.setEdgeClusterId(currentState.edgeClusterId);
       }
 
-      ServiceHostUtils.getNsxClient(getHost(), currentState.nsxManagerEndpoint, currentState.username,
-          currentState.password).getLogicalRouterApi().createLogicalRouter(logicalRouterCreateSpec,
+      ServiceHostUtils.getNsxClient(getHost(), currentState.nsxAddress, currentState.nsxUsername,
+          currentState.nsxPassword).getLogicalRouterApi().createLogicalRouter(logicalRouterCreateSpec,
           new FutureCallback<LogicalRouter>() {
             @Override
             public void onSuccess(@Nullable LogicalRouter result) {
               // TODO(ysheng): there is no getState API for logical router. Not sure
               // what is the correct way to wait for the completion of the router creation.
               CreateLogicalRouterTask patchState = buildPatch(TaskState.TaskStage.FINISHED);
-              patchState.id = result.getId();
+              patchState.logicalRouterId = result.getId();
               TaskUtils.sendSelfPatch(CreateLogicalRouterTaskService.this, patchState);
             }
 

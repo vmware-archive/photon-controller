@@ -71,12 +71,11 @@ public class CreateLogicalRouterTaskServiceTest {
     CreateLogicalRouterTask state = ReflectionUtils.buildValidStartState(CreateLogicalRouterTask.class);
     state.taskState.stage = stage;
     state.controlFlags = ControlFlags.CONTROL_FLAG_OPERATION_PROCESSING_DISABLED;
-    state.displayName = "name";
-    state.description = "desc";
     state.edgeClusterId = "edgeClusterId";
-    state.nsxManagerEndpoint = "nsxManagerEndpoint";
-    state.username = "username";
-    state.password = "password";
+    state.nsxAddress = "nsxAddress";
+    state.nsxUsername = "username";
+    state.nsxPassword = "password";
+    state.virtualNetworkId = "virtualNetworkId";
 
     return state;
   }
@@ -421,7 +420,7 @@ public class CreateLogicalRouterTaskServiceTest {
       CreateLogicalRouterTask savedState = startService();
 
       TestHelper.assertTaskStateFinished(savedState.taskState);
-      assertThat(savedState.id, is("routerId"));
+      assertThat(savedState.logicalRouterId, is("routerId"));
     }
 
     /**
