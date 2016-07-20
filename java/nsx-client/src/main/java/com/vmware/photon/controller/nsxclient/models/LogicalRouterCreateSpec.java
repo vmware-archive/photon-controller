@@ -19,6 +19,7 @@ import com.vmware.photon.controller.nsxclient.utils.ToStringHelper;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -41,6 +42,9 @@ public class LogicalRouterCreateSpec {
 
   @JsonProperty(value = "advanced_config", required = false)
   private LogicalRouterConfig logicalRouterConfig;
+
+  @JsonProperty(value = "tags")
+  private List<Tag> tags;
 
   public NsxRouter.RouterType getRouterType() {
     return routerType;
@@ -82,6 +86,14 @@ public class LogicalRouterCreateSpec {
     this.logicalRouterConfig = logicalRouterConfig;
   }
 
+  public List<Tag> getTags() {
+    return tags;
+  }
+
+  public void setTags(List<Tag> tags) {
+    this.tags = tags;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -97,7 +109,8 @@ public class LogicalRouterCreateSpec {
         && Objects.equals(getDisplayName(), other.getDisplayName())
         && Objects.equals(getDescription(), other.getDescription())
         && Objects.equals(getEdgeClusterId(), other.getEdgeClusterId())
-        && Objects.deepEquals(getLogicalRouterConfig(), other.getLogicalRouterConfig());
+        && Objects.deepEquals(getLogicalRouterConfig(), other.getLogicalRouterConfig())
+        && Objects.deepEquals(this.tags, other.tags);
   }
 
   @Override
@@ -107,7 +120,8 @@ public class LogicalRouterCreateSpec {
         getDescription(),
         getDisplayName(),
         getEdgeClusterId(),
-        getLogicalRouterConfig());
+        getLogicalRouterConfig(),
+        getTags());
   }
 
   @Override

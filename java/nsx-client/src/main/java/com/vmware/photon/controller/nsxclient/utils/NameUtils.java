@@ -28,7 +28,8 @@ public class NameUtils {
   public static final String LOGICAL_SWITCH_DESCRIPTION_PREFIX =
       "Photon Controller Logical Switch in Virtual Network ";
   public static final String LOGICAL_ROUTER_NAME_PREFIX = "PC-LogicalRouter-";
-  public static final String LOGICAL_ROUTER_DESCRIPTION_PREFIX = "Photon Controller Logical Router ";
+  public static final String LOGICAL_ROUTER_DESCRIPTION_PREFIX =
+      "Photon Controller Logical Router in Virtual Network ";
   public static final String LOGICAL_SWITCH_UPLINK_PORT_NAME_PREFIX = "PC-LogicalSwitch-Uplink-Port-";
   public static final String LOGICAL_SWITCH_DOWNLINK_PORT_NAME_PREFIX = "PC-LogicalSwitch-Downlink-Port-";
   public static final String LOGICAL_ROUTER_DOWNLINK_PORT_NAME_PREFIX = "PC-LogicalRouter-Downlink-Port-";

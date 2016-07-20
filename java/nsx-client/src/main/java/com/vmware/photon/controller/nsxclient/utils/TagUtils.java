@@ -34,4 +34,15 @@ public class TagUtils {
 
     return tags;
   }
+
+  public static List<Tag> getLogicalRouterTags(String virtualNetworkId) {
+    Tag virtualNetworkTag = new Tag();
+    virtualNetworkTag.setScope(VIRTUAL_NETWORK_TAG_SCOPE);
+    virtualNetworkTag.setTag(virtualNetworkId);
+
+    List<Tag> tags = new ArrayList<>();
+    tags.add(virtualNetworkTag);
+
+    return tags;
+  }
 }

@@ -250,8 +250,7 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
     createLogicalSwitchTask.nsxAddress = state.nsxManagerEndpoint;
     createLogicalSwitchTask.nsxUsername = state.username;
     createLogicalSwitchTask.nsxPassword = state.password;
-    createLogicalSwitchTask.virtualNetworkId =
-        ServiceUtils.getIDFromDocumentSelfLink(state.taskServiceEntity.documentSelfLink);
+    createLogicalSwitchTask.virtualNetworkId = getVirtualNetworkId(state);
     createLogicalSwitchTask.transportZoneId = state.transportZoneId;
     createLogicalSwitchTask.executionDelay = state.executionDelay;
 
@@ -299,14 +298,11 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
    * the workflow service.
    */
   private void createLogicalRouter(CreateVirtualNetworkWorkflowDocument state) {
-    String virtualNetworkId = getVirtualNetworkId(state);
-
     CreateLogicalRouterTask createLogicalRouterTask = new CreateLogicalRouterTask();
-    createLogicalRouterTask.nsxManagerEndpoint = state.nsxManagerEndpoint;
-    createLogicalRouterTask.username = state.username;
-    createLogicalRouterTask.password = state.password;
-    createLogicalRouterTask.displayName = NameUtils.getLogicalRouterName(virtualNetworkId);
-    createLogicalRouterTask.description = NameUtils.getLogicalRouterDescription(virtualNetworkId);
+    createLogicalRouterTask.nsxAddress = state.nsxManagerEndpoint;
+    createLogicalRouterTask.nsxUsername = state.username;
+    createLogicalRouterTask.nsxPassword = state.password;
+    createLogicalRouterTask.virtualNetworkId = getVirtualNetworkId(state);
 
     TaskUtils.startTaskAsync(
         this,
@@ -325,7 +321,7 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
                       TaskState.TaskStage.STARTED,
                       CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.SET_UP_LOGICAL_ROUTER);
                   patchState.taskServiceEntity = state.taskServiceEntity;
-                  patchState.taskServiceEntity.logicalRouterId = result.id;
+                  patchState.taskServiceEntity.logicalRouterId = result.logicalRouterId;
                   progress(state, patchState);
                 } catch (Throwable t) {
                   fail(state, t);

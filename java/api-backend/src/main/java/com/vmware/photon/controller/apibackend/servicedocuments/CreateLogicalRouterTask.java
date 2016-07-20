@@ -28,6 +28,10 @@ import com.vmware.xenon.common.TaskState;
  */
 public class CreateLogicalRouterTask extends ServiceDocument {
 
+  ///
+  /// Controls Input
+  ///
+
   /**
    * The state of the current task.
    */
@@ -41,36 +45,16 @@ public class CreateLogicalRouterTask extends ServiceDocument {
   @Immutable
   public Integer controlFlags;
 
-  /**
-   * The ID of the logical router.
-   */
-  @WriteOnce
-  public String id;
-
-  /**
-   * The name of the logical router.
-   */
-  @NotBlank
-  @Immutable
-  public String displayName;
-
-  /**
-   * The description of the logical router.
-   */
-  public String description;
-
-  /**
-   * The ID of the Edge cluster.
-   */
-  @Immutable
-  public String edgeClusterId;
+  ///
+  /// Task Input
+  ///
 
   /**
    * Endpoint to the nsx manager.
    */
   @NotBlank
   @Immutable
-  public String nsxManagerEndpoint;
+  public String nsxAddress;
 
   /**
    * Username to access nsx manager.
@@ -78,7 +62,7 @@ public class CreateLogicalRouterTask extends ServiceDocument {
   @NotBlank
   @Immutable
   @ServiceDocument.UsageOption(option = ServiceDocumentDescription.PropertyUsageOption.SENSITIVE)
-  public String username;
+  public String nsxUsername;
 
   /**
    * Password to access nsx manager.
@@ -86,5 +70,28 @@ public class CreateLogicalRouterTask extends ServiceDocument {
   @NotBlank
   @Immutable
   @ServiceDocument.UsageOption(option = ServiceDocumentDescription.PropertyUsageOption.SENSITIVE)
-  public String password;
+  public String nsxPassword;
+
+  /**
+   * ID of the virtual network.
+   */
+  @NotBlank
+  @Immutable
+  public String virtualNetworkId;
+
+  /**
+   * The ID of the Edge cluster.
+   */
+  @Immutable
+  public String edgeClusterId;
+
+  ///
+  /// Task Output
+  ///
+
+  /**
+   * The ID of the logical router.
+   */
+  @WriteOnce
+  public String logicalRouterId;
 }
