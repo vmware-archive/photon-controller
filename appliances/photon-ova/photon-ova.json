@@ -64,6 +64,10 @@
     },
     {
       "type": "shell",
+      "inline": "echo 'changing umaks' && sed -i '/umask*/d' /etc/profile"
+    },
+    {
+      "type": "shell",
       "script": "../scripts/cleanup.sh"
     }
   ]
