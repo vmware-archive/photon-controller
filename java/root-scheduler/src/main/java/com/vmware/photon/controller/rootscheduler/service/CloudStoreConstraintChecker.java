@@ -22,8 +22,6 @@ import com.vmware.photon.controller.cloudstore.xenon.entity.HostServiceFactory;
 import com.vmware.photon.controller.common.clients.exceptions.ConstraintMatchingDatastoreNotFoundException;
 import com.vmware.photon.controller.common.logging.LoggingUtils;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
-import com.vmware.photon.controller.common.xenon.OperationUtils;
-import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.zookeeper.gen.ServerAddress;
@@ -594,10 +592,6 @@ public class CloudStoreConstraintChecker implements ConstraintChecker {
           getCandidates_HandleStep(state);
         });
     xenonClient.send(queryOperation);
-
-    if (QueryTaskUtils.queryClausesContainProperty(state.query, HostService.State.FIELD_NAME_AVAILABILITY_ZONE_ID)) {
-      logger.info("GetCandidates query: {}", OperationUtils.createLogMessageWithCompleteInformation(queryOperation));
-    }
   }
 
   /**
