@@ -16,6 +16,7 @@ package com.vmware.photon.controller.apibackend.tasks;
 import com.vmware.photon.controller.api.model.RoutingType;
 import com.vmware.photon.controller.apibackend.helpers.ReflectionUtils;
 import com.vmware.photon.controller.apibackend.helpers.TestEnvironment;
+import com.vmware.photon.controller.apibackend.helpers.TestHelper;
 import com.vmware.photon.controller.apibackend.helpers.TestHost;
 import com.vmware.photon.controller.apibackend.servicedocuments.ConfigureRoutingTask;
 import com.vmware.photon.controller.apibackend.servicedocuments.ConfigureRoutingTask.TaskState;
@@ -23,6 +24,8 @@ import com.vmware.photon.controller.common.tests.nsx.NsxClientMock;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
+import com.vmware.photon.controller.common.xenon.validation.Immutable;
+import com.vmware.photon.controller.common.xenon.validation.WriteOnce;
 import com.vmware.photon.controller.nsxclient.NsxClientFactory;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
@@ -45,6 +48,7 @@ import static org.testng.Assert.fail;
 
 import java.lang.reflect.Field;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -162,18 +166,15 @@ public class ConfigureRoutingTaskServiceTest {
     private Object[][] getNotEmptyFields() {
       return new Object[][] {
           {"routingType", "routingType cannot be null"},
-          {"nsxManagerEndpoint", "nsxManagerEndpoint cannot be null"},
-          {"username", "username cannot be null"},
-          {"password", "password cannot be null"},
-          {"logicalSwitchPortDisplayName", "logicalSwitchPortDisplayName cannot be null"},
+          {"nsxAddress", "nsxAddress cannot be null"},
+          {"nsxUsername", "nsxUsername cannot be null"},
+          {"nsxPassword", "nsxPassword cannot be null"},
+          {"virtualNetworkId", "virtualNetworkId cannot be null"},
           {"logicalSwitchId", "logicalSwitchId cannot be null"},
-          {"logicalTier1RouterDownLinkPortDisplayName", "logicalTier1RouterDownLinkPortDisplayName cannot be null"},
           {"logicalTier1RouterId", "logicalTier1RouterId cannot be null"},
           {"logicalTier1RouterDownLinkPortIp", "logicalTier1RouterDownLinkPortIp cannot be null"},
           {"logicalTier1RouterDownLinkPortIpPrefixLen", "logicalTier1RouterDownLinkPortIpPrefixLen cannot be null"},
-          {"logicalLinkPortOnTier0RouterDisplayName", "logicalLinkPortOnTier0RouterDisplayName cannot be null"},
           {"logicalTier0RouterId", "logicalTier0RouterId cannot be null"},
-          {"logicalLinkPortOnTier1RouterDisplayName", "logicalLinkPortOnTier1RouterDisplayName cannot be null"}
       };
     }
   }
@@ -385,33 +386,16 @@ public class ConfigureRoutingTaskServiceTest {
 
     @DataProvider(name = "immutableFields")
     public Object[][] getImmutableFields() {
-      return new Object[][] {
-          {"controlFlags"},
-          {"routingType"},
-          {"nsxManagerEndpoint"},
-          {"username"},
-          {"password"},
-          {"dhcpRelayServiceId"},
-          {"logicalSwitchPortDisplayName"},
-          {"logicalSwitchId"},
-          {"logicalTier1RouterDownLinkPortDisplayName"},
-          {"logicalTier1RouterId"},
-          {"logicalTier1RouterDownLinkPortIp"},
-          {"logicalTier1RouterDownLinkPortIpPrefixLen"},
-          {"logicalLinkPortOnTier0RouterDisplayName"},
-          {"logicalTier0RouterId"},
-          {"logicalLinkPortOnTier1RouterDisplayName"}
-      };
+      List<String> immutableAttributes = ReflectionUtils.getAttributeNamesWithAnnotation(
+          ConfigureRoutingTask.class, Immutable.class);
+      return TestHelper.toDataProvidersList(immutableAttributes);
     }
 
     @DataProvider(name = "writeOnceFields")
     public Object[][] getWriteOnceFields() {
-      return new Object[][] {
-          {"logicalSwitchPortId"},
-          {"logicalTier1RouterDownLinkPort"},
-          {"logicalLinkPortOnTier1Router"},
-          {"logicalLinkPortOnTier0Router"}
-      };
+      List<String> immutableAttributes = ReflectionUtils.getAttributeNamesWithAnnotation(
+          ConfigureRoutingTask.class, WriteOnce.class);
+      return TestHelper.toDataProvidersList(immutableAttributes);
     }
 
     private void patchTaskToState(String documentSelfLink,
@@ -594,19 +578,16 @@ public class ConfigureRoutingTaskServiceTest {
     startState.taskState.subStage = subStage;
 
     startState.routingType = routingType;
-    startState.nsxManagerEndpoint = "https://192.168.1.1";
-    startState.username = "username";
-    startState.password = "password";
+    startState.nsxAddress = "https://192.168.1.1";
+    startState.nsxUsername = "username";
+    startState.nsxPassword = "password";
+    startState.virtualNetworkId = "virtualNetworkId";
     startState.dhcpRelayServiceId = "dhcpRelayServiceId";
-    startState.logicalSwitchPortDisplayName = "port-to-router";
     startState.logicalSwitchId = UUID.randomUUID().toString();
-    startState.logicalTier1RouterDownLinkPortDisplayName = "port-to-switch";
     startState.logicalTier1RouterId = UUID.randomUUID().toString();
     startState.logicalTier1RouterDownLinkPortIp = "192.168.2.254";
     startState.logicalTier1RouterDownLinkPortIpPrefixLen = 24;
-    startState.logicalLinkPortOnTier0RouterDisplayName = "port-to-tier1-router";
     startState.logicalTier0RouterId = UUID.randomUUID().toString();
-    startState.logicalLinkPortOnTier1RouterDisplayName = "port-to-tier0-router";
     startState.logicalTier1RouterId = UUID.randomUUID().toString();
     startState.controlFlags = controlFlag;
 

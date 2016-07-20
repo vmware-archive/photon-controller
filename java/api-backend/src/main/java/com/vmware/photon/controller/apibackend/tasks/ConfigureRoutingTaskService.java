@@ -45,6 +45,8 @@ import com.vmware.photon.controller.nsxclient.models.LogicalRouterLinkPortOnTier
 import com.vmware.photon.controller.nsxclient.models.LogicalRouterLinkPortOnTier1CreateSpec;
 import com.vmware.photon.controller.nsxclient.models.ResourceReference;
 import com.vmware.photon.controller.nsxclient.models.ServiceBinding;
+import com.vmware.photon.controller.nsxclient.utils.NameUtils;
+import com.vmware.photon.controller.nsxclient.utils.TagUtils;
 import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
@@ -173,12 +175,14 @@ public class ConfigureRoutingTaskService extends StatefulService {
   private void createLogicalSwitchPort(ConfigureRoutingTask currentState) throws Throwable {
     ServiceUtils.logInfo(this, "Creating port on logical switch %s", currentState.logicalSwitchId);
 
-    LogicalSwitchApi logicalSwitchApi = ServiceHostUtils.getNsxClient(getHost(), currentState.nsxManagerEndpoint,
-        currentState.username, currentState.password).getLogicalSwitchApi();
+    LogicalSwitchApi logicalSwitchApi = ServiceHostUtils.getNsxClient(getHost(), currentState.nsxAddress,
+        currentState.nsxUsername, currentState.nsxPassword).getLogicalSwitchApi();
 
     LogicalPortCreateSpec spec = new LogicalPortCreateSpecBuilder()
         .logicalSwitchId(currentState.logicalSwitchId)
-        .displayName(currentState.logicalSwitchPortDisplayName)
+        .displayName(NameUtils.getLogicalSwitchUplinkPortName(currentState.virtualNetworkId))
+        .description(NameUtils.getLogicalSwitchUplinkPortDescription(currentState.virtualNetworkId))
+        .tags(TagUtils.getLogicalSwitchUplinkPortTags(currentState.virtualNetworkId))
         .build();
     logicalSwitchApi.createLogicalPort(spec,
         new FutureCallback<LogicalPort>() {
@@ -204,8 +208,8 @@ public class ConfigureRoutingTaskService extends StatefulService {
     ServiceUtils.logInfo(this, "Connecting router %s to switch %s", currentState.logicalTier1RouterId,
         currentState.logicalSwitchId);
 
-    LogicalRouterApi logicalRouterApi = ServiceHostUtils.getNsxClient(getHost(), currentState.nsxManagerEndpoint,
-        currentState.username, currentState.password).getLogicalRouterApi();
+    LogicalRouterApi logicalRouterApi = ServiceHostUtils.getNsxClient(getHost(), currentState.nsxAddress,
+        currentState.nsxUsername, currentState.nsxPassword).getLogicalRouterApi();
 
     IPSubnet ipSubnet = new IPSubnet();
     ipSubnet.setIpAddresses(ImmutableList.of(currentState.logicalTier1RouterDownLinkPortIp));
@@ -226,12 +230,14 @@ public class ConfigureRoutingTaskService extends StatefulService {
     }
 
     LogicalRouterDownLinkPortCreateSpec spec = new LogicalRouterDownLinkPortCreateSpecBuilder()
-        .displayName(currentState.logicalTier1RouterDownLinkPortDisplayName)
+        .displayName(NameUtils.getLogicalRouterDownlinkPortName(currentState.virtualNetworkId))
+        .description(NameUtils.getLogicalRouterDownlinkPortDescription(currentState.virtualNetworkId))
         .logicalRouterId(currentState.logicalTier1RouterId)
         .resourceType(NsxRouter.PortType.DOWN_LINK_PORT)
         .subnets(ImmutableList.of(ipSubnet))
         .linkedLogicalSwitchPortId(logicalSwitchPortReference)
         .serviceBindings(serviceBindings)
+        .tags(TagUtils.getLogicalRouterDownlinkPortTags(currentState.virtualNetworkId))
         .build();
 
     logicalRouterApi.createLogicalRouterDownLinkPort(spec,
@@ -261,13 +267,15 @@ public class ConfigureRoutingTaskService extends StatefulService {
   private void createTier0RouterPort(ConfigureRoutingTask currentState) throws Throwable {
     ServiceUtils.logInfo(this, "Creating port on tier-0 router %s", currentState.logicalTier0RouterId);
 
-    LogicalRouterApi logicalRouterApi = ServiceHostUtils.getNsxClient(getHost(), currentState.nsxManagerEndpoint,
-        currentState.username, currentState.password).getLogicalRouterApi();
+    LogicalRouterApi logicalRouterApi = ServiceHostUtils.getNsxClient(getHost(), currentState.nsxAddress,
+        currentState.nsxUsername, currentState.nsxPassword).getLogicalRouterApi();
 
     LogicalRouterLinkPortOnTier0CreateSpec spec = new LogicalRouterLinkPortOnTier0CreateSpecBuilder()
-        .displayName(currentState.logicalLinkPortOnTier0RouterDisplayName)
+        .displayName(NameUtils.getTier0RouterDownlinkPortName(currentState.virtualNetworkId))
+        .description(NameUtils.getTier0RouterDownlinkPortDescription(currentState.virtualNetworkId))
         .logicalRouterId(currentState.logicalTier0RouterId)
         .resourceType(NsxRouter.PortType.LINK_PORT_ON_TIER0)
+        .tags(TagUtils.getTier0RouterDownlinkPortTags(currentState.virtualNetworkId))
         .build();
 
     logicalRouterApi.createLogicalRouterLinkPortTier0(spec,
@@ -293,17 +301,19 @@ public class ConfigureRoutingTaskService extends StatefulService {
     ServiceUtils.logInfo(this, "Connecting tier-1 router %s to tier-0 router %s", currentState.logicalTier1RouterId,
         currentState.logicalTier0RouterId);
 
-    LogicalRouterApi logicalRouterApi = ServiceHostUtils.getNsxClient(getHost(), currentState.nsxManagerEndpoint,
-        currentState.username, currentState.password).getLogicalRouterApi();
+    LogicalRouterApi logicalRouterApi = ServiceHostUtils.getNsxClient(getHost(), currentState.nsxAddress,
+        currentState.nsxUsername, currentState.nsxPassword).getLogicalRouterApi();
 
     ResourceReference resourceReference = new ResourceReference();
     resourceReference.setTargetId(currentState.logicalLinkPortOnTier0Router);
 
     LogicalRouterLinkPortOnTier1CreateSpec spec = new LogicalRouterLinkPortOnTier1CreateSpecBuilder()
-        .displayName(currentState.logicalLinkPortOnTier1RouterDisplayName)
+        .displayName(NameUtils.getLogicalRouterUplinkPortName(currentState.virtualNetworkId))
+        .description(NameUtils.getLogicalRouterUplinkdPortDescription(currentState.virtualNetworkId))
         .logicalRouterId(currentState.logicalTier1RouterId)
         .resourceType(NsxRouter.PortType.LINK_PORT_ON_TIER1)
         .linkedLogicalRouterPortId(resourceReference)
+        .tags(TagUtils.getLogicalRouterUplinkPortTags(currentState.virtualNetworkId))
         .build();
 
     logicalRouterApi.createLogicalRouterLinkPortTier1(spec,

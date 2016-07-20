@@ -18,6 +18,8 @@ import com.vmware.photon.controller.nsxclient.utils.ToStringHelper;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import javax.validation.constraints.Size;
+
 import java.util.List;
 import java.util.Objects;
 
@@ -42,6 +44,10 @@ public class LogicalRouterPort {
 
   @JsonProperty(value = "service_bindings", required = false)
   private List<ServiceBinding> serviceBindings;
+
+  @JsonProperty(value = "tags", required = false)
+  @Size(max = 5)
+  private List<Tag> tags;
 
   public String getId() {
     return id;
@@ -91,6 +97,14 @@ public class LogicalRouterPort {
     this.serviceBindings = serviceBindings;
   }
 
+  public List<Tag> getTags() {
+    return tags;
+  }
+
+  public void setTags(List<Tag> tags) {
+    this.tags = tags;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -107,7 +121,8 @@ public class LogicalRouterPort {
         && Objects.equals(this.resourceType, other.resourceType)
         && Objects.equals(this.serviceBindings, other.serviceBindings)
         && Objects.equals(this.linkedLogicalRouterPortId, other.linkedLogicalRouterPortId)
-        && Objects.equals(this.linkedLogicalSwitchPortId, other.linkedLogicalSwitchPortId);
+        && Objects.equals(this.linkedLogicalSwitchPortId, other.linkedLogicalSwitchPortId)
+        && Objects.equals(this.tags, other.tags);
   }
 
   @Override
@@ -119,7 +134,8 @@ public class LogicalRouterPort {
         resourceType,
         serviceBindings,
         linkedLogicalRouterPortId,
-        linkedLogicalSwitchPortId);
+        linkedLogicalSwitchPortId,
+        tags);
   }
 
   @Override

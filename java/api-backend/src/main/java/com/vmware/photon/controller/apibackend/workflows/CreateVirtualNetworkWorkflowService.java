@@ -31,7 +31,6 @@ import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
-import com.vmware.photon.controller.nsxclient.utils.NameUtils;
 import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
@@ -381,27 +380,18 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
    * Configures the NSX logical router.
    */
   private void setUpLogicalRouter(CreateVirtualNetworkWorkflowDocument state) {
-    String virtualNetworkId = getVirtualNetworkId(state);
-
     ConfigureRoutingTask configureRoutingTask = new ConfigureRoutingTask();
     configureRoutingTask.routingType = state.routingType;
-    configureRoutingTask.nsxManagerEndpoint = state.nsxManagerEndpoint;
-    configureRoutingTask.username = state.username;
-    configureRoutingTask.password = state.password;
+    configureRoutingTask.nsxAddress = state.nsxManagerEndpoint;
+    configureRoutingTask.nsxUsername = state.username;
+    configureRoutingTask.nsxPassword = state.password;
+    configureRoutingTask.virtualNetworkId = getVirtualNetworkId(state);
     configureRoutingTask.dhcpRelayServiceId = state.dhcpRelayServiceId;
-    configureRoutingTask.logicalSwitchPortDisplayName =
-        NameUtils.getLogicalSwitchUplinkPortName(virtualNetworkId);
     configureRoutingTask.logicalSwitchId = state.taskServiceEntity.logicalSwitchId;
-    configureRoutingTask.logicalTier1RouterDownLinkPortDisplayName =
-        NameUtils.getLogicalRouterDownlinkPortName(getVirtualNetworkId(state));
     configureRoutingTask.logicalTier1RouterId = state.taskServiceEntity.logicalRouterId;
     configureRoutingTask.logicalTier1RouterDownLinkPortIp = DEFAULT_TIER1_ROUTER_DOWNLINK_PORT_IP;
     configureRoutingTask.logicalTier1RouterDownLinkPortIpPrefixLen = DEFAULT_TIER1_ROUTER_DOWNLINK_PORT_IP_PREFIX_LEN;
-    configureRoutingTask.logicalLinkPortOnTier0RouterDisplayName =
-        NameUtils.getTier0RouterDownlinkPortName(virtualNetworkId);
     configureRoutingTask.logicalTier0RouterId = state.tier0RouterId;
-    configureRoutingTask.logicalLinkPortOnTier1RouterDisplayName =
-        NameUtils.getLogicalRouterUplinkPortName(virtualNetworkId);
 
     TaskUtils.startTaskAsync(
         this,
