@@ -125,7 +125,7 @@ module EsxCloud
                      " && /usr/lib/vmware/osfs/bin/osfs-rmdir #{datastore_dir}$dir;"\
                      " done"
           else
-            rm_cmd = "rm -rf #{datastore_dir}#{folder}* && rm -rf *installer*"
+            rm_cmd = "rm -rf #{datastore_dir}#{folder}* && rm -rf #{datastore_dir}*installer*"
           end
           ssh.exec!(rm_cmd)
         end
