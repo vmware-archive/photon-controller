@@ -49,7 +49,7 @@ import java.util.Map;
  */
 public class EntityLockDeleteService extends StatefulService {
 
-  public static final Integer DEFAULT_PAGE_LIMIT = 1000;
+  public static final int DEFAULT_PAGE_LIMIT = 1000;
   public static final long DEFAULT_DELETE_WATERMARK_TIME_MILLIS = 5 * 60 * 1000L;
   private static final String DOCUMENT_UPDATE_TIME_MICROS = "documentUpdateTimeMicros";
 
@@ -262,7 +262,7 @@ public class EntityLockDeleteService extends StatefulService {
         .addBooleanClause(timeClause);
 
     querySpec.options = EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
-    querySpec.resultLimit = DEFAULT_PAGE_LIMIT;
+    querySpec.resultLimit = current.queryPageSize;
     return QueryTask.create(querySpec).setDirect(true);
   }
 
@@ -456,6 +456,12 @@ public class EntityLockDeleteService extends StatefulService {
      * The link to next page.
      */
     public String nextPageLink;
+
+    /**
+     * Size of a query page
+     */
+    @DefaultInteger(value = DEFAULT_PAGE_LIMIT)
+    public Integer queryPageSize;
 
     /**
      * Flag that controls if we should self patch to make forward progress.
