@@ -43,7 +43,7 @@ docker run -i --rm \
   -v `pwd`:`pwd` \
   -v /var/run/docker.sock:/var/run/docker.sock \
   -w `pwd`/python vmware/photon-controller-rpm-builder \
-   make vib-only
+  make clean vib-only
 
 cp "${ROOT}"/python/dist/* "${SOURCES_DIR}"
 
