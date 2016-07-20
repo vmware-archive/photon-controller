@@ -25,24 +25,52 @@ public class TagUtils {
   public static final String VIRTUAL_NETWORK_TAG_SCOPE = "virtualNetwork";
 
   public static List<Tag> getLogicalSwitchTags(String virtualNetworkId) {
-    Tag virtualNetworkTag = new Tag();
-    virtualNetworkTag.setScope(VIRTUAL_NETWORK_TAG_SCOPE);
-    virtualNetworkTag.setTag(virtualNetworkId);
-
     List<Tag> tags = new ArrayList<>();
-    tags.add(virtualNetworkTag);
+    tags.add(getVirtualNetworkTag(virtualNetworkId));
 
     return tags;
   }
 
   public static List<Tag> getLogicalRouterTags(String virtualNetworkId) {
-    Tag virtualNetworkTag = new Tag();
-    virtualNetworkTag.setScope(VIRTUAL_NETWORK_TAG_SCOPE);
-    virtualNetworkTag.setTag(virtualNetworkId);
-
     List<Tag> tags = new ArrayList<>();
-    tags.add(virtualNetworkTag);
+    tags.add(getVirtualNetworkTag(virtualNetworkId));
 
     return tags;
+  }
+
+  public static List<Tag> getLogicalSwitchUplinkPortTags(String virtualNetworkId) {
+    List<Tag> tags = new ArrayList<>();
+    tags.add(getVirtualNetworkTag(virtualNetworkId));
+
+    return tags;
+  }
+
+  public static List<Tag> getLogicalRouterUplinkPortTags(String virtualNetworkId) {
+    List<Tag> tags = new ArrayList<>();
+    tags.add(getVirtualNetworkTag(virtualNetworkId));
+
+    return tags;
+  }
+
+  public static List<Tag> getLogicalRouterDownlinkPortTags(String virtualNetworkId) {
+    List<Tag> tags = new ArrayList<>();
+    tags.add(getVirtualNetworkTag(virtualNetworkId));
+
+    return tags;
+  }
+
+  public static List<Tag> getTier0RouterDownlinkPortTags(String virtualNetworkId) {
+    List<Tag> tags = new ArrayList<>();
+    tags.add(getVirtualNetworkTag(virtualNetworkId));
+
+    return tags;
+  }
+
+  private static Tag getVirtualNetworkTag(String virtualNetworkId) {
+    Tag tag = new Tag();
+    tag.setScope(VIRTUAL_NETWORK_TAG_SCOPE);
+    tag.setTag(virtualNetworkId);
+
+    return tag;
   }
 }

@@ -28,29 +28,44 @@ import com.vmware.xenon.common.ServiceDocumentDescription;
  * {@link com.vmware.photon.controller.apibackend.tasks.ConfigureRoutingTaskService}.
  */
 public class ConfigureRoutingTask extends ServiceDocument {
-  /**
-   * Id of the logical switch port.
-   */
-  @WriteOnce
-  public String logicalSwitchPortId;
 
   /**
-   * Id of the logical port on tier1 router to switch.
+   * Customized task state. Defines the substages.
    */
-  @WriteOnce
-  public String logicalTier1RouterDownLinkPort;
+  public static class TaskState extends com.vmware.xenon.common.TaskState {
+    public SubStage subStage;
+
+    /**
+     * Definition of substages.
+     */
+    public enum SubStage {
+      CREATE_SWITCH_PORT,
+      CONNECT_TIER1_ROUTER_TO_SWITCH,
+      CREATE_TIER0_ROUTER_PORT,
+      CONNECT_TIER1_ROUTER_TO_TIER0_ROUTER
+    }
+  }
+
+  ///
+  /// Controls Input
+  ///
 
   /**
-   * Id of the logical port on tier1 router to tier0 router.
+   * State of the task.
    */
-  @WriteOnce
-  public String logicalLinkPortOnTier1Router;
+  @DefaultTaskState(value = TaskState.TaskStage.CREATED)
+  public TaskState taskState;
 
   /**
-   * Id of the logical port on tier0 router to tier1 router.
+   * Control flags that influences the behavior of the task.
    */
-  @WriteOnce
-  public String logicalLinkPortOnTier0Router;
+  @DefaultInteger(0)
+  @Immutable
+  public Integer controlFlags;
+
+  ///
+  /// Task Input
+  ///
 
   /**
    * Whether this network is isolated or connected to outside.
@@ -64,7 +79,7 @@ public class ConfigureRoutingTask extends ServiceDocument {
    */
   @NotBlank
   @Immutable
-  public String nsxManagerEndpoint;
+  public String nsxAddress;
 
   /**
    * Username to access nsx manager.
@@ -72,7 +87,7 @@ public class ConfigureRoutingTask extends ServiceDocument {
   @NotBlank
   @Immutable
   @ServiceDocument.UsageOption(option = ServiceDocumentDescription.PropertyUsageOption.SENSITIVE)
-  public String username;
+  public String nsxUsername;
 
   /**
    * Password to access nsx manager.
@@ -80,7 +95,14 @@ public class ConfigureRoutingTask extends ServiceDocument {
   @NotBlank
   @Immutable
   @ServiceDocument.UsageOption(option = ServiceDocumentDescription.PropertyUsageOption.SENSITIVE)
-  public String password;
+  public String nsxPassword;
+
+  /**
+   * ID of the virtual network.
+   */
+  @NotBlank
+  @Immutable
+  public String virtualNetworkId;
 
   /**
    * ID of the nsx DHCP relay service.
@@ -88,27 +110,12 @@ public class ConfigureRoutingTask extends ServiceDocument {
   @Immutable
   public String dhcpRelayServiceId;
 
-
-  /**
-   * Display name of the logical switch port.
-   */
-  @NotBlank
-  @Immutable
-  public String logicalSwitchPortDisplayName;
-
   /**
    * ID of the logical switch.
    */
   @NotBlank
   @Immutable
   public String logicalSwitchId;
-
-  /**
-   * Display name of the logical tier1 router port to switch.
-   */
-  @NotBlank
-  @Immutable
-  public String logicalTier1RouterDownLinkPortDisplayName;
 
   /**
    * ID of the logical tier1 router.
@@ -132,53 +139,37 @@ public class ConfigureRoutingTask extends ServiceDocument {
   public Integer logicalTier1RouterDownLinkPortIpPrefixLen;
 
   /**
-   * Display name of the logical port on tier0 router to connect tier1 router.
-   */
-  @NotBlank
-  @Immutable
-  public String logicalLinkPortOnTier0RouterDisplayName;
-
-  /**
    * ID of the logical tier0 router.
    */
   @NotBlank
   @Immutable
   public String logicalTier0RouterId;
 
-  /**
-   * Display name of the logical port on tier1 router to connect tier0 router.
-   */
-  @NotBlank
-  @Immutable
-  public String logicalLinkPortOnTier1RouterDisplayName;
+  ///
+  /// Task Output
+  ///
 
   /**
-   * State of the task.
+   * Id of the logical switch port.
    */
-  @DefaultTaskState(value = TaskState.TaskStage.CREATED)
-  public TaskState taskState;
+  @WriteOnce
+  public String logicalSwitchPortId;
 
   /**
-   * Control flags that influences the behavior of the task.
+   * Id of the logical port on tier1 router to switch.
    */
-  @DefaultInteger(0)
-  @Immutable
-  public Integer controlFlags;
+  @WriteOnce
+  public String logicalTier1RouterDownLinkPort;
 
   /**
-   * Customized task state. Defines the substages.
+   * Id of the logical port on tier1 router to tier0 router.
    */
-  public static class TaskState extends com.vmware.xenon.common.TaskState {
-    public SubStage subStage;
+  @WriteOnce
+  public String logicalLinkPortOnTier1Router;
 
-    /**
-     * Definition of substages.
-     */
-    public enum SubStage {
-      CREATE_SWITCH_PORT,
-      CONNECT_TIER1_ROUTER_TO_SWITCH,
-      CREATE_TIER0_ROUTER_PORT,
-      CONNECT_TIER1_ROUTER_TO_TIER0_ROUTER
-    }
-  }
+  /**
+   * Id of the logical port on tier0 router to tier1 router.
+   */
+  @WriteOnce
+  public String logicalLinkPortOnTier0Router;
 }

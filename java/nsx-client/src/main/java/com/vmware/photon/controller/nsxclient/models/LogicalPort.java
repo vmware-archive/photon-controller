@@ -53,6 +53,10 @@ public class LogicalPort {
   @JsonProperty(value = "switching_profile_ids", required = false)
   private List<NsxPair<NsxSwitch.SwitchingProfileType, String>> switchingProfileIds;
 
+  @JsonProperty(value = "tags", required = false)
+  @Size(max = 5)
+  private List<Tag> tags;
+
   public String getId() {
     return id;
   }
@@ -117,6 +121,14 @@ public class LogicalPort {
     this.switchingProfileIds = switchingProfileIds;
   }
 
+  public List<Tag> getTags() {
+    return tags;
+  }
+
+  public void setTags(List<Tag> tags) {
+    this.tags = tags;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -135,13 +147,14 @@ public class LogicalPort {
         && Objects.equals(this.id, other.id)
         && Objects.equals(this.logicalSwitchId, other.logicalSwitchId)
         && Objects.equals(this.resourceType, other.resourceType)
-        && Objects.equals(this.switchingProfileIds, other.switchingProfileIds);
+        && Objects.equals(this.switchingProfileIds, other.switchingProfileIds)
+        && Objects.equals(this.tags, other.tags);
   }
 
   @Override
   public int hashCode() {
     return Objects.hash(super.hashCode(), addressBindings, adminState, attachment, id,
-        logicalSwitchId, resourceType, switchingProfileIds);
+        logicalSwitchId, resourceType, switchingProfileIds, tags);
   }
 
   @Override

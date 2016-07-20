@@ -31,10 +31,18 @@ public class NameUtils {
   public static final String LOGICAL_ROUTER_DESCRIPTION_PREFIX =
       "Photon Controller Logical Router in Virtual Network ";
   public static final String LOGICAL_SWITCH_UPLINK_PORT_NAME_PREFIX = "PC-LogicalSwitch-Uplink-Port-";
+  public static final String LOGICAL_SWITCH_UPLINK_PORT_DESCRIPTION_PREFIX =
+      "Photon Controller Logical Switch Up-Link Port in Virtual Network ";
   public static final String LOGICAL_SWITCH_DOWNLINK_PORT_NAME_PREFIX = "PC-LogicalSwitch-Downlink-Port-";
   public static final String LOGICAL_ROUTER_DOWNLINK_PORT_NAME_PREFIX = "PC-LogicalRouter-Downlink-Port-";
+  public static final String LOGICAL_ROUTER_DOWNLINK_PORT_DESCRIPTION_PREFIX =
+      "Photon Controller Logical Router Down-link Port in Virtual Network ";
   public static final String LOGICAL_ROUTER_UPLINK_PORT_NAME_PREFIX = "PC-LogicalRouter-Uplink-Port-";
+  public static final String LOGICAL_ROUTER_UPLINKD_PORT_DESCRIPTION_PREFIX =
+      "Photon Controller Logical Router Up-link Port in Virtual Network ";
   public static final String TIER0_ROUTER_DOWNLINK_PORT_NAME_PREFIX = "PC-Tier0Router-Downlink-Port-";
+  public static final String TIER0_ROUTER_DOWNLINK_PORT_DESCRIPTION_PREFIX =
+      "Photon Controller Tier0 Router Down-link port in Virtual Network ";
   public static final String DHCP_RELAY_PROFILE_NAME_PREFIX = "PC-Dhcp-Relay-Profile-";
   public static final String DHCP_RELAY_PROFILE_DESCRIPTION_PREFIX = "Photon Controller DHCP Relay Profile ";
   public static final String DHCP_RELAY_SERVICE_NAME_PREFIX = "PC-Dhcp-Relay-Service-";
@@ -84,6 +92,10 @@ public class NameUtils {
     return LOGICAL_SWITCH_UPLINK_PORT_NAME_PREFIX + id;
   }
 
+  public static String getLogicalSwitchUplinkPortDescription(String id) {
+    return LOGICAL_SWITCH_UPLINK_PORT_DESCRIPTION_PREFIX + id;
+  }
+
   public static String getLogicalSwitchDownlinkPortName(String id) {
     return LOGICAL_SWITCH_DOWNLINK_PORT_NAME_PREFIX + id;
   }
@@ -92,12 +104,24 @@ public class NameUtils {
     return LOGICAL_ROUTER_DOWNLINK_PORT_NAME_PREFIX + id;
   }
 
+  public static String getLogicalRouterDownlinkPortDescription(String id) {
+    return LOGICAL_ROUTER_DOWNLINK_PORT_DESCRIPTION_PREFIX + id;
+  }
+
   public static String getLogicalRouterUplinkPortName(String id) {
     return LOGICAL_ROUTER_UPLINK_PORT_NAME_PREFIX + id;
   }
 
+  public static String getLogicalRouterUplinkdPortDescription(String id) {
+    return LOGICAL_ROUTER_UPLINKD_PORT_DESCRIPTION_PREFIX + id;
+  }
+
   public static String getTier0RouterDownlinkPortName(String id) {
     return TIER0_ROUTER_DOWNLINK_PORT_NAME_PREFIX + id;
+  }
+
+  public static String getTier0RouterDownlinkPortDescription(String id) {
+    return TIER0_ROUTER_DOWNLINK_PORT_DESCRIPTION_PREFIX + id;
   }
 
   public static String getDhcpRelayProfileName(String id) {
