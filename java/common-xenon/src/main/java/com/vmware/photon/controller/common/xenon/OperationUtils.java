@@ -18,7 +18,6 @@ import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundExce
 import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceErrorResponse;
-import com.vmware.xenon.common.Utils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -132,10 +131,5 @@ public class OperationUtils {
         operation.getId(),
         operation.getUri(),
         operation.getReferer());
-  }
-
-  public static String createLogMessageWithCompleteInformation(Operation operation) {
-    Operation.SerializedOperation sop = Operation.SerializedOperation.create(operation);
-    return Utils.toJson(true, true, sop);
   }
 }

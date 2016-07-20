@@ -30,7 +30,7 @@ describe "Availability Zone", availabilityzone: true do
     deployment = client.find_all_api_deployments.items.first
     expect(deployment).to_not be_nil
 
-    host = client.get_deployment_hosts(deployment.id).items.select { |h| h.availability_zone.nil? }.first
+    host = client.get_deployment_hosts(deployment.id).items.select { |h| h.availability_zone.nil? and h.usage_tags.include? "CLOUD" }.first
     fail "No Host found without availability zone. Hence cannot proceed." if host.nil?
 
     # set availability zone
@@ -47,9 +47,6 @@ describe "Availability Zone", availabilityzone: true do
         rescue EsxCloud::Error => e
           host_service = EsxCloud::Dcp::CloudStore::HostFactory.get_host host.id
           puts host_service.inspect
-
-          hosts = EsxCloud::Dcp::CloudStore::HostFactory.get_all_hosts
-          hosts.each { |h| puts h.inspect }
 
           fail "Create VM failed. Host: #{host.id} HostState: #{host_service["agentState"]} Error: #{e}"
         end
