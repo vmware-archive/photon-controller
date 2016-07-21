@@ -6,6 +6,7 @@ set -x -e
 # Resulting RPM will be named as 'photon-controller-core-develop.rpm' for develop branch
 # and 'photon-controller-core-v0.9.1.rpm' for v0.9.1 branch.
 BRANCH=${GERRIT_BRANCH:-`git rev-parse --abbrev-ref HEAD`}
+COMMIT=`git rev-parse --short HEAD`
 VERSION=${BRANCH}
 ROOT=`git rev-parse --show-toplevel`
 SOURCES_DIR="${ROOT}/artifacts/rpms/SOURCES"
@@ -19,12 +20,16 @@ ENVOY_VIB_URL="http://artifactory.ec.eng.vmware.com/artifactory/esxcloud-archive
 
 trap "rm -rf ${TEMP_DIR}; rm -rf ${SOURCES_DIR};" EXIT
 
+rm -rf "${RPMS_DIR}"/*
+
 # Create source tar file for use by RPM spec file
 mkdir -p "${SOURCES_DIR}"
 
 cd "${TEMP_DIR}"
 FILENAME=`find "${ROOT}${TAR_PATH}" -iname "${TAR_PREFIX}*.tar"`
 tar -xf "${FILENAME}"
+
+VERSION=`echo $VERSION | tr "-" "_"`
 RPM_DIR="${RPM_PREFIX}-${VERSION}"
 mv ${TAR_PREFIX}* "${RPM_DIR}"
 tar -czf "${SOURCES_DIR}/${RPM_DIR}.tar" "${RPM_DIR}"
@@ -42,7 +47,8 @@ docker pull vmware/photon-controller-rpm-builder
 docker run -i --rm \
   -v `pwd`:`pwd` \
   -v /var/run/docker.sock:/var/run/docker.sock \
-  -w `pwd`/python vmware/photon-controller-rpm-builder \
+  -w `pwd`/python \
+  vmware/photon-controller-rpm-builder \
   make clean vib-only
 
 cp "${ROOT}"/python/dist/* "${SOURCES_DIR}"
@@ -61,7 +67,7 @@ docker run -i ${DEBUG_OPTIONS} \
   -v "${RPMS_DIR}":/usr/src/photon/RPMS \
   -w /photon-controller/artifacts \
   vmware/photon-controller-rpm-builder \
-  ./create-rpm-helper.sh "${VERSION}" "${DEBUG}"
+  ./create-rpm-helper.sh "${VERSION}" "${COMMIT}" "${DEBUG}"
 
 # Verify rpm was created and could be installed.
 docker run -i \

@@ -1,13 +1,12 @@
 [Unit]
-Description=Photon Controller Service
-After=syslog.target network.target
+Description=Photon Controller Configuration Service
+After=syslog.target network.target lwsmd.service
+Requires=lwsmd.service
 
 [Service]
-Type=simple
-Environment=CONFIG_PATH=/opt/vmware/photon-controller/configuration
-Environment=INSTALLATION_PATH=/opt/vmware/photon-controller
-ExecStart=/opt/vmware/photon-controller/configuration/run.sh ${CONFIG_PATH} ${INSTALLATION_PATH}
-Restart=on-failure
+Type=oneshot
+ExecStart=/usr/lib/esxcloud/photon-controller-core/configuration/run.sh
+RemainAfterExit=true
 
 [Install]
 WantedBy=multi-user.target

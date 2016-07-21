@@ -3,7 +3,7 @@
 Summary:    The Photon Controller management plane
 Name:       photon-controller
 Version:    %{pkg_version}
-Release:    1%{?dist}
+Release:    1.%{?pkg_commit}
 License:    Apache License 2.0
 URL:        https://github.com/vmware/photon-controller
 Group:      Applications
@@ -30,6 +30,7 @@ Photon Controller is an open source system for managing hardware, containers, an
 %install
 install -vdm 755 %{buildroot}%{install_dir}
 install -vdm 755 %{buildroot}/etc/systemd/system/photon-controller.service.d
+install -vdm 755 %{buildroot}/etc/systemd/system/multi-user.target.wants
 install -vdm 755 %{buildroot}/usr/lib/systemd/system/
 install -vdm 755 %{buildroot}/usr/bin/
 
@@ -63,6 +64,7 @@ ln -sf %{install_dir}/bin/photon-controller-core  %{buildroot}/usr/bin/photon-co
 ln -sf %{install_dir}/configuration/run.sh  %{buildroot}/usr/bin/run.sh
 ln -sf %{install_dir}/configuration %{buildroot}/etc/esxcloud
 ln -sf %{install_dir}/configuration %{buildroot}/etc/esxcloud-deployer/configurations
+ln -sf /usr/lib/systemd/system/photon-controller.service %{buildroot}/etc/systemd/system/multi-user.target.wants/photon-controller.service
 
 %files
 %defattr(-,root,root)
@@ -73,4 +75,5 @@ ln -sf %{install_dir}/configuration %{buildroot}/etc/esxcloud-deployer/configura
 /usr/bin/run.sh
 /usr/bin/photon-controller-core
 /usr/lib/systemd/system/photon-controller.service
+/etc/systemd/system/multi-user.target.wants/photon-controller.service
 %dir /etc/systemd/system/photon-controller.service.d/
