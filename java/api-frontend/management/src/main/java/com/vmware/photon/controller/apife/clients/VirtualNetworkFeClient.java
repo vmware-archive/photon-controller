@@ -22,7 +22,6 @@ import com.vmware.photon.controller.api.model.SubnetState;
 import com.vmware.photon.controller.api.model.Task;
 import com.vmware.photon.controller.api.model.VirtualNetworkCreateSpec;
 import com.vmware.photon.controller.api.model.VirtualSubnet;
-import com.vmware.photon.controller.api.model.Vm;
 import com.vmware.photon.controller.apibackend.servicedocuments.CreateVirtualNetworkWorkflowDocument;
 import com.vmware.photon.controller.apibackend.servicedocuments.DeleteVirtualNetworkWorkflowDocument;
 import com.vmware.photon.controller.apibackend.workflows.CreateVirtualNetworkWorkflowService;
@@ -127,13 +126,6 @@ public class VirtualNetworkFeClient {
     networkState.state = SubnetState.PENDING_DELETE;
     networkState.deleteRequestTime = System.currentTimeMillis();
     this.patchNetworkService(networkId, networkState);
-
-    List<Vm> vmsOnNetwork = vmBackend.filterByNetwork(networkId);
-    if (!vmsOnNetwork.isEmpty()) {
-      throw new InvalidNetworkStateException(
-          String.format("Invalid operation to delete virtual network %s. There are {} VMs still on virtual network",
-              networkId, vmsOnNetwork.size()));
-    }
 
     DeleteVirtualNetworkWorkflowDocument startState = new DeleteVirtualNetworkWorkflowDocument();
     startState.virtualNetworkId = networkId;
