@@ -13,6 +13,9 @@
 
 package com.vmware.photon.controller.cloudstore.xenon.task;
 
+import com.vmware.photon.controller.cloudstore.xenon.entity.DhcpSubnetService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.EntityLockService;
+import com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment;
 import com.vmware.photon.controller.common.xenon.BasicServiceHost;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.BadRequestException;
@@ -41,6 +44,8 @@ import java.util.concurrent.TimeUnit;
  * Tests {@link com.vmware.photon.controller.cloudstore.xenon.entity.DhcpSubnetService}.
  */
 public class DhcpSubnetDeleteServiceTest {
+
+  private static final int DEFAULT_PAGE_LIMIT = 100;
   private BasicServiceHost host;
   private DhcpSubnetDeleteService service;
 
@@ -240,6 +245,96 @@ public class DhcpSubnetDeleteServiceTest {
       } catch (BadRequestException e) {
         assertThat(e.getMessage(),
             startsWith("Unparseable JSON body: java.lang.IllegalStateException: Expected BEGIN_OBJECT"));
+      }
+    }
+  }
+
+  /**
+   * Tests for end-to-end scenarios.
+   */
+  public class EndToEndTest {
+
+    private TestEnvironment machine;
+    private DhcpSubnetDeleteService.State request;
+
+    @BeforeMethod
+    public void setUp() throws Throwable {
+      // Build input.
+      request = buildValidStartupState();
+      request.isSelfProgressionDisabled = false;
+      request.pageLimit = 100;
+    }
+
+    @AfterMethod
+    public void tearDown() throws Throwable {
+      if (machine != null) {
+        // Note that this will fully clean up the Xenon host's Lucene index: all
+        // services we created will be fully removed.
+        machine.stop();
+        machine = null;
+      }
+    }
+
+    /**
+     * Default provider to control host count.
+     *
+     * @return
+     */
+    @DataProvider(name = "hostCount")
+    public Object[][] getHostCount() {
+      return new Object[][]{
+          {1},
+          {TestEnvironment.DEFAULT_MULTI_HOST_COUNT}
+      };
+    }
+
+    /**
+     * Tests clean success scenarios.
+     *
+     * @param hostCount
+     * @throws Throwable
+     */
+    @Test(dataProvider = "Success")
+    public void testSuccess(int totalDhcpSubnets, int danglingDhcpSubnets, int hostCount)
+        throws Throwable {
+      machine = TestEnvironment.create(hostCount);
+      seedTestEnvironment(machine, totalDhcpSubnets, danglingDhcpSubnets);
+
+      DhcpSubnetDeleteService.State response = machine.callServiceAndWaitForState(
+          DhcpSubnetDeleteService.FACTORY_LINK,
+          request,
+          DhcpSubnetDeleteService.State.class,
+          (DhcpSubnetDeleteService.State state) -> state.taskState.stage == TaskState.TaskStage.FINISHED);
+    }
+
+    @DataProvider(name = "Success")
+    public Object[][] getSuccessData() {
+      return new Object[][]{
+          {0, 0, 1},
+          {2, 0, 1},
+          {2, 0, TestEnvironment.DEFAULT_MULTI_HOST_COUNT},
+          {5, 5, 1},
+          {7, 5, 1},
+          {7, 5, TestEnvironment.DEFAULT_MULTI_HOST_COUNT},
+          // Test cases with entity locks greater than the default page limit.
+          {DEFAULT_PAGE_LIMIT + 10, DEFAULT_PAGE_LIMIT + 10, 1},
+          {DEFAULT_PAGE_LIMIT + 10, DEFAULT_PAGE_LIMIT + 10, TestEnvironment.DEFAULT_MULTI_HOST_COUNT},
+      };
+    }
+
+    private void seedTestEnvironment(TestEnvironment env,
+                                     int totalEntityLocks,
+                                     int danglingEntityLocks) throws Throwable {
+      for (int i = 0; i < totalEntityLocks; i++) {
+
+        // Create associated entity lock without creating task, but only with fake task id(that acts as deleted task)
+        DhcpSubnetService.State state = new DhcpSubnetService.State();
+        if (i < danglingEntityLocks) {
+          state.doGarbageCollection = true;
+        }
+        Operation entityLockOperation = env.sendPostAndWaitForReplication(
+            DhcpSubnetService.FACTORY_LINK, state);
+        entityLockOperation.getBody(EntityLockService.State.class);
       }
     }
   }
