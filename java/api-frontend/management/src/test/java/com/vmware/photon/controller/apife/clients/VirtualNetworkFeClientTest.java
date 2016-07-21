@@ -20,7 +20,6 @@ import com.vmware.photon.controller.api.model.SubnetState;
 import com.vmware.photon.controller.api.model.Task;
 import com.vmware.photon.controller.api.model.VirtualNetworkCreateSpec;
 import com.vmware.photon.controller.api.model.VirtualSubnet;
-import com.vmware.photon.controller.api.model.Vm;
 import com.vmware.photon.controller.apibackend.servicedocuments.CreateVirtualNetworkWorkflowDocument;
 import com.vmware.photon.controller.apibackend.servicedocuments.DeleteVirtualNetworkWorkflowDocument;
 import com.vmware.photon.controller.apibackend.workflows.CreateVirtualNetworkWorkflowService;
@@ -63,7 +62,6 @@ import static org.testng.Assert.fail;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.UUID;
 
 /**
@@ -235,23 +233,6 @@ public class VirtualNetworkFeClientTest {
     getOperation.setBody(virtualNetworkState);
 
     doReturn(getOperation).when(cloudStoreClient).get(virtualNetworkState.documentSelfLink);
-
-    frontendClient.delete(networkId);
-  }
-
-  @Test(expectedExceptions = InvalidNetworkStateException.class)
-  public void failsToDeleteNetworkWithAttachedVMs() throws Throwable {
-    String networkId = UUID.randomUUID().toString();
-    VirtualNetworkService.State virtualNetworkState = createVirtualNetworkState(networkId);
-
-    Operation getOperation = new Operation();
-    getOperation.setBody(virtualNetworkState);
-
-    doReturn(getOperation).when(cloudStoreClient).get(virtualNetworkState.documentSelfLink);
-
-    List<Vm> vms = new ArrayList<>();
-    vms.add(new Vm());
-    doReturn(vms).when(vmBackend).filterByNetwork(networkId);
 
     frontendClient.delete(networkId);
   }

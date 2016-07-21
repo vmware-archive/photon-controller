@@ -109,10 +109,12 @@ public class DeleteVirtualNetworkWorkflowDocument extends ServiceDocument{
      * The sub-states for this this.
      */
     public enum SubStage {
+      CHECK_VM_EXISTENCE,
       GET_NSX_CONFIGURATION,
       DELETE_LOGICAL_PORTS,
       DELETE_LOGICAL_ROUTER,
-      DELETE_LOGICAL_SWITCH
+      DELETE_LOGICAL_SWITCH,
+      DELETE_NETWORK_ENTITY
     }
   }
 }
