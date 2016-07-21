@@ -114,6 +114,7 @@ public class DeleteVirtualNetworkWorkflowDocument extends ServiceDocument{
       DELETE_LOGICAL_PORTS,
       DELETE_LOGICAL_ROUTER,
       DELETE_LOGICAL_SWITCH,
+      RELEASE_IP_ADDRESS_SPACE,
       DELETE_NETWORK_ENTITY
     }
   }

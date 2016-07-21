@@ -23,6 +23,7 @@ import com.vmware.photon.controller.apibackend.tasks.DeleteLogicalRouterTaskServ
 import com.vmware.photon.controller.apibackend.tasks.DeleteLogicalSwitchTaskService;
 import com.vmware.photon.controller.apibackend.utils.ServiceHostUtils;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.SubnetAllocatorService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VirtualNetworkService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VmService;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
@@ -192,8 +193,12 @@ public class DeleteVirtualNetworkWorkflowService extends BaseWorkflowService<Del
         case DELETE_LOGICAL_SWITCH:
           deleteLogicalSwitch(state);
           break;
+        case RELEASE_IP_ADDRESS_SPACE:
+          releaseIpAddressSpace(state);
+          break;
         case DELETE_NETWORK_ENTITY:
           deleteVirtualNetwork(state);
+          break;
       }
     } catch (Throwable t) {
       fail(state, t);
@@ -418,7 +423,7 @@ public class DeleteVirtualNetworkWorkflowService extends BaseWorkflowService<Del
             switch (result.taskState.stage) {
               case FINISHED:
                 try {
-                  progress(state, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_NETWORK_ENTITY);
+                  progress(state, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.RELEASE_IP_ADDRESS_SPACE);
                 } catch (Throwable t) {
                   fail(state, t);
                 }
@@ -440,7 +445,34 @@ public class DeleteVirtualNetworkWorkflowService extends BaseWorkflowService<Del
   }
 
   /**
-   * Delete the network service entity from cloudstore.
+   * Release IPs for the virtual network.
+   */
+  private void releaseIpAddressSpace(DeleteVirtualNetworkWorkflowDocument state) {
+
+    SubnetAllocatorService.ReleaseSubnet releaseSubnet =
+        new SubnetAllocatorService.ReleaseSubnet(state.virtualNetworkId);
+
+    ServiceHostUtils.getCloudStoreHelper(getHost())
+        .createPatch(SubnetAllocatorService.SINGLETON_LINK)
+        .setBody(releaseSubnet)
+        .setCompletion((op, ex) -> {
+          if (ex != null) {
+            fail(state, ex);
+            return;
+          }
+
+          try {
+            progress(state, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_NETWORK_ENTITY);
+          } catch (Throwable t) {
+            fail(state, t);
+          }
+        })
+        .sendWith(this);
+  }
+
+  /**
+   * Deletes a {@link com.vmware.photon.controller.cloudstore.xenon.entity.VirtualNetworkService.State} entity
+   * from cloud-store.
    */
   private void deleteVirtualNetwork(DeleteVirtualNetworkWorkflowDocument state) {
     ServiceHostUtils.getCloudStoreHelper(getHost())

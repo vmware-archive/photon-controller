@@ -22,6 +22,7 @@ import com.vmware.photon.controller.apibackend.helpers.TestHelper;
 import com.vmware.photon.controller.apibackend.servicedocuments.DeleteVirtualNetworkWorkflowDocument;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentServiceFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.SubnetAllocatorService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.TaskService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VirtualNetworkService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VmService;
@@ -332,6 +333,8 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
           {TaskState.TaskStage.CREATED,
               DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_SWITCH},
           {TaskState.TaskStage.CREATED,
+              DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.RELEASE_IP_ADDRESS_SPACE},
+          {TaskState.TaskStage.CREATED,
               DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_NETWORK_ENTITY},
 
           {TaskState.TaskStage.STARTED, null},
@@ -345,6 +348,8 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
               DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_ROUTER},
           {TaskState.TaskStage.STARTED,
               DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_SWITCH},
+          {TaskState.TaskStage.STARTED,
+              DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.RELEASE_IP_ADDRESS_SPACE},
           {TaskState.TaskStage.STARTED,
               DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_NETWORK_ENTITY},
 
@@ -360,6 +365,8 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
           {TaskState.TaskStage.FINISHED,
               DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_SWITCH},
           {TaskState.TaskStage.FINISHED,
+              DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.RELEASE_IP_ADDRESS_SPACE},
+          {TaskState.TaskStage.FINISHED,
               DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_NETWORK_ENTITY},
 
           {TaskState.TaskStage.FAILED, null},
@@ -374,6 +381,8 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
           {TaskState.TaskStage.FAILED,
               DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_SWITCH},
           {TaskState.TaskStage.FAILED,
+              DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.RELEASE_IP_ADDRESS_SPACE},
+          {TaskState.TaskStage.FAILED,
               DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_NETWORK_ENTITY},
 
           {TaskState.TaskStage.CANCELLED, null},
@@ -387,6 +396,8 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
               DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_ROUTER},
           {TaskState.TaskStage.CANCELLED,
               DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_SWITCH},
+          {TaskState.TaskStage.CANCELLED,
+              DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.RELEASE_IP_ADDRESS_SPACE},
           {TaskState.TaskStage.CANCELLED,
               DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_NETWORK_ENTITY}
       };
@@ -478,15 +489,15 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
               TaskState.TaskStage.STARTED,
               DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_ROUTER},
           {TaskState.TaskStage.STARTED,
-              DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_PORTS,
-              TaskState.TaskStage.STARTED,
-              DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_ROUTER},
-          {TaskState.TaskStage.STARTED,
               DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_ROUTER,
               TaskState.TaskStage.STARTED,
               DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_SWITCH},
           {TaskState.TaskStage.STARTED,
               DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_SWITCH,
+              TaskState.TaskStage.STARTED,
+              DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.RELEASE_IP_ADDRESS_SPACE},
+          {TaskState.TaskStage.STARTED,
+              DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.RELEASE_IP_ADDRESS_SPACE,
               TaskState.TaskStage.STARTED,
               DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_NETWORK_ENTITY},
 
@@ -611,6 +622,9 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
 
           {TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_PORTS,
            TaskState.TaskStage.CREATED, null},
+          {TaskState.TaskStage.STARTED,
+           DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.RELEASE_IP_ADDRESS_SPACE,
+           TaskState.TaskStage.CREATED, null},
           {TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_PORTS,
            TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.CHECK_VM_EXISTENCE},
           {TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_PORTS,
@@ -645,6 +659,9 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
            TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_PORTS},
           {TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_SWITCH,
            TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_ROUTER},
+          {TaskState.TaskStage.STARTED,
+           DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.RELEASE_IP_ADDRESS_SPACE,
+           TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_ROUTER},
 
           {TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_NETWORK_ENTITY,
            TaskState.TaskStage.CREATED, null},
@@ -670,6 +687,9 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
           {TaskState.TaskStage.FINISHED, null,
            TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_ROUTER},
           {TaskState.TaskStage.FINISHED, null,
+           TaskState.TaskStage.STARTED,
+           DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.RELEASE_IP_ADDRESS_SPACE},
+          {TaskState.TaskStage.FINISHED, null,
            TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_NETWORK_ENTITY},
 
           {TaskState.TaskStage.CANCELLED, null,
@@ -683,6 +703,9 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
           {TaskState.TaskStage.CANCELLED, null,
            TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_ROUTER},
           {TaskState.TaskStage.CANCELLED, null,
+           TaskState.TaskStage.STARTED,
+           DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.RELEASE_IP_ADDRESS_SPACE},
+          {TaskState.TaskStage.CANCELLED, null,
            TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_NETWORK_ENTITY},
 
           {TaskState.TaskStage.FAILED, null,
@@ -695,6 +718,9 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
            TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_PORTS},
           {TaskState.TaskStage.FAILED, null,
            TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_ROUTER},
+          {TaskState.TaskStage.FAILED, null,
+           TaskState.TaskStage.STARTED,
+           DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.RELEASE_IP_ADDRESS_SPACE},
           {TaskState.TaskStage.FAILED, null,
            TaskState.TaskStage.STARTED, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_NETWORK_ENTITY},
       };
@@ -792,6 +818,8 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
                 Pair.of(TaskState.TaskStage.STARTED,
                     DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_SWITCH),
                 Pair.of(TaskState.TaskStage.STARTED,
+                    DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.RELEASE_IP_ADDRESS_SPACE),
+                Pair.of(TaskState.TaskStage.STARTED,
                     DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_NETWORK_ENTITY),
                 Pair.of(TaskState.TaskStage.FINISHED, null)
             };
@@ -823,6 +851,7 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
 
     private DeleteVirtualNetworkWorkflowDocument startState;
     private DeploymentService.State deploymentStartState;
+    private SubnetAllocatorService.State subnetAllocatorServiceState;
     private NsxClientFactory nsxClientFactory;
     private NsxClientMock nsxClientMock;
     private TestEnvironment testEnvironment;
@@ -837,6 +866,10 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
       deploymentStartState.networkManagerPassword = NETWORK_MANAGER_PASSWORD;
       deploymentStartState.networkZoneId = NETWORK_ZONE_ID;
       deploymentStartState.networkTopRouterId = NETWORK_TOP_ROUTER_ID;
+
+      subnetAllocatorServiceState = new SubnetAllocatorService.State();
+      subnetAllocatorServiceState.rootCidr = "192.168.1.1/24";
+      subnetAllocatorServiceState.documentSelfLink = SubnetAllocatorService.SINGLETON_LINK;
 
       nsxClientFactory = mock(NsxClientFactory.class);
     }
@@ -886,8 +919,14 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
           DeploymentService.State.class,
           (state) -> true);
 
+      testEnvironment.callServiceAndWaitForState(
+          SubnetAllocatorService.FACTORY_LINK,
+          subnetAllocatorServiceState,
+          SubnetAllocatorService.State.class,
+          (state) -> true);
+
       DeleteVirtualNetworkWorkflowDocument finalState =
-          testEnvironment.callServiceAndWaitForState(
+           testEnvironment.callServiceAndWaitForState(
               DeleteVirtualNetworkWorkflowService.FACTORY_LINK,
               startState,
               DeleteVirtualNetworkWorkflowDocument.class,
