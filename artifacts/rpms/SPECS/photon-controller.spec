@@ -54,13 +54,15 @@ pystache "`cat ./run.sh`" "$content" > run-out.sh
 pystache "`cat ./swagger-config.js`" "$content" > swagger-config-out.js
 mv ./photon-controller-core-out.yml ./photon-controller-core.yml
 mv ./run-out.sh ./run.sh
+cp ./run.sh ../bin/
 mv ./swagger-config-out.js ./swagger-config.js
 chmod 755 ./run.sh
+chmod 755 ../bin/run.sh
 
 cp -pr ../* %{buildroot}%{install_dir}
 cp ../configuration/*.json ../configuration/*.yml %{buildroot}%{install_dir}/configuration/photon-controller-core/
 ln -sf %{install_dir}/bin/photon-controller-core  %{buildroot}/usr/bin/photon-controller-core
-ln -sf %{install_dir}/configuration/run.sh  %{buildroot}/usr/bin/run.sh
+ln -sf %{install_dir}/bin/run.sh  %{buildroot}/usr/bin/run-photon-controller.sh
 ln -sf %{install_dir}/configuration %{buildroot}/etc/esxcloud
 ln -sf %{install_dir}/configuration %{buildroot}/etc/esxcloud-deployer/configurations
 
@@ -70,7 +72,7 @@ ln -sf %{install_dir}/configuration %{buildroot}/etc/esxcloud-deployer/configura
 /var/esxcloud/packages/*
 /etc/esxcloud
 /etc/esxcloud-deployer/*
-/usr/bin/run.sh
+/usr/bin/run-photon-controller.sh
 /usr/bin/photon-controller-core
 /usr/lib/systemd/system/photon-controller.service
 %dir /etc/systemd/system/photon-controller.service.d/

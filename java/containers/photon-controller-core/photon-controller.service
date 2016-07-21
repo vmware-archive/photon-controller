@@ -5,7 +5,7 @@ Requires=lwsmd.service
 
 [Service]
 Type=oneshot
-ExecStart=/etc/esxcloud/run.sh
+ExecStart=/usr/bin/run-photon-controller.sh
 RemainAfterExit=true
 
 [Install]
