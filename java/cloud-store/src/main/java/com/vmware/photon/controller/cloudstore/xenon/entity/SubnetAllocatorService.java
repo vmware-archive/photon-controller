@@ -14,12 +14,15 @@
 package com.vmware.photon.controller.cloudstore.xenon.entity;
 
 import com.vmware.photon.controller.common.Constants;
+import com.vmware.photon.controller.common.IpHelper;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
 import com.vmware.photon.controller.common.xenon.deployment.MigrateDuringDeployment;
 import com.vmware.photon.controller.common.xenon.deployment.NoMigrationDuringDeployment;
+import com.vmware.photon.controller.common.xenon.exceptions.BadRequestException;
+import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
 import com.vmware.photon.controller.common.xenon.migration.MigrateDuringUpgrade;
 import com.vmware.photon.controller.common.xenon.migration.MigrationUtils;
 import com.vmware.photon.controller.common.xenon.migration.NoMigrationDuringUpgrade;
@@ -30,6 +33,14 @@ import com.vmware.xenon.common.OperationProcessingChain;
 import com.vmware.xenon.common.RequestRouter;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
+
+import com.google.common.net.InetAddresses;
+import org.apache.commons.net.util.SubnetUtils;
+
+import java.net.Inet4Address;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.concurrent.TimeoutException;
 
 
 /**
@@ -68,13 +79,13 @@ public class SubnetAllocatorService extends StatefulService {
 
     myRouter.register(
         Action.PATCH,
-        new RequestRouter.RequestBodyMatcher<AllocateSubnet>(
+        new RequestRouter.RequestBodyMatcher<>(
             AllocateSubnet.class, "kind", AllocateSubnet.KIND),
         this::handleAllocateSubnet, "Allocate a subnet");
 
     myRouter.register(
         Action.PATCH,
-        new RequestRouter.RequestBodyMatcher<ReleaseSubnet>(
+        new RequestRouter.RequestBodyMatcher<>(
             ReleaseSubnet.class, "kind", ReleaseSubnet.KIND),
         this::handleReleaseSubnet, "Release a subnet");
 
@@ -158,6 +169,7 @@ public class SubnetAllocatorService extends StatefulService {
 
   public void handleReleaseSubnet(Operation patch) {
     ServiceUtils.logInfo(this, "Releasing subnet %s", getSelfLink());
+    patch.complete();
   }
 
   @Override
@@ -167,6 +179,9 @@ public class SubnetAllocatorService extends StatefulService {
       State startState = createOperation.getBody(State.class);
       InitializationUtils.initialize(startState);
       ValidationUtils.validateState(startState);
+
+      seedWithOneAvailableSubnet(startState.rootCidr);
+
       createOperation.complete();
     } catch (IllegalStateException t) {
       ServiceUtils.failOperationAsBadRequest(this, createOperation, t);
@@ -207,5 +222,36 @@ public class SubnetAllocatorService extends StatefulService {
           .add("rootCidr", rootCidr)
           .toString();
     }
+  }
+
+  private void seedWithOneAvailableSubnet(String rootCidr)
+      throws InterruptedException, TimeoutException, BadRequestException,
+      DocumentNotFoundException, UnknownHostException {
+
+    SubnetUtils subnetUtils = new SubnetUtils(rootCidr);
+    SubnetUtils.SubnetInfo subnetInfo = subnetUtils.getInfo();
+    Long lowIp, highIp;
+
+    InetAddress lowIpAddress = InetAddresses.forString(subnetInfo.getLowAddress());
+    if (lowIpAddress instanceof Inet4Address) {
+      lowIp = IpHelper.ipToLong((Inet4Address) lowIpAddress);
+    } else {
+      throw new IllegalArgumentException("lowIpAddress not an IPv4 address");
+    }
+
+    InetAddress highIpAddress = InetAddresses.forString(subnetInfo.getHighAddress());
+    if (highIpAddress instanceof Inet4Address) {
+      highIp = IpHelper.ipToLong((Inet4Address) highIpAddress);
+    } else {
+      throw new IllegalArgumentException("highIpAddress not an IPv4 address");
+    }
+
+    DhcpSubnetService.State subnet = new DhcpSubnetService.State();
+    subnet.lowIp = lowIp;
+    subnet.highIp = highIp;
+
+    Operation postOperation = Operation.createPost(this, DhcpSubnetService.FACTORY_LINK)
+        .setBody(subnet);
+    ServiceUtils.doServiceOperation(this, postOperation);
   }
 }
