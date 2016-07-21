@@ -15,13 +15,17 @@ package com.vmware.photon.controller.cloudstore.xenon.entity;
 
 import com.vmware.photon.controller.cloudstore.xenon.CloudStoreServiceGroup;
 import com.vmware.photon.controller.cloudstore.xenon.helpers.TestHelper;
+import com.vmware.photon.controller.common.IpHelper;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.common.xenon.BasicServiceHost;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.XenonRestClient;
 import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.ServiceDocumentQueryResult;
 
+import com.google.common.net.InetAddresses;
+import org.apache.commons.net.util.SubnetUtils;
 import org.apache.http.HttpStatus;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.AfterSuite;
@@ -29,6 +33,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeSuite;
 import org.testng.annotations.Test;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.net.InetSocketAddress;
@@ -86,6 +91,32 @@ public class SubnetAllocatorServiceTest {
       SubnetAllocatorService.State savedState = host.getServiceState(SubnetAllocatorService.State.class,
           createdState.documentSelfLink);
       assertThat(ServiceUtils.documentEquals(SubnetAllocatorService.State.class, startState, savedState), is(true));
+
+      ServiceHostUtils.waitForServiceState(
+          ServiceDocumentQueryResult.class,
+          DhcpSubnetService.FACTORY_LINK,
+          (queryResult) -> queryResult.documentCount == 1,
+          host,
+          null);
+
+      ServiceDocumentQueryResult queryResult = ServiceHostUtils.getServiceState(host, ServiceDocumentQueryResult.class,
+          DhcpSubnetService.FACTORY_LINK,
+          "test-host");
+      assertThat(queryResult, is(notNullValue()));
+      assertThat(queryResult.documentCount, is(1L));
+      assertThat(queryResult.documentLinks, is(notNullValue()));
+      assertThat(queryResult.documentLinks.size(), is(1));
+
+      DhcpSubnetService.State dhcpSubnetServiceState = ServiceHostUtils.getServiceState(host,
+          DhcpSubnetService.State.class, queryResult.documentLinks.get(0), "test-host");
+      assertThat(dhcpSubnetServiceState, is(notNullValue()));
+
+      SubnetUtils subnetUtils = new SubnetUtils(startState.rootCidr);
+      SubnetUtils.SubnetInfo subnetInfo = subnetUtils.getInfo();
+      assertThat(IpHelper.longToIp(dhcpSubnetServiceState.lowIp),
+          is(InetAddresses.forString(subnetInfo.getLowAddress())));
+      assertThat(IpHelper.longToIp(dhcpSubnetServiceState.highIp),
+          is(InetAddresses.forString(subnetInfo.getHighAddress())));
     }
   }
 
