@@ -78,7 +78,8 @@ describe "migrate finalize", upgrade: true do
                           "/photon/cloudstore/groomers/entity-lock-cleaners",
                           "/photon/cloudstore/groomers/tombstone-entity-cleaners",
                           "/photon/task-triggers",
-                          "/photon/cloudstore/virtual-networks"]
+                          "/photon/cloudstore/virtual-networks",
+                          "/photon/cloudstore/portgroups"]
         puts k
         if !exclusion_list.include?(k)
           begin
@@ -132,7 +133,8 @@ describe "migrate finalize", upgrade: true do
                           "/photon/cloudstore/groomers/tombstone-entity-cleaners",
                           "/photon/cloudstore/cluster-configurations",
                           "/photon/cloudstore/clusters",
-                          "/photon/cloudstore/virtual-networks"]
+                          "/photon/cloudstore/virtual-networks",
+                          "/photon/cloudstore/portgroups"]
         if !exclusion_list.include?(k)
           begin
             source_json = source_cloud_store.get k
