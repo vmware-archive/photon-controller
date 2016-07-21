@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.cloudstore.xenon.task;
 
+import com.vmware.photon.controller.cloudstore.xenon.entity.DhcpSubnetService;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
@@ -20,12 +21,20 @@ import com.vmware.photon.controller.common.xenon.ValidationUtils;
 import com.vmware.photon.controller.common.xenon.deployment.NoMigrationDuringDeployment;
 import com.vmware.photon.controller.common.xenon.migration.NoMigrationDuringUpgrade;
 import com.vmware.photon.controller.common.xenon.validation.DefaultBoolean;
+import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
 import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
 import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.ServiceDocumentQueryResult;
 import com.vmware.xenon.common.StatefulService;
 import com.vmware.xenon.common.TaskState;
+import com.vmware.xenon.common.UriUtils;
+import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.QueryTask;
+import com.vmware.xenon.services.common.ServiceUriPaths;
+
+import java.util.EnumSet;
 
 /**
  * Class implementing service to delete dangling DhcpSubnetService from the cloud store.
@@ -37,6 +46,8 @@ public class DhcpSubnetDeleteService extends StatefulService {
 
   public static final String FACTORY_LINK = com.vmware.photon.controller.common.xenon.ServiceUriPaths.CLOUDSTORE_ROOT
       + "/dhcp-subnet-deletes";
+
+  public static final int DEFAULT_PAGE_LIMIT = 1000;
 
   public static FactoryService createFactory() {
     return FactoryService.create(DhcpSubnetDeleteService.class, DhcpSubnetDeleteService.State.class);
@@ -57,6 +68,7 @@ public class DhcpSubnetDeleteService extends StatefulService {
     initializeState(state);
     validateState(state);
     start.setBody(state).complete();
+    processStart(state);
   }
 
   @Override
@@ -69,6 +81,7 @@ public class DhcpSubnetDeleteService extends StatefulService {
     applyPatch(currentState, patchState);
     validateState(currentState);
     patch.complete();
+    processPatch(currentState);
   }
 
   /**
@@ -120,6 +133,189 @@ public class DhcpSubnetDeleteService extends StatefulService {
     ValidationUtils.validateTaskStageProgression(current.taskState, patch.taskState);
   }
 
+
+  /**
+   * Does any additional processing after the start operation has been completed.
+   *
+   * @param current
+   */
+  private void processStart(final State current) {
+    if (current.isSelfProgressionDisabled) {
+      ServiceUtils.logInfo(this, "Skipping start operation processing (disabled)");
+      return;
+    }
+
+    try {
+      if (!isFinalStage(current)) {
+        if (current.nextPageLink == null) {
+          Operation queryDhcpSubnetsPagination = Operation
+              .createPost(UriUtils.buildUri(getHost(), ServiceUriPaths.CORE_LOCAL_QUERY_TASKS))
+              .setBody(buildDhcpSubnetQuery(current));
+          queryDhcpSubnetsPagination
+              .setCompletion(((op, failure) -> {
+                if (failure != null) {
+                  failTask(failure);
+                  return;
+                }
+                ServiceDocumentQueryResult results = op.getBody(QueryTask.class).results;
+                if (results.nextPageLink != null) {
+                  current.nextPageLink = results.nextPageLink;
+                } else {
+                  ServiceUtils.logInfo(this, "No DhcpSubnets found.");
+                }
+
+                sendStageProgressPatch(current);
+
+              })).sendWith(this);
+        }
+      }
+    } catch (Throwable e) {
+      failTask(e);
+    }
+  }
+
+  /**
+   * Does any additional processing after the patch operation has been completed.
+   *
+   * @param current
+   */
+  private void processPatch(final State current) {
+    try {
+      switch (current.taskState.stage) {
+        case STARTED:
+          processDhcpSubnetsDocuments(current);
+          break;
+
+        case FAILED:
+        case FINISHED:
+        case CANCELLED:
+          break;
+
+        default:
+          this.failTask(
+              new IllegalStateException(
+                  String.format("Un-expected stage: %s", current.taskState.stage))
+          );
+      }
+    } catch (Throwable e) {
+      failTask(e);
+    }
+  }
+
+  /**
+   * Retrieves the first page of DhcpSubnets and kicks of the subsequent processing.
+   *
+   * @param current
+   */
+  private void processDhcpSubnetsDocuments(final State current) {
+    if (current.nextPageLink == null) {
+      finishTask(current);
+      return;
+    }
+
+    Operation getOnePageOfDhcpSubnetsDocuments =
+        Operation.createGet(UriUtils.buildUri(getHost(), current.nextPageLink));
+    getOnePageOfDhcpSubnetsDocuments
+        .setCompletion((op, throwable) -> {
+          if (throwable != null) {
+            failTask(throwable);
+            return;
+          }
+          current.nextPageLink = op.getBody(QueryTask.class).results.nextPageLink;
+          sendStageProgressPatch(current);
+        })
+        .sendWith(this);
+  }
+
+  private void finishTask(final State patch) {
+    ServiceUtils.logInfo(this, "Finished deleting unreleased DhcpSubnets.");
+    if (patch.taskState == null) {
+      patch.taskState = new TaskState();
+    }
+    patch.taskState.stage = TaskState.TaskStage.FINISHED;
+
+    this.sendStageProgressPatch(patch);
+  }
+
+  /**
+   * Moves the service into the FAILED state.
+   *
+   * @param e
+   */
+  private void failTask(Throwable e) {
+    ServiceUtils.logSevere(this, e);
+    this.sendStageProgressPatch(buildPatch(TaskState.TaskStage.FAILED, e));
+  }
+
+  /**
+   * Send a patch message to ourselves to update the execution stage.
+   *
+   * @param state
+   */
+  private void sendStageProgressPatch(State state) {
+    if (state.isSelfProgressionDisabled) {
+      ServiceUtils.logInfo(this, "Skipping patch handling (disabled)");
+      return;
+    }
+
+    Operation patch = Operation
+        .createPatch(UriUtils.buildUri(getHost(), getSelfLink()))
+        .setBody(state);
+    this.sendRequest(patch);
+  }
+
+  /**
+   * Build a state object that can be used to submit a stage progress
+   * self patch.
+   *
+   * @param stage
+   * @param e
+   * @return
+   */
+  private State buildPatch(TaskState.TaskStage stage, Throwable e) {
+    State s = new State();
+    s.taskState = new TaskState();
+    s.taskState.stage = stage;
+
+    if (e != null) {
+      s.taskState.failure = Utils.toServiceErrorResponse(e);
+    }
+
+    return s;
+  }
+
+  /**
+   * Determines if the task is in a final state.
+   *
+   * @param s
+   * @return
+   */
+  private boolean isFinalStage(State s) {
+    return s.taskState.stage == TaskState.TaskStage.FINISHED ||
+        s.taskState.stage == TaskState.TaskStage.FAILED ||
+        s.taskState.stage == TaskState.TaskStage.CANCELLED;
+  }
+
+  private QueryTask buildDhcpSubnetQuery(State s) {
+    QueryTask.Query kindClause = new QueryTask.Query()
+        .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
+        .setTermMatchValue(Utils.buildKind(DhcpSubnetService.State.class));
+
+    QueryTask.QuerySpecification querySpec = new QueryTask.QuerySpecification();
+
+    QueryTask.Query flagClause = new QueryTask.Query()
+        .setTermPropertyName("doGarbageCollection")
+        .setTermMatchValue("true");
+
+    querySpec.query
+        .addBooleanClause(kindClause)
+        .addBooleanClause(flagClause);
+
+    querySpec.options = EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
+    querySpec.resultLimit = s.pageLimit;
+    return QueryTask.create(querySpec).setDirect(true);
+  }
+
   /**
    * Durable service state data.
    */
@@ -137,6 +333,12 @@ public class DhcpSubnetDeleteService extends StatefulService {
      * The link to next page.
      */
     public String nextPageLink;
+
+    /**
+     * The page limit for querying DhcpSubnetService.
+     */
+    @DefaultInteger(value = DEFAULT_PAGE_LIMIT)
+    public int pageLimit;
 
     /**
      * Flag that controls if we should self patch to make forward progress.
