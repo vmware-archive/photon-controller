@@ -39,6 +39,7 @@ import com.vmware.photon.controller.cloudstore.xenon.entity.VmServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.task.AvailabilityZoneCleanerFactoryService;
 import com.vmware.photon.controller.cloudstore.xenon.task.DatastoreCleanerFactoryService;
 import com.vmware.photon.controller.cloudstore.xenon.task.DatastoreDeleteFactoryService;
+import com.vmware.photon.controller.cloudstore.xenon.task.DhcpSubnetDeleteService;
 import com.vmware.photon.controller.cloudstore.xenon.task.EntityLockCleanerFactoryService;
 import com.vmware.photon.controller.cloudstore.xenon.task.EntityLockDeleteFactoryService;
 import com.vmware.photon.controller.cloudstore.xenon.task.TombstoneCleanerFactoryService;
@@ -132,6 +133,7 @@ public class CloudStoreServiceGroup
           .put(SubnetAllocatorService.class, SubnetAllocatorService::createFactory)
           .put(DhcpSubnetService.class, DhcpSubnetService::createFactory)
           .put(IpLeaseService.class, IpLeaseService::createFactory)
+          .put(DhcpSubnetDeleteService.class, DhcpSubnetDeleteService::createFactory)
           .build();
 
   private PhotonControllerXenonHost photonControllerXenonHost;
