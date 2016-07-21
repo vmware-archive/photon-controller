@@ -23,6 +23,7 @@ import com.vmware.photon.controller.apibackend.tasks.DeleteLogicalRouterTaskServ
 import com.vmware.photon.controller.apibackend.tasks.DeleteLogicalSwitchTaskService;
 import com.vmware.photon.controller.apibackend.utils.ServiceHostUtils;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.SubnetAllocatorService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VirtualNetworkService;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.OperationUtils;
@@ -158,6 +159,9 @@ public class DeleteVirtualNetworkWorkflowService extends BaseWorkflowService<Del
           break;
         case DELETE_LOGICAL_SWITCH:
           deleteLogicalSwitch(state);
+          break;
+        case RELEASE_IP_ADDRESS_SPACE:
+          releaseIpAddressSpace(state);
           break;
       }
     } catch (Throwable t) {
@@ -334,7 +338,7 @@ public class DeleteVirtualNetworkWorkflowService extends BaseWorkflowService<Del
             switch (result.taskState.stage) {
               case FINISHED:
                 try {
-                  deleteVirtualNetwork(state);
+                  progress(state, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.RELEASE_IP_ADDRESS_SPACE);
                 } catch (Throwable t) {
                   fail(state, t);
                 }
@@ -353,6 +357,32 @@ public class DeleteVirtualNetworkWorkflowService extends BaseWorkflowService<Del
           }
         }
     );
+  }
+
+  /**
+   * Release IPs for the virtual network.
+   */
+  private void releaseIpAddressSpace(DeleteVirtualNetworkWorkflowDocument state) {
+
+    SubnetAllocatorService.ReleaseSubnet releaseSubnet =
+        new SubnetAllocatorService.ReleaseSubnet(state.virtualNetworkId);
+
+    ServiceHostUtils.getCloudStoreHelper(getHost())
+        .createPatch(SubnetAllocatorService.SINGLETON_LINK)
+        .setBody(releaseSubnet)
+        .setCompletion((op, ex) -> {
+          if (ex != null) {
+            fail(state, ex);
+            return;
+          }
+
+          try {
+            deleteVirtualNetwork(state);
+          } catch (Throwable t) {
+            fail(state, t);
+          }
+        })
+        .sendWith(this);
   }
 
   /**
