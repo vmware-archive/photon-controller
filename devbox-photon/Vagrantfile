@@ -313,11 +313,12 @@ cat >> $out <<-'EOM'
   echo "Checking to connect to Lightwave REST client to start"
   attempts=1
   reachable="false"
-  while [ $attempts -lt 30 ] && [ $reachable != "true" ]; do
+  total_attempts=50
+  while [ $attempts -lt $total_attempts ] && [ $reachable != "true" ]; do
     http_code=$(curl -w "%{http_code}" -s -X GET --insecure https://lightwave.#{ENV['LW_DOMAIN_NAME']})
     # The curl returns 000 when it fails to connect to the lightwave server
     if [ $http_code -eq 000 ]; then
-      echo "Lightwave REST server not reachable (attempt $attempts/30), will try again."
+      echo "Lightwave REST server not reachable (attempt $attempts/$total_attempts), will try again."
       attempts=$[$attempts+1]
       sleep 5
     else
@@ -329,8 +330,9 @@ cat >> $out <<-'EOM'
       break
     fi
   done
-  if [ $attempts -eq 30 ]; then
-    echo "Could not connect to Lightwave REST client after 30 attempts, users not added and token expiration not updated."
+  if [ $attempts -eq $total_attempts ]; then
+    echo "Could not connect to Lightwave REST client after $total_attempts attempts, users not added and token expiration not updated."
+    exit 1
   fi
 EOM
 chmod +x $out
