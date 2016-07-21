@@ -239,23 +239,6 @@ public class VirtualNetworkFeClientTest {
     frontendClient.delete(networkId);
   }
 
-  @Test(expectedExceptions = InvalidNetworkStateException.class)
-  public void failsToDeleteNetworkWithAttachedVMs() throws Throwable {
-    String networkId = UUID.randomUUID().toString();
-    VirtualNetworkService.State virtualNetworkState = createVirtualNetworkState(networkId);
-
-    Operation getOperation = new Operation();
-    getOperation.setBody(virtualNetworkState);
-
-    doReturn(getOperation).when(cloudStoreClient).get(virtualNetworkState.documentSelfLink);
-
-    List<Vm> vms = new ArrayList<>();
-    vms.add(new Vm());
-    doReturn(vms).when(vmBackend).filterByNetwork(networkId);
-
-    frontendClient.delete(networkId);
-  }
-
   @Test(dataProvider = "listAllTestData")
   public void succeedsToListAll(String parentId,
                                 String parentKind,

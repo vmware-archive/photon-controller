@@ -24,6 +24,7 @@ import com.vmware.photon.controller.apibackend.tasks.DeleteLogicalSwitchTaskServ
 import com.vmware.photon.controller.apibackend.utils.ServiceHostUtils;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VirtualNetworkService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.VmService;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.OperationUtils;
 import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
@@ -38,6 +39,8 @@ import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.NodeGroupBroadcastResponse;
 import com.vmware.xenon.services.common.QueryTask;
 
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.FutureCallback;
 
 import java.util.Set;
@@ -121,6 +124,11 @@ public class DeleteVirtualNetworkWorkflowService extends BaseWorkflowService<Del
       DeleteVirtualNetworkWorkflowDocument patchState =
           patchOperation.getBody(DeleteVirtualNetworkWorkflowDocument.class);
       validatePatchState(currentState, patchState);
+
+      if (currentState.taskState.stage == TaskState.TaskStage.STARTED) {
+        validateTaskSubStageProgression(currentState.taskState, patchState.taskState);
+      }
+
       applyPatch(currentState, patchState);
       validateState(currentState);
       patchOperation.complete();
@@ -142,11 +150,36 @@ public class DeleteVirtualNetworkWorkflowService extends BaseWorkflowService<Del
   }
 
   /**
+   * Validate the substage progresses correctly.
+   */
+  private void validateTaskSubStageProgression(DeleteVirtualNetworkWorkflowDocument.TaskState startState,
+                                               DeleteVirtualNetworkWorkflowDocument.TaskState patchState) {
+
+    if (patchState.stage.ordinal() > TaskState.TaskStage.FINISHED.ordinal()) {
+      return;
+    }
+
+    if (patchState.stage == TaskState.TaskStage.FINISHED) {
+      Preconditions.checkState(startState.stage == TaskState.TaskStage.STARTED &&
+          (startState.subStage == DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_NETWORK_ENTITY
+            || startState.subStage == DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.CHECK_VM_EXISTENCE));
+    }
+
+    if (patchState.stage == TaskState.TaskStage.STARTED) {
+      Preconditions.checkState(patchState.subStage.ordinal() == startState.subStage.ordinal() + 1
+          || patchState.subStage == startState.subStage);
+    }
+  }
+
+  /**
    * Processes the sub-stages of the workflow.
    */
   private void processPatch(DeleteVirtualNetworkWorkflowDocument state) {
     try {
       switch (state.taskState.subStage) {
+        case CHECK_VM_EXISTENCE:
+          checkVmExistence(state);
+          break;
         case GET_NSX_CONFIGURATION:
           getNsxConfiguration(state);
           break;
@@ -159,10 +192,60 @@ public class DeleteVirtualNetworkWorkflowService extends BaseWorkflowService<Del
         case DELETE_LOGICAL_SWITCH:
           deleteLogicalSwitch(state);
           break;
+        case DELETE_NETWORK_ENTITY:
+          deleteVirtualNetwork(state);
       }
     } catch (Throwable t) {
       fail(state, t);
     }
+  }
+
+  /**
+   * Check if any VMs still exist on this virtual network.
+   * If there are, move this virtual network to PENDING_DELETE state.
+   * If there are not, delete the related network equipments, and move the network to DELETED state.
+   */
+  private void checkVmExistence(DeleteVirtualNetworkWorkflowDocument state) {
+    ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
+    termsBuilder.put(QueryTask.QuerySpecification.buildCollectionItemName(VmService.State.FIELD_NAME_NETWORKS),
+        state.virtualNetworkId);
+
+    QueryTask.QuerySpecification querySpecification = QueryTaskUtils.buildQuerySpec(VmService.State.class,
+        termsBuilder.build());
+    QueryTask queryTask = QueryTask.create(querySpecification).setDirect(true);
+
+    ServiceHostUtils.getCloudStoreHelper(getHost())
+        .createBroadcastPost(ServiceUriPaths.CORE_LOCAL_QUERY_TASKS, ServiceUriPaths.DEFAULT_NODE_SELECTOR)
+        .setBody(queryTask)
+        .setCompletion((op, ex) -> {
+          if (ex != null) {
+            fail(state, ex);
+            return;
+          }
+
+          NodeGroupBroadcastResponse queryResponse = op.getBody(NodeGroupBroadcastResponse.class);
+          Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(queryResponse);
+
+          try {
+            if (documentLinks.size() != 0) {
+              // VMs are still on this network, cannot continue deleting, and mark this task as finished.
+              // After all related VMs are deleted, this network will be tombstoned.
+              DeleteVirtualNetworkWorkflowDocument patchState = buildPatch(TaskState.TaskStage.FINISHED, null);
+              patchState.taskServiceEntity = state.taskServiceEntity;
+              patchState.taskServiceEntity.state = SubnetState.PENDING_DELETE;
+
+              finish(state, patchState);
+            } else {
+                DeleteVirtualNetworkWorkflowDocument patchState = buildPatch(
+                    TaskState.TaskStage.STARTED,
+                    DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.GET_NSX_CONFIGURATION);
+                progress(state, patchState);
+            }
+          } catch (Throwable t) {
+            fail(state, t);
+          }
+        })
+        .sendWith(this);
   }
 
   /**
@@ -191,9 +274,39 @@ public class DeleteVirtualNetworkWorkflowService extends BaseWorkflowService<Del
           if (documentLinks.size() != 1) {
             fail(state, new IllegalStateException(
                 String.format("Found %d deployment service(s).", documentLinks.size())));
+            return;
           }
 
           getNsxConfiguration(state, documentLinks.iterator().next());
+        })
+        .sendWith(this);
+  }
+
+  /**
+   * Gets NSX configuration from {@link com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService.State}
+   * entity in cloud-store, and saves the configuration in the document of the workflow service.
+   */
+  private void getNsxConfiguration(DeleteVirtualNetworkWorkflowDocument state, String deploymentServiceStateLink) {
+    ServiceHostUtils.getCloudStoreHelper(getHost())
+        .createGet(deploymentServiceStateLink)
+        .setCompletion((op, ex) -> {
+          if (ex != null) {
+            fail(state, ex);
+            return;
+          }
+
+          try {
+            DeploymentService.State deploymentState = op.getBody(DeploymentService.State.class);
+            DeleteVirtualNetworkWorkflowDocument patchState = buildPatch(
+                TaskState.TaskStage.STARTED,
+                DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_PORTS);
+            patchState.nsxManagerEndpoint = deploymentState.networkManagerAddress;
+            patchState.username = deploymentState.networkManagerUsername;
+            patchState.password = deploymentState.networkManagerPassword;
+            progress(state, patchState);
+          } catch (Throwable t) {
+            fail(state, t);
+          }
         })
         .sendWith(this);
   }
@@ -239,35 +352,6 @@ public class DeleteVirtualNetworkWorkflowService extends BaseWorkflowService<Del
           }
         }
     );
-  }
-
-  /**
-   * Gets NSX configuration from {@link com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService.State}
-   * entity in cloud-store, and saves the configuration in the document of the workflow service.
-   */
-  private void getNsxConfiguration(DeleteVirtualNetworkWorkflowDocument state, String deploymentServiceStateLink) {
-    ServiceHostUtils.getCloudStoreHelper(getHost())
-        .createGet(deploymentServiceStateLink)
-        .setCompletion((op, ex) -> {
-          if (ex != null) {
-            fail(state, ex);
-            return;
-          }
-
-          try {
-            DeploymentService.State deploymentState = op.getBody(DeploymentService.State.class);
-            DeleteVirtualNetworkWorkflowDocument patchState = buildPatch(
-                TaskState.TaskStage.STARTED,
-                DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_LOGICAL_PORTS);
-            patchState.nsxManagerEndpoint = deploymentState.networkManagerAddress;
-            patchState.username = deploymentState.networkManagerUsername;
-            patchState.password = deploymentState.networkManagerPassword;
-            progress(state, patchState);
-          } catch (Throwable t) {
-            fail(state, t);
-          }
-        })
-        .sendWith(this);
   }
 
   /**
@@ -334,7 +418,7 @@ public class DeleteVirtualNetworkWorkflowService extends BaseWorkflowService<Del
             switch (result.taskState.stage) {
               case FINISHED:
                 try {
-                  deleteVirtualNetwork(state);
+                  progress(state, DeleteVirtualNetworkWorkflowDocument.TaskState.SubStage.DELETE_NETWORK_ENTITY);
                 } catch (Throwable t) {
                   fail(state, t);
                 }
@@ -356,28 +440,7 @@ public class DeleteVirtualNetworkWorkflowService extends BaseWorkflowService<Del
   }
 
   /**
-   * Gets a VirtualNetworkService.State from {@link com.vmware.photon.controller.cloudstore.xenon.entity
-   * .VirtualNetworkService.State} entity in cloud-store.
-   */
-  private void getVirtualNetwork(DeleteVirtualNetworkWorkflowDocument state, Operation operation) {
-    ServiceHostUtils.getCloudStoreHelper(getHost())
-        .createGet(VirtualNetworkService.FACTORY_LINK + "/" + state.virtualNetworkId)
-        .setCompletion((op, ex) -> {
-          if (ex != null) {
-            operation.fail(ex);
-            fail(state, ex);
-            return;
-          }
-
-          state.taskServiceEntity = op.getBody(VirtualNetworkService.State.class);
-          create(state, operation);
-        })
-        .sendWith(this);
-  }
-
-  /**
-   * Deletes a {@link com.vmware.photon.controller.cloudstore.xenon.entity.VirtualNetworkService.State} entity
-   * from cloud-store.
+   * Delete the network service entity from cloudstore.
    */
   private void deleteVirtualNetwork(DeleteVirtualNetworkWorkflowDocument state) {
     ServiceHostUtils.getCloudStoreHelper(getHost())
@@ -396,6 +459,26 @@ public class DeleteVirtualNetworkWorkflowService extends BaseWorkflowService<Del
           } catch (Throwable t) {
             fail(state, t);
           }
+        })
+        .sendWith(this);
+  }
+
+  /**
+   * Gets a VirtualNetworkService.State from {@link com.vmware.photon.controller.cloudstore.xenon.entity
+   * .VirtualNetworkService.State} entity in cloud-store.
+   */
+  private void getVirtualNetwork(DeleteVirtualNetworkWorkflowDocument state, Operation operation) {
+    ServiceHostUtils.getCloudStoreHelper(getHost())
+        .createGet(VirtualNetworkService.FACTORY_LINK + "/" + state.virtualNetworkId)
+        .setCompletion((op, ex) -> {
+          if (ex != null) {
+            operation.fail(ex);
+            fail(state, ex);
+            return;
+          }
+
+          state.taskServiceEntity = op.getBody(VirtualNetworkService.State.class);
+          create(state, operation);
         })
         .sendWith(this);
   }
