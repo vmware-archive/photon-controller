@@ -60,7 +60,7 @@ chmod 755 ./run.sh
 cp -pr ../* %{buildroot}%{install_dir}
 cp ../configuration/*.json ../configuration/*.yml %{buildroot}%{install_dir}/configuration/photon-controller-core/
 ln -sf %{install_dir}/bin/photon-controller-core  %{buildroot}/usr/bin/photon-controller-core
-ln -sf %{install_dir}/configuration/run.sh  %{buildroot}/usr/bin/run.sh
+ln -sf %{install_dir}/bin/run.sh  %{buildroot}/usr/bin/run.sh
 ln -sf %{install_dir}/configuration %{buildroot}/etc/esxcloud
 ln -sf %{install_dir}/configuration %{buildroot}/etc/esxcloud-deployer/configurations
 
