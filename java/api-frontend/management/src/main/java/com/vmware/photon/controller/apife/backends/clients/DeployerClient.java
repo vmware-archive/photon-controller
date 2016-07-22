@@ -104,14 +104,6 @@ public class DeployerClient {
             Collections.addAll(state.dataStores, allowedDataStores);
         }
 
-        if (state.metadata.containsKey(HostService.State.METADATA_KEY_NAME_ALLOWED_NETWORKS)) {
-            String[] allowedNetworks =
-                    state.metadata.get(HostService.State.METADATA_KEY_NAME_ALLOWED_NETWORKS).
-                            trim().split(COMMA_DELIMITED_REGEX);
-            state.networks = new HashSet<>();
-            Collections.addAll(state.networks, allowedNetworks);
-        }
-
         // Persist the database ID of the host to the Xenon entity so we have a unified ID across the system
         state.documentSelfLink = host.getId();
 

@@ -1392,17 +1392,6 @@ public class ProvisionHostTaskService extends StatefulService {
           .collect(Collectors.toList());
     }
 
-    List<String> allowedNetworks = null;
-    if (hostState.metadata != null
-        && hostState.metadata.containsKey(HostService.State.METADATA_KEY_NAME_ALLOWED_NETWORKS)) {
-
-      allowedNetworks = Stream.of(
-          hostState.metadata.get(HostService.State.METADATA_KEY_NAME_ALLOWED_NETWORKS)
-              .trim()
-              .split("\\s*,\\s*"))
-          .collect(Collectors.toList());
-    }
-
     StatsPluginConfig statsPluginConfig = new StatsPluginConfig(deploymentState.statsEnabled);
     if (deploymentState.statsStoreEndpoint != null) {
       statsPluginConfig.setStats_store_endpoint(deploymentState.statsStoreEndpoint);
@@ -1434,7 +1423,6 @@ public class ProvisionHostTaskService extends StatefulService {
           allowedDatastores,
           deploymentState.imageDataStoreNames,
           deploymentState.imageDataStoreUsedForVMs,
-          allowedNetworks,
           hostState.hostAddress,
           hostState.agentPort,
           0, // Overcommit ratio is not implemented

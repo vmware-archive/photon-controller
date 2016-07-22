@@ -276,7 +276,7 @@ public class MockHelper {
 
     return (invocation) -> {
       AsyncMethodCallback<AgentControl.AsyncClient.provision_call> callback =
-          ((AsyncMethodCallback<AgentControl.AsyncClient.provision_call>) invocation.getArguments()[14]);
+          ((AsyncMethodCallback<AgentControl.AsyncClient.provision_call>) invocation.getArguments()[13]);
       AgentControl.AsyncClient.provision_call provisionCall = mock(AgentControl.AsyncClient.provision_call.class);
       ProvisionResponse provisionResponse = new ProvisionResponse(resultCode);
       doReturn(provisionResponse).when(provisionCall).getResult();

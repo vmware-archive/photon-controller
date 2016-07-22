@@ -553,7 +553,6 @@ public class ValidateHostTaskServiceTest {
     state.metadata.put(HostService.State.METADATA_KEY_NAME_MANAGEMENT_NETWORK_IP, "managementNetworkIp");
     state.metadata.put(HostService.State.METADATA_KEY_NAME_MANAGEMENT_NETWORK_NETMASK, "managementNetworkNetmask");
     state.metadata.put(HostService.State.METADATA_KEY_NAME_ALLOWED_DATASTORES, "datastore1, datastore2");
-    state.metadata.put(HostService.State.METADATA_KEY_NAME_ALLOWED_NETWORKS, "VM Network, Management VLan");
     state.networks = new HashSet<>();
     state.networks.add("network1");
     state.networks.add("network2");
@@ -577,7 +576,6 @@ public class ValidateHostTaskServiceTest {
     host.metadata.put(HostService.State.METADATA_KEY_NAME_MANAGEMENT_NETWORK_IP, "managementNetworkIp");
     host.metadata.put(HostService.State.METADATA_KEY_NAME_MANAGEMENT_NETWORK_NETMASK, "managementNetworkNetmask");
     host.metadata.put(HostService.State.METADATA_KEY_NAME_ALLOWED_DATASTORES, "datastore1, datastore2");
-    host.metadata.put(HostService.State.METADATA_KEY_NAME_ALLOWED_NETWORKS, "VM Network, Management VLan");
     host.state = HostState.CREATING;
     return host;
   }

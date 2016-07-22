@@ -64,7 +64,6 @@ public class AgentControlClientMock extends AgentControlClient {
       List<String> datastores,
       Set<String> imageDatastoreNames,
       boolean usedForVMs,
-      List<String> networks,
       String hostAddress,
       int hostPort,
       double memoryOvercommit,

@@ -472,7 +472,6 @@ public class ProvisionHostTaskServiceTest {
               any(),
               any(),
               anyBoolean(),
-              any(),
               anyString(),
               anyInt(),
               anyDouble(),
@@ -565,7 +564,6 @@ public class ProvisionHostTaskServiceTest {
               eq((List<String>) null),
               eq(deploymentState.imageDataStoreNames),
               eq(deploymentState.imageDataStoreUsedForVMs),
-              eq((List<String>) null),
               eq(hostState.hostAddress),
               eq(hostState.agentPort),
               eq(0.0),
@@ -624,7 +622,6 @@ public class ProvisionHostTaskServiceTest {
               eq((List<String>) null),
               eq(deploymentState.imageDataStoreNames),
               eq(deploymentState.imageDataStoreUsedForVMs),
-              eq((List<String>) null),
               eq(hostState.hostAddress),
               eq(hostState.agentPort),
               eq(0.0),
@@ -675,7 +672,6 @@ public class ProvisionHostTaskServiceTest {
 
       HostService.State hostStartState = TestHelper.getHostServiceStartState(UsageTag.MGMT, HostState.NOT_PROVISIONED);
       hostStartState.metadata.put(HostService.State.METADATA_KEY_NAME_ALLOWED_DATASTORES, "datastore1, datastore2");
-      hostStartState.metadata.put(HostService.State.METADATA_KEY_NAME_ALLOWED_NETWORKS, "VM Network 1,VM Network 2");
       hostState = TestHelper.createHostService(cloudStoreEnvironment, hostStartState);
       startState.hostServiceLink = hostState.documentSelfLink;
 
@@ -695,7 +691,6 @@ public class ProvisionHostTaskServiceTest {
               eq(Arrays.asList("datastore1", "datastore2")),
               eq(deploymentState.imageDataStoreNames),
               eq(deploymentState.imageDataStoreUsedForVMs),
-              eq(Arrays.asList("VM Network 1", "VM Network 2")),
               eq(hostState.hostAddress),
               eq(hostState.agentPort),
               eq(0.0),
@@ -924,7 +919,6 @@ public class ProvisionHostTaskServiceTest {
               any(),
               any(),
               anyBoolean(),
-              any(),
               anyString(),
               anyInt(),
               anyDouble(),
