@@ -9,4 +9,4 @@ if ! hash docker &> /dev/null; then
 fi
 docker pull lamw/vibauthor || true
 top=${GIT_ROOT:-$(git rev-parse --show-toplevel)}
-docker run -v "$top:$top" -w "$PWD" lamw/vibauthor vibauthor "$@"
+docker run --rm -v "$top:$top" -w "$PWD" lamw/vibauthor vibauthor "$@"
