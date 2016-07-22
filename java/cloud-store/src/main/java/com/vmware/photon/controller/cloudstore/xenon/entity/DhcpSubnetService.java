@@ -24,13 +24,18 @@ import com.vmware.photon.controller.common.xenon.migration.MigrateDuringUpgrade;
 import com.vmware.photon.controller.common.xenon.migration.MigrationUtils;
 import com.vmware.photon.controller.common.xenon.migration.NoMigrationDuringUpgrade;
 import com.vmware.photon.controller.common.xenon.validation.DefaultBoolean;
-import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
+import com.vmware.photon.controller.common.xenon.validation.DefaultLong;
+import com.vmware.photon.controller.common.xenon.validation.NotNull;
+import com.vmware.photon.controller.common.xenon.validation.Range;
 import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.OperationProcessingChain;
 import com.vmware.xenon.common.RequestRouter;
 import com.vmware.xenon.common.ServiceDocument;
 import com.vmware.xenon.common.StatefulService;
+
+import com.google.common.base.Preconditions;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.List;
 
@@ -41,6 +46,8 @@ import java.util.List;
 public class DhcpSubnetService extends StatefulService {
 
   public static final String FACTORY_LINK = ServiceUriPaths.CLOUDSTORE_ROOT + "/dhcp-subnets";
+
+  public static final long MAX_IPV4 = 0xFFFFFFFFL; // this represents 255.255.255.255
 
   public DhcpSubnetService() {
     super(State.class);
@@ -64,31 +71,31 @@ public class DhcpSubnetService extends StatefulService {
 
     myRouter.register(
         Action.PATCH,
-        new RequestRouter.RequestBodyMatcher<IpOperationPatch>(
+        new RequestRouter.RequestBodyMatcher<>(
             IpOperationPatch.class, "kind", IpOperationPatch.Kind.AllocateIpToMac),
         this::handleAllocateIpToMacPatch, "Allocate IP to MAC address");
 
     myRouter.register(
         Action.PATCH,
-        new RequestRouter.RequestBodyMatcher<IpOperationPatch>(
+        new RequestRouter.RequestBodyMatcher<>(
             IpOperationPatch.class, "kind", IpOperationPatch.Kind.ReleaseIpForMac),
         this::handleReleaseIpForMacPatch, "Release Ip for MAC address");
 
     myRouter.register(
         Action.PATCH,
-        new RequestRouter.RequestBodyMatcher<SubnetOperationPatch>(
+        new RequestRouter.RequestBodyMatcher<>(
             SubnetOperationPatch.class, "kind", SubnetOperationPatch.Kind.ExtractSubnetFromBottom),
         this::handleExtractSubnetFromBottom, "Extract subnet from bottom");
 
     myRouter.register(
         Action.PATCH,
-        new RequestRouter.RequestBodyMatcher<SubnetOperationPatch>(
+        new RequestRouter.RequestBodyMatcher<>(
             SubnetOperationPatch.class, "kind", SubnetOperationPatch.Kind.ExpandSubnetAtBottom),
         this::handleExpandSubnetAtBottom, "Expand subnet at bottom");
 
     myRouter.register(
         Action.PATCH,
-        new RequestRouter.RequestBodyMatcher<SubnetOperationPatch>(
+        new RequestRouter.RequestBodyMatcher<>(
             SubnetOperationPatch.class, "kind", SubnetOperationPatch.Kind.ExpandSubnetAtTop),
         this::handleExpandSubnetAtTop, "Expand subnet at top");
 
@@ -108,6 +115,28 @@ public class DhcpSubnetService extends StatefulService {
 
   public void handleExtractSubnetFromBottom(Operation patch) {
     ServiceUtils.logInfo(this, "Patching service %s to extract subnet", getSelfLink());
+
+    SubnetOperationPatch subnetOperationPatch = patch.getBody(SubnetOperationPatch.class);
+    if (subnetOperationPatch.size <= 0) {
+      throw new IllegalArgumentException("requested size should be greater than zero");
+    }
+
+    State currentState = getState(patch);
+
+    if (currentState.isAllocated) {
+      throw new IllegalArgumentException("cannot extract subnet from an already allocated subnet");
+    }
+
+    if (currentState.size < subnetOperationPatch.size) {
+      throw new IllegalArgumentException("requested size should be greater than or equal to existing size");
+    }
+
+    currentState.lowIp += subnetOperationPatch.size;
+    currentState.size -= subnetOperationPatch.size;
+
+    setState(patch, currentState);
+
+    patch.complete();
   }
 
   public void handleExpandSubnetAtBottom(Operation patch) {
@@ -123,8 +152,21 @@ public class DhcpSubnetService extends StatefulService {
     ServiceUtils.logInfo(this, "Creating service %s", getSelfLink());
     try {
       State startState = createOperation.getBody(State.class);
+
       InitializationUtils.initialize(startState);
+      startState.size = startState.highIp - startState.lowIp;
       ValidationUtils.validateState(startState);
+
+      Preconditions.checkArgument(startState.lowIp < startState.highIp, "lowIp should be less than highIp");
+
+      if (startState.isAllocated) {
+        Preconditions.checkArgument(StringUtils.isNotBlank(startState.cidr),
+            "cidr should not be blank for an allocated subnet");
+      } else {
+        Preconditions.checkArgument(!startState.doGarbageCollection,
+            "garbage collection is not allowed for un-allocated subnets");
+      }
+
       createOperation.complete();
     } catch (IllegalStateException t) {
       ServiceUtils.failOperationAsBadRequest(this, createOperation, t);
@@ -242,21 +284,27 @@ public class DhcpSubnetService extends StatefulService {
     /**
      * This is the smallest IP of this subnet. It is reserved as Network Address.
      */
+    @NotNull
+    @Range(min = 0, max = MAX_IPV4)
     public Long lowIp;
 
     /**
      * This is the biggest IP of this subnet. It is reserved as Broadcast Address.
      */
+    @NotNull
+    @Range(min = 0L, max = MAX_IPV4)
     public Long highIp;
 
     /**
      * This is the smallest IP of the range from which IPs will be allocated to VMs/MACs.
      */
+    @Range(min = 0L, max = MAX_IPV4)
     public Long lowIpDynamic;
 
     /**
      * This is the biggest IP of the range from which IPs will be allocated to VMs/MACs.
      */
+    @Range(min = 0L, max = MAX_IPV4)
     public Long highIpDynamic;
 
     /**
@@ -269,12 +317,14 @@ public class DhcpSubnetService extends StatefulService {
      * This is the smallest IP of the range from which IPs will be excluded for allocations to VMs/MACs.
      * This is calculated only for display purposes for the user.
      */
+    @Range(min = 0L, max = MAX_IPV4)
     public Long lowIpStatic;
 
     /**
      * This is the biggest IP of the range from which IPs will be excluded for allocations to VMs/MACs.
      * This is calculated only for display purposes for the user.
      */
+    @Range(min = 0L, max = MAX_IPV4)
     public Long highIpStatic;
 
     /**
@@ -282,6 +332,7 @@ public class DhcpSubnetService extends StatefulService {
      * all or part of the range.
      */
     @DefaultBoolean(false)
+    @NotNull
     public boolean isAllocated;
 
     /**
@@ -289,8 +340,10 @@ public class DhcpSubnetService extends StatefulService {
      * persisted so that we can do queries on the index to find an available subnet from which to extract
      * a new subnet of smaller or equal size.
      */
-    @DefaultInteger(0)
-    public int size;
+    @DefaultLong(0L)
+    @NotNull
+    @Range(min = 0L, max = MAX_IPV4)
+    public Long size;
 
     /**
      * This is the flag to indicate if the garbage collection service should perform on this document.
