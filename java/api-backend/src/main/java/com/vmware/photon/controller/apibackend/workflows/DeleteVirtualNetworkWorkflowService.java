@@ -14,6 +14,7 @@
 package com.vmware.photon.controller.apibackend.workflows;
 
 import com.vmware.photon.controller.api.model.SubnetState;
+import com.vmware.photon.controller.api.model.VirtualSubnet;
 import com.vmware.photon.controller.apibackend.servicedocuments.DeleteLogicalPortsTask;
 import com.vmware.photon.controller.apibackend.servicedocuments.DeleteLogicalRouterTask;
 import com.vmware.photon.controller.apibackend.servicedocuments.DeleteLogicalSwitchTask;
@@ -23,6 +24,8 @@ import com.vmware.photon.controller.apibackend.tasks.DeleteLogicalRouterTaskServ
 import com.vmware.photon.controller.apibackend.tasks.DeleteLogicalSwitchTaskService;
 import com.vmware.photon.controller.apibackend.utils.ServiceHostUtils;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.TombstoneService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.TombstoneServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VirtualNetworkService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VmService;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
@@ -445,6 +448,29 @@ public class DeleteVirtualNetworkWorkflowService extends BaseWorkflowService<Del
   private void deleteVirtualNetwork(DeleteVirtualNetworkWorkflowDocument state) {
     ServiceHostUtils.getCloudStoreHelper(getHost())
         .createDelete(state.taskServiceEntity.documentSelfLink)
+        .setCompletion((op, ex) -> {
+          if (ex != null) {
+            fail(state, ex);
+            return;
+          }
+
+          createTombstoneTask(state);
+        })
+        .sendWith(this);
+  }
+
+  /**
+   * Create a tombstone task for this virtual network.
+   */
+  private void createTombstoneTask(DeleteVirtualNetworkWorkflowDocument state) {
+    TombstoneService.State tombstoneStartState = new TombstoneService.State();
+    tombstoneStartState.entityId = state.virtualNetworkId;
+    tombstoneStartState.entityKind = VirtualSubnet.KIND;
+    tombstoneStartState.tombstoneTime = System.currentTimeMillis();
+
+    ServiceHostUtils.getCloudStoreHelper(getHost())
+        .createPost(TombstoneServiceFactory.SELF_LINK)
+        .setBody(tombstoneStartState)
         .setCompletion((op, ex) -> {
           if (ex != null) {
             fail(state, ex);

@@ -23,12 +23,14 @@ import com.vmware.photon.controller.apibackend.servicedocuments.DeleteVirtualNet
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.TaskService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.TombstoneService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VirtualNetworkService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VmService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VmServiceFactory;
 import com.vmware.photon.controller.common.tests.nsx.NsxClientMock;
 import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
+import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;
 import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;
@@ -38,8 +40,12 @@ import com.vmware.photon.controller.nsxclient.NsxClientFactory;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.TaskState;
+import com.vmware.xenon.services.common.NodeGroupBroadcastResponse;
+import com.vmware.xenon.services.common.QueryTask;
 
+import com.google.common.collect.ImmutableMap;
 import org.apache.commons.lang3.tuple.Pair;
+import org.hamcrest.CoreMatchers;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
@@ -57,6 +63,7 @@ import static org.testng.Assert.fail;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.Set;
 
 /**
  * This class implements tests for the {@link com.vmware.photon.controller.apibackend.workflows
@@ -910,6 +917,9 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
         fail("should have failed to find deleted document");
       } catch (DocumentNotFoundException ex) {
       }
+
+      // Verify tombstone task was created
+      assertThat(getTombstoneTaskCount(finalState.virtualNetworkId), CoreMatchers.is(1));
     }
 
     /**
@@ -971,6 +981,9 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
       // Verifies that the virtual network entity is NOT deleted from cloud-store.
       testEnvironment.getServiceState(
           finalState.taskServiceEntity.documentSelfLink, VirtualNetworkService.State.class);
+
+      // Verify the no tombstone task was created
+      assertThat(getTombstoneTaskCount(finalState.virtualNetworkId), is(0));
     }
 
     /**
@@ -1264,6 +1277,21 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
               TaskService.State.class);
       assertThat(taskServiceState, notNullValue());
       assertThat(taskServiceState.state, is(TaskService.State.TaskState.ERROR));
+    }
+
+    private int getTombstoneTaskCount(String entityId) throws Throwable {
+      ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
+      termsBuilder.put("entityId", entityId);
+
+      QueryTask.QuerySpecification querySpecification = QueryTaskUtils.buildQuerySpec(TombstoneService.State.class,
+          termsBuilder.build());
+      QueryTask queryTask = QueryTask.create(querySpecification);
+      queryTask.setDirect(true);
+
+      NodeGroupBroadcastResponse response = testEnvironment.sendBroadcastQueryAndWait(queryTask);
+      Set<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(response);
+
+      return documentLinks.size();
     }
 
     @DataProvider(name = "hostCount")
