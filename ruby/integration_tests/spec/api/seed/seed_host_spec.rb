@@ -17,9 +17,6 @@ describe "Seed host", seed_host: true do
     EsxCloud::Config.init
     EsxCloud::Config.client = ApiClientHelper.management
 
-    allowed_networks = EsxCloud::TestHelpers.get_all_port_groups.join(",")
-    fail "No port group defined for VMs in ESX_VM_PORT_GROUP" if allowed_networks.nil? || allowed_networks.empty?
-
     allowed_datastores = EsxCloud::TestHelpers.get_datastore_name
     fail "No datastore defined for VMs in ESX_DATASTORE" if allowed_datastores.nil? || allowed_datastores.empty?
 
@@ -27,8 +24,7 @@ describe "Seed host", seed_host: true do
     fail "Unexpected deployment list #{deployments.inspect}" unless deployments.size == 1
 
     metadata = {
-        "ALLOWED_DATASTORES" => allowed_datastores,
-        "ALLOWED_NETWORKS" => allowed_networks
+        "ALLOWED_DATASTORES" => allowed_datastores
     }
 
     spec = EsxCloud::HostCreateSpec.new(
