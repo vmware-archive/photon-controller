@@ -104,21 +104,17 @@ public class SubnetAllocatorService extends StatefulService {
     public static final String KIND = AllocateSubnet.class.getCanonicalName();
     public final String kind;
 
-    //Input
-    public String ownerProjectId;
-    public Integer numberOfAllIpAddresses;
-    public Integer numberOfStaticIpAddresses;
-
-    //Output
     public String subnetId;
+    public Long numberOfAllIpAddresses;
+    public Long numberOfStaticIpAddresses;
 
     private AllocateSubnet() {
       kind = null;
     }
 
-    public AllocateSubnet(String ownerProjectId, Integer numberOfAllIpAddresses, Integer numberOfStaticIpAddresses) {
-      if (ownerProjectId == null) {
-        throw new IllegalArgumentException("ownerProjectId cannot be null");
+    public AllocateSubnet(String subnetId, Long numberOfAllIpAddresses, Long numberOfStaticIpAddresses) {
+      if (subnetId == null) {
+        throw new IllegalArgumentException("subnetId cannot be null");
       }
 
       if (numberOfAllIpAddresses == null) {
@@ -130,7 +126,7 @@ public class SubnetAllocatorService extends StatefulService {
       }
 
       this.kind = KIND;
-      this.ownerProjectId = ownerProjectId;
+      this.subnetId = subnetId;
       this.numberOfAllIpAddresses = numberOfAllIpAddresses;
       this.numberOfStaticIpAddresses = numberOfStaticIpAddresses;
     }
@@ -164,7 +160,24 @@ public class SubnetAllocatorService extends StatefulService {
 
   public void handleAllocateSubnet(Operation patch) {
     ServiceUtils.logInfo(this, "Allocating subnet %s", getSelfLink());
-    patch.complete();
+
+    AllocateSubnet allocateSubnetPatch = patch.getBody(AllocateSubnet.class);
+
+    try {
+      DhcpSubnetService.State subnet = new DhcpSubnetService.State();
+      subnet.lowIp = 0L;
+      subnet.highIp = allocateSubnetPatch.numberOfAllIpAddresses;
+      subnet.documentSelfLink = allocateSubnetPatch.subnetId;
+
+      Operation postOperation = Operation.createPost(this, DhcpSubnetService.FACTORY_LINK)
+          .setBody(subnet);
+      ServiceUtils.doServiceOperation(this, postOperation);
+
+      patch.complete();
+    } catch (Throwable t) {
+      ServiceUtils.logSevere(this, t);
+      patch.fail(t);
+    }
   }
 
   public void handleReleaseSubnet(Operation patch) {

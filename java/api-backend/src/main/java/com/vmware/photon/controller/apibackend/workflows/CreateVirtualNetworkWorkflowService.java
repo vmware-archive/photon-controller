@@ -185,7 +185,9 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
   private void allocateIpAddressSpace(CreateVirtualNetworkWorkflowDocument state) {
 
     SubnetAllocatorService.AllocateSubnet allocateSubnet =
-        new SubnetAllocatorService.AllocateSubnet(state.parentId, state.size, state.reservedStaticIpSize);
+        new SubnetAllocatorService.AllocateSubnet(
+            ServiceUtils.getIDFromDocumentSelfLink(state.taskServiceEntity.documentSelfLink),
+            (long) state.size, (long) state.reservedStaticIpSize);
 
     ServiceHostUtils.getCloudStoreHelper(getHost())
         .createPatch(SubnetAllocatorService.SINGLETON_LINK)
@@ -197,7 +199,6 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
           }
 
           try {
-            SubnetAllocatorService.AllocateSubnet subnet = op.getBody(SubnetAllocatorService.AllocateSubnet.class);
             CreateVirtualNetworkWorkflowDocument patchState = buildPatch(
                 TaskState.TaskStage.STARTED,
                 CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.GET_NSX_CONFIGURATION);
@@ -476,14 +477,14 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
     virtualNetworkPatchState.tier0RouterId = state.taskServiceEntity.tier0RouterId;
 
     ServiceHostUtils.getCloudStoreHelper(getHost())
-      .createPatch(state.taskServiceEntity.documentSelfLink)
-      .setBody(virtualNetworkPatchState)
-      .setCompletion((op, ex) -> {
-        if (ex != null) {
-          ServiceUtils.logSevere(this, ex);
-        }
-      })
-      .sendWith(this);
+        .createPatch(state.taskServiceEntity.documentSelfLink)
+        .setBody(virtualNetworkPatchState)
+        .setCompletion((op, ex) -> {
+          if (ex != null) {
+            ServiceUtils.logSevere(this, ex);
+          }
+        })
+        .sendWith(this);
   }
 
   /**
