@@ -27,8 +27,6 @@ import com.vmware.photon.controller.apibackend.servicedocuments.DeleteVirtualNet
 import com.vmware.photon.controller.apibackend.workflows.CreateVirtualNetworkWorkflowService;
 import com.vmware.photon.controller.apibackend.workflows.DeleteVirtualNetworkWorkflowService;
 import com.vmware.photon.controller.apife.backends.TaskBackend;
-import com.vmware.photon.controller.apife.backends.TombstoneBackend;
-import com.vmware.photon.controller.apife.backends.VmBackend;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.backends.clients.PhotonControllerXenonRestClient;
 import com.vmware.photon.controller.apife.backends.utils.TaskUtils;
@@ -59,13 +57,10 @@ public class VirtualNetworkFeClient {
   private final PhotonControllerXenonRestClient backendClient;
   private final ApiFeXenonRestClient cloudStoreClient;
   private final TaskBackend taskBackend;
-  private final VmBackend vmBackend;
-  private final TombstoneBackend tombstoneBackend;
 
   @Inject
   public VirtualNetworkFeClient(PhotonControllerXenonRestClient photonControllerXenonRestClient,
-                                ApiFeXenonRestClient cloudStoreClient, TaskBackend taskBackend, VmBackend vmBackend,
-                                TombstoneBackend tombstoneBackend) {
+                                ApiFeXenonRestClient cloudStoreClient, TaskBackend taskBackend) {
     this.backendClient = photonControllerXenonRestClient;
     this.backendClient.start();
 
@@ -73,8 +68,6 @@ public class VirtualNetworkFeClient {
     this.cloudStoreClient.start();
 
     this.taskBackend = taskBackend;
-    this.vmBackend = vmBackend;
-    this.tombstoneBackend = tombstoneBackend;
   }
 
   /**
@@ -134,7 +127,6 @@ public class VirtualNetworkFeClient {
         .post(DeleteVirtualNetworkWorkflowService.FACTORY_LINK, startState)
         .getBody(DeleteVirtualNetworkWorkflowDocument.class);
 
-    tombstoneBackend.create(VirtualSubnet.KIND, networkId);
     return TaskUtils.convertBackEndToFrontEnd(finalState.taskServiceState);
   }
 
