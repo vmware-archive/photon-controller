@@ -8,6 +8,15 @@ set -x -e
 BRANCH=${GERRIT_BRANCH:-`git rev-parse --abbrev-ref HEAD`}
 COMMIT=`git rev-parse --short HEAD`
 VERSION=${BRANCH}
+
+# An increasing number is needed for release number part of RPM. This is used for updating
+# from old RPM to new RPM within same version by tdnf/yum. To autmoate incrementing the
+# release number we will use total commit count in current branch.
+# RPMs have following version format.
+# <version>-<release>
+# And we replace <version> with [branch_name], and <release> with [commit_count.commit_hash].
+COMMIT_COUNT=`git rev-list HEAD | wc -l | xargs`
+
 ROOT=`git rev-parse --show-toplevel`
 SOURCES_DIR="${ROOT}/artifacts/rpms/SOURCES"
 SPECS_DIR="${ROOT}/artifacts/rpms/SPECS"
@@ -65,7 +74,7 @@ docker run -i ${DEBUG_OPTIONS} \
   -v "${RPMS_DIR}":/usr/src/photon/RPMS \
   -w /photon-controller/artifacts \
   vmware/photon-controller-rpm-builder \
-  ./create-rpm-helper.sh "${VERSION}" "${COMMIT}" "${DEBUG}"
+  ./create-rpm-helper.sh "${VERSION}" "${COMMIT}" "${COMMIT_COUNT}" "${DEBUG}"
 
 # Verify rpm was created and could be installed.
 docker run -i \

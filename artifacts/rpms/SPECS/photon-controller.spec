@@ -3,7 +3,7 @@
 Summary:    The Photon Controller management plane
 Name:       photon-controller
 Version:    %{pkg_version}
-Release:    1.%{?pkg_commit}
+Release:    %{pkg_commit_count}.%{?pkg_commit}
 License:    Apache License 2.0
 URL:        https://github.com/vmware/photon-controller
 Group:      Applications
