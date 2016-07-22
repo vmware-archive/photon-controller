@@ -153,7 +153,7 @@ public class CloudStoreConstraintCheckerTest {
   @DataProvider(name = "environment")
   public Object[][] createDefault() {
     return new Object[][] {
-        { "Single-host small Cloudstore", this.cloudStoreTestEnvironmentSmall, this.checkerSmall },
+//        { "Single-host small Cloudstore", this.cloudStoreTestEnvironmentSmall, this.checkerSmall },
         { "Multi-host large Cloudstore", this.cloudStoreTestEnvironmentLarge, this.checkerLarge },
     };
   }
@@ -261,63 +261,70 @@ public class CloudStoreConstraintCheckerTest {
       TestEnvironment cloudStoreEnvironment,
       CloudStoreConstraintChecker checker) throws Throwable {
 
-    logger.info("Testing host type boundaries with {}", environmentName);
+    for (int i = 0; i < 1000; i++) {
+      logger.info("Testing host type boundaries with {}", environmentName);
 
-    List<DatastoreService.State> datastores = createDatastoreDescriptions(10);
-    List<HostService.State> cloudHosts = createHostDescriptions(10, false, datastores);
-    List<HostService.State> managementHosts = createHostDescriptions(10, true, datastores);
+      List<DatastoreService.State> datastores = createDatastoreDescriptions(10);
+      List<HostService.State> cloudHosts = createHostDescriptions(10, false, datastores);
+      List<HostService.State> managementHosts = createHostDescriptions(10, true, datastores);
 
-    logger.info("Making 10 datastores...");
-    createDatastores(cloudStoreEnvironment, datastores);
+      logger.info("Making 10 datastores...");
+      createDatastores(cloudStoreEnvironment, datastores);
 
-    logger.info("Making 10 cloud hosts...");
-    createHosts(cloudStoreEnvironment, cloudHosts);
+      logger.info("Making 10 cloud hosts...");
+      createHosts(cloudStoreEnvironment, cloudHosts);
 
-    logger.info("Making 10 management hosts...");
-    createHosts(cloudStoreEnvironment, managementHosts);
+      logger.info("Making 10 management hosts...");
+      createHosts(cloudStoreEnvironment, managementHosts);
 
-    Map<String, ServerAddress> selectedHosts;
-    ResourceConstraint constraint;
+      Map<String, ServerAddress> selectedHosts;
+      ResourceConstraint constraint;
 
-    // Verify we can find just management hosts
-    constraint = new ResourceConstraint(ResourceConstraintType.MANAGEMENT_ONLY, null);
-    selectedHosts = checker.getCandidatesSync(Arrays.asList(constraint), 2);
-    assertThat(selectedHosts.size(), equalTo(2));
-    for (String hostId : selectedHosts.keySet()) {
-      assertThat(hostId, startsWith(MGMT_HOST_PREFIX));
+      // Verify we can find just management hosts
+      constraint = new ResourceConstraint(ResourceConstraintType.MANAGEMENT_ONLY, null);
+      selectedHosts = checker.getCandidatesSync(Arrays.asList(constraint), 2);
+      assertThat(selectedHosts.size(), equalTo(2));
+      for (String hostId : selectedHosts.keySet()) {
+        assertThat(hostId, startsWith(MGMT_HOST_PREFIX));
+      }
+
+      // Verify we can find just cloud hosts
+      constraint = new ResourceConstraint(ResourceConstraintType.MANAGEMENT_ONLY, null);
+      constraint.setNegative(true);
+      selectedHosts = checker.getCandidatesSync(Arrays.asList(constraint), 2);
+      assertThat(selectedHosts.size(), equalTo(2));
+      for (String hostId : selectedHosts.keySet()) {
+        assertThat(hostId, startsWith(CLOUD_HOST_PREFIX));
+      }
+
+      // Verify we can find only cloud hosts when the resource constraint list is null
+      selectedHosts = checker.getCandidatesSync(null, 2);
+      assertThat(selectedHosts.size(), equalTo(2));
+      for (String hostId : selectedHosts.keySet()) {
+        assertThat(hostId, startsWith(CLOUD_HOST_PREFIX));
+      }
+
+      // Verify we can find just the cloud host which has the datastore and not the management host which has the same
+      // datastore when MANAGEMENT_ONLY constraint is not set
+      List<String> datastoreList = new ArrayList<>();
+      datastoreList.addAll(cloudHosts.get(0).reportedDatastores);
+      constraint = new ResourceConstraint(ResourceConstraintType.DATASTORE, datastoreList);
+      selectedHosts = checker.getCandidatesSync(Arrays.asList(constraint), 1);
+      assertThat(selectedHosts.size(), equalTo(1));
+      for (String hostId : selectedHosts.keySet()) {
+        assertThat(hostId, startsWith(CLOUD_HOST_PREFIX));
+      }
+
+      deleteDatastores(cloudStoreEnvironment, datastores);
+      deleteHosts(cloudStoreEnvironment, cloudHosts);
+      deleteHosts(cloudStoreEnvironment, managementHosts);
+      if (i == 999) {
+        tearDownClass();
+        Thread.sleep(5000);
+        setUpClass();
+        Thread.sleep(1000);
+      }
     }
-
-    // Verify we can find just cloud hosts
-    constraint = new ResourceConstraint(ResourceConstraintType.MANAGEMENT_ONLY, null);
-    constraint.setNegative(true);
-    selectedHosts = checker.getCandidatesSync(Arrays.asList(constraint), 2);
-    assertThat(selectedHosts.size(), equalTo(2));
-    for (String hostId : selectedHosts.keySet()) {
-      assertThat(hostId, startsWith(CLOUD_HOST_PREFIX));
-    }
-
-    // Verify we can find only cloud hosts when the resource constraint list is null
-    selectedHosts = checker.getCandidatesSync(null, 2);
-    assertThat(selectedHosts.size(), equalTo(2));
-    for (String hostId : selectedHosts.keySet()) {
-      assertThat(hostId, startsWith(CLOUD_HOST_PREFIX));
-    }
-
-    // Verify we can find just the cloud host which has the datastore and not the management host which has the same
-    // datastore when MANAGEMENT_ONLY constraint is not set
-    List<String> datastoreList = new ArrayList<>();
-    datastoreList.addAll(cloudHosts.get(0).reportedDatastores);
-    constraint = new ResourceConstraint(ResourceConstraintType.DATASTORE, datastoreList);
-    selectedHosts = checker.getCandidatesSync(Arrays.asList(constraint), 1);
-    assertThat(selectedHosts.size(), equalTo(1));
-    for (String hostId : selectedHosts.keySet()) {
-      assertThat(hostId, startsWith(CLOUD_HOST_PREFIX));
-    }
-
-    deleteDatastores(cloudStoreEnvironment, datastores);
-    deleteHosts(cloudStoreEnvironment, cloudHosts);
-    deleteHosts(cloudStoreEnvironment, managementHosts);
-  }
 
   /**
    * Test that a constraint with multiple values works.
