@@ -22,7 +22,9 @@ import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.XenonRestClient;
 import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.ServiceDocumentQueryResult;
+import com.vmware.xenon.common.UriUtils;
 
 import com.google.common.net.InetAddresses;
 import org.apache.commons.net.util.SubnetUtils;
@@ -37,6 +39,7 @@ import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 import java.net.InetSocketAddress;
+import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
@@ -176,6 +179,46 @@ public class SubnetAllocatorServiceTest {
           ServiceUtils.computeExpirationTime(Integer.MAX_VALUE),
           ServiceUtils.computeExpirationTime(Integer.MAX_VALUE)
       );
+    }
+  }
+
+  /**
+   * Tests for the handlePatch method.
+   */
+  public class HandlePatchTest {
+    private SubnetAllocatorService.State startState;
+
+    @BeforeMethod
+    public void beforeMethod() throws Throwable {
+      startState = createInitialState();
+      Operation result = xenonClient.post(SubnetAllocatorService.FACTORY_LINK, startState);
+      assertThat(result.getStatusCode(), is(HttpStatus.SC_OK));
+      startState = result.getBody(SubnetAllocatorService.State.class);
+    }
+
+    @AfterMethod
+    public void afterMethod() throws Throwable {
+      ServiceHostUtils.deleteAllDocuments(host, "test-host");
+    }
+
+    @Test
+    public void testExtractSubnet() throws Throwable {
+      String subnetId = UUID.randomUUID().toString();
+      SubnetAllocatorService.AllocateSubnet allocateSubnetPatch =
+          new SubnetAllocatorService.AllocateSubnet(
+              subnetId, 16L, 4L);
+      Operation patchOperation = new Operation()
+          .setAction(Service.Action.PATCH)
+          .setBody(allocateSubnetPatch)
+          .setReferer("test-host")
+          .setUri(UriUtils.buildUri(host, startState.documentSelfLink));
+      host.sendRequestAndWait(patchOperation);
+
+      DhcpSubnetService.State currentState = host.getServiceState(DhcpSubnetService.State.class,
+          DhcpSubnetService.FACTORY_LINK + "/" + subnetId);
+
+      assertThat(currentState.lowIp, is(0L));
+      assertThat(currentState.highIp, is(16L));
     }
   }
 
