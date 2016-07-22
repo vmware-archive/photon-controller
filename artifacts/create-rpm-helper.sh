@@ -6,6 +6,9 @@ COMMIT=$2
 COMMIT_COUNT=$3
 DEBUG=$4
 
+USER=`stat -c '%u' .`
+GROUP=`stat -c '%g' .`
+
 cd rpms
 chown root:root ./SPECS/*
 chown root:root /usr/src/photon/SOURCES/*
@@ -23,3 +26,6 @@ else
 
   tar -czf ../build/photon-controller-rpmrepo-"$VERSION".tar.gz -C /usr/src/photon/ RPMS
 fi
+
+chown -R ${USER}:${GROUP} ./SPECS/*
+chown -R ${USER}:${GROUP} /usr/src/photon
