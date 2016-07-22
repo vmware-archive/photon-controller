@@ -20,7 +20,6 @@ describe "deployment lifecycle", order: :defined, deployer: true do
 
   let(:host_metadata) do
     {
-      "ALLOWED_NETWORKS" => EsxCloud::TestHelpers.get_mgmt_port_group,
       "MANAGEMENT_NETWORK_IP" => EsxCloud::TestHelpers.get_mgmt_vm_ip,
       "MANAGEMENT_DATASTORE" => EsxCloud::TestHelpers.get_datastore_name,
       "MANAGEMENT_NETWORK_DNS_SERVER" => EsxCloud::TestHelpers.get_mgmt_vm_dns_server,
