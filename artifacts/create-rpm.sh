@@ -20,6 +20,9 @@ ENVOY_VIB_URL="http://artifactory.ec.eng.vmware.com/artifactory/esxcloud-archive
 
 trap "rm -rf ${TEMP_DIR}; rm -rf ${SOURCES_DIR};" EXIT
 
+mkdir -p "${RPMS_DIR}"
+rm -rf "${RPMS_DIR}"/*
+
 # Create source tar file for use by RPM spec file
 mkdir -p "${SOURCES_DIR}"
 

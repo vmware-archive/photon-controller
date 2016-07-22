@@ -5,6 +5,9 @@ VERSION=$1
 COMMIT=$2
 DEBUG=$3
 
+USER=`stat -c '%u' .`
+GROUP=`stat -c '%g' .`
+
 cd rpms
 chown root:root ./SPECS/*
 chown root:root /usr/src/photon/SOURCES/*
@@ -16,3 +19,6 @@ else
   createrepo --database /usr/src/photon/RPMS
   tar -czf ../build/photon-controller-rpmrepo-"$VERSION".tar.gz -C /usr/src/photon/ RPMS
 fi
+
+chown -R ${USER}:${GROUP} ./SPECS/*
+chown -R ${USER}:${GROUP} /usr/src/photon
