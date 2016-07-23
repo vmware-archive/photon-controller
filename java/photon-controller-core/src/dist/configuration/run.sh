@@ -76,6 +76,37 @@ cp $API_SWAGGER_JS $CONFIG_PATH/assets
 # to installing JRE instead of JDK. This causes the script to fail and exit early when run as a systemd service.
 # TODO(ashokc): fix this as a part of getting swagger UI to work in auth enabled deployment
 
+{{#ENABLE_AUTH}}
+full_hostname="$(hostname -f)"
+
+# Join lightwave domain
+domainjoin join {{{LIGHTWAVE_DOMAIN}}} --password {{{LIGHTWAVE_PASSWORD}}}
+
+# Fill in the hostname and ip address for generating a machine certificate
+sed -i s/IPAddress.*/"IPAddress = {{{REGISTRATION_ADDRESS}}}"/ /opt/vmware/share/config/certool.cfg
+sed -i s/Hostname.*/"Hostname = $full_hostname"/ /opt/vmware/share/config/certool.cfg
+
+mkdir -p /etc/keys
+
+# Generate keys
+certool --genkey --privkey=/etc/keys/machine.privkey --pubkey=/etc/keys/machine.pubkey \
+  --srp-upn administrator@{{{LIGHTWAVE_DOMAIN}}} --srp-pwd {{{LIGHTWAVE_PASSWORD}}} --server {{{LIGHTWAVE_HOSTNAME}}}
+
+# Generate certificate
+certool --gencert --privkey=/etc/keys/machine.privkey --cert=/etc/keys/machine.crt \
+  --srp-upn administrator@{{{LIGHTWAVE_DOMAIN}}} --srp-pwd {{{LIGHTWAVE_PASSWORD}}} --server {{{LIGHTWAVE_HOSTNAME}}} \
+  --config /opt/vmware/share/config/certool.cfg
+
+# Generate pkcs12 keystore
+openssl pkcs12 -export -in /etc/keys/machine.crt -inkey /etc/keys/machine.privkey -out keystore.p12 -name MACHINE_CERT \
+  -password pass:{{{LIGHTWAVE_PASSWORD}}}
+
+# Convert it into JKS
+keytool -importkeystore -deststorepass {{{LIGHTWAVE_PASSWORD}}} -destkeypass {{{LIGHTWAVE_PASSWORD}}} \
+  -destkeystore /keystore.jks -srckeystore keystore.p12 -srcstoretype PKCS12 -srcstorepass {{{LIGHTWAVE_PASSWORD}}} \
+  -alias MACHINE_CERT
+{{/ENABLE_AUTH}}
+
 #
 # Start service
 #
