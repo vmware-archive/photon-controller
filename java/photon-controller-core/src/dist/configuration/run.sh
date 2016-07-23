@@ -71,10 +71,67 @@ fi
 #
 mkdir -p $CONFIG_PATH/assets
 cp $API_SWAGGER_JS $CONFIG_PATH/assets
+$JAVA_HOME/bin/jar uf ${API_LIB}/swagger-ui*.jar -C $CONFIG_PATH assets/$API_SWAGGER_JS_FILE
 
-# Adding the modified swagger js file to swagger-ui*.jar is removed for now because it no longer works with our move
-# to installing JRE instead of JDK. This causes the script to fail and exit early when run as a systemd service.
-# TODO(ashokc): fix this as a part of getting swagger UI to work in auth enabled deployment
+{{#ENABLE_AUTH}}
+full_hostname="$(hostname -f)"
+
+# Check if lightwave server is up
+attempts=1
+reachable="false"
+total_attempts=50
+while [ $attempts -lt $total_attempts ] && [ $reachable != "true" ]; do
+  http_code=$(curl -w "%{http_code}" -s -X GET --insecure https://{{{LIGHTWAVE_HOSTNAME}}})
+  # The curl returns 000 when it fails to connect to the lightwave server
+  if [ $http_code -eq 000 ]; then
+    echo "Lightwave REST server not reachable (attempt $attempts/$total_attempts), will try again."
+    attempts=$[$attempts+1]
+    sleep 5
+  else
+    reachable="true"
+    break
+  fi
+done
+if [ $attempts -eq $total_attempts ]; then
+  echo "Could not connect to Lightwave REST client after $total_attempts attempts"
+  exit 1
+fi
+
+# Join lightwave domain
+domainjoin join {{{LIGHTWAVE_DOMAIN}}} --password {{{LIGHTWAVE_PASSWORD}}}
+
+# Fill in the hostname and ip address for generating a machine certificate
+sed -i s/IPAddress.*/"IPAddress = {{{REGISTRATION_ADDRESS}}}"/ /opt/vmware/share/config/certool.cfg
+sed -i s/Hostname.*/"Hostname = $full_hostname"/ /opt/vmware/share/config/certool.cfg
+
+mkdir -p /etc/keys
+
+# Generate keys if they don't exist
+if [ ! -f /etc/keys/machine.privkey ] || [ ! -f /etc/keys/machine.pubkey ]; then
+  certool --genkey --privkey=/etc/keys/machine.privkey --pubkey=/etc/keys/machine.pubkey \
+    --srp-upn administrator@{{{LIGHTWAVE_DOMAIN}}} --srp-pwd {{{LIGHTWAVE_PASSWORD}}} --server {{{LIGHTWAVE_HOSTNAME}}}
+fi
+
+# Generate certificate if it doesn't exist
+if [ ! -f /etc/keys/machine.crt ]; then
+  certool --gencert --privkey=/etc/keys/machine.privkey --cert=/etc/keys/machine.crt \
+    --srp-upn administrator@{{{LIGHTWAVE_DOMAIN}}} --srp-pwd {{{LIGHTWAVE_PASSWORD}}} \
+    --server {{{LIGHTWAVE_HOSTNAME}}} --config /opt/vmware/share/config/certool.cfg
+fi
+
+# Generate pkcs12 keystore
+openssl pkcs12 -export -in /etc/keys/machine.crt -inkey /etc/keys/machine.privkey -out keystore.p12 -name MACHINE_CERT \
+  -password pass:{{{LIGHTWAVE_PASSWORD}}}
+
+# Convert it into JKS
+keytool -importkeystore -deststorepass {{{LIGHTWAVE_PASSWORD}}} -destkeypass {{{LIGHTWAVE_PASSWORD}}} \
+  -destkeystore /keystore.jks -srckeystore keystore.p12 -srcstoretype PKCS12 -srcstorepass {{{LIGHTWAVE_PASSWORD}}} \
+  -alias MACHINE_CERT
+
+# Restrict permission on the key files
+chmod 0400 /etc/keys/machine.privkey
+chmod 0444 /etc/keys/machine.pubkey
+{{/ENABLE_AUTH}}
 
 #
 # Start service
