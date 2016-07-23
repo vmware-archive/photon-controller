@@ -53,9 +53,10 @@ public class ApiClient {
   @Inject
   public ApiClient(@Assisted String endpoint,
                    CloseableHttpAsyncClient httpClient,
-                   @SharedSecret String sharedSecret) {
+                   @SharedSecret String sharedSecret,
+                   String protocol) {
     if (!endpoint.startsWith("http")) {
-      endpoint = "http://" + endpoint;
+      endpoint = protocol + "://" + endpoint;
     }
 
     if (sharedSecret == null) {

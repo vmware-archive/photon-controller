@@ -106,6 +106,11 @@ public class DeployerContextTest {
     }
 
     @Test
+    public void testIsAuthEnabled() {
+      assertThat(deployerContext.isAuthEnabled(), is(true));
+    }
+
+    @Test
     public void testDeployerDefaultOverrides() {
       assertThat(deployerContext.getCorePoolSize(), is(17));
       assertThat(deployerContext.getMaximumPoolSize(), is(17));

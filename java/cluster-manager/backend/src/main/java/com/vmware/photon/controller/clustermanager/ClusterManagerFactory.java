@@ -51,6 +51,7 @@ public class ClusterManagerFactory {
   private String apiFeSharedSecret;
   private ServerSet cloudStoreServerSet;
   private String scriptsDirectory;
+  private boolean isAuthEnabled;
 
   /**
    * All Xenon Factory Services in Cluster-Manager backend.
@@ -82,13 +83,15 @@ public class ClusterManagerFactory {
                                ServerSet apiFeServerSet,
                                String apiFeSharedSecret,
                                ServerSet cloudStoreServerSet,
-                               String scriptsDirectory) {
+                               String scriptsDirectory,
+                               boolean isAuthEnabled) {
     this.listeningExecutorService = listeningExecutorService;
     this.httpAsyncClient = httpAsyncClient;
     this.apiFeServerSet = apiFeServerSet;
     this.apiFeSharedSecret = apiFeSharedSecret;
     this.cloudStoreServerSet = cloudStoreServerSet;
     this.scriptsDirectory = scriptsDirectory;
+    this.isAuthEnabled = isAuthEnabled;
   }
 
   /**
@@ -96,12 +99,18 @@ public class ClusterManagerFactory {
    */
   public ApiClient createApiClient() {
     String endpoint;
+    String protocol;
+    if (this.isAuthEnabled) {
+      protocol = "https";
+    } else {
+      protocol = "http";
+    }
     try {
-      endpoint = ServiceUtils.createUriFromServerSet(this.apiFeServerSet, null).toString();
+      endpoint = ServiceUtils.createUriFromServerSet(this.apiFeServerSet, null, protocol).toString();
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
-    return new ApiClient(endpoint, this.httpAsyncClient, this.apiFeSharedSecret);
+    return new ApiClient(endpoint, this.httpAsyncClient, this.apiFeSharedSecret, protocol);
   }
 
   /**
