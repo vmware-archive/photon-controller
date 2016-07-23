@@ -18,10 +18,16 @@ task zookeeper(type: DockerBuildImage) {
   tag = "photon/zookeeper"
 }
 
+task deleteOldRpms(type: Exec) {
+  workingDir "../containers/photon-controller-core"
+  executable "bash"
+  args "-c", "rm -rf *.rpm"
+}
+
 task copyRpms(type: Copy) {
-    dependsOn ':rpm'
-    from "../../artifacts/build/RPMS/x86_64/"
-    into "../containers/photon-controller-core/"
+  dependsOn ':rpm', deleteOldRpms
+  from "../../artifacts/build/RPMS/x86_64/"
+  into "../containers/photon-controller-core/"
 }
 
 task photoncore(type: DockerBuildImage) {
