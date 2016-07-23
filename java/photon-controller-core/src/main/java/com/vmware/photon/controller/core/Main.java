@@ -289,7 +289,7 @@ public class Main {
     final DockerProvisionerFactory dockerProvisionerFactory = new com.vmware.photon.controller.core.Main
         .DockerProvisionerFactoryImpl();
     final ApiClientFactory apiClientFactory = new ApiClientFactory(apiFeServerSet, httpClient,
-        deployerConfig.getDeployerContext().getSharedSecret());
+        deployerConfig.getDeployerContext().getSharedSecret(), deployerConfig.getDeployerContext().isAuthEnabled());
 
     /**
      * The blocking queue associated with the thread pool executor service
@@ -323,7 +323,8 @@ public class Main {
 
     final ClusterManagerFactory clusterManagerFactory = new ClusterManagerFactory(listeningExecutorService,
         httpClient, apiFeServerSet, deployerConfig.getDeployerContext().getSharedSecret(), cloudStoreServerSet,
-        Paths.get(deployerConfig.getDeployerContext().getScriptDirectory(), CLUSTER_SCRIPTS_DIRECTORY).toString());
+        Paths.get(deployerConfig.getDeployerContext().getScriptDirectory(), CLUSTER_SCRIPTS_DIRECTORY).toString(),
+        deployerConfig.getDeployerContext().isAuthEnabled());
 
     return new DeployerServiceGroup(deployerConfig.getDeployerContext(), dockerProvisionerFactory,
         apiClientFactory, deployerConfig.getContainersConfig(), listeningExecutorService,

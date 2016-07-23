@@ -23,6 +23,7 @@ deployer:
   vibDirectory: "/tmp/deployAgent/vibs"
   waitForServiceMaxRetryCount: 17
   sharedSecret: "shared-secret"
+  enableAuth: true
 
 xenon:
   bindAddress: localhost

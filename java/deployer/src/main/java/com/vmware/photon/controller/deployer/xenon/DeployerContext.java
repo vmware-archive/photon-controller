@@ -19,6 +19,7 @@ import com.vmware.photon.controller.common.xenon.migration.UpgradeInformation;
 import com.vmware.photon.controller.deployer.xenon.constant.DeployerDefaults;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.annotations.VisibleForTesting;
 import org.hibernate.validator.constraints.NotBlank;
 import org.hibernate.validator.constraints.Range;
@@ -109,6 +110,9 @@ public class DeployerContext {
   @NotBlank
   private final String configDirectory;
 
+  @JsonProperty("enableAuth")
+  private final boolean enableAuth;
+
   @VisibleForTesting
   public DeployerContext() {
     corePoolSize = DeployerDefaults.CORE_POOL_SIZE;
@@ -133,6 +137,7 @@ public class DeployerContext {
     waitForServiceMaxRetryCount = DeployerDefaults.DEFAULT_WAIT_FOR_SERVICE_MAX_RETRY_COUNT;
     sharedSecret = UUID.randomUUID().toString();
     configDirectory = null;
+    enableAuth = false;
   }
 
   public int getCorePoolSize() {
@@ -229,6 +234,10 @@ public class DeployerContext {
 
   public String getConfigDirectory() {
     return configDirectory;
+  }
+
+  public boolean isAuthEnabled() {
+    return enableAuth;
   }
 
   public Collection<DeploymentMigrationInformation> getDeploymentMigrationInformation() {
