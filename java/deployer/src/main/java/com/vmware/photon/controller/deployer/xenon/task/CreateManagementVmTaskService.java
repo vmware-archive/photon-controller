@@ -1298,6 +1298,18 @@ public class CreateManagementVmTaskService extends StatefulService {
           BuildRuntimeConfigurationTaskService.MUSTACHE_KEY_DEPLOYER_PEER_NODES,
           (k, v) -> new Gson().fromJson(v.toString(), peerNodeTypeToken.getType()));
 
+      // Convert the String values in the dynamic parameters to boolean values. This is needed for mustache to
+      // correctly recognize the boolean values. For example, if "false" evaluates to true in mustache where "false"
+      // is of type String. But, if false does not, where false is of type boolean.
+      for (String key : dynamicParameters.keySet()) {
+        if (dynamicParameters.get(key).equals("true")) {
+          dynamicParameters.put(key, true);
+        }
+        if (dynamicParameters.get(key).equals("false")) {
+          dynamicParameters.put(key, false);
+        }
+      }
+
       serviceConfigurator.applyDynamicParameters(serviceConfigDirectoryPath.toString(),
           ContainersConfig.ContainerType.valueOf(templateStates.get(containerState.documentSelfLink).name),
           dynamicParameters);
