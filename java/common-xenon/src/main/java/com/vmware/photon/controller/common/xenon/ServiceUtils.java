@@ -232,7 +232,21 @@ public class ServiceUtils {
    */
   public static URI createUriFromServerSet(ServerSet serverSet, String path) throws
       URISyntaxException {
-    return createUriFromServerSet(serverSet.getServers(), path);
+    return createUriFromServerSet(serverSet, path, "http");
+  }
+
+  /**
+   * Returns the URI of a random server.
+   *
+   * @param serverSet
+   * @param path
+   * @param protocol
+   * @return
+   * @throws URISyntaxException
+   */
+  public static URI createUriFromServerSet(ServerSet serverSet, String path, String protocol) throws
+      URISyntaxException {
+    return createUriFromServerSet(serverSet.getServers(), path, protocol);
   }
 
   /**
@@ -245,11 +259,25 @@ public class ServiceUtils {
    */
   public static URI createUriFromServerSet(Set<InetSocketAddress> serverInetSet, String path) throws
       URISyntaxException {
+    return createUriFromServerSet(serverInetSet, path, "http");
+  }
+
+  /**
+   * Returns the URI of a random server.
+   *
+   * @param serverInetSet
+   * @param path
+   * @param protocol
+   * @return
+   * @throws URISyntaxException
+   */
+  public static URI createUriFromServerSet(Set<InetSocketAddress> serverInetSet, String path, String protocol) throws
+      URISyntaxException {
     InetSocketAddress inetSocketAddress = ServiceUtils.selectRandomItem(serverInetSet);
     String address = inetSocketAddress.getHostString();
     int port = inetSocketAddress.getPort();
 
-    URI uri = new URI("http", null, address, port, path, null, null);
+    URI uri = new URI(protocol, null, address, port, path, null, null);
     return uri;
   }
 

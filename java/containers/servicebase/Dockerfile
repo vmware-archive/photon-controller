@@ -10,7 +10,7 @@ RUN tdnf clean all \
   && tdnf install -y net-tools \
   && tdnf install -y iproute2 \
   && tdnf install -y cdrkit \
-  && tdnf install -y openjre \
+  && tdnf install -y openjdk \
   && tdnf install -y openssh \
   && tdnf install -y sshpass
 

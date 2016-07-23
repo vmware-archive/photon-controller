@@ -70,7 +70,7 @@ public class TestRunner {
     httpClient.start();
 
     String apiAddress = args.getManagementVmAddress() + ":" + API_FE_PORT;
-    this.apiClient = new ApiClient(apiAddress, httpClient, null);
+    this.apiClient = new ApiClient(apiAddress, httpClient, null, "http");
 
     String deployerAddress = args.getManagementVmAddress() + ":" + DEPLOYER_PORT;
     this.deployerClient = new RestClient(deployerAddress, httpClient);

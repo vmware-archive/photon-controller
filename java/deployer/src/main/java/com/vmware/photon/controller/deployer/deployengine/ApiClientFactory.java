@@ -28,20 +28,29 @@ public class ApiClientFactory {
   private ServerSet serverSet;
   private CloseableHttpAsyncClient httpClient;
   private String sharedSecret;
+  private boolean isAuthEnabled;
 
   public ApiClientFactory(ServerSet serverSet,
                           CloseableHttpAsyncClient httpClient,
-                          String sharedSecret) {
+                          String sharedSecret,
+                          boolean isAuthEnabled) {
 
     this.serverSet = serverSet;
     this.httpClient = httpClient;
     this.sharedSecret = sharedSecret;
+    this.isAuthEnabled = isAuthEnabled;
   }
 
   public ApiClient create() {
     String endpoint;
+    String protocol;
+    if (this.isAuthEnabled) {
+      protocol = "https";
+    } else {
+      protocol = "http";
+    }
     try {
-      endpoint = ServiceUtils.createUriFromServerSet(serverSet, null).toString();
+      endpoint = ServiceUtils.createUriFromServerSet(serverSet, null, protocol).toString();
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
@@ -50,8 +59,14 @@ public class ApiClientFactory {
   }
 
   public ApiClient create(String endpoint) {
+    String protocol;
+    if (this.isAuthEnabled) {
+      protocol = "https";
+    } else {
+      protocol = "http";
+    }
     try {
-      return new ApiClient(endpoint, httpClient, sharedSecret);
+      return new ApiClient(endpoint, httpClient, sharedSecret, protocol);
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
