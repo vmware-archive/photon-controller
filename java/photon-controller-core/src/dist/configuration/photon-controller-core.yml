@@ -26,6 +26,7 @@ deployer:
     tenantName: "{{{TENANT_NAME}}}"
     vibDirectory: "{{{VIB_DIRECTORY}}}"
     sharedSecret: "{{{SHARED_SECRET}}}"
+    enableAuth: {{{ENABLE_AUTH}}}
 
 photon_controller_logging:
   file:
@@ -51,9 +52,21 @@ apife:
   applicationContextPath: /
   registerDefaultExceptionMappers: false
   connector:
+{{^ENABLE_AUTH}}
     type: http
     port: 9000
     bindHost: "0.0.0.0"
+{{/ENABLE_AUTH}}
+{{#ENABLE_AUTH}}
+    type: https
+    port: 9000
+    bindHost: "0.0.0.0"
+    keyStorePath: /keystore.jks
+    keyStorePassword: {{{LIGHTWAVE_PASSWORD}}}
+    validateCerts: false
+    supportedProtocols: [TLSv1.1, TLSv1.2]
+    excludedProtocols: [TLSv1, SSLv2Hello, SSLv3]
+{{/ENABLE_AUTH}}
 
 use_virtual_network: {{{USE_VIRTUAL_NETWORK}}}
 
