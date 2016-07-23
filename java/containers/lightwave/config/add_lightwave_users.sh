@@ -4,6 +4,7 @@ admin_password=$1
 user_password='Passw0rd!'
 
 lwcli="docker exec lightwave opt/vmware/bin/dir-cli"
+lwdnscli="docker exec lightwave opt/vmware/bin/vmdns-cli"
 
 # Add users to Lightwave
 # Currently 2 administrators, 1 tenant administrator, 1 project user, and 1 normal user.
@@ -25,3 +26,6 @@ $lwcli user create --account ec-project-user --user-password $user_password --fi
 $lwcli group modify --name EsxcloudProjectUserGroup1 --add ec-project-user --password $admin_password
 
 $lwcli user create --account ec-user --user-password $user_password --first-name ec-user --last-name ec-user --password $admin_password
+
+# Add DNS forwarder to lightwave VM. 10.0.2.3 DNS works regardless of where we bring up devbox.
+$lwdnscli add-forwarder 10.0.2.3
