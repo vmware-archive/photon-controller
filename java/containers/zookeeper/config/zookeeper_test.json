@@ -5,7 +5,7 @@
   "diskGb": 1,
   "isReplicated": true,
   "isPrivileged": false,
-  "containerImage": "photon/zookeeper",
+  "containerImage": "vmware/zookeeper",
   "containerName": "zookeeper",
   "portBindings": {
     "2181": 2181,

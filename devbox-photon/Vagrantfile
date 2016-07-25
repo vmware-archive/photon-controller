@@ -184,7 +184,7 @@ Vagrant.configure("2") do |config|
     lightwave.vm.provision :shell, :privileged => false, :inline => <<-EOS
       set -xe
       sleep 15 # docker takes longer to come up in RC1
-      docker tag devbox/compileservices photon/compileservices
+      docker tag devbox/compileservices vmware/compileservices
     EOS
 
     dynamic_params = %Q(
@@ -402,7 +402,7 @@ $out
     photon.vm.provision :shell, :privileged => false, :inline => <<-EOS
       set -xe
       sleep 15 # docker takes longer to come up in RC1
-      docker tag devbox/compileservices photon/compileservices
+      docker tag devbox/compileservices vmware/compileservices
     EOS
 
 
@@ -557,10 +557,10 @@ EOM
 
   # ================ PROVISIONING ================
 
-  # renaming esxcloud containers to zookeeper Containers
+  # renaming esxcloud containers
   photon.vm.provision :shell, :inline => <<-EOS
     docker tag devbox/zookeeper photon/zookeeper
-    docker tag devbox/haproxy photon/haproxy
+    docker tag devbox/haproxy vmware/haproxy
   EOS
 
   #
@@ -594,7 +594,7 @@ container=$(docker run -d \
   -v /devbox_data/java/devbox/compileservices:/var/compileservices \
   -e "GIT_ROOT=#{GIT_ROOT}" \
   -e "GIT_REVISION=#{GIT_REVISION}" \
-  photon/compileservices /var/compileservices/agent_compile_install.sh)
+  vmware/compileservices /var/compileservices/agent_compile_install.sh)
 docker attach $container
 docker commit $container devbox/agent
 
