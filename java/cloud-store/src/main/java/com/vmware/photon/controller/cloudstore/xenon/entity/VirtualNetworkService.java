@@ -231,9 +231,9 @@ public class VirtualNetworkService extends StatefulService {
     public String tier0RouterDownlinkPortId;
 
     /**
-     * Mapping between floating IP of the VM and the ID of the NAT rule on the logical router.
+     * Mapping between the ID of the NAT rule on the logical router and floating IP of the VM.
      */
-    public Map<String, String> floatingIpToNatRuleMap;
+    public Map<String, String> natRuleToFloatingIpMap;
 
     public Long deleteRequestTime;
 
