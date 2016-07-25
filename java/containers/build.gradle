@@ -1,9 +1,17 @@
 import com.bmuschko.gradle.docker.tasks.container.*
 import com.bmuschko.gradle.docker.tasks.image.*
 
-task servicebase(type: DockerBuildImage) {
+task servicebaseimage(type: DockerBuildImage) {
   inputDir = file("servicebase")
   tag = "photon/servicebase"
+}
+
+task servicebase(type: DockerTagImage) {
+  dependsOn servicebaseimage
+  force = true
+  imageId = servicebaseimage.getTag()
+  repository = "vmware/photon-controller-service-base"
+  tag = "latest"
 }
 
 task haproxy(type: DockerBuildImage) {
@@ -34,6 +42,18 @@ task photoncoreNoBase(type: DockerBuildImage) {
   dependsOn copyRpms
   inputDir = file("photon-controller-core")
   tag = "photon/photon-controller-core"
+}
+
+task photoncore_lightwave_client(type: DockerBuildImage) {
+  dependsOn servicebase, copyRpms
+  inputDir = file("photon-controller-lightwave-client")
+  tag = "photon/photon-controller-lightwave-client"
+}
+
+task photoncore_lightwave_server(type: DockerBuildImage) {
+  dependsOn servicebase, copyRpms
+  inputDir = file("photon-controller-lightwave-server")
+  tag = "photon/photon-controller-lightwave-server"
 }
 
 task photoncore(type: DockerBuildImage) {
