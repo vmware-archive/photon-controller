@@ -776,6 +776,26 @@ public class NsxClientMock extends NsxClient {
       return this;
     }
 
+    public Builder deleteNatRule(boolean isSuccess) throws Throwable {
+
+      if (isSuccess) {
+        doAnswer(invocation -> {
+          ((FutureCallback<Void>) invocation.getArguments()[2])
+              .onSuccess(null);
+          return null;
+        }).when(mockLogicalRouterApi).deleteNatRule(anyString(), anyString(), any(FutureCallback.class));
+      } else {
+        RuntimeException error = new RuntimeException("deleteNatRule failed");
+        doAnswer(invocation -> {
+          ((FutureCallback<Void>) invocation.getArguments()[2])
+              .onFailure(error);
+          return null;
+        }).when(mockLogicalRouterApi).deleteNatRule(anyString(), anyString(), any(FutureCallback.class));
+      }
+
+      return this;
+    }
+
     public NsxClientMock build() {
       return new NsxClientMock(mockFabricApi, mockLogicalSwitchApi, mockLogicalRouterApi, mockDhcpServiceApi);
     }

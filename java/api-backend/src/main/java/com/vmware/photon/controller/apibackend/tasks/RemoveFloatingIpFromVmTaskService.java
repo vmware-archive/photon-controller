@@ -13,7 +13,8 @@
 
 package com.vmware.photon.controller.apibackend.tasks;
 
-import com.vmware.photon.controller.apibackend.servicedocuments.AssignFloatingIpToVmTask;
+import com.vmware.photon.controller.apibackend.exceptions.RemoveFloatingIpFromVmException;
+import com.vmware.photon.controller.apibackend.servicedocuments.RemoveFloatingIpFromVmTask;
 import com.vmware.photon.controller.apibackend.utils.ServiceHostUtils;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VirtualNetworkService;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
@@ -25,11 +26,9 @@ import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.TaskUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
 import com.vmware.photon.controller.nsxclient.apis.LogicalRouterApi;
-import com.vmware.photon.controller.nsxclient.models.NatRule;
-import com.vmware.photon.controller.nsxclient.models.NatRuleCreateSpec;
-import com.vmware.photon.controller.nsxclient.utils.NameUtils;
 import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.Service;
 import com.vmware.xenon.common.StatefulService;
 import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.Utils;
@@ -42,23 +41,23 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Implements an Xenon service that assigns a floating IP to a VM.
+ * Implements an Xenon service that represents a task to remove the floating IP from a VM.
  */
-public class AssignFloatingIpToVmTaskService extends StatefulService {
+public class RemoveFloatingIpFromVmTaskService extends StatefulService {
 
-  public static final String FACTORY_LINK = ServiceUriPaths.APIBACKEND_ROOT + "/assign-floating-ip-tasks";
+  public static final String FACTORY_LINK = ServiceUriPaths.APIBACKEND_ROOT + "/remove-floating-ip-tasks";
 
   public static FactoryService createFactory() {
-    return FactoryService.create(AssignFloatingIpToVmTaskService.class, AssignFloatingIpToVmTask.class);
+    return FactoryService.create(RemoveFloatingIpFromVmTaskService.class, RemoveFloatingIpFromVmTask.class);
   }
 
-  public AssignFloatingIpToVmTaskService() {
-    super(AssignFloatingIpToVmTask.class);
+  public RemoveFloatingIpFromVmTaskService() {
+    super(RemoveFloatingIpFromVmTask.class);
 
-    super.toggleOption(ServiceOption.PERSISTENCE, true);
-    super.toggleOption(ServiceOption.REPLICATION, true);
-    super.toggleOption(ServiceOption.OWNER_SELECTION, true);
-    super.toggleOption(ServiceOption.INSTRUMENTATION, true);
+    super.toggleOption(Service.ServiceOption.PERSISTENCE, true);
+    super.toggleOption(Service.ServiceOption.REPLICATION, true);
+    super.toggleOption(Service.ServiceOption.OWNER_SELECTION, true);
+    super.toggleOption(Service.ServiceOption.INSTRUMENTATION, true);
   }
 
   @Override
@@ -66,14 +65,14 @@ public class AssignFloatingIpToVmTaskService extends StatefulService {
     ServiceUtils.logInfo(this, "Starting service %s", getSelfLink());
 
     try {
-      AssignFloatingIpToVmTask startState = startOperation.getBody(AssignFloatingIpToVmTask.class);
+      RemoveFloatingIpFromVmTask startState = startOperation.getBody(RemoveFloatingIpFromVmTask.class);
       InitializationUtils.initialize(startState);
 
       validateStartState(startState);
 
-      if (startState.taskState.stage == AssignFloatingIpToVmTask.TaskState.TaskStage.CREATED) {
-        startState.taskState.stage = AssignFloatingIpToVmTask.TaskState.TaskStage.STARTED;
-        startState.taskState.subStage = AssignFloatingIpToVmTask.TaskState.SubStage.CREATE_NAT_RULE;
+      if (startState.taskState.stage == RemoveFloatingIpFromVmTask.TaskState.TaskStage.CREATED) {
+        startState.taskState.stage = RemoveFloatingIpFromVmTask.TaskState.TaskStage.STARTED;
+        startState.taskState.subStage = RemoveFloatingIpFromVmTask.TaskState.SubStage.REMOVE_NAT_RULE;
       }
 
       if (startState.documentExpirationTimeMicros <= 0) {
@@ -85,7 +84,7 @@ public class AssignFloatingIpToVmTaskService extends StatefulService {
 
       if (ControlFlags.isOperationProcessingDisabled(startState.controlFlags)) {
         ServiceUtils.logInfo(this, "Skipping start operation processing (disabled)");
-      } else if (AssignFloatingIpToVmTask.TaskState.TaskStage.STARTED == startState.taskState.stage) {
+      } else if (RemoveFloatingIpFromVmTask.TaskState.TaskStage.STARTED == startState.taskState.stage) {
         TaskUtils.sendSelfPatch(this, buildPatch(startState.taskState.stage, startState.taskState.subStage));
       }
     } catch (Throwable t) {
@@ -101,8 +100,8 @@ public class AssignFloatingIpToVmTaskService extends StatefulService {
     ServiceUtils.logInfo(this, "Handling patch for service %s", getSelfLink());
 
     try {
-      AssignFloatingIpToVmTask currentState = getState(patchOperation);
-      AssignFloatingIpToVmTask patchState = patchOperation.getBody(AssignFloatingIpToVmTask.class);
+      RemoveFloatingIpFromVmTask currentState = getState(patchOperation);
+      RemoveFloatingIpFromVmTask patchState = patchOperation.getBody(RemoveFloatingIpFromVmTask.class);
 
       validatePatchState(currentState, patchState);
       PatchUtils.patchState(currentState, patchState);
@@ -112,10 +111,7 @@ public class AssignFloatingIpToVmTaskService extends StatefulService {
 
       if (ControlFlags.isOperationProcessingDisabled(currentState.controlFlags)) {
         ServiceUtils.logInfo(this, "Skipping start operation processing (disabled)");
-        return;
-      }
-
-      if (TaskState.TaskStage.STARTED == currentState.taskState.stage) {
+      } else if (RemoveFloatingIpFromVmTask.TaskState.TaskStage.STARTED == currentState.taskState.stage) {
         processPatch(currentState);
       }
     } catch (Throwable t) {
@@ -126,47 +122,40 @@ public class AssignFloatingIpToVmTaskService extends StatefulService {
     }
   }
 
-  private void processPatch(AssignFloatingIpToVmTask currentState) {
+  private void processPatch(RemoveFloatingIpFromVmTask currentState) {
     try {
+
       switch (currentState.taskState.subStage) {
-        case CREATE_NAT_RULE:
-          createNatRule(currentState);
+        case REMOVE_NAT_RULE:
+          removeNatRule(currentState);
           break;
         case UPDATE_VIRTUAL_NETWORK:
           getVirtualNetwork(currentState);
           break;
 
         default:
-          throw new RuntimeException("Invalid task substage " + currentState.taskState.subStage);
+          throw new RemoveFloatingIpFromVmException("Invalid task substage " + currentState.taskState.subStage);
       }
     } catch (Throwable t) {
       failTask(t);
     }
   }
 
-  private void createNatRule(AssignFloatingIpToVmTask currentState) throws Throwable {
+  private void removeNatRule(RemoveFloatingIpFromVmTask currentState) throws Throwable {
     LogicalRouterApi logicalRouterApi = ServiceHostUtils.getNsxClient(getHost(),
-        currentState.nsxManagerEndpoint,
-        currentState.username,
-        currentState.password)
+        currentState.nsxAddress,
+        currentState.nsxUsername,
+        currentState.nsxPassword)
         .getLogicalRouterApi();
 
-    NatRuleCreateSpec natRuleCreateSpec = new NatRuleCreateSpec();
-    natRuleCreateSpec.setDisplayName(NameUtils.getDnatRuleName(currentState.vmPrivateIpAddress));
-    natRuleCreateSpec.setDescription(NameUtils.getDnatRuleDescription(currentState.vmPrivateIpAddress));
-    natRuleCreateSpec.setMatchDestinationNetwork(currentState.vmFloatingIpAddress);
-    natRuleCreateSpec.setTranslatedNetwork(currentState.vmPrivateIpAddress);
-
-    logicalRouterApi.createNatRule(currentState.logicalTier1RouterId,
-        natRuleCreateSpec,
-        new FutureCallback<NatRule>() {
+    logicalRouterApi.deleteNatRule(currentState.logicalTier1RouterId,
+        currentState.natRuleId,
+        new FutureCallback<Void>() {
           @Override
-          public void onSuccess(NatRule result) {
-            AssignFloatingIpToVmTask patchState = buildPatch(TaskState.TaskStage.STARTED,
-                AssignFloatingIpToVmTask.TaskState.SubStage.UPDATE_VIRTUAL_NETWORK);
-            patchState.natRuleId = result.getId();
-
-            TaskUtils.sendSelfPatch(AssignFloatingIpToVmTaskService.this, patchState);
+          public void onSuccess(Void result) {
+            RemoveFloatingIpFromVmTask patchState = buildPatch(TaskState.TaskStage.STARTED,
+                RemoveFloatingIpFromVmTask.TaskState.SubStage.UPDATE_VIRTUAL_NETWORK);
+            TaskUtils.sendSelfPatch(RemoveFloatingIpFromVmTaskService.this, patchState);
           }
 
           @Override
@@ -176,9 +165,9 @@ public class AssignFloatingIpToVmTaskService extends StatefulService {
         });
   }
 
-  private void getVirtualNetwork(AssignFloatingIpToVmTask currentState) {
+  private void getVirtualNetwork(RemoveFloatingIpFromVmTask currentState) {
     ServiceHostUtils.getCloudStoreHelper(getHost())
-        .createGet(VirtualNetworkService.FACTORY_LINK + "/" + currentState.networkId)
+        .createGet(VirtualNetworkService.FACTORY_LINK + "/" + currentState.virtualNetworkId)
         .setCompletion((op, ex) -> {
           if (ex != null) {
             failTask(ex);
@@ -195,16 +184,13 @@ public class AssignFloatingIpToVmTaskService extends StatefulService {
 
   private void updateVirtualNetwork(String virtualNetworkSelfLink,
                                     Map<String, String> natRuleToFloatingIpMap,
-                                    AssignFloatingIpToVmTask currentState) {
+                                    RemoveFloatingIpFromVmTask currentState) {
+    checkState(!natRuleToFloatingIpMap.isEmpty());
+    checkState(natRuleToFloatingIpMap.containsKey(currentState.natRuleId));
 
     VirtualNetworkService.State virtualNetwork = new VirtualNetworkService.State();
-
-    if (natRuleToFloatingIpMap == null) {
-      virtualNetwork.natRuleToFloatingIpMap = new HashMap<>();
-    } else {
-      virtualNetwork.natRuleToFloatingIpMap = new HashMap<>(natRuleToFloatingIpMap);
-    }
-    virtualNetwork.natRuleToFloatingIpMap.put(currentState.natRuleId, currentState.vmFloatingIpAddress);
+    virtualNetwork.natRuleToFloatingIpMap = new HashMap<>(natRuleToFloatingIpMap);
+    virtualNetwork.natRuleToFloatingIpMap.remove(currentState.natRuleId);
 
     ServiceHostUtils.getCloudStoreHelper(getHost())
         .createPatch(virtualNetworkSelfLink)
@@ -216,8 +202,8 @@ public class AssignFloatingIpToVmTaskService extends StatefulService {
           }
 
           try {
-            AssignFloatingIpToVmTask patch = buildPatch(AssignFloatingIpToVmTask.TaskState.TaskStage.FINISHED);
-            TaskUtils.sendSelfPatch(AssignFloatingIpToVmTaskService.this, patch);
+            RemoveFloatingIpFromVmTask patch = buildPatch(RemoveFloatingIpFromVmTask.TaskState.TaskStage.FINISHED);
+            TaskUtils.sendSelfPatch(RemoveFloatingIpFromVmTaskService.this, patch);
           } catch (Throwable t) {
             failTask(t);
           }
@@ -225,64 +211,65 @@ public class AssignFloatingIpToVmTaskService extends StatefulService {
         .sendWith(this);
   }
 
-  private void validateStartState(AssignFloatingIpToVmTask state) {
+
+  private void validateStartState(RemoveFloatingIpFromVmTask state) {
     validateState(state);
 
     // Disallow restarting the service.
-    checkState(state.taskState.stage != AssignFloatingIpToVmTask.TaskState.TaskStage.STARTED,
+    checkState(state.taskState.stage != RemoveFloatingIpFromVmTask.TaskState.TaskStage.STARTED,
         "Service state is invalid (START). Restart is disabled.");
   }
 
-  private void validateState(AssignFloatingIpToVmTask state) {
+  private void validateState(RemoveFloatingIpFromVmTask state) {
     ValidationUtils.validateState(state);
     ValidationUtils.validateTaskStage(state.taskState);
   }
 
-  private void validatePatchState(AssignFloatingIpToVmTask currentState, AssignFloatingIpToVmTask patchState) {
+  private void validatePatchState(RemoveFloatingIpFromVmTask currentState, RemoveFloatingIpFromVmTask patchState) {
     checkNotNull(patchState, "patch cannot be null");
 
     ValidationUtils.validatePatch(currentState, patchState);
     ValidationUtils.validateTaskStage(patchState.taskState);
     ValidationUtils.validateTaskStageProgression(currentState.taskState, patchState.taskState);
 
-    if (currentState.taskState.stage == AssignFloatingIpToVmTask.TaskState.TaskStage.STARTED) {
+    if (currentState.taskState.stage == RemoveFloatingIpFromVmTask.TaskState.TaskStage.STARTED) {
       validateTaskSubStageProgression(currentState.taskState, patchState.taskState);
     }
   }
 
-  private void validateTaskSubStageProgression(AssignFloatingIpToVmTask.TaskState startState,
-                                               AssignFloatingIpToVmTask.TaskState patchState) {
-    if (patchState.stage.ordinal() > AssignFloatingIpToVmTask.TaskState.TaskStage.FINISHED.ordinal()) {
+  private void validateTaskSubStageProgression(RemoveFloatingIpFromVmTask.TaskState startState,
+                                               RemoveFloatingIpFromVmTask.TaskState patchState) {
+    if (patchState.stage.ordinal() > RemoveFloatingIpFromVmTask.TaskState.TaskStage.FINISHED.ordinal()) {
       return;
     }
 
-    if (patchState.stage == AssignFloatingIpToVmTask.TaskState.TaskStage.FINISHED) {
-      checkState(startState.subStage == AssignFloatingIpToVmTask.TaskState.SubStage.UPDATE_VIRTUAL_NETWORK);
-    } else if (patchState.stage == AssignFloatingIpToVmTask.TaskState.TaskStage.STARTED) {
-      checkState(startState.subStage.ordinal() + 1 == patchState.subStage.ordinal()
-          || startState.subStage.ordinal() == patchState.subStage.ordinal());
+    if (patchState.stage == RemoveFloatingIpFromVmTask.TaskState.TaskStage.FINISHED) {
+      checkState(startState.subStage == RemoveFloatingIpFromVmTask.TaskState.SubStage.UPDATE_VIRTUAL_NETWORK);
+    } else if (patchState.stage == RemoveFloatingIpFromVmTask.TaskState.TaskStage.STARTED) {
+      checkState(patchState.subStage.ordinal() == startState.subStage.ordinal()
+          || patchState.subStage.ordinal() == startState.subStage.ordinal() + 1);
     }
   }
 
-  private AssignFloatingIpToVmTask buildPatch(AssignFloatingIpToVmTask.TaskState.TaskStage stage) {
+  private RemoveFloatingIpFromVmTask buildPatch(RemoveFloatingIpFromVmTask.TaskState.TaskStage stage) {
     return buildPatch(stage, null, null);
   }
 
-  private AssignFloatingIpToVmTask buildPatch(AssignFloatingIpToVmTask.TaskState.TaskStage stage,
-                                              AssignFloatingIpToVmTask.TaskState.SubStage subStage) {
+  private RemoveFloatingIpFromVmTask buildPatch(RemoveFloatingIpFromVmTask.TaskState.TaskStage stage,
+                                                RemoveFloatingIpFromVmTask.TaskState.SubStage subStage) {
     return buildPatch(stage, subStage, null);
   }
 
-  private AssignFloatingIpToVmTask buildPatch(AssignFloatingIpToVmTask.TaskState.TaskStage stage,
-                                              Throwable t) {
+  private RemoveFloatingIpFromVmTask buildPatch(RemoveFloatingIpFromVmTask.TaskState.TaskStage stage,
+                                                Throwable t) {
     return buildPatch(stage, null, t);
   }
 
-  private AssignFloatingIpToVmTask buildPatch(AssignFloatingIpToVmTask.TaskState.TaskStage stage,
-                                              AssignFloatingIpToVmTask.TaskState.SubStage subStage,
-                                              Throwable t) {
-    AssignFloatingIpToVmTask state = new AssignFloatingIpToVmTask();
-    state.taskState = new AssignFloatingIpToVmTask.TaskState();
+  private RemoveFloatingIpFromVmTask buildPatch(RemoveFloatingIpFromVmTask.TaskState.TaskStage stage,
+                                                RemoveFloatingIpFromVmTask.TaskState.SubStage subStage,
+                                                Throwable t) {
+    RemoveFloatingIpFromVmTask state = new RemoveFloatingIpFromVmTask();
+    state.taskState = new RemoveFloatingIpFromVmTask.TaskState();
     state.taskState.stage = stage;
     state.taskState.subStage = subStage;
     state.taskState.failure = t == null ? null : Utils.toServiceErrorResponse(t);
@@ -290,8 +277,14 @@ public class AssignFloatingIpToVmTaskService extends StatefulService {
     return state;
   }
 
-  private void failTask(Throwable e) {
-    ServiceUtils.logSevere(this, e);
-    TaskUtils.sendSelfPatch(this, buildPatch(AssignFloatingIpToVmTask.TaskState.TaskStage.FAILED, e));
+  private void failTask(Throwable t) {
+    ServiceUtils.logSevere(this, t);
+
+    try {
+      RemoveFloatingIpFromVmTask patchState = buildPatch(RemoveFloatingIpFromVmTask.TaskState.TaskStage.FAILED, t);
+      TaskUtils.sendSelfPatch(this, patchState);
+    } catch (Throwable e) {
+      ServiceUtils.logSevere(this, "Failed to send self-patch: " + e.toString());
+    }
   }
 }
