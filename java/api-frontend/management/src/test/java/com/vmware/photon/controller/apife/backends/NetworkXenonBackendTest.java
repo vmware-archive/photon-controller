@@ -301,7 +301,7 @@ public class NetworkXenonBackendTest {
           Optional.of(PaginationConfig.DEFAULT_DEFAULT_PAGE_SIZE));
       assertThat(networks.getItems().size(), is(1));
 
-      NetworkService.State network = networkBackend.filterNetworkByPortGroup(Optional.of(spec.getPortGroups().get(0)));
+      NetworkService.State network = networkBackend.getNetworkByPortGroup(Optional.of(spec.getPortGroups().get(0)));
       assertThat(network, not(nullValue()));
       assertThat(network.name, is(spec.getName()));
     }

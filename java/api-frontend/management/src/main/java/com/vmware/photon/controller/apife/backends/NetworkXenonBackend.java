@@ -122,7 +122,7 @@ public class NetworkXenonBackend implements NetworkBackend {
   }
 
   @Override
-  public NetworkService.State filterNetworkByPortGroup(Optional<String> portGroup)
+  public NetworkService.State getNetworkByPortGroup(Optional<String> portGroup)
       throws PortGroupRepeatedInMultipleNetworksException {
     ServiceDocumentQueryResult queryResult = filterServiceDocuments(Optional.absent(), portGroup, Optional.absent());
 

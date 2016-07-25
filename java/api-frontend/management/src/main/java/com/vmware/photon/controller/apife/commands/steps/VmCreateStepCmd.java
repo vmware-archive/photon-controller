@@ -138,7 +138,7 @@ public class VmCreateStepCmd extends StepCommand {
 
     Map<String, VmService.NetworkInfo> networkInfoList = new HashedMap();
     for (VmNetworkInfo vmNetworkInfo : vmNetworkInfoList) {
-      NetworkService.State network =  networkBackend.filterNetworkByPortGroup(Optional.of(vmNetworkInfo.getNetwork()));
+      NetworkService.State network =  networkBackend.getNetworkByPortGroup(Optional.of(vmNetworkInfo.getNetwork()));
 
       if (network == null) {
         continue;

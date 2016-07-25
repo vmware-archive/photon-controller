@@ -36,7 +36,7 @@ public interface NetworkBackend {
 
   ResourceList<Subnet> filter(Optional<String> name, Optional<String> portGroup, Optional<Integer> pageSize);
 
-  NetworkService.State filterNetworkByPortGroup(Optional<String> portGroup)
+  NetworkService.State getNetworkByPortGroup(Optional<String> portGroup)
           throws PortGroupRepeatedInMultipleNetworksException;
 
   ResourceList<Subnet> getPage(String pageLink) throws ExternalException;
