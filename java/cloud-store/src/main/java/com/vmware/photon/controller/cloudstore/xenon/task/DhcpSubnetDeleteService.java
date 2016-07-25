@@ -35,6 +35,9 @@ import com.vmware.xenon.services.common.QueryTask;
 import com.vmware.xenon.services.common.ServiceUriPaths;
 
 import java.util.EnumSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Class implementing service to delete dangling DhcpSubnetService from the cloud store.
@@ -139,6 +142,7 @@ public class DhcpSubnetDeleteService extends StatefulService {
    *
    * @param current
    */
+
   private void processStart(final State current) {
     if (current.isSelfProgressionDisabled) {
       ServiceUtils.logInfo(this, "Skipping start operation processing (disabled)");
@@ -220,9 +224,59 @@ public class DhcpSubnetDeleteService extends StatefulService {
             return;
           }
           current.nextPageLink = op.getBody(QueryTask.class).results.nextPageLink;
-          sendStageProgressPatch(current);
+
+          List<DhcpSubnetService.State> dhcpSubnetList =
+              parseDhcpSubnetServiceQueryResults(op.getBody(QueryTask.class));
+
+          triggerIpLeaseDeleteService(current, dhcpSubnetList);
         })
         .sendWith(this);
+  }
+
+  /**
+   * Triggers IpLeaseDeleteService for one DHCP subnet list.
+   *
+   * @param current
+   * @param dhcpSubnetList
+   */
+  private void triggerIpLeaseDeleteService(final State current, List<DhcpSubnetService.State> dhcpSubnetList) {
+    if (dhcpSubnetList.size() == 0) {
+      ServiceUtils.logInfo(this, "No DhcpSubnets found any more.");
+      sendStageProgressPatch(current);
+      return;
+    }
+
+    for (DhcpSubnetService.State state : dhcpSubnetList) {
+      triggerIpLeaseDeleteService(ServiceUtils.getIDFromDocumentSelfLink(state.documentSelfLink));
+    }
+    sendStageProgressPatch(current);
+  }
+
+  /**
+   * Triggers IpLeaseDeleteService for one DHCP subnet.
+   *
+   * @param subnetId
+   */
+  private void triggerIpLeaseDeleteService(String subnetId) {
+    IpLeaseDeleteService.State ipLeaseDeleteServiceState = new IpLeaseDeleteService.State();
+    ipLeaseDeleteServiceState.subnetId = subnetId;
+    ipLeaseDeleteServiceState.documentSelfLink = subnetId;
+
+    Operation triggerIpLeaseDeleteOperation = Operation
+        .createPost(UriUtils.buildUri(getHost(), IpLeaseDeleteService.FACTORY_LINK))
+        .setBody(ipLeaseDeleteServiceState);
+    triggerIpLeaseDeleteOperation
+        .setCompletion(((op, failure) -> {
+          IpLeaseDeleteService.State response = op.getBody(IpLeaseDeleteService.State.class);
+          if (failure != null) {
+            ServiceUtils.logWarning(this, "Triggering one IpLeaseDeleteService (subnetId %s) failed with %s",
+                subnetId, failure);
+            return;
+          }
+
+          ServiceUtils.logInfo(this, "Creating one IpLeaseDeleteService succeeded with subnetId %s",
+              response.subnetId);
+        })).sendWith(this);
   }
 
   private void finishTask(final State patch) {
@@ -312,6 +366,19 @@ public class DhcpSubnetDeleteService extends StatefulService {
     querySpec.options = EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
     querySpec.resultLimit = s.pageLimit;
     return QueryTask.create(querySpec).setDirect(true);
+  }
+
+  private List<DhcpSubnetService.State> parseDhcpSubnetServiceQueryResults(QueryTask result) {
+    List<DhcpSubnetService.State> dhcpSubnetList = new LinkedList<>();
+
+    if (result != null && result.results != null && result.results.documentCount > 0) {
+      for (Map.Entry<String, Object> doc : result.results.documents.entrySet()) {
+        dhcpSubnetList.add(
+            Utils.fromJson(doc.getValue(), DhcpSubnetService.State.class));
+      }
+    }
+
+    return dhcpSubnetList;
   }
 
   /**

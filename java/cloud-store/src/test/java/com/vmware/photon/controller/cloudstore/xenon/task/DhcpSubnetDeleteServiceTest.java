@@ -17,10 +17,13 @@ import com.vmware.photon.controller.cloudstore.xenon.entity.DhcpSubnetService;
 import com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment;
 import com.vmware.photon.controller.common.IpHelper;
 import com.vmware.photon.controller.common.xenon.BasicServiceHost;
+import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.BadRequestException;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
+import com.vmware.xenon.common.ServiceDocumentQueryResult;
+import com.vmware.xenon.common.ServiceHost;
 import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
@@ -28,6 +31,8 @@ import com.vmware.xenon.common.Utils;
 import com.google.common.net.InetAddresses;
 import org.apache.commons.net.util.SubnetUtils;
 import org.hamcrest.Matchers;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
@@ -50,6 +55,11 @@ import java.util.concurrent.TimeUnit;
 public class DhcpSubnetDeleteServiceTest {
 
   private static final int DEFAULT_PAGE_LIMIT = 100;
+
+  private static final long SLEEP_TIME_MILLIS = 1000;
+  private static final long MAX_ITERATIONS = 60;
+  private static final Logger logger = LoggerFactory.getLogger(DhcpSubnetDeleteServiceTest.class);
+
   private BasicServiceHost host;
   private DhcpSubnetDeleteService service;
 
@@ -309,6 +319,24 @@ public class DhcpSubnetDeleteServiceTest {
           request,
           DhcpSubnetDeleteService.State.class,
           (DhcpSubnetDeleteService.State state) -> state.taskState.stage == TaskState.TaskStage.FINISHED);
+
+      for (ServiceHost host : machine.getHosts()) {
+        ServiceHostUtils.waitForServiceState(
+            ServiceDocumentQueryResult.class,
+            IpLeaseDeleteService.FACTORY_LINK,
+            (ServiceDocumentQueryResult result) -> {
+              logger.info(
+                  "Host:[{}] Service:[{}] Document Count- Expected [{}], Actual [{}]",
+                  host.getUri(),
+                  IpLeaseDeleteService.FACTORY_LINK,
+                  danglingDhcpSubnets,
+                  result.documentCount);
+              return result.documentCount == danglingDhcpSubnets;
+            },
+            host,
+            SLEEP_TIME_MILLIS, MAX_ITERATIONS,
+            null);
+      }
     }
 
     @DataProvider(name = "Success")
@@ -321,8 +349,8 @@ public class DhcpSubnetDeleteServiceTest {
           {7, 5, 1},
           {7, 5, TestEnvironment.DEFAULT_MULTI_HOST_COUNT},
           // Test cases with Dhcp subnets greater than the default page limit.
-          {DEFAULT_PAGE_LIMIT + 10, DEFAULT_PAGE_LIMIT + 10, 1},
-          {DEFAULT_PAGE_LIMIT + 10, DEFAULT_PAGE_LIMIT + 10, TestEnvironment.DEFAULT_MULTI_HOST_COUNT},
+          {DEFAULT_PAGE_LIMIT + 10, DEFAULT_PAGE_LIMIT + 5, 1},
+          {DEFAULT_PAGE_LIMIT + 10, DEFAULT_PAGE_LIMIT + 5, TestEnvironment.DEFAULT_MULTI_HOST_COUNT},
       };
     }
 
@@ -344,6 +372,7 @@ public class DhcpSubnetDeleteServiceTest {
         state.isAllocated = true;
         state.cidr = "cidr";
 
+        state.documentSelfLink = "subnet-" + i;
         env.sendPostAndWaitForReplication(
             DhcpSubnetService.FACTORY_LINK, state);
       }
