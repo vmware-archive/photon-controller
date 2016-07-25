@@ -1,4 +1,4 @@
-FROM photon/servicebase
+FROM vmware/servicebase
 
 RUN tdnf makecache && \
     tdnf install -y haproxy && \

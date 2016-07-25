@@ -65,7 +65,7 @@ This will take you into lightwave vm
 
 ### Stopping and destroying devbox
 
-    vagrant destroy [-f] [photon/lightwave]
+    vagrant destroy [-f] [vmware/lightwave]
 
 Destroying devbox is the recommended way of cleaning up.
 
