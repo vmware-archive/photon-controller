@@ -144,6 +144,22 @@ module EsxCloud
         end
       end
 
+      # Like clean_datastores, but only clean the datastores listed in
+      # datastore_string (a string containing a comma-separated datastore list)
+      def clean_datastores_strict(server, user_name, password, datastore_string)
+        puts "cleaning datastores '#{datastore_string}' on #{server}"
+        Net::SSH.start(server, user_name, {password: password, user_known_hosts_file: "/dev/null"}) do |ssh|
+          unless datastore_string.nil?
+            datastores = datastore_string.split(",")
+            datastores.each do |datastore|
+              clean_datastore ssh, datastore.strip
+            end
+          end
+          ssh.exec!("rm -rf /opt/vmware/photon/controller")
+          ssh.exec!("rm -rf /opt/vmware/esxcloud")
+        end
+      end
+
       def api_clean(host_ip)
         deployment = EsxCloud::Deployment.find_all.items.first
         host = EsxCloud::Deployment.get_deployment_hosts(deployment.id).items.detect { |h| h.address == host_ip }

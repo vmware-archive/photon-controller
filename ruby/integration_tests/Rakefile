@@ -180,9 +180,8 @@ namespace "install" do
   end
 end
 
-desc 'Clean hosts'
-task :clean_hosts, [:dc_yml] do |t, args|
-  puts "VERBOSE: Starting task clean_hosts" if $VERBOSE
+desc 'Remove VMs and VIBs from hosts'
+task :delete_vms_vibs, [:dc_yml] do |t, args|
   host_specs = EsxCloud::HostsImporter.import_file  args[:dc_yml]
   host_specs.each do |host|
     puts "VERBOSE: Starting cleaning vms #{host.address}" if $VERBOSE
@@ -191,9 +190,25 @@ task :clean_hosts, [:dc_yml] do |t, args|
     EsxCloud::HostCleaner.uninstall_vib host.address, host.username, host.password, "photon-controller-agent-ext"
     EsxCloud::HostCleaner.uninstall_vib host.address, host.username, host.password, "envoy"
   end
+end
+
+desc 'Clean hosts'
+task :clean_hosts, [:dc_yml] => [:delete_vms_vibs] do |t, args|
+  puts "VERBOSE: Starting task clean_hosts" if $VERBOSE
+  host_specs = EsxCloud::HostsImporter.import_file  args[:dc_yml]
   host_specs.each do |host|
     puts "VERBOSE: Starting cleaning datastores #{host.address}" if $VERBOSE
     EsxCloud::HostCleaner.clean_datastores host.address, host.username, host.password
+  end
+end
+
+desc 'Clean hosts, cleaning only datastores specified in deploy file'
+task :clean_hosts_strict_ds, [:dc_yml] => [:delete_vms_vibs] do |t, args|
+  puts "VERBOSE: Starting task clean_hosts_strict_ds" if $VERBOSE
+  host_specs = EsxCloud::HostsImporter.import_file  args[:dc_yml]
+  host_specs.each do |host|
+    puts "VERBOSE: Starting cleaning datastores #{host.address}" if $VERBOSE
+    EsxCloud::HostCleaner.clean_datastores_strict host.address, host.username, host.password, host.metadata["ALLOWED_DATASTORES"]
   end
 end
 
