@@ -67,7 +67,7 @@ describe "migrate finalize", upgrade: true do
     end
 
     self.get_upgrade_cloudstore_map.each do |k, v|
-      it "should destination contain all the cloudstore content of the source" do
+      it " (#{k}) facotry at destination contains all the cloudstore content of the source" do
 
         exclusion_list = ["/photon/cloudstore/deployments",
                           "/photon/cloudstore/availabilityzones",
@@ -80,7 +80,6 @@ describe "migrate finalize", upgrade: true do
                           "/photon/task-triggers",
                           "/photon/cloudstore/virtual-networks",
                           "/photon/cloudstore/portgroups"]
-        puts k
         if !exclusion_list.include?(k)
           begin
             source_json = source_cloud_store.get k
@@ -115,7 +114,7 @@ describe "migrate finalize", upgrade: true do
       map.select { |key,_| key.include? "photon" }
     end
 
-    it "should be paused" do
+    it "is paused" do
       uri = URI.parse(EsxCloud::TestHelpers.get_upgrade_source_address)
       zk_address = uri.host
       zk = Zookeeper.new("#{zk_address}:2181")
@@ -125,8 +124,7 @@ describe "migrate finalize", upgrade: true do
     end
 
     self.get_upgrade_cloudstore_map.each do |k, v|
-      it "all cloudstore factories should have entities" do
-        puts k
+      it "(#{k}) factory has entities" do
         exclusion_list = ["/photon/cloudstore/entity-locks",
                           "/photon/cloudstore/groomers/availability-zone-entity-cleaners",
                           "/photon/cloudstore/groomers/entity-lock-cleaners",
@@ -150,7 +148,7 @@ describe "migrate finalize", upgrade: true do
   end
 
   describe "agent roll out" do
-    it "should have rolled out the new agent to all hosts" do
+    it "rolls out the new agent to all hosts" do
       client.get_deployment_hosts(destination_deployment.id).items.each do |host|
         protocol = Photon::ThriftHelper.get_protocol(host.address, 8835, "AgentControl")
         agent_client = AgentControl::Client.new(protocol)
@@ -165,7 +163,7 @@ describe "migrate finalize", upgrade: true do
   end
 
   describe "interaction with old entities" do
-    it "should created entities under existing entities" do
+    it "creates entities under existing entities" do
       # find existing image to use for vm creation
       image = client.find_all_images.items[0]
       seeder = EsxCloud::ManagementPlaneSeeder.new
@@ -187,7 +185,7 @@ describe "migrate finalize", upgrade: true do
       end
     end
 
-    it "should be able to interact with created vms" do
+    it "is able to interact with created vms" do
       client.find_all_tenants.items.each do |tenant|
         # ignoring the management tenant to avoid shutting down the old plane
         next if tenant.name == "mgmt-tenant"
