@@ -6,6 +6,14 @@ task servicebase(type: DockerBuildImage) {
   tag = "photon/servicebase"
 }
 
+task tagServiceBase(type: DockerTagImage) {
+  dependsOn servicebase
+  force = true
+  imageId = servicebase.getTag()
+  repository = "vmware/photon-controller-service-base"
+  tag = "latest"
+}
+
 task haproxy(type: DockerBuildImage) {
   dependsOn servicebase
   inputDir = file("haproxy")
@@ -34,6 +42,18 @@ task photoncoreNoBase(type: DockerBuildImage) {
   dependsOn copyRpms
   inputDir = file("photon-controller-core")
   tag = "photon/photon-controller-core"
+}
+
+task photoncore_lightwave_client(type: DockerBuildImage) {
+  dependsOn servicebase, copyRpms
+  inputDir = file("photon-controller-lightwave-client")
+  tag = "photon/photon-controller-lightwave-client"
+}
+
+task photoncore_lightwave_server(type: DockerBuildImage) {
+  dependsOn servicebase, copyRpms
+  inputDir = file("photon-controller-lightwave-server")
+  tag = "photon/photon-controller-lightwave-server"
 }
 
 task photoncore(type: DockerBuildImage) {
