@@ -15,6 +15,7 @@ package com.vmware.photon.controller.cloudstore.xenon.task;
 
 import com.vmware.photon.controller.cloudstore.xenon.entity.DhcpSubnetService;
 import com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment;
+import com.vmware.photon.controller.common.IpHelper;
 import com.vmware.photon.controller.common.xenon.BasicServiceHost;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.BadRequestException;
@@ -24,6 +25,8 @@ import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
 
+import com.google.common.net.InetAddresses;
+import org.apache.commons.net.util.SubnetUtils;
 import org.hamcrest.Matchers;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -36,6 +39,8 @@ import static org.testng.Assert.fail;
 
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
+import java.net.Inet4Address;
+import java.net.InetAddress;
 import java.util.EnumSet;
 import java.util.concurrent.TimeUnit;
 
@@ -324,12 +329,21 @@ public class DhcpSubnetDeleteServiceTest {
     private void seedTestEnvironment(TestEnvironment env,
                                      int totalDhcpSubnets,
                                      int danglingDhcpSubnets) throws Throwable {
-      for (int i = 0; i < totalDhcpSubnets; i++) {
+      SubnetUtils subnetUtils = new SubnetUtils("192.168.0.0/16");
+      SubnetUtils.SubnetInfo subnetInfo = subnetUtils.getInfo();
+      InetAddress lowIpAddress = InetAddresses.forString(subnetInfo.getLowAddress());
+      InetAddress highIpAddress = InetAddresses.forString(subnetInfo.getHighAddress());
 
+      for (int i = 0; i < totalDhcpSubnets; i++) {
         DhcpSubnetService.State state = new DhcpSubnetService.State();
         if (i < danglingDhcpSubnets) {
           state.doGarbageCollection = true;
         }
+        state.lowIp = IpHelper.ipToLong((Inet4Address) lowIpAddress);
+        state.highIp = IpHelper.ipToLong((Inet4Address) highIpAddress);
+        state.isAllocated = true;
+        state.cidr = "cidr";
+
         env.sendPostAndWaitForReplication(
             DhcpSubnetService.FACTORY_LINK, state);
       }
