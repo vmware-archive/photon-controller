@@ -21,5 +21,6 @@
     "ENABLE_AUTH": false,
     "USE_ESX_STORE": true,
     "ENABLE_INSTALLER_STATUS_FILTER": true,
-    "USE_VIRTUAL_NETWORK": false
+    "USE_VIRTUAL_NETWORK": false,
+    "memoryMb": 4096
 }
