@@ -17,9 +17,9 @@ export NO_RESTART_ALWAYS=1
 
 ./gradlew :devbox:renewPhoton
 
-vagrant ssh -c "docker tag photon/zookeeper esxcloud/zookeeper"
-vagrant ssh -c "docker tag photon/haproxy esxcloud/haproxy"
-vagrant ssh -c "docker tag photon/photon-controller-core esxcloud/photon-controller-core"
+vagrant ssh -c "docker tag vmware/zookeeper esxcloud/zookeeper"
+vagrant ssh -c "docker tag vmware/haproxy esxcloud/haproxy"
+vagrant ssh -c "docker tag vmware/photon-controller-core esxcloud/photon-controller-core"
 
 mgmt_ui_container_url="https://ci.ec.eng.vmware.com/view/UI/job/ec-ui-mgmt-publish-docker-image-develop/lastSuccessfulBuild/artifact/ci/docker-image/esxcloud-management-ui.tar"
 container_tar=$(basename "$mgmt_ui_container_url")

@@ -1,7 +1,11 @@
-FROM vmware/servicebase
+OM vmware/photon-controller-service-base
 
 ENV container=docker
 VOLUME ["/sys/fs/cgroup"]
+
+ADD *.rpm /tmp/
+RUN find /tmp -iname "*.rpm" | xargs rpm -Uvh ;\
+    rm -rf /tmp/*.rpm
 
 # install systemd
 RUN tdnf makecache; \
@@ -22,17 +26,14 @@ RUN tdnf makecache; \
     tdnf install -y procps-ng; \
     tdnf install -y commons-daemon \
                     apache-tomcat \
-                    boost-1.56.0; \
-    tdnf install -y likewise-open-6.2.9; \
+                    boost; \
+    tdnf install -y likewise-open; \
     tdnf install -y vmware-lightwave-server; \
     rm -rf /usr/share/doc/*; \
     rm -rf /usr/share/man/*; \
-    rm -rf /usr/include/*;
+    rm -rf /usr/include/*; \
+    rm -rf /etc/systemd/network/10-dhcp-en.network;
 
-ADD configure-lightwave-server.service /usr/lib/systemd/system/
-RUN ln -s /usr/lib/systemd/system/configure-lightwave-server.service \
-          /etc/systemd/system/multi-user.target.wants/configure-lightwave-server.service
-
-EXPOSE 22 53/udp 53 88/udp 88 389 636 2012 2014 2020
+EXPOSE 22 53/udp 53 88/udp 88 389 443 636 2012 2014 2020 9000 19000
 
 ENTRYPOINT ["/usr/sbin/init"]

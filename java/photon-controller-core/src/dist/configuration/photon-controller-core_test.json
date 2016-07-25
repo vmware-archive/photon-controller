@@ -5,7 +5,7 @@
   "diskGb": 27,
   "isReplicated": true,
   "isPrivileged": true,
-  "containerImage": "photon/photon-controller-core",
+  "containerImage": "vmware/photon-controller-core",
   "containerName": "photon-controller-core",
   "portBindings": {
     "9000": 9000,

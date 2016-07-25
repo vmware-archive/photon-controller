@@ -1,4 +1,4 @@
-OM vmware/photon-controller-service-base
+FROM vmware/photon-controller-service-base
 
 ENV container=docker
 
