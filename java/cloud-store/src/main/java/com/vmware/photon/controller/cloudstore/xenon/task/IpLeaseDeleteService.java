@@ -128,9 +128,13 @@ public class IpLeaseDeleteService extends StatefulService {
     /**
      * Service execution stage.
      */
-    @DefaultTaskState(value = TaskState.TaskStage.STARTED)
+    @DefaultTaskState(value = TaskState.TaskStage.CREATED)
     public TaskState taskState;
 
+    /**
+     * Subnet ID.
+     */
+    public String subnetId;
     /**
      * The link to next page.
      */
