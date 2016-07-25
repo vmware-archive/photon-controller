@@ -30,14 +30,12 @@ task vagrantStatus(type: VagrantStatus) {
 // Ensures left over data such as cloud-store sandboxes are removed
 task cleanAll() {
   dependsOn(
-    ":auth-tool:clean",
     ":containers:cleanAll",
   )
 }
 
 task buildAll() {
   dependsOn(
-    ":auth-tool:assemble",
     ":containers:all",
     ":devbox:agent:buildVib"
   )
@@ -46,7 +44,6 @@ task buildAll() {
 
 task buildPhoton() {
   dependsOn(
-    ":auth-tool:assemble",
     ":containers:photon"
   )
   mustRunAfter vagrantUp, cleanAll
