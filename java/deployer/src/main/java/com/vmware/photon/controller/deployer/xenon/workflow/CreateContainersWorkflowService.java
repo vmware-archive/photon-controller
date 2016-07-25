@@ -84,11 +84,11 @@ public class CreateContainersWorkflowService extends StatefulService {
      * This class defines the possible sub-stages for a task.
      */
     public enum SubStage {
-      CREATE_CORE_CONTAINERS,
-      PREEMPTIVE_PAUSE_BACKGROUND_TASKS,
       CREATE_LIGHTWAVE_CONTAINER,
       REGISTER_AUTH_CLIENT_FOR_SWAGGER_UI,
       REGISTER_AUTH_CLIENT_FOR_MGMT_UI,
+      CREATE_CORE_CONTAINERS,
+      PREEMPTIVE_PAUSE_BACKGROUND_TASKS,
       CREATE_SERVICE_CONTAINERS,
       CREATE_LOAD_BALANCER_CONTAINER,
     }
@@ -174,7 +174,7 @@ public class CreateContainersWorkflowService extends StatefulService {
 
     if (startState.taskState.stage == TaskState.TaskStage.CREATED) {
       startState.taskState.stage = TaskState.TaskStage.STARTED;
-      startState.taskState.subStage = TaskState.SubStage.CREATE_CORE_CONTAINERS;
+      startState.taskState.subStage = TaskState.SubStage.CREATE_LIGHTWAVE_CONTAINER;
     }
 
     if (startState.documentExpirationTimeMicros <= 0) {
@@ -262,16 +262,6 @@ public class CreateContainersWorkflowService extends StatefulService {
 
   private void processStartedStage(State currentState) {
     switch (currentState.taskState.subStage) {
-      case CREATE_CORE_CONTAINERS:
-        createContainers(currentState,
-            Arrays.asList(
-                          ContainersConfig.ContainerType.PhotonControllerCore),
-            TaskState.TaskStage.STARTED,
-            TaskState.SubStage.PREEMPTIVE_PAUSE_BACKGROUND_TASKS);
-        break;
-      case PREEMPTIVE_PAUSE_BACKGROUND_TASKS:
-        processPreemptivePauseBackgroundTasksSubStage(currentState);
-        break;
       case CREATE_LIGHTWAVE_CONTAINER:
         processCreateLightwaveContainerSubStage(currentState);
         break;
@@ -281,7 +271,16 @@ public class CreateContainersWorkflowService extends StatefulService {
         break;
       case REGISTER_AUTH_CLIENT_FOR_MGMT_UI:
         registerAuthClient(currentState, AuthenticationServiceType.MGMT_UI, TaskState.TaskStage.STARTED,
-            TaskState.SubStage.CREATE_SERVICE_CONTAINERS);
+            TaskState.SubStage.CREATE_CORE_CONTAINERS);
+        break;
+      case CREATE_CORE_CONTAINERS:
+        createContainers(currentState,
+            Arrays.asList(ContainersConfig.ContainerType.PhotonControllerCore),
+            TaskState.TaskStage.STARTED,
+            TaskState.SubStage.PREEMPTIVE_PAUSE_BACKGROUND_TASKS);
+        break;
+      case PREEMPTIVE_PAUSE_BACKGROUND_TASKS:
+        processPreemptivePauseBackgroundTasksSubStage(currentState);
         break;
       case CREATE_SERVICE_CONTAINERS:
         createContainers(currentState,
@@ -303,7 +302,7 @@ public class CreateContainersWorkflowService extends StatefulService {
 
     if (!currentState.isNewDeployment) {
       ServiceUtils.logInfo(this, "Skipping pause of background tasks (not a new deployment");
-      sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.CREATE_LIGHTWAVE_CONTAINER);
+      sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.CREATE_SERVICE_CONTAINERS);
       return;
     }
 
@@ -337,7 +336,7 @@ public class CreateContainersWorkflowService extends StatefulService {
               if (null != failure) {
                 failTask(failure);
               } else {
-                sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.CREATE_LIGHTWAVE_CONTAINER);
+                sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.CREATE_SERVICE_CONTAINERS);
               }
             }
         ));
