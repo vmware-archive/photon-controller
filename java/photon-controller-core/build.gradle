@@ -62,13 +62,13 @@ distTar << extractRelease(this, 'photon-controller-core')
 task dockerfile(type: Dockerfile) {
   dependsOn distTar
   destFile = file('build/container/Dockerfile')
-  from 'photon/photon-controller-core'
+  from 'vmware/photon-controller-core'
 }
 
 task container(type: DockerBuildImage) {
   dependsOn dockerfile, ':containers:photoncore'
   inputDir = dockerfile.destFile.parentFile
-  tag = 'photon/photon-controller-core'
+  tag = 'vmware/photon-controller-core'
 }
 
 task containerNoBase(type: DockerBuildImage) {
