@@ -1,4 +1,4 @@
-FROM esxcloud/servicebase
+FROM vmware/servicebase
 
 ENV container=docker
 VOLUME ["/sys/fs/cgroup"]

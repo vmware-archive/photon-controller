@@ -3,19 +3,27 @@ import com.bmuschko.gradle.docker.tasks.image.*
 
 task servicebase(type: DockerBuildImage) {
   inputDir = file("servicebase")
-  tag = "photon/servicebase"
+  tag = "vmware/servicebase"
+}
+
+task tagServiceBase(type: DockerTagImage) {
+  dependsOn servicebase
+  force = true
+  imageId = servicebase.getTag()
+  repository = "vmware/photon-controller-service-base"
+  tag = "latest"
 }
 
 task haproxy(type: DockerBuildImage) {
   dependsOn servicebase
   inputDir = file("haproxy")
-  tag = "photon/haproxy"
+  tag = "vmware/haproxy"
 }
 
 task zookeeper(type: DockerBuildImage) {
   dependsOn servicebase
   inputDir = file("zookeeper")
-  tag = "photon/zookeeper"
+  tag = "vmware/zookeeper"
 }
 
 task deleteOldRpms(type: Exec) {
@@ -33,7 +41,19 @@ task copyRpms(type: Copy) {
 task photoncore(type: DockerBuildImage) {
   dependsOn servicebase, copyRpms
   inputDir = file("photon-controller-core")
-  tag = "photon/photon-controller-core"
+  tag = "vmware/photon-controller-core"
+}
+
+task photoncore_lightwave_client(type: DockerBuildImage) {
+  dependsOn servicebase, copyRpms
+  inputDir = file("photon-controller-lightwave-client")
+  tag = "vmware/photon-controller-lightwave-client"
+}
+
+task photoncore_lightwave_server(type: DockerBuildImage) {
+  dependsOn servicebase, copyRpms
+  inputDir = file("photon-controller-lightwave-server")
+  tag = "vmware/photon-controller-lightwave-server"
 }
 
 task removeZookeeper(type: DockerRemoveImage) {

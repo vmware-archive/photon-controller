@@ -1,4 +1,4 @@
-FROM photon/servicebase
+FROM vmware/servicebase
 
 RUN tdnf clean all \
   && tdnf install -y zookeeper
