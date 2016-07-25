@@ -30,7 +30,7 @@ describe "Availability Zone", availabilityzone: true do
     deployment = client.find_all_api_deployments.items.first
     expect(deployment).to_not be_nil
 
-    host = client.get_deployment_hosts(deployment.id).items.select { |h| h.availability_zone.nil? }.first
+    host = client.get_deployment_hosts(deployment.id).items.select { |h| h.availability_zone.nil? and h.usage_tags.include? "CLOUD" }.first
     fail "No Host found without availability zone. Hence cannot proceed." if host.nil?
 
     # set availability zone
