@@ -35,10 +35,23 @@ jar {
   }
 }
 
+task testJar(type: Jar, dependsOn: testClasses) {
+  baseName = "test-${project.archivesBaseName}"
+  from sourceSets.test.output
+}
+
 tasks.withType(Test) {
   scanForTestClasses = false
   include "**/*Test.class"
   exclude "**/helpers/*.class"
+}
+
+configurations {
+  tests
+}
+
+artifacts {
+  tests testJar
 }
 
 test {

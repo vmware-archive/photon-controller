@@ -271,4 +271,19 @@ public class BasicServiceHost
     return ServiceHostUtils.waitForQuery(this, REFERRER, query, predicate,
         this.waitIterationCount, this.waitIterationSleep);
   }
+
+  /**
+   * Wait for a query by providing the customized waiting period.
+   * @param query
+   * @param predicate
+   * @return
+   * @throws Throwable
+   */
+  public QueryTask waitForQuery(QueryTask query,
+                                Predicate<QueryTask> predicate,
+                                long waitIterationCount,
+                                long waitIterationSleep) throws Throwable {
+    return ServiceHostUtils.waitForQuery(this, REFERRER, query, predicate,
+        waitIterationCount, waitIterationSleep);
+  }
 }

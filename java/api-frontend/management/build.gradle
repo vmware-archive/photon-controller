@@ -50,6 +50,7 @@ dependencies {
       '../../../thrift/status.thrift')
 
   testCompile(project(path: ':api:model', configuration: 'tests'))
+  testCompile(project(path: ':api-backend', configuration: 'tests'))
 
   testCompile("org.apache.curator:curator-test:${versions.curator}") {
     exclude group: 'org.slf4j', module: 'slf4j-log4j12'

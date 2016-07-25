@@ -13,17 +13,25 @@
 
 package com.vmware.photon.controller.apife.backends;
 
+import com.vmware.photon.controller.apibackend.helpers.TestHost;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.backends.clients.PhotonControllerXenonRestClient;
 import com.vmware.photon.controller.cloudstore.xenon.CloudStoreServiceGroup;
+import com.vmware.photon.controller.common.tests.nsx.NsxClientMock;
 import com.vmware.photon.controller.common.thrift.StaticServerSet;
 import com.vmware.photon.controller.common.xenon.BasicServiceHost;
+import com.vmware.photon.controller.common.xenon.CloudStoreHelper;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
+import com.vmware.photon.controller.nsxclient.NsxClient;
+import com.vmware.photon.controller.nsxclient.NsxClientFactory;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.google.inject.name.Names;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
 
 import java.net.InetSocketAddress;
 import java.net.URISyntaxException;
@@ -63,8 +71,27 @@ public class XenonBackendTestModule extends AbstractModule {
   @Provides
   @Singleton
   BasicServiceHost getBasicServiceHost() throws Throwable {
-    BasicServiceHost host = BasicServiceHost.create();
+    NsxClient nsxClientMock = new NsxClientMock.Builder()
+        .listLogicalRouterPorts(true)
+        .deleteLogicalRouterPort(true)
+        .deleteLogicalPort(true)
+        .deleteLogicalRouter(true)
+        .deleteLogicalSwitch(true)
+        .checkLogicalRouterPortExistence(true)
+        .checkLogicalSwitchPortExistence(true)
+        .checkLogicalRouterExistence(true)
+        .checkLogicalSwitchExistence(true)
+        .build();
+    NsxClientFactory nsxClientFactory = mock(NsxClientFactory.class);
+    doReturn(nsxClientMock).when(nsxClientFactory).create(any(String.class), any(String.class), any(String.class));
+
+    BasicServiceHost host = new TestHost.Builder()
+        .cloudStoreHelper(new CloudStoreHelper())
+        .nsxClientFactory(nsxClientFactory)
+        .build();
     ServiceHostUtils.startServices(host, CloudStoreServiceGroup.FACTORY_SERVICES);
+    ServiceHostUtils.startFactoryServices(host, CloudStoreServiceGroup.FACTORY_SERVICES_MAP);
+
     return host;
   }
 

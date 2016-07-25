@@ -38,7 +38,10 @@ import com.vmware.photon.controller.api.model.VmCreateSpec;
 import com.vmware.photon.controller.api.model.VmDiskOperation;
 import com.vmware.photon.controller.api.model.VmOperation;
 import com.vmware.photon.controller.api.model.VmState;
+import com.vmware.photon.controller.apibackend.servicedocuments.DeleteVirtualNetworkWorkflowDocument;
+import com.vmware.photon.controller.apibackend.workflows.DeleteVirtualNetworkWorkflowService;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
+import com.vmware.photon.controller.apife.backends.clients.PhotonControllerXenonRestClient;
 import com.vmware.photon.controller.apife.commands.steps.IsoUploadStepCmd;
 import com.vmware.photon.controller.apife.commands.steps.ResourceReserveStepCmd;
 import com.vmware.photon.controller.apife.entities.AttachedDiskEntity;
@@ -106,6 +109,7 @@ public class VmXenonBackend implements VmBackend {
   private static final int GB_TO_BYTE_CONVERSION_RATIO = 1024 * 1024 * 1024;
 
   private final ApiFeXenonRestClient xenonClient;
+  private final PhotonControllerXenonRestClient photonControllerXenonRestClient;
 
   private final ResourceTicketBackend resourceTicketBackend;
   private final ProjectBackend projectBackend;
@@ -122,19 +126,24 @@ public class VmXenonBackend implements VmBackend {
   @Inject
   public VmXenonBackend(
       ApiFeXenonRestClient xenonClient,
+      PhotonControllerXenonRestClient photonControllerXenonRestClient,
       ResourceTicketBackend resourceTicketBackend,
-                      ProjectBackend projectBackend,
-                      AttachedDiskBackend attachedDiskBackend,
-                      ImageBackend imageBackend,
-                      DiskBackend diskBackend,
-                      TaskBackend taskBackend,
-                      FlavorBackend flavorBackend,
-                      HostBackend hostBackend,
-                      NetworkBackend networkBackend,
-                      TombstoneBackend tombstoneBackend,
-                      @Named("useVirtualNetwork") Boolean useVirtualNetwork) {
+      ProjectBackend projectBackend,
+      AttachedDiskBackend attachedDiskBackend,
+      ImageBackend imageBackend,
+      DiskBackend diskBackend,
+      TaskBackend taskBackend,
+      FlavorBackend flavorBackend,
+      HostBackend hostBackend,
+      NetworkBackend networkBackend,
+      TombstoneBackend tombstoneBackend,
+      @Named("useVirtualNetwork") Boolean useVirtualNetwork) {
+
     this.xenonClient = xenonClient;
     xenonClient.start();
+
+    this.photonControllerXenonRestClient = photonControllerXenonRestClient;
+    photonControllerXenonRestClient.start();
 
     this.resourceTicketBackend = resourceTicketBackend;
     this.projectBackend = projectBackend;
@@ -148,7 +157,6 @@ public class VmXenonBackend implements VmBackend {
     this.tombstoneBackend = tombstoneBackend;
     this.useVirtualNetwork = useVirtualNetwork;
   }
-
 
   @Override
   public ResourceList<Vm> filter(String projectId, Optional<String> name, Optional<Integer> pageSize)
@@ -318,7 +326,7 @@ public class VmXenonBackend implements VmBackend {
 
     List<NetworkEntity> networkList = new LinkedList<>();
 
-    // Temporarily disable tombstoning networks when vm is being deleted
+    // In virtual network scenario, it is not needed to retrieve the network entity.
     if (!useVirtualNetwork) {
       if (null != vm.getNetworks()) {
         for (String network : vm.getNetworks()) {
@@ -353,9 +361,21 @@ public class VmXenonBackend implements VmBackend {
       flavorBackend.tombstone(flavor);
     }
 
-    for (NetworkEntity network : networkList) {
-      if (SubnetState.PENDING_DELETE.equals(network.getState())) {
-        networkBackend.tombstone(network);
+    if (useVirtualNetwork) {
+      // Virtual network
+      for (String network : vm.getNetworks()) {
+        DeleteVirtualNetworkWorkflowDocument startState = new DeleteVirtualNetworkWorkflowDocument();
+        startState.virtualNetworkId = network;
+
+        // Do not wait for the task to finish
+        photonControllerXenonRestClient.post(DeleteVirtualNetworkWorkflowService.FACTORY_LINK, startState);
+      }
+    } else {
+      // Physical network
+      for (NetworkEntity network : networkList) {
+        if (SubnetState.PENDING_DELETE.equals(network.getState())) {
+          networkBackend.tombstone(network);
+        }
       }
     }
 
