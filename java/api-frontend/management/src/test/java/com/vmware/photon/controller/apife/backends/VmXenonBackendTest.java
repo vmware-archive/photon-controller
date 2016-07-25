@@ -32,8 +32,10 @@ import com.vmware.photon.controller.api.model.PersistentDisk;
 import com.vmware.photon.controller.api.model.QuotaLineItem;
 import com.vmware.photon.controller.api.model.QuotaUnit;
 import com.vmware.photon.controller.api.model.ResourceList;
+import com.vmware.photon.controller.api.model.RoutingType;
 import com.vmware.photon.controller.api.model.Subnet;
 import com.vmware.photon.controller.api.model.SubnetCreateSpec;
+import com.vmware.photon.controller.api.model.SubnetState;
 import com.vmware.photon.controller.api.model.Tag;
 import com.vmware.photon.controller.api.model.UsageTag;
 import com.vmware.photon.controller.api.model.Vm;
@@ -41,8 +43,10 @@ import com.vmware.photon.controller.api.model.VmCreateSpec;
 import com.vmware.photon.controller.api.model.VmOperation;
 import com.vmware.photon.controller.api.model.VmState;
 import com.vmware.photon.controller.api.model.builders.AttachedDiskCreateSpecBuilder;
+import com.vmware.photon.controller.apibackend.helpers.ReflectionUtils;
 import com.vmware.photon.controller.apife.TestModule;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
+import com.vmware.photon.controller.apife.backends.clients.PhotonControllerXenonRestClient;
 import com.vmware.photon.controller.apife.commands.steps.ResourceReserveStepCmd;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.entities.FlavorEntity;
@@ -60,18 +64,25 @@ import com.vmware.photon.controller.apife.exceptions.external.InvalidImageStateE
 import com.vmware.photon.controller.apife.exceptions.external.InvalidVmStateException;
 import com.vmware.photon.controller.apife.exceptions.external.ProjectNotFoundException;
 import com.vmware.photon.controller.apife.exceptions.external.VmNotFoundException;
+import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DiskService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DiskServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.HostService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.HostServiceFactory;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ImageService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ImageServiceFactory;
+import com.vmware.photon.controller.cloudstore.xenon.entity.SubnetAllocatorService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.VirtualNetworkService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VmService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VmServiceFactory;
 import com.vmware.photon.controller.common.xenon.BasicServiceHost;
+import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.xenon.common.Operation;
+import com.vmware.xenon.common.UriUtils;
+import com.vmware.xenon.services.common.QueryTask;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
@@ -113,6 +124,7 @@ import java.util.stream.Collectors;
 public class VmXenonBackendTest {
 
   private static ApiFeXenonRestClient xenonClient;
+  private static PhotonControllerXenonRestClient photonControllerXenonClient;
   private static BasicServiceHost host;
   private static String projectId;
   private static VmCreateSpec vmCreateSpec;
@@ -126,8 +138,16 @@ public class VmXenonBackendTest {
 
   private static void commonHostAndClientSetup(
       BasicServiceHost basicServiceHost, ApiFeXenonRestClient apiFeXenonRestClient) {
+    commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient, null);
+  }
+
+  private static void commonHostAndClientSetup(BasicServiceHost basicServiceHost,
+                                               ApiFeXenonRestClient apiFeXenonRestClient,
+                                               PhotonControllerXenonRestClient photonControllerXenonRestClient) {
+
     host = basicServiceHost;
     xenonClient = apiFeXenonRestClient;
+    photonControllerXenonClient = photonControllerXenonRestClient;
 
     if (host == null) {
       throw new IllegalStateException(
@@ -157,6 +177,11 @@ public class VmXenonBackendTest {
       xenonClient = null;
     }
 
+    if (photonControllerXenonClient != null) {
+      photonControllerXenonClient.stop();
+      photonControllerXenonClient = null;
+    }
+
     if (host != null) {
       host.destroy();
       host = null;
@@ -182,8 +207,7 @@ public class VmXenonBackendTest {
     XenonBackendTestHelper.createFlavors(flavorXenonBackend, flavorLoader.getAllFlavors());
   }
 
-  private static void commonVmAndImageSetup(VmXenonBackend vmXenonBackend, NetworkXenonBackend networkZenonBackend)
-      throws Throwable {
+  private static void commonVmAndImageSetup(VmXenonBackend vmXenonBackend, List<String> networks) throws Throwable {
     AttachedDiskCreateSpec disk1 =
         new AttachedDiskCreateSpecBuilder().name("disk1").flavor("core-100").bootDisk(true).build();
     AttachedDiskCreateSpec disk2 =
@@ -212,25 +236,6 @@ public class VmXenonBackendTest {
     createdImageState = result.getBody(ImageService.State.class);
     imageId = ServiceUtils.getIDFromDocumentSelfLink(createdImageState.documentSelfLink);
 
-    // create networks
-    createHostDocument(host);
-
-    List<String> networks = new ArrayList<>();
-    List<String> portGroups = new ArrayList<>();
-    portGroups.add("p1");
-    SubnetCreateSpec subnetCreateSpec = new SubnetCreateSpec();
-    subnetCreateSpec.setName("n1");
-    subnetCreateSpec.setPortGroups(portGroups);
-    TaskEntity networkTask = networkZenonBackend.createNetwork(subnetCreateSpec);
-    networks.add(networkTask.getEntityId());
-
-    portGroups = new ArrayList<>();
-    portGroups.add("p2");
-    subnetCreateSpec.setName("n2");
-    subnetCreateSpec.setPortGroups(portGroups);
-    networkTask = networkZenonBackend.createNetwork(subnetCreateSpec);
-    networks.add(networkTask.getEntityId());
-
     vmCreateSpec = new VmCreateSpec();
     vmCreateSpec.setName("test-vm");
     vmCreateSpec.setFlavor("core-100");
@@ -241,6 +246,31 @@ public class VmXenonBackendTest {
     vmCreateSpec.setSubnets(networks);
 
     createdVmTaskEntity = vmXenonBackend.prepareVmCreate(projectId, vmCreateSpec);
+  }
+
+  private static void commonVmAndImageSetup(VmXenonBackend vmXenonBackend, NetworkXenonBackend networkXenonBackend)
+      throws Throwable {
+
+    // create networks
+    createHostDocument(host);
+
+    List<String> networks = new ArrayList<>();
+    List<String> portGroups = new ArrayList<>();
+    portGroups.add("p1");
+    SubnetCreateSpec subnetCreateSpec = new SubnetCreateSpec();
+    subnetCreateSpec.setName("n1");
+    subnetCreateSpec.setPortGroups(portGroups);
+    TaskEntity networkTask = networkXenonBackend.createNetwork(subnetCreateSpec);
+    networks.add(networkTask.getEntityId());
+
+    portGroups = new ArrayList<>();
+    portGroups.add("p2");
+    subnetCreateSpec.setName("n2");
+    subnetCreateSpec.setPortGroups(portGroups);
+    networkTask = networkXenonBackend.createNetwork(subnetCreateSpec);
+    networks.add(networkTask.getEntityId());
+
+    commonVmAndImageSetup(vmXenonBackend, networks);
   }
 
   private static void createHostDocument(BasicServiceHost host) throws Throwable {
@@ -1270,10 +1300,10 @@ public class VmXenonBackendTest {
   }
 
   /**
-   * Tests for tombstone API.
+   * Tests for tombstone API on physical network.
    */
   @Guice(modules = {XenonBackendTestModule.class, TestModule.class})
-  public static class TombstoneVmTest {
+  public static class TombstoneVmOnPhysicalNetworkTest {
 
     @Inject
     private BasicServiceHost basicServiceHost;
@@ -1381,6 +1411,162 @@ public class VmXenonBackendTest {
       String resourceTicketId = projectEntity.getResourceTicketId();
       ResourceTicketEntity resourceTicketEntity = resourceTicketXenonBackend.findById(resourceTicketId);
       return resourceTicketEntity.getUsage(key).getValue();
+    }
+  }
+
+  /**
+   * Tests for tombstone API on virtual network.
+   */
+  @Guice(modules = {XenonBackendWithVirtualNetworkTestModule.class, TestModule.class})
+  public static class TombstoneVmOnVirtualNetworkTest {
+
+    @Inject
+    private BasicServiceHost basicServiceHost;
+
+    @Inject
+    private ApiFeXenonRestClient apiFeXenonRestClient;
+
+    @Inject
+    private PhotonControllerXenonRestClient photonControllerXenonRestClient;
+
+    @Inject
+    private VmXenonBackend vmXenonBackend;
+
+    @Inject
+    private TenantXenonBackend tenantXenonBackend;
+
+    @Inject
+    private ResourceTicketXenonBackend resourceTicketXenonBackend;
+
+    @Inject
+    private ProjectXenonBackend projectXenonBackend;
+
+    @Inject
+    private FlavorXenonBackend flavorXenonBackend;
+
+    @Inject
+    private EntityLockXenonBackend entityLockXenonBackend;
+
+    @Inject
+    private FlavorLoader flavorLoader;
+
+    @Inject
+    private TombstoneXenonBackend tombstoneXenonBackend;
+
+    @Inject
+    private NetworkXenonBackend networkXenonBackend;
+
+    private String vmId;
+
+    private VmEntity vm;
+
+    @BeforeMethod
+    public void setUp() throws Throwable {
+      commonHostAndClientSetup(basicServiceHost, apiFeXenonRestClient, photonControllerXenonRestClient);
+
+      List<String> virtualNetworks = createVirtualNetworksInCloudStore();
+      createDeploymentInCloudStore();
+      createSubnetAllocatorInCloudStore();
+
+      commonDataSetup(
+          tenantXenonBackend,
+          resourceTicketXenonBackend,
+          projectXenonBackend,
+          flavorXenonBackend,
+          flavorLoader);
+
+      commonVmAndImageSetup(vmXenonBackend, virtualNetworks);
+
+      vmId = createdVmTaskEntity.getEntityId();
+      entityLockXenonBackend.clearTaskLocks(createdVmTaskEntity);
+      vm = vmXenonBackend.findById(vmId);
+    }
+
+    @AfterMethod
+    public void tearDown() throws Throwable {
+      commonHostDocumentsCleanup();
+    }
+
+    @AfterClass
+    public static void afterClassCleanup() throws Throwable {
+      commonHostAndClientTeardown();
+    }
+
+    @Test
+    public void testTombstone() throws Throwable {
+      TombstoneEntity tombstone = tombstoneXenonBackend.getByEntityId(vm.getId());
+      assertThat(tombstone, nullValue());
+      assertThat(getUsage("vm.cost"), is(1.0));
+
+      vmXenonBackend.tombstone(vm);
+
+      tombstone = tombstoneXenonBackend.getByEntityId(vm.getId());
+      assertThat(tombstone.getEntityId(), is(vm.getId()));
+      assertThat(tombstone.getEntityKind(), is(Vm.KIND));
+      assertThat(getUsage("vm.cost"), is(0.0));
+
+      // Make sure the virtual network is tombstoned
+      ImmutableMap.Builder<String, String> termsBuilder = new ImmutableMap.Builder<>();
+      QueryTask.QuerySpecification spec = QueryTaskUtils.buildQuerySpec(VirtualNetworkService.State.class,
+          termsBuilder.build());
+      QueryTask query = QueryTask.create(spec);
+      query.setDirect(true);
+
+      host.waitForQuery(query, (queryTask) -> queryTask.results.documentLinks.size() == 0, 5, 5000);
+    }
+
+    private double getUsage(String key) throws Throwable {
+      ProjectEntity projectEntity = projectXenonBackend.findById(projectId);
+      String resourceTicketId = projectEntity.getResourceTicketId();
+      ResourceTicketEntity resourceTicketEntity = resourceTicketXenonBackend.findById(resourceTicketId);
+      return resourceTicketEntity.getUsage(key).getValue();
+    }
+
+    private void createDeploymentInCloudStore() throws Throwable {
+      DeploymentService.State startState = ReflectionUtils.buildValidStartState(DeploymentService.State.class);
+      startState.virtualNetworkEnabled = true;
+      startState.networkManagerAddress = "192.168.1.1";
+      startState.networkManagerUsername = "user";
+      startState.networkManagerPassword = "password";
+      startState.networkZoneId = "transportZoneId";
+      startState.networkTopRouterId = "tier0RouterId";
+
+      Operation operation = Operation.createPost(UriUtils.buildUri(host, DeploymentServiceFactory.SELF_LINK))
+          .setBody(startState);
+      host.sendRequestAndWait(operation);
+    }
+
+    private List<String> createVirtualNetworksInCloudStore() throws Throwable {
+      List<String> networkIds = new ArrayList<>();
+
+      VirtualNetworkService.State startState = new VirtualNetworkService.State();
+      startState.name = "virtual_network_name";
+      startState.state = SubnetState.READY;
+      startState.routingType = RoutingType.ROUTED;
+      startState.parentId = "parentId";
+      startState.parentKind = "parentKind";
+      startState.tier0RouterId = "logical_tier0_router_id";
+      startState.logicalRouterId = "logical_tier1_router_id";
+      startState.logicalSwitchId = "logical_switch_id";
+
+      Operation operation = Operation.createPost(UriUtils.buildUri(host, VirtualNetworkService.FACTORY_LINK))
+          .setBody(startState);
+      Operation result = host.sendRequestAndWait(operation);
+
+      VirtualNetworkService.State createdState = result.getBody(VirtualNetworkService.State.class);
+      networkIds.add(ServiceUtils.getIDFromDocumentSelfLink(createdState.documentSelfLink));
+
+      return networkIds;
+    }
+
+    private void createSubnetAllocatorInCloudStore() throws Throwable {
+      SubnetAllocatorService.State startState = new SubnetAllocatorService.State();
+      startState.rootCidr = "192.168.1.1/24";
+      startState.documentSelfLink = SubnetAllocatorService.SINGLETON_LINK;
+
+      Operation operation = Operation.createPost(UriUtils.buildUri(host, SubnetAllocatorService.FACTORY_LINK))
+          .setBody(startState);
+      host.sendRequestAndWait(operation);
     }
   }
 
