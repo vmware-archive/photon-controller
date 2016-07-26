@@ -150,16 +150,17 @@ class VmWrapper(object):
     def power_request(self, op):
         return Host.PowerVmOpRequest(vm_id=self.id, op=op)
 
-    def resource_request(self, disk=None, vm_disks=None, vm_constraints=[]):
+    def resource_request(self, disk=None, vm_disks=None, vm_constraints=None):
         assert(disk is None or vm_disks is None)
         if disk is not None:
             return Resource(None, [disk])
+        if vm_constraints is None:
+            vm_constraints = []
+        vm_constraints.append(ResourceConstraint(ResourceConstraintType.NETWORK, ["VM Network"]))
 
         resource = Resource(self._vm, None)
         resource.vm.disks = vm_disks
-        resource.vm.resource_constraints = list(vm_constraints)
-        resource.vm.resource_constraints.append(
-            ResourceConstraint(ResourceConstraintType.NETWORK, ["VM Network"]))
+        resource.vm.resource_constraints = vm_constraints
 
         return resource
 
