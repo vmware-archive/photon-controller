@@ -248,7 +248,7 @@ describe "project", management: true do
 
     context "when project has virtual subnets" do
       before(:each) do
-        pending("SDN not enabled") unless @seeder.deployment.network_configuration.virtual_network_enabled
+        pending("SDN not enabled") unless @seeder.deployment.network_configuration.sdn_enabled
 
         spec = EsxCloud::VirtualNetworkCreateSpec.new(random_name("network-"), "TMP subnet", "ROUTED", 128, 16)
         EsxCloud::VirtualNetwork.create(subject.id, spec)

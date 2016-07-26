@@ -47,7 +47,7 @@ deployment:
   oauth_username: 'u'
   oauth_password: 'p'
   oauth_security_groups: ["sg1", "sg2"]
-  virtual_network_enabled: true
+  sdn_enabled: true
   network_manager_address: nma
   network_manager_username: nmu
   network_manager_password: nmp
@@ -85,7 +85,7 @@ CONTENT
 deployment:
   image_datastores: image_datastore
   auth_enabled: false
-  virtual_network_enabled: false
+  sdn_enabled: false
   stats_enabled : false
 CONTENT
         end
@@ -110,7 +110,7 @@ deployment:
   - image_ds1
   - image_ds2
   auth_enabled: false
-  virtual_network_enabled: false
+  sdn_enabled: false
   stats_enabled: false
 CONTENT
           end
@@ -134,7 +134,7 @@ CONTENT
 deployment:
   image_datastores: image_ds1,image_ds2
   auth_enabled: false
-  virtual_network_enabled: false
+  sdn_enabled: false
   stats_enabled: false
 CONTENT
           end

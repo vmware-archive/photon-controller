@@ -83,7 +83,7 @@ namespace :seed do
     # Only ensure default network exists for physical network since virtual network
     # is not global.
     deployment = EsxCloud::Config.client.find_all_api_deployments.items.first
-    return if deployment.network_configuration.virtual_network_enabled
+    return if deployment.network_configuration.sdn_enabled
 
     port_group = EsxCloud::TestHelpers.get_vm_port_group
 

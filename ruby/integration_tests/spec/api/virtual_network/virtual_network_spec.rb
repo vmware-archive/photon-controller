@@ -116,7 +116,7 @@ describe "virtual_network", :virtual_network => true do
       deployment = client.find_all_api_deployments.items.first
       expect(deployment).to_not be_nil
       expect(deployment.network_configuration).to_not be_nil
-      expect(deployment.network_configuration.virtual_network_enabled).to eq(true)
+      expect(deployment.network_configuration.sdn_enabled).to eq(true)
       expect(deployment.network_configuration.network_top_router_id).to_not be_nil
       existing_top_router_id = deployment.network_configuration.network_top_router_id
 
