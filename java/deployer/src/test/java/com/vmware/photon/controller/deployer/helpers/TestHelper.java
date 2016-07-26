@@ -156,7 +156,7 @@ public class TestHelper {
   }
 
   public static DeploymentService.State getDeploymentServiceStartState(boolean authEnabled,
-                                                                       boolean virtualNetworkEnabled) {
+                                                                       boolean sdnEnabled) {
     DeploymentService.State startState = new DeploymentService.State();
     startState.imageDataStoreNames = Collections.singleton("IMAGE_DATASTORE_NAME");
     startState.imageDataStoreUsedForVMs = true;
@@ -174,8 +174,8 @@ public class TestHelper {
     } else {
       startState.oAuthServerPort = 500;
     }
-    startState.virtualNetworkEnabled = virtualNetworkEnabled;
-    if (startState.virtualNetworkEnabled) {
+    startState.sdnEnabled = sdnEnabled;
+    if (startState.sdnEnabled) {
       startState.networkManagerAddress = "1.2.3.4";
       startState.networkManagerUsername = "networkManagerUsername";
       startState.networkManagerPassword = "networkManagerPassword";
@@ -311,9 +311,9 @@ public class TestHelper {
   public static DeploymentService.State createDeploymentService(
       MultiHostEnvironment testEnvironment,
       boolean isAuthEnabled,
-      boolean isVirtualNetworkEnabled) throws Throwable {
+      boolean isSdnEnabled) throws Throwable {
     return createDeploymentService(testEnvironment,
-        getDeploymentServiceStartState(isAuthEnabled, isVirtualNetworkEnabled));
+        getDeploymentServiceStartState(isAuthEnabled, isSdnEnabled));
   }
 
   public static DeploymentService.State createDeploymentService(

@@ -305,7 +305,7 @@ public class BulkProvisionHostsWorkflowService extends StatefulService {
                                              Set<String> hostServiceLinks,
                                              DeploymentService.State deploymentState) {
 
-    if (deploymentState.virtualNetworkEnabled) {
+    if (deploymentState.sdnEnabled) {
       // Due to bug https://bugzilla.eng.vmware.com/show_bug.cgi?id=1646837, we cannot provision
       // hosts concurrently if NSX is used. Otherwise NSX will fail to register hosts as
       // fabric nodes.
