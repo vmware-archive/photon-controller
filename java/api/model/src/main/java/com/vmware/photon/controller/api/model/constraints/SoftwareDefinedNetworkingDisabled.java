@@ -14,7 +14,7 @@
 package com.vmware.photon.controller.api.model.constraints;
 
 /**
- * Defines a constraint group that applies when virtual network is enabled.
+ * Defines a constraint group that applies when sdn is disabled.
  */
-public interface VirtualNetworkEnabled {
+public interface SoftwareDefinedNetworkingDisabled {
 }
