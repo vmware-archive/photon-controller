@@ -120,7 +120,8 @@ module EsxCloud
         DATASTORE_DIRS_TO_DELETE.each do |folder|
           if datastore.start_with?('vsan')
             rm_cmd = "for dir in `/usr/lib/vmware/osfs/bin/osfs-ls #{datastore_dir} | grep -i #{folder}`; do"\
-                     " rm -rf #{datastore_dir}$dir/*"\
+                     " for vmdk in `find $dir -name *.vmdk`; do vmkfstools -U #{datastore_dir}$vmdk || true; done"\
+                     " && rm -rf #{datastore_dir}$dir/*"\
                      " && (rm -rf #{datastore_dir}$dir/.* || true)"\
                      " && /usr/lib/vmware/osfs/bin/osfs-rmdir #{datastore_dir}$dir;"\
                      " done"
