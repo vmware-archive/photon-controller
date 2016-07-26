@@ -109,7 +109,7 @@ public class ConfigureDhcpWorkflowServiceTest {
                                                                        String username,
                                                                        String password) throws Throwable {
     DeploymentService.State startState = ReflectionUtils.buildValidStartState(DeploymentService.State.class);
-    startState.virtualNetworkEnabled = true;
+    startState.sdnEnabled = true;
     startState.networkManagerAddress = nsxServerAddress;
     startState.networkManagerUsername = username;
     startState.networkManagerPassword = password;

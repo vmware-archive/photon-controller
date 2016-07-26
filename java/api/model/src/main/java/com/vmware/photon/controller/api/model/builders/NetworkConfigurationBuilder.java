@@ -26,8 +26,8 @@ public class NetworkConfigurationBuilder {
     networkConfiguration = new NetworkConfiguration();
   }
 
-  public NetworkConfigurationBuilder virtualNetworkEnabled(boolean virtualNetworkEnabled) {
-    this.networkConfiguration.setVirtualNetworkEnabled(virtualNetworkEnabled);
+  public NetworkConfigurationBuilder sdnEnabled(boolean sdnEnabled) {
+    this.networkConfiguration.setSdnEnabled(sdnEnabled);
     return this;
   }
 
