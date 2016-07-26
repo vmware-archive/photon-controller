@@ -13,7 +13,6 @@
 
 package com.vmware.photon.controller.apife;
 
-import com.vmware.photon.controller.api.common.RequestId;
 import com.vmware.photon.controller.apife.auth.fetcher.Cluster;
 import com.vmware.photon.controller.apife.auth.fetcher.ClusterSecurityGroupFetcher;
 import com.vmware.photon.controller.apife.auth.fetcher.Deployment;

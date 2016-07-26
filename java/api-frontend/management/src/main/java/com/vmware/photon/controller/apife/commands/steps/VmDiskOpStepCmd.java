@@ -13,10 +13,6 @@
 
 package com.vmware.photon.controller.apife.commands.steps;
 
-import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
-import com.vmware.photon.controller.api.common.exceptions.ApiFeException;
-import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
-import com.vmware.photon.controller.api.common.exceptions.external.NotImplementedException;
 import com.vmware.photon.controller.api.model.DiskState;
 import com.vmware.photon.controller.api.model.Operation;
 import com.vmware.photon.controller.api.model.PersistentDisk;
@@ -28,7 +24,11 @@ import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.PersistentDiskEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.VmEntity;
+import com.vmware.photon.controller.apife.entities.base.BaseEntity;
+import com.vmware.photon.controller.apife.exceptions.ApiFeException;
+import com.vmware.photon.controller.apife.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidVmStateException;
+import com.vmware.photon.controller.apife.exceptions.external.NotImplementedException;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.exceptions.DiskNotFoundException;
 import com.vmware.photon.controller.common.clients.exceptions.InvalidVmPowerStateException;

@@ -10,7 +10,6 @@ mainClassName = 'com.vmware.photon.controller.core.Main'
 
 dependencies {
   compile project(':api-backend')
-  compile project(':api-frontend:api-frontend-common')
   compile project(':api-frontend:management')
   compile project(':cluster-manager:service-documents')
   compile project(':common')

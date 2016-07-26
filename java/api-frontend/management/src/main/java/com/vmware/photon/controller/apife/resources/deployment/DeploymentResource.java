@@ -13,8 +13,6 @@
 
 package com.vmware.photon.controller.apife.resources.deployment;
 
-import com.vmware.photon.controller.api.common.exceptions.external.ErrorCode;
-import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.model.ClusterConfigurationSpec;
 import com.vmware.photon.controller.api.model.Deployment;
 import com.vmware.photon.controller.api.model.DeploymentDeployOperation;
@@ -25,10 +23,12 @@ import com.vmware.photon.controller.api.model.ResourceList;
 import com.vmware.photon.controller.api.model.Task;
 import com.vmware.photon.controller.apife.clients.DeploymentFeClient;
 import com.vmware.photon.controller.apife.exceptions.external.ClusterTypeNotConfiguredException;
+import com.vmware.photon.controller.apife.exceptions.external.ErrorCode;
+import com.vmware.photon.controller.apife.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
 import com.vmware.photon.controller.apife.resources.routes.DeploymentResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
-import static com.vmware.photon.controller.api.common.Responses.generateCustomResponse;
+import static com.vmware.photon.controller.apife.Responses.generateCustomResponse;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Inject;

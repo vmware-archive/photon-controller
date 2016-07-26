@@ -13,15 +13,15 @@
 
 package com.vmware.photon.controller.apife.resources.vm;
 
-import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.model.ResourceList;
 import com.vmware.photon.controller.api.model.Vm;
 import com.vmware.photon.controller.apife.clients.DeploymentFeClient;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
+import com.vmware.photon.controller.apife.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.resources.routes.DeploymentResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.VmResourceRoutes;
 import com.vmware.photon.controller.apife.utils.PaginationUtils;
-import static com.vmware.photon.controller.api.common.Responses.generateResourceListResponse;
+import static com.vmware.photon.controller.apife.Responses.generateResourceListResponse;
 
 import com.google.common.base.Optional;
 import com.google.inject.Inject;

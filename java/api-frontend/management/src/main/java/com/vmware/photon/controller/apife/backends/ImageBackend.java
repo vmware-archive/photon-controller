@@ -13,8 +13,6 @@
 
 package com.vmware.photon.controller.apife.backends;
 
-import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
-import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
 import com.vmware.photon.controller.api.model.Image;
 import com.vmware.photon.controller.api.model.ImageCreateSpec;
 import com.vmware.photon.controller.api.model.ImageReplicationType;
@@ -22,6 +20,8 @@ import com.vmware.photon.controller.api.model.ImageState;
 import com.vmware.photon.controller.api.model.ResourceList;
 import com.vmware.photon.controller.apife.entities.ImageEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
+import com.vmware.photon.controller.apife.exceptions.external.ExternalException;
+import com.vmware.photon.controller.apife.exceptions.external.PageExpiredException;
 
 import com.google.common.base.Optional;
 

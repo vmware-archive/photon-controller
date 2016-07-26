@@ -13,8 +13,8 @@
 
 package com.vmware.photon.controller.apife.lib.image;
 
-import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.entities.ImageEntity;
+import com.vmware.photon.controller.apife.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidOvaException;
 import com.vmware.photon.controller.apife.exceptions.external.NameTakenException;
 import com.vmware.photon.controller.apife.exceptions.external.UnsupportedImageFileType;

@@ -13,9 +13,6 @@
 
 package com.vmware.photon.controller.apife.exceptions.external;
 
-import com.vmware.photon.controller.api.common.exceptions.external.ErrorCode;
-import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
-
 /**
  * Gets thrown when resource creation cannot proceed because there was not enough quota allocated to accommodate it.
  */

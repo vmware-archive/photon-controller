@@ -13,10 +13,10 @@
 
 package com.vmware.photon.controller.apife.backends;
 
-import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
-import com.vmware.photon.controller.api.common.exceptions.external.ConcurrentTaskException;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
+import com.vmware.photon.controller.apife.entities.base.BaseEntity;
+import com.vmware.photon.controller.apife.exceptions.external.ConcurrentTaskException;
 import com.vmware.photon.controller.cloudstore.xenon.entity.EntityLockService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.EntityLockServiceFactory;
 import com.vmware.photon.controller.common.xenon.exceptions.DocumentNotFoundException;

@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.apife.lib;
 
-import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
+import com.vmware.photon.controller.apife.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
 
 /**

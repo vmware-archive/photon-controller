@@ -13,8 +13,6 @@
 
 package com.vmware.photon.controller.apife.backends;
 
-import com.vmware.photon.controller.api.common.exceptions.external.ErrorCode;
-import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.model.QuotaLineItem;
 import com.vmware.photon.controller.api.model.QuotaUnit;
 import com.vmware.photon.controller.api.model.ResourceList;
@@ -26,6 +24,8 @@ import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.entities.QuotaLineItemEntity;
 import com.vmware.photon.controller.apife.entities.ResourceTicketEntity;
+import com.vmware.photon.controller.apife.exceptions.external.ErrorCode;
+import com.vmware.photon.controller.apife.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidResourceTicketSubdivideException;
 import com.vmware.photon.controller.apife.exceptions.external.NameTakenException;
 import com.vmware.photon.controller.apife.exceptions.external.QuotaException;

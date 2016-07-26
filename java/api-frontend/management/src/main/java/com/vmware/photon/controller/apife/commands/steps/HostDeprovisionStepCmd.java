@@ -13,8 +13,6 @@
 
 package com.vmware.photon.controller.apife.commands.steps;
 
-import com.vmware.photon.controller.api.common.exceptions.ApiFeException;
-import com.vmware.photon.controller.api.common.exceptions.external.TaskNotFoundException;
 import com.vmware.photon.controller.api.model.Host;
 import com.vmware.photon.controller.api.model.HostState;
 import com.vmware.photon.controller.apife.backends.HostBackend;
@@ -22,7 +20,9 @@ import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.HostEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
+import com.vmware.photon.controller.apife.exceptions.ApiFeException;
 import com.vmware.photon.controller.apife.exceptions.external.HostNotFoundException;
+import com.vmware.photon.controller.apife.exceptions.external.TaskNotFoundException;
 import com.vmware.photon.controller.cloudstore.xenon.entity.HostServiceFactory;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
 import com.vmware.photon.controller.deployer.xenon.workflow.DeprovisionHostWorkflowService;

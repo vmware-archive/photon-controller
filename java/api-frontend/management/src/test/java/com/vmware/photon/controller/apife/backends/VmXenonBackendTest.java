@@ -13,9 +13,6 @@
 
 package com.vmware.photon.controller.apife.backends;
 
-import com.vmware.photon.controller.api.common.entities.base.TagEntity;
-import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
-import com.vmware.photon.controller.api.common.exceptions.external.NotImplementedException;
 import com.vmware.photon.controller.api.model.AttachedDiskCreateSpec;
 import com.vmware.photon.controller.api.model.DeploymentCreateSpec;
 import com.vmware.photon.controller.api.model.DiskState;
@@ -59,9 +56,12 @@ import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.entities.TombstoneEntity;
 import com.vmware.photon.controller.apife.entities.VmEntity;
+import com.vmware.photon.controller.apife.entities.base.TagEntity;
+import com.vmware.photon.controller.apife.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidAttachDisksException;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidImageStateException;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidVmStateException;
+import com.vmware.photon.controller.apife.exceptions.external.NotImplementedException;
 import com.vmware.photon.controller.apife.exceptions.external.ProjectNotFoundException;
 import com.vmware.photon.controller.apife.exceptions.external.VmNotFoundException;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;

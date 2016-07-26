@@ -13,8 +13,8 @@
 
 package com.vmware.photon.controller.apife.entities;
 
-import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
 import com.vmware.photon.controller.api.model.Operation;
+import com.vmware.photon.controller.apife.entities.base.BaseEntity;
 import com.vmware.photon.controller.apife.exceptions.external.StepNotFoundException;
 
 import com.google.common.base.Objects;

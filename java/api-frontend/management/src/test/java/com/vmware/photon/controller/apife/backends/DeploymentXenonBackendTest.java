@@ -13,7 +13,6 @@
 
 package com.vmware.photon.controller.apife.backends;
 
-import com.vmware.photon.controller.api.common.exceptions.external.InvalidOperationStateException;
 import com.vmware.photon.controller.api.model.AuthInfo;
 import com.vmware.photon.controller.api.model.ClusterConfigurationSpec;
 import com.vmware.photon.controller.api.model.ClusterType;
@@ -47,6 +46,7 @@ import com.vmware.photon.controller.apife.exceptions.external.DeploymentAlreadyE
 import com.vmware.photon.controller.apife.exceptions.external.DeploymentNotFoundException;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidAuthConfigException;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidImageDatastoreSetException;
+import com.vmware.photon.controller.apife.exceptions.external.InvalidOperationStateException;
 import com.vmware.photon.controller.apife.exceptions.external.NoManagementHostException;
 import com.vmware.photon.controller.cloudstore.SystemConfig;
 import com.vmware.photon.controller.cloudstore.xenon.entity.ClusterConfigurationService;

@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.apife.exceptions.internal;
 
-import com.vmware.photon.controller.api.common.exceptions.ApiFeException;
+import com.vmware.photon.controller.apife.exceptions.ApiFeException;
 
 /**
  * The internal exception class is for exceptions that we intend to log for ourselves,

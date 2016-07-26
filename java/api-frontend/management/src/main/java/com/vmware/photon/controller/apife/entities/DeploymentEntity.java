@@ -13,10 +13,10 @@
 
 package com.vmware.photon.controller.apife.entities;
 
-import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
 import com.vmware.photon.controller.api.model.Deployment;
 import com.vmware.photon.controller.api.model.DeploymentState;
 import com.vmware.photon.controller.api.model.StatsStoreType;
+import com.vmware.photon.controller.apife.entities.base.BaseEntity;
 
 import com.google.common.base.Objects.ToStringHelper;
 import org.apache.commons.collections.ListUtils;

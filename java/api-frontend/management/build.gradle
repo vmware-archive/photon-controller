@@ -15,7 +15,6 @@ dependencies {
   compile(project(':common-auth'))
   compile(project(':common-xenon'))
   compile(project(':cloud-store'))
-  compile(project(':api-frontend:api-frontend-common'))
   compile(project(':api-backend'))
   compile(project(':swagger-ui'))
   compile(project(':swagger-jersey'))

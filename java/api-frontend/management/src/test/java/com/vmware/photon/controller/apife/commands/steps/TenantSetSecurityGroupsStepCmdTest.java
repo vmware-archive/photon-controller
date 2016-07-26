@@ -13,12 +13,12 @@
 
 package com.vmware.photon.controller.apife.commands.steps;
 
-import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.backends.TenantBackend;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.TenantEntity;
+import com.vmware.photon.controller.apife.exceptions.external.ExternalException;
 
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;

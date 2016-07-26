@@ -13,9 +13,7 @@
 
 package com.vmware.photon.controller.apife.exceptions.external;
 
-import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
-import com.vmware.photon.controller.api.common.exceptions.external.ErrorCode;
-import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
+import com.vmware.photon.controller.apife.entities.base.BaseEntity;
 
 /**
  * Gets thrown when a delete is performed, but the object contains child resources that must be deleted first, e.g,

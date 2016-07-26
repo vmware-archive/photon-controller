@@ -13,8 +13,8 @@
 
 package com.vmware.photon.controller.apife.exceptions;
 
-import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
-import static com.vmware.photon.controller.api.common.exceptions.external.ErrorCode.INTERNAL_ERROR;
+import com.vmware.photon.controller.apife.exceptions.external.ExternalException;
+import static com.vmware.photon.controller.apife.exceptions.external.ErrorCode.INTERNAL_ERROR;
 
 import com.google.common.collect.ImmutableMap;
 import org.powermock.modules.testng.PowerMockTestCase;

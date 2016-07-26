@@ -13,9 +13,9 @@
 
 package com.vmware.photon.controller.apife.commands;
 
-import com.vmware.photon.controller.api.common.exceptions.ApiFeException;
-import com.vmware.photon.controller.api.common.exceptions.external.ConcurrentTaskException;
-import com.vmware.photon.controller.api.common.exceptions.external.TaskNotFoundException;
+import com.vmware.photon.controller.apife.exceptions.ApiFeException;
+import com.vmware.photon.controller.apife.exceptions.external.ConcurrentTaskException;
+import com.vmware.photon.controller.apife.exceptions.external.TaskNotFoundException;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
 
 import org.apache.commons.lang3.time.StopWatch;

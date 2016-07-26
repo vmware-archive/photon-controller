@@ -13,8 +13,6 @@
 
 package com.vmware.photon.controller.apife.backends;
 
-import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
-import com.vmware.photon.controller.api.common.exceptions.external.ConcurrentTaskException;
 import com.vmware.photon.controller.api.model.EphemeralDisk;
 import com.vmware.photon.controller.api.model.Image;
 import com.vmware.photon.controller.api.model.Iso;
@@ -28,6 +26,8 @@ import com.vmware.photon.controller.apife.entities.IsoEntity;
 import com.vmware.photon.controller.apife.entities.PersistentDiskEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.entities.VmEntity;
+import com.vmware.photon.controller.apife.entities.base.BaseEntity;
+import com.vmware.photon.controller.apife.exceptions.external.ConcurrentTaskException;
 import com.vmware.photon.controller.common.xenon.BasicServiceHost;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.XenonRuntimeException;

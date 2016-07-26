@@ -13,8 +13,6 @@
 
 package com.vmware.photon.controller.apife.backends;
 
-import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
-import com.vmware.photon.controller.api.common.exceptions.external.TaskNotFoundException;
 import com.vmware.photon.controller.api.model.Cluster;
 import com.vmware.photon.controller.api.model.ClusterCreateSpec;
 import com.vmware.photon.controller.api.model.ClusterResizeOperation;
@@ -31,7 +29,9 @@ import com.vmware.photon.controller.apife.commands.steps.SwarmClusterCreateStepC
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.exceptions.external.ClusterNotFoundException;
+import com.vmware.photon.controller.apife.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.exceptions.external.SpecInvalidException;
+import com.vmware.photon.controller.apife.exceptions.external.TaskNotFoundException;
 import com.vmware.photon.controller.clustermanager.util.ClusterUtil;
 
 import com.google.common.base.Optional;

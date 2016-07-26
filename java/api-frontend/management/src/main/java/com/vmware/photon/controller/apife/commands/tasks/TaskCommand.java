@@ -13,10 +13,6 @@
 
 package com.vmware.photon.controller.apife.commands.tasks;
 
-import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
-import com.vmware.photon.controller.api.common.exceptions.ApiFeException;
-import com.vmware.photon.controller.api.common.exceptions.external.ConcurrentTaskException;
-import com.vmware.photon.controller.api.common.exceptions.external.TaskNotFoundException;
 import com.vmware.photon.controller.apife.backends.EntityLockBackend;
 import com.vmware.photon.controller.apife.backends.TaskBackend;
 import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
@@ -30,8 +26,12 @@ import com.vmware.photon.controller.apife.entities.BaseDiskEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.entities.VmEntity;
+import com.vmware.photon.controller.apife.entities.base.BaseEntity;
+import com.vmware.photon.controller.apife.exceptions.ApiFeException;
+import com.vmware.photon.controller.apife.exceptions.external.ConcurrentTaskException;
 import com.vmware.photon.controller.apife.exceptions.external.DiskNotFoundException;
 import com.vmware.photon.controller.apife.exceptions.external.TaskNotCompletedException;
+import com.vmware.photon.controller.apife.exceptions.external.TaskNotFoundException;
 import com.vmware.photon.controller.apife.exceptions.external.VmNotFoundException;
 import com.vmware.photon.controller.cloudstore.xenon.entity.HostService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.HostServiceFactory;

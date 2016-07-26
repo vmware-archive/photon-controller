@@ -13,9 +13,9 @@
 
 package com.vmware.photon.controller.apife.backends;
 
-import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
-import com.vmware.photon.controller.api.common.exceptions.external.OutOfThreadPoolWorkerException;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
+import com.vmware.photon.controller.apife.exceptions.external.ExternalException;
+import com.vmware.photon.controller.apife.exceptions.external.OutOfThreadPoolWorkerException;
 
 import com.google.inject.Singleton;
 import org.slf4j.Logger;

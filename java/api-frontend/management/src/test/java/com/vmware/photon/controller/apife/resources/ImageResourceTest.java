@@ -13,11 +13,11 @@
 
 package com.vmware.photon.controller.apife.resources;
 
-import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.model.Image;
 import com.vmware.photon.controller.api.model.ImageSetting;
 import com.vmware.photon.controller.api.model.Task;
 import com.vmware.photon.controller.apife.clients.ImageFeClient;
+import com.vmware.photon.controller.apife.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.exceptions.external.ImageNotFoundException;
 import com.vmware.photon.controller.apife.exceptions.external.ImageNotFoundException.Type;
 import com.vmware.photon.controller.apife.resources.image.ImageResource;

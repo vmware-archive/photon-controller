@@ -13,9 +13,6 @@
 
 package com.vmware.photon.controller.apife.backends;
 
-import com.vmware.photon.controller.api.common.exceptions.external.ErrorCode;
-import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
-import com.vmware.photon.controller.api.common.exceptions.external.InvalidOperationStateException;
 import com.vmware.photon.controller.api.model.AvailabilityZoneCreateSpec;
 import com.vmware.photon.controller.api.model.AvailabilityZoneState;
 import com.vmware.photon.controller.api.model.DeploymentCreateSpec;
@@ -36,9 +33,12 @@ import com.vmware.photon.controller.apife.entities.AvailabilityZoneEntity;
 import com.vmware.photon.controller.apife.entities.HostEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.exceptions.external.AvailabilityZoneNotFoundException;
+import com.vmware.photon.controller.apife.exceptions.external.ErrorCode;
+import com.vmware.photon.controller.apife.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.exceptions.external.HostAvailabilityZoneAlreadySetException;
 import com.vmware.photon.controller.apife.exceptions.external.HostNotFoundException;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidAvailabilityZoneStateException;
+import com.vmware.photon.controller.apife.exceptions.external.InvalidOperationStateException;
 import com.vmware.photon.controller.cloudstore.xenon.entity.HostService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.HostServiceFactory;
 import com.vmware.photon.controller.common.xenon.BasicServiceHost;

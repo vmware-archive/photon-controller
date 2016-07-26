@@ -13,11 +13,6 @@
 
 package com.vmware.photon.controller.apife.backends;
 
-import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
-import com.vmware.photon.controller.api.common.entities.base.TagEntity;
-import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
-import com.vmware.photon.controller.api.common.exceptions.external.NotImplementedException;
-import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
 import com.vmware.photon.controller.api.model.AttachedDisk;
 import com.vmware.photon.controller.api.model.AttachedDiskCreateSpec;
 import com.vmware.photon.controller.api.model.DiskState;
@@ -59,7 +54,10 @@ import com.vmware.photon.controller.apife.entities.QuotaLineItemEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.entities.VmEntity;
+import com.vmware.photon.controller.apife.entities.base.BaseEntity;
+import com.vmware.photon.controller.apife.entities.base.TagEntity;
 import com.vmware.photon.controller.apife.exceptions.external.DiskNotFoundException;
+import com.vmware.photon.controller.apife.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidAttachDisksException;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidFlavorStateException;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidImageStateException;
@@ -67,6 +65,8 @@ import com.vmware.photon.controller.apife.exceptions.external.InvalidVmDisksSpec
 import com.vmware.photon.controller.apife.exceptions.external.InvalidVmStateException;
 import com.vmware.photon.controller.apife.exceptions.external.IsoAlreadyAttachedException;
 import com.vmware.photon.controller.apife.exceptions.external.MoreThanOneIsoAttachedException;
+import com.vmware.photon.controller.apife.exceptions.external.NotImplementedException;
+import com.vmware.photon.controller.apife.exceptions.external.PageExpiredException;
 import com.vmware.photon.controller.apife.exceptions.external.PersistentDiskAttachedException;
 import com.vmware.photon.controller.apife.exceptions.external.VmNotFoundException;
 import com.vmware.photon.controller.apife.lib.QuotaCost;

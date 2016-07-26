@@ -13,9 +13,9 @@
 
 package com.vmware.photon.controller.apife.utils;
 
-import com.vmware.photon.controller.api.common.exceptions.external.InvalidPageSizeException;
 import com.vmware.photon.controller.api.model.ResourceList;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
+import com.vmware.photon.controller.apife.exceptions.external.InvalidPageSizeException;
 import com.vmware.xenon.common.ServiceDocumentQueryResult;
 import com.vmware.xenon.common.Utils;
 

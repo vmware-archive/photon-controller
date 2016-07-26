@@ -17,7 +17,7 @@ import com.vmware.photon.controller.api.model.SystemStatus;
 import com.vmware.photon.controller.apife.clients.StatusFeClient;
 import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
 import com.vmware.photon.controller.apife.resources.routes.StatusResourceRoutes;
-import static com.vmware.photon.controller.api.common.Responses.generateCustomResponse;
+import static com.vmware.photon.controller.apife.Responses.generateCustomResponse;
 
 import com.google.inject.Inject;
 import com.wordnik.swagger.annotations.Api;

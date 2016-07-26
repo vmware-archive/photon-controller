@@ -14,11 +14,11 @@
 package com.vmware.photon.controller.apife.auth;
 
 import com.vmware.identity.openidconnect.client.ResourceServerAccessToken;
-import com.vmware.photon.controller.api.common.exceptions.external.ErrorCode;
-import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.auth.fetcher.Multiplexed;
 import com.vmware.photon.controller.apife.auth.fetcher.SecurityGroupFetcher;
 import com.vmware.photon.controller.apife.config.AuthConfig;
+import com.vmware.photon.controller.apife.exceptions.external.ErrorCode;
+import com.vmware.photon.controller.apife.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.resources.routes.AuthRoutes;
 import com.vmware.photon.controller.apife.resources.routes.AvailableRoutes;
 

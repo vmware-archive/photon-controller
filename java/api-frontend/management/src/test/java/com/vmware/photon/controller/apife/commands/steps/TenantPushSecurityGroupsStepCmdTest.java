@@ -13,7 +13,6 @@
 
 package com.vmware.photon.controller.apife.commands.steps;
 
-import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.model.Project;
 import com.vmware.photon.controller.api.model.ResourceList;
 import com.vmware.photon.controller.api.model.SecurityGroup;
@@ -25,6 +24,7 @@ import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.entities.SecurityGroupEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.TenantEntity;
+import com.vmware.photon.controller.apife.exceptions.external.ExternalException;
 
 import com.google.common.base.Optional;
 import org.testng.annotations.BeforeMethod;

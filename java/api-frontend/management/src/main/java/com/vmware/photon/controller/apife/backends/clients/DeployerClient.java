@@ -13,10 +13,10 @@
 
 package com.vmware.photon.controller.apife.backends.clients;
 
-import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.model.DeploymentState;
 import com.vmware.photon.controller.apife.entities.DeploymentEntity;
 import com.vmware.photon.controller.apife.entities.HostEntity;
+import com.vmware.photon.controller.apife.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.exceptions.external.SpecInvalidException;
 import com.vmware.photon.controller.apife.lib.UsageTagHelper;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;

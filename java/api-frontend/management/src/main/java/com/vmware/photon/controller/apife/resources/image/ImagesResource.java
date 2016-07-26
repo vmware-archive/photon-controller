@@ -13,20 +13,20 @@
 
 package com.vmware.photon.controller.apife.resources.image;
 
-import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.model.Image;
 import com.vmware.photon.controller.api.model.ImageReplicationType;
 import com.vmware.photon.controller.api.model.ResourceList;
 import com.vmware.photon.controller.api.model.Task;
 import com.vmware.photon.controller.apife.clients.ImageFeClient;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
+import com.vmware.photon.controller.apife.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.exceptions.external.ImageUploadException;
 import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
 import com.vmware.photon.controller.apife.resources.routes.ImageResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
 import com.vmware.photon.controller.apife.utils.PaginationUtils;
-import static com.vmware.photon.controller.api.common.Responses.generateCustomResponseFromServlet;
-import static com.vmware.photon.controller.api.common.Responses.generateResourceListResponse;
+import static com.vmware.photon.controller.apife.Responses.generateCustomResponseFromServlet;
+import static com.vmware.photon.controller.apife.Responses.generateResourceListResponse;
 
 import com.google.common.base.Optional;
 import com.google.inject.Inject;

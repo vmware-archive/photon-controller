@@ -13,7 +13,6 @@
 
 package com.vmware.photon.controller.apife.commands.steps;
 
-import com.vmware.photon.controller.api.common.exceptions.ApiFeException;
 import com.vmware.photon.controller.api.model.Host;
 import com.vmware.photon.controller.api.model.HostState;
 import com.vmware.photon.controller.api.model.Operation;
@@ -23,6 +22,7 @@ import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.HostEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
+import com.vmware.photon.controller.apife.exceptions.ApiFeException;
 import com.vmware.photon.controller.apife.exceptions.external.DuplicateHostException;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidLoginException;
 import com.vmware.photon.controller.apife.exceptions.external.IpAddressInUseException;

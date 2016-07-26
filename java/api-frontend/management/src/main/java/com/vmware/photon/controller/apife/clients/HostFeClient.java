@@ -13,7 +13,6 @@
 
 package com.vmware.photon.controller.apife.clients;
 
-import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.model.Host;
 import com.vmware.photon.controller.api.model.HostCreateSpec;
 import com.vmware.photon.controller.api.model.HostSetAvailabilityZoneOperation;
@@ -27,6 +26,7 @@ import com.vmware.photon.controller.apife.backends.VmBackend;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommandFactory;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
+import com.vmware.photon.controller.apife.exceptions.external.ExternalException;
 
 import com.google.common.base.Optional;
 import com.google.inject.Inject;

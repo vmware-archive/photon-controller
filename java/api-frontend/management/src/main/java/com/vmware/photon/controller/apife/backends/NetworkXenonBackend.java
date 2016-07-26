@@ -13,8 +13,6 @@
 
 package com.vmware.photon.controller.apife.backends;
 
-import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
-import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
 import com.vmware.photon.controller.api.model.Host;
 import com.vmware.photon.controller.api.model.Operation;
 import com.vmware.photon.controller.api.model.ResourceList;
@@ -26,8 +24,10 @@ import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.entities.NetworkEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
+import com.vmware.photon.controller.apife.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidNetworkStateException;
 import com.vmware.photon.controller.apife.exceptions.external.NetworkNotFoundException;
+import com.vmware.photon.controller.apife.exceptions.external.PageExpiredException;
 import com.vmware.photon.controller.apife.exceptions.external.PortGroupRepeatedInMultipleNetworksException;
 import com.vmware.photon.controller.apife.exceptions.external.PortGroupsAlreadyAddedToSubnetException;
 import com.vmware.photon.controller.apife.exceptions.external.PortGroupsDoNotExistException;
