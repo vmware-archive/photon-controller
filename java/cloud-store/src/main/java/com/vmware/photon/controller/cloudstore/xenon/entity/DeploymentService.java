@@ -268,7 +268,7 @@ public class DeploymentService extends StatefulService {
      * This value represents whether virtual network support is enabled for this deployment.
      */
     @DefaultBoolean(value = false)
-    public Boolean virtualNetworkEnabled;
+    public Boolean sdnEnabled;
 
     /**
      * This value represents the IP address of the network manager.

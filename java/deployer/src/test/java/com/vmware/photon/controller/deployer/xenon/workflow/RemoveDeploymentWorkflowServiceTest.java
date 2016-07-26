@@ -714,7 +714,7 @@ public class RemoveDeploymentWorkflowServiceTest {
 
 
     private void startTestEnvironment(Integer hostCount,
-                                      boolean virtualNetworkEnabled,
+                                      boolean sdnEnabled,
                                       boolean removeFromApifeSuccess,
                                       boolean deprovisionHostSuccess) throws Throwable {
       mockApiClient(removeFromApifeSuccess);
@@ -734,9 +734,9 @@ public class RemoveDeploymentWorkflowServiceTest {
           .build();
 
       startState.deploymentServiceLink =
-          TestHelper.createDeploymentService(cloudStoreTestEnvironment, false, virtualNetworkEnabled)
+          TestHelper.createDeploymentService(cloudStoreTestEnvironment, false, sdnEnabled)
               .documentSelfLink;
-      if (virtualNetworkEnabled) {
+      if (sdnEnabled) {
         DeploymentService.State deploymentPatchState = new DeploymentService.State();
         deploymentPatchState.networkZoneId = "networkZoneId";
         cloudStoreTestEnvironment.sendPatchAndWait(startState.deploymentServiceLink, deploymentPatchState);
