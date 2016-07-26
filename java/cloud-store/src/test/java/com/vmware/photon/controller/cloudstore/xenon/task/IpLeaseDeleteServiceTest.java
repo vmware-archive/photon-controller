@@ -13,6 +13,8 @@
 
 package com.vmware.photon.controller.cloudstore.xenon.task;
 
+import com.vmware.photon.controller.cloudstore.xenon.entity.IpLeaseService;
+import com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment;
 import com.vmware.photon.controller.common.xenon.BasicServiceHost;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.BadRequestException;
@@ -41,6 +43,8 @@ import java.util.concurrent.TimeUnit;
  * Tests {@link com.vmware.photon.controller.cloudstore.xenon.task.IpLeaseDeleteService}.
  */
 public class IpLeaseDeleteServiceTest {
+  private static final int DEFAULT_PAGE_LIMIT = 100;
+
   private BasicServiceHost host;
   private IpLeaseDeleteService service;
 
@@ -144,7 +148,7 @@ public class IpLeaseDeleteServiceTest {
     @DataProvider(name = "AutoInitializedFields")
     public Object[][] getAutoInitializedFieldsParams() {
       TaskState state = new TaskState();
-      state.stage = TaskState.TaskStage.CREATED;
+      state.stage = TaskState.TaskStage.STARTED;
 
       return new Object[][]{
           {"taskState", state},
@@ -244,8 +248,94 @@ public class IpLeaseDeleteServiceTest {
     }
   }
 
+  /**
+   * Tests for end-to-end scenarios.
+   */
+  public class EndToEndTest {
+
+    private TestEnvironment machine;
+    private IpLeaseDeleteService.State request;
+
+    @BeforeMethod
+    public void setUp() throws Throwable {
+      // Build input.
+      request = buildValidStartupState();
+      request.isSelfProgressionDisabled = false;
+      request.pageLimit = 100;
+    }
+
+    @AfterMethod
+    public void tearDown() throws Throwable {
+      if (machine != null) {
+        // Note that this will fully clean up the Xenon host's Lucene index: all
+        // services we created will be fully removed.
+        machine.stop();
+        machine = null;
+      }
+    }
+
+    /**
+     * Default provider to control host count.
+     *
+     * @return
+     */
+    @DataProvider(name = "hostCount")
+    public Object[][] getHostCount() {
+      return new Object[][]{
+          {1},
+          {TestEnvironment.DEFAULT_MULTI_HOST_COUNT}
+      };
+    }
+
+    /**
+     * Tests clean success scenarios.
+     *
+     * @param hostCount
+     * @throws Throwable
+     */
+    @Test(dataProvider = "Success")
+    public void testSuccess(int totalIpLeases, int hostCount)
+        throws Throwable {
+      machine = TestEnvironment.create(hostCount);
+      seedTestEnvironment(machine, totalIpLeases);
+
+      IpLeaseDeleteService.State response = machine.callServiceAndWaitForState(
+          IpLeaseDeleteService.FACTORY_LINK,
+          request,
+          IpLeaseDeleteService.State.class,
+          (IpLeaseDeleteService.State state) -> state.taskState.stage == TaskState.TaskStage.FINISHED);
+    }
+
+    @DataProvider(name = "Success")
+    public Object[][] getSuccessData() {
+      return new Object[][]{
+          {0, 1},
+          {2, 1},
+          {2, TestEnvironment.DEFAULT_MULTI_HOST_COUNT},
+          {5, 1},
+          {5, TestEnvironment.DEFAULT_MULTI_HOST_COUNT},
+          // Test cases with Dhcp subnets greater than the default page limit.
+          {DEFAULT_PAGE_LIMIT + 10, 1},
+          {DEFAULT_PAGE_LIMIT + 10, TestEnvironment.DEFAULT_MULTI_HOST_COUNT},
+      };
+    }
+
+    private void seedTestEnvironment(TestEnvironment env,
+                                     int totalIpLeases) throws Throwable {
+      for (int i = 0; i < totalIpLeases; i++) {
+        IpLeaseDeleteService.State state = new IpLeaseDeleteService.State();
+
+        state.subnetId = "subnet-id";
+        state.documentSelfLink = "ip-lease-" + i;
+        env.sendPostAndWaitForReplication(
+            IpLeaseService.FACTORY_LINK, state);
+      }
+    }
+  }
+
   private IpLeaseDeleteService.State buildValidStartupState() {
     IpLeaseDeleteService.State state = new IpLeaseDeleteService.State();
+    state.subnetId = "subnet-id";
     state.isSelfProgressionDisabled = true;
     return state;
   }
