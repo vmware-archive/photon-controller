@@ -167,6 +167,8 @@ public class SubnetAllocatorService extends StatefulService {
       DhcpSubnetService.State subnet = new DhcpSubnetService.State();
       subnet.lowIp = 0L;
       subnet.highIp = allocateSubnetPatch.numberOfAllIpAddresses;
+      subnet.lowIpDynamic = 0L;
+      subnet.highIpDynamic = allocateSubnetPatch.numberOfAllIpAddresses;
       subnet.documentSelfLink = allocateSubnetPatch.subnetId;
 
       Operation postOperation = Operation.createPost(this, DhcpSubnetService.FACTORY_LINK)

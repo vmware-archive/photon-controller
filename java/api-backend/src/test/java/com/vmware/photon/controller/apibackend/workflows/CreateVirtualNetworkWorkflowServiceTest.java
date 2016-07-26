@@ -740,6 +740,12 @@ public class CreateVirtualNetworkWorkflowServiceTest {
           expectedVirtualNetworkServiceState.tier0RouterDownlinkPortId);
       assertEquals(actualVirtualNetworkServiceState.tier0RouterId,
           expectedVirtualNetworkServiceState.tier0RouterId);
+      assertEquals(actualVirtualNetworkServiceState.cidr, expectedVirtualNetworkServiceState.cidr);
+      assertEquals(actualVirtualNetworkServiceState.lowIpDynamic, expectedVirtualNetworkServiceState.lowIpDynamic);
+      assertEquals(actualVirtualNetworkServiceState.highIpDynamic, expectedVirtualNetworkServiceState.highIpDynamic);
+      assertEquals(actualVirtualNetworkServiceState.lowIpStatic, expectedVirtualNetworkServiceState.lowIpStatic);
+      assertEquals(actualVirtualNetworkServiceState.highIpStatic, expectedVirtualNetworkServiceState.highIpStatic);
+      assertEquals(actualVirtualNetworkServiceState.reservedIpList, expectedVirtualNetworkServiceState.reservedIpList);
     }
 
     /**
@@ -850,6 +856,12 @@ public class CreateVirtualNetworkWorkflowServiceTest {
           expectedVirtualNetworkServiceState.tier0RouterDownlinkPortId);
       assertEquals(actualVirtualNetworkServiceState.tier0RouterId,
           expectedVirtualNetworkServiceState.tier0RouterId);
+      assertEquals(actualVirtualNetworkServiceState.cidr, expectedVirtualNetworkServiceState.cidr);
+      assertEquals(actualVirtualNetworkServiceState.lowIpDynamic, expectedVirtualNetworkServiceState.lowIpDynamic);
+      assertEquals(actualVirtualNetworkServiceState.highIpDynamic, expectedVirtualNetworkServiceState.highIpDynamic);
+      assertEquals(actualVirtualNetworkServiceState.lowIpStatic, expectedVirtualNetworkServiceState.lowIpStatic);
+      assertEquals(actualVirtualNetworkServiceState.highIpStatic, expectedVirtualNetworkServiceState.highIpStatic);
+      assertEquals(actualVirtualNetworkServiceState.reservedIpList, expectedVirtualNetworkServiceState.reservedIpList);
     }
 
     /**
@@ -864,6 +876,12 @@ public class CreateVirtualNetworkWorkflowServiceTest {
           .cloudStoreHelper(new CloudStoreHelper())
           .build();
 
+      testEnvironment.callServiceAndWaitForState(
+          SubnetAllocatorService.FACTORY_LINK,
+          subnetAllocatorServiceState,
+          SubnetAllocatorService.State.class,
+          (state) -> true);
+
       CreateVirtualNetworkWorkflowDocument finalState =
           testEnvironment.callServiceAndWaitForState(
               CreateVirtualNetworkWorkflowService.FACTORY_LINK,
@@ -877,6 +895,33 @@ public class CreateVirtualNetworkWorkflowServiceTest {
       assertThat(finalState.password, nullValue());
       assertThat(finalState.transportZoneId, nullValue());
       assertThat(finalState.tier0RouterId, nullValue());
+    }
+
+    /**
+     * Verifies that when ALLOCATE_IP_ADDRESS_SPACE sub-stage fails, the workflow will progress to FAILED state.
+     */
+    @Test(dataProvider = "hostCount")
+    public void failsToAllocateIpAddressSpace(int hostCount) throws Throwable {
+      testEnvironment = new TestEnvironment.Builder()
+          .hostCount(hostCount)
+          .cloudStoreHelper(new CloudStoreHelper())
+          .build();
+
+      CreateVirtualNetworkWorkflowDocument finalState =
+          testEnvironment.callServiceAndWaitForState(
+              CreateVirtualNetworkWorkflowService.FACTORY_LINK,
+              startState,
+              CreateVirtualNetworkWorkflowDocument.class,
+              (state) -> TaskState.TaskStage.FAILED == state.taskState.stage);
+
+      // Verifies that IP Range information is empty in the service document.
+      assertThat(finalState.taskServiceEntity, notNullValue() );
+      assertThat(finalState.taskServiceEntity.cidr, nullValue() );
+      assertThat(finalState.taskServiceEntity.lowIpDynamic, nullValue() );
+      assertThat(finalState.taskServiceEntity.highIpDynamic, nullValue() );
+      assertThat(finalState.taskServiceEntity.lowIpStatic, nullValue() );
+      assertThat(finalState.taskServiceEntity.highIpStatic, nullValue() );
+      assertThat(finalState.taskServiceEntity.reservedIpList, nullValue() );
     }
 
     /**
@@ -897,6 +942,12 @@ public class CreateVirtualNetworkWorkflowServiceTest {
           .cloudStoreHelper(new CloudStoreHelper())
           .nsxClientFactory(nsxClientFactory)
           .build();
+
+      testEnvironment.callServiceAndWaitForState(
+          SubnetAllocatorService.FACTORY_LINK,
+          subnetAllocatorServiceState,
+          SubnetAllocatorService.State.class,
+          (state) -> true);
 
       testEnvironment.callServiceAndWaitForState(
           DeploymentServiceFactory.SELF_LINK,
@@ -934,6 +985,12 @@ public class CreateVirtualNetworkWorkflowServiceTest {
           .cloudStoreHelper(new CloudStoreHelper())
           .nsxClientFactory(nsxClientFactory)
           .build();
+
+      testEnvironment.callServiceAndWaitForState(
+          SubnetAllocatorService.FACTORY_LINK,
+          subnetAllocatorServiceState,
+          SubnetAllocatorService.State.class,
+          (state) -> true);
 
       testEnvironment.callServiceAndWaitForState(
           DeploymentServiceFactory.SELF_LINK,
