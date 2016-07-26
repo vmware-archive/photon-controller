@@ -23,8 +23,10 @@ import com.vmware.photon.controller.apibackend.tasks.CreateLogicalRouterTaskServ
 import com.vmware.photon.controller.apibackend.tasks.CreateLogicalSwitchTaskService;
 import com.vmware.photon.controller.apibackend.utils.ServiceHostUtils;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
+import com.vmware.photon.controller.cloudstore.xenon.entity.DhcpSubnetService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.SubnetAllocatorService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VirtualNetworkService;
+import com.vmware.photon.controller.common.IpHelper;
 import com.vmware.photon.controller.common.xenon.ControlFlags;
 import com.vmware.photon.controller.common.xenon.OperationUtils;
 import com.vmware.photon.controller.common.xenon.QueryTaskUtils;
@@ -160,6 +162,9 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
         case ALLOCATE_IP_ADDRESS_SPACE:
           allocateIpAddressSpace(state);
           break;
+        case GET_IP_ADDRESS_SPACE:
+          getIpAddressSpace(state);
+          break;
         case GET_NSX_CONFIGURATION:
           getNsxConfiguration(state);
           break;
@@ -200,7 +205,45 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
           try {
             CreateVirtualNetworkWorkflowDocument patchState = buildPatch(
                 TaskState.TaskStage.STARTED,
+                CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.GET_IP_ADDRESS_SPACE);
+            progress(state, patchState);
+          } catch (Throwable t) {
+            fail(state, t);
+          }
+        })
+        .sendWith(this);
+  }
+
+  /**
+   * Get IP range allocated for the virtual network.
+   */
+  private void getIpAddressSpace(CreateVirtualNetworkWorkflowDocument state) {
+
+    ServiceHostUtils.getCloudStoreHelper(getHost())
+        .createGet(DhcpSubnetService.FACTORY_LINK + "/" +
+            ServiceUtils.getIDFromDocumentSelfLink(state.taskServiceEntity.documentSelfLink))
+        .setCompletion((op, ex) -> {
+          if (ex != null) {
+            fail(state, ex);
+            return;
+          }
+
+          try {
+            DhcpSubnetService.State subnet = op.getBody(DhcpSubnetService.State.class);
+            CreateVirtualNetworkWorkflowDocument patchState = buildPatch(
+                TaskState.TaskStage.STARTED,
                 CreateVirtualNetworkWorkflowDocument.TaskState.SubStage.GET_NSX_CONFIGURATION);
+            patchState.taskServiceEntity = state.taskServiceEntity;
+            patchState.taskServiceEntity.cidr = subnet.cidr;
+            patchState.taskServiceEntity.lowIpDynamic = convertLongToDottedIp(subnet.lowIpDynamic);
+            patchState.taskServiceEntity.highIpDynamic = convertLongToDottedIp(subnet.highIpDynamic);
+            patchState.taskServiceEntity.lowIpStatic = convertLongToDottedIp(subnet.lowIpStatic);
+            patchState.taskServiceEntity.highIpStatic = convertLongToDottedIp(subnet.highIpStatic);
+            if (subnet.reservedIpList != null && subnet.reservedIpList.isEmpty()) {
+              for (Long ip : subnet.reservedIpList) {
+                patchState.taskServiceEntity.reservedIpList.add(convertLongToDottedIp(ip));
+              }
+            }
             progress(state, patchState);
           } catch (Throwable t) {
             fail(state, t);
@@ -465,6 +508,12 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
     virtualNetworkPatchState.logicalRouterUplinkPortId = state.taskServiceEntity.logicalRouterUplinkPortId;
     virtualNetworkPatchState.tier0RouterDownlinkPortId = state.taskServiceEntity.tier0RouterDownlinkPortId;
     virtualNetworkPatchState.tier0RouterId = state.taskServiceEntity.tier0RouterId;
+    virtualNetworkPatchState.cidr = state.taskServiceEntity.cidr;
+    virtualNetworkPatchState.lowIpDynamic = state.taskServiceEntity.lowIpDynamic;
+    virtualNetworkPatchState.highIpDynamic = state.taskServiceEntity.highIpDynamic;
+    virtualNetworkPatchState.lowIpStatic = state.taskServiceEntity.lowIpStatic;
+    virtualNetworkPatchState.highIpStatic = state.taskServiceEntity.highIpStatic;
+    virtualNetworkPatchState.reservedIpList = state.taskServiceEntity.reservedIpList;
 
     ServiceHostUtils.getCloudStoreHelper(getHost())
         .createPatch(state.taskServiceEntity.documentSelfLink)
@@ -513,5 +562,15 @@ public class CreateVirtualNetworkWorkflowService extends BaseWorkflowService<Cre
    */
   private String getVirtualNetworkId(CreateVirtualNetworkWorkflowDocument state) {
     return ServiceUtils.getIDFromDocumentSelfLink(state.taskServiceEntity.documentSelfLink);
+  }
+
+  /**
+   * Converts IP from long IP to dotted IP String.
+   */
+  private String convertLongToDottedIp(Long ip) {
+    if (ip == null) {
+      return null;
+    }
+    return IpHelper.longToIp(ip).getHostAddress();
   }
 }

@@ -49,7 +49,7 @@ public class IpHelper {
     try {
       return InetAddress.getByAddress(longToNetworkByteOrderArray(ip));
     } catch (UnknownHostException e) {
-      throw new IllegalArgumentException("not an ip");
+      throw new IllegalArgumentException("Invalid IP " + ip);
     }
   }
 
