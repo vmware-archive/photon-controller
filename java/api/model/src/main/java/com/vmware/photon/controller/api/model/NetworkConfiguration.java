@@ -35,7 +35,7 @@ public class NetworkConfiguration {
 
   @JsonProperty
   @ApiModelProperty(value = "Flag that indicates if virtual network support is enabled or not", required = true)
-  private boolean virtualNetworkEnabled = false;
+  private boolean sdnEnabled = false;
 
   @JsonProperty
   @ApiModelProperty(value = "The IP address of the network manager", required = true)
@@ -61,12 +61,12 @@ public class NetworkConfiguration {
   @ApiModelProperty(value = "The ID of the router for accessing outside network (i.e. Internet)", required = false)
   private String networkTopRouterId;
 
-  public boolean getVirtualNetworkEnabled() {
-    return virtualNetworkEnabled;
+  public boolean getSdnEnabled() {
+    return sdnEnabled;
   }
 
-  public void setVirtualNetworkEnabled(boolean virtualNetworkEnabled) {
-    this.virtualNetworkEnabled = virtualNetworkEnabled;
+  public void setSdnEnabled(boolean sdnEnabled) {
+    this.sdnEnabled = sdnEnabled;
   }
 
   public String getNetworkManagerAddress() {
@@ -120,7 +120,7 @@ public class NetworkConfiguration {
 
     NetworkConfiguration other = (NetworkConfiguration) o;
 
-    return Objects.equals(this.getVirtualNetworkEnabled(), other.getVirtualNetworkEnabled())
+    return Objects.equals(this.getSdnEnabled(), other.getSdnEnabled())
         && Objects.equals(this.getNetworkManagerAddress(), other.getNetworkManagerAddress())
         && Objects.equals(this.getNetworkManagerUsername(), other.getNetworkManagerUsername())
         && Objects.equals(this.getNetworkManagerPassword(), other.getNetworkManagerPassword())
@@ -132,7 +132,7 @@ public class NetworkConfiguration {
   public int hashCode() {
     return Objects.hash(
         super.hashCode(),
-        this.getVirtualNetworkEnabled(),
+        this.getSdnEnabled(),
         this.getNetworkManagerAddress(),
         this.getNetworkManagerUsername(),
         this.getNetworkManagerPassword(),
@@ -144,7 +144,7 @@ public class NetworkConfiguration {
     // NOTE: Do not include networkManagerUsername or networkManagerPassword,
     // to avoid having usernames or passwords in log files
     return com.google.common.base.Objects.toStringHelper(this)
-        .add("virtualNetworkEnabled", this.getVirtualNetworkEnabled())
+        .add("sdnEnabled", this.getSdnEnabled())
         .add("networkManagerAddress", this.getNetworkManagerAddress())
         .add("networkZoneId", this.getNetworkZoneId())
         .add("networkTopRouterId", this.getNetworkTopRouterId());

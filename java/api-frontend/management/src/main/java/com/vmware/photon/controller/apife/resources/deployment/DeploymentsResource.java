@@ -21,10 +21,10 @@ import com.vmware.photon.controller.api.model.Task;
 import com.vmware.photon.controller.api.model.constraints.AuthDisabled;
 import com.vmware.photon.controller.api.model.constraints.AuthEnabled;
 import com.vmware.photon.controller.api.model.constraints.ConditionalValidator;
+import com.vmware.photon.controller.api.model.constraints.SoftwareDefinedNetworkingDisabled;
+import com.vmware.photon.controller.api.model.constraints.SoftwareDefinedNetworkingEnabled;
 import com.vmware.photon.controller.api.model.constraints.StatsDisabled;
 import com.vmware.photon.controller.api.model.constraints.StatsEnabled;
-import com.vmware.photon.controller.api.model.constraints.VirtualNetworkDisabled;
-import com.vmware.photon.controller.api.model.constraints.VirtualNetworkEnabled;
 import com.vmware.photon.controller.apife.clients.DeploymentFeClient;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidAuthConfigException;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidNetworkConfigException;
@@ -116,9 +116,9 @@ public class DeploymentsResource {
     // validate network config
     ConditionalValidator.validate(
         spec.getNetworkConfiguration(),
-        spec.getNetworkConfiguration().getVirtualNetworkEnabled(),
-        VirtualNetworkEnabled.class,
-        VirtualNetworkDisabled.class,
+        spec.getNetworkConfiguration().getSdnEnabled(),
+        SoftwareDefinedNetworkingEnabled.class,
+        SoftwareDefinedNetworkingDisabled.class,
         InvalidNetworkConfigException.class);
 
     // validate stats config
