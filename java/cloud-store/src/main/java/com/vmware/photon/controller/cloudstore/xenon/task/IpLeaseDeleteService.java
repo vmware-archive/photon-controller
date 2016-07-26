@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.cloudstore.xenon.task;
 
+import com.vmware.photon.controller.cloudstore.xenon.entity.IpLeaseService;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
@@ -20,12 +21,21 @@ import com.vmware.photon.controller.common.xenon.ValidationUtils;
 import com.vmware.photon.controller.common.xenon.deployment.NoMigrationDuringDeployment;
 import com.vmware.photon.controller.common.xenon.migration.NoMigrationDuringUpgrade;
 import com.vmware.photon.controller.common.xenon.validation.DefaultBoolean;
+import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
 import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
+import com.vmware.photon.controller.common.xenon.validation.NotNull;
 import com.vmware.xenon.common.FactoryService;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.ServiceDocument;
+import com.vmware.xenon.common.ServiceDocumentQueryResult;
 import com.vmware.xenon.common.StatefulService;
 import com.vmware.xenon.common.TaskState;
+import com.vmware.xenon.common.UriUtils;
+import com.vmware.xenon.common.Utils;
+import com.vmware.xenon.services.common.QueryTask;
+import com.vmware.xenon.services.common.ServiceUriPaths;
+
+import java.util.EnumSet;
 
 /**
  * Class implementing service to delete dangling IpLeaseService from the cloud store.
@@ -35,6 +45,7 @@ public class IpLeaseDeleteService extends StatefulService {
 
   public static final String FACTORY_LINK = com.vmware.photon.controller.common.xenon.ServiceUriPaths.CLOUDSTORE_ROOT
       + "/ip-leases-deletes";
+  public static final int DEFAULT_PAGE_LIMIT = 1000;
 
   public static FactoryService createFactory() {
     return FactoryService.create(IpLeaseDeleteService.class, IpLeaseDeleteService.State.class);
@@ -55,6 +66,7 @@ public class IpLeaseDeleteService extends StatefulService {
     initializeState(state);
     validateState(state);
     start.setBody(state).complete();
+    processStart(state);
   }
 
   @Override
@@ -67,6 +79,168 @@ public class IpLeaseDeleteService extends StatefulService {
     applyPatch(currentState, patchState);
     validateState(currentState);
     patch.complete();
+    processPatch(currentState);
+  }
+
+  /**
+   * Does any additional processing after the start operation has been completed.
+   *
+   * @param current
+   */
+
+  private void processStart(final State current) {
+    if (current.isSelfProgressionDisabled) {
+      ServiceUtils.logInfo(this, "Skipping start operation processing (disabled)");
+      return;
+    }
+
+    try {
+      if (!isFinalStage(current) && current.nextPageLink == null) {
+        Operation queryIpLeasePagination = Operation
+            .createPost(UriUtils.buildUri(getHost(), ServiceUriPaths.CORE_LOCAL_QUERY_TASKS))
+            .setBody(buildIpLeaseQuery(current));
+        queryIpLeasePagination
+            .setCompletion(((op, failure) -> {
+              if (failure != null) {
+                failTask(failure);
+                return;
+              }
+              ServiceDocumentQueryResult results = op.getBody(QueryTask.class).results;
+              if (results.nextPageLink != null) {
+                current.nextPageLink = results.nextPageLink;
+              } else {
+                ServiceUtils.logInfo(this, "No ip lease found.");
+              }
+              sendStageProgressPatch(current);
+            })).sendWith(this);
+      } else {
+        sendStageProgressPatch(current);
+      }
+    } catch (Throwable e) {
+      failTask(e);
+    }
+  }
+
+  /**
+   * Does any additional processing after the patch operation has been completed.
+   *
+   * @param current
+   */
+  private void processPatch(final State current) {
+    try {
+      switch (current.taskState.stage) {
+        case STARTED:
+          processIpLeaseDocuments(current);
+          break;
+
+        case FAILED:
+        case FINISHED:
+        case CANCELLED:
+          break;
+
+        default:
+          this.failTask(
+              new IllegalStateException(
+                  String.format("Un-expected stage: %s", current.taskState.stage))
+          );
+      }
+    } catch (Throwable e) {
+      failTask(e);
+    }
+  }
+
+  /**
+   * Retrieves the first page of IpLeaseService and kicks of the subsequent processing.
+   *
+   * @param current
+   */
+  private void processIpLeaseDocuments(final State current) {
+    if (current.nextPageLink == null) {
+      finishTask(current);
+      return;
+    }
+
+    Operation getOnePageOfDhcpSubnetsDocuments =
+        Operation.createGet(UriUtils.buildUri(getHost(), current.nextPageLink));
+    getOnePageOfDhcpSubnetsDocuments
+        .setCompletion((op, throwable) -> {
+          if (throwable != null) {
+            failTask(throwable);
+            return;
+          }
+          current.nextPageLink = op.getBody(QueryTask.class).results.nextPageLink;
+          sendStageProgressPatch(current);
+        })
+        .sendWith(this);
+  }
+
+  /**
+   * Determines if the task is in a final state.
+   *
+   * @param s
+   * @return
+   */
+  private boolean isFinalStage(State s) {
+    return s.taskState.stage == TaskState.TaskStage.FINISHED ||
+        s.taskState.stage == TaskState.TaskStage.FAILED ||
+        s.taskState.stage == TaskState.TaskStage.CANCELLED;
+  }
+
+  private void finishTask(final State patch) {
+    ServiceUtils.logInfo(this, "Finished deleting unreleased ip leases.");
+    if (patch.taskState == null) {
+      patch.taskState = new TaskState();
+    }
+    patch.taskState.stage = TaskState.TaskStage.FINISHED;
+
+    this.sendStageProgressPatch(patch);
+  }
+
+  /**
+   * Moves the service into the FAILED state.
+   *
+   * @param e
+   */
+  private void failTask(Throwable e) {
+    ServiceUtils.logSevere(this, e);
+    this.sendStageProgressPatch(buildPatch(TaskState.TaskStage.FAILED, e));
+  }
+
+  /**
+   * Send a patch message to ourselves to update the execution stage.
+   *
+   * @param state
+   */
+  private void sendStageProgressPatch(State state) {
+    if (state.isSelfProgressionDisabled) {
+      ServiceUtils.logInfo(this, "Skipping patch handling (disabled)");
+      return;
+    }
+
+    Operation patch = Operation
+        .createPatch(UriUtils.buildUri(getHost(), getSelfLink()))
+        .setBody(state);
+    this.sendRequest(patch);
+  }
+
+  /**
+   * Build a state object that can be used to submit a stage progress
+   * self patch.
+   *
+   * @param stage
+   * @param e
+   * @return
+   */
+  private State buildPatch(TaskState.TaskStage stage, Throwable e) {
+    State s = new State();
+    s.taskState = new TaskState();
+    s.taskState.stage = stage;
+
+    if (e != null) {
+      s.taskState.failure = Utils.toServiceErrorResponse(e);
+    }
+
+    return s;
   }
 
   /**
@@ -118,6 +292,26 @@ public class IpLeaseDeleteService extends StatefulService {
     ValidationUtils.validateTaskStageProgression(current.taskState, patch.taskState);
   }
 
+  private QueryTask buildIpLeaseQuery(State s) {
+    QueryTask.Query kindClause = new QueryTask.Query()
+        .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
+        .setTermMatchValue(Utils.buildKind(IpLeaseService.State.class));
+
+    QueryTask.QuerySpecification querySpec = new QueryTask.QuerySpecification();
+
+    QueryTask.Query subnetIdClause = new QueryTask.Query()
+        .setTermPropertyName("subnetId")
+        .setTermMatchValue(s.subnetId);
+
+    querySpec.query
+        .addBooleanClause(kindClause)
+        .addBooleanClause(subnetIdClause);
+
+    querySpec.options = EnumSet.of(QueryTask.QuerySpecification.QueryOption.EXPAND_CONTENT);
+    querySpec.resultLimit = s.pageLimit;
+    return QueryTask.create(querySpec).setDirect(true);
+  }
+
   /**
    * Durable service state data.
    */
@@ -128,18 +322,24 @@ public class IpLeaseDeleteService extends StatefulService {
     /**
      * Service execution stage.
      */
-    @DefaultTaskState(value = TaskState.TaskStage.CREATED)
+    @DefaultTaskState(value = TaskState.TaskStage.STARTED)
     public TaskState taskState;
 
     /**
      * Subnet ID.
      */
+    @NotNull
     public String subnetId;
     /**
      * The link to next page.
      */
     public String nextPageLink;
 
+    /**
+     * The page limit for querying DhcpSubnetService.
+     */
+    @DefaultInteger(value = DEFAULT_PAGE_LIMIT)
+    public int pageLimit;
     /**
      * Flag that controls if we should self patch to make forward progress.
      */
