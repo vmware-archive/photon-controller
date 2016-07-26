@@ -1524,7 +1524,7 @@ public class VmXenonBackendTest {
 
     private void createDeploymentInCloudStore() throws Throwable {
       DeploymentService.State startState = ReflectionUtils.buildValidStartState(DeploymentService.State.class);
-      startState.virtualNetworkEnabled = true;
+      startState.sdnEnabled = true;
       startState.networkManagerAddress = "192.168.1.1";
       startState.networkManagerUsername = "user";
       startState.networkManagerPassword = "password";

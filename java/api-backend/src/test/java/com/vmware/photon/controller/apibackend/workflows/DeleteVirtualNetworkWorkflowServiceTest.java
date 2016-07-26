@@ -867,7 +867,7 @@ public class DeleteVirtualNetworkWorkflowServiceTest {
     public void setUpTest() throws Throwable {
 
       deploymentStartState = ReflectionUtils.buildValidStartState(DeploymentService.State.class);
-      deploymentStartState.virtualNetworkEnabled = true;
+      deploymentStartState.sdnEnabled = true;
       deploymentStartState.networkManagerAddress = NETWORK_MANAGER_ADDRESS;
       deploymentStartState.networkManagerUsername = NETWORK_MANAGER_USERNAME;
       deploymentStartState.networkManagerPassword = NETWORK_MANAGER_PASSWORD;

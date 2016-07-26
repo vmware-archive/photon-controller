@@ -520,7 +520,7 @@ public class DisconnectVmFromSwitchTaskServiceTest {
       DeploymentService.State deploymentStartState =
           ReflectionUtils.buildValidStartState(DeploymentService.State.class);
 
-      deploymentStartState.virtualNetworkEnabled = true;
+      deploymentStartState.sdnEnabled = true;
       deploymentStartState.networkManagerAddress = "networkManagerAddress";
       deploymentStartState.networkManagerUsername = "networkManagerUsername";
       deploymentStartState.networkManagerPassword = "networkManagerPassword";

@@ -440,7 +440,7 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
       case PhotonControllerCore:
         dynamicParameters.put(MUSTACHE_KEY_MGMT_API_DATASTORE, deploymentState.imageDataStoreNames.iterator().next());
         dynamicParameters.put(MUSTACHE_KEY_MGMT_API_USE_VIRTUAL_NETWORK,
-            String.valueOf(deploymentState.virtualNetworkEnabled));
+            String.valueOf(deploymentState.sdnEnabled));
         if (deploymentState.oAuthEnabled) {
           dynamicParameters.put(MUSTACHE_KEY_MGMT_API_AUTH_SERVER_PORT,
               String.valueOf(Constants.LIGHTWAVE_PORT));
