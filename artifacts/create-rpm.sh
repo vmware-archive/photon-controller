@@ -25,7 +25,7 @@ TEMP_DIR=$(mktemp -d "${ROOT}/create_tar.XXXXX")
 TAR_PATH="/java/photon-controller-core/build/distributions/"
 TAR_PREFIX="photon-controller-core"
 RPM_PREFIX="photon-controller"
-ENVOY_VIB_URL="http://artifactory.ec.eng.vmware.com/artifactory/esxcloud-archives/envoy/${BRANCH}/latest/vmware-envoy-latest.vib"
+ENVOY_VIB_URL=${ENVOY_VIB_URL:="http://artifactory.ec.eng.vmware.com/artifactory/esxcloud-archives/envoy/${BRANCH}/latest/vmware-envoy-latest.vib"}
 
 trap "rm -rf ${TEMP_DIR}; rm -rf ${SOURCES_DIR};" EXIT
 
