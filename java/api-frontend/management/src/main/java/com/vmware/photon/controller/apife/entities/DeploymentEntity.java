@@ -58,7 +58,7 @@ public class DeploymentEntity extends BaseEntity {
 
   private List<String> oauthSecurityGroups;
 
-  private boolean virtualNetworkEnabled;
+  private boolean sdnEnabled;
 
   private String networkManagerAddress;
 
@@ -214,12 +214,12 @@ public class DeploymentEntity extends BaseEntity {
     this.oauthSecurityGroups = oauthSecurityGroups;
   }
 
-  public boolean getVirtualNetworkEnabled() {
-    return virtualNetworkEnabled;
+  public boolean getSdnEnabled() {
+    return sdnEnabled;
   }
 
-  public void setVirtualNetworkEnabled(boolean virtualNetworkEnabled) {
-    this.virtualNetworkEnabled = virtualNetworkEnabled;
+  public void setSdnEnabled(boolean sdnEnabled) {
+    this.sdnEnabled = sdnEnabled;
   }
 
   public String getNetworkManagerAddress() {
@@ -342,7 +342,7 @@ public class DeploymentEntity extends BaseEntity {
         && Objects.equals(this.getOauthUsername(), other.getOauthUsername())
         && Objects.equals(this.getOauthPassword(), other.getOauthPassword())
         && ListUtils.isEqualList(this.getOauthSecurityGroups(), other.getOauthSecurityGroups())
-        && Objects.equals(this.getVirtualNetworkEnabled(), other.getVirtualNetworkEnabled())
+        && Objects.equals(this.getSdnEnabled(), other.getSdnEnabled())
         && Objects.equals(this.getNetworkManagerAddress(), other.getNetworkManagerAddress())
         && Objects.equals(this.getNetworkManagerUsername(), other.getNetworkManagerUsername())
         && Objects.equals(this.getNetworkManagerPassword(), other.getNetworkManagerPassword())
@@ -374,7 +374,7 @@ public class DeploymentEntity extends BaseEntity {
         .add("oauthPort", this.getOauthPort())
         .add("oauthTenant", this.getOauthTenant())
         .add("oauthSecurityGroups", StringUtils.join(this.getOauthSecurityGroups(), ','))
-        .add("virtualNetworkEnabled", this.getVirtualNetworkEnabled())
+        .add("sdnEnabled", this.getSdnEnabled())
         .add("networkManagerAddress", this.getNetworkManagerAddress())
         .add("networkZoneId", this.getNetworkZoneId())
         .add("networkTopRouterId", this.getNetworkTopRouterId())

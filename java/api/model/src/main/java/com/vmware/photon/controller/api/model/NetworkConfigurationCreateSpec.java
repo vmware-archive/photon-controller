@@ -14,8 +14,8 @@
 package com.vmware.photon.controller.api.model;
 
 import com.vmware.photon.controller.api.model.constraints.DomainOrIP;
-import com.vmware.photon.controller.api.model.constraints.VirtualNetworkDisabled;
-import com.vmware.photon.controller.api.model.constraints.VirtualNetworkEnabled;
+import com.vmware.photon.controller.api.model.constraints.SoftwareDefinedNetworkingDisabled;
+import com.vmware.photon.controller.api.model.constraints.SoftwareDefinedNetworkingEnabled;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -37,45 +37,56 @@ import java.util.Objects;
 public class NetworkConfigurationCreateSpec {
 
   @JsonProperty
-  @ApiModelProperty(value = "Flag that indicates if virtual network support is enabled or not", required = true)
-  private boolean virtualNetworkEnabled = false;
+  @ApiModelProperty(value = "Flag that indicates if software defined networking is enabled or not", required = true)
+  private boolean sdnEnabled = false;
 
   @JsonProperty
   @ApiModelProperty(value = "The IP address of the network manager")
-  @Null(groups = {VirtualNetworkDisabled.class})
-  @DomainOrIP(groups = {VirtualNetworkEnabled.class})
+  @Null(groups = {SoftwareDefinedNetworkingDisabled.class})
+  @DomainOrIP(groups = {SoftwareDefinedNetworkingEnabled.class})
   private String networkManagerAddress;
 
   @JsonProperty
   @ApiModelProperty(value = "The username for accessing the network manager")
-  @Null(groups = {VirtualNetworkDisabled.class})
-  @NotNull(groups = {VirtualNetworkEnabled.class})
+  @Null(groups = {SoftwareDefinedNetworkingDisabled.class})
+  @NotNull(groups = {SoftwareDefinedNetworkingEnabled.class})
   private String networkManagerUsername;
 
   @JsonProperty
   @ApiModelProperty(value = "The password for accessing the network manager")
-  @Null(groups = {VirtualNetworkDisabled.class})
-  @NotNull(groups = {VirtualNetworkEnabled.class})
+  @Null(groups = {SoftwareDefinedNetworkingDisabled.class})
+  @NotNull(groups = {SoftwareDefinedNetworkingEnabled.class})
   private String networkManagerPassword;
 
   @JsonProperty
   @ApiModelProperty(value = "The ID of the network zone which inter-connects all hosts")
-  @Null(groups = {VirtualNetworkDisabled.class})
-  @NotNull(groups = {VirtualNetworkEnabled.class})
+  @Null(groups = {SoftwareDefinedNetworkingDisabled.class})
+  @NotNull(groups = {SoftwareDefinedNetworkingEnabled.class})
   private String networkZoneId;
 
   @JsonProperty
   @ApiModelProperty(value = "The ID of the router for accessing outside network (i.e. Internet)")
-  @Null(groups = {VirtualNetworkDisabled.class})
-  @NotNull(groups = {VirtualNetworkEnabled.class})
+  @Null(groups = {SoftwareDefinedNetworkingDisabled.class})
+  @NotNull(groups = {SoftwareDefinedNetworkingEnabled.class})
   private String networkTopRouterId;
 
-  public boolean getVirtualNetworkEnabled() {
-    return virtualNetworkEnabled;
+  @JsonProperty
+  @ApiModelProperty(value = "The global IP range for allocating private IP range to virtual network")
+  @Null(groups = {SoftwareDefinedNetworkingDisabled.class})
+  @NotNull(groups = {SoftwareDefinedNetworkingEnabled.class})
+  private String ipRange;
+
+  @JsonProperty
+  @ApiModelProperty(value = "The global floating IP range for allocating floating IP to VM")
+  @Null(groups = {SoftwareDefinedNetworkingDisabled.class})
+  private String floatingIpRange;
+
+  public boolean getSdnEnabled() {
+    return sdnEnabled;
   }
 
-  public void setVirtualNetworkEnabled(boolean virtualNetworkEnabled) {
-    this.virtualNetworkEnabled = virtualNetworkEnabled;
+  public void setSdnEnabled(boolean sdnEnabled) {
+    this.sdnEnabled = sdnEnabled;
   }
 
   public String getNetworkManagerAddress() {
@@ -118,6 +129,21 @@ public class NetworkConfigurationCreateSpec {
     this.networkTopRouterId = networkTopRouterId;
   }
 
+  public String getIpRange() {
+    return ipRange;
+  }
+  public void setIpRange(String ipRange) {
+    this.ipRange = ipRange;
+  }
+
+  public String getFloatingIpRange() {
+    return floatingIpRange;
+  }
+
+  public void setFloatingIpRange(String floatingIpRange) {
+    this.floatingIpRange = floatingIpRange;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -129,34 +155,40 @@ public class NetworkConfigurationCreateSpec {
 
     NetworkConfigurationCreateSpec other = (NetworkConfigurationCreateSpec) o;
 
-    return Objects.equals(this.getVirtualNetworkEnabled(), other.getVirtualNetworkEnabled())
+    return Objects.equals(this.getSdnEnabled(), other.getSdnEnabled())
         && Objects.equals(this.getNetworkManagerAddress(), other.getNetworkManagerAddress())
         && Objects.equals(this.getNetworkManagerUsername(), other.getNetworkManagerUsername())
         && Objects.equals(this.getNetworkManagerPassword(), other.getNetworkManagerPassword())
         && Objects.equals(this.getNetworkZoneId(), other.getNetworkZoneId())
-        && Objects.equals(this.getNetworkTopRouterId(), other.getNetworkTopRouterId());
+        && Objects.equals(this.getNetworkTopRouterId(), other.getNetworkTopRouterId())
+        && Objects.equals(this.getIpRange(), other.getIpRange())
+        && Objects.equals(this.getFloatingIpRange(), other.getFloatingIpRange());
   }
 
   @Override
   public int hashCode() {
     return Objects.hash(
         super.hashCode(),
-        this.getVirtualNetworkEnabled(),
+        this.getSdnEnabled(),
         this.getNetworkManagerAddress(),
         this.getNetworkManagerUsername(),
         this.getNetworkManagerPassword(),
         this.getNetworkZoneId(),
-        this.getNetworkTopRouterId());
+        this.getNetworkTopRouterId(),
+        this.getIpRange(),
+        this.getFloatingIpRange());
   }
 
   protected com.google.common.base.Objects.ToStringHelper toStringHelper() {
     // NOTE: Do not include networkManagerUsername or networkManagerPassword,
     // to avoid having usernames or passwords in log files
     return com.google.common.base.Objects.toStringHelper(this)
-        .add("virtualNetworkEnabled", this.getVirtualNetworkEnabled())
+        .add("sdnEnabled", this.getSdnEnabled())
         .add("networkManagerAddress", this.getNetworkManagerAddress())
         .add("networkZoneId", this.getNetworkZoneId())
-        .add("networkTopRouterId", this.getNetworkTopRouterId());
+        .add("networkTopRouterId", this.getNetworkTopRouterId())
+        .add("ipRange", this.getIpRange())
+        .add("floatingIpRange", this.getFloatingIpRange());
   }
 
   @Override

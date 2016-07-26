@@ -219,7 +219,7 @@ public class DeploymentsResourceTest extends ResourceTest {
   @Test
   public void testSuccessfulWithNetworkConfigEnabled() throws Exception {
     spec.setNetworkConfiguration(new NetworkConfigurationCreateSpecBuilder()
-        .virtualNetworkEnabled(true)
+        .sdnEnabled(true)
         .networkManagerAddress("10.1.1.1")
         .networkManagerUsername("u")
         .networkManagerPassword("p")
@@ -243,7 +243,7 @@ public class DeploymentsResourceTest extends ResourceTest {
   @Test
   public void testInvalidWithNetworkConfigEnabled() throws Exception {
     spec.setNetworkConfiguration(new NetworkConfigurationCreateSpecBuilder()
-        .virtualNetworkEnabled(true)
+        .sdnEnabled(true)
         .build());
 
     Task task = new Task();
