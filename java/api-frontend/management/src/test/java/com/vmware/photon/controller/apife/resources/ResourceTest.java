@@ -13,12 +13,12 @@
 
 package com.vmware.photon.controller.apife.resources;
 
-import com.vmware.photon.controller.api.common.providers.ConstraintViolationExceptionMapper;
-import com.vmware.photon.controller.api.common.providers.ExternalExceptionMapper;
-import com.vmware.photon.controller.api.common.providers.JsonProcessingExceptionMapper;
-import com.vmware.photon.controller.api.common.providers.LoggingExceptionMapper;
-import com.vmware.photon.controller.api.common.providers.WebApplicationExceptionMapper;
 import com.vmware.photon.controller.apife.InfrastructureTestModule;
+import com.vmware.photon.controller.apife.providers.ConstraintViolationExceptionMapper;
+import com.vmware.photon.controller.apife.providers.ExternalExceptionMapper;
+import com.vmware.photon.controller.apife.providers.JsonProcessingExceptionMapper;
+import com.vmware.photon.controller.apife.providers.LoggingExceptionMapper;
+import com.vmware.photon.controller.apife.providers.WebApplicationExceptionMapper;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;

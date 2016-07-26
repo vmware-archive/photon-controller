@@ -13,21 +13,21 @@
 
 package com.vmware.photon.controller.apife;
 
-import com.vmware.photon.controller.api.common.filters.LoggingFilter;
-import com.vmware.photon.controller.api.common.filters.UrlTrailingSlashFilter;
-import com.vmware.photon.controller.api.common.jackson.GuiceModule;
-import com.vmware.photon.controller.api.common.providers.ConstraintViolationExceptionMapper;
-import com.vmware.photon.controller.api.common.providers.ExternalExceptionMapper;
-import com.vmware.photon.controller.api.common.providers.JsonProcessingExceptionMapper;
-import com.vmware.photon.controller.api.common.providers.LoggingExceptionMapper;
-import com.vmware.photon.controller.api.common.providers.WebApplicationExceptionMapper;
 import com.vmware.photon.controller.apife.auth.AuthFilter;
 import com.vmware.photon.controller.apife.config.ApiFeConfiguration;
 import com.vmware.photon.controller.apife.config.ApiFeStaticConfiguration;
 import com.vmware.photon.controller.apife.config.AuthConfig;
 import com.vmware.photon.controller.apife.config.ConfigurationUtils;
+import com.vmware.photon.controller.apife.filter.LoggingFilter;
 import com.vmware.photon.controller.apife.filter.NetworkToSubnetRedirectionFilter;
 import com.vmware.photon.controller.apife.filter.PauseFilter;
+import com.vmware.photon.controller.apife.filter.UrlTrailingSlashFilter;
+import com.vmware.photon.controller.apife.jackson.GuiceModule;
+import com.vmware.photon.controller.apife.providers.ConstraintViolationExceptionMapper;
+import com.vmware.photon.controller.apife.providers.ExternalExceptionMapper;
+import com.vmware.photon.controller.apife.providers.JsonProcessingExceptionMapper;
+import com.vmware.photon.controller.apife.providers.LoggingExceptionMapper;
+import com.vmware.photon.controller.apife.providers.WebApplicationExceptionMapper;
 import com.vmware.photon.controller.apife.resources.auth.AuthResource;
 import com.vmware.photon.controller.apife.resources.availabilityzone.AvailabilityZoneResource;
 import com.vmware.photon.controller.apife.resources.availabilityzone.AvailabilityZonesResource;

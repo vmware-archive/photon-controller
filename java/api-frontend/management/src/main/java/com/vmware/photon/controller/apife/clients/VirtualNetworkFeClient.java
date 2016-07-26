@@ -13,8 +13,6 @@
 
 package com.vmware.photon.controller.apife.clients;
 
-import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
-import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
 import com.vmware.photon.controller.api.model.Operation;
 import com.vmware.photon.controller.api.model.Project;
 import com.vmware.photon.controller.api.model.ResourceList;
@@ -31,9 +29,11 @@ import com.vmware.photon.controller.apife.backends.clients.ApiFeXenonRestClient;
 import com.vmware.photon.controller.apife.backends.clients.PhotonControllerXenonRestClient;
 import com.vmware.photon.controller.apife.backends.utils.TaskUtils;
 import com.vmware.photon.controller.apife.backends.utils.VirtualNetworkUtils;
+import com.vmware.photon.controller.apife.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidNetworkStateException;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidReservedStaticIpSizeException;
 import com.vmware.photon.controller.apife.exceptions.external.NetworkNotFoundException;
+import com.vmware.photon.controller.apife.exceptions.external.PageExpiredException;
 import com.vmware.photon.controller.apife.utils.PaginationUtils;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VirtualNetworkService;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;

@@ -13,8 +13,6 @@
 
 package com.vmware.photon.controller.apife.exceptions.external;
 
-import com.vmware.photon.controller.api.common.exceptions.external.ErrorCode;
-import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.entities.BaseDiskEntity;
 import com.vmware.photon.controller.apife.entities.VmEntity;
 

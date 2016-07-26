@@ -13,10 +13,6 @@
 
 package com.vmware.photon.controller.apife.backends;
 
-import com.vmware.photon.controller.api.common.entities.base.TagEntity;
-import com.vmware.photon.controller.api.common.exceptions.external.ErrorCode;
-import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
-import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
 import com.vmware.photon.controller.api.model.Operation;
 import com.vmware.photon.controller.api.model.QuotaLineItem;
 import com.vmware.photon.controller.api.model.ResourceList;
@@ -27,8 +23,12 @@ import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.entities.QuotaLineItemEntity;
 import com.vmware.photon.controller.apife.entities.ResourceTicketEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
+import com.vmware.photon.controller.apife.entities.base.TagEntity;
+import com.vmware.photon.controller.apife.exceptions.external.ErrorCode;
+import com.vmware.photon.controller.apife.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidResourceTicketSubdivideException;
 import com.vmware.photon.controller.apife.exceptions.external.NameTakenException;
+import com.vmware.photon.controller.apife.exceptions.external.PageExpiredException;
 import com.vmware.photon.controller.apife.exceptions.external.QuotaException;
 import com.vmware.photon.controller.apife.exceptions.external.ResourceTicketNotFoundException;
 import com.vmware.photon.controller.apife.lib.QuotaCost;

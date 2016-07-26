@@ -13,12 +13,12 @@
 
 package com.vmware.photon.controller.apife.resources;
 
-import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.model.ApiError;
 import com.vmware.photon.controller.api.model.ResourceList;
 import com.vmware.photon.controller.api.model.Task;
 import com.vmware.photon.controller.apife.clients.TaskFeClient;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
+import com.vmware.photon.controller.apife.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.resources.routes.HostResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
 import com.vmware.photon.controller.apife.resources.tasks.HostTasksResource;

@@ -13,9 +13,9 @@
 
 package com.vmware.photon.controller.apife.filter;
 
-import com.vmware.photon.controller.api.common.Responses;
-import com.vmware.photon.controller.api.common.exceptions.external.ErrorCode;
-import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
+import com.vmware.photon.controller.apife.Responses;
+import com.vmware.photon.controller.apife.exceptions.external.ErrorCode;
+import com.vmware.photon.controller.apife.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.resources.routes.DeploymentResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.VmResourceRoutes;
 import com.vmware.photon.controller.cloudstore.SystemConfig;

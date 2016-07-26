@@ -13,10 +13,10 @@
 
 package com.vmware.photon.controller.apife.entities;
 
-import com.vmware.photon.controller.api.common.exceptions.external.ErrorCode;
 import com.vmware.photon.controller.api.model.EphemeralDisk;
 import com.vmware.photon.controller.api.model.PersistentDisk;
 import com.vmware.photon.controller.api.model.Vm;
+import com.vmware.photon.controller.apife.exceptions.external.ErrorCode;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidVmStateException;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
 

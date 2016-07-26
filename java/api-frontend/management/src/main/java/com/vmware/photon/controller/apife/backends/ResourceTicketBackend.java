@@ -13,13 +13,13 @@
 
 package com.vmware.photon.controller.apife.backends;
 
-import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.model.ResourceList;
 import com.vmware.photon.controller.api.model.ResourceTicket;
 import com.vmware.photon.controller.api.model.ResourceTicketCreateSpec;
 import com.vmware.photon.controller.apife.entities.QuotaLineItemEntity;
 import com.vmware.photon.controller.apife.entities.ResourceTicketEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
+import com.vmware.photon.controller.apife.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.exceptions.external.QuotaException;
 import com.vmware.photon.controller.apife.exceptions.external.ResourceTicketNotFoundException;
 import com.vmware.photon.controller.apife.lib.QuotaCost;

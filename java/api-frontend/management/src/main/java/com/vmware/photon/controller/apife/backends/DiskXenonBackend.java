@@ -13,10 +13,6 @@
 
 package com.vmware.photon.controller.apife.backends;
 
-import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
-import com.vmware.photon.controller.api.common.entities.base.TagEntity;
-import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
-import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
 import com.vmware.photon.controller.api.model.AttachedDiskCreateSpec;
 import com.vmware.photon.controller.api.model.DiskCreateSpec;
 import com.vmware.photon.controller.api.model.DiskState;
@@ -42,8 +38,12 @@ import com.vmware.photon.controller.apife.entities.ProjectEntity;
 import com.vmware.photon.controller.apife.entities.QuotaLineItemEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
+import com.vmware.photon.controller.apife.entities.base.BaseEntity;
+import com.vmware.photon.controller.apife.entities.base.TagEntity;
 import com.vmware.photon.controller.apife.exceptions.external.DiskNotFoundException;
+import com.vmware.photon.controller.apife.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidFlavorStateException;
+import com.vmware.photon.controller.apife.exceptions.external.PageExpiredException;
 import com.vmware.photon.controller.apife.lib.QuotaCost;
 import com.vmware.photon.controller.apife.utils.PaginationUtils;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DiskService;

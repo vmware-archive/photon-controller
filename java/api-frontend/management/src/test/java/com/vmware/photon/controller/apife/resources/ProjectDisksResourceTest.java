@@ -13,9 +13,6 @@
 
 package com.vmware.photon.controller.apife.resources;
 
-import com.vmware.photon.controller.api.common.exceptions.external.ErrorCode;
-import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
-import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
 import com.vmware.photon.controller.api.model.ApiError;
 import com.vmware.photon.controller.api.model.DiskCreateSpec;
 import com.vmware.photon.controller.api.model.DiskState;
@@ -31,7 +28,10 @@ import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.entities.PersistentDiskEntity;
 import com.vmware.photon.controller.apife.entities.ProjectEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
+import com.vmware.photon.controller.apife.exceptions.external.ErrorCode;
+import com.vmware.photon.controller.apife.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.exceptions.external.FlavorNotFoundException;
+import com.vmware.photon.controller.apife.exceptions.external.PageExpiredException;
 import com.vmware.photon.controller.apife.resources.disk.ProjectDisksResource;
 import com.vmware.photon.controller.apife.resources.routes.DiskResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.ProjectResourceRoutes;

@@ -13,7 +13,6 @@
 
 package com.vmware.photon.controller.apife.commands.steps;
 
-import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.model.DiskState;
 import com.vmware.photon.controller.api.model.EphemeralDisk;
 import com.vmware.photon.controller.api.model.PersistentDisk;
@@ -42,6 +41,7 @@ import com.vmware.photon.controller.apife.entities.QuotaLineItemEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.entities.VmEntity;
+import com.vmware.photon.controller.apife.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidLocalitySpecException;
 import com.vmware.photon.controller.apife.exceptions.external.NoSuchResourceException;
 import com.vmware.photon.controller.apife.exceptions.external.NotEnoughCpuResourceException;

@@ -13,14 +13,14 @@
 
 package com.vmware.photon.controller.apife.resources.vm;
 
-import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.model.Operation;
 import com.vmware.photon.controller.api.model.Task;
 import com.vmware.photon.controller.api.model.VmDiskOperation;
 import com.vmware.photon.controller.apife.clients.VmFeClient;
+import com.vmware.photon.controller.apife.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.VmResourceRoutes;
-import static com.vmware.photon.controller.api.common.Responses.generateCustomResponse;
+import static com.vmware.photon.controller.apife.Responses.generateCustomResponse;
 
 import com.google.inject.Inject;
 import com.wordnik.swagger.annotations.Api;

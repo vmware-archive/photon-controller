@@ -13,9 +13,6 @@
 
 package com.vmware.photon.controller.apife.exceptions.external;
 
-import com.vmware.photon.controller.api.common.exceptions.external.ErrorCode;
-import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
-
 /**
  * Gets thrown when a VM Spec has invalid networks settings.
  */

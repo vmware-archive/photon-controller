@@ -15,10 +15,10 @@ package com.vmware.photon.controller.apife.auth;
 
 import com.vmware.identity.openidconnect.client.ResourceServerAccessToken;
 import com.vmware.identity.openidconnect.client.TokenValidationException;
-import com.vmware.photon.controller.api.common.Responses;
-import com.vmware.photon.controller.api.common.exceptions.external.ErrorCode;
-import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
+import com.vmware.photon.controller.apife.Responses;
 import com.vmware.photon.controller.apife.config.AuthConfig;
+import com.vmware.photon.controller.apife.exceptions.external.ErrorCode;
+import com.vmware.photon.controller.apife.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.resources.routes.AvailableRoutes;
 import com.vmware.photon.controller.common.auth.AuthException;
 import com.vmware.photon.controller.common.auth.AuthOIDCClient;

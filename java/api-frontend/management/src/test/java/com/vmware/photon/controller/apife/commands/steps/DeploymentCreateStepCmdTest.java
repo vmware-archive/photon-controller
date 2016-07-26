@@ -13,7 +13,6 @@
 
 package com.vmware.photon.controller.apife.commands.steps;
 
-import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.model.DeploymentState;
 import com.vmware.photon.controller.apife.backends.DeploymentXenonBackend;
 import com.vmware.photon.controller.apife.backends.HostXenonBackend;
@@ -23,6 +22,7 @@ import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.DeploymentEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
+import com.vmware.photon.controller.apife.exceptions.external.ExternalException;
 import com.vmware.photon.controller.deployer.xenon.workflow.DeploymentWorkflowFactoryService;
 import com.vmware.photon.controller.deployer.xenon.workflow.DeploymentWorkflowService;
 

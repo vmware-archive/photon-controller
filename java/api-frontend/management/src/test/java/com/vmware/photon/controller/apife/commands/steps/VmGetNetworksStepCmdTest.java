@@ -13,7 +13,6 @@
 
 package com.vmware.photon.controller.apife.commands.steps;
 
-import com.vmware.photon.controller.api.common.exceptions.external.UnsupportedOperationException;
 import com.vmware.photon.controller.api.model.ResourceList;
 import com.vmware.photon.controller.api.model.Subnet;
 import com.vmware.photon.controller.api.model.VmState;
@@ -30,6 +29,7 @@ import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.entities.VmEntity;
+import com.vmware.photon.controller.apife.exceptions.external.UnsupportedOperationException;
 import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
 import com.vmware.photon.controller.cloudstore.xenon.entity.HostService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.HostServiceFactory;

@@ -13,8 +13,6 @@
 
 package com.vmware.photon.controller.apife.backends;
 
-import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
-import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
 import com.vmware.photon.controller.api.model.EphemeralDisk;
 import com.vmware.photon.controller.api.model.Flavor;
 import com.vmware.photon.controller.api.model.FlavorCreateSpec;
@@ -29,8 +27,10 @@ import com.vmware.photon.controller.apife.entities.EntityStateValidator;
 import com.vmware.photon.controller.apife.entities.FlavorEntity;
 import com.vmware.photon.controller.apife.entities.QuotaLineItemEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
+import com.vmware.photon.controller.apife.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.exceptions.external.FlavorNotFoundException;
 import com.vmware.photon.controller.apife.exceptions.external.NameTakenException;
+import com.vmware.photon.controller.apife.exceptions.external.PageExpiredException;
 import com.vmware.photon.controller.apife.utils.PaginationUtils;
 import com.vmware.photon.controller.cloudstore.xenon.entity.FlavorService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.FlavorServiceFactory;

@@ -13,9 +13,9 @@
 
 package com.vmware.photon.controller.apife.entities;
 
-import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
 import com.vmware.photon.controller.api.model.DatastoreCreateSpec;
 import com.vmware.photon.controller.api.model.constraints.URI;
+import com.vmware.photon.controller.apife.entities.base.BaseEntity;
 
 import static com.google.common.base.Objects.ToStringHelper;
 

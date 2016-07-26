@@ -13,11 +13,6 @@
 
 package com.vmware.photon.controller.apife.commands.steps;
 
-import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
-import com.vmware.photon.controller.api.common.exceptions.ApiFeException;
-import com.vmware.photon.controller.api.common.exceptions.external.ErrorCode;
-import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
-import com.vmware.photon.controller.api.common.exceptions.external.TaskNotFoundException;
 import com.vmware.photon.controller.api.model.DiskState;
 import com.vmware.photon.controller.api.model.EphemeralDisk;
 import com.vmware.photon.controller.api.model.PersistentDisk;
@@ -41,11 +36,16 @@ import com.vmware.photon.controller.apife.entities.ProjectEntity;
 import com.vmware.photon.controller.apife.entities.QuotaLineItemEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.VmEntity;
+import com.vmware.photon.controller.apife.entities.base.BaseEntity;
 import com.vmware.photon.controller.apife.entities.base.InfrastructureEntity;
+import com.vmware.photon.controller.apife.exceptions.ApiFeException;
 import com.vmware.photon.controller.apife.exceptions.external.DiskNotFoundException;
+import com.vmware.photon.controller.apife.exceptions.external.ErrorCode;
+import com.vmware.photon.controller.apife.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidLocalitySpecException;
 import com.vmware.photon.controller.apife.exceptions.external.NetworkNotFoundException;
 import com.vmware.photon.controller.apife.exceptions.external.StepNotFoundException;
+import com.vmware.photon.controller.apife.exceptions.external.TaskNotFoundException;
 import com.vmware.photon.controller.apife.exceptions.external.UnfulfillableAffinitiesException;
 import com.vmware.photon.controller.apife.exceptions.external.UnfulfillableDiskAffinitiesException;
 import com.vmware.photon.controller.apife.exceptions.internal.InternalException;

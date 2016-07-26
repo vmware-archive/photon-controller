@@ -13,7 +13,6 @@
 
 package com.vmware.photon.controller.apife.resources.vm;
 
-import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.model.AttachedDiskCreateSpec;
 import com.vmware.photon.controller.api.model.LocalitySpec;
 import com.vmware.photon.controller.api.model.ResourceList;
@@ -22,6 +21,7 @@ import com.vmware.photon.controller.api.model.Vm;
 import com.vmware.photon.controller.api.model.VmCreateSpec;
 import com.vmware.photon.controller.apife.clients.VmFeClient;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
+import com.vmware.photon.controller.apife.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidLocalitySpecException;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidVmDisksSpecException;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidVmNetworksSpecException;
@@ -30,8 +30,8 @@ import com.vmware.photon.controller.apife.resources.routes.ProjectResourceRoutes
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.VmResourceRoutes;
 import com.vmware.photon.controller.apife.utils.PaginationUtils;
-import static com.vmware.photon.controller.api.common.Responses.generateCustomResponse;
-import static com.vmware.photon.controller.api.common.Responses.generateResourceListResponse;
+import static com.vmware.photon.controller.apife.Responses.generateCustomResponse;
+import static com.vmware.photon.controller.apife.Responses.generateResourceListResponse;
 
 import com.google.common.base.Optional;
 import com.google.inject.Inject;

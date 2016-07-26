@@ -13,7 +13,6 @@
 
 package com.vmware.photon.controller.apife.backends;
 
-import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.model.ClusterConfiguration;
 import com.vmware.photon.controller.api.model.ClusterConfigurationSpec;
 import com.vmware.photon.controller.api.model.ClusterType;
@@ -27,6 +26,7 @@ import com.vmware.photon.controller.api.model.InitializeMigrationOperation;
 import com.vmware.photon.controller.apife.entities.DeploymentEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.exceptions.external.DeploymentNotFoundException;
+import com.vmware.photon.controller.apife.exceptions.external.ExternalException;
 
 import java.util.List;
 

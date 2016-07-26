@@ -13,10 +13,10 @@
 
 package com.vmware.photon.controller.apife.entities;
 
-import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
 import com.vmware.photon.controller.api.model.Subnet;
 import com.vmware.photon.controller.api.model.SubnetState;
 import com.vmware.photon.controller.api.model.base.Named;
+import com.vmware.photon.controller.apife.entities.base.BaseEntity;
 
 /**
  * Network entity.

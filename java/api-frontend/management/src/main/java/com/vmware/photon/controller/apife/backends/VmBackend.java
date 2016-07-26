@@ -13,7 +13,6 @@
 
 package com.vmware.photon.controller.apife.backends;
 
-import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.model.ImageCreateSpec;
 import com.vmware.photon.controller.api.model.Operation;
 import com.vmware.photon.controller.api.model.ResourceList;
@@ -26,6 +25,7 @@ import com.vmware.photon.controller.apife.entities.IsoEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.entities.VmEntity;
 import com.vmware.photon.controller.apife.exceptions.external.DiskNotFoundException;
+import com.vmware.photon.controller.apife.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.exceptions.external.VmNotFoundException;
 import com.vmware.photon.controller.cloudstore.xenon.entity.VmService;
 

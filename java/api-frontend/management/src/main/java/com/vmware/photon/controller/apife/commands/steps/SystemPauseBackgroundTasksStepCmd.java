@@ -13,11 +13,11 @@
 
 package com.vmware.photon.controller.apife.commands.steps;
 
-import com.vmware.photon.controller.api.common.exceptions.ApiFeException;
 import com.vmware.photon.controller.api.model.DeploymentState;
 import com.vmware.photon.controller.apife.backends.StepBackend;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.StepEntity;
+import com.vmware.photon.controller.apife.exceptions.ApiFeException;
 import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.DeploymentServiceFactory;

@@ -13,7 +13,6 @@
 
 package com.vmware.photon.controller.apife.clients;
 
-import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.model.AvailabilityZone;
 import com.vmware.photon.controller.api.model.Flavor;
 import com.vmware.photon.controller.api.model.PersistentDisk;
@@ -35,6 +34,7 @@ import com.vmware.photon.controller.apife.entities.ImageEntity;
 import com.vmware.photon.controller.apife.entities.ProjectEntity;
 import com.vmware.photon.controller.apife.entities.ResourceTicketEntity;
 import com.vmware.photon.controller.apife.entities.TenantEntity;
+import com.vmware.photon.controller.apife.exceptions.external.ExternalException;
 
 import com.google.common.base.Optional;
 import com.google.inject.Inject;

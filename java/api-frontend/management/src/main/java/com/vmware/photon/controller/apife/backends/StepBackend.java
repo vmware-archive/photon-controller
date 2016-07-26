@@ -13,11 +13,11 @@
 
 package com.vmware.photon.controller.apife.backends;
 
-import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
-import com.vmware.photon.controller.api.common.exceptions.external.TaskNotFoundException;
 import com.vmware.photon.controller.api.model.Operation;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
+import com.vmware.photon.controller.apife.entities.base.BaseEntity;
+import com.vmware.photon.controller.apife.exceptions.external.TaskNotFoundException;
 
 import java.util.List;
 import java.util.Map;

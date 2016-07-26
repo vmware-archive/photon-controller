@@ -13,7 +13,6 @@
 
 package com.vmware.photon.controller.apife.commands.steps;
 
-import com.vmware.photon.controller.api.common.exceptions.ApiFeException;
 import com.vmware.photon.controller.api.model.Operation;
 import com.vmware.photon.controller.api.model.Vm;
 import com.vmware.photon.controller.api.model.VmState;
@@ -22,6 +21,7 @@ import com.vmware.photon.controller.apife.backends.VmBackend;
 import com.vmware.photon.controller.apife.commands.tasks.TaskCommand;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.VmEntity;
+import com.vmware.photon.controller.apife.exceptions.ApiFeException;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
 import com.vmware.photon.controller.common.clients.exceptions.VmNotFoundException;
 import com.vmware.photon.controller.host.gen.PowerVmOp;

@@ -13,7 +13,6 @@
 
 package com.vmware.photon.controller.apife.commands.steps;
 
-import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
 import com.vmware.photon.controller.api.model.DiskState;
 import com.vmware.photon.controller.api.model.EphemeralDisk;
 import com.vmware.photon.controller.api.model.Operation;
@@ -35,6 +34,7 @@ import com.vmware.photon.controller.apife.entities.EphemeralDiskEntity;
 import com.vmware.photon.controller.apife.entities.PersistentDiskEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
+import com.vmware.photon.controller.apife.entities.base.BaseEntity;
 import com.vmware.photon.controller.common.clients.HostClient;
 import com.vmware.photon.controller.common.clients.exceptions.RpcException;
 import com.vmware.photon.controller.host.gen.CreateDiskError;

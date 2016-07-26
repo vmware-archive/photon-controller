@@ -13,7 +13,6 @@
 
 package com.vmware.photon.controller.apife.resources.deployment;
 
-import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.model.Deployment;
 import com.vmware.photon.controller.api.model.DeploymentCreateSpec;
 import com.vmware.photon.controller.api.model.ResourceList;
@@ -26,6 +25,7 @@ import com.vmware.photon.controller.api.model.constraints.StatsEnabled;
 import com.vmware.photon.controller.api.model.constraints.VirtualNetworkDisabled;
 import com.vmware.photon.controller.api.model.constraints.VirtualNetworkEnabled;
 import com.vmware.photon.controller.apife.clients.DeploymentFeClient;
+import com.vmware.photon.controller.apife.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidAuthConfigException;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidNetworkConfigException;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidStatsConfigException;
@@ -33,8 +33,8 @@ import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
 import com.vmware.photon.controller.apife.resources.routes.DeploymentResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
 import com.vmware.photon.controller.apife.utils.SecurityGroupUtils;
-import static com.vmware.photon.controller.api.common.Responses.generateCustomResponse;
-import static com.vmware.photon.controller.api.common.Responses.generateResourceListResponse;
+import static com.vmware.photon.controller.apife.Responses.generateCustomResponse;
+import static com.vmware.photon.controller.apife.Responses.generateResourceListResponse;
 
 import com.google.inject.Inject;
 import com.wordnik.swagger.annotations.Api;

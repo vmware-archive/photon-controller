@@ -13,8 +13,6 @@
 
 package com.vmware.photon.controller.apife.backends;
 
-import com.vmware.photon.controller.api.common.entities.base.BaseEntity;
-import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.model.AuthInfo;
 import com.vmware.photon.controller.api.model.ClusterConfiguration;
 import com.vmware.photon.controller.api.model.ClusterConfigurationSpec;
@@ -48,10 +46,12 @@ import com.vmware.photon.controller.apife.entities.EntityStateValidator;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.entities.TenantEntity;
+import com.vmware.photon.controller.apife.entities.base.BaseEntity;
 import com.vmware.photon.controller.apife.exceptions.external.ClusterTypeAlreadyConfiguredException;
 import com.vmware.photon.controller.apife.exceptions.external.ClusterTypeNotConfiguredException;
 import com.vmware.photon.controller.apife.exceptions.external.DeploymentAlreadyExistException;
 import com.vmware.photon.controller.apife.exceptions.external.DeploymentNotFoundException;
+import com.vmware.photon.controller.apife.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidAuthConfigException;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidImageDatastoreSetException;
 import com.vmware.photon.controller.apife.exceptions.external.NoManagementHostException;

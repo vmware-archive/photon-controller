@@ -13,7 +13,6 @@
 
 package com.vmware.photon.controller.apife.clients;
 
-import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.model.Project;
 import com.vmware.photon.controller.api.model.ProjectCreateSpec;
 import com.vmware.photon.controller.api.model.ResourceList;
@@ -21,6 +20,7 @@ import com.vmware.photon.controller.api.model.Task;
 import com.vmware.photon.controller.apife.backends.ProjectBackend;
 import com.vmware.photon.controller.apife.backends.TaskBackend;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
+import com.vmware.photon.controller.apife.exceptions.external.ExternalException;
 
 import com.google.common.base.Optional;
 import com.google.inject.Inject;

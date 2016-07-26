@@ -13,11 +13,11 @@
 
 package com.vmware.photon.controller.apife.resources.datastore;
 
-import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.model.Datastore;
 import com.vmware.photon.controller.apife.clients.DatastoreFeClient;
+import com.vmware.photon.controller.apife.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.resources.routes.DatastoreResourceRoutes;
-import static com.vmware.photon.controller.api.common.Responses.generateCustomResponse;
+import static com.vmware.photon.controller.apife.Responses.generateCustomResponse;
 
 import com.google.inject.Inject;
 import com.wordnik.swagger.annotations.Api;

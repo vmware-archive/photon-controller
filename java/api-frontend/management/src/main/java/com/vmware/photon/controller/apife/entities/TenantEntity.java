@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.apife.entities;
 
-import com.vmware.photon.controller.api.common.entities.base.VisibleModelEntity;
+import com.vmware.photon.controller.apife.entities.base.VisibleModelEntity;
 
 import java.util.ArrayList;
 import java.util.List;

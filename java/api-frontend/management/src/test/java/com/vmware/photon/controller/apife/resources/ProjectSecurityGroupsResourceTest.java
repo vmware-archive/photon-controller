@@ -13,11 +13,11 @@
 
 package com.vmware.photon.controller.apife.resources;
 
-import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.model.ApiError;
 import com.vmware.photon.controller.api.model.ResourceList;
 import com.vmware.photon.controller.api.model.Task;
 import com.vmware.photon.controller.apife.clients.ProjectFeClient;
+import com.vmware.photon.controller.apife.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.resources.project.ProjectSecurityGroupsResource;
 import com.vmware.photon.controller.apife.resources.routes.ProjectResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;

@@ -13,7 +13,6 @@
 
 package com.vmware.photon.controller.apife.backends;
 
-import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.model.Image;
 import com.vmware.photon.controller.api.model.ImageCreateSpec;
 import com.vmware.photon.controller.api.model.ImageReplicationType;
@@ -27,6 +26,7 @@ import com.vmware.photon.controller.apife.entities.ImageEntity;
 import com.vmware.photon.controller.apife.entities.ImageSettingsEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
+import com.vmware.photon.controller.apife.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.exceptions.external.ImageNotFoundException;
 import com.vmware.photon.controller.apife.exceptions.external.ImageUploadException;
 import com.vmware.photon.controller.apife.exceptions.external.InvalidImageStateException;

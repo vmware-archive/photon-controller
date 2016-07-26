@@ -13,8 +13,6 @@
 
 package com.vmware.photon.controller.apife.clients;
 
-import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
-import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
 import com.vmware.photon.controller.api.model.Auth;
 import com.vmware.photon.controller.api.model.AuthInfo;
 import com.vmware.photon.controller.api.model.ClusterConfigurationSpec;
@@ -43,6 +41,8 @@ import com.vmware.photon.controller.apife.commands.tasks.TaskCommandFactory;
 import com.vmware.photon.controller.apife.config.AuthConfig;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
+import com.vmware.photon.controller.apife.exceptions.external.ExternalException;
+import com.vmware.photon.controller.apife.exceptions.external.PageExpiredException;
 import com.vmware.photon.controller.apife.exceptions.internal.InternalException;
 import com.vmware.photon.controller.common.Constants;
 

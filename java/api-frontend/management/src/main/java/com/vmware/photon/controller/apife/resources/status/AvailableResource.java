@@ -13,10 +13,10 @@
 
 package com.vmware.photon.controller.apife.resources.status;
 
-import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.model.Available;
+import com.vmware.photon.controller.apife.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.resources.routes.AvailableRoutes;
-import static com.vmware.photon.controller.api.common.Responses.generateCustomResponse;
+import static com.vmware.photon.controller.apife.Responses.generateCustomResponse;
 
 import com.google.inject.Inject;
 import com.wordnik.swagger.annotations.Api;

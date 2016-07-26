@@ -13,9 +13,6 @@
 
 package com.vmware.photon.controller.apife.exceptions.external;
 
-import com.vmware.photon.controller.api.common.exceptions.external.ErrorCode;
-import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
-
 /**
  * Thrown when an invalid image datastore set is provided when
  * updating the existing image datastores of a deployment.

@@ -13,8 +13,6 @@
 
 package com.vmware.photon.controller.apife.commands.tasks;
 
-import com.vmware.photon.controller.api.common.exceptions.ApiFeException;
-import com.vmware.photon.controller.api.common.exceptions.external.ConcurrentTaskException;
 import com.vmware.photon.controller.api.model.HostState;
 import com.vmware.photon.controller.api.model.Operation;
 import com.vmware.photon.controller.api.model.QuotaLineItem;
@@ -45,6 +43,8 @@ import com.vmware.photon.controller.apife.entities.PersistentDiskEntity;
 import com.vmware.photon.controller.apife.entities.StepEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
 import com.vmware.photon.controller.apife.entities.VmEntity;
+import com.vmware.photon.controller.apife.exceptions.ApiFeException;
+import com.vmware.photon.controller.apife.exceptions.external.ConcurrentTaskException;
 import com.vmware.photon.controller.apife.exceptions.external.DiskNotFoundException;
 import com.vmware.photon.controller.apife.exceptions.external.VmNotFoundException;
 import com.vmware.photon.controller.cloudstore.xenon.entity.HostService;

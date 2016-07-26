@@ -13,14 +13,14 @@
 
 package com.vmware.photon.controller.apife.resources;
 
-import com.vmware.photon.controller.api.common.exceptions.external.ErrorCode;
-import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
-import com.vmware.photon.controller.api.common.exceptions.external.PageExpiredException;
 import com.vmware.photon.controller.api.model.ApiError;
 import com.vmware.photon.controller.api.model.Image;
 import com.vmware.photon.controller.api.model.ResourceList;
 import com.vmware.photon.controller.apife.clients.ImageFeClient;
 import com.vmware.photon.controller.apife.config.PaginationConfig;
+import com.vmware.photon.controller.apife.exceptions.external.ErrorCode;
+import com.vmware.photon.controller.apife.exceptions.external.ExternalException;
+import com.vmware.photon.controller.apife.exceptions.external.PageExpiredException;
 import com.vmware.photon.controller.apife.resources.image.ImagesResource;
 import com.vmware.photon.controller.apife.resources.routes.ImageResourceRoutes;
 

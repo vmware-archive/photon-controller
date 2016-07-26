@@ -13,7 +13,6 @@
 
 package com.vmware.photon.controller.apife.backends;
 
-import com.vmware.photon.controller.api.common.entities.base.TagEntity;
 import com.vmware.photon.controller.api.model.AttachedDiskCreateSpec;
 import com.vmware.photon.controller.api.model.DiskCreateSpec;
 import com.vmware.photon.controller.api.model.DiskState;
@@ -37,6 +36,7 @@ import com.vmware.photon.controller.apife.config.PaginationConfig;
 import com.vmware.photon.controller.apife.entities.BaseDiskEntity;
 import com.vmware.photon.controller.apife.entities.PersistentDiskEntity;
 import com.vmware.photon.controller.apife.entities.TaskEntity;
+import com.vmware.photon.controller.apife.entities.base.TagEntity;
 import com.vmware.photon.controller.apife.exceptions.external.DiskNotFoundException;
 import com.vmware.photon.controller.apife.exceptions.external.ProjectNotFoundException;
 import com.vmware.photon.controller.common.xenon.BasicServiceHost;

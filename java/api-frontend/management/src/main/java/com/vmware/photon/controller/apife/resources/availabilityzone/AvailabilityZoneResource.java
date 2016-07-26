@@ -13,13 +13,13 @@
 
 package com.vmware.photon.controller.apife.resources.availabilityzone;
 
-import com.vmware.photon.controller.api.common.exceptions.external.ExternalException;
 import com.vmware.photon.controller.api.model.AvailabilityZone;
 import com.vmware.photon.controller.api.model.Task;
 import com.vmware.photon.controller.apife.clients.AvailabilityZoneFeClient;
+import com.vmware.photon.controller.apife.exceptions.external.ExternalException;
 import com.vmware.photon.controller.apife.resources.routes.AvailabilityZonesResourceRoutes;
 import com.vmware.photon.controller.apife.resources.routes.TaskResourceRoutes;
-import static com.vmware.photon.controller.api.common.Responses.generateCustomResponse;
+import static com.vmware.photon.controller.apife.Responses.generateCustomResponse;
 
 import com.google.inject.Inject;
 import com.wordnik.swagger.annotations.Api;
