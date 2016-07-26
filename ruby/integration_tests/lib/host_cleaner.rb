@@ -18,21 +18,11 @@ module EsxCloud
 
     class << self
 
-      DATASTORE_DIRS_TO_DELETE = ["disks", "deleted_images", "images", "tmp_images", "vms", "tmp_uploads",
-                                  "disk_*", "deleted_image_*", "image_*", "tmp_image_*", "vm_*", "tmp_upload_*"]
-
       def clean_vms_on_real_host(server, user_name, password)
         dirty_vms = remove_vms server, user_name, password
 
         Net::SSH.start(server, user_name, {password: password, user_known_hosts_file: "/dev/null"}) do |ssh|
-          datastore_dir = "/vmfs/volumes/#{EsxCloud::TestHelpers.get_datastore_name}/"
-          rm_cmd = "rm -rf #{datastore_dir}"
-
-          puts "cleaning folders under #{datastore_dir}"
-          DATASTORE_DIRS_TO_DELETE.each do |folder_prefix|
-            ssh.exec!(rm_cmd + folder_prefix)
-          end
-
+          clean_datastore ssh, EsxCloud::TestHelpers.get_datastore_name
           dirty_vms
         end
       end
@@ -145,11 +135,33 @@ module EsxCloud
         end
       end
 
-      def clean_datastores(server, user_name, password, folders = DATASTORE_DIRS_TO_DELETE)
+      DATASTORE_DIRS_TO_DELETE = ["deleted_image", "disk", "image", "tmp_image", "vm", "tmp_upload"]
+      def clean_datastore(ssh, datastore)
+        puts "cleaning datastore #{datastore}"
+
+        datastore_dir = "/vmfs/volumes/#{datastore}/"
+        DATASTORE_DIRS_TO_DELETE.each do |folder|
+          if datastore.start_with?('vsan')
+            rm_cmd = "for dir in `/usr/lib/vmware/osfs/bin/osfs-ls #{datastore_dir} | grep -i #{folder}`; do"\
+                     " for vmdk in `find $dir -name *.vmdk`; do vmkfstools -U #{datastore_dir}$vmdk || true; done"\
+                     " && rm -rf #{datastore_dir}$dir/*"\
+                     " && (rm -rf #{datastore_dir}$dir/.* || true)"\
+                     " && /usr/lib/vmware/osfs/bin/osfs-rmdir #{datastore_dir}$dir;"\
+                     " done"
+          else
+            rm_cmd = "rm -rf #{datastore_dir}#{folder}* && rm -rf #{datastore_dir}*installer*"
+          end
+          ssh.exec!(rm_cmd)
+        end
+      end
+
+      def clean_datastores(server, user_name, password)
         puts "cleaning datastores on #{server}"
         Net::SSH.start(server, user_name, {password: password, user_known_hosts_file: "/dev/null"}) do |ssh|
-          folders.each do |folder|
-            ssh.exec!("for ds in `df | awk '{print $6}' | grep -v Mounted`; do rm -rf $ds/#{folder}; done")
+          output = ssh.exec!("for ds in `df | awk '{print $6}' | grep -v Mounted`; do echo $(basename $ds); done")
+          datastores = output.split("\n")
+          datastores.each do |datastore|
+            clean_datastore ssh, datastore
           end
           ssh.exec!("rm -rf /opt/vmware/photon/controller/")
           ssh.exec!("rm -rf /opt/vmware/esxcloud")
