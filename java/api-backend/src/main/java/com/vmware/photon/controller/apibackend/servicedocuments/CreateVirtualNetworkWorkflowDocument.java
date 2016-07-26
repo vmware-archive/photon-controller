@@ -199,6 +199,7 @@ public class CreateVirtualNetworkWorkflowDocument extends ServiceDocument{
      */
     public enum SubStage {
       ALLOCATE_IP_ADDRESS_SPACE,
+      GET_IP_ADDRESS_SPACE,
       GET_NSX_CONFIGURATION,
       CREATE_LOGICAL_SWITCH,
       CREATE_LOGICAL_ROUTER,

@@ -42,6 +42,11 @@ public class IpHelperTest {
     assertThat(out.toString(), is(equalTo("/" + expectedIpAddress)));
   }
 
+  @Test(dataProvider = "IpAddresses")
+  public void testLongToDottedIp(String expectedIpAddress, long value) {
+    assertThat(IpHelper.longToDottedIp(value), is(expectedIpAddress));
+  }
+
   @DataProvider(name = "IpAddresses")
   public Object[][] getAutoInitializedFieldsParams() {
     return new Object[][]{

@@ -45,12 +45,30 @@ public class IpHelper {
    * @param ip long value storing ipv4 bytes in host byte order
    * @return InetAddress
    */
-  public static InetAddress longToIp(long ip) {
+  public static InetAddress longToIp(Long ip) {
+    if (ip == null) {
+      return null;
+    }
+
     try {
       return InetAddress.getByAddress(longToNetworkByteOrderArray(ip));
     } catch (UnknownHostException e) {
-      throw new IllegalArgumentException("not an ip");
+      throw new IllegalArgumentException("Invalid IP " + ip);
     }
+  }
+
+  /**
+   * Convert an host byte order long to dotted IP address.
+   *
+   * @param ip long value storing ipv4 bytes in host byte order
+   * @return dotted IP address
+   */
+  public static String longToDottedIp(Long ip) {
+    if (ip == null) {
+      return null;
+    }
+
+    return longToIp(ip).getHostAddress();
   }
 
   /**
