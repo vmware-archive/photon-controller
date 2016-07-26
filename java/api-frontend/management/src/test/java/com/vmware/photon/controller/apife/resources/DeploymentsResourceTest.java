@@ -219,12 +219,13 @@ public class DeploymentsResourceTest extends ResourceTest {
   @Test
   public void testSuccessfulWithNetworkConfigEnabled() throws Exception {
     spec.setNetworkConfiguration(new NetworkConfigurationCreateSpecBuilder()
-        .virtualNetworkEnabled(true)
+        .sdnEnabled(true)
         .networkManagerAddress("10.1.1.1")
         .networkManagerUsername("u")
         .networkManagerPassword("p")
         .networkTopRouterId("rid")
         .networkZoneId("zid")
+        .ipRange("192.168.1.1/24")
         .build());
 
     Task task = new Task();
@@ -243,7 +244,7 @@ public class DeploymentsResourceTest extends ResourceTest {
   @Test
   public void testInvalidWithNetworkConfigEnabled() throws Exception {
     spec.setNetworkConfiguration(new NetworkConfigurationCreateSpecBuilder()
-        .virtualNetworkEnabled(true)
+        .sdnEnabled(true)
         .build());
 
     Task task = new Task();

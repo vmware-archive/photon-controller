@@ -14,7 +14,7 @@ module EsxCloud
   # Contains NetworkConfigurationSpec Info
   class NetworkConfigurationSpec
 
-    attr_reader :virtual_network_enabled, :network_manager_address, :network_manager_username,
+    attr_reader :sdn_enabled, :network_manager_address, :network_manager_username,
                 :network_manager_password, :network_zone_id, :network_top_router_id
 
     # @param [String] json
@@ -26,23 +26,23 @@ module EsxCloud
     # @param [Hash] hash
     # @return [NetworkConfigurationSpec]
     def self.create_from_hash(hash)
-      unless hash.is_a?(Hash) && hash.keys.to_set.superset?(%w(virtualNetworkEnabled).to_set)
+      unless hash.is_a?(Hash) && hash.keys.to_set.superset?(%w(sdnEnabled).to_set)
         fail UnexpectedFormat, "Invalid NetworkConfiguration hash: #{hash}"
       end
 
-      new(hash["virtualNetworkEnabled"], hash["networkManagerAddress"], hash["networkManagerUsername"],
+      new(hash["sdnEnabled"], hash["networkManagerAddress"], hash["networkManagerUsername"],
           hash["networkManagerPassword"], hash["networkZoneId"], hash["networkTopRouterId"])
     end
 
-    # @param [Boolean] virtual_network_enabled
+    # @param [Boolean] sdn_enabled
     # @param [String] network_manager_address
     # @param [String] network_manager_username
     # @param [String] network_manager_password
     # @param [String] network_zone_id
     # @param [String] network_top_router_id
-    def initialize(virtual_network_enabled, network_manager_address = nil, network_manager_username = nil,
+    def initialize(sdn_enabled, network_manager_address = nil, network_manager_username = nil,
                    network_manager_password = nil, network_zone_id = nil, network_top_router_id = nil)
-      @virtual_network_enabled = virtual_network_enabled
+      @sdn_enabled = sdn_enabled
       @network_manager_address = network_manager_address
       @network_manager_username = network_manager_username
       @network_manager_password = network_manager_password
@@ -52,7 +52,7 @@ module EsxCloud
 
     # @param [NetworkConfigurationSpec] other
     def ==(other)
-      @virtual_network_enabled == other.virtual_network_enabled &&
+      @sdn_enabled == other.sdn_enabled &&
       @network_manager_address == other.network_manager_address &&
       @network_manager_username == other.network_manager_username &&
       @network_manager_password == other.network_manager_password &&
@@ -62,7 +62,7 @@ module EsxCloud
 
     def to_hash
       {
-          virtualNetworkEnabled: @virtual_network_enabled,
+          sdnEnabled: @sdn_enabled,
           networkManagerAddress: @network_manager_address,
           networkManagerUsername: @network_manager_username,
           networkManagerPassword: @network_manager_password,

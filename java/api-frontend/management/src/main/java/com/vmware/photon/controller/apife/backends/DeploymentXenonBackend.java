@@ -298,7 +298,7 @@ public class DeploymentXenonBackend implements DeploymentBackend {
     deployment.setAuth(authInfo);
 
     NetworkConfiguration networkConfiguration = new NetworkConfiguration();
-    networkConfiguration.setVirtualNetworkEnabled(deploymentEntity.getVirtualNetworkEnabled());
+    networkConfiguration.setSdnEnabled(deploymentEntity.getSdnEnabled());
     networkConfiguration.setNetworkManagerAddress(deploymentEntity.getNetworkManagerAddress());
     networkConfiguration.setNetworkManagerUsername(deploymentEntity.getNetworkManagerUsername());
     networkConfiguration.setNetworkManagerPassword(deploymentEntity.getNetworkManagerPassword());
@@ -499,7 +499,7 @@ public class DeploymentXenonBackend implements DeploymentBackend {
     }
 
     if (spec.getNetworkConfiguration() != null) {
-      deployment.virtualNetworkEnabled = spec.getNetworkConfiguration().getVirtualNetworkEnabled();
+      deployment.sdnEnabled = spec.getNetworkConfiguration().getSdnEnabled();
       deployment.networkManagerAddress = spec.getNetworkConfiguration().getNetworkManagerAddress();
       deployment.networkManagerUsername = spec.getNetworkConfiguration().getNetworkManagerUsername();
       deployment.networkManagerPassword = spec.getNetworkConfiguration().getNetworkManagerPassword();
@@ -536,7 +536,7 @@ public class DeploymentXenonBackend implements DeploymentBackend {
     entity.setOauthUsername(deployment.oAuthUserName);
     entity.setOauthPassword(deployment.oAuthPassword);
     entity.setOauthSecurityGroups(deployment.oAuthSecurityGroups);
-    entity.setVirtualNetworkEnabled(deployment.virtualNetworkEnabled);
+    entity.setSdnEnabled(deployment.sdnEnabled);
     entity.setNetworkManagerAddress(deployment.networkManagerAddress);
     entity.setNetworkManagerUsername(deployment.networkManagerUsername);
     entity.setNetworkManagerPassword(deployment.networkManagerPassword);

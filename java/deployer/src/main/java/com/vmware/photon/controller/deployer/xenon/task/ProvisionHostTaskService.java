@@ -502,7 +502,7 @@ public class ProvisionHostTaskService extends StatefulService {
 
   private void processGetNetworkManagerInfoSubStage(DeploymentService.State deploymentState) {
 
-    if (!deploymentState.virtualNetworkEnabled) {
+    if (!deploymentState.sdnEnabled) {
       ServiceUtils.logInfo(this, "Skipping virtual network configuration (disabled)");
       sendStageProgressPatch(TaskState.TaskStage.STARTED, TaskState.SubStage.CONFIGURE_SYSLOG);
       return;

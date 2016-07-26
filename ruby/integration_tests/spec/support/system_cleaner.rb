@@ -42,7 +42,7 @@ module EsxCloud
       # In physical network situation, all the networks need to be cleaned up
       # at system level
       deployment = client.find_all_api_deployments.items.first
-      unless deployment.network_configuration.virtual_network_enabled
+      unless deployment.network_configuration.sdn_enabled
         client.find_all_networks.items.each do |network|
           delete_network network, stat
         end
@@ -145,7 +145,7 @@ module EsxCloud
 
       # Delete virtual networks under this project
       deployment = client.find_all_api_deployments.items.first
-      if deployment.network_configuration.virtual_network_enabled
+      if deployment.network_configuration.sdn_enabled
         client.get_project_networks(project.id).items.flatten.each do |network|
           delete_network(network, stat)
         end

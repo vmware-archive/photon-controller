@@ -26,8 +26,8 @@ public class NetworkConfigurationCreateSpecBuilder {
     networkConfigurationCreateSpec = new NetworkConfigurationCreateSpec();
   }
 
-  public NetworkConfigurationCreateSpecBuilder virtualNetworkEnabled(boolean virtualNetworkEnabled) {
-    this.networkConfigurationCreateSpec.setVirtualNetworkEnabled(virtualNetworkEnabled);
+  public NetworkConfigurationCreateSpecBuilder sdnEnabled(boolean sdnEnabled) {
+    this.networkConfigurationCreateSpec.setSdnEnabled(sdnEnabled);
     return this;
   }
 
@@ -53,6 +53,16 @@ public class NetworkConfigurationCreateSpecBuilder {
 
   public NetworkConfigurationCreateSpecBuilder networkTopRouterId(String networkTopRouterId) {
     this.networkConfigurationCreateSpec.setNetworkTopRouterId(networkTopRouterId);
+    return this;
+  }
+
+  public NetworkConfigurationCreateSpecBuilder ipRange(String ipRange) {
+    this.networkConfigurationCreateSpec.setIpRange(ipRange);
+    return this;
+  }
+
+  public NetworkConfigurationCreateSpecBuilder floatingIpRange(String floatingIpRange) {
+    this.networkConfigurationCreateSpec.setFloatingIpRange(floatingIpRange);
     return this;
   }
 

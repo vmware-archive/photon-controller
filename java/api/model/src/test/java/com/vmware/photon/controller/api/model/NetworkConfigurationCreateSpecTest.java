@@ -14,8 +14,8 @@
 package com.vmware.photon.controller.api.model;
 
 import com.vmware.photon.controller.api.model.builders.NetworkConfigurationCreateSpecBuilder;
-import com.vmware.photon.controller.api.model.constraints.VirtualNetworkDisabled;
-import com.vmware.photon.controller.api.model.constraints.VirtualNetworkEnabled;
+import com.vmware.photon.controller.api.model.constraints.SoftwareDefinedNetworkingDisabled;
+import com.vmware.photon.controller.api.model.constraints.SoftwareDefinedNetworkingEnabled;
 import com.vmware.photon.controller.api.model.helpers.JsonHelpers;
 import com.vmware.photon.controller.api.model.helpers.Validator;
 
@@ -41,12 +41,14 @@ public class NetworkConfigurationCreateSpecTest {
 
   private NetworkConfigurationCreateSpec sampleNetworkConfigurationCreateSpec =
       new NetworkConfigurationCreateSpecBuilder()
-          .virtualNetworkEnabled(true)
+          .sdnEnabled(true)
           .networkManagerAddress("1.2.3.4")
           .networkManagerUsername("networkManagerUsername")
           .networkManagerPassword("networkManagerPassword")
           .networkZoneId("networkZoneId")
           .networkTopRouterId("networkTopRouterId")
+          .ipRange("10.0.0.1/24")
+          .floatingIpRange("192.168.0.1/28")
           .build();
 
   @Test(enabled = false)
@@ -58,7 +60,8 @@ public class NetworkConfigurationCreateSpecTest {
    */
   public class ValidationTest {
 
-    private final String[] virtualNetworkEnabledErrorMsgs = new String[]{
+    private final String[] sdnEnabledErrorMsgs = new String[]{
+        "ipRange may not be null (was null)",
         "networkManagerAddress is invalid IP or Domain address (was null)",
         "networkManagerPassword may not be null (was null)",
         "networkManagerUsername may not be null (was null)",
@@ -66,7 +69,9 @@ public class NetworkConfigurationCreateSpecTest {
         "networkZoneId may not be null (was null)"
     };
 
-    private final String[] virtualNetworkDisabledErrorMsgs = new String[]{
+    private final String[] sdnDisabledErrorMsgs = new String[]{
+        "floatingIpRange must be null (was f)",
+        "ipRange must be null (was i)",
         "networkManagerAddress must be null (was e)",
         "networkManagerPassword must be null (was p)",
         "networkManagerUsername must be null (was u)",
@@ -79,10 +84,10 @@ public class NetworkConfigurationCreateSpecTest {
     @Test(dataProvider = "validNetworkConfiguration")
     public void testValidNetworkConfiguration(NetworkConfigurationCreateSpec spec) {
       ImmutableList<String> violations;
-      if (spec.getVirtualNetworkEnabled()) {
-        violations = validator.validate(spec, VirtualNetworkEnabled.class);
+      if (spec.getSdnEnabled()) {
+        violations = validator.validate(spec, SoftwareDefinedNetworkingEnabled.class);
       } else {
-        violations = validator.validate(spec, VirtualNetworkDisabled.class);
+        violations = validator.validate(spec, SoftwareDefinedNetworkingDisabled.class);
       }
 
       assertThat(violations.isEmpty(), is(true));
@@ -92,7 +97,7 @@ public class NetworkConfigurationCreateSpecTest {
     public Object[][] getValidNetworkConfig() {
       return new Object[][]{
           {new NetworkConfigurationCreateSpecBuilder()
-              .virtualNetworkEnabled(false)
+              .sdnEnabled(false)
               .build()},
           {sampleNetworkConfigurationCreateSpec},
       };
@@ -101,10 +106,10 @@ public class NetworkConfigurationCreateSpecTest {
     @Test(dataProvider = "invalidNetworkConfiguration")
     public void testInvalidNetworkConfiguration(NetworkConfigurationCreateSpec spec, String[] errorMsgs) {
       ImmutableList<String> violations;
-      if (spec.getVirtualNetworkEnabled()) {
-        violations = validator.validate(spec, VirtualNetworkEnabled.class);
+      if (spec.getSdnEnabled()) {
+        violations = validator.validate(spec, SoftwareDefinedNetworkingEnabled.class);
       } else {
-        violations = validator.validate(spec, VirtualNetworkDisabled.class);
+        violations = validator.validate(spec, SoftwareDefinedNetworkingDisabled.class);
       }
 
       assertThat(violations.size(), is(errorMsgs.length));
@@ -115,18 +120,20 @@ public class NetworkConfigurationCreateSpecTest {
     public Object[][] getInvalidNetworkConfig() {
       return new Object[][]{
           {new NetworkConfigurationCreateSpecBuilder()
-              .virtualNetworkEnabled(true)
+              .sdnEnabled(true)
               .build(),
-              virtualNetworkEnabledErrorMsgs},
+              sdnEnabledErrorMsgs},
           {new NetworkConfigurationCreateSpecBuilder()
-              .virtualNetworkEnabled(false)
+              .sdnEnabled(false)
               .networkManagerAddress("e")
               .networkManagerUsername("u")
               .networkManagerPassword("p")
               .networkTopRouterId("r")
               .networkZoneId("z")
+              .ipRange("i")
+              .floatingIpRange("f")
               .build(),
-              virtualNetworkDisabledErrorMsgs},
+              sdnDisabledErrorMsgs},
       };
     }
   }
@@ -139,8 +146,9 @@ public class NetworkConfigurationCreateSpecTest {
     @Test
     public void testCorrectString() {
       String expectedString =
-          "NetworkConfigurationCreateSpec{virtualNetworkEnabled=true, networkManagerAddress=1.2.3.4, " +
-          "networkZoneId=networkZoneId, networkTopRouterId=networkTopRouterId}";
+          "NetworkConfigurationCreateSpec{sdnEnabled=true, networkManagerAddress=1.2.3.4, " +
+          "networkZoneId=networkZoneId, networkTopRouterId=networkTopRouterId, ipRange=10.0.0.1/24, " +
+          "floatingIpRange=192.168.0.1/28}";
       assertThat(sampleNetworkConfigurationCreateSpec.toString(), is(expectedString));
     }
   }
