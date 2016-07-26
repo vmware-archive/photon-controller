@@ -150,16 +150,17 @@ class VmWrapper(object):
     def power_request(self, op):
         return Host.PowerVmOpRequest(vm_id=self.id, op=op)
 
-    def resource_request(self, disk=None, vm_disks=None, vm_constraints=[]):
+    def resource_request(self, disk=None, vm_disks=None, vm_constraints=None):
         assert(disk is None or vm_disks is None)
         if disk is not None:
             return Resource(None, [disk])
+        if vm_constraints is None:
+            vm_constraints = []
+        vm_constraints.append(ResourceConstraint(ResourceConstraintType.NETWORK, ["VM Network"]))
 
         resource = Resource(self._vm, None)
         resource.vm.disks = vm_disks
-        resource.vm.resource_constraints = list(vm_constraints)
-        resource.vm.resource_constraints.append(
-            ResourceConstraint(ResourceConstraintType.NETWORK, ["VM Network"]))
+        resource.vm.resource_constraints = vm_constraints
 
         return resource
 
@@ -183,7 +184,7 @@ class VmWrapper(object):
         place_response = self.place(disk, vm_disks, expect)
         return self.reserve(disk, vm_disks, place_response, expect)
 
-    def place(self, disk=None, vm_disks=None, expect=PlaceResultCode.OK, vm_constraints=[]):
+    def place(self, disk=None, vm_disks=None, expect=PlaceResultCode.OK, vm_constraints=None):
         resource = self.resource_request(disk, vm_disks, vm_constraints)
         response = rpc_call(self.host_client.place, PlaceRequest(resource))
         assert_that(response.result, equal_to(expect))
