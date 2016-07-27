@@ -53,6 +53,9 @@ import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUriPaths;
 import com.vmware.photon.controller.common.xenon.XenonServiceGroup;
 import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
+import com.vmware.photon.controller.common.xenon.scheduler.TaskSchedulerService;
+import com.vmware.photon.controller.common.xenon.scheduler.TaskSchedulerServiceFactory;
+import com.vmware.photon.controller.common.xenon.scheduler.TaskSchedulerServiceStateBuilder;
 import com.vmware.photon.controller.common.xenon.scheduler.TaskStateBuilder;
 import com.vmware.photon.controller.common.xenon.scheduler.TaskTriggerFactoryService;
 import com.vmware.photon.controller.common.xenon.service.UpgradeInformationService;
@@ -65,6 +68,7 @@ import com.google.common.collect.ImmutableMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.URI;
 import java.util.Map;
 import java.util.function.Supplier;
 
@@ -73,26 +77,6 @@ import java.util.function.Supplier;
  */
 public class CloudStoreServiceGroup
     implements XenonServiceGroup {
-  private static final Logger logger = LoggerFactory.getLogger(CloudStoreServiceGroup.class);
-
-  private static final TaskStateBuilder[] TASK_TRIGGERS = new TaskStateBuilder[]{
-      new TombstoneCleanerTriggerBuilder(
-          TombstoneCleanerTriggerBuilder.DEFAULT_TRIGGER_INTERVAL_MILLIS,
-          TombstoneCleanerTriggerBuilder.DEFAULT_TASK_EXPIRATION_AGE_MILLIS,
-          TombstoneCleanerTriggerBuilder.DEFAULT_TOMBSTONE_EXPIRATION_AGE_MILLIS),
-      new EntityLockCleanerTriggerBuilder(
-          EntityLockCleanerTriggerBuilder.DEFAULT_TRIGGER_INTERVAL_MILLIS,
-          EntityLockCleanerTriggerBuilder.DEFAULT_TASK_EXPIRATION_AGE_MILLIS),
-      new EntityLockDeleteTriggerBuilder(
-          EntityLockDeleteTriggerBuilder.DEFAULT_TRIGGER_INTERVAL_MILLIS,
-          EntityLockDeleteTriggerBuilder.DEFAULT_TASK_EXPIRATION_AGE_MILLIS),
-      new AvailabilityZoneCleanerTriggerBuilder(
-          AvailabilityZoneCleanerTriggerBuilder.DEFAULT_TRIGGER_INTERVAL_MILLIS,
-          AvailabilityZoneCleanerTriggerBuilder.DEFAULT_TASK_EXPIRATION_AGE_MILLIS),
-      new DatastoreCleanerTriggerBuilder(
-          DatastoreCleanerTriggerBuilder.DEFAULT_TRIGGER_INTERVAL_MILLIS,
-          DatastoreCleanerTriggerBuilder.DEFAULT_TASK_EXPIRATION_AGE_MILLIS)
-  };
 
   public static final Class[] FACTORY_SERVICES = {
       FlavorServiceFactory.class,
@@ -117,6 +101,7 @@ public class CloudStoreServiceGroup
 
       // Tasks
       TaskTriggerFactoryService.class,
+      TaskSchedulerServiceFactory.class,
       EntityLockCleanerFactoryService.class,
       EntityLockDeleteFactoryService.class,
       TombstoneCleanerFactoryService.class,
@@ -138,6 +123,35 @@ public class CloudStoreServiceGroup
           .put(IpLeaseDeleteService.class, IpLeaseDeleteService::createFactory)
           .build();
 
+  protected static final String SCHEDULER_IP_LEASE_DELETES = "/ip-lease-deletes";
+
+  private static final String IP_LEASE_DELETE_SERVICE =
+      TaskSchedulerServiceFactory.SELF_LINK + SCHEDULER_IP_LEASE_DELETES;
+
+  private static final Logger logger = LoggerFactory.getLogger(CloudStoreServiceGroup.class);
+
+  private static final Map<String, TaskSchedulerServiceStateBuilder> TASK_SCHEDULERS = ImmutableMap.of(
+      IP_LEASE_DELETE_SERVICE, new TaskSchedulerServiceStateBuilder(IpLeaseDeleteService.class, 10));
+
+  private static final TaskStateBuilder[] TASK_TRIGGERS = new TaskStateBuilder[]{
+      new TombstoneCleanerTriggerBuilder(
+          TombstoneCleanerTriggerBuilder.DEFAULT_TRIGGER_INTERVAL_MILLIS,
+          TombstoneCleanerTriggerBuilder.DEFAULT_TASK_EXPIRATION_AGE_MILLIS,
+          TombstoneCleanerTriggerBuilder.DEFAULT_TOMBSTONE_EXPIRATION_AGE_MILLIS),
+      new EntityLockCleanerTriggerBuilder(
+          EntityLockCleanerTriggerBuilder.DEFAULT_TRIGGER_INTERVAL_MILLIS,
+          EntityLockCleanerTriggerBuilder.DEFAULT_TASK_EXPIRATION_AGE_MILLIS),
+      new EntityLockDeleteTriggerBuilder(
+          EntityLockDeleteTriggerBuilder.DEFAULT_TRIGGER_INTERVAL_MILLIS,
+          EntityLockDeleteTriggerBuilder.DEFAULT_TASK_EXPIRATION_AGE_MILLIS),
+      new AvailabilityZoneCleanerTriggerBuilder(
+          AvailabilityZoneCleanerTriggerBuilder.DEFAULT_TRIGGER_INTERVAL_MILLIS,
+          AvailabilityZoneCleanerTriggerBuilder.DEFAULT_TASK_EXPIRATION_AGE_MILLIS),
+      new DatastoreCleanerTriggerBuilder(
+          DatastoreCleanerTriggerBuilder.DEFAULT_TRIGGER_INTERVAL_MILLIS,
+          DatastoreCleanerTriggerBuilder.DEFAULT_TASK_EXPIRATION_AGE_MILLIS)
+  };
+
   private PhotonControllerXenonHost photonControllerXenonHost;
 
   public CloudStoreServiceGroup() {
@@ -158,6 +172,7 @@ public class CloudStoreServiceGroup
 
     // Start all special services
     startTaskTriggerServices();
+    startTaskSchedulerServices();
   }
 
   @Override
@@ -210,12 +225,41 @@ public class CloudStoreServiceGroup
             && photonControllerXenonHost.checkServiceAvailable(
             TaskTriggerFactoryService.SELF_LINK + AvailabilityZoneCleanerTriggerBuilder.TRIGGER_SELF_LINK)
             && photonControllerXenonHost.checkServiceAvailable(
-            TaskTriggerFactoryService.SELF_LINK + DatastoreCleanerTriggerBuilder.TRIGGER_SELF_LINK);
+            TaskTriggerFactoryService.SELF_LINK + DatastoreCleanerTriggerBuilder.TRIGGER_SELF_LINK)
+            && photonControllerXenonHost.checkServiceAvailable(TaskSchedulerServiceFactory.SELF_LINK)
+            && photonControllerXenonHost.checkServiceAvailable(IP_LEASE_DELETE_SERVICE);
   }
 
   @Override
   public void setPhotonControllerXenonHost(PhotonControllerXenonHost photonControllerXenonHost) {
     this.photonControllerXenonHost = photonControllerXenonHost;
+  }
+
+  private void startTaskSchedulerServices() {
+    photonControllerXenonHost.registerForServiceAvailability(
+        (Operation operation, Throwable throwable) -> {
+          for (String link : TASK_SCHEDULERS.keySet()) {
+            try {
+              startTaskSchedulerService(link, TASK_SCHEDULERS.get(link));
+            } catch (Exception ex) {
+              // This method gets executed on a background thread so since we cannot make return the
+              // error to the caller, we swallow the exception here to allow the other the other schedulers
+              // to start
+              logger.warn("Could not register {}", link, ex);
+            }
+          }
+        }, TaskSchedulerServiceFactory.SELF_LINK);
+  }
+
+  private void startTaskSchedulerService(final String selfLink, TaskSchedulerServiceStateBuilder builder)
+      throws IllegalAccessException, InstantiationException {
+    TaskSchedulerService.State state = builder.build();
+    state.documentSelfLink = TaskSchedulerServiceStateBuilder.getSuffixFromSelfLink(selfLink);
+
+    URI uri = UriUtils.buildUri(photonControllerXenonHost, TaskSchedulerServiceFactory.SELF_LINK, null);
+    Operation post = Operation.createPost(uri).setBody(state);
+    post.setReferer(UriUtils.buildUri(photonControllerXenonHost, ServiceUriPaths.CLOUDSTORE_ROOT));
+    photonControllerXenonHost.sendRequest(post);
   }
 
   private void startTaskTriggerServices() {
