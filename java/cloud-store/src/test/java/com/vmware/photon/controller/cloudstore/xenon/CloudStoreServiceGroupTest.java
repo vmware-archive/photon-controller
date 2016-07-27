@@ -54,6 +54,7 @@ import com.vmware.photon.controller.common.config.BadConfigException;
 import com.vmware.photon.controller.common.config.ConfigBuilder;
 import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
+import com.vmware.photon.controller.common.xenon.scheduler.TaskSchedulerServiceFactory;
 import com.vmware.photon.controller.common.xenon.scheduler.TaskTriggerFactoryService;
 import com.vmware.xenon.services.common.LuceneDocumentIndexService;
 import com.vmware.xenon.services.common.RootNamespaceService;
@@ -133,6 +134,10 @@ public class CloudStoreServiceGroupTest {
       DhcpSubnetDeleteService.FACTORY_LINK,
       IpLeaseDeleteService.FACTORY_LINK,
 
+      //schedulers
+      TaskSchedulerServiceFactory.SELF_LINK,
+      TaskSchedulerServiceFactory.SELF_LINK + CloudStoreServiceGroup.SCHEDULER_IP_LEASE_DELETES,
+
       // discovery
       RootNamespaceService.SELF_LINK,
   };
@@ -168,7 +173,7 @@ public class CloudStoreServiceGroupTest {
     @BeforeMethod
     public void setUp() throws Throwable {
       host = new PhotonControllerXenonHost(
-              config.getXenonConfig(), hostClientFactory, agentControlClientFactory, null, null);
+          config.getXenonConfig(), hostClientFactory, agentControlClientFactory, null, null);
       cloudStoreServiceGroup = new CloudStoreServiceGroup();
       host.registerCloudStore(cloudStoreServiceGroup);
     }
@@ -194,7 +199,7 @@ public class CloudStoreServiceGroupTest {
       assertThat(storageDir.exists(), is(false));
 
       host = new PhotonControllerXenonHost(
-              config.getXenonConfig(), hostClientFactory, agentControlClientFactory, null, null);
+          config.getXenonConfig(), hostClientFactory, agentControlClientFactory, null, null);
       cloudStoreServiceGroup = new CloudStoreServiceGroup();
       host.registerCloudStore(cloudStoreServiceGroup);
       assertThat(storageDir.exists(), is(true));
@@ -228,7 +233,7 @@ public class CloudStoreServiceGroupTest {
     @BeforeMethod
     private void setUp() throws Throwable {
       host = new PhotonControllerXenonHost(
-              config.getXenonConfig(), hostClientFactory, agentControlClientFactory, null, null);
+          config.getXenonConfig(), hostClientFactory, agentControlClientFactory, null, null);
       cloudStoreServiceGroup = new CloudStoreServiceGroup();
       host.registerCloudStore(cloudStoreServiceGroup);
     }
@@ -285,7 +290,7 @@ public class CloudStoreServiceGroupTest {
     @BeforeMethod
     private void setUp() throws Throwable {
       host = new PhotonControllerXenonHost(
-              config.getXenonConfig(), hostClientFactory, agentControlClientFactory, null, null);
+          config.getXenonConfig(), hostClientFactory, agentControlClientFactory, null, null);
       cloudStoreServiceGroup = new CloudStoreServiceGroup();
       host.registerCloudStore(cloudStoreServiceGroup);
       host.start();

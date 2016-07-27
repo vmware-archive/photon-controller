@@ -20,12 +20,14 @@ import com.vmware.photon.controller.common.clients.HostClientFactory;
 import com.vmware.photon.controller.common.xenon.MultiHostEnvironment;
 import com.vmware.photon.controller.common.xenon.host.PhotonControllerXenonHost;
 import com.vmware.photon.controller.common.xenon.host.XenonConfig;
+import com.vmware.photon.controller.common.xenon.scheduler.TaskSchedulerServiceStateBuilder;
 
 import org.apache.commons.io.FileUtils;
 import static org.mockito.Mockito.mock;
 import static org.testng.Assert.assertTrue;
 
 import java.io.File;
+import java.util.concurrent.TimeUnit;
 
 /**
  * TestMachine class hosting a Xenon host.
@@ -56,6 +58,8 @@ public class TestEnvironment extends MultiHostEnvironment<PhotonControllerXenonH
     }
     // Disable host ping: we have fake hosts and don't want them to be marked as missing
     HostService.setInUnitTests(true);
+
+    TaskSchedulerServiceStateBuilder.triggerInterval = TimeUnit.MILLISECONDS.toMicros(500);
   }
 
   public static TestEnvironment create(int hostCount) throws Throwable {

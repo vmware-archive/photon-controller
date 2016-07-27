@@ -20,6 +20,7 @@ import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.ValidationUtils;
 import com.vmware.photon.controller.common.xenon.deployment.NoMigrationDuringDeployment;
 import com.vmware.photon.controller.common.xenon.migration.NoMigrationDuringUpgrade;
+import com.vmware.photon.controller.common.xenon.scheduler.TaskSchedulerServiceFactory;
 import com.vmware.photon.controller.common.xenon.validation.DefaultBoolean;
 import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
 import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
@@ -35,6 +36,10 @@ import com.vmware.xenon.common.Utils;
 import com.vmware.xenon.services.common.QueryTask;
 import com.vmware.xenon.services.common.ServiceUriPaths;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
+
+import java.net.URI;
 import java.util.EnumSet;
 
 /**
@@ -59,14 +64,22 @@ public class IpLeaseDeleteService extends StatefulService {
     super.toggleOption(ServiceOption.INSTRUMENTATION, true);
   }
 
+  public static State buildStartPatch() {
+    State s = new State();
+    s.taskState = new TaskState();
+    s.taskState.stage = TaskState.TaskStage.STARTED;
+    return s;
+  }
+
   @Override
   public void handleStart(Operation start) {
     ServiceUtils.logInfo(this, "Starting service %s", getSelfLink());
     State state = start.getBody(State.class);
     initializeState(state);
     validateState(state);
-    start.setBody(state).complete();
     processStart(state);
+
+    start.setBody(state).complete();
   }
 
   @Override
@@ -74,8 +87,9 @@ public class IpLeaseDeleteService extends StatefulService {
     ServiceUtils.logInfo(this, "Handling patch for service %s", getSelfLink());
     State currentState = getState(patch);
     State patchState = patch.getBody(State.class);
+    URI referer = patch.getReferer();
 
-    validatePatch(currentState, patchState);
+    validatePatch(currentState, patchState, referer);
     applyPatch(currentState, patchState);
     validateState(currentState);
     patch.complete();
@@ -129,6 +143,8 @@ public class IpLeaseDeleteService extends StatefulService {
   private void processPatch(final State current) {
     try {
       switch (current.taskState.stage) {
+        case CREATED:
+          break;
         case STARTED:
           processIpLeaseDocuments(current);
           break;
@@ -286,10 +302,24 @@ public class IpLeaseDeleteService extends StatefulService {
    *
    * @param current Supplies the start state object.
    * @param patch   Supplies the patch state object.
+   * @param referer
    */
-  private void validatePatch(State current, State patch) {
+  private void validatePatch(State current, State patch, URI referer) {
+    checkNotNull(current.taskState.stage);
+    checkNotNull(patch.taskState.stage);
+
+    if (current.taskState.stage != TaskState.TaskStage.CREATED &&
+        referer.getPath().contains(TaskSchedulerServiceFactory.SELF_LINK)) {
+      throw new IllegalStateException("Service is not in CREATED stage, ignores patch from TaskSchedulerService");
+    }
+
     ValidationUtils.validatePatch(current, patch);
-    ValidationUtils.validateTaskStageProgression(current.taskState, patch.taskState);
+
+    // Patches cannot be applied to documents in terminal states.
+    checkState(current.taskState.stage.ordinal() < TaskState.TaskStage.FINISHED.ordinal());
+
+    // Patches cannot transition the document to an earlier state
+    checkState(patch.taskState.stage.ordinal() >= current.taskState.stage.ordinal());
   }
 
   private QueryTask buildIpLeaseQuery(State s) {
@@ -322,7 +352,7 @@ public class IpLeaseDeleteService extends StatefulService {
     /**
      * Service execution stage.
      */
-    @DefaultTaskState(value = TaskState.TaskStage.STARTED)
+    @DefaultTaskState(value = TaskState.TaskStage.CREATED)
     public TaskState taskState;
 
     /**
@@ -340,6 +370,7 @@ public class IpLeaseDeleteService extends StatefulService {
      */
     @DefaultInteger(value = DEFAULT_PAGE_LIMIT)
     public int pageLimit;
+
     /**
      * Flag that controls if we should self patch to make forward progress.
      */

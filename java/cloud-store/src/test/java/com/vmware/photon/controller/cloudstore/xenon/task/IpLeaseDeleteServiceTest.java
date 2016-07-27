@@ -148,7 +148,7 @@ public class IpLeaseDeleteServiceTest {
     @DataProvider(name = "AutoInitializedFields")
     public Object[][] getAutoInitializedFieldsParams() {
       TaskState state = new TaskState();
-      state.stage = TaskState.TaskStage.STARTED;
+      state.stage = TaskState.TaskStage.CREATED;
 
       return new Object[][]{
           {"taskState", state},
@@ -298,6 +298,7 @@ public class IpLeaseDeleteServiceTest {
         throws Throwable {
       machine = TestEnvironment.create(hostCount);
       seedTestEnvironment(machine, totalIpLeases);
+      request.isSelfProgressionDisabled = false;
 
       IpLeaseDeleteService.State response = machine.callServiceAndWaitForState(
           IpLeaseDeleteService.FACTORY_LINK,
