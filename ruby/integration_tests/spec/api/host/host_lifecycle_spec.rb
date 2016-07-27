@@ -361,7 +361,11 @@ end
 
 def host_is_reachable(host, seeder)
   # we testing the reachability by trying to create a vm on the specific host
-  vm = seeder.create_vm seeder.project!, affinities: [{id: host.address, kind: "host"}]
-  vm.delete
+  begin
+    vm = seeder.create_vm seeder.project!, affinities: [{id: host.address, kind: "host"}]
+    vm.delete
+  rescue
+    return false
+  end
   return true
 end
