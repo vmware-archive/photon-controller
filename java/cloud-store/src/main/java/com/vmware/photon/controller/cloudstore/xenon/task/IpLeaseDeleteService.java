@@ -13,6 +13,7 @@
 
 package com.vmware.photon.controller.cloudstore.xenon.task;
 
+import com.vmware.photon.controller.cloudstore.xenon.entity.DhcpSubnetService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.IpLeaseService;
 import com.vmware.photon.controller.common.xenon.InitializationUtils;
 import com.vmware.photon.controller.common.xenon.PatchUtils;
@@ -122,10 +123,22 @@ public class IpLeaseDeleteService extends StatefulService {
               ServiceDocumentQueryResult results = op.getBody(QueryTask.class).results;
               if (results.nextPageLink != null) {
                 current.nextPageLink = results.nextPageLink;
+                sendStageProgressPatch(current);
               } else {
-                ServiceUtils.logInfo(this, "No ip lease found.");
+                ServiceUtils.logInfo(this, "No ip lease found, deleting DhcpSubnetService.");
+                Operation deleteOperation = Operation
+                    .createDelete(UriUtils.buildUri(getHost(), DhcpSubnetService.FACTORY_LINK + "/" + current.subnetId))
+                    .setReferer(UriUtils.buildUri(getHost(), getSelfLink()));
+                deleteOperation.setCompletion(
+                    (operation, ex) -> {
+                      if (ex != null) {
+                        failTask(ex);
+                        return;
+                      }
+                      finishTask(current);
+                    }
+                ).sendWith(this);
               }
-              sendStageProgressPatch(current);
             })).sendWith(this);
       } else {
         sendStageProgressPatch(current);
