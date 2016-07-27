@@ -101,7 +101,8 @@ public class VsphereImageStoreImage implements Image {
     try {
       nfcClient.close();
     } catch (IOException e) {
-      // Ignore.
+      // Adding traces for failure on closing nfc client connection.
+      logger.warn("Exception on closing nfc client: {}", e);
     }
     nfcClient = null;
   }
