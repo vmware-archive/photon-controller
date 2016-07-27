@@ -13,18 +13,27 @@
 
 package com.vmware.photon.controller.cloudstore.xenon.task;
 
+import com.vmware.photon.controller.cloudstore.xenon.entity.DhcpSubnetService;
 import com.vmware.photon.controller.cloudstore.xenon.entity.IpLeaseService;
 import com.vmware.photon.controller.cloudstore.xenon.helpers.TestEnvironment;
+import com.vmware.photon.controller.common.IpHelper;
 import com.vmware.photon.controller.common.xenon.BasicServiceHost;
+import com.vmware.photon.controller.common.xenon.ServiceHostUtils;
 import com.vmware.photon.controller.common.xenon.ServiceUtils;
 import com.vmware.photon.controller.common.xenon.exceptions.BadRequestException;
 import com.vmware.xenon.common.Operation;
 import com.vmware.xenon.common.Service;
+import com.vmware.xenon.common.ServiceDocumentQueryResult;
+import com.vmware.xenon.common.ServiceHost;
 import com.vmware.xenon.common.TaskState;
 import com.vmware.xenon.common.UriUtils;
 import com.vmware.xenon.common.Utils;
 
+import com.google.common.net.InetAddresses;
+import org.apache.commons.net.util.SubnetUtils;
 import org.hamcrest.Matchers;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
@@ -36,6 +45,8 @@ import static org.testng.Assert.fail;
 
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
+import java.net.Inet4Address;
+import java.net.InetAddress;
 import java.util.EnumSet;
 import java.util.concurrent.TimeUnit;
 
@@ -43,7 +54,9 @@ import java.util.concurrent.TimeUnit;
  * Tests {@link com.vmware.photon.controller.cloudstore.xenon.task.IpLeaseDeleteService}.
  */
 public class IpLeaseDeleteServiceTest {
+  
   private static final int TEST_PAGE_LIMIT = 100;
+  private static final Logger logger = LoggerFactory.getLogger(DhcpSubnetDeleteServiceTest.class);
 
   private BasicServiceHost host;
   private IpLeaseDeleteService service;
@@ -305,12 +318,32 @@ public class IpLeaseDeleteServiceTest {
           request,
           IpLeaseDeleteService.State.class,
           (IpLeaseDeleteService.State state) -> state.taskState.stage == TaskState.TaskStage.FINISHED);
+
+      if (totalIpLeases == 0) {
+        for (ServiceHost host : machine.getHosts()) {
+          ServiceHostUtils.waitForServiceState(
+              ServiceDocumentQueryResult.class,
+              DhcpSubnetService.FACTORY_LINK,
+              (ServiceDocumentQueryResult result) -> {
+                logger.info(
+                    "Host:[{}] Service:[{}] Document Count- Expected [{}], Actual [{}]",
+                    host.getUri(),
+                    DhcpSubnetService.FACTORY_LINK,
+                    0,
+                    result.documentCount);
+                return result.documentCount == 0;
+              },
+              host,
+              null);
+        }
+      }
     }
 
     @DataProvider(name = "Success")
     public Object[][] getSuccessData() {
       return new Object[][]{
           {0, 1},
+          {0, TestEnvironment.DEFAULT_MULTI_HOST_COUNT},
           {2, 1},
           {2, TestEnvironment.DEFAULT_MULTI_HOST_COUNT},
           {5, 1},
@@ -323,6 +356,20 @@ public class IpLeaseDeleteServiceTest {
 
     private void seedTestEnvironment(TestEnvironment env,
                                      int totalIpLeases) throws Throwable {
+      DhcpSubnetService.State subnetService = new DhcpSubnetService.State();
+      subnetService.documentSelfLink = "subnet-id";
+      SubnetUtils subnetUtils = new SubnetUtils("192.168.0.0/16");
+      SubnetUtils.SubnetInfo subnetInfo = subnetUtils.getInfo();
+      InetAddress lowIpAddress = InetAddresses.forString(subnetInfo.getLowAddress());
+      InetAddress highIpAddress = InetAddresses.forString(subnetInfo.getHighAddress());
+      subnetService.lowIp = IpHelper.ipToLong((Inet4Address) lowIpAddress);
+      subnetService.highIp = IpHelper.ipToLong((Inet4Address) highIpAddress);
+      subnetService.isAllocated = true;
+      subnetService.cidr = "cidr";
+
+      env.sendPostAndWaitForReplication(
+          DhcpSubnetService.FACTORY_LINK, subnetService);
+
       for (int i = 0; i < totalIpLeases; i++) {
         IpLeaseDeleteService.State state = new IpLeaseDeleteService.State();
 
