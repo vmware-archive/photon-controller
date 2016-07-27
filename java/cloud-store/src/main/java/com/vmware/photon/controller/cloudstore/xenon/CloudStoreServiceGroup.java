@@ -46,6 +46,7 @@ import com.vmware.photon.controller.cloudstore.xenon.task.IpLeaseDeleteService;
 import com.vmware.photon.controller.cloudstore.xenon.task.TombstoneCleanerFactoryService;
 import com.vmware.photon.controller.cloudstore.xenon.task.trigger.AvailabilityZoneCleanerTriggerBuilder;
 import com.vmware.photon.controller.cloudstore.xenon.task.trigger.DatastoreCleanerTriggerBuilder;
+import com.vmware.photon.controller.cloudstore.xenon.task.trigger.DhcpSubnetDeleteTriggerBuilder;
 import com.vmware.photon.controller.cloudstore.xenon.task.trigger.EntityLockCleanerTriggerBuilder;
 import com.vmware.photon.controller.cloudstore.xenon.task.trigger.EntityLockDeleteTriggerBuilder;
 import com.vmware.photon.controller.cloudstore.xenon.task.trigger.TombstoneCleanerTriggerBuilder;
@@ -149,7 +150,10 @@ public class CloudStoreServiceGroup
           AvailabilityZoneCleanerTriggerBuilder.DEFAULT_TASK_EXPIRATION_AGE_MILLIS),
       new DatastoreCleanerTriggerBuilder(
           DatastoreCleanerTriggerBuilder.DEFAULT_TRIGGER_INTERVAL_MILLIS,
-          DatastoreCleanerTriggerBuilder.DEFAULT_TASK_EXPIRATION_AGE_MILLIS)
+          DatastoreCleanerTriggerBuilder.DEFAULT_TASK_EXPIRATION_AGE_MILLIS),
+      new DhcpSubnetDeleteTriggerBuilder(
+          DhcpSubnetDeleteTriggerBuilder.DEFAULT_TRIGGER_INTERVAL_MILLIS,
+          DhcpSubnetDeleteTriggerBuilder.DEFAULT_TASK_EXPIRATION_AGE_MILLIS)
   };
 
   private PhotonControllerXenonHost photonControllerXenonHost;
@@ -227,7 +231,9 @@ public class CloudStoreServiceGroup
             && photonControllerXenonHost.checkServiceAvailable(
             TaskTriggerFactoryService.SELF_LINK + DatastoreCleanerTriggerBuilder.TRIGGER_SELF_LINK)
             && photonControllerXenonHost.checkServiceAvailable(TaskSchedulerServiceFactory.SELF_LINK)
-            && photonControllerXenonHost.checkServiceAvailable(IP_LEASE_DELETE_SERVICE);
+            && photonControllerXenonHost.checkServiceAvailable(IP_LEASE_DELETE_SERVICE)
+            && photonControllerXenonHost.checkServiceAvailable(
+            TaskTriggerFactoryService.SELF_LINK + DhcpSubnetDeleteTriggerBuilder.TRIGGER_SELF_LINK);
   }
 
   @Override
