@@ -33,6 +33,12 @@ brew install maven
 
 As of this writing, this workflow caused Maven 3.3.3 to be installed.
 
+#### 4. Docker
+
+To build RPMs you would need to have docker running on your system.
+
+You can install [Docker for Mac from here](https://docs.docker.com/engine/installation/mac/) to build RPMs on your machine.
+
 ### Linux
 
 These instructions cover installation on Ubuntu 14.04 LTS. You will need to install these tools using the appropriate steps for your distro.
@@ -68,6 +74,12 @@ sudo apt-get install maven
 ~~~
 
 As of this writing, this step caused Maven 3.0.5 to be installed.
+
+#### 4. Docker
+
+To build RPMs you would need to have docker running on your system.
+
+You can install [Docker from here](https://docs.docker.com/v1.10/linux/step_one/) to build RPMs on your machine.
 
 ## Building
 
