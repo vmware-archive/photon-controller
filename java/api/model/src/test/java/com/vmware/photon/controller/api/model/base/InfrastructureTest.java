@@ -26,7 +26,7 @@ import static org.testng.Assert.assertTrue;
 
 import java.util.List;
 
-//import com.vmware.esxcloud.apife.InfrastructureTestModule;
+//import com.vmware.esxcloud.api.InfrastructureTestModule;
 
 /**
  * Tests {@link Infrastructure}.

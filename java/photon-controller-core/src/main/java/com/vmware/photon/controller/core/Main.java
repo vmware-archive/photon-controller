@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.core;
 
-import com.vmware.photon.controller.apife.ApiFeService;
+import com.vmware.photon.controller.api.frontend.ApiFeService;
 import com.vmware.photon.controller.cloudstore.SystemConfig;
 import com.vmware.photon.controller.cloudstore.xenon.CloudStoreServiceGroup;
 import com.vmware.photon.controller.clustermanager.ClusterManagerFactory;
@@ -114,7 +114,7 @@ public class Main {
 
     ServiceHost xenonHost = startXenonHost(photonControllerConfig, thriftModule, deployerConfig);
 
-    // Creating a temp configuration file for apife with modification to some named sections in photon-controller-config
+    // Creating a temp configuration file for api with modification to some named sections in photon-controller-config
     // so that it can match the Configuration class of dropwizard.
     File apiFeTempConfig = File.createTempFile("apiFeTempConfig", ".tmp");
     File source = new File(args[0]);
@@ -126,8 +126,8 @@ public class Main {
 
     String aLine = null;
     while ((aLine = in.readLine()) != null) {
-      if (aLine.equals("apife:")) {
-        aLine = aLine.replace("apife:", "server:");
+      if (aLine.equals("api:")) {
+        aLine = aLine.replace("api:", "server:");
       }
       out.write(aLine);
       out.newLine();
@@ -135,7 +135,7 @@ public class Main {
     in.close();
     out.close();
 
-    // This approach can be simplified once the apife container is gone, but for the time being
+    // This approach can be simplified once the api container is gone, but for the time being
     // it expects the first arg to be the string "server".
     String[] apiFeArgs = new String[2];
     apiFeArgs[0] = "server";

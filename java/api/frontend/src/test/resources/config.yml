@@ -1,0 +1,17 @@
+background_workers: 500
+background_workers_queue_size: 200
+use_virtual_network: true
+
+auth:
+  enable_auth: true
+  auth_server_address: 10.146.64.236
+  auth_server_port: 443
+  tenant: esxcloud
+
+pagination:
+  default_page_size: 10
+  max_page_size: 100
+
+status:
+  components:
+    - photon-controller

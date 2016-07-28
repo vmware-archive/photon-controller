@@ -915,13 +915,13 @@ public class CreateVirtualNetworkWorkflowServiceTest {
               (state) -> TaskState.TaskStage.FAILED == state.taskState.stage);
 
       // Verifies that IP Range information is empty in the service document.
-      assertThat(finalState.taskServiceEntity, notNullValue() );
-      assertThat(finalState.taskServiceEntity.cidr, nullValue() );
-      assertThat(finalState.taskServiceEntity.lowIpDynamic, nullValue() );
-      assertThat(finalState.taskServiceEntity.highIpDynamic, nullValue() );
-      assertThat(finalState.taskServiceEntity.lowIpStatic, nullValue() );
-      assertThat(finalState.taskServiceEntity.highIpStatic, nullValue() );
-      assertThat(finalState.taskServiceEntity.reservedIpList, nullValue() );
+      assertThat(finalState.taskServiceEntity, notNullValue());
+      assertThat(finalState.taskServiceEntity.cidr, nullValue());
+      assertThat(finalState.taskServiceEntity.lowIpDynamic, nullValue());
+      assertThat(finalState.taskServiceEntity.highIpDynamic, nullValue());
+      assertThat(finalState.taskServiceEntity.lowIpStatic, nullValue());
+      assertThat(finalState.taskServiceEntity.highIpStatic, nullValue());
+      assertThat(finalState.taskServiceEntity.reservedIpList, nullValue());
     }
 
     /**

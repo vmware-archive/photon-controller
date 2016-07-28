@@ -1,0 +1,141 @@
+{
+    "context": {
+        "headers": {
+            "Content-Type": [
+                {
+                    "type": "application",
+                    "subtype": "json",
+                    "parameters": {},
+                    "wildcardType": false,
+                    "wildcardSubtype": false
+                }
+            ],
+            "X-API-VERSION": [
+                "1.0"
+            ],
+            "REQUEST-ID": [
+                "requestId"
+            ]
+        },
+        "entity": {
+            "id": "base-id",
+            "kind": "ConcreteBase"
+        },
+        "entityType": "com.vmware.photon.controller.api.serialization.BaseSerializationTest$ConcreteBase",
+        "entityAnnotations": [],
+        "entityStream": {
+            "committed": false,
+            "closed": false
+        },
+        "length": -1,
+        "language": null,
+        "location": null,
+        "mediaType": {
+            "type": "application",
+            "subtype": "json",
+            "parameters": {},
+            "wildcardType": false,
+            "wildcardSubtype": false
+        },
+        "allowedMethods": [],
+        "responseCookies": {},
+        "entityTag": null,
+        "links": [],
+        "lastModified": null,
+        "requestCookies": {},
+        "acceptableMediaTypes": [
+            {
+                "type": "*",
+                "subtype": "*",
+                "parameters": {},
+                "quality": 1000,
+                "wildcardType": true,
+                "wildcardSubtype": true
+            }
+        ],
+        "acceptableLanguages": [
+            "*"
+        ],
+        "committed": false,
+        "entityClass": "com.vmware.photon.controller.api.serialization.BaseSerializationTest$ConcreteBase",
+        "stringHeaders": {
+            "Content-Type": [
+                "application/json"
+            ],
+            "X-API-VERSION": [
+                "1.0"
+            ],
+            "REQUEST-ID": [
+                "requestId"
+            ]
+        },
+        "date": null
+    },
+    "status": 201,
+    "length": -1,
+    "language": null,
+    "location": null,
+    "mediaType": {
+        "type": "application",
+        "subtype": "json",
+        "parameters": {},
+        "wildcardType": false,
+        "wildcardSubtype": false
+    },
+    "allowedMethods": [],
+    "entityTag": null,
+    "links": [],
+    "lastModified": null,
+    "entity": {
+        "id": "base-id",
+        "kind": "ConcreteBase"
+    },
+    "cookies": {},
+    "metadata": {
+        "Content-Type": [
+            {
+                "type": "application",
+                "subtype": "json",
+                "parameters": {},
+                "wildcardType": false,
+                "wildcardSubtype": false
+            }
+        ],
+        "X-API-VERSION": [
+            "1.0"
+        ],
+        "REQUEST-ID": [
+            "requestId"
+        ]
+    },
+    "stringHeaders": {
+        "Content-Type": [
+            "application/json"
+        ],
+        "X-API-VERSION": [
+            "1.0"
+        ],
+        "REQUEST-ID": [
+            "requestId"
+        ]
+    },
+    "statusInfo": "CREATED",
+    "date": null,
+    "headers": {
+        "Content-Type": [
+            {
+                "type": "application",
+                "subtype": "json",
+                "parameters": {},
+                "wildcardType": false,
+                "wildcardSubtype": false
+            }
+        ],
+        "X-API-VERSION": [
+            "1.0"
+        ],
+        "REQUEST-ID": [
+            "requestId"
+        ]
+    }
+}
