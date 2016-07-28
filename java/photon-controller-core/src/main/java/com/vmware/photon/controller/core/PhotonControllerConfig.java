@@ -28,7 +28,7 @@ import javax.validation.constraints.NotNull;
 /**
  * This class implements configuration state for the photon-controller-core service.
  */
-// This annotation is added to ignore apife related configuration sections.
+// This annotation is added to ignore api related configuration sections.
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class PhotonControllerConfig {
 

@@ -1,0 +1,25 @@
+KDMV??
+
+# Disk DescriptorFile
+version=1
+encoding="UTF-8"
+CID=fffffffe
+parentCID=ffffffff
+isNativeSnapshot="no"
+createType="monolithicSparse"
+
+# Extent description
+RW 4096 SPARSE "2mb_monosparse.vmdk"
+RW 4096 SPARSE "2mb_monosparse.vmdk"
+RW 4096 SPARSE "2mb_monosparse.vmdk"
+
+# The Disk Data Base
+#DDB
+
+ddb.virtualHWVersion = "6"
+ddb.longContentID = "00da592f2b7170f4b1a6e6e1fffffffe"
+ddb.uuid = "60 00 C2 93 e0 5b b1 fd-ad 4e 64 2d a9 5e 78 f2"
+ddb.geometry.cylinders = "2"
+ddb.geometry.heads = "64"
+ddb.geometry.sectors = "32"
+ddb.adapterType = "lsilogic"

@@ -13,7 +13,7 @@
 
 package com.vmware.photon.controller.core;
 
-import com.vmware.photon.controller.apife.ApiFeService;
+import com.vmware.photon.controller.api.frontend.ApiFeService;
 import com.vmware.photon.controller.cloudstore.SystemConfig;
 import com.vmware.photon.controller.cloudstore.xenon.CloudStoreServiceGroup;
 import com.vmware.photon.controller.clustermanager.ClusterManagerFactory;
