@@ -42,6 +42,9 @@ import static com.google.common.base.Preconditions.checkState;
 
 import java.net.URI;
 import java.util.EnumSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Class implementing service to delete dangling IpLeaseService from the cloud store.
@@ -189,18 +192,77 @@ public class IpLeaseDeleteService extends StatefulService {
       return;
     }
 
-    Operation getOnePageOfDhcpSubnetsDocuments =
+    Operation getOnePageOfIpLeaseDocuments =
         Operation.createGet(UriUtils.buildUri(getHost(), current.nextPageLink));
-    getOnePageOfDhcpSubnetsDocuments
+    getOnePageOfIpLeaseDocuments
         .setCompletion((op, throwable) -> {
           if (throwable != null) {
             failTask(throwable);
             return;
           }
           current.nextPageLink = op.getBody(QueryTask.class).results.nextPageLink;
-          sendStageProgressPatch(current);
+          List<IpLeaseService.State> ipLeaseList =
+              parseIpLeaseServiceQueryResults(op.getBody(QueryTask.class));
+          deleteIpLeaseDocuments(current, ipLeaseList);
         })
         .sendWith(this);
+  }
+
+  /**
+   * Delete the ip lease documents.
+   *
+   * @param ipLeaseList
+   */
+  private void deleteIpLeaseDocuments(final State current, List<IpLeaseService.State> ipLeaseList) {
+    if (ipLeaseList.size() == 0) {
+      ServiceUtils.logInfo(this, "No Ip Lease documents found any more.");
+      finishTask(current);
+      return;
+    }
+
+    for (IpLeaseService.State ipLease : ipLeaseList) {
+      deleteIpLease(ipLease);
+    }
+    finishTask(current);
+  }
+
+  /**
+   * Delete one ip lease document.
+   *
+   * @param state
+   */
+  private void deleteIpLease(IpLeaseService.State state) {
+    String ipLeaseId = ServiceUtils
+        .getIDFromDocumentSelfLink(state.documentSelfLink);
+    Operation deleteOperation = Operation
+        .createDelete(UriUtils.buildUri(getHost(), IpLeaseService.FACTORY_LINK + "/" + ipLeaseId))
+        .setReferer(UriUtils.buildUri(getHost(), getSelfLink()));
+    deleteOperation.setCompletion(
+        (operation, ex) -> {
+          if (ex != null) {
+            failTask(ex);
+          }
+          ServiceUtils.logInfo(this, "Ip Lease document %s has been released.", ipLeaseId);
+        }
+    ).sendWith(this);
+  }
+
+  /**
+   * Parse IpLeaseServiec query results.
+   *
+   * @param result
+   */
+  private List<IpLeaseService.State> parseIpLeaseServiceQueryResults(QueryTask result) {
+    List<IpLeaseService.State> ipLeaseList = new LinkedList<>();
+
+    if (result != null && result.results != null && result.results.documentCount > 0) {
+      for (Map.Entry<String, Object> doc : result.results.documents.entrySet()) {
+        ipLeaseList.add(
+            Utils.fromJson(doc.getValue(), IpLeaseService.State.class));
+      }
+    }
+
+    return ipLeaseList;
   }
 
   /**
