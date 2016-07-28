@@ -26,7 +26,7 @@ public class Constants {
 
   public static final String TENANT_NAME = "mgmt-tenant";
 
-  public static final String APIFE_SERVICE_NAME = "apife";
+  public static final String APIFE_SERVICE_NAME = "api";
 
   public static final String CLOUDSTORE_SERVICE_NAME = "cloudstore";
 

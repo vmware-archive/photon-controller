@@ -64,7 +64,7 @@ class JacocoPlugin implements Plugin<Project> {
             fileset dir: "${project.sourceSets.main.output.classesDir}"
           }
           sourcefiles {
-            project.sourceSets.main.java.srcDirs.each {
+            project.sourceSets.java.srcDirs.each {
               fileset(dir: it.absolutePath)
             }
           }
