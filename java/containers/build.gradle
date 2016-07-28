@@ -91,7 +91,7 @@ task all() {
 
 task cleanAll() {
   dependsOn(
-    ":api-frontend:management:clean",
+    ":api:frontend:clean",
     ":cloud-store:clean",
     ":deployer:clean",
     ":housekeeper:clean",

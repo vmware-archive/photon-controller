@@ -23,4 +23,3 @@ ddb.geometry.cylinders = "2"
 ddb.geometry.heads = "64"
 ddb.geometry.sectors = "32"
 ddb.adapterType = "lsilogic"
-
