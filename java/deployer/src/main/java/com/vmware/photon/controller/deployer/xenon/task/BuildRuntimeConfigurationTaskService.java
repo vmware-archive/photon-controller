@@ -94,6 +94,7 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
   private static final String MUSTACHE_KEY_HAPROXY_MGMT_UI_HTTP_PORT = "MANAGEMENT_UI_HTTP_PORT";
   private static final String MUSTACHE_KEY_HAPROXY_MGMT_UI_HTTPS_PORT = "MANAGEMENT_UI_HTTPS_PORT";
   private static final String MUSTACHE_KEY_LIGHTWAVE_ADDRESS = "LIGHTWAVE_ADDRESS";
+  private static final String MUSTACHE_KEY_LIGHTWAVE_HOSTNAME = "LIGHTWAVE_HOSTNAME";
   private static final String MUSTACHE_KEY_LIGHTWAVE_DOMAIN = "LIGHTWAVE_DOMAIN";
   private static final String MUSTACHE_KEY_LIGHTWAVE_PASSWORD = "LIGHTWAVE_PASSWORD";
   private static final String MUSTACHE_KEY_MGMT_API_AUTH_SERVER_ADDRESS = "AUTH_SERVER_ADDRESS";
@@ -442,11 +443,12 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
         dynamicParameters.put(MUSTACHE_KEY_MGMT_API_USE_VIRTUAL_NETWORK,
             String.valueOf(deploymentState.sdnEnabled));
         if (deploymentState.oAuthEnabled) {
-          dynamicParameters.put(MUSTACHE_KEY_MGMT_API_AUTH_SERVER_PORT,
-              String.valueOf(Constants.LIGHTWAVE_PORT));
+          dynamicParameters.put(MUSTACHE_KEY_MGMT_API_AUTH_SERVER_PORT, String.valueOf(Constants.LIGHTWAVE_PORT));
           dynamicParameters.put(MUSTACHE_KEY_MGMT_API_AUTH_SERVER_TENANT, deploymentState.oAuthTenantName);
           dynamicParameters.put(MUSTACHE_KEY_MGMT_API_SWAGGER_LOGIN_URL, deploymentState.oAuthSwaggerLoginEndpoint);
           dynamicParameters.put(MUSTACHE_KEY_MGMT_API_SWAGGER_LOGOUT_URL, deploymentState.oAuthSwaggerLogoutEndpoint);
+          dynamicParameters.put(MUSTACHE_KEY_LIGHTWAVE_DOMAIN, deploymentState.oAuthTenantName);
+          dynamicParameters.put(MUSTACHE_KEY_LIGHTWAVE_PASSWORD, deploymentState.oAuthPassword);
         }
         break;
       case ManagementUi:
@@ -517,6 +519,13 @@ public class BuildRuntimeConfigurationTaskService extends StatefulService {
       //
 
       case PhotonControllerCore:
+        if (currentState.oAuthEnabled &&
+            !currentState.dynamicParameters.containsKey(MUSTACHE_KEY_LIGHTWAVE_HOSTNAME)) {
+          getIpsForContainerType(ContainersConfig.ContainerType.Lightwave,
+              (vmIpAddresses) -> patchDynamicParameter(currentState, MUSTACHE_KEY_LIGHTWAVE_HOSTNAME,
+                  vmIpAddresses.iterator().next()));
+          return;
+        }
       case ManagementUi:
         if (!currentState.dynamicParameters.containsKey(MUSTACHE_KEY_COMMON_LOAD_BALANCER_IP)) {
           getIpsForContainerType(ContainersConfig.ContainerType.LoadBalancer,
