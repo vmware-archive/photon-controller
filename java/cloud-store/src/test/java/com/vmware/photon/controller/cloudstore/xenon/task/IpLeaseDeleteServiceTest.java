@@ -54,7 +54,7 @@ import java.util.concurrent.TimeUnit;
  * Tests {@link com.vmware.photon.controller.cloudstore.xenon.task.IpLeaseDeleteService}.
  */
 public class IpLeaseDeleteServiceTest {
-  
+
   private static final int TEST_PAGE_LIMIT = 100;
   private static final Logger logger = LoggerFactory.getLogger(DhcpSubnetDeleteServiceTest.class);
 
@@ -324,6 +324,22 @@ public class IpLeaseDeleteServiceTest {
           ServiceHostUtils.waitForServiceState(
               ServiceDocumentQueryResult.class,
               DhcpSubnetService.FACTORY_LINK,
+              (ServiceDocumentQueryResult result) -> {
+                logger.info(
+                    "Host:[{}] Service:[{}] Document Count- Expected [{}], Actual [{}]",
+                    host.getUri(),
+                    DhcpSubnetService.FACTORY_LINK,
+                    0,
+                    result.documentCount);
+                return result.documentCount == 0;
+              },
+              host,
+              null);
+        }
+        for (ServiceHost host : machine.getHosts()) {
+          ServiceHostUtils.waitForServiceState(
+              ServiceDocumentQueryResult.class,
+              IpLeaseService.FACTORY_LINK,
               (ServiceDocumentQueryResult result) -> {
                 logger.info(
                     "Host:[{}] Service:[{}] Document Count- Expected [{}], Actual [{}]",
