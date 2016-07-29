@@ -53,4 +53,11 @@ function install_vib() {
 	fi
 }
 
+
+sshpass -p "$password"  ssh -o StrictHostKeyChecking=no ${username}@${host_address} date
+sshpass -p "$password"  ssh -o StrictHostKeyChecking=no ${username}@${host_address} esxcli software vib list
+
 install_vib
+
+sshpass -p "$password"  ssh -o StrictHostKeyChecking=no ${username}@${host_address} esxcli software vib list
+sshpass -p "$password"  ssh -o StrictHostKeyChecking=no ${username}@${host_address} date
