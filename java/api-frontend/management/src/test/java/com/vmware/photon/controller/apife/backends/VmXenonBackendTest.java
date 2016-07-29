@@ -1512,7 +1512,7 @@ public class VmXenonBackendTest {
       QueryTask query = QueryTask.create(spec);
       query.setDirect(true);
 
-      host.waitForQuery(query, (queryTask) -> queryTask.results.documentLinks.size() == 0, 5, 5000);
+      host.waitForQuery(query, (queryTask) -> queryTask.results.documentLinks.size() == 0, 10, 5000);
     }
 
     private double getUsage(String key) throws Throwable {
