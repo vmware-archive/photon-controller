@@ -304,6 +304,8 @@ public class DeploymentXenonBackend implements DeploymentBackend {
     networkConfiguration.setNetworkManagerPassword(deploymentEntity.getNetworkManagerPassword());
     networkConfiguration.setNetworkZoneId(deploymentEntity.getNetworkZoneId());
     networkConfiguration.setNetworkTopRouterId(deploymentEntity.getNetworkTopRouterId());
+    networkConfiguration.setIpRange(deploymentEntity.getIpRange());
+    networkConfiguration.setFloatingIpRange(deploymentEntity.getFloatingIpRange());
     deployment.setNetworkConfiguration(networkConfiguration);
 
     deployment.setLoadBalancerEnabled(deploymentEntity.getLoadBalancerEnabled());
@@ -505,6 +507,8 @@ public class DeploymentXenonBackend implements DeploymentBackend {
       deployment.networkManagerPassword = spec.getNetworkConfiguration().getNetworkManagerPassword();
       deployment.networkZoneId = spec.getNetworkConfiguration().getNetworkZoneId();
       deployment.networkTopRouterId = spec.getNetworkConfiguration().getNetworkTopRouterId();
+      deployment.ipRange = spec.getNetworkConfiguration().getIpRange();
+      deployment.floatingIpRange = spec.getNetworkConfiguration().getFloatingIpRange();
     }
     deployment.loadBalancerEnabled = spec.getLoadBalancerEnabled();
 
@@ -542,6 +546,8 @@ public class DeploymentXenonBackend implements DeploymentBackend {
     entity.setNetworkManagerPassword(deployment.networkManagerPassword);
     entity.setNetworkZoneId(deployment.networkZoneId);
     entity.setNetworkTopRouterId(deployment.networkTopRouterId);
+    entity.setIpRange(deployment.ipRange);
+    entity.setFloatingIpRange(deployment.floatingIpRange);
     entity.setLoadBalancerEnabled(deployment.loadBalancerEnabled);
     entity.setLoadBalancerAddress(deployment.loadBalancerAddress);
     entity.setMigrationProgress(deployment.dataMigrationProgress);
