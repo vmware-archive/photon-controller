@@ -42,6 +42,8 @@ public class NetworkConfigurationTest {
       .networkManagerPassword("networkManagerPassword")
       .networkZoneId("networkZoneId")
       .networkTopRouterId("networkTopRouterId")
+      .ipRange("10.0.0.1/24")
+      .floatingIpRange("192.168.0.1/28")
       .build();
 
   @Test(enabled = false)
@@ -90,7 +92,8 @@ public class NetworkConfigurationTest {
     public void testCorrectString() {
       String expectedString =
           "NetworkConfiguration{sdnEnabled=true, networkManagerAddress=1.2.3.4, " +
-          "networkZoneId=networkZoneId, networkTopRouterId=networkTopRouterId}";
+          "networkZoneId=networkZoneId, networkTopRouterId=networkTopRouterId, " +
+          "ipRange=10.0.0.1/24, floatingIpRange=192.168.0.1/28}";
       assertThat(sampleNetworkConfiguration.toString(), is(expectedString));
     }
   }

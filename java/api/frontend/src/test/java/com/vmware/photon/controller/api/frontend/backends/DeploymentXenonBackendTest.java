@@ -167,6 +167,8 @@ public class DeploymentXenonBackendTest {
         .networkManagerPassword("networkManagerPassword")
         .networkZoneId("networkZoneId")
         .networkTopRouterId("networkTopRouterId")
+        .ipRange("10.0.0.1/24")
+        .floatingIpRange("192.168.0.1/28")
         .build());
   }
 
@@ -250,6 +252,8 @@ public class DeploymentXenonBackendTest {
       assertThat(deployment.getNetworkManagerPassword(), is("networkManagerPassword"));
       assertThat(deployment.getNetworkZoneId(), is("networkZoneId"));
       assertThat(deployment.getNetworkTopRouterId(), is("networkTopRouterId"));
+      assertThat(deployment.getIpRange(), is("10.0.0.1/24"));
+      assertThat(deployment.getFloatingIpRange(), is("192.168.0.1/28"));
       assertThat(ListUtils.isEqualList(deployment.getOauthSecurityGroups(),
           Arrays.asList(new String[]{"securityGroup1", "securityGroup2"})), is(true));
     }
@@ -738,6 +742,8 @@ public class DeploymentXenonBackendTest {
       assertThat(networkConfiguration.getNetworkManagerPassword(), is(entity.getNetworkManagerPassword()));
       assertThat(networkConfiguration.getNetworkZoneId(), is(entity.getNetworkZoneId()));
       assertThat(networkConfiguration.getNetworkTopRouterId(), is(entity.getNetworkTopRouterId()));
+      assertThat(networkConfiguration.getIpRange(), is(entity.getIpRange()));
+      assertThat(networkConfiguration.getFloatingIpRange(), is(entity.getFloatingIpRange()));
     }
 
     @Test(expectedExceptions = DeploymentNotFoundException.class)
@@ -1113,6 +1119,8 @@ public class DeploymentXenonBackendTest {
       deployment2.networkManagerPassword = deploymentCreateSpec.getNetworkConfiguration().getNetworkManagerPassword();
       deployment2.networkZoneId = deploymentCreateSpec.getNetworkConfiguration().getNetworkZoneId();
       deployment2.networkTopRouterId = deploymentCreateSpec.getNetworkConfiguration().getNetworkTopRouterId();
+      deployment2.ipRange = deploymentCreateSpec.getNetworkConfiguration().getIpRange();
+      deployment2.floatingIpRange = deploymentCreateSpec.getNetworkConfiguration().getFloatingIpRange();
 
       xenonClient2.post(DeploymentServiceFactory.SELF_LINK, deployment2);
     }

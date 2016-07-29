@@ -56,6 +56,16 @@ public class NetworkConfigurationBuilder {
     return this;
   }
 
+  public NetworkConfigurationBuilder ipRange(String ipRange) {
+    this.networkConfiguration.setIpRange(ipRange);
+    return this;
+  }
+
+  public NetworkConfigurationBuilder floatingIpRange(String floatingIpRange) {
+    this.networkConfiguration.setFloatingIpRange(floatingIpRange);
+    return this;
+  }
+
   public NetworkConfiguration build() {
     return networkConfiguration;
   }

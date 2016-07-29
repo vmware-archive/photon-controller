@@ -70,6 +70,12 @@ public class DeploymentEntity extends BaseEntity {
 
   private String networkTopRouterId;
 
+  private String ipRange;
+
+  private String floatingIpRange;
+
+  private String floatingAddressSpaceSubnetId;
+
   private String ntpEndpoint;
 
   private Set<String> imageDatastores;
@@ -262,6 +268,30 @@ public class DeploymentEntity extends BaseEntity {
     this.networkTopRouterId = networkTopRouterId;
   }
 
+  public String getIpRange() {
+    return ipRange;
+  }
+
+  public void setIpRange(String ipRange) {
+    this.ipRange = ipRange;
+  }
+
+  public String getFloatingIpRange() {
+    return floatingIpRange;
+  }
+
+  public void setFloatingIpRange(String floatingIpRange) {
+    this.floatingIpRange = floatingIpRange;
+  }
+
+  public String getFloatingAddressSpaceSubnetId() {
+    return floatingAddressSpaceSubnetId;
+  }
+
+  public void setFloatingAddressSpaceSubnetId(String floatingAddressSpaceSubnetId) {
+    this.floatingAddressSpaceSubnetId = floatingAddressSpaceSubnetId;
+  }
+
   public String getNtpEndpoint() {
     return this.ntpEndpoint;
   }
@@ -348,6 +378,9 @@ public class DeploymentEntity extends BaseEntity {
         && Objects.equals(this.getNetworkManagerPassword(), other.getNetworkManagerPassword())
         && Objects.equals(this.getNetworkZoneId(), other.getNetworkZoneId())
         && Objects.equals(this.getNetworkTopRouterId(), other.getNetworkTopRouterId())
+        && Objects.equals(this.getIpRange(), other.getIpRange())
+        && Objects.equals(this.getFloatingIpRange(), other.getFloatingIpRange())
+        && Objects.equals(this.getFloatingAddressSpaceSubnetId(), other.getFloatingAddressSpaceSubnetId())
         && Objects.equals(this.getNtpEndpoint(), other.getNtpEndpoint())
         && Objects.equals(this.getImageDatastores(), other.getImageDatastores())
         && Objects.equals(this.getUseImageDatastoreForVms(), other.getUseImageDatastoreForVms())
@@ -378,6 +411,9 @@ public class DeploymentEntity extends BaseEntity {
         .add("networkManagerAddress", this.getNetworkManagerAddress())
         .add("networkZoneId", this.getNetworkZoneId())
         .add("networkTopRouterId", this.getNetworkTopRouterId())
+        .add("ipRange", this.getIpRange())
+        .add("floatingIpRange", this.getFloatingIpRange())
+        .add("floatingAddressSpaceSubnetId", this.getFloatingAddressSpaceSubnetId())
         .add("ntpEndpoint", this.getNtpEndpoint())
         .add("imageDatastores", StringUtils.join(this.getImageDatastores(), ','))
         .add("useImageDatastoreForVms", this.getUseImageDatastoreForVms())

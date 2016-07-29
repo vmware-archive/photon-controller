@@ -61,6 +61,14 @@ public class NetworkConfiguration {
   @ApiModelProperty(value = "The ID of the router for accessing outside network (i.e. Internet)", required = false)
   private String networkTopRouterId;
 
+  @JsonProperty
+  @ApiModelProperty(value = "The global IP range for allocating private IP range to virtual network", required = true)
+  private String ipRange;
+
+  @JsonProperty
+  @ApiModelProperty(value = "The global floating IP range for allocating floating IP to VM")
+  private String floatingIpRange;
+
   public boolean getSdnEnabled() {
     return sdnEnabled;
   }
@@ -105,6 +113,22 @@ public class NetworkConfiguration {
     return networkTopRouterId;
   }
 
+  public String getIpRange() {
+    return ipRange;
+  }
+
+  public void setIpRange(String ipRange) {
+    this.ipRange = ipRange;
+  }
+
+  public String getFloatingIpRange() {
+    return floatingIpRange;
+  }
+
+  public void setFloatingIpRange(String floatingIpRange) {
+    this.floatingIpRange = floatingIpRange;
+  }
+
   public void setNetworkTopRouterId(String networkTopRouterId) {
     this.networkTopRouterId = networkTopRouterId;
   }
@@ -147,7 +171,9 @@ public class NetworkConfiguration {
         .add("sdnEnabled", this.getSdnEnabled())
         .add("networkManagerAddress", this.getNetworkManagerAddress())
         .add("networkZoneId", this.getNetworkZoneId())
-        .add("networkTopRouterId", this.getNetworkTopRouterId());
+        .add("networkTopRouterId", this.getNetworkTopRouterId())
+        .add("ipRange", this.getIpRange())
+        .add("floatingIpRange", this.getFloatingIpRange());
   }
 
   @Override

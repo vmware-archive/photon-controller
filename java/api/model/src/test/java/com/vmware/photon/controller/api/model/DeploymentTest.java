@@ -72,6 +72,8 @@ public class DeploymentTest {
         .networkManagerPassword("networkManagerPassword")
         .networkZoneId("networkZoneId")
         .networkTopRouterId("networkTopRouterId")
+        .ipRange("10.0.0.1/24")
+        .floatingIpRange("192.168.0.1/28")
         .build());
     deployment.setLoadBalancerEnabled(true);
     deployment.setLoadBalancerAddress(loadBalancerAddress);
@@ -158,9 +160,9 @@ public class DeploymentTest {
               "auth=AuthInfo{enabled=true, endpoint=10.146.64.236, port=443, " +
               "tenant=t, securityGroups=adminGroup1,adminGroup2}, " +
               "networkConfiguration=NetworkConfiguration{sdnEnabled=true, networkManagerAddress=1.2.3.4, " +
-              "networkZoneId=networkZoneId, networkTopRouterId=networkTopRouterId}, " +
-              "loadBalancerEnabled=true, loadBalancerAddress=0.0.0.4, migrationProgress=null, " +
-              "clusterConfigurations=null}";
+              "networkZoneId=networkZoneId, networkTopRouterId=networkTopRouterId, ipRange=10.0.0.1/24, " +
+              "floatingIpRange=192.168.0.1/28}, loadBalancerEnabled=true, loadBalancerAddress=0.0.0.4, " +
+              "migrationProgress=null, clusterConfigurations=null}";
       HashSet<String> imageDatastores = new HashSet<String>();
       imageDatastores.add("image-datastore1");
       imageDatastores.add("image-datastore2");
