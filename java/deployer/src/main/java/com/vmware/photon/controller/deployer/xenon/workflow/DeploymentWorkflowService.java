@@ -519,9 +519,32 @@ public class DeploymentWorkflowService extends StatefulService {
         callback);
   }
 
-  private void allocateClusterManagerResources(final State currentState) throws Throwable {
-
+  private void allocateClusterManagerResources(final State currentState) {
     ServiceUtils.logInfo(this, "Allocating ClusterManager resources");
+    sendRequest(
+        HostUtils.getCloudStoreHelper(this)
+            .createGet(currentState.deploymentServiceLink)
+            .setCompletion(
+                (operation, throwable) -> {
+                  if (null != throwable) {
+                    failTask(throwable);
+                    return;
+                  }
+
+                  DeploymentService.State deploymentState = operation.getBody(DeploymentService.State.class);
+                  try {
+                    allocateClusterManagerResources(currentState, deploymentState);
+                  } catch (Throwable t) {
+                    failTask(t);
+                  }
+                }
+            )
+    );
+  }
+
+  private void allocateClusterManagerResources(final State currentState,
+                                               DeploymentService.State deploymentState) throws Throwable {
+
     final Service service = this;
 
     FutureCallback<AllocateClusterManagerResourcesTaskService.State> callback =
@@ -554,6 +577,9 @@ public class DeploymentWorkflowService extends StatefulService {
 
     AllocateClusterManagerResourcesTaskService.State startState =
         new AllocateClusterManagerResourcesTaskService.State();
+    if (deploymentState.oAuthEnabled) {
+      startState.apifeProtocol = "https";
+    }
 
     TaskUtils.startTaskAsync(
         this,

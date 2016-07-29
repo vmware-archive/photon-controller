@@ -59,11 +59,13 @@ public class ApiClientFactory {
   }
 
   public ApiClient create(String endpoint) {
-    String protocol;
-    if (this.isAuthEnabled) {
-      protocol = "https";
-    } else {
-      protocol = "http";
+    String protocol = null;
+    if (!endpoint.startsWith("http")) {
+      if (this.isAuthEnabled) {
+        protocol = "https";
+      } else {
+        protocol = "http";
+      }
     }
     try {
       return new ApiClient(endpoint, httpClient, sharedSecret, protocol);

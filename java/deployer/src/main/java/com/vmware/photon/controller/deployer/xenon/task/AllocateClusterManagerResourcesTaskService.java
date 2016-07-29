@@ -29,6 +29,7 @@ import com.vmware.photon.controller.common.xenon.ValidationUtils;
 import com.vmware.photon.controller.common.xenon.deployment.NoMigrationDuringDeployment;
 import com.vmware.photon.controller.common.xenon.migration.NoMigrationDuringUpgrade;
 import com.vmware.photon.controller.common.xenon.validation.DefaultInteger;
+import com.vmware.photon.controller.common.xenon.validation.DefaultString;
 import com.vmware.photon.controller.common.xenon.validation.DefaultTaskState;
 import com.vmware.photon.controller.common.xenon.validation.Immutable;
 import com.vmware.photon.controller.common.xenon.validation.WriteOnce;
@@ -62,8 +63,6 @@ import java.util.List;
  * Implements a Xenon workflow service to allocate Cluster Manager resources.
  */
 public class AllocateClusterManagerResourcesTaskService extends StatefulService {
-
-  private static final String MANAGEMENT_API_PROTOCOL = "http";
 
   /**
    * This class defines the state of a {@link AllocateClusterManagerResourcesTaskService} task.
@@ -112,6 +111,13 @@ public class AllocateClusterManagerResourcesTaskService extends StatefulService 
      */
     @WriteOnce
     public String loadBalancerAddress;
+
+    /**
+     * This value represents the protocol to use to talk to APIFE.
+     */
+    @DefaultString(value = "http")
+    @Immutable
+    public String apifeProtocol;
   }
 
   public AllocateClusterManagerResourcesTaskService() {
@@ -231,7 +237,7 @@ public class AllocateClusterManagerResourcesTaskService extends StatefulService 
             Collection<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(operation);
             QueryTaskUtils.logQueryResults(AllocateClusterManagerResourcesTaskService.this, documentLinks);
             checkState(!documentLinks.isEmpty(), "Found 0 ManagementApi container template entity");
-            queryForLoadBalancerContainer(documentLinks.iterator().next());
+            queryForLoadBalancerContainer(documentLinks.iterator().next(), currentState);
           } catch (Throwable t) {
             failTask(t);
           }
@@ -240,7 +246,7 @@ public class AllocateClusterManagerResourcesTaskService extends StatefulService 
     sendRequest(queryPostOperation);
   }
 
-  private void queryForLoadBalancerContainer(String containerTemplateLink) {
+  private void queryForLoadBalancerContainer(String containerTemplateLink, final State currentState) {
 
     QueryTask.Query kindClause = new QueryTask.Query()
         .setTermPropertyName(ServiceDocument.FIELD_NAME_KIND)
@@ -270,7 +276,7 @@ public class AllocateClusterManagerResourcesTaskService extends StatefulService 
             Collection<String> documentLinks = QueryTaskUtils.getBroadcastQueryDocumentLinks(operation);
             QueryTaskUtils.logQueryResults(AllocateClusterManagerResourcesTaskService.this, documentLinks);
             checkState(!documentLinks.isEmpty(), "Found 0 container entity");
-            getContainerState(documentLinks.iterator().next());
+            getContainerState(documentLinks.iterator().next(), currentState);
           } catch (Throwable t) {
             failTask(t);
           }
@@ -279,7 +285,7 @@ public class AllocateClusterManagerResourcesTaskService extends StatefulService 
     sendRequest(queryPostOperation);
   }
 
-  private void getContainerState(String containerLink) {
+  private void getContainerState(String containerLink, final State currentState) {
     Operation getOperation = Operation
         .createGet(this, containerLink)
         .forceRemote()
@@ -290,13 +296,13 @@ public class AllocateClusterManagerResourcesTaskService extends StatefulService 
           }
 
           ContainerService.State containerState = operation.getBody(ContainerService.State.class);
-          getVmState(containerState.vmServiceLink);
+          getVmState(containerState.vmServiceLink, currentState);
         });
 
     sendRequest(getOperation);
   }
 
-  private void getVmState(String vmLink) {
+  private void getVmState(String vmLink, final State currentState) {
     Operation getOperation = Operation
         .createGet(this, vmLink)
         .forceRemote()
@@ -311,7 +317,7 @@ public class AllocateClusterManagerResourcesTaskService extends StatefulService 
             State patchState = buildPatch(TaskState.TaskStage.STARTED,
                 TaskState.SubStage.CREATE_MASTER_VM_FLAVOR, null);
             patchState.loadBalancerAddress = new URL(String.format("%s://%s:%s",
-                MANAGEMENT_API_PROTOCOL,
+                currentState.apifeProtocol,
                 vmState.ipAddress,
                 Constants.MANAGEMENT_API_PORT)).toString();
             TaskUtils.sendSelfPatch(AllocateClusterManagerResourcesTaskService.this, patchState);
