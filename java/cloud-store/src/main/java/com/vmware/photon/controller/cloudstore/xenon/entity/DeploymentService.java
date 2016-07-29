@@ -308,6 +308,21 @@ public class DeploymentService extends StatefulService {
     public String dhcpRelayServiceId;
 
     /**
+     * This value represents the global ip range.
+     */
+    public String ipRange;
+
+    /**
+     * This value represents the global floating ip range.
+     */
+    public String floatingIpRange;
+
+    /**
+     * This value represents the subnet against global floating ip range.
+     */
+    public String floatingAddressSpaceSubnetId;
+
+    /**
      * This value represents the syslog endpoint for the deployment.
      */
     @Immutable
